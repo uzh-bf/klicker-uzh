@@ -47,7 +47,7 @@ export class ImportExportRateLimitError extends ImportExportDomainError {
 }
 
 export async function assertImportExportRateLimit(
-  ctx: ContextWithUser,
+  ctx: Pick<ContextWithUser, 'redisExec' | 'user'>,
   operation: ImportExportRateLimitedOperation
 ) {
   const config = getImportExportRuntimeConfig()

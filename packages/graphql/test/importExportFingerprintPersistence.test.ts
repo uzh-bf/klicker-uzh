@@ -7,6 +7,10 @@ import {
   IMPORT_EXPORT_FINGERPRINT_VERSION,
 } from '../src/lib/importExportFingerprintCanonicalization.js'
 import {
+  backfillFingerprintBatch,
+  repairStaleImportExportFingerprints,
+} from '../src/services/importExportFingerprintMaintenance.js'
+import {
   computeAnswerCollectionDidacticFingerprintFromDbV1,
   computeElementDidacticFingerprintFromDbV1,
   persistAnswerCollectionDidacticFingerprintSnapshot,
@@ -14,6 +18,7 @@ import {
   refreshAnswerCollectionDidacticFingerprintV1,
   refreshElementDidacticFingerprintV1,
 } from '../src/services/importExportFingerprintPersistence.js'
+import { invalidateElementFingerprintsForFinalizedMediaV1 } from '../src/services/importExportFingerprints.js'
 
 const TEST_RUN_ID = randomUUID()
 const TEST_EMAIL_PREFIX = `fingerprint-v1-${TEST_RUN_ID}`
@@ -182,7 +187,7 @@ describe('DB-only didactic fingerprint persistence', () => {
     expect(dbSnapshot?.computed).toEqual(packageFingerprint)
   })
 
-  it('keeps missing media hashes null and treats absent rows as omission', async () => {
+  it('rollout-revisits a scheduled null fingerprint after media classification', async () => {
     const href = `https://storage.invalid/${ownerId}/unhashed.png`
     const mediaFile = await prisma.mediaFile.create({
       data: {
@@ -204,17 +209,60 @@ describe('DB-only didactic fingerprint persistence', () => {
       prisma
     )
     expect(unresolved?.computed).toBeNull()
-    await expect(
-      refreshElementDidacticFingerprintV1(element.id, prisma)
-    ).resolves.toMatchObject({ status: 'updated', computed: null })
+    await expect(repairStaleImportExportFingerprints(prisma)).resolves.toEqual({
+      processedAnswerCollections: 0,
+      processedElements: 1,
+      answerCollectionBacklogRemaining: false,
+      elementBacklogRemaining: false,
+    })
     await expect(
       prisma.element.findUniqueOrThrow({
         where: { id: element.id },
-        select: { importFingerprint: true, importFingerprintVersion: true },
+        select: {
+          importFingerprint: true,
+          importFingerprintVersion: true,
+          updatedAt: true,
+        },
       })
-    ).resolves.toEqual({
+    ).resolves.toMatchObject({
       importFingerprint: null,
-      importFingerprintVersion: null,
+      importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+    })
+    const afterFirstRefresh = await prisma.element.findUniqueOrThrow({
+      where: { id: element.id },
+      select: { updatedAt: true },
+    })
+    await expect(
+      refreshElementDidacticFingerprintV1(element.id, prisma)
+    ).resolves.toMatchObject({ status: 'unchanged', computed: null })
+    await expect(
+      prisma.element.findUniqueOrThrow({
+        where: { id: element.id },
+        select: { updatedAt: true },
+      })
+    ).resolves.toEqual(afterFirstRefresh)
+
+    await prisma.mediaFile.update({
+      where: { id: mediaFile.id },
+      data: {
+        contentHash: HASH_A,
+        importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+      },
+    })
+    await expect(
+      backfillFingerprintBatch({ resource: 'ELEMENT' }, prisma)
+    ).resolves.toEqual({ processed: 1, nextAfterId: undefined })
+    await expect(
+      prisma.element.findUniqueOrThrow({
+        where: { id: element.id },
+        select: {
+          importFingerprint: true,
+          importFingerprintVersion: true,
+        },
+      })
+    ).resolves.toMatchObject({
+      importFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+      importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
     })
 
     await prisma.mediaFile.delete({ where: { id: mediaFile.id } })
@@ -318,6 +366,54 @@ describe('DB-only didactic fingerprint persistence', () => {
       importFingerprint: LEGACY_FINGERPRINT,
       importFingerprintVersion: 7,
     })
+  })
+
+  it('invalidates an omission fingerprint when direct-upload media becomes available', async () => {
+    const href = `https://storage.invalid/${ownerId}/pending-direct-upload.png`
+    await prisma.mediaFile.create({
+      data: {
+        ownerId,
+        href,
+        name: 'pending-direct-upload.png',
+        type: 'image/png',
+        contentHash: null,
+        importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+      },
+    })
+    const element = await createContentElement({
+      content: `![pending upload](<${href}>)`,
+      importFingerprint: LEGACY_FINGERPRINT,
+      importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+    })
+    const staleSnapshot = await computeElementDidacticFingerprintFromDbV1(
+      element.id,
+      prisma
+    )
+    expect(staleSnapshot?.computed).not.toBeNull()
+
+    await expect(
+      invalidateElementFingerprintsForFinalizedMediaV1(
+        { href, ownerId },
+        prisma
+      )
+    ).resolves.toBe(1)
+    await expect(
+      prisma.element.findUniqueOrThrow({
+        where: { id: element.id },
+        select: {
+          version: true,
+          importFingerprint: true,
+          importFingerprintVersion: true,
+        },
+      })
+    ).resolves.toEqual({
+      version: element.version + 1,
+      importFingerprint: null,
+      importFingerprintVersion: null,
+    })
+    await expect(
+      persistElementDidacticFingerprintSnapshot(staleSnapshot!, prisma)
+    ).resolves.toMatchObject({ status: 'stale' })
   })
 
   it('does not persist element or collection snapshots after a collection edit', async () => {

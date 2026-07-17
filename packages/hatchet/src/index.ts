@@ -1,4 +1,5 @@
 import {
+  ConcurrencyLimitStrategy,
   Priority,
   type HatchetClient,
   type TaskWorkflowDeclaration,
@@ -15,6 +16,20 @@ import type { Redis } from 'ioredis'
 export * from './client.js'
 
 export type { HatchetHandlers } from '@klicker-uzh/types'
+
+export const IMPORT_EXPORT_TASK_EXECUTION_TIMEOUTS = {
+  refreshFingerprints: '5m',
+  repairFingerprints: '10m',
+  cleanupPackages: '45m',
+} as const
+
+const IMPORT_EXPORT_MAINTENANCE_SINGLE_FLIGHT = {
+  // A standalone task owns its own concurrency group, so one constant CEL key
+  // serializes runs of that task without coupling repair and cleanup together.
+  expression: 'true',
+  maxRuns: 1,
+  limitStrategy: ConcurrencyLimitStrategy.CANCEL_NEWEST,
+} as const
 
 export function prepareHatchetTasks({
   hatchet,
@@ -51,7 +66,8 @@ export function prepareHatchetTasks({
   >
   refreshImportExportFingerprints = hatchet.task({
     name: 'refresh-import-export-fingerprints',
-    retries: 3,
+    retries: 0,
+    executionTimeout: IMPORT_EXPORT_TASK_EXECUTION_TIMEOUTS.refreshFingerprints,
     defaultPriority: Priority.LOW,
     fn: async (input, executionContext) => {
       const result = await handlers.handleRefreshImportExportFingerprints(
@@ -59,13 +75,33 @@ export function prepareHatchetTasks({
         globalContext,
         executionContext
       )
-      if (typeof result.nextAfterElementId === 'number') {
+      if (
+        !result.stoppedEarly &&
+        typeof result.nextAfterElementId === 'number' &&
+        'answerCollectionId' in input
+      ) {
         await refreshImportExportFingerprints.runNoWait({
           answerCollectionId: input.answerCollectionId,
           afterElementId: result.nextAfterElementId,
         })
       }
       return { success: true, processed: result.processed }
+    },
+  })
+
+  const repairImportExportFingerprints = hatchet.task({
+    name: 'repair-import-export-fingerprints',
+    retries: 0,
+    executionTimeout: IMPORT_EXPORT_TASK_EXECUTION_TIMEOUTS.repairFingerprints,
+    concurrency: IMPORT_EXPORT_MAINTENANCE_SINGLE_FLIGHT,
+    defaultPriority: Priority.LOW,
+    onCrons: ['*/15 * * * *'],
+    fn: async (_, executionContext) => {
+      return await handlers.handleRepairImportExportFingerprints(
+        {},
+        globalContext,
+        executionContext
+      )
     },
   })
   // #endregion
@@ -310,7 +346,9 @@ export function prepareHatchetTasks({
 
   const cleanupImportExportPackages = hatchet.task({
     name: 'cleanup-import-export-packages',
-    retries: 3,
+    retries: 0,
+    executionTimeout: IMPORT_EXPORT_TASK_EXECUTION_TIMEOUTS.cleanupPackages,
+    concurrency: IMPORT_EXPORT_MAINTENANCE_SINGLE_FLIGHT,
     defaultPriority: Priority.LOW,
     onCrons: [
       '30 * * * *', // running hourly at minute 30 (UTC)
@@ -341,6 +379,7 @@ export function prepareHatchetTasks({
 
   return {
     refreshImportExportFingerprints,
+    repairImportExportFingerprints,
     updateGroupAverageScores,
     runningRandomGroupAssignments,
     finalRandomGroupAssignments,

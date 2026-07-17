@@ -1119,4 +1119,60 @@ describe('Unit tests batch operations on elements', () => {
     expect(updatedInstanceWithUpdate?.elementData.pointsMultiplier).toEqual(3)
     expect(updatedInstanceWithUpdate?.options.pointsMultiplier).toEqual(6)
   })
+
+  it('keeps a didactic batch write successful when fingerprint enqueueing fails', async () => {
+    const elementId = await seedElement(
+      {
+        type: ElementType.SC,
+        options: { hasSampleSolution: true },
+        pointsMultiplier: 1,
+        importFingerprint: 'a'.repeat(64),
+        importFingerprintVersion: 1,
+      },
+      prisma
+    )
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const runNoWait = vi
+      .spyOn(userOneCtx.tasks.refreshImportExportFingerprints, 'runNoWait')
+      .mockRejectedValue(new Error('Hatchet unavailable'))
+
+    try {
+      await expect(
+        applyElementBatchOperations(
+          {
+            elementIds: [elementId],
+            multiplier: 2,
+            archive: false,
+            unarchive: false,
+            updateInstances: false,
+            updateTemplateInstances: false,
+          },
+          userOneCtx
+        )
+      ).resolves.toBe(1)
+      await Promise.resolve()
+
+      expect(runNoWait).toHaveBeenCalledWith({ elementId })
+      expect(warn).toHaveBeenCalledWith(
+        '[ImportExportFingerprint] REFRESH_ENQUEUE_FAILED'
+      )
+      await expect(
+        prisma.element.findUniqueOrThrow({
+          where: { id: elementId },
+          select: {
+            pointsMultiplier: true,
+            importFingerprint: true,
+            importFingerprintVersion: true,
+          },
+        })
+      ).resolves.toEqual({
+        pointsMultiplier: 2,
+        importFingerprint: null,
+        importFingerprintVersion: null,
+      })
+    } finally {
+      runNoWait.mockRestore()
+      warn.mockRestore()
+    }
+  })
 })

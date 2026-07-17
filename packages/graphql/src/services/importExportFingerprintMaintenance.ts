@@ -1,7 +1,8 @@
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import type {
-  HatchetHandlerGlobalContext,
+  HatchetHandlers,
   ImportExportFingerprintRefreshResult,
+  ImportExportFingerprintRepairResult,
   RefreshImportExportFingerprintsInput,
 } from '@klicker-uzh/types'
 import { createHash } from 'node:crypto'
@@ -16,8 +17,12 @@ import {
 import { downloadKlickerMediaFile } from './mediaStorage.js'
 
 const FINGERPRINT_BATCH_SIZE = 100
+const FINGERPRINT_REPAIR_MAX_BATCHES_PER_RESOURCE = 5
 const MEDIA_HASH_BATCH_SIZE = 50
 const CONCURRENCY = 10
+export const IMPORT_EXPORT_FINGERPRINT_REFRESH_RUNTIME_BUDGET_MS = 4 * 60 * 1000
+export const IMPORT_EXPORT_FINGERPRINT_REPAIR_RUNTIME_BUDGET_MS = 8 * 60 * 1000
+export type ImportExportFingerprintStopReason = 'budget' | 'cancelled'
 
 type FingerprintBackfillInput = {
   resource: 'ANSWER_COLLECTION' | 'ELEMENT'
@@ -29,6 +34,14 @@ type FingerprintBackfillResult = {
   nextAfterId?: number
 }
 
+type FingerprintWhere = {
+  OR: Array<
+    | { importFingerprint: null }
+    | { importFingerprintVersion: null }
+    | { importFingerprintVersion: { not: number } }
+  >
+}
+
 type MediaHashBackfillInput = {
   afterId?: string
 }
@@ -38,7 +51,20 @@ type MediaHashBackfillResult = {
   nextAfterId?: string
 }
 
-function staleFingerprintWhere() {
+function staleFingerprintWhere(): FingerprintWhere {
+  return {
+    OR: [
+      { importFingerprintVersion: null },
+      {
+        importFingerprintVersion: {
+          not: IMPORT_EXPORT_FINGERPRINT_VERSION,
+        },
+      },
+    ],
+  }
+}
+
+function rolloutFingerprintWhere(): FingerprintWhere {
   return {
     OR: [
       { importFingerprint: null },
@@ -52,20 +78,79 @@ function staleFingerprintWhere() {
   }
 }
 
-async function runInChunks<T>(
-  values: readonly T[],
-  operation: (value: T) => Promise<unknown>
+async function hasStaleFingerprints(
+  resource: FingerprintBackfillInput['resource'],
+  prisma: FingerprintPrisma
 ) {
-  for (let index = 0; index < values.length; index += CONCURRENCY) {
-    await Promise.all(values.slice(index, index + CONCURRENCY).map(operation))
-  }
+  const where = { isDeleted: false, ...staleFingerprintWhere() }
+  const stale =
+    resource === 'ANSWER_COLLECTION'
+      ? await prisma.answerCollection.findFirst({ where, select: { id: true } })
+      : await prisma.element.findFirst({ where, select: { id: true } })
+
+  return stale !== null
 }
 
-export async function refreshAnswerCollectionFingerprintBatch(
+async function repairFingerprintResource(
+  resource: FingerprintBackfillInput['resource'],
+  prisma: FingerprintPrisma,
+  shouldStop: () => boolean
+) {
+  let processed = 0
+  let afterId: number | undefined
+
+  for (
+    let batch = 0;
+    batch < FINGERPRINT_REPAIR_MAX_BATCHES_PER_RESOURCE;
+    batch += 1
+  ) {
+    if (shouldStop()) break
+    const result = await processFingerprintBatch(
+      { resource, afterId },
+      prisma,
+      staleFingerprintWhere(),
+      shouldStop
+    )
+    processed += result.processed
+
+    if (shouldStop()) break
+    if (typeof result.nextAfterId !== 'number') {
+      break
+    }
+    afterId = result.nextAfterId
+  }
+
+  return processed
+}
+
+async function runInChunks<T>(
+  values: readonly T[],
+  operation: (value: T) => Promise<unknown>,
+  shouldStop: () => boolean = () => false
+) {
+  let processed = 0
+  for (let index = 0; index < values.length; index += CONCURRENCY) {
+    if (shouldStop()) break
+    const chunk = values.slice(index, index + CONCURRENCY)
+    await Promise.all(chunk.map(operation))
+    processed += chunk.length
+  }
+  return processed
+}
+
+export async function refreshImportExportFingerprintBatch(
   input: RefreshImportExportFingerprintsInput,
-  prisma: FingerprintPrisma
+  prisma: FingerprintPrisma,
+  shouldStop: () => boolean = () => false
 ): Promise<ImportExportFingerprintRefreshResult> {
   let processed = 0
+
+  if (shouldStop()) return { processed: 0, stoppedEarly: true }
+
+  if ('elementId' in input) {
+    await refreshElementDidacticFingerprintV1(input.elementId, prisma)
+    return { processed: 1 }
+  }
 
   if (typeof input.afterElementId === 'undefined') {
     await refreshAnswerCollectionDidacticFingerprintV1(
@@ -74,6 +159,8 @@ export async function refreshAnswerCollectionFingerprintBatch(
     )
     processed += 1
   }
+
+  if (shouldStop()) return { processed, stoppedEarly: true }
 
   const elements = await prisma.element.findMany({
     where: {
@@ -90,44 +177,57 @@ export async function refreshAnswerCollectionFingerprintBatch(
     take: FINGERPRINT_BATCH_SIZE,
   })
 
-  await runInChunks(elements, ({ id }) =>
-    refreshElementDidacticFingerprintV1(id, prisma)
+  const processedElements = await runInChunks(
+    elements,
+    ({ id }) => refreshElementDidacticFingerprintV1(id, prisma),
+    shouldStop
   )
-  processed += elements.length
+  processed += processedElements
+
+  const stoppedEarly = processedElements < elements.length || shouldStop()
 
   return {
     processed,
+    ...(stoppedEarly ? { stoppedEarly: true as const } : {}),
     nextAfterElementId:
-      elements.length === FINGERPRINT_BATCH_SIZE
+      !stoppedEarly && elements.length === FINGERPRINT_BATCH_SIZE
         ? elements.at(-1)?.id
         : undefined,
   }
 }
 
-export async function backfillFingerprintBatch(
+async function processFingerprintBatch(
   input: FingerprintBackfillInput,
-  prisma: FingerprintPrisma
+  prisma: FingerprintPrisma,
+  fingerprintWhere: FingerprintWhere,
+  shouldStop: () => boolean = () => false
 ): Promise<FingerprintBackfillResult> {
+  if (shouldStop()) return { processed: 0 }
+
   if (input.resource === 'ANSWER_COLLECTION') {
     const collections = await prisma.answerCollection.findMany({
       where: {
         isDeleted: false,
         id:
           typeof input.afterId === 'number' ? { gt: input.afterId } : undefined,
-        ...staleFingerprintWhere(),
+        ...fingerprintWhere,
       },
       select: { id: true },
       orderBy: { id: 'asc' },
       take: FINGERPRINT_BATCH_SIZE,
     })
-    await runInChunks(collections, ({ id }) =>
-      refreshAnswerCollectionDidacticFingerprintV1(id, prisma)
+    const processed = await runInChunks(
+      collections,
+      ({ id }) => refreshAnswerCollectionDidacticFingerprintV1(id, prisma),
+      shouldStop
     )
     return {
-      processed: collections.length,
+      processed,
       nextAfterId:
-        collections.length === FINGERPRINT_BATCH_SIZE
-          ? collections.at(-1)?.id
+        processed > 0 &&
+        (processed < collections.length ||
+          collections.length === FINGERPRINT_BATCH_SIZE)
+          ? collections[processed - 1]?.id
           : undefined,
     }
   }
@@ -136,21 +236,73 @@ export async function backfillFingerprintBatch(
     where: {
       isDeleted: false,
       id: typeof input.afterId === 'number' ? { gt: input.afterId } : undefined,
-      ...staleFingerprintWhere(),
+      ...fingerprintWhere,
     },
     select: { id: true },
     orderBy: { id: 'asc' },
     take: FINGERPRINT_BATCH_SIZE,
   })
-  await runInChunks(elements, ({ id }) =>
-    refreshElementDidacticFingerprintV1(id, prisma)
+  const processed = await runInChunks(
+    elements,
+    ({ id }) => refreshElementDidacticFingerprintV1(id, prisma),
+    shouldStop
   )
   return {
-    processed: elements.length,
+    processed,
     nextAfterId:
-      elements.length === FINGERPRINT_BATCH_SIZE
-        ? elements.at(-1)?.id
+      processed > 0 &&
+      (processed < elements.length ||
+        elements.length === FINGERPRINT_BATCH_SIZE)
+        ? elements[processed - 1]?.id
         : undefined,
+  }
+}
+
+export async function backfillFingerprintBatch(
+  input: FingerprintBackfillInput,
+  prisma: FingerprintPrisma
+): Promise<FingerprintBackfillResult> {
+  // The rollout backfill deliberately revisits null/current rows. They may
+  // have been classified before the media-hash backfill made them computable.
+  // Its keyset cursor still guarantees forward progress past rows that remain
+  // permanently unfingerprintable.
+  return await processFingerprintBatch(input, prisma, rolloutFingerprintWhere())
+}
+
+export async function repairStaleImportExportFingerprints(
+  prisma: FingerprintPrisma,
+  getStopReason: () => ImportExportFingerprintStopReason | null = () => null
+): Promise<ImportExportFingerprintRepairResult> {
+  let stopReason: ImportExportFingerprintStopReason | null = null
+  const shouldStop = () => {
+    const reason = getStopReason()
+    if (reason && stopReason === null) stopReason = reason
+    return stopReason !== null
+  }
+  const processedAnswerCollections = await repairFingerprintResource(
+    'ANSWER_COLLECTION',
+    prisma,
+    shouldStop
+  )
+  const processedElements = shouldStop()
+    ? 0
+    : await repairFingerprintResource('ELEMENT', prisma, shouldStop)
+  shouldStop()
+  const [answerCollectionBacklogRemaining, elementBacklogRemaining] =
+    stopReason === 'cancelled'
+      ? [true, true]
+      : await Promise.all([
+          hasStaleFingerprints('ANSWER_COLLECTION', prisma),
+          hasStaleFingerprints('ELEMENT', prisma),
+        ])
+  const stoppedEarly = shouldStop()
+
+  return {
+    processedAnswerCollections,
+    processedElements,
+    answerCollectionBacklogRemaining,
+    elementBacklogRemaining,
+    ...(stoppedEarly ? { stoppedEarly: true as const } : {}),
   }
 }
 
@@ -216,9 +368,43 @@ export async function backfillMediaHashBatch(
   }
 }
 
-export async function handleRefreshImportExportFingerprints(
-  input: RefreshImportExportFingerprintsInput,
-  globalCtx: HatchetHandlerGlobalContext
-) {
-  return await refreshAnswerCollectionFingerprintBatch(input, globalCtx.prisma)
-}
+export const handleRefreshImportExportFingerprints: HatchetHandlers['handleRefreshImportExportFingerprints'] =
+  async (input, globalCtx, executionCtx) => {
+    const deadline =
+      Date.now() + IMPORT_EXPORT_FINGERPRINT_REFRESH_RUNTIME_BUDGET_MS
+    const result = await refreshImportExportFingerprintBatch(
+      input,
+      globalCtx.prisma,
+      () =>
+        executionCtx.abortController.signal.aborted || Date.now() >= deadline
+    )
+    if (executionCtx.abortController.signal.aborted) {
+      throw new Error('Import/export fingerprint refresh was cancelled.')
+    }
+    return result
+  }
+
+export const handleRepairImportExportFingerprints: HatchetHandlers['handleRepairImportExportFingerprints'] =
+  async (_, globalCtx, executionCtx) => {
+    const deadline =
+      Date.now() + IMPORT_EXPORT_FINGERPRINT_REPAIR_RUNTIME_BUDGET_MS
+    const result = await repairStaleImportExportFingerprints(
+      globalCtx.prisma,
+      () =>
+        executionCtx.abortController.signal.aborted
+          ? 'cancelled'
+          : Date.now() >= deadline
+            ? 'budget'
+            : null
+    )
+    if (executionCtx.abortController.signal.aborted) {
+      throw new Error('Import/export fingerprint repair was cancelled.')
+    }
+    await executionCtx.logger.info(
+      result.stoppedEarly
+        ? 'Import/export fingerprint repair reached its work budget'
+        : 'Import/export fingerprint repair completed',
+      result
+    )
+    return result
+  }

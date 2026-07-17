@@ -2,6 +2,7 @@ import * as DB from '@klicker-uzh/prisma/client'
 import { ElementOptionsInput } from '@klicker-uzh/types'
 import { z } from 'zod'
 import {
+  type CanonicalCaseStudyOptions,
   canonicalizeCaseStudyRelations,
   normalizeCaseStudyOptions,
   parseCaseStudyAuthoringOptions,
@@ -9,7 +10,6 @@ import {
 import { normalizeChoicesOptions } from './elementDomain/choice.js'
 import { normalizeContentOptions } from './elementDomain/content.js'
 import {
-  type CanonicalElementDomain,
   ELEMENT_DOMAIN_LIMITS,
   ElementDomainIssueCode,
   ElementDomainValidationError,
@@ -33,7 +33,6 @@ export {
   ElementDomainValidationError,
 } from './elementDomain/core.js'
 export type {
-  CanonicalElementDomain,
   ElementDomainIssue,
   ElementRelationContext,
 } from './elementDomain/core.js'
@@ -41,10 +40,53 @@ export type {
 export const MAX_ELEMENT_POINTS_MULTIPLIER =
   ELEMENT_DOMAIN_LIMITS.pointsMultiplierMax
 
-type PreviousElementDomainFields = Pick<
-  CanonicalElementDomain<ElementReference>,
-  'content' | 'explanation' | 'basePoints' | 'pointsMultiplier'
->
+export type CanonicalOptionsByElementType = {
+  [DB.ElementType.SC]: ReturnType<typeof normalizeChoicesOptions>
+  [DB.ElementType.MC]: ReturnType<typeof normalizeChoicesOptions>
+  [DB.ElementType.KPRIM]: ReturnType<typeof normalizeChoicesOptions>
+  [DB.ElementType.NUMERICAL]: ReturnType<typeof normalizeNumericalOptions>
+  [DB.ElementType.FREE_TEXT]: ReturnType<typeof normalizeFreeTextOptions>
+  [DB.ElementType.SELECTION]: ReturnType<typeof normalizeSelectionOptions>
+  [DB.ElementType.CASE_STUDY]: CanonicalCaseStudyOptions
+  [DB.ElementType.CONTENT]: ReturnType<typeof normalizeContentOptions>
+  [DB.ElementType.FLASHCARD]: ReturnType<typeof normalizeContentOptions>
+}
+
+export type CanonicalElementDomain<
+  Type extends DB.ElementType = DB.ElementType,
+  Id extends ElementReference = ElementReference,
+> = Type extends DB.ElementType
+  ? {
+      type: Type
+      content: string
+      explanation: string | null
+      basePoints: boolean
+      pointsMultiplier: number
+      options: CanonicalOptionsByElementType[Type]
+      relations: {
+        answerCollectionId?: Id
+        selectedIds: Id[]
+      }
+    }
+  : never
+
+type CanonicalElementOptionsResult<
+  Type extends DB.ElementType,
+  Id extends ElementReference,
+> = {
+  options: CanonicalOptionsByElementType[Type]
+  relations: {
+    answerCollectionId?: Id
+    selectedIds: Id[]
+  }
+}
+
+type PreviousElementDomainFields = {
+  content: string
+  explanation: string | null
+  basePoints: boolean
+  pointsMultiplier: number
+}
 
 function canonicalizeRelations<Id extends ElementReference>(
   type: DB.ElementType,
@@ -67,15 +109,18 @@ function canonicalizeRelations<Id extends ElementReference>(
   return { selectedIds: [] as Id[] }
 }
 
-export function canonicalizeElementOptions<Id extends ElementReference>({
+export function canonicalizeElementOptions<
+  Type extends DB.ElementType,
+  Id extends ElementReference,
+>({
   type,
   options: rawOptions,
   relations,
 }: {
-  type: DB.ElementType
+  type: Type
   options: unknown
   relations?: ElementRelationContext<Id>
-}) {
+}): CanonicalElementOptionsResult<Type, Id> {
   const referenceKey = relations?.caseSolutionReferenceKey ?? 'itemId'
   const options = (() => {
     switch (type) {
@@ -95,19 +140,25 @@ export function canonicalizeElementOptions<Id extends ElementReference>({
       case DB.ElementType.FLASHCARD:
         return normalizeContentOptions(rawOptions)
     }
-  })() as Record<string, unknown>
+  })() as CanonicalOptionsByElementType[Type]
 
   return {
     options,
-    relations: canonicalizeRelations(type, options, relations),
+    relations: canonicalizeRelations(
+      type,
+      options as Record<string, unknown>,
+      relations
+    ),
   }
 }
 
-export function canonicalizeElementAuthoringOptions(
-  type: DB.ElementType,
+export function canonicalizeElementAuthoringOptions<
+  Type extends DB.ElementType,
+>(
+  type: Type,
   rawOptions?: ElementOptionsInput | null,
   { poolIds }: { poolIds?: readonly number[] } = {}
-) {
+): CanonicalElementOptionsResult<Type, number> {
   if (type === DB.ElementType.SELECTION) {
     const parsed = parseSelectionAuthoringOptions(rawOptions)
     return canonicalizeElementOptions({
@@ -142,7 +193,10 @@ export function canonicalizeElementAuthoringOptions(
   return canonicalizeElementOptions({ type, options: rawOptions ?? {} })
 }
 
-export function canonicalizeElementDomain<Id extends ElementReference>({
+export function canonicalizeElementDomain<
+  Type extends DB.ElementType,
+  Id extends ElementReference,
+>({
   type,
   content,
   explanation,
@@ -151,17 +205,63 @@ export function canonicalizeElementDomain<Id extends ElementReference>({
   options,
   relations,
 }: {
-  type: DB.ElementType
+  type: Type
   content: unknown
   explanation?: unknown
   basePoints: unknown
   pointsMultiplier: unknown
   options: unknown
   relations?: ElementRelationContext<Id>
-}): CanonicalElementDomain<Id> {
+}): CanonicalElementDomain<Type, Id> {
+  const shared = canonicalizeElementSharedFields({
+    type,
+    content,
+    explanation,
+    basePoints,
+    pointsMultiplier,
+  })
+  const canonical = canonicalizeElementOptions({ type, options, relations })
+  return {
+    ...shared,
+    options: canonical.options,
+    relations: canonical.relations,
+  } as CanonicalElementDomain<Type, Id>
+}
+
+export function canonicalizeElementSharedFields<Type extends DB.ElementType>({
+  type,
+  content,
+  explanation,
+  basePoints,
+  pointsMultiplier,
+}: {
+  type: Type
+  content: unknown
+  explanation?: unknown
+  basePoints: unknown
+  pointsMultiplier: unknown
+}) {
+  return {
+    type,
+    content: canonicalizeElementContent(content),
+    explanation: canonicalizeElementExplanation(type, explanation),
+    basePoints: canonicalizeElementBasePoints(type, basePoints),
+    pointsMultiplier: canonicalizeElementPointsMultiplier(pointsMultiplier),
+  }
+}
+
+function canonicalizeElementContent(content: unknown) {
   if (typeof content !== 'string' || !isMeaningfulText(content)) {
     issue(ElementDomainIssueCode.INVALID_TEXT, ['content'])
   }
+
+  return normalizeAuthoredText(content)
+}
+
+function canonicalizeElementExplanation(
+  type: DB.ElementType,
+  explanation: unknown
+) {
   if (
     explanation !== null &&
     typeof explanation !== 'undefined' &&
@@ -175,9 +275,26 @@ export function canonicalizeElementDomain<Id extends ElementReference>({
   ) {
     issue(ElementDomainIssueCode.INVALID_TEXT, ['explanation'])
   }
+
+  return typeof explanation === 'string'
+    ? normalizeAuthoredText(explanation)
+    : null
+}
+
+function canonicalizeElementBasePoints(
+  type: DB.ElementType,
+  basePoints: unknown
+) {
   if (typeof basePoints !== 'boolean') {
     issue(ElementDomainIssueCode.INVALID_SHAPE, ['basePoints'])
   }
+
+  return type === DB.ElementType.CONTENT || type === DB.ElementType.FLASHCARD
+    ? false
+    : basePoints
+}
+
+function canonicalizeElementPointsMultiplier(pointsMultiplier: unknown) {
   if (
     typeof pointsMultiplier !== 'number' ||
     !Number.isInteger(pointsMultiplier) ||
@@ -187,47 +304,68 @@ export function canonicalizeElementDomain<Id extends ElementReference>({
     issue(ElementDomainIssueCode.INVALID_SHAPE, ['pointsMultiplier'])
   }
 
-  const canonical = canonicalizeElementOptions({ type, options, relations })
-  return {
-    type,
-    content: normalizeAuthoredText(content),
-    explanation:
-      typeof explanation === 'string'
-        ? normalizeAuthoredText(explanation)
-        : null,
-    basePoints:
-      type === DB.ElementType.CONTENT || type === DB.ElementType.FLASHCARD
-        ? false
-        : basePoints,
-    pointsMultiplier,
-    options: canonical.options,
-    relations: canonical.relations,
-  }
+  return pointsMultiplier
 }
 
-export function canonicalizeElementDomainUpdate<Id extends ElementReference>({
+export function canonicalizeElementSharedFieldsPatch<
+  Type extends DB.ElementType,
+>({
   type,
   content,
   explanation,
   basePoints,
   pointsMultiplier,
-  options,
-  relations,
   previous,
 }: {
-  type: DB.ElementType
+  type: Type
   content?: unknown
   explanation?: unknown
   basePoints?: unknown
   pointsMultiplier?: unknown
-  options: unknown
-  relations?: ElementRelationContext<Id>
+  previous: PreviousElementDomainFields
+}) {
+  return {
+    type,
+    content:
+      typeof content === 'undefined'
+        ? previous.content
+        : canonicalizeElementContent(content),
+    explanation:
+      typeof explanation === 'undefined'
+        ? previous.explanation
+        : canonicalizeElementExplanation(type, explanation),
+    basePoints:
+      typeof basePoints === 'undefined'
+        ? previous.basePoints
+        : canonicalizeElementBasePoints(type, basePoints),
+    pointsMultiplier:
+      typeof pointsMultiplier === 'undefined'
+        ? previous.pointsMultiplier
+        : canonicalizeElementPointsMultiplier(pointsMultiplier),
+  }
+}
+
+export function canonicalizeElementSharedFieldsUpdate<
+  Type extends DB.ElementType,
+>({
+  type,
+  content,
+  explanation,
+  basePoints,
+  pointsMultiplier,
+  previous,
+}: {
+  type: Type
+  content?: unknown
+  explanation?: unknown
+  basePoints?: unknown
+  pointsMultiplier?: unknown
   previous?: PreviousElementDomainFields
 }) {
   const isNonQuestion =
     type === DB.ElementType.CONTENT || type === DB.ElementType.FLASHCARD
 
-  return canonicalizeElementDomain({
+  return canonicalizeElementSharedFields({
     type,
     content: typeof content === 'undefined' ? previous?.content : content,
     explanation:
@@ -240,40 +378,77 @@ export function canonicalizeElementDomainUpdate<Id extends ElementReference>({
       typeof pointsMultiplier === 'undefined'
         ? (previous?.pointsMultiplier ?? (isNonQuestion ? 1 : undefined))
         : pointsMultiplier,
-    options,
-    relations,
   })
 }
 
-export function createCanonicalElementOptionsSchema(
-  type: DB.ElementType,
-  caseSolutionReferenceKey: 'itemId' | 'itemRef' = 'itemId'
-) {
-  return z.unknown().transform((value, ctx) => {
-    try {
-      return canonicalizeElementOptions({
-        type,
-        options: value,
-        relations:
-          type === DB.ElementType.CASE_STUDY
-            ? {
-                caseSolutionReferenceKey,
-              }
-            : undefined,
-      }).options
-    } catch (error) {
-      if (!(error instanceof ElementDomainValidationError)) throw error
-
-      for (const entry of error.issues) {
-        const relativePath =
-          entry.path[0] === 'options' ? entry.path.slice(1) : entry.path
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: [...relativePath],
-          message: entry.code,
-        })
-      }
-      return z.NEVER
-    }
+export function canonicalizeElementDomainUpdate<
+  Type extends DB.ElementType,
+  Id extends ElementReference,
+>({
+  type,
+  content,
+  explanation,
+  basePoints,
+  pointsMultiplier,
+  options,
+  relations,
+  previous,
+}: {
+  type: Type
+  content?: unknown
+  explanation?: unknown
+  basePoints?: unknown
+  pointsMultiplier?: unknown
+  options: unknown
+  relations?: ElementRelationContext<Id>
+  previous?: PreviousElementDomainFields
+}): CanonicalElementDomain<Type, Id> {
+  const shared = canonicalizeElementSharedFieldsUpdate({
+    type,
+    content,
+    explanation,
+    basePoints,
+    pointsMultiplier,
+    previous,
   })
+  const canonical = canonicalizeElementOptions({ type, options, relations })
+  return {
+    ...shared,
+    options: canonical.options,
+    relations: canonical.relations,
+  } as CanonicalElementDomain<Type, Id>
+}
+
+export function createCanonicalElementOptionsSchema<
+  Type extends DB.ElementType,
+>(type: Type, caseSolutionReferenceKey: 'itemId' | 'itemRef' = 'itemId') {
+  return z
+    .unknown()
+    .transform((value, ctx): CanonicalOptionsByElementType[Type] => {
+      try {
+        return canonicalizeElementOptions({
+          type,
+          options: value,
+          relations:
+            type === DB.ElementType.CASE_STUDY
+              ? {
+                  caseSolutionReferenceKey,
+                }
+              : undefined,
+        }).options
+      } catch (error) {
+        if (!(error instanceof ElementDomainValidationError)) throw error
+
+        for (const entry of error.issues) {
+          const relativePath =
+            entry.path[0] === 'options' ? entry.path.slice(1) : entry.path
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [...relativePath],
+            message: entry.code,
+          })
+        }
+        return z.NEVER
+      }
+    })
 }

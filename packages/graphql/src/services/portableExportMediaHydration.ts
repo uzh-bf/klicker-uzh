@@ -44,8 +44,10 @@ export function createStorageAwarePortableExportPlan(
 
 export async function loadPortableExportPreviewMediaOutcomes(
   plan: PortableExportPlan,
-  ctx: ContextWithUser
+  ctx: ContextWithUser,
+  assertLease: () => void = () => {}
 ): Promise<PortableExportMediaOutcome[]> {
+  assertLease()
   if (plan.mediaInventory.firstParty.length > MAX_IMPORT_EXPORT_MEDIA_FILES) {
     throw new ImportExportDomainError(
       ImportExportErrorCode.EXPORT_PACKAGE_TOO_LARGE
@@ -53,12 +55,16 @@ export async function loadPortableExportPreviewMediaOutcomes(
   }
   if (plan.mediaInventory.firstParty.length === 0) return []
 
+  assertLease()
   const metadataByHref = await getKlickerMediaFilesExportMetadata(
     plan.mediaInventory.firstParty.map(({ href }) => href),
-    ctx
+    ctx,
+    assertLease
   )
+  assertLease()
 
-  return plan.mediaInventory.firstParty.map((candidate) => {
+  const outcomes = plan.mediaInventory.firstParty.map((candidate) => {
+    assertLease()
     const metadata = metadataByHref.get(candidate.href)
     if (
       !metadata ||
@@ -81,6 +87,8 @@ export async function loadPortableExportPreviewMediaOutcomes(
       bytes: metadata.bytes,
     }
   })
+  assertLease()
+  return outcomes
 }
 
 export async function hydratePortableExportMediaOutcomes(

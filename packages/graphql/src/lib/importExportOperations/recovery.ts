@@ -1,9 +1,5 @@
 // Recovery checks are exact-record and owner scoped.
-import {
-  countExactRecoveryScope,
-  createOperationsPrisma,
-  type OperationsPrisma,
-} from './database.js'
+import { createOperationsPrisma, type OperationsPrisma } from './database.js'
 import {
   ImportExportOperationError,
   createOperationOutput,
@@ -14,6 +10,170 @@ import {
   writeRecoveryManifest,
   type ImportExportRecoveryManifest,
 } from './runtime.js'
+
+type ExactScopeCounts = Readonly<{
+  elements: number
+  answerCollections: number
+  mediaFiles: number
+  artifacts: number
+  receipts: number
+  stagingRecords: number
+  activeElements: number
+  activeAnswerCollections: number
+  foreignOwnedRecords: number
+}>
+
+async function countExactRecoveryScope({
+  prisma,
+  ownerId,
+  resources,
+}: {
+  prisma: OperationsPrisma
+  ownerId: string
+  resources: {
+    elementIds: number[]
+    answerCollectionIds: number[]
+    mediaFileIds: string[]
+    artifactIds: string[]
+    receiptIds: string[]
+    stagingIds: string[]
+  }
+}): Promise<ExactScopeCounts> {
+  const ownerWhere = { ownerId }
+  const [
+    elements,
+    answerCollections,
+    mediaFiles,
+    artifacts,
+    receipts,
+    stagingRecords,
+    activeElements,
+    activeAnswerCollections,
+    foreignElements,
+    foreignAnswerCollections,
+    foreignMediaFiles,
+    foreignArtifacts,
+    foreignReceipts,
+    foreignStagingRecords,
+  ] = await Promise.all([
+    resources.elementIds.length === 0
+      ? 0
+      : prisma.element.count({
+          where: { ...ownerWhere, id: { in: resources.elementIds } },
+        }),
+    resources.answerCollectionIds.length === 0
+      ? 0
+      : prisma.answerCollection.count({
+          where: {
+            ...ownerWhere,
+            id: { in: resources.answerCollectionIds },
+          },
+        }),
+    resources.mediaFileIds.length === 0
+      ? 0
+      : prisma.mediaFile.count({
+          where: { ...ownerWhere, id: { in: resources.mediaFileIds } },
+        }),
+    resources.artifactIds.length === 0
+      ? 0
+      : prisma.importExportPackageArtifact.count({
+          where: { ...ownerWhere, id: { in: resources.artifactIds } },
+        }),
+    resources.receiptIds.length === 0
+      ? 0
+      : prisma.elementImportReceipt.count({
+          where: { ...ownerWhere, id: { in: resources.receiptIds } },
+        }),
+    resources.stagingIds.length === 0
+      ? 0
+      : prisma.importMediaStaging.count({
+          where: { ...ownerWhere, id: { in: resources.stagingIds } },
+        }),
+    resources.elementIds.length === 0
+      ? 0
+      : prisma.element.count({
+          where: {
+            ...ownerWhere,
+            id: { in: resources.elementIds },
+            isDeleted: false,
+          },
+        }),
+    resources.answerCollectionIds.length === 0
+      ? 0
+      : prisma.answerCollection.count({
+          where: {
+            ...ownerWhere,
+            id: { in: resources.answerCollectionIds },
+            isDeleted: false,
+          },
+        }),
+    resources.elementIds.length === 0
+      ? 0
+      : prisma.element.count({
+          where: {
+            id: { in: resources.elementIds },
+            ownerId: { not: ownerId },
+          },
+        }),
+    resources.answerCollectionIds.length === 0
+      ? 0
+      : prisma.answerCollection.count({
+          where: {
+            id: { in: resources.answerCollectionIds },
+            ownerId: { not: ownerId },
+          },
+        }),
+    resources.mediaFileIds.length === 0
+      ? 0
+      : prisma.mediaFile.count({
+          where: {
+            id: { in: resources.mediaFileIds },
+            ownerId: { not: ownerId },
+          },
+        }),
+    resources.artifactIds.length === 0
+      ? 0
+      : prisma.importExportPackageArtifact.count({
+          where: {
+            id: { in: resources.artifactIds },
+            ownerId: { not: ownerId },
+          },
+        }),
+    resources.receiptIds.length === 0
+      ? 0
+      : prisma.elementImportReceipt.count({
+          where: {
+            id: { in: resources.receiptIds },
+            ownerId: { not: ownerId },
+          },
+        }),
+    resources.stagingIds.length === 0
+      ? 0
+      : prisma.importMediaStaging.count({
+          where: {
+            id: { in: resources.stagingIds },
+            ownerId: { not: ownerId },
+          },
+        }),
+  ])
+  return {
+    elements,
+    answerCollections,
+    mediaFiles,
+    artifacts,
+    receipts,
+    stagingRecords,
+    activeElements,
+    activeAnswerCollections,
+    foreignOwnedRecords:
+      foreignElements +
+      foreignAnswerCollections +
+      foreignMediaFiles +
+      foreignArtifacts +
+      foreignReceipts +
+      foreignStagingRecords,
+  }
+}
 
 function recoveryManifestPath(env: NodeJS.ProcessEnv) {
   const path = env.IMPORT_EXPORT_RECOVERY_MANIFEST_PATH

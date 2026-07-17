@@ -33,12 +33,16 @@ export type ImportExportRuntimeConfig = Readonly<{
     leaseTtlMs: number
     previewPerUser: number
     previewGlobal: number
+    uploadPerUser: number
+    uploadGlobal: number
+    validatePerUser: number
+    validateGlobal: number
+    importPerUser: number
+    importGlobal: number
     exportPerUser: number
     exportGlobal: number
   }>
   timeouts: Readonly<{
-    httpHeadersMs: number
-    httpRequestMs: number
     uploadBodyMs: number
     azureMetadataMs: number
     azureTransferMs: number
@@ -185,7 +189,7 @@ export function parseImportExportRuntimeConfig(
     leaseTtlMs: readInteger(env, {
       name: 'IMPORT_EXPORT_PACKAGE_CONCURRENCY_LEASE_TTL_MS',
       fallback: 2 * 60 * 1000,
-      minimum: 1_000,
+      minimum: 3_000,
       maximum: 15 * 60 * 1000,
     }),
     previewPerUser: readInteger(env, {
@@ -197,6 +201,42 @@ export function parseImportExportRuntimeConfig(
     previewGlobal: readInteger(env, {
       name: 'IMPORT_EXPORT_PACKAGE_PREVIEW_GLOBAL_CONCURRENCY',
       fallback: 8,
+      minimum: 1,
+      maximum: 10_000,
+    }),
+    uploadPerUser: readInteger(env, {
+      name: 'IMPORT_EXPORT_PACKAGE_UPLOAD_CONCURRENCY',
+      fallback: 1,
+      minimum: 1,
+      maximum: 1_000,
+    }),
+    uploadGlobal: readInteger(env, {
+      name: 'IMPORT_EXPORT_PACKAGE_UPLOAD_GLOBAL_CONCURRENCY',
+      fallback: 4,
+      minimum: 1,
+      maximum: 10_000,
+    }),
+    validatePerUser: readInteger(env, {
+      name: 'IMPORT_EXPORT_PACKAGE_VALIDATE_CONCURRENCY',
+      fallback: 2,
+      minimum: 1,
+      maximum: 1_000,
+    }),
+    validateGlobal: readInteger(env, {
+      name: 'IMPORT_EXPORT_PACKAGE_VALIDATE_GLOBAL_CONCURRENCY',
+      fallback: 8,
+      minimum: 1,
+      maximum: 10_000,
+    }),
+    importPerUser: readInteger(env, {
+      name: 'IMPORT_EXPORT_PACKAGE_IMPORT_CONCURRENCY',
+      fallback: 1,
+      minimum: 1,
+      maximum: 1_000,
+    }),
+    importGlobal: readInteger(env, {
+      name: 'IMPORT_EXPORT_PACKAGE_IMPORT_GLOBAL_CONCURRENCY',
+      fallback: 4,
       minimum: 1,
       maximum: 10_000,
     }),
@@ -214,18 +254,6 @@ export function parseImportExportRuntimeConfig(
     }),
   })
   const timeouts = frozen({
-    httpHeadersMs: readInteger(env, {
-      name: 'IMPORT_EXPORT_HTTP_HEADERS_TIMEOUT_MS',
-      fallback: 10_000,
-      minimum: 1_000,
-      maximum: 120_000,
-    }),
-    httpRequestMs: readInteger(env, {
-      name: 'IMPORT_EXPORT_HTTP_REQUEST_TIMEOUT_MS',
-      fallback: 120_000,
-      minimum: 1_000,
-      maximum: 300_000,
-    }),
     uploadBodyMs: readInteger(env, {
       name: 'IMPORT_EXPORT_UPLOAD_BODY_TIMEOUT_MS',
       fallback: 60_000,
@@ -256,17 +284,21 @@ export function parseImportExportRuntimeConfig(
       'IMPORT_EXPORT_PACKAGE_EXPORT_GLOBAL_CONCURRENCY must be greater than or equal to IMPORT_EXPORT_PACKAGE_EXPORT_CONCURRENCY.'
     )
   }
-  if (timeouts.httpRequestMs < timeouts.uploadBodyMs) {
+  if (concurrency.uploadGlobal < concurrency.uploadPerUser) {
     throw new Error(
-      'IMPORT_EXPORT_HTTP_REQUEST_TIMEOUT_MS must be greater than or equal to IMPORT_EXPORT_UPLOAD_BODY_TIMEOUT_MS.'
+      'IMPORT_EXPORT_PACKAGE_UPLOAD_GLOBAL_CONCURRENCY must be greater than or equal to IMPORT_EXPORT_PACKAGE_UPLOAD_CONCURRENCY.'
     )
   }
-  if (timeouts.httpRequestMs < timeouts.httpHeadersMs) {
+  if (concurrency.validateGlobal < concurrency.validatePerUser) {
     throw new Error(
-      'IMPORT_EXPORT_HTTP_REQUEST_TIMEOUT_MS must be greater than or equal to IMPORT_EXPORT_HTTP_HEADERS_TIMEOUT_MS.'
+      'IMPORT_EXPORT_PACKAGE_VALIDATE_GLOBAL_CONCURRENCY must be greater than or equal to IMPORT_EXPORT_PACKAGE_VALIDATE_CONCURRENCY.'
     )
   }
-
+  if (concurrency.importGlobal < concurrency.importPerUser) {
+    throw new Error(
+      'IMPORT_EXPORT_PACKAGE_IMPORT_GLOBAL_CONCURRENCY must be greater than or equal to IMPORT_EXPORT_PACKAGE_IMPORT_CONCURRENCY.'
+    )
+  }
   return frozen({
     assessmentMode,
     enabled,

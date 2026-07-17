@@ -3,7 +3,6 @@ import {
   ElementDomainIssueCode,
   isMeaningfulText,
   issue,
-  normalizePlainText,
   parseWithDomainErrors,
 } from './core.js'
 
@@ -24,7 +23,9 @@ export function normalizeFreeTextOptions(value: unknown) {
   const parsed = parseWithDomainErrors(freeTextOptionsSchema, value)
   const maxLength = parsed.restrictions?.maxLength ?? undefined
   const solutions = (parsed.solutions ?? []).map((solution, index) => {
-    const normalized = normalizePlainText(solution)
+    // Preserve the exact Unicode representation because the free-text grader
+    // currently treats canonically equivalent strings as distinct answers.
+    const normalized = solution.trim()
     if (!isMeaningfulText(normalized)) {
       issue(ElementDomainIssueCode.INVALID_SOLUTION, [
         'options',

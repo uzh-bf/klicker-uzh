@@ -2,17 +2,10 @@ import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
 import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
-import {
-  ImportExportDomainError,
-  ImportExportErrorCode,
-  toImportExportGraphQLError,
-} from '../lib/importExportErrors.js'
-import { MAX_IMPORT_EXPORT_ELEMENTS } from '../lib/importExportPackageConfig.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseService from '../services/courses.js'
-import * as ElementImportExportService from '../services/elementImportExport.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
@@ -31,9 +24,6 @@ import { PointCorrection, PointCorrectionType } from './assessment.js'
 import { Course } from './course.js'
 import {
   Element,
-  ElementImportPackagePreview,
-  ElementImportPackageResult,
-  ElementImportPackageUpload,
   ElementInstance,
   OptionsCaseStudyInput,
   OptionsChoicesInput,
@@ -97,35 +87,12 @@ import {
   UserGroupMembersInput,
 } from './sharing.js'
 import {
-  FileUploadSAS,
   LocaleType,
   User,
   UserInfo,
   UserLogin,
   UserLoginScope,
 } from './user.js'
-
-type ImportElementPackageArgs = {
-  importToken: string
-  selectedElementRefs: string[]
-}
-type ImportElementPackageContext = Parameters<
-  typeof ElementImportExportService.importElementPackage
->[1]
-
-export async function resolveImportElementPackageAtBoundary(
-  args: ImportElementPackageArgs,
-  ctx: ImportElementPackageContext,
-  service: typeof ElementImportExportService.importElementPackage = ElementImportExportService.importElementPackage
-) {
-  if (args.selectedElementRefs.length > MAX_IMPORT_EXPORT_ELEMENTS) {
-    throw toImportExportGraphQLError(
-      new ImportExportDomainError(ImportExportErrorCode.INVALID_SELECTION)
-    )
-  }
-
-  return await service(args, ctx)
-}
 
 // shorthand for frequently accessed functions
 const checkAccess = SharingService.checkAccess
@@ -1611,18 +1578,6 @@ export const Mutation = builder.mutationType({
             return await GroupService.changeGroupActivityName(args, ctx)
           }
           return null
-        },
-      }),
-
-      getFileUploadSas: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: FileUploadSAS,
-        args: {
-          fileName: t.arg.string({ required: true }),
-          contentType: t.arg.string({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await ElementService.getFileUploadSas(args, ctx)
         },
       }),
 
@@ -3523,51 +3478,6 @@ export const Mutation = builder.mutationType({
         args: { id: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await AccountService.deleteUserLogin(args, ctx)
-        },
-      }),
-
-      // #endregion
-
-      // ----- IMPORT -----
-      // #region
-      prepareElementImportPackageUpload: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: ElementImportPackageUpload,
-        args: {
-          filename: t.arg.string({ required: true }),
-          bytes: t.arg.int({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await ElementImportExportService.prepareElementImportPackageUpload(
-            args,
-            ctx
-          )
-        },
-      }),
-
-      validateElementImportPackage: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: ElementImportPackagePreview,
-        args: {
-          artifactId: t.arg.string({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await ElementImportExportService.validateElementImportPackage(
-            args,
-            ctx
-          )
-        },
-      }),
-
-      importElementPackage: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: ElementImportPackageResult,
-        args: {
-          importToken: t.arg.string({ required: true }),
-          selectedElementRefs: t.arg.stringList({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await resolveImportElementPackageAtBoundary(args, ctx)
         },
       }),
 

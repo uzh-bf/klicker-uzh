@@ -9,6 +9,7 @@ import {
   createQuestionSC,
   validateElement,
 } from '../../util/fixtures/elements.js'
+import { getImportExportConcurrencyLeaseCleanupKeys } from '../../util/fixtures/importExportArtifacts.js'
 import { isGraphqlOperation } from '../../util/graphqlRequest.js'
 import { enMessages as messages } from '../../util/messages.js'
 import { expect, importExportTest } from './fixture.js'
@@ -40,7 +41,12 @@ export function registerBasicImportExportCases() {
 
   importExportTest(
     'Import upload HTTP boundary enforces strict CORS, authentication, MIME, exact bytes, and READY replay',
-    async ({ page, playwright, trackImportExportArtifact }) => {
+    async ({
+      importExportIsolation,
+      page,
+      playwright,
+      trackImportExportArtifact,
+    }) => {
       const manageOrigin = getManageOrigin()
       const lookalikeOrigin = getLookalikeOrigin(manageOrigin)
       const payload = Buffer.from('PK\u0003\u0004playwright package boundary')
@@ -55,6 +61,21 @@ export function registerBasicImportExportCases() {
         'Content-Type': 'application/zip',
         [importUploadCapabilityHeader]: upload.uploadCapability,
       }
+
+      await importExportTest.step(
+        'isolated teardown covers upload concurrency leases',
+        async () => {
+          expect(
+            getImportExportConcurrencyLeaseCleanupKeys(
+              importExportIsolation.users.owner.id
+            )
+          ).toContainEqual({
+            operation: 'upload',
+            userKey: `concurrency:{import-export-package}:upload:user:${importExportIsolation.users.owner.id}`,
+            globalKey: 'concurrency:{import-export-package}:upload:global',
+          })
+        }
+      )
 
       await importExportTest.step(
         'preflight exposes CORS only to the exact manage origin',
@@ -434,6 +455,221 @@ export function registerBasicImportExportCases() {
   )
 
   importExportTest(
+    'Closing the export modal cancels an active package download request',
+    async ({ importExportIsolation, page }, testInfo) => {
+      const names = await seedPackageElements({
+        page,
+        suffix: `cancel export ${testInfo.workerIndex}`,
+        userId: importExportIsolation.users.owner.id,
+      })
+      const lateDownloadUrl = new URL(
+        '/fake-late-export-package.zip',
+        process.env.URL_MANAGE ?? URL_MANAGE
+      ).toString()
+      let releasePackageLink!: () => void
+      let packageLinkStarted!: () => void
+      let packageLinkRouteSettled!: () => void
+      const packageLinkGate = new Promise<void>((resolve) => {
+        releasePackageLink = resolve
+      })
+      const packageLinkRequest = new Promise<void>((resolve) => {
+        packageLinkStarted = resolve
+      })
+      const packageLinkSettled = new Promise<void>((resolve) => {
+        packageLinkRouteSettled = resolve
+      })
+
+      await page.route('**/api/graphql*', async (route) => {
+        if (
+          !isGraphqlOperation(route.request(), 'GetElementExportPackageLink')
+        ) {
+          await route.continue()
+          return
+        }
+
+        importExportIsolation.markRequestAbortedBeforeServer(route.request())
+        packageLinkStarted()
+        await packageLinkGate
+        try {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              data: {
+                getElementExportPackageLink: {
+                  downloadLink: lateDownloadUrl,
+                  filename: 'late-export.zip',
+                },
+              },
+            }),
+          })
+        } catch {
+          // Closing the modal aborts the request before this delayed response
+          // can be delivered.
+        } finally {
+          packageLinkRouteSettled()
+        }
+      })
+
+      try {
+        await openExportPackageModal(page, [names.singleChoice])
+        await page.getByTestId('download-selected-elements-package').click()
+        await packageLinkRequest
+
+        const requestFailure = page.waitForEvent('requestfailed', {
+          timeout: 30_000,
+          predicate: (request) =>
+            isGraphqlOperation(request, 'GetElementExportPackageLink'),
+        })
+        void requestFailure.catch(() => undefined)
+        const requestFinished = page.waitForEvent('requestfinished', {
+          timeout: 30_000,
+          predicate: (request) =>
+            isGraphqlOperation(request, 'GetElementExportPackageLink'),
+        })
+        void requestFinished.catch(() => undefined)
+        const requestSettlement = Promise.race([
+          requestFailure.then(() => 'failed' as const),
+          requestFinished.then(() => 'finished' as const),
+        ])
+        void requestSettlement.catch(() => undefined)
+
+        await page.getByTestId('close-element-download-modal').click()
+        await expect(
+          page.getByTestId('element-download-modal')
+        ).not.toBeAttached()
+        releasePackageLink()
+        await packageLinkSettled
+        expect(await requestSettlement).toBe('failed')
+        await expect(
+          page
+            .getByLabel('Notifications alt+T')
+            .getByText(messages.manage.elements.elementDownloadFailed)
+        ).toHaveCount(0)
+      } finally {
+        releasePackageLink()
+      }
+    }
+  )
+
+  importExportTest(
+    'Closing the export modal cancels an active package transfer before download',
+    async ({ importExportIsolation, page }, testInfo) => {
+      const names = await seedPackageElements({
+        page,
+        suffix: `cancel export transfer ${testInfo.workerIndex}`,
+        userId: importExportIsolation.users.owner.id,
+      })
+      const heldDownloadUrl = new URL(
+        '/fake-held-export-package.zip',
+        process.env.URL_MANAGE ?? URL_MANAGE
+      ).toString()
+      let releaseTransfer!: () => void
+      let transferStarted!: () => void
+      let transferRouteSettled!: () => void
+      const transferGate = new Promise<void>((resolve) => {
+        releaseTransfer = resolve
+      })
+      const transferRequest = new Promise<void>((resolve) => {
+        transferStarted = resolve
+      })
+      const transferSettled = new Promise<void>((resolve) => {
+        transferRouteSettled = resolve
+      })
+
+      await page.route('**/api/graphql*', async (route) => {
+        if (
+          !isGraphqlOperation(route.request(), 'GetElementExportPackageLink')
+        ) {
+          await route.continue()
+          return
+        }
+
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            data: {
+              getElementExportPackageLink: {
+                downloadLink: heldDownloadUrl,
+                filename: 'held-export.zip',
+              },
+            },
+          }),
+        })
+      })
+      await page.route(heldDownloadUrl, async (route) => {
+        transferStarted()
+        await transferGate
+        try {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/zip',
+            body: Buffer.from('late package bytes'),
+          })
+        } catch {
+          // The modal unmount aborts the held blob fetch before it can trigger
+          // the synthetic anchor download.
+        } finally {
+          transferRouteSettled()
+        }
+      })
+
+      let downloadCount = 0
+      const countDownload = () => {
+        downloadCount += 1
+      }
+      page.on('download', countDownload)
+      try {
+        await openExportPackageModal(page, [names.singleChoice])
+        await page.getByTestId('download-selected-elements-package').click()
+        await transferRequest
+
+        const requestFailure = page.waitForEvent('requestfailed', {
+          timeout: 30_000,
+          predicate: (request) => request.url() === heldDownloadUrl,
+        })
+        void requestFailure.catch(() => undefined)
+        const requestFinished = page.waitForEvent('requestfinished', {
+          timeout: 30_000,
+          predicate: (request) => request.url() === heldDownloadUrl,
+        })
+        void requestFinished.catch(() => undefined)
+        const requestSettlement = Promise.race([
+          requestFailure.then(() => 'failed' as const),
+          requestFinished.then(() => 'finished' as const),
+        ])
+        void requestSettlement.catch(() => undefined)
+
+        await page.getByTestId('close-element-download-modal').click()
+        await expect(
+          page.getByTestId('element-download-modal')
+        ).not.toBeAttached()
+        releaseTransfer()
+        await transferSettled
+        expect(await requestSettlement).toBe('failed')
+        await page.evaluate(
+          () =>
+            new Promise<void>((resolve) => {
+              requestAnimationFrame(() =>
+                requestAnimationFrame(() => resolve())
+              )
+            })
+        )
+        expect(downloadCount).toBe(0)
+        await expect(
+          page
+            .getByLabel('Notifications alt+T')
+            .getByText(messages.manage.elements.elementDownloadFailed)
+        ).toHaveCount(0)
+      } finally {
+        releaseTransfer()
+        page.off('download', countDownload)
+      }
+    }
+  )
+
+  importExportTest(
     'Export preview warns about external auto-loading media without blocking download',
     async ({ importExportIsolation, page }, testInfo) => {
       testInfo.setTimeout(180_000)
@@ -473,11 +709,13 @@ export function registerBasicImportExportCases() {
       await validateElement(page, elementName)
 
       await openExportPackageModal(page, [elementName])
-      await expect(
-        page.getByTestId('element-export-package-warning')
-      ).toContainText(
-        messages.manage.elements.elementImportExternalMediaWarning
+      const packageWarning = page.getByTestId('element-export-package-warning')
+      await expect(packageWarning).toContainText(
+        messages.manage.elements.elementExportExternalMediaWarning
       )
+      await expect(packageWarning).toHaveAttribute('role', 'status')
+      await expect(packageWarning).toHaveAttribute('aria-live', 'polite')
+      await expect(packageWarning).toHaveAttribute('aria-atomic', 'true')
       await expect(
         page.getByTestId('download-selected-elements-package')
       ).toBeEnabled()
@@ -562,7 +800,7 @@ export function registerBasicImportExportCases() {
       await expect(
         page.getByTestId('element-export-package-warning')
       ).toContainText(
-        messages.manage.elements.elementImportExternalMediaWarning
+        messages.manage.elements.elementExportExternalMediaWarning
       )
       await expect(
         page.getByTestId('download-selected-elements-package')

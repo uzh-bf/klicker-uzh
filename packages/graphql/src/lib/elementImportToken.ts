@@ -1,9 +1,9 @@
-import { createHmac, timingSafeEqual } from 'node:crypto'
 import {
   ImportExportDomainError,
   ImportExportErrorCode,
 } from './importExportErrors.js'
 import { getImportExportTokenSecret } from './importExportTokenSecret.js'
+import { createStrictSignedCanonicalPayloadCodec } from './strictSignedCanonicalPayload.js'
 
 export const ELEMENT_IMPORT_TOKEN_VERSION = 1
 export const ELEMENT_IMPORT_TOKEN_PURPOSE = 'element-import'
@@ -28,11 +28,9 @@ const MAX_ENCODED_PAYLOAD_LENGTH = 2048
 const MAX_ENCODED_SIGNATURE_LENGTH = 128
 const MAX_TOKEN_LENGTH =
   MAX_ENCODED_PAYLOAD_LENGTH + MAX_ENCODED_SIGNATURE_LENGTH + 1
-const BASE64URL_PATTERN = /^[A-Za-z0-9_-]+$/
 const CANONICAL_UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
 const SHA256_PATTERN = /^[a-f0-9]{64}$/
-const UTF8_DECODER = new TextDecoder('utf-8', { fatal: true })
 const TOKEN_KEYS = [
   'v',
   'purpose',
@@ -92,42 +90,17 @@ function canonicalizePayload(value: unknown): ElementImportTokenPayload | null {
   }
 }
 
-function decodeBase64UrlStrict(value: string, maxLength: number) {
-  if (
-    value.length === 0 ||
-    value.length > maxLength ||
-    !BASE64URL_PATTERN.test(value)
-  ) {
-    return null
-  }
-
-  const decoded = Buffer.from(value, 'base64url')
-  return decoded.toString('base64url') === value ? decoded : null
-}
-
-function computeSignature(encodedPayload: string, secret: string) {
-  return createHmac('sha256', secret)
-    .update(
-      `${TOKEN_SIGNING_DOMAIN}\0${ELEMENT_IMPORT_TOKEN_VERSION}\0${ELEMENT_IMPORT_TOKEN_PURPOSE}\0${encodedPayload}`
-    )
-    .digest()
-}
-
-function signaturesMatch(encodedSignature: string, expected: Buffer) {
-  const provided =
-    decodeBase64UrlStrict(encodedSignature, MAX_ENCODED_SIGNATURE_LENGTH) ??
-    Buffer.alloc(0)
-  const fixedLengthProvided = Buffer.alloc(expected.length)
-  provided.copy(
-    fixedLengthProvided,
-    0,
-    0,
-    Math.min(provided.length, expected.length)
-  )
-
-  const equalContent = timingSafeEqual(fixedLengthProvided, expected)
-  return provided.length === expected.length && equalContent
-}
+const TOKEN_CODEC = createStrictSignedCanonicalPayloadCodec({
+  signingContext: [
+    TOKEN_SIGNING_DOMAIN,
+    ELEMENT_IMPORT_TOKEN_VERSION,
+    ELEMENT_IMPORT_TOKEN_PURPOSE,
+  ],
+  maxEncodedPayloadLength: MAX_ENCODED_PAYLOAD_LENGTH,
+  maxEncodedSignatureLength: MAX_ENCODED_SIGNATURE_LENGTH,
+  maxTokenLength: MAX_TOKEN_LENGTH,
+  canonicalize: canonicalizePayload,
+})
 
 export function createElementImportToken(
   identity: ElementImportTokenIdentity
@@ -145,18 +118,11 @@ export function createElementImportToken(
     throw new TypeError('Invalid element import token identity.')
   }
 
-  const encodedPayload = Buffer.from(JSON.stringify(payload), 'utf8').toString(
-    'base64url'
-  )
-  if (encodedPayload.length > MAX_ENCODED_PAYLOAD_LENGTH) {
+  const token = TOKEN_CODEC.sign(payload, getImportExportTokenSecret())
+  if (!token) {
     throw new TypeError('Element import token payload is too large.')
   }
-
-  const signature = computeSignature(
-    encodedPayload,
-    getImportExportTokenSecret()
-  ).toString('base64url')
-  return `${encodedPayload}.${signature}`
+  return token
 }
 
 export function parseElementImportTokenForOwner({
@@ -181,37 +147,8 @@ export function parseElementImportTokenForOwner({
       throw invalidToken()
     }
 
-    const separator = token.indexOf('.')
-    if (
-      separator <= 0 ||
-      separator !== token.lastIndexOf('.') ||
-      separator === token.length - 1
-    ) {
-      throw invalidToken()
-    }
-
-    const encodedPayload = token.slice(0, separator)
-    const encodedSignature = token.slice(separator + 1)
-    const payloadBuffer = decodeBase64UrlStrict(
-      encodedPayload,
-      MAX_ENCODED_PAYLOAD_LENGTH
-    )
-    if (!payloadBuffer) throw invalidToken()
-
-    const expectedSignature = computeSignature(encodedPayload, secret)
-    if (!signaturesMatch(encodedSignature, expectedSignature)) {
-      throw invalidToken()
-    }
-
-    const serializedPayload = UTF8_DECODER.decode(payloadBuffer)
-    const payload = canonicalizePayload(
-      JSON.parse(serializedPayload) as unknown
-    )
-    if (
-      !payload ||
-      payload.userId !== userId ||
-      JSON.stringify(payload) !== serializedPayload
-    ) {
+    const payload = TOKEN_CODEC.parse(token, secret)
+    if (!payload || payload.userId !== userId) {
       throw invalidToken()
     }
 

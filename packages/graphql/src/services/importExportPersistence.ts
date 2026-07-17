@@ -47,6 +47,10 @@ type ElementImportReceiptPersistenceClient = Pick<
   PrismaClient,
   'elementImportReceipt'
 >
+type ElementImportReceiptLeasePersistenceClient = Pick<
+  PrismaClient,
+  '$queryRaw'
+>
 type PackageArtifactPersistenceClient = Pick<
   PrismaClient,
   'importExportPackageArtifact'
@@ -126,7 +130,7 @@ export async function reserveImportExportPackageArtifact({
       // observing quota below the limit and overcommitting it.
       const owners = await tx.$queryRaw<Array<{ id: string }>>`
             SELECT "id"
-            FROM "User"
+            FROM "public"."User"
             WHERE "id" = ${ownerId}::uuid
             FOR UPDATE
           `
@@ -467,7 +471,7 @@ export async function pinReadyImportArtifactAndCreateReceipt({
           "bytes",
           "sha256",
           "expiresAt"
-        FROM "ImportExportPackageArtifact"
+        FROM "public"."ImportExportPackageArtifact"
         WHERE "id" = ${artifactId}::uuid
           AND "ownerId" = ${ownerId}::uuid
         FOR UPDATE
@@ -581,7 +585,7 @@ export async function assertLiveElementImportReceiptLease({
 
   const receipts = await prisma.$queryRaw<Array<{ id: string }>>`
     SELECT "id"
-    FROM "ElementImportReceipt"
+    FROM "public"."ElementImportReceipt"
     WHERE "id" = ${receiptId}::uuid
       AND "ownerId" = ${ownerId}::uuid
       AND "state" = 'PENDING'
@@ -626,6 +630,43 @@ export async function claimExpiredElementImportReceiptLease({
   })
 
   return result.count === 1
+}
+
+export async function renewElementImportReceiptLease({
+  prisma,
+  receiptId,
+  ownerId,
+  leaseId,
+  leaseExpiresAt,
+  now = new Date(),
+}: {
+  prisma: ElementImportReceiptLeasePersistenceClient
+  receiptId: string
+  ownerId: string
+  leaseId: string
+  leaseExpiresAt: Date
+  now?: Date
+}) {
+  assertUuid(receiptId, 'Import receipt id')
+  assertUuid(ownerId, 'Import receipt owner id')
+  assertUuid(leaseId, 'Import receipt lease id')
+  if (leaseExpiresAt <= now) {
+    throw new TypeError('The renewed import lease must expire in the future.')
+  }
+
+  const renewed = await prisma.$queryRaw<Array<{ id: string }>>`
+    UPDATE "public"."ElementImportReceipt"
+    SET "leaseExpiresAt" = ${leaseExpiresAt}
+    WHERE "id" = ${receiptId}::uuid
+      AND "ownerId" = ${ownerId}::uuid
+      AND "state" = 'PENDING'
+      AND "leaseId" = ${leaseId}::uuid
+      AND "leaseExpiresAt" > CURRENT_TIMESTAMP
+      AND ${leaseExpiresAt} > CURRENT_TIMESTAMP
+    RETURNING "id"
+  `
+
+  return renewed.length === 1
 }
 
 export async function completeElementImportReceipt({
@@ -739,7 +780,7 @@ export async function claimExpiredPackageArtifactForCleanup({
           "storageContainer",
           "storageBlob",
           "expiresAt"
-        FROM "ImportExportPackageArtifact"
+        FROM "public"."ImportExportPackageArtifact"
         WHERE "id" = ${artifactId}::uuid
         FOR UPDATE
       `

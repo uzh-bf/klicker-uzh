@@ -1,6 +1,9 @@
 import { ElementType } from '@klicker-uzh/prisma/client'
 import { createHash, randomUUID } from 'node:crypto'
-import { ImportExportErrorCode } from '../src/lib/importExportErrors.js'
+import {
+  ImportExportDomainError,
+  ImportExportErrorCode,
+} from '../src/lib/importExportErrors.js'
 import { createZip } from '../src/lib/zip.js'
 
 function createMinimalImportPackage() {
@@ -154,9 +157,13 @@ async function loadDurableImportWithMocks({
   completeReceipt,
   manipulateError,
   mediaStorage,
+  onPlanExecuted,
+  onReceiptCompleted,
 }: {
   completeReceipt: boolean
   manipulateError?: Error
+  onPlanExecuted?: () => void
+  onReceiptCompleted?: () => void
   mediaStorage?: {
     stageImportedMediaFile: ReturnType<typeof vi.fn>
     finalizeStagedImportedMediaFile: ReturnType<typeof vi.fn>
@@ -166,7 +173,10 @@ async function loadDurableImportWithMocks({
   const assertLiveElementImportReceiptLease = vi.fn(async () => ({
     id: randomUUID(),
   }))
-  const completeElementImportReceipt = vi.fn(async () => completeReceipt)
+  const completeElementImportReceipt = vi.fn(async () => {
+    onReceiptCompleted?.()
+    return completeReceipt
+  })
   const executeElementImportExecutionPlan = vi.fn(async ({ plan, prisma }) => {
     const createdAnswerCollectionIds: number[] = []
     if (plan.answerCollections.length > 0) {
@@ -174,6 +184,7 @@ async function loadDurableImportWithMocks({
       createdAnswerCollectionIds.push(created.id)
     }
     if (manipulateError) throw manipulateError
+    onPlanExecuted?.()
     return {
       createdElementIds: [123],
       createdAnswerCollectionIds,
@@ -284,6 +295,120 @@ describe('durable element import transaction seam', () => {
         createdAnswerCollectionIds: [],
       })
     )
+    expect(emitter.emit).not.toHaveBeenCalled()
+  })
+
+  it('rolls back transaction writes when the combined lease is lost during plan execution', async () => {
+    const receiptId = randomUUID()
+    const leaseId = randomUUID()
+    const emitter = { emit: vi.fn() }
+    let leaseLost = false
+    const leaseError = new ImportExportDomainError(
+      ImportExportErrorCode.IMPORT_IN_PROGRESS
+    )
+    const leaseGuard = {
+      assertLease: vi.fn(() => {
+        if (leaseLost) throw leaseError
+      }),
+      renewNow: vi.fn(async () => undefined),
+    }
+    let transactionCallbackError: unknown
+    const txPrisma = {
+      element: { update: vi.fn(async () => ({})) },
+    }
+    const transaction = vi.fn(
+      async (callback: (prisma: typeof txPrisma) => Promise<unknown>) => {
+        try {
+          return await callback(txPrisma)
+        } catch (error) {
+          transactionCallbackError = error
+          throw error
+        }
+      }
+    )
+    const mocked = await loadDurableImportWithMocks({
+      completeReceipt: true,
+      onPlanExecuted: () => {
+        leaseLost = true
+      },
+    })
+
+    await expect(
+      mocked.importElementPackageBuffer(
+        {
+          buffer: createMinimalImportPackage(),
+          selectedElementRefs: ['element-1'],
+          durableExecution: { receiptId, leaseId },
+          leaseGuard,
+        },
+        {
+          user: { sub: randomUUID() },
+          emitter,
+          prisma: { $transaction: transaction },
+        } as any
+      )
+    ).rejects.toBe(leaseError)
+
+    expect(transactionCallbackError).toBe(leaseError)
+    expect(mocked.executeElementImportExecutionPlan).toHaveBeenCalledTimes(1)
+    expect(mocked.completeElementImportReceipt).not.toHaveBeenCalled()
+    expect(emitter.emit).not.toHaveBeenCalled()
+  })
+
+  it('rolls back transaction writes when the combined lease is lost during receipt completion', async () => {
+    const receiptId = randomUUID()
+    const leaseId = randomUUID()
+    const emitter = { emit: vi.fn() }
+    let leaseLost = false
+    const leaseError = new ImportExportDomainError(
+      ImportExportErrorCode.IMPORT_IN_PROGRESS
+    )
+    const leaseGuard = {
+      assertLease: vi.fn(() => {
+        if (leaseLost) throw leaseError
+      }),
+      renewNow: vi.fn(async () => undefined),
+    }
+    let transactionCallbackError: unknown
+    const txPrisma = {
+      element: { update: vi.fn(async () => ({})) },
+    }
+    const transaction = vi.fn(
+      async (callback: (prisma: typeof txPrisma) => Promise<unknown>) => {
+        try {
+          return await callback(txPrisma)
+        } catch (error) {
+          transactionCallbackError = error
+          throw error
+        }
+      }
+    )
+    const mocked = await loadDurableImportWithMocks({
+      completeReceipt: true,
+      onReceiptCompleted: () => {
+        leaseLost = true
+      },
+    })
+
+    await expect(
+      mocked.importElementPackageBuffer(
+        {
+          buffer: createMinimalImportPackage(),
+          selectedElementRefs: ['element-1'],
+          durableExecution: { receiptId, leaseId },
+          leaseGuard,
+        },
+        {
+          user: { sub: randomUUID() },
+          emitter,
+          prisma: { $transaction: transaction },
+        } as any
+      )
+    ).rejects.toBe(leaseError)
+
+    expect(transactionCallbackError).toBe(leaseError)
+    expect(mocked.executeElementImportExecutionPlan).toHaveBeenCalledTimes(1)
+    expect(mocked.completeElementImportReceipt).toHaveBeenCalledTimes(1)
     expect(emitter.emit).not.toHaveBeenCalled()
   })
 

@@ -3,11 +3,11 @@ import { graphql } from 'graphql/index.js'
 import { schema } from '../src/index.js'
 import { ImportExportErrorCode } from '../src/lib/importExportErrors.js'
 import { MAX_IMPORT_EXPORT_ELEMENTS } from '../src/lib/importExportPackageConfig.js'
-import { resolveImportElementPackageAtBoundary } from '../src/schema/mutation.js'
 import {
   resolveElementExportPackageLinkAtBoundary,
   resolveElementExportPackagePreviewAtBoundary,
-} from '../src/schema/query.js'
+  resolveImportElementPackageAtBoundary,
+} from '../src/schema/elementImportExport.js'
 import * as ElementImportExportService from '../src/services/elementImportExport.js'
 
 const context = {} as Parameters<

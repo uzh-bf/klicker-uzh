@@ -42,6 +42,15 @@ describe('import/export signed capabilities', () => {
   const expiresAt = NOW + IMPORT_EXPORT_CAPABILITY_MAX_TTL_MS
 
   it('creates and verifies an exact, bounded import upload capability', () => {
+    const expectedPayload = {
+      v: 1,
+      purpose: ImportExportCapabilityPurpose.IMPORT_UPLOAD,
+      userId,
+      artifactId,
+      bytes,
+      issuedAt: NOW,
+      expiresAt,
+    }
     const token = createImportUploadCapability({
       secret: SECRET,
       userId,
@@ -51,6 +60,13 @@ describe('import/export signed capabilities', () => {
       expiresAt,
     })
 
+    // Preserve the established byte-level format across codec refactors.
+    expect(token).toBe(
+      signRawPayload(
+        JSON.stringify(expectedPayload),
+        ImportExportCapabilityPurpose.IMPORT_UPLOAD
+      )
+    )
     expect(
       verifyImportUploadCapability({
         token,
@@ -60,15 +76,7 @@ describe('import/export signed capabilities', () => {
         bytes,
         now: NOW,
       })
-    ).toEqual({
-      v: 1,
-      purpose: ImportExportCapabilityPurpose.IMPORT_UPLOAD,
-      userId,
-      artifactId,
-      bytes,
-      issuedAt: NOW,
-      expiresAt,
-    })
+    ).toEqual(expectedPayload)
   })
 
   it('binds upload capabilities to purpose, user, artifact, exact bytes, and secret', () => {
@@ -113,6 +121,14 @@ describe('import/export signed capabilities', () => {
   })
 
   it('binds local download capabilities separately from uploads', () => {
+    const expectedPayload = {
+      v: 1,
+      purpose: ImportExportCapabilityPurpose.LOCAL_ARTIFACT_DOWNLOAD,
+      userId,
+      artifactId,
+      issuedAt: NOW,
+      expiresAt,
+    }
     const token = createLocalArtifactDownloadCapability({
       secret: SECRET,
       userId,
@@ -121,6 +137,12 @@ describe('import/export signed capabilities', () => {
       expiresAt,
     })
 
+    expect(token).toBe(
+      signRawPayload(
+        JSON.stringify(expectedPayload),
+        ImportExportCapabilityPurpose.LOCAL_ARTIFACT_DOWNLOAD
+      )
+    )
     expect(
       verifyLocalArtifactDownloadCapability({
         token,
@@ -129,11 +151,7 @@ describe('import/export signed capabilities', () => {
         artifactId,
         now: NOW,
       })
-    ).toMatchObject({
-      purpose: ImportExportCapabilityPurpose.LOCAL_ARTIFACT_DOWNLOAD,
-      userId,
-      artifactId,
-    })
+    ).toEqual(expectedPayload)
     expect(
       verifyLocalArtifactDownloadCapability({
         token,

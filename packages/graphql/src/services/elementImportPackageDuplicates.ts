@@ -63,7 +63,7 @@ export async function findImportPackageDuplicateMatchesByFingerprint(
           FROM candidates
           CROSS JOIN LATERAL (
             SELECT "id", "name", "importFingerprint"
-            FROM "Element"
+            FROM "public"."Element"
             WHERE ROW(
               "ownerId",
               "importFingerprintVersion",
@@ -112,7 +112,7 @@ export async function findImportPackageDuplicateMatchesByFingerprint(
           FROM candidates
           CROSS JOIN LATERAL (
             SELECT "id", "name", "importFingerprint"
-            FROM "AnswerCollection"
+            FROM "public"."AnswerCollection"
             WHERE ROW(
               "ownerId",
               "importFingerprintVersion",

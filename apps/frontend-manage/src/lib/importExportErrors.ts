@@ -1,9 +1,13 @@
-import { ApolloError } from '@apollo/client'
-import { ImportExportErrorCode } from '@klicker-uzh/graphql/dist/ops'
+import { ImportExportErrorCode } from '@klicker-uzh/graphql/dist/ops.js'
 
 const IMPORT_EXPORT_ERROR_CODES = new Set<string>(
   Object.values(ImportExportErrorCode)
 )
+const RETRYABLE_EXPORT_PREVIEW_ERROR_CODES = new Set<ImportExportErrorCode>([
+  ImportExportErrorCode.ImportExportRateLimited,
+  ImportExportErrorCode.ImportExportRateLimitUnavailable,
+  ImportExportErrorCode.ImportExportInfrastructureFailure,
+])
 
 function asImportExportErrorCode(value: unknown) {
   return typeof value === 'string' && IMPORT_EXPORT_ERROR_CODES.has(value)
@@ -31,13 +35,6 @@ export function getImportExportRouteErrorCode(error: unknown) {
  * package-authored text and must never be rendered directly.
  */
 export function getImportExportErrorCode(error: unknown) {
-  if (error instanceof ApolloError) {
-    for (const graphQLError of error.graphQLErrors) {
-      const code = getImportExportGraphQLErrorCode(graphQLError)
-      if (code) return code
-    }
-  }
-
   if (error && typeof error === 'object') {
     const directCode = getImportExportGraphQLErrorCode(error)
     if (directCode) return directCode
@@ -52,4 +49,15 @@ export function getImportExportErrorCode(error: unknown) {
   }
 
   return null
+}
+
+export function isRetryableElementExportPreviewError({
+  code,
+  unknownNetworkError,
+}: {
+  code: ImportExportErrorCode | null
+  unknownNetworkError: boolean
+}) {
+  if (code) return RETRYABLE_EXPORT_PREVIEW_ERROR_CODES.has(code)
+  return unknownNetworkError
 }

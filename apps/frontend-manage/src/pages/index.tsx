@@ -399,8 +399,8 @@ function Index() {
 
         <div className="flex w-full flex-1 flex-col overflow-auto">
           <>
-            <div className="flex flex-none flex-row flex-wrap content-center items-end justify-between pb-2.5">
-              <div className="flex flex-row items-center gap-1.5">
+            <div className="flex flex-none flex-row flex-wrap content-center items-end justify-between gap-2 pb-2.5">
+              <div className="flex w-full flex-row flex-wrap items-center gap-1.5 sm:w-auto">
                 <ElementListSelectAllCheckbox
                   elements={elements}
                   selectedElements={selectedElements}
@@ -415,11 +415,11 @@ function Index() {
                 />
               </div>
 
-              <div className="flex flex-row items-center gap-2">
+              <div className="flex w-full min-w-0 flex-row flex-wrap items-center justify-end gap-2 sm:w-auto">
                 {!creationMode && selectedElementCount > 0 ? (
                   <Button
                     className={{
-                      root: 'h-9 border-orange-300 bg-orange-100 hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
+                      root: 'min-h-9 max-w-full border-orange-300 bg-orange-100 hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
                     }}
                     onClick={() => setBatchOperationsOpen(true)}
                     data={{ cy: 'element-batch-operations' }}

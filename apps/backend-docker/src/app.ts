@@ -11,6 +11,7 @@ import {
   initializeImportExportRuntimeConfig,
   isLocalImportExportPackageStorageEnabled,
   schema,
+  type Context,
 } from '@klicker-uzh/graphql'
 import type { PreparedHatchetTasks } from '@klicker-uzh/hatchet'
 import { verifyJWT } from '@klicker-uzh/util'
@@ -22,7 +23,6 @@ import { createRequire } from 'node:module'
 import {
   registerImportExportPreflightRoute,
   registerImportExportRoutes,
-  type ImportExportRouteContext,
 } from './importExportRoutes.js'
 import {
   getImportExportManageOriginForStartup,
@@ -35,7 +35,7 @@ declare namespace global {
   let __coverage__: any
 }
 
-type PrepareAppContext = Omit<ImportExportRouteContext, 'tasks'> & {
+type PrepareAppContext = Omit<Context, 'req' | 'res' | 'tasks' | 'user'> & {
   tasks: PreparedHatchetTasks
 }
 
@@ -243,13 +243,6 @@ function prepareApp({
       context: {
         prisma,
         redisExec,
-        redisAssessmentExec,
-        pubSub,
-        emitter,
-        hatchet,
-        // Import/export does not invoke tasks; this bridges the pre-existing
-        // runtime/shared Hatchet task declaration mismatch.
-        tasks: tasks as unknown as ImportExportRouteContext['tasks'],
       },
       manageOrigin: importExportManageOrigin,
       localStorageEnabled: isLocalImportExportPackageStorageEnabled(),
@@ -259,7 +252,7 @@ function prepareApp({
 
   app.use('/api/graphql', yogaApp as any)
 
-  return { app, yogaApp, importExportConfig }
+  return { app, yogaApp }
 }
 
 export default prepareApp

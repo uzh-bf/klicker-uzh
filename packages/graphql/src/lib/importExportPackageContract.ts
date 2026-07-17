@@ -74,7 +74,7 @@ export const mediaManifestEntrySchema = z
       .min(1)
       .max(120)
       .refine(isSupportedPackageMediaContentType),
-    bytes: z.number().int().nonnegative().max(MAX_IMPORT_EXPORT_MEDIA_BYTES),
+    bytes: z.number().int().positive().max(MAX_IMPORT_EXPORT_MEDIA_BYTES),
     sha256: z.string().regex(/^[a-f0-9]{64}$/),
     sourceHref: z
       .string()
@@ -308,7 +308,7 @@ export const elementSchema = z
         answerCollectionItemRefs: usesAnswerCollection
           ? canonical.relations.selectedIds
           : undefined,
-      }
+      } as typeof element
     } catch (error) {
       if (!(error instanceof ElementDomainValidationError)) throw error
 

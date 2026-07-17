@@ -300,8 +300,13 @@ export function registerSecurityErrorImportExportCases() {
         page.getByTestId('download-selected-elements-package')
       ).toBeDisabled()
       await expect(
-        page.getByTestId('element-export-package-error')
-      ).toBeVisible()
+        page.getByTestId('element-export-answer-collections-overview-error')
+      ).toContainText(
+        messages.manage.elements.packageElementExportPermissionError
+      )
+      await expect(
+        page.getByTestId('element-export-preview-retry')
+      ).not.toBeAttached()
     }
   )
 
@@ -358,10 +363,117 @@ export function registerSecurityErrorImportExportCases() {
         page.getByTestId('download-selected-elements-package')
       ).toBeDisabled()
       await expect(
-        page.getByTestId('element-export-package-error')
+        page.getByTestId('element-export-answer-collections-overview-error')
       ).toContainText(
         messages.manage.elements.packageAnswerCollectionExportPermissionError
       )
+      await expect(
+        page.getByTestId('element-export-preview-retry')
+      ).not.toBeAttached()
+    }
+  )
+
+  importExportTest(
+    'A null export preview fails closed instead of enabling a package download',
+    async ({ importExportIsolation, page }, testInfo) => {
+      const names = await seedPackageElements({
+        page,
+        suffix: `null export preview ${testInfo.workerIndex}`,
+        userId: importExportIsolation.users.owner.id,
+      })
+
+      await page.route('**/api/graphql*', async (route) => {
+        if (
+          !isGraphqlOperation(route.request(), 'GetElementExportPackagePreview')
+        ) {
+          await route.continue()
+          return
+        }
+
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            data: { getElementExportPackagePreview: null },
+          }),
+        })
+      })
+
+      await openExportPackageModal(page, [names.singleChoice])
+
+      const previewError = page.getByTestId(
+        'element-export-answer-collections-overview-error'
+      )
+      await expect(previewError).toContainText(
+        messages.manage.elements.packageServiceUnavailableError
+      )
+      await expect(
+        page.getByTestId('download-selected-elements-package')
+      ).toBeDisabled()
+      await expect(
+        page.getByTestId('element-export-preview-retry')
+      ).toBeVisible()
+    }
+  )
+
+  importExportTest(
+    'Transient export preview errors can be retried',
+    async ({ importExportIsolation, page }, testInfo) => {
+      const names = await seedPackageElements({
+        page,
+        suffix: `transient preview ${testInfo.workerIndex}`,
+        userId: importExportIsolation.users.owner.id,
+      })
+      let previewRequestCount = 0
+
+      await page.route('**/api/graphql*', async (route) => {
+        if (
+          !isGraphqlOperation(route.request(), 'GetElementExportPackagePreview')
+        ) {
+          await route.continue()
+          return
+        }
+
+        previewRequestCount += 1
+        if (previewRequestCount > 1) {
+          await route.continue()
+          return
+        }
+
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            data: {
+              getElementExportPackagePreview: {
+                errors: ['IMPORT_EXPORT_INFRASTRUCTURE_FAILURE'],
+                warnings: [],
+                answerCollections: [],
+              },
+            },
+          }),
+        })
+      })
+
+      await openExportPackageModal(page, [names.singleChoice])
+
+      const previewError = page.getByTestId(
+        'element-export-answer-collections-overview-error'
+      )
+      const previewOverview = page.getByTestId(
+        'element-export-answer-collections-overview'
+      )
+      await expect(previewError).toContainText(
+        messages.manage.elements.packageServiceUnavailableError
+      )
+      await page.getByTestId('element-export-preview-retry').click()
+
+      await expect(previewError).not.toBeAttached()
+      await expect(
+        page.getByTestId('download-selected-elements-package')
+      ).toBeEnabled()
+      await expect(previewOverview).toBeFocused()
+      expect(previewRequestCount).toBeGreaterThanOrEqual(2)
     }
   )
 }

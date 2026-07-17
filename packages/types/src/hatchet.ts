@@ -8,14 +8,27 @@ import type EventEmitter from 'events'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
 
-export type RefreshImportExportFingerprintsInput = {
-  answerCollectionId: number
-  afterElementId?: number
-}
+export type RefreshImportExportFingerprintsInput =
+  | {
+      answerCollectionId: number
+      afterElementId?: number
+    }
+  | {
+      elementId: number
+    }
 
 export type ImportExportFingerprintRefreshResult = {
   processed: number
   nextAfterElementId?: number
+  stoppedEarly?: true
+}
+
+export type ImportExportFingerprintRepairResult = {
+  processedAnswerCollections: number
+  processedElements: number
+  answerCollectionBacklogRemaining: boolean
+  elementBacklogRemaining: boolean
+  stoppedEarly?: true
 }
 
 export interface HatchetHandlerGlobalContext {
@@ -30,6 +43,11 @@ export interface HatchetHandlerGlobalContext {
 
 // Shared contract for Hatchet task handler injections.
 export interface HatchetHandlers {
+  handleRepairImportExportFingerprints: (
+    input: {},
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<ImportExportFingerprintRepairResult>
   handleRefreshImportExportFingerprints: (
     input: RefreshImportExportFingerprintsInput,
     globalCtx: HatchetHandlerGlobalContext,
@@ -114,6 +132,10 @@ export interface HatchetHandlers {
 
 // Contract for the tasks that are passed into the GraphQL context.
 export interface PreparedHatchetTasks {
+  repairImportExportFingerprints: TaskWorkflowDeclaration<
+    {},
+    ImportExportFingerprintRepairResult
+  >
   refreshImportExportFingerprints: TaskWorkflowDeclaration<
     RefreshImportExportFingerprintsInput,
     { success: boolean; processed: number }

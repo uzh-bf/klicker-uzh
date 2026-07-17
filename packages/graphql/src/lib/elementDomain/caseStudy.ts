@@ -92,6 +92,58 @@ const caseStudyAuthoringOptionsSchema = createCaseStudyOptionsSchema(
   collectionItemIds: z.array(z.number().int().nonnegative()).min(1),
 })
 
+export type CanonicalCaseStudySolution = {
+  criteriaSolutions: Array<{
+    criterionId: string
+    min: number
+    max: number
+  }>
+} & (
+  | { itemId: ElementReference; itemRef?: never }
+  | { itemRef: ElementReference; itemId?: never }
+)
+
+export type CanonicalCaseStudyOptions = {
+  hasSampleSolution: boolean
+  criteria: Array<{
+    id: string
+    name: string
+    order: number
+    min: number
+    max: number
+    step: number
+    unit?: string
+    labels?: { min: string; mid?: string; max: string }
+  }>
+  cases: Array<{
+    id: string
+    title: string
+    description: string
+    order: number
+    solutions?: CanonicalCaseStudySolution[]
+  }>
+}
+
+type CanonicalCaseStudyCase = CanonicalCaseStudyOptions['cases'][number]
+type CanonicalCaseStudySolutionEntry = NonNullable<
+  CanonicalCaseStudyCase['solutions']
+>[number]
+
+export type CaseStudyOptionsWithSolutionReference<
+  Options extends CanonicalCaseStudyOptions,
+  ReferenceKey extends 'itemId' | 'itemRef',
+  Reference extends ElementReference,
+> = Omit<Options, 'cases'> & {
+  cases: Array<
+    Omit<Options['cases'][number], 'solutions'> & {
+      solutions?: Array<
+        Omit<CanonicalCaseStudySolutionEntry, 'itemId' | 'itemRef'> &
+          Record<ReferenceKey, Reference>
+      >
+    }
+  >
+}
+
 export function parseCaseStudyAuthoringOptions(value: unknown) {
   return parseWithDomainErrors(
     caseStudyAuthoringOptionsSchema,
@@ -152,7 +204,7 @@ function containsReachableCaseStudyValue({
 export function normalizeCaseStudyOptions(
   value: unknown,
   referenceKey: 'itemId' | 'itemRef'
-) {
+): CanonicalCaseStudyOptions {
   const parsed = parseWithDomainErrors(
     createCaseStudyOptionsSchema(referenceKey),
     value
@@ -204,6 +256,9 @@ export function normalizeCaseStudyOptions(
 
   const criterionById = new Map(
     criteria.map((criterion) => [criterion.id, criterion])
+  )
+  const criterionOrderById = new Map(
+    criteria.map((criterion, index) => [criterion.id, index])
   )
   for (const [index, criterion] of criteria.entries()) {
     if (
@@ -330,12 +385,14 @@ export function normalizeCaseStudyOptions(
       order: caseItem.order,
       solutions: parsed.hasSampleSolution
         ? caseItem.solutions!.map((solution) => ({
-            [referenceKey]: solution[referenceKey],
+            ...(referenceKey === 'itemId'
+              ? { itemId: solution.itemId as ElementReference }
+              : { itemRef: solution.itemRef as ElementReference }),
             criteriaSolutions: [...solution.criteriaSolutions]
               .sort(
                 (left, right) =>
-                  criteria.findIndex((entry) => entry.id === left.criterionId) -
-                  criteria.findIndex((entry) => entry.id === right.criterionId)
+                  criterionOrderById.get(left.criterionId)! -
+                  criterionOrderById.get(right.criterionId)!
               )
               .map((entry) => ({
                 criterionId: entry.criterionId,

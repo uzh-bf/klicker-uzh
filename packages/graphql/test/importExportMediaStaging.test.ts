@@ -112,6 +112,24 @@ describe('durable imported-media staging', () => {
     }
   })
 
+  it('rejects empty media before creating durable state', async () => {
+    const buffer = Buffer.alloc(0)
+    const contentHash = createHash('sha256').update(buffer).digest('hex')
+
+    await expect(
+      stageImportedMediaFile(
+        {
+          buffer,
+          contentType: 'image/png',
+          filename: 'empty.png',
+          originalId: `import-media:${contentHash}`,
+          contentHash,
+        },
+        {} as any
+      )
+    ).rejects.toThrow('Media file must not be empty.')
+  })
+
   it('records the exact target before copying and then CASes it to COPIED', async () => {
     const calls: string[] = []
     const buffer = Buffer.from('durably staged media')
@@ -224,6 +242,76 @@ describe('durable imported-media staging', () => {
     expect(result.get(hrefs[5]!)).toBeNull()
   })
 
+  it('stops metadata work after the first failure and waits for in-flight reads', async () => {
+    const hrefs = Array.from(
+      { length: 6 },
+      (_, index) =>
+        `https://testaccount.blob.core.windows.net/${OWNER_ID}/imported/media-${index + 1}.png`
+    )
+    const firstError = new Error('metadata unavailable')
+    const started: string[] = []
+    let releaseInFlight!: () => void
+    const inFlightReleased = new Promise<void>((resolve) => {
+      releaseInFlight = resolve
+    })
+    let markInitialReadsStarted!: () => void
+    const initialReadsStarted = new Promise<void>((resolve) => {
+      markInitialReadsStarted = resolve
+    })
+    let failureRaised = false
+
+    azure.getProperties.mockImplementation(async (blobName?: string) => {
+      started.push(blobName ?? '')
+      if (started.length === 4) markInitialReadsStarted()
+      await initialReadsStarted
+
+      if (blobName?.endsWith('media-1.png')) {
+        failureRaised = true
+        throw firstError
+      }
+
+      await inFlightReleased
+      return { contentLength: 10, contentType: 'image/png' }
+    })
+    const findMany = vi.fn(async () =>
+      hrefs.map((href, index) => ({
+        id: randomUUID(),
+        href,
+        name: `media-${index + 1}.png`,
+        originalId: null,
+        ownerId: OWNER_ID,
+        type: 'image/png',
+      }))
+    )
+
+    let settled = false
+    let rejection: unknown
+    const operation = getKlickerMediaFilesExportMetadata(hrefs, {
+      prisma: { mediaFile: { findMany } },
+    } as any).then(
+      () => {
+        settled = true
+      },
+      (error: unknown) => {
+        settled = true
+        rejection = error
+      }
+    )
+
+    await initialReadsStarted
+    await vi.waitFor(() => expect(failureRaised).toBe(true))
+    await Promise.resolve()
+
+    expect(started).toHaveLength(4)
+    expect(settled).toBe(false)
+
+    releaseInFlight()
+    await operation
+
+    expect(rejection).toBe(firstError)
+    expect(started).toHaveLength(4)
+  })
+
   it('omits unknown-length media from final export just as preview does', async () => {
     const href = `https://testaccount.blob.core.windows.net/${OWNER_ID}/imported/unknown-size.png`
     azure.getProperties.mockResolvedValue({
@@ -246,6 +334,48 @@ describe('durable imported-media staging', () => {
         },
       } as any)
     ).rejects.toMatchObject({ kind: 'unknown-size' })
+  })
+
+  it('reads direct Azure uploads while import packages use local storage', async () => {
+    const href = `https://testaccount.blob.core.windows.net/${OWNER_ID}/direct-upload.png`
+    const body = Buffer.from('direct Azure upload')
+    azure.downloadBody = body
+    azure.getProperties.mockResolvedValue({
+      contentLength: body.length,
+      contentType: 'image/png',
+    })
+    process.env.IMPORT_EXPORT_PACKAGE_STORAGE = 'local'
+
+    try {
+      const findUnique = vi.fn(
+        async ({ where }: { where: { href: string } }) =>
+          where.href === href
+            ? {
+                id: randomUUID(),
+                name: 'direct-upload.png',
+                originalId: null,
+                ownerId: OWNER_ID,
+                type: 'image/png',
+              }
+            : null
+      )
+
+      await expect(
+        downloadKlickerMediaFile(href, {
+          prisma: { mediaFile: { findUnique } },
+        } as any)
+      ).resolves.toMatchObject({
+        buffer: body,
+        contentType: 'image/png',
+        filename: 'direct-upload.png',
+      })
+      expect(findUnique).toHaveBeenCalledWith({
+        where: { href },
+        select: expect.any(Object),
+      })
+    } finally {
+      process.env.IMPORT_EXPORT_PACKAGE_STORAGE = 'azure'
+    }
   })
 
   it('keeps the RESERVED ledger recoverable when copying fails', async () => {

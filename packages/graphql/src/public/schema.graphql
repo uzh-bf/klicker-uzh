@@ -1361,6 +1361,7 @@ type FeedbackResponse {
 type FileUploadSAS {
   containerName: String!
   fileName: String!
+  mediaFileId: ID!
   uploadHref: String!
   uploadSasURL: String!
 }
@@ -2023,6 +2024,7 @@ type Mutation {
   ensureParticipation(courseId: String!): Boolean!
   extendGroupActivity(endDate: Date!, id: String!): GroupActivity
   extendMicroLearning(endDate: Date!, id: String!): MicroLearning
+  finalizeFileUpload(mediaFileId: ID!): Boolean!
   finalizeGroupActivityGrading(id: String!): GroupActivity
   flagElement(content: String!, elementId: Int!, elementInstanceId: Int!): ElementFeedback
   flagOutdatedElementInstances(elementId: Int!): Boolean

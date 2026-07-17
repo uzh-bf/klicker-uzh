@@ -1515,7 +1515,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       selectedElementsDescription:
         'You have selected the following elements. All elements, which are affected by the selected actions, are marked. Hover over the icon for unaffected elements for more information. Please note: Some actions can only be performed separately or require specific permissions (see tooltip). Carefully review the selected actions and affected elements before applying them.',
       selectedElementsDescriptionDownload:
-        'You have selected {numElements} element(s) to download.',
+        '{numElements, plural, one {You have selected # element to download.} other {You have selected # elements to download.}}',
       actionApplies: 'Action applies',
       modifyStatus: 'Modify status',
       modifyMultiplier: 'Modify multiplier',
@@ -1749,6 +1749,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       uploadImageHeader: 'Upload Media',
       uploadImageDescription:
         'Drag an image here to upload or click to open file explorer.',
+      uploadImageFailed:
+        'The media upload could not be completed. Please try again.',
+      uploadImageInvalidFileType: 'Select a PNG, JPEG, or GIF image.',
+      uploadImageTooLarge:
+        'The selected image is too large. Upload an image no larger than {maxSizeMiB} MiB.',
       updateInstances: 'Update element instances in KlickerUZH activities',
       includeTemplateInstanceUpdates:
         'Include instances in template activities for update',
@@ -1770,6 +1775,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Packages can contain solutions and copyrighted teaching material. Share or redistribute content only when you have the right to do so.',
       elementImportPsychometricDisclosure:
         'Imported elements are uncalibrated copies in review status. Participant responses, item statistics, difficulty, discrimination, reliability, validity, calibration, analytics, and grading history are not included.',
+      elementExportPsychometricDisclosure:
+        'Psychometric data, calibration data, and response histories are not exported. Participant responses, item statistics, difficulty, discrimination, reliability, validity, calibration, analytics, and grading history remain in the source system. Imported elements are uncalibrated copies in review status.',
       exportElementsInfo:
         'Exports contain reusable element content only. Tags, owner, permissions, activity results, and private metadata are not included.',
       exportElementsPackageInfo:
@@ -1788,9 +1795,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       packageAnswerCollectionDuplicateExisting: 'Matches "{name}"',
       packageAnswerCollectionDuplicateSummary:
         '{count, plural, =0 {No required answer collections match existing content.} one {# required answer collection matches existing content. It will still be created as a new collection if you import an element that needs it.} other {# required answer collections match existing content. They will still be created as new collections if you import selected elements that need them.}}',
-      packagePreviewLoading: 'Checking package contents...',
+      packagePreviewLoading: 'Checking package contents…',
       packagePreviewError:
         'The package contents could not be checked. Please try again.',
+      packagePreviewRetry: 'Check package contents again',
       packageElementExportPermissionError:
         'Some selected elements cannot be exported. You must be an administrator or owner of every selected element.',
       packageAnswerCollectionExportPermissionError:
@@ -1879,6 +1887,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The import completed, but temporary package cleanup is still pending.',
       elementImportGenericWarning:
         'The package was accepted with a warning. Review the imported elements before using them.',
+      elementExportStatusNormalizedWarning:
+        'Element statuses are not included in the ZIP package. Imported copies will be created in review status.',
+      elementExportExternalMediaWarning:
+        'Auto-loading external images are not copied into the ZIP package. When imported, they are replaced by a visible placeholder; ordinary links remain unchanged.',
+      elementExportMediaMissingWarning:
+        'Some referenced KlickerUZH images could not be included in the ZIP package. When imported, they are replaced by a visible placeholder.',
+      elementExportUnusedMediaWarning:
+        'Media not referenced by the selected elements is omitted from the ZIP package.',
+      elementExportCleanupPendingWarning:
+        'The export package was prepared, but cleanup of temporary export data is still pending.',
+      elementExportGenericWarning:
+        'The ZIP package can be exported with a warning. Review its contents before sharing it.',
       elementImportNoElementsSelected: 'Select at least one element to import.',
       elementImportSelectionInvalid:
         'The selected elements no longer match this package. Upload the package again.',

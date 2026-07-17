@@ -66,6 +66,8 @@ model Element {
   @@index([ownerId, importFingerprint])
   @@index([ownerId, importFingerprintVersion, importFingerprint], map: "Element_owner_fpv_fp_idx")
   @@index([ownerId, importFingerprintVersion, importFingerprint, isDeleted, id], map: "Element_owner_fpv_fp_id_idx")
+  @@index([answerCollectionId, isDeleted, id], map: "Element_answer_collection_deleted_id_idx")
+  @@index([importFingerprintVersion, isDeleted, id], map: "Element_repair_fpv_deleted_id_idx")
 }
 
 enum ElementInstanceType {

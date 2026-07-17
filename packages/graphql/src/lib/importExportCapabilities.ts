@@ -1,5 +1,8 @@
-import { createHmac, timingSafeEqual } from 'node:crypto'
 import { MAX_IMPORT_EXPORT_PACKAGE_BYTES } from './importExportPackageConfig.js'
+import {
+  createStrictSignedCanonicalPayloadCodec,
+  type StrictSignedCanonicalPayloadCodec,
+} from './strictSignedCanonicalPayload.js'
 
 export const IMPORT_EXPORT_CAPABILITY_VERSION = 1
 export const IMPORT_EXPORT_CAPABILITY_MAX_TTL_MS = 15 * 60 * 1000
@@ -42,8 +45,8 @@ export type ImportExportArtifactStorageTarget = Readonly<{
 const CAPABILITY_SIGNING_DOMAIN = 'klicker-element-package-capability'
 const MAX_ENCODED_PAYLOAD_LENGTH = 2048
 const MAX_ENCODED_SIGNATURE_LENGTH = 128
-const BASE64URL_PATTERN = /^[A-Za-z0-9_-]+$/
-const UTF8_DECODER = new TextDecoder('utf-8', { fatal: true })
+const MAX_CAPABILITY_LENGTH =
+  MAX_ENCODED_PAYLOAD_LENGTH + MAX_ENCODED_SIGNATURE_LENGTH + 1
 const CANONICAL_UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
 
@@ -167,47 +170,29 @@ function canonicalizeLocalDownloadPayload(
   }
 }
 
-function decodeBase64UrlStrict(value: string, maxLength: number) {
-  if (
-    value.length === 0 ||
-    value.length > maxLength ||
-    !BASE64URL_PATTERN.test(value)
-  ) {
-    return null
+const IMPORT_UPLOAD_CAPABILITY_CODEC = createStrictSignedCanonicalPayloadCodec({
+  signingContext: [
+    CAPABILITY_SIGNING_DOMAIN,
+    ImportExportCapabilityPurpose.IMPORT_UPLOAD,
+  ],
+  maxEncodedPayloadLength: MAX_ENCODED_PAYLOAD_LENGTH,
+  maxEncodedSignatureLength: MAX_ENCODED_SIGNATURE_LENGTH,
+  maxTokenLength: MAX_CAPABILITY_LENGTH,
+  canonicalize: canonicalizeImportUploadPayload,
+})
+
+const LOCAL_DOWNLOAD_CAPABILITY_CODEC = createStrictSignedCanonicalPayloadCodec(
+  {
+    signingContext: [
+      CAPABILITY_SIGNING_DOMAIN,
+      ImportExportCapabilityPurpose.LOCAL_ARTIFACT_DOWNLOAD,
+    ],
+    maxEncodedPayloadLength: MAX_ENCODED_PAYLOAD_LENGTH,
+    maxEncodedSignatureLength: MAX_ENCODED_SIGNATURE_LENGTH,
+    maxTokenLength: MAX_CAPABILITY_LENGTH,
+    canonicalize: canonicalizeLocalDownloadPayload,
   }
-
-  const decoded = Buffer.from(value, 'base64url')
-  return decoded.toString('base64url') === value ? decoded : null
-}
-
-function computeCapabilitySignature(
-  encodedPayload: string,
-  purpose: ImportExportCapabilityPurpose,
-  secret: string
-) {
-  return createHmac('sha256', secret)
-    .update(`${CAPABILITY_SIGNING_DOMAIN}\0${purpose}\0${encodedPayload}`)
-    .digest()
-}
-
-function signaturesMatch(encodedSignature: string, expected: Buffer) {
-  const provided =
-    decodeBase64UrlStrict(encodedSignature, MAX_ENCODED_SIGNATURE_LENGTH) ??
-    Buffer.alloc(0)
-  const fixedLengthProvided = Buffer.alloc(expected.length)
-  provided.copy(
-    fixedLengthProvided,
-    0,
-    0,
-    Math.min(provided.length, expected.length)
-  )
-
-  // timingSafeEqual requires equal-length inputs. Always compare a fixed-size
-  // buffer, then separately require that the provided signature had the exact
-  // expected length.
-  const equalContent = timingSafeEqual(fixedLengthProvided, expected)
-  return provided.length === expected.length && equalContent
-}
+)
 
 function signCapability(
   payload:
@@ -219,30 +204,28 @@ function signCapability(
     throw new TypeError('Invalid import/export capability configuration.')
   }
 
-  const encodedPayload = Buffer.from(JSON.stringify(payload), 'utf8').toString(
-    'base64url'
-  )
-  const signature = computeCapabilitySignature(
-    encodedPayload,
-    payload.purpose,
-    secret
-  ).toString('base64url')
-
-  return `${encodedPayload}.${signature}`
+  const token =
+    payload.purpose === ImportExportCapabilityPurpose.IMPORT_UPLOAD
+      ? IMPORT_UPLOAD_CAPABILITY_CODEC.sign(payload, secret)
+      : LOCAL_DOWNLOAD_CAPABILITY_CODEC.sign(payload, secret)
+  if (!token) {
+    throw new TypeError('Import/export capability payload is too large.')
+  }
+  return token
 }
 
-function parseAndVerifyCapability<Payload>({
+function parseAndVerifyCapability<
+  Payload extends { issuedAt: number; expiresAt: number },
+>({
   token,
-  purpose,
   secret,
   now,
-  canonicalize,
+  codec,
 }: {
   token: string
-  purpose: ImportExportCapabilityPurpose
   secret: string
   now: number
-  canonicalize: (value: unknown) => Payload | null
+  codec: StrictSignedCanonicalPayloadCodec<Payload>
 }) {
   try {
     if (
@@ -253,38 +236,12 @@ function parseAndVerifyCapability<Payload>({
       return null
     }
 
-    const firstSeparator = token.indexOf('.')
+    const payload = codec.parse(token, secret)
+    if (!payload) return null
+
     if (
-      firstSeparator <= 0 ||
-      firstSeparator !== token.lastIndexOf('.') ||
-      firstSeparator === token.length - 1
-    ) {
-      return null
-    }
-
-    const encodedPayload = token.slice(0, firstSeparator)
-    const encodedSignature = token.slice(firstSeparator + 1)
-    const payloadBuffer = decodeBase64UrlStrict(
-      encodedPayload,
-      MAX_ENCODED_PAYLOAD_LENGTH
-    )
-    if (!payloadBuffer) return null
-
-    const expectedSignature = computeCapabilitySignature(
-      encodedPayload,
-      purpose,
-      secret
-    )
-    if (!signaturesMatch(encodedSignature, expectedSignature)) return null
-
-    const serializedPayload = UTF8_DECODER.decode(payloadBuffer)
-    const payload = canonicalize(JSON.parse(serializedPayload) as unknown)
-    if (!payload || JSON.stringify(payload) !== serializedPayload) return null
-
-    const times = payload as unknown as { issuedAt: number; expiresAt: number }
-    if (
-      times.issuedAt > now + IMPORT_EXPORT_CAPABILITY_CLOCK_SKEW_MS ||
-      times.expiresAt < now - IMPORT_EXPORT_CAPABILITY_CLOCK_SKEW_MS
+      payload.issuedAt > now + IMPORT_EXPORT_CAPABILITY_CLOCK_SKEW_MS ||
+      payload.expiresAt < now - IMPORT_EXPORT_CAPABILITY_CLOCK_SKEW_MS
     ) {
       return null
     }
@@ -357,10 +314,9 @@ export function verifyImportUploadCapability({
 }) {
   const payload = parseAndVerifyCapability({
     token,
-    purpose: ImportExportCapabilityPurpose.IMPORT_UPLOAD,
     secret,
     now,
-    canonicalize: canonicalizeImportUploadPayload,
+    codec: IMPORT_UPLOAD_CAPABILITY_CODEC,
   })
 
   return payload?.userId === userId &&
@@ -413,10 +369,9 @@ export function verifyLocalArtifactDownloadCapability({
 }) {
   const payload = parseAndVerifyCapability({
     token,
-    purpose: ImportExportCapabilityPurpose.LOCAL_ARTIFACT_DOWNLOAD,
     secret,
     now,
-    canonicalize: canonicalizeLocalDownloadPayload,
+    codec: LOCAL_DOWNLOAD_CAPABILITY_CODEC,
   })
 
   return payload?.userId === userId && payload.artifactId === artifactId

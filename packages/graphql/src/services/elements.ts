@@ -27,14 +27,14 @@ import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
-import {
-  canonicalizeElementAuthoringOptions,
-  canonicalizeElementDomainUpdate,
-  ElementDomainValidationError,
-} from '../lib/elementDomain.js'
+import { IMPORT_EXPORT_FINGERPRINT_VERSION } from '../lib/importExportFingerprintCanonicalization.js'
+import { getImportExportRuntimeConfig } from '../lib/importExportRuntimeConfig.js'
 import { SUPPORTED_MEDIA_CONTENT_TYPE_EXTENSIONS } from '../lib/mediaContentTypes.js'
-import validateElementInputs from '../lib/validateElementInputs.js'
-import { refreshElementImportFingerprint } from './importExportFingerprints.js'
+import { prepareElementMutation } from './elementMutationPreparation.js'
+import {
+  enqueueImportExportFingerprintRefresh,
+  finalizeUploadedMediaFingerprintV1,
+} from './importExportFingerprints.js'
 import { getAnswerCollectionsElements } from './resources.js'
 import { checkAccess } from './sharing.js'
 import { getActivityAnswerCollectionIds } from './templates.js'
@@ -432,7 +432,6 @@ export async function manipulateElement(
   ctx: PrismaTransactionContextWithUser
 ) {
   let tagsToDisconnect: string[] = []
-  let collectionAnswersToDisconnect: number[] = []
 
   // Partial edits need the persisted shared fields and options to validate the
   // resulting element, rather than validating only the fields present in the
@@ -452,66 +451,6 @@ export async function manipulateElement(
     return null
   }
 
-  const previousOptions =
-    elementPrev?.options &&
-    typeof elementPrev.options === 'object' &&
-    !Array.isArray(elementPrev.options)
-      ? elementPrev.options
-      : undefined
-  const optionsForValidation =
-    typeof options !== 'undefined'
-      ? options
-      : !elementPrev
-        ? options
-        : type === DB.ElementType.SELECTION
-          ? {
-              ...previousOptions,
-              answerCollection: elementPrev.answerCollectionId,
-              correctAnswers: elementPrev.answerCollectionItems.map(
-                (entry) => entry.id
-              ),
-            }
-          : type === DB.ElementType.CASE_STUDY
-            ? {
-                ...previousOptions,
-                answerCollection: elementPrev.answerCollectionId,
-                collectionItemIds: elementPrev.answerCollectionItems.map(
-                  (entry) => entry.id
-                ),
-              }
-            : elementPrev.options
-
-  // validate if all required fields and options are specified
-  const validInputs = validateElementInputs({
-    id,
-    status,
-    type,
-    name,
-    content,
-    explanation,
-    basePoints,
-    pointsMultiplier,
-  })
-  let canonicalOptions
-  try {
-    canonicalOptions = canonicalizeElementAuthoringOptions(
-      type,
-      optionsForValidation as ElementManipulationInput['options']
-    )
-  } catch (error) {
-    if (error instanceof ElementDomainValidationError) return null
-    throw error
-  }
-
-  // if the provided information is not valid for the element creation / editing, return null
-  if (!validInputs) {
-    return null
-  }
-  let processedOptions = canonicalOptions.options
-  let answerCollectionId = canonicalOptions.relations.answerCollectionId
-  let selectedAnswerCollectionItemIds = canonicalOptions.relations.selectedIds
-  let answerCollectionEntryIds: number[] | undefined
-
   // determine which tags have been deconnected
   if (elementPrev?.tags && tags) {
     tagsToDisconnect = elementPrev.tags
@@ -519,138 +458,68 @@ export async function manipulateElement(
       .map((tag) => tag.name)
   }
 
-  // (SE & CS only) validate that the user has access to the answer collection that should be used
-  if (type === DB.ElementType.SELECTION || type === DB.ElementType.CASE_STUDY) {
-    if (typeof answerCollectionId !== 'number') return null
-
-    if (templateId) {
-      // fetch all answer collections that are either available directly or through template
-      const availableAnswerCollections = await getAnswerCollectionsElements(
-        { templateId },
-        ctx
-      )
-
-      // check if the answer collection that should be linked is available
-      const answerCollection = availableAnswerCollections.find(
-        (collection) => collection.id === answerCollectionId
-      )
-
-      if (!answerCollection) return null
-      answerCollectionEntryIds = answerCollection.entries.map(
-        (entry) => entry.id
-      )
-    } else {
-      // access check for answer collection
-      const validAccess = await checkAccess(
-        [
-          {
-            answerCollectionId,
-            minimumPermissionLevel: DB.PermissionLevel.READ,
-          },
-        ],
-        ctx
-      )
-
-      if (!validAccess) {
-        return null
-      }
-
-      const answerCollection = await ctx.prisma.answerCollection.findFirst({
-        where: { id: answerCollectionId, isDeleted: false },
-        select: { entries: { select: { id: true } } },
-      })
-      if (!answerCollection) return null
-      answerCollectionEntryIds = answerCollection.entries.map(
-        (entry) => entry.id
-      )
-    }
-
-    try {
-      canonicalOptions = canonicalizeElementAuthoringOptions(
-        type,
-        optionsForValidation as ElementManipulationInput['options'],
-        { poolIds: answerCollectionEntryIds }
-      )
-      processedOptions = canonicalOptions.options
-      answerCollectionId = canonicalOptions.relations.answerCollectionId
-      selectedAnswerCollectionItemIds = canonicalOptions.relations.selectedIds
-    } catch (error) {
-      if (error instanceof ElementDomainValidationError) return null
-      throw error
-    }
-  }
-
-  let canonicalDomain
-  try {
-    canonicalDomain = canonicalizeElementDomainUpdate({
+  const prepared = await prepareElementMutation(
+    {
+      id,
+      status,
       type,
+      name,
       content,
       explanation,
+      options,
       basePoints,
       pointsMultiplier,
-      options: processedOptions,
-      relations:
-        type === DB.ElementType.SELECTION || type === DB.ElementType.CASE_STUDY
-          ? {
+      tags,
+      templateId,
+    },
+    elementPrev ?? undefined,
+    async (answerCollectionId) => {
+      if (templateId) {
+        // fetch all answer collections that are either available directly or through template
+        const availableAnswerCollections = await getAnswerCollectionsElements(
+          { templateId },
+          ctx
+        )
+
+        // check if the answer collection that should be linked is available
+        const answerCollection = availableAnswerCollections.find(
+          (collection) => collection.id === answerCollectionId
+        )
+
+        return answerCollection?.entries.map((entry) => entry.id) ?? null
+      } else {
+        // access check for answer collection
+        const validAccess = await checkAccess(
+          [
+            {
               answerCollectionId,
-              poolIds: answerCollectionEntryIds,
-              selectedIds: selectedAnswerCollectionItemIds,
-              caseSolutionReferenceKey:
-                type === DB.ElementType.CASE_STUDY
-                  ? ('itemId' as const)
-                  : undefined,
-            }
-          : undefined,
-      previous: elementPrev
-        ? {
-            content: elementPrev.content,
-            explanation: elementPrev.explanation,
-            basePoints: elementPrev.basePoints,
-            pointsMultiplier: elementPrev.pointsMultiplier,
-          }
-        : undefined,
-    })
-  } catch (error) {
-    if (error instanceof ElementDomainValidationError) return null
-    throw error
-  }
-  processedOptions = canonicalDomain.options
-  answerCollectionId = canonicalDomain.relations.answerCollectionId
-  selectedAnswerCollectionItemIds = canonicalDomain.relations.selectedIds
+              minimumPermissionLevel: DB.PermissionLevel.READ,
+            },
+          ],
+          ctx
+        )
 
-  // (SE only) determine which answer options are no longer considered to be correct
-  if (type === DB.ElementType.SELECTION && elementPrev?.answerCollectionItems) {
-    const prevSolutionsIds = elementPrev.answerCollectionItems.map(
-      (sol) => sol.id
-    )
-    collectionAnswersToDisconnect =
-      processedOptions.hasSampleSolution === true
-        ? prevSolutionsIds.filter(
-            (sol) => !selectedAnswerCollectionItemIds.includes(sol)
-          )
-        : prevSolutionsIds
-  }
+        if (!validAccess) return null
 
-  // (CS only) determine which answer options are no longer used in the case study
-  // (similar to selection questions, but not dependent on definition of a sample solution)
-  if (
-    type === DB.ElementType.CASE_STUDY &&
-    elementPrev?.answerCollectionItems
-  ) {
-    const previousItemIds = elementPrev.answerCollectionItems.map(
-      (item) => item.id
-    )
-    collectionAnswersToDisconnect = previousItemIds.filter(
-      (item) => !selectedAnswerCollectionItemIds.includes(item)
-    )
-  }
+        const answerCollection = await ctx.prisma.answerCollection.findFirst({
+          where: { id: answerCollectionId, isDeleted: false },
+          select: { entries: { select: { id: true } } },
+        })
+        return answerCollection?.entries.map((entry) => entry.id) ?? null
+      }
+    }
+  )
+  if (!prepared) return null
+
+  const { domain: canonicalDomain, relationWrite } = prepared
+  const processedOptions = canonicalDomain.options
 
   const element = await ctx.prisma.element.upsert({
     where: { id: typeof id !== 'undefined' && id !== null ? id : -1 },
     create: {
-      status: status!,
+      status: prepared.status,
       type,
-      name: name!,
+      name: prepared.name,
       content: canonicalDomain.content,
       explanation: canonicalDomain.explanation ?? undefined,
       basePoints: canonicalDomain.basePoints,
@@ -667,20 +536,20 @@ export async function manipulateElement(
         }),
       },
       // connect the selection question to the corresponding answer collection
-      answerCollection:
-        type === DB.ElementType.SELECTION || type === DB.ElementType.CASE_STUDY
-          ? { connect: { id: answerCollectionId! } }
-          : undefined,
+      answerCollection: relationWrite
+        ? { connect: { id: relationWrite.answerCollectionId } }
+        : undefined,
       // connect the answer collection options to the selection question if sample solution is enabled
       answerCollectionItems:
+        relationWrite &&
         type === DB.ElementType.SELECTION &&
-        processedOptions.hasSampleSolution === true
+        relationWrite.connectSelectedItems
           ? {
-              connect: selectedAnswerCollectionItemIds.map((id) => ({ id })),
+              connect: relationWrite.selectedIds.map((id) => ({ id })),
             }
-          : type === DB.ElementType.CASE_STUDY
+          : relationWrite && type === DB.ElementType.CASE_STUDY
             ? {
-                connect: selectedAnswerCollectionItemIds.map((id) => ({ id })),
+                connect: relationWrite.selectedIds.map((id) => ({ id })),
               }
             : undefined,
     },
@@ -706,7 +575,7 @@ export async function manipulateElement(
           ? undefined
           : canonicalDomain.pointsMultiplier,
       version: { increment: 1 },
-      options: options ? processedOptions : undefined,
+      options: prepared.shouldWriteOptions ? processedOptions : undefined,
       // connect or create new tags and disconnect previous ones if they are selected anymore
       tags: {
         connectOrCreate: tags
@@ -724,24 +593,23 @@ export async function manipulateElement(
         }),
       },
       // connect new answer collection and disconnect previous one if they are not the same
-      answerCollection:
-        type === DB.ElementType.SELECTION || type === DB.ElementType.CASE_STUDY
-          ? { connect: { id: answerCollectionId! } }
-          : undefined,
+      answerCollection: relationWrite
+        ? { connect: { id: relationWrite.answerCollectionId } }
+        : undefined,
       // connect or disconnect the answer collection options if sample solution is enabled
-      answerCollectionItems:
-        type === DB.ElementType.SELECTION || type === DB.ElementType.CASE_STUDY
-          ? {
-              connect:
-                type === DB.ElementType.SELECTION &&
-                processedOptions.hasSampleSolution === true
-                  ? selectedAnswerCollectionItemIds.map((id) => ({ id }))
-                  : type === DB.ElementType.CASE_STUDY
-                    ? selectedAnswerCollectionItemIds.map((id) => ({ id }))
-                    : undefined,
-              disconnect: collectionAnswersToDisconnect.map((id) => ({ id })),
-            }
-          : undefined,
+      answerCollectionItems: relationWrite
+        ? {
+            connect:
+              type === DB.ElementType.SELECTION
+                ? relationWrite.connectSelectedItems
+                  ? relationWrite.selectedIds.map((id) => ({ id }))
+                  : undefined
+                : type === DB.ElementType.CASE_STUDY
+                  ? relationWrite.selectedIds.map((id) => ({ id }))
+                  : undefined,
+            disconnect: relationWrite.disconnectIds.map((id) => ({ id })),
+          }
+        : undefined,
     },
     include: {
       tags: {
@@ -813,15 +681,15 @@ export async function manipulateElement(
 
   if (
     (type === DB.ElementType.SELECTION || type === DB.ElementType.CASE_STUDY) &&
-    typeof answerCollectionId === 'number'
+    typeof prepared.answerCollectionId === 'number'
   ) {
     ctx.emitter.emit('invalidate', {
       typename: 'AnswerCollection',
-      id: answerCollectionId,
+      id: prepared.answerCollectionId,
     })
   }
 
-  await refreshElementImportFingerprint(element.id, ctx.prisma)
+  enqueueImportExportFingerprintRefresh({ elementId: element.id }, ctx)
 
   return {
     ...element,
@@ -982,7 +850,10 @@ export async function applyElementBatchOperations(
       return updatedElement
     })
     if (changesDidacticIdentity) {
-      await refreshElementImportFingerprint(updatedElement.id, ctx.prisma)
+      enqueueImportExportFingerprintRefresh(
+        { elementId: updatedElement.id },
+        ctx
+      )
     }
     updatedElements.push(updatedElement)
   }
@@ -1235,6 +1106,27 @@ export async function updateTagOrdering(
   return reorderedTags
 }
 
+export async function getUserMediaFiles(ctx: ContextWithUser) {
+  const importExportEnabled = getImportExportRuntimeConfig().enabled
+  const user = await ctx.prisma.user.findUnique({
+    where: { id: ctx.user.sub },
+    include: {
+      mediaFiles: {
+        ...(importExportEnabled
+          ? {
+              where: {
+                importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+              },
+            }
+          : {}),
+        orderBy: { createdAt: 'desc' },
+      },
+    },
+  })
+
+  return user?.mediaFiles ?? []
+}
+
 export async function getFileUploadSas(
   { fileName, contentType }: { fileName: string; contentType: string },
   ctx: ContextWithUser
@@ -1267,7 +1159,9 @@ export async function getFileUploadSas(
   const fileHref = `${storageAccount}/${ctx.user.sub}/${blobName}`
 
   // generate file upload SAS with blob storage service
-  const permissions = BlobSASPermissions.parse('w')
+  // Create-only access prevents the still-live SAS from overwriting bytes
+  // after server-side fingerprint finalization.
+  const permissions = BlobSASPermissions.parse('c')
   const startDate = dayjs()
   const expiryDate = startDate.add(15, 'minutes')
   const queryParams = generateBlobSASQueryParameters(
@@ -1292,11 +1186,22 @@ export async function getFileUploadSas(
   })
 
   return {
+    mediaFileId: id,
     uploadSasURL: `${storageAccount}?${queryParams}`,
     uploadHref: fileHref,
     containerName: ctx.user.sub,
     fileName: blobName,
   }
+}
+
+export async function finalizeFileUpload(
+  { mediaFileId }: { mediaFileId: string },
+  ctx: ContextWithUser
+) {
+  return await finalizeUploadedMediaFingerprintV1(
+    { mediaFileId, ownerId: ctx.user.sub },
+    ctx.prisma
+  )
 }
 
 export async function getInstanceUpdateActivities(

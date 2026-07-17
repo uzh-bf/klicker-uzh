@@ -9,6 +9,7 @@ import {
 } from 'graphql/index.js'
 import { schema } from '../src/index.js'
 import { createElementImportPackagePreviewOptions } from '../src/schema/elementImportPreviewOptions.js'
+import type { ElementImportPackagePreviewOptionsSource } from '../src/services/elementImportPreviewModel.js'
 
 const optionsUnion = schema.getType('ElementImportPackagePreviewOptions')
 if (!optionsUnion || !isUnionType(optionsUnion)) {
@@ -74,14 +75,41 @@ const optionsQuery = `
 `
 
 async function executeOptions(
-  type: ElementType,
-  options: Record<string, unknown>
+  element: ElementImportPackagePreviewOptionsSource
 ) {
   return await graphql({
     schema: optionsSchema,
     source: optionsQuery,
-    rootValue: createElementImportPackagePreviewOptions({ type, options }),
+    rootValue: createElementImportPackagePreviewOptions(element),
   })
+}
+
+function createChoiceOptionsSource(
+  type:
+    | typeof ElementType.SC
+    | typeof ElementType.MC
+    | typeof ElementType.KPRIM,
+  choices: Array<{ ix: number; value: string }>
+): ElementImportPackagePreviewOptionsSource {
+  const options = {
+    displayMode: DisplayMode.LIST,
+    hasSampleSolution: false,
+    hasAnswerFeedbacks: false,
+    choices: choices.map((choice) => ({
+      ...choice,
+      correct: undefined,
+      feedback: undefined,
+    })),
+  }
+
+  switch (type) {
+    case ElementType.SC:
+      return { type, options }
+    case ElementType.MC:
+      return { type, options }
+    case ElementType.KPRIM:
+      return { type, options }
+  }
 }
 
 describe('element import preview option contract', () => {
@@ -89,7 +117,7 @@ describe('element import preview option contract', () => {
     [ElementType.CONTENT, 'ElementImportPackagePreviewContentOptions'],
     [ElementType.FLASHCARD, 'ElementImportPackagePreviewFlashcardOptions'],
   ])('resolves empty %s options to a concrete object', async (type, name) => {
-    const result = await executeOptions(type, {})
+    const result = await executeOptions({ type, options: {} })
 
     expect(result.errors).toBeUndefined()
     expect(result.data?.options).toEqual({ __typename: name, type })
@@ -106,12 +134,9 @@ describe('element import preview option contract', () => {
         ix,
         value: `Choice ${ix + 1}`,
       }))
-      const result = await executeOptions(type, {
-        displayMode: DisplayMode.LIST,
-        hasSampleSolution: false,
-        hasAnswerFeedbacks: false,
-        choices,
-      })
+      const result = await executeOptions(
+        createChoiceOptionsSource(type, choices)
+      )
 
       expect(result.errors).toBeUndefined()
       expect(result.data?.options).toEqual({
@@ -130,24 +155,27 @@ describe('element import preview option contract', () => {
   )
 
   it('preserves choice correctness and feedback when a scoring key exists', async () => {
-    const result = await executeOptions(ElementType.SC, {
-      displayMode: DisplayMode.GRID,
-      hasSampleSolution: true,
-      hasAnswerFeedbacks: true,
-      choices: [
-        {
-          ix: 0,
-          value: 'Correct choice',
-          correct: true,
-          feedback: 'Exactly.',
-        },
-        {
-          ix: 1,
-          value: 'Distractor',
-          correct: false,
-          feedback: 'Not this one.',
-        },
-      ],
+    const result = await executeOptions({
+      type: ElementType.SC,
+      options: {
+        displayMode: DisplayMode.GRID,
+        hasSampleSolution: true,
+        hasAnswerFeedbacks: true,
+        choices: [
+          {
+            ix: 0,
+            value: 'Correct choice',
+            correct: true,
+            feedback: 'Exactly.',
+          },
+          {
+            ix: 1,
+            value: 'Distractor',
+            correct: false,
+            feedback: 'Not this one.',
+          },
+        ],
+      },
     })
 
     expect(result.errors).toBeUndefined()
@@ -165,14 +193,17 @@ describe('element import preview option contract', () => {
 
   it('preserves numerical bounds, solutions, and a Unicode placeholder', async () => {
     const placeholder = 'Δx ≈ 3,14\u202fµm 🧪'
-    const result = await executeOptions(ElementType.NUMERICAL, {
-      hasSampleSolution: true,
-      accuracy: 3,
-      placeholder,
-      unit: 'µm',
-      restrictions: { min: -5, max: 10 },
-      solutionRanges: [{ min: 3.139, max: 3.141 }],
-      exactSolutions: null,
+    const result = await executeOptions({
+      type: ElementType.NUMERICAL,
+      options: {
+        hasSampleSolution: true,
+        accuracy: 3,
+        placeholder,
+        unit: 'µm',
+        restrictions: { min: -5, max: 10 },
+        solutionRanges: [{ min: 3.139, max: 3.141 }],
+        exactSolutions: undefined,
+      },
     })
 
     expect(result.errors).toBeUndefined()
@@ -190,14 +221,17 @@ describe('element import preview option contract', () => {
   })
 
   it('preserves numerical exact solutions independently of ranges', async () => {
-    const result = await executeOptions(ElementType.NUMERICAL, {
-      hasSampleSolution: true,
-      accuracy: null,
-      placeholder: null,
-      unit: null,
-      restrictions: { min: null, max: null },
-      solutionRanges: null,
-      exactSolutions: [-1.5, 2.25],
+    const result = await executeOptions({
+      type: ElementType.NUMERICAL,
+      options: {
+        hasSampleSolution: true,
+        accuracy: undefined,
+        placeholder: undefined,
+        unit: undefined,
+        restrictions: { min: undefined, max: undefined },
+        solutionRanges: undefined,
+        exactSolutions: [-1.5, 2.25],
+      },
     })
 
     expect(result.errors).toBeUndefined()
@@ -209,10 +243,13 @@ describe('element import preview option contract', () => {
   })
 
   it('preserves free-text scoring fields', async () => {
-    const result = await executeOptions(ElementType.FREE_TEXT, {
-      hasSampleSolution: true,
-      restrictions: { maxLength: 240 },
-      solutions: ['First answer', 'Second answer'],
+    const result = await executeOptions({
+      type: ElementType.FREE_TEXT,
+      options: {
+        hasSampleSolution: true,
+        restrictions: { maxLength: 240 },
+        solutions: ['First answer', 'Second answer'],
+      },
     })
 
     expect(result.errors).toBeUndefined()
@@ -226,9 +263,12 @@ describe('element import preview option contract', () => {
   })
 
   it('preserves selection input and scoring-key settings', async () => {
-    const result = await executeOptions(ElementType.SELECTION, {
-      hasSampleSolution: false,
-      numberOfInputs: 3,
+    const result = await executeOptions({
+      type: ElementType.SELECTION,
+      options: {
+        hasSampleSolution: false,
+        numberOfInputs: 3,
+      },
     })
 
     expect(result.errors).toBeUndefined()
@@ -241,36 +281,39 @@ describe('element import preview option contract', () => {
   })
 
   it('preserves every nested case-study review field', async () => {
-    const result = await executeOptions(ElementType.CASE_STUDY, {
-      hasSampleSolution: true,
-      criteria: [
-        {
-          id: 'quality',
-          name: 'Quality',
-          order: 0,
-          min: 0,
-          max: 5,
-          step: 0.5,
-          unit: 'pts',
-          labels: { min: 'Low', mid: 'Medium', max: 'High' },
-        },
-      ],
-      cases: [
-        {
-          id: 'case-a',
-          title: 'Case A',
-          description: 'Evaluate the candidate.',
-          order: 0,
-          solutions: [
-            {
-              itemId: 17,
-              criteriaSolutions: [
-                { criterionId: 'quality', min: 3.5, max: 4.5 },
-              ],
-            },
-          ],
-        },
-      ],
+    const result = await executeOptions({
+      type: ElementType.CASE_STUDY,
+      options: {
+        hasSampleSolution: true,
+        criteria: [
+          {
+            id: 'quality',
+            name: 'Quality',
+            order: 0,
+            min: 0,
+            max: 5,
+            step: 0.5,
+            unit: 'pts',
+            labels: { min: 'Low', mid: 'Medium', max: 'High' },
+          },
+        ],
+        cases: [
+          {
+            id: 'case-a',
+            title: 'Case A',
+            description: 'Evaluate the candidate.',
+            order: 0,
+            solutions: [
+              {
+                itemId: 17,
+                criteriaSolutions: [
+                  { criterionId: 'quality', min: 3.5, max: 4.5 },
+                ],
+              },
+            ],
+          },
+        ],
+      },
     })
 
     expect(result.errors).toBeUndefined()

@@ -2,6 +2,7 @@ import type { PreparedHatchetTasks } from '@klicker-uzh/hatchet'
 
 export const REQUIRED_IMPORT_EXPORT_WORKFLOW_KEYS = [
   'refreshImportExportFingerprints',
+  'repairImportExportFingerprints',
   'cleanupImportExportPackages',
 ] as const satisfies readonly (keyof PreparedHatchetTasks)[]
 const REQUIRED_IMPORT_EXPORT_WORKFLOW_KEY_SET = new Set<

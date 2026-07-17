@@ -50,6 +50,15 @@ describe('artifact-bound element import tokens', () => {
   })
 
   it('creates a canonical token and verifies owner separately from expiry', () => {
+    const expectedPayload = {
+      v: 1,
+      purpose: 'element-import',
+      userId,
+      artifactId,
+      packageHash,
+      expiresAt,
+      jti,
+    }
     const token = createElementImportToken({
       userId,
       artifactId,
@@ -58,16 +67,10 @@ describe('artifact-bound element import tokens', () => {
       jti,
     })
 
+    // Preserve the established byte-level format across codec refactors.
+    expect(token).toBe(signRawPayload(JSON.stringify(expectedPayload)))
     const payload = parseElementImportTokenForOwner({ token, userId })
-    expect(payload).toEqual({
-      v: 1,
-      purpose: 'element-import',
-      userId,
-      artifactId,
-      packageHash,
-      expiresAt,
-      jti,
-    })
+    expect(payload).toEqual(expectedPayload)
     expect(() => assertElementImportTokenUnexpired(payload, NOW)).not.toThrow()
     expectTokenError(
       () => assertElementImportTokenUnexpired(payload, expiresAt),
@@ -228,6 +231,22 @@ describe('artifact-bound element import tokens', () => {
         () => parseElementImportTokenForOwner({ token, userId }),
         ImportExportErrorCode.TOKEN_INVALID
       )
+    }
+  })
+
+  it('preserves parser failures as the cause of the invalid-token error', () => {
+    expect.assertions(2)
+
+    try {
+      parseElementImportTokenForOwner({
+        token: signRawPayload('not-json'),
+        userId,
+      })
+    } catch (error) {
+      expect(error).toEqual(
+        expect.objectContaining({ code: ImportExportErrorCode.TOKEN_INVALID })
+      )
+      expect((error as Error).cause).toBeInstanceOf(SyntaxError)
     }
   })
 

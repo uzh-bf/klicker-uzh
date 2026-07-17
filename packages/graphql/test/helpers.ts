@@ -38,7 +38,10 @@ import {
   handleEndExpiredGroupActivity,
   handlePublishScheduledGroupActivity,
 } from 'src/services/groups.js'
-import { handleRefreshImportExportFingerprints } from 'src/services/importExportFingerprintMaintenance.js'
+import {
+  handleRefreshImportExportFingerprints,
+  handleRepairImportExportFingerprints,
+} from 'src/services/importExportFingerprintMaintenance.js'
 import {
   handleAssessmentLiveQuizBlockClosureAggregation,
   handlePublishScheduledLiveQuiz,
@@ -150,12 +153,26 @@ export async function testInitialization(
 
   // initialize tasks to be called
   const tasks = {
+    repairImportExportFingerprints: hatchet.task({
+      name: 'repair-import-export-fingerprints',
+      fn: async (_, executionContext) => {
+        return await handleRepairImportExportFingerprints(
+          {},
+          hatchetCtx,
+          executionContext
+        )
+      },
+    }),
     refreshImportExportFingerprints: hatchet.task({
       name: 'refresh-import-export-fingerprints',
-      fn: async (input: RefreshImportExportFingerprintsInput) => {
+      fn: async (
+        input: RefreshImportExportFingerprintsInput,
+        executionContext
+      ) => {
         const result = await handleRefreshImportExportFingerprints(
           input,
-          hatchetCtx
+          hatchetCtx,
+          executionContext
         )
         return { success: true, processed: result.processed }
       },

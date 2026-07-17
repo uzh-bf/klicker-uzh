@@ -1,12 +1,9 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import type {
-  ElementOptionsCaseStudy,
-  ElementOptionsChoices,
-  ElementOptionsFreeText,
-  ElementOptionsNumerical,
-  ElementOptionsSelection,
-} from '@klicker-uzh/types'
 import builder from '../builder.js'
+import type {
+  ElementImportPackagePreviewOptionsByElementType,
+  ElementImportPackagePreviewOptionsSource,
+} from '../services/elementImportPreviewModel.js'
 import {
   CaseStudyCase,
   CaseStudyCriterion,
@@ -18,108 +15,19 @@ import {
   NumericalSolutionRange,
 } from './elementData.js'
 
-type CanonicalChoiceOptions = Omit<
-  ElementOptionsChoices,
-  'hasSampleSolution' | 'hasAnswerFeedbacks'
-> & {
-  hasSampleSolution: boolean
-  hasAnswerFeedbacks: boolean
-}
-
-type CanonicalNumericalOptions = Omit<
-  ElementOptionsNumerical,
-  'hasSampleSolution' | 'hasAnswerFeedbacks'
-> & {
-  hasSampleSolution: boolean
-}
-
-type CanonicalFreeTextOptions = Omit<
-  ElementOptionsFreeText,
-  'hasSampleSolution' | 'hasAnswerFeedbacks'
-> & {
-  hasSampleSolution: boolean
-}
-
-type CanonicalSelectionOptions = Omit<
-  ElementOptionsSelection,
-  | 'hasSampleSolution'
-  | 'hasAnswerFeedbacks'
-  | 'answerCollection'
-  | 'answerCollectionSolutionIds'
-> & {
-  hasSampleSolution: boolean
-}
-
-type CanonicalCaseStudyOptions = Omit<
-  ElementOptionsCaseStudy,
-  | 'hasSampleSolution'
-  | 'hasAnswerFeedbacks'
-  | 'answerCollectionId'
-  | 'collectionItemIds'
-  | 'items'
-> & {
-  hasSampleSolution: boolean
-}
-
-type PreviewOptionsByElementType = {
-  [DB.ElementType.SC]: CanonicalChoiceOptions
-  [DB.ElementType.MC]: CanonicalChoiceOptions
-  [DB.ElementType.KPRIM]: CanonicalChoiceOptions
-  [DB.ElementType.NUMERICAL]: CanonicalNumericalOptions
-  [DB.ElementType.FREE_TEXT]: CanonicalFreeTextOptions
-  [DB.ElementType.CONTENT]: Record<string, never>
-  [DB.ElementType.FLASHCARD]: Record<string, never>
-  [DB.ElementType.SELECTION]: CanonicalSelectionOptions
-  [DB.ElementType.CASE_STUDY]: CanonicalCaseStudyOptions
-}
-
 type PreviewOptionsWrapper<Type extends DB.ElementType> = {
-  elementType: Type
-  options: PreviewOptionsByElementType[Type]
+  type: Type
+  options: ElementImportPackagePreviewOptionsByElementType[Type]
 }
 
 export type ElementImportPackagePreviewOptionsValue = {
   [Type in DB.ElementType]: PreviewOptionsWrapper<Type>
 }[DB.ElementType]
 
-type ElementImportPackagePreviewOptionsSource = {
-  type: DB.ElementType
-  options: Record<string, unknown>
-}
-
-function wrapPreviewOptions<Type extends DB.ElementType>(
-  elementType: Type,
-  options: Record<string, unknown>
-): PreviewOptionsWrapper<Type> {
-  return {
-    elementType,
-    options: options as PreviewOptionsByElementType[Type],
-  }
-}
-
 export function createElementImportPackagePreviewOptions(
   element: ElementImportPackagePreviewOptionsSource
 ): ElementImportPackagePreviewOptionsValue {
-  switch (element.type) {
-    case DB.ElementType.SC:
-      return wrapPreviewOptions(DB.ElementType.SC, element.options)
-    case DB.ElementType.MC:
-      return wrapPreviewOptions(DB.ElementType.MC, element.options)
-    case DB.ElementType.KPRIM:
-      return wrapPreviewOptions(DB.ElementType.KPRIM, element.options)
-    case DB.ElementType.NUMERICAL:
-      return wrapPreviewOptions(DB.ElementType.NUMERICAL, element.options)
-    case DB.ElementType.FREE_TEXT:
-      return wrapPreviewOptions(DB.ElementType.FREE_TEXT, element.options)
-    case DB.ElementType.CONTENT:
-      return wrapPreviewOptions(DB.ElementType.CONTENT, element.options)
-    case DB.ElementType.FLASHCARD:
-      return wrapPreviewOptions(DB.ElementType.FLASHCARD, element.options)
-    case DB.ElementType.SELECTION:
-      return wrapPreviewOptions(DB.ElementType.SELECTION, element.options)
-    case DB.ElementType.CASE_STUDY:
-      return wrapPreviewOptions(DB.ElementType.CASE_STUDY, element.options)
-  }
+  return element
 }
 
 export const ElementImportPackagePreviewSCOptions = builder
@@ -130,7 +38,7 @@ export const ElementImportPackagePreviewSCOptions = builder
     fields: (t) => ({
       type: t.field({
         type: ElementType,
-        resolve: ({ elementType }) => elementType,
+        resolve: ({ type }) => type,
       }),
       displayMode: t.field({
         type: ElementDisplayMode,
@@ -157,7 +65,7 @@ export const ElementImportPackagePreviewMCOptions = builder
     fields: (t) => ({
       type: t.field({
         type: ElementType,
-        resolve: ({ elementType }) => elementType,
+        resolve: ({ type }) => type,
       }),
       displayMode: t.field({
         type: ElementDisplayMode,
@@ -184,7 +92,7 @@ export const ElementImportPackagePreviewKPRIMOptions = builder
     fields: (t) => ({
       type: t.field({
         type: ElementType,
-        resolve: ({ elementType }) => elementType,
+        resolve: ({ type }) => type,
       }),
       displayMode: t.field({
         type: ElementDisplayMode,
@@ -211,7 +119,7 @@ export const ElementImportPackagePreviewNumericalOptions = builder
     fields: (t) => ({
       type: t.field({
         type: ElementType,
-        resolve: ({ elementType }) => elementType,
+        resolve: ({ type }) => type,
       }),
       hasSampleSolution: t.boolean({
         resolve: ({ options }) => options.hasSampleSolution,
@@ -253,7 +161,7 @@ export const ElementImportPackagePreviewFreeTextOptions = builder
     fields: (t) => ({
       type: t.field({
         type: ElementType,
-        resolve: ({ elementType }) => elementType,
+        resolve: ({ type }) => type,
       }),
       hasSampleSolution: t.boolean({
         resolve: ({ options }) => options.hasSampleSolution,
@@ -278,7 +186,7 @@ export const ElementImportPackagePreviewContentOptions = builder
     fields: (t) => ({
       type: t.field({
         type: ElementType,
-        resolve: ({ elementType }) => elementType,
+        resolve: ({ type }) => type,
       }),
     }),
   })
@@ -291,7 +199,7 @@ export const ElementImportPackagePreviewFlashcardOptions = builder
     fields: (t) => ({
       type: t.field({
         type: ElementType,
-        resolve: ({ elementType }) => elementType,
+        resolve: ({ type }) => type,
       }),
     }),
   })
@@ -304,7 +212,7 @@ export const ElementImportPackagePreviewSelectionOptions = builder
     fields: (t) => ({
       type: t.field({
         type: ElementType,
-        resolve: ({ elementType }) => elementType,
+        resolve: ({ type }) => type,
       }),
       hasSampleSolution: t.boolean({
         resolve: ({ options }) => options.hasSampleSolution,
@@ -323,7 +231,7 @@ export const ElementImportPackagePreviewCaseStudyOptions = builder
     fields: (t) => ({
       type: t.field({
         type: ElementType,
-        resolve: ({ elementType }) => elementType,
+        resolve: ({ type }) => type,
       }),
       hasSampleSolution: t.boolean({
         resolve: ({ options }) => options.hasSampleSolution,
@@ -353,8 +261,8 @@ export const ElementImportPackagePreviewOptions = builder.unionType(
       ElementImportPackagePreviewSelectionOptions,
       ElementImportPackagePreviewCaseStudyOptions,
     ],
-    resolveType: ({ elementType }) => {
-      switch (elementType) {
+    resolveType: ({ type }) => {
+      switch (type) {
         case DB.ElementType.SC:
           return ElementImportPackagePreviewSCOptions
         case DB.ElementType.MC:

@@ -1,21 +1,33 @@
+import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import { execFileSync, spawnSync } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 import {
-  IMPORT_EXPORT_MIGRATIONS,
-  REQUIRED_IMPORT_EXPORT_CONSTRAINTS,
-  REQUIRED_IMPORT_EXPORT_INDEXES,
   withAdvisoryLock,
-  type ImportExportDatabaseInspection,
   type OperationsPrisma,
 } from '../src/lib/importExportOperations/database.js'
+import type { ImportExportDatabaseInspection } from '../src/lib/importExportOperations/databaseCatalog.js'
+import {
+  IMPORT_EXPORT_CHECK_CONSTRAINT_CONTRACT_PREFIX,
+  IMPORT_EXPORT_MIGRATIONS,
+  REQUIRED_IMPORT_EXPORT_COLUMNS,
+  REQUIRED_IMPORT_EXPORT_CONSTRAINTS,
+  REQUIRED_IMPORT_EXPORT_INDEXES,
+  REQUIRED_IMPORT_EXPORT_TRIGGERS,
+} from '../src/lib/importExportOperations/databaseContract.js'
 import { evaluateImportExportInspection } from '../src/lib/importExportOperations/inspection.js'
 import {
   ImportExportOperationError,
   requireMasterGateOff,
   runOperationCli,
 } from '../src/lib/importExportOperations/runtime.js'
+import {
+  IMPORT_EXPORT_CLEANUP_RUNTIME_BUDGET_MS,
+  cleanupImportExportPackages,
+  handleCleanupImportExportPackages,
+} from '../src/services/importExportCleanup.js'
+import { cleanupOrphanedImportedMediaFiles } from '../src/services/mediaStorageCleanup.js'
 
 const SAFE_ENV = {
   NODE_ENV: 'production',
@@ -36,6 +48,16 @@ const OPERATION_ALIASES = [
 
 async function readRepositoryFile(path: string) {
   return await readFile(new URL(`../../../${path}`, import.meta.url), 'utf8')
+}
+
+function taskDeclarationSource(source: string, taskName: string) {
+  const nameIndex = source.indexOf(`name: '${taskName}'`)
+  expect(nameIndex).toBeGreaterThanOrEqual(0)
+  const taskStart = source.lastIndexOf('hatchet.task({', nameIndex)
+  const taskEnd = source.indexOf('\n  })', nameIndex)
+  expect(taskStart).toBeGreaterThanOrEqual(0)
+  expect(taskEnd).toBeGreaterThan(nameIndex)
+  return source.slice(taskStart, taskEnd + '\n  })'.length)
 }
 
 describe('import/export production operation aliases', () => {
@@ -150,7 +172,243 @@ describe('privacy-safe operation output', () => {
   })
 })
 
+describe('import/export maintenance execution safety', () => {
+  it('schema-qualifies every quoted relation in export snapshot SQL', async () => {
+    const source = await readRepositoryFile(
+      'packages/graphql/src/services/elementExportSnapshot.ts'
+    )
+    const relations = [
+      'AnswerCollectionEntry',
+      '_ElementAnswerCollectionUsedItems',
+      'AnswerCollection',
+      'DerivedPermission',
+      'Element',
+      'User',
+    ] as const
+
+    expect(source).not.toMatch(
+      /\b(?:FROM|JOIN|UPDATE|INTO)\s+"(?!public"\.)[A-Za-z_][A-Za-z0-9_]*"/
+    )
+    for (const relation of relations) {
+      expect(source).toContain(`"public"."${relation}"`)
+    }
+  })
+
+  it('sets explicit Hatchet timeouts and leaves cleanup a five-minute stop margin', async () => {
+    const [hatchetSource, cleanupSource, fingerprintSource] = await Promise.all(
+      [
+        readRepositoryFile('packages/hatchet/src/index.ts'),
+        readRepositoryFile(
+          'packages/graphql/src/services/importExportCleanup.ts'
+        ),
+        readRepositoryFile(
+          'packages/graphql/src/services/importExportFingerprintMaintenance.ts'
+        ),
+      ]
+    )
+    const refreshTask = taskDeclarationSource(
+      hatchetSource,
+      'refresh-import-export-fingerprints'
+    )
+    const repairTask = taskDeclarationSource(
+      hatchetSource,
+      'repair-import-export-fingerprints'
+    )
+    const cleanupTask = taskDeclarationSource(
+      hatchetSource,
+      'cleanup-import-export-packages'
+    )
+
+    expect(hatchetSource).toContain("refreshFingerprints: '5m'")
+    expect(hatchetSource).toContain("repairFingerprints: '10m'")
+    expect(hatchetSource).toContain("cleanupPackages: '45m'")
+    expect(hatchetSource).toContain(
+      'limitStrategy: ConcurrencyLimitStrategy.CANCEL_NEWEST'
+    )
+    expect(refreshTask).toContain('retries: 0')
+    expect(refreshTask).toContain(
+      'IMPORT_EXPORT_TASK_EXECUTION_TIMEOUTS.refreshFingerprints'
+    )
+    expect(refreshTask).toContain('!result.stoppedEarly')
+    expect(repairTask).toContain('retries: 0')
+    expect(repairTask).toContain(
+      'IMPORT_EXPORT_TASK_EXECUTION_TIMEOUTS.repairFingerprints'
+    )
+    expect(repairTask).toContain(
+      'concurrency: IMPORT_EXPORT_MAINTENANCE_SINGLE_FLIGHT'
+    )
+    expect(cleanupTask).toContain('retries: 0')
+    expect(cleanupTask).toContain(
+      'IMPORT_EXPORT_TASK_EXECUTION_TIMEOUTS.cleanupPackages'
+    )
+    expect(cleanupTask).toContain(
+      'concurrency: IMPORT_EXPORT_MAINTENANCE_SINGLE_FLIGHT'
+    )
+    expect(IMPORT_EXPORT_CLEANUP_RUNTIME_BUDGET_MS).toBe(40 * 60 * 1000)
+    expect(cleanupSource).toContain(
+      'executionCtx.abortController.signal.aborted'
+    )
+    expect(cleanupSource).toContain('Date.now() >= deadline')
+    expect(fingerprintSource).toContain(
+      'IMPORT_EXPORT_FINGERPRINT_REFRESH_RUNTIME_BUDGET_MS'
+    )
+    expect(fingerprintSource).toContain(
+      'IMPORT_EXPORT_FINGERPRINT_REPAIR_RUNTIME_BUDGET_MS'
+    )
+    expect(fingerprintSource).toContain(
+      'executionCtx.abortController.signal.aborted'
+    )
+  })
+
+  it('stops cleanup before new persistence work when its budget is exhausted', async () => {
+    const prisma = {} as PrismaClient
+    const info = vi.spyOn(console, 'info').mockImplementation(() => undefined)
+    try {
+      const [packageCleanup, mediaCleanup] = await Promise.all([
+        cleanupImportExportPackages({
+          prisma,
+          getStopReason: () => 'budget',
+        }),
+        cleanupOrphanedImportedMediaFiles({
+          prisma,
+          shouldStop: () => true,
+        }),
+      ])
+
+      expect(packageCleanup).toMatchObject({
+        packageCleanupBacklogRemaining: true,
+        receiptCleanupBacklogRemaining: true,
+        cleanupBacklogRemaining: true,
+        cleanupStoppedEarly: true,
+        cleanupStopReason: 'budget',
+        cleanupFailures: 0,
+      })
+      expect(mediaCleanup).toMatchObject({
+        cleanupBacklogRemaining: true,
+        cleanupStoppedEarly: true,
+        failedMediaCleanups: 0,
+      })
+    } finally {
+      info.mockRestore()
+    }
+  })
+
+  it('reports cancellation as a failed stop instead of a successful budget stop', async () => {
+    const events: Array<Record<string, unknown>> = []
+    const info = vi
+      .spyOn(console, 'info')
+      .mockImplementation((label, value) => {
+        if (label === '[ImportExportTelemetry]' && typeof value === 'string') {
+          events.push(JSON.parse(value) as Record<string, unknown>)
+        }
+      })
+    try {
+      await expect(
+        cleanupImportExportPackages({
+          prisma: {} as PrismaClient,
+          getStopReason: () => 'cancelled',
+        })
+      ).resolves.toMatchObject({
+        cleanupStoppedEarly: true,
+        cleanupStopReason: 'cancelled',
+      })
+    } finally {
+      info.mockRestore()
+    }
+
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        operation: 'cleanup',
+        outcome: 'failure',
+        code: 'CLEANUP_CANCELLED',
+      })
+    )
+  })
+
+  it('rejects cancellation arriving after the final internal stop poll', async () => {
+    const abortController = new AbortController()
+    let receiptQueryCount = 0
+    const prisma = {
+      importExportPackageArtifact: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      importMediaStaging: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      elementImportReceipt: {
+        findMany: vi.fn().mockImplementation(async () => {
+          receiptQueryCount++
+          if (receiptQueryCount === 2) abortController.abort()
+          return []
+        }),
+      },
+    } as unknown as PrismaClient
+    const logger = { info: vi.fn() }
+    const events: Array<Record<string, unknown>> = []
+    const info = vi
+      .spyOn(console, 'info')
+      .mockImplementation((label, value) => {
+        if (label === '[ImportExportTelemetry]' && typeof value === 'string') {
+          events.push(JSON.parse(value) as Record<string, unknown>)
+        }
+      })
+
+    try {
+      await expect(
+        handleCleanupImportExportPackages(
+          {},
+          { prisma } as Parameters<typeof handleCleanupImportExportPackages>[1],
+          { abortController, logger } as unknown as Parameters<
+            typeof handleCleanupImportExportPackages
+          >[2]
+        )
+      ).rejects.toThrow('Import/export cleanup was cancelled.')
+    } finally {
+      info.mockRestore()
+    }
+
+    expect(receiptQueryCount).toBe(2)
+    expect(abortController.signal.aborted).toBe(true)
+    expect(logger.info).not.toHaveBeenCalled()
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        operation: 'cleanup',
+        outcome: 'failure',
+        code: 'CLEANUP_CANCELLED',
+      })
+    )
+    expect(events).not.toContainEqual(
+      expect.objectContaining({
+        operation: 'cleanup',
+        outcome: 'success',
+      })
+    )
+  })
+})
+
 describe('database operation safety', () => {
+  it('inspects the complete import/export migration and maintenance-index contract', async () => {
+    expect(IMPORT_EXPORT_MIGRATIONS).toContain(
+      '20260716085603_import_export_fingerprint_repair_indexes'
+    )
+    expect(REQUIRED_IMPORT_EXPORT_INDEXES.map(([, name]) => name)).toEqual(
+      expect.arrayContaining([
+        'AnswerCollection_repair_fpv_deleted_id_idx',
+        'Element_answer_collection_deleted_id_idx',
+        'Element_repair_fpv_deleted_id_idx',
+      ])
+    )
+
+    const sealingMigration = await readRepositoryFile(
+      'packages/prisma/src/prisma/schema/migrations/20260716085603_import_export_fingerprint_repair_indexes/migration.sql'
+    )
+    expect(sealingMigration).toContain('SELECT pg_get_expr(')
+    expect(sealingMigration).not.toContain('SELECT pg_get_constraintdef(')
+    expect(sealingMigration).toContain(
+      `'${IMPORT_EXPORT_CHECK_CONSTRAINT_CONTRACT_PREFIX}' || live_expression`
+    )
+  })
+
   it('holds and releases one advisory lock around a bounded operation', async () => {
     const queryRaw = vi
       .fn()
@@ -197,21 +455,81 @@ describe('database operation safety', () => {
       })),
       missingMigrations: [],
       tableSizes: [],
-      columns: [],
-      indexes: REQUIRED_IMPORT_EXPORT_INDEXES.map((index_name) => ({
-        table_name: 'Element',
-        index_name,
-        is_ready: true,
-        is_valid: true,
-        definition: 'allowlisted schema definition',
-      })),
-      constraints: REQUIRED_IMPORT_EXPORT_CONSTRAINTS.map(
-        (constraint_name) => ({
-          table_name: 'Element',
-          constraint_name,
-          constraint_type: 'c',
+      columns: REQUIRED_IMPORT_EXPORT_COLUMNS.map(
+        ([table_name, column_name, data_type]) => ({
+          table_name,
+          column_name,
+          data_type,
+          is_nullable: 'YES' as const,
+          column_default: null,
+          is_identity: 'NO' as const,
+          is_generated: 'NEVER' as const,
+        })
+      ),
+      indexes: REQUIRED_IMPORT_EXPORT_INDEXES.map(
+        ([table_name, index_name, is_unique, key_columns]) => ({
+          table_name,
+          index_name,
+          is_ready: true,
+          is_valid: true,
+          is_unique,
+          access_method: 'btree',
+          key_columns: [...key_columns],
+          has_predicate: false,
+          has_expressions: false,
+          has_included_columns: false,
+          definition: 'operator evidence only',
+        })
+      ),
+      constraints: REQUIRED_IMPORT_EXPORT_CONSTRAINTS.map((expected) => {
+        const definition = 'operator evidence only'
+        return {
+          table_name: expected.tableName,
+          constraint_name: expected.constraintName,
+          constraint_type: expected.constraintType,
           is_validated: true,
-          definition: 'allowlisted schema definition',
+          definition,
+          contract_comment:
+            expected.constraintType === 'c'
+              ? `${IMPORT_EXPORT_CHECK_CONSTRAINT_CONTRACT_PREFIX}${definition}`
+              : null,
+          key_columns: [...expected.keyColumns],
+          referenced_table:
+            expected.constraintType === 'f' ? expected.referencedTable : null,
+          referenced_schema: expected.constraintType === 'f' ? 'public' : null,
+          referenced_columns:
+            expected.constraintType === 'f'
+              ? [...expected.referencedColumns]
+              : [],
+          update_action:
+            expected.constraintType === 'f' ? expected.updateAction : '',
+          delete_action:
+            expected.constraintType === 'f' ? expected.deleteAction : '',
+        }
+      }),
+      triggers: REQUIRED_IMPORT_EXPORT_TRIGGERS.map(
+        ([
+          table_name,
+          trigger_name,
+          function_name,
+          trigger_type,
+          update_columns,
+        ]) => ({
+          table_name,
+          trigger_name,
+          enabled: 'O',
+          update_columns: [...update_columns],
+          has_when_clause: false,
+          has_arguments: false,
+          is_constraint: false,
+          is_deferrable: false,
+          is_initially_deferred: false,
+          function_schema: 'public',
+          function_name,
+          function_language: 'plpgsql',
+          function_security_definer: false,
+          function_source_matches: true,
+          trigger_type,
         })
       ),
       locks: [
@@ -229,8 +547,11 @@ describe('database operation safety', () => {
       migrationsPresent: true,
       migrationChecksumsMatch: true,
       migrationHistoryUnambiguous: true,
+      migrationStepsComplete: true,
+      columnsReady: true,
       indexesReady: true,
       constraintsValidated: true,
+      triggersReady: true,
       staleVersionsClear: true,
       noWaitingLocks: true,
     })
@@ -239,6 +560,196 @@ describe('database operation safety', () => {
         ...inspection,
         locks: [{ ...inspection.locks[0]!, granted: false }],
       }).noWaitingLocks
+    ).toBe(false)
+    expect(
+      evaluateImportExportInspection({
+        ...inspection,
+        columns: [
+          { ...inspection.columns[0]!, data_type: 'character varying' },
+          ...inspection.columns.slice(1),
+        ],
+      }).columnsReady
+    ).toBe(false)
+    expect(
+      evaluateImportExportInspection({
+        ...inspection,
+        indexes: [
+          { ...inspection.indexes[0]!, table_name: 'Element' },
+          ...inspection.indexes.slice(1),
+        ],
+      }).indexesReady
+    ).toBe(false)
+    expect(
+      evaluateImportExportInspection({
+        ...inspection,
+        constraints: [
+          { ...inspection.constraints[0]!, is_validated: false },
+          ...inspection.constraints.slice(1),
+        ],
+      }).constraintsValidated
+    ).toBe(false)
+    expect(
+      evaluateImportExportInspection({
+        ...inspection,
+        constraints: inspection.constraints.map((constraint) =>
+          constraint.constraint_name === 'MediaFile_contentHash_check'
+            ? { ...constraint, definition: 'true' }
+            : constraint
+        ),
+      }).constraintsValidated
+    ).toBe(false)
+    expect(
+      evaluateImportExportInspection({
+        ...inspection,
+        constraints: inspection.constraints.map((constraint) =>
+          constraint.constraint_name === 'PackageArtifact_expiry_check'
+            ? { ...constraint, key_columns: [] }
+            : constraint
+        ),
+      }).constraintsValidated
+    ).toBe(false)
+    expect(
+      evaluateImportExportInspection({
+        ...inspection,
+        constraints: inspection.constraints.map((constraint) =>
+          constraint.constraint_name === 'PackageArtifact_expiry_check'
+            ? {
+                ...constraint,
+                definition: '"expiresAt" IS NULL OR "createdAt" IS NULL',
+              }
+            : constraint
+        ),
+      }).constraintsValidated
+    ).toBe(false)
+    expect(
+      evaluateImportExportInspection({
+        ...inspection,
+        constraints: inspection.constraints.map((constraint) =>
+          constraint.constraint_name ===
+          'ImportExportPackageArtifact_ownerId_fkey'
+            ? { ...constraint, referenced_schema: 'shadow' }
+            : constraint
+        ),
+      }).constraintsValidated
+    ).toBe(false)
+    expect(
+      evaluateImportExportInspection({
+        ...inspection,
+        constraints: inspection.constraints.map((constraint) =>
+          constraint.constraint_name ===
+          'ImportExportPackageArtifact_ownerId_fkey'
+            ? { ...constraint, referenced_table: 'MediaFile' }
+            : constraint
+        ),
+      }).constraintsValidated
+    ).toBe(false)
+    expect(
+      evaluateImportExportInspection({
+        ...inspection,
+        triggers: [
+          { ...inspection.triggers[0]!, enabled: 'D' },
+          ...inspection.triggers.slice(1),
+        ],
+      }).triggersReady
+    ).toBe(false)
+    expect(
+      evaluateImportExportInspection({
+        ...inspection,
+        triggers: [
+          {
+            ...inspection.triggers[2]!,
+            update_columns: [],
+          },
+          ...inspection.triggers.filter((_, index) => index !== 2),
+        ],
+      }).triggersReady
+    ).toBe(false)
+    expect(
+      evaluateImportExportInspection({
+        ...inspection,
+        triggers: [
+          { ...inspection.triggers[0]!, function_source_matches: false },
+          ...inspection.triggers.slice(1),
+        ],
+      }).triggersReady
+    ).toBe(false)
+    expect(
+      evaluateImportExportInspection({
+        ...inspection,
+        triggers: [
+          { ...inspection.triggers[0]!, function_schema: 'shadow' },
+          ...inspection.triggers.slice(1),
+        ],
+      }).triggersReady
+    ).toBe(false)
+
+    const baselinedFirstMigration = {
+      ...inspection,
+      migrations: inspection.migrations.map((migration, index) => ({
+        ...migration,
+        applied_steps_count: index === 0 ? 0 : 1,
+      })),
+    }
+    expect(
+      evaluateImportExportInspection(baselinedFirstMigration)
+        .migrationStepsComplete
+    ).toBe(true)
+    expect(
+      evaluateImportExportInspection({
+        ...baselinedFirstMigration,
+        migrations: baselinedFirstMigration.migrations.map(
+          (migration, index) => ({
+            ...migration,
+            applied_steps_count:
+              index === 1 ? 0 : migration.applied_steps_count,
+          })
+        ),
+      }).migrationStepsComplete
+    ).toBe(false)
+
+    const activeFailedAttempt = {
+      ...inspection,
+      migrations: [
+        ...inspection.migrations,
+        {
+          ...inspection.migrations[1]!,
+          started_at: new Date(2),
+          finished_at: null,
+          applied_steps_count: 0,
+        },
+      ],
+    }
+    expect(
+      evaluateImportExportInspection(activeFailedAttempt)
+        .migrationHistoryUnambiguous
+    ).toBe(false)
+
+    const rolledBackAttempt = {
+      ...inspection,
+      migrations: [
+        ...inspection.migrations,
+        {
+          ...inspection.migrations[1]!,
+          started_at: new Date(2),
+          finished_at: null,
+          rolled_back_at: new Date(3),
+          applied_steps_count: 0,
+        },
+      ],
+    }
+    expect(
+      evaluateImportExportInspection(rolledBackAttempt)
+        .migrationHistoryUnambiguous
+    ).toBe(true)
+    expect(
+      evaluateImportExportInspection({
+        ...rolledBackAttempt,
+        migrations: rolledBackAttempt.migrations.map((migration, index) =>
+          index === rolledBackAttempt.migrations.length - 1
+            ? { ...migration, checksum_matches: false }
+            : migration
+        ),
+      }).migrationChecksumsMatch
     ).toBe(false)
   })
 })

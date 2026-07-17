@@ -14,24 +14,95 @@ import { cleanupOrphanedImportedMediaFiles } from './mediaStorage.js'
 
 const CLEANUP_BATCH_SIZE = 100
 const MAX_CLEANUP_BATCHES = 10
+export const IMPORT_EXPORT_CLEANUP_RUNTIME_BUDGET_MS = 40 * 60 * 1000
+export type ImportExportCleanupStopReason = 'budget' | 'cancelled'
 
-export async function cleanupImportExportPackages({
+type CleanupStopController = {
+  shouldStop: () => boolean
+  readonly reason: ImportExportCleanupStopReason | null
+}
+
+type PackageCleanupSummary = {
+  deletedPackages: number
+  wouldDeletePackages: number
+  unsafePackageTargets: number
+  failedPackageCleanups: number
+  packageCleanupBatches: number
+  packageCleanupBacklogRemaining: boolean
+  cleanupStoppedEarly: boolean
+  attemptedCount: number
+}
+
+type ReceiptCleanupSummary = {
+  deletedReceipts: number
+  wouldDeleteReceipts: number
+  failedReceiptCleanups: number
+  receiptCleanupBatches: number
+  receiptCleanupBacklogRemaining: boolean
+  cleanupStoppedEarly: boolean
+  attemptedCount: number
+}
+
+type MediaCleanupSummary = Awaited<
+  ReturnType<typeof cleanupOrphanedImportedMediaFiles>
+>
+
+function createCleanupStopController(
+  getStopReason: () => ImportExportCleanupStopReason | null
+): CleanupStopController {
+  let reason: ImportExportCleanupStopReason | null = null
+
+  return {
+    shouldStop: () => {
+      const currentReason = getStopReason()
+      if (currentReason && reason === null) reason = currentReason
+      return reason !== null
+    },
+    get reason() {
+      return reason
+    },
+  }
+}
+
+function emptyMediaCleanupSummary(
+  cleanupStoppedEarly: boolean
+): MediaCleanupSummary {
+  return {
+    deletedMediaFiles: 0,
+    deletedStagingRecords: 0,
+    wouldDeleteMediaFiles: 0,
+    failedMediaCleanups: 0,
+    unsafeMediaTargets: 0,
+    cleanupBatches: 0,
+    cleanupBacklogRemaining: cleanupStoppedEarly,
+    cleanupStoppedEarly,
+  }
+}
+
+async function cleanupExpiredPackageArtifacts({
   now = new Date(),
   prisma,
   dryRun = false,
+  shouldStop,
 }: {
   now?: Date
   prisma: PrismaClient
   dryRun?: boolean
-}) {
+  shouldStop: () => boolean
+}): Promise<PackageCleanupSummary> {
   let deletedPackages = 0
   let wouldDeletePackages = 0
   let unsafePackageTargets = 0
   let failedPackageCleanups = 0
   let packageCleanupBatches = 0
+  let cleanupStoppedEarly = false
   const attemptedPackageIds: string[] = []
 
   for (let batch = 0; batch < MAX_CLEANUP_BATCHES; batch++) {
+    if (shouldStop()) {
+      cleanupStoppedEarly = true
+      break
+    }
     const candidates = await findExpiredPackageArtifactsForCleanup({
       prisma,
       now,
@@ -41,9 +112,13 @@ export async function cleanupImportExportPackages({
     if (candidates.length === 0) break
 
     packageCleanupBatches++
-    attemptedPackageIds.push(...candidates.map((artifact) => artifact.id))
 
     for (const artifact of candidates) {
+      if (shouldStop()) {
+        cleanupStoppedEarly = true
+        break
+      }
+      attemptedPackageIds.push(artifact.id)
       if (
         !isCanonicalImportExportArtifactStorageTarget({
           storageContainer: artifact.storageContainer,
@@ -112,52 +187,61 @@ export async function cleanupImportExportPackages({
       }
     }
 
+    if (cleanupStoppedEarly) break
     if (candidates.length < CLEANUP_BATCH_SIZE) break
   }
 
   const packageCleanupBacklogRemaining =
-    attemptedPackageIds.length === CLEANUP_BATCH_SIZE * MAX_CLEANUP_BATCHES &&
-    (
-      await findExpiredPackageArtifactsForCleanup({
-        prisma,
-        now,
-        batchSize: 1,
-        excludeIds: attemptedPackageIds,
-      })
-    ).length > 0
+    cleanupStoppedEarly ||
+    (attemptedPackageIds.length === CLEANUP_BATCH_SIZE * MAX_CLEANUP_BATCHES &&
+      (
+        await findExpiredPackageArtifactsForCleanup({
+          prisma,
+          now,
+          batchSize: 1,
+          excludeIds: attemptedPackageIds,
+        })
+      ).length > 0)
 
-  let mediaCleanup = {
-    deletedMediaFiles: 0,
-    deletedStagingRecords: 0,
-    wouldDeleteMediaFiles: 0,
-    failedMediaCleanups: 0,
-    unsafeMediaTargets: 0,
-    cleanupBatches: 0,
-    cleanupBacklogRemaining: false,
+  return {
+    deletedPackages,
+    wouldDeletePackages,
+    unsafePackageTargets,
+    failedPackageCleanups,
+    packageCleanupBatches,
+    packageCleanupBacklogRemaining,
+    cleanupStoppedEarly,
+    attemptedCount: attemptedPackageIds.length,
   }
-  try {
-    mediaCleanup = await cleanupOrphanedImportedMediaFiles({
-      prisma,
-      now,
-      dryRun,
-    })
-  } catch {
-    mediaCleanup.failedMediaCleanups++
-    emitImportExportTelemetry({
-      operation: 'cleanup',
-      outcome: 'failure',
-      code: 'MEDIA_CLEANUP_QUERY_FAILED',
-      cleanupFailureCount: 1,
-    })
-  }
+}
 
+async function cleanupExpiredReceipts({
+  now,
+  prisma,
+  dryRun,
+  shouldStop,
+}: {
+  now: Date
+  prisma: PrismaClient
+  dryRun: boolean
+  shouldStop: () => boolean
+}): Promise<ReceiptCleanupSummary> {
   let deletedReceipts = 0
   let wouldDeleteReceipts = 0
   let failedReceiptCleanups = 0
   let receiptCleanupBatches = 0
+  let cleanupStoppedEarly = false
   const attemptedPendingReceiptIds: string[] = []
 
-  for (let batch = 0; batch < MAX_CLEANUP_BATCHES; batch++) {
+  for (
+    let batch = 0;
+    !cleanupStoppedEarly && batch < MAX_CLEANUP_BATCHES;
+    batch++
+  ) {
+    if (shouldStop()) {
+      cleanupStoppedEarly = true
+      break
+    }
     const receipts = await findExpiredPendingImportReceiptsForCleanup({
       prisma,
       now,
@@ -168,10 +252,14 @@ export async function cleanupImportExportPackages({
 
     receiptCleanupBatches++
     wouldDeleteReceipts += receipts.length
-    attemptedPendingReceiptIds.push(...receipts.map((receipt) => receipt.id))
 
     if (!dryRun) {
       for (const receipt of receipts) {
+        if (shouldStop()) {
+          cleanupStoppedEarly = true
+          break
+        }
+        attemptedPendingReceiptIds.push(receipt.id)
         try {
           if (
             await deleteExpiredPendingImportReceipt({
@@ -192,26 +280,38 @@ export async function cleanupImportExportPackages({
           })
         }
       }
+    } else {
+      attemptedPendingReceiptIds.push(...receipts.map((receipt) => receipt.id))
     }
 
+    if (cleanupStoppedEarly) break
     if (receipts.length < CLEANUP_BATCH_SIZE) break
   }
 
   const pendingReceiptCleanupBacklogRemaining =
-    attemptedPendingReceiptIds.length ===
+    cleanupStoppedEarly ||
+    (attemptedPendingReceiptIds.length ===
       CLEANUP_BATCH_SIZE * MAX_CLEANUP_BATCHES &&
-    (
-      await findExpiredPendingImportReceiptsForCleanup({
-        prisma,
-        now,
-        batchSize: 1,
-        excludeIds: attemptedPendingReceiptIds,
-      })
-    ).length > 0
+      (
+        await findExpiredPendingImportReceiptsForCleanup({
+          prisma,
+          now,
+          batchSize: 1,
+          excludeIds: attemptedPendingReceiptIds,
+        })
+      ).length > 0)
 
   const attemptedCompletedReceiptIds: string[] = []
 
-  for (let batch = 0; batch < MAX_CLEANUP_BATCHES; batch++) {
+  for (
+    let batch = 0;
+    !cleanupStoppedEarly && batch < MAX_CLEANUP_BATCHES;
+    batch++
+  ) {
+    if (shouldStop()) {
+      cleanupStoppedEarly = true
+      break
+    }
     const receipts = await findExpiredCompletedImportReceiptsForCleanup({
       prisma,
       now,
@@ -222,10 +322,14 @@ export async function cleanupImportExportPackages({
 
     receiptCleanupBatches++
     wouldDeleteReceipts += receipts.length
-    attemptedCompletedReceiptIds.push(...receipts.map((receipt) => receipt.id))
 
     if (!dryRun) {
       for (const receipt of receipts) {
+        if (shouldStop()) {
+          cleanupStoppedEarly = true
+          break
+        }
+        attemptedCompletedReceiptIds.push(receipt.id)
         try {
           deletedReceipts += await prisma.$transaction(async (tx) => {
             await tx.importMediaStaging.deleteMany({
@@ -254,12 +358,18 @@ export async function cleanupImportExportPackages({
           })
         }
       }
+    } else {
+      attemptedCompletedReceiptIds.push(
+        ...receipts.map((receipt) => receipt.id)
+      )
     }
 
+    if (cleanupStoppedEarly) break
     if (receipts.length < CLEANUP_BATCH_SIZE) break
   }
 
   const receiptCleanupBacklogRemaining =
+    cleanupStoppedEarly ||
     pendingReceiptCleanupBacklogRemaining ||
     (attemptedCompletedReceiptIds.length ===
       CLEANUP_BATCH_SIZE * MAX_CLEANUP_BATCHES &&
@@ -271,64 +381,160 @@ export async function cleanupImportExportPackages({
           excludeIds: attemptedCompletedReceiptIds,
         })
       ).length > 0)
-  const cleanupFailures =
-    failedPackageCleanups +
-    mediaCleanup.failedMediaCleanups +
-    failedReceiptCleanups +
-    unsafePackageTargets +
-    mediaCleanup.unsafeMediaTargets
-
-  emitImportExportTelemetry({
-    service: 'worker',
-    operation: 'cleanup',
-    outcome: cleanupFailures > 0 ? 'failure' : 'success',
-    code: dryRun ? 'DRY_RUN_COMPLETED' : 'CLEANUP_COMPLETED',
-    attemptedCount:
-      attemptedPackageIds.length +
-      attemptedPendingReceiptIds.length +
-      attemptedCompletedReceiptIds.length,
-    deletedCount:
-      deletedPackages + deletedReceipts + mediaCleanup.deletedMediaFiles,
-    wouldDeleteCount:
-      wouldDeletePackages +
-      wouldDeleteReceipts +
-      mediaCleanup.wouldDeleteMediaFiles,
-    cleanupFailureCount: cleanupFailures,
-    unsafeTargetCount: unsafePackageTargets + mediaCleanup.unsafeMediaTargets,
-    batchCount:
-      packageCleanupBatches +
-      receiptCleanupBatches +
-      mediaCleanup.cleanupBatches,
-    backlogRemaining:
-      packageCleanupBacklogRemaining ||
-      receiptCleanupBacklogRemaining ||
-      mediaCleanup.cleanupBacklogRemaining,
-  })
 
   return {
-    deletedPackages,
-    wouldDeletePackages,
-    unsafePackageTargets,
-    failedPackageCleanups,
-    packageCleanupBatches,
-    packageCleanupBacklogRemaining,
     deletedReceipts,
     wouldDeleteReceipts,
     failedReceiptCleanups,
     receiptCleanupBatches,
     receiptCleanupBacklogRemaining,
-    cleanupFailures,
+    cleanupStoppedEarly,
+    attemptedCount:
+      attemptedPendingReceiptIds.length + attemptedCompletedReceiptIds.length,
+  }
+}
+
+export async function cleanupImportExportPackages({
+  now = new Date(),
+  prisma,
+  dryRun = false,
+  getStopReason = () => null,
+}: {
+  now?: Date
+  prisma: PrismaClient
+  dryRun?: boolean
+  getStopReason?: () => ImportExportCleanupStopReason | null
+}) {
+  const stopController = createCleanupStopController(getStopReason)
+  const packageCleanup = await cleanupExpiredPackageArtifacts({
+    prisma,
+    now,
+    dryRun,
+    shouldStop: stopController.shouldStop,
+  })
+
+  let mediaCleanup = emptyMediaCleanupSummary(
+    packageCleanup.cleanupStoppedEarly
+  )
+  if (!packageCleanup.cleanupStoppedEarly) {
+    try {
+      mediaCleanup = await cleanupOrphanedImportedMediaFiles({
+        prisma,
+        now,
+        dryRun,
+        shouldStop: stopController.shouldStop,
+      })
+    } catch {
+      mediaCleanup.failedMediaCleanups++
+      emitImportExportTelemetry({
+        operation: 'cleanup',
+        outcome: 'failure',
+        code: 'MEDIA_CLEANUP_QUERY_FAILED',
+        cleanupFailureCount: 1,
+      })
+    }
+  }
+
+  const receiptCleanup = await cleanupExpiredReceipts({
+    prisma,
+    now,
+    dryRun,
+    shouldStop: stopController.shouldStop,
+  })
+  const stoppedAfterCleanup = stopController.shouldStop()
+  const cleanupStoppedEarly =
+    packageCleanup.cleanupStoppedEarly ||
+    mediaCleanup.cleanupStoppedEarly ||
+    receiptCleanup.cleanupStoppedEarly ||
+    stoppedAfterCleanup
+  const cleanupFailures =
+    packageCleanup.failedPackageCleanups +
+    mediaCleanup.failedMediaCleanups +
+    receiptCleanup.failedReceiptCleanups +
+    packageCleanup.unsafePackageTargets +
+    mediaCleanup.unsafeMediaTargets
+
+  emitImportExportTelemetry({
+    service: 'worker',
+    operation: 'cleanup',
+    outcome:
+      cleanupFailures > 0 || stopController.reason === 'cancelled'
+        ? 'failure'
+        : 'success',
+    code:
+      stopController.reason === 'cancelled'
+        ? 'CLEANUP_CANCELLED'
+        : stopController.reason === 'budget'
+          ? 'CLEANUP_BUDGET_REACHED'
+          : dryRun
+            ? 'DRY_RUN_COMPLETED'
+            : 'CLEANUP_COMPLETED',
+    attemptedCount:
+      packageCleanup.attemptedCount + receiptCleanup.attemptedCount,
+    deletedCount:
+      packageCleanup.deletedPackages +
+      receiptCleanup.deletedReceipts +
+      mediaCleanup.deletedMediaFiles,
+    wouldDeleteCount:
+      packageCleanup.wouldDeletePackages +
+      receiptCleanup.wouldDeleteReceipts +
+      mediaCleanup.wouldDeleteMediaFiles,
+    cleanupFailureCount: cleanupFailures,
+    unsafeTargetCount:
+      packageCleanup.unsafePackageTargets + mediaCleanup.unsafeMediaTargets,
+    batchCount:
+      packageCleanup.packageCleanupBatches +
+      receiptCleanup.receiptCleanupBatches +
+      mediaCleanup.cleanupBatches,
+    backlogRemaining:
+      packageCleanup.packageCleanupBacklogRemaining ||
+      receiptCleanup.receiptCleanupBacklogRemaining ||
+      mediaCleanup.cleanupBacklogRemaining,
+  })
+
+  return {
+    deletedPackages: packageCleanup.deletedPackages,
+    wouldDeletePackages: packageCleanup.wouldDeletePackages,
+    unsafePackageTargets: packageCleanup.unsafePackageTargets,
+    failedPackageCleanups: packageCleanup.failedPackageCleanups,
+    packageCleanupBatches: packageCleanup.packageCleanupBatches,
+    packageCleanupBacklogRemaining:
+      packageCleanup.packageCleanupBacklogRemaining,
+    deletedReceipts: receiptCleanup.deletedReceipts,
+    wouldDeleteReceipts: receiptCleanup.wouldDeleteReceipts,
+    failedReceiptCleanups: receiptCleanup.failedReceiptCleanups,
+    receiptCleanupBatches: receiptCleanup.receiptCleanupBatches,
+    receiptCleanupBacklogRemaining:
+      receiptCleanup.receiptCleanupBacklogRemaining,
     ...mediaCleanup,
+    cleanupStoppedEarly,
+    cleanupStopReason: stopController.reason,
+    cleanupFailures,
   }
 }
 
 export const handleCleanupImportExportPackages: HatchetHandlers['handleCleanupImportExportPackages'] =
   async (_, globalCtx, executionCtx) => {
+    const deadline = Date.now() + IMPORT_EXPORT_CLEANUP_RUNTIME_BUDGET_MS
     const result = await cleanupImportExportPackages({
       prisma: globalCtx.prisma,
+      getStopReason: () =>
+        executionCtx.abortController.signal.aborted
+          ? 'cancelled'
+          : Date.now() >= deadline
+            ? 'budget'
+            : null,
     })
+
+    if (
+      executionCtx.abortController.signal.aborted ||
+      result.cleanupStopReason === 'cancelled'
+    ) {
+      throw new Error('Import/export cleanup was cancelled.')
+    }
+
     executionCtx.logger.info(
-      `[INFO] [CleanupImportExportPackages] Deleted ${result.deletedPackages}/${result.wouldDeletePackages} recorded package artifacts, ${result.deletedMediaFiles}/${result.wouldDeleteMediaFiles} recorded imported media blobs, and ${result.deletedReceipts}/${result.wouldDeleteReceipts} retained receipts; failures=${result.cleanupFailures}; unsafeTargets=${result.unsafePackageTargets + result.unsafeMediaTargets}; backlog=${result.packageCleanupBacklogRemaining || result.cleanupBacklogRemaining || result.receiptCleanupBacklogRemaining}`
+      `[INFO] [CleanupImportExportPackages] Deleted ${result.deletedPackages}/${result.wouldDeletePackages} recorded package artifacts, ${result.deletedMediaFiles}/${result.wouldDeleteMediaFiles} recorded imported media blobs, and ${result.deletedReceipts}/${result.wouldDeleteReceipts} retained receipts; failures=${result.cleanupFailures}; unsafeTargets=${result.unsafePackageTargets + result.unsafeMediaTargets}; backlog=${result.packageCleanupBacklogRemaining || result.cleanupBacklogRemaining || result.receiptCleanupBacklogRemaining}; stoppedEarly=${result.cleanupStoppedEarly}`
     )
 
     if (result.cleanupFailures > 0) {

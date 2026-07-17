@@ -51,7 +51,10 @@ function targetState(
 ): PersistedFingerprintState {
   return computed
     ? { fingerprint: computed.fingerprint, version: computed.version }
-    : { fingerprint: null, version: null }
+    : {
+        fingerprint: null,
+        version: IMPORT_EXPORT_FINGERPRINT_VERSION,
+      }
 }
 
 function statesEqual(

@@ -184,8 +184,10 @@ export async function getElementExportPackageLink(
 
 async function getElementExportPackagePreviewInternal(
   { elementIds }: { elementIds: number[] },
-  ctx: ContextWithUser
+  ctx: ContextWithUser,
+  assertLease: () => void
 ) {
+  assertLease()
   const uniqueElementIds = Array.from(new Set(elementIds))
   if (uniqueElementIds.length === 0) {
     throw new ImportExportDomainError(ImportExportErrorCode.INVALID_SELECTION)
@@ -197,9 +199,13 @@ async function getElementExportPackagePreviewInternal(
   let snapshot: Awaited<ReturnType<typeof loadElementExportSnapshot>>
   let plan: PortableExportPlan
   try {
+    assertLease()
     snapshot = await loadElementExportSnapshot(uniqueElementIds, ctx)
+    assertLease()
     plan = createStorageAwarePortableExportPlan(snapshot)
+    assertLease()
   } catch (error) {
+    assertLease()
     if (error instanceof ImportExportDomainError) {
       switch (error.code) {
         case ImportExportErrorCode.ELEMENT_EXPORT_PERMISSION:
@@ -229,20 +235,25 @@ async function getElementExportPackagePreviewInternal(
     getPortableExportPlanWarnings(plan)
   let errors: ImportExportErrorCode[] = []
   try {
+    assertLease()
     const mediaOutcomes = await loadPortableExportPreviewMediaOutcomes(
       plan,
-      ctx
+      ctx,
+      assertLease
     )
+    assertLease()
     const rendered = renderPortableExportPackage({
       plan,
       mediaOutcomes,
       createdAt: new Date(0).toISOString(),
     })
+    assertLease()
     warnings = rendered.warnings
     if (rendered.exceedsPackageLimit) {
       errors = [EXPORT_PREVIEW_ERROR_PACKAGE_TOO_LARGE]
     }
   } catch (error) {
+    assertLease()
     if (error instanceof ImportExportDomainError) {
       if (error.code === ImportExportErrorCode.EXPORT_PACKAGE_TOO_LARGE) {
         errors = [EXPORT_PREVIEW_ERROR_PACKAGE_TOO_LARGE]
@@ -256,7 +267,7 @@ async function getElementExportPackagePreviewInternal(
     }
   }
 
-  return {
+  const result = {
     elements: plan.elements.map((element) => ({
       id: element.sourceId,
       name: element.content.name,
@@ -282,6 +293,8 @@ async function getElementExportPackagePreviewInternal(
     warnings: [...warnings],
     errors,
   }
+  assertLease()
+  return result
 }
 
 export async function getElementExportPackagePreview(
@@ -302,7 +315,8 @@ export async function getElementExportPackagePreview(
     const result = await withImportExportConcurrencyLease(
       ctx,
       'preview',
-      async () => getElementExportPackagePreviewInternal(args, ctx)
+      async (assertLease) =>
+        getElementExportPackagePreviewInternal(args, ctx, assertLease)
     )
     emitImportExportTelemetry({
       correlationId,

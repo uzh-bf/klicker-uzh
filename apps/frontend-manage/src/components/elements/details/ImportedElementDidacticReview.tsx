@@ -86,7 +86,11 @@ function AnswerPool({
         <div className="border-t border-solid">
           <ol
             start={firstVisibleEntry}
-            className="m-0 max-h-64 list-decimal overflow-auto px-8 py-2 text-sm [contain:content]"
+            tabIndex={0}
+            aria-label={t('manage.elements.elementImportAnswerPool', {
+              count: entries.length,
+            })}
+            className="m-0 max-h-64 list-decimal overflow-auto rounded-sm px-8 py-2 text-sm outline-none [contain:content] focus-visible:ring-2 focus-visible:ring-offset-2"
             data-cy="element-import-answer-pool-page"
             data-total-entries={entries.length}
           >
@@ -388,7 +392,7 @@ function ImportedElementDidacticReview({
               {element.options.criteria.map((criterion) => (
                 <li
                   key={criterion.id}
-                  className="rounded border border-solid p-2"
+                  className="break-words rounded border border-solid p-2"
                 >
                   <div className="font-bold">{criterion.name}</div>
                   <div className="text-slate-600">
@@ -417,7 +421,7 @@ function ImportedElementDidacticReview({
               {element.options.cases.map((caseItem) => (
                 <li
                   key={caseItem.id}
-                  className="rounded border border-solid p-2"
+                  className="break-words rounded border border-solid p-2"
                 >
                   <div className="font-bold">{caseItem.title}</div>
                   <div className="whitespace-pre-wrap break-words">
@@ -442,7 +446,10 @@ function ImportedElementDidacticReview({
                                   )?.name ?? criterionId
 
                                 return (
-                                  <li key={`${itemKey}-${criterionId}`}>
+                                  <li
+                                    key={`${itemKey}-${criterionId}`}
+                                    className="break-words"
+                                  >
                                     {entryById.get(itemId) ?? itemKey} /{' '}
                                     {criterionName}: {range.min} – {range.max}
                                   </li>

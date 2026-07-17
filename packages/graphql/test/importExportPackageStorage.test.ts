@@ -38,6 +38,10 @@ const ZIP_CONTENT_TYPE = 'application/zip'
 const ORIGINAL_ENV = {
   IMPORT_EXPORT_ENABLED: process.env.IMPORT_EXPORT_ENABLED,
   IMPORT_EXPORT_PACKAGE_STORAGE: process.env.IMPORT_EXPORT_PACKAGE_STORAGE,
+  IMPORT_EXPORT_PACKAGE_UPLOAD_CONCURRENCY:
+    process.env.IMPORT_EXPORT_PACKAGE_UPLOAD_CONCURRENCY,
+  IMPORT_EXPORT_PACKAGE_UPLOAD_GLOBAL_CONCURRENCY:
+    process.env.IMPORT_EXPORT_PACKAGE_UPLOAD_GLOBAL_CONCURRENCY,
   IMPORT_EXPORT_PRIVATE_PREVIEW_ONLY:
     process.env.IMPORT_EXPORT_PRIVATE_PREVIEW_ONLY,
   IMPORT_EXPORT_TOKEN_SECRET: process.env.IMPORT_EXPORT_TOKEN_SECRET,
@@ -74,14 +78,18 @@ function createContext(
     },
     prisma: prismaClient,
     redisExec: {
-      eval: vi.fn().mockResolvedValue(evalResult),
+      eval: vi.fn(async (script: string) =>
+        script.includes('local globalKey') ? 1 : evalResult
+      ),
     },
   } as unknown as ContextWithUser
 }
 
 function chunks(...values: Array<Buffer | string>) {
   return (async function* () {
-    for (const value of values) yield value
+    for (const value of values) {
+      yield typeof value === 'string' ? Buffer.from(value) : value
+    }
   })()
 }
 
@@ -127,6 +135,8 @@ beforeAll(async () => {
   process.env.IMPORT_EXPORT_ENABLED = 'true'
   process.env.IMPORT_EXPORT_PRIVATE_PREVIEW_ONLY = 'false'
   process.env.IMPORT_EXPORT_PACKAGE_STORAGE = 'local'
+  process.env.IMPORT_EXPORT_PACKAGE_UPLOAD_CONCURRENCY = '1'
+  process.env.IMPORT_EXPORT_PACKAGE_UPLOAD_GLOBAL_CONCURRENCY = '4'
   process.env.IMPORT_EXPORT_TOKEN_SECRET = TOKEN_SECRET
 
   const [owner, otherOwner] = await Promise.all([
@@ -549,6 +559,47 @@ describe('durable import/export package storage', () => {
     } finally {
       info.mockRestore()
     }
+    await expectPendingWithoutBlob(prepared)
+  })
+
+  it('does not claim, consume, or create a blob when upload concurrency is full', async () => {
+    const ctx = createContext(ownerId)
+    const prepared = await prepareElementImportPackageUpload({ bytes: 5 }, ctx)
+    let streamConsumed = false
+    const stream = (async function* () {
+      streamConsumed = true
+      yield Buffer.from('12345')
+    })()
+    vi.mocked(ctx.redisExec.eval).mockImplementation(async (script) =>
+      String(script).includes('local globalKey') ? 0 : [1, 1]
+    )
+
+    await expectPackageError(
+      uploadPreparedElementImportPackage(
+        {
+          artifactId: prepared.artifactId,
+          capability: prepared.uploadCapability,
+          contentLength: 5,
+          contentType: ZIP_CONTENT_TYPE,
+          stream,
+        },
+        ctx
+      ),
+      ImportExportErrorCode.RATE_LIMITED
+    )
+
+    expect(streamConsumed).toBe(false)
+    expect(ctx.redisExec.eval).toHaveBeenCalledWith(
+      expect.stringContaining('local globalKey'),
+      2,
+      `concurrency:{import-export-package}:upload:user:${ownerId}`,
+      'concurrency:{import-export-package}:upload:global',
+      expect.any(Number),
+      120_000,
+      1,
+      4,
+      expect.any(String)
+    )
     await expectPendingWithoutBlob(prepared)
   })
 

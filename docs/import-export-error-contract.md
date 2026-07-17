@@ -2,7 +2,7 @@
 type: Reference
 title: Import/Export Error Contract
 description: Closed server-owned error and warning codes, localized recovery behavior, regression ownership, and telemetry privacy.
-timestamp: '2026-07-14'
+timestamp: '2026-07-16'
 tags:
   - graphql
   - elements
@@ -16,11 +16,11 @@ tags:
 
 ## Contract boundary
 
-`packages/graphql/src/lib/importExportErrors.ts` is the source of truth for `ImportExportErrorCode` and `ImportExportWarningCode`. `ImportExportDomainError` keeps an internal cause, while `toImportExportGraphQLError` emits only `Import/export request failed.` and a stable `extensions.code`. Unknown or uncoded failures become `IMPORT_EXPORT_INFRASTRUCTURE_FAILURE`. The Pothos enums in `packages/graphql/src/schema/element.ts` expose the same closed sets.
+`packages/graphql/src/lib/importExportErrors.ts` is the source of truth for `ImportExportErrorCode` and `ImportExportWarningCode`. `ImportExportDomainError` keeps an internal cause, while `toImportExportGraphQLError` emits only `Import/export request failed.` and a stable `extensions.code`. Unknown or uncoded failures become `IMPORT_EXPORT_INFRASTRUCTURE_FAILURE`. The Pothos enums in `packages/graphql/src/schema/elementImportExport.ts` expose the same closed sets.
 
 Package manifests may contain only known warning codes. The importer caps and parses that list for wire compatibility, then discards it and derives warnings again from validated package contents. A package therefore cannot forge warning text or recovery guidance.
 
-`apps/frontend-manage/src/lib/importExportErrors.ts` accepts only generated enum members. `UploadModal.tsx` and `DownloadModal.tsx` map them to EN/DE strings with an operation-appropriate generic fallback; neither UI code nor the global Apollo error link renders `Error.message`, raw Apollo messages, or unknown codes.
+`apps/frontend-manage/src/lib/importExportErrors.ts` accepts only generated enum members. `useElementImportWorkflow.ts` maps import errors and warnings, while `DownloadModal.tsx` maps export errors and warnings, to EN/DE strings with an operation-appropriate generic fallback. `UploadModal.tsx` renders only the safe hook state. Feature components never render `Error.message`, raw Apollo messages, or unknown codes. The shared Apollo transport remains feature-agnostic and emits detailed server-provided GraphQL/network diagnostics only during server-side execution; browser consoles never receive those raw messages or extensions.
 
 ## Error vocabulary and recovery
 
@@ -58,9 +58,9 @@ Telemetry may contain duration, limits, counts, bytes, retry/replay/cleanup outc
 ## Regression ownership
 
 - Closed enums, fallback redaction, and telemetry sanitization: `packages/graphql/test/importExportErrors.test.ts` and `importExportTelemetry.test.ts`.
-- Export authorization, snapshot stability, portability, sizing, and storage ordering: `elementImportExport{Database,Export,Security}.test.ts`, `elementExportSnapshot*.test.ts`, `portableExport*.test.ts`, and `importExportPackageStorage.test.ts`.
+- Export authorization, snapshot stability, portability, sizing, and storage ordering: `elementImportExport{Database,DatabaseSecurity,Security}.test.ts`, `elementExport{PackageService,PreviewService,PublicationGuard,SnapshotConsistency,SnapshotStorageOrdering}.test.ts`, `portableExport*.test.ts`, and `importExportPackageStorage.test.ts`.
 - ZIP/package parsing, exact closure, aggregate limits, and option validation: `elementImportExport{Validation,PackageBoundaries}.test.ts`, `importExportPackageContract.test.ts`, `elementDomain.test.ts`, and `zip.test.ts`.
-- Tokens, durable artifacts, media staging, leases, replay, and exactly-once behavior: `elementImportToken.test.ts`, `elementImportExactlyOnce.test.ts`, `elementImportDurableTransaction.test.ts`, `elementImportReceiptOrchestration.test.ts`, `elementImportPackagedMedia.test.ts`, and the focused `importExport{Persistence,Media,Concurrency}*.test.ts` suites.
+- Tokens, durable artifacts, media staging, leases, replay, and exactly-once behavior: `elementImportToken.test.ts`, `elementImportExactlyOnce.test.ts`, `elementImportDurableTransaction.test.ts`, `elementImportReceipt{Heartbeat,Orchestration,Persistence}.test.ts`, `elementImportPackagedMedia.test.ts`, `importExport{ArtifactPersistence,Concurrency,MediaHashPersistence,MediaPersistence}.test.ts`, and `importExportFingerprintPersistence.test.ts`.
 - HTTP upload/download masking and body limits: `apps/backend-docker/test/*.test.ts`.
 - Localized end-user recovery, permission boundaries, request blocking, and commit/refresh behavior: `playwright/tests/MA-import-export.spec.ts` and its modules under `playwright/tests/import-export/`.
 

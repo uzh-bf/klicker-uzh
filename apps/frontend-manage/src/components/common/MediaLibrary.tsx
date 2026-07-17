@@ -1,113 +1,25 @@
 import { useApolloClient, useMutation, useSuspenseQuery } from '@apollo/client'
 import { BlobServiceClient } from '@azure/storage-blob'
 import {
+  FinalizeFileUploadDocument,
   GetFileUploadSasDocument,
   GetUserMediaFilesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button } from '@uzh-bf/design-system'
+import { Button, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
-import { ReactNode, Suspense, useCallback, useState } from 'react'
-import Dropzone, { type FileRejection } from 'react-dropzone'
-import { twMerge } from 'tailwind-merge'
+import { Suspense, useCallback, useState } from 'react'
+import { ErrorCode, type FileRejection } from 'react-dropzone'
+import {
+  DIRECT_MEDIA_UPLOAD_MAX_BYTES,
+  finalizeMediaUploadWithRetry,
+} from '../../lib/mediaUpload'
+import FileUploadDropzone from './FileUploadDropzone'
 
 interface Props {
   onImageClick: (href: string, name: string) => void
-}
-
-interface MediaUploadDropzoneProps {
-  accept: Record<string, string[]>
-  title: ReactNode
-  description?: ReactNode
-  activeDescription?: ReactNode
-  inputAriaLabel?: string
-  compact?: boolean
-  isUploading?: boolean
-  maxSize?: number
-  multiple?: boolean
-  onDropAccepted: (files: File[]) => void | Promise<void>
-  onDropRejected?: (fileRejections: FileRejection[]) => void
-  data?: {
-    cy?: string
-  }
-  className?: {
-    root?: string
-    title?: string
-    description?: string
-  }
-}
-
-export function MediaUploadDropzone({
-  accept,
-  title,
-  description,
-  activeDescription,
-  inputAriaLabel,
-  compact = false,
-  isUploading = false,
-  maxSize,
-  multiple = false,
-  onDropAccepted,
-  onDropRejected,
-  data,
-  className,
-}: MediaUploadDropzoneProps) {
-  return (
-    <Dropzone
-      onDropAccepted={onDropAccepted}
-      onDropRejected={onDropRejected}
-      multiple={multiple}
-      accept={accept}
-      maxSize={maxSize}
-      disabled={isUploading}
-    >
-      {({ getRootProps, getInputProps, isDragActive }) => (
-        <div
-          {...getRootProps({
-            className: twMerge(
-              'flex-1 p-2',
-              isUploading
-                ? 'cursor-not-allowed opacity-60'
-                : 'hover:cursor-pointer hover:bg-slate-100',
-              compact ? 'flex min-h-10 items-center' : 'flex min-h-32 flex-col',
-              className?.root
-            ),
-            'data-cy': data?.cy,
-            'aria-busy': isUploading,
-            'aria-disabled': isUploading,
-            'aria-label': inputAriaLabel,
-            role: 'button',
-            tabIndex: isUploading ? -1 : 0,
-          })}
-        >
-          <div className={twMerge('font-bold', className?.title)}>
-            {compact && isDragActive && activeDescription
-              ? activeDescription
-              : title}
-          </div>
-          {!compact && (
-            <div className={twMerge('mt-2', className?.description)}>
-              {isUploading ? (
-                <Loader />
-              ) : isDragActive && activeDescription ? (
-                activeDescription
-              ) : (
-                description
-              )}
-            </div>
-          )}
-          <input
-            type="file"
-            {...getInputProps({
-              'aria-label': inputAriaLabel,
-            })}
-          />
-        </div>
-      )}
-    </Dropzone>
-  )
 }
 
 function SuspendedMediaFiles({ onImageClick }: Props) {
@@ -142,6 +54,26 @@ function MediaLibrary({ onImageClick }: Props) {
   const client = useApolloClient()
   const [isUploading, setIsUploading] = useState(false)
   const [getFileUploadSAS] = useMutation(GetFileUploadSasDocument)
+  const [finalizeFileUpload] = useMutation(FinalizeFileUploadDocument)
+
+  const handleFileRejections = useCallback(
+    (fileRejections: FileRejection[]) => {
+      const isTooLarge = fileRejections.some((rejection) =>
+        rejection.errors.some((error) => error.code === ErrorCode.FileTooLarge)
+      )
+
+      toast({
+        type: 'error',
+        message: isTooLarge
+          ? t('manage.elements.uploadImageTooLarge', {
+              maxSizeMiB: DIRECT_MEDIA_UPLOAD_MAX_BYTES / 1024 / 1024,
+            })
+          : t('manage.elements.uploadImageInvalidFileType'),
+        options: { duration: 5000 },
+      })
+    },
+    [t]
+  )
 
   const handleFileFieldChange = useCallback(
     async (files: File[]) => {
@@ -156,32 +88,47 @@ function MediaLibrary({ onImageClick }: Props) {
             contentType: file.type,
           },
         })
-        if (!data?.getFileUploadSas) return
+        const upload = data?.getFileUploadSas
+        if (!upload) throw new Error('Media upload target was not created.')
 
-        const blobServiceClient = new BlobServiceClient(
-          data.getFileUploadSas.uploadSasURL
-        )
+        const blobServiceClient = new BlobServiceClient(upload.uploadSasURL)
         const containerClient = blobServiceClient.getContainerClient(
-          data.getFileUploadSas.containerName
+          upload.containerName
         )
-        const blobClient = containerClient.getBlobClient(
-          data.getFileUploadSas.fileName
-        )
+        const blobClient = containerClient.getBlobClient(upload.fileName)
         const blockBlobClient = blobClient.getBlockBlobClient()
         await blockBlobClient.uploadData(file, {
-          blockSize: 4 * 1024 * 1024, // 4MB block size
+          maxSingleShotSize: DIRECT_MEDIA_UPLOAD_MAX_BYTES,
         })
 
-        client.refetchQueries({
-          include: ['GetUserMediaFiles'],
-        })
+        await finalizeMediaUploadWithRetry(
+          upload.mediaFileId,
+          async (mediaFileId) => {
+            const finalized = await finalizeFileUpload({
+              variables: { mediaFileId },
+            })
+            return finalized.data?.finalizeFileUpload === true
+          }
+        )
 
-        onImageClick(data.getFileUploadSas.uploadHref, file.name)
+        onImageClick(upload.uploadHref, file.name)
+
+        // The upload and its server-side fingerprint are already durable.
+        // A library refresh failure must not turn that success into a retry.
+        void client
+          .refetchQueries({ include: ['GetUserMediaFiles'] })
+          .catch(() => undefined)
+      } catch {
+        toast({
+          type: 'error',
+          message: t('manage.elements.uploadImageFailed'),
+          options: { duration: 5000 },
+        })
       } finally {
         setIsUploading(false)
       }
     },
-    [client, getFileUploadSAS, onImageClick]
+    [client, finalizeFileUpload, getFileUploadSAS, onImageClick, t]
   )
 
   return (
@@ -190,14 +137,18 @@ function MediaLibrary({ onImageClick }: Props) {
         <SuspendedMediaFiles onImageClick={onImageClick} />
       </Suspense>
 
-      <MediaUploadDropzone
+      <FileUploadDropzone
         accept={{
-          'application/image': ['.png', '.jpg', '.jpeg', '.gif'],
+          'image/png': ['.png'],
+          'image/jpeg': ['.jpg', '.jpeg'],
+          'image/gif': ['.gif'],
         }}
         title={t('manage.elements.uploadImageHeader')}
         description={<p>{t('manage.elements.uploadImageDescription')}</p>}
         isUploading={isUploading}
+        maxSize={DIRECT_MEDIA_UPLOAD_MAX_BYTES}
         onDropAccepted={handleFileFieldChange}
+        onDropRejected={handleFileRejections}
       />
     </>
   )

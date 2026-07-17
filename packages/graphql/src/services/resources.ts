@@ -9,6 +9,7 @@ import {
   computeAnswerCollectionDidacticFingerprint,
   IMPORT_EXPORT_FINGERPRINT_VERSION,
 } from '../lib/importExportFingerprintCanonicalization.js'
+import { enqueueImportExportFingerprintRefresh } from './importExportFingerprints.js'
 import { validateTemplateAccessible } from './templates.js'
 
 // ! Answer Collections
@@ -39,21 +40,6 @@ async function markAnswerCollectionDidacticChange(
     where: { answerCollectionId: collectionId, isDeleted: false },
     data: { importFingerprint: null, importFingerprintVersion: null },
   })
-}
-
-function enqueueAnswerCollectionFingerprintRefresh(
-  collectionId: number,
-  ctx: ContextWithUser
-) {
-  void ctx.tasks.refreshImportExportFingerprints
-    .runNoWait({
-      answerCollectionId: collectionId,
-    })
-    .catch(() => {
-      // The null fingerprint/version values are durable retry markers. Do not
-      // turn a successful authoring write into a user-visible failure.
-      console.warn('[ImportExportFingerprint] REFRESH_ENQUEUE_FAILED')
-    })
 }
 
 function invalidateAnswerCollection(
@@ -458,7 +444,6 @@ export async function modifyAnswerCollection(
   }
 
   const shouldResumeFingerprint =
-    collection.importFingerprint === null ||
     collection.importFingerprintVersion !== IMPORT_EXPORT_FINGERPRINT_VERSION
   const updatedCollection = await ctx.prisma.$transaction(async (tx) => {
     // update changes in the database
@@ -485,7 +470,7 @@ export async function modifyAnswerCollection(
   })
 
   if (shouldResumeFingerprint) {
-    enqueueAnswerCollectionFingerprintRefresh(id, ctx)
+    enqueueImportExportFingerprintRefresh({ answerCollectionId: id }, ctx)
   }
 
   return updatedCollection
@@ -734,7 +719,10 @@ export async function editAnswerCollectionEntry(
     return entry
   })
   invalidateAnswerCollection(collectionId, ctx)
-  enqueueAnswerCollectionFingerprintRefresh(collectionId, ctx)
+  enqueueImportExportFingerprintRefresh(
+    { answerCollectionId: collectionId },
+    ctx
+  )
 
   return updatedEntry
 }
@@ -765,7 +753,10 @@ export async function deleteAnswerCollectionEntry(
     return deletedEntry
   })
   invalidateAnswerCollection(collectionId, ctx)
-  enqueueAnswerCollectionFingerprintRefresh(collectionId, ctx)
+  enqueueImportExportFingerprintRefresh(
+    { answerCollectionId: collectionId },
+    ctx
+  )
 
   return updatedEntry.id
 }
@@ -785,7 +776,10 @@ export async function addAnswerCollectionOption(
     return entry
   })
   invalidateAnswerCollection(collectionId, ctx)
-  enqueueAnswerCollectionFingerprintRefresh(collectionId, ctx)
+  enqueueImportExportFingerprintRefresh(
+    { answerCollectionId: collectionId },
+    ctx
+  )
 
   return newEntry
 }

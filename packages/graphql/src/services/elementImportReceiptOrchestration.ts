@@ -20,14 +20,23 @@ import {
   findElementImportReceiptByJti,
   isElementImportReceiptJtiUniqueConflict,
   pinReadyImportArtifactAndCreateReceipt,
+  renewElementImportReceiptLease,
 } from './importExportPersistence.js'
-import { assertImportExportRateLimit } from './importExportRateLimit.js'
 
 const IMPORT_RECEIPT_LEASE_MS = 5 * 60 * 1000
 
 export type DurableImportExecution = {
   receiptId: string
   leaseId: string
+}
+
+export type RenewableDurableImportExecution = DurableImportExecution & {
+  leaseExpiresAt: Date
+}
+
+export type DurableImportLeaseGuard = {
+  assertLease: () => void
+  renewNow: () => Promise<void>
 }
 
 type ElementImportReceiptRecord = NonNullable<
@@ -111,6 +120,141 @@ function getCompletedImportReceiptResult(receipt: ElementImportReceiptRecord) {
   }
 }
 
+function getMatchingCompletedImportReceipt(
+  receipt: ElementImportReceiptRecord | null,
+  token: ElementImportTokenPayload,
+  selectedElementRefs: readonly string[],
+  selectionDigest: string
+) {
+  if (!receipt) return null
+
+  assertMatchingImportReceipt(
+    receipt,
+    token,
+    selectedElementRefs,
+    selectionDigest
+  )
+  if (receipt.state !== ElementImportReceiptState.COMPLETE) return null
+
+  return {
+    replay: getCompletedImportReceiptResult(receipt),
+    receiptId: receipt.id,
+  }
+}
+
+function createFencedImportError() {
+  return new ImportExportDomainError(ImportExportErrorCode.IMPORT_IN_PROGRESS)
+}
+
+export async function findCompletedElementImportExecution({
+  token,
+  selectedElementRefs,
+  selectionDigest,
+  ctx,
+}: {
+  token: ElementImportTokenPayload
+  selectedElementRefs: string[]
+  selectionDigest: string
+  ctx: ContextWithUser
+}) {
+  const receipt = await findElementImportReceiptByJti({
+    prisma: ctx.prisma,
+    jti: token.jti,
+  })
+
+  return getMatchingCompletedImportReceipt(
+    receipt,
+    token,
+    selectedElementRefs,
+    selectionDigest
+  )
+}
+
+export async function withElementImportReceiptHeartbeat<T>({
+  execution,
+  ctx,
+  callback,
+}: {
+  execution: RenewableDurableImportExecution
+  ctx: ContextWithUser
+  callback: (guard: DurableImportLeaseGuard) => Promise<T>
+}) {
+  let leaseDeadline = execution.leaseExpiresAt.getTime()
+  let leaseLost = false
+  const renewalState: { inFlight: Promise<void> | null } = { inFlight: null }
+
+  const assertLease = () => {
+    if (leaseLost || Date.now() >= leaseDeadline) {
+      leaseLost = true
+      throw createFencedImportError()
+    }
+  }
+
+  const beginRenewal = () => {
+    if (renewalState.inFlight) return renewalState.inFlight
+
+    const renewedAt = new Date()
+    const nextDeadline = renewedAt.getTime() + IMPORT_RECEIPT_LEASE_MS
+    let renewal: Promise<void>
+    renewal = renewElementImportReceiptLease({
+      prisma: ctx.prisma,
+      receiptId: execution.receiptId,
+      ownerId: ctx.user.sub,
+      leaseId: execution.leaseId,
+      leaseExpiresAt: new Date(nextDeadline),
+      now: renewedAt,
+    })
+      .then((renewed) => {
+        if (!renewed) {
+          leaseLost = true
+          throw createFencedImportError()
+        }
+        leaseDeadline = Math.max(leaseDeadline, nextDeadline)
+      })
+      .catch((error: unknown) => {
+        if (Date.now() >= leaseDeadline) leaseLost = true
+        throw error
+      })
+      .finally(() => {
+        if (renewalState.inFlight === renewal) renewalState.inFlight = null
+      })
+    renewalState.inFlight = renewal
+    return renewal
+  }
+
+  const renewNow = async () => {
+    assertLease()
+    try {
+      await beginRenewal()
+    } catch {
+      leaseLost = true
+      throw createFencedImportError()
+    }
+    assertLease()
+  }
+
+  const renewalInterval = setInterval(
+    () => {
+      if (leaseLost || renewalState.inFlight) return
+      void beginRenewal().catch(() => {
+        if (Date.now() >= leaseDeadline) leaseLost = true
+      })
+    },
+    Math.max(1_000, Math.floor(IMPORT_RECEIPT_LEASE_MS / 3))
+  )
+  renewalInterval.unref?.()
+
+  try {
+    assertLease()
+    return await callback({ assertLease, renewNow })
+  } finally {
+    clearInterval(renewalInterval)
+    if (renewalState.inFlight) {
+      await renewalState.inFlight.catch(() => undefined)
+    }
+  }
+}
+
 export async function getElementImportResultWarnings(
   receiptId: string,
   ctx: ContextWithUser
@@ -146,10 +290,8 @@ export async function acquireElementImportExecution({
       replay: ReturnType<typeof getCompletedImportReceiptResult>
       receiptId: string
     }
-  | { execution: DurableImportExecution }
+  | { execution: RenewableDurableImportExecution }
 > {
-  let rateLimitApplied = false
-
   for (let attempt = 0; attempt < 3; attempt++) {
     const now = new Date()
     const receipt = await findElementImportReceiptByJti({
@@ -158,24 +300,15 @@ export async function acquireElementImportExecution({
     })
 
     if (receipt) {
-      assertMatchingImportReceipt(
+      const completed = getMatchingCompletedImportReceipt(
         receipt,
         token,
         selectedElementRefs,
         selectionDigest
       )
-      if (receipt.state === ElementImportReceiptState.COMPLETE) {
-        return {
-          replay: getCompletedImportReceiptResult(receipt),
-          receiptId: receipt.id,
-        }
-      }
+      if (completed) return completed
 
       assertElementImportTokenUnexpired(token, now.getTime())
-      if (!rateLimitApplied) {
-        await assertImportExportRateLimit(ctx, 'import')
-        rateLimitApplied = true
-      }
       if (receipt.leaseExpiresAt && receipt.leaseExpiresAt > now) {
         throw new ImportExportDomainError(
           ImportExportErrorCode.IMPORT_IN_PROGRESS
@@ -183,25 +316,25 @@ export async function acquireElementImportExecution({
       }
 
       const leaseId = randomUUID()
+      const leaseExpiresAt = new Date(now.getTime() + IMPORT_RECEIPT_LEASE_MS)
       const claimed = await claimExpiredElementImportReceiptLease({
         prisma: ctx.prisma,
         receiptId: receipt.id,
         leaseId,
-        leaseExpiresAt: new Date(now.getTime() + IMPORT_RECEIPT_LEASE_MS),
+        leaseExpiresAt,
         now,
       })
       if (claimed) {
-        return { execution: { receiptId: receipt.id, leaseId } }
+        return {
+          execution: { receiptId: receipt.id, leaseId, leaseExpiresAt },
+        }
       }
       continue
     }
 
     assertElementImportTokenUnexpired(token, now.getTime())
-    if (!rateLimitApplied) {
-      await assertImportExportRateLimit(ctx, 'import')
-      rateLimitApplied = true
-    }
     const leaseId = randomUUID()
+    const leaseExpiresAt = new Date(now.getTime() + IMPORT_RECEIPT_LEASE_MS)
     try {
       const created = await pinReadyImportArtifactAndCreateReceipt({
         prisma: ctx.prisma,
@@ -211,11 +344,13 @@ export async function acquireElementImportExecution({
         selectionDigest,
         selectedElementRefs,
         leaseId,
-        leaseExpiresAt: new Date(now.getTime() + IMPORT_RECEIPT_LEASE_MS),
+        leaseExpiresAt,
         ownerId: token.userId,
         now,
       })
-      return { execution: { receiptId: created.id, leaseId } }
+      return {
+        execution: { receiptId: created.id, leaseId, leaseExpiresAt },
+      }
     } catch (error) {
       if (!isElementImportReceiptJtiUniqueConflict(error)) throw error
     }

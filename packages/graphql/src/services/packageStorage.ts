@@ -28,6 +28,7 @@ import { getImportExportRuntimeConfig } from '../lib/importExportRuntimeConfig.j
 import { emitImportExportTelemetry } from '../lib/importExportTelemetry.js'
 import { getImportExportTokenSecret } from '../lib/importExportTokenSecret.js'
 import { assertCanUseElementImportExport } from './importExportAuthorization.js'
+import { withImportExportConcurrencyLease } from './importExportConcurrency.js'
 import {
   createPackageReadSasUrl,
   deletePackageArtifactBlobIfExists,
@@ -49,6 +50,11 @@ import { ImportExportStorageDeadlineError } from './importExportStorageDeadline.
 const ZIP_CONTENT_TYPE = 'application/zip'
 const LOCAL_PACKAGE_ROUTE = '/api/import-export-packages'
 const EXPORT_PUBLICATION_ATTEMPTS = 3
+
+type PackageStorageContext = Pick<
+  ContextWithUser,
+  'prisma' | 'redisExec' | 'user'
+>
 
 type PackageStorageTelemetrySpan = Readonly<{
   correlationId: string
@@ -132,26 +138,27 @@ function getLocalArtifactDownloadUrl(artifactId: string, capability: string) {
 }
 
 async function readUploadStreamExact(
-  stream: AsyncIterable<unknown>,
+  stream: AsyncIterable<Uint8Array>,
   expectedBytes: number
 ) {
-  const chunks: Buffer[] = []
+  const uploaded = Buffer.alloc(expectedBytes)
   const hash = createHash('sha256')
   let totalBytes = 0
 
   for await (const chunk of stream) {
-    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as any)
-    totalBytes += buffer.length
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+    const nextTotalBytes = totalBytes + buffer.length
 
     if (
-      totalBytes > expectedBytes ||
-      totalBytes > MAX_IMPORT_EXPORT_PACKAGE_BYTES
+      nextTotalBytes > expectedBytes ||
+      nextTotalBytes > MAX_IMPORT_EXPORT_PACKAGE_BYTES
     ) {
       throw new ImportExportDomainError(ImportExportErrorCode.UPLOAD_TOO_LARGE)
     }
 
     hash.update(buffer)
-    chunks.push(buffer)
+    buffer.copy(uploaded, totalBytes)
+    totalBytes = nextTotalBytes
   }
 
   if (totalBytes !== expectedBytes) {
@@ -159,7 +166,7 @@ async function readUploadStreamExact(
   }
 
   return {
-    buffer: Buffer.concat(chunks, totalBytes),
+    buffer: uploaded,
     bytes: totalBytes,
     sha256: hash.digest('hex'),
   }
@@ -211,7 +218,7 @@ async function discardClaimedArtifactAfterFailure({
   ownerId: string
   storageBlob: string
   operation: 'upload' | 'export'
-  ctx: ContextWithUser
+  ctx: PackageStorageContext
 }) {
   try {
     await deletePackageArtifactBlobIfExists(storageBlob)
@@ -265,7 +272,7 @@ async function retainUncertainArtifactAfterWriteFailure({
   artifactId: string
   ownerId: string
   operation: 'upload' | 'export'
-  ctx: ContextWithUser
+  ctx: PackageStorageContext
 }) {
   await markImportExportPackageArtifactStorageUncertain({
     prisma: ctx.prisma,
@@ -281,7 +288,7 @@ async function retainUncertainArtifactAfterWriteFailure({
 
 export async function prepareElementImportPackageUpload(
   { bytes }: { bytes: number },
-  ctx: ContextWithUser
+  ctx: PackageStorageContext
 ) {
   const artifactId = randomUUID()
   const target = createImportExportArtifactStorageTarget({
@@ -335,9 +342,9 @@ export async function uploadPreparedElementImportPackage(
     capability: string
     contentLength: number
     contentType: string
-    stream: AsyncIterable<unknown>
+    stream: AsyncIterable<Uint8Array>
   },
-  ctx: ContextWithUser
+  ctx: PackageStorageContext
 ) {
   await assertCanUseElementImportExport(ctx)
 
@@ -427,77 +434,92 @@ export async function uploadPreparedElementImportPackage(
   }
 
   await assertImportExportRateLimit(ctx, 'upload')
-  const claimed = await claimImportExportPackageArtifact({
-    prisma: ctx.prisma,
-    artifactId: artifact.id,
-    ownerId: ctx.user.sub,
-    direction: ImportExportPackageArtifactDirection.IMPORT,
-    now,
-  })
-  if (!claimed) {
-    throw new ImportExportDomainError(ImportExportErrorCode.IMPORT_IN_PROGRESS)
-  }
-
-  let storageWriteStarted = false
-  let storageWriteCompleted = false
-  const telemetry = startPackageStorageTelemetry('upload', contentLength)
-  try {
-    const uploaded = await readUploadStreamExact(stream, contentLength)
-    storageWriteStarted = true
-    await writePackageArtifactBlobExclusive(
-      artifact.storageBlob,
-      uploaded.buffer
-    )
-    storageWriteCompleted = true
-    const completed = await completeImportExportPackageArtifact({
-      prisma: ctx.prisma,
-      artifactId: artifact.id,
-      ownerId: ctx.user.sub,
-      bytes: uploaded.bytes,
-      sha256: uploaded.sha256,
-    })
-    if (!completed) {
-      throw new ImportExportDomainError(
-        ImportExportErrorCode.INFRASTRUCTURE_FAILURE
-      )
-    }
-
-    finishPackageStorageTelemetry(
-      telemetry,
-      'success',
-      'PACKAGE_UPLOAD_COMPLETED'
-    )
-    return { bytes: uploaded.bytes, sha256: uploaded.sha256, replayed: false }
-  } catch (error) {
-    if (storageWriteStarted && !storageWriteCompleted) {
-      await retainUncertainArtifactAfterWriteFailure({
+  return await withImportExportConcurrencyLease(
+    ctx,
+    'upload',
+    async (assertLease) => {
+      assertLease()
+      const claimed = await claimImportExportPackageArtifact({
+        prisma: ctx.prisma,
         artifactId: artifact.id,
         ownerId: ctx.user.sub,
-        operation: 'upload',
-        ctx,
+        direction: ImportExportPackageArtifactDirection.IMPORT,
+        now,
       })
-    } else {
-      await discardClaimedArtifactAfterFailure({
-        artifactId: artifact.id,
-        ownerId: ctx.user.sub,
-        storageBlob: artifact.storageBlob,
-        operation: 'upload',
-        ctx,
-      })
+      if (!claimed) {
+        throw new ImportExportDomainError(
+          ImportExportErrorCode.IMPORT_IN_PROGRESS
+        )
+      }
+
+      let storageWriteStarted = false
+      let storageWriteCompleted = false
+      const telemetry = startPackageStorageTelemetry('upload', contentLength)
+      try {
+        const uploaded = await readUploadStreamExact(stream, contentLength)
+        assertLease()
+        storageWriteStarted = true
+        await writePackageArtifactBlobExclusive(
+          artifact.storageBlob,
+          uploaded.buffer
+        )
+        storageWriteCompleted = true
+        assertLease()
+        const completed = await completeImportExportPackageArtifact({
+          prisma: ctx.prisma,
+          artifactId: artifact.id,
+          ownerId: ctx.user.sub,
+          bytes: uploaded.bytes,
+          sha256: uploaded.sha256,
+        })
+        if (!completed) {
+          throw new ImportExportDomainError(
+            ImportExportErrorCode.INFRASTRUCTURE_FAILURE
+          )
+        }
+
+        finishPackageStorageTelemetry(
+          telemetry,
+          'success',
+          'PACKAGE_UPLOAD_COMPLETED'
+        )
+        return {
+          bytes: uploaded.bytes,
+          sha256: uploaded.sha256,
+          replayed: false,
+        }
+      } catch (error) {
+        if (storageWriteStarted && !storageWriteCompleted) {
+          await retainUncertainArtifactAfterWriteFailure({
+            artifactId: artifact.id,
+            ownerId: ctx.user.sub,
+            operation: 'upload',
+            ctx,
+          })
+        } else {
+          await discardClaimedArtifactAfterFailure({
+            artifactId: artifact.id,
+            ownerId: ctx.user.sub,
+            storageBlob: artifact.storageBlob,
+            operation: 'upload',
+            ctx,
+          })
+        }
+
+        finishPackageStorageFailure(telemetry, error)
+
+        if (error instanceof ImportExportDomainError) throw error
+        throw new ImportExportDomainError(
+          ImportExportErrorCode.INFRASTRUCTURE_FAILURE,
+          error
+        )
+      }
     }
-
-    finishPackageStorageFailure(telemetry, error)
-
-    if (error instanceof ImportExportDomainError) throw error
-    throw new ImportExportDomainError(
-      ImportExportErrorCode.INFRASTRUCTURE_FAILURE,
-      error
-    )
-  }
+  )
 }
 
 export async function reserveElementExportPackageArtifact(
-  ctx: ContextWithUser
+  ctx: PackageStorageContext
 ) {
   const artifactId = randomUUID()
   const target = createImportExportArtifactStorageTarget({
@@ -528,7 +550,7 @@ export async function reserveElementExportPackageArtifact(
 
 export async function discardElementExportPackageReservation(
   reservation: Awaited<ReturnType<typeof reserveElementExportPackageArtifact>>,
-  ctx: ContextWithUser
+  ctx: PackageStorageContext
 ) {
   try {
     await ctx.prisma.importExportPackageArtifact.deleteMany({
@@ -568,7 +590,7 @@ async function storeElementExportPackage(
       prisma: PrismaTransactionContextWithUser['prisma']
     ) => Promise<void>
   },
-  ctx: ContextWithUser
+  ctx: PackageStorageContext
 ) {
   const prepared =
     reservation ?? (await reserveElementExportPackageArtifact(ctx))
@@ -725,7 +747,7 @@ export async function uploadElementExportPackage(
       prisma: PrismaTransactionContextWithUser['prisma']
     ) => Promise<void>
   },
-  ctx: ContextWithUser
+  ctx: PackageStorageContext
 ) {
   return await storeElementExportPackage(
     {
@@ -741,7 +763,7 @@ export async function uploadElementExportPackage(
 async function findReadyOwnedArtifact(
   artifactId: string,
   direction: ImportExportPackageArtifactDirection,
-  ctx: ContextWithUser
+  ctx: PackageStorageContext
 ) {
   if (!isCanonicalImportExportArtifactId(artifactId)) {
     throw new ImportExportDomainError(ImportExportErrorCode.PACKAGE_NOT_FOUND)
@@ -791,7 +813,7 @@ async function findReadyOwnedArtifact(
 
 export async function resolvePreparedElementImportPackageArtifact(
   { artifactId }: { artifactId: string },
-  ctx: ContextWithUser
+  ctx: PackageStorageContext
 ) {
   const artifact = await findReadyOwnedArtifact(
     artifactId,
@@ -809,7 +831,7 @@ export async function resolvePreparedElementImportPackageArtifact(
 
 export async function downloadPreparedElementImportPackage(
   { artifactId }: { artifactId: string },
-  ctx: ContextWithUser
+  ctx: PackageStorageContext
 ) {
   const artifact = await findReadyOwnedArtifact(
     artifactId,
@@ -853,7 +875,7 @@ export async function downloadLocalElementExportPackage(
     artifactId: string
     capability: string
   },
-  ctx: ContextWithUser
+  ctx: PackageStorageContext
 ) {
   await assertCanUseElementImportExport(ctx)
   if (!isLocalImportExportPackageStorageEnabled()) {

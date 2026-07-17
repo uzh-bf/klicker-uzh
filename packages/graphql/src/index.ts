@@ -1,6 +1,6 @@
 import type { HatchetHandlers } from '@klicker-uzh/types'
 
-export { default as enhanceContext } from './lib/context.js'
+export { default as enhanceContext, type Context } from './lib/context.js'
 export {
   getImportExportErrorCode,
   ImportExportErrorCode,
@@ -26,8 +26,10 @@ import './schema/assessment.js'
 import './schema/course.js'
 import './schema/element.js'
 import './schema/elementData.js'
+import './schema/elementImportExport.js'
 import './schema/evaluation.js'
 import './schema/groupActivity.js'
+import './schema/mediaUpload.js'
 import './schema/microLearning.js'
 import './schema/participant.js'
 import './schema/resource.js'
@@ -60,7 +62,10 @@ import {
   handleRunningRandomGroupAssignments,
   handleUpdateGroupAverageScores,
 } from './services/groups.js'
-import { handleRefreshImportExportFingerprints } from './services/importExportFingerprintMaintenance.js'
+import {
+  handleRefreshImportExportFingerprints,
+  handleRepairImportExportFingerprints,
+} from './services/importExportFingerprintMaintenance.js'
 import {
   handleAssessmentLiveQuizBlockClosureAggregation,
   handlePublishScheduledLiveQuiz,
@@ -86,6 +91,7 @@ export const schema = builder.toSchema({
 
 export const handlers: HatchetHandlers = {
   handleRefreshImportExportFingerprints,
+  handleRepairImportExportFingerprints,
   handleFinalRandomGroupAssignments,
   handleRunningRandomGroupAssignments,
   handleUpdateGroupAverageScores,

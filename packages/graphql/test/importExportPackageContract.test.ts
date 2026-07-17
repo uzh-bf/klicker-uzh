@@ -252,8 +252,14 @@ describe('import/export package manifest contract', () => {
     ).toBe(false)
   })
 
-  it('accepts the declared media byte cap and rejects one byte more', () => {
+  it('accepts positive media through the byte cap and rejects empty media or one byte more', () => {
     const entry = createMediaManifestEntry(0)
+    expect(
+      mediaManifestEntrySchema.safeParse({
+        ...entry,
+        bytes: 0,
+      }).success
+    ).toBe(false)
     expect(
       mediaManifestEntrySchema.safeParse({
         ...entry,

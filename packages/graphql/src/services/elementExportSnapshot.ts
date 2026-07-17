@@ -231,7 +231,7 @@ async function preflightAuthorizedElementBatch(
         octet_length(COALESCE("explanation", ''))::bigint +
         octet_length("options"::text)::bigint
       ) AS "sourceBytes"
-    FROM "Element"
+    FROM "public"."Element"
     WHERE "id" IN (${DB.Prisma.join(elementIds)})
     ORDER BY "id"
   `
@@ -268,10 +268,10 @@ async function preflightAuthorizedElementBatch(
     SELECT
       COALESCE(MAX(char_length(entry."value")), 0)::int AS "maximumValueLength",
       COALESCE(SUM(octet_length(entry."value")::bigint), 0) AS "sourceBytes"
-    FROM "Element" element
-    LEFT JOIN "_ElementAnswerCollectionUsedItems" relation
+    FROM "public"."Element" element
+    LEFT JOIN "public"."_ElementAnswerCollectionUsedItems" relation
       ON relation."B" = element."id"
-    LEFT JOIN "AnswerCollectionEntry" entry
+    LEFT JOIN "public"."AnswerCollectionEntry" entry
       ON entry."id" = relation."A"
     WHERE element."id" IN (${DB.Prisma.join(elementIds)})
   `
@@ -342,8 +342,8 @@ async function preflightAuthorizedAnswerCollections(
         octet_length(collection."description")::bigint +
         COALESCE(SUM(octet_length(entry."value")::bigint), 0)
       ) AS "sourceBytes"
-    FROM "AnswerCollection" collection
-    LEFT JOIN "AnswerCollectionEntry" entry
+    FROM "public"."AnswerCollection" collection
+    LEFT JOIN "public"."AnswerCollectionEntry" entry
       ON entry."collectionId" = collection."id"
     WHERE collection."id" IN (${DB.Prisma.join(answerCollectionIds)})
     GROUP BY collection."id"
@@ -591,13 +591,13 @@ async function lockExportSources(
 
   await ctx.prisma.$queryRaw`
     SELECT "id"
-    FROM "User"
+    FROM "public"."User"
     WHERE "id" = ${ctx.user.sub}::uuid
     FOR UPDATE NOWAIT
   `
   await ctx.prisma.$queryRaw`
     SELECT "id"
-    FROM "Element"
+    FROM "public"."Element"
     WHERE "id" IN (${DB.Prisma.join(elementIds)})
     ORDER BY "id"
     FOR UPDATE NOWAIT
@@ -605,7 +605,7 @@ async function lockExportSources(
   if (answerCollectionIds.length > 0) {
     await ctx.prisma.$queryRaw`
       SELECT "id"
-      FROM "AnswerCollection"
+      FROM "public"."AnswerCollection"
       WHERE "id" IN (${DB.Prisma.join(answerCollectionIds)})
       ORDER BY "id"
       FOR UPDATE NOWAIT
@@ -621,7 +621,7 @@ async function lockExportSources(
         ) AS requested("collectionId")
         CROSS JOIN LATERAL (
           SELECT source."id", source."collectionId"
-          FROM "AnswerCollectionEntry" source
+          FROM "public"."AnswerCollectionEntry" source
           WHERE source."collectionId" = requested."collectionId"
           ORDER BY source."id"
           LIMIT ${MAX_IMPORT_EXPORT_ANSWER_COLLECTION_ENTRIES + 1}
@@ -634,7 +634,7 @@ async function lockExportSources(
         LIMIT ${MAX_IMPORT_EXPORT_TOTAL_ANSWER_COLLECTION_ENTRIES + 1}
       )
       SELECT source."id", source."collectionId"
-      FROM "AnswerCollectionEntry" source
+      FROM "public"."AnswerCollectionEntry" source
       INNER JOIN bounded_entries bounded
         ON bounded."id" = source."id"
       ORDER BY source."collectionId", source."id"
@@ -670,7 +670,7 @@ async function lockExportSources(
       ) AS requested("elementId")
       CROSS JOIN LATERAL (
         SELECT source."A", source."B"
-        FROM "_ElementAnswerCollectionUsedItems" source
+        FROM "public"."_ElementAnswerCollectionUsedItems" source
         WHERE source."B" = requested."elementId"
         ORDER BY source."A"
         LIMIT ${MAX_IMPORT_EXPORT_ANSWER_COLLECTION_ENTRIES + 1}
@@ -685,7 +685,7 @@ async function lockExportSources(
     SELECT
       source."A" AS "entryId",
       source."B" AS "elementId"
-    FROM "_ElementAnswerCollectionUsedItems" source
+    FROM "public"."_ElementAnswerCollectionUsedItems" source
     INNER JOIN bounded_selected_relations_aggregate bounded
       ON bounded."A" = source."A" AND bounded."B" = source."B"
     ORDER BY source."B", source."A"
@@ -712,7 +712,7 @@ async function lockExportSources(
 
   await ctx.prisma.$queryRaw`
     SELECT "id"
-    FROM "DerivedPermission"
+    FROM "public"."DerivedPermission"
     WHERE "userId" = ${ctx.user.sub}::uuid
       AND "elementId" IN (${DB.Prisma.join(elementIds)})
     ORDER BY "id"
@@ -721,7 +721,7 @@ async function lockExportSources(
   if (answerCollectionIds.length > 0) {
     await ctx.prisma.$queryRaw`
       SELECT "id"
-      FROM "DerivedPermission"
+      FROM "public"."DerivedPermission"
       WHERE "userId" = ${ctx.user.sub}::uuid
         AND "answerCollectionId" IN (${DB.Prisma.join(answerCollectionIds)})
       ORDER BY "id"

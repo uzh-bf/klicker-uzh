@@ -6,11 +6,29 @@ describe('import/export concurrency leases', () => {
     process.env.IMPORT_EXPORT_PACKAGE_PREVIEW_CONCURRENCY
   const previousPreviewGlobalLimit =
     process.env.IMPORT_EXPORT_PACKAGE_PREVIEW_GLOBAL_CONCURRENCY
+  const previousValidateLimit =
+    process.env.IMPORT_EXPORT_PACKAGE_VALIDATE_CONCURRENCY
+  const previousValidateGlobalLimit =
+    process.env.IMPORT_EXPORT_PACKAGE_VALIDATE_GLOBAL_CONCURRENCY
+  const previousImportLimit =
+    process.env.IMPORT_EXPORT_PACKAGE_IMPORT_CONCURRENCY
+  const previousImportGlobalLimit =
+    process.env.IMPORT_EXPORT_PACKAGE_IMPORT_GLOBAL_CONCURRENCY
+  const previousUploadLimit =
+    process.env.IMPORT_EXPORT_PACKAGE_UPLOAD_CONCURRENCY
+  const previousUploadGlobalLimit =
+    process.env.IMPORT_EXPORT_PACKAGE_UPLOAD_GLOBAL_CONCURRENCY
   const previousTtl = process.env.IMPORT_EXPORT_PACKAGE_CONCURRENCY_LEASE_TTL_MS
 
   beforeEach(() => {
     process.env.IMPORT_EXPORT_PACKAGE_PREVIEW_CONCURRENCY = '2'
     process.env.IMPORT_EXPORT_PACKAGE_PREVIEW_GLOBAL_CONCURRENCY = '8'
+    process.env.IMPORT_EXPORT_PACKAGE_VALIDATE_CONCURRENCY = '2'
+    process.env.IMPORT_EXPORT_PACKAGE_VALIDATE_GLOBAL_CONCURRENCY = '8'
+    process.env.IMPORT_EXPORT_PACKAGE_IMPORT_CONCURRENCY = '1'
+    process.env.IMPORT_EXPORT_PACKAGE_IMPORT_GLOBAL_CONCURRENCY = '4'
+    process.env.IMPORT_EXPORT_PACKAGE_UPLOAD_CONCURRENCY = '1'
+    process.env.IMPORT_EXPORT_PACKAGE_UPLOAD_GLOBAL_CONCURRENCY = '4'
     process.env.IMPORT_EXPORT_PACKAGE_CONCURRENCY_LEASE_TTL_MS = '60000'
   })
 
@@ -31,6 +49,40 @@ describe('import/export concurrency leases', () => {
     } else {
       process.env.IMPORT_EXPORT_PACKAGE_PREVIEW_GLOBAL_CONCURRENCY =
         previousPreviewGlobalLimit
+    }
+    if (previousValidateLimit === undefined) {
+      delete process.env.IMPORT_EXPORT_PACKAGE_VALIDATE_CONCURRENCY
+    } else {
+      process.env.IMPORT_EXPORT_PACKAGE_VALIDATE_CONCURRENCY =
+        previousValidateLimit
+    }
+    if (previousValidateGlobalLimit === undefined) {
+      delete process.env.IMPORT_EXPORT_PACKAGE_VALIDATE_GLOBAL_CONCURRENCY
+    } else {
+      process.env.IMPORT_EXPORT_PACKAGE_VALIDATE_GLOBAL_CONCURRENCY =
+        previousValidateGlobalLimit
+    }
+    if (previousImportLimit === undefined) {
+      delete process.env.IMPORT_EXPORT_PACKAGE_IMPORT_CONCURRENCY
+    } else {
+      process.env.IMPORT_EXPORT_PACKAGE_IMPORT_CONCURRENCY = previousImportLimit
+    }
+    if (previousImportGlobalLimit === undefined) {
+      delete process.env.IMPORT_EXPORT_PACKAGE_IMPORT_GLOBAL_CONCURRENCY
+    } else {
+      process.env.IMPORT_EXPORT_PACKAGE_IMPORT_GLOBAL_CONCURRENCY =
+        previousImportGlobalLimit
+    }
+    if (previousUploadLimit === undefined) {
+      delete process.env.IMPORT_EXPORT_PACKAGE_UPLOAD_CONCURRENCY
+    } else {
+      process.env.IMPORT_EXPORT_PACKAGE_UPLOAD_CONCURRENCY = previousUploadLimit
+    }
+    if (previousUploadGlobalLimit === undefined) {
+      delete process.env.IMPORT_EXPORT_PACKAGE_UPLOAD_GLOBAL_CONCURRENCY
+    } else {
+      process.env.IMPORT_EXPORT_PACKAGE_UPLOAD_GLOBAL_CONCURRENCY =
+        previousUploadGlobalLimit
     }
     vi.restoreAllMocks()
     vi.useRealTimers()
@@ -82,6 +134,77 @@ describe('import/export concurrency leases', () => {
     ).rejects.toMatchObject({ code: ImportExportErrorCode.RATE_LIMITED })
     expect(callback).not.toHaveBeenCalled()
     expect(ctx.redisExec.eval).toHaveBeenCalledTimes(1)
+  })
+
+  it('uses dedicated per-user and global limits for validation', async () => {
+    process.env.IMPORT_EXPORT_PACKAGE_VALIDATE_CONCURRENCY = '3'
+    process.env.IMPORT_EXPORT_PACKAGE_VALIDATE_GLOBAL_CONCURRENCY = '5'
+    const evalRedis = vi.fn().mockResolvedValueOnce(1).mockResolvedValueOnce(1)
+    const ctx = {
+      user: { sub: 'owner' },
+      redisExec: { eval: evalRedis },
+    } as any
+
+    await expect(
+      withImportExportConcurrencyLease(ctx, 'validate', async () => 'validated')
+    ).resolves.toBe('validated')
+    expect(evalRedis.mock.calls[0]).toEqual([
+      expect.stringContaining('ZREMRANGEBYSCORE'),
+      2,
+      'concurrency:{import-export-package}:validate:user:owner',
+      'concurrency:{import-export-package}:validate:global',
+      expect.any(Number),
+      60_000,
+      3,
+      5,
+      expect.any(String),
+    ])
+  })
+
+  it('uses independent one-per-user and four-global import defaults', async () => {
+    const evalRedis = vi.fn().mockResolvedValueOnce(1).mockResolvedValueOnce(1)
+    const ctx = {
+      user: { sub: 'owner' },
+      redisExec: { eval: evalRedis },
+    } as any
+
+    await expect(
+      withImportExportConcurrencyLease(ctx, 'import', async () => 'imported')
+    ).resolves.toBe('imported')
+    expect(evalRedis.mock.calls[0]).toEqual([
+      expect.stringContaining('ZREMRANGEBYSCORE'),
+      2,
+      'concurrency:{import-export-package}:import:user:owner',
+      'concurrency:{import-export-package}:import:global',
+      expect.any(Number),
+      60_000,
+      1,
+      4,
+      expect.any(String),
+    ])
+  })
+
+  it('uses memory-safe one-per-user and four-global upload defaults', async () => {
+    const evalRedis = vi.fn().mockResolvedValueOnce(1).mockResolvedValueOnce(1)
+    const ctx = {
+      user: { sub: 'owner' },
+      redisExec: { eval: evalRedis },
+    } as any
+
+    await expect(
+      withImportExportConcurrencyLease(ctx, 'upload', async () => 'uploaded')
+    ).resolves.toBe('uploaded')
+    expect(evalRedis.mock.calls[0]).toEqual([
+      expect.stringContaining('ZREMRANGEBYSCORE'),
+      2,
+      'concurrency:{import-export-package}:upload:user:owner',
+      'concurrency:{import-export-package}:upload:global',
+      expect.any(Number),
+      60_000,
+      1,
+      4,
+      expect.any(String),
+    ])
   })
 
   it('fails closed distinctly when Redis cannot acquire a lease', async () => {

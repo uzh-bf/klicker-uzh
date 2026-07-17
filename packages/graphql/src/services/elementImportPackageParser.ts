@@ -73,7 +73,7 @@ export type NormalizedImportPackage = {
   media: PackageMedia[]
 }
 
-function assertOptionsSize(options: Record<string, unknown>) {
+function assertOptionsSize(options: unknown) {
   if (
     Buffer.byteLength(JSON.stringify(options), 'utf8') >
     MAX_IMPORT_EXPORT_OPTIONS_BYTES
@@ -406,6 +406,11 @@ function parseElementImportPackageInternal(
         if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
           return
         }
+        const rawOptions = Reflect.get(parsed, 'options')
+        if (typeof rawOptions !== 'undefined') {
+          assertOptionsSize(rawOptions)
+        }
+
         const rawSelectedItems = Reflect.get(parsed, 'answerCollectionItemRefs')
         if (!Array.isArray(rawSelectedItems)) return
 
@@ -444,6 +449,10 @@ function parseElementImportPackageInternal(
     const file = files.get(entry.file)
     if (!file) {
       throw invalidImportPackage('Import package is missing a media file.')
+    }
+
+    if (file.length === 0) {
+      throw invalidImportPackage('Import package media must not be empty.')
     }
 
     if (file.length > MAX_IMPORT_EXPORT_MEDIA_BYTES) {
@@ -635,17 +644,12 @@ function* getElementEntryRefs(element: PackageElement) {
   // allocate another maximum-sized Set for every element.
   yield* element.answerCollectionItemRefs ?? []
 
-  if (
-    element.type !== DB.ElementType.CASE_STUDY ||
-    !Array.isArray((element.options as any).cases)
-  ) {
+  if (element.type !== DB.ElementType.CASE_STUDY) {
     return
   }
 
-  for (const caseItem of (element.options as any).cases) {
-    if (!Array.isArray(caseItem?.solutions)) continue
-
-    for (const solution of caseItem.solutions) {
+  for (const caseItem of element.options.cases) {
+    for (const solution of caseItem.solutions ?? []) {
       if (typeof solution.itemId !== 'undefined') {
         throw invalidImportPackage(
           'Case study package must not contain database item IDs.'

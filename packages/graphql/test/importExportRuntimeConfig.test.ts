@@ -15,10 +15,14 @@ const INTEGER_ENV_NAMES = [
   'IMPORT_EXPORT_PACKAGE_CONCURRENCY_LEASE_TTL_MS',
   'IMPORT_EXPORT_PACKAGE_PREVIEW_CONCURRENCY',
   'IMPORT_EXPORT_PACKAGE_PREVIEW_GLOBAL_CONCURRENCY',
+  'IMPORT_EXPORT_PACKAGE_UPLOAD_CONCURRENCY',
+  'IMPORT_EXPORT_PACKAGE_UPLOAD_GLOBAL_CONCURRENCY',
+  'IMPORT_EXPORT_PACKAGE_VALIDATE_CONCURRENCY',
+  'IMPORT_EXPORT_PACKAGE_VALIDATE_GLOBAL_CONCURRENCY',
+  'IMPORT_EXPORT_PACKAGE_IMPORT_CONCURRENCY',
+  'IMPORT_EXPORT_PACKAGE_IMPORT_GLOBAL_CONCURRENCY',
   'IMPORT_EXPORT_PACKAGE_EXPORT_CONCURRENCY',
   'IMPORT_EXPORT_PACKAGE_EXPORT_GLOBAL_CONCURRENCY',
-  'IMPORT_EXPORT_HTTP_HEADERS_TIMEOUT_MS',
-  'IMPORT_EXPORT_HTTP_REQUEST_TIMEOUT_MS',
   'IMPORT_EXPORT_UPLOAD_BODY_TIMEOUT_MS',
   'IMPORT_EXPORT_AZURE_METADATA_TIMEOUT_MS',
   'IMPORT_EXPORT_AZURE_TRANSFER_TIMEOUT_MS',
@@ -48,6 +52,19 @@ describe('import/export runtime configuration', () => {
     })
     expect(Object.isFrozen(normal)).toBe(true)
     expect(Object.isFrozen(normal.rateLimits)).toBe(true)
+    expect(normal.concurrency).toEqual({
+      leaseTtlMs: 120_000,
+      previewPerUser: 2,
+      previewGlobal: 8,
+      uploadPerUser: 1,
+      uploadGlobal: 4,
+      validatePerUser: 2,
+      validateGlobal: 8,
+      importPerUser: 1,
+      importGlobal: 4,
+      exportPerUser: 2,
+      exportGlobal: 8,
+    })
 
     const assessment = parseImportExportRuntimeConfig(
       productionEnv({
@@ -78,6 +95,39 @@ describe('import/export runtime configuration', () => {
         IMPORT_EXPORT_PRIVATE_PREVIEW_ONLY: 'true',
       }).privatePreviewOnly
     ).toBe(true)
+  })
+
+  it('rejects validation concurrency when the global limit is below the user limit', () => {
+    expect(() =>
+      parseImportExportRuntimeConfig(
+        productionEnv({
+          IMPORT_EXPORT_PACKAGE_VALIDATE_CONCURRENCY: '3',
+          IMPORT_EXPORT_PACKAGE_VALIDATE_GLOBAL_CONCURRENCY: '2',
+        })
+      )
+    ).toThrow('IMPORT_EXPORT_PACKAGE_VALIDATE_GLOBAL_CONCURRENCY')
+  })
+
+  it('rejects upload concurrency when the global limit is below the user limit', () => {
+    expect(() =>
+      parseImportExportRuntimeConfig(
+        productionEnv({
+          IMPORT_EXPORT_PACKAGE_UPLOAD_CONCURRENCY: '3',
+          IMPORT_EXPORT_PACKAGE_UPLOAD_GLOBAL_CONCURRENCY: '2',
+        })
+      )
+    ).toThrow('IMPORT_EXPORT_PACKAGE_UPLOAD_GLOBAL_CONCURRENCY')
+  })
+
+  it('rejects import concurrency when the global limit is below the user limit', () => {
+    expect(() =>
+      parseImportExportRuntimeConfig(
+        productionEnv({
+          IMPORT_EXPORT_PACKAGE_IMPORT_CONCURRENCY: '3',
+          IMPORT_EXPORT_PACKAGE_IMPORT_GLOBAL_CONCURRENCY: '2',
+        })
+      )
+    ).toThrow('IMPORT_EXPORT_PACKAGE_IMPORT_GLOBAL_CONCURRENCY')
   })
 
   it.each([
@@ -132,11 +182,10 @@ describe('import/export runtime configuration', () => {
     expect(() =>
       parseImportExportRuntimeConfig(
         productionEnv({
-          IMPORT_EXPORT_HTTP_REQUEST_TIMEOUT_MS: '59000',
-          IMPORT_EXPORT_UPLOAD_BODY_TIMEOUT_MS: '60000',
+          IMPORT_EXPORT_PACKAGE_CONCURRENCY_LEASE_TTL_MS: '2999',
         })
       )
-    ).toThrow('IMPORT_EXPORT_HTTP_REQUEST_TIMEOUT_MS')
+    ).toThrow('IMPORT_EXPORT_PACKAGE_CONCURRENCY_LEASE_TTL_MS')
   })
 
   it('allows local storage only in development/test', () => {

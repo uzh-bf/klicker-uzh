@@ -1,6 +1,6 @@
 import { Badge, Button, H4, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { memo, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 
 type OverviewAnswerCollectionEntry = {
   id: number
@@ -23,8 +23,10 @@ export type OverviewAnswerCollection = {
 const ExpandableAnswerCollectionEntries = memo(
   function ExpandableAnswerCollectionEntries({
     entries,
+    dataCy,
   }: {
     entries: readonly OverviewAnswerCollectionEntry[]
+    dataCy: string
   }) {
     const t = useTranslations()
     const [expanded, setExpanded] = useState(false)
@@ -32,22 +34,32 @@ const ExpandableAnswerCollectionEntries = memo(
     const totalPages = Math.ceil(
       entries.length / ANSWER_COLLECTION_ENTRY_PAGE_SIZE
     )
+    const lastPage = Math.max(0, totalPages - 1)
+    const visiblePage = Math.min(page, lastPage)
     const visibleEntries = entries.slice(
-      page * ANSWER_COLLECTION_ENTRY_PAGE_SIZE,
-      (page + 1) * ANSWER_COLLECTION_ENTRY_PAGE_SIZE
+      visiblePage * ANSWER_COLLECTION_ENTRY_PAGE_SIZE,
+      (visiblePage + 1) * ANSWER_COLLECTION_ENTRY_PAGE_SIZE
     )
-    const firstVisibleEntry = page * ANSWER_COLLECTION_ENTRY_PAGE_SIZE + 1
+    const firstVisibleEntry =
+      visiblePage * ANSWER_COLLECTION_ENTRY_PAGE_SIZE + 1
     const lastVisibleEntry = Math.min(
-      (page + 1) * ANSWER_COLLECTION_ENTRY_PAGE_SIZE,
+      (visiblePage + 1) * ANSWER_COLLECTION_ENTRY_PAGE_SIZE,
       entries.length
     )
+
+    useEffect(() => {
+      if (page > lastPage) setPage(lastPage)
+    }, [lastPage, page])
 
     return (
       <details
         className="mt-1 rounded border border-solid bg-slate-50"
         onToggle={(event) => setExpanded(event.currentTarget.open)}
       >
-        <summary className="cursor-pointer px-2 py-1 text-xs font-bold focus-visible:outline-2 focus-visible:outline-offset-2">
+        <summary
+          className="min-h-11 cursor-pointer px-2 py-2 text-xs font-bold focus-visible:outline-2 focus-visible:outline-offset-2"
+          data-cy={`${dataCy}-entries-toggle`}
+        >
           {t('manage.elements.packageAnswerCollectionEntries', {
             count: entries.length,
           })}
@@ -56,7 +68,11 @@ const ExpandableAnswerCollectionEntries = memo(
           <div className="border-t border-solid">
             <ol
               start={firstVisibleEntry}
-              className="m-0 max-h-48 list-decimal overflow-auto px-7 py-1.5 text-xs text-slate-700 [contain:content]"
+              tabIndex={0}
+              aria-label={t('manage.elements.packageAnswerCollectionEntries', {
+                count: entries.length,
+              })}
+              className="m-0 max-h-48 list-decimal overflow-auto rounded-sm px-7 py-1.5 text-xs text-slate-700 outline-none [contain:content] focus-visible:ring-2 focus-visible:ring-offset-2"
               data-cy="element-package-answer-collection-entry-page"
               data-total-entries={entries.length}
             >
@@ -72,7 +88,7 @@ const ExpandableAnswerCollectionEntries = memo(
                   basic
                   type="button"
                   size="sm"
-                  disabled={page === 0}
+                  disabled={visiblePage === 0}
                   onClick={() => setPage((current) => Math.max(0, current - 1))}
                   data={{ cy: 'element-package-answer-collection-previous' }}
                 >
@@ -89,9 +105,9 @@ const ExpandableAnswerCollectionEntries = memo(
                   basic
                   type="button"
                   size="sm"
-                  disabled={page >= totalPages - 1}
+                  disabled={visiblePage >= lastPage}
                   onClick={() =>
-                    setPage((current) => Math.min(totalPages - 1, current + 1))
+                    setPage((current) => Math.min(lastPage, current + 1))
                   }
                   data={{ cy: 'element-package-answer-collection-next' }}
                 >
@@ -113,6 +129,7 @@ function PackageAnswerCollectionOverview({
   error = '',
   dataCy,
   selectedCollectionRefs,
+  onRetry,
 }: {
   collections: readonly OverviewAnswerCollection[]
   mode: 'export' | 'import'
@@ -120,8 +137,11 @@ function PackageAnswerCollectionOverview({
   error?: string
   dataCy: string
   selectedCollectionRefs?: ReadonlySet<string>
+  onRetry?: () => void
 }) {
   const t = useTranslations()
+  const overviewRef = useRef<HTMLElement | null>(null)
+  const focusOverviewAfterRetryRef = useRef(false)
 
   const visibleCollections = selectedCollectionRefs
     ? collections.filter((collection) =>
@@ -137,19 +157,30 @@ function PackageAnswerCollectionOverview({
     (collection) => collection.alreadyImported
   ).length
 
+  useEffect(() => {
+    if (!focusOverviewAfterRetryRef.current) return
+
+    overviewRef.current?.focus()
+    if (!loading) focusOverviewAfterRetryRef.current = false
+  }, [error, loading])
+
   return (
     <section
-      className="flex min-h-0 flex-col gap-2"
+      ref={overviewRef}
+      tabIndex={-1}
+      aria-label={t('manage.elements.packageAnswerCollections')}
+      className="flex flex-none flex-col gap-2 outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
       data-cy={dataCy}
-      aria-live={mode === 'import' ? 'polite' : undefined}
     >
       <div className="flex flex-col gap-1">
         <H4 className={{ root: 'm-0 text-base' }}>
           {t('manage.elements.packageAnswerCollections')}
         </H4>
-        <div className="text-sm text-slate-600">
-          {t(descriptionKey, { numCollections: visibleCollections.length })}
-        </div>
+        {!loading && !error ? (
+          <div className="text-sm text-slate-600">
+            {t(descriptionKey, { numCollections: visibleCollections.length })}
+          </div>
+        ) : null}
       </div>
 
       {mode === 'import' && duplicateCount > 0 ? (
@@ -172,21 +203,51 @@ function PackageAnswerCollectionOverview({
       ) : null}
 
       {loading ? (
-        <UserNotification
-          message={t('manage.elements.packagePreviewLoading')}
-          className={{ root: 'text-sm' }}
-        />
+        <div
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          data-cy={`${dataCy}-loading`}
+        >
+          <UserNotification
+            message={t('manage.elements.packagePreviewLoading')}
+            className={{ root: 'text-sm' }}
+          />
+        </div>
       ) : error ? (
-        <UserNotification
-          type="error"
-          message={error || t('manage.elements.packagePreviewError')}
-          className={{ root: 'text-sm' }}
-        />
+        <div
+          className="flex flex-col items-start gap-2"
+          role="alert"
+          aria-atomic="true"
+          data-cy={`${dataCy}-error`}
+        >
+          <UserNotification
+            type="error"
+            message={error}
+            className={{ root: 'w-full text-sm' }}
+          />
+          {onRetry ? (
+            <Button
+              basic
+              type="button"
+              onClick={() => {
+                focusOverviewAfterRetryRef.current = true
+                overviewRef.current?.focus()
+                onRetry()
+              }}
+              data={{ cy: 'element-export-preview-retry' }}
+            >
+              {t('manage.elements.packagePreviewRetry')}
+            </Button>
+          ) : null}
+        </div>
       ) : visibleCollections.length === 0 ? (
-        <UserNotification
-          message={t('manage.elements.packageAnswerCollectionsEmpty')}
-          className={{ root: 'text-sm' }}
-        />
+        collections.length === 0 ? (
+          <UserNotification
+            message={t('manage.elements.packageAnswerCollectionsEmpty')}
+            className={{ root: 'text-sm' }}
+          />
+        ) : null
       ) : (
         <div className="max-h-40 overflow-auto rounded-md border border-solid bg-white">
           {visibleCollections.map((collection, index) => {
@@ -249,6 +310,7 @@ function PackageAnswerCollectionOverview({
                 {collection.entries.length > 0 ? (
                   <ExpandableAnswerCollectionEntries
                     entries={collection.entries}
+                    dataCy={`${dataCy}-collection-${index}`}
                   />
                 ) : null}
               </div>

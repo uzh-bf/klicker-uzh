@@ -48,11 +48,15 @@ importExport:
     leaseTtlMs: 120000
     previewPerUser: 2
     previewGlobal: 8
+    uploadPerUser: 1
+    uploadGlobal: 4
+    validatePerUser: 2
+    validateGlobal: 8
+    importPerUser: 1
+    importGlobal: 4
     exportPerUser: 2
     exportGlobal: 8
   timeouts:
-    httpHeadersMs: 10000
-    httpRequestMs: 120000
     uploadBodyMs: 60000
     azureMetadataMs: 10000
     azureTransferMs: 60000
@@ -84,7 +88,7 @@ hatchet:
     general:
       replicaCount: 1
       priorityClassName: production-workload
-      workflows: "refreshImportExportFingerprints,updateGroupAverageScores,runningRandomGroupAssignments,finalRandomGroupAssignments,updateWeeklyTimelineEntries,cleanupImportExportPackages,sendPushNotifications,publishScheduledGroupActivity,publishScheduledLiveQuiz,publishScheduledMicroLearning,publishScheduledPracticeQuiz,endExpiredGroupActivity,endExpiredMicroLearning,aggregateLiveQuizBlockResultsStandard,aggregateLiveQuizBlockResultsAssessment,createAuditLogEntry"
+      workflows: "refreshImportExportFingerprints,repairImportExportFingerprints,updateGroupAverageScores,runningRandomGroupAssignments,finalRandomGroupAssignments,updateWeeklyTimelineEntries,cleanupImportExportPackages,sendPushNotifications,publishScheduledGroupActivity,publishScheduledLiveQuiz,publishScheduledMicroLearning,publishScheduledPracticeQuiz,endExpiredGroupActivity,endExpiredMicroLearning,aggregateLiveQuizBlockResultsStandard,aggregateLiveQuizBlockResultsAssessment,createAuditLogEntry"
       health:
         port: 8081
         startupProbe:

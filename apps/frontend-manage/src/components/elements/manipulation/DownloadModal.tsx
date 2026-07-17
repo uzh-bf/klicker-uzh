@@ -15,68 +15,92 @@ import {
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { getImportExportErrorCode } from '~/lib/importExportErrors'
+import {
+  getImportExportErrorCode,
+  isRetryableElementExportPreviewError,
+} from '~/lib/importExportErrors'
 import PackageAnswerCollectionOverview from './PackageAnswerCollectionOverview'
 import SelectedElementsList from './batchOperations/SelectedElementsList'
 
-async function createDownload(downloadLink: string, filename: string) {
-  const response = await fetch(downloadLink, { credentials: 'include' })
+type ElementsTranslator = ReturnType<typeof useTranslations<'manage.elements'>>
+
+async function createDownload(
+  downloadLink: string,
+  filename: string,
+  signal: AbortSignal
+) {
+  const response = await fetch(downloadLink, {
+    credentials: 'include',
+    signal,
+  })
   if (!response.ok) throw new Error('DOWNLOAD_FAILED')
 
   const blob = await response.blob()
+  if (signal.aborted) return
+
   const blobUrl = URL.createObjectURL(blob)
+  try {
+    if (signal.aborted) return
 
-  const a = document.createElement('a')
-  a.href = blobUrl
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(blobUrl)
-}
-
-function translateExportPackageWarning(t: any, code: ImportExportWarningCode) {
-  switch (code) {
-    case ImportExportWarningCode.ImportExternalMediaNotPackaged:
-      return t('manage.elements.elementImportExternalMediaWarning')
-    case ImportExportWarningCode.ImportMediaNotIncluded:
-      return t('manage.elements.elementImportMediaMissingWarning')
-    case ImportExportWarningCode.ImportStatusNormalizedToReview:
-      return t('manage.elements.elementImportStatusNormalizedWarning')
-    case ImportExportWarningCode.ImportUnusedMedia:
-      return t('manage.elements.elementImportUnusedMediaWarning')
-    case ImportExportWarningCode.ImportCleanupPending:
-      return t('manage.elements.elementImportCleanupPendingWarning')
-    default:
-      return t('manage.elements.elementImportGenericWarning')
+    const a = document.createElement('a')
+    a.href = blobUrl
+    a.download = filename
+    a.click()
+  } finally {
+    URL.revokeObjectURL(blobUrl)
   }
 }
 
-function translateExportPackageError(t: any, code: ImportExportErrorCode) {
+function translateExportPackageWarning(
+  t: ElementsTranslator,
+  code: ImportExportWarningCode
+) {
+  switch (code) {
+    case ImportExportWarningCode.ImportExternalMediaNotPackaged:
+      return t('elementExportExternalMediaWarning')
+    case ImportExportWarningCode.ImportMediaNotIncluded:
+      return t('elementExportMediaMissingWarning')
+    case ImportExportWarningCode.ImportStatusNormalizedToReview:
+      return t('elementExportStatusNormalizedWarning')
+    case ImportExportWarningCode.ImportUnusedMedia:
+      return t('elementExportUnusedMediaWarning')
+    case ImportExportWarningCode.ImportCleanupPending:
+      return t('elementExportCleanupPendingWarning')
+    default:
+      return t('elementExportGenericWarning')
+  }
+}
+
+function translateExportPackageError(
+  t: ElementsTranslator,
+  code: ImportExportErrorCode
+) {
   switch (code) {
     case ImportExportErrorCode.ElementExportPermission:
-      return t('manage.elements.packageElementExportPermissionError')
+      return t('packageElementExportPermissionError')
     case ImportExportErrorCode.AnswerCollectionExportPermission:
-      return t('manage.elements.packageAnswerCollectionExportPermissionError')
+      return t('packageAnswerCollectionExportPermissionError')
     case ImportExportErrorCode.TooManyElements:
-      return t('manage.elements.packageTooManyElementsError')
+      return t('packageTooManyElementsError')
     case ImportExportErrorCode.ExportPackageTooLarge:
-      return t('manage.elements.packageExportTooLargeError')
+      return t('packageExportTooLargeError')
     case ImportExportErrorCode.ElementNotPortable:
-      return t('manage.elements.packageElementNotPortableError')
+      return t('packageElementNotPortableError')
     case ImportExportErrorCode.ExportAggregateLimit:
-      return t('manage.elements.packageAggregateLimitError')
+      return t('packageAggregateLimitError')
     case ImportExportErrorCode.ExportSourceChanged:
-      return t('manage.elements.packageExportSourceChangedError')
+      return t('packageExportSourceChangedError')
     case ImportExportErrorCode.ImportExportRateLimited:
-      return t('manage.elements.packageRateLimitedError')
+      return t('packageRateLimitedError')
     case ImportExportErrorCode.ImportArtifactQuotaExceeded:
-      return t('manage.elements.packageArtifactQuotaError')
+      return t('packageArtifactQuotaError')
     case ImportExportErrorCode.ImportExportDisabled:
-      return t('manage.elements.packageFeatureDisabledError')
+      return t('packageFeatureDisabledError')
     case ImportExportErrorCode.ImportExportRateLimitUnavailable:
     case ImportExportErrorCode.ImportExportInfrastructureFailure:
-      return t('manage.elements.packageServiceUnavailableError')
+      return t('packageServiceUnavailableError')
     default:
-      return t('manage.elements.packagePreviewError')
+      return t('packagePreviewError')
   }
 }
 
@@ -86,17 +110,32 @@ const DownloadSelectedElementsPackage: React.FC<{
   disabled?: boolean
 }> = ({ selectedElements, onError, disabled = false }) => {
   const t = useTranslations()
+  const tElements = useTranslations('manage.elements')
   const [downloading, setDownloading] = useState(false)
   const downloadInProgressRef = useRef(false)
+  const mountedRef = useRef(true)
+  const activeDownloadControllerRef = useRef<AbortController | null>(null)
   const [fetchDownloadLink, { loading: loadingPackageLink }] = useLazyQuery(
     GetElementExportPackageLinkDocument
   )
 
   const selectedElementIds = selectedElements.map((element) => element.id)
 
+  useEffect(() => {
+    mountedRef.current = true
+
+    return () => {
+      mountedRef.current = false
+      activeDownloadControllerRef.current?.abort()
+      activeDownloadControllerRef.current = null
+    }
+  }, [])
+
   const handleDownload = async () => {
     if (downloadInProgressRef.current) return
 
+    const controller = new AbortController()
+    activeDownloadControllerRef.current = controller
     downloadInProgressRef.current = true
     setDownloading(true)
     try {
@@ -104,7 +143,10 @@ const DownloadSelectedElementsPackage: React.FC<{
       const packageLink = await fetchDownloadLink({
         variables: { elementIds: selectedElementIds },
         fetchPolicy: 'network-only',
+        context: { fetchOptions: { signal: controller.signal } },
       }).then((result) => result.data?.getElementExportPackageLink)
+
+      if (controller.signal.aborted || !mountedRef.current) return
 
       if (!packageLink?.downloadLink) {
         throw new Error('No download link received.')
@@ -117,12 +159,15 @@ const DownloadSelectedElementsPackage: React.FC<{
 
       await createDownload(
         downloadPackage.downloadLink,
-        downloadPackage.filename
+        downloadPackage.filename,
+        controller.signal
       )
     } catch (error: unknown) {
+      if (controller.signal.aborted || !mountedRef.current) return
+
       const code = getImportExportErrorCode(error)
       const message = code
-        ? translateExportPackageError(t, code)
+        ? translateExportPackageError(tElements, code)
         : t('manage.elements.elementDownloadFailed')
       onError(message)
       toast({
@@ -132,8 +177,11 @@ const DownloadSelectedElementsPackage: React.FC<{
         type: 'error',
       })
     } finally {
+      if (activeDownloadControllerRef.current === controller) {
+        activeDownloadControllerRef.current = null
+      }
       downloadInProgressRef.current = false
-      setDownloading(false)
+      if (mountedRef.current) setDownloading(false)
     }
   }
 
@@ -172,6 +220,7 @@ function DownloadModal({
   onClose: () => void
 }) {
   const t = useTranslations()
+  const tElements = useTranslations('manage.elements')
   const [downloadError, setDownloadError] = useState('')
 
   useEffect(() => {
@@ -187,27 +236,56 @@ function DownloadModal({
     data: exportPreviewData,
     loading: loadingExportPreview,
     error: exportPreviewQueryError,
+    refetch: refetchExportPreview,
   } = useQuery(GetElementExportPackagePreviewDocument, {
     variables: { elementIds: selectedElementIds },
     fetchPolicy: 'network-only',
+    notifyOnNetworkStatusChange: true,
     skip: selectedElementIds.length === 0,
   })
   const exportPreview = exportPreviewData?.getElementExportPackagePreview
   const exportPreviewErrors = exportPreview?.errors ?? []
   const exportPreviewWarnings = exportPreview?.warnings ?? []
+  const missingExportPreview =
+    selectedElementIds.length > 0 &&
+    !loadingExportPreview &&
+    !exportPreviewQueryError &&
+    !exportPreview
   const exportPreviewQueryErrorCode = getImportExportErrorCode(
     exportPreviewQueryError
   )
+  const exportPreviewErrorCode = exportPreviewQueryError
+    ? exportPreviewQueryErrorCode
+    : (exportPreviewErrors[0] ??
+      (missingExportPreview
+        ? ImportExportErrorCode.ImportExportInfrastructureFailure
+        : null))
   const exportPreviewErrorMessage = exportPreviewQueryError
     ? exportPreviewQueryErrorCode
-      ? translateExportPackageError(t, exportPreviewQueryErrorCode)
+      ? translateExportPackageError(tElements, exportPreviewQueryErrorCode)
       : t('manage.elements.packagePreviewError')
     : exportPreviewErrors[0]
-      ? translateExportPackageError(t, exportPreviewErrors[0])
-      : ''
-  const shownExportError = downloadError || exportPreviewErrorMessage
+      ? translateExportPackageError(tElements, exportPreviewErrors[0])
+      : missingExportPreview
+        ? t('manage.elements.packageServiceUnavailableError')
+        : ''
   const exportBlocked =
-    Boolean(exportPreviewQueryError) || exportPreviewErrors.length > 0
+    !exportPreview ||
+    Boolean(exportPreviewQueryError) ||
+    exportPreviewErrors.length > 0
+  const retryableExportPreviewError =
+    Boolean(exportPreviewErrorMessage) &&
+    isRetryableElementExportPreviewError({
+      code: exportPreviewErrorCode,
+      unknownNetworkError: Boolean(
+        exportPreviewQueryError?.networkError && !exportPreviewQueryErrorCode
+      ),
+    })
+
+  const retryExportPreview = () => {
+    setDownloadError('')
+    void refetchExportPreview().catch(() => undefined)
+  }
 
   const affectedElements = selectedElements.map((element) => ({
     ...element,
@@ -238,6 +316,10 @@ function DownloadModal({
           className={{ root: 'text-sm' }}
         />
         <UserNotification
+          message={t('manage.elements.elementExportPsychometricDisclosure')}
+          className={{ root: 'text-sm' }}
+        />
+        <UserNotification
           type="warning"
           message={t(
             'manage.elements.elementExportCopyrightSolutionsDisclosure'
@@ -252,16 +334,6 @@ function DownloadModal({
           className="flex min-h-0 flex-col gap-3"
           aria-busy={loadingExportPreview}
         >
-          {loadingExportPreview ? (
-            <div
-              className="sr-only"
-              role="status"
-              aria-live="polite"
-              data-cy="element-export-preview-status"
-            >
-              {t('manage.elements.packagePreviewLoading')}
-            </div>
-          ) : null}
           <H4>{t('shared.generic.elements')}</H4>
           <div className="text-sm">
             {t('manage.questionPool.selectedElementsDescriptionDownload', {
@@ -277,23 +349,35 @@ function DownloadModal({
             collections={exportPreview?.answerCollections ?? []}
             loading={loadingExportPreview}
             error={exportPreviewErrorMessage}
+            onRetry={
+              retryableExportPreviewError ? retryExportPreview : undefined
+            }
             dataCy="element-export-answer-collections-overview"
           />
-          {shownExportError && (
-            <div data-cy="element-export-package-error">
+          {downloadError ? (
+            <div
+              role="alert"
+              aria-atomic="true"
+              data-cy="element-export-package-error"
+            >
               <UserNotification
                 type="error"
-                message={shownExportError}
+                message={downloadError}
                 className={{ root: 'text-sm' }}
               />
             </div>
-          )}
+          ) : null}
           {exportPreviewWarnings.length > 0 ? (
-            <div data-cy="element-export-package-warning">
+            <div
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+              data-cy="element-export-package-warning"
+            >
               <UserNotification
                 type="warning"
                 message={exportPreviewWarnings
-                  .map((code) => translateExportPackageWarning(t, code))
+                  .map((code) => translateExportPackageWarning(tElements, code))
                   .join(' ')}
                 className={{
                   root: 'text-sm',

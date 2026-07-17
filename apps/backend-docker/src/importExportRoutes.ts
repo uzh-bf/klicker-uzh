@@ -190,11 +190,17 @@ function nextUploadChunk<T>(
   })
 }
 
-async function* withUploadBodyDeadline(request: Request, signal: AbortSignal) {
+async function* withUploadBodyDeadline(
+  request: Request,
+  signal: AbortSignal
+): AsyncGenerator<Uint8Array> {
   const iterator = request[Symbol.asyncIterator]()
   while (true) {
     const next = await nextUploadChunk(iterator, signal)
     if (next.done) return
+    if (!(next.value instanceof Uint8Array)) {
+      throw new TypeError('Upload request yielded a non-binary chunk.')
+    }
     yield next.value
   }
 }
@@ -228,11 +234,9 @@ function createUploadBodyDeadline(request: Request, timeoutMs: number) {
 
 function createServiceContext(
   context: ImportExportRouteContext,
-  req: Request,
-  res: Response,
   user: ImportExportRouteUser
 ): ImportExportServiceContext {
-  return { ...context, req, res, user }
+  return { ...context, user }
 }
 
 export function registerImportExportPreflightRoute(
@@ -321,7 +325,7 @@ export function registerImportExportRoutes(
             contentType,
             stream: bodyDeadline.stream,
           },
-          createServiceContext(context, req, res, user)
+          createServiceContext(context, user)
         )
 
         if (result.replayed && !req.readableEnded) {
@@ -396,7 +400,7 @@ export function registerImportExportRoutes(
                 ? req.query.capability
                 : '',
           },
-          createServiceContext(context, req, res, user)
+          createServiceContext(context, user)
         )
         res.setHeader('Content-Type', ZIP_CONTENT_TYPE)
         res.send(buffer)

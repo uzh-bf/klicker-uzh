@@ -35,6 +35,7 @@ model AnswerCollection {
   @@index([ownerId, importFingerprint])
   @@index([ownerId, importFingerprintVersion, importFingerprint], map: "AnswerCollection_owner_fpv_fp_idx")
   @@index([ownerId, importFingerprintVersion, importFingerprint, isDeleted, id], map: "AnswerCollection_owner_fpv_fp_id_idx")
+  @@index([importFingerprintVersion, isDeleted, id], map: "AnswerCollection_repair_fpv_deleted_id_idx")
 }
 
 model AnswerCollectionEntry {

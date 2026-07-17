@@ -1,8 +1,5 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import {
-  ImportExportDomainError,
-  ImportExportErrorCode,
-} from '../lib/importExportErrors.js'
+import type { CaseStudyOptionsWithSolutionReference } from '../lib/elementDomain/caseStudy.js'
 import {
   computeAnswerCollectionDidacticFingerprint,
   computeElementDidacticFingerprint,
@@ -15,19 +12,45 @@ import type {
   PackageElement,
   PackageMediaManifestEntry,
 } from '../lib/importExportPackageContract.js'
-import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
 
 export type ElementImportPreviewEntry = {
   id: number
   value: string
 }
 
-export type ElementImportPackagePreviewElement = {
+type PackageElementByType<Type extends DB.ElementType> = Extract<
+  PackageElement,
+  { type: Type }
+>
+
+type PackageCaseStudyOptions = PackageElementByType<
+  typeof DB.ElementType.CASE_STUDY
+>['options']
+
+export type ElementImportCaseStudyPreviewOptions =
+  CaseStudyOptionsWithSolutionReference<
+    PackageCaseStudyOptions,
+    'itemId',
+    number
+  >
+
+export type ElementImportPackagePreviewOptionsByElementType = {
+  [Type in DB.ElementType]: Type extends typeof DB.ElementType.CASE_STUDY
+    ? ElementImportCaseStudyPreviewOptions
+    : PackageElementByType<Type>['options']
+}
+
+export type ElementImportPackagePreviewOptionsSource = {
+  [Type in DB.ElementType]: {
+    type: Type
+    options: ElementImportPackagePreviewOptionsByElementType[Type]
+  }
+}[DB.ElementType]
+
+type ElementImportPackagePreviewElementFields = {
   ref: string
   name: string
   content: string
-  type: DB.ElementType
-  options: Record<string, unknown>
   pointsMultiplier: number
   basePoints: boolean
   explanation?: string | null
@@ -39,6 +62,10 @@ export type ElementImportPackagePreviewElement = {
   answerCollectionRef?: string | null
   answerCollectionItemIds: number[]
 }
+
+export type ElementImportPackagePreviewElement =
+  ElementImportPackagePreviewElementFields &
+    ElementImportPackagePreviewOptionsSource
 
 export type ElementImportPackagePreviewAnswerCollection = {
   ref: string
@@ -139,44 +166,43 @@ function deepFreeze<T>(value: T): T {
 }
 
 function mapCaseStudySolutionRefsToItemIds(
-  options: Record<string, unknown>,
+  options: PackageCaseStudyOptions,
   entryByRef: ReadonlyMap<string, ElementImportPreviewEntry>,
   counters?: ElementImportPreviewOperationCounters
-) {
-  const cloned = structuredClone(options) as Record<string, any>
+): ElementImportCaseStudyPreviewOptions {
+  const cloned = structuredClone(options)
 
-  if (!Array.isArray(cloned.cases)) return cloned
+  return {
+    ...cloned,
+    cases: cloned.cases.map((caseItem) => ({
+      ...caseItem,
+      solutions: caseItem.solutions?.map((solution) => {
+        if (typeof solution.itemId !== 'undefined') {
+          throw new Error(
+            'Case study package must not contain database item IDs.'
+          )
+        }
 
-  cloned.cases = cloned.cases.map((caseItem: any) => ({
-    ...caseItem,
-    solutions: Array.isArray(caseItem.solutions)
-      ? caseItem.solutions.map((solution: any) => {
-          if (typeof solution.itemId !== 'undefined') {
-            throw new Error(
-              'Case study package must not contain database item IDs.'
-            )
-          }
+        increment(counters, 'caseSolutionRefLookups')
+        const entry =
+          typeof solution.itemRef === 'string'
+            ? entryByRef.get(solution.itemRef)
+            : undefined
 
-          increment(counters, 'caseSolutionRefLookups')
-          const entry =
-            typeof solution.itemRef === 'string'
-              ? entryByRef.get(solution.itemRef)
-              : undefined
+        if (!entry) {
+          throw new Error('Case study solution references an unknown entry.')
+        }
 
-          if (!entry) {
-            throw new Error('Case study solution references an unknown entry.')
-          }
-
-          const { itemRef, ...rest } = solution
-          return {
-            ...rest,
-            itemId: entry.id,
-          }
-        })
-      : caseItem.solutions,
-  }))
-
-  return cloned
+        const { itemId: _itemId, itemRef: _itemRef, ...rest } = solution
+        void _itemId
+        void _itemRef
+        return {
+          ...rest,
+          itemId: entry.id,
+        }
+      }),
+    })),
+  }
 }
 
 function buildElementPreviewOptions({
@@ -187,7 +213,7 @@ function buildElementPreviewOptions({
   element: PackageElement
   collection: IndexedCollection | undefined
   counters?: ElementImportPreviewOperationCounters
-}) {
+}): ElementImportPackagePreviewOptionsSource {
   if (element.type === DB.ElementType.SELECTION) {
     if (!collection) {
       throw new Error(
@@ -199,7 +225,7 @@ function buildElementPreviewOptions({
     // Relation IDs are exposed separately on the preview DTO and must not be
     // copied into an authoring-only `correctAnswers` array just to strip them
     // again during validation.
-    return { ...element.options }
+    return { type: element.type, options: { ...element.options } }
   }
 
   if (element.type === DB.ElementType.CASE_STUDY) {
@@ -211,30 +237,33 @@ function buildElementPreviewOptions({
 
     // The review renderer consumes database-shaped item IDs in case-study
     // solutions. Collection and selected IDs remain separate preview fields.
-    return mapCaseStudySolutionRefsToItemIds(
-      element.options,
-      collection.entryByRef,
-      counters
-    )
+    return {
+      type: element.type,
+      options: mapCaseStudySolutionRefsToItemIds(
+        element.options,
+        collection.entryByRef,
+        counters
+      ),
+    }
   }
 
-  return assertValidElementOptions(element, element.options)
-}
-
-function assertValidElementOptions(
-  element: PackageElement,
-  options: Record<string, unknown>
-) {
-  const processedOptions = validateAndProcessElementOptions(
-    element.type,
-    options as any
-  )
-
-  if (processedOptions === null) {
-    throw new ImportExportDomainError(ImportExportErrorCode.INVALID_OPTIONS)
+  // Package parsing has already run the type-specific canonical schema.
+  switch (element.type) {
+    case DB.ElementType.SC:
+      return { type: element.type, options: element.options }
+    case DB.ElementType.MC:
+      return { type: element.type, options: element.options }
+    case DB.ElementType.KPRIM:
+      return { type: element.type, options: element.options }
+    case DB.ElementType.NUMERICAL:
+      return { type: element.type, options: element.options }
+    case DB.ElementType.FREE_TEXT:
+      return { type: element.type, options: element.options }
+    case DB.ElementType.CONTENT:
+      return { type: element.type, options: element.options }
+    case DB.ElementType.FLASHCARD:
+      return { type: element.type, options: element.options }
   }
-
-  return processedOptions as Record<string, unknown>
 }
 
 function buildFingerprintMedia(
@@ -329,7 +358,7 @@ export function createElementImportPreviewModel(
       selectedAnswerValues.push(entry.value)
     }
 
-    const options = buildElementPreviewOptions({
+    const previewOptions = buildElementPreviewOptions({
       element,
       collection,
       counters,
@@ -358,8 +387,7 @@ export function createElementImportPreviewModel(
       ref: element.ref,
       name: element.name,
       content: element.content,
-      type: element.type,
-      options,
+      ...previewOptions,
       pointsMultiplier: element.pointsMultiplier,
       basePoints: element.basePoints,
       explanation: element.explanation ?? null,

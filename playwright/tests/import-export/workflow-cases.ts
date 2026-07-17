@@ -1,4 +1,5 @@
 import { AxeBuilder } from '@axe-core/playwright'
+import type { Request } from '@playwright/test'
 import deMessages from '../../../packages/i18n/messages/de.js'
 import { URL_MANAGE } from '../../util/constants.js'
 import { isGraphqlOperation } from '../../util/graphqlRequest.js'
@@ -7,6 +8,7 @@ import { expect, importExportTest } from './fixture.js'
 import {
   downloadElementPackage,
   getElementsSearchInput,
+  openExportPackageModal,
   openImportPackageModal,
   packageEntries,
   seedNumericalPackageElement,
@@ -24,15 +26,24 @@ export function registerWorkflowImportExportCases() {
         suffix: `roundtrip ${testInfo.workerIndex}`,
         userId: importExportIsolation.users.owner.id,
       })
+      const numericalPlaceholder = 'Round-trip Δx ≈ 3,14\u202fµm 🧪'
+      const numericalName = await seedNumericalPackageElement({
+        name: `PW Package Numerical roundtrip ${testInfo.workerIndex}`,
+        content: `Numerical package content roundtrip ${testInfo.workerIndex}`,
+        placeholder: numericalPlaceholder,
+        userId: importExportIsolation.users.owner.id,
+      })
       const zipPath = await downloadElementPackage({
         page,
         testInfo,
-        elementNames: [names.singleChoice, names.selection],
+        elementNames: [names.singleChoice, names.selection, numericalName],
       })
 
       await openImportPackageModal(page)
       await uploadPackageFile(page, zipPath)
-      await expect(page.getByTestId('element-0-import')).toBeFocused()
+      await expect(
+        page.getByTestId('element-import-review-disclosures')
+      ).toBeFocused()
 
       const dialog = page.getByRole('dialog')
       const previewPanel = page.getByTestId('element-import-preview-panel')
@@ -55,8 +66,9 @@ export function registerWorkflowImportExportCases() {
       )
       await expect(
         page.getByTestId('element-import-selection-summary')
-      ).toContainText('2 elements selected')
+      ).toContainText('3 elements selected')
       await expect(previewPanel).toBeVisible()
+      await expect(previewPanel).toHaveAttribute('tabindex', '0')
       await expect(page.getByTestId('element-import-0')).toBeVisible()
 
       const selectionToggle = page.getByRole('checkbox', {
@@ -66,10 +78,15 @@ export function registerWorkflowImportExportCases() {
       await selectionToggle.click()
       await expect(
         page.getByTestId('element-import-selection-summary')
-      ).toContainText('1 element selected')
+      ).toContainText('2 elements selected')
       await expect(
         page.getByTestId('element-package-answer-collection-0')
       ).not.toBeAttached()
+      await expect(
+        page.getByTestId('element-import-answer-collections-overview')
+      ).not.toContainText(
+        messages.manage.elements.packageAnswerCollectionsEmpty
+      )
       await selectionToggle.click()
       await expect(
         page.getByTestId('element-package-answer-collection-0')
@@ -78,7 +95,18 @@ export function registerWorkflowImportExportCases() {
       const collectionOverview = page.getByTestId(
         'element-package-answer-collection-0'
       )
-      await collectionOverview.locator('summary').click()
+      const collectionSummary = collectionOverview.locator('summary')
+      expect(
+        await collectionSummary.evaluate(
+          (element) => getComputedStyle(element).display
+        )
+      ).toBe('list-item')
+      await collectionSummary.click()
+      await expect(
+        collectionOverview.getByTestId(
+          'element-package-answer-collection-entry-page'
+        )
+      ).toHaveAttribute('tabindex', '0')
       await expect(collectionOverview).toContainText(packageEntries[0]!)
       await expect(collectionOverview).toContainText(packageEntries[2]!)
 
@@ -156,6 +184,16 @@ export function registerWorkflowImportExportCases() {
       await expect(answerPool).toContainText(packageEntries[0]!)
       await expect(answerPool).toContainText(packageEntries[2]!)
 
+      await page.getByTestId('preview-imported-element-2').click()
+      await expect(
+        page
+          .getByTestId('student-element-preview')
+          .getByTestId('input-numerical-0')
+      ).toHaveAttribute('placeholder', numericalPlaceholder)
+      await expect(
+        page.getByTestId('element-import-didactic-review')
+      ).toContainText(numericalPlaceholder)
+
       await page.getByTestId('confirm-element-import').click()
       await expect(
         page.getByTestId('element-import-preview-panel')
@@ -177,11 +215,18 @@ export function registerWorkflowImportExportCases() {
       await expect(
         page.getByTestId(`element-item-${names.selection}`)
       ).toHaveCount(2)
+
+      await searchInput.clear()
+      await searchInput.fill(numericalName)
+      await page.keyboard.press('Enter')
+      await expect(
+        page.getByTestId(`element-item-${numericalName}`)
+      ).toHaveCount(2)
     }
   )
 
   importExportTest(
-    'Committed import stays non-dismissible and a refresh failure remains a success',
+    'Committed import stays non-dismissible until commit and can close during refresh',
     async ({ importExportIsolation, page }, testInfo) => {
       const names = await seedPackageElements({
         page,
@@ -193,6 +238,14 @@ export function registerWorkflowImportExportCases() {
         testInfo,
         elementNames: [names.singleChoice, names.selection],
       })
+      const manageOrigin = process.env.URL_MANAGE ?? URL_MANAGE
+
+      await page.getByTestId('activities').click()
+      await expect(page).toHaveURL(
+        new URL('/activities', manageOrigin).toString()
+      )
+      await page.getByTestId('library').click()
+      await expect(page).toHaveURL(new URL('/', manageOrigin).toString())
 
       await openImportPackageModal(page)
       await uploadPackageFile(page, zipPath)
@@ -210,6 +263,10 @@ export function registerWorkflowImportExportCases() {
       })
       const elementRefreshRequest = new Promise<void>((resolve) => {
         elementRefreshStarted = resolve
+      })
+      let elementRefreshRouteSettled!: () => void
+      const elementRefreshSettled = new Promise<void>((resolve) => {
+        elementRefreshRouteSettled = resolve
       })
       await page.route('**/api/graphql*', async (route) => {
         const request = route.request()
@@ -242,13 +299,19 @@ export function registerWorkflowImportExportCases() {
           failNextElementRefresh = false
           elementRefreshStarted()
           await elementRefreshGate
-          await route.fulfill({
-            status: 200,
-            contentType: 'application/json',
-            body: JSON.stringify({
-              errors: [{ message: 'Synthetic post-commit refresh failure' }],
-            }),
-          })
+          try {
+            await route.fulfill({
+              status: 200,
+              contentType: 'application/json',
+              body: JSON.stringify({
+                errors: [{ message: 'Synthetic post-commit refresh failure' }],
+              }),
+            })
+          } catch {
+            // Closing the workflow may abort the held refresh request.
+          } finally {
+            elementRefreshRouteSettled()
+          }
           return
         }
 
@@ -273,49 +336,73 @@ export function registerWorkflowImportExportCases() {
         await page.keyboard.press('Escape')
         await expect(page.getByRole('dialog')).toBeVisible()
 
+        const importPageUrl = page.url()
+        await expect
+          .poll(
+            async () =>
+              await page.evaluate(() => {
+                const event = new Event('beforeunload', { cancelable: true })
+                return !window.dispatchEvent(event)
+              })
+          )
+          .toBe(true)
+        await page.evaluate(
+          () =>
+            new Promise<void>((resolve) => {
+              window.addEventListener(
+                'popstate',
+                () => window.requestAnimationFrame(() => resolve()),
+                { once: true }
+              )
+              window.history.back()
+            })
+        )
+        await expect(page).toHaveURL(importPageUrl)
+        await expect(page.getByRole('dialog')).toBeVisible()
+        expect(importCalls).toBe(1)
+
         releaseImport()
         await elementRefreshRequest
-        try {
-          await expect(
-            page.getByTestId('element-import-workflow')
-          ).toHaveAttribute('aria-busy', 'true')
-          await expect(
-            page.getByTestId('element-import-completion')
-          ).toBeVisible()
-          await expect(
-            page.getByTestId('close-element-upload-modal')
-          ).not.toBeAttached()
-          await expect(
-            page.getByTestId('cancel-element-upload-modal')
-          ).not.toBeAttached()
-          await expect(page.getByTestId('element-import-status')).toContainText(
-            messages.manage.elements.elementImportStatusRefreshing
-          )
-          await expect(page.getByTestId('element-import-status')).toBeVisible()
-          await page.keyboard.press('Escape')
-          await expect(page.getByRole('dialog')).toBeVisible()
-        } finally {
-          releaseElementRefresh()
-        }
+        await expect(
+          page.getByTestId('element-import-workflow')
+        ).toHaveAttribute('aria-busy', 'true')
+        await expect(
+          page.getByTestId('element-import-completion')
+        ).toBeVisible()
+        await expect(
+          page.getByTestId('close-element-upload-modal')
+        ).toBeEnabled()
+        await expect(
+          page.getByTestId('cancel-element-upload-modal')
+        ).toBeEnabled()
+        await expect(page.getByTestId('element-import-status')).toContainText(
+          messages.manage.elements.elementImportStatusRefreshing
+        )
+        await expect(page.getByTestId('element-import-status')).toBeVisible()
         await expect(
           page
             .getByLabel('Notifications alt+T')
             .getByText('2 elements were imported successfully.')
         ).toBeVisible()
+
+        await page.getByTestId('close-element-upload-modal').click()
+        await expect(page.getByRole('dialog')).not.toBeAttached()
+
+        releaseElementRefresh()
+        await elementRefreshSettled
+        await page.evaluate(
+          () =>
+            new Promise<void>((resolve) => {
+              requestAnimationFrame(() =>
+                requestAnimationFrame(() => resolve())
+              )
+            })
+        )
         await expect(
           page
             .getByLabel('Notifications alt+T')
             .getByText(messages.manage.elements.elementImportRefreshFailed)
-        ).toBeVisible()
-        await expect(page.getByRole('dialog')).toBeVisible()
-        await expect(
-          page.getByTestId('close-element-upload-modal')
-        ).toBeEnabled()
-        await testInfo.attach('element-import-success-refresh-warning-en', {
-          body: await page.screenshot(),
-          contentType: 'image/png',
-        })
-        await page.getByTestId('close-element-upload-modal').click()
+        ).toHaveCount(0)
         await expect(page.getByRole('dialog')).not.toBeAttached()
         expect(importCalls).toBe(1)
       } finally {
@@ -521,7 +608,7 @@ export function registerWorkflowImportExportCases() {
   )
 
   importExportTest(
-    'German import review remains usable without horizontal overflow at 375px and 320px',
+    'German import and export remain usable at desktop and mobile viewports',
     async ({ importExportIsolation, page }, testInfo) => {
       testInfo.setTimeout(180_000)
       const names = await seedPackageElements({
@@ -541,8 +628,13 @@ export function registerWorkflowImportExportCases() {
         testInfo,
         elementNames: [names.singleChoice, names.selection, numericalName],
       })
+      const viewports = [
+        { width: 1280, height: 720, name: '1280x720' },
+        { width: 375, height: 812, name: '375px' },
+        { width: 320, height: 720, name: '320px' },
+      ]
 
-      await page.setViewportSize({ width: 375, height: 812 })
+      await page.setViewportSize({ width: 1280, height: 720 })
       await page.goto(
         new URL('/de', process.env.URL_MANAGE ?? URL_MANAGE).toString(),
         { waitUntil: 'commit' }
@@ -566,13 +658,18 @@ export function registerWorkflowImportExportCases() {
       await expect(
         page.getByTestId('element-import-didactic-review')
       ).toContainText(numericalPlaceholder)
+      await page.getByTestId('close-element-import-preview').click()
 
-      for (const viewport of [
-        { width: 375, height: 812, name: '375px' },
-        { width: 320, height: 720, name: '320px' },
-      ]) {
+      for (const viewport of viewports) {
         await page.setViewportSize(viewport)
         const modal = page.getByTestId('element-upload-modal')
+        const selectionList = page.getByTestId('element-import-selection-list')
+        const selectionSummary = page.getByTestId(
+          'element-import-selection-summary'
+        )
+        const firstSelection = page.getByTestId('element-0-import')
+        const firstSelectionTarget = page.getByTestId('element-0-import-target')
+        const lastSelection = page.getByTestId('element-2-import')
         await expect(modal).toBeVisible()
         const modalBox = await modal.boundingBox()
         expect(modalBox?.x ?? -1).toBeGreaterThanOrEqual(0)
@@ -584,6 +681,112 @@ export function registerWorkflowImportExportCases() {
             (element) => element.scrollWidth <= element.clientWidth
           )
         ).toBe(true)
+
+        await selectionList.scrollIntoViewIfNeeded()
+        await expect(selectionList).toBeVisible()
+        await expect
+          .poll(async () => (await selectionList.boundingBox())?.height ?? 0)
+          .toBeGreaterThanOrEqual(128)
+        await expect(selectionSummary).toContainText(
+          '3 Elemente ausgewählt (von 3 Elementen)'
+        )
+
+        const firstTargetBox = await firstSelectionTarget.boundingBox()
+        expect(firstTargetBox?.width ?? 0).toBeGreaterThanOrEqual(44)
+        expect(firstTargetBox?.height ?? 0).toBeGreaterThanOrEqual(44)
+        await firstSelection.scrollIntoViewIfNeeded()
+        await expect(firstSelection).toBeVisible()
+        await expect(firstSelection).toBeChecked()
+        if (viewport.width === 320) {
+          await firstSelectionTarget.click({ position: { x: 2, y: 2 } })
+        } else {
+          await firstSelection.click()
+        }
+        await lastSelection.scrollIntoViewIfNeeded()
+        await expect(lastSelection).toBeVisible()
+        await expect(lastSelection).toBeChecked()
+        await lastSelection.click()
+        await expect(selectionSummary).toContainText(
+          '1 Element ausgewählt (von 3 Elementen)'
+        )
+
+        await firstSelection.scrollIntoViewIfNeeded()
+        await expect(firstSelection).not.toBeChecked()
+        await firstSelection.click()
+        await lastSelection.scrollIntoViewIfNeeded()
+        await expect(lastSelection).not.toBeChecked()
+        await lastSelection.click()
+        await expect(selectionSummary).toContainText(
+          '3 Elemente ausgewählt (von 3 Elementen)'
+        )
+
+        if (viewport.width === 320) {
+          const previewButton = page.getByTestId('preview-imported-element-2')
+          const previewRegion = page.getByTestId(
+            'element-import-preview-region'
+          )
+          await previewButton.scrollIntoViewIfNeeded()
+          await expect(previewButton).toHaveAttribute(
+            'aria-controls',
+            'element-import-preview-region'
+          )
+          await expect(previewButton).toHaveAttribute('aria-pressed', 'false')
+          await previewButton.click()
+          await expect(previewButton).toHaveAttribute('aria-pressed', 'true')
+          await expect(previewRegion).toBeFocused()
+          await expect(previewRegion).toBeInViewport()
+          await expect(
+            page.getByTestId('element-import-preview-content')
+          ).toBeVisible()
+          await expect(
+            page.getByTestId('element-import-didactic-review')
+          ).toBeVisible()
+
+          const numericalInput = page.getByTestId('input-numerical-0')
+          expect(
+            await numericalInput.evaluate(
+              (element) => element.closest('form') === null
+            )
+          ).toBe(true)
+
+          let importRequestCount = 0
+          const countImportRequest = (request: Request) => {
+            if (isGraphqlOperation(request, 'ImportElementPackage')) {
+              importRequestCount += 1
+            }
+          }
+          page.on('request', countImportRequest)
+          try {
+            await numericalInput.press('Enter')
+            await expect(
+              page.getByTestId('element-import-review-form')
+            ).toBeVisible()
+
+            const closePreview = page.getByTestId(
+              'close-element-import-preview'
+            )
+            await closePreview.scrollIntoViewIfNeeded()
+            await expect(closePreview).toBeInViewport()
+            await closePreview.click()
+            await expect(
+              page.getByTestId('element-import-preview-content')
+            ).not.toBeAttached()
+            await expect(previewButton).toHaveAttribute('aria-pressed', 'false')
+            await expect(previewButton).toBeFocused()
+            await page.evaluate(
+              () =>
+                new Promise<void>((resolve) => {
+                  requestAnimationFrame(() =>
+                    requestAnimationFrame(() => resolve())
+                  )
+                })
+            )
+            expect(importRequestCount).toBe(0)
+          } finally {
+            page.off('request', countImportRequest)
+          }
+        }
+
         await page
           .getByTestId('confirm-element-import')
           .scrollIntoViewIfNeeded()
@@ -596,6 +799,56 @@ export function registerWorkflowImportExportCases() {
 
       await page.getByTestId('close-element-upload-modal').click()
       await expect(page.getByTestId('elements-upload')).toBeFocused()
+
+      await page.setViewportSize(viewports[0]!)
+      await page.goto(
+        new URL('/de', process.env.URL_MANAGE ?? URL_MANAGE).toString(),
+        { waitUntil: 'commit' }
+      )
+      await expect(page.getByTestId('elements-upload')).toBeVisible()
+      await openExportPackageModal(page, [
+        names.singleChoice,
+        names.selection,
+        numericalName,
+      ])
+      await expect
+        .poll(() => page.evaluate(() => document.documentElement.lang))
+        .toBe('de')
+      await expect(page.getByTestId('element-download-modal')).toContainText(
+        deMessages.manage.elements.elementExportPsychometricDisclosure
+      )
+
+      for (const viewport of viewports) {
+        await page.setViewportSize(viewport)
+        const modal = page.getByTestId('element-download-modal')
+        const downloadButton = page.getByTestId(
+          'download-selected-elements-package'
+        )
+        await expect(modal).toBeVisible()
+        const modalBox = await modal.boundingBox()
+        expect(modalBox?.x ?? -1).toBeGreaterThanOrEqual(0)
+        expect(
+          (modalBox?.x ?? 0) + (modalBox?.width ?? Infinity)
+        ).toBeLessThanOrEqual(viewport.width)
+        expect(
+          await modal.evaluate(
+            (element) => element.scrollWidth <= element.clientWidth
+          )
+        ).toBe(true)
+        await expect(
+          page.getByTestId('element-export-answer-collections-overview')
+        ).toBeVisible()
+        await downloadButton.scrollIntoViewIfNeeded()
+        await expect(downloadButton).toBeInViewport()
+        await expect(downloadButton).toBeEnabled()
+        await testInfo.attach(`element-export-review-${viewport.name}-de`, {
+          body: await page.screenshot(),
+          contentType: 'image/png',
+        })
+      }
+
+      await page.getByTestId('close-element-download-modal').click()
+      await expect(page.getByTestId('elements-download')).toBeFocused()
     }
   )
 }

@@ -288,6 +288,25 @@ describe('canonical element domain', () => {
     }
   })
 
+  it('preserves free-text Unicode scoring semantics during canonicalization', () => {
+    const decomposedSolution = 'e\u0301'
+    const canonical = canonicalizeElementOptions({
+      type: ElementType.FREE_TEXT,
+      options: {
+        hasSampleSolution: true,
+        solutions: [` ${decomposedSolution} `],
+      },
+    })
+
+    expect(canonical.options.solutions).toEqual([decomposedSolution])
+    expect(
+      gradeQuestionFreeText({
+        response: decomposedSolution,
+        solutions: canonical.options.solutions,
+      })
+    ).toBe(1)
+  })
+
   it('enforces selection integers, pool bounds, uniqueness, and membership', () => {
     const canonical = canonicalizeElementAuthoringOptions(
       ElementType.SELECTION,

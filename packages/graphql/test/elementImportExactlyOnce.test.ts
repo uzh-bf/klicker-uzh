@@ -266,7 +266,7 @@ describe.sequential('exactly-once public element import', () => {
     ])
   })
 
-  it('serializes concurrent same-token attempts and later replays the result', async () => {
+  it('bounds concurrent same-token attempts and later replays the result', async () => {
     const prepared = await prepareValidatedPackage({
       elementCount: 1,
       exporterCtx,
@@ -304,7 +304,7 @@ describe.sequential('exactly-once public element import', () => {
     }
     for (const attempt of rejected) {
       expect(getPublicErrorCode(attempt.reason)).toBe(
-        ImportExportErrorCode.IMPORT_IN_PROGRESS
+        ImportExportErrorCode.RATE_LIMITED
       )
     }
     await expect(

@@ -35,19 +35,19 @@ export type ElementImportExecutionCollectionPlan = Readonly<{
   entries: readonly Readonly<{ ref: string; value: string }>[]
 }>
 
-export type ElementImportExecutionElementPlan = Readonly<{
-  ref: string
-  originalId: string
-  name: string
-  content: string
-  explanation: string | null
-  type: DB.ElementType
-  options: Readonly<Record<string, unknown>>
-  pointsMultiplier: number
-  basePoints: boolean
-  answerCollectionRef?: string
-  answerCollectionItemRefs: readonly string[]
-}>
+type ElementImportExecutionElementPlanFor<Element extends PackageElement> =
+  Element extends PackageElement
+    ? Readonly<
+        Omit<Element, 'answerCollectionItemRefs' | 'explanation'> & {
+          originalId: string
+          explanation: string | null
+          answerCollectionItemRefs: readonly string[]
+        }
+      >
+    : never
+
+export type ElementImportExecutionElementPlan =
+  ElementImportExecutionElementPlanFor<PackageElement>
 
 export type ElementImportExecutionPlan = Readonly<{
   ownerId: string
@@ -65,11 +65,15 @@ export type BoundElementImportExecutionCollectionPlan =
     }>
 
 export type BoundElementImportExecutionElementPlan =
-  ElementImportExecutionElementPlan &
-    Readonly<{
-      importFingerprint: string | null
-      importFingerprintVersion: number | null
-    }>
+  ElementImportExecutionElementPlan extends infer Element
+    ? Element extends ElementImportExecutionElementPlan
+      ? Element &
+          Readonly<{
+            importFingerprint: string | null
+            importFingerprintVersion: number | null
+          }>
+      : never
+    : never
 
 export type BoundElementImportExecutionPlan = Readonly<{
   ownerId: string
@@ -106,6 +110,18 @@ function createImportedElementOriginalId(
   elementRef: string
 ) {
   return `import-package:${packageHash.slice(0, 16)}:${elementRef}`
+}
+
+function createExecutionElementPlan<Element extends PackageElement>(
+  element: Element,
+  packageHash: string
+) {
+  return {
+    ...element,
+    originalId: createImportedElementOriginalId(packageHash, element.ref),
+    explanation: element.explanation ?? null,
+    answerCollectionItemRefs: element.answerCollectionItemRefs ?? [],
+  }
 }
 
 function assertNoPackageMediaReferences({
@@ -230,19 +246,9 @@ export function createElementImportExecutionPlan({
         value: entry.value,
       })),
     })),
-    elements: elements.map((element) => ({
-      ref: element.ref,
-      originalId: createImportedElementOriginalId(packageHash, element.ref),
-      name: element.name,
-      content: element.content,
-      explanation: element.explanation ?? null,
-      type: element.type,
-      options: element.options,
-      pointsMultiplier: element.pointsMultiplier,
-      basePoints: element.basePoints,
-      answerCollectionRef: element.answerCollectionRef,
-      answerCollectionItemRefs: element.answerCollectionItemRefs ?? [],
-    })),
+    elements: elements.map((element) =>
+      createExecutionElementPlan(element, packageHash)
+    ),
     media: media.map((entry) => ({
       sourceHref: entry.sourceHref,
       sha256: entry.sha256,

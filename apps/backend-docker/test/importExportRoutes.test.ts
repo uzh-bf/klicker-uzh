@@ -42,7 +42,7 @@ function createDefaultServices(): ImportExportRouteServices {
     uploadPreparedElementImportPackage: async ({ contentLength, stream }) => {
       let bytes = 0
       for await (const chunk of stream) {
-        bytes += Buffer.from(chunk as Uint8Array).length
+        bytes += Buffer.from(chunk).length
       }
       assert.equal(bytes, contentLength)
       return { bytes, sha256: 'uploaded-sha256', replayed: false }
@@ -277,11 +277,11 @@ describe('import/export HTTP routes', () => {
     ] as const
 
     for (const [code, status] of expected) {
-      let readableEndedDuringService = true
+      let serviceCalls = 0
       const harness = await createHarness({
         serviceOverrides: {
-          uploadPreparedElementImportPackage: async (_args, ctx) => {
-            readableEndedDuringService = ctx.req.readableEnded
+          uploadPreparedElementImportPackage: async () => {
+            serviceCalls += 1
             throw new GraphQLError('stable rejection', {
               extensions: { code },
             })
@@ -295,7 +295,7 @@ describe('import/export HTTP routes', () => {
 
       assert.equal(result.status, status)
       assert.equal(json(result).code, code)
-      assert.equal(readableEndedDuringService, false)
+      assert.equal(serviceCalls, 1)
       assert.equal(result.headers.connection, 'close')
       await harness.close()
       activeHarnesses.delete(harness)

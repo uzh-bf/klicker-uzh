@@ -10,6 +10,8 @@ import { emitImportExportTelemetry } from '../lib/importExportTelemetry.js'
 
 export const IMPORT_EXPORT_DISABLED_ERROR_CODE = ImportExportErrorCode.DISABLED
 
+type ImportExportAuthorizationContext = Pick<ContextWithUser, 'prisma' | 'user'>
+
 function hasImportExportLoginScope(scope: DB.UserLoginScope) {
   return (
     scope === DB.UserLoginScope.ACCOUNT_OWNER ||
@@ -18,7 +20,7 @@ function hasImportExportLoginScope(scope: DB.UserLoginScope) {
 }
 
 export async function canUseElementImportExport(
-  ctx: ContextWithUser | PrismaTransactionContextWithUser
+  ctx: ImportExportAuthorizationContext | PrismaTransactionContextWithUser
 ) {
   const config = getImportExportRuntimeConfig()
   if (!config.enabled) return false
@@ -55,7 +57,9 @@ export async function getElementImportExportCapability(ctx: ContextWithUser) {
   }
 }
 
-export async function assertCanUseElementImportExport(ctx: ContextWithUser) {
+export async function assertCanUseElementImportExport(
+  ctx: ImportExportAuthorizationContext
+) {
   if (await canUseElementImportExport(ctx)) return
 
   throw new GraphQLError('Import/export is not available.', {

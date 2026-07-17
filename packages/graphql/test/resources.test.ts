@@ -14,6 +14,8 @@ import {
 import { EventEmitter } from 'events'
 import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
+import { IMPORT_EXPORT_FINGERPRINT_VERSION } from '../src/lib/importExportFingerprintCanonicalization.js'
+import { repairStaleImportExportFingerprints } from '../src/services/importExportFingerprintMaintenance.js'
 import { refreshElementImportFingerprint } from '../src/services/importExportFingerprints.js'
 import {
   addAnswerCollectionOption,
@@ -511,6 +513,32 @@ describe('Integration tests for resource management (e.g. answer collections)', 
       select: { importFingerprint: true },
     })
     expect(after.importFingerprint).toBe(before.importFingerprint)
+  })
+
+  it('does not enqueue metadata-only refresh for a processed null fingerprint', async () => {
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
+    await prisma.answerCollection.update({
+      where: { id: AC1!.id },
+      data: {
+        importFingerprint: null,
+        importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+      },
+    })
+    const runNoWait = vi.spyOn(
+      userOneCtx.tasks.refreshImportExportFingerprints,
+      'runNoWait'
+    )
+
+    try {
+      await modifyAnswerCollection(
+        { id: AC1!.id, name: 'Processed null metadata update' },
+        userOneCtx
+      )
+
+      expect(runNoWait).not.toHaveBeenCalled()
+    } finally {
+      runNoWait.mockRestore()
+    }
   })
 
   it('Verify that answer collections can be deleted when unused (hard deletion case)', async () => {
@@ -1062,6 +1090,25 @@ describe('Integration tests for resource management (e.g. answer collections)', 
 
   it('keeps an entry write successful when fingerprint enqueueing fails', async () => {
     const { AC1 } = await seedAnswerCollections(userOneCtx)
+    const collection = await prisma.answerCollection.findUniqueOrThrow({
+      where: { id: AC1!.id },
+      include: { entries: true },
+    })
+    const linkedElement = await prisma.element.create({
+      data: {
+        type: ElementType.SELECTION,
+        name: 'Enqueue failure linked selection',
+        content: 'Choose an option',
+        options: { hasSampleSolution: true, numberOfInputs: 1 },
+        ownerId: userOne.id,
+        answerCollectionId: collection.id,
+        answerCollectionItems: {
+          connect: { id: collection.entries[0]!.id },
+        },
+        importFingerprint: 'a'.repeat(64),
+        importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+      },
+    })
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const runNoWait = vi
       .spyOn(userOneCtx.tasks.refreshImportExportFingerprints, 'runNoWait')
@@ -1091,6 +1138,53 @@ describe('Integration tests for resource management (e.g. answer collections)', 
         importFingerprint: null,
         importFingerprintVersion: null,
       })
+
+      await expect(
+        repairStaleImportExportFingerprints(prisma)
+      ).resolves.toMatchObject({
+        processedAnswerCollections: expect.any(Number),
+        processedElements: expect.any(Number),
+      })
+      await expect(
+        prisma.answerCollection.findUniqueOrThrow({
+          where: { id: AC1!.id },
+          select: {
+            importFingerprint: true,
+            importFingerprintVersion: true,
+          },
+        })
+      ).resolves.toMatchObject({
+        importFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+        importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+      })
+      await expect(
+        prisma.element.findUniqueOrThrow({
+          where: { id: linkedElement.id },
+          select: {
+            importFingerprint: true,
+            importFingerprintVersion: true,
+          },
+        })
+      ).resolves.toMatchObject({
+        importFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+        importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+      })
+      await expect(
+        prisma.element.count({
+          where: {
+            answerCollectionId: collection.id,
+            isDeleted: false,
+            OR: [
+              { importFingerprintVersion: null },
+              {
+                importFingerprintVersion: {
+                  not: IMPORT_EXPORT_FINGERPRINT_VERSION,
+                },
+              },
+            ],
+          },
+        })
+      ).resolves.toBe(0)
     } finally {
       runNoWait.mockRestore()
       warn.mockRestore()

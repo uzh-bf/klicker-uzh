@@ -2,7 +2,7 @@
 type: Data Layer
 title: Data & Migrations
 description: Split Prisma schema, the migrate→sync→generate ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-07-14'
+timestamp: '2026-07-17'
 tags:
   - backend
   - prisma
@@ -37,7 +37,7 @@ Migration `20260707120000_import_export_fingerprints` is published feature-branc
 
 That prior migration creates its two owner/fingerprint indexes with ordinary blocking `CREATE INDEX` statements. If it is absent on a measured-large target, the concurrent-index pre-step below cannot safely pre-create those same names because the published migration does not use `IF NOT EXISTS`. Never edit the published migration. Use the audited reconciliation procedure below only with a named DBA/release owner, recorded target evidence, and approval through the protected production change process.
 
-Migration `20260712205147_import_export_durable_state` is additive and compatible with the previous application: it adds new tables and nullable fields, while retaining the old owner/fingerprint indexes for mixed-version rollback. Follow-up migration `20260712223000_import_export_media_fingerprint_state` adds nullable `MediaFile.importFingerprintVersion`, a `NOT VALID` positive-version check, and the maintenance lookup index. Migration `20260713003000_element_import_receipt_identity_immutable` prevents updates to a receipt's token-binding identity while leaving the optional artifact relation detachable by expiry cleanup. Migration `20260713013000_import_export_result_and_target_immutability` makes completed receipt results monotonic and freezes the exact artifact/media cleanup identities; operational lease, state, expiry, orphan-ref, and media-link transitions remain mutable. Migration `20260713130636_import_export_duplicate_lookup_indexes` adds owner/version/fingerprint/active-state/trailing-`id` indexes for one bounded lowest-active-ID duplicate probe per package candidate, including under heavy soft-delete skew; the previous three-column indexes remain in place for mixed-version rollback. The media and duplicate-lookup indexes use ordinary transactional creation on measured-small targets. On a large target, record real table sizes, approve the media-index maintenance/lock budget, and use the documented concurrent pre-create procedure for the duplicate-lookup indexes. The repository exposes manual deployment aliases:
+Migration `20260712205147_import_export_durable_state` is additive and compatible with the previous application: it adds new tables and nullable fields, while retaining the old owner/fingerprint indexes for mixed-version rollback. Follow-up migration `20260712223000_import_export_media_fingerprint_state` adds nullable `MediaFile.importFingerprintVersion`, a `NOT VALID` positive-version check, and the maintenance lookup index. Migration `20260713003000_element_import_receipt_identity_immutable` prevents updates to a receipt's token-binding identity while leaving the optional artifact relation detachable by expiry cleanup. Migration `20260713013000_import_export_result_and_target_immutability` makes completed receipt results monotonic and freezes the exact artifact/media cleanup identities; operational lease, state, expiry, orphan-ref, and media-link transitions remain mutable. Migration `20260713130636_import_export_duplicate_lookup_indexes` adds owner/version/fingerprint/active-state/trailing-`id` indexes for one bounded lowest-active-ID duplicate probe per package candidate, including under heavy soft-delete skew; the previous three-column indexes remain in place for mixed-version rollback. Migration `20260716085603_import_export_fingerprint_repair_indexes` adds version/deletion/ID indexes for the bounded scheduled-repair scans and an answer-collection/deletion/ID index for linked-element invalidation and refresh. Before sealing the server-canonical CHECK expressions, it installs and validates corrected durable-state constraints that explicitly require final bytes and SHA-256 for `READY` artifacts and a retention deadline for `COMPLETE` receipts; the previous comparison-only expressions could evaluate to SQL `NULL` and therefore pass a PostgreSQL CHECK. Constraint replacement and expression sealing run in one explicit transaction, so a validation or seal failure preserves the previously installed constraints; the preceding idempotent index creation and validation intentionally remain outside that transaction. Its NULL-safe compatibility guard also revalidates the four earlier concurrently pre-creatable indexes without modifying their published migrations. Production inspection reads only the public schema, rejects failed or duplicate active migration attempts, checks CHECK/FK column shapes and exact CHECK-expression seals, and compares every ownership/immutability trigger body to its immutable repository migration source. The media, duplicate-lookup, and repair/invalidation indexes use ordinary transactional creation on measured-small targets. On a large target, record real table sizes, approve the media-index maintenance/lock budget, and use the documented concurrent pre-create procedure for the duplicate-lookup and repair/invalidation indexes. The repository exposes manual deployment aliases:
 
 ```bash
 pnpm --filter @klicker-uzh/prisma prisma:deploy:qa
@@ -58,7 +58,8 @@ WHERE migration_name IN (
   '20260712223000_import_export_media_fingerprint_state',
   '20260713003000_element_import_receipt_identity_immutable',
   '20260713013000_import_export_result_and_target_immutability',
-  '20260713130636_import_export_duplicate_lookup_indexes'
+  '20260713130636_import_export_duplicate_lookup_indexes',
+  '20260716085603_import_export_fingerprint_repair_indexes'
 )
 ORDER BY migration_name;
 
@@ -96,6 +97,12 @@ The bounded duplicate-lookup migration checksum is `862ce0f89bbb1f6f74fcbf5ef2e4
 
 ```bash
 shasum -a 256 packages/prisma/src/prisma/schema/migrations/20260713130636_import_export_duplicate_lookup_indexes/migration.sql
+```
+
+The bounded repair/invalidation-index, durable-state correction, and CHECK-expression-seal migration checksum is `7f3005b1bccda0a0a782f1e2c05f1a1f806e24399143568b3958da824234f30a`. Recompute and record it with the target migration state before deployment:
+
+```bash
+shasum -a 256 packages/prisma/src/prisma/schema/migrations/20260716085603_import_export_fingerprint_repair_indexes/migration.sql
 ```
 
 ### Controlled reconciliation of the published fingerprint migration
@@ -172,7 +179,7 @@ For a failed/partial attempt, the DBA must choose exactly one recovery branch:
 
 Capture the before/after schema and `_prisma_migrations` output for either branch. Never combine `--rolled-back` and `--applied`, resolve a migration that is still running, or infer success from Prisma CLI exit status without the database verification queries.
 
-For measured-small targets, normal `migrate deploy` creates the versioned fingerprint indexes and the two active-state/trailing-`id` duplicate-lookup indexes. For large targets, run the following audited pre-step immediately before `migrate deploy`. Each `CREATE INDEX CONCURRENTLY` statement must run outside a transaction:
+For measured-small targets, normal `migrate deploy` creates the versioned fingerprint indexes, the two active-state/trailing-`id` duplicate-lookup indexes, the two repair-scan indexes, and the linked-element invalidation index. For large targets, run the following audited pre-step immediately before `migrate deploy`. Each `CREATE INDEX CONCURRENTLY` statement must run outside a transaction:
 
 ```sql
 ALTER TABLE "public"."AnswerCollection"
@@ -200,9 +207,24 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS
 "Element_owner_fpv_fp_id_idx"
 ON "public"."Element"
 ("ownerId", "importFingerprintVersion", "importFingerprint", "isDeleted", "id");
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS
+"AnswerCollection_repair_fpv_deleted_id_idx"
+ON "public"."AnswerCollection"
+("importFingerprintVersion", "isDeleted", "id");
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS
+"Element_repair_fpv_deleted_id_idx"
+ON "public"."Element"
+("importFingerprintVersion", "isDeleted", "id");
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS
+"Element_answer_collection_deleted_id_idx"
+ON "public"."Element"
+("answerCollectionId", "isDeleted", "id");
 ```
 
-`IF NOT EXISTS` compares names, not definitions. Before continuing, verify both columns are nullable `integer` fields and all four indexes have the exact definitions above with `indisready=true` and `indisvalid=true`. A failed concurrent build may leave an invalid same-name index; drop that index concurrently and retry before `migrate deploy`. The migrations independently reject incompatible columns and invalid or differently defined indexes.
+`IF NOT EXISTS` compares names, not definitions. Before continuing, verify both columns are nullable `integer` fields and all seven indexes have the exact definitions above with `indisready=true` and `indisvalid=true`. A failed concurrent build may leave an invalid same-name index; record and drop only that index concurrently, then retry before `migrate deploy`. The migrations independently reject incompatible columns and invalid or differently defined indexes after an `IF NOT EXISTS` no-op.
 
 ```sql
 SELECT table_name, column_name, data_type, is_nullable,
@@ -228,6 +250,9 @@ WHERE index_rel.relname IN (
   'AnswerCollection_owner_fpv_fp_idx',
   'Element_owner_fpv_fp_id_idx',
   'AnswerCollection_owner_fpv_fp_id_idx',
+  'Element_repair_fpv_deleted_id_idx',
+  'AnswerCollection_repair_fpv_deleted_id_idx',
+  'Element_answer_collection_deleted_id_idx',
   'MediaFile_import_fpv_id_idx'
 );
 ```

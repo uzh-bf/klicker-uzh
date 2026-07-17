@@ -1,4 +1,3 @@
-import * as DB from '@klicker-uzh/prisma/client'
 import { z } from 'zod'
 
 export const ELEMENT_DOMAIN_LIMITS = {
@@ -43,19 +42,6 @@ export type ElementRelationContext<Id extends ElementReference> = {
   poolIds?: readonly Id[]
   selectedIds?: readonly Id[]
   caseSolutionReferenceKey?: 'itemId' | 'itemRef'
-}
-
-export type CanonicalElementDomain<Id extends ElementReference> = {
-  type: DB.ElementType
-  content: string
-  explanation: string | null
-  basePoints: boolean
-  pointsMultiplier: number
-  options: Record<string, unknown>
-  relations: {
-    answerCollectionId?: Id
-    selectedIds: Id[]
-  }
 }
 
 export const reservedIdentifiers = new Set([

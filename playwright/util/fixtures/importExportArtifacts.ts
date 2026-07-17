@@ -29,11 +29,25 @@ const RATE_LIMIT_OPERATIONS = [
   'validate',
   'import',
 ] as const
-const CONCURRENCY_OPERATIONS = ['preview', 'export'] as const
+const CONCURRENCY_OPERATIONS = [
+  'preview',
+  'upload',
+  'validate',
+  'export',
+  'import',
+] as const
 // Durable imports can wait 10s for a Prisma transaction and then execute for
 // up to 60s. Teardown must not delete the owner or exact blob ledgers while a
 // timed-out browser test still has that server-side operation in flight.
 const IMPORT_EXPORT_REQUEST_SETTLE_TIMEOUT_MS = 75_000
+
+export function getImportExportConcurrencyLeaseCleanupKeys(userId: string) {
+  return CONCURRENCY_OPERATIONS.map((operation) => ({
+    operation,
+    userKey: `concurrency:{import-export-package}:${operation}:user:${userId}`,
+    globalKey: `concurrency:{import-export-package}:${operation}:global`,
+  }))
+}
 
 export type ImportExportTestUser = {
   id: string
@@ -367,9 +381,11 @@ async function cleanupRedisForUsers(userIds: string[]) {
     await redis.connect()
     await redis.ping()
     for (const userId of userIds) {
-      for (const operation of CONCURRENCY_OPERATIONS) {
-        const userKey = `concurrency:{import-export-package}:${operation}:user:${userId}`
-        const globalKey = `concurrency:{import-export-package}:${operation}:global`
+      for (const {
+        operation,
+        userKey,
+        globalKey,
+      } of getImportExportConcurrencyLeaseCleanupKeys(userId)) {
         const members = await redis.zrange(userKey, 0, -1)
         leakedLeases += members.length
         if (members.length > 0) {

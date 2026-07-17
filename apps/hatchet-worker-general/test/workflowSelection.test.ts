@@ -57,6 +57,11 @@ describe('selectHatchetWorkflows', () => {
       ...REQUIRED_IMPORT_EXPORT_WORKFLOW_KEYS,
       'createAuditLogEntry',
     ])
+    assert.equal(
+      selected.keys.filter((key) => key === 'repairImportExportFingerprints')
+        .length,
+      1
+    )
   })
 
   it('rejects explicit empty, blank entries, duplicates, and unknown keys', () => {
@@ -94,6 +99,19 @@ describe('selectHatchetWorkflows', () => {
     }
   })
 
+  it('rejects a strict-runtime allowlist missing fingerprint repair', () => {
+    assert.throws(
+      () =>
+        selectHatchetWorkflows(productionWorkflows, {
+          configuredKeys: REQUIRED_IMPORT_EXPORT_WORKFLOW_KEYS.filter(
+            (key) => key !== 'repairImportExportFingerprints'
+          ).join(','),
+          nodeEnv: 'production',
+        }),
+      /missing required import\/export workflows: repairImportExportFingerprints/
+    )
+  })
+
   it('does not require import/export maintenance workflows for an assessment responsibility', () => {
     const available = workflows('createAuditLogEntry')
     const selected = selectHatchetWorkflows(available, {
@@ -103,6 +121,14 @@ describe('selectHatchetWorkflows', () => {
     })
 
     assert.deepEqual(selected.keys, ['createAuditLogEntry'])
+    assert.equal(
+      selected.keys.some((key) =>
+        REQUIRED_IMPORT_EXPORT_WORKFLOW_KEYS.includes(
+          key as (typeof REQUIRED_IMPORT_EXPORT_WORKFLOW_KEYS)[number]
+        )
+      ),
+      false
+    )
   })
 
   it('excludes import/export maintenance from the unconfigured non-production assessment default', () => {

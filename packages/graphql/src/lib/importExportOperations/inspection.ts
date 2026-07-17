@@ -1,62 +1,173 @@
 // Release-readiness evaluation is kept pure for deterministic verification.
+import type { OperationsPrisma } from './database.js'
 import {
-  IMPORT_EXPORT_MIGRATIONS,
-  REQUIRED_IMPORT_EXPORT_CONSTRAINTS,
-  REQUIRED_IMPORT_EXPORT_INDEXES,
   inspectImportExportDatabase,
   type ImportExportDatabaseInspection,
-  type OperationsPrisma,
-} from './database.js'
+} from './databaseCatalog.js'
+import {
+  IMPORT_EXPORT_CHECK_CONSTRAINT_CONTRACT_PREFIX,
+  IMPORT_EXPORT_MIGRATIONS,
+  REQUIRED_IMPORT_EXPORT_COLUMNS,
+  REQUIRED_IMPORT_EXPORT_CONSTRAINTS,
+  REQUIRED_IMPORT_EXPORT_INDEXES,
+  REQUIRED_IMPORT_EXPORT_TRIGGERS,
+} from './databaseContract.js'
 import {
   createOperationOutput,
   parseDatabaseTarget,
   requireMasterGateOff,
 } from './runtime.js'
 
+function hasSameOrderedValues(
+  actual: readonly string[],
+  expected: readonly string[]
+) {
+  return (
+    actual.length === expected.length &&
+    actual.every((value, index) => value === expected[index])
+  )
+}
+
+function hasSameValues(actual: readonly string[], expected: readonly string[]) {
+  return (
+    actual.length === expected.length &&
+    expected.every((value) => actual.includes(value))
+  )
+}
+
 export function evaluateImportExportInspection(
   inspection: ImportExportDatabaseInspection
 ) {
-  const successfulMigrations = inspection.migrations.filter(
-    (migration) => migration.finished_at && !migration.rolled_back_at
+  const activeMigrations = inspection.migrations.filter(
+    (migration) => !migration.rolled_back_at
+  )
+  const successfulMigrations = activeMigrations.filter(
+    (migration) => migration.finished_at
   )
   const successfulMigrationNames = new Set(
     successfulMigrations.map((migration) => migration.migration_name)
   )
-  const migrationAttemptsByName = new Map<string, number>()
-  for (const migration of successfulMigrations) {
-    migrationAttemptsByName.set(
+  const activeMigrationAttemptsByName = new Map<string, number>()
+  for (const migration of activeMigrations) {
+    activeMigrationAttemptsByName.set(
       migration.migration_name,
-      (migrationAttemptsByName.get(migration.migration_name) ?? 0) + 1
+      (activeMigrationAttemptsByName.get(migration.migration_name) ?? 0) + 1
     )
   }
 
-  const readyIndexes = new Set(
-    inspection.indexes
-      .filter((index) => index.is_ready && index.is_valid)
-      .map((index) => index.index_name)
+  const columnsReady = REQUIRED_IMPORT_EXPORT_COLUMNS.every(
+    ([tableName, columnName, dataType]) =>
+      inspection.columns.some(
+        (column) =>
+          column.table_name === tableName &&
+          column.column_name === columnName &&
+          column.data_type === dataType &&
+          column.is_nullable === 'YES' &&
+          column.column_default === null &&
+          column.is_identity === 'NO' &&
+          column.is_generated === 'NEVER'
+      )
   )
-  const validatedConstraints = new Set(
-    inspection.constraints
-      .filter((constraint) => constraint.is_validated)
-      .map((constraint) => constraint.constraint_name)
+  const indexesReady = REQUIRED_IMPORT_EXPORT_INDEXES.every(
+    ([tableName, indexName, isUnique, keyColumns]) =>
+      inspection.indexes.some(
+        (index) =>
+          index.table_name === tableName &&
+          index.index_name === indexName &&
+          index.is_ready &&
+          index.is_valid &&
+          index.is_unique === isUnique &&
+          index.access_method === 'btree' &&
+          !index.has_predicate &&
+          !index.has_expressions &&
+          !index.has_included_columns &&
+          hasSameOrderedValues(index.key_columns, keyColumns)
+      )
+  )
+  const constraintsValidated = REQUIRED_IMPORT_EXPORT_CONSTRAINTS.every(
+    (expected) =>
+      inspection.constraints.some((constraint) => {
+        if (
+          constraint.table_name !== expected.tableName ||
+          constraint.constraint_name !== expected.constraintName ||
+          constraint.constraint_type !== expected.constraintType ||
+          !constraint.is_validated
+        ) {
+          return false
+        }
+        if (
+          'definition' in expected &&
+          constraint.definition !== expected.definition
+        ) {
+          return false
+        }
+        if (expected.constraintType === 'c') {
+          return (
+            hasSameValues(constraint.key_columns, expected.keyColumns) &&
+            constraint.contract_comment ===
+              `${IMPORT_EXPORT_CHECK_CONSTRAINT_CONTRACT_PREFIX}${constraint.definition}`
+          )
+        }
+        if (expected.constraintType === 'f') {
+          return (
+            hasSameOrderedValues(constraint.key_columns, expected.keyColumns) &&
+            constraint.referenced_schema === 'public' &&
+            constraint.referenced_table === expected.referencedTable &&
+            hasSameOrderedValues(
+              constraint.referenced_columns,
+              expected.referencedColumns
+            ) &&
+            constraint.update_action === expected.updateAction &&
+            constraint.delete_action === expected.deleteAction
+          )
+        }
+        return true
+      })
+  )
+  const triggersReady = REQUIRED_IMPORT_EXPORT_TRIGGERS.every(
+    ([tableName, triggerName, functionName, triggerType, updateColumns]) =>
+      inspection.triggers.some(
+        (trigger) =>
+          trigger.table_name === tableName &&
+          trigger.trigger_name === triggerName &&
+          trigger.enabled === 'O' &&
+          hasSameOrderedValues(trigger.update_columns, updateColumns) &&
+          !trigger.has_when_clause &&
+          !trigger.has_arguments &&
+          !trigger.is_constraint &&
+          !trigger.is_deferrable &&
+          !trigger.is_initially_deferred &&
+          trigger.function_schema === 'public' &&
+          trigger.function_name === functionName &&
+          trigger.function_language === 'plpgsql' &&
+          !trigger.function_security_definer &&
+          trigger.function_source_matches &&
+          trigger.trigger_type === triggerType
+      )
   )
 
   return {
     migrationsPresent: IMPORT_EXPORT_MIGRATIONS.every((migration) =>
       successfulMigrationNames.has(migration)
     ),
-    migrationChecksumsMatch: successfulMigrations.every(
+    migrationChecksumsMatch: inspection.migrations.every(
       (migration) => migration.checksum_matches
     ),
     migrationHistoryUnambiguous: IMPORT_EXPORT_MIGRATIONS.every(
-      (migration) => migrationAttemptsByName.get(migration) === 1
+      (migration) =>
+        activeMigrationAttemptsByName.get(migration) === 1 &&
+        successfulMigrationNames.has(migration)
     ),
-    indexesReady: REQUIRED_IMPORT_EXPORT_INDEXES.every((index) =>
-      readyIndexes.has(index)
+    migrationStepsComplete: successfulMigrations.every(
+      (migration) =>
+        migration.applied_steps_count === 1 ||
+        (migration.migration_name === IMPORT_EXPORT_MIGRATIONS[0] &&
+          migration.applied_steps_count === 0)
     ),
-    constraintsValidated: REQUIRED_IMPORT_EXPORT_CONSTRAINTS.every(
-      (constraint) => validatedConstraints.has(constraint)
-    ),
+    columnsReady,
+    indexesReady,
+    constraintsValidated,
+    triggersReady,
     staleVersionsClear:
       inspection.staleVersions.elements === 0 &&
       inspection.staleVersions.answerCollections === 0 &&
@@ -101,6 +212,7 @@ export async function createImportExportInspectionOutput({
         columns: inspection.columns.length,
         indexes: inspection.indexes.length,
         constraints: inspection.constraints.length,
+        triggers: inspection.triggers.length,
         locks: inspection.locks.length,
         staleElements: inspection.staleVersions.elements ?? -1,
         staleAnswerCollections:
@@ -114,6 +226,7 @@ export async function createImportExportInspectionOutput({
         columns: inspection.columns,
         indexes: inspection.indexes,
         constraints: inspection.constraints,
+        triggers: inspection.triggers,
         locks: inspection.locks,
       },
     },

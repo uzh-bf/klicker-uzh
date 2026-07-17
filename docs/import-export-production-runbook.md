@@ -2,7 +2,7 @@
 type: Operations
 title: Import/Export Production Runbook
 description: Protected migration, backfill, canary-recovery, rollback, rotation, and evidence procedures for element packages.
-timestamp: '2026-07-14'
+timestamp: '2026-07-16'
 tags:
   - import-export
   - operations
@@ -112,14 +112,14 @@ Prerequisites: reviewed immutable commit/image digests; both normal and assessme
 The named release coordinator must record each approval before a named operator executes the following stop-safe order for normal and assessment databases. The normal target uses the existing `prisma:deploy:qa` or `prisma:deploy:prod` alias; assessment deployment requires the same immutable `prisma migrate deploy` command with the approved assessment database injected as `DATABASE_URL`. The repository does not automate this target mapping.
 
 1. verify recorded approvals and runner versions;
-2. inspect migration rows/checksums, sizes, columns, indexes, constraints, locks, and stale versions;
+2. inspect migration rows/checksums/step counts (including failed or duplicate active attempts), exact required column shapes, structural index definitions, CHECK/FK column shapes plus migration-sealed canonical CHECK expressions, ownership/immutability trigger event/update-column bindings plus repository-matched function bodies, locks, and stale versions, including `20260716085603_import_export_fingerprint_repair_indexes`, both ready/valid repair-scan indexes, and `Element_answer_collection_deleted_id_idx`;
 3. record exactly one DBA-selected branch: `measured-small`, `large-indexes-precreated`, or `partial-history-reconciled`;
 4. run immutable `prisma migrate deploy` through the environment wrapper;
 5. inspect both databases again;
 6. require the previous-image ordinary Element/AnswerCollection/MediaFile read-write smoke attestation;
 7. store redacted inspection/branch evidence even after failure.
 
-The large and partial-history SQL branches remain DBA-controlled because concurrent index statements and reconciliation cannot be safely inferred automatically. Follow [Data & Migrations](./data-and-migrations.md#importexport-additive-migration), store exact SQL/locks/WAL output in protected evidence, then record the precondition. The operator must never run `migrate dev`, edit migration history, drop schema, or enable a feature gate as part of this procedure.
+The large and partial-history SQL branches remain DBA-controlled because concurrent index statements and reconciliation cannot be safely inferred automatically. Follow [Data & Migrations](./data-and-migrations.md#importexport-additive-migration), including concurrent pre-creation and exact ready/valid definition checks for `AnswerCollection_repair_fpv_deleted_id_idx`, `Element_repair_fpv_deleted_id_idx`, and `Element_answer_collection_deleted_id_idx`; store exact SQL/locks/WAL output in protected evidence, then record the precondition. The operator must never run `migrate dev`, edit migration history, drop schema, or enable a feature gate as part of this procedure.
 
 The repository still does not identify the external Helm release/namespace executor. Until the release owner fills those values, deployment is blocked. The command contract, once approved, is:
 
@@ -132,7 +132,7 @@ helm upgrade --install "$RELEASE" deploy/charts/klicker-uzh-v3 \
   --atomic --wait --timeout 15m
 ```
 
-`TARGET`, `RELEASE`, and `NAMESPACE` must come from the protected change record, not ad-hoc shell history. Render the selected v3 chart with those exact values and retain the reviewed manifest before execution.
+`TARGET`, `RELEASE`, and `NAMESPACE` must come from the protected change record, not ad-hoc shell history. Render the selected v3 chart with those exact values and retain the reviewed manifest before execution. Confirm that the rendered normal general-worker `HATCHET_WORKFLOWS` contains all required maintenance keys: `refreshImportExportFingerprints`, `repairImportExportFingerprints`, and `cleanupImportExportPackages`. A production worker missing any key must fail startup; do not remove the repair or cleanup workflows merely because the user-facing gate is dark. Assessment workers must contain none of these keys.
 
 ## Post-deploy dark operations
 
@@ -145,12 +145,16 @@ Run the aliases from [Exact aliases and target selection](#exact-aliases-and-tar
 3. bounded media-hash backfill on normal and assessment;
 4. bounded answer-collection/element fingerprint backfill on normal and assessment;
 5. validate the four deferred constraints under a 5-second lock timeout and 60-second statement timeout;
-6. verify migrations/checksums, indexes, constraints, locks, and zero stale versions;
+6. verify migrations/checksums/step counts, columns, indexes, constraints, triggers, locks, and zero stale versions;
 7. exact record-scoped cleanup dry-run;
 8. exact owner-scoped canary residue verification;
 9. store protected evidence even after failure.
 
-An incomplete backfill exits before constraint validation. Resume from its protected progress manifest or rerun until it reports `BACKFILL_COMPLETE`; do not skip to verification.
+An incomplete backfill exits before constraint validation. Resume from its protected progress manifest or rerun until it reports `BACKFILL_COMPLETE`; do not skip to verification. The media pass must finish first. The following operator fingerprint pass intentionally revisits null/current rows that may now be computable, while its keyset cursor advances past rows that remain safely unfingerprintable.
+
+The scheduled `repair-import-export-fingerprints` workflow is only a post-deploy safety net for newly dirtied rows and failed immediate refresh delivery. It runs every 15 minutes with a ten-minute execution timeout, stops new work cooperatively after eight minutes, and processes no more than 500 answer collections followed by 500 elements per invocation. It uses the next cron rather than immediate Hatchet retries, so one run cannot consume multiple cadence windows. It does not classify historical media, hold the rollout advisory lock, persist a rollout progress manifest, or prove the initial corpus was backfilled. Never replace steps 3–6 with a wait for the scheduled repair.
+
+Before proceeding to private preview, capture at least one successful scheduled-repair execution from the deployed normal worker and one cleanup execution within its 45-minute timeout. Cleanup must stop new work by its 40-minute cooperative budget, leaving any remaining record-scoped ledger backlog for the next hourly run. Its observability must distinguish hard failures from a budget stop. Verify that repair and cleanup each enforce one active run with `CANCEL_NEWEST`; a duplicate cron must be cancelled without interrupting the active run. The repair payload may contain only `processedAnswerCollections`, `processedElements`, `answerCollectionBacklogRemaining`, `elementBacklogRemaining`, and optional `stoppedEarly`; it must not contain IDs or authored values. The flags are fresh database rechecks after bounded processing, not estimates based on whether the final batch was full. A cancelled repair emits no successful payload and starts no backlog queries; its next cron performs the fresh recheck. A backlog flag that remains true across successive invocations, a missing execution beyond the task's cadence allowance, a cleanup run that reaches its Hatchet timeout instead of stopping cooperatively, overlapping maintenance runs, or a hard task failure is a stop condition and must page the named Hatchet/observability owner.
 
 ## Authenticated canary and recovery
 
@@ -172,12 +176,20 @@ The database verifier cannot prove blob absence by itself. Azure-list evidence f
 The release record must attach measured evidence for:
 
 - maximum archive and upload size 10 MiB, aggregate media/reference/parser work limits, and rejected over-limit/slow-body cases;
-- HTTP headers 10 seconds, request 120 seconds, upload body 60 seconds;
+- upload concurrency capped at one live body per user and four globally by default, including fail-closed Redis acquisition/renewal evidence and bounded-memory measurements;
+- import concurrency capped at one live execution per user and four globally by default, including fail-closed Redis acquisition/renewal and PostgreSQL receipt-fencing evidence;
+- feature-owned upload-body deadline 60 seconds; global server and ingress
+  header/request budgets remain platform controls and are not mutated by the
+  import/export feature;
 - Azure metadata/properties/SAS 10 seconds and transfer/delete/backfill 60 seconds;
+- Hatchet fingerprint refresh 5 minutes with a 4-minute cooperative work
+  budget, scheduled repair 10 minutes with an 8-minute cooperative work budget
+  on a 15-minute cadence, and cleanup 45 minutes with a 40-minute cooperative
+  work budget on an hourly cadence; all three use zero immediate retries;
 - maximum preview under 2 seconds and 128 MiB incremental memory;
 - maximum import transaction under 15 seconds and 128 MiB WAL;
 - constraint validation lock budget, migration locks/WAL/duration, and previous-image compatibility;
-- cleanup heartbeat/backlog/unsafe-target/oldest-age and canary age/result;
+- fingerprint-repair cadence, processed counts, per-resource backlog flags, cleanup heartbeat/backlog/unsafe-target/oldest-age, and canary age/result;
 - exact/max/over-limit and slow-client HAProxy/controller probes.
 
 Repository defaults are requirements, not target proof. Missing or exceeded evidence is a no-go.
@@ -201,8 +213,8 @@ Rollback never drops the additive schema, reverses immutable migrations, deletes
 
 1. Set `importExport.enabled=false` in the protected values source and deploy it first.
 2. Verify capability/UI fail-closed behavior and drain in-flight requests.
-3. Roll backend, worker, and Manage images to the recorded previous immutable digests with `IfNotPresent`.
-4. Keep assessment off, additive schema in place, cleanup/maintenance running, and recovery manifests protected.
+3. Roll backend and Manage images to the recorded previous immutable digests with `IfNotPresent`, but pin the current maintenance-capable general-worker digest. A pre-feature worker does not register the required repair and record-scoped cleanup workflows.
+4. Keep assessment off, additive schema in place, the pinned maintenance worker healthy, cleanup/maintenance running, and recovery manifests protected. Do not select a previous worker digest until every recorded artifact/staging target is clean and an explicit follow-up rollback decision has removed the feature workflow allowlist.
 5. Run inspect, previous-image ordinary read/write smoke, cleanup dry-run, and exact residue verification.
 6. Fire/test the rollback alert path and record the incident/change decision.
 
@@ -214,12 +226,15 @@ helm upgrade "$RELEASE" deploy/charts/klicker-uzh-v3 \
   --values "deploy/env-uzh-${TARGET}/values.yaml" \
   --set importExport.enabled=false \
   --set backendGraphql.image.tag="$PREVIOUS_BACKEND_TAG" \
-  --set hatchet.workers.general.image.tag="$PREVIOUS_WORKER_TAG" \
+  --set backendGraphql.image.pullPolicy=IfNotPresent \
+  --set hatchet.workers.general.image.tag="$ROLLBACK_MAINTENANCE_WORKER_TAG" \
+  --set hatchet.workers.general.image.pullPolicy=IfNotPresent \
   --set frontendManage.image.tag="$PREVIOUS_MANAGE_TAG" \
+  --set frontendManage.image.pullPolicy=IfNotPresent \
   --atomic --wait --timeout 15m
 ```
 
-Exact value paths must be render-verified against the selected chart before execution. Because the external release coordinates and executor are `TBD`, the rollback drill is currently **BLOCKING**.
+`ROLLBACK_MAINTENANCE_WORKER_TAG` is the reviewed current feature-capable worker digest, not the pre-feature worker tag. Exact value paths and the rendered maintenance workflow allowlist must be verified against the selected chart before execution. Because the external release coordinates and executor are `TBD`, the rollback drill is currently **BLOCKING**.
 
 ## Staged decision gates
 

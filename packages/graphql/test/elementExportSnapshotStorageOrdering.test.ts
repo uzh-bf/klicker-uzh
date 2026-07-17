@@ -269,7 +269,8 @@ describe('element export snapshot storage ordering', () => {
       )
       expect(adapters.loadMediaMetadata).toHaveBeenCalledWith(
         [MEDIA_HREF],
-        expect.any(Object)
+        expect.any(Object),
+        expect.any(Function)
       )
       expect(events.indexOf('snapshot:resolved')).toBeLessThan(
         events.indexOf('media:classify')
@@ -326,7 +327,8 @@ describe('element export snapshot storage ordering', () => {
       expect(adapters.classifyMedia).toHaveBeenCalledWith(MEDIA_HREF)
       expect(adapters.loadMediaMetadata).toHaveBeenCalledWith(
         [MEDIA_HREF],
-        expect.any(Object)
+        expect.any(Object),
+        expect.any(Function)
       )
       expect(adapters.downloadMedia).not.toHaveBeenCalled()
       expect(events.indexOf('snapshot:resolved')).toBeLessThan(

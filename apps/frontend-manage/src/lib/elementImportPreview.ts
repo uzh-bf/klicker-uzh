@@ -4,7 +4,6 @@ import {
   type ImportExportWarningCode,
   type ValidateElementImportPackageMutation,
 } from '@klicker-uzh/graphql/dist/ops.js'
-import type { OverviewAnswerCollection } from '~/components/elements/manipulation/PackageAnswerCollectionOverview'
 import type {
   ElementFormTypes,
   ElementFormTypesCaseStudySolutions,
@@ -32,7 +31,7 @@ export type ElementImportReviewModel = {
     string,
     readonly { id: number; value: string }[]
   >
-  answerCollections: readonly OverviewAnswerCollection[]
+  answerCollections: PackagePreview['answerCollections']
 }
 
 function sharedQuestionFields(element: PackagePreviewElement) {

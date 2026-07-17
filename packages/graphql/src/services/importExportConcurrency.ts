@@ -4,7 +4,12 @@ import { getImportExportRuntimeConfig } from '../lib/importExportRuntimeConfig.j
 import { emitImportExportTelemetry } from '../lib/importExportTelemetry.js'
 import { ImportExportRateLimitError } from './importExportRateLimit.js'
 
-export type ImportExportConcurrentOperation = 'preview' | 'export'
+export type ImportExportConcurrentOperation =
+  | 'preview'
+  | 'upload'
+  | 'validate'
+  | 'import'
+  | 'export'
 
 const ACQUIRE_CONCURRENCY_LEASE_SCRIPT = `
 local userKey = KEYS[1]
@@ -53,21 +58,42 @@ return 1
 
 function getConcurrencyConfig(operation: ImportExportConcurrentOperation) {
   const config = getImportExportRuntimeConfig()
-  return operation === 'preview'
-    ? {
+  switch (operation) {
+    case 'preview':
+      return {
         limit: config.concurrency.previewPerUser,
         globalLimit: config.concurrency.previewGlobal,
         ttlMs: config.concurrency.leaseTtlMs,
       }
-    : {
+    case 'upload':
+      return {
+        limit: config.concurrency.uploadPerUser,
+        globalLimit: config.concurrency.uploadGlobal,
+        ttlMs: config.concurrency.leaseTtlMs,
+      }
+    case 'validate':
+      return {
+        limit: config.concurrency.validatePerUser,
+        globalLimit: config.concurrency.validateGlobal,
+        ttlMs: config.concurrency.leaseTtlMs,
+      }
+    case 'import':
+      return {
+        limit: config.concurrency.importPerUser,
+        globalLimit: config.concurrency.importGlobal,
+        ttlMs: config.concurrency.leaseTtlMs,
+      }
+    case 'export':
+      return {
         limit: config.concurrency.exportPerUser,
         globalLimit: config.concurrency.exportGlobal,
         ttlMs: config.concurrency.leaseTtlMs,
       }
+  }
 }
 
 export async function withImportExportConcurrencyLease<T>(
-  ctx: ContextWithUser,
+  ctx: Pick<ContextWithUser, 'redisExec' | 'user'>,
   operation: ImportExportConcurrentOperation,
   callback: (assertLease: () => void) => Promise<T>
 ) {

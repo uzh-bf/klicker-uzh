@@ -77,6 +77,7 @@ jobs:
         env:
           APP_SECRET: abcd
           DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
+          IMPORT_EXPORT_ENABLED: 'true'
           NODE_ENV: test
           REDIS_HOST: localhost
           REDIS_PASS: ''
@@ -302,6 +303,7 @@ jobs:
         env:
           APP_SECRET: abcd
           DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
+          IMPORT_EXPORT_ENABLED: 'true'
           NODE_ENV: production
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:3001
           URL_AUTH: http://127.0.0.1:3010
@@ -310,7 +312,7 @@ jobs:
           URL_STUDENT: http://127.0.0.1:3001
           URL_STUDENT_LOGIN: http://127.0.0.1:3001/login
           URL_CHAT: http://127.0.0.1:3004
-          SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3004/noLogin http://127.0.0.1:3010'
+          SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3004/noLogin http://127.0.0.1:3010 http://127.0.0.1:8081/ready'
           SERVICE_START_SCRIPT: start:playwright:ci
           TIMEOUT_SECONDS: '300'
           CHECK_INTERVAL: '5'
@@ -334,6 +336,7 @@ jobs:
           HATCHET_CLIENT_HOST_PORT: hatchet:7077
           HATCHET_HOST_PORT: hatchet:7077
           HATCHET_CLIENT_TLS_STRATEGY: none
+          HATCHET_WORKFLOWS: refreshImportExportFingerprints,sendPushNotifications,publishScheduledGroupActivity,publishScheduledLiveQuiz,publishScheduledMicroLearning,publishScheduledPracticeQuiz,endExpiredGroupActivity,endExpiredMicroLearning,aggregateLiveQuizBlockResultsStandard,aggregateLiveQuizBlockResultsAssessment,createAuditLogEntry
           APP_ORIGIN_API: http://127.0.0.1:3000
           APP_ORIGIN_AUTH: http://127.0.0.1:3010
           APP_ORIGIN_LTI: http://127.0.0.1:4000

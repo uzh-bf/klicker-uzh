@@ -1,10 +1,8 @@
-import { DocumentProps, Head, Html, Main, NextScript } from 'next/document'
+import { Head, Html, Main, NextScript } from 'next/document'
 
-export default function Document({ __NEXT_DATA__ }: DocumentProps) {
-  const locale = __NEXT_DATA__.locale === 'de' ? 'de' : 'en'
-
+export default function Document() {
   return (
-    <Html lang={locale}>
+    <Html>
       <Head>
         <meta name="application-name" content="KlickerUZH" />
         <meta name="apple-mobile-web-app-capable" content="yes" />

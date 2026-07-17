@@ -123,7 +123,8 @@ describe('portable export media hydration preflight', () => {
     expect(adapters.getKlickerMediaFilesExportMetadata).toHaveBeenCalledOnce()
     expect(adapters.getKlickerMediaFilesExportMetadata).toHaveBeenCalledWith(
       plan.mediaInventory.firstParty.map(({ href }) => href),
-      ctx
+      ctx,
+      expect.any(Function)
     )
     expect(adapters.download).not.toHaveBeenCalled()
   })

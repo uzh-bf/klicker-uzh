@@ -189,7 +189,7 @@ export default {
       question: 'Frage',
       activities: 'Aktivitäten',
       element: 'Element',
-      elements: 'Elements',
+      elements: 'Elemente',
       block: 'Block',
       stack: 'Stack',
       feedbacks: 'Feedbacks',
@@ -1519,7 +1519,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       selectedElementsDescription:
         'Sie haben die folgenden Elemente ausgewählt. Alle Elemente, welche von den gewählten Aktionen betroffen sind, sind markiert. Hovern Sie über dem Symbol für nicht betroffene Elemente für mehr Informationen. Bitte beachten Sie: Einige Aktionen können nur einzeln durchgeführt werden oder erfordern bestimmte Zugriffsrechte (siehe Tooltip). Überprüfen Sie die ausgewählten Aktionen sorgfältig, bevor Sie diese anwenden.',
       selectedElementsDescriptionDownload:
-        'Sie haben {numElements} Element(e) ausgewählt zum Herunterladen.',
+        '{numElements, plural, one {Sie haben # Element zum Herunterladen ausgewählt.} other {Sie haben # Elemente zum Herunterladen ausgewählt.}}',
       actionApplies: 'Aktion wird angewendet',
       modifyStatus: 'Status ändern',
       modifyMultiplier: 'Multiplikator ändern',
@@ -1756,6 +1756,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       uploadImageHeader: 'Medien hinzufügen',
       uploadImageDescription:
         'Ziehen Sie ein Bild auf diese Fläche oder klicken Sie darauf, um den Explorer zu öffnen.',
+      uploadImageFailed:
+        'Der Medien-Upload konnte nicht abgeschlossen werden. Bitte versuchen Sie es erneut.',
+      uploadImageInvalidFileType:
+        'Wählen Sie ein Bild im PNG-, JPEG- oder GIF-Format aus.',
+      uploadImageTooLarge:
+        'Das ausgewählte Bild ist zu gross. Laden Sie ein Bild mit höchstens {maxSizeMiB} MiB hoch.',
       updateInstances:
         'Element-Instanzen in KlickerUZH-Aktivitäten aktualisieren',
       includeTemplateInstanceUpdates:
@@ -1778,6 +1784,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Pakete können Lösungen und urheberrechtlich geschützte Lehrmaterialien enthalten. Teilen oder verbreiten Sie Inhalte nur, wenn Sie dazu berechtigt sind.',
       elementImportPsychometricDisclosure:
         'Importierte Elemente sind unkalibrierte Kopien mit dem Status «Prüfung». Antworten von Teilnehmenden, Itemstatistiken, Schwierigkeit, Trennschärfe, Reliabilität, Validität, Kalibrierung, Analysen und Bewertungsverläufe werden nicht übernommen.',
+      elementExportPsychometricDisclosure:
+        'Psychometrische Daten, Kalibrierungsdaten und Antwortverläufe werden nicht exportiert. Antworten von Teilnehmenden, Itemstatistiken, Schwierigkeit, Trennschärfe, Reliabilität, Validität, Kalibrierung, Analysen und Bewertungsverläufe verbleiben im Quellsystem. Importierte Elemente sind unkalibrierte Kopien mit dem Status «Prüfung».',
       exportElementsInfo:
         'Exporte enthalten nur wiederverwendbare Elementinhalte. Tags, Besitzer, Berechtigungen, Aktivitätsresultate und private Metadaten werden nicht exportiert.',
       exportElementsPackageInfo:
@@ -1799,6 +1807,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       packagePreviewLoading: 'Paketinhalt wird geprüft…',
       packagePreviewError:
         'Der Paketinhalt konnte nicht geprüft werden. Bitte versuchen Sie es erneut.',
+      packagePreviewRetry: 'Paketinhalt erneut prüfen',
       packageElementExportPermissionError:
         'Einige ausgewählte Elemente können nicht exportiert werden. Sie müssen Administrator oder Besitzer aller ausgewählten Elemente sein.',
       packageAnswerCollectionExportPermissionError:
@@ -1887,6 +1896,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der Import wurde abgeschlossen, die Bereinigung temporärer Paketdaten steht jedoch noch aus.',
       elementImportGenericWarning:
         'Das Paket wurde mit einem Hinweis akzeptiert. Prüfen Sie die importierten Elemente vor der Verwendung.',
+      elementExportStatusNormalizedWarning:
+        'Elementstatus werden nicht in das ZIP-Paket aufgenommen. Importierte Kopien werden mit dem Status «Prüfung» erstellt.',
+      elementExportExternalMediaWarning:
+        'Automatisch geladene externe Bilder werden nicht in das ZIP-Paket kopiert. Beim Import werden sie durch einen sichtbaren Platzhalter ersetzt; normale Links bleiben unverändert.',
+      elementExportMediaMissingWarning:
+        'Einige referenzierte KlickerUZH-Bilder konnten nicht in das ZIP-Paket aufgenommen werden. Beim Import werden sie durch einen sichtbaren Platzhalter ersetzt.',
+      elementExportUnusedMediaWarning:
+        'Medien, auf die von den ausgewählten Elementen nicht verwiesen wird, werden nicht in das ZIP-Paket aufgenommen.',
+      elementExportCleanupPendingWarning:
+        'Das Exportpaket wurde erstellt, die Bereinigung temporärer Exportdaten steht jedoch noch aus.',
+      elementExportGenericWarning:
+        'Das ZIP-Paket kann mit einem Hinweis exportiert werden. Prüfen Sie den Inhalt, bevor Sie es weitergeben.',
       elementImportNoElementsSelected:
         'Wählen Sie mindestens ein Element für den Import aus.',
       elementImportSelectionInvalid:

@@ -1,5 +1,6 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { canonicalizeElementDomain } from '../lib/elementDomain.js'
+import type { CaseStudyOptionsWithSolutionReference } from '../lib/elementDomain/caseStudy.js'
 import {
   ImportExportDomainError,
   ImportExportErrorCode,
@@ -49,6 +50,18 @@ type PreparedElement = {
   selectedEntryIds: number[]
 }
 
+type BoundCaseStudyExecutionElement = Extract<
+  BoundElementImportExecutionElementPlan,
+  { type: typeof DB.ElementType.CASE_STUDY }
+>
+
+type PackageCaseStudyOptions = BoundCaseStudyExecutionElement['options']
+type DatabaseCaseStudyOptions = CaseStudyOptionsWithSolutionReference<
+  PackageCaseStudyOptions,
+  'itemId',
+  number
+>
+
 export function createElementImportExecutionOperationCounters(): ElementImportExecutionOperationCounters {
   return {
     collectionCreates: 0,
@@ -87,44 +100,29 @@ function* batches<T>(values: readonly T[], size: number) {
 }
 
 function mapCaseStudySolutionRefsToItemIds(
-  options: Readonly<Record<string, unknown>>,
+  options: PackageCaseStudyOptions,
   entryIdByRef: ReadonlyMap<string, number>
-) {
-  const cloned = structuredClone(options) as Record<string, unknown>
-  if (!Array.isArray(cloned.cases)) return cloned
-
-  cloned.cases = cloned.cases.map((rawCase) => {
-    if (!rawCase || typeof rawCase !== 'object' || Array.isArray(rawCase)) {
-      infrastructureFailure()
-    }
-    const caseItem = rawCase as Record<string, unknown>
-    if (!Array.isArray(caseItem.solutions)) return caseItem
-
-    return {
+): DatabaseCaseStudyOptions {
+  const cloned = structuredClone(options)
+  return {
+    ...cloned,
+    cases: cloned.cases.map((caseItem) => ({
       ...caseItem,
-      solutions: caseItem.solutions.map((rawSolution) => {
-        if (
-          !rawSolution ||
-          typeof rawSolution !== 'object' ||
-          Array.isArray(rawSolution)
-        ) {
-          infrastructureFailure()
-        }
-        const solution = rawSolution as Record<string, unknown>
+      solutions: caseItem.solutions?.map((solution) => {
+        if (typeof solution.itemId !== 'undefined') infrastructureFailure()
         const entryId =
           typeof solution.itemRef === 'string'
             ? entryIdByRef.get(solution.itemRef)
             : undefined
         if (typeof entryId !== 'number') infrastructureFailure()
 
-        const { itemRef: _itemRef, ...fields } = solution
+        const { itemId: _itemId, itemRef: _itemRef, ...fields } = solution
+        void _itemId
         void _itemRef
         return { ...fields, itemId: entryId }
       }),
-    }
-  })
-
-  return cloned
+    })),
+  }
 }
 
 function prepareElementRows({

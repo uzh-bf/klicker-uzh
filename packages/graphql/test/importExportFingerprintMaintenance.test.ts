@@ -4,8 +4,16 @@ import { MediaExportOmissionError } from '../src/lib/mediaErrors.js'
 import {
   backfillFingerprintBatch,
   backfillMediaHashBatch,
-  refreshAnswerCollectionFingerprintBatch,
+  refreshImportExportFingerprintBatch,
+  repairStaleImportExportFingerprints,
 } from '../src/services/importExportFingerprintMaintenance.js'
+import { finalizeUploadedMediaFingerprintV1 } from '../src/services/importExportFingerprints.js'
+import {
+  createFingerprintFindMany,
+  createFingerprintPrisma,
+  markFingerprintCurrent,
+  type FakeFingerprintResource,
+} from './importExportFingerprintTestSupport.js'
 
 const mocks = vi.hoisted(() => ({
   downloadKlickerMediaFile:
@@ -83,64 +91,165 @@ function createMediaPrisma(mediaFiles: FakeMediaFile[]) {
   return { findMany, prisma, updateMany }
 }
 
-type FakeFingerprintResource = {
-  id: number
-  importFingerprint: string | null
-  importFingerprintVersion: number | null
-  isDeleted: boolean
-  answerCollectionId?: number | null
+type FakeUploadedMediaFile = FakeMediaFile & { ownerId: string }
+
+type FakeUploadedMediaReferenceElement = FakeFingerprintResource & {
+  version: number
+  ownerId: string
+  content: string
+  explanation: string | null
+  options: unknown
 }
 
-type FingerprintFindManyArgs = {
-  where: {
-    id?: { gt: number }
-    isDeleted?: boolean
-    answerCollectionId?: number
-    OR?: unknown[]
-  }
-  take: number
-}
-
-function isDirtyFingerprint(resource: FakeFingerprintResource) {
-  return (
-    resource.importFingerprint === null ||
-    resource.importFingerprintVersion === null ||
-    resource.importFingerprintVersion !== IMPORT_EXPORT_FINGERPRINT_VERSION
-  )
-}
-
-function createFingerprintFindMany(resources: FakeFingerprintResource[]) {
-  return vi.fn(async ({ where, take }: FingerprintFindManyArgs) => {
-    return resources
-      .filter(
-        (resource) =>
-          (where.isDeleted !== false || !resource.isDeleted) &&
-          (typeof where.answerCollectionId === 'undefined' ||
-            resource.answerCollectionId === where.answerCollectionId) &&
-          (!where.id || resource.id > where.id.gt) &&
-          (!where.OR || isDirtyFingerprint(resource))
-      )
-      .sort((left, right) => left.id - right.id)
-      .slice(0, take)
-      .map(({ id }) => ({ id }))
-  })
-}
-
-function markFingerprintCurrent(
-  resources: FakeFingerprintResource[],
-  resourceId: number
+function createUploadedMediaPrisma(
+  mediaFiles: FakeUploadedMediaFile[],
+  elements: FakeUploadedMediaReferenceElement[] = [],
+  beforeUpdateMany?: () => void | Promise<void>
 ) {
-  const resource = resources.find(({ id }) => id === resourceId)
-  if (!resource)
-    throw new Error(`Missing fake fingerprint resource ${resourceId}`)
+  const findFirst = vi.fn(
+    async ({ where }: { where: { id: string; ownerId: string } }) => {
+      const mediaFile = mediaFiles.find(
+        (candidate) =>
+          candidate.id === where.id && candidate.ownerId === where.ownerId
+      )
+      return mediaFile
+        ? {
+            id: mediaFile.id,
+            href: mediaFile.href,
+            contentHash: mediaFile.contentHash,
+            importFingerprintVersion: mediaFile.importFingerprintVersion,
+          }
+        : null
+    }
+  )
+  const updateMany = vi.fn(
+    async ({
+      where,
+      data,
+    }: {
+      where: { id: string; ownerId: string; href: string; OR: unknown[] }
+      data: { contentHash: string | null; importFingerprintVersion: number }
+    }) => {
+      await beforeUpdateMany?.()
+      const mediaFile = mediaFiles.find(
+        (candidate) =>
+          candidate.id === where.id &&
+          candidate.ownerId === where.ownerId &&
+          candidate.href === where.href &&
+          (candidate.importFingerprintVersion !==
+            IMPORT_EXPORT_FINGERPRINT_VERSION ||
+            (candidate.contentHash === null && data.contentHash !== null))
+      )
+      if (!mediaFile) return { count: 0 }
+      mediaFile.contentHash = data.contentHash
+      mediaFile.importFingerprintVersion = data.importFingerprintVersion
+      return { count: 1 }
+    }
+  )
+  const count = vi.fn(
+    async ({
+      where,
+    }: {
+      where: {
+        id: string
+        ownerId: string
+        href: string
+        importFingerprintVersion: number
+        contentHash: string | null
+      }
+    }) =>
+      mediaFiles.filter(
+        (candidate) =>
+          candidate.id === where.id &&
+          candidate.ownerId === where.ownerId &&
+          candidate.href === where.href &&
+          candidate.importFingerprintVersion ===
+            where.importFingerprintVersion &&
+          candidate.contentHash === where.contentHash
+      ).length
+  )
+  const executeRaw = vi.fn(
+    async (_strings: TemplateStringsArray, ...values: unknown[]) => {
+      const [ownerId, currentVersion, href] = values as [string, number, string]
+      let updated = 0
+      for (const element of elements) {
+        if (
+          element.ownerId !== ownerId ||
+          element.isDeleted ||
+          (element.importFingerprintVersion !== null &&
+            element.importFingerprintVersion !== currentVersion) ||
+          ![
+            element.content,
+            element.explanation ?? '',
+            JSON.stringify(element.options),
+          ].some((value) => value.includes(href))
+        ) {
+          continue
+        }
 
-  resource.importFingerprint = `fingerprint-${resourceId}`
-  resource.importFingerprintVersion = IMPORT_EXPORT_FINGERPRINT_VERSION
+        element.version += 1
+        element.importFingerprint = null
+        element.importFingerprintVersion = null
+        updated += 1
+      }
+      return updated
+    }
+  )
+  const prisma = {
+    mediaFile: { count, findFirst, updateMany },
+    $executeRaw: executeRaw,
+  } as unknown as Parameters<typeof finalizeUploadedMediaFingerprintV1>[1]
+  Object.assign(prisma, {
+    $transaction: vi.fn(
+      async (operation: (tx: typeof prisma) => Promise<unknown>) =>
+        await operation(prisma)
+    ),
+  })
+
+  return { count, executeRaw, findFirst, prisma, updateMany }
 }
 
 describe('import/export fingerprint maintenance batches', () => {
   beforeEach(() => {
     vi.resetAllMocks()
+  })
+
+  it('does not start a refresh page after cooperative cancellation', async () => {
+    await expect(
+      refreshImportExportFingerprintBatch(
+        { answerCollectionId: 77 },
+        {} as Parameters<typeof refreshImportExportFingerprintBatch>[1],
+        () => true
+      )
+    ).resolves.toEqual({
+      processed: 0,
+      stoppedEarly: true,
+    })
+    expect(
+      mocks.refreshAnswerCollectionDidacticFingerprintV1
+    ).not.toHaveBeenCalled()
+    expect(mocks.refreshElementDidacticFingerprintV1).not.toHaveBeenCalled()
+  })
+
+  it('refreshes one directly authored element without collection fan-out', async () => {
+    mocks.refreshElementDidacticFingerprintV1.mockResolvedValue({
+      status: 'updated',
+      computed: null,
+    })
+
+    await expect(
+      refreshImportExportFingerprintBatch(
+        { elementId: 77 },
+        {} as Parameters<typeof refreshImportExportFingerprintBatch>[1]
+      )
+    ).resolves.toEqual({ processed: 1 })
+    expect(mocks.refreshElementDidacticFingerprintV1).toHaveBeenCalledWith(
+      77,
+      expect.anything()
+    )
+    expect(
+      mocks.refreshAnswerCollectionDidacticFingerprintV1
+    ).not.toHaveBeenCalled()
   })
 
   it('records omitted early media identities and resumes later rows', async () => {
@@ -299,8 +408,271 @@ describe('import/export fingerprint maintenance batches', () => {
     expect(updateMany).not.toHaveBeenCalled()
   })
 
+  it('securely finalizes an owned direct upload and reruns idempotently', async () => {
+    const buffer = Buffer.from('direct upload bytes')
+    const expectedHash = createHash('sha256').update(buffer).digest('hex')
+    const mediaFiles: FakeUploadedMediaFile[] = [
+      {
+        id: 'media-upload',
+        ownerId: 'owner-1',
+        href: 'https://storage.invalid/owner-1/media-upload.png',
+        contentHash: null,
+        importFingerprintVersion: null,
+      },
+    ]
+    const { executeRaw, prisma, updateMany } =
+      createUploadedMediaPrisma(mediaFiles)
+    mocks.downloadKlickerMediaFile.mockResolvedValue({
+      buffer,
+      contentType: 'image/png',
+    })
+
+    await expect(
+      finalizeUploadedMediaFingerprintV1(
+        { mediaFileId: 'media-upload', ownerId: 'owner-1' },
+        prisma
+      )
+    ).resolves.toBe(true)
+    await expect(
+      finalizeUploadedMediaFingerprintV1(
+        { mediaFileId: 'media-upload', ownerId: 'owner-1' },
+        prisma
+      )
+    ).resolves.toBe(true)
+
+    expect(mediaFiles[0]).toMatchObject({
+      contentHash: expectedHash,
+      importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+    })
+    expect(updateMany).toHaveBeenCalledOnce()
+    expect(executeRaw).toHaveBeenCalledOnce()
+    expect(mocks.downloadKlickerMediaFile).toHaveBeenCalledOnce()
+  })
+
+  it('repairs a direct upload classified as omitted before its blob became visible', async () => {
+    const href = 'https://storage.invalid/owner-1/media-upload.png'
+    const mediaFiles: FakeUploadedMediaFile[] = [
+      {
+        id: 'media-upload',
+        ownerId: 'owner-1',
+        href,
+        contentHash: null,
+        importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+      },
+    ]
+    const elements: FakeUploadedMediaReferenceElement[] = [
+      {
+        id: 1,
+        version: 1,
+        ownerId: 'owner-1',
+        content: `![diagram](<${href}>)`,
+        explanation: null,
+        options: {},
+        importFingerprint: null,
+        importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+        isDeleted: false,
+      },
+      {
+        id: 2,
+        version: 1,
+        ownerId: 'owner-2',
+        content: `![diagram](<${href}>)`,
+        explanation: null,
+        options: {},
+        importFingerprint: null,
+        importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+        isDeleted: false,
+      },
+      {
+        id: 3,
+        version: 1,
+        ownerId: 'owner-1',
+        content: 'No media reference',
+        explanation: null,
+        options: {},
+        importFingerprint: null,
+        importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+        isDeleted: false,
+      },
+      {
+        id: 4,
+        version: 1,
+        ownerId: 'owner-1',
+        content: `![diagram](<${href}>)`,
+        explanation: null,
+        options: {},
+        importFingerprint: 'already-computed',
+        importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+        isDeleted: false,
+      },
+    ]
+    const { executeRaw, prisma } = createUploadedMediaPrisma(
+      mediaFiles,
+      elements
+    )
+    mocks.downloadKlickerMediaFile.mockResolvedValue({
+      buffer: Buffer.from('direct upload bytes'),
+      contentType: 'image/png',
+    })
+
+    await expect(
+      finalizeUploadedMediaFingerprintV1(
+        { mediaFileId: 'media-upload', ownerId: 'owner-1' },
+        prisma
+      )
+    ).resolves.toBe(true)
+
+    expect(elements.map((element) => element.importFingerprintVersion)).toEqual(
+      [null, 1, 1, null]
+    )
+    expect(elements.map((element) => element.version)).toEqual([2, 1, 1, 2])
+    expect(executeRaw).toHaveBeenCalledOnce()
+
+    mocks.refreshElementDidacticFingerprintV1.mockImplementation(async (id) => {
+      markFingerprintCurrent(elements, id)
+    })
+    const { prisma: repairPrisma } = createFingerprintPrisma({ elements })
+    await expect(
+      repairStaleImportExportFingerprints(repairPrisma)
+    ).resolves.toEqual({
+      processedAnswerCollections: 0,
+      processedElements: 2,
+      answerCollectionBacklogRemaining: false,
+      elementBacklogRemaining: false,
+    })
+    expect(mocks.refreshElementDidacticFingerprintV1).toHaveBeenCalledWith(
+      1,
+      expect.anything()
+    )
+    expect(mocks.refreshElementDidacticFingerprintV1).toHaveBeenCalledWith(
+      4,
+      expect.anything()
+    )
+    expect([elements[0], elements[3]]).toMatchObject([
+      {
+        importFingerprint: 'fingerprint-1',
+        importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+      },
+      {
+        importFingerprint: 'fingerprint-4',
+        importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+      },
+    ])
+  })
+
+  it('repairs the media hash when rollout backfill wins between read and compare-and-set', async () => {
+    const href = 'https://storage.invalid/owner-1/media-upload.png'
+    const buffer = Buffer.from('direct upload bytes')
+    const expectedHash = createHash('sha256').update(buffer).digest('hex')
+    const mediaFiles: FakeUploadedMediaFile[] = [
+      {
+        id: 'media-upload',
+        ownerId: 'owner-1',
+        href,
+        contentHash: null,
+        importFingerprintVersion: null,
+      },
+    ]
+    const elements: FakeUploadedMediaReferenceElement[] = [
+      {
+        id: 1,
+        version: 1,
+        ownerId: 'owner-1',
+        content: `![diagram](<${href}>)`,
+        explanation: null,
+        options: {},
+        importFingerprint: 'omission-fingerprint',
+        importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+        isDeleted: false,
+      },
+    ]
+    const backfillWinsRace = vi.fn(() => {
+      mediaFiles[0]!.contentHash = expectedHash
+      mediaFiles[0]!.importFingerprintVersion =
+        IMPORT_EXPORT_FINGERPRINT_VERSION
+    })
+    const { executeRaw, prisma, updateMany } = createUploadedMediaPrisma(
+      mediaFiles,
+      elements,
+      backfillWinsRace
+    )
+    mocks.downloadKlickerMediaFile.mockResolvedValue({
+      buffer,
+      contentType: 'image/png',
+    })
+
+    await expect(
+      finalizeUploadedMediaFingerprintV1(
+        { mediaFileId: 'media-upload', ownerId: 'owner-1' },
+        prisma
+      )
+    ).resolves.toBe(true)
+
+    expect(backfillWinsRace).toHaveBeenCalledOnce()
+    expect(updateMany).toHaveBeenCalledOnce()
+    expect(mediaFiles[0]).toMatchObject({
+      contentHash: expectedHash,
+      importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+    })
+    expect(elements[0]).toMatchObject({
+      version: 2,
+      importFingerprint: null,
+      importFingerprintVersion: null,
+    })
+    expect(executeRaw).toHaveBeenCalledOnce()
+  })
+
+  it('does not finalize another owner media or a temporarily missing blob', async () => {
+    const mediaFiles: FakeUploadedMediaFile[] = [
+      {
+        id: 'media-upload',
+        ownerId: 'owner-1',
+        href: 'https://storage.invalid/owner-1/media-upload.png',
+        contentHash: null,
+        importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+      },
+    ]
+    const { prisma, updateMany } = createUploadedMediaPrisma(mediaFiles)
+
+    await expect(
+      finalizeUploadedMediaFingerprintV1(
+        { mediaFileId: 'media-upload', ownerId: 'owner-2' },
+        prisma
+      )
+    ).resolves.toBe(false)
+    mocks.downloadKlickerMediaFile.mockResolvedValue(null)
+    await expect(
+      finalizeUploadedMediaFingerprintV1(
+        { mediaFileId: 'media-upload', ownerId: 'owner-1' },
+        prisma
+      )
+    ).resolves.toBe(false)
+
+    expect(updateMany).not.toHaveBeenCalled()
+    expect(mediaFiles[0]).toMatchObject({
+      contentHash: null,
+      importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+    })
+
+    const buffer = Buffer.from('eventually visible upload')
+    mocks.downloadKlickerMediaFile.mockResolvedValue({
+      buffer,
+      contentType: 'image/png',
+    })
+    await expect(
+      finalizeUploadedMediaFingerprintV1(
+        { mediaFileId: 'media-upload', ownerId: 'owner-1' },
+        prisma
+      )
+    ).resolves.toBe(true)
+    expect(mediaFiles[0]?.contentHash).toBe(
+      createHash('sha256').update(buffer).digest('hex')
+    )
+    expect(updateMany).toHaveBeenCalledOnce()
+  })
+
   it.each(['ELEMENT', 'ANSWER_COLLECTION'] as const)(
-    'globally refreshes null and mismatched %s fingerprints, advances the cursor, and reruns without writes',
+    'rollout-refreshes null and stale-version %s fingerprints and reruns without writes',
     async (resource) => {
       const resources = Array.from({ length: 100 }, (_, index) => {
         const id = index + 1
@@ -413,9 +785,7 @@ describe('import/export fingerprint maintenance batches', () => {
     const prisma = {
       element: { findMany },
       answerCollection: { findMany: vi.fn() },
-    } as unknown as Parameters<
-      typeof refreshAnswerCollectionFingerprintBatch
-    >[1]
+    } as unknown as Parameters<typeof refreshImportExportFingerprintBatch>[1]
     mocks.refreshAnswerCollectionDidacticFingerprintV1.mockImplementation(
       async (id) => {
         events.push(`collection:${id}`)
@@ -426,11 +796,11 @@ describe('import/export fingerprint maintenance batches', () => {
       markFingerprintCurrent(elements, id)
     })
 
-    const firstPage = await refreshAnswerCollectionFingerprintBatch(
+    const firstPage = await refreshImportExportFingerprintBatch(
       { answerCollectionId: collectionId },
       prisma
     )
-    const secondPage = await refreshAnswerCollectionFingerprintBatch(
+    const secondPage = await refreshImportExportFingerprintBatch(
       {
         answerCollectionId: collectionId,
         afterElementId: firstPage.nextAfterElementId,

@@ -28,7 +28,6 @@ type AnswerCollectionPreviewEntry = {
 const ImportSelectionCheckbox = memo(function ImportSelectionCheckbox({
   name,
   id,
-  label,
   checked,
   disabled,
   dataCy,
@@ -37,7 +36,6 @@ const ImportSelectionCheckbox = memo(function ImportSelectionCheckbox({
 }: {
   name: string
   id: string
-  label: string
   checked: boolean
   disabled: boolean
   dataCy: string
@@ -45,22 +43,23 @@ const ImportSelectionCheckbox = memo(function ImportSelectionCheckbox({
   setFieldTouched: FormikProps<Record<string, boolean>>['setFieldTouched']
 }) {
   return (
-    <div className="mt-1 flex-none">
+    <div
+      className="flex h-11 w-11 flex-none items-center justify-center"
+      data-cy={`${dataCy}-target`}
+    >
       <Checkbox
         id={id}
         checked={checked}
         disabled={disabled}
-        size="sm"
+        size="md"
         data={{ cy: dataCy }}
+        className={{
+          root: "relative before:absolute before:-inset-3 before:content-['']",
+        }}
         onCheck={() => {
           void setFieldValue(name, !checked, false)
           void setFieldTouched(name, true, false)
         }}
-        label={
-          <label htmlFor={id} className="sr-only">
-            {label}
-          </label>
-        }
       />
     </div>
   )
@@ -116,6 +115,8 @@ function ImportedElementsOverviewTable({
 }) {
   const t = useTranslations()
   const commitErrorRef = useRef<HTMLDivElement | null>(null)
+  const previewPanelRef = useRef<HTMLElement | null>(null)
+  const previewTriggerRef = useRef<HTMLButtonElement | null>(null)
   const [previewedElementId, setPreviewedElementId] = useState<string | null>(
     null
   )
@@ -131,6 +132,16 @@ function ImportedElementsOverviewTable({
   useEffect(() => {
     if (commitError) commitErrorRef.current?.focus()
   }, [commitError])
+
+  useEffect(() => {
+    if (!previewedElementId) return
+
+    const frame = requestAnimationFrame(() => {
+      previewPanelRef.current?.scrollIntoView({ block: 'nearest' })
+      previewPanelRef.current?.focus({ preventScroll: true })
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [previewedElementId])
 
   return (
     <Formik
@@ -197,6 +208,11 @@ function ImportedElementsOverviewTable({
         const previewedElement = previewedElementId
           ? elements[previewedElementId]
           : undefined
+        const previewLabel = previewedElement
+          ? t('manage.elements.elementImportPreviewElement', {
+              name: previewedElement.name,
+            })
+          : t('manage.elements.elementImportPreview')
         const previewAnswerCollectionEntries = previewedElementId
           ? (answerCollectionEntries[previewedElementId] ?? [])
           : []
@@ -226,9 +242,14 @@ function ImportedElementsOverviewTable({
               type="button"
               title={label}
               aria-label={label}
+              aria-controls="element-import-preview-region"
+              aria-pressed={previewedElementId === key}
               disabled={busy}
               className={{ root: 'h-9 w-9 flex-none' }}
-              onClick={() => setPreviewedElementId(key)}
+              onClick={(event) => {
+                previewTriggerRef.current = event?.currentTarget ?? null
+                setPreviewedElementId(key)
+              }}
               data={{ cy: `preview-imported-element-${index}` }}
             >
               <Button.Icon icon={faMagnifyingGlass} />
@@ -237,34 +258,42 @@ function ImportedElementsOverviewTable({
         }
 
         return (
-          <Form
-            className="flex h-[38rem] max-h-[calc(100vh-16rem)] min-h-0 flex-col gap-4 overflow-auto pr-1 lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(20rem,0.95fr)] lg:overflow-hidden lg:pr-0"
+          <div
+            className="flex max-h-[calc(100vh-16rem)] min-h-0 flex-col gap-4 overflow-y-auto overflow-x-hidden pr-1 lg:grid lg:h-[38rem] lg:grid-cols-[minmax(0,1.05fr)_minmax(20rem,0.95fr)] lg:overflow-hidden lg:pr-0"
             aria-busy={busy}
             data-cy="element-import-review-form"
           >
-            <div className="flex min-h-[18rem] flex-col gap-3 overflow-hidden lg:min-h-0">
-              <div
-                className="flex flex-col gap-2"
+            <Form className="flex min-w-0 flex-col gap-3 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
+              <section
+                className="flex flex-col gap-2 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                role="region"
+                tabIndex={0}
+                aria-label={t('manage.elements.reviewElementsBeforeImport')}
+                aria-describedby="element-import-copyright-disclosure element-import-psychometric-disclosure"
                 data-cy="element-import-review-disclosures"
               >
-                <UserNotification
-                  type="warning"
-                  message={t(
-                    'manage.elements.elementImportCopyrightSolutionsDisclosure'
-                  )}
-                  className={{
-                    root: 'text-sm',
-                    icon: 'text-red-900',
-                    message: 'text-red-900',
-                  }}
-                />
-                <UserNotification
-                  message={t(
-                    'manage.elements.elementImportPsychometricDisclosure'
-                  )}
-                  className={{ root: 'text-sm' }}
-                />
-              </div>
+                <div id="element-import-copyright-disclosure">
+                  <UserNotification
+                    type="warning"
+                    message={t(
+                      'manage.elements.elementImportCopyrightSolutionsDisclosure'
+                    )}
+                    className={{
+                      root: 'text-sm',
+                      icon: 'text-red-900',
+                      message: 'text-red-900',
+                    }}
+                  />
+                </div>
+                <div id="element-import-psychometric-disclosure">
+                  <UserNotification
+                    message={t(
+                      'manage.elements.elementImportPsychometricDisclosure'
+                    )}
+                    className={{ root: 'text-sm' }}
+                  />
+                </div>
+              </section>
               {commitError ? (
                 <div
                   ref={commitErrorRef}
@@ -340,7 +369,7 @@ function ImportedElementsOverviewTable({
               </div>
 
               <ul
-                className="m-0 flex min-h-0 flex-1 list-none flex-col gap-2 overflow-auto rounded-md border border-solid p-2"
+                className="m-0 flex min-h-32 flex-none list-none flex-col gap-2 overflow-auto rounded-md border border-solid p-2 lg:flex-1"
                 aria-label={t('manage.elements.reviewElementsBeforeImport')}
                 data-cy="element-import-selection-list"
               >
@@ -362,18 +391,23 @@ function ImportedElementsOverviewTable({
                         id={`element-import-switch-${key}`}
                         checked={Boolean(values[key])}
                         disabled={busy}
-                        label={t(
-                          'manage.elements.elementImportSelectionToggle',
-                          { name: element.name }
-                        )}
                         dataCy={`element-${index}-import`}
                         setFieldValue={setFieldValue}
                         setFieldTouched={setFieldTouched}
                       />
                       <div className="min-w-0">
-                        <div className="break-words text-sm font-bold">
-                          {element.name}
-                        </div>
+                        <label
+                          htmlFor={`element-import-switch-${key}`}
+                          className="flex min-h-11 cursor-pointer items-center break-words text-sm font-bold"
+                          data-cy={`element-${index}-import-label`}
+                        >
+                          <span className="sr-only">
+                            {t('manage.elements.elementImportSelectionToggle', {
+                              name: element.name,
+                            })}
+                          </span>
+                          <span aria-hidden="true">{element.name}</span>
+                        </label>
                         <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-slate-700 sm:gap-2">
                           <span>{t(`shared.${element.type}.typeLabel`)}</span>
                           <Badge
@@ -442,9 +476,17 @@ function ImportedElementsOverviewTable({
                     : ''}
                 </div>
               </div>
-            </div>
+            </Form>
 
-            <section className="flex min-h-[22rem] min-w-0 flex-col overflow-hidden rounded-md border border-solid bg-white lg:min-h-0">
+            <section
+              ref={previewPanelRef}
+              id="element-import-preview-region"
+              role="region"
+              tabIndex={-1}
+              data-cy="element-import-preview-region"
+              aria-label={previewLabel}
+              className="flex min-h-[22rem] min-w-0 flex-col overflow-hidden rounded-md border border-solid bg-white outline-none focus-visible:ring-2 focus-visible:ring-offset-2 lg:min-h-0"
+            >
               <div className="flex h-12 flex-none items-center justify-between gap-3 border-b px-3">
                 <H4 className={{ root: 'm-0 truncate text-base' }}>
                   {previewedElement
@@ -460,7 +502,11 @@ function ImportedElementsOverviewTable({
                     aria-label={t('shared.generic.close')}
                     disabled={busy}
                     className={{ root: 'h-8 w-8 flex-none' }}
-                    onClick={() => setPreviewedElementId(null)}
+                    onClick={() => {
+                      const trigger = previewTriggerRef.current
+                      setPreviewedElementId(null)
+                      requestAnimationFrame(() => trigger?.focus())
+                    }}
                     data={{ cy: 'close-element-import-preview' }}
                   >
                     <Button.Icon withoutLabel icon={faXmark} />
@@ -469,11 +515,17 @@ function ImportedElementsOverviewTable({
               </div>
 
               <div
-                className="min-h-0 flex-1 overflow-auto p-3"
+                role="region"
+                tabIndex={0}
+                aria-label={previewLabel}
+                className="min-h-0 flex-1 overflow-auto rounded-sm p-3 outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
                 data-cy="element-import-preview-panel"
               >
                 {previewedElement ? (
-                  <div data-cy="element-import-preview-content">
+                  <div
+                    key={previewedElementId}
+                    data-cy="element-import-preview-content"
+                  >
                     <StudentElementPreview
                       values={previewedElement}
                       elementDataTypename={getElementDataType(
@@ -498,7 +550,7 @@ function ImportedElementsOverviewTable({
                 )}
               </div>
             </section>
-          </Form>
+          </div>
         )
       }}
     </Formik>
