@@ -1121,6 +1121,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         '{points} Points ({basePoints} base points, {correctnessPoints} correctness points, {bonusPoints} bonus points): {reason}',
     },
   },
+  kb: {
+    title: 'Knowledge Bases',
+    signedInAs: 'Signed in as {email}',
+  },
   manage: {
     general: {
       qrCode: 'QR Code',

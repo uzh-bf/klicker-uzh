@@ -23,7 +23,11 @@ let nextConfig = {
 }
 
 nextConfig.transpilePackages = Array.from(
-  new Set([...(nextConfig.transpilePackages ?? []), 'formik'])
+  new Set([
+    ...(nextConfig.transpilePackages ?? []),
+    '@klicker-uzh/kb-management',
+    'formik',
+  ])
 )
 
 if (process.env.NODE_ENV !== 'test') {

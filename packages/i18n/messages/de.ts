@@ -1122,6 +1122,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         '{points} Punkte ({basePoints} Basispunkte, {correctnessPoints} Korrektheitspunkte, {bonusPoints} Bonuspunkte): {reason}',
     },
   },
+  kb: {
+    title: 'Wissensdatenbanken',
+    signedInAs: 'Angemeldet als {email}',
+  },
   manage: {
     general: {
       qrCode: 'QR Code',
