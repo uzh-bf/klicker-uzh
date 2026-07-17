@@ -1,11 +1,16 @@
 # Review — PR #5141: Export Student Assessment Report with Verifiable Credentials
 
+> **STATUS (added 2026-07-17): PRE-REMEDIATION BASELINE — do not read the Verdict below as describing the current branch.**
+> This review was performed on 2026-07-07 against the branch as it stood before PR #5173. All findings below are preserved unedited as the historical record of what that review found; nothing in §1–§7 has been rewritten to look clean in hindsight. PR #5173 (commit `2c7acbbfa`, merged into this branch) subsequently remediated the two Blockers this review calls critical (forgeable scores, no issuance authorization) plus the high-severity PII exposure and several of the mediums. **§6 below is annotated inline** with what was fixed by #5173 and what — if anything — is still open as of 2026-07-17. See `project/2026-07-06-export-assessment-performance-insights-plan.md` for the corresponding plan-side corrections. Do not use this document's original Verdict/sign-off gate as the current release decision; use the §6 annotations instead.
+
 - **PR**: https://github.com/uzh-bf/klicker-uzh/pull/5141
 - **Branch**: `export-assessment-performance-insights` → `v3`
-- **Reviewed**: 2026-07-07 (full branch diff `v3...HEAD`, all 32 files)
-- **Verdict**: **Not production-ready.** Good feature direction and a clean schema/UI skeleton, but the core trust model is broken and a hands-on security pass (§7) confirmed the escape hatches don't hold: credentials are **forgeable in production** (persisted operations do not protect the client-supplied payload — verified, not assumed), issuance has **no authorization** (any authenticated principal, including anonymous accounts, can mint), and the public credential query exposes the **course join PIN and lecturer email** in dev/test. On top of that, both verification claims in the PR description are false: the shipped unit test **fails when actually run**, and the shipped E2E test **cannot pass** against the seeded database. Concrete evidence and a step-by-step fix plan below; a security sign-off gate is in §6.
+- **Reviewed**: 2026-07-07 (full branch diff `v3...HEAD`, all 32 files) — **pre-#5173 baseline, see status banner above**
+- **Verdict (as of 2026-07-07, superseded — see §6 annotations)**: **Not production-ready.** Good feature direction and a clean schema/UI skeleton, but the core trust model is broken and a hands-on security pass (§7) confirmed the escape hatches don't hold: credentials are **forgeable in production** (persisted operations do not protect the client-supplied payload — verified, not assumed), issuance has **no authorization** (any authenticated principal, including anonymous accounts, can mint), and the public credential query exposes the **course join PIN and lecturer email** in dev/test. On top of that, both verification claims in the PR description are false: the shipped unit test **fails when actually run**, and the shipped E2E test **cannot pass** against the seeded database. Concrete evidence and a step-by-step fix plan below; a security sign-off gate is in §6.
 
 This document is written so a junior engineer can execute it top-to-bottom. Each finding has evidence (file:line) and a "Fix" with acceptance criteria. Work through the Blockers in order; they are sequenced so later fixes build on earlier ones.
+
+**This is what the review found on 2026-07-07.** It is kept as-is, including file:line references that point at the pre-#5173 code and may no longer match current line numbers. For the present state of each finding, see the annotations in §6.
 
 ---
 
@@ -24,7 +29,7 @@ All commands were run on a clean checkout of the PR branch with the repo-pinned 
 
 Unit test failure output (verbatim):
 
-```
+```text
 ✓ correctly issues a new verifiable credential
 ✓ resolves a valid credential by token
 × does not resolve a revoked credential
@@ -222,29 +227,46 @@ Report footer and verify page claim the document is "digital signiert / digitall
 
 ## 6. Execution order for the fix pass (junior checklist)
 
+> **Annotation (added 2026-07-17): remediation status of each step below, verified against the current branch (PR #5173 / `2c7acbbfa`).** The numbered list and sign-off gate are left as originally written (they describe the fix pass as planned on 2026-07-07); each item now carries a `→ status:` line with what actually shipped, checked against the code in this worktree. Nothing below was deleted or reworded in the original text — only the `→ status:` lines are new.
+
 Work on the PR branch; one commit per numbered step; run the listed verification each time. **Do steps 1 and 2 first — they neutralise the two critical trust holes; everything else is downstream.**
 
 1. **Server-side snapshot** (§2.1) + **auth/enrollment/temporary-account rejection** (§2.2) — one slice; they touch the same resolver. This is the security core: after it, scores can't be forged and only real enrolled participants can issue. Verify: new unit tests + manual GraphQL calls (lecturer JWT → clean error not masked 500, non-enrolled participant → error, temporary/anonymous participant → error, valid participant → server-computed snapshot). **Also replay the persisted `MIssueCredential` hash with a tampered `metadata` variable and confirm it is now rejected/ignored** (this is the exact prod attack from §2.1).
+   → **status: FIXED.** `issueAssessmentReport(courseId)` (`packages/graphql/src/schema/verification.ts:239`, `packages/graphql/src/services/assessmentReports.ts:613`) takes no client-supplied payload — the resolver builds `AssessmentReportSnapshotV1` itself from the participant's own course/invitation/score data and hashes it (`snapshotHash`). It is scoped `t.withAuth(asParticipant)` and additionally checks `ctx.user.role !== DB.UserRole.PARTICIPANT`, an accepted `Participation`, and an `ACCEPTED` course invitation with a non-null `acceptedAt` (`assessmentReports.ts:310-346`) before it will issue — a lecturer JWT or a participant without an accepted invitation gets a typed `GraphQLError`, not a 500. The `MIssueCredential.graphql` op no longer declares a `metadata` variable at all, so there is nothing left to tamper via persisted-op replay.
 2. **Minimal public course projection** (§2.8) — replace `verifiableCredential.course: CourseRef` with a 3-field `PublicCourseInfo` type. Verify: `verifiableCredential(token){ course { pinCode owner { email } } }` against a dev server returns a schema error, not data.
+   → **status: FIXED.** The public query (`assessmentReportVerification`, `verification.ts:212`) returns a dedicated `PublicAssessmentReportCourse` object ref (`verification.ts:67-70`), separate from the lecturer-facing `AssessmentReportCourse` ref that exposes more fields — `pinCode`/`owner.email` are not reachable from the public type.
 3. **Fix unit test expectation** (§2.3) and add the tests from steps 1–2. Verify: `./run-tests-local.sh verification.test.ts` green; paste output in PR.
+   → **status: FIXED (superseded by a full test rewrite).** `packages/graphql/test/verification.test.ts` (1019 lines) and `packages/graphql/test/assessmentReports.test.ts` (203 lines, new) now cover the redaction/authorization/idempotency behavior. CI's `test-graphql` job passes on the current PR head commit `f769bec30` (`gh pr checks 5141`, verified 2026-07-17).
 4. **Idempotent issuance + revocation policy** (§2.6, needs product-owner decision — ask before coding) + **typed GraphQL errors** (§3.6). Verify: unit tests.
+   → **status: PARTIALLY ADDRESSED — see caveat.** Issuance is idempotent (unchanged snapshot returns the existing `ACTIVE` record) and re-issuing claims that match a `REVOKED` record's claims is now explicitly blocked (`ASSESSMENT_REPORT_REVOKED`), while re-issuing with genuinely changed data supersedes the prior record (`issueAssessmentReportInTransaction`, `assessmentReports.ts:429-541`). Resolvers throw typed `GraphQLError`s with `extensions.code` (e.g. `FORBIDDEN`, `NOT_FOUND`) instead of generic `Error`. **Caveat**: this repo has no record of an explicit product-owner sign-off on this exact policy shape — it reads as an engineering-derived answer to the open question, not a documented product decision. Flag for product confirmation if that matters for this feature's compliance posture.
 5. **Public exposure hardening** (§3.1: revoked-metadata stripping, expiry decision, histogram/privacy-notice wording) + **crash-hardening** (§3.3) + **HTML escaping** (§3.4). Verify: unit test with malformed legacy metadata; manual verify-page check. File the §3.5 armor follow-up.
+   → **status: MOSTLY FIXED.** `getPublicAssessmentReport` (`services/verification.ts:74-109`) redacts non-`ACTIVE` records to `{status, issuedAt, snapshot: null}`, and a hash-mismatch/malformed record redacts to `DATA_UNAVAILABLE` rather than crashing. `exportReport.ts` has an `escapeHtml()` helper (`exportReport.ts:55`) applied to interpolated values. The `expiresAt` column and public-histogram-wording items were not individually re-checked here — treat as unverified rather than fixed.
 6. **Perf decision** (§2.7) — discuss the two options in the PR thread first; implement the chosen one. Verify: Prisma query logs on the student page.
+   → **status: FIXED (cheapest option taken).** `getStudentAssessmentResults` (`services/courses.ts:543`) no longer computes cohort-wide percentile/histogram on every page view — that aggregation (`calculateAssessmentCourseScores`) now runs only inside `issueAssessmentReport` at issuance time (`assessmentReports.ts:348`).
+   → 2026-07-17 note: the split introduced a second scoring path — `packages/graphql/src/services/assessmentScores.ts` (203 lines, new) — reviewed only for the presence of `calculateAssessmentCourseScores`, not audited end-to-end for score-calculation correctness.
 7. **Identity on verify page** (§2.5) + **wording fixes** (§3.2). Verify: screenshot pair (report vs. verify page).
+   → **status: FIXED.** `verify/index.tsx:322` renders `{snapshot.subject.email}` on the status banner. A search for the original "digital signiert / digitally signed" / "manipulationssicher" strings found no matches in `exportReport.ts` or `verify/index.tsx`, consistent with the wording having been corrected — not independently re-read line-by-line.
 8. **UX/i18n batch** (§4.1–4.13). Verify: agent-browser walkthrough with screenshots (repo rule for UI changes), DE + EN locales, mobile + desktop viewports.
+   → **status: PARTIALLY VERIFIED.** `verify/index.tsx` uses `next-intl` (`useTranslations`) rather than hardcoded bilingual strings. The rest of item 4's sub-points (QR race, silent failures, `window.confirm`, fake seal, pagination, etc.) were **not** individually re-checked for this annotation pass — do not assume all of §4 is closed.
+   → **No `agent-browser` walkthrough has been run as part of this annotation pass.** Per repo rules this is required before treating any frontend-facing part of this PR as browser-verified; it is still an open, pending manual step.
 9. **Fix and actually run the E2E spec** (§2.4). Verify: green Playwright output in PR.
+   → **status: FIXED.** `playwright/tests/Z-credential-verification.spec.ts` was substantially rewritten (part of the #5173 diff, +/- several hundred lines) alongside new helpers in `playwright/util/credentialVerification.ts` and `playwright/util/constants.ts`. CI's `test-playwright` shards all pass on the current PR head commit `f769bec30` (verified via `gh pr checks 5141`, 2026-07-17).
 10. Re-run the full loop: `CI=true pnpm run check:all && pnpm run build`, unit tests, E2E, then update the PR description's Verification section with real outputs/screenshots.
+    → **status: CI-verified as of 2026-07-17** (`gh pr checks 5141`): build, check-types, check-format, check-lint, check-syncpack, test-graphql, test-playwright (all 8 shards) all report `pass` on commit `f769bec30`. This was checked via GitHub's check-run status, not by re-running the commands locally in this pass.
 
 Estimated effort: steps 1–5 (security + correctness) ≈ 2–3 days, 6–9 ≈ 1–2 days including verification.
 
 ### Security sign-off gate (must all be true before merge)
 
-- [ ] Scores on the verify page are server-computed; a tampered persisted `MIssueCredential` replay cannot change them (§2.1).
-- [ ] `issueCredential` rejects lecturer JWTs, non-enrolled participants, and temporary/anonymous participants (§2.2).
-- [ ] The public credential query cannot reach `Course.pinCode` / `owner.email` on any environment (§2.8).
-- [ ] Revoked credentials do not serve metadata publicly; revocation cannot be silently undone by re-export (§3.1, §2.6).
-- [ ] Exported HTML escapes all lecturer/user-controlled strings (§3.4).
-- [ ] The committed unit + E2E suites actually run green (§2.3, §2.4), with output attached to the PR.
+> **Annotation (added 2026-07-17):** gate re-evaluated against the current branch. Checkboxes below reflect what code inspection and CI status support as of 2026-07-17, not the 2026-07-07 baseline.
+
+- [x] Scores on the verify page are server-computed; a tampered persisted `MIssueCredential` replay cannot change them (§2.1). — no `metadata` variable exists on the mutation to tamper with.
+- [x] `issueAssessmentReport` rejects lecturer JWTs (role check + `t.withAuth(asParticipant)`), non-enrolled participants (accepted-invitation check), and effectively requires a real accepted invitation (§2.2) — the original "temporary/anonymous participant" wording is superseded by the invitation-based identity check: no accepted invitation means no issuance, regardless of account type.
+- [x] The public credential query cannot reach `Course.pinCode` / `owner.email` on any environment (§2.8) — dedicated minimal `PublicAssessmentReportCourse` type.
+- [x] Revoked/superseded credentials do not serve `snapshot` publicly; re-issuing matching claims after revocation is explicitly refused rather than silently minting a fresh active credential (§3.1, §2.6).
+- [x] Exported HTML escapes interpolated values via `escapeHtml()` (§3.4).
+- [x] The committed unit + E2E suites run green in CI on the current PR head commit (`f769bec30`), per `gh pr checks 5141` (§2.3, §2.4).
+- [ ] **Still open / not verified in this pass**: `graphql-armor` `maxDepth`/`costLimit` remain disabled (§3.5, `apps/backend-docker/src/app.ts`) — explicitly deferred as a follow-up in the original review and still disabled in the current code; `expiresAt` column disposition (§3.1); full §4 UX/i18n batch beyond the verify page; and the **mandatory `agent-browser` before/after screenshot verification** of the export and verification flows, which per repo rules has not yet been performed.
 
 ---
 
