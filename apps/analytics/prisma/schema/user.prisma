@@ -110,22 +110,23 @@ model User {
   publicPreview  Boolean @default(false)
   privatePreview Boolean @default(false)
 
-  logins             UserLogin[]
-  session            Session[]
-  accounts           Account[]
-  courses            Course[]
-  questions          Element[]
-  mediaFiles         MediaFile[]
-  tags               Tag[]
-  groupActivities    GroupActivity[]
-  elementInstances   ElementInstance[]
-  practiceQuizzes    PracticeQuiz[]
-  microLearnings     MicroLearning[]
-  liveQuizzes        LiveQuiz[]
-  competencyTrees    CompetencyTree[]
-  answerCollections  AnswerCollection[]
-  chatbots           Chatbot[]
-  chatbotDisclaimers ChatbotDisclaimer[]
+  logins                     UserLogin[]
+  session                    Session[]
+  accounts                   Account[]
+  courses                    Course[]
+  questions                  Element[]
+  mediaFiles                 MediaFile[]
+  tags                       Tag[]
+  groupActivities            GroupActivity[]
+  elementInstances           ElementInstance[]
+  practiceQuizzes            PracticeQuiz[]
+  microLearnings             MicroLearning[]
+  liveQuizzes                LiveQuiz[]
+  competencyTrees            CompetencyTree[]
+  answerCollections          AnswerCollection[]
+  chatbots                   Chatbot[]
+  chatbotDisclaimers         ChatbotDisclaimer[]
+  revokedVerificationRecords VerifiableCredential[] @relation("RevokedVerifiableCredentials")
 
   userGroups                UserGroup[]         @relation("UserGroupMembers")
   adminUserGroups           UserGroup[]         @relation("UserGroupAdmins")
