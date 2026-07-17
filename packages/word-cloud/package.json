@@ -35,7 +35,7 @@
     "test": "vitest run"
   },
   "engines": {
-    "node": "=20"
+    "node": "=24"
   },
   "volta": {
     "extends": "../../package.json"
