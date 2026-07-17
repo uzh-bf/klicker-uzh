@@ -1,526 +1,367 @@
-import { HistogramBin } from '@klicker-uzh/types'
+import type { MIssueCredentialMutation } from '@klicker-uzh/graphql/dist/ops'
+import { getHistogramBinGeometry, isScoreInHistogramBin } from './histogram'
+
+type AssessmentReportSnapshot =
+  MIssueCredentialMutation['issueAssessmentReport']['snapshot']
 
 export interface ExportReportTexts {
-  title: string
-  subtitle: string
+  documentTitle: string
+  issuedAt: string
+  timeZone: string
   course: string
+  courseReference: string
   student: string
-  date: string
+  identitySource: string
   pointsSummary: string
-  basePointsTitle: string
-  correctnessPointsTitle: string
-  bonusPointsTitle: string
-  totalPointsTitle: string
-  ofAvailable: string
-  excludingBonus: string
-  percentileTitle: string
+  achieved: string
+  available: string
+  basePoints: string
+  correctnessPoints: string
+  bonusPoints: string
+  totalPoints: string
+  comparisonTitle: string
   percentileText: string
   percentileExplanation: string
   histogramTitle: string
   histogramDescription: string
-  privacyNoticeTitle: string
-  privacyNoticeText: string
-  yourScoreLabel: string
-  countLabel: string
-  binLabel: string
-  notEnoughDataForComparison: string
+  histogramUserRange: string
+  noComparison: string
+  privacyTitle: string
+  privacyText: string
+  scoreRange: string
+  participantCount: string
+  yourScore: string
+  verificationTitle: string
+  verificationText: string
+  verificationLink: string
+  verificationQrAlt: string
 }
 
-export function downloadAssessmentReport({
-  courseName,
-  studentEmail,
+export interface AssessmentReportArtifact {
+  filename: string
+  url: string
+}
+
+const REPORT_TIME_ZONE = 'Europe/Zurich'
+
+const HTML_ENTITIES: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#039;',
+}
+
+function escapeHtml(value: string | number) {
+  return String(value).replace(/[&<>"']/g, (character) => {
+    return HTML_ENTITIES[character]!
+  })
+}
+
+function formatNumber(value: number, locale: string) {
+  return new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(
+    value
+  )
+}
+
+function createHistogramSvg({
+  histogram,
   totalPoints,
   availableTotalPoints,
-  basePoints,
-  availableBasePoints,
-  correctnessPoints,
-  availableCorrectnessPoints,
-  bonusPoints,
-  availableBonusPoints,
-  percentile,
-  histogram,
-  hasEnoughData,
   texts,
-  verificationUrl = null,
-  qrCodeDataUrl = null,
+  locale,
 }: {
-  courseName: string
-  studentEmail: string
+  histogram: NonNullable<AssessmentReportSnapshot['comparison']>['histogram']
   totalPoints: number
   availableTotalPoints: number
-  basePoints: number
-  availableBasePoints: number
-  correctnessPoints: number
-  availableCorrectnessPoints: number
-  bonusPoints: number
-  availableBonusPoints: number
-  percentile: number | null
-  histogram: HistogramBin[] | null
-  hasEnoughData: boolean
   texts: ExportReportTexts
-  verificationUrl?: string | null
-  qrCodeDataUrl?: string | null
+  locale: string
 }) {
-  const formattedDate = new Date().toLocaleDateString(undefined, {
-    dateStyle: 'medium',
+  const width = 640
+  const height = 300
+  const top = 36
+  const bottom = 58
+  const left = 52
+  const right = 20
+  const plotWidth = width - left - right
+  const plotHeight = height - top - bottom
+  const maxCount = Math.max(...histogram.map((bin) => bin.count), 1)
+  const userBinIndex = histogram.findIndex((bin, index) => {
+    return isScoreInHistogramBin({
+      score: totalPoints,
+      bin,
+      isLast: index === histogram.length - 1,
+      availableTotalPoints,
+    })
   })
 
-  // Format numbers nicely
-  const formatNum = (val: number) =>
-    Number.isInteger(val) ? val.toString() : val.toFixed(2)
+  const grid = Array.from({ length: 5 }, (_, index) => {
+    const ratio = index / 4
+    const y = top + plotHeight - ratio * plotHeight
+    const count = Math.round(ratio * maxCount)
+    return `<line x1="${left}" y1="${y}" x2="${width - right}" y2="${y}" stroke="#d6d6d6" />
+      <text x="${left - 8}" y="${y + 4}" text-anchor="end">${count}</text>`
+  }).join('')
 
-  // Generate SVG Histogram
-  let svgChart = ''
-  if (hasEnoughData && histogram && histogram.length > 0) {
-    svgChart = generateSvgHistogram(
-      histogram,
-      totalPoints,
-      texts.yourScoreLabel,
-      texts.countLabel,
-      texts.binLabel
+  const bars = histogram
+    .map((bin, index) => {
+      const barHeight = (bin.count / maxCount) * plotHeight
+      const { startRatio, widthRatio } = getHistogramBinGeometry(
+        histogram,
+        index
+      )
+      const slotX = left + startRatio * plotWidth
+      const slotWidth = widthRatio * plotWidth
+      const gap = Math.min(8, slotWidth * 0.2)
+      const x = slotX + gap / 2
+      const barWidth = Math.max(slotWidth - gap, 1)
+      const y = top + plotHeight - barHeight
+      const isUserBin = index === userBinIndex
+      const color = isUserBin ? '#0028a5' : '#007a92'
+      const range = `${formatNumber(bin.binStart, locale)}-${formatNumber(
+        bin.binEnd,
+        locale
+      )}`
+      return `<rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" fill="${color}" />
+        <text x="${x + barWidth / 2}" y="${y - 7}" text-anchor="middle" font-weight="600">${bin.count}</text>
+        <text x="${x + barWidth / 2}" y="${top + plotHeight + 20}" text-anchor="middle" font-size="10">${escapeHtml(range)}</text>
+        ${
+          isUserBin
+            ? `<text x="${x + barWidth / 2}" y="${y - 22}" text-anchor="middle" fill="#0028a5" font-weight="700">${escapeHtml(texts.yourScore)}</text>`
+            : ''
+        }`
+    })
+    .join('')
+
+  const accessibleDescription = [
+    texts.histogramDescription,
+    texts.histogramUserRange,
+  ]
+    .filter(Boolean)
+    .join(' ')
+
+  return `<svg role="img" aria-label="${escapeHtml(accessibleDescription)}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+    <g fill="#333" font-family="Arial, sans-serif" font-size="11">
+      ${grid}
+      <line x1="${left}" y1="${top + plotHeight}" x2="${width - right}" y2="${top + plotHeight}" stroke="#666" />
+      ${bars}
+      <text x="${left + plotWidth / 2}" y="${height - 8}" text-anchor="middle">${escapeHtml(texts.scoreRange)}</text>
+      <text x="14" y="${top + plotHeight / 2}" text-anchor="middle" transform="rotate(-90 14 ${top + plotHeight / 2})">${escapeHtml(texts.participantCount)}</text>
+    </g>
+  </svg>`
+}
+
+function createHistogramTable(
+  snapshot: AssessmentReportSnapshot,
+  texts: ExportReportTexts,
+  locale: string
+) {
+  if (!snapshot.comparison) return ''
+  const rows = snapshot.comparison.histogram
+    .map((bin, index, histogram) => {
+      const isUserBin = isScoreInHistogramBin({
+        score: snapshot.results.totalPoints,
+        bin,
+        isLast: index === histogram.length - 1,
+        availableTotalPoints: snapshot.results.availableTotalPoints,
+      })
+      return `<tr${isUserBin ? ' class="user-bin"' : ''}>
+        <td>${escapeHtml(formatNumber(bin.binStart, locale))}-${escapeHtml(formatNumber(bin.binEnd, locale))}${isUserBin ? ` <span class="user-bin-label">(${escapeHtml(texts.yourScore)})</span>` : ''}</td>
+        <td>${bin.count}</td>
+      </tr>`
+    })
+    .join('')
+  return `<table class="histogram-table">
+    <thead><tr><th>${escapeHtml(texts.scoreRange)}</th><th>${escapeHtml(texts.participantCount)}</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`
+}
+
+export async function loadPublicImageAsDataUrl(path: string) {
+  const response = await fetch(path)
+  if (!response.ok) throw new Error('REPORT_ASSET_UNAVAILABLE')
+  const blob = await response.blob()
+  return await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.addEventListener('load', () => resolve(String(reader.result)))
+    reader.addEventListener('error', () => reject(reader.error))
+    reader.readAsDataURL(blob)
+  })
+}
+
+export function createAssessmentReport({
+  snapshot,
+  issuedAt,
+  identitySourceLabel,
+  locale,
+  texts,
+  verificationUrl,
+  qrCodeDataUrl,
+  uzhLogoDataUrl,
+}: {
+  snapshot: AssessmentReportSnapshot
+  issuedAt: string | Date
+  identitySourceLabel: string
+  locale: string
+  texts: ExportReportTexts
+  verificationUrl: string
+  qrCodeDataUrl: string
+  uzhLogoDataUrl: string
+}): AssessmentReportArtifact {
+  const formattedIssuedAt = new Intl.DateTimeFormat(locale, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: REPORT_TIME_ZONE,
+  }).format(new Date(issuedAt))
+  const resultRows = [
+    [
+      texts.basePoints,
+      snapshot.results.basePoints,
+      snapshot.results.availableBasePoints,
+    ],
+    [
+      texts.correctnessPoints,
+      snapshot.results.correctnessPoints,
+      snapshot.results.availableCorrectnessPoints,
+    ],
+    [
+      texts.bonusPoints,
+      snapshot.results.bonusPoints,
+      snapshot.results.availableBonusPoints,
+    ],
+    [
+      texts.totalPoints,
+      snapshot.results.totalPoints,
+      snapshot.results.availableTotalPoints,
+    ],
+  ]
+    .map(
+      ([label, achieved, available]) => `<tr>
+        <th scope="row">${escapeHtml(label)}</th>
+        <td>${escapeHtml(formatNumber(Number(achieved), locale))}</td>
+        <td>${escapeHtml(formatNumber(Number(available), locale))}</td>
+      </tr>`
     )
-  }
+    .join('')
 
-  // Construct HTML content
-  const htmlContent = `<!DOCTYPE html>
-<html lang="de">
+  const comparison = snapshot.comparison
+    ? `<p class="percentile">${escapeHtml(texts.percentileText)}</p>
+       <p>${escapeHtml(texts.percentileExplanation)}</p>
+       <h3>${escapeHtml(texts.histogramTitle)}</h3>
+       <p>${escapeHtml(texts.histogramDescription)}</p>
+       <div class="chart">${createHistogramSvg({
+         histogram: snapshot.comparison.histogram,
+         totalPoints: snapshot.results.totalPoints,
+         availableTotalPoints: snapshot.results.availableTotalPoints,
+         texts,
+         locale,
+       })}</div>
+       ${createHistogramTable(snapshot, texts, locale)}`
+    : `<p>${escapeHtml(texts.noComparison)}</p>`
+
+  const html = `<!doctype html>
+<html lang="${escapeHtml(locale)}">
 <head>
-  <meta charset="UTF-8">
-  <title>${texts.title} - ${courseName}</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="referrer" content="no-referrer" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'" />
+  <title>${escapeHtml(texts.documentTitle)} - ${escapeHtml(snapshot.course.displayName)}</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      color: #121212;
-      background-color: #FFFFFF;
-      margin: 0;
-      padding: 40px;
-      line-height: 1.6;
-    }
-    .header {
-      border-bottom: 2px solid #0028A5;
-      padding-bottom: 20px;
-      margin-bottom: 30px;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-    }
-    .logo-wrapper {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-    }
-    .logo-divider {
-      width: 1px;
-      height: 32px;
-      background-color: #E9E9E9;
-    }
-    .logo-unit {
-      font-size: 16px;
-      font-weight: bold;
-      color: #121212;
-    }
-    .document-title {
-      font-size: 24px;
-      font-weight: bold;
-      margin: 0;
-      color: #121212;
-    }
-    .meta-info {
-      font-size: 14px;
-      color: #666666;
-      margin-top: 5px;
-    }
-    .section-title {
-      font-size: 18px;
-      font-weight: bold;
-      color: #0028A5;
-      border-bottom: 1px solid #E9E9E9;
-      padding-bottom: 8px;
-      margin-top: 30px;
-      margin-bottom: 15px;
-    }
-    .info-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      margin-bottom: 25px;
-      background-color: #FAFAFA;
-      border: 1px solid #E9E9E9;
-      border-radius: 8px;
-      padding: 15px;
-    }
-    .info-item {
-      font-size: 14px;
-    }
-    .info-label {
-      font-weight: bold;
-      color: #666666;
-      margin-bottom: 3px;
-    }
-    .points-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 15px;
-      margin-bottom: 25px;
-    }
-    .points-card {
-      border: 1px solid #E9E9E9;
-      border-radius: 8px;
-      padding: 15px;
-      background-color: #FAFAFA;
-      text-align: center;
-    }
-    .points-card.total {
-      background-color: #F5F5FB;
-      border-color: #0028A5;
-    }
-    .points-label {
-      font-size: 11px;
-      text-transform: uppercase;
-      font-weight: bold;
-      color: #666666;
-      margin-bottom: 5px;
-    }
-    .points-value {
-      font-size: 24px;
-      font-weight: bold;
-      color: #121212;
-    }
-    .points-card.total .points-value {
-      color: #0028A5;
-    }
-    .points-meta {
-      font-size: 12px;
-      color: #4C4C4C;
-      margin-top: 5px;
-    }
-    .percentile-box {
-      background-color: #F5F5FB;
-      border-left: 4px solid #0028A5;
-      padding: 15px 20px;
-      margin-bottom: 25px;
-      border-radius: 0 8px 8px 0;
-    }
-    .percentile-title {
-      font-size: 16px;
-      font-weight: bold;
-      color: #0028A5;
-      margin-bottom: 5px;
-    }
-    .percentile-explanation {
-      font-size: 14px;
-      color: #4C4C4C;
-    }
-    .chart-container {
-      text-align: center;
-      margin: 30px 0;
-      padding: 20px;
-      border: 1px solid #E9E9E9;
-      border-radius: 8px;
-      background-color: #FAFAFA;
-    }
-    .chart-title {
-      font-size: 16px;
-      font-weight: bold;
-      margin-bottom: 15px;
-      color: #121212;
-    }
-    .privacy-box {
-      font-size: 13px;
-      color: #666666;
-      background-color: #FAFAFA;
-      border: 1px solid #E9E9E9;
-      padding: 15px;
-      border-radius: 6px;
-      margin-top: 30px;
-    }
-    .privacy-title {
-      font-weight: bold;
-      color: #121212;
-      margin-bottom: 5px;
-    }
-    .verification-footer {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      border: 2px dashed #0028A5;
-      background-color: #F5F5FB;
-      padding: 20px;
-      border-radius: 8px;
-      margin-top: 30px;
-      margin-bottom: 20px;
-      page-break-inside: avoid;
-    }
-    .verification-qr {
-      width: 100px;
-      height: 100px;
-      flex-shrink: 0;
-      background-color: #FFFFFF;
-      border: 1px solid #E9E9E9;
-      padding: 5px;
-      border-radius: 4px;
-    }
-    .verification-text {
-      font-size: 13px;
-      color: #121212;
-      line-height: 1.4;
-    }
-    .verification-title {
-      font-size: 15px;
-      font-weight: bold;
-      color: #0028A5;
-      margin-bottom: 5px;
-    }
-    .verification-link {
-      color: #0028A5;
-      text-decoration: underline;
-      font-weight: bold;
-      word-break: break-all;
-    }
-    @media print {
-      body {
-        padding: 0;
-      }
-      .chart-container {
-        page-break-inside: avoid;
-      }
-    }
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #fff; color: #1a1a1a; font-family: "Source Sans 3", "Source Sans Pro", Arial, sans-serif; line-height: 1.45; }
+    main { max-width: 960px; margin: 0 auto; padding: 40px; }
+    header { display: flex; align-items: flex-end; justify-content: space-between; gap: 28px; border-bottom: 4px solid #0028a5; padding-bottom: 20px; }
+    .brand { display: flex; align-items: center; gap: 20px; }
+    .brand img { display: block; width: 184px; height: auto; }
+    .product { border-left: 1px solid #b3b3b3; padding-left: 20px; font-size: 18px; font-weight: 700; }
+    h1 { margin: 0; font-size: 28px; line-height: 1.15; }
+    h2 { margin: 34px 0 12px; border-bottom: 1px solid #b3b3b3; padding-bottom: 7px; color: #0028a5; font-size: 20px; }
+    h3 { margin: 24px 0 8px; font-size: 17px; }
+    p { margin: 8px 0; }
+    .issued { margin-top: 6px; color: #555; text-align: right; }
+    dl { display: grid; grid-template-columns: minmax(150px, 1fr) 2fr; margin: 20px 0 0; border-top: 1px solid #d6d6d6; }
+    dt, dd { margin: 0; border-bottom: 1px solid #d6d6d6; padding: 10px 12px; }
+    dd { overflow-wrap: anywhere; }
+    dt { background: #f3f4f6; font-weight: 700; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    th, td { border-bottom: 1px solid #d6d6d6; padding: 10px 12px; text-align: right; }
+    th:first-child, td:first-child { text-align: left; }
+    thead th { background: #f3f4f6; }
+    .results-table tbody tr:last-child { background: #eef3ff; font-weight: 700; }
+    .percentile { border-left: 4px solid #0028a5; padding: 10px 14px; color: #0028a5; font-size: 18px; font-weight: 700; }
+    .chart { overflow-x: auto; }
+    .chart svg { display: block; min-width: 620px; width: 100%; height: auto; }
+    .histogram-table { font-size: 14px; }
+    .histogram-table .user-bin { background: #eef3ff; font-weight: 700; }
+    .user-bin-label { margin-left: 6px; color: #0028a5; }
+    .verification { display: grid; grid-template-columns: 120px 1fr; gap: 22px; align-items: center; margin-top: 36px; border-top: 2px solid #0028a5; border-bottom: 2px solid #0028a5; padding: 20px 0; }
+    .verification img { width: 120px; height: 120px; }
+    .verification a { color: #0028a5; overflow-wrap: anywhere; }
+    .privacy { margin-top: 28px; border-left: 4px solid #007a92; padding-left: 14px; color: #444; }
+    @media (max-width: 680px) { main { padding: 24px; } header { align-items: flex-start; flex-direction: column; } .issued { text-align: left; } dl { grid-template-columns: 1fr; } dt { border-bottom: 0; } .verification { grid-template-columns: 1fr; } }
+    @media print { main { max-width: none; padding: 0; } .chart, .verification { break-inside: avoid; } }
   </style>
 </head>
 <body>
-  <div class="header">
+<main>
+  <header>
+    <div class="brand">
+      <img src="${escapeHtml(uzhLogoDataUrl)}" alt="Universität Zürich" />
+      <div class="product">KlickerUZH</div>
+    </div>
     <div>
-      <div class="logo-wrapper">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 80" fill="none" style="height: 50px; width: auto; display: block;">
-          <!-- Seal -->
-          <circle cx="40" cy="40" r="36" stroke="#121212" stroke-width="2" fill="none"/>
-          <circle cx="40" cy="40" r="30" stroke="#121212" stroke-width="1" fill="none"/>
-          <text x="40" y="37" text-anchor="middle" font-family="Georgia, serif" font-size="7" fill="#121212" font-weight="bold">UNIVERSITAS</text>
-          <text x="40" y="47" text-anchor="middle" font-family="Georgia, serif" font-size="7" fill="#121212" font-weight="bold">TURICENSIS</text>
-          
-          <!-- Separator line -->
-          <line x1="88" y1="12" x2="88" y2="68" stroke="#121212" stroke-width="0.5"/>
-          
-          <!-- "Universität Zürich" text -->
-          <text x="100" y="38" font-family="'Source Sans 3', 'Source Sans Pro', Arial, sans-serif" font-size="18" font-weight="400" fill="#121212">Universität Zürich</text>
-          
-          <!-- "UZH" acronym -->
-          <text x="100" y="62" font-family="'Source Sans 3', 'Source Sans Pro', Arial, sans-serif" font-size="22" font-weight="bold" letter-spacing="2" fill="#121212">UZH</text>
-        </svg>
-        <div class="logo-divider"></div>
-        <div class="logo-unit">KlickerUZH</div>
-      </div>
+      <h1>${escapeHtml(texts.documentTitle)}</h1>
+      <div class="issued">${escapeHtml(texts.issuedAt)}: ${escapeHtml(formattedIssuedAt)} (${escapeHtml(texts.timeZone)})</div>
     </div>
-    <div style="text-align: right">
-      <h1 class="document-title">${texts.title}</h1>
-      <div class="meta-info">${texts.date}: ${formattedDate}</div>
-    </div>
-  </div>
+  </header>
 
-  <div class="info-grid">
-    <div class="info-item">
-      <div class="info-label">${texts.course}</div>
-      <div style="font-size: 16px; font-weight: bold;">${courseName}</div>
-    </div>
-    <div class="info-item">
-      <div class="info-label">${texts.student}</div>
-      <div style="font-size: 16px; font-weight: bold;">${studentEmail}</div>
-    </div>
-  </div>
+  <dl>
+    <dt>${escapeHtml(texts.course)}</dt><dd>${escapeHtml(snapshot.course.displayName)}</dd>
+    <dt>${escapeHtml(texts.courseReference)}</dt><dd>${escapeHtml(snapshot.course.name)}</dd>
+    <dt>${escapeHtml(texts.student)}</dt><dd>${escapeHtml(snapshot.subject.email)}</dd>
+    <dt>${escapeHtml(texts.identitySource)}</dt><dd>${escapeHtml(identitySourceLabel)}</dd>
+  </dl>
 
-  <div class="section-title">${texts.pointsSummary}</div>
-  <div class="points-grid">
-    <div class="points-card">
-      <div class="points-label">${texts.basePointsTitle}</div>
-      <div class="points-value">${formatNum(basePoints)}</div>
-      <div class="points-meta">${texts.ofAvailable.replace('{value}', formatNum(availableBasePoints))}</div>
-    </div>
-    <div class="points-card">
-      <div class="points-label">${texts.correctnessPointsTitle}</div>
-      <div class="points-value">${formatNum(correctnessPoints)}</div>
-      <div class="points-meta">${texts.ofAvailable.replace('{value}', formatNum(availableCorrectnessPoints))}</div>
-    </div>
-    <div class="points-card">
-      <div class="points-label">${texts.bonusPointsTitle}</div>
-      <div class="points-value">${formatNum(bonusPoints)}</div>
-      <div class="points-meta">${texts.ofAvailable.replace('{value}', formatNum(availableBonusPoints))}</div>
-    </div>
-    <div class="points-card total">
-      <div class="points-label">${texts.totalPointsTitle}</div>
-      <div class="points-value">${formatNum(totalPoints)}</div>
-      <div class="points-meta">
-        ${texts.ofAvailable.replace('{value}', formatNum(availableTotalPoints))}<br>
-        <span style="font-size: 10px; color: #666666;">${texts.excludingBonus.replace('{value}', formatNum(availableBasePoints + availableCorrectnessPoints))}</span>
-      </div>
-    </div>
-  </div>
+  <section>
+    <h2>${escapeHtml(texts.pointsSummary)}</h2>
+    <table class="results-table">
+      <thead><tr><th></th><th>${escapeHtml(texts.achieved)}</th><th>${escapeHtml(texts.available)}</th></tr></thead>
+      <tbody>${resultRows}</tbody>
+    </table>
+  </section>
 
-  ${
-    hasEnoughData && percentile !== null
-      ? `
-  <div class="section-title">${texts.percentileTitle}</div>
-  <div class="percentile-box">
-    <div class="percentile-title">
-      ${texts.percentileText.replace('{percentile}', percentile.toString())}
-    </div>
-    <div class="percentile-explanation">
-      ${texts.percentileExplanation}
-    </div>
-  </div>
+  <section>
+    <h2>${escapeHtml(texts.comparisonTitle)}</h2>
+    ${comparison}
+  </section>
 
-  <div class="chart-container">
-    <div class="chart-title">${texts.histogramTitle}</div>
-    <div style="margin-bottom: 15px; font-size: 14px; color: #4C4C4C;">${texts.histogramDescription}</div>
-    <div style="display: inline-block;">
-      ${svgChart}
+  <section class="verification">
+    <img src="${escapeHtml(qrCodeDataUrl)}" alt="${escapeHtml(texts.verificationQrAlt)}" />
+    <div>
+      <h2>${escapeHtml(texts.verificationTitle)}</h2>
+      <p>${escapeHtml(texts.verificationText)}</p>
+      <a href="${escapeHtml(verificationUrl)}" rel="noreferrer">${escapeHtml(texts.verificationLink)}</a>
     </div>
-  </div>
-  `
-      : `
-  <div class="section-title">${texts.percentileTitle}</div>
-  <div class="percentile-box" style="border-left-color: #666666; background-color: #FAFAFA;">
-    <div class="percentile-title" style="color: #666666;">
-      ${texts.percentileTitle} (nicht verfügbar)
-    </div>
-    <div class="percentile-explanation">
-      ${texts.notEnoughDataForComparison}
-    </div>
-  </div>
-  `
-  }
+  </section>
 
-  ${
-    verificationUrl && qrCodeDataUrl
-      ? `
-  <div class="verification-footer">
-    <img src="${qrCodeDataUrl}" class="verification-qr" alt="Verification QR Code" />
-    <div class="verification-text">
-      <div class="verification-title">Offizielle Verifizierung / Official Verification</div>
-      Dieser Leistungsbericht wurde digital signiert und kann auf KlickerUZH verifiziert werden.<br>
-      This performance report is digitally signed and can be verified on KlickerUZH.<br>
-      <a href="${verificationUrl}" class="verification-link" target="_blank" rel="noopener noreferrer">
-        ${verificationUrl}
-      </a>
-    </div>
-  </div>
-  `
-      : ''
-  }
-
-  <div class="privacy-box">
-    <div class="privacy-title">${texts.privacyNoticeTitle}</div>
-    <div>${texts.privacyNoticeText}</div>
-  </div>
+  <section class="privacy">
+    <h3>${escapeHtml(texts.privacyTitle)}</h3>
+    <p>${escapeHtml(texts.privacyText)}</p>
+  </section>
+</main>
 </body>
 </html>`
 
-  // Trigger file download
-  const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.setAttribute(
-    'download',
-    `KlickerUZH_Assessment_Report_${courseName.replace(/[^a-z0-9]/gi, '_')}.html`
-  )
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
-}
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+  const filename = snapshot.course.displayName
+    .normalize('NFKD')
+    .replace(/[^a-z0-9]+/gi, '_')
+    .replace(/^_+|_+$/g, '')
 
-function generateSvgHistogram(
-  histogram: HistogramBin[],
-  totalPoints: number,
-  yourScoreLabel: string,
-  countLabel: string,
-  binLabel: string
-): string {
-  const width = 600
-  const height = 300
-  const topMargin = 40
-  const bottomMargin = 50
-  const leftMargin = 50
-  const rightMargin = 20
-
-  const plotWidth = width - leftMargin - rightMargin
-  const plotHeight = height - topMargin - bottomMargin
-
-  const maxCount = Math.max(...histogram.map((b) => b.count), 1)
-
-  // Find user's bin index
-  const userBinIndex = histogram.findIndex((bin) => {
-    if (bin.binStart === histogram[histogram.length - 1]?.binStart) {
-      return totalPoints >= bin.binStart && totalPoints <= bin.binEnd
-    }
-    return totalPoints >= bin.binStart && totalPoints < bin.binEnd
-  })
-
-  const binWidth = plotWidth / histogram.length
-  const barWidth = binWidth - 6
-
-  let svgContent = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="background-color: #FAFAFA; font-family: sans-serif;">`
-
-  // Grid lines and Y axis ticks
-  const ticks = 5
-  for (let i = 0; i <= ticks; i++) {
-    const yVal = topMargin + plotHeight - (i / ticks) * plotHeight
-    const tickCount = Math.round((i / ticks) * maxCount)
-    svgContent += `
-      <line x1="${leftMargin}" y1="${yVal}" x2="${width - rightMargin}" y2="${yVal}" stroke="#E9E9E9" stroke-width="1" />
-      <text x="${leftMargin - 10}" y="${yVal + 4}" fill="#666666" font-size="11" text-anchor="end">${tickCount}</text>
-    `
+  return {
+    filename: `KlickerUZH_Assessment_Report_${filename || 'Course'}.html`,
+    url: URL.createObjectURL(blob),
   }
-
-  // X axis line
-  svgContent += `<line x1="${leftMargin}" y1="${topMargin + plotHeight}" x2="${width - rightMargin}" y2="${topMargin + plotHeight}" stroke="#666666" stroke-width="1" />`
-
-  // Bars
-  histogram.forEach((bin, i) => {
-    const barHeight = (bin.count / maxCount) * plotHeight
-    const x = leftMargin + i * binWidth + 3
-    const y = topMargin + plotHeight - barHeight
-
-    const isUserBin = i === userBinIndex
-    const barColor = isUserBin ? '#0028A5' : '#4AC9E3'
-
-    // Draw bar rect
-    svgContent += `
-      <rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" fill="${barColor}" rx="3" />
-    `
-
-    // Bar count text above
-    if (bin.count > 0) {
-      svgContent += `
-        <text x="${x + barWidth / 2}" y="${y - 6}" fill="${isUserBin ? '#0028A5' : '#4C4C4C'}" font-size="11" font-weight="${isUserBin ? 'bold' : 'normal'}" text-anchor="middle">${bin.count}</text>
-      `
-    }
-
-    // Highlight label for User bin
-    if (isUserBin) {
-      svgContent += `
-        <text x="${x + barWidth / 2}" y="${y - 18}" fill="#0028A5" font-size="10" font-weight="bold" text-anchor="middle">${yourScoreLabel}</text>
-      `
-    }
-
-    // X axis ticks & labels
-    const labelX = x + barWidth / 2
-    const labelY = topMargin + plotHeight + 18
-    const labelText = `${Math.round(bin.binStart)}-${Math.round(bin.binEnd)}`
-    svgContent += `
-      <text x="${labelX}" y="${labelY}" fill="#666666" font-size="9" text-anchor="middle" transform="rotate(-15, ${labelX}, ${labelY})">${labelText}</text>
-    `
-  })
-
-  // Y-axis title
-  svgContent += `
-    <text x="15" y="${topMargin + plotHeight / 2}" fill="#666666" font-size="12" text-anchor="middle" transform="rotate(-90, 15, ${topMargin + plotHeight / 2})">${countLabel}</text>
-  `
-  // X-axis title
-  svgContent += `
-    <text x="${leftMargin + plotWidth / 2}" y="${height - 8}" fill="#666666" font-size="12" text-anchor="middle">${binLabel}</text>
-  `
-
-  svgContent += `</svg>`
-  return svgContent
 }

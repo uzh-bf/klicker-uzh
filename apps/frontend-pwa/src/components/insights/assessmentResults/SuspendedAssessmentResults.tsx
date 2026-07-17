@@ -1,207 +1,203 @@
-import { useMutation, useSuspenseQuery } from '@apollo/client'
-import { faDownload } from '@fortawesome/free-solid-svg-icons'
+import { ApolloError, useMutation, useSuspenseQuery } from '@apollo/client'
 import {
-  CredentialType,
+  faArrowUpRightFromSquare,
+  faDownload,
+  faRotate,
+} from '@fortawesome/free-solid-svg-icons'
+import {
   GetStudentAssessmentResultsDocument,
   MIssueCredentialDocument,
+  type MIssueCredentialMutation,
 } from '@klicker-uzh/graphql/dist/ops'
+import { routing } from '@klicker-uzh/i18n'
 import { ActivityType } from '@klicker-uzh/types'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
-import { useCallback, useEffect, useState } from 'react'
-import { QRCode } from 'react-qrcode-logo'
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
+import { useLocale, useTranslations } from 'next-intl'
+import { useEffect, useState } from 'react'
 import AssessmentResultsList from './AssessmentResultsList'
-import { downloadAssessmentReport, ExportReportTexts } from './exportReport'
+import {
+  type AssessmentReportArtifact,
+  createAssessmentReport,
+  type ExportReportTexts,
+  loadPublicImageAsDataUrl,
+} from './exportReport'
+import { isScoreInHistogramBin } from './histogram'
+
+type IssuedAssessmentReport = MIssueCredentialMutation['issueAssessmentReport']
+
+function getAssessmentReportIssueErrorKey(error: unknown) {
+  const code =
+    error instanceof ApolloError
+      ? error.graphQLErrors
+          .map((graphQLError) => graphQLError.extensions?.code)
+          .find((extensionCode) => typeof extensionCode === 'string')
+      : undefined
+
+  switch (code) {
+    case 'ASSESSMENT_REPORT_NOT_ELIGIBLE':
+      return 'pwa.assessment.exportReportNotEligibleError' as const
+    case 'ASSESSMENT_REPORT_IDENTITY_UNVERIFIED':
+      return 'pwa.assessment.exportReportIdentityUnverifiedError' as const
+    case 'ASSESSMENT_REPORT_REVOKED':
+      return 'pwa.assessment.exportReportRevokedError' as const
+    case 'ASSESSMENT_REPORT_INVALID_DATA':
+      return 'pwa.assessment.exportReportInvalidDataError' as const
+    default:
+      return 'pwa.assessment.exportReportIssuanceError' as const
+  }
+}
 
 function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
   const t = useTranslations()
+  const locale = useLocale()
   const { data } = useSuspenseQuery(GetStudentAssessmentResultsDocument, {
     variables: { courseId },
     fetchPolicy: 'network-only',
   })
-
-  const [verificationToken, setVerificationToken] = useState<string | null>(
-    null
-  )
   const [isExporting, setIsExporting] = useState(false)
-  const [issueCredentialMutation] = useMutation(MIssueCredentialDocument)
+  const [exportError, setExportError] = useState<string | null>(null)
+  const [reportArtifact, setReportArtifact] =
+    useState<AssessmentReportArtifact | null>(null)
+  const [issueAssessmentReport] = useMutation(MIssueCredentialDocument)
+
+  useEffect(() => {
+    if (!reportArtifact) return
+
+    return () => {
+      URL.revokeObjectURL(reportArtifact.url)
+    }
+  }, [reportArtifact])
+
+  function handleViewReport() {
+    if (!reportArtifact) return
+    setExportError(null)
+    const reportWindow = window.open(reportArtifact.url, '_blank')
+    if (reportWindow) {
+      reportWindow.opener = null
+    } else {
+      setExportError(t('pwa.assessment.exportReportViewError'))
+    }
+  }
+
+  function handleDownloadReport() {
+    if (!reportArtifact) return
+    setExportError(null)
+    const link = document.createElement('a')
+    link.href = reportArtifact.url
+    link.download = reportArtifact.filename
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+  }
 
   const results = data.studentAssessmentResults
-
   const liveQuizzes = results?.liveQuizzes ?? []
   const practiceQuizzes = results?.practiceQuizzes ?? []
   const microLearnings = results?.microLearnings ?? []
   const groupActivities = results?.groupActivities ?? []
-  const percentile = results?.percentile ?? null
-  const histogram = results?.histogram ?? null
-  const hasEnoughData = results?.hasEnoughData ?? false
-  const participantEmail = results?.participantEmail ?? ''
-  const courseName = results?.courseName ?? 'Course'
 
-  const allActivities = [
-    ...liveQuizzes,
-    ...practiceQuizzes,
-    ...microLearnings,
-    ...groupActivities,
-  ]
-
-  const aggregated = allActivities.reduce(
-    (acc, activity) => {
-      acc.basePoints += activity.basePoints
-      acc.availableBasePoints += activity.availableBasePoints
-      acc.correctnessPoints += activity.correctnessPoints
-      acc.availableCorrectnessPoints += activity.availableCorrectnessPoints
-      acc.bonusPoints += activity.bonusPoints
-      acc.availableBonusPoints += activity.availableBonusPoints
-      acc.totalPoints +=
-        activity.basePoints + activity.correctnessPoints + activity.bonusPoints
-      acc.availableTotalPoints +=
-        activity.availableBasePoints +
-        activity.availableCorrectnessPoints +
-        activity.availableBonusPoints
-      return acc
-    },
-    {
-      basePoints: 0,
-      availableBasePoints: 0,
-      correctnessPoints: 0,
-      availableCorrectnessPoints: 0,
-      bonusPoints: 0,
-      availableBonusPoints: 0,
-      totalPoints: 0,
-      availableTotalPoints: 0,
-    }
-  )
-
-  const runDownload = useCallback(
-    (token: string) => {
-      if (!results) return
-
-      const texts: ExportReportTexts = {
-        title: t('pwa.assessment.performanceInsightsTitle'),
-        subtitle: t('pwa.assessment.performanceInsightsTitle'),
-        course: t('pwa.assessment.courseNameLabel') || 'Kurs',
-        student:
-          t('pwa.assessment.studentEmailLabel') || 'Studierende (E-Mail)',
-        date: t('manage.general.date') || 'Datum',
-        pointsSummary:
-          t('pwa.assessment.pointsSummaryLabel') || 'Punkteübersicht',
-        basePointsTitle: t('pwa.assessment.basePoints'),
-        correctnessPointsTitle: t('pwa.assessment.correctnessPoints'),
-        bonusPointsTitle: t('pwa.assessment.bonusPoints'),
-        totalPointsTitle: t('pwa.assessment.totalPoints'),
-        ofAvailable: t('pwa.assessment.ofAvailable'),
-        excludingBonus: t('pwa.assessment.excludingBonus'),
-        percentileTitle: t('pwa.assessment.performanceInsightsTitle'),
-        percentileText: t('pwa.assessment.percentileText'),
-        percentileExplanation: t('pwa.assessment.percentileExplanation'),
-        histogramTitle: t('pwa.assessment.histogramTitle'),
-        histogramDescription: t('pwa.assessment.histogramDescription'),
-        privacyNoticeTitle:
-          t('pwa.assessment.privacyNoticeTitle') || 'Datenschutz & Transparenz',
-        privacyNoticeText: t('pwa.assessment.privacyAndTransparencyNotice'),
-        yourScoreLabel: t('pwa.assessment.yourScoreLabel') || 'Deine Position',
-        countLabel: t('pwa.assessment.countLabel') || 'Anzahl',
-        binLabel: t('pwa.assessment.binLabel') || 'Punktebereich',
-        notEnoughDataForComparison: t(
-          'pwa.assessment.notEnoughDataForComparison'
-        ),
-      }
-
-      const canvas = document.getElementById(
-        'verification-qr-canvas'
-      ) as HTMLCanvasElement
-      const qrCodeDataUrl = canvas?.toDataURL('image/png') ?? null
-      const verificationUrl = `${window.location.origin}/verify/${token}`
-
-      downloadAssessmentReport({
-        courseName,
-        studentEmail: participantEmail,
-        totalPoints: aggregated.totalPoints,
-        availableTotalPoints: aggregated.availableTotalPoints,
-        basePoints: aggregated.basePoints,
-        availableBasePoints: aggregated.availableBasePoints,
-        correctnessPoints: aggregated.correctnessPoints,
-        availableCorrectnessPoints: aggregated.availableCorrectnessPoints,
-        bonusPoints: aggregated.bonusPoints,
-        availableBonusPoints: aggregated.availableBonusPoints,
-        percentile: percentile ?? null,
-        histogram: histogram ? (histogram as any) : null,
-        hasEnoughData: !!hasEnoughData,
-        texts,
-        verificationUrl,
-        qrCodeDataUrl,
-      })
-    },
-    [
-      results,
-      courseName,
-      participantEmail,
-      aggregated,
-      percentile,
-      histogram,
-      hasEnoughData,
-      t,
-    ]
-  )
-
-  useEffect(() => {
-    if (isExporting && verificationToken) {
-      const timer = setTimeout(() => {
-        runDownload(verificationToken)
-        setIsExporting(false)
-      }, 100)
-      return () => clearTimeout(timer)
-    }
-  }, [verificationToken, isExporting, runDownload])
-
-  const handleExport = async () => {
-    if (verificationToken) {
-      runDownload(verificationToken)
-      return
-    }
-
+  async function handleExport() {
     setIsExporting(true)
+    setExportError(null)
     try {
-      const response = await issueCredentialMutation({
-        variables: {
-          courseId,
-          type: CredentialType.CourseAssessmentInsights,
-          metadata: {
-            courseName,
-            studentEmail: participantEmail,
-            totalPoints: aggregated.totalPoints,
-            availableTotalPoints: aggregated.availableTotalPoints,
-            basePoints: aggregated.basePoints,
-            availableBasePoints: aggregated.availableBasePoints,
-            correctnessPoints: aggregated.correctnessPoints,
-            availableCorrectnessPoints: aggregated.availableCorrectnessPoints,
-            bonusPoints: aggregated.bonusPoints,
-            availableBonusPoints: aggregated.availableBonusPoints,
-            percentile: percentile ?? null,
-            histogram: histogram ?? null,
-            hasEnoughData: !!hasEnoughData,
-          },
-        },
-      })
-      const token = response.data?.issueCredential?.token
-      if (token) {
-        setVerificationToken(token)
-      } else {
-        setIsExporting(false)
+      let report: IssuedAssessmentReport
+      try {
+        const response = await issueAssessmentReport({
+          variables: { courseId },
+        })
+        const issuedReport = response.data?.issueAssessmentReport
+        if (!issuedReport) throw new Error('ASSESSMENT_REPORT_ISSUANCE_FAILED')
+        report = issuedReport
+      } catch (error) {
+        setExportError(t(getAssessmentReportIssueErrorKey(error)))
+        return
       }
-    } catch (e) {
-      console.error('Failed to issue credential', e)
+
+      const localePrefix = locale === routing.defaultLocale ? '' : `/${locale}`
+      const verificationUrl = `${window.location.origin}${localePrefix}/verify#${report.token}`
+      try {
+        const [QRCode, uzhLogoDataUrl] = await Promise.all([
+          import('qrcode').then((module) => module.default),
+          loadPublicImageAsDataUrl('/uzhlogo_email.png'),
+        ])
+        const qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, {
+          errorCorrectionLevel: 'M',
+          margin: 2,
+          width: 320,
+          color: { dark: '#0028A5FF', light: '#FFFFFFFF' },
+        })
+        const identitySourceLabel = t(
+          'pwa.assessment.identitySourceCourseInvitation'
+        )
+        const comparison = report.snapshot.comparison
+        const userBin = comparison?.histogram.find((bin, index, histogram) => {
+          return isScoreInHistogramBin({
+            score: report.snapshot.results.totalPoints,
+            bin,
+            isLast: index === histogram.length - 1,
+            availableTotalPoints: report.snapshot.results.availableTotalPoints,
+          })
+        })
+        const numberFormatter = new Intl.NumberFormat(locale, {
+          maximumFractionDigits: 2,
+        })
+        const histogramUserRange = userBin
+          ? t('pwa.assessment.histogramUserRange', {
+              range: `${numberFormatter.format(userBin.binStart)}-${numberFormatter.format(userBin.binEnd)}`,
+            })
+          : ''
+        const texts: ExportReportTexts = {
+          documentTitle: t('pwa.assessment.reportTitle'),
+          issuedAt: t('pwa.assessment.issuedAt'),
+          timeZone: t('pwa.assessment.reportTimeZone'),
+          course: t('pwa.assessment.courseNameLabel'),
+          courseReference: t('pwa.assessment.courseReferenceLabel'),
+          student: t('pwa.assessment.studentEmailLabel'),
+          identitySource: t('pwa.assessment.identitySourceLabel'),
+          pointsSummary: t('pwa.assessment.pointsSummaryLabel'),
+          achieved: t('pwa.assessment.achievedPointsLabel'),
+          available: t('pwa.assessment.availablePointsLabel'),
+          basePoints: t('pwa.assessment.basePoints'),
+          correctnessPoints: t('pwa.assessment.correctnessPoints'),
+          bonusPoints: t('pwa.assessment.bonusPoints'),
+          totalPoints: t('pwa.assessment.totalPoints'),
+          comparisonTitle: t('pwa.assessment.performanceInsightsTitle'),
+          percentileText: comparison
+            ? t('pwa.assessment.percentileText', {
+                percentile: comparison.percentile,
+              })
+            : '',
+          percentileExplanation: t('pwa.assessment.percentileExplanation'),
+          histogramTitle: t('pwa.assessment.histogramTitle'),
+          histogramDescription: t('pwa.assessment.histogramDescription'),
+          histogramUserRange,
+          noComparison: t('pwa.assessment.notEnoughDataForComparison'),
+          privacyTitle: t('pwa.assessment.privacyNoticeTitle'),
+          privacyText: t('pwa.assessment.privacyAndTransparencyNotice'),
+          scoreRange: t('pwa.assessment.binLabel'),
+          participantCount: t('pwa.assessment.countLabel'),
+          yourScore: t('pwa.assessment.yourScoreLabel'),
+          verificationTitle: t('pwa.assessment.verificationTitle'),
+          verificationText: t('pwa.assessment.verificationText'),
+          verificationLink: t('pwa.assessment.verificationLink'),
+          verificationQrAlt: t('pwa.assessment.verificationQrAlt'),
+        }
+
+        const artifact = createAssessmentReport({
+          snapshot: report.snapshot,
+          issuedAt: report.issuedAt,
+          identitySourceLabel,
+          locale,
+          texts,
+          verificationUrl,
+          qrCodeDataUrl,
+          uzhLogoDataUrl,
+        })
+        setReportArtifact(artifact)
+      } catch {
+        setExportError(t('pwa.assessment.exportReportDownloadError'))
+      }
+    } finally {
       setIsExporting(false)
     }
   }
@@ -215,148 +211,85 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
     )
   }
 
-  const chartData =
-    histogram?.map((bin) => ({
-      name: `${Math.round(bin.binStart)}-${Math.round(bin.binEnd)}`,
-      count: bin.count,
-      binStart: bin.binStart,
-      binEnd: bin.binEnd,
-    })) || []
-
-  const userBinIndex = histogram
-    ? histogram.findIndex((bin) => {
-        if (bin.binStart === histogram[histogram.length - 1]?.binStart) {
-          return (
-            aggregated.totalPoints >= bin.binStart &&
-            aggregated.totalPoints <= bin.binEnd
-          )
-        }
-        return (
-          aggregated.totalPoints >= bin.binStart &&
-          aggregated.totalPoints < bin.binEnd
-        )
-      })
-    : -1
-
   return (
     <div>
       <div className="mb-4 text-sm md:mb-6 md:text-base">
         {t('pwa.assessment.activityResultsDescription')}
       </div>
 
-      {/* Performance Insights Section */}
-      <div className="mb-8 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <H3 className={{ root: 'mb-4 text-lg font-bold text-slate-800' }}>
-          {t('pwa.assessment.performanceInsightsTitle')}
+      <section className="mb-8 border-y border-slate-200 py-5">
+        <H3 className={{ root: 'mb-2 text-lg font-semibold' }}>
+          {t('pwa.assessment.reportTitle')}
         </H3>
-
-        {hasEnoughData && percentile !== null && percentile !== undefined ? (
-          <div>
-            <div className="border-uzh-blue mb-6 rounded-r-lg border-l-4 bg-slate-50 p-4">
-              <div className="text-uzh-blue text-base font-semibold">
-                {t('pwa.assessment.percentileText', {
-                  percentile: percentile.toString(),
-                })}
-              </div>
-              <div className="mt-1 text-sm text-slate-600">
-                {t('pwa.assessment.percentileExplanation')}
-              </div>
-            </div>
-
-            <div className="mb-6 rounded-lg border border-slate-100 bg-slate-50 p-4">
-              <div className="mb-2 text-center text-sm font-semibold text-slate-700">
-                {t('pwa.assessment.histogramTitle')}
-              </div>
-              <div className="mb-4 text-center text-xs text-slate-500">
-                {t('pwa.assessment.histogramDescription')}
-              </div>
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={chartData}
-                    margin={{ top: 10, right: 10, left: -20, bottom: 10 }}
-                  >
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      vertical={false}
-                      stroke="#E2E8F0"
-                    />
-                    <XAxis
-                      dataKey="name"
-                      stroke="#64748B"
-                      fontSize={10}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      allowDecimals={false}
-                      stroke="#64748B"
-                      fontSize={10}
-                      tickLine={false}
-                    />
-                    <Tooltip
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          const data = payload[0].payload
-                          return (
-                            <div className="rounded border border-slate-200 bg-white p-2 text-xs shadow-sm">
-                              <p className="font-semibold text-slate-800">
-                                {t('pwa.assessment.binLabel')}: {data.name}
-                              </p>
-                              <p className="text-slate-600">
-                                {t('pwa.assessment.countLabel')}: {data.count}
-                              </p>
-                            </div>
-                          )
-                        }
-                        return null
-                      }}
-                    />
-                    <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                      {chartData.map((_, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={index === userBinIndex ? '#0028A5' : '#4AC9E3'}
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+        <p className="mb-4 max-w-2xl text-sm text-slate-600">
+          {t('pwa.assessment.exportReportExplanation')}
+        </p>
+        {exportError ? (
+          <div className="mb-4" role="alert">
+            <UserNotification type="error" message={exportError} />
+          </div>
+        ) : null}
+        {reportArtifact ? (
+          <div className="mb-4 space-y-3">
+            <UserNotification
+              type="success"
+              message={t('pwa.assessment.exportReportReady')}
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={handleViewReport}
+                primary
+                fluid={false}
+                disabled={isExporting}
+                data={{ cy: 'view-assessment-report' }}
+              >
+                <Button.Icon icon={faArrowUpRightFromSquare} />
+                <Button.Label>
+                  {t('pwa.assessment.viewReportButton')}
+                </Button.Label>
+              </Button>
+              <Button
+                onClick={handleDownloadReport}
+                fluid={false}
+                disabled={isExporting}
+                data={{ cy: 'download-assessment-report' }}
+              >
+                <Button.Icon icon={faDownload} />
+                <Button.Label>
+                  {t('pwa.assessment.downloadReportButton')}
+                </Button.Label>
+              </Button>
+              <Button
+                onClick={handleExport}
+                fluid={false}
+                loading={isExporting}
+                disabled={isExporting}
+                data={{ cy: 'refresh-assessment-report' }}
+              >
+                <Button.Icon icon={faRotate} loading={isExporting} />
+                <Button.Label>
+                  {t('pwa.assessment.refreshReportButton')}
+                </Button.Label>
+              </Button>
             </div>
           </div>
-        ) : (
-          <div className="mb-6 rounded-r-lg border-l-4 border-slate-400 bg-slate-50 p-4 text-sm text-slate-600">
-            {t('pwa.assessment.notEnoughDataForComparison')}
-          </div>
-        )}
-
-        {/* PDF / HTML Export Button */}
-        <div className="flex flex-col items-center border-t border-slate-100 pt-6">
+        ) : null}
+        {!reportArtifact ? (
           <Button
             onClick={handleExport}
             primary
             fluid={false}
             loading={isExporting}
+            disabled={isExporting}
             data={{ cy: 'export-report-button' }}
-            className={{
-              root: 'bg-uzh-blue flex items-center gap-2 rounded-full px-6 py-2.5 font-medium text-white transition-all hover:bg-opacity-90',
-            }}
           >
             <Button.Icon icon={faDownload} loading={isExporting} />
             <Button.Label>
               {t('pwa.assessment.exportReportButton')}
             </Button.Label>
           </Button>
-          <div className="mt-2 max-w-md text-center text-xs text-slate-500">
-            {t('pwa.assessment.exportReportExplanation')}
-          </div>
-        </div>
-
-        {/* Privacy Notice */}
-        <div className="text-2xs mt-6 border-t border-slate-100 pt-4 leading-normal text-slate-400">
-          {t('pwa.assessment.privacyAndTransparencyNotice')}
-        </div>
-      </div>
+        ) : null}
+      </section>
 
       <div>
         <H3>{t('shared.generic.liveQuizzes')}</H3>
@@ -393,20 +326,6 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
           <AssessmentResultsList
             results={groupActivities}
             type={ActivityType.GROUP_ACTIVITY}
-          />
-        </div>
-      )}
-
-      {/* Hidden QR Code canvas for PDF/HTML report verification */}
-      {verificationToken && (
-        <div style={{ display: 'none' }}>
-          <QRCode
-            id="verification-qr-canvas"
-            value={`${window.location.origin}/verify/${verificationToken}`}
-            size={300}
-            logoImage="/img/KlickerLogo.png"
-            logoWidth={90}
-            logoHeight={27}
           />
         </div>
       )}
