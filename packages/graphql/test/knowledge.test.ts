@@ -380,6 +380,50 @@ describe('Integration tests for knowledge base CRUD', () => {
     ).resolves.toBe(1)
   })
 
+  it('does not delete an existing blob on cross-KB metadata mismatch', async () => {
+    const firstKb = await createKb({ name: 'First notes' }, userOneCtx)
+    const secondKb = await createKb({ name: 'Second notes' }, userOneCtx)
+    const ticket = await requestKbFileUpload(
+      {
+        kbId: firstKb.id,
+        fileName: 'notes.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 1024,
+      },
+      userOneCtx
+    )
+    const args = {
+      blobName: ticket.blobName,
+      title: 'Finance notes',
+      originalFilename: 'notes.pdf',
+      mimeType: 'application/pdf',
+      sizeBytes: 1024,
+    }
+
+    const resource = await confirmKbFileUpload(
+      { ...args, kbId: firstKb.id },
+      userOneCtx
+    )
+    getBlobProperties.mockClear()
+    deleteBlobIfExists.mockClear()
+
+    await expect(
+      confirmKbFileUpload(
+        { ...args, kbId: secondKb.id, sizeBytes: 1025 },
+        userOneCtx
+      )
+    ).rejects.toThrow('KB blob name is invalid')
+    expect(getBlobProperties).not.toHaveBeenCalled()
+    expect(deleteBlobIfExists).not.toHaveBeenCalled()
+    await expect(
+      prisma.kBResource.findUniqueOrThrow({ where: { id: resource.id } })
+    ).resolves.toMatchObject({
+      kbId: firstKb.id,
+      blobName: ticket.blobName,
+      sizeBytes: 1024,
+    })
+  })
+
   it('returns one resource for concurrent confirmation retries', async () => {
     const created = await createKb({ name: 'Finance notes' }, userOneCtx)
     const ticket = await requestKbFileUpload(

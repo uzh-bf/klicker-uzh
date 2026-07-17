@@ -252,7 +252,7 @@ export async function confirmKbFileUpload(
   const normalizedTitle = validateKbResourceTitle(title)
 
   const existingResource = await ctx.prisma.kBResource.findFirst({
-    where: { id: blobId, kbId },
+    where: { id: blobId, kb: { ownerId: ctx.user.sub } },
   })
   if (existingResource) {
     if (
