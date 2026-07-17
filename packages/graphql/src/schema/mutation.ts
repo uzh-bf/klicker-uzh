@@ -9,6 +9,7 @@ import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
+import * as KnowledgeService from '../services/knowledge.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as NotificationService from '../services/notifications.js'
@@ -41,6 +42,7 @@ import {
   GroupActivityGradingInput,
   GroupActivityInstance,
 } from './groupActivity.js'
+import { KB } from './knowledge.js'
 import {
   ConfusionTimestep,
   Feedback,
@@ -1631,6 +1633,27 @@ export const Mutation = builder.mutationType({
         args: { email: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await AccountService.grantPrivatePreviewAccess(args, ctx)
+        },
+      }),
+
+      createKb: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KB,
+        args: {
+          name: t.arg.string({ required: true }),
+          description: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.createKb(args, ctx)
+        },
+      }),
+
+      deleteKb: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KB,
+        args: { id: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.deleteKb(args, ctx)
         },
       }),
 

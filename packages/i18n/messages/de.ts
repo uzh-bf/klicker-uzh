@@ -1124,7 +1124,25 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
   },
   kb: {
     title: 'Wissensdatenbanken',
-    signedInAs: 'Angemeldet als {email}',
+    create: 'Wissensdatenbank erstellen',
+    nameLabel: 'Name',
+    descriptionLabel: 'Beschreibung (optional)',
+    createSuccess: 'Wissensdatenbank wurde erstellt.',
+    createError: 'Die Wissensdatenbank konnte nicht erstellt werden.',
+    deleteTitle: 'Wissensdatenbank löschen',
+    deleteDescription:
+      'Möchten Sie „{name}“ wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
+    deleteSuccess: 'Wissensdatenbank wurde gelöscht.',
+    deleteError: 'Die Wissensdatenbank konnte nicht gelöscht werden.',
+    emptyTitle: 'Noch keine Wissensdatenbanken',
+    emptyDescription:
+      'Erstellen Sie eine Wissensdatenbank, um erste Ressourcen hinzuzufügen.',
+    noDescription: 'Keine Beschreibung',
+    loadError: 'Die Wissensdatenbanken konnten nicht geladen werden.',
+    notFound: 'Die Wissensdatenbank konnte nicht gefunden werden.',
+    backToList: 'Zurück zu den Wissensdatenbanken',
+    resourcesPlaceholder:
+      'Datei- und URL-Ressourcen werden im nächsten Schritt ergänzt.',
   },
   manage: {
     general: {

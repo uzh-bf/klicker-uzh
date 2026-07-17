@@ -1123,7 +1123,23 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
   },
   kb: {
     title: 'Knowledge Bases',
-    signedInAs: 'Signed in as {email}',
+    create: 'Create knowledge base',
+    nameLabel: 'Name',
+    descriptionLabel: 'Description (optional)',
+    createSuccess: 'Knowledge base created.',
+    createError: 'The knowledge base could not be created.',
+    deleteTitle: 'Delete knowledge base',
+    deleteDescription:
+      'Are you sure you want to delete “{name}”? This action cannot be undone.',
+    deleteSuccess: 'Knowledge base deleted.',
+    deleteError: 'The knowledge base could not be deleted.',
+    emptyTitle: 'No knowledge bases yet',
+    emptyDescription: 'Create a knowledge base to add your first resources.',
+    noDescription: 'No description',
+    loadError: 'The knowledge bases could not be loaded.',
+    notFound: 'The knowledge base could not be found.',
+    backToList: 'Back to knowledge bases',
+    resourcesPlaceholder: 'File and URL resources are added in the next step.',
   },
   manage: {
     general: {

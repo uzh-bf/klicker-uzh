@@ -1600,6 +1600,43 @@ The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://
 """
 scalar Json
 
+type KB {
+  createdAt: Date!
+  description: String
+  id: ID!
+  name: String!
+  resources: [KBResource!]!
+  updatedAt: Date!
+}
+
+type KBResource {
+  createdAt: Date!
+  id: ID!
+  ingestedAt: Date
+  mimeType: String
+  originalFilename: String
+  sizeBytes: Int
+  sourceUrl: String
+  status: KBResourceStatus!
+  statusMessage: String
+  title: String!
+  type: KBResourceType!
+  updatedAt: Date!
+}
+
+enum KBResourceStatus {
+  ADDED
+  FAILED
+  PROCESSING
+  QUEUED
+  READY
+}
+
+enum KBResourceType {
+  BLOB
+  URL
+}
+
 type LeaderboardEntry {
   avatar: String
   email: String
@@ -1787,6 +1824,7 @@ type Mutation {
   createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, startDate: Date!): Course
   createFeedback(content: String!, quizId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): ActivityInfo
+  createKb(description: String, name: String!): KB!
   createLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, defaultCorrectPoints: Int, defaultPoints: Int, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, isPinProtected: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): ActivityInfo
   createLiveQuizFromTemplate(blocks: [TemplateBlockInput!]!, courseId: String, description: String, displayName: String!, isGamificationEnabled: Boolean!, name: String!, templateId: String!): String
   createMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): ActivityInfo
@@ -1807,6 +1845,7 @@ type Mutation {
   deleteFeedback(id: Int!, liveQuizId: String!): Feedback
   deleteFeedbackResponse(id: Int!, liveQuizId: String!): Feedback
   deleteGroupActivity(id: String!): GroupActivity
+  deleteKb(id: ID!): KB!
   deleteLiveQuiz(id: String!): LiveQuiz
   deleteMicroLearning(id: String!): MicroLearning
   deleteParticipantAccount: Boolean
@@ -2372,6 +2411,7 @@ type Query {
   getGradingGroupActivity(id: String!): GroupActivity
   getGroupActivitySummary(id: String!): GroupActivitySummary
   getInstanceUpdateActivities(elementId: Int!, hasSampleSolution: Boolean, includeTemplateInstances: Boolean!): [InstanceUpdateActivityInfo!]
+  getKb(id: ID!): KB!
   getLecturerViewLiveQuiz(id: String!): LiveQuiz
   getLiveQuizEmbeddingInfo(id: String!): LiveQuizEmbeddingInfo
   getLiveQuizSummary(quizId: String!): LiveQuizSummary
@@ -2397,6 +2437,7 @@ type Query {
   getTemplatePreviewAnswerCollectionEntries(answerCollectionId: Int!, templateId: String!): [AnswerCollectionPreviewEntry!]
   getUserActivitiesCourses: [CourseListEntry!]
   getUserGroupsUser: [UserGroup!]
+  getUserKbs: [KB!]!
   getUsersPrivatePreview: [UserInfo!]
   groupActivities(courseId: String!): [GroupActivity!]
   groupActivity(id: String!): GroupActivity

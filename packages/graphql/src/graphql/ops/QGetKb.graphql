@@ -1,0 +1,21 @@
+query GetKb($id: ID!) {
+  getKb(id: $id) {
+    id
+    name
+    description
+    resources {
+      id
+      type
+      title
+      sourceUrl
+      originalFilename
+      mimeType
+      sizeBytes
+      status
+      statusMessage
+      ingestedAt
+      createdAt
+      updatedAt
+    }
+  }
+}
