@@ -2,7 +2,7 @@
 type: Frontend Conventions
 title: Frontend Conventions
 description: Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.
-timestamp: '2026-07-08'
+timestamp: '2026-07-15'
 tags:
   - frontend
 ---
@@ -22,9 +22,10 @@ Scope: `frontend-manage`, `frontend-pwa`, `frontend-control`, `auth` — all Nex
 
 ## Markdown and Video Embeds
 
-- **Link Interception for Videos**: Links in markdown fields (`@klicker-uzh/markdown`) with a plain, unformatted text label of `video` or `embed` (case-insensitive, trimmed) targeting YouTube or UZH Kaltura (SWITCHcast) are automatically intercepted and rendered as responsive `<iframe />` players via `VideoEmbed`.
-- **Kaltura PlaykitJs Bypass**: To prevent frame-based third-party cookie login loops, Kaltura embeds resolve the video's `entryId` (requires the standard `0_` or `1_` prefix followed by 8 alphanumeric characters) and parse `partnerId` (defaults to `106`) and `uiConfId` (defaults to `23449004`) to render using the PlaykitJs secure embed structure:
-  `https://api.cast.switch.ch/p/${partnerId}/embedPlaykitJs/uiconf_id/${uiConfId}/partner_id/${partnerId}?iframeembed=true&playerId=kaltura_player&entry_id=${entryId}`
+- **Plain-link trigger**: Any plain, unformatted markdown link labelled `video` or `embed` (case-insensitive, trimmed) with a supported URL is rendered as a responsive iframe. The player uses a block-styled phrasing wrapper so links keep the original interception behavior inside paragraphs, lists, headings, and tables without producing invalid `<p><div>` markup. Formatted labels, unsupported hosts, malformed IDs, and other link labels stay regular links.
+- **YouTube URLs**: Allowlisted `youtube.com/watch`, `youtu.be`, and `youtube.com/embed` links are supported. Video IDs must contain exactly 11 valid characters.
+- **Kaltura URLs**: MediaSpace, legacy `entryId` / `partner_id` / `uiConfId`, and PlayKit `/p/{partnerId}` / `/uiconf_id/{uiConfId}` forms are supported. Entry IDs require `0_` or `1_` plus 8 alphanumeric characters; partner/UI configuration defaults to `106` / `23449004`. Generic Kaltura origins intentionally normalize to the UZH SWITCHcast player for now.
+- **Player behavior**: YouTube and Kaltura render immediately with the original 16:9 responsive dimensions, accessible provider title, lazy loading, and fullscreen support.
 
 ## Data fetching
 
