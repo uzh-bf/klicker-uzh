@@ -40,6 +40,8 @@ describe('parseVideoEmbedUrl', () => {
   it.each([
     `https://evil.example/watch?v=${YOUTUBE_ID}`,
     `https://youtube.com.evil.example/watch?v=${YOUTUBE_ID}`,
+    `https://notyoutube.com/watch?v=${YOUTUBE_ID}`,
+    `https://attackyoutu.be/${YOUTUBE_ID}`,
     `ftp://youtube.com/watch?v=${YOUTUBE_ID}`,
     `/embed/${YOUTUBE_ID}`,
     'https://youtube.com/watch?v=tooShort',
@@ -92,6 +94,8 @@ describe('parseVideoEmbedUrl', () => {
   it.each([
     `https://evil.example/media/title/${KALTURA_ID}`,
     `https://cast.switch.ch.evil.example/media/title/${KALTURA_ID}`,
+    `https://evilkaltura.com/media/title/${KALTURA_ID}`,
+    `https://evilcast.switch.ch/media/title/${KALTURA_ID}`,
     `ftp://api.cast.switch.ch/p/123/embedPlaykitJs/uiconf_id/987654?entry_id=${KALTURA_ID}`,
     'https://uzh.mediaspace.cast.switch.ch/media/title/invalid_id',
   ])('rejects unsupported or malformed Kaltura URL %s', (url) => {
