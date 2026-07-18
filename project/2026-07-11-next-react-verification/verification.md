@@ -97,6 +97,15 @@ Clean-install follow-up:
 - Full `pnpm run check:all` and `pnpm run build` passed with the fixed worktree.
 - Independent review and simplification found no issues with the native style change.
 
+Playwright artifact follow-up:
+
+- Current-head CI built all test artifacts, but every Playwright shard timed out because PWA `/` returned HTTP 500 before tests started.
+- The downloaded CI artifact reproduced the same HTTP 500 locally: `next-intl-*` could not resolve `use-intl` after direct artifact upload dereferenced Turbopack's `.next/node_modules` symlink.
+- The locally built artifact returned HTTP 200 with `.next/cache` removed, ruling out the cache exclusion.
+- Tarring the `.next` tree before transfer preserved its dependency symlinks; the extracted artifact returned HTTP 200 in the same `next start` and curl loop.
+- The workflow now tars all five `.next` trees before upload and extracts them in each Playwright shard.
+- Independent review found no issue; simplification removed the now-stale hidden-file upload option.
+
 Known non-blocking warnings:
 
 - Existing Pages Router `next-intl`, workspace package export, manage missing-message, large-page-data, and missing local chat-provider warnings remain.

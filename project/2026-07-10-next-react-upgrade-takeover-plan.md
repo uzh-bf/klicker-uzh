@@ -766,9 +766,10 @@ Progress:
 - [x] Revision-bound evidence recorded locally.
 - [x] Publish Slice 10 and read back current-head PR metadata and initial CI state.
 - [x] Clean-install styled-jsx type regression fixed with native global style tags; four focused typechecks, four Turbopack builds, representative browser verification, `pnpm run check:all`, and the full production build passed.
-- [ ] Current-head CI completes; the Claude check failed again without producing review feedback.
+- [x] Current-head Playwright startup failure reproduced from the downloaded artifact: direct upload dereferenced Turbopack dependency symlinks and omitted `use-intl`, causing PWA HTTP 500 in all eight shards. A tar-preserved artifact returned HTTP 200 in the same local loop.
+- [ ] Publish the Playwright artifact fix and rerun current-head CI; the Claude check failed again without producing review feedback.
 
-Next: monitor current-head CI, address actionable findings, and keep the PR draft until the remaining manual gates are resolved or explicitly waived.
+Next: verify and publish the Playwright artifact fix, then monitor current-head CI and keep the PR draft until the remaining manual gates are resolved or explicitly waived.
 
 ## Open Questions
 
