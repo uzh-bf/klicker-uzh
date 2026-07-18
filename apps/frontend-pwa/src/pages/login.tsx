@@ -188,7 +188,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     : forwardedProto || 'https'
   const host = ctx.req.headers.host as string
   const requestBase = `${proto}://${host}`
-  const pwaUrl = process.env.NEXT_PUBLIC_PWA_URL || requestBase
+  const configuredPwaUrl = process.env.NEXT_PUBLIC_PWA_URL
+  const pwaUrl = configuredPwaUrl || requestBase
   const redirectPath = getSafeRedirectPath(
     ctx.query.redirect_to,
     pwaUrl,
@@ -197,7 +198,10 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   // In assessment mode, SSR-redirect to Auth /student to avoid client-side flash
   if (process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true') {
-    const targetUrl = new URL(redirectPath, requestBase).toString()
+    if (!configuredPwaUrl) {
+      throw new Error('NEXT_PUBLIC_PWA_URL is required in assessment mode')
+    }
+    const targetUrl = new URL(redirectPath, configuredPwaUrl).toString()
     const authBase =
       process.env.NEXT_PUBLIC_AUTH_URL || 'https://auth.klicker.uzh.ch'
 

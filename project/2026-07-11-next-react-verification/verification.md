@@ -122,6 +122,8 @@ Ready-for-review follow-up:
 - Sonar reported a B reliability rating because the catalog dropdown propagation wrapper had an `onClick` handler without keyboard semantics. The row now ignores a data-marked action subtree instead, preserving the verified navigation fix without making the wrapper interactive.
 - Sonar's remaining PWA maintainability finding is addressed by explicitly marking the login component props read-only.
 - Focused formatting, frontend-manage and frontend-pwa typechecks, and both app lint commands pass under Node 24.16.0. The lint commands report only the branch's existing warnings.
+- The Sonar quality gate passed on `5653a14e1` with zero new issues. All Docker builds, package checks, GraphQL tests, and all eight Playwright shards passed; Greptile reviewed the same head at 5/5 with no blocking issues.
+- CodeRabbit's whole-branch review found three valid final corrections: use the configured trusted PWA origin for assessment return targets, honor Playwright's student credential overrides, and supersede two stale single-Webpack documentation statements. These corrections are prepared for final-head verification.
 
 Known non-blocking warnings:
 

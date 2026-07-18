@@ -23,8 +23,12 @@ async function signInStudentFromReturnTarget(page: Page, target: string) {
   await page.goto(
     `${getStudentLoginUrl()}?redirect_to=${encodeURIComponent(target)}`
   )
-  await page.getByTestId('username-field').fill(STUDENT_USERNAME)
-  await page.getByTestId('password-field').fill(STUDENT_PASSWORD)
+  await page
+    .getByTestId('username-field')
+    .fill(process.env.STUDENT_USERNAME ?? STUDENT_USERNAME)
+  await page
+    .getByTestId('password-field')
+    .fill(process.env.STUDENT_PASSWORD ?? STUDENT_PASSWORD)
   await page.getByTestId('submit-login').click()
 }
 

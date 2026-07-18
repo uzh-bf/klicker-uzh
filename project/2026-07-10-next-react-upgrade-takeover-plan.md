@@ -773,9 +773,10 @@ Progress:
 - [x] Activity-wizard submit-promise fix published at `5441ea04f`; shard 8 passed 117 tests in 9.8 minutes, including the formerly failing single-choice and second-instance update test in 17.4 seconds. The Claude check failed again without producing review feedback.
 - [x] Restored `apps/office-addin/package.json` byte-for-byte to `v3`; only the shared lockfile carries the second React 19.1 peer graph required to preserve that separate application's existing dependency boundary, with a package-scoped Syncpack exception for those four versions.
 - [x] Maintainer marked the PR ready for review; the full ready-state CI matrix and final-head automated reviews started.
-- [ ] Publish and verify the Sonar reliability fix: the catalog row now ignores its marked action subtree without making the wrapper interactive, and PWA login props are explicitly read-only. Focused Node 24 typechecks, lint, and formatting pass.
+- [x] Sonar reliability fix published at `5653a14e1`; the final-head quality gate passed with zero new issues, all eight Playwright shards passed, and Greptile rated the branch safe to merge.
+- [ ] Publish and verify the three valid CodeRabbit findings: require the trusted configured PWA origin for assessment redirects, honor Playwright student credential overrides, and align stale bundler documentation.
 
-Next: publish the Sonar fix, verify current-head CI and automated review feedback, then settle the ready PR for maintainer merge.
+Next: publish the CodeRabbit fixes, resolve their review threads, verify final-head CI, then settle the ready PR for maintainer merge.
 
 ## Open Questions
 
