@@ -32,7 +32,7 @@ Wrong major (e.g. 9.x from a stale Volta shim; `VOLTA_FEATURE_PNPM` unset) **sil
 | `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH` under `CI=true` | restore lockfile (check 1), install without `CI=true`                          |
 | ~19 packages fail `pnpm run check`                  | `pnpm run build` once (generates Prisma client, codegen, dists), then re-check |
 
-Healthy sequence from scratch: `pnpm install` → `pnpm run build` → `pnpm run check` (verified ~20s / ~1.5min / clean). A production build inside a running devcontainer can replace Next.js dev output; from a linked worktree, run `devrouter workspace ensure .` afterward so the owned runtime is health-checked and recovered when needed.
+Healthy sequence from scratch inside the devcontainer: `pnpm install` → `pnpm run build` → `pnpm run check` (verified ~20s / ~1.5min / clean). A production build can replace Next.js dev output; run `devrouter ensure .` afterward so the exact checkout runtime is health-checked and recovered when needed.
 
 ## Check 3 — stale GraphQL codegen
 
@@ -59,19 +59,19 @@ lsof -nP -iTCP:5432 -sTCP:LISTEN   # repeat for 6379 6380 6381 7077 8888 80 443
 
 Depending on your environment path:
 
-### Path A: Inside Devcontainer
+### Path A: Managed devcontainer
 
-The container manages infra services and app servers automatically in the background. Re-run the ownership-aware lifecycle check, then inspect logs:
+Run the ownership-aware lifecycle check from the host, then inspect the exact container through devrouter:
 
 ```bash
-bash .devcontainer/post-start.sh
-cat /tmp/devrouter-process-klicker-dev.state
-tail -n 50 /tmp/dev.log   # inspect server startup logs
+devrouter ensure .
+devrouter exec . -- cat /tmp/devrouter-process-klicker-dev.state
+devrouter exec . -- tail -n 50 /tmp/dev.log
 ```
 
-The packaged `devrouter-process` helper reuses an exact workspace/command fingerprint, replaces a stale owned process group, and leaves unknown processes untouched. It does not check application health. For linked worktrees, run `devrouter workspace ensure .` on the host so all routes are checked and one stale or unhealthy exact-path DevPod can be recreated once.
+`devrouter ensure` delivers its matching process helper to the exact validated container. Released `0.0.34` reuses an exact workspace/command fingerprint; the `0.0.35` safety release adds adapter hashing and the declared non-secret origin allowlist. The helper replaces a stale owned process group and leaves unknown processes untouched. Host-side ensure checks all routes and can recreate one stale or unhealthy exact-path DevPod once. Do not treat an origin-mismatch test with `0.0.34` as proof of the stronger contract.
 
-`devrouter doctor --repo .` statically inspects `.devcontainer/docker-compose.yml` and may warn that devnet aliases are missing or proxy upstreams do not match. Klicker intentionally keeps aliases in `.devcontainer/docker-compose.devrouter.yml`; `workspace ensure` resolves that overlay and is the authoritative runtime proof. Do not add devnet aliases to the base Compose file merely to silence those warnings.
+`devrouter doctor --repo .` provides static diagnostics. `devrouter ensure .` resolves the checkout-specific overlay and is the authoritative runtime proof.
 
 ### Path B: Host-based Setup
 

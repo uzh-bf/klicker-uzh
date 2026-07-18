@@ -5,8 +5,9 @@ external EduID, no `/etc/hosts` edits — clone, route through devrouter, and ru
 The devcontainer owns the whole stack (toolchain, Postgres, 3× Redis, MailHog,
 Hatchet, install + build + seed, `turbo dev`);
 [devrouter](https://github.com/rschlaefli/devrouter) fronts it on a shared
-`:443` / `:5432` so many projects coexist with **zero host-port collisions**
-(nothing is published on the host).
+`:443` / `:5432`. Linked worktrees publish no host ports and can coexist;
+the primary checkout intentionally keeps fixed localhost ports and is
+one-at-a-time.
 
 > **Scope:** all runnable apps — **backend, auth, frontend-pwa, frontend-manage,
 > frontend-control, olat-api, response-api, lti-service, chat**, and the **two
@@ -19,12 +20,12 @@ Hatchet, install + build + seed, `turbo dev`);
 
 You can run the devcontainer in two modes:
 
-### Mode 1: Plain localhost (Fallback)
+### Mode 1: Primary checkout
 
-Use this if you are running in a headless cloud server or want to avoid installing Traefik/mkcert on your host:
+The primary checkout keeps fixed localhost ports and receives stable unnamespaced devrouter routes:
 
-1. No action required; the default setup dynamically falls back to the localhost overlay. (If you need to force it, ensure `DEVCONTAINER_COMPOSE_OVERLAY` is unset or explicitly set to `docker-compose.localhost.yml`).
-2. Start the devcontainer (`devpod up .` or via VS Code).
+1. Run one-time setup: `devrouter setup --yes`.
+2. Start and prove the checkout: `devrouter ensure .`.
 3. The applications are exposed directly on your host's ports:
    - Student PWA: `http://localhost:3001`
    - Lecturer UI (Manage): `http://localhost:3002` (login: `lecturer` / `abcd`)
@@ -36,40 +37,43 @@ Use this if you are running in a headless cloud server or want to avoid installi
    - Hatchet Dashboard: `http://localhost:8888`
    - Postgres DB: `localhost:5432`
 
-### Mode 2: devrouter (Default Routed HTTPS domains)
+### Mode 2: Linked checkout
 
 Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, and enable parallel workspaces:
 
-1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.30 and start it:
+1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.34 and set it up:
    ```bash
-   devrouter up && devrouter tls install   # Traefik + the shared `devnet` + mkcert CA
+   devrouter setup --yes   # Traefik + the shared `devnet` + mkcert CA
    ```
 2. Reconcile this existing linked worktree with one command:
    ```bash
-   devrouter workspace ensure .
+   devrouter ensure .
    ```
    To create a new worktree instead, run `devrouter workspace up <branch-name>` from the main repository. Both commands persist one identity, select the devrouter overlay, mount linked Git metadata, start or attach the exact DevPod, prove the runtime, and reconcile routes.
 3. Open `https://manage.klicker.<workspace>.localhost` (credentials: `lecturer` / `abcd`).
 
-Do not use bare `devpod up`, manual `WORKSPACE`, or per-app `--workspace` route loops in a linked worktree. Those paths cannot prove that the DevPod, Git mount, aliases, and routes share one identity.
+Do not use bare `devpod up`, manual `WORKSPACE`, or per-app `--workspace` route loops for this managed devcontainer. Those paths bypass the identity and runtime proof.
 
-## Primary checkout with DevPod
+## Checkout lifecycle
 
 ```bash
-devpod up . --ide none # builds image, starts infra, installs, builds, seeds
+devrouter ensure .
+devrouter exec . -- <command...>
+devrouter stop .
 ```
 
-Open <http://localhost:3002> and log in as **`lecturer` / `abcd`**
-(accept the terms checkbox). The dev servers auto-start in the background
-(`tail -f /tmp/dev.log`; first compile can take a minute).
+Open the Manage URL printed by `ensure` and log in as **`lecturer` / `abcd`**
+(accept the terms checkbox). The dev servers run in the background; inspect
+`/tmp/dev.log` through `devrouter exec` or an exact DevPod shell.
 
 ## How routing works
 
 The monorepo runs **all apps in one container** via `turbo dev`;
 devrouter's Traefik (on `devnet`) routes each hostname to that container's
-internal port — no published host ports. The devrouter overlay exposes
-`${WORKSPACE}-app` and `${WORKSPACE}-db` aliases. `.devrouter.yml` uses that
-persisted linked-worktree identity in every proxy upstream.
+internal port. The linked-worktree overlay publishes no host ports and exposes
+`${WORKSPACE}-app` and `${WORKSPACE}-db` aliases. The primary overlay exposes
+stable unnamespaced aliases plus fixed localhost ports. `.devrouter.yml` uses
+the selected checkout identity in every proxy upstream.
 
 | What              | Host                                                 | Upstream (devnet)       |
 | ----------------- | ---------------------------------------------------- | ----------------------- |
@@ -137,12 +141,16 @@ hatchet DB migrations finishing. If the API is down, check
 
 Environment lives in `devcontainer.env` (committed, dev-only). Lifecycle:
 `post-create.sh` (install + build packages + prisma reset/push/seed + token) then
-`post-start.sh` (set Klicker origins and call the packaged `devrouter-process`
-helper). Runtime state is `/tmp/devrouter-process-klicker-dev.state`: an exact
+host-side `devrouter ensure` delivers its matching process helper and invokes
+`post-start.sh` (set Klicker origins and call that helper). Runtime state is
+`/tmp/devrouter-process-klicker-dev.state`: an exact
 workspace/command fingerprint is reused, stale owned groups are replaced
 boundedly, and unknown processes are never killed. HTTP readiness remains in
-`devrouter workspace ensure .`; rerun it after a production build so stale
+`devrouter ensure .`; rerun it after a production build so stale
 Next.js dev output can trigger the single container-recreate budget.
+
+The image also carries uv `0.11.12` and selects Python 3.12, matching the
+analytics image and lint CI so the root quality gate runs inside the container.
 
 ## Notes
 

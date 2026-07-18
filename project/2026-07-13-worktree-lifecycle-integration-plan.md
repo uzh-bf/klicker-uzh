@@ -19,7 +19,7 @@
 - Branch: `codex/worktree-lifecycle-hardening`
 - Original base: fresh `origin/v3` at `eef745d06`; synchronize current `v3` before the reopened migration slices.
 - Target: `v3`
-- Dependency: released devrouter `0.0.34` managed-adapter contract; validate the final safety gate with the `0.0.35` release-candidate branch from `project/2026-07-18-workspace-safety-hardening-plan.md`.
+- Dependency: released devrouter `0.0.34` managed-adapter contract; validate the final safety gate with the `0.0.35` release-candidate branch from `project/2026-07-18-workspace-safety-hardening-plan.md`, then require a released/pinned `0.0.35` before this PR or Escape Room can proceed.
 
 ## Research
 
@@ -48,8 +48,8 @@ These decisions and the matching evidence below are historical. The reopened dec
 
 ## Progress
 
-- Current: the original `0.0.30` implementation and evidence are preserved, but PR #24 superseded its image-installed helper and automatic `postStartCommand` contract. The branch is reopened for the released `0.0.34` managed-adapter migration and the `0.0.35` workspace-safety proof.
-- Next: independently review this extension, synchronize current `v3`, commit the updated plan before implementation, then execute Slices 4 and 5. Keep draft PR #5169 open; merge only with explicit approval.
+- Current: current `origin/v3` (`393a1fffb`) is merged at `d817f84c0`. Slice 4 is implemented, independently reviewed, simplified, and green: it consumes the released `0.0.34` managed-adapter contract, starts both checkout kinds with `devrouter ensure .`, and gives the self-contained container the same pinned uv/Python line as analytics CI. Review confirmed that `0.0.34` ignores the declared origin allowlist; the stronger identity contract remains a release blocker, not a completed consumer claim.
+- Next: stage the exact Slice 4 files, run data hygiene, and commit before the cold/warm `0.0.35` branch-built safety proof. Keep draft PR #5169 open; merge only with explicit approval.
 
 ## Slice 1: runtime ownership
 
@@ -82,10 +82,12 @@ These decisions and the matching evidence below are historical. The reopened dec
 - The Dockerfile keeps `procps` and `util-linux` for the runtime-delivered helper, but removes package download/extraction and `tar` when otherwise unused.
 - `devcontainer.json` does not declare `postStartCommand`; host-side `devrouter ensure` proves the exact container, delivers the helper, and invokes the managed adapter.
 - `.devcontainer/post-start.sh` contains the `devrouter:managed devcontainer` marker, requires `DEVROUTER_PROCESS_HELPER`, prepares only Klicker-owned environment/origin inputs, and calls `"$DEVROUTER_PROCESS_HELPER" ensure`.
-- The adapter sets `DEVROUTER_PROCESS_FINGERPRINT_ENV` to this exact non-secret runtime-origin allowlist: `APP_ORIGIN_API APP_ORIGIN_AUTH APP_ORIGIN_PWA APP_ORIGIN_MANAGE APP_ORIGIN_CONTROL APP_ORIGIN_ASSESSMENT_API APP_ORIGIN_ASSESSMENT_PWA APP_ORIGIN_LTI APP_ORIGIN_CHAT APP_MANAGE_SUBDOMAIN APP_STUDENT_SUBDOMAIN APP_CONTROL_SUBDOMAIN NEXTAUTH_URL COOKIE_DOMAIN NEXT_PUBLIC_API_URL NEXT_PUBLIC_AUTH_URL NEXT_PUBLIC_MANAGE_URL NEXT_PUBLIC_PWA_URL NEXT_PUBLIC_ASSESSMENT_URL NEXT_PUBLIC_CONTROL_URL NEXT_PUBLIC_ADD_RESPONSE_URL NEXT_PUBLIC_CHAT_URL CORS_ALLOWED_ORIGINS AUTH_LECTURER_ALLOWED_HOSTS AUTH_STUDENT_ALLOWED_HOSTS NODE_EXTRA_CA_CERTS`.
+- The adapter sets `DEVROUTER_PROCESS_FINGERPRINT_ENV` to this exact comma-separated non-secret runtime-origin allowlist: `APP_ORIGIN_API,APP_ORIGIN_AUTH,APP_ORIGIN_PWA,APP_ORIGIN_MANAGE,APP_ORIGIN_CONTROL,APP_ORIGIN_ASSESSMENT_API,APP_ORIGIN_ASSESSMENT_PWA,APP_ORIGIN_LTI,APP_ORIGIN_CHAT,APP_MANAGE_SUBDOMAIN,APP_STUDENT_SUBDOMAIN,APP_CONTROL_SUBDOMAIN,NEXTAUTH_URL,COOKIE_DOMAIN,NEXT_PUBLIC_API_URL,NEXT_PUBLIC_AUTH_URL,NEXT_PUBLIC_MANAGE_URL,NEXT_PUBLIC_PWA_URL,NEXT_PUBLIC_ASSESSMENT_URL,NEXT_PUBLIC_CONTROL_URL,NEXT_PUBLIC_ADD_RESPONSE_URL,NEXT_PUBLIC_CHAT_URL,CORS_ALLOWED_ORIGINS,AUTH_LECTURER_ALLOWED_HOSTS,AUTH_STUDENT_ALLOWED_HOSTS,NODE_EXTRA_CA_CERTS`.
+- Released `0.0.34` ignores `DEVROUTER_PROCESS_FINGERPRINT_ENV`; it is declared now as a forward-compatible adapter input, but only the `0.0.35` candidate hashes the adapter and allowlisted values. Do not mark the PR ready or resume Escape Room until `0.0.35` is released, pinned, and reverified.
 - Documentation, AGENTS guidance, the environment-doctor skill, and wiki use one checkout-agnostic command: `devrouter ensure .`. Manual `WORKSPACE`, direct `devpod up`, and per-app route loops are migration history, not current instructions.
 - Add `project/_local/` to `.gitignore` so future goal checkpoints and handoffs stay repository-local without becoming public artifacts.
 - Use released `0.0.34` for the committed consumer migration. Exercise the devrouter `0.0.35` branch-built CLI for the safety proof; do not pin or publish an unreleased package.
+- Keep the self-contained container capable of running the repository-wide gate: copy the existing `uv 0.11.12` binary used by the analytics image and select Python 3.12 like CI. This is development toolchain parity, not a new application dependency.
 
 ## Independent review of the reopened plan
 
@@ -98,6 +100,8 @@ These decisions and the matching evidence below are historical. The reopened dec
 - Do: merge current `v3`; update `.devrouter.yml`; remove helper extraction and automatic post-start wiring; migrate the adapter marker/helper invocation; add the local-checkpoint ignore.
 - Do: update AGENTS, `.devcontainer/README.md`, environment wiki, environment-doctor skill, and wiki changelog so `devrouter ensure .` is canonical and no manual-token route flow is recommended.
 - Check: devrouter static verification and doctor, Compose resolution, Bash syntax/ShellCheck, Prettier, `git diff --check`, focused repo checks, review, simplification, rerun, progress update, and commit.
+- Result: merged current `v3`; removed image-installed devrouter and independent `postStartCommand`; added the managed marker, runtime-delivered helper requirement, and exact comma-separated origin fingerprint allowlist; made the primary overlay satisfy the same devnet alias/TLS contract; updated the repository guidance, wiki, and skills to one `devrouter ensure .` lifecycle. The image now includes the existing pinned uv tool and Python 3.12 selection required by the root lint gate. Shared Compose routing/trust wiring lives in the base; overlays contain only checkout-specific aliases, ports, namespaced hosts, and the linked Git bind.
+- Evidence: branch-built devrouter `96c8df5e71e2` reports 5/5 static devcontainer checks passing and doctor has 0 errors; primary and linked Compose configs resolve with exact aliases, CA trust, and Git bind; Bash syntax, ShellCheck, Prettier, and `git diff --check` pass. A cold linked-worktree creation completed install, build, database setup, and seeding; a warm exact reconcile reused the managed process. Applying the Dockerfile toolchain correction required one explicit delete/recreate of only this plan-targeted DevPod; no Git worktree or other environment was touched. The post-review root `check:all` gate passes inside the exact DevPod. Correctness review caught and removed premature `0.0.34` origin-fingerprint claims plus stale port-free primary claims; simplification centralized Compose wiring and corrected lifecycle commands. Both independent reviewers returned READY; the `0.0.35` release dependency is explicit.
 - Commit: `refactor(devcontainer): adopt runtime-delivered devrouter helper`.
 
 ## Slice 5: prove cold, warm, routed, and browser identity

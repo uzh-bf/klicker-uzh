@@ -24,29 +24,31 @@ You can set up the environment in two ways:
 
 Clone-and-run via a self-contained devcontainer — no Infisical, no external EduID, no `/etc/hosts` edits needed. The container runs every routed app plus the two Hatchet workers through one `turbo dev` task set and houses all dependencies (Postgres, Redis, MailHog, Hatchet).
 
-1. **Start the container:**
+1. **Start and prove the checkout:**
    ```bash
-   devpod up . # primary checkout / plain localhost fallback
+   devrouter ensure .
    ```
-   For a linked worktree, complete Mode 2 below. `workspace ensure` prints the exact DevPod ID for `devpod ssh <workspace-id>`; the primary checkout uses `klicker-uzh`.
+   The same command owns primary and linked checkout startup. It prints the exact DevPod ID when an interactive shell is needed.
 2. **Accessing the apps:**
-   - **Mode 1 (Plain localhost fallback):** Exposed directly on host ports after starting devcontainer (`devpod up .` or via VS Code) without devrouter: Student PWA at `http://localhost:3001`, Lecturer UI at `http://localhost:3002` (login: `lecturer`/`abcd`).
-   - **Mode 2 (devrouter overlay):** Routes linked-worktree traffic over HTTPS at `https://manage.klicker.<workspace>.localhost`. Requires:
-     1. Install devrouter ≥ 0.0.30 and start it on the host (`devrouter up && devrouter tls install`).
+   - **Mode 1 (Primary checkout):** Stable routes such as `https://manage.klicker.localhost` plus the fixed localhost ports. Lecturer login is `lecturer`/`abcd`.
+   - **Mode 2 (linked checkout):** Routes linked-worktree traffic over HTTPS at `https://manage.klicker.<workspace>.localhost`. Requires:
+     1. Install devrouter ≥ 0.0.34 and run `devrouter setup --yes` once.
      2. From an existing linked worktree, start and prove the environment with:
         ```bash
-        devrouter workspace ensure .
+        devrouter ensure .
         ```
-        Use `devrouter workspace up <branch-name>` from the main repository to create a new worktree. Do not use bare `devpod up` or manual route-token loops in linked worktrees; `workspace ensure` owns the persisted identity, Git mount, overlay, aliases, runtime proof, and routes together.
-3. **Logs:** The dev servers auto-start inside the container. View logs via `tail -f /tmp/dev.log`.
+        Use `devrouter workspace up <branch-name>` from the main repository to create a new worktree. Do not use bare `devpod up` or manual route-token loops; `ensure` owns the persisted identity, Git mount, overlay, aliases, runtime proof, and routes together.
+3. **Logs:** The dev servers auto-start inside the container. View logs via `devrouter exec . -- tail -f /tmp/dev.log`.
 
-`post-start.sh` keeps Klicker's environment and origin setup local, then calls the packaged `devrouter-process` helper. The helper records its owned process group and workspace/command fingerprint in `/tmp/devrouter-process-klicker-dev.state`; an exact repeat is idempotent, stale owned groups are replaced boundedly, and unknown processes are never killed.
+`post-start.sh` keeps Klicker's environment and origin setup local. Host-side `devrouter ensure` delivers its matching process helper to the exact validated container, then invokes the adapter. Released devrouter `0.0.34` records its owned process group and workspace/command fingerprint in `/tmp/devrouter-process-klicker-dev.state`; an exact repeat is idempotent, stale owned groups are replaced boundedly, and unknown processes are never killed.
 
-Devrouter owns generic process lifecycle and HTTP readiness. `workspace ensure` verifies all ten routes and can spend one container recreate when an exact workspace is alive but an application remains unhealthy, including after a production build replaces live Next.js output.
+Devrouter owns generic process lifecycle and HTTP readiness. `ensure` verifies all ten routes and can spend one container recreate when an exact workspace is alive but an application remains unhealthy, including after a production build replaces live Next.js output.
 
-The published `@devrouter/cli@0.0.30` path was verified from a linked worktree on 2026-07-14: a cold reconcile rebuilt the image, loaded the packaged helper, mounted the exact worktree, and brought up all ten routes. A warm repeat preserved the app container and managed process state. Delegated lecturer login returned to the same worktree-specific Manage host and rendered the seeded library.
+The consumer contract is pinned once in `.devrouter.yml` at devrouter `0.0.34`. The devcontainer image contains no devrouter package or helper, and `devcontainer.json` does not run the managed adapter independently. The adapter already declares Klicker's exact non-secret origin allowlist, but origin and adapter hashing require devrouter `0.0.35`; this branch remains a draft until that release is pinned after its branch-built safety proof.
 
-`devrouter doctor --repo .` currently inspects the port-free base Compose file without the selected devrouter overlay, so it can warn that aliases are missing or upstreams do not match. For a linked worktree, `devrouter workspace ensure .` is the runtime authority: it resolves the overlay and fails unless the actual container aliases and routes match. Do not add devnet aliases to the base file to silence the static warning.
+The image does include the repository's development toolchain: pnpm `11.5.0`, uv `0.11.12`, and the Python 3.12 selection used by analytics CI. This keeps `pnpm run check:all` reproducible inside the container.
+
+`devrouter doctor --repo .` is the static check. `devrouter ensure .` is the runtime authority: it resolves the checkout-specific overlay and fails unless the actual container aliases, Git mount, managed process, and routes agree.
 
 ### Path B: Host-based Setup (Legacy)
 

@@ -1,22 +1,21 @@
 # Proxy-only routing over the shared external `devnet` network by container
-# alias (NO published host ports in devrouter mode). The monorepo runs every app
-# in one container via `turbo dev`; each hostname routes to that container's
-# internal port. ${WORKSPACE} is substituted by devrouter at runtime so
-# parallel worktrees target distinct aliases (`<workspace>-app` / `<workspace>-db`)
-# instead of all sharing one `klicker-app`.
+# alias. Linked worktrees publish no host ports; the primary checkout keeps its
+# documented fixed localhost ports. The monorepo runs every app in one container
+# via `turbo dev`; each hostname routes to that container's internal port.
+# ${WORKSPACE} is substituted by devrouter at runtime so parallel worktrees
+# target distinct aliases (`<workspace>-app` / `<workspace>-db`).
 # Full walkthrough: devrouter docs/DEVCONTAINER.md.
 #
-# Usage: `devrouter up` + `devrouter tls install` once, then from a linked
-# worktree run `devrouter workspace ensure .`. Use
+# Usage: `devrouter setup --yes` once, then from either checkout kind run
+# `devrouter ensure .`. Use
 # `devrouter workspace up <branch>` to create a new worktree. Primary checkouts
-# retain the one-at-a-time localhost fallback documented in
-# `.devcontainer/README.md`.
+# use the one-at-a-time localhost overlay documented in `.devcontainer/README.md`.
 #
 # The container runs every routed app plus the two Hatchet workers. Workers have
 # no route; analytics, Office add-in, and docs remain outside this stack.
 version: 1
 devrouter:
-  version: 0.0.30
+  version: 0.0.34
 project:
   name: klicker-uzh
 apps:

@@ -126,29 +126,29 @@ Prisma split-schema under `packages/prisma/src/prisma/schema/`. After editing a 
 Clone-and-run via a self-contained devcontainer — no Infisical/Doppler, no EduID, no `/etc/hosts` edits. The container owns the whole stack (Node 24 + pnpm toolchain, Postgres, 3× Redis, MailHog, Hatchet) and runs **all core apps in ONE container** via `turbo dev`. Run pnpm/prisma/tests **inside the container**, never on the host.
 
 ```bash
-devpod up . # primary checkout / plain localhost fallback
+devrouter ensure .
 ```
 
-For a linked worktree, complete the routed devrouter flow below. Use `devpod ssh <workspace-id>` for a shell after startup (`workspace ensure` prints the ID; the primary checkout uses `klicker-uzh`).
+The same command starts and proves primary and linked checkouts. Use `devrouter exec . -- <command...>` for one-shot commands or the exact DevPod ID printed by `ensure` for an interactive shell.
 
-The dev servers auto-start in the background (`tail -f /tmp/dev.log`; first compile takes ~1min). Re-run lifecycle by hand inside the container: `bash .devcontainer/post-create.sh` / `bash .devcontainer/post-start.sh`. The stack runs every routed app plus the two Hatchet workers (no worker route); analytics, Office add-in, and docs remain outside it. See `.devcontainer/README.md`.
+The dev servers auto-start in the background (`devrouter exec . -- tail -f /tmp/dev.log`; first compile takes ~1min). Host-side `devrouter ensure` owns lifecycle reconciliation and delivers its matching process helper to the exact validated container. The stack runs every routed app plus the two Hatchet workers (no worker route); analytics, Office add-in, and docs remain outside it. See `.devcontainer/README.md`.
 
-**Routing (devrouter — when available):** nothing is published on the host; [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.30 fronts the stack over the shared `devnet` network. One-time host setup must happen **before** the container starts:
+**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.34 fronts the stack over the shared `devnet` network. One-time host setup must happen **before** the container starts:
 
 ```bash
-devrouter up && devrouter tls install # Traefik + devnet + mkcert CA
+devrouter setup --yes # Traefik + devnet + mkcert CA
 ```
 
-From an existing linked worktree, one command owns DevPod identity, the Git metadata mount, aliases, runtime proof, and route reconciliation. Do not use bare `devpod up` or manual `--workspace` route loops for linked worktrees:
+One command owns DevPod identity, the Git metadata mount, aliases, runtime proof, and route reconciliation for either checkout kind. Do not use bare `devpod up`, manual `WORKSPACE`, or per-app `--workspace` route loops:
 
 ```bash
-devrouter workspace ensure .          # existing linked worktree
+devrouter ensure .                    # existing primary or linked checkout
 devrouter workspace up <branch-name>  # create and start a new worktree
 ```
 
-Linked-worktree apps use `https://{app}.klicker.<workspace>.localhost`; Postgres for host tooling is at `db.klicker.<workspace>.localhost:5432` (`sslmode=require sslnegotiation=direct`). The primary checkout remains the one-at-a-time localhost fallback on the ports in [Repo Layout](#repo-layout). Login as `lecturer`/`abcd` (see test credentials below). Env in `.devcontainer/devcontainer.env` (committed, dev-only — no real secrets).
+Primary-checkout apps use `https://{app}.klicker.localhost`; linked-worktree apps use `https://{app}.klicker.<workspace>.localhost`. Postgres for host tooling is at `db.klicker[.<workspace>].localhost:5432` (`sslmode=require sslnegotiation=direct`). The primary checkout also keeps the fixed localhost ports in [Repo Layout](#repo-layout). Login as `lecturer`/`abcd` (see test credentials below). Env in `.devcontainer/devcontainer.env` (committed, dev-only — no real secrets).
 
-**Media uploads and Blob CORS:** the manage media library uploads directly from the browser to Azure Blob Storage with a SAS URL. The storage account's Blob service CORS must allow the actual local origin (`http://localhost:3002` for the primary fallback or `https://manage.klicker.<workspace>.localhost` for a linked worktree), not only production origins such as `https://manage.klicker.com`. For a dedicated dev storage account, use dev-only localhost rules; keep production storage accounts exact.
+**Media uploads and Blob CORS:** the manage media library uploads directly from the browser to Azure Blob Storage with a SAS URL. The storage account's Blob service CORS must allow the actual local origin (`https://manage.klicker.localhost` or `https://manage.klicker.<workspace>.localhost`), not only production origins such as `https://manage.klicker.com`. For a dedicated dev storage account, use dev-only localhost rules; keep production storage accounts exact.
 
 ### Legacy host-based stack
 
@@ -229,10 +229,10 @@ Full reference (config schema, docker requirements, env injection, commands):
 
 Quick validation sequence:
 
-- `devrouter up`
-- `devrouter tls install` (required when repo defines tcp/postgres apps)
+- `devrouter setup --yes`
 - `devrouter app ls --repo .`
-- Linked devcontainer worktree: `devrouter workspace ensure .`
+- Managed devcontainer: `devrouter ensure .`
+- Exact container command: `devrouter exec . -- <command...>`
 - Host/docker runtime app only: `devrouter app run <host-app> --repo . --yes`
 - `devrouter ls`
 <!-- /devrouter -->
