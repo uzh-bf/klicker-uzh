@@ -69,7 +69,7 @@ devrouter exec . -- cat /tmp/devrouter-process-klicker-dev.state
 devrouter exec . -- tail -n 50 /tmp/dev.log
 ```
 
-`devrouter ensure` delivers its matching process helper to the exact validated container. Released `0.0.34` reuses an exact workspace/command fingerprint; the `0.0.35` safety release adds adapter hashing and the declared non-secret origin allowlist. The helper replaces a stale owned process group and leaves unknown processes untouched. Host-side ensure checks all routes and can recreate one stale or unhealthy exact-path DevPod once. Do not treat an origin-mismatch test with `0.0.34` as proof of the stronger contract.
+`devrouter ensure` delivers its matching process helper to the exact validated container. Released `0.0.35` fingerprints the workspace, command, adapter bytes, and declared non-secret origin allowlist. The helper replaces a stale owned process group and leaves unknown processes untouched. Host-side ensure checks all routes and can recreate one stale or unhealthy exact-path DevPod once.
 
 `devrouter doctor --repo .` provides static diagnostics. `devrouter ensure .` resolves the checkout-specific overlay and is the authoritative runtime proof.
 

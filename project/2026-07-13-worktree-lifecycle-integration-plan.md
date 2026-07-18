@@ -19,7 +19,7 @@
 - Branch: `codex/worktree-lifecycle-hardening`
 - Original base: fresh `origin/v3` at `eef745d06`; synchronize current `v3` before the reopened migration slices.
 - Target: `v3`
-- Dependency: released devrouter `0.0.34` managed-adapter contract; validate the final safety gate with the `0.0.35` release-candidate branch from `project/2026-07-18-workspace-safety-hardening-plan.md`, then require a released/pinned `0.0.35` before this PR or Escape Room can proceed.
+- Dependency: released Devrouter `v0.0.35`, satisfied and reverified in Slice 6.
 
 ## Research
 
@@ -48,8 +48,8 @@ These decisions and the matching evidence below are historical. The reopened dec
 
 ## Progress
 
-- Current: current `origin/v3` (`393a1fffb`) is merged at `d817f84c0`; Slice 4 is committed at `277ae692f`, Slice 5 evidence at `722ce9e4a`, and the verified root-build correction at `7f1646ef1`. Branch-built `0.0.35` cold/warm, route, browser, static, production-build, and recovery proof passes on the exact hardening checkout. Final code-level security review found no high-confidence vulnerability, whole-branch review found no code defect, and the strict maintainability review returned READY. The whole-branch review's two stale-documentation findings are corrected in the final checkpoint. The released consumer pin remains `0.0.34`, so the stronger adapter/origin identity contract is still a release blocker rather than a completed consumer claim.
-- Next: after explicit approval for the public Devrouter repository action, push its completed safety branch and open/update its draft PR. Land and release devrouter `0.0.35`, pin that released version here, repeat the cold/warm identity proof, rerun current-head finish gates and CI, and refresh draft PR #5169. Do not mark it ready, resume Escape Room, or merge before those steps pass.
+- Current: Slice 6 implementation, released-artifact verification, final security review, same-provider branch crosscheck, and strict maintainability review are complete in this worktree against [PR #5169](https://github.com/uzh-bf/klicker-uzh/pull/5169) head `58590e974`.
+- Next: commit and push, refresh [PR #5169](https://github.com/uzh-bf/klicker-uzh/pull/5169) from whole-branch evidence, wait for feedback and CI, then mark ready and merge under the user's explicit authority. Escape Room remains untouched until this passes.
 
 ## Slice 1: runtime ownership
 
@@ -76,17 +76,17 @@ These decisions and the matching evidence below are historical. The reopened dec
 - Evidence: published 0.0.30 registry metadata and isolated CLI/helper entry points pass. The Klicker image builds and the extracted helper passes Devrouter's complete Linux lifecycle regression. Bash syntax, ShellCheck, Compose resolution, Prettier, `git diff --check`, `pnpm run check:all`, and the 21-task production build pass. The first build attempt failed only on sandbox DNS for `fonts.googleapis.com`; the network-enabled rerun passed.
 - Commit: `refactor(devcontainer): delegate process lifecycle to devrouter`.
 
-## Reopened decisions after devrouter PR #24
+## Reopened decisions after devrouter [PR #24](https://github.com/rschlaefli/devrouter/pull/24)
 
 - `.devrouter.yml` is the only consumer-side devrouter version pin.
 - The Dockerfile keeps `procps` and `util-linux` for the runtime-delivered helper, but removes package download/extraction and `tar` when otherwise unused.
 - `devcontainer.json` does not declare `postStartCommand`; host-side `devrouter ensure` proves the exact container, delivers the helper, and invokes the managed adapter.
 - `.devcontainer/post-start.sh` contains the `devrouter:managed devcontainer` marker, requires `DEVROUTER_PROCESS_HELPER`, prepares only Klicker-owned environment/origin inputs, and calls `"$DEVROUTER_PROCESS_HELPER" ensure`.
 - The adapter sets `DEVROUTER_PROCESS_FINGERPRINT_ENV` to this exact comma-separated non-secret runtime-origin allowlist: `APP_ORIGIN_API,APP_ORIGIN_AUTH,APP_ORIGIN_PWA,APP_ORIGIN_MANAGE,APP_ORIGIN_CONTROL,APP_ORIGIN_ASSESSMENT_API,APP_ORIGIN_ASSESSMENT_PWA,APP_ORIGIN_LTI,APP_ORIGIN_CHAT,APP_MANAGE_SUBDOMAIN,APP_STUDENT_SUBDOMAIN,APP_CONTROL_SUBDOMAIN,NEXTAUTH_URL,COOKIE_DOMAIN,NEXT_PUBLIC_API_URL,NEXT_PUBLIC_AUTH_URL,NEXT_PUBLIC_MANAGE_URL,NEXT_PUBLIC_PWA_URL,NEXT_PUBLIC_ASSESSMENT_URL,NEXT_PUBLIC_CONTROL_URL,NEXT_PUBLIC_ADD_RESPONSE_URL,NEXT_PUBLIC_CHAT_URL,CORS_ALLOWED_ORIGINS,AUTH_LECTURER_ALLOWED_HOSTS,AUTH_STUDENT_ALLOWED_HOSTS,NODE_EXTRA_CA_CERTS`.
-- Released `0.0.34` ignores `DEVROUTER_PROCESS_FINGERPRINT_ENV`; it is declared now as a forward-compatible adapter input, but only the `0.0.35` candidate hashes the adapter and allowlisted values. Do not mark the PR ready or resume Escape Room until `0.0.35` is released, pinned, and reverified.
+- Released `0.0.34` ignored `DEVROUTER_PROCESS_FINGERPRINT_ENV`; `0.0.35` hashes the adapter and allowlisted values. Do not mark the PR ready or resume Escape Room until the released artifact is pinned and reverified.
 - Documentation, AGENTS guidance, the environment-doctor skill, and wiki use one checkout-agnostic command: `devrouter ensure .`. Manual `WORKSPACE`, direct `devpod up`, and per-app route loops are migration history, not current instructions.
 - Add `project/_local/` to `.gitignore` so future goal checkpoints and handoffs stay repository-local without becoming public artifacts.
-- Use released `0.0.34` for the committed consumer migration. Exercise the devrouter `0.0.35` branch-built CLI for the safety proof; do not pin or publish an unreleased package.
+- Before `0.0.35` publication, keep the consumer migration on released `0.0.34` and use the branch-built candidate only for safety proof. Slice 6 owns the released pin and repeat proof.
 - Keep the self-contained container capable of running the repository-wide gate: copy the existing `uv 0.11.12` binary used by the analytics image and select Python 3.12 like CI. This is development toolchain parity, not a new application dependency.
 
 ## Independent review of the reopened plan
@@ -109,9 +109,9 @@ These decisions and the matching evidence below are historical. The reopened dec
 - Do: build and record the source SHA/version of `node /Users/rschlae/Git/personal/devrouter/trees/workspace-safety-hardening/dist/devrouter.js`, then use that exact executable for every `ensure`, inspection, cold, and warm command against this exact checkout without changing or cleaning the Escape Room worktree.
 - Do: cold reconcile, then warm reconcile; prove the same exact DevPod id/source path, app container, in-container Git path, workspace env, process fingerprint/reuse, and complete route ownership.
 - Do: exercise all HTTP/TCP routes and delegated lecturer login on the worktree-specific Manage host with browser evidence.
-- Check: full risk-appropriate Klicker static/build suite, code-level security review, independent branch review, strict maintainability review, and whole-branch PR #5169 description/readback.
+- Check: full risk-appropriate Klicker static/build suite, code-level security review, independent branch review, strict maintainability review, and whole-branch [PR #5169](https://github.com/uzh-bf/klicker-uzh/pull/5169) description/readback.
 - Commit: docs-only progress/evidence update if live proof changes the plan after the implementation commit.
-- Stop: keep PR #5169 draft and report any upstream release dependency; no merge without explicit authority.
+- Stop: keep [PR #5169](https://github.com/uzh-bf/klicker-uzh/pull/5169) draft and report any upstream release dependency; no merge without explicit authority.
 
 ### Slice 5 live evidence
 
@@ -131,6 +131,26 @@ These decisions and the matching evidence below are historical. The reopened dec
 - Final whole-branch review: no code, lifecycle, copy-integrity, transaction, authorization, i18n, or leftover defect after the root-build correction. Its two documentation findings were stale plan status and the `post-start.sh` "core apps" comment; both are corrected in this checkpoint. The external GLM crosscheck could not complete because Droid aborted during MCP reload, so the independent collaboration review and direct repository verification are the recorded fallback rather than a claimed second-model result.
 - Final maintainability review: READY with no blocking or non-blocking finding. The branch keeps generic ownership/recovery in Devrouter, app-specific inputs in Klicker, shared Compose wiring in the base, and checkout-specific differences in overlays. No new helper duplication or oversized code surface remains.
 - Boundary: the branch-built proof validates the `0.0.35` candidate, but this PR cannot be ready and Escape Room cannot resume until that version is released, pinned in `.devrouter.yml`, and the cold/warm identity proof is repeated against the released artifact.
+
+## Slice 6: pin and prove the released safety contract
+
+- Do: pin `.devrouter.yml` and current setup guidance to released `0.0.35`; update the environment skill, wiki timestamp/log, and this progress record without rewriting historical evidence.
+- Do: use one exact released `@devrouter/cli@0.0.35` executable for cold and warm reconciliation of only this worktree. Prove exact source/workspace/container/Git/process identity, origin fingerprinting, ten owned routes, PostgreSQL, and delegated lecturer login at desktop and mobile sizes.
+- Check: static devcontainer verification and doctor; Compose, Bash, ShellCheck, wiki validation, Prettier, `check:all`, root build, targeted live probes, browser evidence, security review, independent branch review, strict maintainability review, PR feedback, and GitHub CI.
+- Commit: `chore(devcontainer): pin devrouter 0.0.35`.
+- Stop: do not resume or mutate the Escape Room worktree until [PR #5169](https://github.com/uzh-bf/klicker-uzh/pull/5169) is merged into `v3`.
+
+### Slice 6 live evidence
+
+- Released artifact: Devrouter `v0.0.35` targets `57e9749b86e8afeb41f850bd7fdbbeb99826880c`; release workflow run `29654758160` passed its check and publish jobs. npm readback returned `@devrouter/cli@0.0.35` with integrity `sha512-G+D097f5KzYPBLe7lS3Ci6BjBrcqmwl7HVeF8PXlEwbHgeWupnNJj/EUgCdpPweXGZ0faH3yIE9ovFR3ebfMXA==`. Every live command used `/opt/homebrew/lib/node_modules/@devrouter/cli/dist/devrouter.js`, whose SHA-256 is `814c8a65828b33e5b7d506039db77c3fb4a4d84c934d5456c9b9d24f067ce756`; `-V` reports installed and repository version `0.0.35` with no upgrade target.
+- Static contract: `repo devcontainer verify --repo . --json` returned 5 ok, 0 warnings, and 0 errors across ten proxy applications. `doctor --repo . --json` returned 23 ok, 3 known overlay/runtime warnings, and 0 errors. Primary and linked Compose configs resolve; Bash syntax, targeted Prettier, `git diff --check`, and ShellCheck pass. The raw ShellCheck findings `SC1091` and `SC2034` are unchanged on `origin/v3`; excluding those two baseline warnings returns clean. Opengrep scanned 3,032 tracked files with 676 rules; all 610 reported findings are outside the 19 changed branch paths.
+- Cold ownership and identity: the preflight ledger bound only workspace/DevPod `codex-worktree-lifecycle-hardeni` and its ten routes to this exact checkout. `stop . --delete --json` deleted only that DevPod and freed its ten routes. The following released `ensure . --json` rebuilt, installed, built, initialized, seeded, started PID/PGID `1234/1234`, and registered all routes. Container `d260e9ef798f` resolved `/workspaces/klicker-uzh` at Git SHA `58590e974e90bf035ece82010d25f4c868cad33f`; both workspace variables matched the durable id. The state fingerprint was `a8d4cf46f94139225b13d3e9e0d2491fe7de3736107fd6e3c74a3aebee47b8f3`, with `uv 0.11.12` and `UV_PYTHON=3.12`.
+- Warm reuse: the immediate released `ensure` returned `recreated: false`; container, Git SHA, PID/PGID, and fingerprint remained byte-for-byte identical.
+- Routes and database: API `/` returned 404; Auth, PWA, Manage, and Control returned 200; OLAT `/health` and Response `/healthz` returned 200; LTI `/info` returned 401; Chat `/` returned 404. PostgreSQL connected through `db.klicker.codex-worktree-lifecycle-hardeni.localhost:5432` with direct negotiation, TLS 1.3, and `postgresql` ALPN.
+- Browser: `npx agent-browser` accepted the terms gate, completed delegated lecturer authentication on the namespaced Auth host, and returned to the same namespaced Manage host. The seeded library rendered at 1440x1000 and 390x844; captures are ignored local artifacts under `project/_local/evidence/workspace-hardening-release/`. Page errors were empty. Existing development-only unauthenticated GraphQL, nested-button hydration, image, and HMR console warnings remain outside this infrastructure-only diff.
+- Repository gates: `pnpm run check:all` passed in the exact DevPod, including all 23 type-check tasks plus lint, format, Syncpack, AGENTS, and Prisma synchronization. `pnpm run build` passed all 21 production build tasks with existing warnings only. As expected, the production build disturbed live Next output; the following released `ensure` spent its recreate budget, restored the same durable workspace in container `24f60debc150`, started PID/PGID `806/806` with the unchanged fingerprint, and returned `recreated: true`. Every route passed again, and the next ensure reused that recovered runtime with `recreated: false`.
+- Wiki validation: the documented Python validator could not run because PyYAML is not installed and the skill forbids installing it without approval. A temporary Node validator using the repository's pinned `yaml@2.6.1` checked the OKF core plus repository profile fields and passed all 14 applicable Markdown files; `docs/solutions/` remains under its separate `rs-compound` schema.
+- Review: simplification removed premature proof wording and repeated release evidence. Correctness review found one workflow-format issue, bare PR references in touched plan progress, and all such references are now clickable links. Final security review found no high-confidence vulnerability. A same-provider branch crosscheck validated the lifecycle, configuration-safety, review-lens, and maintainability conclusions; its only correction broadens the database-owner scope from devcontainer-only to fresh local and test PostgreSQL initialization. A different-model crosscheck remains unavailable: Droid aborted during MCP reload, and the approval reviewer blocked the OpenCode disclosure before execution, so no worktree data was sent and no cross-model result is claimed. The first strict maintainability pass caught the stale generated Devrouter skill and narrow README fingerprint wording. Running the exact released `devrouter repo agents` generator, documenting adapter and declared non-secret environment fingerprinting, and rerunning the complete gate resolved the finding; the final verdict is READY with no remaining maintainability issue at confidence 80 or higher.
 
 ## Historical final review for 0.0.30
 

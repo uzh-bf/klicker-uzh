@@ -133,7 +133,7 @@ The same command starts and proves primary and linked checkouts. Use `devrouter 
 
 The dev servers auto-start in the background (`devrouter exec . -- tail -f /tmp/dev.log`; first compile takes ~1min). Host-side `devrouter ensure` owns lifecycle reconciliation and delivers its matching process helper to the exact validated container. The stack runs every routed app plus the two Hatchet workers (no worker route); analytics, Office add-in, and docs remain outside it. See `.devcontainer/README.md`.
 
-**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.34 fronts the stack over the shared `devnet` network. One-time host setup must happen **before** the container starts:
+**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.35 fronts the stack over the shared `devnet` network. One-time host setup must happen **before** the container starts:
 
 ```bash
 devrouter setup --yes # Traefik + devnet + mkcert CA
@@ -229,10 +229,11 @@ Full reference (config schema, docker requirements, env injection, commands):
 
 Quick validation sequence:
 
-- `devrouter setup --yes`
+- Managed devcontainer consumer images contain no devrouter package or helper; `devrouter ensure` delivers the matching helper at runtime.
+- `devrouter up`
+- `devrouter tls install` (required when repo defines tcp/postgres apps)
 - `devrouter app ls --repo .`
-- Managed devcontainer: `devrouter ensure .`
-- Exact container command: `devrouter exec . -- <command...>`
+- Primary or linked devcontainer checkout: `devrouter ensure . --json`
 - Host/docker runtime app only: `devrouter app run <host-app> --repo . --yes`
 - `devrouter ls`
 <!-- /devrouter -->

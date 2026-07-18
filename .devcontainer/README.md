@@ -41,7 +41,7 @@ The primary checkout keeps fixed localhost ports and receives stable unnamespace
 
 Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, and enable parallel workspaces:
 
-1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.34 and set it up:
+1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.35 and set it up:
    ```bash
    devrouter setup --yes   # Traefik + the shared `devnet` + mkcert CA
    ```
@@ -143,9 +143,10 @@ Environment lives in `devcontainer.env` (committed, dev-only). Lifecycle:
 `post-create.sh` (install + build packages + prisma reset/push/seed + token) then
 host-side `devrouter ensure` delivers its matching process helper and invokes
 `post-start.sh` (set Klicker origins and call that helper). Runtime state is
-`/tmp/devrouter-process-klicker-dev.state`: an exact
-workspace/command fingerprint is reused, stale owned groups are replaced
-boundedly, and unknown processes are never killed. HTTP readiness remains in
+`/tmp/devrouter-process-klicker-dev.state`: exact workspace, command, adapter
+bytes, and declared non-secret runtime-origin values are fingerprinted for
+reuse; stale owned groups are replaced boundedly, and unknown processes are
+never killed. HTTP readiness remains in
 `devrouter ensure .`; the root build script forces production mode even though
 the live container exports `NODE_ENV=development`. Rerun ensure after
 `pnpm run build` so stale Next.js dev output can trigger the single
