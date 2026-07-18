@@ -10,6 +10,26 @@ podSecurityContext: {}
 
 securityContext: {}
 
+# Database migration hook (prisma migrate deploy), run as an ArgoCD PreSync hook.
+# Tag defaults to the chart appVersion; override with the backend-docker release tag.
+migrator:
+  enabled: true
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-migrator
+    pullPolicy: Always
+  imagePullSecrets: []
+  backoffLimit: 1
+  activeDeadlineSeconds: 600
+  ttlSecondsAfterFinished: 3600
+  nodeSelector: {}
+  tolerations: []
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+
 notifications:
   url: ''
   secret: ''

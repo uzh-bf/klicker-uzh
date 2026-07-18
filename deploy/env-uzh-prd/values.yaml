@@ -949,3 +949,9 @@ assessment:
         memory: 50Mi
       limits:
         memory: 200Mi
+
+# Migration hook image: pin to the SAME tag as backend-docker-arm above.
+migrator:
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-migrator-arm
+    tag: v3.4.0-alpha.62

@@ -898,3 +898,9 @@ assessment:
       limits:
         cpu: 200m
         memory: 200Mi
+
+# Migration hook image: tracks the floating v3 tag alongside backend-docker-arm.
+migrator:
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-migrator-arm
+    tag: v3

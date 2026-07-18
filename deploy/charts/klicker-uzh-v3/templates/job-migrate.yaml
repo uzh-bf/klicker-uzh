@@ -1,0 +1,57 @@
+{{- if .Values.migrator.enabled }}
+# Runs `prisma migrate deploy` as an ArgoCD PreSync hook before every rollout.
+# A failed hook aborts the whole sync, so the app Deployments in the main wave
+# never start against an unmigrated database.
+#
+# Migrations run while the PREVIOUS app version is still live — keep them
+# backward-compatible (expand-contract).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "chart.fullname" . }}-migrate
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migrate
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    # Keep a failed Job around for debugging; delete it on success and before the next run.
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  backoffLimit: {{ .Values.migrator.backoffLimit }}
+  activeDeadlineSeconds: {{ .Values.migrator.activeDeadlineSeconds }}
+  ttlSecondsAfterFinished: {{ .Values.migrator.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels:
+        {{- include "chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: migrate
+    spec:
+      restartPolicy: Never
+      {{- with .Values.migrator.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: migrate
+          image: "{{ .Values.migrator.image.repository }}:{{ .Values.migrator.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.migrator.image.pullPolicy }}
+          # Same env as the backend-graphql app so DATABASE_URL resolves identically.
+          envFrom:
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-global
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-backend-graphql
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-backend-graphql
+          resources:
+            {{- toYaml .Values.migrator.resources | nindent 12 }}
+      {{- with .Values.migrator.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.migrator.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

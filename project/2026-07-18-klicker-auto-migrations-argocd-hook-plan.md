@@ -48,11 +48,11 @@ R2. Migrator image must carry: prisma CLI + migration (schema) engine binary + `
 - [x] Plan approved, decisions locked.
 - [x] Slice 1 — migrator image applies migrations. VERIFIED: `packages/prisma/Dockerfile` built (node:24.16.0-alpine + prisma@6.16.1 global); ran vs throwaway Postgres with ONLY `DATABASE_URL` → 176 migrations applied, exit 0; 2nd run idempotent ("No pending migrations"); `_prisma_migrations`=176. Confirms no SHADOW_DATABASE_URL / generators needed. `--schema src/prisma/schema` resolves migrations from `<dir>/migrations`.
 - [x] Slice 2 — CI. Added `build-migrator-{arm,amd}` jobs + `MIGRATOR_IMAGE_NAME` env to `v3_backend-docker-{stg,prd}.yml`. Mirror backend jobs, `file: packages/prisma/Dockerfile`. Same triggers/metadata-action → tags lockstep (prd `v*.*.*`, stg `v3`; stg PR paths already include `packages/prisma/**`). YAML validated (ruby): 4 jobs each. True build test = on push.
-- [ ] Slice 3 — Helm PreSync hook Job + values (base/stg/prd).
+- [x] Slice 3 — Helm PreSync hook Job + values. `templates/job-migrate.yaml` (ArgoCD PreSync, envFrom = backend-graphql global+cm+secret, guarded by `migrator.enabled`). Base `values.yaml` migrator block; prd overlay (`-arm`, tag `v3.4.0-alpha.62`); stg overlay (`-arm`, tag `v3`). VERIFIED: `helm lint` clean; `helm template` per env renders correct annotations/image/envFrom; `enabled=false` → empty (no Job).
 - [ ] Slice 4 — wiki updated, manual path demoted to break-glass.
 - [ ] Finish gate — security review, maintainability review, draft PR.
 
-Current slice: Slice 3. Next: add templates/job-migrate.yaml + migrator values (base/stg/prd).
+Current slice: Slice 4. Next: independent review of slices 1-3, then update wiki.
 
 ## Slices
 
