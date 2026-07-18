@@ -34,7 +34,7 @@ export interface MicroLearningWizardStepProps {
   gamifiedCourses?: ElementSelectCourse[]
   nonGamifiedCourses?: ElementSelectCourse[]
   assessmentCourses?: ElementSelectCourse[]
-  onSubmit?: (newValues: MicroLearningFormValues) => void
+  onSubmit?: (newValues: MicroLearningFormValues) => Promise<void>
   setStepValidity: Dispatch<SetStateAction<boolean[]>>
   onPrevStep?: (newValues: MicroLearningFormValues) => void
   onNextStep?: (newValues: MicroLearningFormValues) => void
@@ -273,8 +273,8 @@ function MicroLearningWizard({
     EditMicroLearningDocument
   )
   const handleSubmit = useCallback(
-    async (values: MicroLearningFormValues) => {
-      submitMicrolearningForm({
+    (values: MicroLearningFormValues) => {
+      return submitMicrolearningForm({
         id: initialValues?.id,
         previousCourseId: initialValues?.course?.id,
         values,

@@ -108,6 +108,9 @@ Playwright artifact follow-up:
 - Current-head CI restored the tarred artifact successfully in all eight shards. Seven shards passed; shard 5 reached tests but repeatedly navigated into a catalog collection while opening its action dropdown, detaching the delete modal before the test could cancel it.
 - The dropdown trigger was nested in the row's navigation target without its own propagation boundary. A narrow wrapper now stops trigger clicks from reaching the row while preserving the Dropdown button and portal behavior.
 - Focused manage typecheck and Turbopack `build:test` passed. Independent review and simplification found no issue. Local browser verification is blocked because Docker cannot create another branch-local DevPod network: `all predefined address pools have been fully subnetted`; the focused Playwright shard remains the browser gate.
+- CI verified the catalog fix: shard 5 passed 102 tests in 4.5 minutes, and the formerly failing catalog permission test passed in 7.4 seconds. Seven of eight shards passed.
+- Shard 8 then exposed a separate submit race in the serial instance-update suite. Activity wizard callbacks were declared async but did not return their `submit*Form` promises, so Formik cleared `isSubmitting` before the mutation completed and test navigation could abort the update. The first failure left the old single-choice title; two later failures cascaded from that stale state.
+- All four activity wizards now return their existing submit-helper promise. The serial Playwright spec waits for the shared completion action before navigating away after each final submit. Focused manage typecheck, Playwright TypeScript, and Turbopack `build:test` pass; current-head Playwright remains the browser gate.
 
 Known non-blocking warnings:
 

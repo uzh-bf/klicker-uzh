@@ -38,7 +38,7 @@ export interface GroupActivityWizardStepProps {
   coursesWithGroups?: ElementSelectCourse[]
   assessmentCoursesWithGroups?: ElementSelectCourse[]
   coursesWithoutGroups?: ElementSelectCourse[]
-  onSubmit?: (newValues: GroupActivityFormValues) => void
+  onSubmit?: (newValues: GroupActivityFormValues) => Promise<void>
   setStepValidity: Dispatch<SetStateAction<boolean[]>>
   onPrevStep?: (newValues: GroupActivityFormValues) => void
   onNextStep?: (newValues: GroupActivityFormValues) => void
@@ -308,8 +308,8 @@ function GroupActivityWizard({
   )
 
   const handleSubmit = useCallback(
-    async (values: GroupActivityFormValues) => {
-      submitGroupActivityForm({
+    (values: GroupActivityFormValues) => {
+      return submitGroupActivityForm({
         id: initialValues?.id,
         previousCourseId: initialValues?.course?.id,
         values,

@@ -29,6 +29,7 @@ Scope: `frontend-manage`, `frontend-pwa`, `frontend-control`, `auth` — all Nex
 - **Shared components** (`packages/shared-components`): Loader, DataTable, question renderers, Leaderboard, charts, evaluation. **Deep-import** them (`@klicker-uzh/shared-components/src/Loader`) — there is no barrel index.
 - Function components with hooks only; PascalCase files; app-local components under `src/components/` with relative imports.
 - Interactive controls nested in a clickable row must stop click propagation so opening a dropdown or modal cannot also trigger the row navigation.
+- Async Formik submit handlers must return or await their mutation promise so `isSubmitting` remains active and users cannot navigate away before the save completes.
 
 ## Markdown and Video Embeds
 

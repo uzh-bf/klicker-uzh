@@ -768,9 +768,10 @@ Progress:
 - [x] Clean-install styled-jsx type regression fixed with native global style tags; four focused typechecks, four Turbopack builds, representative browser verification, `pnpm run check:all`, and the full production build passed.
 - [x] Current-head Playwright startup failure reproduced from the downloaded artifact: direct upload dereferenced Turbopack dependency symlinks and omitted `use-intl`, causing PWA HTTP 500 in all eight shards. A tar-preserved artifact returned HTTP 200 in the same local loop.
 - [x] Playwright artifact fix published at `7456de2dd`; all eight shards restored the tarred build and entered test execution, proving the startup regression fixed. Seven shards passed.
-- [ ] Publish and verify the catalog action-menu propagation fix exposed by the Turbopack test build. The failing shard navigated into the collection while opening its dropdown, detached the delete modal, and failed identically after one failed-job rerun. The Claude check failed again without producing review feedback.
+- [x] Catalog action-menu propagation fix published at `96293b227`; shard 5 passed 102 tests, including the formerly failing permission test in 7.4 seconds. Seven of eight shards passed.
+- [ ] Publish and verify the activity-wizard submit-promise fix exposed in shard 8. Four async handlers returned immediately instead of returning their mutation promise, so Formik ended `isSubmitting`; the serial test also navigated before the completion state proved the save finished. The Claude check failed again without producing review feedback.
 
-Next: publish the catalog action-menu fix, rerun current-head CI, and keep the PR draft until the remaining manual gates are resolved or explicitly waived.
+Next: publish the activity-wizard submit-promise fix, rerun current-head CI, and keep the PR draft until the remaining manual gates are resolved or explicitly waived.
 
 ## Open Questions
 
