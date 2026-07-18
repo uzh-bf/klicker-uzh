@@ -13,6 +13,7 @@ import type {
 } from '@klicker-uzh/prisma/client'
 
 // ----- HATCHET (WORKER/TASK) TYPES -----
+export * from './assessmentReport.js'
 export * from './hatchet.js'
 
 // ----- ACTIVITY LOG TYPES -----

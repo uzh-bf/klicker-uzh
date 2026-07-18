@@ -31,6 +31,7 @@ import { createHash, createHmac } from 'node:crypto'
 import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
+import { computeRanks } from '../lib/util.js'
 import { getPermissionBooleans } from './activities.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
@@ -3136,11 +3137,7 @@ export async function getLiveQuizLeaderboard(
     [prop('username'), 'asc']
   )
 
-  const filteredEntries = sortedEntries.flatMap((entry, ix) => {
-    return { ...entry, rank: ix + 1 }
-  })
-
-  return filteredEntries
+  return computeRanks(sortedEntries)
 }
 // #endregion
 

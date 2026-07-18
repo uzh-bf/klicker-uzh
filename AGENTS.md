@@ -196,7 +196,8 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 - **Task tracking**: ClickUp is the source of truth; GitHub Issues are not actively used.
 - Dev scripts use `./util/_run_with_infisical.sh` for secret injection. Avoid starting dev servers unless explicitly asked.
 - If you add or rename an Infisical-managed env var/secret, also update `turbo.json` `globalEnv` so Turborepo sees it during task execution and cache invalidation.
-- Never commit secrets, `.env` files, or credentials.
+- Never commit secrets, `.env` files, or credentials. **This repo is public** — anything committed on any branch, once pushed, is permanent public history that deleting the file later does not remove.
+- **Data hygiene before every commit.** Review staged content (`git diff --cached`, and open any staged data file) for secrets _and_ real personal data — participant/student names, email addresses, matriculation/Studi-IDs, raw response exports, course rosters. Be especially wary of bulk data files (`.csv`, `.json`, `.sql` dumps): these are the highest-risk carriers and are easy to sweep in with `git add .`. Real course-data pulls belong outside the repo (add a `.gitignore` rule); if such data must be versioned, it goes in a private location with direct identifiers removed first. Pseudonymous ids (participant UUIDs) are lower-risk but still get the same scrutiny. When in doubt, do not commit — ask.
 - Keep changes small, follow existing patterns in the touched app/package.
 - Don't add/update dependencies unless required for the task.
 - Feature branches from `v3`. Conventional commits preferred.
@@ -205,6 +206,8 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 ## Engineering Wiki
 
 Ground truth for working on this codebase is the agent-facing wiki at **[docs/index.md](docs/index.md)** (not to be confused with `apps/docs`, the user-facing site). Read the relevant page before working in an unfamiliar area, and keep it current — **any PR that changes behavior must update the affected wiki pages in `docs/` and relevant skills in `.agents/skills/` within the same PR.** The former `project/CODEBASE_NOTES.md` is a retired pointer stub.
+
+Retrospective fixes and durable lessons live in `docs/solutions/`; check them before re-deriving a solved problem.
 
 ## AI Assistance (Skills)
 

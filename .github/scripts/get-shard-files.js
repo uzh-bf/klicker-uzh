@@ -2,7 +2,7 @@ const fs = require('fs')
 const path = require('path')
 
 const shardIndex = parseInt(process.argv[2], 10)
-const numShards = parseInt(process.argv[3], 10) || 5
+const numShards = Math.max(1, parseInt(process.argv[3], 10) || 5)
 if (isNaN(shardIndex) || shardIndex < 1 || shardIndex > numShards) {
   console.error(`Invalid shard index. Must be between 1 and ${numShards}.`)
   process.exit(1)
