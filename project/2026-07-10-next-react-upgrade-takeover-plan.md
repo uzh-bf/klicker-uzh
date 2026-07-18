@@ -21,6 +21,7 @@ Success:
 - Initial safe target used Webpack only. Approved Slice 10 adopts Turbopack where the current PWA contract allows; full PWA production migration remains in the separate Serwist plan.
 - Skip `middleware.ts` -> `proxy.ts` auth migration unless Next 16 makes current middleware unusable. Handle separately because redirect/cookie logic is security-sensitive.
 - Skip broad security dependency refresh. Only dependency overrides required by this framework upgrade stay in this PR.
+- Skip the Office Add-in. Keep its package manifest on the `v3` React and React type versions because a separate PR replaces that application.
 - Skip new Cypress coverage. Cypress is frozen; retain only fixes needed to keep existing parity tests green.
 - Skip product/UI changes. Compatibility fixes must preserve behavior.
 - Skip closing or mutating old PRs until replacement evidence exists and maintainer approves supersession.
@@ -769,9 +770,10 @@ Progress:
 - [x] Current-head Playwright startup failure reproduced from the downloaded artifact: direct upload dereferenced Turbopack dependency symlinks and omitted `use-intl`, causing PWA HTTP 500 in all eight shards. A tar-preserved artifact returned HTTP 200 in the same local loop.
 - [x] Playwright artifact fix published at `7456de2dd`; all eight shards restored the tarred build and entered test execution, proving the startup regression fixed. Seven shards passed.
 - [x] Catalog action-menu propagation fix published at `96293b227`; shard 5 passed 102 tests, including the formerly failing permission test in 7.4 seconds. Seven of eight shards passed.
-- [ ] Publish and verify the activity-wizard submit-promise fix exposed in shard 8. Four async handlers returned immediately instead of returning their mutation promise, so Formik ended `isSubmitting`; the serial test also navigated before the completion state proved the save finished. The Claude check failed again without producing review feedback.
+- [x] Activity-wizard submit-promise fix published at `5441ea04f`; shard 8 passed 117 tests in 9.8 minutes, including the formerly failing single-choice and second-instance update test in 17.4 seconds. The Claude check failed again without producing review feedback.
+- [x] Restored `apps/office-addin/package.json` byte-for-byte to `v3`; only the shared lockfile carries the second React 19.1 peer graph required to preserve that separate application's existing dependency boundary, with a package-scoped Syncpack exception for those four versions.
 
-Next: publish the activity-wizard submit-promise fix, rerun current-head CI, and keep the PR draft until the remaining manual gates are resolved or explicitly waived.
+Next: publish the Office Add-in scope correction, verify current-head CI, then keep the PR draft until the remaining manual gates are resolved or explicitly waived.
 
 ## Open Questions
 
