@@ -57,11 +57,11 @@ Runs all services on your host machine. Needs Traefik (`*.klicker.com` reverse p
 ```bash
 pnpm --version        # must print 11.x
 pnpm install          # ~20s cold; peer warnings are pre-existing
-pnpm run build        # 21 turbo tasks, ~1.5min; needs NO secrets
+pnpm run build        # 21 production-mode turbo tasks, ~1.5min; needs NO secrets
 pnpm run check        # typecheck — only passes AFTER build (generated artifacts)
 ```
 
-Order matters: on a fresh clone, `pnpm run check` fails in ~19 packages until `pnpm run build` has produced the Prisma client, GraphQL codegen output, and package dists. Git hooks depend on the same state: pre-commit runs `check:all`, pre-push runs `build` — both fail hard without `node_modules` and a prior build.
+Order matters: on a fresh clone, `pnpm run check` fails in ~19 packages until `pnpm run build` has produced the Prisma client, GraphQL codegen output, and package dists. The root build script forces `NODE_ENV=production`, even when the devcontainer exports `NODE_ENV=development` for live apps. Git hooks depend on the same state: pre-commit runs `check:all`, pre-push runs `build` — both fail hard without `node_modules` and a prior build.
 
 ## Failure signatures (fresh clone / wrong state)
 

@@ -146,8 +146,10 @@ host-side `devrouter ensure` delivers its matching process helper and invokes
 `/tmp/devrouter-process-klicker-dev.state`: an exact
 workspace/command fingerprint is reused, stale owned groups are replaced
 boundedly, and unknown processes are never killed. HTTP readiness remains in
-`devrouter ensure .`; rerun it after a production build so stale
-Next.js dev output can trigger the single container-recreate budget.
+`devrouter ensure .`; the root build script forces production mode even though
+the live container exports `NODE_ENV=development`. Rerun ensure after
+`pnpm run build` so stale Next.js dev output can trigger the single
+container-recreate budget.
 
 The image also carries uv `0.11.12` and selects Python 3.12, matching the
 analytics image and lint CI so the root quality gate runs inside the container.

@@ -32,7 +32,7 @@ Wrong major (e.g. 9.x from a stale Volta shim; `VOLTA_FEATURE_PNPM` unset) **sil
 | `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH` under `CI=true` | restore lockfile (check 1), install without `CI=true`                          |
 | ~19 packages fail `pnpm run check`                  | `pnpm run build` once (generates Prisma client, codegen, dists), then re-check |
 
-Healthy sequence from scratch inside the devcontainer: `pnpm install` → `pnpm run build` → `pnpm run check` (verified ~20s / ~1.5min / clean). A production build can replace Next.js dev output; run `devrouter ensure .` afterward so the exact checkout runtime is health-checked and recovered when needed.
+Healthy sequence from scratch inside the devcontainer: `pnpm install` → `pnpm run build` → `pnpm run check` (verified ~20s / ~1.5min / clean). The root build script forces `NODE_ENV=production`, including when the devcontainer exports `NODE_ENV=development` for its live apps. A production build can replace Next.js dev output; run `devrouter ensure .` afterward so the exact checkout runtime is health-checked and recovered when needed.
 
 ## Check 3 — stale GraphQL codegen
 

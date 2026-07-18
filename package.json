@@ -42,7 +42,7 @@
     "yaml": "~2.6.1"
   },
   "scripts": {
-    "build": "turbo run build",
+    "build": "cross-env NODE_ENV=production turbo run build",
     "build:test": "bash ./util/_with_local_test_origins.sh cross-env NODE_ENV=test turbo run build:test --cache-dir=.turbo",
     "check": "turbo run check --parallel --continue",
     "check:agents-md": "node ./util/check-agents-md.mjs",
