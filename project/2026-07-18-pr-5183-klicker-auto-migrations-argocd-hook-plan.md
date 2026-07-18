@@ -56,6 +56,8 @@ R2. Migrator image must carry: prisma CLI + migration (schema) engine binary + `
   - ADR: CREATED. User aligned repo convention — ADRs are the decision record, wiki is non-obvious concepts only. Established `docs/adr/` (README + convention), wrote [ADR-0001](../docs/adr/0001-automate-db-migrations-via-argocd-presync-hook.md), linked from both wiki sections + `docs/index.md`, re-routed `AGENTS.md`/`CLAUDE.md` decisions → `docs/adr/`.
 - [x] Draft PR — https://github.com/uzh-bf/klicker-uzh/pull/5183 (draft, base v3). Body via $rs-mr-description-writer, whole-branch coverage, read-back verified. GitGuardian PASS. `build-migrator-{arm,amd}` recognized in CI, `skipping` on draft (same `draft==false` gate as backend jobs) → will build on non-draft/merge/tag.
 
+- [x] Post-review slice — couple migrator tag to backend tag. `job-migrate.yaml` defaults `migrator.image.tag` to `.Values.backendGraphql.image.tag`; dropped the per-env migrator `tag` pins (repo-only). VERIFIED: helm renders prd `…-migrator-arm:v3.4.0-alpha.62`, stg `…-migrator-arm:v3` (both follow backend tag); lint clean. Resolves the prd bootstrap landmine: release does not auto-bump env tags (standard-version bumps only package.json; Helm updater commented out), and a prd release necessarily builds the migrator image + moves the backend tag the migrator now follows. ADR-0001 + wiki updated.
+
 Current slice: DONE. Branch complete, draft PR open. Remaining before merge (see PR "Blocking Before Merge"): user runs `/thermo-nuclear-code-quality-review`; confirm real CI migrator build on non-draft/tag; confirm ArgoCD picks up the PreSync hook on next stg sync.
 
 ## Slices
