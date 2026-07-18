@@ -2,7 +2,7 @@
 type: Data Layer
 title: Data & Migrations
 description: Split Prisma schema, the migrate→sync→generate ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-07-16'
+timestamp: '2026-07-18'
 tags:
   - backend
   - prisma
@@ -29,7 +29,18 @@ The Python twin (`apps/analytics/prisma/schema/py.prisma`) uses `prisma-client-p
 ## Migrations
 
 - Prisma migrations live in `packages/prisma/src/prisma/schema/migrations/` (~170 since 2022). Migrations may contain data backfills (SQL `ROW_NUMBER()` etc.), not just DDL.
-- Separately, the backend runs a **homegrown boot-time data-migration runner** (`apps/backend-docker/src/migration.ts:migrate`) with its own `Migration` table for one-off data fixes — currently an empty list; don't confuse it with `prisma migrate deploy`. Where `migrate deploy` runs in deployment is **not documented in-repo** (open question — verify before making deploy claims).
+- Separately, the backend runs a **homegrown boot-time data-migration runner** (`apps/backend-docker/src/migration.ts:migrate`) with its own `Migration` table for one-off data fixes — currently an empty list; don't confuse it with `prisma migrate deploy`.
+
+### Deployment migrations
+
+`prisma migrate deploy` runs **automatically** on every stg/prd rollout as an ArgoCD **`PreSync` hook Job** (`deploy/charts/klicker-uzh-v3/templates/job-migrate.yaml`), not by hand. Mechanics:
+
+- A dedicated migrator image (`packages/prisma/Dockerfile`: `node:24.16.0-alpine` + global `prisma`, carrying the schema + `migrations/`) runs `prisma migrate deploy`. It exists because the backend runtime image installs `--prod --ignore-scripts` and so ships neither the Prisma CLI nor the migration engine. CI builds it as `backend-docker-migrator{-arm,-amd}` in lockstep with `backend-docker` (`v3_backend-docker-{stg,prd}.yml`); keep the migrator tag equal to the backend tag in `deploy/env-uzh-{stg,prd}/values.yaml`.
+- The hook draws `DATABASE_URL` from the externally-provisioned `…-secret-backend-graphql` Secret only (a PreSync hook must not depend on Sync-phase ConfigMaps). Toggle with `migrator.enabled`.
+- A **failed** hook aborts the whole sync — app Deployments never roll onto an unmigrated DB. The Job runs while the **previous** app version is still live, so migrations must be **backward-compatible (expand-contract)**; a destructive/renaming migration must be split across releases.
+- **Break-glass only:** `pnpm --filter @klicker-uzh/prisma prisma:deploy:prod` (Infisical `--env prd`) still applies migrations manually from a workstation. Use it only when the hook is unavailable; `prisma:resolve:prod` resolves a failed/partial migration.
+
+Where `migrate deploy` is invoked in deployment is now the PreSync hook above (see [CI & Deployment → Deployment migrations](./ci-and-deployment.md#deployment-migrations)).
 
 ## Seeding
 

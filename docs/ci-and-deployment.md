@@ -2,7 +2,7 @@
 type: Operations
 title: CI & Deployment
 description: PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
-timestamp: '2026-07-07'
+timestamp: '2026-07-18'
 tags:
   - ci
   - deployment
@@ -10,7 +10,7 @@ tags:
 
 # CI & Deployment
 
-**What is NOT in this repo: the deploy trigger.** There are no ArgoCD/Flux manifests; deployment is `helm upgrade` driven from outside the repository (mechanism undocumented here — ask a maintainer before making deploy claims). What IS in-repo: the chart (`deploy/charts/klicker-uzh-v3/` — internally still named `klicker-uzh-v2`, chart version drifted behind the repo version), per-env values (`deploy/env-uzh-stg`, `deploy/env-uzh-prd`), and Stakater **Reloader** annotations (`reloader.stakater.com/auto: "true"`) so config/secret changes restart pods.
+**The deploy driver is ArgoCD** (confirmed with maintainers; the ArgoCD `Application`/sync trigger itself lives outside this repo). What IS in-repo: the chart (`deploy/charts/klicker-uzh-v3/` — internally still named `klicker-uzh-v2`, chart version drifted behind the repo version), per-env values (`deploy/env-uzh-stg`, `deploy/env-uzh-prd`), Stakater **Reloader** annotations (`reloader.stakater.com/auto: "true"`) so config/secret changes restart pods, and an ArgoCD **PreSync migration hook** that runs `prisma migrate deploy` before each rollout (see [Deployment migrations](#deployment-migrations)).
 
 ## PR gates
 
@@ -43,6 +43,10 @@ Version bumps are **local and manual** via standard-version: `pnpm run release[:
 - **Rollout strategy**: use `RollingUpdate` in prd values; `Recreate` can leave a service with zero endpoints during slow image pulls (PDBs don't protect against Deployment-driven scale-downs). `maxUnavailable: 0` only for singletons.
 - `deploy/compose*` are v2-era self-hoster examples; `deploy/scripts/rollout.sh` is a legacy manual `kubectl rollout restart`.
 
+## Deployment migrations
+
+`prisma migrate deploy` runs automatically as an ArgoCD **`PreSync` hook Job** (`deploy/charts/klicker-uzh-v3/templates/job-migrate.yaml`) before each stg/prd rollout. It runs a dedicated `backend-docker-migrator` image (`packages/prisma/Dockerfile`), CI-built in lockstep with `backend-docker` (`v3_backend-docker-{stg,prd}.yml`), so the migrator tag always matches the app release tag. A failed hook aborts the whole sync, so app Deployments in the main wave never start against an unmigrated DB. The hook uses **ArgoCD-native** annotations (`argocd.argoproj.io/hook: PreSync`), not Helm chart hooks — the two must not be mixed, because a single ArgoCD hook annotation makes ArgoCD ignore _all_ Helm-native hooks on the chart. Full details: [Data & Migrations → Deployment migrations](./data-and-migrations.md#deployment-migrations). Manual `pnpm --filter @klicker-uzh/prisma prisma:deploy:prod` remains a break-glass fallback only.
+
 ## Open questions (verify before documenting further)
 
-Who/what runs `helm upgrade` on tag push, and where `prisma migrate deploy` is invoked during deployment — neither is discoverable in-repo.
+Whether ArgoCD auto-syncs on git change or is synced manually, and the exact per-release image-tag bump/promotion trigger (the tag values in `deploy/env-uzh-{stg,prd}/values.yaml` are edited by hand today).
