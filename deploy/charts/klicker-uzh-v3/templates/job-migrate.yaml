@@ -34,7 +34,11 @@ spec:
       {{- end }}
       containers:
         - name: migrate
-          image: "{{ .Values.migrator.image.repository }}:{{ .Values.migrator.image.tag | default .Chart.AppVersion }}"
+          # Tag defaults to the backend-graphql image tag so the migrator always
+          # tracks the app release without a separate per-env pin; falls back to
+          # the chart appVersion. Only the repository is pinned per env (the `-arm`
+          # migrator image differs from the backend image).
+          image: "{{ .Values.migrator.image.repository }}:{{ .Values.migrator.image.tag | default .Values.backendGraphql.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.migrator.image.pullPolicy }}
           # DATABASE_URL comes from the externally-provisioned backend-graphql Secret.
           # Only the Secret is referenced (not the app ConfigMaps): a PreSync hook runs

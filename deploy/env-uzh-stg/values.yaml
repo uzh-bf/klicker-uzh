@@ -899,8 +899,8 @@ assessment:
         cpu: 200m
         memory: 200Mi
 
-# Migration hook image: tracks the floating v3 tag alongside backend-docker-arm.
+# Migration hook image: only the repo is pinned; the tag auto-tracks the
+# backendGraphql image tag above (floating v3 on stg).
 migrator:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-migrator-arm
-    tag: v3

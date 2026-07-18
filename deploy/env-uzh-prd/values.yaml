@@ -950,8 +950,8 @@ assessment:
       limits:
         memory: 200Mi
 
-# Migration hook image: pin to the SAME tag as backend-docker-arm above.
+# Migration hook image: only the repo is pinned; the tag auto-tracks the
+# backendGraphql image tag above (see chart job-migrate.yaml).
 migrator:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-migrator-arm
-    tag: v3.4.0-alpha.62
