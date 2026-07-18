@@ -1,6 +1,6 @@
 # Next.js 16 and React 19 Takeover Plan
 
-Status: approved 2026-07-10; Slices 0-8 committed; Slice 10 mixed-bundler update active with CI-only gates remaining afterward.
+Status: approved 2026-07-10; Slices 0-8 and 10 committed locally; publish and replacement-PR CI remain.
 
 ## Goal
 
@@ -759,13 +759,14 @@ Progress:
 - [x] Maintainer approved the mixed-bundler boundary.
 - [x] Next and `eslint-config-next` updated to 16.2.10 across apps, shared packages, and lockfile; React remains current at 19.2.7.
 - [x] Mixed scripts and explicit active-worktree root implemented.
-- [x] Five Turbopack test builds and five mixed production builds passed under pinned Node 24.16.0 / pnpm 11.5.0; standalone and PWA worker artifacts verified in the worktree, with revision-bound evidence pending the implementation commit.
+- [x] Five Turbopack test builds and five mixed production builds passed under pinned Node 24.16.0 / pnpm 11.5.0; standalone and PWA worker artifacts were verified after implementation commit `76301b941`.
 - [x] Auth and chat standalone servers returned HTTP 200. Same-origin Turbopack dev browser smokes rendered PWA login and chat `/noLogin` with no browser errors; development registered zero service workers.
 - [x] Frozen offline install, `pnpm run check:all`, and the 21-task full production build passed.
 - [x] Slice review and simplification passed after removing unrelated lockfile drift and stale documentation. Code-security review found no high-confidence vulnerabilities; strict maintainability review found no structural regression or simpler safe design.
-- [ ] Commit revision-bound evidence, publish Slice 10, and read back PR CI.
+- [x] Revision-bound evidence recorded locally.
+- [ ] Publish Slice 10 and read back PR CI.
 
-Next: commit Slice 10, add revision-bound evidence, then publish and read back PR CI.
+Next: commit the revision-bound evidence, then publish and read back PR CI.
 
 ## Open Questions
 

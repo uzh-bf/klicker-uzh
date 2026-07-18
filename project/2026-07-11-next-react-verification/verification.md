@@ -52,3 +52,42 @@ Screenshots: `auth.png`, `manage-authenticated.png`, `pwa-authenticated.png`, `p
 - Full live-quiz Cypress spec remains blocked at the documented legacy response-state boundary.
 - Production PWA registration/update/offline browser behavior remains unverified; production artifacts are verified, development correctly disables registration.
 - AMD and ARM image jobs require replacement PR CI; no remote checks exist before push.
+
+## Slice 10 revision-bound verification — 2026-07-18
+
+Implementation SHA: `76301b9416de5e80528e7862b6fd288e72adc3ff`
+
+Environment: Node `24.16.0`; pnpm `11.5.0`.
+
+Automated evidence rerun after the implementation commit:
+
+- `CI=true pnpm install --frozen-lockfile --offline`: passed.
+- `pnpm run check:all`: passed, including 23/23 typecheck tasks, 6/6 lint tasks, formatting, syncpack, AGENTS validation, and Prisma sync.
+- `pnpm --filter @klicker-uzh/auth --filter @klicker-uzh/chat --filter @klicker-uzh/frontend-control --filter @klicker-uzh/frontend-manage --filter @klicker-uzh/frontend-pwa run build:test`: all five Turbopack test builds passed.
+- `pnpm run build`: passed 21/21 tasks. Auth and chat used Turbopack; control, manage, and PWA used Webpack for production service-worker compatibility.
+- Auth standalone `/` returned HTTP 200; chat standalone `/api/health` returned HTTP 200.
+
+Build artifacts:
+
+- Standalone servers exist for all five apps under `apps/<app>/.next/standalone/apps/<app>/server.js`.
+- Control emitted `public/sw.js` and `public/worker-17b771828705222f.js`.
+- Manage emitted `public/sw.js` and `public/worker-17b771828705222f.js`.
+- PWA emitted `public/sw.js` and `public/worker-b5a6b2ba8c13cceb.js`.
+
+Browser evidence from the implementation tree committed as the SHA above:
+
+- PWA `/login` and chat `/noLogin` rendered from same-origin `localhost` Turbopack development servers.
+- `agent-browser errors` returned no errors for either page.
+- PWA development registered zero service workers, preserving the development contract.
+
+Reviews:
+
+- Independent slice review found no runtime, package, PWA, security, scope, or ADR defect.
+- Independent simplification review findings were integrated: unrelated lockfile edges were restored, superseded documentation was clarified, stale next steps were removed, and standalone verification now covers all five apps.
+- Code-level security review found no high-confidence vulnerabilities.
+- Strict maintainability review found no structural regression or simpler safe design.
+
+Known non-blocking warnings:
+
+- Pages Router Turbopack builds warn that `styled-jsx/style.js` cannot be resolved; the builds exit successfully and both development browser and standalone runtime smokes pass.
+- Existing Pages Router `next-intl`, workspace package export, manage missing-message, large-page-data, and missing local chat-provider warnings remain.
