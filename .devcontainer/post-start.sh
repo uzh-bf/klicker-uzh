@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # devrouter:managed devcontainer
 # Invoked by host-side `devrouter ensure` after it validates the exact container.
-# Launches the core apps (turbo dev) in the background through the delivered helper.
+# Launches every routed app plus both workers through the delivered helper.
 set -euo pipefail
 cd /workspaces/klicker-uzh
 
