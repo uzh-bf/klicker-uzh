@@ -48,8 +48,8 @@ These decisions and the matching evidence below are historical. The reopened dec
 
 ## Progress
 
-- Current: current `origin/v3` (`393a1fffb`) is merged at `d817f84c0`. Slice 4 is implemented, independently reviewed, simplified, and green: it consumes the released `0.0.34` managed-adapter contract, starts both checkout kinds with `devrouter ensure .`, and gives the self-contained container the same pinned uv/Python line as analytics CI. Review confirmed that `0.0.34` ignores the declared origin allowlist; the stronger identity contract remains a release blocker, not a completed consumer claim.
-- Next: stage the exact Slice 4 files, run data hygiene, and commit before the cold/warm `0.0.35` branch-built safety proof. Keep draft PR #5169 open; merge only with explicit approval.
+- Current: current `origin/v3` (`393a1fffb`) is merged at `d817f84c0`; Slice 4 is committed at `277ae692f`. Slice 5's branch-built `0.0.35` cold/warm, route, browser, static, and production-build proof passes on the exact hardening checkout. The released consumer pin remains `0.0.34`, so the stronger adapter/origin identity contract is still a release blocker rather than a completed consumer claim.
+- Next: review and commit this docs-only evidence update, run the mandatory final security/branch/maintainability gates, and refresh draft PR #5169 from whole-branch evidence. Do not mark it ready, resume Escape Room, or merge until devrouter `0.0.35` is released, pinned here, and reverified.
 
 ## Slice 1: runtime ownership
 
@@ -113,6 +113,19 @@ These decisions and the matching evidence below are historical. The reopened dec
 - Commit: docs-only progress/evidence update if live proof changes the plan after the implementation commit.
 - Stop: keep PR #5169 draft and report any upstream release dependency; no merge without explicit authority.
 
+### Slice 5 live evidence
+
+- Exact sources: Klicker commit `277ae692f7fe222a6c7740dc124ec07e3acc80f6`; branch-built devrouter source `0a7b11c9b3ced2b5f5fcccef7b31f44f44c31572`; exact executable `/Users/rschlae/Git/personal/devrouter/trees/workspace-safety-hardening/dist/devrouter.js`, reporting `0.0.35`. The committed consumer pin is still the released `0.0.34`.
+- Cold start: `devrouter stop . --delete --json` deleted only the plan-targeted DevPod `codex-worktree-lifecycle-hardeni` and freed its ten routes. The following exact `ensure . --json` rebuilt the image, installed dependencies, built packages, initialized and seeded the databases, delivered the managed helper, started the app process, and registered nine HTTPS routes plus PostgreSQL.
+- Cold identity: durable workspace/DevPod id `codex-worktree-lifecycle-hardeni`; source path `/Users/rschlae/Git/klicker/klicker-uzh/trees/worktree-lifecycle-hardening`; container hostname `ba0dcedccc4a`; in-container path `/workspaces/klicker-uzh`; in-container Git SHA `277ae692f7fe222a6c7740dc124ec07e3acc80f6`; `WORKSPACE` and `DEVROUTER_WORKSPACE` both equal the durable id. The container has `uv 0.11.12` and `UV_PYTHON=3.12`.
+- Managed process: state `/tmp/devrouter-process-klicker-dev.state` contained PID/PGID `1239/1239` and fingerprint `59f58493d79fbcebcb571fd116990c5cf3b6a4d9965a74fccf38fde53fdc625f`; the process was `node /usr/local/bin/pnpm run dev:container`.
+- Warm reuse: the following exact `ensure . --json` reported that `klicker-dev` already matched PID 1239 and returned `recreated: false`. Container hostname, Git SHA, PID/PGID, and fingerprint all remained byte-for-byte identical.
+- Routes: API GraphQL GET returned 403, Auth/PWA/Manage/Control returned 200, OLAT `/health` returned 200, Response `/healthz` returned 200, LTI `/info` returned 401, and Chat `/` returned 404. All are application-level responses rather than router/upstream failures. PostgreSQL 18 `pg_isready` with direct SSL/SNI reported the namespaced `db` route accepting connections. Devrouter reported ten owned routes and no duplicate hosts.
+- Browser: `agent-browser` accepted the terms gate, completed delegated lecturer authentication on the namespaced Auth host, followed `Open Application` back to the same namespaced Manage host, and rendered the seeded lecturer library. Desktop and mobile captures are repository-local ignored artifacts under `project/_local/evidence/workspace-hardening/`; the final recovered desktop capture also proves the session remained authenticated after runtime recovery. Existing auth hydration, initial unauthenticated GraphQL, image, and HMR console warnings are outside this infrastructure-only diff; browser page errors were empty.
+- Checks: `pnpm run check:all` passed in the exact cold-created DevPod (23/23 type-check tasks plus lint, format, Syncpack, AGENTS, and Prisma synchronization). A first raw `pnpm run build` inherited the devcontainer's intentional `NODE_ENV=development` and failed Auth prerender with `NextRouter was not mounted`; the diagnosis was confirmed by environment readback. `env NODE_ENV=production pnpm run build` then passed all 21 production build tasks.
+- Post-build recovery: running production Next builds beside the live dev tasks replaced `.next` output and temporarily made Auth/PWA/Manage/Control return 500 while API remained healthy. The managed parent later exited; after interrupting the long readiness wait, a new exact `ensure` preserved the durable workspace/DevPod id, started state PID/PGID `904/904` with the same fingerprint, and restored every HTTP/TCP route. The underlying app container hostname changed to `edd21dbf310b`; this recovery proves durable workspace identity and route recovery across a container change. Exact-container reuse is the separate cold-to-warm result above.
+- Boundary: the branch-built proof validates the `0.0.35` candidate, but this PR cannot be ready and Escape Room cannot resume until that version is released, pinned in `.devrouter.yml`, and the cold/warm identity proof is repeated against the released artifact.
+
 ## Historical final review for 0.0.30
 
 - Maintainability: pass. The final boundary is one app-owned package script plus one helper call; 288 lines of generic supervisor and local regression code are removed. No new dependency, config schema, or oversized file remains.
@@ -154,4 +167,4 @@ These decisions and the matching evidence below are historical. The reopened dec
 
 ## Branch status
 
-- Eleven focused commits cover the plan, runtime identity, documentation, service and database startup, owned-runtime recovery, Devrouter 0.0.29 integration, and the Devrouter 0.0.30 simplification. `git log origin/v3..HEAD` is the commit-level source of truth.
+- Current migration commits after synchronizing `v3`: `17838a57e` reopens the plan, `d817f84c0` merges current `v3`, and `277ae692f` adopts the runtime-delivered managed helper. `git log origin/v3..HEAD` remains the commit-level source of truth.
