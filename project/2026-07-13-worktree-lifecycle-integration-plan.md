@@ -17,9 +17,9 @@
 
 - Plan: `project/2026-07-13-worktree-lifecycle-integration-plan.md`
 - Branch: `codex/worktree-lifecycle-hardening`
-- Base: fresh `origin/v3` at `eef745d06`
+- Original base: fresh `origin/v3` at `eef745d06`; synchronize current `v3` before the reopened migration slices.
 - Target: `v3`
-- Dependency: devrouter `0.0.30` (managed process helper plus the 0.0.29 worktree readiness recovery).
+- Dependency: released devrouter `0.0.34` managed-adapter contract; validate the final safety gate with the `0.0.35` release-candidate branch from `project/2026-07-18-workspace-safety-hardening-plan.md`.
 
 ## Research
 
@@ -29,7 +29,9 @@
 - Live incident produced mixed route tokens and a stale generic-origin Turbo supervisor.
 - The first branch implementation proved the lifecycle behavior but left a generic supervisor and its regression suite inside Klicker. Devrouter 0.0.30 now packages that reusable responsibility.
 
-## Decisions
+## Original decisions for the completed 0.0.30 phase
+
+These decisions and the matching evidence below are historical. The reopened decisions after Slice 3 supersede them for current implementation.
 
 - Require devrouter `0.0.30` in `.devrouter.yml` and extract only its process helper into the app image.
 - Canonical command: `devrouter workspace ensure .` from an existing linked worktree; `workspace up` remains create-and-ensure.
@@ -46,8 +48,8 @@
 
 ## Progress
 
-- Current: Devrouter 0.0.30 cleanup, static checks, cold and warm worktree validation, browser smoke, and final review are complete.
-- Next: keep draft PR #5169 open for CI and review; merge only with explicit approval.
+- Current: the original `0.0.30` implementation and evidence are preserved, but PR #24 superseded its image-installed helper and automatic `postStartCommand` contract. The branch is reopened for the released `0.0.34` managed-adapter migration and the `0.0.35` workspace-safety proof.
+- Next: independently review this extension, synchronize current `v3`, commit the updated plan before implementation, then execute Slices 4 and 5. Keep draft PR #5169 open; merge only with explicit approval.
 
 ## Slice 1: runtime ownership
 
@@ -74,13 +76,46 @@
 - Evidence: published 0.0.30 registry metadata and isolated CLI/helper entry points pass. The Klicker image builds and the extracted helper passes Devrouter's complete Linux lifecycle regression. Bash syntax, ShellCheck, Compose resolution, Prettier, `git diff --check`, `pnpm run check:all`, and the 21-task production build pass. The first build attempt failed only on sandbox DNS for `fonts.googleapis.com`; the network-enabled rerun passed.
 - Commit: `refactor(devcontainer): delegate process lifecycle to devrouter`.
 
-## Final review
+## Reopened decisions after devrouter PR #24
+
+- `.devrouter.yml` is the only consumer-side devrouter version pin.
+- The Dockerfile keeps `procps` and `util-linux` for the runtime-delivered helper, but removes package download/extraction and `tar` when otherwise unused.
+- `devcontainer.json` does not declare `postStartCommand`; host-side `devrouter ensure` proves the exact container, delivers the helper, and invokes the managed adapter.
+- `.devcontainer/post-start.sh` contains the `devrouter:managed devcontainer` marker, requires `DEVROUTER_PROCESS_HELPER`, prepares only Klicker-owned environment/origin inputs, and calls `"$DEVROUTER_PROCESS_HELPER" ensure`.
+- The adapter sets `DEVROUTER_PROCESS_FINGERPRINT_ENV` to this exact non-secret runtime-origin allowlist: `APP_ORIGIN_API APP_ORIGIN_AUTH APP_ORIGIN_PWA APP_ORIGIN_MANAGE APP_ORIGIN_CONTROL APP_ORIGIN_ASSESSMENT_API APP_ORIGIN_ASSESSMENT_PWA APP_ORIGIN_LTI APP_ORIGIN_CHAT APP_MANAGE_SUBDOMAIN APP_STUDENT_SUBDOMAIN APP_CONTROL_SUBDOMAIN NEXTAUTH_URL COOKIE_DOMAIN NEXT_PUBLIC_API_URL NEXT_PUBLIC_AUTH_URL NEXT_PUBLIC_MANAGE_URL NEXT_PUBLIC_PWA_URL NEXT_PUBLIC_ASSESSMENT_URL NEXT_PUBLIC_CONTROL_URL NEXT_PUBLIC_ADD_RESPONSE_URL NEXT_PUBLIC_CHAT_URL CORS_ALLOWED_ORIGINS AUTH_LECTURER_ALLOWED_HOSTS AUTH_STUDENT_ALLOWED_HOSTS NODE_EXTRA_CA_CERTS`.
+- Documentation, AGENTS guidance, the environment-doctor skill, and wiki use one checkout-agnostic command: `devrouter ensure .`. Manual `WORKSPACE`, direct `devpod up`, and per-app route loops are migration history, not current instructions.
+- Add `project/_local/` to `.gitignore` so future goal checkpoints and handoffs stay repository-local without becoming public artifacts.
+- Use released `0.0.34` for the committed consumer migration. Exercise the devrouter `0.0.35` branch-built CLI for the safety proof; do not pin or publish an unreleased package.
+
+## Independent review of the reopened plan
+
+- Reviewers: two independent collaboration agents, 2026-07-18.
+- Accepted: make the historical `0.0.30` decisions/evidence explicit; use the released `0.0.34` contract before branch-built `0.0.35` proof; pin every proof command to one exact executable and source SHA; declare the exact non-secret origin fingerprint allowlist; keep release, merge, Escape Room, and live-resource boundaries explicit.
+- Result: go for implementation after the upstream safety-plan revisions.
+
+## Slice 4: adopt the runtime-delivered managed helper contract
+
+- Do: merge current `v3`; update `.devrouter.yml`; remove helper extraction and automatic post-start wiring; migrate the adapter marker/helper invocation; add the local-checkpoint ignore.
+- Do: update AGENTS, `.devcontainer/README.md`, environment wiki, environment-doctor skill, and wiki changelog so `devrouter ensure .` is canonical and no manual-token route flow is recommended.
+- Check: devrouter static verification and doctor, Compose resolution, Bash syntax/ShellCheck, Prettier, `git diff --check`, focused repo checks, review, simplification, rerun, progress update, and commit.
+- Commit: `refactor(devcontainer): adopt runtime-delivered devrouter helper`.
+
+## Slice 5: prove cold, warm, routed, and browser identity
+
+- Do: build and record the source SHA/version of `node /Users/rschlae/Git/personal/devrouter/trees/workspace-safety-hardening/dist/devrouter.js`, then use that exact executable for every `ensure`, inspection, cold, and warm command against this exact checkout without changing or cleaning the Escape Room worktree.
+- Do: cold reconcile, then warm reconcile; prove the same exact DevPod id/source path, app container, in-container Git path, workspace env, process fingerprint/reuse, and complete route ownership.
+- Do: exercise all HTTP/TCP routes and delegated lecturer login on the worktree-specific Manage host with browser evidence.
+- Check: full risk-appropriate Klicker static/build suite, code-level security review, independent branch review, strict maintainability review, and whole-branch PR #5169 description/readback.
+- Commit: docs-only progress/evidence update if live proof changes the plan after the implementation commit.
+- Stop: keep PR #5169 draft and report any upstream release dependency; no merge without explicit authority.
+
+## Historical final review for 0.0.30
 
 - Maintainability: pass. The final boundary is one app-owned package script plus one helper call; 288 lines of generic supervisor and local regression code are removed. No new dependency, config schema, or oversized file remains.
 - Security: no high-confidence finding. The image pins an immutable package version and extracts only its helper; startup uses constant argv; process ownership fails closed; Git metadata and database changes remain limited to the local devcontainer.
 - Static analysis: Opengrep ran 93 applicable rules across the nine changed code/config surfaces with 0 findings.
 
-## Final live gate: devrouter 0.0.30
+## Historical final live gate: devrouter 0.0.30
 
 - Cold reconcile: rebuilt the exact linked worktree app container as `486bce82e9cb`, extracted `/usr/local/bin/devrouter-process`, and started state `770 770 893406388-101`.
 - Identity: `WORKSPACE` and `DEVROUTER_WORKSPACE` both equal `codex-worktree-lifecycle-hardeni`; in-container Git resolves the exact checkout at `/workspaces/klicker-uzh`.
@@ -90,7 +125,7 @@
 - Browser: delegated lecturer login opened the same worktree-specific Manage host and rendered the seeded library. Captures: `/tmp/klicker-v030-before-login.png`, `/tmp/klicker-v030-after-login.png`, and `/tmp/klicker-v030-manage.png`.
 - Browser warnings: the existing auth page reports a nested-button hydration error; initial unauthenticated GraphQL queries report `Unauthorized`; the Manage dev client logs an HMR message warning. These did not block login or rendering and are outside this devcontainer-only diff.
 
-## Earlier live gate: devrouter 0.0.29
+## Historical earlier live gate: devrouter 0.0.29
 
 - Result: passed on 2026-07-14 with published `@devrouter/cli@0.0.29`.
 - Worktree: `/Users/rschlae/Git/klicker/klicker-uzh/trees/worktree-lifecycle-hardening` at fresh `origin/v3` base `eef745d06`.
@@ -103,7 +138,7 @@
 - Preserved: `trees/escape-room-production`, its dirty feature changes, and its existing DevPod/routes were not modified.
 - Known unrelated issue: Hatchet heartbeat still logs `TypeError: this.logger[message.type] is not a function`. Startup, routing, Git identity, database initialization, and process reuse still pass; Hatchet SDK behavior remains feature/runtime follow-up scope.
 
-## Verification
+## Historical verification through devrouter 0.0.30
 
 - Focused lifecycle test, Bash syntax, ShellCheck, merged Compose validation, Prettier, `git diff --check`, and Opengrep all pass; Opengrep found 0 findings. The lifecycle regression now covers a missing fingerprint, and Compose fails immediately with the `DEVROUTER_GIT_COMMON_DIR must be set by devrouter workspace ensure` message when that required value is absent.
 - TypeScript checks pass serially for 31/31 tasks. A production-mode serial build passes 21/21 tasks.
