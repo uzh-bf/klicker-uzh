@@ -719,7 +719,45 @@ Slice 8 local evidence:
 
 Current: Slice 8 local verification is complete except documented environment/CI gates. Replacement PR CI is required before readiness.
 
-Next: review and commit Slice 8 evidence/fix, then request approval before Slice 9 push and replacement draft PR.
+### Slice 10 — Use Turbopack where the current PWA contract allows
+
+Decision:
+
+- Use Turbopack for development and test builds in all five Next apps.
+- Use Turbopack for auth and chat production builds.
+- Keep Webpack only for control, manage, and PWA production builds while they use
+  `@ducanh2912/next-pwa`.
+- Record the separate Serwist migration in
+  [`project/2026-07-18-serwist-turbopack-pwa-migration-plan.md`](./2026-07-18-serwist-turbopack-pwa-migration-plan.md).
+
+Do:
+
+- bump Next and `eslint-config-next` from 16.2.9 to current stable 16.2.10;
+- keep React and React DOM at current stable 19.2.7;
+- set an explicit active-worktree monorepo root for Turbopack and output tracing;
+- update app scripts to the approved mixed-bundler matrix;
+- update wiki, verification evidence, and PR description.
+
+Check:
+
+- frozen install;
+- all five Turbopack test builds;
+- auth and chat Turbopack production builds plus standalone paths;
+- control, manage, and PWA Webpack production builds plus service-worker outputs;
+- `pnpm run check:all` and full production build;
+- slice review, simplification, security, and maintainability gates.
+
+Commit: `build(next): adopt mixed Turbopack builds`
+
+Progress:
+
+- [x] Current branch and latest package versions verified on 2026-07-18.
+- [x] All five test-mode Turbopack builds passed on Next 16.2.9.
+- [x] Auth and chat production Turbopack builds passed on Next 16.2.9.
+- [x] Maintainer approved the mixed-bundler boundary.
+- [ ] Implement and verify Slice 10.
+
+Next: commit the approved plan update, then implement Slice 10.
 
 ## Open Questions
 
