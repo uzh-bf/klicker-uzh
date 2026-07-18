@@ -49,10 +49,14 @@ R2. Migrator image must carry: prisma CLI + migration (schema) engine binary + `
 - [x] Slice 1 — migrator image applies migrations. VERIFIED: `packages/prisma/Dockerfile` built (node:24.16.0-alpine + prisma@6.16.1 global); ran vs throwaway Postgres with ONLY `DATABASE_URL` → 176 migrations applied, exit 0; 2nd run idempotent ("No pending migrations"); `_prisma_migrations`=176. Confirms no SHADOW_DATABASE_URL / generators needed. `--schema src/prisma/schema` resolves migrations from `<dir>/migrations`.
 - [x] Slice 2 — CI. Added `build-migrator-{arm,amd}` jobs + `MIGRATOR_IMAGE_NAME` env to `v3_backend-docker-{stg,prd}.yml`. Mirror backend jobs, `file: packages/prisma/Dockerfile`. Same triggers/metadata-action → tags lockstep (prd `v*.*.*`, stg `v3`; stg PR paths already include `packages/prisma/**`). YAML validated (ruby): 4 jobs each. True build test = on push.
 - [x] Slice 3 — Helm PreSync hook Job + values. `templates/job-migrate.yaml` (ArgoCD PreSync, envFrom = backend-graphql global+cm+secret, guarded by `migrator.enabled`). Base `values.yaml` migrator block; prd overlay (`-arm`, tag `v3.4.0-alpha.62`); stg overlay (`-arm`, tag `v3`). VERIFIED: `helm lint` clean; `helm template` per env renders correct annotations/image/envFrom; `enabled=false` → empty (no Job).
-- [x] Slice 4 — wiki updated. `docs/ci-and-deployment.md` (deploy driver = ArgoCD, new Deployment migrations section, resolved open question) + `docs/data-and-migrations.md` (Deployment migrations subsection: hook mechanics, expand-contract, break-glass `prisma:deploy:prod`). Anchors + cross-links verified.
-- [ ] Finish gate — security review, maintainability review, draft PR.
+- [x] Slice 4 — wiki updated. `docs/ci-and-deployment.md` (deploy driver = ArgoCD, new Deployment migrations section + ArgoCD-native-vs-Helm-hook gotcha, resolved open question) + `docs/data-and-migrations.md` (Deployment migrations subsection: hook mechanics, expand-contract, break-glass `prisma:deploy:prod`). Anchors + cross-links verified.
+- [x] Finish gate — reviews done.
+  - Security ($security-review): PASS. 0 HIGH-confidence findings. Traced: no creds baked in image / logged, non-root, exec-form CMD; GH Actions use only trusted server-controlled interpolations (no untrusted event body in run:/ref:), scoped `contents:read`/`packages:write`; images exact-pinned. 3 defense-in-depth NOTES (not blocking): (1) Job `envFrom` inherits full backend secret not just DATABASE_URL — accepted (secret provisioned out-of-band, blast radius = backend's); (2) actions tag-pinned not SHA — matches repo convention; (3) `npm i -g` transitive deps unlocked — same as backend image.
+  - Maintainability: `$thermo-nuclear-code-quality-review` is slash-only (`disable-model-invocation`) → USER must run `/thermo-nuclear-code-quality-review`. Ran equivalent independent review via agy (Gemini 3.5 Flash High): 4 findings, ALL rejected with evidence — prisma version pin (exact > `~6.16.1` range), no-cache arm-only (mirrors backend jobs exactly), resources `{{- with }}` (chart renders unguarded at deployment-app.yaml:67), custom user (cosmetic, both non-root). Clean.
+  - ADR: DECIDED AGAINST standalone `docs/adr/`. Repo has no ADR convention; its documented pattern puts architectural decisions in the engineering wiki (`docs/`). Rationale captured in wiki + this plan's Research (R1/R2).
+- [ ] Draft PR — via $rs-mr-description-writer.
 
-Current slice: Finish gate. Next: security + maintainability review, then draft PR.
+Current slice: Finish gate complete. Next: create draft PR.
 
 ## Slices
 
