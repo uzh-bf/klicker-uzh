@@ -105,6 +105,9 @@ Playwright artifact follow-up:
 - Tarring the `.next` tree before transfer preserved its dependency symlinks; the extracted artifact returned HTTP 200 in the same `next start` and curl loop.
 - The workflow now tars all five `.next` trees before upload and extracts them in each Playwright shard.
 - Independent review found no issue; simplification removed the now-stale hidden-file upload option.
+- Current-head CI restored the tarred artifact successfully in all eight shards. Seven shards passed; shard 5 reached tests but repeatedly navigated into a catalog collection while opening its action dropdown, detaching the delete modal before the test could cancel it.
+- The dropdown trigger was nested in the row's navigation target without its own propagation boundary. A narrow wrapper now stops trigger clicks from reaching the row while preserving the Dropdown button and portal behavior.
+- Focused manage typecheck and Turbopack `build:test` passed. Independent review and simplification found no issue. Local browser verification is blocked because Docker cannot create another branch-local DevPod network: `all predefined address pools have been fully subnetted`; the focused Playwright shard remains the browser gate.
 
 Known non-blocking warnings:
 
