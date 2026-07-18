@@ -106,7 +106,7 @@ Playwright artifact follow-up:
 - The workflow now tars all five `.next` trees before upload and extracts them in each Playwright shard.
 - Independent review found no issue; simplification removed the now-stale hidden-file upload option.
 - Current-head CI restored the tarred artifact successfully in all eight shards. Seven shards passed; shard 5 reached tests but repeatedly navigated into a catalog collection while opening its action dropdown, detaching the delete modal before the test could cancel it.
-- The dropdown trigger was nested in the row's navigation target without its own propagation boundary. A narrow wrapper now stops trigger clicks from reaching the row while preserving the Dropdown button and portal behavior.
+- The dropdown trigger was nested in the row's navigation target without its own event boundary. The row now ignores its marked action subtree while preserving the Dropdown button and portal behavior.
 - Focused manage typecheck and Turbopack `build:test` passed. Independent review and simplification found no issue. Local browser verification is blocked because Docker cannot create another branch-local DevPod network: `all predefined address pools have been fully subnetted`; the focused Playwright shard remains the browser gate.
 - CI verified the catalog fix: shard 5 passed 102 tests in 4.5 minutes, and the formerly failing catalog permission test passed in 7.4 seconds. Seven of eight shards passed.
 - Shard 8 then exposed a separate submit race in the serial instance-update suite. Activity wizard callbacks were declared async but did not return their `submit*Form` promises, so Formik cleared `isSubmitting` before the mutation completed and test navigation could abort the update. The first failure left the old single-choice title; two later failures cascaded from that stale state.
@@ -115,6 +115,13 @@ Playwright artifact follow-up:
 - The Office Add-in package manifest is restored byte-for-byte to `v3` as an explicit non-goal. Its existing React 19.1 runtime remains isolated through a second peer graph in the shared lockfile and a four-dependency, package-scoped Syncpack exception; the Next applications and shared frontend packages remain on React 19.2.7.
 - The Office Add-in's frozen filtered install, typecheck, production build, repository-wide `check:all`, and 21-task production build passed under Node 24.16.0 / pnpm 11.5.0. Independent correctness and simplification reviews found no blocker or smaller canonical lock representation. Focused security review found no high-confidence vulnerability; strict maintainability review found no structural regression or missed simpler implementation.
 - The Office Add-in correction was published as `e2dc412d5`. GitHub accepted the head, the current-head production build completed successfully, and all eight Playwright shards entered execution. The PR remains draft while those checks run.
+
+Ready-for-review follow-up:
+
+- Marking the PR ready started the full Docker, package-test, Playwright, CodeQL, and Sonar matrix on final head `94b4311ad`.
+- Sonar reported a B reliability rating because the catalog dropdown propagation wrapper had an `onClick` handler without keyboard semantics. The row now ignores a data-marked action subtree instead, preserving the verified navigation fix without making the wrapper interactive.
+- Sonar's remaining PWA maintainability finding is addressed by explicitly marking the login component props read-only.
+- Focused formatting, frontend-manage and frontend-pwa typechecks, and both app lint commands pass under Node 24.16.0. The lint commands report only the branch's existing warnings.
 
 Known non-blocking warnings:
 

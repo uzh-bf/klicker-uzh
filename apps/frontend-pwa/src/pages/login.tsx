@@ -43,7 +43,7 @@ function getSafeRedirectPath(
   }
 }
 
-function Login({ redirectPath }: LoginProps) {
+function Login({ redirectPath }: Readonly<LoginProps>) {
   const t = useTranslations()
   const router = useRouter()
 

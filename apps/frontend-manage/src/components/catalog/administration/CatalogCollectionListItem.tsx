@@ -63,6 +63,14 @@ function CatalogCollectionListItem({
         onClick={(e) => {
           e?.stopPropagation()
           if (
+            (e.target as HTMLElement).closest(
+              '[data-catalog-collection-actions]'
+            )
+          ) {
+            return
+          }
+
+          if (
             collection.access === ObjectAccess.Public ||
             collection.isShared ||
             collection.isManager
@@ -131,7 +139,7 @@ function CatalogCollectionListItem({
             </div>
           ) : null}
           {dropdownItems.length > 0 ? (
-            <div onClick={(e) => e.stopPropagation()}>
+            <div data-catalog-collection-actions>
               <Dropdown
                 items={dropdownItems}
                 trigger={<FontAwesomeIcon icon={faEllipsisVertical} />}

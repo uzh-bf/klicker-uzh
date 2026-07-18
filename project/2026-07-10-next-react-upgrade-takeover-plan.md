@@ -772,8 +772,10 @@ Progress:
 - [x] Catalog action-menu propagation fix published at `96293b227`; shard 5 passed 102 tests, including the formerly failing permission test in 7.4 seconds. Seven of eight shards passed.
 - [x] Activity-wizard submit-promise fix published at `5441ea04f`; shard 8 passed 117 tests in 9.8 minutes, including the formerly failing single-choice and second-instance update test in 17.4 seconds. The Claude check failed again without producing review feedback.
 - [x] Restored `apps/office-addin/package.json` byte-for-byte to `v3`; only the shared lockfile carries the second React 19.1 peer graph required to preserve that separate application's existing dependency boundary, with a package-scoped Syncpack exception for those four versions.
+- [x] Maintainer marked the PR ready for review; the full ready-state CI matrix and final-head automated reviews started.
+- [ ] Publish and verify the Sonar reliability fix: the catalog row now ignores its marked action subtree without making the wrapper interactive, and PWA login props are explicitly read-only. Focused Node 24 typechecks, lint, and formatting pass.
 
-Next: verify current-head CI, refresh the whole-branch PR evidence, then keep the PR draft until the remaining manual gates are resolved or explicitly waived.
+Next: publish the Sonar fix, verify current-head CI and automated review feedback, then settle the ready PR for maintainer merge.
 
 ## Open Questions
 
