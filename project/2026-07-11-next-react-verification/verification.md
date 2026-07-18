@@ -114,6 +114,7 @@ Playwright artifact follow-up:
 - CI verified the activity fix: shard 8 passed 117 tests in 9.8 minutes, and the formerly failing single-choice and second-instance update test passed in 17.4 seconds.
 - The Office Add-in package manifest is restored byte-for-byte to `v3` as an explicit non-goal. Its existing React 19.1 runtime remains isolated through a second peer graph in the shared lockfile and a four-dependency, package-scoped Syncpack exception; the Next applications and shared frontend packages remain on React 19.2.7.
 - The Office Add-in's frozen filtered install, typecheck, production build, repository-wide `check:all`, and 21-task production build passed under Node 24.16.0 / pnpm 11.5.0. Independent correctness and simplification reviews found no blocker or smaller canonical lock representation. Focused security review found no high-confidence vulnerability; strict maintainability review found no structural regression or missed simpler implementation.
+- The Office Add-in correction was published as `e2dc412d5`. GitHub accepted the head, the current-head production build completed successfully, and all eight Playwright shards entered execution. The PR remains draft while those checks run.
 
 Known non-blocking warnings:
 
