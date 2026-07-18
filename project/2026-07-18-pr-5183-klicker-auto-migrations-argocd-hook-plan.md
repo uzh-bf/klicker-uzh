@@ -2,10 +2,10 @@
 
 ## Identity
 
-- Plan path: `project/2026-07-18-klicker-auto-migrations-argocd-hook-plan.md`
+- Plan path: `project/2026-07-18-pr-5183-klicker-auto-migrations-argocd-hook-plan.md`
 - Branch: `claude/klicker-auto-migrations-90b73c`
 - Target: `v3`
-- PR: none yet
+- PR: https://github.com/uzh-bf/klicker-uzh/pull/5183 (draft)
 - Reference pattern: `~/Git/tc/{elearning,careers}/deploy/{stg,prd}/migration-job.yaml` (ArgoCD PreSync migration Job)
 
 ## Goal
@@ -54,9 +54,9 @@ R2. Migrator image must carry: prisma CLI + migration (schema) engine binary + `
   - Security ($security-review): PASS. 0 HIGH-confidence findings. Traced: no creds baked in image / logged, non-root, exec-form CMD; GH Actions use only trusted server-controlled interpolations (no untrusted event body in run:/ref:), scoped `contents:read`/`packages:write`; images exact-pinned. 3 defense-in-depth NOTES (not blocking): (1) Job `envFrom` inherits full backend secret not just DATABASE_URL — accepted (secret provisioned out-of-band, blast radius = backend's); (2) actions tag-pinned not SHA — matches repo convention; (3) `npm i -g` transitive deps unlocked — same as backend image.
   - Maintainability: `$thermo-nuclear-code-quality-review` is slash-only (`disable-model-invocation`) → USER must run `/thermo-nuclear-code-quality-review`. Ran equivalent independent review via agy (Gemini 3.5 Flash High): 4 findings, ALL rejected with evidence — prisma version pin (exact > `~6.16.1` range), no-cache arm-only (mirrors backend jobs exactly), resources `{{- with }}` (chart renders unguarded at deployment-app.yaml:67), custom user (cosmetic, both non-root). Clean.
   - ADR: DECIDED AGAINST standalone `docs/adr/`. Repo has no ADR convention; its documented pattern puts architectural decisions in the engineering wiki (`docs/`). Rationale captured in wiki + this plan's Research (R1/R2).
-- [ ] Draft PR — via $rs-mr-description-writer.
+- [x] Draft PR — https://github.com/uzh-bf/klicker-uzh/pull/5183 (draft, base v3). Body via $rs-mr-description-writer, whole-branch coverage, read-back verified. GitGuardian PASS. `build-migrator-{arm,amd}` recognized in CI, `skipping` on draft (same `draft==false` gate as backend jobs) → will build on non-draft/merge/tag.
 
-Current slice: Finish gate complete. Next: create draft PR.
+Current slice: DONE. Branch complete, draft PR open. Remaining before merge (see PR "Blocking Before Merge"): user runs `/thermo-nuclear-code-quality-review`; confirm real CI migrator build on non-draft/tag; confirm ArgoCD picks up the PreSync hook on next stg sync.
 
 ## Slices
 
