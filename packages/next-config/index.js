@@ -1,3 +1,7 @@
+import { fileURLToPath } from 'node:url'
+
+const monorepoRoot = fileURLToPath(new URL('../..', import.meta.url))
+
 /** @type {import('next').NextConfig} */
 function getNextBaseConfig({
   BLOB_STORAGE_ACCOUNT_URL,
@@ -13,7 +17,11 @@ function getNextBaseConfig({
   return {
     allowedDevOrigins:
       NODE_ENV === 'development' ? ['**.klicker.localhost'] : undefined,
+    outputFileTracingRoot: monorepoRoot,
     productionBrowserSourceMaps: isStaging,
+    turbopack: {
+      root: monorepoRoot,
+    },
     webpack: (config, { isServer }) => {
       if (!isServer && isStaging) {
         config.devtool = 'cheap-module-source-map'

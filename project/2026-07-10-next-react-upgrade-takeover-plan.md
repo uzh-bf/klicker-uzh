@@ -1,6 +1,6 @@
 # Next.js 16 and React 19 Takeover Plan
 
-Status: approved 2026-07-10; Slices 0-7 committed; Slice 8 local verification active with CI-only gates remaining.
+Status: approved 2026-07-10; Slices 0-8 committed; Slice 10 mixed-bundler update active with CI-only gates remaining afterward.
 
 ## Goal
 
@@ -18,7 +18,7 @@ Success:
 
 - Skip TypeScript 6. Owned by `project/2026-07-10-typescript-6-upgrade-takeover-plan.md` on `feature/upgrade-typescript`.
 - Skip TypeScript 7, Prisma 7, React Compiler adoption, and GraphQL/Pothos major upgrades.
-- Skip Turbopack migration. Initial safe target uses Webpack only.
+- Initial safe target used Webpack only. Approved Slice 10 adopts Turbopack where the current PWA contract allows; full PWA production migration remains in the separate Serwist plan.
 - Skip `middleware.ts` -> `proxy.ts` auth migration unless Next 16 makes current middleware unusable. Handle separately because redirect/cookie logic is security-sensitive.
 - Skip broad security dependency refresh. Only dependency overrides required by this framework upgrade stay in this PR.
 - Skip new Cypress coverage. Cypress is frozen; retain only fixes needed to keep existing parity tests green.
@@ -85,6 +85,8 @@ Evidence:
 - Local shared Next config has a custom Webpack callback; PWA apps need worker generation; chat Docker output needs standalone proof.
 
 Decision:
+
+Initial decision, superseded by the maintainer-approved mixed-bundler boundary in Slice 10:
 
 - Use Webpack only for `dev`, `dev:offline`, `dev:test`, `build`, and `build:test` in all five apps during this upgrade.
 - Remove `--turbo`; keep `--webpack`.
@@ -755,17 +757,18 @@ Progress:
 - [x] All five test-mode Turbopack builds passed on Next 16.2.9.
 - [x] Auth and chat production Turbopack builds passed on Next 16.2.9.
 - [x] Maintainer approved the mixed-bundler boundary.
-- [ ] Implement and verify Slice 10.
+- [x] Next and `eslint-config-next` updated to 16.2.10 across apps, shared packages, and lockfile; React remains current at 19.2.7.
+- [x] Mixed scripts and explicit active-worktree root implemented.
+- [x] Five Turbopack test builds and five mixed production builds passed under pinned Node 24.16.0 / pnpm 11.5.0; standalone and PWA worker artifacts verified in the worktree, with revision-bound evidence pending the implementation commit.
+- [x] Auth and chat standalone servers returned HTTP 200. Same-origin Turbopack dev browser smokes rendered PWA login and chat `/noLogin` with no browser errors; development registered zero service workers.
+- [x] Frozen offline install, `pnpm run check:all`, and the 21-task full production build passed.
+- [x] Slice review and simplification passed after removing unrelated lockfile drift and stale documentation. Code-security review found no high-confidence vulnerabilities; strict maintainability review found no structural regression or simpler safe design.
+- [ ] Commit revision-bound evidence, publish Slice 10, and read back PR CI.
 
-Next: commit the approved plan update, then implement Slice 10.
+Next: commit Slice 10, add revision-bound evidence, then publish and read back PR CI.
 
 ## Open Questions
 
 - Old PR closure: requires maintainer approval after replacement PR evidence.
 - Ready-for-review transition: maintainer decision after CI/manual matrix.
 - Merge: always separate explicit approval.
-
-## Next Steps
-
-1. Review and commit Slice 8 evidence/fix.
-2. Obtain approval for Slice 9 push and replacement draft PR.
