@@ -23,7 +23,7 @@ RUN npm install -g prisma@6.16.1
 # directory that `migrate deploy` applies. No generated client, no app code required.
 COPY packages/prisma/src/prisma/schema ./src/prisma/schema
 
-RUN addgroup -S nodejs -g 1001 && adduser -S prisma -u 1001
+RUN addgroup -S nodejs -g 1001 && adduser -S -G nodejs -u 1001 prisma
 USER prisma
 
 # `migrate deploy` reads migrations from <schema-dir>/migrations by default.

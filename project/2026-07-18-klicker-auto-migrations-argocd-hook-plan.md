@@ -79,6 +79,14 @@ Current slice: Slice 4. Next: independent review of slices 1-3, then update wiki
 - Check: `pnpm run check:agents-md` (if it covers docs) / prettier on changed md.
 - Commit: `docs(deploy): document automated migration hook, demote manual to break-glass`
 
+## Independent review (slices 1-3, agy / Gemini 3.5 Flash High)
+
+- F5 ACCEPTED (correctness): PreSync hook `envFrom` referenced Sync-phase ConfigMaps → fails on fresh install. Fix: reference ONLY the external `secret-backend-graphql` (holds DATABASE_URL; confirmed absent from all configmaps; provisioned out-of-band so present before any sync). Re-verified: helm template shows secretRef-only; image re-run applies 176 migrations.
+- F2 minor cleanup ACCEPTED: `adduser -S -G nodejs -u 1001 prisma` (place user in group). Rejected as "build fails" — image built + ran twice.
+- F1 REJECTED (false positive): `if: github.event.pull_request.draft == false` — existing backend prd jobs use identical `if` and build on tag-only push (no PR context). Mirrored working pattern.
+- F3 REJECTED (false positive): `runs-on: ubuntu-24.04-arm` — existing backend build-arm uses same valid label.
+- F4 REJECTED: base values unsuffixed `backend-docker-migrator` matches chart convention (base `backendGraphql` repo also unsuffixed, line 356); env overlays override to `-arm`.
+
 ## Finish gate
 
 - Security review subagent ($security-review): Job secret handling, no creds in image/logs, no over-privilege.

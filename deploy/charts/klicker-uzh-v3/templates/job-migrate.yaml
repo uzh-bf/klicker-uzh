@@ -36,12 +36,11 @@ spec:
         - name: migrate
           image: "{{ .Values.migrator.image.repository }}:{{ .Values.migrator.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.migrator.image.pullPolicy }}
-          # Same env as the backend-graphql app so DATABASE_URL resolves identically.
+          # DATABASE_URL comes from the externally-provisioned backend-graphql Secret.
+          # Only the Secret is referenced (not the app ConfigMaps): a PreSync hook runs
+          # before the Sync phase, so it must not depend on Sync-phase ConfigMaps that
+          # would not yet exist on a fresh install. The external Secret is always present.
           envFrom:
-            - configMapRef:
-                name: {{ include "chart.fullname" . }}-config-global
-            - configMapRef:
-                name: {{ include "chart.fullname" . }}-config-backend-graphql
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-backend-graphql
           resources:
