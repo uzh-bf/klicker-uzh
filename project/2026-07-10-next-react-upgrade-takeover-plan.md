@@ -1,6 +1,6 @@
 # Next.js 16 and React 19 Takeover Plan
 
-Status: approved 2026-07-10; Slices 0-8 and 10 committed locally; publish and replacement-PR CI remain.
+Status: approved 2026-07-10; Slices 0-8 and 10 published to draft PR #5166; current-head CI is active.
 
 ## Goal
 
@@ -667,8 +667,8 @@ Commit:
 - [x] Post-commit branch review findings resolved in a separate cleanup commit.
 - [x] Slice 6 legacy e2e repair verified and committed separately.
 - [x] Slice 7 wiki, skills, and operator evidence synchronized.
-- [ ] Slice 8 fresh verification and final reviews pass.
-- [ ] Slice 9 replacement draft PR opened and read back.
+- [x] Slice 8 fresh verification and final reviews passed with documented environment and CI gates.
+- [x] Slice 9 replacement draft PR opened and read back as #5166.
 - [ ] Shared old-PR supersession gate in TypeScript plan approved and executed.
 - [ ] Merge separately approved.
 
@@ -764,9 +764,11 @@ Progress:
 - [x] Frozen offline install, `pnpm run check:all`, and the 21-task full production build passed.
 - [x] Slice review and simplification passed after removing unrelated lockfile drift and stale documentation. Code-security review found no high-confidence vulnerabilities; strict maintainability review found no structural regression or simpler safe design.
 - [x] Revision-bound evidence recorded locally.
-- [ ] Publish Slice 10 and read back PR CI.
+- [x] Publish Slice 10 and read back current-head PR metadata and initial CI state.
+- [x] Clean-install styled-jsx type regression fixed with native global style tags; four focused typechecks, four Turbopack builds, representative browser verification, `pnpm run check:all`, and the full production build passed.
+- [ ] Current-head CI completes; the Claude check failed again without producing review feedback.
 
-Next: commit the revision-bound evidence, then publish and read back PR CI.
+Next: monitor current-head CI, address actionable findings, and keep the PR draft until the remaining manual gates are resolved or explicitly waived.
 
 ## Open Questions
 

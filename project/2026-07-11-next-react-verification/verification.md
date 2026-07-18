@@ -87,7 +87,16 @@ Reviews:
 - Code-level security review found no high-confidence vulnerabilities.
 - Strict maintainability review found no structural regression or simpler safe design.
 
+Clean-install follow-up:
+
+- Rebuilding `node_modules` from the frozen lockfile exposed four Pages Router typecheck failures because their `<style jsx global>` blocks depended on styled-jsx's React type augmentation.
+- Each block only defined `:root` font variables, so auth, control, manage, and PWA now use native `<style>` tags with the same global CSS behavior.
+- All four focused typechecks and all four Turbopack `build:test` commands passed after the change.
+- The Turbopack `styled-jsx/style.js` module warning is no longer present.
+- PWA `/login` rendered with both font variables set to the generated Next font token, no browser errors, and zero service-worker registrations.
+- Full `pnpm run check:all` and `pnpm run build` passed with the fixed worktree.
+- Independent review and simplification found no issues with the native style change.
+
 Known non-blocking warnings:
 
-- Pages Router Turbopack builds warn that `styled-jsx/style.js` cannot be resolved; the builds exit successfully and both development browser and standalone runtime smokes pass.
 - Existing Pages Router `next-intl`, workspace package export, manage missing-message, large-page-data, and missing local chat-provider warnings remain.
