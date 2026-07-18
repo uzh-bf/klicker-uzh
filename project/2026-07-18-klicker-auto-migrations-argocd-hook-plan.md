@@ -46,13 +46,13 @@ R2. Migrator image must carry: prisma CLI + migration (schema) engine binary + `
 ## Progress
 
 - [x] Plan approved, decisions locked.
-- [ ] Slice 1 — migrator image applies migrations (verified vs throwaway Postgres).
+- [x] Slice 1 — migrator image applies migrations. VERIFIED: `packages/prisma/Dockerfile` built (node:24.16.0-alpine + prisma@6.16.1 global); ran vs throwaway Postgres with ONLY `DATABASE_URL` → 176 migrations applied, exit 0; 2nd run idempotent ("No pending migrations"); `_prisma_migrations`=176. Confirms no SHADOW_DATABASE_URL / generators needed. `--schema src/prisma/schema` resolves migrations from `<dir>/migrations`.
 - [ ] Slice 2 — CI builds/pushes migrator image in lockstep with backend.
 - [ ] Slice 3 — Helm PreSync hook Job + values (base/stg/prd).
 - [ ] Slice 4 — wiki updated, manual path demoted to break-glass.
 - [ ] Finish gate — security review, maintainability review, draft PR.
 
-Current slice: Slice 1. Next: build+run migrator image locally.
+Current slice: Slice 2. Next: add migrator build jobs to v3_backend-docker-{stg,prd}.yml.
 
 ## Slices
 
