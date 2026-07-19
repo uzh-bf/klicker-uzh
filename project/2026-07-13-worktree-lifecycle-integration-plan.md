@@ -3,7 +3,7 @@
 ## Goal
 
 - Make `v3` the reusable Klicker base for reliable agent worktree startup.
-- Consume devrouter's fail-closed `workspace ensure` flow.
+- Consume devrouter's fail-closed `devrouter ensure .` flow.
 - Keep Klicker-specific environment and application commands local while Devrouter owns generic process lifecycle and route recovery.
 
 ## Non-goals
@@ -48,8 +48,8 @@ These decisions and the matching evidence below are historical. The reopened dec
 
 ## Progress
 
-- Current: Slice 6 implementation, released-artifact verification, final security review, same-provider branch crosscheck, and strict maintainability review are complete in this worktree against [PR #5169](https://github.com/uzh-bf/klicker-uzh/pull/5169) head `58590e974`.
-- Next: commit and push, refresh [PR #5169](https://github.com/uzh-bf/klicker-uzh/pull/5169) from whole-branch evidence, wait for feedback and CI, then mark ready and merge under the user's explicit authority. Escape Room remains untouched until this passes.
+- Current: Slice 6 implementation, released-artifact verification, final security review, same-provider branch crosscheck, strict maintainability review, and synchronization with current `v3` are complete in this worktree against [PR #5169](https://github.com/uzh-bf/klicker-uzh/pull/5169).
+- Next: resolve final review feedback, pass refreshed CI and independent approval, then let the armed squash auto-merge complete under the user's explicit authority. Escape Room remains untouched until this passes.
 
 ## Slice 1: runtime ownership
 

@@ -5,8 +5,9 @@ FROM node:24.16.0-bookworm-slim
 
 ENV PNPM_HOME="/pnpm" \
     PATH="/pnpm:$PATH" \
-    UV_PYTHON="3.12" \
-    DEBIAN_FRONTEND=noninteractive
+    UV_PYTHON="3.12"
+
+ARG DEBIAN_FRONTEND=noninteractive
 
 # Runtime tools: git (repo ops), openssl/ca-certificates (Prisma + TLS),
 # procps (process matching), util-linux (flock/setsid), curl (healthchecks).
