@@ -1,6 +1,6 @@
 # Prisma 7.8 Upgrade Plan
 
-Status: approved; implementation and local finish gates complete; draft publication pending.
+Status: approved; implementation and local finish gates complete; draft PR #5185 published.
 
 ## Goal
 
@@ -31,14 +31,14 @@ Terminal proof:
 ## Plan Identity
 
 - Review artifact: `/private/tmp/prisma-7-upgrade-plan-draft.md`
-- Final plan after approval: `project/2026-07-19-prisma-7-upgrade-plan.md`
+- Final plan after approval: `project/2026-07-19-pr-5185-prisma-7-upgrade-plan.md`
 - Branch after approval: `codex/upgrade-prisma-7`
 - Project-local worktree after approval: `trees/prisma-7-upgrade`
 - Target: `v3`
 - Base: `origin/v3` at `15fededdb78a69b09eb80f81b522ef6bc024f18e`
 - Related merged PR: https://github.com/uzh-bf/klicker-uzh/pull/5167
-- PR: not created
-- Current state: implementation complete at `89589ffcd`; branch remains based on the refreshed `origin/v3` SHA above
+- PR: https://github.com/uzh-bf/klicker-uzh/pull/5185 (draft)
+- Current state: implementation and local finish gates complete; draft PR published from `a7702e532` before this metadata-only rename
 
 ## Resolved Decisions
 
@@ -676,7 +676,7 @@ Verified without changes:
   - Auth production and test builds include the NextAuth route and the production login flow passes; the existing Next 16 Turbopack development server omits that Pages API route, so CI browser suites remain the final end-to-end gate
   - local Playwright browser installation downloaded but stalled during extraction; focused browser behavior was verified with the pinned agent-browser runtime, while the full Cypress and Playwright suites remain GitHub gates
   - correctness and simplification reviews are resolved with no open findings
-- [ ] Slice 6: document, finish, and publish the draft PR
+- [x] Slice 6: document, finish, and publish the draft PR
   - Prisma 7 client, datasource, Analytics, generation, seeding, and Auth adapter ownership is documented in AGENTS.md, the engineering wiki, and the three affected project skills
   - legacy host/Infisical lifecycle commands and self-contained DevPod `*:raw` commands are separated explicitly; all procedural DevPod examples are directly runnable
   - wiki validation reached the full docs bundle; its only conformance error is pre-existing frontmatter in an untouched solution file, while AGENTS.md and Prisma schema-sync checks pass
@@ -688,7 +688,7 @@ Verified without changes:
   - three other external suggestions were rejected after fact-checking: Prisma 7 no longer seeds automatically during reset, the flashcard entry point's direct-execution behavior predates this branch and has no importers, and the Analytics drift check intentionally fails when an owned file is missing
   - the Auth smoke guard establishes an endpoint and execution-context boundary, not database provenance through a local tunnel; ordinary error paths clean up exact disposable identifiers, while abrupt process termination remains an accepted limitation of this manual smoke test
   - the final thermo-nuclear maintainability review passed at `89589ffcd`: the branch centralizes ownership, removes obsolete patching and dependencies, adds no source-file size crossing, and keeps explicit lifecycle contracts instead of hiding them behind a generic wrapper
-- [ ] draft PR
+- [x] draft PR #5185 created against `v3` and read back with the expected title, body, head, base, and draft state
 
 ## Approval Record
 
@@ -700,6 +700,6 @@ On 2026-07-19, the user approved:
 
 ## Next Steps
 
-1. Commit this final verification checkpoint and push the branch.
-2. Create the draft PR, add its number to the plan filename and identity, then push the metadata commit.
-3. Verify the published PR body, branch coverage, and current-head GitHub checks.
+1. Commit and push this PR-number metadata update.
+2. Refresh the PR body for the new plan path and current head, then verify the published branch coverage.
+3. Monitor current-head GitHub checks; keep the PR draft until the user explicitly marks it ready so the draft-gated Analytics image workflows can run.
