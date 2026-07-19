@@ -18,7 +18,13 @@ overrides:
   'glob@>=10.2.0 <10.5.0': 10.5.0
   'mysql2@<3.9.8': 3.9.8
   'next@>=15.0.0 <15.5.16': 15.5.18
+  'prisma-json-types-generator@3.6.0>typescript': ^6.0.3
   'systeminformation@>=4.17.0 <=5.31.5': 5.31.6
+
+packageExtensions:
+  'recharts@2.15.3':
+    peerDependencies:
+      '@types/react': '*'
 
 ignoredBuiltDependencies:
   - '@microsoft/teamsapp-cli'

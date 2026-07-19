@@ -18,6 +18,8 @@ pnpm run build               # 4. regenerate Prisma client + dependent packages
 
 Then, if the change is API-visible: update Pothos types/resolvers (`klicker-graphql-api`) — the Pothos Prisma plugin picks up new fields, but object types expose them explicitly.
 
+Run Prisma client generation only through `pnpm --filter @klicker-uzh/prisma generate` (or a build that calls it). The package script owns the TypeScript 6 generated-namespace patch; direct `prisma generate` bypasses it. The package's canonical `check` includes the patch invariant tests. If generation fails at the patch, run `pnpm --filter @klicker-uzh/prisma test:patch-namespace` and inspect the new generated declarations instead of weakening the exact-cardinality guard.
+
 Provenance: steps 2 requires a database; on a machine without one running, write the schema change and STOP — hand the migration step to the user rather than faking a migration file.
 
 ## Rules that prevent real incidents

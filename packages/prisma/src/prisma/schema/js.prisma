@@ -11,7 +11,7 @@ generator client {
 
 generator pothos {
   provider     = "prisma-pothos-types"
-  clientOutput = "@klicker-uzh/prisma/client"
+  clientOutput = "./client.js"
   output       = "../client/pothos.ts"
 }
 

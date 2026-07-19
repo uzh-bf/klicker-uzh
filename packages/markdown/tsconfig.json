@@ -1,8 +1,7 @@
 {
   "include": ["**/**/*"],
   "compilerOptions": {
-    "baseUrl": ".",
-    "jsx": "react",
+    "jsx": "react-jsx",
     /* Base Options: */
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -22,8 +21,8 @@
     "sourceMap": true,
     /* AND if you're building for a library: */
     "declaration": true,
-    /* AND if you're building for a library in a monorepo: */
-    "composite": true,
+    /* Incremental build cache: */
+    "incremental": true,
     "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
     "declarationMap": true,
     /* If your code runs in the DOM: */
