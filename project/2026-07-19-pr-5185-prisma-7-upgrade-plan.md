@@ -1,6 +1,6 @@
 # Prisma 7.8 Upgrade Plan
 
-Status: approved; implementation and local finish gates complete; draft PR #5185 published.
+Status: approved; implementation, local finish gates, and draft-state CI complete; draft PR #5185 published.
 
 ## Goal
 
@@ -38,7 +38,7 @@ Terminal proof:
 - Base: `origin/v3` at `15fededdb78a69b09eb80f81b522ef6bc024f18e`
 - Related merged PR: https://github.com/uzh-bf/klicker-uzh/pull/5167
 - PR: https://github.com/uzh-bf/klicker-uzh/pull/5185 (draft)
-- Current state: implementation and local finish gates complete; draft PR published from `a7702e532` before this metadata-only rename
+- Current state: implementation and local finish gates complete; all 25 non-skipped draft-state checks passed at `e7b297ef4` before this metadata-only checkpoint
 
 ## Resolved Decisions
 
@@ -688,6 +688,7 @@ Verified without changes:
   - three other external suggestions were rejected after fact-checking: Prisma 7 no longer seeds automatically during reset, the flashcard entry point's direct-execution behavior predates this branch and has no importers, and the Analytics drift check intentionally fails when an owned file is missing
   - the Auth smoke guard establishes an endpoint and execution-context boundary, not database provenance through a local tunnel; ordinary error paths clean up exact disposable identifiers, while abrupt process termination remains an accepted limitation of this manual smoke test
   - the final thermo-nuclear maintainability review passed at `89589ffcd`: the branch centralizes ownership, removes obsolete patching and dependencies, adds no source-file size crossing, and keeps explicit lifecycle contracts instead of hiding them behind a generic wrapper
+  - all 25 non-skipped GitHub checks passed at `e7b297ef4`, including typecheck, formatting, lint, Syncpack, GraphQL plus its aggregate, Playwright build plus all eight shards and aggregate, three CodeQL languages, GitGuardian, Greptile, and fallback AMD64/ARM64 builds
 - [x] draft PR #5185 created against `v3` and read back with the expected title, body, head, base, and draft state
 
 ## Approval Record
@@ -700,6 +701,6 @@ On 2026-07-19, the user approved:
 
 ## Next Steps
 
-1. Commit and push this PR-number metadata update.
-2. Refresh the PR body for the new plan path and current head, then verify the published branch coverage.
-3. Monitor current-head GitHub checks; keep the PR draft until the user explicitly marks it ready so the draft-gated Analytics image workflows can run.
+1. Keep the PR draft until the user explicitly marks it ready.
+2. After it is ready, verify the Analytics staging AMD64 and ARM64 image jobs that are skipped for drafts.
+3. Obtain required maintainer approval; merge only with explicit authority and passing required checks.
