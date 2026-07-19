@@ -518,6 +518,12 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   }
 
   const apolloClient = initializeApollo()
+  const participantToken =
+    process.env.ASSESSMENT_MODE === 'true'
+      ? ctx.req.cookies?.['next-auth.participant-session-token']
+      : (ctx.req.cookies?.['participant_token'] ??
+        ctx.req.cookies?.['temporary_participant_token'] ??
+        ctx.req.cookies?.['next-auth.session-token'])
 
   let liveQuiz = null
   try {
@@ -526,10 +532,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       variables: { id: ctx.query?.id as string },
       context: {
         headers: {
-          authorization: ctx.req.cookies?.[
-            'next-auth.participant-session-token'
-          ]
-            ? `Bearer ${ctx.req.cookies?.['next-auth.participant-session-token'] ?? ''}`
+          authorization: participantToken
+            ? `Bearer ${participantToken}`
             : undefined,
         },
       },

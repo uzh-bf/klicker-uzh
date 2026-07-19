@@ -73,6 +73,8 @@ devrouter exec . -- tail -n 50 /tmp/dev.log
 
 `devrouter doctor --repo .` provides static diagnostics. `devrouter ensure .` resolves the checkout-specific overlay and is the authoritative runtime proof.
 
+If LiveQuiz submissions return HTTP 404 while the response API health check is green, verify that `NEXT_PUBLIC_ADD_RESPONSE_URL` ends in `/AddResponse`. The response API host root accepts GET health checks only; the PWA must POST to `/AddResponse` in primary, workspace, and plain-localhost modes.
+
 ### Path B: Host-based Setup
 
 Manually boot the compose infrastructure:

@@ -1,5 +1,11 @@
 # Log
 
+## 2026-07-19
+
+- **Update**: [getting-started](./getting-started.md) and the environment-doctor skill record the required `/AddResponse` suffix for LiveQuiz submissions in every local routing mode.
+
+- **Update**: [auth-model](./auth-model.md), [testing](./testing.md), and the Playwright E2E skill document participant-cookie forwarding during PWA SSR and exact-workspace browser routing overrides used by the verified Escape Room suite.
+
 ## 2026-07-18
 
 - **Update**: [getting-started](./getting-started.md) pins released devrouter `0.0.35`; the managed-process fingerprint now includes the exact adapter bytes and declared non-secret origin environment as well as workspace and command identity.

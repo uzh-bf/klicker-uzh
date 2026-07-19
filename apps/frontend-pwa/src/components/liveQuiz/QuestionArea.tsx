@@ -785,8 +785,9 @@ function QuestionArea({
     )
   }
 
-  // while the remaining questions are still initializing, do not return anything
-  if (remainingQuestions === null) {
+  // Escape-room instances are hidden until the attempt starts. Wait for the
+  // active index to catch up when the first visible instance arrives.
+  if (remainingQuestions === null || !currentInstance) {
     return <></>
   }
 

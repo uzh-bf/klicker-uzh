@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the two e2e stacks and their seeds, and the CI test matrix.
-timestamp: '2026-07-18'
+timestamp: '2026-07-19'
 tags:
   - testing
   - ci
@@ -36,6 +36,8 @@ Both frameworks click the same `data-cy` attributes ([Frontend Conventions](./fr
 | CI            | 8-way `cypress-split` (draft PRs) / Cypress Cloud (non-draft + v3) | official Playwright container, 8-way shard, all PRs        |
 
 The three seed paths (dev `seedTEST.ts`, Cypress, Playwright) are **independent** — a fixture added to one does not exist in the others ([Data & Migrations](./data-and-migrations.md)). `*:raw` script variants skip Infisical on both sides. `_run_app_dependencies.sh` with no args (or `local`/`dev`/`playwright`) applies the schema with `prisma:push` without forcing a reset; the `test`/`cypress` argument is the Cypress-specific **reset** path.
+
+For an exact DevPod routed through a workspace-namespaced devrouter host, `playwright/playwright.config.ts` accepts `PLAYWRIGHT_BROWSER_EXECUTABLE_PATH` for the container-installed Chromium and `PLAYWRIGHT_HOST_RESOLVER_RULES` for the browser's `*.localhost` mapping. The `URL_*`, `APP_ORIGIN_AUTH`, and `COOKIE_DOMAIN` values passed to the test process must use the same workspace host suffix; mixing primary and namespaced hosts produces authentication redirects rather than selector failures.
 
 For authoring specifics, helper patterns, and failure triage, use the skills — `klicker-cypress-e2e` and `klicker-playwright-e2e` ([.agents/skills/](../.agents/skills/)) — rather than duplicating their content here.
 

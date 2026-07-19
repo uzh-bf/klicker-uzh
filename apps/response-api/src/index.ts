@@ -379,6 +379,9 @@ const server = createServer(async (req, res) => {
 
     // add response endpoint
     if (url.pathname === '/AddResponse' && req.method === 'POST') {
+      // Escape-room validation can respond early from a separate module, so
+      // establish CORS before dispatching to any response path.
+      setCorsHeaders(req, res)
       // if not in assessment mode, call standard processing logic
       if (process.env.ASSESSMENT_MODE === 'true') {
         return await handleAddAssessmentResponse(req, res)

@@ -7,12 +7,17 @@
  * lockout, completion stats), and the lecturer dashboard shows and resets
  * the attempt.
  */
-import { expect, type Page } from '@playwright/test'
+import { expect, type Browser, type Page } from '@playwright/test'
+import { mkdir } from 'node:fs/promises'
+import { join } from 'node:path'
+import deMessages from '../../packages/i18n/messages/de.js'
 import { test } from '../util/fixtures.js'
 import { setDatetime, type StackType } from '../util/fixtures/activities.js'
+import { searchAndEdit } from '../util/fixtures/elements.js'
 import { getDatetimeValidationString } from '../util/helpers.js'
 import { enMessages as messages } from '../util/messages.js'
 import {
+  acceptGamifiedLiveQuizAccountPrompt,
   createContent,
   createQuestionQrScan,
   createQuestionSC,
@@ -20,11 +25,45 @@ import {
   env,
   loginLecturer,
   loginStudent,
+  loginStudentPassword,
+  openStudentLiveQuiz,
   runTask,
   selectOption,
 } from '../util/workflow.js'
 
 let page: Page
+
+const evidenceDir = process.env.ESCAPE_ROOM_EVIDENCE_DIR
+
+async function captureEvidence(page: Page, filename: string) {
+  if (!evidenceDir) return
+  await mkdir(evidenceDir, { recursive: true })
+  await page.evaluate(() => document.fonts.ready)
+  await page.screenshot({
+    path: join(evidenceDir, filename),
+    fullPage: true,
+    animations: 'disabled',
+  })
+}
+
+async function setLocale(page: Page, locale: 'en' | 'de') {
+  const url = new URL(page.url())
+  url.pathname = url.pathname.replace(/^\/(?:en|de)(?=\/|$)/, '') || '/'
+  if (locale !== 'en') {
+    url.pathname = `/${locale}${url.pathname}`
+  }
+  await page.goto(url.toString(), { waitUntil: 'commit' })
+  await expect(page.locator('html')).toHaveAttribute('lang', locale)
+}
+
+async function createStudentPage(browser: Browser) {
+  const context = await browser.newContext({
+    ignoreHTTPSErrors: true,
+    locale: 'en-US',
+    viewport: { width: 1440, height: 900 },
+  })
+  return context.newPage()
+}
 
 function timerSeconds(value: string) {
   const [minutes, seconds] = value.split(':').map(Number)
@@ -794,6 +833,16 @@ test.describe.serial('Escape room workflows', () => {
       page.getByTestId(`status-${QR.quizName}-PUBLISHED`)
     ).toBeAttached()
 
+    await page.getByTestId('library').click()
+    await searchAndEdit(page, QR.title)
+    const printPagePromise = page.waitForEvent('popup')
+    await page.getByTestId('open-qr-print-view').click()
+    const printPage = await printPagePromise
+    await expect(printPage.getByTestId('print-qr-sheets')).toBeVisible()
+    await expect(printPage.getByTestId('qr-print-decoy-count')).toHaveValue('3')
+    await captureEvidence(printPage, 'qr-print-en-desktop.png')
+    await printPage.close()
+
     await page.addInitScript(() => {
       Object.defineProperty(globalThis, 'BarcodeDetector', {
         configurable: true,
@@ -816,6 +865,8 @@ test.describe.serial('Escape room workflows', () => {
     await page.getByTestId('quizzes').click()
     await page.getByTestId(`practice-quiz-${QR.quizDisplayName}`).click()
     await page.getByTestId('escape-room-start').click()
+    await page.setViewportSize({ width: 390, height: 844 })
+    await setLocale(page, 'de')
     await page.getByTestId('start-practice-quiz').click()
     await expect(page.getByText(QR.content).first()).toBeVisible()
 
@@ -828,16 +879,19 @@ test.describe.serial('Escape room workflows', () => {
     )
     await page.evaluate(() => (globalThis as any).__rejectQrCamera())
     await expect(page.getByRole('status')).toContainText(
-      messages.shared.QR_SCAN.cameraFallback
+      deMessages.shared.QR_SCAN.cameraFallback
     )
-    const manualCode = page.getByLabel(messages.shared.QR_SCAN.manualLabel)
+    const manualCode = page.getByLabel(deMessages.shared.QR_SCAN.manualLabel)
+    await captureEvidence(page, 'qr-manual-fallback-de-mobile.png')
     await manualCode.fill('not-a-code')
     await expect(page.getByTestId('student-stack-submit')).toBeDisabled()
     await manualCode.fill(QR.code)
     await expect(page.getByTestId('student-stack-submit')).toBeEnabled()
     await page.getByTestId('student-stack-submit').click()
     await expect(
-      page.getByText(messages.pwa.practiceQuiz.escapeRoomCompletedTitle).first()
+      page
+        .getByText(deMessages.pwa.practiceQuiz.escapeRoomCompletedTitle)
+        .first()
     ).toBeVisible()
   })
 
@@ -850,6 +904,8 @@ test.describe.serial('Escape room workflows', () => {
     // the microlearning tile lives on the student home page (not the practice
     // quiz repetition page reached via the "quizzes" link)
     await page.getByTestId(`microlearning-${MICRO.displayName}`).click()
+    await page.waitForURL(/\/microLearnings\//)
+    await page.reload()
     await page.getByTestId('start-microlearning').click()
     await page.getByTestId('escape-room-start').click()
 
@@ -915,43 +971,121 @@ test.describe.serial('Escape room workflows', () => {
     ).toBeAttached()
   })
 
-  test('Group members start, hit the lockout on a wrong answer, and escape on the correct one', async ({
+  test('Two group members share one attempt while the lecturer monitors and resets it', async ({
+    browser,
     page: testPage,
   }, testInfo) => {
     page = testPage
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
-    // testuser1 belongs to a seeded two-member group ("Gruppe 1"), which
-    // clears the minimum-size gate for starting a group activity
-    await loginStudent(page)
-    await page.getByTestId(`course-button-${COURSE}`).click()
-    await page.getByTestId('student-course-existing-group-0').click()
-    await page.getByTestId(`open-group-activity-${GROUP.displayName}`).click()
-    await page.getByTestId('start-group-activity').click()
+    await loginLecturer(page)
+    await page.getByTestId('courses').click()
+    await page.getByTestId(`course-list-button-${COURSE}`).click()
+    await page.getByTestId('tab-groupActivities').click()
+    await page.getByTestId(`actions-GROUP_ACTIVITY-${GROUP.name}`).click()
+    await page.getByTestId(`monitor-group-activity-${GROUP.name}`).click()
 
-    // the group instance now exists; the escape overlay withholds the stack
-    // until a shared attempt is started
-    await page.getByTestId('escape-room-start').click()
-    await expect(page.getByText(SC1.content).first()).toBeVisible()
+    const member1 = await createStudentPage(browser)
+    const member2 = await createStudentPage(browser)
+    try {
+      await loginStudentPassword(member1, {
+        username: env('STUDENT_USERNAME'),
+      })
+      await member1.getByTestId(`course-button-${COURSE}`).click()
+      await member1.waitForURL(/\/course\//)
+      await member1.reload()
+      await member1.getByTestId('student-course-existing-group-0').click()
+      await member1
+        .getByTestId(`open-group-activity-${GROUP.displayName}`)
+        .click()
+      await member1.getByTestId('start-group-activity').click()
+      await expect(member1.getByTestId('escape-room-start')).toBeVisible()
 
-    // a wrong answer in the all-or-nothing submission persists nothing and
-    // locks the whole group out for a short window
-    await page.getByTestId('sc-0-answer-option-1').click()
-    await page.getByTestId('submit-group-activity').click()
-    await expect(
-      page.getByText(messages.pwa.practiceQuiz.escapeRoomLockoutToast)
-    ).toBeVisible()
-    await expect(page.getByTestId('submit-group-activity')).toBeEnabled({
-      timeout: 15_000,
-    })
+      await loginStudentPassword(member2, {
+        username: env('STUDENT_USERNAME15'),
+      })
+      await member2.getByTestId(`course-button-${COURSE}`).click()
+      await member2.waitForURL(/\/course\//)
+      await member2.reload()
+      await member2.setViewportSize({ width: 390, height: 844 })
+      await setLocale(member2, 'de')
+      await member2.getByTestId('student-course-existing-group-0').click()
+      await member2
+        .getByTestId(`open-group-activity-${GROUP.displayName}`)
+        .click()
+      await expect(member2.getByTestId('escape-room-start')).toBeVisible()
 
-    // the correct answer clears the single stack and completes the shared
-    // attempt, surfacing the completion overlay
-    await page.getByTestId('sc-0-answer-option-0').click()
-    await page.getByTestId('submit-group-activity').click()
-    await expect(
-      page.getByText(messages.pwa.practiceQuiz.escapeRoomCompletedTitle).first()
-    ).toBeVisible()
+      await Promise.all([
+        member1.getByTestId('escape-room-start').click(),
+        member2.getByTestId('escape-room-start').click(),
+      ])
+      await expect(member1.getByText(SC1.content).first()).toBeVisible()
+      await expect(member2.getByText(SC1.content).first()).toBeVisible()
+      await expect(page.getByTestId('group-escape-room-progress')).toBeVisible({
+        timeout: 20_000,
+      })
+
+      const attemptRow = page
+        .locator('[data-cy^="escape-room-attempt-"]')
+        .first()
+      await expect(attemptRow).toContainText(
+        messages.manage.evaluation.escapeRoomStatusInProgress,
+        { timeout: 20_000 }
+      )
+      await captureEvidence(page, 'group-dashboard-en-desktop.png')
+
+      await member1.getByTestId('sc-0-answer-option-1').click()
+      await member1.getByTestId('submit-group-activity').click()
+      await expect(
+        member1.getByText(messages.pwa.practiceQuiz.escapeRoomLockoutToast)
+      ).toBeVisible()
+
+      // The second member hits the same server-owned group lockout.
+      await member2.getByTestId('sc-0-answer-option-1').click()
+      await member2.getByTestId('submit-group-activity').click()
+      await expect(
+        member2.getByText(deMessages.pwa.practiceQuiz.escapeRoomLockoutToast)
+      ).toBeVisible()
+      await captureEvidence(member2, 'group-participant-de-mobile.png')
+
+      await expect(member1.getByTestId('submit-group-activity')).toBeEnabled({
+        timeout: 15_000,
+      })
+      await member1.getByTestId('sc-0-answer-option-0').click()
+      await member1.getByTestId('submit-group-activity').click()
+      await expect(
+        member1
+          .getByText(messages.pwa.practiceQuiz.escapeRoomCompletedTitle)
+          .first()
+      ).toBeVisible()
+
+      await member2.reload()
+      await expect(
+        member2
+          .getByText(deMessages.pwa.practiceQuiz.escapeRoomCompletedTitle)
+          .first()
+      ).toBeVisible()
+      await expect(attemptRow).toContainText(
+        messages.manage.evaluation.escapeRoomStatusCompleted,
+        { timeout: 20_000 }
+      )
+
+      await attemptRow
+        .locator('[data-cy^="escape-room-reset-"]')
+        .first()
+        .click()
+      await attemptRow
+        .locator('[data-cy^="escape-room-reset-confirm-"]')
+        .click()
+      await expect(attemptRow).not.toBeAttached()
+
+      await Promise.all([member1.reload(), member2.reload()])
+      await expect(member1.getByTestId('start-group-activity')).toBeVisible()
+      await expect(member2.getByTestId('start-group-activity')).toBeVisible()
+    } finally {
+      await member1.context().close()
+      await member2.context().close()
+    }
   })
 
   test('Author a LiveQuiz escape-room block and confirm the time limit round-trips in minutes on edit', async ({
@@ -1028,5 +1162,109 @@ test.describe.serial('Escape room workflows', () => {
       LIVE.introText
     )
     await page.getByTestId('close-block-countdown').click()
+  })
+
+  test('LiveQuiz participant progression, cockpit monitoring, reset, and reload stay synchronized', async ({
+    browser,
+    page: testPage,
+  }, testInfo) => {
+    page = testPage
+    testInfo.setTimeout(600_000)
+    page.setDefaultNavigationTimeout(300_000)
+    await loginLecturer(page)
+    await page.getByTestId('activities').click()
+    await page.getByTestId('activities-search-input').fill(LIVE.name)
+    await page.getByTestId('activities-search-input').press('Enter')
+    await page.getByTestId(`start-live-quiz-${LIVE.name}`).click()
+    await expect(page.getByTestId('next-block-timeline')).toBeVisible({
+      timeout: 30_000,
+    })
+    await page.getByTestId('next-block-timeline').click()
+
+    const student = await createStudentPage(browser)
+    try {
+      await loginStudentPassword(student, {
+        username: env('STUDENT_USERNAME'),
+      })
+      await openStudentLiveQuiz(student, LIVE.displayName)
+      await acceptGamifiedLiveQuizAccountPrompt(student, LIVE.displayName)
+      await expect(student.getByTestId('escape-room-start')).toBeVisible()
+      await expect(student.getByText(SC1.content)).not.toBeAttached()
+
+      await student.getByTestId('escape-room-start').click()
+      await expect(student.getByText(SC1.content).first()).toBeVisible()
+      await student.setViewportSize({ width: 390, height: 844 })
+      await captureEvidence(student, 'live-participant-en-mobile.png')
+
+      await student.getByTestId('sc-0-answer-option-1').click()
+      const incorrectResponsePromise = student.waitForResponse(
+        (response) =>
+          response.request().method() === 'POST' &&
+          new URL(response.url()).pathname === '/AddResponse'
+      )
+      await student.getByTestId('student-submit-answer').click()
+      const incorrectResponse = await incorrectResponsePromise
+      expect(incorrectResponse.status()).toBe(200)
+      expect(await incorrectResponse.json()).toMatchObject({
+        status: 'incorrect',
+      })
+      await expect(
+        student.getByText(messages.pwa.practiceQuiz.escapeRoomIncorrectToast)
+      ).toBeVisible()
+      await expect(
+        student.getByText(/Locked out\. You can try again in \d+s\./)
+      ).toBeVisible()
+
+      await student.reload()
+      await expect(student.getByText(SC1.content).first()).toBeVisible()
+      const lockoutCountdown = student.getByText(
+        /Locked out\. You can try again in \d+s\./
+      )
+      await expect(lockoutCountdown).toBeVisible()
+      await expect(lockoutCountdown).toBeHidden({ timeout: 15_000 })
+
+      await student.getByTestId('sc-0-answer-option-0').click()
+      await student.getByTestId('student-submit-answer').click()
+      await expect(
+        student
+          .getByText(messages.pwa.practiceQuiz.escapeRoomCompletedTitle)
+          .first()
+      ).toBeVisible({ timeout: 30_000 })
+
+      const attemptRow = page
+        .locator('[data-cy^="escape-room-attempt-"]')
+        .filter({ hasText: env('STUDENT_USERNAME') })
+        .first()
+      await expect(attemptRow).toContainText(
+        messages.manage.evaluation.escapeRoomStatusCompleted,
+        { timeout: 30_000 }
+      )
+      await setLocale(page, 'de')
+      const germanAttemptRow = page
+        .locator('[data-cy^="escape-room-attempt-"]')
+        .filter({ hasText: env('STUDENT_USERNAME') })
+        .first()
+      await expect(germanAttemptRow).toContainText(
+        deMessages.manage.evaluation.escapeRoomStatusCompleted,
+        { timeout: 30_000 }
+      )
+      await germanAttemptRow.scrollIntoViewIfNeeded()
+      await captureEvidence(page, 'live-cockpit-de-desktop.png')
+
+      await germanAttemptRow
+        .locator('[data-cy^="escape-room-reset-"]')
+        .first()
+        .click()
+      await germanAttemptRow
+        .locator('[data-cy^="escape-room-reset-confirm-"]')
+        .click()
+      await expect(germanAttemptRow).not.toBeAttached()
+
+      await student.reload()
+      await expect(student.getByTestId('escape-room-start')).toBeVisible()
+      await expect(student.getByText(SC1.content)).not.toBeAttached()
+    } finally {
+      await student.context().close()
+    }
   })
 })

@@ -58,6 +58,8 @@ volta run pnpm --filter @klicker-uzh/playwright exec playwright test --project=c
 volta run pnpm --filter @klicker-uzh/playwright test -- --project=chromium
 ```
 
+For a linked DevPod behind devrouter, run Playwright inside the exact application container and keep every URL on the same workspace suffix. The config accepts `PLAYWRIGHT_BROWSER_EXECUTABLE_PATH` when Chromium is installed outside Playwright's normal cache flow and `PLAYWRIGHT_HOST_RESOLVER_RULES` to map the namespaced `*.localhost` hosts to devrouter's `devnet` IP. Pass matching `URL_MANAGE`, `URL_STUDENT`, `URL_STUDENT_LOGIN`, `URL_API`, `URL_AUTH`, `APP_ORIGIN_AUTH`, and `COOKIE_DOMAIN` values; a primary-host redirect from a namespaced test is an environment mismatch, not a missing selector.
+
 For live quiz answer submission, response processing, scheduled microlearnings, or Hatchet workflow failures, start the missing services explicitly:
 
 ```bash
@@ -76,6 +78,7 @@ Ensure the response processor is not running with `ASSESSMENT_MODE=true` when va
 - Sudden Firefox/WebKit execution: Playwright is running all configured projects. Pass `--project=chromium` or keep non-Chromium projects commented in config if Chromium-only is desired.
 - UI mode does not automatically mean tests execute; prefer CLI runs for verification and use UI mode only for interactive debugging.
 - A passing `CLEANUP` followed by immediate failures often means frontend apps or auth URLs are unavailable after setup.
+- A failure screenshot on `auth.klicker.localhost` during a namespaced run means the frontend was compiled without the workspace-specific public auth URL. Restart that exact app with the post-start environment before changing locators.
 
 Before blaming a test, probe the apps:
 

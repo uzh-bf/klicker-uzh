@@ -2733,6 +2733,7 @@ export async function getGradingGroupActivity(
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
     where: { id },
     include: {
+      escapeRoomConfig: true,
       stacks: { include: { elements: { orderBy: { order: 'asc' } } } },
       activityInstances: {
         include: { group: true },

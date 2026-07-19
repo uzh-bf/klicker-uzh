@@ -1697,14 +1697,15 @@ describe('Escape room integration tests', () => {
       })
       createdUserIds.push(otherLecturer.id)
 
-      expect(
-        (
-          await getGradingGroupActivity(
-            { id: fixture.groupActivity.id },
-            lecturerCtx
-          )
-        )?.canResetEscapeRoom
-      ).toBe(true)
+      const ownerView = await getGradingGroupActivity(
+        { id: fixture.groupActivity.id },
+        lecturerCtx
+      )
+      expect(ownerView?.escapeRoomConfig).toMatchObject({
+        timeLimit: 3600,
+        lockoutSeconds: 5,
+      })
+      expect(ownerView?.canResetEscapeRoom).toBe(true)
       expect(
         (
           await getGradingGroupActivity(
