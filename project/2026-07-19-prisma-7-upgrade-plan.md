@@ -677,6 +677,10 @@ Verified without changes:
   - local Playwright browser installation downloaded but stalled during extraction; focused browser behavior was verified with the pinned agent-browser runtime, while the full Cypress and Playwright suites remain GitHub gates
   - correctness and simplification reviews are resolved with no open findings
 - [ ] Slice 6: document, finish, and publish the draft PR
+  - Prisma 7 client, datasource, Analytics, generation, seeding, and Auth adapter ownership is documented in AGENTS.md, the engineering wiki, and the three affected project skills
+  - legacy host/Infisical lifecycle commands and self-contained DevPod `*:raw` commands are separated explicitly; all procedural DevPod examples are directly runnable
+  - wiki validation reached the full docs bundle; its only conformance error is pre-existing frontmatter in an untouched solution file, while AGENTS.md and Prisma schema-sync checks pass
+  - correctness and simplification review findings are resolved with no open findings
 - [ ] draft PR
 
 ## Approval Record
@@ -689,5 +693,6 @@ On 2026-07-19, the user approved:
 
 ## Next Steps
 
-1. Document Prisma 7 ownership and command behavior in the wiki and project skills.
-2. Execute the final security, independent, and maintainability gates through the draft PR.
+1. Commit the reviewed Prisma 7 wiki and skill updates.
+2. Execute fresh full verification and the final security, independent, and maintainability gates.
+3. Create and verify the draft PR.
