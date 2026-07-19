@@ -11,17 +11,15 @@ import type {
   PointCorrection,
   ResponseCorrectness as PrismaResponseCorrectness,
 } from '@klicker-uzh/prisma/client'
-import { ElementType as PrismaElementType } from '@klicker-uzh/prisma/client'
 
-export const ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES: readonly PrismaElementType[] =
-  [
-    PrismaElementType.SC,
-    PrismaElementType.MC,
-    PrismaElementType.KPRIM,
-    PrismaElementType.NUMERICAL,
-    PrismaElementType.FREE_TEXT,
-    PrismaElementType.QR_SCAN,
-  ]
+export const ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES: readonly ElementType[] = [
+  'SC',
+  'MC',
+  'KPRIM',
+  'NUMERICAL',
+  'FREE_TEXT',
+  'QR_SCAN',
+]
 
 export const ESCAPE_ROOM_GRACE_SECONDS = 5
 
