@@ -58,7 +58,8 @@
     "dev:test": "cross-env NODE_ENV=test next dev --turbopack --port 3010",
     "lint": "eslint .",
     "start": "next start --port 3010",
-    "start:test": "cross-env NODE_ENV=test pnpm start"
+    "start:test": "cross-env NODE_ENV=test pnpm start",
+    "test:prisma-adapter": "node scripts/testPrismaAdapter.mjs"
   },
   "engines": {
     "node": "=24"

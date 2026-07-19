@@ -665,7 +665,17 @@ Verified without changes:
   - correctness and simplification reviews found one argument-forwarding regression in the initial `run-s` composites; pnpm-compatible `{@}` placeholders now send flags only to the Prisma operation before generation
   - raw push/migrate help, a named create-only migration, and forced reset-plus-seed all passed through the corrected wrappers; the disposable migration was removed and fixtures were restored
   - both reviews are resolved with no open findings
-- [ ] Slice 5: verify Auth and all runtime consumers
+- [x] Slice 5: verify Auth and all runtime consumers
+  - a fail-closed Auth adapter smoke now exercises create, email lookup, account link, account lookup, unlink, and delete through the shared Prisma client; exact-ID cleanup always disconnects, leaves zero disposable rows, refuses remote hosts, and permits the DevPod `postgres` alias only under DevRouter outside production mode
+  - `check:all`, all 21 production build tasks, all 19 test-environment build tasks, frozen install, and Playwright discovery of 823 Chromium tests passed
+  - Grading 10/10, Util 46/46, Chat 40/40, and clean-database GraphQL 441/441 tests passed; the two Hatchet-dependent GraphQL files remain CI-only because the local worker does not register their workflow
+  - OLAT completed 22/22 assertions against a clean database; its direct local Vitest process then reported `EADDRINUSE` because the imported app unconditionally listens on the fixed port already occupied by the live DevPod service
+  - delegated lecturer Auth providers, credentials callback, session persistence, sign-out, authenticated Manage data, and authenticated Control `controlCourses` data passed without exposing session material
+  - the PWA loaded a seeded participant course and leaderboard at desktop and mobile sizes; Chat loaded a seeded database-backed chatbot route and API; screenshots are stored in the ignored project-local evidence directory
+  - backend, Response API, OLAT, and application routes started against local PostgreSQL; both Hatchet workers reached their services before the existing SDK heartbeat logger defect stopped them, which is unrelated to Prisma
+  - Auth production and test builds include the NextAuth route and the production login flow passes; the existing Next 16 Turbopack development server omits that Pages API route, so CI browser suites remain the final end-to-end gate
+  - local Playwright browser installation downloaded but stalled during extraction; focused browser behavior was verified with the pinned agent-browser runtime, while the full Cypress and Playwright suites remain GitHub gates
+  - correctness and simplification reviews are resolved with no open findings
 - [ ] Slice 6: document, finish, and publish the draft PR
 - [ ] draft PR
 
@@ -679,5 +689,5 @@ On 2026-07-19, the user approved:
 
 ## Next Steps
 
-1. Verify Auth and all runtime consumers, including browser behavior.
-2. Document and execute the final gates through the draft PR.
+1. Document Prisma 7 ownership and command behavior in the wiki and project skills.
+2. Execute the final security, independent, and maintainability gates through the draft PR.
