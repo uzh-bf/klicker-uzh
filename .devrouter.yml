@@ -1,0 +1,94 @@
+# Proxy-only routing over the shared external `devnet` network by container
+# alias. Linked worktrees publish no host ports; the primary checkout keeps its
+# documented fixed localhost ports. The monorepo runs every app in one container
+# via `turbo dev`; each hostname routes to that container's internal port.
+# ${WORKSPACE} is substituted by devrouter at runtime so parallel worktrees
+# target distinct aliases (`<workspace>-app` / `<workspace>-db`).
+# Full walkthrough: devrouter docs/DEVCONTAINER.md.
+#
+# Usage: `devrouter setup --yes` once, then from either checkout kind run
+# `devrouter ensure .`. Use
+# `devrouter workspace up <branch>` to create a new worktree. Primary checkouts
+# use the one-at-a-time localhost overlay documented in `.devcontainer/README.md`.
+#
+# The container runs every routed app plus the two Hatchet workers. Workers have
+# no route; analytics, Office add-in, and docs remain outside this stack.
+version: 1
+devrouter:
+  version: 0.0.35
+project:
+  name: klicker-uzh
+apps:
+  # backend GraphQL API
+  - name: api
+    host: api.klicker.localhost
+    protocol: http
+    runtime: proxy
+    upstream: ${WORKSPACE}-app:3000
+
+  # auth (NextAuth; credentials login as lecturer/abcd, no EduID needed)
+  - name: auth
+    host: auth.klicker.localhost
+    protocol: http
+    runtime: proxy
+    upstream: ${WORKSPACE}-app:3010
+
+  # student PWA
+  - name: pwa
+    host: pwa.klicker.localhost
+    protocol: http
+    runtime: proxy
+    upstream: ${WORKSPACE}-app:3001
+
+  # lecturer management UI
+  - name: manage
+    host: manage.klicker.localhost
+    protocol: http
+    runtime: proxy
+    upstream: ${WORKSPACE}-app:3002
+
+  # live-quiz control UI
+  - name: control
+    host: control.klicker.localhost
+    protocol: http
+    runtime: proxy
+    upstream: ${WORKSPACE}-app:3003
+
+  # OLAT inbound REST API (dev port 3030; bearer OLAT_API_KEY). /health + /api-docs.
+  - name: olat-api
+    host: olat-api.klicker.localhost
+    protocol: http
+    runtime: proxy
+    upstream: ${WORKSPACE}-app:3030
+
+  # response-api: receives live-quiz responses from the PWA, pushes hatchet events.
+  - name: response-api
+    host: response-api.klicker.localhost
+    protocol: http
+    runtime: proxy
+    upstream: ${WORKSPACE}-app:7078
+
+  # Postgres: db.klicker.localhost:5432 -> `klicker-db` (SNI). Connect with
+  # direct-SSL so the ClientHello carries the SNI (libpq 17+): psql
+  # "host=db.klicker.localhost port=5432 user=klicker-prod password=klicker
+  # dbname=klicker-prod sslmode=require sslnegotiation=direct"  (GOTCHAS #17)
+  - name: db
+    host: db.klicker.localhost
+    protocol: tcp
+    tcpProtocol: postgres
+    runtime: proxy
+    upstream: ${WORKSPACE}-db:5432
+
+  # lti-service: pre-built, runs on 4000. Full LTI launch requires external LMS.
+  - name: lti
+    host: lti.klicker.localhost
+    protocol: http
+    runtime: proxy
+    upstream: ${WORKSPACE}-app:4000
+
+  # chat: needs UPSTREAM_OPENAI_API_KEY. runs on 3004.
+  - name: chat
+    host: chat.klicker.localhost
+    protocol: http
+    runtime: proxy
+    upstream: ${WORKSPACE}-app:3004

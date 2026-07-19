@@ -15,6 +15,8 @@ import remarkRehype from 'remark-rehype'
 import { twMerge } from 'tailwind-merge'
 import { unified } from 'unified'
 import ImgWithModal from './ImgWithModal.js'
+import { VideoEmbed } from './VideoEmbed.js'
+import { parseVideoEmbedUrl } from './VideoEmbedUrl.js'
 
 export interface MarkdownProps {
   className?: {
@@ -135,32 +137,54 @@ function Markdown({
                   withModal={withModal}
                 />
               ),
-              a: withLinkButtons
-                ? ({
-                    href,
-                    children,
-                  }: {
-                    href: string
-                    children: React.ReactNode
-                  }) => {
-                    const isExcel = href.includes('.xls')
-                    const isPDF = href.includes('.pdf')
-                    return (
-                      <a
-                        className={twMerge(
-                          'my-1 flex flex-row gap-3 rounded-sm border px-4 py-3 text-sm hover:bg-slate-200'
-                        )}
-                        href={href}
-                      >
-                        <div>
-                          {isExcel && <FontAwesomeIcon icon={faFileExcel} />}
-                          {isPDF && <FontAwesomeIcon icon={faFilePdf} />}
-                        </div>
-                        <div>{children}</div>
-                      </a>
-                    )
-                  }
-                : 'a',
+              a: ({
+                href,
+                children,
+                target,
+                rel,
+                ...rest
+              }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => {
+                const labelText =
+                  typeof children === 'string'
+                    ? children.trim().toLowerCase()
+                    : ''
+                const isVideoLabel =
+                  labelText === 'video' || labelText === 'embed'
+                const video =
+                  href && isVideoLabel ? parseVideoEmbedUrl(href) : null
+
+                if (video) {
+                  return <VideoEmbed {...video} />
+                }
+
+                if (withLinkButtons) {
+                  const isExcel = href?.includes('.xls')
+                  const isPDF = href?.includes('.pdf')
+                  return (
+                    <a
+                      className={twMerge(
+                        'my-1 flex flex-row gap-3 rounded-sm border px-4 py-3 text-sm hover:bg-slate-200'
+                      )}
+                      href={href}
+                      target={target}
+                      rel={rel}
+                      {...rest}
+                    >
+                      <span>
+                        {isExcel && <FontAwesomeIcon icon={faFileExcel} />}
+                        {isPDF && <FontAwesomeIcon icon={faFilePdf} />}
+                      </span>
+                      <span>{children}</span>
+                    </a>
+                  )
+                }
+
+                return (
+                  <a href={href} target={target} rel={rel} {...rest}>
+                    {children}
+                  </a>
+                )
+              },
               ...components,
             },
           })

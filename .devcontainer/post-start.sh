@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+# devrouter:managed devcontainer
+# Invoked by host-side `devrouter ensure` after it validates the exact container.
+# Launches every routed app plus both workers through the delivered helper.
+set -euo pipefail
+cd /workspaces/klicker-uzh
+
+# Re-source the canonical env (DevPod truncates env_file values at '='), then the
+# runtime Hatchet token written by post-create (if any). (GOTCHAS #1)
+set -a
+# shellcheck source=/dev/null
+. /workspaces/klicker-uzh/.devcontainer/devcontainer.env
+# shellcheck source=/dev/null
+[ -f /workspaces/klicker-uzh/.devcontainer/.hatchet.env ] && . /workspaces/klicker-uzh/.devcontainer/.hatchet.env
+set +a
+
+# Detect if devrouter routing is active (via mkcert CA mount) or fallback to plain localhost ports
+if [ ! -s /etc/devrouter/mkcert-rootCA.pem ]; then
+  echo "[post-start] devrouter not detected (no cert mount). Falling back to localhost port-based URLs."
+  export APP_ORIGIN_API=http://localhost:3000
+  export APP_ORIGIN_AUTH=http://localhost:3010
+  export APP_ORIGIN_PWA=http://localhost:3001
+  export APP_ORIGIN_MANAGE=http://localhost:3002
+  export APP_ORIGIN_CONTROL=http://localhost:3003
+  export APP_ORIGIN_ASSESSMENT_API=http://localhost:3000
+  export APP_ORIGIN_ASSESSMENT_PWA=http://localhost:3001
+  export APP_ORIGIN_LTI=http://localhost:4000
+  export APP_ORIGIN_CHAT=http://localhost:3004
+  export NEXTAUTH_URL=http://localhost:3010
+  export COOKIE_DOMAIN=localhost
+  export NEXT_PUBLIC_API_URL=http://localhost:3000/api/graphql
+  export NEXT_PUBLIC_AUTH_URL=http://localhost:3010
+  export NEXT_PUBLIC_MANAGE_URL=http://localhost:3002
+  export NEXT_PUBLIC_PWA_URL=http://localhost:3001
+  export NEXT_PUBLIC_ASSESSMENT_URL=http://localhost:3001
+  export NEXT_PUBLIC_CONTROL_URL=http://localhost:3003
+  export NEXT_PUBLIC_ADD_RESPONSE_URL=http://localhost:7078
+  export NEXT_PUBLIC_CHAT_URL=http://localhost:3004
+  export CORS_ALLOWED_ORIGINS=http://localhost:3001
+  export NODE_EXTRA_CA_CERTS=""
+elif [ -n "${WORKSPACE:-}" ]; then
+  echo "[post-start] Namespacing URLs for workspace: $WORKSPACE"
+  export APP_ORIGIN_API=https://api.klicker.${WORKSPACE}.localhost
+  export APP_ORIGIN_AUTH=https://auth.klicker.${WORKSPACE}.localhost
+  export APP_ORIGIN_PWA=https://pwa.klicker.${WORKSPACE}.localhost
+  export APP_ORIGIN_MANAGE=https://manage.klicker.${WORKSPACE}.localhost
+  export APP_ORIGIN_CONTROL=https://control.klicker.${WORKSPACE}.localhost
+  export APP_ORIGIN_ASSESSMENT_API=https://api.klicker.${WORKSPACE}.localhost
+  export APP_ORIGIN_ASSESSMENT_PWA=https://pwa.klicker.${WORKSPACE}.localhost
+  export APP_MANAGE_SUBDOMAIN=manage.klicker.${WORKSPACE}.localhost
+  export APP_STUDENT_SUBDOMAIN=pwa.klicker.${WORKSPACE}.localhost
+  export APP_CONTROL_SUBDOMAIN=control.klicker.${WORKSPACE}.localhost
+  export NEXTAUTH_URL=https://auth.klicker.${WORKSPACE}.localhost
+  export COOKIE_DOMAIN=klicker.${WORKSPACE}.localhost
+  export NEXT_PUBLIC_API_URL=https://api.klicker.${WORKSPACE}.localhost/api/graphql
+  export NEXT_PUBLIC_AUTH_URL=https://auth.klicker.${WORKSPACE}.localhost
+  export NEXT_PUBLIC_MANAGE_URL=https://manage.klicker.${WORKSPACE}.localhost
+  export NEXT_PUBLIC_PWA_URL=https://pwa.klicker.${WORKSPACE}.localhost
+  export NEXT_PUBLIC_ASSESSMENT_URL=https://pwa.klicker.${WORKSPACE}.localhost
+  export NEXT_PUBLIC_CONTROL_URL=https://control.klicker.${WORKSPACE}.localhost
+  export NEXT_PUBLIC_ADD_RESPONSE_URL=https://response-api.klicker.${WORKSPACE}.localhost
+  export CORS_ALLOWED_ORIGINS=https://pwa.klicker.${WORKSPACE}.localhost
+  export AUTH_LECTURER_ALLOWED_HOSTS=manage.klicker.${WORKSPACE}.localhost,127.0.0.1:3002
+  export AUTH_STUDENT_ALLOWED_HOSTS=pwa.klicker.${WORKSPACE}.localhost,127.0.0.1:3001
+  export APP_ORIGIN_LTI=https://lti.klicker.${WORKSPACE}.localhost
+  export NEXT_PUBLIC_CHAT_URL=https://chat.klicker.${WORKSPACE}.localhost
+  export APP_ORIGIN_CHAT=https://chat.klicker.${WORKSPACE}.localhost
+fi
+
+# No-TTY pnpm hardening (see post-create.sh). (GOTCHAS #18)
+export CI=true
+export npm_config_verify_deps_before_run=false
+
+: "${DEVROUTER_PROCESS_HELPER:?Run devrouter ensure to start this managed application process.}"
+
+export DEVROUTER_PROCESS_FINGERPRINT_ENV='APP_ORIGIN_API,APP_ORIGIN_AUTH,APP_ORIGIN_PWA,APP_ORIGIN_MANAGE,APP_ORIGIN_CONTROL,APP_ORIGIN_ASSESSMENT_API,APP_ORIGIN_ASSESSMENT_PWA,APP_ORIGIN_LTI,APP_ORIGIN_CHAT,APP_MANAGE_SUBDOMAIN,APP_STUDENT_SUBDOMAIN,APP_CONTROL_SUBDOMAIN,NEXTAUTH_URL,COOKIE_DOMAIN,NEXT_PUBLIC_API_URL,NEXT_PUBLIC_AUTH_URL,NEXT_PUBLIC_MANAGE_URL,NEXT_PUBLIC_PWA_URL,NEXT_PUBLIC_ASSESSMENT_URL,NEXT_PUBLIC_CONTROL_URL,NEXT_PUBLIC_ADD_RESPONSE_URL,NEXT_PUBLIC_CHAT_URL,CORS_ALLOWED_ORIGINS,AUTH_LECTURER_ALLOWED_HOSTS,AUTH_STUDENT_ALLOWED_HOSTS,NODE_EXTRA_CA_CERTS'
+
+# Run every routed app plus both Hatchet workers without Infisical. Devrouter
+# owns generic locking, process-group identity, and bounded replacement; this
+# repository owns only the application command and environment above.
+"$DEVROUTER_PROCESS_HELPER" ensure \
+  --name klicker-dev \
+  --match 'turbo run dev' \
+  --log /tmp/dev.log \
+  -- pnpm run dev:container
+
+if [ -s /etc/devrouter/mkcert-rootCA.pem ]; then
+  cat <<EOF
+[post-start] Apps (via devrouter; first compile can take a minute):
+[post-start]   API          -> ${APP_ORIGIN_API}
+[post-start]   Auth         -> ${APP_ORIGIN_AUTH}
+[post-start]   PWA          -> ${APP_ORIGIN_PWA}
+[post-start]   Manage       -> ${APP_ORIGIN_MANAGE}   (login: lecturer / abcd)
+[post-start]   Control      -> ${APP_ORIGIN_CONTROL}
+[post-start]   OLAT API     -> https://olat-api.${COOKIE_DOMAIN}  (/health, /api-docs; bearer OLAT_API_KEY)
+[post-start]   Response API -> ${NEXT_PUBLIC_ADD_RESPONSE_URL}
+[post-start]   LTI Service  -> ${APP_ORIGIN_LTI}
+[post-start]   Chat         -> ${NEXT_PUBLIC_CHAT_URL} (requires UPSTREAM_OPENAI_API_KEY)
+[post-start]   Workers      -> hatchet-worker-general + -response-processor (no URL; consume hatchet queue)
+[post-start] Lifecycle -> on the host: devrouter ensure <this-checkout>
+[post-start] Logs    -> devrouter exec <this-checkout> -- tail -f /tmp/dev.log
+EOF
+else
+  cat <<'EOF'
+[post-start] Apps (plain localhost; first compile can take a minute):
+[post-start]   API          -> http://localhost:3000
+[post-start]   Auth         -> http://localhost:3010
+[post-start]   PWA          -> http://localhost:3001
+[post-start]   Manage       -> http://localhost:3002   (login: lecturer / abcd)
+[post-start]   Control      -> http://localhost:3003
+[post-start]   OLAT API     -> http://localhost:3030  (/health, /api-docs; bearer OLAT_API_KEY)
+[post-start]   Response API -> http://localhost:7078
+[post-start]   LTI Service  -> http://localhost:4000
+[post-start]   Chat         -> http://localhost:3004 (requires UPSTREAM_OPENAI_API_KEY)
+[post-start]   Workers      -> hatchet-worker-general + -response-processor (no URL; consume hatchet queue)
+[post-start] Logs    -> devrouter exec <this-checkout> -- tail -f /tmp/dev.log
+EOF
+fi
