@@ -23,7 +23,11 @@ import { prop, sortBy } from 'remeda'
 import { ICourse, type ILeaderboardEntry } from 'src/schema/course.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import convertDateToUTCDatetime from '../lib/convertDateToUTCDatetime.js'
-import { orderStacks } from '../lib/util.js'
+import { computeRanks, orderStacks } from '../lib/util.js'
+import {
+  calculateAssessmentCourseScores,
+  getInstanceAvailablePoints,
+} from './assessmentScores.js'
 import { checkAccess } from './sharing.js'
 
 // custom date parser
@@ -302,9 +306,7 @@ export async function getCourseOverviewData(
         [prop('name'), 'asc']
       )
 
-      const filteredGroupEntries = sortedGroupEntries.flatMap((entry, ix) => {
-        return { ...entry, rank: ix + 1 }
-      })
+      const filteredGroupEntries = computeRanks(sortedGroupEntries)
 
       const groupCreationPoolEntry =
         await ctx.prisma.groupAssignmentPoolEntry.findUnique({
@@ -355,50 +357,6 @@ export async function getCourseOverviewData(
     course,
     participant,
     participation: null,
-  }
-}
-
-function getInstanceScoringInfo({
-  instance,
-}: {
-  instance: DB.ElementInstance
-}) {
-  const { elementData } = instance
-  const hasSampleSolution =
-    'options' in elementData &&
-    'hasSampleSolution' in elementData.options &&
-    (elementData.options.hasSampleSolution ?? false)
-
-  // compute the available points based on the instance information
-  const hasBasePoints =
-    instance.elementType !== DB.ElementType.FLASHCARD &&
-    instance.elementType !== DB.ElementType.CONTENT &&
-    (instance.options.basePoints ?? false)
-  const pointsMultiplier = instance.options.pointsMultiplier ?? 1
-
-  return { hasSampleSolution, hasBasePoints, pointsMultiplier }
-}
-
-function getInstanceAvailablePoints({
-  instance,
-  activityBasePoints,
-  activityCorrectnessPoints,
-  activityBonusPoints,
-}: {
-  instance: DB.ElementInstance
-  activityBasePoints: number
-  activityCorrectnessPoints: number
-  activityBonusPoints: number
-}) {
-  const { hasSampleSolution, hasBasePoints, pointsMultiplier } =
-    getInstanceScoringInfo({ instance })
-
-  return {
-    basePoints: hasBasePoints ? activityBasePoints : 0,
-    correctnessPoints: hasSampleSolution
-      ? pointsMultiplier * activityCorrectnessPoints
-      : 0,
-    bonusPoints: hasSampleSolution ? pointsMultiplier * activityBonusPoints : 0,
   }
 }
 
@@ -602,25 +560,39 @@ export async function getStudentAssessmentResults(
     }
   )
 
-  // verify that the student is logged in as an assessment participant and has a participation in the course
+  // Participant access is backed by the accepted course invitation, independent
+  // of the login mechanism used for the current session.
   if (!isAssessmentCourseAdmin) {
-    if (ctx.user.scope !== DB.UserLoginScope.EDUID) {
+    if (participantId !== ctx.user.sub) {
       throw new Error(
-        'Only logged in assessment participants can access assessment results'
+        'Participants can only access their own assessment results'
       )
     }
 
-    const participation = await ctx.prisma.participation.findUnique({
+    const participation = await ctx.prisma.participation.findFirst({
       where: {
-        courseId_participantId: {
-          courseId,
-          participantId: ctx.user.sub,
+        courseId,
+        participantId,
+        isActive: true,
+        participant: { isActive: true },
+        course: {
+          isAssessmentEnabled: true,
+          participantInvitations: {
+            some: {
+              participantId,
+              status: DB.InvitationStatus.ACCEPTED,
+              acceptedAt: { not: null },
+            },
+          },
         },
       },
+      select: { id: true },
     })
 
     if (!participation) {
-      throw new Error('Participation not found')
+      throw new Error(
+        'Active assessment participation with an accepted invitation not found'
+      )
     }
   }
 
@@ -859,153 +831,41 @@ export async function getAssessmentResultsCourse(
   }: { courseId: string; preferredAffiliation?: string },
   ctx: ContextWithUser
 ): Promise<AssessmentResultsCourse | null> {
-  const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId, isAssessmentEnabled: true },
-    include: {
-      liveQuizzes: {
-        where: {
-          status: DB.PublicationStatus.ENDED,
-          isDeleted: false,
-          isAssessmentEnabled: true,
-        },
-        include: {
-          blocks: {
-            include: {
-              elements: {
-                include: {
-                  liveQuizResponses: {
-                    include: {
-                      participant: {
-                        include: {
-                          accounts: {
-                            where: { ssoType: preferredAffiliation },
-                          },
-                        },
-                      },
-                    },
-                  },
-                  _count: { select: { corrections: true } },
-                },
-              },
-            },
-          },
-          _count: { select: { corrections: true } },
-        },
-      },
-      participations: {
-        include: {
-          participant: {
-            include: {
-              accounts: {
-                where: { ssoType: preferredAffiliation },
-              },
-            },
-          },
-        },
+  const scores = await calculateAssessmentCourseScores(
+    { courseId, participantScope: 'ALL' },
+    ctx
+  )
+  if (!scores) return null
+
+  const participants = await ctx.prisma.participant.findMany({
+    where: {
+      id: { in: scores.studentResults.map((result) => result.participantId) },
+    },
+    select: {
+      id: true,
+      email: true,
+      accounts: {
+        where: { ssoType: preferredAffiliation },
+        select: { ssoEmail: true },
+        take: 1,
       },
     },
   })
-
-  if (!course) return null
-
-  // initial student results object with all participants in the course
-  const initialStudentResults = course.participations.reduce<{
-    [participantId: string]: StudentAssessmentResultsItem
-  }>((acc, participation) => {
-    const email =
-      participation.participant.accounts[0]?.ssoEmail ??
-      participation.participant.email ??
-      'Missing E-Mail'
-    acc[participation.participantId] = {
-      participantId: participation.participantId,
-      participantEmail: email,
-      basePoints: 0,
-      correctnessPoints: 0,
-      bonusPoints: 0,
-    }
-    return acc
-  }, {})
-
-  // aggregate the points over all activities contained in the course
-  const courseResults = course.liveQuizzes.reduce<
-    Omit<AssessmentResultsCourse, 'studentResults'> & {
-      studentResults: { [participantId: string]: StudentAssessmentResultsItem }
-    }
-  >(
-    (courseAcc, lq) => {
-      lq.blocks.forEach((block) => {
-        block.elements.forEach((instance) => {
-          // get the available points for the instance
-          const { basePoints, correctnessPoints, bonusPoints } =
-            getInstanceAvailablePoints({
-              instance,
-              activityBasePoints: lq.defaultPoints,
-              activityCorrectnessPoints: lq.defaultCorrectPoints,
-              activityBonusPoints: lq.maxBonusPoints,
-            })
-
-          // increment the overall available points in the course
-          courseAcc.availableBasePoints += basePoints
-          courseAcc.availableCorrectnessPoints += correctnessPoints
-          courseAcc.availableBonusPoints += bonusPoints
-
-          // increment the number of point corrections in the course
-          courseAcc.numberOfCorrections += instance._count.corrections
-
-          // iterate over the student responses and aggregate them into the course results object
-          instance.liveQuizResponses
-            .filter(
-              (response) => response.elementBlockExecution === block.execution
-            )
-            .forEach((response) => {
-              // get the student's affiliation email, if available
-              const email =
-                response.participant.accounts[0]?.ssoEmail ??
-                response.participant.email ??
-                'Missing E-Mail'
-
-              // check if the student already has an entry in the results object and set it otherwise
-              if (courseAcc.studentResults[response.participantId]) {
-                // increment the results object with the student response content
-                courseAcc.studentResults[response.participantId]!.basePoints +=
-                  response.basePoints
-                courseAcc.studentResults[
-                  response.participantId
-                ]!.correctnessPoints += response.correctnessPoints
-                courseAcc.studentResults[response.participantId]!.bonusPoints +=
-                  response.bonusPoints
-              } else {
-                // set up a new student entry in the results object with the response content
-                courseAcc.studentResults[response.participantId] = {
-                  participantId: response.participantId,
-                  participantEmail: email,
-                  basePoints: response.basePoints,
-                  correctnessPoints: response.correctnessPoints,
-                  bonusPoints: response.bonusPoints,
-                }
-              }
-            })
-        })
-      })
-
-      // increment the number of point corrections in the course
-      courseAcc.numberOfCorrections += lq._count.corrections
-
-      return courseAcc
-    },
-    {
-      name: course.name,
-      availableBasePoints: 0,
-      availableCorrectnessPoints: 0,
-      availableBonusPoints: 0,
-      numberOfCorrections: 0,
-      studentResults: initialStudentResults,
-    }
+  const emails = new Map(
+    participants.map((participant) => [
+      participant.id,
+      participant.accounts[0]?.ssoEmail ??
+        participant.email ??
+        'Missing E-Mail',
+    ])
   )
 
   return {
-    ...courseResults,
-    studentResults: Object.values(courseResults.studentResults),
+    ...scores,
+    studentResults: scores.studentResults.map((result) => ({
+      ...result,
+      participantEmail: emails.get(result.participantId) ?? 'Missing E-Mail',
+    })),
   }
 }
 
@@ -2513,10 +2373,12 @@ async function computeRollingLeaderboardEntries(
   })
 
   // sort the leaderboard entries and add rank, level, and compute statistics
-  const sortedScores = sortBy(
-    Object.values(leaderboardScores),
-    [prop('score'), 'desc'],
-    [prop('username'), 'asc']
+  const sortedScores = computeRanks(
+    sortBy(
+      Object.values(leaderboardScores),
+      [prop('score'), 'desc'],
+      [prop('username'), 'asc']
+    )
   )
   const { leaderboardEntries, count, sum } = sortedScores.reduce<{
     leaderboardEntries: {
@@ -2532,7 +2394,7 @@ async function computeRollingLeaderboardEntries(
     count: number
     sum: number
   }>(
-    (acc, scoreEntry, ix) => {
+    (acc, scoreEntry) => {
       acc.leaderboardEntries.push({
         id: Math.floor(random(1000000000)),
         participantId: scoreEntry.participantId,
@@ -2540,7 +2402,7 @@ async function computeRollingLeaderboardEntries(
         avatar: scoreEntry.avatar,
         score: scoreEntry.score,
         isSelf: scoreEntry.isSelf,
-        rank: ix + 1,
+        rank: scoreEntry.rank,
         level: levelFromXp(scoreEntry.xp),
       })
       acc.count += 1
@@ -2632,17 +2494,18 @@ export async function getStudentCourseLeaderboard(
         }
       )
 
-      const sortedEntries = sortBy(
-        allEntries.mapped,
-        [prop('score'), 'desc'],
-        [prop('username'), 'asc']
+      const sortedEntries = computeRanks(
+        sortBy(
+          allEntries.mapped,
+          [prop('score'), 'desc'],
+          [prop('username'), 'asc']
+        )
       )
 
-      const filteredEntries = sortedEntries.flatMap((entry, ix) => {
-        if (ix < 10 || entry.participantId === ctx.user?.sub)
-          return { ...entry, rank: ix + 1 }
-        return []
-      })
+      // keep the top 10 entries, plus the requesting participant's own entry
+      const filteredEntries = sortedEntries.filter(
+        (entry, ix) => ix < 10 || entry.participantId === ctx.user?.sub
+      )
 
       return {
         leaderboard: filteredEntries,

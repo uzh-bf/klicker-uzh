@@ -6,7 +6,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface EscapeRoomProgressProps {
@@ -72,6 +72,17 @@ function EscapeRoomProgress({
   const [confirmingId, setConfirmingId] = useState<string | null>(null)
   const [resettingId, setResettingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [currentTime, setCurrentTime] = useState<number | null>(null)
+
+  useEffect(() => {
+    const updateCurrentTime = () => setCurrentTime(Date.now())
+    updateCurrentTime()
+    const interval = window.setInterval(updateCurrentTime, 1000)
+
+    return () => {
+      window.clearInterval(interval)
+    }
+  }, [])
 
   const { totalStacks, attempts } = progress
 
@@ -160,8 +171,9 @@ function EscapeRoomProgress({
                       ? Math.round((attempt.clearedStacks / totalStacks) * 100)
                       : 0
                   const lockedOut =
+                    currentTime !== null &&
                     attempt.lockoutUntil != null &&
-                    new Date(attempt.lockoutUntil).getTime() > Date.now()
+                    new Date(attempt.lockoutUntil).getTime() > currentTime
                   return (
                     <tr
                       key={

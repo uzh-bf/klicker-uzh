@@ -35,6 +35,7 @@ export function getCurrentEscapeRoomInstance<T extends { id: number }>(
 }
 
 // ----- HATCHET (WORKER/TASK) TYPES -----
+export * from './assessmentReport.js'
 export * from './hatchet.js'
 
 // ----- ACTIVITY LOG TYPES -----

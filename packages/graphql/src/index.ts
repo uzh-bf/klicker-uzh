@@ -19,6 +19,7 @@ import './schema/resource.js'
 import './schema/sharing.js'
 import './schema/template.js'
 import './schema/user.js'
+import './schema/verification.js'
 
 import './schema/mutation.js'
 import './schema/query.js'
