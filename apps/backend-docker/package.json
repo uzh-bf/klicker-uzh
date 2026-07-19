@@ -66,7 +66,7 @@
     "rollup": "~4.34.9",
     "source-map-support": "~0.5.21",
     "tsx": "~4.19.4",
-    "typescript": "~5.6.3"
+    "typescript": "~6.0.3"
   },
   "scripts": {
     "build": "cross-env NODE_ENV=production run-s --npm-path pnpm build:ts",

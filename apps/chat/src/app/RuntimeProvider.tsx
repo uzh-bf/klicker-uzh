@@ -1,5 +1,12 @@
 'use client'
 
+import { useChatResponse } from '@/src/hooks/useChatResponse'
+import { useThreadManagement } from '@/src/hooks/useThreadManagement'
+import {
+  useChatStore,
+  type ExtendedThreadMessageLike,
+} from '@/src/stores/chatStore'
+import { useSettingsStore } from '@/src/stores/settingsStore'
 import {
   AssistantRuntimeProvider,
   useExternalStoreRuntime,
@@ -7,13 +14,6 @@ import {
 } from '@assistant-ui/react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useChatResponse } from 'src/hooks/useChatResponse'
-import { useThreadManagement } from 'src/hooks/useThreadManagement'
-import {
-  useChatStore,
-  type ExtendedThreadMessageLike,
-} from 'src/stores/chatStore'
-import { useSettingsStore } from 'src/stores/settingsStore'
 import { useChatUi } from '../components/chat-ui-context'
 import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
 

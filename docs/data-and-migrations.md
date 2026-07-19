@@ -20,6 +20,12 @@ pnpm run prisma:sync      # 3. mirror schema into apps/analytics (Python client)
 
 Forgetting step 3 silently desynchronizes the Python analytics service — `util/sync-schema.sh` copies every `.prisma` file **except `js.prisma`** into `apps/analytics/prisma/schema/`, where a separate `py.prisma` defines the Python generator. Then regenerate the client (`pnpm --filter @klicker-uzh/prisma generate`, or `pnpm run build`) and update GraphQL types/resolvers if the API surface changed ([API layer](./graphql-api-layer.md)).
 
+## TypeScript 6 generation compatibility
+
+The package generation pipeline runs `packages/prisma/scripts/patchPrismaNamespace.mjs` after Prisma and annotates three generated null-enum constants required by TypeScript 6. The patch is idempotent and fails unless every expected generated or already-patched declaration occurs exactly once. Direct `prisma generate` bypasses this compatibility step. The Prisma package's canonical `check` runs both its compiler and the patch invariant tests.
+
+`pnpm-workspace.yaml` also narrows the `prisma-json-types-generator@3.6.0` TypeScript peer to TypeScript 6. Remove that override when the generator publishes native TypeScript 6 peer support. Remove the namespace patch, test, and package-script suffix together when a Prisma upgrade emits declarations that compile under TypeScript 6 without the patch.
+
 ## Split schema
 
 The schema is a **folder** (`prisma.config.ts` → `schema: 'src/prisma/schema'`), 14 files split by area: `user`, `participant`, `course`, `element`, `quiz`, `response`, `gamification`, `sharing`, `chat`, `analytics`, `resources`, `other`, plus `datasource.prisma` (shared datasource, `DATABASE_URL` + shadow DB) and `js.prisma` (generators only: `prisma-client` ESM output to `../client`, Pothos types, `prisma-json-types-generator`).

@@ -26,14 +26,15 @@
     "rollup-plugin-copy": "~3.5.0",
     "rollup-plugin-delete": "~2.1.0",
     "tsx": "~4.19.4",
-    "typescript": "~5.6.3"
+    "typescript": "~6.0.3"
   },
   "scripts": {
     "build": "run-s --npm-path pnpm generate build:ts",
     "build:test": "pnpm run build",
     "build:ts": "cross-env NODE_ENV=production rollup -c",
-    "check": "tsc --noEmit",
-    "generate": "prisma generate",
+    "check": "run-s --npm-path pnpm generate check:ts test:patch-namespace",
+    "check:ts": "tsc --noEmit -p tsconfig.check.json",
+    "generate": "prisma generate && node scripts/patchPrismaNamespace.mjs",
     "prisma:deploy": "../../util/_run_with_infisical.sh --env dev pnpm run prisma:deploy:raw",
     "prisma:deploy:prod": "../../util/_run_with_infisical.sh --env prd pnpm run prisma:deploy:raw",
     "prisma:deploy:qa": "../../util/_run_with_infisical.sh --env stg pnpm run prisma:deploy:raw",
@@ -58,7 +59,8 @@
     "prisma:studio": "../../util/_run_with_infisical.sh --env dev pnpm run prisma:studio:raw",
     "prisma:studio:prod": "../../util/_run_with_infisical.sh --env prd pnpm run prisma:studio:raw",
     "prisma:studio:qa": "../../util/_run_with_infisical.sh --env stg pnpm run prisma:studio:raw",
-    "prisma:studio:raw": "prisma studio"
+    "prisma:studio:raw": "prisma studio",
+    "test:patch-namespace": "node --test scripts/patchPrismaNamespace.test.mjs"
   },
   "engines": {
     "node": "=24"

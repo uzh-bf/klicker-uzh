@@ -1,7 +1,6 @@
 {
   "include": ["**/**/*"],
   "compilerOptions": {
-    "baseUrl": ".",
     /* Base Options: */
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -15,16 +14,10 @@
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
-    /* If transpiling with TypeScript: */
-    "module": "ESNext",
+    /* If NOT transpiling with TypeScript: */
+    "module": "preserve",
     "moduleResolution": "bundler",
-    "outDir": "dist",
-    "sourceMap": true,
-    /* AND if you're building for a library: */
-    "declaration": true,
-    /* AND if you're building for a library in a monorepo: */
-    "composite": true,
-    "declarationMap": true,
+    "noEmit": true,
     /* If your code runs in the DOM: */
     "lib": ["es2022", "dom", "dom.iterable"]
   }
