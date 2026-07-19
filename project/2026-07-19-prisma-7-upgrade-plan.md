@@ -50,9 +50,9 @@ Terminal proof:
 6. Keep existing node-pg pool and SSL behavior; verify rather than tune.
 7. Preserve Analytics-specific `datasource.prisma` in local sync and Docker assembly.
 8. Compile raw Prisma 7 generated output before deciding whether the TypeScript namespace patch remains.
-9. Use a narrow Auth adapter peer correction only if current types, build, direct adapter-method smoke, and delegated-login behavior pass. Otherwise stop the Prisma 7 upgrade.
+9. Do not add an Auth peer correction: `@auth/prisma-adapter` 2.11.2's existing `>=2.26.0` comparator already admits Prisma 7. Keep the direct adapter-method and delegated-login gates.
 10. Keep the PR draft until local finish gates pass; image jobs skipped on drafts must pass after the user marks it ready.
-11. Prove the unsupported Auth adapter runtime surface with a local-only adapter-method round-trip; delegated credentials login alone does not call those methods.
+11. Prove the Auth adapter runtime surface with a local-only adapter-method round-trip; delegated credentials login alone does not call those methods.
 
 ## Research Summary
 
@@ -75,14 +75,14 @@ Findings:
 - 47 active raw `new PrismaClient()` calls omit an adapter; six more GraphQL scripts and one backend script construct adapters locally.
 - Prisma 7 removes automatic generation after `migrate dev` and `db push`, plus automatic seeding after migrate/reset flows.
 - Current `migrate diff` uses removed flags and the wrong migration directory.
-- Latest `@auth/prisma-adapter` 2.11.2 still declares Prisma support only through version 6.
+- `@auth/prisma-adapter` 2.11.2 visually enumerates historical majors through `>=6`, but its first `>=2.26.0` comparator already admits Prisma 7 under semver rules; no peer correction is required.
 - No Prisma client middleware, metrics API, Accelerate URL, removed engine environment variable, or `db execute` flag requires migration.
-- Prisma 7.8 still emits inferred `DbNull`, `JsonNull`, and `AnyNull`; upstream issue 28581 remains open.
+- Upstream issue 28581 remains open, but installed Prisma 7.8 emits `runtime.DbNull`, `runtime.JsonNull`, and `runtime.AnyNull`; raw strict and declaration builds pass without the local patch.
 
 Limitations:
 
 - Exact Prisma 7.8 CLI behavior must be proved after install.
-- Auth adapter runtime compatibility is not officially declared by its peer range.
+- Auth adapter runtime compatibility still needs direct proof even though its peer range accepts Prisma 7.
 - Production migration execution is not mapped in this repository; this branch preserves commands but does not claim deployment proof.
 
 ## Full Dependency Inventory
@@ -96,7 +96,7 @@ Limitations:
 | `@prisma/extension-optimize` | 2.0.1 | remove | query optimization | unused; peer range excludes Prisma 7 |
 | `prisma-json-types-generator` | 3.6.0 | 5.1.0 | JSON type generator | Prisma 7 and TypeScript 6 compatible; release-age eligible |
 | `@pothos/plugin-prisma` | 4.10.0 | unchanged | GraphQL type generator | peer range accepts Prisma 7; change only on evidence |
-| `@auth/prisma-adapter` | 2.10.0 | 2.11.2 candidate | Auth database adapter | latest still lacks Prisma 7 peer declaration; gated correction and smoke test |
+| `@auth/prisma-adapter` | 2.10.0 | 2.11.2 | Auth database adapter | existing peer range accepts Prisma 7; no extension; gated smoke test |
 | `@next-auth/prisma-adapter` | 1.0.7 | remove | legacy Auth adapter | unused duplicate |
 | `pg` | 8.16.3 | unchanged | PostgreSQL driver | preserve pool and SSL behavior |
 
@@ -175,25 +175,24 @@ Do not add a general connection framework, new environment abstraction, or pool 
 
 Problem:
 
-- current and latest `@auth/prisma-adapter` peer metadata ends at Prisma 6
+- `@auth/prisma-adapter` peer metadata visually enumerates historical majors through `>=6`, but its leading `>=2.26.0` comparator already includes Prisma 7
 - Auth actively passes the shared generated client to `PrismaAdapter`
 
 Recommended path:
 
 1. Move to release-age-eligible 2.11.2.
-2. Add the narrowest pnpm package extension that admits only Prisma 7 for that exact adapter version.
-3. Record package, version, upstream limitation, verification, and removal trigger next to the extension.
-4. Add a local-only, fail-closed adapter smoke that calls `getUserByEmail`, `createUser`, `linkAccount`, `getUserByAccount`, and cleanup methods against a disposable identity.
-5. Require cleanup in `finally` and refuse non-local database hosts.
-6. Require frozen install, Auth typecheck, production build, adapter smoke, delegated sign-in, session persistence, and sign-out.
-7. Treat delegated credentials login as proof of direct shared-client behavior, not proof of Auth adapter methods.
-8. Stop and revert the Prisma 7 upgrade if any adapter operation or type contract fails.
+2. Confirm the resolved peer graph accepts Prisma 7 without a package extension.
+3. Add a local-only, fail-closed adapter smoke that calls `getUserByEmail`, `createUser`, `linkAccount`, `getUserByAccount`, and cleanup methods against a disposable identity.
+4. Require cleanup in `finally` and refuse non-local database hosts.
+5. Require frozen install, Auth typecheck, production build, adapter smoke, delegated sign-in, session persistence, and sign-out.
+6. Treat delegated credentials login as proof of direct shared-client behavior, not proof of Auth adapter methods.
+7. Stop and revert the Prisma 7 upgrade if any adapter operation or type contract fails.
 
 Rejected:
 
 - legacy `@next-auth/prisma-adapter`: unused and stale
 - Auth.js major migration: unrelated blast radius
-- ignoring the peer warning globally: hides unrelated dependency defects
+- a redundant package extension: changes no accepted versions and creates a false maintenance obligation
 
 ## Generated-Code Patch Gate
 
@@ -257,7 +256,7 @@ Baseline result on 2026-07-19:
 
 | Risk | Early signal | Control | Fallback |
 | --- | --- | --- | --- |
-| Auth adapter is not Prisma 7 compatible | peer/type/build/login failure | exact package extension plus full Auth smoke | stop upgrade and wait for upstream |
+| Auth adapter is not Prisma 7 compatible | type/build/adapter/login failure | resolved peer check plus full Auth smoke | stop upgrade and wait for upstream |
 | maintenance scripts fail at runtime | constructor/type/runtime error | shared factory on Prisma 6 first | revert affected preparation slice |
 | generated null types still fail TS6 | TS2742 declaration error | raw probe plus exact fail-closed patch | retain adapted patch with removal trigger |
 | JSON annotations drift | generated client diff or GraphQL errors | compare output and run GraphQL generation/tests | stop before consumer edits |
@@ -420,7 +419,7 @@ Files:
 - `util/check-prisma-sync.sh`
 - `apps/analytics/Dockerfile`
 - namespace patch script/tests if retained
-- Auth package manifest and pnpm compatibility rule
+- Auth package manifest and resolved peer evaluation
 - plan progress
 
 Do:
@@ -428,7 +427,7 @@ Do:
 - upgrade `prisma`, `@prisma/client`, and `@prisma/adapter-pg` owner packages to 7.8.0
 - upgrade JSON generator to 5.1.0 and remove its TypeScript override
 - remove unused Prisma CLI, client, adapter, Optimize, instrumentation, and legacy Auth adapter dependencies
-- upgrade `@auth/prisma-adapter` to 2.11.2 and add the exact gated peer correction
+- upgrade `@auth/prisma-adapter` to 2.11.2 and confirm that no peer correction is required
 - move JavaScript datasource URLs into config using secret-free-safe environment access
 - give Analytics its own datasource and preserve it in sync/check/Docker assembly
 - run the raw namespace-patch gate and remove or adapt it from evidence
@@ -647,7 +646,16 @@ Verified without changes:
   - GraphQL and backend checks/builds, frozen install, isolated database reset, full seed, and a converted read-only maintenance script passed
   - GraphQL integration reached 447/523 tests; the remaining 76 failures are confined to `liveQuizPointCorrections.test.ts` and `instancePointCorrections.test.ts` because the local shared Hatchet worker does not register the CI-only `create-audit-log-entry` workflow
   - correctness and simplification reviews are resolved with no open findings; CI's dedicated worker remains the final proof for the blocked subset
-- [ ] Slice 3: upgrade the generated-client boundary to Prisma 7
+- [x] Slice 3: upgrade the generated-client boundary to Prisma 7
+  - Prisma, Client, and PostgreSQL adapter are pinned to 7.8.0; the JSON generator is pinned to 5.1.0 through a narrow Syncpack rule
+  - unused consumer CLI/client/adapter, Optimize, instrumentation, and legacy Auth adapter dependencies are removed; Office Add-in remains unchanged
+  - JavaScript datasource URLs moved to secret-free-safe Prisma config, while Analytics owns its URL-bearing datasource through sync, drift checking, and Docker assembly
+  - raw unpatched Prisma 7 output passed strict and declaration builds; the obsolete namespace patch and tests are removed
+  - secret-free generation was deterministic across two full-tree hashes (`62ece9db4281c0b959e5bf18832ea4617642555aad34c26976aa05f795ca15ef`)
+  - Prisma, GraphQL, Auth, backend, Chat, OLAT, and Cypress checks/builds passed; the compiled client queried local fixtures
+  - Prisma Client Python generation and the local Analytics image build passed with the owned datasource
+  - the Auth peer graph accepts Prisma 7 without an extension; the remaining repository peer warnings are pre-existing and unrelated
+  - review findings were integrated: remove the no-op Auth extension, require both Analytics-owned schema files, and enforce exact reviewed package pins
 - [ ] Slice 4: preserve database lifecycle commands
 - [ ] Slice 5: verify Auth and all runtime consumers
 - [ ] Slice 6: document, finish, and publish the draft PR
@@ -657,12 +665,12 @@ Verified without changes:
 
 On 2026-07-19, the user approved:
 
-1. the exact, temporary Auth adapter peer correction subject to all defined compatibility gates
+1. an exact, temporary Auth adapter peer correction if required; implementation evidence showed the existing semver range already accepts Prisma 7, so no correction was added
 2. JSON generator 5.1.0 under the repository release-age policy
 3. preservation and adapter-safe conversion of all historical scripts
 
 ## Next Steps
 
-1. Upgrade and verify the generated-client boundary on Prisma 7.
-2. Preserve the database lifecycle commands and verify all runtime consumers.
+1. Preserve and verify the Prisma 7 database lifecycle commands.
+2. Verify Auth and all runtime consumers, including browser behavior.
 3. Document and execute the final gates through the draft PR.

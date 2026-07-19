@@ -29,6 +29,13 @@ export default {
       packages: ['**'],
     },
     {
+      // Keep reviewed upgrade targets exact instead of floating across releases.
+      range: '',
+      dependencyTypes: ['dev'],
+      dependencies: ['prisma', 'prisma-json-types-generator'],
+      packages: ['@klicker-uzh/prisma'],
+    },
+    {
       range: '~',
       dependencyTypes: ['dev'],
       dependencies: ['!@types/**'],

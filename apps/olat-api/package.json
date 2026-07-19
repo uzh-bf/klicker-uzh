@@ -10,7 +10,6 @@
   "dependencies": {
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
-    "@prisma/adapter-pg": "6.16.1",
     "@scalar/express-api-reference": "0.8.7",
     "dayjs": "1.11.20",
     "express": "4.21.2",

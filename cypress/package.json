@@ -6,7 +6,6 @@
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/util": "workspace:*",
-    "@prisma/adapter-pg": "~6.16.1",
     "@testing-library/cypress": "~10.1.3",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^24.10.1",

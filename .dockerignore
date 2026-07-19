@@ -10,6 +10,7 @@ newsletter/
 **/.next/
 **/node_modules/
 **/.turbo/
+**/.venv/
 util/
 
 Dockerfile

@@ -1,10 +1,6 @@
-// import { PrismaPg } from '@prisma/adapter-pg'
 import { defineConfig } from 'prisma/config'
 
 export default defineConfig({
-  // experimental: {
-  //   adapter: true,
-  // },
   schema: 'src/prisma/schema',
   migrations: {
     path: 'src/prisma/schema/migrations',
@@ -16,10 +12,10 @@ export default defineConfig({
   typedSql: {
     path: 'src/prisma/schema/queries',
   },
-  // TODO: switch to using adapter instead of datasource at some point (was buggy when tested)
-  // async adapter() {
-  //   return new PrismaPg({
-  //     connectionString: process.env.DATABASE_URL,
-  //   })
-  // },
+  datasource: {
+    url: process.env.DATABASE_URL ?? '',
+    ...(process.env.SHADOW_DATABASE_URL
+      ? { shadowDatabaseUrl: process.env.SHADOW_DATABASE_URL }
+      : {}),
+  },
 })

@@ -8,8 +8,8 @@
     "dist"
   ],
   "dependencies": {
-    "@prisma/adapter-pg": "6.16.1",
-    "@prisma/client": "6.16.1",
+    "@prisma/adapter-pg": "7.8.0",
+    "@prisma/client": "7.8.0",
     "pg": "8.16.3"
   },
   "devDependencies": {
@@ -20,8 +20,8 @@
     "cross-env": "~7.0.3",
     "eslint": "~9.30.1",
     "npm-run-all": "~4.1.5",
-    "prisma": "~6.16.1",
-    "prisma-json-types-generator": "~3.6.0",
+    "prisma": "7.8.0",
+    "prisma-json-types-generator": "5.1.0",
     "rollup": "~4.34.9",
     "rollup-plugin-copy": "~3.5.0",
     "rollup-plugin-delete": "~2.1.0",
@@ -32,9 +32,9 @@
     "build": "run-s --npm-path pnpm generate build:ts",
     "build:test": "pnpm run build",
     "build:ts": "cross-env NODE_ENV=production rollup -c",
-    "check": "run-s --npm-path pnpm generate check:ts test:patch-namespace",
+    "check": "run-s --npm-path pnpm generate check:ts",
     "check:ts": "tsc --noEmit -p tsconfig.check.json",
-    "generate": "prisma generate && node scripts/patchPrismaNamespace.mjs",
+    "generate": "prisma generate",
     "prisma:deploy": "../../util/_run_with_infisical.sh --env dev pnpm run prisma:deploy:raw",
     "prisma:deploy:prod": "../../util/_run_with_infisical.sh --env prd pnpm run prisma:deploy:raw",
     "prisma:deploy:qa": "../../util/_run_with_infisical.sh --env stg pnpm run prisma:deploy:raw",
@@ -59,8 +59,7 @@
     "prisma:studio": "../../util/_run_with_infisical.sh --env dev pnpm run prisma:studio:raw",
     "prisma:studio:prod": "../../util/_run_with_infisical.sh --env prd pnpm run prisma:studio:raw",
     "prisma:studio:qa": "../../util/_run_with_infisical.sh --env stg pnpm run prisma:studio:raw",
-    "prisma:studio:raw": "prisma studio",
-    "test:patch-namespace": "node --test scripts/patchPrismaNamespace.test.mjs"
+    "prisma:studio:raw": "prisma studio"
   },
   "engines": {
     "node": "=24"
