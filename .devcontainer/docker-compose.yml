@@ -152,8 +152,11 @@ services:
         condition: service_healthy
 
   # --- LiteLLM for Chat (Tier 3) ---
+  # Pin an image tag that still exists on ghcr — BerriAI prunes old main-vX.Y.Z
+  # tags, and the previous main-v1.61.12 pin 404s, which fails `devpod up` once
+  # litellm is in runServices.
   litellm:
-    image: ghcr.io/berriai/litellm:main-v1.61.12
+    image: ghcr.io/berriai/litellm:main-v1.82.3
     volumes:
       - ../util/litellm/config.yaml:/app/config.yaml:ro
     command:
