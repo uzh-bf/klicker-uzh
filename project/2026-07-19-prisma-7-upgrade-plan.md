@@ -681,6 +681,12 @@ Verified without changes:
   - legacy host/Infisical lifecycle commands and self-contained DevPod `*:raw` commands are separated explicitly; all procedural DevPod examples are directly runnable
   - wiki validation reached the full docs bundle; its only conformance error is pre-existing frontmatter in an untouched solution file, while AGENTS.md and Prisma schema-sync checks pass
   - correctness and simplification review findings are resolved with no open findings
+  - fresh frozen install, all 21 production build tasks, all 19 test build tasks, the Analytics Docker image, the Auth adapter round-trip, and Grading 10/10, Util 46/46, and Chat 40/40 tests passed
+  - the final clean-database GraphQL run passed 440/441 tests after an earlier 441/441 pass on the same implementation; the single assessment-restriction reset failure is treated as a local integration flake, while the two Hatchet-dependent files remain CI-only
+  - the code-level security review found no branch-introduced high-confidence vulnerability; `pnpm audit --prod --audit-level high` still reports the repository-wide pre-existing backlog of 20 high, 33 moderate, and 7 low advisories
+  - independent native and Gemini 3.5 Flash High reviews confirmed client ownership, lifecycle wrappers, Analytics ownership, dependency cleanup, and the unchanged Office Add-in; one accepted low-severity improvement now gives a clear error when the Auth smoke lacks `DATABASE_URL`
+  - three other external suggestions were rejected after fact-checking: Prisma 7 no longer seeds automatically during reset, the flashcard entry point's direct-execution behavior predates this branch and has no importers, and the Analytics drift check intentionally fails when an owned file is missing
+  - the Auth smoke guard establishes an endpoint and execution-context boundary, not database provenance through a local tunnel; ordinary error paths clean up exact disposable identifiers, while abrupt process termination remains an accepted limitation of this manual smoke test
 - [ ] draft PR
 
 ## Approval Record
@@ -693,6 +699,6 @@ On 2026-07-19, the user approved:
 
 ## Next Steps
 
-1. Commit the reviewed Prisma 7 wiki and skill updates.
-2. Execute fresh full verification and the final security, independent, and maintainability gates.
-3. Create and verify the draft PR.
+1. Commit the reviewed final-gate follow-up.
+2. Run the final strict maintainability gate and resolve or record its findings.
+3. Complete Slice 6, create the draft PR, and verify its published state and CI.

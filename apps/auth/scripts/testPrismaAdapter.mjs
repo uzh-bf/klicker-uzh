@@ -2,7 +2,11 @@ import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma } from '@klicker-uzh/prisma'
 import { randomUUID } from 'node:crypto'
 
-const databaseUrl = new URL(process.env.DATABASE_URL ?? '')
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL is required for the Auth adapter smoke')
+}
+
+const databaseUrl = new URL(process.env.DATABASE_URL)
 const loopbackHosts = new Set(['127.0.0.1', '[::1]', 'localhost'])
 const isDevrouterDatabase =
   databaseUrl.hostname === 'postgres' &&
