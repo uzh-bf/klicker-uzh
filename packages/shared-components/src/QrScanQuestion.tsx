@@ -1,7 +1,7 @@
 import { Markdown } from '@klicker-uzh/markdown'
 import { isValidQrScanCode, normalizeQrScanCode } from '@klicker-uzh/types'
 import { useTranslations } from 'next-intl'
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 type BarcodeDetectorInstance = {
   detect: (source: HTMLVideoElement) => Promise<{ rawValue: string }[]>
