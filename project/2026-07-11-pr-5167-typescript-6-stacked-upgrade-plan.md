@@ -52,7 +52,7 @@ Evidence:
 - The eight TypeScript commits were replayed onto that merge without retaining obsolete stacked Next/React history. A range-diff confirmed that all eight logical commits remain.
 - The merged dual-React dependency graph exposed a missing `@types/react` edge in `recharts@2.15.3`. The same graph fails under TypeScript 5.6, so this is dependency resolution exposed by the rebase, not a TypeScript 6 language regression.
 - A package-scoped pnpm extension supplies the omitted peer only to `recharts@2.15.3`; a clean install links the React types into each Recharts virtual package.
-- Node 24.16.0 and pnpm 11.5.0 verification passes: frozen install, `check:all` (24/24 typechecks and 6/6 lint tasks), production build (21/21), test build (19/19), and Docs production build.
+- Node 24.16.0 and pnpm 11.5.0 verification passes: frozen install, `check:all` (24/24 typechecks and 6/6 lint tasks), production build (21/21), test build (19/19), and Docs production build. Frozen install, `check:all`, and production build were rerun after the final rebase onto `3872caee7`.
 - Office Add-in remains unchanged relative to `v3` and stays on TypeScript 5.6.
 
 Decision:
@@ -439,7 +439,8 @@ Every implementation slice:
 - [x] Clean post-rebase checks exposed the missing Recharts-to-React-types dependency edge. A package-scoped pnpm extension fixes the graph; TypeScript 5.6 reproduction confirmed this is not a TypeScript 6 regression.
 - [x] Post-fix Node 24 verification passes: frozen install, `check:all` (24/24 typechecks and 6/6 lint tasks), production build (21/21), test build (19/19), and Docs build. Office Add-in has no diff from `v3`.
 - [x] TypeScript 7 feasibility tested in disposable trees. Direct replacement is blocked; the official TypeScript 7 CLI plus TypeScript 6 API compatibility pattern passes Prisma generation, Next type generation, production build, and all 24 post-build checks. Release-age policy and Docusaurus remain explicit prerequisites.
+- [x] Final rebase onto current `v3` commit `3872caee7` completed. Range-diff preserves all ten branch commits; the TypeScript wiki commit keeps the newer devcontainer timestamp and log history. Fresh Node 24 frozen install, `check:all` (24/24 and 6/6), and production build (21/21) pass.
 
-Current: Draft [PR #5167](https://github.com/uzh-bf/klicker-uzh/pull/5167) is ready for final rebase onto current `v3`, fresh verification, and force-push. Office Add-in remains on TypeScript 5.6 and is untouched.
+Current: Draft [PR #5167](https://github.com/uzh-bf/klicker-uzh/pull/5167) is ready for force-push and CI read-back. Office Add-in remains on TypeScript 5.6 and is untouched.
 
-Next: commit the Recharts resolution and updated evidence, rebase onto `3872caee7`, rerun final verification, force-push with lease, refresh the whole-branch PR body, and monitor CI. Keep draft status.
+Next: commit this final checkpoint, force-push with lease, refresh the whole-branch PR body, and monitor CI. Keep draft status.
