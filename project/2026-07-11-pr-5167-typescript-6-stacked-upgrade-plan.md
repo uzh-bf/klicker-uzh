@@ -1,6 +1,6 @@
 # PR #5167 TypeScript 6 upgrade plan
 
-Status: rebased onto merged `v3` on 2026-07-19. Fresh local verification is green; publication and CI read-back remain.
+Status: rebased onto merged `v3` and published on 2026-07-19. Fresh local verification and required PR checks are green; the draft remains gated on maintainer approval.
 
 ## Goal
 
@@ -441,6 +441,6 @@ Every implementation slice:
 - [x] TypeScript 7 feasibility tested in disposable trees. Direct replacement is blocked; the official TypeScript 7 CLI plus TypeScript 6 API compatibility pattern passes Prisma generation, Next type generation, production build, and all 24 post-build checks. Release-age policy and Docusaurus remain explicit prerequisites.
 - [x] Final rebase onto current `v3` commit `3872caee7` completed. Range-diff preserves all ten branch commits; the TypeScript wiki commit keeps the newer devcontainer timestamp and log history. Fresh Node 24 frozen install, `check:all` (24/24 and 6/6), and production build (21/21) pass.
 
-Current: Draft [PR #5167](https://github.com/uzh-bf/klicker-uzh/pull/5167) is ready for force-push and CI read-back. Office Add-in remains on TypeScript 5.6 and is untouched.
+Current: Draft [PR #5167](https://github.com/uzh-bf/klicker-uzh/pull/5167) is published on current `v3`. Required checks passed for the verified code head `a45133bee`; this plan-only checkpoint does not change runtime or build behavior. Office Add-in remains on TypeScript 5.6 and is untouched. The PR's current-head checks remain the merge-gate source of truth.
 
-Next: commit this final checkpoint, force-push with lease, refresh the whole-branch PR body, and monitor CI. Keep draft status.
+Next: keep the PR draft until maintainer approval is present and the user explicitly asks to mark it ready. Merge only with explicit authority and green current-head CI.
