@@ -149,7 +149,8 @@ export default function CourseVerifiableCredentialsModal({
         onClose={onClose}
         title={t('manage.assessment.reportRecordsTitle')}
         className={{
-          content: 'min-w-0 max-w-[calc(100%-2rem)] p-4 md:max-w-6xl md:p-6',
+          content:
+            'min-w-0 max-w-[calc(100%-2rem)] overflow-visible p-4 md:max-w-6xl md:p-6',
         }}
         dataCloseButton={{ cy: 'close-assessment-report-records' }}
       >
@@ -224,13 +225,19 @@ export default function CourseVerifiableCredentialsModal({
           </div>
         ) : (
           <>
-            <CourseVerifiableCredentialsList
-              records={records}
-              locale={locale}
-              revokingId={revokingId}
-              onCopy={copyVerificationLink}
-              onRevoke={setPendingRevocation}
-            />
+            {/* Single scroll boundary: the modal content is overflow-visible (see
+                className.content above), so only this list scrolls while the search
+                row and pagination stay pinned. 16rem reserves room for those pinned
+                elements plus modal padding, keeping the whole modal within ~80vh. */}
+            <div className="max-h-[calc(80vh-16rem)] overflow-y-auto">
+              <CourseVerifiableCredentialsList
+                records={records}
+                locale={locale}
+                revokingId={revokingId}
+                onCopy={copyVerificationLink}
+                onRevoke={setPendingRevocation}
+              />
+            </div>
             <Pagination
               totalPages={totalPages}
               currentPage={currentPage}
@@ -238,6 +245,7 @@ export default function CourseVerifiableCredentialsModal({
               numOfObjects={totalCount}
               pageSize={pageSize}
               setPageSize={setPageSizeAndReset}
+              className="border-t border-slate-200 pt-2"
             />
           </>
         )}

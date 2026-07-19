@@ -386,13 +386,13 @@ function Index() {
               </div>
             </div>
 
-            <div className="h-full overflow-y-auto">
-              {!dataElements || loadingElements ? (
-                <div className="flex h-full items-center justify-center">
-                  <Loader />
-                </div>
-              ) : (
-                <>
+            {!dataElements || loadingElements ? (
+              <div className="flex flex-1 items-center justify-center">
+                <Loader />
+              </div>
+            ) : (
+              <div className="flex min-h-0 flex-1 flex-col">
+                <div className="min-h-0 flex-1 overflow-y-auto">
                   <ElementList
                     filtersActive={filtersActiveExceptCourse}
                     activityWizardOpen={!!creationMode}
@@ -431,21 +431,21 @@ function Index() {
                       await refetchElements()
                     }}
                   />
+                </div>
 
-                  {elements.length > 0 && (
-                    <Pagination
-                      totalPages={totalPages}
-                      currentPage={currentPage}
-                      setCurrentPage={setCurrentPage}
-                      numOfObjects={numOfElements}
-                      pageSize={pageSize}
-                      setPageSize={setPageSize}
-                      className="mb-3"
-                    />
-                  )}
-                </>
-              )}
-            </div>
+                {elements.length > 0 && (
+                  <Pagination
+                    totalPages={totalPages}
+                    currentPage={currentPage}
+                    setCurrentPage={setCurrentPage}
+                    numOfObjects={numOfElements}
+                    pageSize={pageSize}
+                    setPageSize={setPageSize}
+                    className="flex-none border-t border-slate-200 pt-2"
+                  />
+                )}
+              </div>
+            )}
           </>
         </div>
       </div>
