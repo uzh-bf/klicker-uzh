@@ -109,7 +109,9 @@ export function registerMicrolearningFlowTest() {
     })
     await page.getByTestId('sc-0-answer-option-0').click()
     await page.getByTestId('student-stack-submit').click()
-    await page.getByTestId('student-stack-continue').click()
+
+    // the authoritative refetch advances the stale URL to the next uncleared
+    // stack, so the evaluation's continue button can be only transient
     await expect(page).toHaveURL(/\/microLearnings\/[^/]+\/1$/)
     await expect(page.getByText(SC2.content).first()).toBeVisible()
 
