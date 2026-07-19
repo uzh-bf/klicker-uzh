@@ -35,7 +35,7 @@ export interface PracticeQuizWizardStepProps {
   gamifiedCourses?: ElementSelectCourse[]
   nonGamifiedCourses?: ElementSelectCourse[]
   assessmentCourses?: ElementSelectCourse[]
-  onSubmit?: (newValues: PracticeQuizFormValues) => void
+  onSubmit?: (newValues: PracticeQuizFormValues) => Promise<void>
   setStepValidity: Dispatch<SetStateAction<boolean[]>>
   onPrevStep?: (newValues: PracticeQuizFormValues) => void
   onNextStep?: (newValues: PracticeQuizFormValues) => void
@@ -255,8 +255,8 @@ function PracticeQuizWizard({
     EditPracticeQuizDocument
   )
   const handleSubmit = useCallback(
-    async (values: PracticeQuizFormValues) => {
-      submitPracticeQuizForm({
+    (values: PracticeQuizFormValues) => {
+      return submitPracticeQuizForm({
         id: initialValues?.id,
         previousCourseId: initialValues?.course?.id,
         values,

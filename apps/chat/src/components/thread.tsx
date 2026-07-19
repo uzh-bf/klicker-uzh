@@ -239,6 +239,7 @@ export const Thread: FC<ThreadProps> = ({
 
   return (
     <ThreadPrimitive.Root
+      data-cy="chat-thread"
       className="bg-background relative box-border flex min-h-0 flex-1 flex-col overflow-hidden"
       style={{
         ['--thread-max-width' as string]: embedded ? '100%' : '60rem',
@@ -330,7 +331,10 @@ const ThreadWelcome: FC<{
           embedded ? 'px-2' : ''
         )}
       >
-        <div className="flex w-full flex-grow flex-col items-center justify-center py-8 text-center">
+        <div
+          data-cy="chat-welcome-message"
+          className="flex w-full flex-grow flex-col items-center justify-center py-8 text-center"
+        >
           <ChatbotAvatar
             avatar={chatbotAvatar}
             fallbackIcon={chatbotFallbackIcon}
@@ -513,7 +517,10 @@ const Composer: FC = () => {
       className="w-full max-w-3xl"
       roundedClass="rounded-3xl"
     >
-      <ComposerPrimitive.Root className="flex w-full flex-col rounded-3xl border border-gray-200 bg-gray-100/80 px-2.5 shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-colors ease-in focus-within:border-gray-300">
+      <ComposerPrimitive.Root
+        data-cy="chat-composer"
+        className="flex w-full flex-col rounded-3xl border border-gray-200 bg-gray-100/80 px-2.5 shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-colors ease-in focus-within:border-gray-300"
+      >
         <ComposerAttachments />
 
         <AttachmentErrorBanner
@@ -523,8 +530,12 @@ const Composer: FC = () => {
         />
 
         <div className="flex w-full items-center">
-          <ComposerAttachButton setError={setAttachmentError} />
+          <ComposerAttachButton
+            setError={setAttachmentError}
+            dataCy="chat-composer"
+          />
           <ComposerPrimitive.Input
+            data-cy="chat-composer-input"
             rows={1}
             autoFocus={!embedded}
             placeholder="Write a message..."
@@ -730,6 +741,7 @@ const AttachmentTile: FC<{
 const AttachmentRemoveButton: FC<{ onClick?: () => void }> = ({ onClick }) => (
   <button
     type="button"
+    data-cy="chat-attachment-remove"
     onClick={onClick}
     className="bg-background text-muted-foreground hover:text-foreground absolute right-1 top-1 inline-flex size-5 items-center justify-center rounded-full border"
     aria-label="Remove attachment"
@@ -751,7 +763,10 @@ const ComposerAttachmentView: FC<{
       : twMerge('size-14', embedded ? 'max-h-20 max-w-20' : 'max-h-28 max-w-28')
 
   return (
-    <AttachmentPrimitive.Root className="relative">
+    <AttachmentPrimitive.Root
+      data-cy="chat-composer-attachment"
+      className="relative"
+    >
       <AttachmentTile
         imageSrc={imageSrc}
         label={attachmentName}
@@ -768,7 +783,8 @@ const ComposerAttachmentView: FC<{
 const ComposerAttachButton: FC<{
   setError: (msg: string | null) => void
   currentCount?: number
-}> = ({ setError, currentCount }) => {
+  dataCy?: string
+}> = ({ setError, currentCount, dataCy }) => {
   const { embedded } = useChatUi()
   const composerRuntime = useComposerRuntime()
   const composerAttachmentCount = useComposer((s) => s.attachments?.length ?? 0)
@@ -806,6 +822,7 @@ const ComposerAttachButton: FC<{
     <>
       <input
         ref={inputRef}
+        data-cy={dataCy + '-attach-input' || 'chat-attach-input'}
         type="file"
         accept={imageAttachmentAdapter.accept}
         multiple
@@ -819,6 +836,7 @@ const ComposerAttachButton: FC<{
       />
       <button
         type="button"
+        data-cy={dataCy + '-attach-button' || 'chat-attach-button'}
         onClick={() => inputRef.current?.click()}
         className={twMerge(
           'text-muted-foreground hover:text-foreground inline-flex items-center justify-center rounded-md',
@@ -843,6 +861,7 @@ const ComposerAction: FC = () => {
         <ComposerPrimitive.Send asChild>
           <Button
             basic
+            data-cy="chat-send-button"
             style={{
               width: size,
               height: size,
@@ -868,6 +887,7 @@ const ComposerAction: FC = () => {
         <ComposerPrimitive.Cancel asChild>
           <Button
             basic
+            data-cy="chat-cancel-button"
             style={{
               width: size,
               height: size,
@@ -907,8 +927,14 @@ const UserMessage: FC = () => {
   const attachments = getMessageAttachments(message)
 
   return (
-    <MessagePrimitive.Root className="flex w-full max-w-[var(--thread-max-width)] flex-col items-end gap-y-1 py-2 sm:py-4">
-      <div className="bg-muted text-foreground max-w-[calc(var(--thread-max-width)*0.8)] break-words rounded-2xl px-5 py-2.5">
+    <MessagePrimitive.Root
+      data-cy="chat-user-message"
+      className="flex w-full max-w-[var(--thread-max-width)] flex-col items-end gap-y-1 py-2 sm:py-4"
+    >
+      <div
+        data-cy="chat-user-message-content"
+        className="bg-muted text-foreground max-w-[calc(var(--thread-max-width)*0.8)] break-words rounded-2xl px-5 py-2.5"
+      >
         {attachments.length > 0 && (
           <MessageAttachments
             attachments={attachments}
@@ -957,7 +983,10 @@ const UserActionBar: FC = () => {
             </button>
           ) : (
             <ActionBarPrimitive.Edit asChild>
-              <button className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50">
+              <button
+                data-cy="chat-edit-message-button"
+                className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
+              >
                 <PencilIcon />
                 <span className="sr-only">Edit</span>
               </button>
@@ -1077,8 +1106,12 @@ const EditComposer: FC = () => {
       className="my-4 w-full max-w-[var(--thread-max-width)]"
       roundedClass="rounded-2xl"
     >
-      <ComposerPrimitive.Root className="bg-muted flex w-full flex-col gap-2 rounded-2xl border-none outline-none focus-within:outline-none focus-within:ring-0">
+      <ComposerPrimitive.Root
+        data-cy="chat-edit-composer"
+        className="bg-muted flex w-full flex-col gap-2 rounded-2xl border-none outline-none focus-within:outline-none focus-within:ring-0"
+      >
         <ComposerPrimitive.Input
+          data-cy="chat-edit-composer-input"
           autoFocus
           className="text-foreground flex min-h-[2.5rem] w-full resize-none border-0 bg-transparent px-4 pt-4 outline-none focus:border-0 focus:shadow-none focus:outline-none focus:ring-0"
         />
@@ -1120,9 +1153,11 @@ const EditComposer: FC = () => {
           <ComposerAttachButton
             setError={setAttachmentError}
             currentCount={totalAttachmentCount}
+            dataCy="chat-edit-composer"
           />
           <div className="ml-auto flex items-center justify-center gap-2">
             <Button
+              data-cy="chat-edit-cancel-button"
               onClick={() => {
                 clearEditRemovedAttachmentKeys(message.id)
                 messageRuntime.composer.cancel()
@@ -1138,6 +1173,7 @@ const EditComposer: FC = () => {
               <Button.Label>Cancel</Button.Label>
             </Button>
             <Button
+              data-cy="chat-edit-send-button"
               onClick={() => void handleSend()}
               disabled={!canSubmit}
               style={{
@@ -1224,12 +1260,14 @@ const AssistantMessage: FC<{
 
   return (
     <MessagePrimitive.Root
+      data-cy="chat-assistant-message"
       className={twMerge(
         'relative grid w-full max-w-[var(--thread-max-width)] grid-rows-[auto_1fr] py-2 sm:py-4',
         embedded ? 'grid-cols-[auto_1fr] gap-x-2' : 'grid-cols-[auto_auto_1fr]'
       )}
     >
       <div
+        data-cy="chat-assistant-message-content"
         className={twMerge(
           'col-start-1 row-span-2 row-start-1 flex items-start',
           embedded ? 'mt-2' : 'mr-2 mt-2 pr-1 sm:mr-3 sm:mt-3 sm:pr-2'
@@ -1289,7 +1327,10 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
         <Tooltip>
           <TooltipTrigger asChild>
             <ActionBarPrimitive.Copy asChild>
-              <button className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50">
+              <button
+                data-cy="chat-copy-message-button"
+                className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
+              >
                 <MessagePrimitive.If copied>
                   <CheckIcon />
                 </MessagePrimitive.If>
@@ -1305,7 +1346,10 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
         <Tooltip>
           <TooltipTrigger asChild>
             <ActionBarPrimitive.Reload asChild>
-              <button className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50">
+              <button
+                data-cy="chat-reload-message-button"
+                className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
+              >
                 <RefreshCwIcon />
                 <span className="sr-only">Refresh</span>
               </button>

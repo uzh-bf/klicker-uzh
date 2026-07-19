@@ -1,0 +1,26 @@
+query QGetCourseVerificationRecords(
+  $courseId: String!
+  $statusFilter: [AssessmentReportCredentialStatus!]
+  $searchString: String
+  $numEntries: Int
+  $offset: Int
+) {
+  courseAssessmentReportRecords(
+    courseId: $courseId
+    statusFilter: $statusFilter
+    searchString: $searchString
+    numEntries: $numEntries
+    offset: $offset
+  ) {
+    totalCount
+    records {
+      id
+      subjectEmail
+      status
+      issuedAt
+      revokedAt
+      supersededAt
+      verificationToken
+    }
+  }
+}

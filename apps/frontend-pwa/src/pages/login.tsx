@@ -10,11 +10,40 @@ import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import * as Yup from 'yup'
 import LoginForm from '../components/forms/LoginForm'
 
-function Login() {
+interface LoginProps {
+  redirectPath: string
+}
+
+function getSafeRedirectPath(
+  value: string | string[] | undefined,
+  pwaUrl: string,
+  chatUrl: string | undefined
+) {
+  const redirectTo = Array.isArray(value) ? value[0] : value
+  if (!redirectTo) return '/'
+
+  try {
+    const pwaOrigin = new URL(pwaUrl)
+    const target = new URL(redirectTo, pwaOrigin)
+    if (target.origin === pwaOrigin.origin) {
+      return `${target.pathname}${target.search}${target.hash}`
+    }
+
+    if (chatUrl && target.origin === new URL(chatUrl).origin) {
+      return target.toString()
+    }
+
+    return '/'
+  } catch {
+    return '/'
+  }
+}
+
+function Login({ redirectPath }: Readonly<LoginProps>) {
   const t = useTranslations()
   const router = useRouter()
 
@@ -23,7 +52,6 @@ function Login() {
   const [fetchSelf] = useLazyQuery(SelfDocument, {
     fetchPolicy: 'network-only',
   })
-  const [decodedRedirectPath, setDecodedRedirectPath] = useState('/')
   const [magicLinkLogin, setMagicLinkLogin] = useState(false)
 
   const loginSchema = (magicLinkState: boolean) => {
@@ -42,14 +70,6 @@ function Login() {
       })
     }
   }
-
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window?.location?.search)
-    const redirectTo = urlParams?.get('redirect_to')
-    if (redirectTo) {
-      setDecodedRedirectPath(decodeURIComponent(redirectTo))
-    }
-  }, [])
 
   const loginWithPassword = async (
     values: any,
@@ -75,7 +95,11 @@ function Login() {
         await fetchSelf()
 
         // redirect to the specified redirect path (default: question pool)
-        router.push(decodedRedirectPath)
+        if (redirectPath.startsWith('/')) {
+          void router.push(redirectPath)
+        } else {
+          window.location.assign(redirectPath)
+        }
       }
     } catch (e) {
       console.error(e)
@@ -158,14 +182,26 @@ function Login() {
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
+  const forwardedProto = ctx.req.headers['x-forwarded-proto']
+  const proto = Array.isArray(forwardedProto)
+    ? forwardedProto[0]
+    : forwardedProto || 'https'
+  const host = ctx.req.headers.host as string
+  const requestBase = `${proto}://${host}`
+  const configuredPwaUrl = process.env.NEXT_PUBLIC_PWA_URL
+  const pwaUrl = configuredPwaUrl || requestBase
+  const redirectPath = getSafeRedirectPath(
+    ctx.query.redirect_to,
+    pwaUrl,
+    process.env.NEXT_PUBLIC_CHAT_URL
+  )
+
   // In assessment mode, SSR-redirect to Auth /student to avoid client-side flash
   if (process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true') {
-    const proto = (ctx.req.headers['x-forwarded-proto'] || 'https') as string
-    const host = ctx.req.headers.host as string
-    const base = `${proto}://${host}`
-
-    const redirectParam = (ctx.query.redirect_to as string) || '/'
-    const targetUrl = new URL(redirectParam, base).toString()
+    if (!configuredPwaUrl) {
+      throw new Error('NEXT_PUBLIC_PWA_URL is required in assessment mode')
+    }
+    const targetUrl = new URL(redirectPath, configuredPwaUrl).toString()
     const authBase =
       process.env.NEXT_PUBLIC_AUTH_URL || 'https://auth.klicker.uzh.ch'
 
@@ -182,6 +218,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   return {
     props: {
       messages: (await import(`@klicker-uzh/i18n/messages/${locale}`)).default,
+      redirectPath,
     },
   }
 }
