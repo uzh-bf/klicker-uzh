@@ -1,6 +1,6 @@
 # Prisma 7.8 Upgrade Plan
 
-Status: approved; execution in progress.
+Status: approved; implementation and local finish gates complete; draft publication pending.
 
 ## Goal
 
@@ -38,7 +38,7 @@ Terminal proof:
 - Base: `origin/v3` at `15fededdb78a69b09eb80f81b522ef6bc024f18e`
 - Related merged PR: https://github.com/uzh-bf/klicker-uzh/pull/5167
 - PR: not created
-- Current state: implementing branch and project-local worktree created from the recorded base
+- Current state: implementation complete at `89589ffcd`; branch remains based on the refreshed `origin/v3` SHA above
 
 ## Resolved Decisions
 
@@ -687,6 +687,7 @@ Verified without changes:
   - independent native and Gemini 3.5 Flash High reviews confirmed client ownership, lifecycle wrappers, Analytics ownership, dependency cleanup, and the unchanged Office Add-in; one accepted low-severity improvement now gives a clear error when the Auth smoke lacks `DATABASE_URL`
   - three other external suggestions were rejected after fact-checking: Prisma 7 no longer seeds automatically during reset, the flashcard entry point's direct-execution behavior predates this branch and has no importers, and the Analytics drift check intentionally fails when an owned file is missing
   - the Auth smoke guard establishes an endpoint and execution-context boundary, not database provenance through a local tunnel; ordinary error paths clean up exact disposable identifiers, while abrupt process termination remains an accepted limitation of this manual smoke test
+  - the final thermo-nuclear maintainability review passed at `89589ffcd`: the branch centralizes ownership, removes obsolete patching and dependencies, adds no source-file size crossing, and keeps explicit lifecycle contracts instead of hiding them behind a generic wrapper
 - [ ] draft PR
 
 ## Approval Record
@@ -699,6 +700,6 @@ On 2026-07-19, the user approved:
 
 ## Next Steps
 
-1. Commit the reviewed final-gate follow-up.
-2. Run the final strict maintainability gate and resolve or record its findings.
-3. Complete Slice 6, create the draft PR, and verify its published state and CI.
+1. Commit this final verification checkpoint and push the branch.
+2. Create the draft PR, add its number to the plan filename and identity, then push the metadata commit.
+3. Verify the published PR body, branch coverage, and current-head GitHub checks.
