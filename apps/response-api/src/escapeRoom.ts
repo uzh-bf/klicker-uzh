@@ -369,16 +369,14 @@ export async function handleEscapeRoomValidation(
         tries,
       }
 
-      if (!instanceAlreadyCleared) {
-        await hatchetClient.events.push(
-          'response-received:authenticated',
-          message
-        )
-        await redis.sadd(clearedKey, String(instanceId))
-        clearedInstances.add(String(instanceId))
-        await redis.expire(clearedKey, 60 * 60 * 24 * 30)
-        await redis.del(triesKey)
-      }
+      await hatchetClient.events.push(
+        'response-received:authenticated',
+        message
+      )
+      await redis.sadd(clearedKey, String(instanceId))
+      clearedInstances.add(String(instanceId))
+      await redis.expire(clearedKey, 60 * 60 * 24 * 30)
+      await redis.del(triesKey)
 
       const blockCompleted =
         requiredInstances.length > 0 &&
