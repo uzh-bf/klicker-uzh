@@ -16,6 +16,20 @@ tags:
 
 Aligned to Node `24.16.0` and pnpm `11.5.0` across the entire workspace, including the self-contained devcontainer. Pinned in root `package.json`: `volta.node = 24.16.0`, `volta.pnpm = 11.5.0`, `packageManager = pnpm@11.5.0`.
 
+The workspace TypeScript baseline is `~6.0.3` (config-derived from root and package manifests). `apps/office-addin/package.json` intentionally remains on `~5.6.3` outside this baseline; `.syncpackrc.mjs` contains the narrow exception that keeps `pnpm run check:syncpack` honest without forcing that app into this upgrade.
+
+Compiler settings follow the code's runtime and build owner:
+
+| Role                                       | Compiler contract                                                                                                                                                                   |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Next.js application                        | `target: ES2017`, `module: ESNext`, `moduleResolution: Bundler`, `jsx: react-jsx`, and the Next TypeScript plugin                                                                   |
+| Emitted Node application or library        | `module: NodeNext`; use incremental build info only when the build owner preserves outputs and matching state atomically, and emit declarations only for packages that publish them |
+| Browser or bundler-owned source            | Bundler resolution; source-only packages use `module: preserve` and `noEmit`                                                                                                        |
+| Node-only script source                    | `module: NodeNext` with `noEmit`; the runtime transpiler owns execution                                                                                                             |
+| Check-only config extending an emit config | `noEmit`; disable inherited declarations when declaration portability is outside the check's purpose, and keep incremental state separate from the emitting build                   |
+
+The workspace does not use TypeScript project references or `tsc -b`, so `composite` is not a package-role marker. Emitted packages use `incremental` only when their build preserves outputs and matching state atomically; Prisma's Rollup build deliberately does not because it deletes `dist` while TypeScript's parallel build-start hook may read its cache. Separate compiler invocations also use separate build-info files: no-output checks cannot overwrite emit state, and Export's library and CLI Rollup builds own distinct caches. Do not choose `NodeNext` or `Bundler` by package location alone: choose it based on whether TypeScript/Node must resolve the emitted runtime imports or another bundler owns that job.
+
 ## Onboarding Paths
 
 You can set up the environment in two ways:

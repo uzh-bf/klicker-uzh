@@ -39,6 +39,7 @@ const config = defineConfig([
         outDir: 'dist/scripts',
         declaration: false,
         declarationMap: false,
+        tsBuildInfoFile: 'dist/scripts/tsconfig.tsbuildinfo',
       }),
     ],
     external: [/@klicker-uzh*/, /node_modules/],

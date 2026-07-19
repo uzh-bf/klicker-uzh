@@ -1,7 +1,6 @@
 {
   "include": ["**/**/*"],
   "compilerOptions": {
-    "baseUrl": ".",
     /* Base Options: */
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -22,8 +21,8 @@
     "sourceMap": true,
     /* AND if you're building for a library: */
     "declaration": true,
-    /* AND if you're building for a library in a monorepo: */
-    "composite": true,
+    /* Incremental build cache: */
+    "incremental": true,
     "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
     "declarationMap": true,
     /* If your code doesn't run in the DOM: */

@@ -10,6 +10,8 @@
 
 - **Update**: [auth-model](./auth-model.md), [testing](./testing.md), and the Playwright E2E skill document participant-cookie forwarding during PWA SSR and exact-workspace browser routing overrides used by the verified Escape Room suite.
 
+- **Update**: [getting-started](./getting-started.md), [frontend-conventions](./frontend-conventions.md), and [testing](./testing.md) document the runtime-owned TypeScript compiler matrix, explicit Next.js build-validation config, isolated incremental-cache ownership, and check-only declaration trap. The matching verification procedure and solution notes preserve the required checks.
+
 ## 2026-07-18
 
 - **Update**: [getting-started](./getting-started.md) pins released devrouter `0.0.35`; the managed-process fingerprint now includes the exact adapter bytes and declared non-secret origin environment as well as workspace and command identity.
@@ -54,6 +56,8 @@
 - **Update**: [async-and-workers](./async-and-workers.md) and [domain-model](./domain-model.md) now document the enforced LiveQuiz Escape Room response contract, multi-instance completion, and deterministic event deduplication.
 - **Update**: [domain-model](./domain-model.md) and [graphql-api-layer](./graphql-api-layer.md) now document shared GroupActivity escape-room attempts, atomic concurrent hint penalties/restoration, retry-preserving lockouts, and structured participant errors.
 - **Update**: escape room production pass on the `codex/escape-room-production` branch — practice quiz game loop fixed for server-side stack masking (escape-mode advance/retry in `PracticeQuiz.tsx`), `Z-escape-room.spec.ts` rewritten as a full 11-test workflow, and user-facing lecturer/student tutorials added to `apps/docs`. Roadmap details: `project/2026-07-10-pr-5143-escape-room-implementation-review.md`.
+
+- **Update**: [getting-started](./getting-started.md), [data-and-migrations](./data-and-migrations.md), [frontend-conventions](./frontend-conventions.md), and [testing](./testing.md) document the TypeScript 6 workspace baseline, the separate Office Add-in exception, Prisma generation compatibility guard, explicit path mapping, and compiler-upgrade verification surfaces. Matching procedure was added to `klicker-data-model` and `klicker-testing-verification`.
 
 ## 2026-07-10
 

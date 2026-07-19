@@ -1,3 +1,18 @@
+import {
+  handleEndExpiredGroupActivity,
+  handlePublishScheduledGroupActivity,
+} from '@/services/groups.js'
+import {
+  handleAssessmentLiveQuizBlockClosureAggregation,
+  handlePublishScheduledLiveQuiz,
+  handleStandardLiveQuizBlockClosureAggregation,
+} from '@/services/liveQuizzes.js'
+import {
+  handleEndExpiredMicroLearning,
+  handlePublishScheduledMicroLearning,
+} from '@/services/microLearning.js'
+import { handlePublishScheduledPracticeQuiz } from '@/services/practiceQuizzes.js'
+import { handlePruneEscapeRooms } from '@/services/pruneEscapeRooms.js'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import { prisma } from '@klicker-uzh/prisma'
@@ -33,21 +48,6 @@ import { EventEmitter } from 'events'
 import generatePassword from 'generate-password'
 import { createPubSub, Repeater } from 'graphql-yoga'
 import { Redis } from 'ioredis'
-import {
-  handleEndExpiredGroupActivity,
-  handlePublishScheduledGroupActivity,
-} from 'src/services/groups.js'
-import {
-  handleAssessmentLiveQuizBlockClosureAggregation,
-  handlePublishScheduledLiveQuiz,
-  handleStandardLiveQuizBlockClosureAggregation,
-} from 'src/services/liveQuizzes.js'
-import {
-  handleEndExpiredMicroLearning,
-  handlePublishScheduledMicroLearning,
-} from 'src/services/microLearning.js'
-import { handlePublishScheduledPracticeQuiz } from 'src/services/practiceQuizzes.js'
-import { handlePruneEscapeRooms } from 'src/services/pruneEscapeRooms.js'
 import { v4 as uuidv4 } from 'uuid'
 import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'

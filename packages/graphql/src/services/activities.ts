@@ -1,3 +1,4 @@
+import { ContextWithUser } from '@/lib/context.js'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
@@ -11,7 +12,6 @@ import {
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import generatePassword from 'generate-password'
-import { ContextWithUser } from 'src/lib/context.js'
 import { POINTS_PER_GROUP_ACTIVITY_ELEMENT } from './groups.js'
 import { POINTS_PER_INSTANCE } from './stacks.js'
 

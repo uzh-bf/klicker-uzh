@@ -1,3 +1,4 @@
+import { ICaseStudyElementEvaluationResults } from '@/schema/evaluation.js'
 import {
   computeAwardedXp,
   computeSimpleAwardedPoints,
@@ -66,7 +67,6 @@ import { GraphQLError } from 'graphql'
 import { max, mean, median, min, quantileSeq, round, std } from 'mathjs'
 import { createHash } from 'node:crypto'
 import { toLowerCase } from 'remeda'
-import { ICaseStudyElementEvaluationResults } from 'src/schema/evaluation.js'
 import type { Context } from '../lib/context.js'
 import type {
   CaseStudyCaseResponse,

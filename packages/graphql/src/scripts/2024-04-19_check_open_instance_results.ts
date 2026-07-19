@@ -1,3 +1,4 @@
+import { FreeTextQuestionOptions, NumericalQuestionOptions } from '@/ops.js'
 import {
   gradeQuestionFreeText,
   gradeQuestionNumerical,
@@ -6,7 +7,6 @@ import { ElementType, PrismaClient } from '@klicker-uzh/prisma/client'
 import { AllElementTypeData, QuestionResultsOpen } from '@klicker-uzh/types'
 import { error } from 'console'
 import { createHash } from 'node:crypto'
-import { FreeTextQuestionOptions, NumericalQuestionOptions } from 'src/ops.js'
 
 async function run() {
   const prisma = new PrismaClient()
