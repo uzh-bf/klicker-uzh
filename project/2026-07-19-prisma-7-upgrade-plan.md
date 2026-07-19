@@ -656,7 +656,15 @@ Verified without changes:
   - Prisma Client Python generation and the local Analytics image build passed with the owned datasource
   - the Auth peer graph accepts Prisma 7 without an extension; the remaining repository peer warnings are pre-existing and unrelated
   - review findings were integrated: remove the no-op Auth extension, require both Analytics-owned schema files, and enforce exact reviewed package pins
-- [ ] Slice 4: preserve database lifecycle commands
+- [x] Slice 4: preserve database lifecycle commands
+  - Prisma config now delegates explicit seeding to Prisma Data; migrate, create-only, and push wrappers explicitly regenerate the checked-in client, while reset remains seed-free unless the seed composite is selected
+  - the removed reset and diff flags are gone; diff reads the config datasource and the actual split-schema migrations directory
+  - reset without seed, push, explicit seed, migrate dev, named create-only, and no-difference diff all passed against local PostgreSQL; seeded fixtures were restored afterward
+  - a disposable clean database accepted all 176 migrations and exposed 96 base tables before it was removed
+  - resolve and Studio help parsing, devcontainer shell syntax, Prisma check/build, frozen install, Syncpack, formatting, and whitespace checks passed
+  - correctness and simplification reviews found one argument-forwarding regression in the initial `run-s` composites; pnpm-compatible `{@}` placeholders now send flags only to the Prisma operation before generation
+  - raw push/migrate help, a named create-only migration, and forced reset-plus-seed all passed through the corrected wrappers; the disposable migration was removed and fixtures were restored
+  - both reviews are resolved with no open findings
 - [ ] Slice 5: verify Auth and all runtime consumers
 - [ ] Slice 6: document, finish, and publish the draft PR
 - [ ] draft PR
@@ -671,6 +679,5 @@ On 2026-07-19, the user approved:
 
 ## Next Steps
 
-1. Preserve and verify the Prisma 7 database lifecycle commands.
-2. Verify Auth and all runtime consumers, including browser behavior.
-3. Document and execute the final gates through the draft PR.
+1. Verify Auth and all runtime consumers, including browser behavior.
+2. Document and execute the final gates through the draft PR.

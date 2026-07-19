@@ -4,7 +4,7 @@ export default defineConfig({
   schema: 'src/prisma/schema',
   migrations: {
     path: 'src/prisma/schema/migrations',
-    seed: 'pnpm run seed',
+    seed: 'pnpm --filter @klicker-uzh/prisma-data run seed:raw',
   },
   views: {
     path: 'src/prisma/schema/views',

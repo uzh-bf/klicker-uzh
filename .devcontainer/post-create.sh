@@ -51,8 +51,8 @@ pnpm exec turbo run build --filter='./packages/*' --filter=@klicker-uzh/backend-
 # even though pg_isready is healthy — retry. (GOTCHAS #12)
 echo "[post-create] Resetting + pushing Prisma schema (retrying through DB warmup)..."
 retry 12 "prisma reset/push" bash -c '
-  pnpm --filter @klicker-uzh/prisma exec prisma migrate reset --skip-seed --force \
-  && pnpm --filter @klicker-uzh/prisma exec prisma db push' || exit 1
+  pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force \
+  && pnpm --filter @klicker-uzh/prisma run prisma:push:raw' || exit 1
 
 echo "[post-create] Seeding test data (lecturer/abcd, testuser1..50/abcdabcd)..."
 retry 5 "prisma-data seed" pnpm --filter @klicker-uzh/prisma-data run seed:raw || exit 1
