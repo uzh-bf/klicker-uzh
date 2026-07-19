@@ -16,7 +16,7 @@ Migrations run automatically as ArgoCD `PreSync` hook Job before each stg/prd ro
 
 - Boot-time data-migration runner (`apps/backend-docker/src/migration.ts`) — untouched (currently empty list, separate concern).
 - standard-version release flow — unchanged.
-- Auto-bump of image tags — still manual per-release (same as today); migrator tag bumped alongside backend tag.
+- Auto-bump of image tags — still manual per-release (same as today). The migrator tag is not bumped separately: it defaults to the backend tag in the chart, and per-env migrator tag pins were removed (see Progress post-review slice).
 
 ## Decisions (user-approved)
 
@@ -37,7 +37,7 @@ R1. ArgoCD + Helm hook behavior (agy / Gemini 3.5 Flash High, ArgoCD docs; corro
 - Decision: use ArgoCD-native, mirror reference exactly.
 - Applicability: reference = same team/cluster/ArgoCD → high transfer. Klicker chart is Helm (reference is Kustomize) but annotation handling identical post-render.
 
-R2. Migrator image must carry: prisma CLI + migration (schema) engine binary + `src/prisma/schema` (177 migrations) + `prisma.config.ts`. Needs `DATABASE_URL` only at deploy time.
+R2. Migrator image must carry: prisma CLI + migration (schema) engine binary + `src/prisma/schema` (176 migrations) + `prisma.config.ts`. Needs `DATABASE_URL` only at deploy time.
 - Risk: backend runtime image installs `--prod --ignore-scripts` → no prisma CLI, no engine, no migrations. Cannot reuse.
 - Risk: Option A (`--target migrator` off backend build) inherits `--ignore-scripts` → engine binary likely absent. Rejected.
 - Decision: Option B — standalone alpine, `npm i -g prisma@6.16.1` (scripts run → engine present), copy schema + config.
@@ -50,7 +50,7 @@ R2. Migrator image must carry: prisma CLI + migration (schema) engine binary + `
 - [x] Slice 2 — CI. Added `build-migrator-{arm,amd}` jobs + `MIGRATOR_IMAGE_NAME` env to `v3_backend-docker-{stg,prd}.yml`. Mirror backend jobs, `file: packages/prisma/Dockerfile`. Same triggers/metadata-action → tags lockstep (prd `v*.*.*`, stg `v3`; stg PR paths already include `packages/prisma/**`). YAML validated (ruby): 4 jobs each. True build test = on push.
 - [x] Slice 3 — Helm PreSync hook Job + values. `templates/job-migrate.yaml` (ArgoCD PreSync, envFrom = backend-graphql global+cm+secret, guarded by `migrator.enabled`). Base `values.yaml` migrator block; prd overlay (`-arm`, tag `v3.4.0-alpha.62`); stg overlay (`-arm`, tag `v3`). VERIFIED: `helm lint` clean; `helm template` per env renders correct annotations/image/envFrom; `enabled=false` → empty (no Job).
 - [x] Slice 4 — wiki updated. `docs/ci-and-deployment.md` (deploy driver = ArgoCD, new Deployment migrations section + ArgoCD-native-vs-Helm-hook gotcha, resolved open question) + `docs/data-and-migrations.md` (Deployment migrations subsection: hook mechanics, expand-contract, break-glass `prisma:deploy:prod`). Anchors + cross-links verified.
-- [x] Finish gate — reviews done.
+- [~] Finish gate — automated reviews run; slash-only maintainability gate + operational confirmations still pending (see Current slice).
   - Security ($security-review): PASS. 0 HIGH-confidence findings. Traced: no creds baked in image / logged, non-root, exec-form CMD; GH Actions use only trusted server-controlled interpolations (no untrusted event body in run:/ref:), scoped `contents:read`/`packages:write`; images exact-pinned. 3 defense-in-depth NOTES (not blocking): (1) Job `envFrom` inherits full backend secret not just DATABASE_URL — accepted (secret provisioned out-of-band, blast radius = backend's); (2) actions tag-pinned not SHA — matches repo convention; (3) `npm i -g` transitive deps unlocked — same as backend image.
   - Maintainability: `$thermo-nuclear-code-quality-review` is slash-only (`disable-model-invocation`) → USER must run `/thermo-nuclear-code-quality-review`. Ran equivalent independent review via agy (Gemini 3.5 Flash High): 4 findings, ALL rejected with evidence — prisma version pin (exact > `~6.16.1` range), no-cache arm-only (mirrors backend jobs exactly), resources `{{- with }}` (chart renders unguarded at deployment-app.yaml:67), custom user (cosmetic, both non-root). Clean.
   - ADR: CREATED. User aligned repo convention — ADRs are the decision record, wiki is non-obvious concepts only. Established `docs/adr/` (README + convention), wrote [ADR-0001](../docs/adr/0001-automate-db-migrations-via-argocd-presync-hook.md), linked from both wiki sections + `docs/index.md`, re-routed `AGENTS.md`/`CLAUDE.md` decisions → `docs/adr/`.
