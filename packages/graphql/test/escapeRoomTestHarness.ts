@@ -427,7 +427,7 @@ async function seedParticipant(label: string) {
   const participant = await prisma.participant.create({
     data: {
       username: `${TEST_PREFIX}-${label}`,
-      password: 'test-password',
+      password: TEST_PREFIX,
       participations: { create: [{ courseId, isActive: true }] },
     },
   })

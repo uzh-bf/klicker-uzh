@@ -265,14 +265,14 @@ describe('getEscapeRoomProgress - lecturer progress aggregation', () => {
     const outsideParticipant = await prisma.participant.create({
       data: {
         username: `${TEST_PREFIX}-progress-outside`,
-        password: 'test-password',
+        password: TEST_PREFIX,
       },
     })
     createdParticipantIds.push(outsideParticipant.id)
     const inactiveParticipant = await prisma.participant.create({
       data: {
         username: `${TEST_PREFIX}-progress-inactive`,
-        password: 'test-password',
+        password: TEST_PREFIX,
         participations: { create: [{ courseId, isActive: false }] },
       },
     })
