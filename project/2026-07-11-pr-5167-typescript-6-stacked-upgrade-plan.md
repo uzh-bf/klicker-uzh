@@ -1,10 +1,10 @@
 # PR #5167 TypeScript 6 upgrade plan
 
-Status: draft PR published on 2026-07-12. Merge readiness awaits PR CI, including GraphQL runtime tests.
+Status: rebased onto merged `v3` on 2026-07-19. Fresh local verification is green; publication and CI read-back remain.
 
 ## Goal
 
-Stack a narrow TypeScript 6 migration on [PR #5166](https://github.com/uzh-bf/klicker-uzh/pull/5166). Keep Next.js, React, Prisma, GraphQL runtime behavior, and product behavior unchanged.
+Land a narrow TypeScript 6 migration on `v3` after [PR #5166](https://github.com/uzh-bf/klicker-uzh/pull/5166). Keep Next.js, React, Prisma, GraphQL runtime behavior, and product behavior unchanged.
 
 Success:
 
@@ -15,7 +15,7 @@ Success:
 - GraphQL schema and operations do not drift;
 - GraphQL public entry declarations do not regress relative to TypeScript 5.6; existing Pothos declaration portability debt stays explicit and out of scope;
 - root checks plus Docs, Cypress, and Playwright compiler surfaces pass;
-- PR diff against `feature/upgrade-next-react` contains TypeScript-only work.
+- PR diff against `v3` contains TypeScript-only work.
 
 ## Non-goals
 
@@ -34,32 +34,31 @@ Success:
 - Branch: `feature/upgrade-typescript`
 - Worktree: `/Users/rschlae/Git/klicker/klicker-uzh/trees/upgrade-typescript`
 - PR: [#5167](https://github.com/uzh-bf/klicker-uzh/pull/5167)
-- Stack base: `feature/upgrade-next-react`
-- Base PR: [#5166](https://github.com/uzh-bf/klicker-uzh/pull/5166)
-- Base SHA: `bdc6701902af6e8a9863809fa2d8246d428e7101`
+- Target: `v3`
+- Merged prerequisite: [#5166](https://github.com/uzh-bf/klicker-uzh/pull/5166)
+- Merged prerequisite SHA: `212a924c1`
+- Current `v3` rebase base: `3872caee79df882e9c56ab438e740b5caf561d50`
 - Historical source PR: [#5111](https://github.com/uzh-bf/klicker-uzh/pull/5111)
 - Historical TS commit: `421a5aa89e1f3ee7540c9cef927db5f441c079d9`
 - Historical Next boundary: `191d7dff60312ee6f637c1d5e6bb804d844812d0`
-- Backup ref: `backup/upgrade-typescript-pre-takeover-20260710`
+- Original takeover backup: `backup/upgrade-typescript-pre-takeover-20260710`
+- Pre-`v3`-rebase backup: `backup/upgrade-typescript-pre-v3-20260719`
 
 ## Current state
 
 Evidence:
 
-- PR #5166 CI is green at `bdc670190`, including checks, GraphQL tests, CodeQL, fallback AMD/ARM builds, and all eight Playwright shards.
-- PR #5166 remains draft, mergeable, review-required, and blocked by documented manual gates.
-- TypeScript branch is clean and contains one TS commit on top of obsolete Next commit `191d7dff6`.
-- Historical TS commit changes 64 files. Main areas: direct TS versions, tsconfigs, Prisma generation, GraphQL types, Office CSS declaration, lockfile.
-- Plain rebase is unsafe because it would replay the obsolete Next commit and reintroduce removed scope.
+- PR #5166 merged into `v3` as `212a924c1` with Next.js 16 and React 19. Current `v3` is `3872caee7`, adding only the later devcontainer startup hardening from PR #5169.
+- The eight TypeScript commits were replayed onto that merge without retaining obsolete stacked Next/React history. A range-diff confirmed that all eight logical commits remain.
+- The merged dual-React dependency graph exposed a missing `@types/react` edge in `recharts@2.15.3`. The same graph fails under TypeScript 5.6, so this is dependency resolution exposed by the rebase, not a TypeScript 6 language regression.
+- A package-scoped pnpm extension supplies the omitted peer only to `recharts@2.15.3`; a clean install links the React types into each Recharts virtual package.
+- Node 24.16.0 and pnpm 11.5.0 verification passes: frozen install, `check:all` (24/24 typechecks and 6/6 lint tasks), production build (21/21), test build (19/19), and Docs production build.
+- Office Add-in remains unchanged relative to `v3` and stays on TypeScript 5.6.
 
 Decision:
 
-- Preserve historical commit only on the backup ref.
-- Rebuild local branch history from exact PR #5166 base with plan commit first.
-- Apply historical TS commit with `cherry-pick --no-commit` as source material.
-- Partition uncommitted changes into dependency, tsconfig, Prisma, and GraphQL slices. Do not recreate bundled historical commit.
-- Resolve manifests semantically and regenerate lockfile.
-- Stop after source application for stack-diff and slice-partition review.
+- Keep the Recharts package extension in this PR because it is required for the rebased TypeScript branch to typecheck from a clean install.
+- Keep TypeScript 7 out of PR #5167. Pursue it separately as a dual-compiler migration after the repository release-age gate allows the package and the Docs compiler boundary is decided.
 
 ## Research
 
@@ -347,6 +346,31 @@ Do only after approval:
 - run and read CI, reviews, comments, full Playwright/Cypress status, and affected image builds;
 - after PR #5166 merges, request approval before rewriting published history, restack onto `origin/v3`, force-push with lease, retarget, and rerun all gates.
 
+## Post-merge rebase and TypeScript 7 feasibility
+
+### TypeScript 6 rebase
+
+- preserve the pre-rebase branch as `backup/upgrade-typescript-pre-v3-20260719`;
+- replay the eight TypeScript commits onto the merged Next.js and React prerequisite;
+- resolve dependency-policy and lockfile conflicts semantically;
+- rebase once more onto the current `v3` head before publication;
+- verify from a clean install and force-push only with a lease.
+
+### TypeScript 7 result
+
+Checked 2026-07-19 against stable TypeScript `7.0.2`:
+
+| Approach | Result | Meaning |
+| --- | --- | --- |
+| Replace TypeScript 6 directly with TypeScript 7 | Blocked | Prisma/Pothos generation fails because TypeScript 7 has no programmatic compiler API. Next type generation also expects the API package. |
+| Official dual-compiler transition | Viable | Keep `typescript` aliased to `@typescript/typescript6@6.0.2` for API consumers and add stable TypeScript 7 under a separate native CLI alias. Prisma generation, all five Next type-generation commands, production build (21/21), and post-build checks (24/24) pass. |
+| Compile Docs with TypeScript 7 | Blocked on current Docusaurus | Docusaurus 3.8.1 inherits the removed `baseUrl` option. Upgrade Docusaurus or keep Docs on TypeScript 6 during the transition. |
+| Install through repository policy | Temporarily blocked | The 14-day minimum release-age policy rejects TypeScript 7.0.2 until it matures past the configured gate. Do not bypass this policy in the real branch. |
+
+Additional constraint: the current `typescript-eslint` release officially supports TypeScript versions below 6.1. The dual setup can keep lint tooling on the TypeScript 6 compatibility package, but CI must still prove that the TypeScript 7 CLI does not introduce unacceptable runtime or memory cost when Turbo runs checks in parallel.
+
+Recommendation: merge TypeScript 6 first. Open a separate TypeScript 7 transition PR after the release-age gate clears, using the supported dual-compiler pattern. Keep Office Add-in on its existing compiler, and either upgrade Docusaurus first or explicitly exempt Docs. A full TypeScript 7 replacement should wait until Next, Prisma generators, lint tooling, and Docs no longer require the TypeScript 6 API/configuration surface.
+
 ## Review cadence
 
 Every implementation slice:
@@ -411,7 +435,11 @@ Every implementation slice:
 - [x] Slice 9 publish approval received.
 - [x] PR CI failure diagnosis completed at `d74201f15`: GraphQL tests could not resolve the new `@/*` imports because Vitest lacked the matching runtime alias; `check-types` restored a cached Prisma build without the generated `src/prisma/client` tree. The `test-graphql-status` failure was only the downstream status gate.
 - [x] CI repair adds the Vitest alias, makes the Prisma check generate its own client, and removes the now-redundant Prisma check-to-build Turbo edge. A missing-client Node 24 Prisma check passes, the formerly blocked GraphQL suite resolves its aliases and executes, and the full Node 24 typecheck graph passes 25/25. Full service-backed GraphQL results remain delegated to the clean CI stack because the shared DevPod database and worker state are not test-isolated.
+- [x] PR #5166 merged into `v3`; the eight TypeScript commits were replayed onto the merged dependency base and preserved by range-diff. Backup ref `backup/upgrade-typescript-pre-v3-20260719` retains the old published history.
+- [x] Clean post-rebase checks exposed the missing Recharts-to-React-types dependency edge. A package-scoped pnpm extension fixes the graph; TypeScript 5.6 reproduction confirmed this is not a TypeScript 6 regression.
+- [x] Post-fix Node 24 verification passes: frozen install, `check:all` (24/24 typechecks and 6/6 lint tasks), production build (21/21), test build (19/19), and Docs build. Office Add-in has no diff from `v3`.
+- [x] TypeScript 7 feasibility tested in disposable trees. Direct replacement is blocked; the official TypeScript 7 CLI plus TypeScript 6 API compatibility pattern passes Prisma generation, Next type generation, production build, and all 24 post-build checks. Release-age policy and Docusaurus remain explicit prerequisites.
 
-Current: Draft [PR #5167](https://github.com/uzh-bf/klicker-uzh/pull/5167) is published with a focused CI repair. Office Add-in remains on TypeScript 5.6 and is untouched.
+Current: Draft [PR #5167](https://github.com/uzh-bf/klicker-uzh/pull/5167) is ready for final rebase onto current `v3`, fresh verification, and force-push. Office Add-in remains on TypeScript 5.6 and is untouched.
 
-Next: Read rerun CI and reviews. Keep draft status until GraphQL runtime CI and remaining required checks pass.
+Next: commit the Recharts resolution and updated evidence, rebase onto `3872caee7`, rerun final verification, force-push with lease, refresh the whole-branch PR body, and monitor CI. Keep draft status.
