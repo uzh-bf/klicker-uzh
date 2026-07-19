@@ -1,4 +1,5 @@
-import { PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
+import type { PrismaClient } from '@klicker-uzh/prisma/client'
 
 async function seedAchievements(prisma: PrismaClient) {
   // // PERFORMANCE
@@ -337,13 +338,11 @@ async function seedAchievements(prisma: PrismaClient) {
   // )
 }
 
-const prismaClient = new PrismaClient()
-
-seedAchievements(prismaClient)
+seedAchievements(prisma)
   .catch((e) => {
     console.error(e)
     process.exit(1)
   })
   .finally(async () => {
-    await prismaClient.$disconnect()
+    await prisma.$disconnect()
   })

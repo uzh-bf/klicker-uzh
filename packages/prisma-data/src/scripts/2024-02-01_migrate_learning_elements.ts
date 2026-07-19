@@ -1,11 +1,11 @@
 // @ts-nocheck
 
+import { prisma } from '@klicker-uzh/prisma'
 import {
   ElementInstanceType,
   ElementOrderType,
   ElementStackType,
   ElementType,
-  PrismaClient,
   PublicationStatus,
 } from '@klicker-uzh/prisma/client'
 
@@ -80,8 +80,6 @@ function preparePracticeQuizInstanceResults(
 }
 
 async function migrate() {
-  const prisma = new PrismaClient()
-
   throw new Error('already applied to PROD')
 
   const initialElementInstances = await prisma.elementInstance.findMany({

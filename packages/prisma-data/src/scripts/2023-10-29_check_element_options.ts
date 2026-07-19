@@ -1,8 +1,6 @@
-import { PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
 
 async function run() {
-  const prisma = new PrismaClient()
-
   const elements = await prisma.element.findMany({})
 
   let counter = 1

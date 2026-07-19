@@ -36,6 +36,9 @@
     "xml2js": "~0.6.2"
   },
   "scripts": {
+    "check": "run-s --npm-path pnpm check:data check:scripts",
+    "check:data": "tsc --noEmit -p tsconfig.check.json",
+    "check:scripts": "tsc --noEmit --noCheck -p tsconfig.json",
     "script": "ENV=development ../../util/_run_with_infisical.sh --env dev tsx",
     "script:prod": "ENV=production ../../util/_run_with_infisical.sh --env prd tsx",
     "script:qa": "ENV=development ../../util/_run_with_infisical.sh --env stg tsx",

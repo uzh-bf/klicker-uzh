@@ -1,12 +1,11 @@
+import { prisma } from '@klicker-uzh/prisma'
 import {
   ElementInstanceType,
   ElementType,
-  PrismaClient,
   ResponseCorrectness,
 } from '@klicker-uzh/prisma/client'
 
 async function run() {
-  const prisma = new PrismaClient()
   const debug = false
 
   let counter = 0

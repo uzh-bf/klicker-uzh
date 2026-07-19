@@ -344,7 +344,11 @@ Check:
 
 - Prisma generate/check/build
 - `pnpm --filter @klicker-uzh/prisma-data check`
-- note that two historical files use `@ts-nocheck`; verify their imports by syntax/build parsing and focused review
+- keep current seed code under strict TypeScript checking; parse the full historical
+  script tree with `--noCheck` because its obsolete data model intentionally does
+  not typecheck against today's schema
+- note that two historical files already use `@ts-nocheck`; verify all converted
+  imports by syntax/build parsing and focused review
 - repository search shows zero raw no-argument constructors in Prisma Data
 - local reset plus `@klicker-uzh/prisma-data seed:raw`
 - run one converted read-only historical script, such as the lowercase-email check, against local seeded data
@@ -631,8 +635,17 @@ Verified without changes:
 - [x] integrate accepted external findings
 - [x] user approval
 - [x] create implementing worktree and establish the clean Prisma 6 baseline
-- [ ] commit final plan
-- [ ] execute slices
+- [x] commit final plan
+- [x] Slice 1: centralize Prisma construction and convert Prisma Data entry points on Prisma 6
+  - the factory remains internal so importing the package cannot create a singleton plus a second client
+  - current seed code passes strict TypeScript; the full historical script tree passes syntax parsing
+  - isolated database reset, complete seed, converted read-only email audit, and fixture query passed
+  - correctness and simplification reviews are resolved with no open findings
+- [ ] Slice 2: convert GraphQL and backend maintenance scripts
+- [ ] Slice 3: upgrade the generated-client boundary to Prisma 7
+- [ ] Slice 4: preserve database lifecycle commands
+- [ ] Slice 5: verify Auth and all runtime consumers
+- [ ] Slice 6: document, finish, and publish the draft PR
 - [ ] draft PR
 
 ## Approval Record
@@ -645,6 +658,6 @@ On 2026-07-19, the user approved:
 
 ## Next Steps
 
-1. Commit this plan alone on the implementing branch.
-2. Make Prisma Data entry points adapter-safe on Prisma 6.
-3. Execute each remaining reviewed and simplified slice.
+1. Convert GraphQL and backend maintenance scripts on Prisma 6.
+2. Upgrade and verify the generated-client boundary on Prisma 7.
+3. Execute each remaining reviewed and simplified slice through the draft PR.
