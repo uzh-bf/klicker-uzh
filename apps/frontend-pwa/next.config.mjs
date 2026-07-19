@@ -10,6 +10,9 @@ let nextConfig = {
     NODE_ENV: process.env.NODE_ENV,
     NEXT_PUBLIC_ENV: process.env.NEXT_PUBLIC_ENV,
   }),
+  typescript: {
+    ignoreBuildErrors: true,
+  },
 }
 
 nextConfig.transpilePackages = Array.from(

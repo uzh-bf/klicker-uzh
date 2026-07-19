@@ -1,6 +1,6 @@
 # PR #5167 TypeScript 6 upgrade plan
 
-Status: rebased onto merged `v3` and published on 2026-07-19. Fresh local verification and required PR checks are green; the draft remains gated on maintainer approval.
+Status: rebased onto merged `v3` and published on 2026-07-19. The approved tsconfig best-practice extension is active; the draft remains gated on its fresh verification and maintainer approval.
 
 ## Goal
 
@@ -371,6 +371,83 @@ Additional constraint: the current `typescript-eslint` release officially suppor
 
 Recommendation: merge TypeScript 6 first. Open a separate TypeScript 7 transition PR after the release-age gate clears, using the supported dual-compiler pattern. Keep Office Add-in on its existing compiler, and either upgrade Docusaurus first or explicitly exempt Docs. A full TypeScript 7 replacement should wait until Next, Prisma generators, lint tooling, and Docs no longer require the TypeScript 6 API/configuration surface.
 
+## Approved tsconfig best-practice extension
+
+Approved 2026-07-19 after auditing all tracked tsconfigs except Office Add-in against installed Next.js 16.2.10 behavior and current TypeScript module guidance.
+
+Decision:
+
+- keep Next apps on `module: ESNext`, `moduleResolution: Bundler`, and `jsx: react-jsx`;
+- keep Node-targeted Rollup outputs on `NodeNext` because external packages remain runtime imports;
+- keep browser/source bundles on bundler-aware resolution;
+- do not introduce a shared tsconfig hierarchy in this dependency PR;
+- do not change Office Add-in, TypeScript 7, Serwist, Cypress, Playwright, or Docusaurus compatibility boundaries.
+
+### Slice 10: Align Next.js compiler contracts
+
+Do:
+
+- raise Control, Manage, and PWA from `ES2015` to Next's `ES2017` baseline;
+- add the Next TypeScript plugin to those three apps;
+- remove `ignoreBuildErrors` from the shared Next config;
+- retain the explicit bypass only in Control, Manage, and PWA, where stale dev and production Pages Router validators duplicate global declarations;
+- keep Auth and Chat build-time type checking enabled;
+- preserve Turbopack production builds for Auth/Chat and Webpack production builds for the three PWA apps.
+
+Check:
+
+```bash
+pnpm --filter @klicker-uzh/auth check
+pnpm --filter @klicker-uzh/chat check
+pnpm --filter @klicker-uzh/frontend-control check
+pnpm --filter @klicker-uzh/frontend-manage check
+pnpm --filter @klicker-uzh/frontend-pwa check
+```
+
+Commit: `build(next): align TypeScript compiler contracts`
+
+### Slice 11: Align library and script compiler roles
+
+Do:
+
+- replace unused `composite` settings with `incremental` where emitted packages already persist build info;
+- remove now-redundant check-config overrides;
+- use `react-jsx` in Markdown and shared components;
+- make source-only i18n explicit `noEmit` with `module: preserve` and bundler resolution;
+- make script-only Prisma data explicit `noEmit` while retaining `NodeNext` runtime resolution;
+- keep existing strictness and test-runner compatibility exceptions.
+
+Check:
+
+```bash
+pnpm run check
+pnpm --filter @klicker-uzh/markdown build
+pnpm --filter @klicker-uzh/graphql build
+pnpm --filter @klicker-uzh/export build
+```
+
+Commit: `build(types): align workspace compiler roles`
+
+### Slice 12: Document and verify the compiler matrix
+
+Do:
+
+- update compiler and bundler facts in the engineering wiki and testing procedure;
+- record the validator-duplication exception and the NodeNext-versus-Bundler rule;
+- run the full compiler, mixed production bundler, all-Turbopack test build, Docs, browser-smoke, security, maintainability, and independent-review gates;
+- update the whole-branch PR body and read back current-head CI.
+
+Check:
+
+```bash
+pnpm run check:all
+pnpm run build
+pnpm run build:test
+pnpm --filter @klicker-uzh/docs build:docs
+```
+
+Commit: `docs: document TypeScript compiler roles`
+
 ## Review cadence
 
 Every implementation slice:
@@ -440,7 +517,10 @@ Every implementation slice:
 - [x] Post-fix Node 24 verification passes: frozen install, `check:all` (24/24 typechecks and 6/6 lint tasks), production build (21/21), test build (19/19), and Docs build. Office Add-in has no diff from `v3`.
 - [x] TypeScript 7 feasibility tested in disposable trees. Direct replacement is blocked; the official TypeScript 7 CLI plus TypeScript 6 API compatibility pattern passes Prisma generation, Next type generation, production build, and all 24 post-build checks. Release-age policy and Docusaurus remain explicit prerequisites.
 - [x] Final rebase onto current `v3` commit `3872caee7` completed. Range-diff preserves all ten branch commits; the TypeScript wiki commit keeps the newer devcontainer timestamp and log history. Fresh Node 24 frozen install, `check:all` (24/24 and 6/6), and production build (21/21) pass.
+- [x] Slice 10 aligned the three PWA apps with Next's ES2017 target and TypeScript plugin, removed the shared `ignoreBuildErrors`, and localized that exception to the three apps affected by duplicate generated validators. Node 24 checks pass for all five Next apps; the ordered build graph passes 13/13 with Auth/Chat typechecked under Turbopack and Control/Manage/PWA built under Webpack with their service-worker outputs. Correctness review found no issue; simplification review kept the explicit per-app ownership.
+- [ ] Slice 11 active: align emitted-library, source-package, and script compiler roles.
+- [ ] Slice 12 pending: update wiki and testing procedure, run fresh finish gates, and refresh PR #5167.
 
-Current: Draft [PR #5167](https://github.com/uzh-bf/klicker-uzh/pull/5167) is published on current `v3`. Required checks passed for the verified code head `a45133bee`; this plan-only checkpoint does not change runtime or build behavior. Office Add-in remains on TypeScript 5.6 and is untouched. The PR's current-head checks remain the merge-gate source of truth.
+Current: Draft [PR #5167](https://github.com/uzh-bf/klicker-uzh/pull/5167) is published on current `v3`. The approved tsconfig extension is active. Office Add-in remains on TypeScript 5.6 and is untouched.
 
-Next: keep the PR draft until maintainer approval is present and the user explicitly asks to mark it ready. Merge only with explicit authority and green current-head CI.
+Next: complete Slice 11, then continue autonomously through Slice 12. Keep the PR draft until maintainer approval is present and the user explicitly asks to mark it ready. Merge only with explicit authority and green current-head CI.
