@@ -1,11 +1,11 @@
-import { ElementType, PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
+import { ElementType } from '@klicker-uzh/prisma/client'
 import { createHash } from 'node:crypto'
 
 // ? This script fixes question responses of free text and numerical questions,
 // ? which are currently inconsistent due to a errorneous aggergation logic
 
 async function run() {
-  const prisma = new PrismaClient()
   let counter = 0
 
   const instances = await prisma.elementInstance.findMany({

@@ -1,4 +1,5 @@
-import { PrismaClient, PublicationStatus } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
+import { PublicationStatus } from '@klicker-uzh/prisma/client'
 import { ActivityType } from '@klicker-uzh/types'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import * as cliProgress from 'cli-progress'
@@ -14,8 +15,6 @@ import { getActivityAnswerCollectionIds } from '../services/templates.js'
  * ! - Verify that no answer collection with a deconnected owner exists (-> migration makes owner required)
  */
 async function run() {
-  const prisma = new PrismaClient()
-
   // ! 1. Reset the originalId value on answer collections and elements
   // --> this will allow to track imports from this point onwards
   // #region

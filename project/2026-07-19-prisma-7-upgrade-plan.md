@@ -641,7 +641,12 @@ Verified without changes:
   - current seed code passes strict TypeScript; the full historical script tree passes syntax parsing
   - isolated database reset, complete seed, converted read-only email audit, and fixture query passed
   - correctness and simplification reviews are resolved with no open findings
-- [ ] Slice 2: convert GraphQL and backend maintenance scripts
+- [x] Slice 2: convert GraphQL and backend maintenance scripts
+  - all active GraphQL/backend script construction now uses the shared Prisma singleton; only historical comments retain constructor examples
+  - PrismaPg implementation ownership is limited to `packages/prisma`, and the redundant GraphQL/backend adapter dependencies are removed
+  - GraphQL and backend checks/builds, frozen install, isolated database reset, full seed, and a converted read-only maintenance script passed
+  - GraphQL integration reached 447/523 tests; the remaining 76 failures are confined to `liveQuizPointCorrections.test.ts` and `instancePointCorrections.test.ts` because the local shared Hatchet worker does not register the CI-only `create-audit-log-entry` workflow
+  - correctness and simplification reviews are resolved with no open findings; CI's dedicated worker remains the final proof for the blocked subset
 - [ ] Slice 3: upgrade the generated-client boundary to Prisma 7
 - [ ] Slice 4: preserve database lifecycle commands
 - [ ] Slice 5: verify Auth and all runtime consumers
@@ -658,6 +663,6 @@ On 2026-07-19, the user approved:
 
 ## Next Steps
 
-1. Convert GraphQL and backend maintenance scripts on Prisma 6.
-2. Upgrade and verify the generated-client boundary on Prisma 7.
-3. Execute each remaining reviewed and simplified slice through the draft PR.
+1. Upgrade and verify the generated-client boundary on Prisma 7.
+2. Preserve the database lifecycle commands and verify all runtime consumers.
+3. Document and execute the final gates through the draft PR.

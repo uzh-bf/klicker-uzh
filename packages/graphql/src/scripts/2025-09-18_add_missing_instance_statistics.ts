@@ -1,6 +1,5 @@
-import { PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
 import { getInitialInstanceStatistics } from '@klicker-uzh/util'
-import { PrismaPg } from '@prisma/adapter-pg'
 
 // ! IMPORTANT INFORMATION
 // Find all element instances that do not have instance statistics assigned yet to make them properly required
@@ -8,9 +7,6 @@ import { PrismaPg } from '@prisma/adapter-pg'
 const DRY_RUN = false
 
 async function run() {
-  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
-  const prisma = new PrismaClient({ adapter })
-
   // find all element instances that do not have instance statistics assigned yet
   const instancesWithoutStatistics = await prisma.elementInstance.count({
     where: { instanceStatistics: null },

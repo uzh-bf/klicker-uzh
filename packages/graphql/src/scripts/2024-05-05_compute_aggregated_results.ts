@@ -1,4 +1,5 @@
-import { Element, ElementType, PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
+import { Element, ElementType } from '@klicker-uzh/prisma/client'
 import {
   QuestionResultsChoices,
   QuestionResultsOpen,
@@ -10,8 +11,6 @@ import { createHash } from 'node:crypto'
 
 async function run() {
   const MD5 = createHash('md5')
-  const prisma = new PrismaClient()
-
   const startTime = new Date().getTime()
 
   let doContinue = true

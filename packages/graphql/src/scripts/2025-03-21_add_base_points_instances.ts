@@ -1,11 +1,9 @@
-import { PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 dayjs.extend(utc)
 
 async function run() {
-  const prisma = new PrismaClient()
-
   // count the number of element instances that are contained in the database
   const count = await prisma.elementInstance.count()
 

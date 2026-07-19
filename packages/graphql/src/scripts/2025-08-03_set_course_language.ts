@@ -1,9 +1,7 @@
-import { PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
 
 async function run() {
   const DEBUG = false
-  const prisma = new PrismaClient()
-
   // get all courses and the associated users
   const courses = await prisma.course.findMany({
     include: { owner: { select: { locale: true } } },
