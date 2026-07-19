@@ -22,11 +22,13 @@ tags:
 
 **Never run root `pnpm run test:run` blind** — the turbo fan-out includes Cypress, which needs a running, seeded stack. The graphql vitest config forces `pool: forks, singleFork: true` (serialized specs sharing DB state) — don't parallelize it.
 
+Escape Room GraphQL integration coverage is split by lifecycle, hints, reset, GroupActivity, LiveQuiz, templates, completion, and retention/progress. Those files share `packages/graphql/test/escapeRoomTestHarness.ts`; keep feature-only fixtures, database cleanup, and context mocks there rather than growing the generic `test/helpers.ts` or recreating process-global state in each suite.
+
 ## Two e2e stacks, one selector convention
 
 **Playwright is the primary suite — all new e2e specs land there.** The Cypress suite is a frozen parity suite pending removal: touch it only to keep existing specs green, never to add coverage. Both still run in CI until the removal actually happens, so both stacks stay documented below.
 
-Both frameworks click the same `data-cy` attributes ([Frontend Conventions](./frontend-conventions.md)). Specs are letter-prefixed for run order (`A-login-workflow` … `X-review-workflow`; Playwright adds `Y-chat` and `Z-escape-room` with no Cypress counterpart).
+Both frameworks click the same `data-cy` attributes ([Frontend Conventions](./frontend-conventions.md)). Specs are letter-prefixed for run order (`A-login-workflow` … `X-review-workflow`; Playwright adds `Y-chat` and `Z-escape-room` with no Cypress counterpart). The Escape Room spec keeps one serial orchestrator while mode-specific workflows live under `playwright/tests/escape-room/`; keep titles, selectors, screenshot names, and execution order stable when extending those modules.
 
 |               | Cypress (`cypress/`)                                               | Playwright (`playwright/`)                                 |
 | ------------- | ------------------------------------------------------------------ | ---------------------------------------------------------- |

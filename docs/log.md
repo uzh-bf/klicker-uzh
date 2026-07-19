@@ -2,6 +2,10 @@
 
 ## 2026-07-19
 
+- **Update**: final Escape Room hardening centralizes attempt/hint/reset ownership, makes reset atomic, serializes GraphQL and LiveQuiz grading with post-claim state checks, preserves Escape Room LiveQuiz templates, aligns edit/reset/QR controls with permissions, and splits the large regression modules along mode boundaries.
+
+- **Update**: the lecturer and student Escape Room tutorials now cover Practice Quiz, Microlearning, Group Activity, Live Quiz blocks, shared group attempts, QR print/decoy setup, camera fallback, monitoring, and reset behavior. The Docusaurus production build passes; existing unrelated link and anchor warnings remain.
+
 - **Update**: [getting-started](./getting-started.md) and the environment-doctor skill record the required `/AddResponse` suffix for LiveQuiz submissions in every local routing mode.
 
 - **Update**: [auth-model](./auth-model.md), [testing](./testing.md), and the Playwright E2E skill document participant-cookie forwarding during PWA SSR and exact-workspace browser routing overrides used by the verified Escape Room suite.
