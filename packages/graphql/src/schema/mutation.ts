@@ -7,6 +7,7 @@ import * as ActivitiesService from '../services/activities.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
+import * as EscapeRoomService from '../services/escapeRooms.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
@@ -3399,7 +3400,7 @@ export const Mutation = builder.mutationType({
           elementBlockId: t.arg.int({ required: false }),
         },
         resolve: async (_, args, ctx) => {
-          return await PracticeQuizService.startEscapeRoomAttempt(args, ctx)
+          return await EscapeRoomService.startEscapeRoomAttempt(args, ctx)
         },
       }),
 
@@ -3413,7 +3414,7 @@ export const Mutation = builder.mutationType({
           groupId: t.arg.string({ required: false }),
         },
         resolve: async (_, args, ctx) => {
-          return await PracticeQuizService.resetEscapeRoomAttempt(args, ctx)
+          return await EscapeRoomService.resetEscapeRoomAttempt(args, ctx)
         },
       }),
 
@@ -3428,7 +3429,7 @@ export const Mutation = builder.mutationType({
           instanceId: t.arg.int({ required: true }),
         },
         resolve: async (_, args, ctx) => {
-          return await PracticeQuizService.requestEscapeRoomHint(args, ctx)
+          return await EscapeRoomService.requestEscapeRoomHint(args, ctx)
         },
       }),
 

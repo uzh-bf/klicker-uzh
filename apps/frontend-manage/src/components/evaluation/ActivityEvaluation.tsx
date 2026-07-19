@@ -57,6 +57,7 @@ interface ActivityEvaluationProps {
   // when set, an "Escape Room" tab surfaces the per-participant progress
   // dashboard (owner-scoped query returns null for non-escape-room activities)
   escapeRoomActivityType?: 'practiceQuiz' | 'microLearning'
+  canResetEscapeRoom?: boolean
 }
 
 function ActivityEvaluation({
@@ -73,6 +74,7 @@ function ActivityEvaluation({
   hideActiveBlockResults = false,
   type = 'Asynchronous',
   escapeRoomActivityType,
+  canResetEscapeRoom = false,
 }: ActivityEvaluationProps) {
   const router = useRouter()
   const t = useTranslations()
@@ -331,6 +333,7 @@ function ActivityEvaluation({
               activityId={activityId}
               progress={escapeRoomProgress}
               onReset={refetchEscapeRoom}
+              canReset={canResetEscapeRoom}
             />
           )}
       </div>

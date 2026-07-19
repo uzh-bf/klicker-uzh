@@ -5,6 +5,7 @@ query GetPracticeQuizEvaluation($id: String!) {
     displayName
     description
     courseId
+    canResetEscapeRoom
 
     ...EvaluationResults
   }

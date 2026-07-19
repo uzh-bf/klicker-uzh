@@ -65,7 +65,7 @@ function EscapeRoomProgress({
   activityId,
   progress,
   onReset,
-  canReset = true,
+  canReset = false,
 }: EscapeRoomProgressProps) {
   const t = useTranslations()
   const [resetEscapeRoomAttempt] = useMutation(ResetEscapeRoomAttemptDocument)

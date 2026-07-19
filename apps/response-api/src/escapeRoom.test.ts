@@ -67,7 +67,7 @@ function responseRecorder() {
 
 function redisMock() {
   const sets = new Map<string, Set<string>>()
-  const claims = new Set<string>()
+  const claims = new Map<string, string>()
   const transaction = {
     incr: vi.fn().mockReturnThis(),
     expire: vi.fn().mockReturnThis(),
@@ -77,15 +77,23 @@ function redisMock() {
     ]),
   }
   return {
+    hgetall: vi.fn().mockResolvedValue({}),
     get: vi.fn().mockResolvedValue(null),
     del: vi.fn(async (key: string) => {
       const removed = claims.delete(key) || sets.delete(key)
       return removed ? 1 : 0
     }),
+    eval: vi.fn(
+      async (_script: string, _keys: number, key: string, token: string) => {
+        if (claims.get(key) !== token) return 0
+        claims.delete(key)
+        return 1
+      }
+    ),
     incr: vi.fn().mockResolvedValue(1),
-    set: vi.fn(async (key: string) => {
+    set: vi.fn(async (key: string, value: string) => {
       if (claims.has(key)) return null
-      claims.add(key)
+      claims.set(key, value)
       return 'OK'
     }),
     sismember: vi.fn(async (key: string, value: string) =>
@@ -120,6 +128,18 @@ const payload = {
   instanceId: 11,
 }
 
+function activeInstanceState() {
+  return {
+    elementBlockId: 7,
+    elementBlock: {
+      liveQuizId: 'quiz-1',
+      status: 'ACTIVE',
+      liveQuiz: { activeBlockId: 7 },
+    },
+    element: { qrScanCode: null },
+  }
+}
+
 function attempt(overrides: Record<string, unknown> = {}) {
   return {
     id: 'attempt-1',
@@ -139,11 +159,7 @@ describe('response-api escape-room validation', () => {
       sub: 'participant-1',
       role: 'PARTICIPANT',
     })
-    mocks.findInstance.mockResolvedValue({
-      elementBlockId: 7,
-      elementBlock: { liveQuizId: 'quiz-1' },
-      element: { qrScanCode: null },
-    })
+    mocks.findInstance.mockResolvedValue(activeInstanceState())
     mocks.findAttempt.mockResolvedValue(attempt())
     mocks.findInstances.mockResolvedValue([{ id: 11 }])
     mocks.updateAttempt.mockResolvedValue(attempt())
@@ -217,6 +233,61 @@ describe('response-api escape-room validation', () => {
     expect(mocks.findAttempt).not.toHaveBeenCalled()
   })
 
+  it('rejects a response when the block closes before the claimed recheck', async () => {
+    mocks.findInstance
+      .mockResolvedValueOnce(activeInstanceState())
+      .mockResolvedValueOnce({
+        ...activeInstanceState(),
+        elementBlock: {
+          ...activeInstanceState().elementBlock,
+          status: 'INACTIVE',
+          liveQuiz: { activeBlockId: null },
+        },
+      })
+    mocks.grade.mockReturnValue(1)
+    const redis = redisMock()
+    const { response, result } = responseRecorder()
+
+    await handleEscapeRoomValidation(
+      {} as any,
+      response,
+      payload,
+      'participant_token=token',
+      info,
+      redis
+    )
+
+    expect(result.statusCode).toBe(409)
+    expect(JSON.parse(result.body)).toEqual({
+      error: 'escape_room_block_closed',
+    })
+    expect(mocks.grade).not.toHaveBeenCalled()
+    expect(mocks.push).not.toHaveBeenCalled()
+    expect(redis.sadd).not.toHaveBeenCalled()
+    expect(mocks.updateAttempts).not.toHaveBeenCalled()
+    expect(redis.eval).toHaveBeenCalledOnce()
+  })
+
+  it('rejects cached instance metadata already marked as closed', async () => {
+    const { response, result } = responseRecorder()
+
+    await handleEscapeRoomValidation(
+      {} as any,
+      response,
+      payload,
+      'participant_token=token',
+      { ...info, blockClosedAt: String(Date.now()) },
+      redisMock()
+    )
+
+    expect(result.statusCode).toBe(409)
+    expect(JSON.parse(result.body)).toEqual({
+      error: 'escape_room_block_closed',
+    })
+    expect(mocks.findInstance).not.toHaveBeenCalled()
+    expect(mocks.grade).not.toHaveBeenCalled()
+  })
+
   it('returns the active lockout without grading', async () => {
     const lockoutUntil = new Date(Date.now() + 5_000)
     mocks.findAttempt.mockResolvedValue(attempt({ lockoutUntil }))
@@ -234,6 +305,29 @@ describe('response-api escape-room validation', () => {
     expect(result.statusCode).toBe(429)
     expect(JSON.parse(result.body).status).toBe('lockout')
     expect(mocks.grade).not.toHaveBeenCalled()
+  })
+
+  it('rechecks lockout after acquiring the submission claim', async () => {
+    const lockoutUntil = new Date(Date.now() + 5_000)
+    mocks.findAttempt
+      .mockResolvedValueOnce(attempt())
+      .mockResolvedValueOnce(attempt({ lockoutUntil }))
+    const redis = redisMock()
+    const { response, result } = responseRecorder()
+
+    await handleEscapeRoomValidation(
+      {} as any,
+      response,
+      payload,
+      'participant_token=token',
+      info,
+      redis
+    )
+
+    expect(result.statusCode).toBe(429)
+    expect(JSON.parse(result.body).status).toBe('lockout')
+    expect(mocks.grade).not.toHaveBeenCalled()
+    expect(redis.eval).toHaveBeenCalledOnce()
   })
 
   it('accepts the five-second grace boundary and expires beyond it', async () => {
@@ -333,8 +427,7 @@ describe('response-api escape-room validation', () => {
 
   it('accepts an exact QR code and rejects a well-formed decoy', async () => {
     mocks.findInstance.mockResolvedValue({
-      elementBlockId: 7,
-      elementBlock: { liveQuizId: 'quiz-1' },
+      ...activeInstanceState(),
       element: { qrScanCode: 'AbCdEf12_-34' },
     })
     const qrInfo = { ...info, type: 'QR_SCAN', solutions: '' }
@@ -367,8 +460,7 @@ describe('response-api escape-room validation', () => {
 
   it('rejects malformed QR codes before publishing a response', async () => {
     mocks.findInstance.mockResolvedValue({
-      elementBlockId: 7,
-      elementBlock: { liveQuizId: 'quiz-1' },
+      ...activeInstanceState(),
       element: { qrScanCode: 'AbCdEf12_-34' },
     })
     const { response, result } = responseRecorder()
@@ -523,6 +615,38 @@ describe('response-api escape-room validation', () => {
     )
 
     expect(mocks.push).toHaveBeenCalledTimes(1)
+    expect(responses.map(({ result }) => result.statusCode).sort()).toEqual([
+      200, 409,
+    ])
+  })
+
+  it('grades only one of concurrent correct and incorrect responses', async () => {
+    mocks.grade.mockImplementation(({ response }) =>
+      response[0] === 0 ? 1 : 0
+    )
+    const redis = redisMock()
+    const responses = [responseRecorder(), responseRecorder()]
+
+    await Promise.all([
+      handleEscapeRoomValidation(
+        {} as any,
+        responses[0]!.response,
+        { ...payload, response: { choices: [0] } },
+        'participant_token=token',
+        info,
+        redis
+      ),
+      handleEscapeRoomValidation(
+        {} as any,
+        responses[1]!.response,
+        { ...payload, response: { choices: [1] } },
+        'participant_token=token',
+        info,
+        redis
+      ),
+    ])
+
+    expect(mocks.grade).toHaveBeenCalledTimes(1)
     expect(responses.map(({ result }) => result.statusCode).sort()).toEqual([
       200, 409,
     ])

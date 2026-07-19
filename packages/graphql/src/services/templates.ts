@@ -21,6 +21,7 @@ import type {
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
 import { manipulateElement } from './elements.js'
+import { validateEscapeRoomConfig } from './escapeRooms.js'
 import { getAnswerCollectionsElements } from './resources.js'
 import { checkAccess } from './sharing.js'
 
@@ -1314,6 +1315,7 @@ export async function getActivityTemplate(
         include: {
           blocks: {
             include: {
+              escapeRoomConfig: true,
               elements: {
                 orderBy: {
                   order: 'asc',
@@ -1545,6 +1547,13 @@ export async function createLiveQuizFromTemplate(
     return null
   }
 
+  for (const block of blocks.filter((entry) => entry.isEscapeRoom)) {
+    validateEscapeRoomConfig({
+      timeLimit: block.escapeRoomTimeLimit ?? 300,
+      hintPenalty: block.escapeRoomHintPenalty ?? 0,
+    })
+  }
+
   // get the available answer collection ids for the activity linked to the template
   const availableAnswerCollections = template.answerCollections.map(
     (collection) => collection.id
@@ -1556,11 +1565,28 @@ export async function createLiveQuizFromTemplate(
       id: template.liveQuizId,
       status: DB.PublicationStatus.TEMPLATE,
     },
+    include: {
+      blocks: {
+        include: { elements: true },
+      },
+    },
   })
 
   if (!templateLiveQuiz) {
     return null
   }
+
+  // Raw hints stay server-side even for publicly readable templates. The
+  // positional mapping preserves them when a user instantiates the template
+  // without exposing solution-like content through GraphQL.
+  const sourceEscapeRoomHints = new Map(
+    templateLiveQuiz.blocks.flatMap((block) =>
+      block.elements.map((instance) => [
+        `${block.order}:${instance.order}`,
+        instance.options.escapeRoomHint ?? null,
+      ])
+    )
+  )
 
   // check if the calling user has sufficient permissions on the course and the course exists
   const cleanCourseId =
@@ -1596,8 +1622,14 @@ export async function createLiveQuizFromTemplate(
         blocks: {
           order: number
           timeLimit?: number | null
+          isEscapeRoom?: boolean | null
+          escapeRoomTimeLimit?: number | null
+          escapeRoomHintPenalty?: number | null
+          escapeRoomLockoutSeconds?: number | null
+          escapeRoomIntroText?: string | null
           elements: {
             order: number
+            escapeRoomHint?: string | null
             element: DB.Element
           }[]
         }[]
@@ -1607,6 +1639,7 @@ export async function createLiveQuizFromTemplate(
       for (const block of blocks) {
         const elements: {
           order: number
+          escapeRoomHint?: string | null
           element: DB.Element & {
             answerCollection?:
               | (DB.AnswerCollection & { entries: DB.AnswerCollectionEntry[] })
@@ -1615,6 +1648,9 @@ export async function createLiveQuizFromTemplate(
           }
         }[] = []
         for (const element of block.elements) {
+          const escapeRoomHint = sourceEscapeRoomHints.get(
+            `${block.order}:${element.order}`
+          )
           if (element.useExistingElement) {
             if (
               element.existingElementId === null ||
@@ -1656,6 +1692,7 @@ export async function createLiveQuizFromTemplate(
             // add existing element to content map
             elements.push({
               order: element.order,
+              escapeRoomHint,
               element: existingElement,
             })
           } else if (element.useNewElement) {
@@ -1832,6 +1869,7 @@ export async function createLiveQuizFromTemplate(
 
             elements.push({
               order: element.order,
+              escapeRoomHint,
               element: newElement,
             })
           } else {
@@ -1843,6 +1881,11 @@ export async function createLiveQuizFromTemplate(
         liveQuizContent.blocks.push({
           order: block.order,
           timeLimit: block.timeLimit,
+          isEscapeRoom: block.isEscapeRoom,
+          escapeRoomTimeLimit: block.escapeRoomTimeLimit,
+          escapeRoomHintPenalty: block.escapeRoomHintPenalty,
+          escapeRoomLockoutSeconds: block.escapeRoomLockoutSeconds,
+          escapeRoomIntroText: block.escapeRoomIntroText,
           elements,
         })
       }
@@ -1871,6 +1914,19 @@ export async function createLiveQuizFromTemplate(
             create: liveQuizContent.blocks.map((block) => ({
               order: block.order,
               timeLimit: block.timeLimit,
+              escapeRoomConfig: block.isEscapeRoom
+                ? {
+                    create: {
+                      timeLimit: block.escapeRoomTimeLimit ?? 300,
+                      hintPenalty: block.escapeRoomHintPenalty ?? 0,
+                      lockoutSeconds: Math.max(
+                        block.escapeRoomLockoutSeconds ?? 5,
+                        0
+                      ),
+                      introText: block.escapeRoomIntroText?.trim() || null,
+                    },
+                  }
+                : undefined,
               elements: {
                 create: block.elements.map((entry) => {
                   const elementData = processElementData(entry.element)
@@ -1886,6 +1942,7 @@ export async function createLiveQuizFromTemplate(
                       pointsMultiplier:
                         templateLiveQuiz.pointsMultiplier *
                         entry.element.pointsMultiplier,
+                      escapeRoomHint: entry.escapeRoomHint?.trim() || null,
                     },
                     results: initialResults,
                     anonymousResults: initialResults,

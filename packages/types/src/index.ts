@@ -23,6 +23,38 @@ export const ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES: readonly ElementType[] = [
 
 export const ESCAPE_ROOM_GRACE_SECONDS = 5
 
+export type EscapeRoomLifecycleTargetKind =
+  | 'practiceQuiz'
+  | 'microLearning'
+  | 'groupActivity'
+  | 'liveQuizBlock'
+
+export function getEscapeRoomLifecycleClaimKey(
+  targetKind: EscapeRoomLifecycleTargetKind,
+  targetId: string | number,
+  actorId: string
+) {
+  return `escape-room:${targetKind}:${targetId}:${actorId}:lifecycle`
+}
+
+export function isEscapeRoomExpired(
+  attempt: {
+    startedAt: Date | string
+    timeLimit: number
+    penaltySeconds: number
+  },
+  now = Date.now()
+) {
+  const deadline =
+    new Date(attempt.startedAt).getTime() +
+    (attempt.timeLimit - attempt.penaltySeconds + ESCAPE_ROOM_GRACE_SECONDS) *
+      1000
+
+  // Preserve the established action-grace contract: the exact deadline is
+  // still valid; the attempt expires immediately after it.
+  return now > deadline
+}
+
 export function getCurrentEscapeRoomInstance<T extends { id: number }>(
   orderedInstances: readonly T[],
   clearedInstanceIds: ReadonlySet<string>
@@ -288,6 +320,11 @@ export type TemplateBlockElementInput = {
 
 export type TemplateBlockInput = {
   timeLimit?: number | null
+  isEscapeRoom?: boolean | null
+  escapeRoomTimeLimit?: number | null
+  escapeRoomHintPenalty?: number | null
+  escapeRoomLockoutSeconds?: number | null
+  escapeRoomIntroText?: string | null
   order: number
   elements: TemplateBlockElementInput[]
 }

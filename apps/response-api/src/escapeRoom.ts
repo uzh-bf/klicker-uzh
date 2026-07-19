@@ -8,16 +8,25 @@ import {
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import { prisma } from '@klicker-uzh/prisma'
 import {
-  ESCAPE_ROOM_GRACE_SECONDS,
   ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES,
   getCurrentEscapeRoomInstance,
+  getEscapeRoomLifecycleClaimKey,
   gradeQrScanResponse,
+  isEscapeRoomExpired,
   isValidQrScanCode,
   normalizeQrScanCode,
 } from '@klicker-uzh/types'
 import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
 import { IncomingMessage, ServerResponse } from 'http'
 import { Redis } from 'ioredis'
+import { randomUUID } from 'node:crypto'
+
+const RELEASE_ESCAPE_ROOM_CLAIM = `
+  if redis.call('get', KEYS[1]) == ARGV[1] then
+    return redis.call('del', KEYS[1])
+  end
+  return 0
+`
 
 async function getParticipantData(
   cookieHeader?: string
@@ -55,6 +64,41 @@ function sendJson(res: ServerResponse, status: number, body: unknown) {
   res.end(json)
 }
 
+type EscapeRoomInstanceState = Awaited<
+  ReturnType<typeof loadEscapeRoomInstanceState>
+>
+
+function loadEscapeRoomInstanceState(instanceId: number) {
+  return prisma.elementInstance.findUnique({
+    where: { id: instanceId },
+    select: {
+      elementBlockId: true,
+      elementBlock: {
+        select: {
+          liveQuizId: true,
+          status: true,
+          liveQuiz: { select: { activeBlockId: true } },
+        },
+      },
+      element: { select: { qrScanCode: true } },
+    },
+  })
+}
+
+function isActiveEscapeRoomInstance(
+  instance: EscapeRoomInstanceState,
+  blockId: number,
+  liveQuizId: string
+) {
+  return !!(
+    instance &&
+    instance.elementBlockId === blockId &&
+    instance.elementBlock?.liveQuizId === liveQuizId &&
+    instance.elementBlock.status === 'ACTIVE' &&
+    instance.elementBlock.liveQuiz.activeBlockId === blockId
+  )
+}
+
 export async function handleEscapeRoomValidation(
   req: IncomingMessage,
   res: ServerResponse,
@@ -80,20 +124,13 @@ export async function handleEscapeRoomValidation(
     sendJson(res, 400, { error: 'escape_room_invalid_block' })
     return true
   }
+  if (instanceInfo.blockClosedAt) {
+    sendJson(res, 409, { error: 'escape_room_block_closed' })
+    return true
+  }
 
-  const instance = await prisma.elementInstance.findUnique({
-    where: { id: instanceId },
-    select: {
-      elementBlockId: true,
-      elementBlock: { select: { liveQuizId: true } },
-      element: { select: { qrScanCode: true } },
-    },
-  })
-  if (
-    !instance ||
-    instance.elementBlockId !== blockId ||
-    instance.elementBlock?.liveQuizId !== liveQuizId
-  ) {
+  const instance = await loadEscapeRoomInstanceState(instanceId)
+  if (!isActiveEscapeRoomInstance(instance, blockId, liveQuizId)) {
     sendJson(res, 400, { error: 'escape_room_instance_block_mismatch' })
     return true
   }
@@ -128,9 +165,7 @@ export async function handleEscapeRoomValidation(
     return true
   }
 
-  const elapsed = (Date.now() - new Date(attempt.startedAt).getTime()) / 1000
-  const totalLimit = attempt.timeLimit - attempt.penaltySeconds
-  if (elapsed > totalLimit + ESCAPE_ROOM_GRACE_SECONDS) {
+  if (isEscapeRoomExpired(attempt)) {
     await prisma.escapeRoomAttempt.update({
       where: { id: attempt.id },
       data: { status: 'EXPIRED' },
@@ -148,8 +183,8 @@ export async function handleEscapeRoomValidation(
     orderBy: { order: 'asc' },
   })
   const clearedKey = `escape-attempt:${attempt.id}:cleared`
-  const clearedInstances = new Set(await redis.smembers(clearedKey))
-  const instanceAlreadyCleared = clearedInstances.has(String(instanceId))
+  let clearedInstances = new Set(await redis.smembers(clearedKey))
+  let instanceAlreadyCleared = clearedInstances.has(String(instanceId))
   const currentInstance = getCurrentEscapeRoomInstance(
     requiredInstances,
     clearedInstances
@@ -159,105 +194,182 @@ export async function handleEscapeRoomValidation(
     return true
   }
 
-  // Grade response
-  let pointsPercentage = 0
-  const type = instanceInfo.type
-  let parsedSolutions: any = undefined
-  if (instanceInfo.solutions) {
-    try {
-      parsedSolutions = JSON.parse(instanceInfo.solutions)
-    } catch (e) {
-      sendJson(res, 400, { error: 'invalid_solutions_json' })
-      return true
-    }
+  const claimKey = getEscapeRoomLifecycleClaimKey(
+    'liveQuizBlock',
+    blockId,
+    participantData.sub
+  )
+  const claimToken = randomUUID()
+  const claimed = await redis.set(claimKey, claimToken, 'EX', 300, 'NX')
+  if (claimed !== 'OK') {
+    sendJson(res, 409, { error: 'escape_room_response_processing' })
+    return true
   }
 
-  if (type === 'SC') {
-    pointsPercentage =
-      gradeQuestionSC({
-        responseCount: Number(instanceInfo.choiceCount),
-        response: response.choices || [],
-        solution: parsedSolutions || [],
-      }) || 0
-  } else if (type === 'MC') {
-    pointsPercentage =
-      gradeQuestionMC({
-        responseCount: Number(instanceInfo.choiceCount),
-        response: response.choices || [],
-        solution: parsedSolutions || [],
-      }) || 0
-  } else if (type === 'KPRIM') {
-    pointsPercentage =
-      gradeQuestionKPRIM({
-        responseCount: Number(instanceInfo.choiceCount),
-        response: response.choices || [],
-        solution: parsedSolutions || [],
-      }) || 0
-  } else if (type === 'NUMERICAL') {
-    const numValue = Number(response.value)
-    if (isNaN(numValue)) {
-      pointsPercentage = 0
-    } else {
-      const exactSolutionsDefined =
-        typeof parsedSolutions !== 'undefined' &&
-        parsedSolutions.length > 0 &&
-        (typeof parsedSolutions[0] === 'number' ||
-          typeof parsedSolutions[0] === 'string')
-      pointsPercentage =
-        gradeQuestionNumerical({
-          response: numValue,
-          solutionRanges: exactSolutionsDefined ? undefined : parsedSolutions,
-          exactSolutions: exactSolutionsDefined ? parsedSolutions : undefined,
-        }) || 0
-    }
-  } else if (type === 'FREE_TEXT') {
-    pointsPercentage =
-      gradeQuestionFreeText({
-        response: (response.value || '').trim(),
-        solutions: parsedSolutions || [],
-      }) || 0
-  } else if (type === 'QR_SCAN') {
-    const code = normalizeQrScanCode(response.value)
-    if (!isValidQrScanCode(code)) {
-      sendJson(res, 400, { error: 'invalid_qr_code' })
+  try {
+    const [currentInstanceState, currentInstanceInfo] = await Promise.all([
+      loadEscapeRoomInstanceState(instanceId),
+      redis.hgetall(`lq:${liveQuizId}:i:${instanceId}:info`),
+    ])
+    if (
+      currentInstanceInfo.blockClosedAt ||
+      !isActiveEscapeRoomInstance(currentInstanceState, blockId, liveQuizId)
+    ) {
+      sendJson(res, 409, { error: 'escape_room_block_closed' })
       return true
     }
-    pointsPercentage = gradeQrScanResponse(instance.element.qrScanCode, code)
-      ? 1
-      : 0
-  }
 
-  const isCorrect = pointsPercentage === 1
-  const triesKey = `lq:${liveQuizId}:i:${instanceId}:tries:${participantData.sub}`
+    const currentAttempt = await prisma.escapeRoomAttempt.findUnique({
+      where: { id: attempt.id },
+    })
+    if (!currentAttempt || currentAttempt.status !== 'IN_PROGRESS') {
+      sendJson(res, 400, { error: 'escape_room_not_in_progress' })
+      return true
+    }
+    if (
+      currentAttempt.lockoutUntil &&
+      Date.now() < new Date(currentAttempt.lockoutUntil).getTime()
+    ) {
+      sendJson(res, 429, {
+        status: 'lockout',
+        lockoutUntil: currentAttempt.lockoutUntil,
+      })
+      return true
+    }
+    if (isEscapeRoomExpired(currentAttempt)) {
+      await prisma.escapeRoomAttempt.updateMany({
+        where: { id: currentAttempt.id, status: 'IN_PROGRESS' },
+        data: { status: 'EXPIRED' },
+      })
+      sendJson(res, 400, { error: 'escape_room_expired' })
+      return true
+    }
+    clearedInstances = new Set(await redis.smembers(clearedKey))
+    instanceAlreadyCleared = clearedInstances.has(String(instanceId))
+    if (instanceAlreadyCleared) {
+      const blockCompleted =
+        requiredInstances.length > 0 &&
+        requiredInstances.every((entry) =>
+          clearedInstances.has(String(entry.id))
+        )
+      if (blockCompleted) {
+        await prisma.escapeRoomAttempt.updateMany({
+          where: { id: currentAttempt.id, status: 'IN_PROGRESS' },
+          data: {
+            status: 'COMPLETED',
+            completedAt: new Date(),
+            lockoutUntil: null,
+          },
+        })
+      }
+      sendJson(res, 200, {
+        status: 'correct',
+        completed: blockCompleted,
+        responseTimestamp: Date.now(),
+      })
+      return true
+    }
+    const claimedCurrentInstance = getCurrentEscapeRoomInstance(
+      requiredInstances,
+      clearedInstances
+    )
+    if (claimedCurrentInstance?.id !== instanceId) {
+      sendJson(res, 409, { error: 'escape_room_stage_locked' })
+      return true
+    }
 
-  if (isCorrect) {
-    // Correct! Fetch tries and send event to Hatchet to save
-    const triesRaw = await redis.get(triesKey)
-    const tries = triesRaw ? Number(triesRaw) + 1 : 1
-
-    const responseTimestamp = Date.now()
-    const claimKey = `${clearedKey}:claim:${instanceId}`
-
-    if (!instanceAlreadyCleared) {
-      const claimed = await redis.set(claimKey, '1', 'EX', 300, 'NX')
-      if (claimed !== 'OK') {
-        sendJson(res, 409, { error: 'escape_room_response_processing' })
+    // Grade response
+    let pointsPercentage = 0
+    const type = instanceInfo.type
+    let parsedSolutions: any = undefined
+    if (instanceInfo.solutions) {
+      try {
+        parsedSolutions = JSON.parse(instanceInfo.solutions)
+      } catch (e) {
+        sendJson(res, 400, { error: 'invalid_solutions_json' })
         return true
       }
     }
 
-    const message = {
-      messageId: `escape:${attempt.id}:${instanceId}`,
-      sessionId: String(liveQuizId),
-      instanceId: String(instanceId),
-      response,
-      cookie,
-      responseTimestamp,
-      tries,
+    if (type === 'SC') {
+      pointsPercentage =
+        gradeQuestionSC({
+          responseCount: Number(instanceInfo.choiceCount),
+          response: response.choices || [],
+          solution: parsedSolutions || [],
+        }) || 0
+    } else if (type === 'MC') {
+      pointsPercentage =
+        gradeQuestionMC({
+          responseCount: Number(instanceInfo.choiceCount),
+          response: response.choices || [],
+          solution: parsedSolutions || [],
+        }) || 0
+    } else if (type === 'KPRIM') {
+      pointsPercentage =
+        gradeQuestionKPRIM({
+          responseCount: Number(instanceInfo.choiceCount),
+          response: response.choices || [],
+          solution: parsedSolutions || [],
+        }) || 0
+    } else if (type === 'NUMERICAL') {
+      const numValue = Number(response.value)
+      if (isNaN(numValue)) {
+        pointsPercentage = 0
+      } else {
+        const exactSolutionsDefined =
+          typeof parsedSolutions !== 'undefined' &&
+          parsedSolutions.length > 0 &&
+          (typeof parsedSolutions[0] === 'number' ||
+            typeof parsedSolutions[0] === 'string')
+        pointsPercentage =
+          gradeQuestionNumerical({
+            response: numValue,
+            solutionRanges: exactSolutionsDefined ? undefined : parsedSolutions,
+            exactSolutions: exactSolutionsDefined ? parsedSolutions : undefined,
+          }) || 0
+      }
+    } else if (type === 'FREE_TEXT') {
+      pointsPercentage =
+        gradeQuestionFreeText({
+          response: (response.value || '').trim(),
+          solutions: parsedSolutions || [],
+        }) || 0
+    } else if (type === 'QR_SCAN') {
+      const code = normalizeQrScanCode(response.value)
+      if (!isValidQrScanCode(code)) {
+        sendJson(res, 400, { error: 'invalid_qr_code' })
+        return true
+      }
+      pointsPercentage = gradeQrScanResponse(
+        currentInstanceState!.element.qrScanCode,
+        code
+      )
+        ? 1
+        : 0
     }
 
-    if (!instanceAlreadyCleared) {
-      try {
+    const isCorrect = pointsPercentage === 1
+    const triesKey = `lq:${liveQuizId}:i:${instanceId}:tries:${participantData.sub}`
+
+    if (isCorrect) {
+      // Correct! Fetch tries and send event to Hatchet to save
+      const triesRaw = await redis.get(triesKey)
+      const tries = triesRaw ? Number(triesRaw) + 1 : 1
+
+      const responseTimestamp = Date.now()
+
+      const message = {
+        messageId: `escape:${attempt.id}:${instanceId}`,
+        sessionId: String(liveQuizId),
+        instanceId: String(instanceId),
+        response,
+        cookie,
+        responseTimestamp,
+        tries,
+      }
+
+      if (!instanceAlreadyCleared) {
         await hatchetClient.events.push(
           'response-received:authenticated',
           message
@@ -266,55 +378,56 @@ export async function handleEscapeRoomValidation(
         clearedInstances.add(String(instanceId))
         await redis.expire(clearedKey, 60 * 60 * 24 * 30)
         await redis.del(triesKey)
-      } catch (error) {
-        await redis.del(claimKey)
-        throw error
       }
-    }
 
-    const blockCompleted =
-      requiredInstances.length > 0 &&
-      requiredInstances.every((entry) => clearedInstances.has(String(entry.id)))
+      const blockCompleted =
+        requiredInstances.length > 0 &&
+        requiredInstances.every((entry) =>
+          clearedInstances.has(String(entry.id))
+        )
 
-    if (blockCompleted) {
-      await prisma.escapeRoomAttempt.updateMany({
-        where: { id: attempt.id, status: 'IN_PROGRESS' },
-        data: {
-          status: 'COMPLETED',
-          completedAt: new Date(),
-          lockoutUntil: null,
-        },
+      if (blockCompleted) {
+        await prisma.escapeRoomAttempt.updateMany({
+          where: { id: attempt.id, status: 'IN_PROGRESS' },
+          data: {
+            status: 'COMPLETED',
+            completedAt: new Date(),
+            lockoutUntil: null,
+          },
+        })
+      }
+      sendJson(res, 200, {
+        status: 'correct',
+        completed: blockCompleted,
+        responseTimestamp,
       })
-    }
-    sendJson(res, 200, {
-      status: 'correct',
-      completed: blockCompleted,
-      responseTimestamp,
-    })
-    return true
-  } else {
-    // Incorrect! Apply lockout and increment tries
-    await redis
-      .multi()
-      .incr(triesKey)
-      .expire(triesKey, 60 * 60 * 24 * 30)
-      .exec()
-    const lockoutSeconds = Number(instanceInfo.escapeRoomLockoutSeconds || 0)
-    let lockoutUntil: Date | null = null
+      return true
+    } else {
+      // Incorrect! Apply lockout and increment tries
+      await redis
+        .multi()
+        .incr(triesKey)
+        .expire(triesKey, 60 * 60 * 24 * 30)
+        .exec()
+      const lockoutSeconds = Number(instanceInfo.escapeRoomLockoutSeconds || 0)
+      let lockoutUntil: Date | null = null
 
-    if (lockoutSeconds > 0) {
-      lockoutUntil = new Date(Date.now() + lockoutSeconds * 1000)
-      await prisma.escapeRoomAttempt.update({
-        where: { id: attempt.id },
-        data: { lockoutUntil },
+      if (lockoutSeconds > 0) {
+        lockoutUntil = new Date(Date.now() + lockoutSeconds * 1000)
+        await prisma.escapeRoomAttempt.update({
+          where: { id: attempt.id },
+          data: { lockoutUntil },
+        })
+      }
+
+      sendJson(res, 200, {
+        status: 'incorrect',
+        lockoutUntil,
+        responseTimestamp: Date.now(),
       })
+      return true
     }
-
-    sendJson(res, 200, {
-      status: 'incorrect',
-      lockoutUntil,
-      responseTimestamp: Date.now(),
-    })
-    return true
+  } finally {
+    await redis.eval(RELEASE_ESCAPE_ROOM_CLAIM, 1, claimKey, claimToken)
   }
 }

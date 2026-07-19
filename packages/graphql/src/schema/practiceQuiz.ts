@@ -14,13 +14,13 @@ import {
 import builder from '../builder.js'
 import type {
   EscapeRoomAttemptProgress as IEscapeRoomAttemptProgress,
+  EscapeRoomHintResult as IEscapeRoomHintResult,
   EscapeRoomProgress as IEscapeRoomProgress,
 } from '../services/escapeRooms.js'
 import {
   getEscapeRoomExpiresInSeconds,
   getEscapeRoomRemainingSeconds,
 } from '../services/escapeRooms.js'
-import type { EscapeRoomHintResult as IEscapeRoomHintResult } from '../services/practiceQuizzes.js'
 import { CourseRef, type ICourse } from './course.js'
 import { ElementInstanceRef, InstanceEvaluation } from './element.js'
 import { ElementType } from './elementData.js'

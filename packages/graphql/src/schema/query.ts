@@ -610,10 +610,22 @@ export const Query = builder.queryType({
           (args) => ({ practiceQuizId: args.id }),
           DB.PermissionLevel.READ,
           async (_, args, ctx) => {
-            return await PracticeQuizService.getPracticeQuizEvaluation(
-              args,
+            const evaluation =
+              await PracticeQuizService.getPracticeQuizEvaluation(args, ctx)
+            if (!evaluation) return null
+            const canResetEscapeRoom = await checkAccess(
+              [
+                {
+                  practiceQuizId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
               ctx
             )
+            return {
+              ...evaluation,
+              canResetEscapeRoom,
+            }
           }
         ),
       }),
@@ -662,7 +674,7 @@ export const Query = builder.queryType({
                 : args.groupActivityId
                   ? { groupActivityId: args.groupActivityId }
                   : { liveQuizId: args.liveQuizId },
-          DB.PermissionLevel.OWNER,
+          DB.PermissionLevel.WRITE,
           async (_, args, ctx) =>
             EscapeRoomService.getEscapeRoomHints(args, ctx)
         ),
@@ -685,10 +697,22 @@ export const Query = builder.queryType({
           (args) => ({ microLearningId: args.id }),
           DB.PermissionLevel.READ,
           async (_, args, ctx) => {
-            return await MicroLearningService.getMicroLearningEvaluation(
-              args,
+            const evaluation =
+              await MicroLearningService.getMicroLearningEvaluation(args, ctx)
+            if (!evaluation) return null
+            const canResetEscapeRoom = await checkAccess(
+              [
+                {
+                  microLearningId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
               ctx
             )
+            return {
+              ...evaluation,
+              canResetEscapeRoom,
+            }
           }
         ),
       }),
@@ -892,7 +916,7 @@ export const Query = builder.queryType({
         },
         resolve: withPermission(
           (args) => ({ elementId: args.elementId }),
-          DB.PermissionLevel.READ,
+          DB.PermissionLevel.OWNER,
           async (_, args, ctx) => {
             return await ElementService.getQrScanPrintData(args, ctx)
           }

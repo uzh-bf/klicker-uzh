@@ -40,6 +40,7 @@ function PracticeQuizEvaluation() {
       activityName={evaluation?.displayName ?? ''}
       stacks={evaluation?.results ?? []}
       escapeRoomActivityType="practiceQuiz"
+      canResetEscapeRoom={evaluation?.canResetEscapeRoom ?? false}
     />
   )
 }

@@ -39,6 +39,7 @@ type ActivityDetails {
 }
 
 type ActivityEvaluation {
+  canResetEscapeRoom: Boolean
   confusionFeedbacks: [ConfusionTimestep!]
   courseId: String
   courseLanguage: LocaleType
@@ -3072,6 +3073,11 @@ input TemplateBlockElementInput {
 
 input TemplateBlockInput {
   elements: [TemplateBlockElementInput!]!
+  escapeRoomHintPenalty: Int
+  escapeRoomIntroText: String
+  escapeRoomLockoutSeconds: Int
+  escapeRoomTimeLimit: Int
+  isEscapeRoom: Boolean
   order: Int!
   timeLimit: Int
 }

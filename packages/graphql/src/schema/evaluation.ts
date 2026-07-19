@@ -24,6 +24,7 @@ export interface IActivityEvaluation {
   courseLanguage?: DB.Locale | null
   isAssessmentEnabled?: boolean | null
   pinCode?: string | null
+  canResetEscapeRoom?: boolean | null
   results: IStackEvaluation[]
   feedbacks?: IFeedback[] | null
   confusionFeedbacks?: DB.ConfusionTimestep[] | null
@@ -253,6 +254,9 @@ export const ActivityEvaluation = ActivityEvaluationRef.implement({
       nullable: true,
     }),
     pinCode: t.exposeString('pinCode', { nullable: true }),
+    canResetEscapeRoom: t.exposeBoolean('canResetEscapeRoom', {
+      nullable: true,
+    }),
     results: t.expose('results', {
       type: [StackEvaluation],
     }),

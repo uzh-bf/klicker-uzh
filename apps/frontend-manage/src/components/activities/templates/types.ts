@@ -35,6 +35,11 @@ export type LiveQuizTemplateFormValues = {
   // blocks with optionally identical or modified elements
   blocks: {
     timeLimit?: string // optional time limit to be set through custom dialog
+    isEscapeRoom?: boolean
+    escapeRoomTimeLimit?: number
+    escapeRoomHintPenalty?: number
+    escapeRoomLockoutSeconds?: number
+    escapeRoomIntroText?: string | null
     elements: ActivityTemplateElementFormValues[]
   }[]
 }

@@ -1,47 +1,33 @@
-import { useMutation } from '@apollo/client'
 import useRemainingInstances from '@components/hooks/useRemainingInstances'
-import EscapeRoomOverlay from '@components/practiceQuiz/EscapeRoomOverlay'
 import { faCheck } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ElementInstance,
-  ElementType,
-  EscapeRoomStatus,
-  RequestEscapeRoomHintDocument,
-  StartEscapeRoomAttemptDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ElementInstance, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
   InstanceStackStudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
 import useSingleStudentResponse from '@klicker-uzh/shared-components/src/hooks/useSingleStudentResponse'
 import LiveQuizProgress from '@klicker-uzh/shared-components/src/questions/LiveQuizProgress'
 import { push } from '@socialgouv/matomo-next'
-import { Button, H2, toast, UserNotification } from '@uzh-bf/design-system'
+import { H2, toast, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import localforage from 'localforage'
 import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
 import React, { useEffect, useRef, useState } from 'react'
 import { isDeepEqual } from 'remeda'
+import {
+  type LiveQuizEscapeRoomAttempt,
+  useLiveQuizEscapeRoom,
+} from '../hooks/useLiveQuizEscapeRoom'
+import {
+  LiveQuizEscapeRoomOverlay,
+  LiveQuizEscapeRoomQuestionControls,
+} from './LiveQuizEscapeRoomControls'
 import { loadStoredResponse, updateStoredResponses } from './storageHelpers'
 
 const ConfettiExplosion = dynamic(() => import('react-confetti-explosion'), {
   ssr: false,
 })
-
-// The escape attempt is fed from three GraphQL selections (start mutation, hint
-// mutation, live-quiz block query) that all select the same fields, so we type
-// it structurally here rather than coupling to one generated selection type.
-type EscapeRoomAttemptView = {
-  id: string
-  startedAt: string
-  timeLimit: number
-  penaltySeconds: number
-  hintsUsed: string[]
-  status: EscapeRoomStatus
-  lockoutUntil?: string | null
-  completedAt?: string | null
-}
 
 interface QuestionAreaProps {
   isBlockActive?: boolean
@@ -77,7 +63,7 @@ interface QuestionAreaProps {
     hintPenalty: number
     introText?: string | null
   } | null
-  initialEscapeRoomAttempt?: EscapeRoomAttemptView | null
+  initialEscapeRoomAttempt?: LiveQuizEscapeRoomAttempt | null
   escapeRoomTotalInstances?: number | null
   escapeRoomClearedInstances?: number | null
   refetchLiveQuiz?: () => Promise<unknown>
@@ -102,143 +88,34 @@ function QuestionArea({
   const t = useTranslations()
 
   const [showConfetti, setShowConfetti] = useState(false)
-  const [startEscapeRoomAttempt, { loading: startingEscapeRoom }] = useMutation(
-    StartEscapeRoomAttemptDocument
-  )
-  const [requestEscapeRoomHint, { loading: requestingHint }] = useMutation(
-    RequestEscapeRoomHintDocument
-  )
-  const [escapeAttempt, setEscapeAttempt] = useState(initialEscapeRoomAttempt)
-  const [escapeCompleted, setEscapeCompleted] = useState(
-    initialEscapeRoomAttempt?.status === EscapeRoomStatus.Completed
-  )
-  const [escapeRemaining, setEscapeRemaining] = useState<number | null>(null)
-  const [lockoutRemaining, setLockoutRemaining] = useState(0)
-  const [revealedHints, setRevealedHints] = useState<Record<number, string>>(
-    Object.fromEntries(
-      instances.flatMap((instance) =>
-        instance.revealedHint
-          ? [[instance.id, instance.revealedHint] as const]
-          : []
-      )
-    )
-  )
   const [submitting, setSubmitting] = useState(false)
   const [remainingQuestions, setRemainingQuestions] = useState<number[] | null>(
     null
   )
-
   const [submittedAt, setSubmittedAt] = useState<number | null>(null)
   const [activeInstance, setActiveInstance] = useState<number>(0)
   const currentInstance = instances[activeInstance]
-  const responseStorageQuizId = escapeAttempt?.id
-    ? `${quizId}-escape-${escapeAttempt.id}`
+  const escapeRoom = useLiveQuizEscapeRoom({
+    blockId,
+    config: escapeRoomConfig,
+    initialAttempt: initialEscapeRoomAttempt,
+    instances,
+    currentInstance,
+    refetch: refetchLiveQuiz,
+  })
+  const responseStorageQuizId = escapeRoom.attempt?.id
+    ? `${quizId}-escape-${escapeRoom.attempt.id}`
     : quizId
-  const serverAttemptIdRef = useRef<string | null>(
-    initialEscapeRoomAttempt?.id ?? null
-  )
-  const revealedHintProjection = instances
-    .map((instance) => `${instance.id}:${instance.revealedHint ?? ''}`)
-    .join('|')
+  const renderedAttemptIdRef = useRef(initialEscapeRoomAttempt?.id ?? null)
 
   useEffect(() => {
-    const nextServerAttemptId = initialEscapeRoomAttempt?.id ?? null
-    if (serverAttemptIdRef.current === nextServerAttemptId) return
+    const nextAttemptId = escapeRoom.attempt?.id ?? null
+    if (renderedAttemptIdRef.current === nextAttemptId) return
 
-    serverAttemptIdRef.current = nextServerAttemptId
-    setEscapeAttempt(initialEscapeRoomAttempt ?? null)
-    setEscapeCompleted(
-      initialEscapeRoomAttempt?.status === EscapeRoomStatus.Completed
-    )
-    setLockoutRemaining(0)
+    renderedAttemptIdRef.current = nextAttemptId
     setRemainingQuestions(null)
     setActiveInstance(0)
-  }, [initialEscapeRoomAttempt])
-
-  useEffect(() => {
-    setRevealedHints(
-      Object.fromEntries(
-        instances.flatMap((instance) =>
-          instance.revealedHint
-            ? [[instance.id, instance.revealedHint] as const]
-            : []
-        )
-      )
-    )
-  }, [revealedHintProjection])
-
-  useEffect(() => {
-    if (!escapeRoomConfig || !escapeAttempt) {
-      setEscapeRemaining(null)
-      return
-    }
-    const tick = () => {
-      const elapsed =
-        (Date.now() - new Date(escapeAttempt.startedAt).getTime()) / 1000
-      setEscapeRemaining(
-        Math.max(
-          0,
-          Math.ceil(
-            escapeAttempt.timeLimit - escapeAttempt.penaltySeconds - elapsed
-          )
-        )
-      )
-      setLockoutRemaining(
-        escapeAttempt.lockoutUntil
-          ? Math.max(
-              0,
-              Math.ceil(
-                (new Date(escapeAttempt.lockoutUntil).getTime() - Date.now()) /
-                  1000
-              )
-            )
-          : 0
-      )
-    }
-    tick()
-    const interval = setInterval(tick, 1000)
-    return () => clearInterval(interval)
-  }, [escapeAttempt, escapeRoomConfig])
-
-  const handleEscapeStart = async () => {
-    if (!blockId) return
-    try {
-      const result = await startEscapeRoomAttempt({
-        variables: { elementBlockId: blockId },
-      })
-      if (result.data?.startEscapeRoomAttempt) {
-        await refetchLiveQuiz?.()
-        setEscapeAttempt(result.data.startEscapeRoomAttempt)
-        setEscapeCompleted(false)
-      }
-    } catch {
-      toast({
-        message: t('pwa.assessment.submissionGeneralError'),
-        type: 'error',
-      })
-    }
-  }
-
-  const handleHintRequest = async () => {
-    if (!blockId || !currentInstance) return
-    try {
-      const result = await requestEscapeRoomHint({
-        variables: { elementBlockId: blockId, instanceId: currentInstance.id },
-      })
-      const payload = result.data?.requestEscapeRoomHint
-      if (!payload) return
-      setRevealedHints((current) => ({
-        ...current,
-        [currentInstance.id]: payload.hint,
-      }))
-      setEscapeAttempt(payload.attempt)
-    } catch {
-      toast({
-        message: t('pwa.assessment.submissionGeneralError'),
-        type: 'error',
-      })
-    }
-  }
+  }, [escapeRoom.attempt?.id])
 
   // initialize student response with default state (FT question) - is overwritten on instance change
   const [studentResponse, setStudentResponse] =
@@ -331,7 +208,7 @@ function QuestionArea({
   })
 
   const onSubmit = async (): Promise<void> => {
-    if (lockoutRemaining > 0) return
+    if (escapeRoom.lockoutRemaining > 0) return
     // lock the submission button temporarily to avoid double submissions
     setSubmitting(true)
 
@@ -476,21 +353,13 @@ function QuestionArea({
     }
   }
 
-  function applyEscapeResponseState(result: {
-    completed?: boolean
-    lockoutUntil?: string
-  }) {
-    if (result.completed) setEscapeCompleted(true)
-    if (result.lockoutUntil) {
-      const remaining = Math.max(
-        0,
-        Math.ceil((new Date(result.lockoutUntil).getTime() - Date.now()) / 1000)
-      )
-      setLockoutRemaining(remaining)
-      setEscapeAttempt((current) =>
-        current ? { ...current, lockoutUntil: result.lockoutUntil } : current
-      )
-    }
+  async function submitLiveQuizResponse(
+    input: Parameters<QuestionAreaProps['handleNewResponse']>[0]
+  ) {
+    const result = await handleNewResponse(input)
+    showStatusCodeToast(result.statusCode, result.responseStatus)
+    escapeRoom.onResponse(result)
+    return result
   }
 
   // use the handleNewResponse function to add a response to the question instance
@@ -521,7 +390,7 @@ function QuestionArea({
       typeof input.response !== 'undefined'
     ) {
       // submit responses as an array of objects with answer ix and selected boolean
-      const result = await handleNewResponse({
+      const result = await submitLiveQuizResponse({
         liveQuizId: quizId,
         instanceId,
         type,
@@ -531,11 +400,6 @@ function QuestionArea({
         })),
         correlationKey,
       })
-
-      // --> show toast based on status code
-      showStatusCodeToast(result.statusCode, result.responseStatus)
-      applyEscapeResponseState(result)
-
       // if request was successful, store the submitted answer locally to be shown and remove any temporary saved response
       if (
         result.statusCode >= 200 &&
@@ -559,17 +423,13 @@ function QuestionArea({
       typeof input.response !== 'undefined'
     ) {
       // submit responses as a string
-      const result = await handleNewResponse({
+      const result = await submitLiveQuizResponse({
         liveQuizId: quizId,
         instanceId,
         type,
         answer: input.response,
         correlationKey,
       })
-
-      // --> show toast based on status code
-      showStatusCodeToast(result.statusCode, result.responseStatus)
-      applyEscapeResponseState(result)
 
       if (
         result.statusCode >= 200 &&
@@ -591,16 +451,13 @@ function QuestionArea({
       input.type === ElementType.QrScan &&
       typeof input.response !== 'undefined'
     ) {
-      const result = await handleNewResponse({
+      const result = await submitLiveQuizResponse({
         liveQuizId: quizId,
         instanceId,
         type,
         answer: input.response,
         correlationKey,
       })
-
-      showStatusCodeToast(result.statusCode, result.responseStatus)
-      applyEscapeResponseState(result)
 
       if (
         result.statusCode >= 200 &&
@@ -622,17 +479,13 @@ function QuestionArea({
       typeof input.response !== 'undefined'
     ) {
       // submit responses as a number (float)
-      const result = await handleNewResponse({
+      const result = await submitLiveQuizResponse({
         liveQuizId: quizId,
         instanceId,
         type,
         answer: String(parseFloat(input.response)),
         correlationKey,
       })
-
-      // --> show toast based on status code
-      showStatusCodeToast(result.statusCode, result.responseStatus)
-      applyEscapeResponseState(result)
 
       if (
         result.statusCode >= 200 &&
@@ -655,7 +508,7 @@ function QuestionArea({
       typeof input.response !== 'undefined'
     ) {
       // submit responses as an array of answer ids that were selected
-      const result = await handleNewResponse({
+      const result = await submitLiveQuizResponse({
         liveQuizId: quizId,
         instanceId,
         type,
@@ -664,10 +517,6 @@ function QuestionArea({
         ),
         correlationKey,
       })
-
-      // --> show toast based on status code
-      showStatusCodeToast(result.statusCode, result.responseStatus)
-      applyEscapeResponseState(result)
 
       if (
         result.statusCode >= 200 &&
@@ -690,17 +539,13 @@ function QuestionArea({
       typeof input.response !== 'undefined'
     ) {
       // submit responses as an object with case, item and criterion ids as nested keys
-      const result = await handleNewResponse({
+      const result = await submitLiveQuizResponse({
         liveQuizId: quizId,
         instanceId,
         type,
         answer: input.response,
         correlationKey,
       })
-
-      // --> show toast based on status code
-      showStatusCodeToast(result.statusCode, result.responseStatus)
-      applyEscapeResponseState(result)
 
       if (
         result.statusCode >= 200 &&
@@ -719,17 +564,13 @@ function QuestionArea({
       }
     } else if (type === ElementType.Content) {
       // for content elements, only the number of reads / next clicks are counted
-      const result = await handleNewResponse({
+      const result = await submitLiveQuizResponse({
         liveQuizId: quizId,
         instanceId,
         type,
         answer: true,
         correlationKey,
       })
-
-      // --> show toast based on status code
-      showStatusCodeToast(result.statusCode, result.responseStatus)
-      applyEscapeResponseState(result)
 
       if (
         result.statusCode >= 200 &&
@@ -757,25 +598,14 @@ function QuestionArea({
   }
 
   const escapeRoomOverlay = escapeRoomConfig ? (
-    <EscapeRoomOverlay
-      isStarted={!!escapeAttempt}
-      isCompleted={escapeCompleted}
-      isExpired={
-        escapeAttempt?.status === EscapeRoomStatus.Expired ||
-        escapeRemaining === 0
-      }
-      remainingSeconds={escapeRemaining}
-      timeLimit={escapeRoomConfig.timeLimit}
-      hintPenalty={escapeRoomConfig.hintPenalty}
-      onStart={handleEscapeStart}
-      loading={startingEscapeRoom}
-      attempt={escapeAttempt}
-      clearedStacks={
+    <LiveQuizEscapeRoomOverlay
+      controller={escapeRoom}
+      config={escapeRoomConfig}
+      clearedInstances={
         escapeRoomClearedInstances ??
         instances.length - (remainingQuestions?.length ?? 0)
       }
-      totalStacks={escapeRoomTotalInstances ?? instances.length}
-      introText={escapeRoomConfig.introText}
+      totalInstances={escapeRoomTotalInstances ?? instances.length}
     />
   ) : null
 
@@ -840,7 +670,9 @@ function QuestionArea({
           isContent={currentInstance.elementType === ElementType.Content}
           isBlockOver={remainingQuestions.length === 0}
           canSubmit={
-            !!studentResponse.valid && !submitting && lockoutRemaining === 0
+            !!studentResponse.valid &&
+            !submitting &&
+            escapeRoom.lockoutRemaining === 0
           }
           onPrev={() => setActiveInstance((prev) => Math.max(0, prev - 1))}
           onNext={() =>
@@ -870,39 +702,13 @@ function QuestionArea({
           singleStudentResponse={studentResponse}
           setSingleStudentResponse={setStudentResponse}
         />
-        {escapeRoomConfig && lockoutRemaining > 0 && (
-          <UserNotification
-            type="warning"
-            className={{ root: 'mt-3' }}
-            message={t('pwa.practiceQuiz.escapeRoomLockoutCountdown', {
-              seconds: lockoutRemaining,
-            })}
+        {escapeRoomConfig && (
+          <LiveQuizEscapeRoomQuestionControls
+            controller={escapeRoom}
+            config={escapeRoomConfig}
+            currentInstance={currentInstance}
           />
         )}
-        {escapeRoomConfig &&
-          escapeAttempt &&
-          currentInstance?.options?.hasHint && (
-            <div className="mt-3">
-              {revealedHints[currentInstance.id] ? (
-                <UserNotification
-                  type="info"
-                  message={revealedHints[currentInstance.id]}
-                />
-              ) : (
-                <Button
-                  basic
-                  loading={requestingHint}
-                  disabled={lockoutRemaining > 0}
-                  onClick={handleHintRequest}
-                  data={{ cy: 'live-quiz-escape-room-hint' }}
-                >
-                  {t('pwa.practiceQuiz.escapeRoomRequestHint', {
-                    penalty: escapeRoomConfig.hintPenalty,
-                  })}
-                </Button>
-              )}
-            </div>
-          )}
       </div>
     </div>
   )

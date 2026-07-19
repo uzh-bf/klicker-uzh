@@ -130,6 +130,7 @@ function ElementEditModal({
       mode={mode}
       elementId={elementId}
       inputsDisabled={inputsDisabled}
+      canPrintQrCodes={dataQuestion?.element?.isOwner ?? false}
       loading={
         loadingQuestion ||
         !formikInitialValues ||
