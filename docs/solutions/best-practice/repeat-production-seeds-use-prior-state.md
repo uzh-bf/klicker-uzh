@@ -1,4 +1,7 @@
 ---
+type: Solution
+title: Repeat Production Seeds Must Validate Prior Mutable State
+description: Validate the existing mutable record and payload snapshot before extending an earlier production seed.
 module: prisma-data
 date: 2026-07-16
 problem_type: best_practice
