@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the two e2e stacks and their seeds, and the CI test matrix.
-timestamp: '2026-07-18'
+timestamp: '2026-07-19'
 tags:
   - testing
   - ci
@@ -54,4 +54,6 @@ Path-filtered unit workflows: `test-grading`, `test-util`, `test-markdown` (pack
 
 Root typecheck includes the Cypress and Playwright compiler surfaces through their package `check` scripts. Compiler/toolchain upgrades also cover the test build and Docs production build; the exact commands live in `klicker-testing-verification`. Cypress explicitly preserves its TypeScript 5 non-strict baseline in `cypress/tsconfig.json`; Playwright remains strict. This is legacy-suite compatibility, not a precedent for new TypeScript packages.
 
-For framework upgrades, run both bundler paths: `pnpm run build:test` must exercise Turbopack in all five Next apps, while `pnpm run build` must exercise production Turbopack for auth/chat and production Webpack for control/manage/PWA. Inspect `.next/standalone` for all five apps and the service worker, Workbox, and custom worker outputs for control/manage/PWA. Treat configuration inspection as **config-derived**; call the artifacts verified only when the command, date, and tested SHA are recorded.
+Check-only configs must state their no-output role with `noEmit`. When they extend a declaration-emitting config, `noEmit` alone does not disable declaration portability analysis: GraphQL and Prisma therefore also set `declaration: false` and `declarationMap: false`. Incremental checks use `tsconfig.check.tsbuildinfo` rather than overwriting the emitting compiler's state. The full compiler-role matrix lives in [Getting Started](./getting-started.md#toolchain-verified-2026-07-07).
+
+For framework upgrades, run both bundler paths: `pnpm run build:test` must exercise Turbopack in all five Next apps, while `pnpm run build` must exercise production Turbopack for auth/chat and production Webpack for control/manage/PWA. All five Next builds use their canonical `tsconfig.json`; the three PWA apps reserve `tsconfig.check.json` for raw package checks that must exclude stale development validators. Inspect `.next/standalone` for all five apps and the service worker, Workbox, and custom worker outputs for control/manage/PWA. Treat configuration inspection as **config-derived**; call the artifacts verified only when the command, date, and tested SHA are recorded.

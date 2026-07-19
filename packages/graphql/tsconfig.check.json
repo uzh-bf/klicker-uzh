@@ -3,6 +3,7 @@
   "compilerOptions": {
     "declaration": false,
     "declarationMap": false,
-    "noEmit": true
+    "noEmit": true,
+    "tsBuildInfoFile": "dist/tsconfig.check.tsbuildinfo"
   }
 }

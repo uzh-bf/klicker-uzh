@@ -1,4 +1,7 @@
 ---
+type: Solution
+title: Add the Missing React Types Edge to Recharts 2
+description: Repair the isolated pnpm type graph instead of weakening compiler checks or application code.
 module: dependency-management
 date: 2026-07-19
 problem_type: build_error

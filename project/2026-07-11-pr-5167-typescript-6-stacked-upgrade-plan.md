@@ -390,8 +390,8 @@ Do:
 - raise Control, Manage, and PWA from `ES2015` to Next's `ES2017` baseline;
 - add the Next TypeScript plugin to those three apps;
 - remove `ignoreBuildErrors` from the shared Next config;
-- retain the explicit bypass only in Control, Manage, and PWA, where stale dev and production Pages Router validators duplicate global declarations;
-- keep Auth and Chat build-time type checking enabled;
+- remove the TypeScript build bypass from every Next app;
+- keep build-time type checking enabled against each app's canonical `tsconfig.json`; Next 16 filters stale development validators on its production typecheck path;
 - preserve Turbopack production builds for Auth/Chat and Webpack production builds for the three PWA apps.
 
 Check:
@@ -433,7 +433,7 @@ Commit: `build(types): align workspace compiler roles`
 Do:
 
 - update compiler and bundler facts in the engineering wiki and testing procedure;
-- record the validator-duplication exception and the NodeNext-versus-Bundler rule;
+- record the raw-check validator-duplication exception and the NodeNext-versus-Bundler rule;
 - run the full compiler, mixed production bundler, all-Turbopack test build, Docs, browser-smoke, security, maintainability, and independent-review gates;
 - update the whole-branch PR body and read back current-head CI.
 
@@ -446,7 +446,7 @@ pnpm run build:test
 pnpm --filter @klicker-uzh/docs build:docs
 ```
 
-Commit: `docs: document TypeScript compiler roles`
+Commit: `build(types): isolate compiler cache ownership`
 
 ## Review cadence
 
@@ -517,10 +517,10 @@ Every implementation slice:
 - [x] Post-fix Node 24 verification passes: frozen install, `check:all` (24/24 typechecks and 6/6 lint tasks), production build (21/21), test build (19/19), and Docs build. Office Add-in has no diff from `v3`.
 - [x] TypeScript 7 feasibility tested in disposable trees. Direct replacement is blocked; the official TypeScript 7 CLI plus TypeScript 6 API compatibility pattern passes Prisma generation, Next type generation, production build, and all 24 post-build checks. Release-age policy and Docusaurus remain explicit prerequisites.
 - [x] Final rebase onto current `v3` commit `3872caee7` completed. Range-diff preserves all ten branch commits; the TypeScript wiki commit keeps the newer devcontainer timestamp and log history. Fresh Node 24 frozen install, `check:all` (24/24 and 6/6), and production build (21/21) pass.
-- [x] Slice 10 aligned the three PWA apps with Next's ES2017 target and TypeScript plugin, removed the shared `ignoreBuildErrors`, and localized that exception to the three apps affected by duplicate generated validators. Node 24 checks pass for all five Next apps; the ordered build graph passes 13/13 with Auth/Chat typechecked under Turbopack and Control/Manage/PWA built under Webpack with their service-worker outputs. Correctness review found no issue; simplification review kept the explicit per-app ownership.
+- [x] Slice 10 aligned the three PWA apps with Next's ES2017 target and TypeScript plugin and removed every Next TypeScript build bypass. The final design has no per-app config-selection branch: Next 16 production builds typecheck the canonical `tsconfig.json`, while raw PWA checks alone use `tsconfig.check.json` to exclude stale development validators. Fresh Node 24 production Webpack builds for Control, Manage, and PWA ran Next's `Running TypeScript` gate and passed with their service-worker outputs.
 - [x] Slice 11 replaced unused project-reference `composite` flags with explicit incremental caches where emitted outputs and build state persist, made i18n and Prisma data explicit source/script-only check targets, and adopted the automatic React JSX runtime in shared React libraries. A no-emit-only check-config simplification reproduced the existing 33 GraphQL declaration-portability diagnostics, so GraphQL and Prisma checks retain the minimal declaration overrides. The sequential finish gate exposed Prisma's Rollup cleanup racing with incremental state inside `dist`; Prisma remains deliberately non-incremental, and two consecutive Prisma builds retain both declarations before the downstream Types build passes. Fresh Node 24 typecheck (24/24), production build (21/21), and corrected all-Turbopack build (19/19) pass.
-- [ ] Slice 12 active: compiler matrix, Next validation boundary, Prisma incremental exception, verification procedure, and two solution notes are drafted and reviewed. Branch-owned solution docs pass OKF validation; full wiki validation has one unrelated pre-existing solution-frontmatter error. Remaining work is the browser, security, maintainability, independent branch, publication, and current-head CI gates.
+- [x] Slice 12 documented the compiler matrix, raw-check validator boundary, Prisma incremental exception, and both build-error lessons. Strict review found and corrected shared incremental state between emit and no-emit compilers, including separate GraphQL, Backend, Export library/CLI/check, and workspace check caches; no shared config abstraction was added. Fresh Node 24 gates pass: `check:all` (24/24 typechecks and 6/6 lint tasks), forced production build (21/21), forced all-Turbopack test build (19/19), Docs production build, focused canonical-config PWA builds, and a mobile PWA browser smoke with no page errors. Branch-owned solution docs pass OKF validation; full wiki validation retains one unrelated pre-existing solution-frontmatter error. Security, correctness, alternate-model, and final strict maintainability reviews found no remaining code issue.
 
-Current: Draft [PR #5167](https://github.com/uzh-bf/klicker-uzh/pull/5167) is published on current `v3`. The approved tsconfig extension is active. Office Add-in remains on TypeScript 5.6 and is untouched.
+Current: The approved tsconfig extension is complete and locally verified on current `v3`. Draft [PR #5167](https://github.com/uzh-bf/klicker-uzh/pull/5167) is ready for its whole-branch refresh. Office Add-in remains on TypeScript 5.6 and is untouched.
 
-Next: complete Slice 12 and refresh PR #5167 from whole-branch evidence. Keep the PR draft until maintainer approval is present and the user explicitly asks to mark it ready. Merge only with explicit authority and green current-head CI.
+Next: commit and push Slice 12, refresh PR #5167 from whole-branch evidence, and read back current-head CI. Keep the PR draft until the user explicitly asks to mark it ready. Merge only with explicit authority and green current-head CI.

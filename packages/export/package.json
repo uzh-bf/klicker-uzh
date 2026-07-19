@@ -27,7 +27,7 @@
     "build": "run-s build:ts",
     "build:test": "pnpm run build",
     "build:ts": "cross-env NODE_ENV=production rollup -c && chmod +x dist/scripts/export-course.js",
-    "check": "tsc --noEmit",
+    "check": "tsc --noEmit --tsBuildInfoFile dist/tsconfig.check.tsbuildinfo",
     "dev": "cross-env NODE_ENV=development rollup -c --watch",
     "export": "node dist/scripts/export-course.js",
     "export:dev": "tsx src/scripts/export-course.ts",

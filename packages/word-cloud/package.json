@@ -27,7 +27,7 @@
     "build": "run-s build:ts",
     "build:test": "pnpm run build",
     "build:ts": "cross-env NODE_ENV=production rollup -c",
-    "check": "tsc --noEmit",
+    "check": "tsc --noEmit --tsBuildInfoFile dist/tsconfig.check.tsbuildinfo",
     "demo": "node ./demo/server.mjs",
     "dev": "cross-env NODE_ENV=development rollup -c --watch",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",

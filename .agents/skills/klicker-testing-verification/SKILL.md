@@ -18,7 +18,7 @@ Facts about the test landscape: [docs/testing.md](../../../docs/testing.md). Thi
 
 Never run root `pnpm run test:run` blind — its turbo fan-out includes Cypress, which needs a running seeded stack.
 
-Direct checks for `auth`, `chat`, `frontend-control`, `frontend-manage`, and `frontend-pwa` generate ignored Next route types first through each app's `check` script. Do not hand-edit or commit `next-env.d.ts`; keep it ignored and included by `tsconfig.json`. The three PWA apps use `tsconfig.check.json` to exclude `.next/dev/types` from raw `tsc`; otherwise stale dev and fresh production Pages Router validators duplicate global declarations.
+Direct checks for `auth`, `chat`, `frontend-control`, `frontend-manage`, and `frontend-pwa` generate ignored Next route types first through each app's `check` script. Do not hand-edit or commit `next-env.d.ts`; keep it ignored and included by `tsconfig.json`. The three PWA apps use `tsconfig.check.json` only for raw package checks so stale `.next/dev/types` cannot duplicate fresh Pages Router validators. Next builds use the canonical `tsconfig.json`; Next 16 filters development validators on its production typecheck path. Auth and Chat use their main config for both checks and builds.
 
 For Next framework or bundler changes, verify both repository-supported paths. `pnpm run build:test` uses Turbopack in all five Next apps. `pnpm run build` uses Turbopack for auth/chat and Webpack for control/manage/PWA until their service-worker integration moves to Serwist. Confirm standalone server paths for all five apps and `sw.js`, Workbox, and custom worker outputs for the three PWA apps.
 
@@ -43,7 +43,7 @@ Every item, in order; paste evidence (command + tail of output, screenshots) int
 5. **i18n pair check** if UI text changed: the key exists in BOTH `packages/i18n/messages/de.ts` and `en.ts`.
 6. **Browser evidence for UI changes** — open the changed pages with `npx agent-browser` (never bare `agent-browser`), log in with delegated/test credentials (AGENTS.md), capture before/after screenshots. "The logic looks correct" does not count.
 
-For TypeScript or other compiler/toolchain upgrades, root `check:all` includes the Cypress and Playwright compilers through their package `check` scripts. Also run `pnpm run build:test` and the Docs production build; those surfaces remain outside the root check. Use direct package `tsc --noEmit -p tsconfig.json` commands only to isolate a Cypress or Playwright failure.
+For TypeScript or other compiler/toolchain upgrades, root `check:all` includes the Cypress and Playwright compilers through their package `check` scripts. Also run `pnpm run build:test` and the Docs production build; those surfaces remain outside the root check. Use direct package `tsc --noEmit -p tsconfig.json` commands only to isolate a Cypress or Playwright failure. When a check config extends a declaration-emitting config, verify the resolved compiler options: `noEmit` does not disable declaration portability analysis, so the check may also need explicit `declaration: false` and `declarationMap: false`. Incremental checks must use a different `tsBuildInfoFile` from the emitting build.
 
 ## Reporting
 

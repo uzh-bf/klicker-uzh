@@ -28,7 +28,7 @@
   "scripts": {
     "build": "cross-env NODE_ENV=production pnpm run build:ts",
     "build:ts": "rollup -c",
-    "check": "tsc --noEmit",
+    "check": "tsc --noEmit --tsBuildInfoFile dist/tsconfig.check.tsbuildinfo",
     "dev": "npm-run-all --parallel dev:build dev:run",
     "dev:build": "rollup -c --watch",
     "dev:infisical": "../../util/_run_with_infisical.sh --env dev pnpm run dev:lti",

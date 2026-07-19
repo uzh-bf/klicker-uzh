@@ -52,7 +52,7 @@
     "build": "run-s --npm-path pnpm build:ts",
     "build:test": "pnpm run build",
     "build:ts": "cross-env NODE_ENV=production rollup -c",
-    "check": "tsc --noEmit",
+    "check": "tsc --noEmit --tsBuildInfoFile dist/tsconfig.check.tsbuildinfo",
     "dev": "run-p --npm-path pnpm dev:ts",
     "dev:infisical": "../../util/_run_with_infisical.sh --env dev pnpm run dev",
     "dev:offline": "pnpm run dev",
