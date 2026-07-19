@@ -95,27 +95,31 @@ jobs:
           APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
           APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
 
+      - name: Archive Next build outputs
+        run: |
+          tar -cf playwright-next-builds.tar \
+            --exclude='apps/auth/.next/cache' \
+            --exclude='apps/auth/.next/standalone' \
+            --exclude='apps/chat/.next/cache' \
+            --exclude='apps/chat/.next/standalone' \
+            --exclude='apps/frontend-control/.next/cache' \
+            --exclude='apps/frontend-control/.next/standalone' \
+            --exclude='apps/frontend-manage/.next/cache' \
+            --exclude='apps/frontend-manage/.next/standalone' \
+            --exclude='apps/frontend-pwa/.next/cache' \
+            --exclude='apps/frontend-pwa/.next/standalone' \
+            apps/auth/.next \
+            apps/chat/.next \
+            apps/frontend-control/.next \
+            apps/frontend-manage/.next \
+            apps/frontend-pwa/.next
+
       - name: Upload Playwright build outputs
         uses: actions/upload-artifact@v4
         with:
           name: playwright-build-artifact
-          include-hidden-files: true
           path: |
-            apps/auth/.next
-            !apps/auth/.next/cache/**
-            !apps/auth/.next/standalone/**
-            apps/chat/.next
-            !apps/chat/.next/cache/**
-            !apps/chat/.next/standalone/**
-            apps/frontend-control/.next
-            !apps/frontend-control/.next/cache/**
-            !apps/frontend-control/.next/standalone/**
-            apps/frontend-manage/.next
-            !apps/frontend-manage/.next/cache/**
-            !apps/frontend-manage/.next/standalone/**
-            apps/frontend-pwa/.next
-            !apps/frontend-pwa/.next/cache/**
-            !apps/frontend-pwa/.next/standalone/**
+            playwright-next-builds.tar
             apps/backend-docker/dist
             apps/hatchet-worker-general/dist
             apps/hatchet-worker-response-processor/dist
@@ -257,6 +261,9 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: playwright-build-artifact
+
+      - name: Restore Next build outputs
+        run: tar -xf playwright-next-builds.tar
 
       - name: Generate Prisma Client
         run: pnpm --filter @klicker-uzh/prisma generate

@@ -61,7 +61,7 @@ function App({ Component, pageProps }: AppProps) {
         </NextIntlClientProvider>
       </ApolloProvider>
 
-      <style jsx global>{`
+      <style>{`
         :root {
           --source-sans-pro: ${sourceSansPro.variable};
           --theme-font-primary: ${sourceSansPro.variable};

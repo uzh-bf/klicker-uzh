@@ -57,7 +57,7 @@ export interface LiveQuizWizardStepProps {
   gamifiedCourses?: ElementSelectCourse[]
   nonGamifiedCourses?: ElementSelectCourse[]
   assessmentCourses?: ElementSelectCourse[]
-  onSubmit?: (newValues: LiveQuizFormValues) => void
+  onSubmit?: (newValues: LiveQuizFormValues) => Promise<void>
   setStepValidity: Dispatch<SetStateAction<boolean[]>>
   onNextStep?: (newValues: LiveQuizFormValues) => void
   onPrevStep?: (newValues: LiveQuizFormValues) => void
@@ -285,8 +285,8 @@ function LiveQuizWizard({
   const [startLiveQuiz] = useMutation(StartLiveQuizDocument)
 
   const handleSubmit = useCallback(
-    async (values: LiveQuizFormValues) => {
-      submitLiveQuizForm({
+    (values: LiveQuizFormValues) => {
+      return submitLiveQuizForm({
         id: initialValues?.id,
         previousCourseId: initialValues?.course?.id,
         editMode,

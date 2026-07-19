@@ -49,6 +49,13 @@ export default {
   ],
   versionGroups: [
     {
+      // A separate PR replaces the Office Add-in; keep its manifest on the v3 versions.
+      label: 'Office Add-in React versions can differ',
+      dependencies: ['react', 'react-dom', '@types/react', '@types/react-dom'],
+      packages: ['@klicker-uzh/office-addin'],
+      isIgnored: true,
+    },
+    {
       // FIXME: update when consistent versions are possible (e.g., do other remark updates in apps)
       label: 'remark-math can be inconsistent between docs and apps',
       dependencies: ['remark-math'],
