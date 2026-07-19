@@ -1,6 +1,6 @@
 # PR #5167 TypeScript 6 upgrade plan
 
-Status: rebased onto merged `v3` and published on 2026-07-19. The approved tsconfig best-practice extension is active; the draft remains gated on its fresh verification and maintainer approval.
+Status: rebased onto merged `v3` and published on 2026-07-19. The approved tsconfig best-practice extension is active and fresh verification has passed; the ready PR remains governed by current-head CI and maintainer approval.
 
 ## Goal
 
@@ -15,7 +15,7 @@ Success:
 - GraphQL schema and operations do not drift;
 - GraphQL public entry declarations do not regress relative to TypeScript 5.6; existing Pothos declaration portability debt stays explicit and out of scope;
 - root checks plus Docs, Cypress, and Playwright compiler surfaces pass;
-- PR diff against `v3` contains TypeScript-only work.
+- PR diff against `v3` contains TypeScript migration work plus supporting documentation, tests, and tooling changes.
 
 ## Non-goals
 
@@ -216,7 +216,7 @@ Decisions:
 
 - remove 24 local `baseUrl` declarations; retain only the Docusaurus compatibility exception;
 - make path targets explicitly relative where TS6 requires it without `baseUrl`;
-- raise the three Next frontend targets from deprecated ES5 to the TS6 floor, ES2015;
+- raise the three Next frontend targets from deprecated ES5 to Next's ES2017 baseline;
 - leave `types`, `rootDir`, module settings, strictness, side-effect imports, library replacement, downlevel iteration, output mode, and interop behavior unchanged.
 
 Checkpoint: batch with Slices 2, 4, and 5 so the normal pre-commit gate sees one buildable compatibility set.
@@ -521,7 +521,9 @@ Every implementation slice:
 - [x] Slice 11 replaced unused project-reference `composite` flags with explicit incremental caches where emitted outputs and build state persist, made i18n and Prisma data explicit source/script-only check targets, and adopted the automatic React JSX runtime in shared React libraries. A no-emit-only check-config simplification reproduced the existing 33 GraphQL declaration-portability diagnostics, so GraphQL and Prisma checks retain the minimal declaration overrides. The sequential finish gate exposed Prisma's Rollup cleanup racing with incremental state inside `dist`; Prisma remains deliberately non-incremental, and two consecutive Prisma builds retain both declarations before the downstream Types build passes. Fresh Node 24 typecheck (24/24), production build (21/21), and corrected all-Turbopack build (19/19) pass.
 - [x] Slice 12 documented the compiler matrix, raw-check validator boundary, Prisma incremental exception, and both build-error lessons. Strict review found and corrected shared incremental state between emit and no-emit compilers, including separate GraphQL, Backend, Export library/CLI/check, and workspace check caches; no shared config abstraction was added. Fresh Node 24 gates pass: `check:all` (24/24 typechecks and 6/6 lint tasks), forced production build (21/21), forced all-Turbopack test build (19/19), Docs production build, focused canonical-config PWA builds, and a mobile PWA browser smoke with no page errors. Branch-owned solution docs pass OKF validation; full wiki validation retains one unrelated pre-existing solution-frontmatter error. Security, correctness, alternate-model, and final strict maintainability reviews found no remaining code issue.
 - [x] Current-head CI at `30037aabd` exposed a gap between the staged-file pre-commit format check and CI's full-repository check. The TypeScript 6-aware import organizer removed or narrowed 33 obsolete React default imports after the automatic JSX migration. The exact formatter diff and both affected package typechecks pass locally.
+- [x] CI at `38dbe9a97` passed every reported check: TypeScript, full-repository formatting, lint, Syncpack, GraphQL, CodeQL, SonarCloud, GitGuardian, all image builds and package tests, and all eight Playwright shards.
+- [x] Final review feedback was verified and resolved with documentation-only wording corrections: the complete `check:all` gate, an exact `agent-browser@0.32.2` command, the plan's migration scope, and the final ES2017 target.
 
-Current: The approved tsconfig extension is published on [PR #5167](https://github.com/uzh-bf/klicker-uzh/pull/5167). Its narrow full-format CI repair is locally verified. Office Add-in remains on TypeScript 5.6 and is untouched.
+Current: The approved tsconfig extension and final review cleanup are published on [PR #5167](https://github.com/uzh-bf/klicker-uzh/pull/5167). Office Add-in remains on TypeScript 5.6 and is untouched.
 
-Next: commit and push the formatter repair, refresh the PR evidence, and read back current-head CI. Do not change the PR's readiness or merge state without explicit authority; merge only with green current-head CI.
+Next: keep current-head CI green and obtain the required maintainer approval. Do not change the PR's readiness or merge state without explicit authority; merge only with green current-head CI.
