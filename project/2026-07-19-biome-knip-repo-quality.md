@@ -1,0 +1,183 @@
+# Repo Quality Migration — Biome + Knip + Gitleaks
+
+Status: PLAN (awaiting approval to start Phase 0)
+Date: 2026-07-19
+Branch: `claude/klicker-uzh-repo-quality-17a1bb` → target `v3`
+Owner: Roland Schlaefli
+Skill: `$rs-repo-quality-setup` (Web/Node branch)
+
+## Objective
+
+Move KlickerUZH to one locked quality loop that devs, hooks, and CI all run:
+Biome as the code formatter + general linter, Knip for dead code/deps, Gitleaks
+for secret scanning. Preserve the Next.js lint safety net and existing type/CI
+gates. Terminal condition: enforced Biome format gate green in CI; Biome lint +
+Knip landed as audit-first reports with a documented ratchet path; hooks + docs
+updated; no unrelated changes absorbed.
+
+## Approved decisions (user, 2026-07-19)
+
+| # | Decision | Ruling | Consequence |
+|---|---|---|---|
+| D1 | Formatter scope | Biome formats code (JS/TS/JSX/TSX/JSON/JSONC/CSS); keep **slim Prettier for Markdown + YAML only** | Prettier stays but shrinks to MD/YAML. No formatter overlap on code. |
+| D2 | Tailwind class sort (follows D1) | Biome `useSortedClasses`; **drop `prettier-plugin-tailwindcss`** | Single tool sorts classes. Rule is nursery — verify parity in Phase 0. |
+| D3 | Linter | **Hybrid**: Biome general lint everywhere + keep `eslint-config-next` in the 5 Next apps | Next/React rules preserved; ESLint stays only for Next apps. |
+| D4 | Enforcement posture | **Staged**: format enforced immediately; Biome lint + Knip **audit-first**, then ratchet | Clean one-shot format diff blocks CI; lint/unused findings non-blocking first. |
+| D5 | Knip | Real per-workspace config, **audit-only first**, then ratchet | Knip becomes useful without an up-front blocking wall. |
+| D9 | Knip major | **Adopt Knip 6.x** — user OK'd the major (Knip not used before, no config to break) | Bump 5.83.0 → 6.24.0 (see D10). Verify 6.x config schema in Phase 3. |
+| D10 | Versions | **Newest version that has cleared the repo's 14-day `minimumReleaseAge` guard** (user chose, 2026-07-19) | Installed: **Biome 2.5.2** (Jul 1), **Knip 6.24.0** (Jul 2). Absolute latest (Biome 2.5.4 / Knip 6.27.0, both Jul 15) is blocked by `minimumReleaseAgeStrict` until it ages out (~2026-07-29) — NOT excepted; a routine bump reaches latest then. Guard left untouched. Gitleaks v8.x (binary, not npm — no age gate). husky/lint-staged/syncpack: incumbent, bump only if needed. |
+| D11 | TypeScript baseline | **TS 6 landed on v3** (#5167, `~6.0.3`); merged into this branch. Not changed by this effort | Biome/lint/Knip and the one-shot reformat validate against TS 6.0.3. Exception: `apps/office-addin` still pins `~5.6.3` (left out of #5167, outside the core stack). Earlier "TS excluded" note is moot. |
+
+Derived (not separately asked, flagged for veto):
+- D6 — Retire `packages/shared-components/.eslintrc.js` (legacy prettier-only config); Biome covers it. No Next rules lost there.
+- D7 — Keep **husky + lint-staged**; do NOT swap to the Python `pre-commit` framework. Rationale: `$rs-repo-quality-setup` prefers `pre-commit`, but the global rule "preserve an existing hook framework when it is working" wins. Gitleaks runs as a husky hook + CI job instead.
+- D8 — Keep `prettier-plugin-organize-imports` only if Prettier still touches code; since Biome owns code, import organizing moves to Biome assist (`source.organizeImports`). Prettier for MD/YAML needs no plugins.
+
+## Current state (reviewed 2026-07-19)
+
+- Package mgr: pnpm 11.5.0 (Volta-pinned), Node 24, Turborepo 2.5.6. Workspaces: `apps/*`, `packages/*`, `cypress`, `playwright`.
+- Formatter: **Prettier ~3.3.3** whole-repo. Config `.prettierrc.mjs` — `semi:false`, `singleQuote:true`, `trailingComma:'es5'`, plugins `organize-imports` + `tailwindcss`. `.prettierignore` is extensive (see Excludes). Second config at `cypress/.prettierrc.mjs`.
+- Linter: **ESLint 9 flat config** (`eslint.config.mjs`) in 5 Next apps — `auth`, `chat`, `frontend-control`, `frontend-manage`, `frontend-pwa` — via `eslint-config-next ~16.2.10` (`eslint ~9.30.1`). `next lint` deprecated → apps run `eslint .`. `packages/shared-components/.eslintrc.js` legacy (prettier-only). Other packages: no lint (turbo lint is a no-op there).
+- Types: `tsc --noEmit` per package via `turbo run check` (`dependsOn: ^build`); CI change-filtered.
+- Knip: **~5.83.0 already installed**, `knip.json` minimal (root workspace only, `tags: ["-lintignore"]`), `knip` script exists, **no CI job**, not enforced.
+- syncpack ~13.0.4 (`check:syncpack` in CI + hooks).
+- Hooks: husky `pre-commit` → `pnpm run check:all` (check + check:format[lint-staged prettier] + check:lint + check:syncpack + check:agents-md + check:prisma-sync); `pre-push` → `pnpm run build`. `.lintstagedrc` runs `prettier --check` on staged non-symlinks.
+- CI quality workflows: `check-format.yml` (`format:check` = prettier whole repo), `check-lint.yml` (`lint` = turbo eslint + prisma-sync + agents-md, path-filtered), `check-types.yml` (turbo build+check, change-filtered), `check-syncpack.yml`, `codeql-analysis.yml`, `v3_sonarcloud.yml`.
+
+## Non-goals
+
+- No dependency major-version upgrades bundled in (Biome/Knip/Gitleaks only).
+- No change to type-checking, test, build, or deploy pipelines beyond wiring the new gates.
+- No rewrite of Next apps' ESLint rule sets (kept as-is under hybrid).
+- No migration of the `project/`/`docs/` artifacts root.
+- No Python/SQL branch work (no `pyproject.toml`/tracked SQL migrations relevant here — Prisma owns schema).
+
+## Phase 0 — Verify & baseline (no code change) — BLOCKS all later phases
+
+Run when Bash/Agent/MCP classifier is available (was down at plan time).
+
+1. [DONE 2026-07-19] Biome latest stable = **2.5.4** → pin `@biomejs/biome@2.5.4`. Still confirm via Context7/CLI schema for 2.5.4:
+   - CSS + GraphQL formatting support and defaults.
+   - `useSortedClasses` status (nursery?) + config surface (functions: `cn`, `clsx`, `cva`, `twMerge`; attributes) — assess parity with `prettier-plugin-tailwindcss`. If parity is poor, escalate D2 back to the user (option: keep the Prettier tailwind plugin as a narrow exception).
+   - Monorepo config model: single root `biome.json` vs nested with `root:false` + `extends:"//"`.
+   - `vcs.enabled` + `vcs.useIgnoreFile` (gitignore awareness) and `files.includes`/`files.ignoreUnknown`.
+2. Measure churn: dry `biome format` (or `biome check --formatter-enabled=true` diff) across the intended scope → record file count. Capture pre-format `git status`/`tsc`/test state.
+3. Measure Knip noise: run `knip` with a first-cut config → record count of unused files/deps/exports per workspace.
+4. Audit per-package `lint` scripts + eslint deps to confirm the 5-app + shared-components inventory (spot-check others).
+5. Record findings in this file's Progress section. If churn or Knip noise is far larger than expected, checkpoint and confirm scope before Phase 1's one-shot reformat.
+
+## Phase 1 — Biome as code formatter (enforced) — Slice 1
+
+- Add `@biomejs/biome@2.5.4` exact (`-D -E`). Update lockfile in same commit.
+- `biome init`; write `biome.json` (package-local schema):
+  - Style: `semicolons:"asNeeded"`, `quoteStyle:"single"`, `trailingCommas:"es5"`, indent 2 spaces — match `.prettierrc.mjs`.
+  - `vcs.useIgnoreFile:true`, `files.ignoreUnknown:true`.
+  - Scope Biome to JS/TS/JSX/TSX/JSON/JSONC/CSS. Port `.prettierignore` → `files.includes` negations / overrides (see Excludes).
+  - `assist.actions.source.organizeImports:"on"` (replaces `prettier-plugin-organize-imports`).
+  - Enable `useSortedClasses` (fix) with the Tailwind function list (replaces `prettier-plugin-tailwindcss`) — pending Phase 0 parity check.
+- Shrink Prettier to MD/YAML only: keep `prettier ~3.3.3`, drop `prettier-plugin-tailwindcss` + `prettier-plugin-organize-imports`; update `.prettierrc.mjs` (no plugins) and restrict `format`/`format:check` globs to `**/*.{md,yaml,yml}`. Reconcile `cypress/.prettierrc.mjs`.
+- One-shot `biome format --write` reformat as its **own commit**, reviewed separately from config. Rerun `pnpm run check` (tsc) + `pnpm run test:run` after; confirm only whitespace/quote/import-order churn (no semantic diffs).
+- Scripts: `format`→prettier(MD/YAML), add `check`/`check:fix`/`lint` (biome), repoint `check:format`. Keep names stable for hooks/CI.
+- Verify: `biome format --check .` exits zero; `git diff --check` clean; tsc + tests green.
+
+## Phase 2 — Biome lint (audit-first) — Slice 2
+
+- Enable Biome `recommended` lint rules. Add narrow, documented rule overrides only for verified false positives / intentional patterns; disable noisy nursery rules explicitly.
+- Hybrid (D3): leave `eslint-config-next` + the 5 `eslint.config.mjs` untouched. Retire `shared-components/.eslintrc.js` (D6).
+- Run `biome lint` → triage. Fix safe/auto-fixable; leave the rest reported.
+- Enforcement: **non-blocking** at first (CI reports, exit non-zero tolerated via `continue-on-error` or a separate advisory job). Ratchet criterion documented (see Ratchet).
+
+## Phase 3 — Knip (audit-first) — Slice 3
+
+- Bump `knip@5.83.0` → **`knip@6.27.0`** exact; verify the 6.x config schema (breaking changes vs 5.x) before writing config.
+- Expand `knip.json` to real entry points per workspace: Next apps (`next.config`, `app/`/`pages/`, `middleware`), package `exports`/`bin`/`main`, GraphQL codegen entry + ops, Hatchet workers, util scripts, cypress/playwright specs. Derive from evidence, not assumptions.
+- Enable unused files, unused deps, unlisted deps, unresolved imports; treat config hints as errors where the pinned Knip supports it.
+- Run → record findings; fix easy wins (truly-dead files/deps). Keep the rest as an audit report.
+- Enforcement: **non-blocking** CI job first (D5). Ratchet later.
+
+## Phase 4 — Hooks + Gitleaks — Slice 4
+
+- Keep husky (D7). Update `.lintstagedrc`: run `biome check --write` (or `--staged`) on code files (JS/TS/JSX/TSX/JSON/CSS), `prettier --write` on `*.md`/`*.yaml`. Preserve the symlink filter.
+- Add **Gitleaks** pinned exact (**v8.30.1** latest at plan time): a `pre-commit` (or `pre-push`) husky step + a CI job. Rationale: CodeQL/Sonar don't do secret scanning; public repo → prevent secret commits locally. Provide `.gitleaks.toml` allowlist only for known false positives.
+- Verify hooks on newly-staged config: `pnpm run check:all` passes; gitleaks clean on a scratch commit.
+
+## Phase 5 — CI parity — Slice 5
+
+- `check-format.yml`: replace `format:check` step with `biome format --check .` (or `biome ci` scoped to formatter) + a Prettier MD/YAML check step.
+- `check-lint.yml`: add a `biome lint` step (advisory first per D4); keep the turbo eslint step for Next apps, plus existing prisma-sync + agents-md.
+- New Knip CI job (advisory first per D5).
+- Keep `check-types.yml`, `check-syncpack.yml`, `codeql-analysis.yml`, `v3_sonarcloud.yml` unchanged.
+- Install from lockfile (`--frozen-lockfile`); invoke the same repo scripts as local. No CI-only tool versions.
+
+## Phase 6 — Docs — Slice 6
+
+- `CLAUDE.md`: update Formatting row + Code Conventions (Prettier→Biome for code; Prettier=MD/YAML; import/tailwind sorting via Biome) and pre-commit section.
+- `docs/` engineering wiki: update/create the tooling page (formatter/linter/unused/secret-scan commands + scope + excludes rationale). Per repo rule, same-PR wiki update.
+- `.agents/skills/` klicker-* skills that reference prettier/eslint commands: sync.
+
+## Excludes (port from `.prettierignore` → Biome/Knip)
+
+Generated/vendored — keep exclusions narrow + documented:
+- GraphQL codegen: `ops.ts`, `ops.schema.json`, `schema.graphql`, `nexus-typegen.ts`, `client.json`, `server.json`.
+- Prisma generated client: `packages/prisma/src/prisma/client/`.
+- Compiled markdown CSS: `packages/markdown/components.css`, `packages/markdown/utilities.css`.
+- Instrumented build: `packages/graphql/instrumented/`.
+- Build outputs: `.next/`, `dist/`, `out/`, `build/`, `.turbo/`, `.docusaurus/`, `.tsup/`.
+- Static/public assets incl. service workers: `public/`, `static/`, `apps/frontend-pwa/{ios,android}/`.
+- Charts: `deploy/charts/`.
+- Not Biome-formatted anyway (leave to Prettier/none): `*.md`, `*.yaml/*.yml`, `*.prisma`, `*.sql`, `*.sh`, `*.toml`, `Dockerfile*`, `*.py`, `*.txt`.
+
+## Ratchet (audit → enforced)
+
+Flip Biome lint and Knip CI jobs from advisory to blocking once their findings
+reach zero (or an agreed, documented allowlist) on `v3`. Track remaining
+findings in Progress. Each flip is its own small PR referencing this plan.
+
+## Risks
+
+- Biome≠Prettier formatting → large one-shot diff (Phase 1). Mitigate: isolated commit, tsc+tests after, independent review of the diff.
+- `useSortedClasses` nursery parity gap (D2). Mitigate: Phase 0 parity check; fallback = narrow Prettier tailwind-plugin exception, re-confirm with user.
+- Biome lint on a large untouched codebase → high finding volume. Mitigate: audit-first (D4), recommended-only, ratchet.
+- Knip false positives in a codegen-heavy monorepo. Mitigate: evidence-based entry points, audit-first.
+- Two Prettier configs (`.prettierrc.mjs`, `cypress/.prettierrc.mjs`) → reconcile so no code file is touched by both tools.
+
+## Verification matrix (run before "complete")
+
+| Layer | Command |
+|---|---|
+| Lockfiles | `pnpm install --frozen-lockfile` |
+| Format (code) | `biome format --check .` exits zero |
+| Format (docs) | `prettier --check "**/*.{md,yaml,yml}"` exits zero |
+| Lint (Biome) | `biome lint .` — advisory first, zero at ratchet |
+| Lint (Next) | `pnpm run lint` (turbo eslint) exits zero |
+| Unused | `knip` — advisory first, zero at ratchet |
+| Types | `pnpm run check` (tsc) exits zero |
+| Tests | `pnpm run test:run` passes |
+| Build | `pnpm run build` passes (pre-push) |
+| Hooks | new files checked explicitly; `check:all` + gitleaks pass |
+| Static analysis | `opengrep scan --config auto` read + classified |
+| Diff hygiene | `git diff --check`; format churn reviewed |
+| Docs | CLAUDE.md + docs/ wiki + skills synced |
+
+## Phase 0 findings (2026-07-19, partial)
+
+Done (read-only / version lookups):
+- Biome latest stable **2.5.4** (beta/nightly stale) → pin `@biomejs/biome@2.5.4`.
+- Knip latest **6.27.0** (major); repo on **5.83.0** → adopt 6.27.0 (D9, user-approved).
+- Gitleaks latest **v8.30.1** → pin that.
+- Biome format scope: **~1379** code files (ts/tsx/js/jsx/mjs/cjs/json/css) after excludes; **1228** are `.ts/.tsx`. Whole-repo reformat = large one-shot diff → isolated commit + independent review (as planned).
+- MD/YAML under apps/packages that stay on Prettier: ~10 files (plus root-level docs/README). Small surface.
+- `packages/shared-components`: has `eslint ~9.30.1` dep but **no `lint` script**, and `.eslintrc.js` is legacy eslintrc that ESLint 9 ignores by default → **orphaned dead config + unused dep**. Confirms D6 and is an easy Knip win.
+- Lint reality: only the 5 Next apps run real lint (`eslint .`); `turbo run lint` is a no-op elsewhere.
+
+Still pending (need Biome/Knip installed — belongs to Phase 1/3 start):
+- Real Biome-vs-Prettier diff count (after writing the style-matched `biome.json`).
+- `useSortedClasses` parity vs `prettier-plugin-tailwindcss` (D2 gate).
+- Knip finding baseline per workspace.
+
+## Progress
+
+- 2026-07-19: Plan drafted; repo state reviewed; D1–D11 recorded (D1–D5 user-approved; D9 Knip-6 + D10 latest-versions user-approved; D11 TS6 baseline). Phase 0 version + scope facts gathered. Remaining Phase 0 measurements require installing Biome/Knip → run at Phase 1/3 start. Pending: confirm exact latest of Prettier/husky/lint-staged/syncpack at install.
+- 2026-07-19: Merged `origin/v3` (fast-forward) → HEAD `15fededdb` (TS 6, #5167). Branch now 0/0 vs v3. Root + all workspaces on `typescript ~6.0.3` except `apps/office-addin` (`~5.6.3`).
+- 2026-07-19: **Phase 0 done.** Worktree had no `node_modules` → ran `pnpm install --frozen-lockfile`. Installed **Biome 2.5.2** + **Knip 6.24.0** exact (D10). Authored `biome.json` (formatter: 2-space, single-quote, asNeeded semicolons, es5 trailing commas; assist organizeImports; recommended linter [audit]; vcs.useIgnoreFile; excludes for generated ops/prisma-client/markdown-css/public/static). **Fixed** CSS Tailwind-directive parse via `css.parser.tailwindDirectives: true`. **Churn measured: 25 files** need biome formatting (0 parse errors) — very small, Biome≈Prettier output. Biome scope confirmed complete (1699 files checked vs 1273 raw TS/JS + JSON/CSS).
+- 2026-07-19: **Phase 1 in progress.** Edits done (uncommitted): `biome.json`; `package.json` (biome dep, knip→exact 6.24.0, dropped `prettier-plugin-organize-imports`+`prettier-plugin-tailwindcss`, `format`/`format:check` now `biome format` + prettier md/yaml, added `biome`/`biome:fix` scripts); `.prettierrc.mjs` (plugins dropped, MD/YAML only); `.lintstagedrc.mjs` (biome for code, prettier for md/yaml, symlink filter kept). `pnpm install` synced lockfile (pruned 2 plugins; large churn = knip 5→6 major + biome). **Pending (blocked on flaky Bash classifier):** run `biome format --write .` (25 files), verify `format:check` + prettier md/yaml, then commit Phase 1 as `build(quality): adopt biome 2.5.2 + knip 6.24.0`. Note: Tailwind class-sort (`useSortedClasses`) deferred to Phase 2 (nursery, parity-check) — existing classes already sorted, no regression. Next: reformat + verify + commit.
