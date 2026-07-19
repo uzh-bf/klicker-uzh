@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client'
+import EscapeRoomProgress from '@components/evaluation/EscapeRoomProgress'
 import {
   ConfusionTimestep,
   Feedback,
@@ -10,6 +11,8 @@ import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import Leaderboard, {
   LeaderboardCombinedEntry,
 } from '@klicker-uzh/shared-components/src/Leaderboard'
+import useEvaluationInitialization from '@lib/hooks/useEvaluationInitialization'
+import useEvaluationSettingsInitialization from '@lib/hooks/useEvaluationSettingsInitialization'
 import { useSessionStorage } from '@uidotdev/usehooks'
 import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -20,10 +23,7 @@ import Rank2Img from 'public/img/rank2.svg'
 import Rank3Img from 'public/img/rank3.svg'
 import { useEffect, useReducer, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import useEvaluationInitialization from '../../lib/hooks/useEvaluationInitialization'
-import useEvaluationSettingsInitialization from '../../lib/hooks/useEvaluationSettingsInitialization'
 import ElementEvaluation from './ElementEvaluation'
-import EscapeRoomProgress from './EscapeRoomProgress'
 import EvaluationFooter from './EvaluationFooter'
 import EvaluationUnavailableNotification from './EvaluationUnavailableNotification'
 import EvaluationConfusion from './feedbacks/EvaluationConfusion'

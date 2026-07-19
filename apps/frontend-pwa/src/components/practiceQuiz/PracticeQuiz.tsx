@@ -19,6 +19,8 @@ import ElementStack from './ElementStack'
 import EscapeRoomOverlay from './EscapeRoomOverlay'
 import PracticeQuizOverview from './PracticeQuizOverview'
 
+const noopRefetch = async () => undefined
+
 export const FEEDBACK_STATUS_PROGRESS_MAP: Record<
   StackFeedbackStatus,
   'correct' | 'unanswered' | 'incorrect' | 'partial' | undefined
@@ -48,7 +50,7 @@ interface PracticeQuizProps {
   showResetLocalStorage?: boolean
   embedded?: boolean
   previewOnly?: boolean
-  refetch?: () => Promise<unknown> | void
+  refetch?: () => Promise<unknown>
 }
 
 function PracticeQuiz({
@@ -102,6 +104,8 @@ function PracticeQuiz({
   )
 
   const isEscapeRoom = !!quiz.escapeRoomConfig
+  const escapeRoomHintPenalty = quiz.escapeRoomConfig?.hintPenalty ?? 120
+  const resolvedRefetch = refetch ?? noopRefetch
   const {
     attempt,
     isStarted,
@@ -113,7 +117,7 @@ function PracticeQuiz({
   } = useEscapeRoom({
     activity: quiz,
     activityType: 'practiceQuiz',
-    refetch: refetch ?? (() => {}),
+    refetch: resolvedRefetch,
   })
 
   // Synchronize localStorage progress state with server's isCorrect fields if they differ
@@ -217,7 +221,7 @@ function PracticeQuiz({
           isExpired={isExpired}
           remainingSeconds={remainingSeconds}
           timeLimit={quiz.escapeRoomConfig?.timeLimit ?? 3600}
-          hintPenalty={quiz.escapeRoomConfig?.hintPenalty ?? 120}
+          hintPenalty={escapeRoomHintPenalty}
           onStart={startAttempt}
           loading={attemptLoading}
           attempt={attempt}
@@ -331,8 +335,8 @@ function PracticeQuiz({
               isEscapeRoom
                 ? {
                     activityType: 'practiceQuiz',
-                    hintPenalty: quiz.escapeRoomConfig?.hintPenalty ?? 0,
-                    onStateChanged: refetch ?? (() => {}),
+                    hintPenalty: escapeRoomHintPenalty,
+                    onStateChanged: resolvedRefetch,
                   }
                 : undefined
             }

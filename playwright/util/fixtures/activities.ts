@@ -109,18 +109,17 @@ export async function createStacks(
   }
 }
 
-function getCalendarDataDay(validation: string) {
+function parseCalendarDate(validation: string) {
   const match = validation.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/)
   if (!match) {
     throw new Error(`setDatetime: cannot parse date from "${validation}"`)
   }
 
   const [, dayString, monthString, yearString] = match
-  return new Date(
-    Number(yearString),
-    Number(monthString) - 1,
-    Number(dayString)
-  ).toLocaleDateString()
+  const day = Number(dayString)
+  const month = Number(monthString)
+  const year = Number(yearString)
+  return { dataDay: `${month}/${day}/${year}`, month, year }
 }
 
 export async function setDatetime(
@@ -139,11 +138,14 @@ export async function setDatetime(
 
   const hour = String(datetime.hour).padStart(2, '0')
   const minute = String(datetime.minute).padStart(2, '0')
-  const targetDataDay = getCalendarDataDay(datetime.validation)
-  const [month, , year] = targetDataDay.split('/').map(Number)
+  const {
+    dataDay: targetDataDay,
+    month,
+    year,
+  } = parseCalendarDate(datetime.validation)
   const monthLabel = new Intl.DateTimeFormat('en-US', {
     month: 'short',
-  }).format(new Date(year!, month! - 1, 1))
+  }).format(new Date(year, month - 1, 1))
   await page
     .getByRole('combobox', { name: 'Choose the Month' })
     .selectOption({ label: monthLabel })

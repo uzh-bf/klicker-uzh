@@ -1,4 +1,6 @@
 import { useMutation } from '@apollo/client'
+import useRemainingInstances from '@components/hooks/useRemainingInstances'
+import EscapeRoomOverlay from '@components/practiceQuiz/EscapeRoomOverlay'
 import { faCheck } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -21,8 +23,6 @@ import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
 import React, { useEffect, useRef, useState } from 'react'
 import { isDeepEqual } from 'remeda'
-import useRemainingInstances from '../hooks/useRemainingInstances'
-import EscapeRoomOverlay from '../practiceQuiz/EscapeRoomOverlay'
 import { loadStoredResponse, updateStoredResponses } from './storageHelpers'
 
 const ConfettiExplosion = dynamic(() => import('react-confetti-explosion'), {

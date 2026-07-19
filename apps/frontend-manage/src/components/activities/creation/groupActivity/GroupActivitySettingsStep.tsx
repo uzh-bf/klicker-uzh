@@ -1,3 +1,4 @@
+import EscapeRoomSettingsFields from '@components/activities/creation/EscapeRoomSettingsFields'
 import { faClock, faCrown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -12,7 +13,6 @@ import useGroupActivityCourseGrouping from '../../../../lib/hooks/useGroupActivi
 import CourseChangeMonitor from '../CourseChangeMonitor'
 import CreationFormValidator from '../CreationFormValidator'
 import DateChangeMonitor from '../DateChangeMonitor'
-import EscapeRoomSettingsFields from '../EscapeRoomSettingsFields'
 import MultiplierSelector from '../MultiplierSelector'
 import WizardNavigation from '../WizardNavigation'
 import { GroupActivityWizardStepProps } from './GroupActivityWizard'

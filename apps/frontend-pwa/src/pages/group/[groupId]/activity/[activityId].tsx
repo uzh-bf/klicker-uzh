@@ -77,7 +77,7 @@ function GroupActivityDetails() {
   } = useEscapeRoom({
     activity: hookActivity,
     activityType: 'groupActivity',
-    refetch: refetch ?? (() => {}),
+    refetch,
   })
 
   if (!data || loading) {
@@ -97,6 +97,8 @@ function GroupActivityDetails() {
   }
 
   const groupActivity = data.groupActivityDetails
+  const escapeRoomHintPenalty =
+    groupActivity.escapeRoomConfig?.hintPenalty ?? 120
   const instance = groupActivity.activityInstance
   const maxTotalPoints = instance?.results?.grading.reduce(
     (acc: number, grading: GroupActivityGrading) => {
@@ -126,7 +128,7 @@ function GroupActivityDetails() {
           isExpired={isExpired}
           remainingSeconds={remainingSeconds}
           timeLimit={groupActivity.escapeRoomConfig?.timeLimit ?? 3600}
-          hintPenalty={groupActivity.escapeRoomConfig?.hintPenalty ?? 120}
+          hintPenalty={escapeRoomHintPenalty}
           onStart={async () => {
             await startAttempt()
             await refetch()
@@ -295,11 +297,7 @@ function GroupActivityDetails() {
                   'DD.MM.YYYY HH:mm:ss'
                 )}
                 groupActivityId={isEscapeRoom ? groupActivity.id : undefined}
-                hintPenalty={
-                  isEscapeRoom
-                    ? (groupActivity.escapeRoomConfig?.hintPenalty ?? 0)
-                    : undefined
-                }
+                hintPenalty={isEscapeRoom ? escapeRoomHintPenalty : undefined}
                 onEscapeRoomStateChanged={
                   isEscapeRoom ? refetchEscapeRoom : undefined
                 }

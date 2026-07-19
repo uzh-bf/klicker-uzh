@@ -1,9 +1,10 @@
-import { ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
-import { Dispatch, SetStateAction, useEffect } from 'react'
-import {
+import type {
   ActiveStackType,
   ActivityEvaluationType,
-} from '../../components/evaluation/ActivityEvaluation'
+} from '@components/evaluation/ActivityEvaluation'
+import type { ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import type { Dispatch, SetStateAction } from 'react'
+import { useEffect } from 'react'
 
 function useEvaluationInitialization({
   setActiveInstance,

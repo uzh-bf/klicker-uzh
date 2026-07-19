@@ -54,7 +54,7 @@ function MicrolearningInstance() {
   } = useEscapeRoom({
     activity: hookActivity,
     activityType: 'microLearning',
-    refetch: refetch ?? (() => {}),
+    refetch,
   })
 
   // Escape rooms always resume at the first uncleared stack. This prevents
@@ -101,6 +101,8 @@ function MicrolearningInstance() {
   }
 
   const microLearning = data.microLearning
+  const escapeRoomHintPenalty =
+    microLearning.escapeRoomConfig?.hintPenalty ?? 120
 
   const escapeRoomOverlay = isEscapeRoom && !previewMode && (
     <EscapeRoomOverlay
@@ -109,7 +111,7 @@ function MicrolearningInstance() {
       isExpired={isExpired}
       remainingSeconds={remainingSeconds}
       timeLimit={microLearning.escapeRoomConfig?.timeLimit ?? 3600}
-      hintPenalty={microLearning.escapeRoomConfig?.hintPenalty ?? 120}
+      hintPenalty={escapeRoomHintPenalty}
       onStart={async () => {
         await startAttempt()
         await refetch()
@@ -233,9 +235,8 @@ function MicrolearningInstance() {
               isEscapeRoom
                 ? {
                     activityType: 'microLearning',
-                    hintPenalty:
-                      microLearning.escapeRoomConfig?.hintPenalty ?? 0,
-                    onStateChanged: refetch ?? (() => {}),
+                    hintPenalty: escapeRoomHintPenalty,
+                    onStateChanged: refetch,
                   }
                 : undefined
             }

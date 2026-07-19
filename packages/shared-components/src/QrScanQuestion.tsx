@@ -67,7 +67,7 @@ export default function QrScanQuestion({
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: 'environment' } },
       })
-      if (acquisition !== acquisitionRef.current || disabled) {
+      if (acquisition !== acquisitionRef.current) {
         stream.getTracks().forEach((track) => track.stop())
         return
       }

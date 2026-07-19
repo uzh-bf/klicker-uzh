@@ -35,7 +35,7 @@ export function useEscapeRoom({
 }: {
   activity: EscapeRoomActivityInput | null | undefined
   activityType: 'practiceQuiz' | 'microLearning' | 'groupActivity'
-  refetch: () => Promise<unknown> | void
+  refetch: () => Promise<unknown>
 }) {
   const [startAttemptMutation, { loading: starting }] = useMutation(
     StartEscapeRoomAttemptDocument
@@ -97,7 +97,7 @@ export function useEscapeRoom({
       // the guard this fired every second while status stayed InProgress.
       if (expiresIn <= 0 && expiryHandledAttemptIdRef.current !== attempt.id) {
         expiryHandledAttemptIdRef.current = attempt.id
-        refetch()
+        void refetch()
       }
     }
 
