@@ -34,10 +34,16 @@ export async function verifyParticipantSession(
 ): Promise<StudentMcpSession> {
   const payload = await verifyJWT(token, settings.appSecret, {
     issuer: settings.jwtIssuer,
+  }).catch(() => {
+    throw new StudentMcpAuthError(
+      'Authentication failed: invalid participant token'
+    )
   })
 
   if (!payload.sub || payload.role !== 'PARTICIPANT') {
-    throw new StudentMcpAuthError('MCP token must identify a participant')
+    throw new StudentMcpAuthError(
+      'Authentication failed: MCP token must identify a participant'
+    )
   }
 
   return {

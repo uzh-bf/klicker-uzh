@@ -32,7 +32,7 @@ export function studentToolErrorCode(error: unknown): StudentMcpToolErrorCode {
 
   if (
     message === 'Missing authenticated participant session' ||
-    message === 'Missing Authorization bearer token' ||
+    /Authentication failed/i.test(message) ||
     /UNAUTHENTICATED|unauthenticated|unauthorized|HTTP 401|status code 401/i.test(
       message
     )

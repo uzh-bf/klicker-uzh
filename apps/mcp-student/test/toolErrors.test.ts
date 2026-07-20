@@ -20,6 +20,11 @@ describe('student MCP tool errors', () => {
       )
     ).toBe('UNAUTHENTICATED')
     expect(
+      studentToolErrorCode(
+        new Error('Authentication failed: invalid participant token')
+      )
+    ).toBe('UNAUTHENTICATED')
+    expect(
       toStudentToolError(new Error('GraphQL Query failed: FORBIDDEN')).error
     ).toEqual({
       code: 'FORBIDDEN',

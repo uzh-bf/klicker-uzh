@@ -69,7 +69,9 @@ export function createStudentMcpServer(
     authenticate: async (request: IncomingMessage) => {
       const token = bearerTokenFromHeaders(request.headers)
       if (!token) {
-        throw new UserError('Missing Authorization bearer token')
+        throw new UserError(
+          'Authentication failed: missing Authorization bearer token'
+        )
       }
       return verifyParticipantSession(token, settings)
     },
