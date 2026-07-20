@@ -7,6 +7,7 @@ import { useMemo, useState } from 'react'
 import { TextField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useParams, useRouter } from 'next/navigation'
+import { getModeIcon } from '../lib/config/modes'
 import { useChatStore, type Thread } from '../stores/chatStore'
 
 export const ThreadList: FC = () => {
@@ -179,6 +180,9 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
     }
   }
 
+  // Badge the row with the icon of the mode the thread was last used in (D6).
+  const ModeIcon = thread.lastChatMode ? getModeIcon(thread.lastChatMode) : null
+
   return (
     <div
       data-cy="chat-thread-item"
@@ -221,8 +225,11 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
             type="button"
             data-cy="chat-thread-select"
             onClick={onSelect}
-            className="min-w-0 flex-grow px-3 py-1 text-start"
+            className="flex min-w-0 flex-grow items-center gap-2 px-3 py-1 text-start"
           >
+            {ModeIcon && (
+              <ModeIcon className="text-muted-foreground size-4 shrink-0" />
+            )}
             <p className="truncate text-sm">{getThreadTitle()}</p>
           </button>
           <button

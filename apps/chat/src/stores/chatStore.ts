@@ -23,6 +23,7 @@ import {
   sortAttachmentsByPosition,
 } from '../lib/attachments/attachmentState'
 import { type ReasoningEffort } from '../lib/config/reasoning'
+import { useSettingsStore } from './settingsStore'
 
 /**
  * Extended thread message type that includes parentId for conversation branching
@@ -54,6 +55,7 @@ export interface Thread {
   title?: string
   createdAt: Date
   updatedAt: Date
+  lastChatMode?: string | null // mode of the thread's most recent message (D6)
 }
 
 interface ChatState {
@@ -315,6 +317,18 @@ export const useChatStore = create<ChatState>((set, get) => {
 
         set({ activeThreadId: threadId })
 
+        // D6: resync the composer mode to the mode the thread was last used in,
+        // but only when that mode is offered by this chatbot and actually differs.
+        const lastMode = existingThread?.lastChatMode
+        if (lastMode) {
+          const { modeOptions, selectedMode, setSelectedMode } =
+            useSettingsStore.getState()
+          // `in` (not truthiness): a mode may have an empty description string.
+          if (lastMode in modeOptions && lastMode !== selectedMode) {
+            setSelectedMode(lastMode)
+          }
+        }
+
         if (existingThread && existingThread.allMessages.length > 0) {
           set({ isLoading: false })
           return true
@@ -485,6 +499,10 @@ export const useChatStore = create<ChatState>((set, get) => {
                 messages: [...thread.messages, message],
                 allMessages: [...thread.allMessages, message],
                 updatedAt: new Date(),
+                // Keep the thread's mode in sync with the message just sent so
+                // the sidebar icon and the switch-back resync (D6) stay correct
+                // within the session, before the next full loadThreads().
+                lastChatMode: message.chatMode ?? thread.lastChatMode,
               }
             : thread
         ),

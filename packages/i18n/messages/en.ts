@@ -23,6 +23,7 @@ export default {
     sidebar: {
       newChat: 'New Chat',
       closeSidebar: 'Close sidebar',
+      conversationsLabel: 'Conversations',
       logoAlt: 'Klicker Logo',
     },
     assistant: {
