@@ -116,6 +116,22 @@ export type ExternalKBIngestionPayload = {
   speed_mode: IngestKBResourceInput['speedMode']
 }
 
+export type KBIngestionSourceInput =
+  | {
+      type: 'BLOB'
+      blobName: string
+      containerName: string
+    }
+  | {
+      type: 'URL'
+      sourceUrl: string
+    }
+
+export type RecoveredExternalKBIngestionRun = {
+  runId: string
+  startedAt: Date
+}
+
 let externalHatchetClient: ExternalHatchetClient | undefined
 
 function requireEnvironmentVariable(
@@ -256,7 +272,7 @@ export function buildExternalKBIngestionPayload(
 }
 
 export function getKBIngestionSourceUrl(
-  input: IngestKBResourceInput,
+  input: KBIngestionSourceInput,
   {
     env = process.env,
     now = () => new Date(),
@@ -295,6 +311,34 @@ export function getKBIngestionSourceUrl(
   return `${blobClient.url}?${sas}`
 }
 
+export async function recoverExternalKBIngestionRun({
+  client,
+  workflowName,
+  additionalMetadata,
+  recoveryAnchor,
+}: {
+  client: ExternalHatchetClient
+  workflowName: string
+  additionalMetadata: Record<string, string>
+  recoveryAnchor: Date
+}): Promise<RecoveredExternalKBIngestionRun | undefined> {
+  const existingRuns = await client.runs.list({
+    workflowNames: [workflowName],
+    additionalMetadata,
+    onlyTasks: false,
+    includePayloads: false,
+    limit: 1,
+    since: new Date(recoveryAnchor.getTime() - KB_BLOB_SAS_CLOCK_SKEW_MS),
+  })
+  const recoveredRun = existingRuns.rows[0]
+  if (!recoveredRun) return undefined
+
+  return {
+    runId: recoveredRun.workflowRunExternalId,
+    startedAt: new Date(recoveredRun.createdAt),
+  }
+}
+
 async function logErrorBestEffort(
   logger: KBIngestionLogger | undefined,
   message: string,
@@ -319,15 +363,15 @@ async function logInfoBestEffort(
   }
 }
 
-async function cancelRunBestEffort({
+export async function cancelExternalKBIngestionRunBestEffort({
   client,
   runId,
-  input,
+  identifiers,
   logger,
 }: {
   client: ExternalHatchetClient
   runId: string
-  input: IngestKBResourceInput
+  identifiers: Record<string, string>
   logger?: KBIngestionLogger
 }): Promise<void> {
   try {
@@ -336,11 +380,7 @@ async function cancelRunBestEffort({
     await logErrorBestEffort(
       logger,
       'External KB ingestion cancellation failed',
-      {
-        resourceId: input.resourceId,
-        kbId: input.kbId,
-        ingestionAttemptId: input.ingestionAttemptId,
-      }
+      identifiers
     )
   }
 }
@@ -496,21 +536,18 @@ export async function dispatchKBIngestion(
     const additionalMetadata = {
       [KB_INGESTION_ATTEMPT_METADATA_KEY]: input.ingestionAttemptId,
     }
-    const existingRuns = await client.runs.list({
-      workflowNames: [config.workflowName],
+    const recoveredRun = await recoverExternalKBIngestionRun({
+      client,
+      workflowName: config.workflowName,
       additionalMetadata,
-      onlyTasks: false,
-      includePayloads: false,
-      limit: 1,
-      since: new Date(resource.updatedAt.getTime() - KB_BLOB_SAS_CLOCK_SKEW_MS),
+      recoveryAnchor: resource.updatedAt,
     })
 
     let runId: string
     let startedAt: Date
-    const recoveredRun = existingRuns.rows[0]
     if (recoveredRun) {
-      runId = recoveredRun.workflowRunExternalId
-      startedAt = new Date(recoveredRun.createdAt)
+      runId = recoveredRun.runId
+      startedAt = recoveredRun.startedAt
     } else {
       const sourceUrl = getKBIngestionSourceUrl(input, { env, now })
       const payload = buildExternalKBIngestionPayload(input, sourceUrl)
@@ -550,10 +587,10 @@ export async function dispatchKBIngestion(
         return runId
       }
 
-      await cancelRunBestEffort({
+      await cancelExternalKBIngestionRunBestEffort({
         client,
         runId,
-        input,
+        identifiers,
         logger: dependencies.logger,
       })
       return undefined

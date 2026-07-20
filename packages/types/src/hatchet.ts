@@ -43,6 +43,29 @@ export type IngestKBResourceInput = IngestKBResourceInputBase &
       }
   )
 
+export type BuildChatbotKnowledgeGraphInput = JsonObject & {
+  graphId: string
+  chatbotId: string
+  attemptId: string
+  selectionRevision: number
+  speedMode: KBIngestionSpeedMode
+  resources: Array<
+    | {
+        resourceId: string
+        title: string
+        type: 'BLOB'
+        blobName: string
+        containerName: string
+      }
+    | {
+        resourceId: string
+        title: string
+        type: 'URL'
+        sourceUrl: string
+      }
+  >
+}
+
 // Shared contract for Hatchet task handler injections.
 export interface HatchetHandlers {
   handleSendTeamsNotification: (
@@ -119,6 +142,10 @@ export interface HatchetHandlers {
 
 // Contract for the tasks that are passed into the GraphQL context.
 export interface PreparedHatchetTasks {
+  buildChatbotKnowledgeGraph: TaskWorkflowDeclaration<
+    BuildChatbotKnowledgeGraphInput,
+    { success: boolean }
+  >
   ingestKBResource: TaskWorkflowDeclaration<
     IngestKBResourceInput,
     { success: boolean }

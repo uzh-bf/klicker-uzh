@@ -1738,6 +1738,21 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      rebuildChatbotKnowledgeGraph: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: ChatbotKnowledgeGraphConfigRef,
+        args: {
+          chatbotId: t.arg.id({ required: true }),
+          speedMode: t.arg({ type: KBSpeedMode, required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotKnowledgeGraphService.rebuildChatbotKnowledgeGraph(
+            args,
+            ctx
+          )
+        },
+      }),
+
       createAnswerCollection: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: AnswerCollection,

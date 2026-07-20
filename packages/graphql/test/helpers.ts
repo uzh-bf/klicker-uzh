@@ -18,6 +18,7 @@ import {
   UserRole,
 } from '@klicker-uzh/prisma/client'
 import {
+  BuildChatbotKnowledgeGraphInput,
   DisplayMode,
   ElementData,
   ElementInstanceOptions,
@@ -142,6 +143,13 @@ export async function testInitialization(
 
   // initialize tasks to be called
   const tasks = {
+    buildChatbotKnowledgeGraph: hatchet.task({
+      name: 'build-chatbot-knowledge-graph',
+      fn: async (input: BuildChatbotKnowledgeGraphInput) => {
+        console.info('Chatbot knowledge graph dispatch stub triggered', input)
+        return { success: true }
+      },
+    }),
     ingestKBResource: hatchet.task({
       name: 'ingest-kb-resource',
       fn: async (input: IngestKBResourceInput) => {

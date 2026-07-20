@@ -1,14 +1,19 @@
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   ChatbotKnowledgeGraphStatus,
+  KBIngestionSpeedMode,
+  KBResourceType,
   PrismaClient,
 } from '@klicker-uzh/prisma/client'
+import type { KBIngestionSpeedMode as APIKBIngestionSpeedMode } from '@klicker-uzh/types'
 import { randomUUID } from 'crypto'
 import { EventEmitter } from 'events'
+import { validate as validateUuid } from 'uuid'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
   getAvailableChatbotKnowledgeGraphResources,
   getChatbotKnowledgeGraphConfig,
+  rebuildChatbotKnowledgeGraph,
   updateChatbotKnowledgeGraphResources,
 } from '../src/services/chatbotKnowledgeGraphs.js'
 import {
@@ -24,12 +29,14 @@ import {
   testInitialization,
 } from './helpers.js'
 
-function createDeferred() {
-  let resolve!: () => void
-  const promise = new Promise<void>((resolvePromise) => {
+function createDeferred<T = void>() {
+  let resolve!: (value: T) => void
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
     resolve = resolvePromise
+    reject = rejectPromise
   })
-  return { promise, resolve }
+  return { promise, resolve, reject }
 }
 
 function rawQueryText(args: unknown[]) {
@@ -562,6 +569,285 @@ describe('Integration tests for chatbot knowledge graph selection', () => {
         ],
       }),
     ])
+  })
+
+  it('rejects a graph build without selected resources', async () => {
+    const chatbot = await createChatbot(userOneCtx, 'Course assistant')
+    await updateChatbotKnowledgeGraphResources(
+      { chatbotId: chatbot.id, resourceIds: [] },
+      userOneCtx
+    )
+    const runNoWait = vi.spyOn(
+      userOneCtx.tasks.buildChatbotKnowledgeGraph,
+      'runNoWait'
+    )
+
+    await expect(
+      rebuildChatbotKnowledgeGraph(
+        { chatbotId: chatbot.id, speedMode: 'balanced' },
+        userOneCtx
+      )
+    ).rejects.toThrow('Chatbot knowledge graph has no selected resources')
+    expect(runNoWait).not.toHaveBeenCalled()
+  })
+
+  it('hides a foreign chatbot when a graph build is requested', async () => {
+    const chatbot = await createChatbot(userTwoCtx, 'Foreign assistant')
+
+    await expect(
+      rebuildChatbotKnowledgeGraph(
+        { chatbotId: chatbot.id, speedMode: 'balanced' },
+        userOneCtx
+      )
+    ).rejects.toThrow('Chatbot not found')
+  })
+
+  it('claims a fresh attempt and dispatches a complete immutable snapshot', async () => {
+    const chatbot = await createChatbot(userOneCtx, 'Course assistant')
+    const url = await createUrlResource(
+      userOneCtx,
+      'Reading list',
+      'Public paper'
+    )
+    const blobKb = await createKb({ name: 'Lecture notes' }, userOneCtx)
+    const blob = await prisma.kBResource.create({
+      data: {
+        kbId: blobKb.id,
+        type: KBResourceType.BLOB,
+        title: 'Private slides',
+        blobName: 'slides/private.pdf',
+        originalFilename: 'private.pdf',
+        mimeType: 'application/pdf',
+        sizeBytes: 1024,
+      },
+    })
+    const selected = await updateChatbotKnowledgeGraphResources(
+      {
+        chatbotId: chatbot.id,
+        resourceIds: [url.resource.id, blob.id],
+      },
+      userOneCtx
+    )
+    const runNoWait = vi
+      .spyOn(userOneCtx.tasks.buildChatbotKnowledgeGraph, 'runNoWait')
+      .mockResolvedValue({} as never)
+
+    const claimed = await rebuildChatbotKnowledgeGraph(
+      { chatbotId: chatbot.id, speedMode: 'balanced' },
+      userOneCtx
+    )
+
+    expect(claimed).toMatchObject({
+      id: selected.id,
+      status: ChatbotKnowledgeGraphStatus.QUEUED,
+      selectionRevision: 1,
+      activeBuildRevision: 1,
+      lastBuildSpeedMode: KBIngestionSpeedMode.BALANCED,
+      externalWorkflowRunId: null,
+      externalStartedAt: null,
+    })
+    expect(claimed.activeAttemptId).not.toBeNull()
+    expect(validateUuid(claimed.activeAttemptId!)).toBe(true)
+    expect(runNoWait).toHaveBeenCalledOnce()
+    const payload = runNoWait.mock.calls[0]![0] as unknown as {
+      graphId: string
+      chatbotId: string
+      attemptId: string
+      selectionRevision: number
+      speedMode: APIKBIngestionSpeedMode
+      resources: Array<Record<string, unknown>>
+    }
+    expect(payload).toMatchObject({
+      graphId: selected.id,
+      chatbotId: chatbot.id,
+      attemptId: claimed.activeAttemptId,
+      selectionRevision: 1,
+      speedMode: 'balanced',
+    })
+    expect(payload.resources).toHaveLength(2)
+    expect(payload.resources).toEqual(
+      expect.arrayContaining([
+        {
+          resourceId: blob.id,
+          title: blob.title,
+          type: 'BLOB',
+          blobName: 'slides/private.pdf',
+          containerName: `kb-${userOneCtx.user.sub}`,
+        },
+        {
+          resourceId: url.resource.id,
+          title: url.resource.title,
+          type: 'URL',
+          sourceUrl: url.resource.sourceUrl,
+        },
+      ])
+    )
+  })
+
+  it.each<{
+    speedMode: APIKBIngestionSpeedMode
+    storedMode: KBIngestionSpeedMode
+  }>([
+    { speedMode: 'balanced', storedMode: KBIngestionSpeedMode.BALANCED },
+    { speedMode: 'quality', storedMode: KBIngestionSpeedMode.QUALITY },
+    { speedMode: 'fast', storedMode: KBIngestionSpeedMode.FAST },
+  ])(
+    'claims and dispatches a $speedMode build',
+    async ({ speedMode, storedMode }) => {
+      const chatbot = await createChatbot(userOneCtx, 'Course assistant')
+      const { resource } = await createUrlResource(
+        userOneCtx,
+        'Lecture notes',
+        'Lecture 1'
+      )
+      await updateChatbotKnowledgeGraphResources(
+        { chatbotId: chatbot.id, resourceIds: [resource.id] },
+        userOneCtx
+      )
+      const runNoWait = vi
+        .spyOn(userOneCtx.tasks.buildChatbotKnowledgeGraph, 'runNoWait')
+        .mockResolvedValue({} as never)
+
+      const claimed = await rebuildChatbotKnowledgeGraph(
+        { chatbotId: chatbot.id, speedMode },
+        userOneCtx
+      )
+
+      expect(claimed.lastBuildSpeedMode).toBe(storedMode)
+      expect(runNoWait).toHaveBeenCalledWith(
+        expect.objectContaining({ speedMode })
+      )
+    }
+  )
+
+  it('rejects a duplicate build while the first dispatch is pending', async () => {
+    const chatbot = await createChatbot(userOneCtx, 'Course assistant')
+    const { resource } = await createUrlResource(
+      userOneCtx,
+      'Lecture notes',
+      'Lecture 1'
+    )
+    await updateChatbotKnowledgeGraphResources(
+      { chatbotId: chatbot.id, resourceIds: [resource.id] },
+      userOneCtx
+    )
+    const dispatchStarted = createDeferred()
+    const finishDispatch = createDeferred<any>()
+    vi.spyOn(
+      userOneCtx.tasks.buildChatbotKnowledgeGraph,
+      'runNoWait'
+    ).mockImplementation(() => {
+      dispatchStarted.resolve()
+      return finishDispatch.promise
+    })
+
+    const firstBuild = rebuildChatbotKnowledgeGraph(
+      { chatbotId: chatbot.id, speedMode: 'balanced' },
+      userOneCtx
+    )
+    await dispatchStarted.promise
+    await expect(
+      rebuildChatbotKnowledgeGraph(
+        { chatbotId: chatbot.id, speedMode: 'fast' },
+        userOneCtx
+      )
+    ).rejects.toThrow('Chatbot knowledge graph build is already active')
+    finishDispatch.resolve({})
+    await expect(firstBuild).resolves.toMatchObject({
+      status: ChatbotKnowledgeGraphStatus.QUEUED,
+    })
+  })
+
+  it('marks the current revision FAILED when local dispatch rejects', async () => {
+    const chatbot = await createChatbot(userOneCtx, 'Course assistant')
+    const { resource } = await createUrlResource(
+      userOneCtx,
+      'Lecture notes',
+      'Lecture 1'
+    )
+    await updateChatbotKnowledgeGraphResources(
+      { chatbotId: chatbot.id, resourceIds: [resource.id] },
+      userOneCtx
+    )
+    vi.spyOn(
+      userOneCtx.tasks.buildChatbotKnowledgeGraph,
+      'runNoWait'
+    ).mockRejectedValue(new Error('private local Hatchet failure'))
+
+    await expect(
+      rebuildChatbotKnowledgeGraph(
+        { chatbotId: chatbot.id, speedMode: 'balanced' },
+        userOneCtx
+      )
+    ).rejects.toThrow('Chatbot knowledge graph build could not be queued')
+    await expect(
+      prisma.chatbotKnowledgeGraph.findUniqueOrThrow({
+        where: { chatbotId: chatbot.id },
+      })
+    ).resolves.toMatchObject({
+      status: ChatbotKnowledgeGraphStatus.FAILED,
+      statusMessage: 'The knowledge graph build could not be queued.',
+      selectionRevision: 1,
+      activeAttemptId: null,
+      activeBuildRevision: null,
+    })
+  })
+
+  it('marks a newer selection DIRTY when its older local dispatch rejects', async () => {
+    const chatbot = await createChatbot(userOneCtx, 'Course assistant')
+    const first = await createUrlResource(
+      userOneCtx,
+      'Lecture notes',
+      'Lecture 1'
+    )
+    const second = await createUrlResource(
+      userOneCtx,
+      'Reading list',
+      'Paper 1'
+    )
+    await updateChatbotKnowledgeGraphResources(
+      { chatbotId: chatbot.id, resourceIds: [first.resource.id] },
+      userOneCtx
+    )
+    const dispatchStarted = createDeferred()
+    const finishDispatch = createDeferred<any>()
+    vi.spyOn(
+      userOneCtx.tasks.buildChatbotKnowledgeGraph,
+      'runNoWait'
+    ).mockImplementation(() => {
+      dispatchStarted.resolve()
+      return finishDispatch.promise
+    })
+
+    const build = rebuildChatbotKnowledgeGraph(
+      { chatbotId: chatbot.id, speedMode: 'quality' },
+      userOneCtx
+    )
+    const rejectedBuild = expect(build).rejects.toThrow(
+      'Chatbot knowledge graph build could not be queued'
+    )
+    await dispatchStarted.promise
+    await updateChatbotKnowledgeGraphResources(
+      {
+        chatbotId: chatbot.id,
+        resourceIds: [first.resource.id, second.resource.id],
+      },
+      userOneCtx
+    )
+    finishDispatch.reject(new Error('private local Hatchet failure'))
+    await rejectedBuild
+
+    await expect(
+      prisma.chatbotKnowledgeGraph.findUniqueOrThrow({
+        where: { chatbotId: chatbot.id },
+      })
+    ).resolves.toMatchObject({
+      status: ChatbotKnowledgeGraphStatus.DIRTY,
+      statusMessage: null,
+      selectionRevision: 2,
+      activeAttemptId: null,
+      activeBuildRevision: null,
+    })
   })
 
   it('rejects deletion of an assigned resource and its containing KB', async () => {

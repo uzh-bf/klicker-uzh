@@ -5,10 +5,18 @@ import {
   type HatchetClient,
 } from '@hatchet-dev/typescript-sdk'
 import { prisma } from '@klicker-uzh/prisma'
-import type { HatchetHandlers, IngestKBResourceInput } from '@klicker-uzh/types'
+import type {
+  BuildChatbotKnowledgeGraphInput,
+  HatchetHandlers,
+  IngestKBResourceInput,
+} from '@klicker-uzh/types'
 import type EventEmitter from 'events'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
+import {
+  dispatchChatbotKnowledgeGraphIngestion,
+  markChatbotKnowledgeGraphBuildFailed,
+} from './kbGraphIngestion.js'
 import {
   dispatchKBIngestion,
   monitorActiveKBIngestions,
@@ -16,6 +24,7 @@ import {
 } from './kbIngestion.js'
 
 export * from './client.js'
+export * from './kbGraphIngestion.js'
 export * from './kbIngestion.js'
 
 export type { HatchetHandlers } from '@klicker-uzh/types'
@@ -101,6 +110,35 @@ export function prepareHatchetTasks({
     },
   }
   const ingestKBResource = hatchet.task(ingestKBResourceDefinition)
+
+  const buildChatbotKnowledgeGraphDefinition = {
+    name: 'build-chatbot-knowledge-graph',
+    retries: 3,
+    fn: async (
+      input: BuildChatbotKnowledgeGraphInput,
+      ctx: Context<BuildChatbotKnowledgeGraphInput>
+    ) => {
+      await ctx.logger.info('Chatbot knowledge graph ingestion dispatch', {
+        graphId: input.graphId,
+        chatbotId: input.chatbotId,
+        attemptId: input.attemptId,
+      })
+      await dispatchChatbotKnowledgeGraphIngestion(input, {
+        prisma,
+        logger: ctx.logger,
+      })
+      return { success: true }
+    },
+    onFailure: {
+      retries: 3,
+      fn: async (input: BuildChatbotKnowledgeGraphInput) => {
+        await markChatbotKnowledgeGraphBuildFailed(input, prisma)
+      },
+    },
+  }
+  const buildChatbotKnowledgeGraph = hatchet.task(
+    buildChatbotKnowledgeGraphDefinition
+  )
   // #endregion
 
   // ! ACTIVITY PUBLICATION TASKS
@@ -358,6 +396,7 @@ export function prepareHatchetTasks({
     endExpiredMicroLearning,
     aggregateLiveQuizBlockResultsStandard,
     aggregateLiveQuizBlockResultsAssessment,
+    buildChatbotKnowledgeGraph,
     ingestKBResource,
     monitorKBIngestions,
     createAuditLogEntry,

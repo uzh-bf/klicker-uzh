@@ -1,4 +1,9 @@
 import * as DB from '@klicker-uzh/prisma/client'
+import type {
+  BuildChatbotKnowledgeGraphInput,
+  KBIngestionSpeedMode,
+} from '@klicker-uzh/types'
+import { randomUUID } from 'crypto'
 import { GraphQLError } from 'graphql'
 import type { ContextWithUser } from '../lib/context.js'
 
@@ -131,6 +136,68 @@ function sameIdSet(
 ) {
   if (currentIds.length !== requestedIds.length) return false
   return currentIds.every((id, index) => id === requestedIds[index])
+}
+
+function toDBSpeedMode(speedMode: KBIngestionSpeedMode) {
+  switch (speedMode) {
+    case 'balanced':
+      return DB.KBIngestionSpeedMode.BALANCED
+    case 'quality':
+      return DB.KBIngestionSpeedMode.QUALITY
+    case 'fast':
+      return DB.KBIngestionSpeedMode.FAST
+  }
+}
+
+async function markLocalBuildDispatchFailed(
+  {
+    graphId,
+    chatbotId,
+    attemptId,
+    selectionRevision,
+  }: Pick<
+    BuildChatbotKnowledgeGraphInput,
+    'graphId' | 'chatbotId' | 'attemptId' | 'selectionRevision'
+  >,
+  ctx: ContextWithUser
+) {
+  const activeAttempt = {
+    id: graphId,
+    chatbotId,
+    activeAttemptId: attemptId,
+    activeBuildRevision: selectionRevision,
+  }
+  const clearActiveAttempt = {
+    activeAttemptId: null,
+    activeBuildRevision: null,
+    externalWorkflowRunId: null,
+    externalStartedAt: null,
+  }
+
+  const failed = await ctx.prisma.chatbotKnowledgeGraph.updateMany({
+    where: {
+      ...activeAttempt,
+      selectionRevision,
+    },
+    data: {
+      status: DB.ChatbotKnowledgeGraphStatus.FAILED,
+      statusMessage: 'The knowledge graph build could not be queued.',
+      ...clearActiveAttempt,
+    },
+  })
+  if (failed.count === 1) return
+
+  await ctx.prisma.chatbotKnowledgeGraph.updateMany({
+    where: {
+      ...activeAttempt,
+      selectionRevision: { not: selectionRevision },
+    },
+    data: {
+      status: DB.ChatbotKnowledgeGraphStatus.DIRTY,
+      statusMessage: null,
+      ...clearActiveAttempt,
+    },
+  })
 }
 
 async function lockOwnedResources(
@@ -316,4 +383,93 @@ export async function updateChatbotKnowledgeGraphResources(
 
     return toConfig(updated)
   })
+}
+
+export async function rebuildChatbotKnowledgeGraph(
+  {
+    chatbotId,
+    speedMode,
+  }: { chatbotId: string; speedMode: KBIngestionSpeedMode },
+  ctx: ContextWithUser
+): Promise<ChatbotKnowledgeGraphConfig> {
+  await getOwnedChatbotOrThrow(ctx, chatbotId)
+
+  const graph = await ctx.prisma.chatbotKnowledgeGraph.findUnique({
+    where: { chatbotId },
+    include: { resources: { orderBy: { id: 'asc' } } },
+  })
+  if (!graph || graph.resources.length === 0) {
+    throw new GraphQLError('Chatbot knowledge graph has no selected resources')
+  }
+
+  const resources: BuildChatbotKnowledgeGraphInput['resources'] =
+    graph.resources.map((resource) => {
+      const base = { resourceId: resource.id, title: resource.title }
+      if (resource.type === DB.KBResourceType.BLOB) {
+        if (!resource.blobName) {
+          throw new GraphQLError('Chatbot knowledge graph resource is invalid')
+        }
+        return {
+          ...base,
+          type: 'BLOB',
+          blobName: resource.blobName,
+          containerName: `kb-${ctx.user.sub}`,
+        }
+      }
+      if (!resource.sourceUrl) {
+        throw new GraphQLError('Chatbot knowledge graph resource is invalid')
+      }
+      return { ...base, type: 'URL', sourceUrl: resource.sourceUrl }
+    })
+
+  const attemptId = randomUUID()
+  const payload: BuildChatbotKnowledgeGraphInput = {
+    graphId: graph.id,
+    chatbotId,
+    attemptId,
+    selectionRevision: graph.selectionRevision,
+    speedMode,
+    resources,
+  }
+  const claim = await ctx.prisma.chatbotKnowledgeGraph.updateMany({
+    where: {
+      id: graph.id,
+      chatbotId,
+      selectionRevision: graph.selectionRevision,
+      activeAttemptId: null,
+      activeBuildRevision: null,
+    },
+    data: {
+      status: DB.ChatbotKnowledgeGraphStatus.QUEUED,
+      statusMessage: null,
+      activeAttemptId: attemptId,
+      activeBuildRevision: graph.selectionRevision,
+      externalWorkflowRunId: null,
+      externalStartedAt: null,
+      lastBuildSpeedMode: toDBSpeedMode(speedMode),
+    },
+  })
+  if (claim.count !== 1) {
+    const current = await ctx.prisma.chatbotKnowledgeGraph.findUnique({
+      where: { id: graph.id },
+      select: { activeAttemptId: true },
+    })
+    if (current?.activeAttemptId) {
+      throw new GraphQLError('Chatbot knowledge graph build is already active')
+    }
+    throw new GraphQLError('Chatbot knowledge graph build could not be queued')
+  }
+
+  try {
+    await ctx.tasks.buildChatbotKnowledgeGraph.runNoWait(payload)
+  } catch {
+    await markLocalBuildDispatchFailed(payload, ctx)
+    throw new GraphQLError('Chatbot knowledge graph build could not be queued')
+  }
+
+  const claimed = await ctx.prisma.chatbotKnowledgeGraph.findUniqueOrThrow({
+    where: { id: graph.id },
+    include: { resources: { select: { id: true } } },
+  })
+  return toConfig(claimed)
 }
