@@ -120,51 +120,63 @@ export async function registerPushDevice(
   const tokenHash = getPushDeviceTokenHash(token)
   const deviceId = normalizePushDeviceString(args.deviceId)
 
-  if (deviceId) {
-    await ctx.prisma.pushDevice.updateMany({
-      where: {
-        participantId: ctx.user.sub,
+  const upsertDevice = () =>
+    ctx.prisma.pushDevice.upsert({
+      where: { tokenHash },
+      create: {
+        token,
+        tokenHash,
+        platform: args.platform,
         provider,
+        appId: normalizePushDeviceString(args.appId),
+        appVersion: normalizePushDeviceString(args.appVersion),
         deviceId,
-        tokenHash: { not: tokenHash },
-      },
-      data: {
-        enabled: false,
-        revokedAt: now,
+        locale: args.locale ?? null,
+        enabled: true,
         lastSeenAt: now,
+        participant: { connect: { id: ctx.user.sub } },
+      },
+      update: {
+        token,
+        platform: args.platform,
+        provider,
+        appId: normalizePushDeviceString(args.appId),
+        appVersion: normalizePushDeviceString(args.appVersion),
+        deviceId,
+        locale: args.locale ?? null,
+        enabled: true,
+        revokedAt: null,
+        lastSeenAt: now,
+        participant: { connect: { id: ctx.user.sub } },
       },
     })
+
+  // A physical device with a stable `deviceId` occupies the
+  // @@unique([participantId, provider, deviceId]) key. When it rotates its push
+  // token, soft-revoking the previous row (enabled=false) leaves that key taken,
+  // so the upsert's CREATE branch for the new `tokenHash` would collide (P2002).
+  // Delete the stale same-device rows (any other token) and create/refresh the
+  // current one atomically. The upsert still keys on `tokenHash`, so
+  // cross-participant token reassignment on shared devices keeps working. Revoked
+  // rows have no reader today (the push-send path is not built and only ever
+  // queries enabled devices), so no history worth keeping is lost.
+  if (deviceId) {
+    const [, device] = await ctx.prisma.$transaction([
+      ctx.prisma.pushDevice.deleteMany({
+        where: {
+          participantId: ctx.user.sub,
+          provider,
+          deviceId,
+          tokenHash: { not: tokenHash },
+        },
+      }),
+      upsertDevice(),
+    ])
+
+    return device
   }
 
-  return ctx.prisma.pushDevice.upsert({
-    where: { tokenHash },
-    create: {
-      token,
-      tokenHash,
-      platform: args.platform,
-      provider,
-      appId: normalizePushDeviceString(args.appId),
-      appVersion: normalizePushDeviceString(args.appVersion),
-      deviceId,
-      locale: args.locale ?? null,
-      enabled: true,
-      lastSeenAt: now,
-      participant: { connect: { id: ctx.user.sub } },
-    },
-    update: {
-      token,
-      platform: args.platform,
-      provider,
-      appId: normalizePushDeviceString(args.appId),
-      appVersion: normalizePushDeviceString(args.appVersion),
-      deviceId,
-      locale: args.locale ?? null,
-      enabled: true,
-      revokedAt: null,
-      lastSeenAt: now,
-      participant: { connect: { id: ctx.user.sub } },
-    },
-  })
+  return upsertDevice()
 }
 
 export async function revokePushDevice(
