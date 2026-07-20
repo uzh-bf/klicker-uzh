@@ -1179,6 +1179,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     speedModeBalanced: 'Ausgewogen',
     speedModeQuality: 'Qualität',
     speedModeFast: 'Schnell',
+    knowledgeGraphAssigned: 'Wissensgraph: {chatbotName}',
   },
   manage: {
     general: {
@@ -3219,6 +3220,116 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotModelSettingsSaveSuccess: 'Modelleinstellungen gespeichert.',
       chatbotModelSettingsSaveError:
         'Die Chatbot-Modelleinstellungen konnten nicht gespeichert werden. Bitte erneut versuchen.',
+      knowledgeGraphTitle: 'Wissensgraph',
+      knowledgeGraphDescription:
+        'Wählen Sie die Kursmaterialien für diesen Chatbot aus und erstellen Sie anschliessend den interaktiven Wissensgraphen.',
+      knowledgeGraphLoading: 'Wissensgraph-Konfiguration wird geladen…',
+      knowledgeGraphLoadError:
+        'Die Wissensgraph-Konfiguration konnte nicht geladen werden.',
+      knowledgeGraphRetry: 'Erneut versuchen',
+      knowledgeGraphResourcesTitle: 'Wissensdatenbank-Ressourcen',
+      knowledgeGraphSelectedCount:
+        '{count, plural, =0 {Keine Ressourcen ausgewählt} one {# Ressource ausgewählt} other {# Ressourcen ausgewählt}}',
+      knowledgeGraphUnsavedChanges: 'Nicht gespeicherte Auswahl',
+      knowledgeGraphNoResources:
+        'Fügen Sie einer Wissensdatenbank Ressourcen hinzu, bevor Sie diesen Graphen konfigurieren.',
+      knowledgeGraphUnknownAssignedChatbot: 'einem anderen Chatbot',
+      knowledgeGraphResourceFile: 'Datei',
+      knowledgeGraphResourceUrl: 'Öffentliche URL',
+      knowledgeGraphAssignedElsewhere:
+        'Bereits „{chatbotName}“ zugewiesen. Eine Ressource kann nur zu einem Chatbot-Graphen gehören.',
+      knowledgeGraphSaveSelection: 'Auswahl speichern',
+      knowledgeGraphSelectionSaved: 'Ressourcenauswahl gespeichert.',
+      knowledgeGraphSelectionSaveError:
+        'Die Ressourcenauswahl konnte nicht gespeichert werden. Bitte erneut versuchen.',
+      knowledgeGraphBuildTitle: 'Wissensgraph erstellen',
+      knowledgeGraphBuildDescription:
+        'Wählen Sie einen Verarbeitungsmodus und starten Sie die externe Graph-Pipeline ausdrücklich.',
+      knowledgeGraphSaveBeforeBuild:
+        'Speichern Sie die geänderte Ressourcenauswahl, bevor Sie den Graphen erstellen.',
+      knowledgeGraphBuild: 'Erstellen',
+      knowledgeGraphRebuild: 'Neu erstellen',
+      knowledgeGraphBuildError:
+        'Die Erstellung des Wissensgraphen konnte nicht gestartet werden. Bitte erneut versuchen.',
+      knowledgeGraphStatus: 'Status',
+      knowledgeGraphStatusEmpty: 'Keine Ressourcen',
+      knowledgeGraphStatusDirty: 'Erstellung erforderlich',
+      knowledgeGraphStatusQueued: 'In Warteschlange',
+      knowledgeGraphStatusProcessing: 'In Verarbeitung',
+      knowledgeGraphStatusReady: 'Bereit',
+      knowledgeGraphStatusFailed: 'Fehlgeschlagen',
+      knowledgeGraphExternalRun: 'Externer Workflow-Lauf: {runId}',
+      knowledgeGraphLastBuilt:
+        'Letzte erfolgreiche Erstellung: {date} ({speed})',
+      knowledgeGraphUnknownSpeed: 'unbekannter Modus',
+      knowledgeGraphPreviewTitle: 'Vorschau des Wissensgraphen',
+      knowledgeGraphPreviewUnavailable:
+        'Die Vorschau ist verfügbar, sobald die aktuelle Ressourcenauswahl erfolgreich verarbeitet wurde.',
+      knowledgeGraphViewer: {
+        explorerAriaLabel: 'Wissensgraph-Explorer',
+        searchAriaLabel: 'Wissensgraph durchsuchen',
+        searchLabel: 'Begriffe suchen',
+        searchPlaceholder: 'Begriffe suchen…',
+        searching: 'Suche läuft…',
+        search: 'Suchen',
+        truncatedNotice:
+          'Diese begrenzte Ansicht zeigt die am stärksten vernetzten Begriffe. Durchsuchen Sie den vollständigen Graphen.',
+        retry: 'Erneut versuchen',
+        canvasAriaLabel:
+          'Interaktiver Wissensgraph. Verwenden Sie die Begriffs- und Beziehungslisten unterhalb des Graphen für die Tastaturnavigation.',
+        zoomInAriaLabel: 'Wissensgraph vergrössern',
+        zoomIn: 'Vergrössern',
+        zoomOutAriaLabel: 'Wissensgraph verkleinern',
+        zoomOut: 'Verkleinern',
+        fitView: 'Ansicht einpassen',
+        resetLayout: 'Layout zurücksetzen',
+        legendAriaLabel: 'Legende der Begriffstypen',
+        conceptTypes: 'Begriffstypen',
+        shapeCircle: 'Kreis',
+        shapeDiamond: 'Raute',
+        shapeRoundedSquare: 'abgerundetes Quadrat',
+        shapeHexagon: 'Sechseck',
+        loading: 'Wissensgraph wird geladen…',
+        unavailableTitle: 'Wissensgraph nicht verfügbar',
+        notReadyTitle: 'Wissensgraph noch nicht bereit',
+        checkAgain: 'Erneut prüfen',
+        searchResults: 'Suchergebnisse',
+        loadedConcepts: 'Geladene Begriffe ({count})',
+        noConceptsLoaded: 'Keine Begriffe geladen.',
+        loadedRelationships: 'Geladene Beziehungen ({count})',
+        noRelationshipsLoaded: 'Keine Beziehungen geladen.',
+        selectRelationshipAriaLabel:
+          'Beziehung von {source} zu {target} auswählen: {label}',
+        searchUnavailable:
+          'Die Suche ist vorübergehend nicht verfügbar. Bitte erneut versuchen.',
+        connectionsUnavailable:
+          'Die Verbindungen sind vorübergehend nicht verfügbar. Bitte erneut versuchen.',
+        graphUnavailable: 'Der Wissensgraph ist vorübergehend nicht verfügbar.',
+        searchResultsLoadedAnnouncement:
+          '{count, plural, =0 {Keine Suchergebnisse geladen.} one {# Suchergebnis geladen.} other {# Suchergebnisse geladen.}}',
+        conceptsLoadedAnnouncement:
+          '{count, plural, =0 {Keine Begriffe geladen.} one {# Begriff geladen.} other {# Begriffe geladen.}}',
+        selectedConceptAnnouncement: '{label} ausgewählt.',
+        selectedRelationshipAnnouncement: 'Beziehung ausgewählt.',
+        detailsClosedAnnouncement: 'Details geschlossen.',
+        details: {
+          detailsFallback: 'Details',
+          ariaLabel: 'Details zum Wissensgraphen',
+          relationship: 'Beziehung',
+          concept: 'Begriff',
+          closeAriaLabel: 'Details schliessen',
+          type: 'Typ',
+          connections: 'Verbindungen',
+          summary: 'Zusammenfassung',
+          content: 'Inhalt',
+          sources: 'Quellen',
+          loadingConnections: 'Verbindungen werden geladen…',
+          expandConnections: 'Verbindungen erweitern',
+          from: 'Von',
+          to: 'Zu',
+          properties: 'Eigenschaften',
+        },
+      },
       creditResetPeriodDaily: 'Täglich',
       creditResetPeriodWeekly: 'Wöchentlich',
       creditResetPeriodBiweekly: 'Alle zwei Wochen',

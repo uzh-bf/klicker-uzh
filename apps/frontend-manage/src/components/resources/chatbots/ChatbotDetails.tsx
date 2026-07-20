@@ -22,6 +22,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import ChatbotKnowledgeGraphPanel from './ChatbotKnowledgeGraphPanel'
 
 type ReasoningConfigState = Record<string, string[]>
 
@@ -707,6 +708,8 @@ function ChatbotDetails({
             )}
           </div>
         </div>
+
+        <ChatbotKnowledgeGraphPanel key={chatbot.id} chatbotId={chatbot.id} />
 
         <div className="mt-8 flex flex-wrap gap-4 border-t pt-4 text-xs text-gray-500">
           <div>

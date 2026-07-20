@@ -63,6 +63,7 @@ export type KnowledgeGraphAction =
       operation: KnowledgeGraphRequestOperation
       requestId: number
       response: KnowledgeGraphResponse
+      announcement?: string
     }
   | {
       type: 'request-failed'
@@ -78,10 +79,10 @@ export type KnowledgeGraphAction =
       message: string
       input?: string
     }
-  | { type: 'select-node'; nodeId: string }
-  | { type: 'select-edge'; edgeId: string }
-  | { type: 'focus-search-result'; nodeId: string }
-  | { type: 'close-details' }
+  | { type: 'select-node'; nodeId: string; announcement?: string }
+  | { type: 'select-edge'; edgeId: string; announcement?: string }
+  | { type: 'focus-search-result'; nodeId: string; announcement?: string }
+  | { type: 'close-details'; announcement?: string }
   | { type: 'clear-search' }
   | { type: 'reset' }
 
@@ -240,9 +241,10 @@ export function knowledgeGraphReducer(
             ? deduplicateById([], action.response.nodes)
             : nextGraph.searchResults,
         announcement:
-          action.operation === 'search'
+          action.announcement ??
+          (action.operation === 'search'
             ? `${action.response.nodes.length} search results loaded.`
-            : `${action.response.nodes.length} concepts loaded.`,
+            : `${action.response.nodes.length} concepts loaded.`),
         activeRequestIds: replacesGraph
           ? emptyActiveRequestIds
           : withoutActiveRequest(state, action.operation),
@@ -290,10 +292,12 @@ export function knowledgeGraphReducer(
         selectedNodeId: action.nodeId,
         selectedEdgeId: null,
         focusedNodeId: action.nodeId,
-        announcement: `Selected ${
-          state.nodes.find((node) => node.id === action.nodeId)?.displayLabel ??
-          'concept'
-        }.`,
+        announcement:
+          action.announcement ??
+          `Selected ${
+            state.nodes.find((node) => node.id === action.nodeId)
+              ?.displayLabel ?? 'concept'
+          }.`,
       }
 
     case 'select-edge':
@@ -304,7 +308,7 @@ export function knowledgeGraphReducer(
         ...state,
         selectedNodeId: null,
         selectedEdgeId: action.edgeId,
-        announcement: 'Selected relationship.',
+        announcement: action.announcement ?? 'Selected relationship.',
       }
 
     case 'close-details':
@@ -312,7 +316,7 @@ export function knowledgeGraphReducer(
         ...state,
         selectedNodeId: null,
         selectedEdgeId: null,
-        announcement: 'Details closed.',
+        announcement: action.announcement ?? 'Details closed.',
       }
 
     case 'clear-search':

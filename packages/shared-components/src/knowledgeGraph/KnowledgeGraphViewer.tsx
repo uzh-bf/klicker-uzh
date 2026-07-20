@@ -15,6 +15,11 @@ import React, {
 
 import { KnowledgeGraphDetails } from './KnowledgeGraphDetails'
 import {
+  type KnowledgeGraphViewerLabelOverrides,
+  type KnowledgeGraphViewerLabels,
+  resolveKnowledgeGraphLabels,
+} from './knowledgeGraphLabels'
+import {
   type KnowledgeGraphDataSource,
   type KnowledgeGraphRequestOperation,
   KnowledgeGraphUnavailableError,
@@ -34,28 +39,28 @@ const UZH_KIND_STYLES = [
     borderColor: '#001E7C',
     shape: 'ellipse',
     legendClassName: 'rounded-full bg-[#BDC9E8] border-[#001E7C]',
-    shapeLabel: 'circle',
+    shapeLabelKey: 'shapeCircle',
   },
   {
     color: '#F78CAA',
     borderColor: '#8F0A2E',
     shape: 'diamond',
     legendClassName: 'rotate-45 bg-[#F78CAA] border-[#8F0A2E]',
-    shapeLabel: 'diamond',
+    shapeLabelKey: 'shapeDiamond',
   },
   {
     color: '#FFE9B5',
     borderColor: '#A27200',
     shape: 'round-rectangle',
     legendClassName: 'rounded bg-[#FFE9B5] border-[#A27200]',
-    shapeLabel: 'rounded square',
+    shapeLabelKey: 'shapeRoundedSquare',
   },
   {
     color: '#E7E7E7',
     borderColor: '#4D4D4D',
     shape: 'hexagon',
     legendClassName: 'rounded-sm bg-[#E7E7E7] border-[#4D4D4D]',
-    shapeLabel: 'hexagon',
+    shapeLabelKey: 'shapeHexagon',
   },
 ] as const
 
@@ -118,6 +123,7 @@ type KnowledgeGraphViewerProps = {
   dataSource: KnowledgeGraphDataSource
   className?: string
   unavailableMessage?: string
+  labels?: KnowledgeGraphViewerLabelOverrides
 }
 
 function kindStyle(kind: string) {
@@ -179,21 +185,31 @@ function isUnavailableError(error: unknown): boolean {
   return candidate.code === 'UNAVAILABLE' || candidate.status === 409
 }
 
-function safeRequestError(operation: 'overview' | 'search' | 'neighbors') {
+function safeRequestError(
+  operation: 'overview' | 'search' | 'neighbors',
+  labels: KnowledgeGraphViewerLabels
+) {
   if (operation === 'search') {
-    return 'Search is temporarily unavailable. Try again.'
+    return labels.searchUnavailable
   }
   if (operation === 'neighbors') {
-    return 'Connections are temporarily unavailable. Try again.'
+    return labels.connectionsUnavailable
   }
-  return 'The knowledge graph is temporarily unavailable.'
+  return labels.graphUnavailable
 }
 
 export function KnowledgeGraphViewer({
   dataSource,
   className = '',
-  unavailableMessage = 'The knowledge graph is not available for the current resource selection.',
+  unavailableMessage,
+  labels: labelOverrides,
 }: KnowledgeGraphViewerProps) {
+  const labels = useMemo(
+    () => resolveKnowledgeGraphLabels(labelOverrides),
+    [labelOverrides]
+  )
+  const resolvedUnavailableMessage =
+    unavailableMessage ?? labels.defaultUnavailableMessage
   const [state, dispatch] = useReducer(
     knowledgeGraphReducer,
     initialKnowledgeGraphState
@@ -215,9 +231,11 @@ export function KnowledgeGraphViewer({
   const pendingFocusRef = useRef<string | null>(null)
   const prefersReducedMotionRef = useRef(false)
   const expandNodeRef = useRef<(nodeId: string) => void>(() => undefined)
+  const labelsRef = useRef(labels)
 
   dataSourceRef.current = dataSource
   stateRef.current = state
+  labelsRef.current = labels
 
   const runRequest = useCallback(
     async (
@@ -248,6 +266,14 @@ export function KnowledgeGraphViewer({
           operation,
           requestId,
           response: graphResponse,
+          announcement:
+            operation === 'search'
+              ? labelsRef.current.searchResultsLoadedAnnouncement(
+                  graphResponse.nodes.length
+                )
+              : labelsRef.current.conceptsLoadedAnnouncement(
+                  graphResponse.nodes.length
+                ),
         })
         return graphResponse
       } catch (error) {
@@ -262,7 +288,7 @@ export function KnowledgeGraphViewer({
             type: 'request-unavailable',
             operation,
             requestId,
-            message: unavailableMessage,
+            message: resolvedUnavailableMessage,
             ...(input === null ? {} : { input }),
           })
         } else {
@@ -270,14 +296,14 @@ export function KnowledgeGraphViewer({
             type: 'request-failed',
             operation,
             requestId,
-            message: safeRequestError(operation),
+            message: safeRequestError(operation, labelsRef.current),
             ...(input === null ? {} : { input }),
           })
         }
         return null
       }
     },
-    [unavailableMessage]
+    [resolvedUnavailableMessage]
   )
 
   const loadOverview = useCallback(async () => {
@@ -364,7 +390,13 @@ export function KnowledgeGraphViewer({
 
     const onNodeTap: cytoscape.EventHandler = (event) => {
       const nodeId = String(event.target.data('graphId'))
-      dispatch({ type: 'select-node', nodeId })
+      const displayLabel = String(event.target.data('displayLabel'))
+      dispatch({
+        type: 'select-node',
+        nodeId,
+        announcement:
+          labelsRef.current.selectedConceptAnnouncement(displayLabel),
+      })
     }
     const onNodeDoubleTap: cytoscape.EventHandler = (event) => {
       const nodeId = String(event.target.data('graphId'))
@@ -375,6 +407,7 @@ export function KnowledgeGraphViewer({
       dispatch({
         type: 'select-edge',
         edgeId: String(event.target.data('graphId')),
+        announcement: labelsRef.current.selectedRelationshipAnnouncement,
       })
     }
     const rememberPosition: cytoscape.EventHandler = (event) => {
@@ -592,7 +625,13 @@ export function KnowledgeGraphViewer({
 
   function focusNode(nodeId: string) {
     pendingFocusRef.current = nodeId
-    dispatch({ type: 'focus-search-result', nodeId })
+    const displayLabel =
+      indexes.nodes.get(nodeId)?.displayLabel ?? labels.details.concept
+    dispatch({
+      type: 'focus-search-result',
+      nodeId,
+      announcement: labels.selectedConceptAnnouncement(displayLabel),
+    })
   }
 
   const searchGraph = useCallback(
@@ -694,7 +733,7 @@ export function KnowledgeGraphViewer({
 
   return (
     <section
-      aria-label="Knowledge graph explorer"
+      aria-label={labels.explorerAriaLabel}
       className={`relative flex h-full min-h-[32rem] overflow-hidden rounded-lg border border-[#E9E9E9] bg-white ${className}`}
       data-cy="knowledge-graph-viewer"
     >
@@ -702,12 +741,12 @@ export function KnowledgeGraphViewer({
         <div className="border-b border-[#E9E9E9] bg-white p-3 md:p-4">
           <form
             role="search"
-            aria-label="Search the knowledge graph"
+            aria-label={labels.searchAriaLabel}
             onSubmit={(event) => void handleSearch(event)}
             className="flex gap-2"
           >
             <label htmlFor="knowledge-graph-search" className="sr-only">
-              Search concepts
+              {labels.searchLabel}
             </label>
             <input
               id="knowledge-graph-search"
@@ -716,7 +755,7 @@ export function KnowledgeGraphViewer({
               minLength={1}
               maxLength={100}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search concepts"
+              placeholder={labels.searchPlaceholder}
               className="min-h-11 min-w-0 flex-1 rounded border border-[#E9E9E9] px-3 py-2 text-base text-[#121212] placeholder:text-[#666666] focus:border-[#0028A5] focus:outline-none focus:ring-2 focus:ring-[#BDC9E8]"
               data-cy="knowledge-graph-search"
             />
@@ -725,14 +764,13 @@ export function KnowledgeGraphViewer({
               disabled={isSearching || searchQuery.trim().length === 0}
               className="min-h-11 rounded-full border border-[#0028A5] bg-[#0028A5] px-5 py-2 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isSearching ? 'Searching…' : 'Search'}
+              {isSearching ? labels.searching : labels.search}
             </button>
           </form>
 
           {state.truncated ? (
             <p className="mt-2 text-sm text-[#4C4C4C]" role="note">
-              This bounded view shows the most connected concepts. Search to
-              explore the complete graph.
+              {labels.truncatedNotice}
             </p>
           ) : null}
 
@@ -748,7 +786,7 @@ export function KnowledgeGraphViewer({
                 className="min-h-11 shrink-0 rounded-full border border-[#8F0A2E] bg-white px-4 font-semibold text-[#60061F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5]"
                 data-cy="knowledge-graph-retry"
               >
-                Retry
+                {labels.retry}
               </button>
             </div>
           ) : null}
@@ -759,7 +797,7 @@ export function KnowledgeGraphViewer({
             id="knowledge-graph-canvas"
             ref={containerRef}
             role="img"
-            aria-label="Interactive knowledge graph. Use the concept and relationship lists below for keyboard navigation."
+            aria-label={labels.canvasAriaLabel}
             className="absolute inset-0"
           />
 
@@ -768,19 +806,19 @@ export function KnowledgeGraphViewer({
               type="button"
               onClick={() => changeZoom(1.25)}
               className="min-h-11 rounded-full border border-[#E9E9E9] bg-white px-4 text-sm font-semibold text-[#121212] shadow-sm hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5]"
-              aria-label="Zoom in on the knowledge graph"
+              aria-label={labels.zoomInAriaLabel}
               data-cy="knowledge-graph-zoom-in"
             >
-              Zoom in
+              {labels.zoomIn}
             </button>
             <button
               type="button"
               onClick={() => changeZoom(0.8)}
               className="min-h-11 rounded-full border border-[#E9E9E9] bg-white px-4 text-sm font-semibold text-[#121212] shadow-sm hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5]"
-              aria-label="Zoom out of the knowledge graph"
+              aria-label={labels.zoomOutAriaLabel}
               data-cy="knowledge-graph-zoom-out"
             >
-              Zoom out
+              {labels.zoomOut}
             </button>
             <button
               type="button"
@@ -788,7 +826,7 @@ export function KnowledgeGraphViewer({
               className="min-h-11 rounded-full border border-[#E9E9E9] bg-white px-4 text-sm font-semibold text-[#121212] shadow-sm hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5]"
               data-cy="knowledge-graph-fit"
             >
-              Fit view
+              {labels.fitView}
             </button>
             <button
               type="button"
@@ -796,16 +834,16 @@ export function KnowledgeGraphViewer({
               className="min-h-11 rounded-full border border-[#E9E9E9] bg-white px-4 text-sm font-semibold text-[#121212] shadow-sm hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5]"
               data-cy="knowledge-graph-reset"
             >
-              Reset layout
+              {labels.resetLayout}
             </button>
           </div>
 
           {legendEntries.length === 0 ? null : (
             <div
-              aria-label="Concept type legend"
+              aria-label={labels.legendAriaLabel}
               className="absolute right-3 top-3 max-w-48 rounded-lg border border-[#E9E9E9] bg-white/95 p-3 text-xs text-[#121212] shadow-sm"
             >
-              <p className="mb-2 font-semibold">Concept types</p>
+              <p className="mb-2 font-semibold">{labels.conceptTypes}</p>
               <ul className="space-y-1.5">
                 {legendEntries.map(([kind, style]) => (
                   <li key={kind} className="flex items-center gap-2">
@@ -822,7 +860,7 @@ export function KnowledgeGraphViewer({
                       }
                     />
                     <span className="min-w-0 truncate">
-                      {kind} ({style.shapeLabel})
+                      {kind} ({labels[style.shapeLabelKey]})
                     </span>
                   </li>
                 ))}
@@ -835,7 +873,7 @@ export function KnowledgeGraphViewer({
               role="status"
               className="absolute inset-0 flex items-center justify-center bg-white/90 p-6 text-center text-[#4C4C4C]"
             >
-              Loading knowledge graph…
+              {labels.loading}
             </div>
           ) : null}
 
@@ -846,7 +884,7 @@ export function KnowledgeGraphViewer({
             >
               <div>
                 <h2 className="text-lg font-semibold text-[#121212]">
-                  Knowledge graph unavailable
+                  {labels.unavailableTitle}
                 </h2>
                 <p className="mt-1 text-sm text-[#4C4C4C]">
                   {state.errorMessage}
@@ -858,7 +896,7 @@ export function KnowledgeGraphViewer({
                 className="min-h-11 rounded-full border border-[#0028A5] bg-[#0028A5] px-5 text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] focus-visible:ring-offset-2"
                 data-cy="knowledge-graph-retry"
               >
-                Retry
+                {labels.retry}
               </button>
             </div>
           ) : null}
@@ -870,7 +908,7 @@ export function KnowledgeGraphViewer({
             >
               <div>
                 <h2 className="text-lg font-semibold text-[#121212]">
-                  Knowledge graph not ready
+                  {labels.notReadyTitle}
                 </h2>
                 <p className="mt-1 max-w-md text-sm text-[#4C4C4C]">
                   {state.unavailableMessage}
@@ -882,7 +920,7 @@ export function KnowledgeGraphViewer({
                 className="min-h-11 rounded-full border border-[#E9E9E9] bg-white px-5 text-sm font-semibold text-[#121212] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5]"
                 data-cy="knowledge-graph-retry"
               >
-                Check again
+                {labels.checkAgain}
               </button>
             </div>
           ) : null}
@@ -898,7 +936,7 @@ export function KnowledgeGraphViewer({
                 id="knowledge-graph-search-results-heading"
                 className="mb-2 text-sm font-semibold text-[#121212]"
               >
-                Search results
+                {labels.searchResults}
               </h2>
               <ul className="space-y-1">
                 {state.searchResults.map((node) => (
@@ -926,10 +964,12 @@ export function KnowledgeGraphViewer({
               id="knowledge-graph-loaded-nodes-heading"
               className="mb-2 text-sm font-semibold text-[#121212]"
             >
-              Loaded concepts ({state.nodes.length})
+              {labels.loadedConcepts(state.nodes.length)}
             </h2>
             {state.nodes.length === 0 ? (
-              <p className="text-sm text-[#4C4C4C]">No concepts loaded.</p>
+              <p className="text-sm text-[#4C4C4C]">
+                {labels.noConceptsLoaded}
+              </p>
             ) : (
               <ul className="grid grid-cols-1 gap-1 sm:grid-cols-2">
                 {state.nodes.map((node) => (
@@ -958,20 +998,30 @@ export function KnowledgeGraphViewer({
               id="knowledge-graph-loaded-relationships-heading"
               className="mb-2 text-sm font-semibold text-[#121212]"
             >
-              Loaded relationships ({relationshipEntries.length})
+              {labels.loadedRelationships(relationshipEntries.length)}
             </h2>
             {relationshipEntries.length === 0 ? (
-              <p className="text-sm text-[#4C4C4C]">No relationships loaded.</p>
+              <p className="text-sm text-[#4C4C4C]">
+                {labels.noRelationshipsLoaded}
+              </p>
             ) : (
               <ul className="space-y-1">
                 {relationshipEntries.map(({ edge, source, target }) => (
                   <li key={edge.id}>
                     <button
                       type="button"
-                      aria-label={`Select relationship ${source} to ${target}: ${edge.label}`}
+                      aria-label={labels.selectRelationshipAriaLabel(
+                        source,
+                        target,
+                        edge.label
+                      )}
                       aria-pressed={state.selectedEdgeId === edge.id}
                       onClick={() =>
-                        dispatch({ type: 'select-edge', edgeId: edge.id })
+                        dispatch({
+                          type: 'select-edge',
+                          edgeId: edge.id,
+                          announcement: labels.selectedRelationshipAnnouncement,
+                        })
                       }
                       className="min-h-11 w-full rounded px-3 py-2 text-left text-sm text-[#121212] hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] aria-pressed:bg-[#F5F5FB] aria-pressed:text-[#0028A5]"
                     >
@@ -993,7 +1043,13 @@ export function KnowledgeGraphViewer({
         edge={selectedEdge}
         edgeEndpoints={selectedEdgeEndpoints}
         isExpanding={isExpanding}
-        onClose={() => dispatch({ type: 'close-details' })}
+        labels={labels.details}
+        onClose={() =>
+          dispatch({
+            type: 'close-details',
+            announcement: labels.detailsClosedAnnouncement,
+          })
+        }
         onExpand={(nodeId) => void expandNode(nodeId)}
       />
 
