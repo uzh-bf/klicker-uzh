@@ -1,0 +1,29 @@
+query GetChatbotKnowledgeGraphOverview($chatbotId: ID!) {
+  getChatbotKnowledgeGraphOverview(chatbotId: $chatbotId) {
+    chatbotId
+    builtRevision
+    truncated
+    nodes {
+      id
+      labels
+      kind
+      displayLabel
+      summary
+      content
+      degree
+      sourceReferences {
+        resourceId
+        title
+        reference
+      }
+    }
+    edges {
+      id
+      source
+      target
+      type
+      label
+      properties
+    }
+  }
+}

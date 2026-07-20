@@ -44,6 +44,7 @@ import {
 import {
   AvailableChatbotKnowledgeGraphResourceGroupRef,
   ChatbotKnowledgeGraphConfigRef,
+  KnowledgeGraphResponseRef,
 } from './chatbotKnowledgeGraph.js'
 import {
   AssessmentParticipant,
@@ -1451,6 +1452,51 @@ export const Query = builder.queryType({
         args: { chatbotId: t.arg.id({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await ChatbotKnowledgeGraphService.getAvailableChatbotKnowledgeGraphResources(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      getChatbotKnowledgeGraphOverview: t.withAuth(asUser).field({
+        nullable: false,
+        type: KnowledgeGraphResponseRef,
+        args: { chatbotId: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotKnowledgeGraphService.getChatbotKnowledgeGraphOverview(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      searchChatbotKnowledgeGraph: t.withAuth(asUser).field({
+        nullable: false,
+        type: KnowledgeGraphResponseRef,
+        args: {
+          chatbotId: t.arg.id({ required: true }),
+          query: t.arg.string({
+            required: true,
+            validate: { minLength: 1, maxLength: 100 },
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotKnowledgeGraphService.searchChatbotKnowledgeGraph(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      getChatbotKnowledgeGraphNeighbors: t.withAuth(asUser).field({
+        nullable: false,
+        type: KnowledgeGraphResponseRef,
+        args: {
+          chatbotId: t.arg.id({ required: true }),
+          nodeId: t.arg.id({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotKnowledgeGraphService.getChatbotKnowledgeGraphNeighbors(
             args,
             ctx
           )

@@ -5,15 +5,44 @@ import {
   KBResourceType,
   PrismaClient,
 } from '@klicker-uzh/prisma/client'
-import type { KBIngestionSpeedMode as APIKBIngestionSpeedMode } from '@klicker-uzh/types'
+import type {
+  KBIngestionSpeedMode as APIKBIngestionSpeedMode,
+  KnowledgeGraphResponse,
+} from '@klicker-uzh/types'
 import { randomUUID } from 'crypto'
 import { EventEmitter } from 'events'
 import { validate as validateUuid } from 'uuid'
 import type { ContextWithUser } from '../src/lib/context.js'
+
+const knowledgeGraph = vi.hoisted(() => ({
+  getPublishedKnowledgeGraph: vi.fn(),
+  readKnowledgeGraphNeighbors: vi.fn(),
+  readKnowledgeGraphOverview: vi.fn(),
+  searchKnowledgeGraph: vi.fn(),
+}))
+
+vi.mock('@klicker-uzh/knowledge-graph', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('@klicker-uzh/knowledge-graph')>()
+  knowledgeGraph.getPublishedKnowledgeGraph.mockImplementation(
+    actual.getPublishedKnowledgeGraph
+  )
+  return {
+    ...actual,
+    getPublishedKnowledgeGraph: knowledgeGraph.getPublishedKnowledgeGraph,
+    readKnowledgeGraphNeighbors: knowledgeGraph.readKnowledgeGraphNeighbors,
+    readKnowledgeGraphOverview: knowledgeGraph.readKnowledgeGraphOverview,
+    searchKnowledgeGraph: knowledgeGraph.searchKnowledgeGraph,
+  }
+})
+
 import {
   getAvailableChatbotKnowledgeGraphResources,
   getChatbotKnowledgeGraphConfig,
+  getChatbotKnowledgeGraphNeighbors,
+  getChatbotKnowledgeGraphOverview,
   rebuildChatbotKnowledgeGraph,
+  searchChatbotKnowledgeGraph,
   updateChatbotKnowledgeGraphResources,
 } from '../src/services/chatbotKnowledgeGraphs.js'
 import {
@@ -112,6 +141,45 @@ function withResourceLockHooks(
   return { ...ctx, prisma }
 }
 
+function graphResponse(
+  chatbotId: string,
+  builtRevision: number
+): KnowledgeGraphResponse {
+  return {
+    chatbotId,
+    builtRevision,
+    truncated: false,
+    nodes: [
+      {
+        id: '12',
+        labels: ['Konzept'],
+        kind: 'Konzept',
+        displayLabel: 'Example concept',
+        summary: 'Safe summary',
+        content: 'Safe content',
+        degree: 2,
+        sourceReferences: [
+          {
+            resourceId: '00000000-0000-4000-8000-000000000123',
+            title: 'Example resource',
+            reference: 'page 3',
+          },
+        ],
+      },
+    ],
+    edges: [
+      {
+        id: '30',
+        source: '12',
+        target: '14',
+        type: 'RELATED',
+        label: 'RELATED',
+        properties: { weight: 1 },
+      },
+    ],
+  }
+}
+
 describe('Integration tests for chatbot knowledge graph selection', () => {
   let prisma: PrismaClient
   let hatchet: Hatchet
@@ -132,6 +200,7 @@ describe('Integration tests for chatbot knowledge graph selection', () => {
   })
 
   beforeEach(async () => {
+    vi.clearAllMocks()
     const initialized = await testInitialization(prisma, hatchet, emitter)
     userOneCtx = initialized.userOneCtx
     userTwoCtx = initialized.userTwoCtx
@@ -171,6 +240,27 @@ describe('Integration tests for chatbot knowledge graph selection', () => {
       ctx
     )
     return { kb, resource }
+  }
+
+  async function createPublishedGraph(ctx: ContextWithUser, name: string) {
+    const chatbot = await createChatbot(ctx, name)
+    const { resource } = await createUrlResource(
+      ctx,
+      `${name} KB`,
+      `${name} resource`
+    )
+    const config = await updateChatbotKnowledgeGraphResources(
+      { chatbotId: chatbot.id, resourceIds: [resource.id] },
+      ctx
+    )
+    await ctx.prisma.chatbotKnowledgeGraph.update({
+      where: { id: config.id! },
+      data: {
+        status: ChatbotKnowledgeGraphStatus.READY,
+        builtRevision: config.selectionRevision,
+      },
+    })
+    return { chatbot, config, resource }
   }
 
   it('returns an EMPTY revision-zero virtual configuration before first save', async () => {
@@ -569,6 +659,200 @@ describe('Integration tests for chatbot knowledge graph selection', () => {
         ],
       }),
     ])
+  })
+
+  it('authorizes graph reads before checking publication or calling FalkorDB', async () => {
+    const foreignChatbot = await createChatbot(
+      userTwoCtx,
+      'Foreign graph assistant'
+    )
+
+    await expect(
+      getChatbotKnowledgeGraphOverview(
+        { chatbotId: foreignChatbot.id },
+        userOneCtx
+      )
+    ).rejects.toThrow('Chatbot not found')
+    expect(knowledgeGraph.getPublishedKnowledgeGraph).not.toHaveBeenCalled()
+    expect(knowledgeGraph.readKnowledgeGraphOverview).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    {
+      name: 'missing',
+      status: null,
+      builtRevision: null,
+      publicationStatus: 'EMPTY',
+    },
+    {
+      name: 'empty',
+      status: ChatbotKnowledgeGraphStatus.EMPTY,
+      builtRevision: null,
+      publicationStatus: 'EMPTY',
+    },
+    {
+      name: 'dirty',
+      status: ChatbotKnowledgeGraphStatus.DIRTY,
+      builtRevision: null,
+      publicationStatus: 'DIRTY',
+    },
+    {
+      name: 'queued',
+      status: ChatbotKnowledgeGraphStatus.QUEUED,
+      builtRevision: null,
+      publicationStatus: 'QUEUED',
+    },
+    {
+      name: 'processing',
+      status: ChatbotKnowledgeGraphStatus.PROCESSING,
+      builtRevision: null,
+      publicationStatus: 'PROCESSING',
+    },
+    {
+      name: 'failed',
+      status: ChatbotKnowledgeGraphStatus.FAILED,
+      builtRevision: null,
+      publicationStatus: 'FAILED',
+    },
+    {
+      name: 'ready with a revision mismatch',
+      status: ChatbotKnowledgeGraphStatus.READY,
+      builtRevision: 0,
+      publicationStatus: 'DIRTY',
+    },
+  ])(
+    'does not call FalkorDB for a $name graph',
+    async ({ name, status, builtRevision, publicationStatus }) => {
+      const chatbot = await createChatbot(userOneCtx, `${name} assistant`)
+
+      if (status === ChatbotKnowledgeGraphStatus.EMPTY) {
+        await updateChatbotKnowledgeGraphResources(
+          { chatbotId: chatbot.id, resourceIds: [] },
+          userOneCtx
+        )
+      } else if (status !== null) {
+        const { resource } = await createUrlResource(
+          userOneCtx,
+          `${name} KB`,
+          `${name} resource`
+        )
+        const config = await updateChatbotKnowledgeGraphResources(
+          { chatbotId: chatbot.id, resourceIds: [resource.id] },
+          userOneCtx
+        )
+        await prisma.chatbotKnowledgeGraph.update({
+          where: { id: config.id! },
+          data: { status, builtRevision },
+        })
+      }
+
+      await expect(
+        getChatbotKnowledgeGraphOverview({ chatbotId: chatbot.id }, userOneCtx)
+      ).rejects.toMatchObject({
+        message: 'Knowledge graph is not published',
+        extensions: {
+          code: 'KNOWLEDGE_GRAPH_NOT_PUBLISHED',
+          publicationStatus,
+        },
+      })
+      expect(knowledgeGraph.readKnowledgeGraphOverview).not.toHaveBeenCalled()
+    }
+  )
+
+  it('returns the reader DTO and propagates the published revision', async () => {
+    const { chatbot, config, resource } = await createPublishedGraph(
+      userOneCtx,
+      'Published assistant'
+    )
+    const response = graphResponse(chatbot.id, config.selectionRevision)
+    knowledgeGraph.readKnowledgeGraphOverview.mockResolvedValue(response)
+
+    await expect(
+      getChatbotKnowledgeGraphOverview({ chatbotId: chatbot.id }, userOneCtx)
+    ).resolves.toEqual(response)
+    expect(knowledgeGraph.readKnowledgeGraphOverview).toHaveBeenCalledWith({
+      chatbotId: chatbot.id,
+      builtRevision: config.selectionRevision,
+      graphName: `klickeruzh:${chatbot.id}`,
+      sources: [{ resourceId: resource.id, title: resource.title }],
+    })
+  })
+
+  it('passes only bounded search and neighborhood arguments to fixed readers', async () => {
+    const { chatbot, config } = await createPublishedGraph(
+      userOneCtx,
+      'Interactive assistant'
+    )
+    const response = graphResponse(chatbot.id, config.selectionRevision)
+    knowledgeGraph.searchKnowledgeGraph.mockResolvedValue(response)
+    knowledgeGraph.readKnowledgeGraphNeighbors.mockResolvedValue(response)
+
+    await expect(
+      searchChatbotKnowledgeGraph(
+        { chatbotId: chatbot.id, query: 'Android security' },
+        userOneCtx
+      )
+    ).resolves.toEqual(response)
+    await expect(
+      getChatbotKnowledgeGraphNeighbors(
+        { chatbotId: chatbot.id, nodeId: '12' },
+        userOneCtx
+      )
+    ).resolves.toEqual(response)
+
+    const publishedContext = expect.objectContaining({
+      chatbotId: chatbot.id,
+      builtRevision: config.selectionRevision,
+      graphName: `klickeruzh:${chatbot.id}`,
+    })
+    expect(knowledgeGraph.searchKnowledgeGraph).toHaveBeenCalledWith(
+      publishedContext,
+      'Android security'
+    )
+    expect(knowledgeGraph.readKnowledgeGraphNeighbors).toHaveBeenCalledWith(
+      publishedContext,
+      '12'
+    )
+  })
+
+  it('sanitizes temporary FalkorDB failures without changing publication', async () => {
+    const { chatbot, config } = await createPublishedGraph(
+      userOneCtx,
+      'Unavailable assistant'
+    )
+    knowledgeGraph.readKnowledgeGraphOverview.mockRejectedValue(
+      new Error('redis://reader:secret@falkordb.internal/graph')
+    )
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+
+    try {
+      await expect(
+        getChatbotKnowledgeGraphOverview({ chatbotId: chatbot.id }, userOneCtx)
+      ).rejects.toMatchObject({
+        message: 'Knowledge graph is temporarily unavailable',
+        extensions: {
+          code: 'KNOWLEDGE_GRAPH_TEMPORARILY_UNAVAILABLE',
+        },
+      })
+      expect(consoleError).toHaveBeenCalledWith('Knowledge graph read failed', {
+        chatbotId: chatbot.id,
+        operation: 'overview',
+      })
+      expect(JSON.stringify(consoleError.mock.calls)).not.toContain('secret')
+      await expect(
+        prisma.chatbotKnowledgeGraph.findUniqueOrThrow({
+          where: { id: config.id! },
+        })
+      ).resolves.toMatchObject({
+        status: ChatbotKnowledgeGraphStatus.READY,
+        selectionRevision: config.selectionRevision,
+        builtRevision: config.selectionRevision,
+      })
+    } finally {
+      consoleError.mockRestore()
+    }
   })
 
   it('rejects a graph build without selected resources', async () => {

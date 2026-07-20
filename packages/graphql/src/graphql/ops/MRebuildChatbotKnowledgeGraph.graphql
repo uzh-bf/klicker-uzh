@@ -1,0 +1,21 @@
+mutation RebuildChatbotKnowledgeGraph(
+  $chatbotId: ID!
+  $speedMode: KBSpeedMode!
+) {
+  rebuildChatbotKnowledgeGraph(chatbotId: $chatbotId, speedMode: $speedMode) {
+    id
+    chatbotId
+    status
+    statusMessage
+    selectionRevision
+    builtRevision
+    activeBuildRevision
+    externalWorkflowRunId
+    externalStartedAt
+    lastBuiltAt
+    lastBuildSpeedMode
+    selectedResourceIds
+    createdAt
+    updatedAt
+  }
+}

@@ -1,0 +1,29 @@
+query GetChatbotKnowledgeGraphNeighbors($chatbotId: ID!, $nodeId: ID!) {
+  getChatbotKnowledgeGraphNeighbors(chatbotId: $chatbotId, nodeId: $nodeId) {
+    chatbotId
+    builtRevision
+    truncated
+    nodes {
+      id
+      labels
+      kind
+      displayLabel
+      summary
+      content
+      degree
+      sourceReferences {
+        resourceId
+        title
+        reference
+      }
+    }
+    edges {
+      id
+      source
+      target
+      type
+      label
+      properties
+    }
+  }
+}

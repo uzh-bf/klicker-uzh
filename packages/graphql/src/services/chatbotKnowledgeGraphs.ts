@@ -1,7 +1,16 @@
+import {
+  KnowledgeGraphNotPublishedError,
+  type PublishedKnowledgeGraph,
+  getPublishedKnowledgeGraph,
+  readKnowledgeGraphNeighbors,
+  readKnowledgeGraphOverview,
+  searchKnowledgeGraph,
+} from '@klicker-uzh/knowledge-graph'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   BuildChatbotKnowledgeGraphInput,
   KBIngestionSpeedMode,
+  KnowledgeGraphResponse,
 } from '@klicker-uzh/types'
 import { randomUUID } from 'crypto'
 import { GraphQLError } from 'graphql'
@@ -94,6 +103,41 @@ async function getOwnedChatbotOrThrow(ctx: ContextWithUser, chatbotId: string) {
     throw new GraphQLError('Chatbot not found')
   }
   return chatbot
+}
+
+type KnowledgeGraphReadOperation = 'overview' | 'search' | 'neighbors'
+
+async function readOwnedPublishedKnowledgeGraph(
+  chatbotId: string,
+  operation: KnowledgeGraphReadOperation,
+  ctx: ContextWithUser,
+  read: (
+    publishedGraph: PublishedKnowledgeGraph
+  ) => Promise<KnowledgeGraphResponse>
+): Promise<KnowledgeGraphResponse> {
+  await getOwnedChatbotOrThrow(ctx, chatbotId)
+
+  try {
+    const publishedGraph = await getPublishedKnowledgeGraph(
+      ctx.prisma,
+      chatbotId
+    )
+    return await read(publishedGraph)
+  } catch (error) {
+    if (error instanceof KnowledgeGraphNotPublishedError) {
+      throw new GraphQLError('Knowledge graph is not published', {
+        extensions: {
+          code: 'KNOWLEDGE_GRAPH_NOT_PUBLISHED',
+          publicationStatus: error.code,
+        },
+      })
+    }
+
+    console.error('Knowledge graph read failed', { chatbotId, operation })
+    throw new GraphQLError('Knowledge graph is temporarily unavailable', {
+      extensions: { code: 'KNOWLEDGE_GRAPH_TEMPORARILY_UNAVAILABLE' },
+    })
+  }
 }
 
 async function lockOwnedChatbotOrThrow(
@@ -241,6 +285,39 @@ export async function getChatbotKnowledgeGraphConfig(
     include: { resources: { select: { id: true } } },
   })
   return graph ? toConfig(graph) : emptyConfig(chatbotId)
+}
+
+export async function getChatbotKnowledgeGraphOverview(
+  { chatbotId }: { chatbotId: string },
+  ctx: ContextWithUser
+): Promise<KnowledgeGraphResponse> {
+  return readOwnedPublishedKnowledgeGraph(
+    chatbotId,
+    'overview',
+    ctx,
+    readKnowledgeGraphOverview
+  )
+}
+
+export async function searchChatbotKnowledgeGraph(
+  { chatbotId, query }: { chatbotId: string; query: string },
+  ctx: ContextWithUser
+): Promise<KnowledgeGraphResponse> {
+  return readOwnedPublishedKnowledgeGraph(chatbotId, 'search', ctx, (graph) =>
+    searchKnowledgeGraph(graph, query)
+  )
+}
+
+export async function getChatbotKnowledgeGraphNeighbors(
+  { chatbotId, nodeId }: { chatbotId: string; nodeId: string },
+  ctx: ContextWithUser
+): Promise<KnowledgeGraphResponse> {
+  return readOwnedPublishedKnowledgeGraph(
+    chatbotId,
+    'neighbors',
+    ctx,
+    (graph) => readKnowledgeGraphNeighbors(graph, nodeId)
+  )
 }
 
 export async function getAvailableChatbotKnowledgeGraphResources(

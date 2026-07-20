@@ -1,0 +1,24 @@
+mutation UpdateChatbotKnowledgeGraphResources(
+  $chatbotId: ID!
+  $resourceIds: [ID!]!
+) {
+  updateChatbotKnowledgeGraphResources(
+    chatbotId: $chatbotId
+    resourceIds: $resourceIds
+  ) {
+    id
+    chatbotId
+    status
+    statusMessage
+    selectionRevision
+    builtRevision
+    activeBuildRevision
+    externalWorkflowRunId
+    externalStartedAt
+    lastBuiltAt
+    lastBuildSpeedMode
+    selectedResourceIds
+    createdAt
+    updatedAt
+  }
+}
