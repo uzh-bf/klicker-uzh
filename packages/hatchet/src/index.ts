@@ -6,6 +6,7 @@ import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
 
 export * from './client.js'
+export * from './kbIngestion.js'
 
 export type { HatchetHandlers } from '@klicker-uzh/types'
 

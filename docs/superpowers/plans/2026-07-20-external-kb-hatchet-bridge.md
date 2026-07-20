@@ -411,7 +411,7 @@ git commit -m "feat(kb): add correlated speed-aware ingestion attempts"
 - Modify: `packages/hatchet/package.json`
 - Modify: `pnpm-lock.yaml`
 
-- [ ] **Step 1: Add only the worker package's direct runtime/test dependencies**
+- [x] **Step 1: Add only the worker package's direct runtime/test dependencies**
 
 Add exact versions already used by the monorepo:
 
@@ -439,7 +439,7 @@ pnpm install
 
 Expected: only the `@klicker-uzh/hatchet` importer changes in `pnpm-lock.yaml`; no package version upgrades.
 
-- [ ] **Step 2: Add the node Vitest configuration and failing contract tests**
+- [x] **Step 2: Add the node Vitest configuration and failing contract tests**
 
 Mirror `packages/util/vitest.config.ts`. In `kbIngestion.test.ts`, mock the SDK boundary, Prisma calls, clock, and webhook fetch. Add failing tests for:
 
@@ -464,7 +464,7 @@ pnpm --filter @klicker-uzh/hatchet test
 
 Expected: FAIL because `kbIngestion.ts` does not exist.
 
-- [ ] **Step 3: Implement strict environment parsing and the lazy client**
+- [x] **Step 3: Implement strict environment parsing and the lazy client**
 
 Export `getKBIngestionTimeoutSeconds(env = process.env)` and `validateKBIngestionWorkerConfig(env = process.env)`. The latter calls the parser but does not instantiate a client.
 
@@ -481,7 +481,7 @@ HatchetClient.init({
 
 Require the five dedicated external Hatchet variables. Accept only `tls`, `mtls`, or `none`. Do not read the local `HATCHET_*` variables as fallback.
 
-- [ ] **Step 4: Implement exact source URL and payload construction**
+- [x] **Step 4: Implement exact source URL and payload construction**
 
 Use these named constants:
 
@@ -508,7 +508,7 @@ Build exactly:
 
 Never log or persist `sourceUrl`.
 
-- [ ] **Step 5: Implement idempotent external dispatch**
+- [x] **Step 5: Implement idempotent external dispatch**
 
 Export `dispatchKBIngestion(input, dependencies)` and use this order:
 
@@ -532,11 +532,11 @@ const runId = await run.getWorkflowRunId()
 
 The attempt-metadata lookup is the retry recovery for an accepted run whose first response/persistence was ambiguous. Do not add an outbox in this POC.
 
-- [ ] **Step 6: Make errors retryable but privacy-safe**
+- [x] **Step 6: Make errors retryable but privacy-safe**
 
 Let configuration, Azure, and SDK failures throw so local Hatchet applies its configured retries. Log only a stable category plus resource/KB/attempt identifiers. Do not interpolate `error.message` into the UI status or any log that could contain a URL/token.
 
-- [ ] **Step 7: Run bridge tests and package checks**
+- [x] **Step 7: Run bridge tests and package checks**
 
 ```bash
 pnpm --filter @klicker-uzh/hatchet test
@@ -546,7 +546,7 @@ pnpm --filter @klicker-uzh/hatchet build
 
 Expected: all bridge tests pass and Rollup includes `kbIngestion.js` through the `index.ts` export/import graph.
 
-- [ ] **Step 8: Commit Task 4**
+- [x] **Step 8: Commit Task 4**
 
 ```bash
 git add packages/hatchet/src/kbIngestion.ts packages/hatchet/test/kbIngestion.test.ts packages/hatchet/vitest.config.ts packages/hatchet/package.json pnpm-lock.yaml
