@@ -368,7 +368,7 @@ const Composer: FC = () => {
     >
       <ComposerPrimitive.Root
         data-cy="chat-composer"
-        className="flex w-full flex-col rounded-3xl border border-gray-200 bg-gray-100/80 px-2.5 shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-colors ease-in focus-within:border-gray-300"
+        className="focus-within:border-primary/40 focus-within:ring-primary/10 flex w-full flex-col rounded-3xl border border-gray-200 bg-white px-2.5 shadow-[0_0_12px_rgba(0,0,0,0.06)] transition-colors ease-in focus-within:ring-2"
       >
         <ComposerAttachments />
 
@@ -457,7 +457,7 @@ const ComposerDropzone: FC<
       data-testid="composer-dropzone"
       disabled={!supportsImages}
       className={twMerge(
-        'group relative transition-colors data-[dragging]:ring-2 data-[dragging]:ring-slate-500',
+        'data-[dragging]:ring-primary/40 group relative transition-colors data-[dragging]:ring-2',
         roundedClass,
         className
       )}
@@ -475,7 +475,7 @@ const ComposerDropOverlay: FC<{ roundedClass: string }> = ({
   return (
     <div
       className={twMerge(
-        'pointer-events-none absolute inset-0 z-10 hidden items-center justify-center border-2 border-dashed border-slate-500 bg-white/80 px-4 text-center text-sm font-medium text-slate-900 shadow-inner backdrop-blur-sm group-data-[dragging]:flex',
+        'border-primary/60 text-primary pointer-events-none absolute inset-0 z-10 hidden items-center justify-center border-2 border-dashed bg-white/85 px-4 text-center text-sm font-medium shadow-inner backdrop-blur-sm group-data-[dragging]:flex',
         roundedClass
       )}
     >
@@ -579,12 +579,12 @@ const AttachmentTile: FC<{
         <img
           src={imageSrc}
           alt={label || t('chat.composer.attachmentPreviewAlt')}
-          className={twMerge('rounded-md border object-cover', sizeClasses)}
+          className={twMerge('rounded-lg border object-cover', sizeClasses)}
         />
       ) : (
         <div
           className={twMerge(
-            'text-muted-foreground bg-muted flex items-center justify-center rounded-md border px-2 text-[10px]',
+            'text-muted-foreground bg-muted flex items-center justify-center rounded-lg border px-2 text-[10px]',
             sizeClasses
           )}
         >
@@ -716,60 +716,50 @@ const ComposerAttachButton: FC<{
 
 const ComposerAction: FC = () => {
   const { embedded } = useChatUi()
-  const isEmpty = useComposer((s) => s.isEmpty)
-  const size = embedded ? '28px' : '36px'
+  // Shared shape/focus for both action buttons; the design-system `Button`'s
+  // focus ring is lost when swapping to a plain <button> (see Send note below),
+  // so restore an equivalent `focus-visible` ring here.
+  const baseAction = twMerge(
+    'focus-visible:ring-ring flex items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed',
+    embedded ? 'm-1' : 'm-2',
+    embedded ? 'size-7' : 'size-9'
+  )
 
   return (
     <>
       <ThreadPrimitive.If running={false}>
         <ComposerPrimitive.Send asChild>
-          <Button
-            basic
+          {/*
+           * Plain button, not the design-system `Button`: the `Send asChild`
+           * Slot merges a className *string*, which clobbers `Button`'s object
+           * `className.root`. A raw <button> takes the class string cleanly, so
+           * the `bg-primary` fill and `disabled:` (empty-composer) states apply.
+           */}
+          <button
+            type="button"
             data-cy="chat-send-button"
-            style={{
-              width: size,
-              height: size,
-              minWidth: size,
-              minHeight: size,
-              padding: '0',
-              margin: '5px',
-              color: isEmpty ? 'var(--muted-foreground)' : 'black',
-            }}
-            className={{
-              root: twMerge(
-                'flex items-center justify-center rounded-md transition-colors',
-                embedded ? 'm-1' : 'm-2',
-                !isEmpty && 'hover:bg-accent'
-              ),
-            }}
+            className={twMerge(
+              baseAction,
+              'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm',
+              'disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none'
+            )}
           >
             <SendHorizontalIcon className={embedded ? 'size-4' : 'size-5'} />
-          </Button>
+          </button>
         </ComposerPrimitive.Send>
       </ThreadPrimitive.If>
       <ThreadPrimitive.If running>
         <ComposerPrimitive.Cancel asChild>
-          <Button
-            basic
+          <button
+            type="button"
             data-cy="chat-cancel-button"
-            style={{
-              width: size,
-              height: size,
-              minWidth: size,
-              minHeight: size,
-              padding: '0',
-              margin: '5px',
-              color: 'black',
-            }}
-            className={{
-              root: twMerge(
-                'hover:bg-accent flex items-center justify-center rounded-md transition-colors',
-                embedded ? 'm-1' : 'm-2'
-              ),
-            }}
+            className={twMerge(
+              baseAction,
+              'text-foreground hover:bg-accent disabled:opacity-50'
+            )}
           >
             <SquareIcon className={embedded ? 'size-4' : 'size-5'} />
-          </Button>
+          </button>
         </ComposerPrimitive.Cancel>
       </ThreadPrimitive.If>
     </>
