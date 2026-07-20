@@ -24,12 +24,14 @@ console.log(
 
 async function shutdown(signal: NodeJS.Signals) {
   console.log(`Received ${signal}, shutting down Lecturer MCP server...`)
+  let exitCode = 0
   try {
     await server.stop()
   } catch (error) {
     console.error('Error during Lecturer MCP server shutdown:', error)
+    exitCode = 1
   } finally {
-    process.exit(0)
+    process.exit(exitCode)
   }
 }
 
