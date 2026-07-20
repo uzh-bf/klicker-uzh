@@ -2,7 +2,7 @@
 
 Date: 2026-07-20
 
-Status: approved in conversation, pending review of this written specification
+Status: approved in conversation on 2026-07-20
 
 Related implementation record: `project/2026-07-15-pr-5174-kb-poc-plan.md`
 
