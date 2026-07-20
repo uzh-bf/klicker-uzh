@@ -6,6 +6,7 @@ fragment ActivityEntryData on ActivityLogEntry {
   resolved
   resolvedAt
   username
+  isOwn
 
   options {
     field

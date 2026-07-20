@@ -5,14 +5,18 @@ query GetCockpitQuiz($id: String!) {
     isConfusionFeedbackEnabled
     isModerationEnabled
     isGamificationEnabled
+    isAssessmentEnabled
+
     namespace
     name
     displayName
+    pinCode
     status
     startedAt
     course {
       id
       displayName
+      language
     }
     blocks {
       id
@@ -52,6 +56,7 @@ query GetCockpitQuiz($id: String!) {
         content
         positiveReactions
         negativeReactions
+        createdAt
       }
     }
   }

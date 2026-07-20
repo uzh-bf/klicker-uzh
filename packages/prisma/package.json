@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/prisma",
-  "version": "3.3.0-alpha.78",
+  "version": "3.4.0-alpha.64",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -8,87 +8,75 @@
     "dist"
   ],
   "dependencies": {
-    "@prisma/client": "6.1.0"
+    "@prisma/adapter-pg": "6.16.1",
+    "@prisma/client": "6.16.1",
+    "pg": "8.16.3"
   },
   "devDependencies": {
-    "@klicker-uzh/transactional": "workspace:*",
-    "@pothos/plugin-prisma": "~4.2.1",
-    "@types/bcryptjs": "^2.4.6",
-    "@types/node": "^20.16.1",
-    "@types/turndown": "^5.0.5",
-    "@types/uuid": "^10.0.0",
-    "@types/xml2js": "^0.4.14",
-    "bcryptjs": "~2.4.3",
+    "@pothos/plugin-prisma": "~4.10.0",
+    "@rollup/plugin-node-resolve": "~15.3.1",
+    "@rollup/plugin-typescript": "~12.1.4",
+    "@types/pg": "^8.15.5",
     "cross-env": "~7.0.3",
-    "dotenv": "~16.4.5",
-    "dotenv-cli": "~7.4.2",
     "eslint": "~9.30.1",
-    "fs-extra": "~11.2.0",
     "npm-run-all": "~4.1.5",
-    "p-map": "~7.0.2",
-    "prisma": "~6.1.0",
-    "prisma-json-types-generator": "~3.2.2",
-    "tsx": "~4.19.1",
-    "turndown": "~7.2.0",
-    "typescript": "~5.6.3",
-    "uuid": "~10.0.0",
-    "xml2js": "~0.6.2"
-  },
-  "peerDependencies": {
-    "@klicker-uzh/types": "workspace:*",
-    "@klicker-uzh/util": "workspace:*"
+    "prisma": "~6.16.1",
+    "prisma-json-types-generator": "~3.6.0",
+    "rollup": "~4.34.9",
+    "rollup-plugin-copy": "~3.5.0",
+    "rollup-plugin-delete": "~2.1.0",
+    "tsx": "~4.19.4",
+    "typescript": "~6.0.3"
   },
   "scripts": {
-    "build": "run-s generate build:copy",
-    "build:copy": "node src/copy.cjs",
+    "build": "run-s --npm-path pnpm generate build:ts",
     "build:test": "pnpm run build",
-    "check": "tsc --noEmit",
-    "generate": "prisma generate --schema=src/prisma/schema",
-    "prisma:deploy": "doppler run --config dev -- pnpm run prisma:deploy:raw",
-    "prisma:deploy:prod": "doppler run --config prd -- pnpm run prisma:deploy:raw",
-    "prisma:deploy:qa": "doppler run --config stg -- pnpm run prisma:deploy:raw",
-    "prisma:deploy:raw": "prisma migrate deploy --schema=src/prisma/schema",
-    "prisma:diff": "doppler run --config dev --command 'prisma migrate diff --from-url \"$PROD_DATABASE_URL\" --to-migrations src/prisma/migrations --shadow-database-url \"postgres://klicker-prod:klicker@localhost:5432/shadow\"'",
-    "prisma:migrate": "doppler run --config dev -- prisma migrate dev --schema=src/prisma/schema",
-    "prisma:migrate:create": "doppler run --config dev -- prisma migrate dev --schema=src/prisma/schema --create-only",
-    "prisma:push": "doppler run --config dev -- pnpm run prisma:push:raw",
-    "prisma:push:qa": "doppler run --config stg -- pnpm run prisma:push:raw",
-    "prisma:push:raw": "prisma db push --schema=src/prisma/schema",
-    "prisma:reset": "doppler run --config dev -- pnpm run prisma:reset:raw",
-    "prisma:reset:qa": "doppler run --config stg -- pnpm run prisma:reset:raw",
-    "prisma:reset:raw": "prisma migrate reset --schema=src/prisma/schema --skip-seed",
-    "prisma:reset:seed": "doppler run --config dev -- prisma migrate reset --schema=src/prisma/schema",
-    "prisma:reset:yes": "doppler run --config dev -- pnpm run prisma:reset:raw -f",
+    "build:ts": "cross-env NODE_ENV=production rollup -c",
+    "check": "run-s --npm-path pnpm generate check:ts test:patch-namespace",
+    "check:ts": "tsc --noEmit -p tsconfig.check.json",
+    "generate": "prisma generate && node scripts/patchPrismaNamespace.mjs",
+    "prisma:deploy": "../../util/_run_with_infisical.sh --env dev pnpm run prisma:deploy:raw",
+    "prisma:deploy:prod": "../../util/_run_with_infisical.sh --env prd pnpm run prisma:deploy:raw",
+    "prisma:deploy:qa": "../../util/_run_with_infisical.sh --env stg pnpm run prisma:deploy:raw",
+    "prisma:deploy:raw": "prisma migrate deploy",
+    "prisma:diff": "../../util/_run_with_infisical.sh --env prd bash -c \"prisma migrate diff --from-url \\$DATABASE_URL --to-migrations src/prisma/migrations --shadow-database-url postgres://klicker-prod:klicker@localhost:5432/shadow\"",
+    "prisma:migrate": "../../util/_run_with_infisical.sh --env dev prisma migrate dev",
+    "prisma:migrate:create": "../../util/_run_with_infisical.sh --env dev prisma migrate dev --create-only",
+    "prisma:push": "../../util/_run_with_infisical.sh --env dev pnpm run prisma:push:raw",
+    "prisma:push:qa": "../../util/_run_with_infisical.sh --env stg pnpm run prisma:push:raw",
+    "prisma:push:raw": "prisma db push",
+    "prisma:reset": "../../util/_run_with_infisical.sh --env dev pnpm run prisma:reset:raw",
+    "prisma:reset:qa": "../../util/_run_with_infisical.sh --env stg pnpm run prisma:reset:raw",
+    "prisma:reset:raw": "prisma migrate reset --skip-seed",
+    "prisma:reset:seed": "../../util/_run_with_infisical.sh --env dev prisma migrate reset",
+    "prisma:reset:yes": "../../util/_run_with_infisical.sh --env dev pnpm run prisma:reset:raw -f",
     "prisma:resetCypress": "pnpm run prisma:reset:raw",
-    "prisma:resolve:prod": "doppler run --config prd -- prisma migrate resolve --schema=src/prisma/schema",
-    "prisma:setup": "run-s prisma:reset prisma:push seed",
-    "prisma:setup:raw": "run-s prisma:reset:raw prisma:push:raw seed:raw",
-    "prisma:setup:yes": "run-s prisma:reset:yes prisma:push seed",
-    "prisma:studio": "doppler run --config dev -- pnpm run prisma:studio:raw",
-    "prisma:studio:prod": "doppler run --config prd -- pnpm run prisma:studio:raw",
-    "prisma:studio:qa": "doppler run --config stg -- pnpm run prisma:studio:raw",
-    "prisma:studio:raw": "prisma studio --schema=src/prisma/schema",
-    "script": "ENV=development doppler run --config dev -- tsx",
-    "script:prod": "ENV=production doppler run --config prd -- tsx",
-    "script:qa": "ENV=development doppler run --config stg -- tsx",
-    "seed": "ENV=development doppler run --config dev -- run-s build seed:test",
-    "seed:achievements": "ENV=development doppler run --config dev tsx src/data/seedAchievements.ts",
-    "seed:flashcards": "ENV=development doppler run --config dev tsx src/data/seedFlashcards.ts",
-    "seed:prod:achievements": "ENV=production doppler run --config prd -- tsx src/data/seedAchievements.ts",
-    "seed:prod:flashcards": "ENV=development doppler run --config prd -- tsx src/data/seedFlashcards.ts",
-    "seed:prod:repetitionPool": "ENV=development doppler run --config prd -- tsx src/data/seedRepetitionPool.ts",
-    "seed:qa": "ENV=development doppler run --config stg -- tsx src/data/seedTEST.ts",
-    "seed:raw": "ENV=development run-s build seed:test",
-    "seed:test": "ENV=development tsx src/data/seedTEST.ts"
+    "prisma:resolve:prod": "../../util/_run_with_infisical.sh --env prd prisma migrate resolve",
+    "prisma:resolve:qa": "../../util/_run_with_infisical.sh --env stg prisma migrate resolve",
+    "prisma:setup": "run-s --npm-path pnpm prisma:reset prisma:push",
+    "prisma:setup:raw": "run-s --npm-path pnpm prisma:reset:raw prisma:push:raw",
+    "prisma:setup:yes": "run-s --npm-path pnpm prisma:reset:yes prisma:push",
+    "prisma:studio": "../../util/_run_with_infisical.sh --env dev pnpm run prisma:studio:raw",
+    "prisma:studio:prod": "../../util/_run_with_infisical.sh --env prd pnpm run prisma:studio:raw",
+    "prisma:studio:qa": "../../util/_run_with_infisical.sh --env stg pnpm run prisma:studio:raw",
+    "prisma:studio:raw": "prisma studio",
+    "test:patch-namespace": "node --test scripts/patchPrismaNamespace.test.mjs"
   },
   "engines": {
-    "node": "=20"
+    "node": "=24"
   },
   "volta": {
     "extends": "../../package.json"
   },
-  "prisma": {
-    "seed": "pnpm run seed"
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "default": "./dist/client.js"
+    }
   },
   "type": "module"
 }

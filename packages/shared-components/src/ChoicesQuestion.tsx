@@ -3,8 +3,6 @@ import type {
   ChoicesInstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ElementType } from '@klicker-uzh/graphql/dist/ops'
-import { useTranslations } from 'next-intl'
-import React from 'react'
 import MCKPRIMEvaluation from './evaluation/MCKPRIMEvaluation'
 import PracticeQuizPoints from './evaluation/PracticeQuizPoints'
 import QuestionExplanation from './evaluation/QuestionExplanation'
@@ -47,8 +45,6 @@ function ChoicesQuestion({
   noPoints,
   disabled,
 }: ChoicesQuestionProps) {
-  const t = useTranslations()
-
   return (
     <div className="flex flex-col gap-4 md:flex-row">
       <div className="flex-1">
@@ -66,7 +62,7 @@ function ChoicesQuestion({
             feedbacks={evaluation?.feedbacks}
             value={existingResponse ?? response}
             onChange={(newValue: ChoicesStudentResponseType) => {
-              const valid = validateKprimResponse(newValue)
+              const valid = validateKprimResponse({ response: newValue })
               setResponse(newValue, valid)
             }}
             elementIx={elementIx}
@@ -81,7 +77,7 @@ function ChoicesQuestion({
             feedbacks={evaluation?.feedbacks}
             value={existingResponse ?? response}
             onChange={(newValue: ChoicesStudentResponseType) => {
-              const valid = validateMcResponse(newValue)
+              const valid = validateMcResponse({ response: newValue })
               setResponse(newValue, valid)
             }}
             elementIx={elementIx}
@@ -96,7 +92,7 @@ function ChoicesQuestion({
             feedbacks={evaluation?.feedbacks}
             value={existingResponse ?? response}
             onChange={(newValue: ChoicesStudentResponseType) => {
-              const valid = validateScResponse(newValue)
+              const valid = validateScResponse({ response: newValue })
               setResponse(newValue, valid)
             }}
             elementIx={elementIx}

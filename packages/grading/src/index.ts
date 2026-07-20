@@ -1,8 +1,15 @@
+import type {
+  CaseStudyCaseResponse,
+  CaseStudyCaseSolution,
+  CaseStudyResponseObject,
+  ChoicesResponse,
+  NumericalSolutionRange,
+} from '@klicker-uzh/types'
 import { isDeepEqual, toLowerCase } from 'remeda'
 
 interface GradeQuestionChoicesArgs {
   responseCount: number
-  response: { ix: number; selected: boolean }[]
+  response: ChoicesResponse[]
   solution: number[]
 }
 
@@ -83,12 +90,7 @@ export function gradeQuestionKPRIM({
 
 interface GradeQuestionNumericalArgs {
   response: number
-  solutionRanges?:
-    | {
-        min?: number | null
-        max?: number | null
-      }[]
-    | null
+  solutionRanges?: NumericalSolutionRange[] | null
   exactSolutions?: number[] | null
 }
 
@@ -175,32 +177,13 @@ export function gradeQuestionSelection({
 }
 
 interface GradeQuestionCaseStudyArgs {
-  response:
-    | {
-        caseId: string
-        itemResponses: {
-          itemId: number
-          criterionResponses: { criterionId: string; response: number }[]
-        }[]
-      }[]
-    | CaseStudyResponseObject
+  response: CaseStudyCaseResponse[] | CaseStudyResponseObject
   solutions?:
     | {
         caseId: string
-        itemSolutions: {
-          itemId: number
-          criteriaSolutions: { criterionId: string; min: number; max: number }[]
-        }[]
+        itemSolutions: CaseStudyCaseSolution[]
       }[]
     | null
-}
-
-type CaseStudyResponseObject = {
-  [caseId: string]: {
-    [itemId: number]: {
-      [criterionId: string]: number // value = response
-    }
-  }
 }
 
 export function gradeQuestionCaseStudy({
@@ -272,9 +255,73 @@ export function gradeQuestionCaseStudy({
     : totalCorrectCases / totalAssessmentCases
 }
 
-// ! Function to compute awarded points for instances in synchronous activities
+// ! Function to compute the awarded correctness and bonus points in asynchronous activities
+interface ComputeAwardedCorrectnessPointsArgs {
+  firstResponseReceivedAt?: string | null
+  responseTimestamp: number
+  maxBonus: number
+  timeToZeroBonus?: number
+  getsMaxPoints?: boolean
+  defaultCorrectPoints?: number
+  pointsPercentage?: number | null
+  pointsMultiplier?: number | string | null
+}
+export function computeAwardedCorrectnessPoints({
+  firstResponseReceivedAt,
+  responseTimestamp,
+  maxBonus,
+  timeToZeroBonus,
+  getsMaxPoints,
+  defaultCorrectPoints,
+  pointsPercentage,
+  pointsMultiplier,
+}: ComputeAwardedCorrectnessPointsArgs): {
+  correctnessPoints: number
+  bonusPoints: number
+} {
+  const slope = Math.max(maxBonus, 0) / Math.max(timeToZeroBonus ?? 20, 1)
+
+  // time between the first response and the current response (in seconds)
+  const responseTiming = Math.max(
+    (responseTimestamp - Number(firstResponseReceivedAt ?? responseTimestamp)) /
+      1000,
+    0
+  )
+
+  // intialize the correctness points and bonus points to 0
+  let correctnessPoints = 0
+  let bonusPoints = 0
+
+  // if the student gets the question right, they get the full points or partial points depending on the question type
+  // the students get at most maxBonus points and the bonus declines linearly until it reaches 0 after 40 seconds
+  if (pointsPercentage !== null && typeof pointsPercentage !== 'undefined') {
+    correctnessPoints +=
+      pointsPercentage * Math.max(defaultCorrectPoints ?? 0, 0)
+    bonusPoints += Math.max(
+      pointsPercentage * (maxBonus - slope * responseTiming),
+      0
+    )
+  } else if (getsMaxPoints) {
+    correctnessPoints += Math.max(defaultCorrectPoints ?? 0, 0)
+    bonusPoints += Math.max(maxBonus - slope * responseTiming, 0)
+  }
+
+  // if a multiplier is defined, apply it to both the correctness points and bonus points
+  if (typeof pointsMultiplier !== 'undefined' && pointsMultiplier !== null) {
+    const numericMultiplier =
+      Number.isNaN(Number(pointsMultiplier)) || Number(pointsMultiplier) < 1
+        ? 1
+        : Number(pointsMultiplier)
+    correctnessPoints *= numericMultiplier
+    bonusPoints *= numericMultiplier
+  }
+
+  return { correctnessPoints, bonusPoints }
+}
+
+// ! Function to compute awarded points for instances in synchronous activities (relying on the previous function)
 interface ComputeAwardedPointsArgs {
-  firstResponseReceivedAt: string | null
+  firstResponseReceivedAt?: string | null
   responseTimestamp: number
   maxBonus: number
   timeToZeroBonus?: number
@@ -284,6 +331,7 @@ interface ComputeAwardedPointsArgs {
   pointsPercentage?: number | null
   basePoints: boolean
   pointsMultiplier?: number | string | null
+  roundedResult: boolean
 }
 export function computeAwardedPoints({
   firstResponseReceivedAt,
@@ -296,38 +344,31 @@ export function computeAwardedPoints({
   pointsPercentage,
   basePoints, // flag if based points should be awarded
   pointsMultiplier,
+  roundedResult = false,
 }: ComputeAwardedPointsArgs): number {
-  const slope = maxBonus / (timeToZeroBonus ?? 20)
-
-  // default number of points each student gets independent of the correctness of the answer
+  // initialize the number of awarded points
   let awardedPoints = 0
 
-  // time between the first response and the current response
-  let responseTiming =
-    (responseTimestamp - Number(firstResponseReceivedAt ?? responseTimestamp)) /
-    1000
+  // compute the correctness and bonus points awarded to participants
+  const { correctnessPoints, bonusPoints } = computeAwardedCorrectnessPoints({
+    firstResponseReceivedAt,
+    responseTimestamp,
+    maxBonus,
+    timeToZeroBonus,
+    getsMaxPoints,
+    defaultCorrectPoints,
+    pointsPercentage,
+    pointsMultiplier,
+  })
 
-  // if the student gets the question right, they get the full points or partial points depending on the question type
-  // the students get at most maxBonus points and the bonus declines linearly until it reaches 0 after 40 seconds
-  if (pointsPercentage !== null && typeof pointsPercentage !== 'undefined') {
-    const additionalPoints =
-      pointsPercentage * (defaultCorrectPoints ?? 0) +
-      Math.max(pointsPercentage * (maxBonus - slope * responseTiming), 0)
-    awardedPoints += additionalPoints
-  } else if (getsMaxPoints) {
-    const additionalPoints =
-      (defaultCorrectPoints ?? 0) +
-      Math.max(maxBonus - slope * responseTiming, 0)
-    awardedPoints += additionalPoints
-  }
+  // add the points awarded for correct answers
+  awardedPoints += correctnessPoints + bonusPoints
 
-  if (typeof pointsMultiplier !== 'undefined') {
-    awardedPoints *= Number(pointsMultiplier)
-  }
+  // depending on the base points setting, compute the final awarded points
+  awardedPoints += basePoints ? Math.max(defaultPoints ?? 0, 0) : 0
 
-  awardedPoints += basePoints ? (defaultPoints ?? 0) : 0
-
-  return Math.round(awardedPoints)
+  // if desired, round the result to the nearest integer
+  return roundedResult ? Math.round(awardedPoints) : awardedPoints
 }
 
 // ! Function to compute awarded points for instances in asynchronous activities

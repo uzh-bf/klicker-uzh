@@ -6,20 +6,6 @@ const currentYear = new Date().getFullYear()
 
 // ? For consistency, all creation / editing / duplication workflows are run before checking the student views
 describe('Different practice quiz workflows', function () {
-  before(() => {
-    cy.seed()
-
-    // set browser language to english (independent of local machine setting
-    Cypress.automation('remote:debugger:protocol', {
-      command: 'Emulation.setLocaleOverride',
-      params: { locale: 'en' },
-    })
-  })
-
-  after(() => {
-    cy.cleanup()
-  })
-
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('questions.json').then((questionData) => {
       this.data = questionData
@@ -29,12 +15,12 @@ describe('Different practice quiz workflows', function () {
     })
   })
 
-  // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  // Fail-fast handled globally in support/e2e.ts
+
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
+  })
 
   // ! Part 0: Preparation - Question Creation
   // #region
@@ -170,7 +156,7 @@ describe('Different practice quiz workflows', function () {
       .type(this.data.running.displayName)
     cy.get('[data-cy="insert-practice-quiz-description"]')
       .realClick()
-      .type(this.data.running.description)
+      .realType(this.data.running.description)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
@@ -228,14 +214,9 @@ describe('Different practice quiz workflows', function () {
     })
 
     // SC question without sample solution should be rejected
-    const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="element-item-${this.data.SC.title}"]`)
-      .contains(this.data.SC.title)
-      .trigger('dragstart', {
-        dataTransfer,
-      })
-    cy.get('[data-cy="drop-elements-stack-1"]').trigger('drop', {
-      dataTransfer,
+    cy.dragAndDropElement({
+      element: this.data.SC.title,
+      target: 'drop-elements-stack-1',
     })
     cy.get('[data-cy="element-1-stack-1"]').contains(this.data.SC.title)
     cy.get('[data-cy="next-or-submit"]').should('be.disabled')
@@ -293,7 +274,7 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="insert-practice-quiz-description"]')
       .realClick()
       .clear()
-      .type(this.data.running.descriptionNew)
+      .realType(this.data.running.descriptionNew)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 3: Settings
@@ -346,14 +327,9 @@ describe('Different practice quiz workflows', function () {
     )
 
     cy.get('[data-cy="drop-elements-add-stack"]').click()
-    const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="element-item-${this.data.SCML.title}"]`)
-      .contains(this.data.SCML.title)
-      .trigger('dragstart', {
-        dataTransfer,
-      })
-    cy.get('[data-cy="drop-elements-stack-9"]').trigger('drop', {
-      dataTransfer,
+    cy.dragAndDropElement({
+      element: this.data.SCML.title,
+      target: 'drop-elements-stack-9',
     })
     cy.get('[data-cy="element-0-stack-9"]').contains(
       this.data.SCML.title.substring(0, 20)
@@ -1060,37 +1036,40 @@ describe('Different practice quiz workflows', function () {
       `[data-cy="publish-practice-quiz-${this.data.scheduled.name}"]`
     ).click()
 
+    const courseStartMonthDelta = -12 - new Date().getMonth()
+
     // check that if publication date is before course start date, submission is disabled
     cy.get('[data-cy="schedule-practice-quiz-publication"]').should(
       'be.disabled'
     )
-    cy.setDatetime(
-      'practice-quiz-available-from',
-      'publish-immediately-header',
-      {
-        monthDelta: -36,
-        day: 15,
-        hour: 12,
+    cy.setDatetime({
+      cyString: 'practice-quiz-available-from',
+      deselectorString: 'publish-immediately-header',
+      datetime: {
+        monthDelta: courseStartMonthDelta,
+        day: 1,
+        hour: 0,
         minute: 0,
-        validation: getDatetimeValidationString(-36, '15') + ', 12:00',
-      }
-    ) // select publication date 3 years in the past -> course start date is beginning of the previous year
+        validation:
+          getDatetimeValidationString(courseStartMonthDelta, '01') + ', 00:00',
+      },
+    }) // select publication date equal to course start date (must be strictly after)
     cy.get('[data-cy="schedule-practice-quiz-publication"]').should(
       'be.disabled'
     )
 
     // set future publication date
-    cy.setDatetime(
-      'practice-quiz-available-from',
-      'publish-immediately-header',
-      {
-        monthDelta: 40,
+    cy.setDatetime({
+      cyString: 'practice-quiz-available-from',
+      deselectorString: 'publish-immediately-header',
+      datetime: {
+        monthDelta: 4 - courseStartMonthDelta,
         day: 15,
         hour: 12,
         minute: 0,
         validation: getDatetimeValidationString(4, '15') + ', 12:00',
-      }
-    ) // select publication date 4 months in the future
+      },
+    }) // select publication date 4 months in the future
     cy.get('[data-cy="schedule-practice-quiz-publication"]').click()
     cy.get(
       `[data-cy="activity-PRACTICE_QUIZ-${this.data.scheduled.name}"]`
@@ -1158,17 +1137,17 @@ describe('Different practice quiz workflows', function () {
     cy.get(
       `[data-cy="publish-practice-quiz-${this.data.scheduled.name}"]`
     ).click()
-    cy.setDatetime(
-      'practice-quiz-available-from',
-      'publish-immediately-header',
-      {
+    cy.setDatetime({
+      cyString: 'practice-quiz-available-from',
+      deselectorString: 'publish-immediately-header',
+      datetime: {
         monthDelta: -1,
         day: 15,
         hour: 12,
         minute: 0,
         validation: getDatetimeValidationString(-1, '15') + ', 12:00',
-      }
-    ) // set last month as a publication date (within the course runtime, but past)
+      },
+    }) // set last month as a publication date (within the course runtime, but past)
     cy.get('[data-cy="schedule-practice-quiz-publication"]').click()
     cy.get(
       `[data-cy="activity-PRACTICE_QUIZ-${this.data.scheduled.name}"]`
@@ -1244,7 +1223,7 @@ describe('Different practice quiz workflows', function () {
     cy.loginLecturer()
 
     // modify numerical question
-    cy.get(`[data-cy="edit-element-${this.data.NRML2.title}"]`).click()
+    cy.editElement({ element: this.data.NRML2.title })
     cy.get('[data-cy="instance-update-switch"]').click() // deactivate instance updates (on by default)
     cy.get('[data-cy="insert-question-title"]')
       .clear()
@@ -1252,8 +1231,9 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .clear()
-      .type(this.data.manipulation.newNRContent)
+      .realType(this.data.manipulation.newNRContent)
     cy.get('[data-cy="save-new-question"]').click()
+    cy.wait(1000) // wait for the question to be saved and the modal to be closed
 
     // edit and save the unmodified practice quiz
     cy.get('[data-cy="courses"]').click()
@@ -1327,28 +1307,18 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="select-course"]').should('exist')
     cy.get('[data-cy="next-or-submit"]').click()
 
-    const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="element-item-${this.data.manipulation.newNRTitle}"]`)
-      .contains(this.data.manipulation.newNRTitle)
-      .trigger('dragstart', {
-        dataTransfer,
-      })
-    cy.get(`[data-cy="drop-elements-stack-0"]`).trigger('drop', {
-      dataTransfer,
+    cy.dragAndDropElement({
+      element: this.data.manipulation.newNRTitle,
+      target: 'drop-elements-stack-0',
     })
     cy.get(`[data-cy="element-1-stack-0"]`).contains(
       this.data.manipulation.newNRTitle.substring(0, 20)
     )
 
-    const dataTransfer2 = new DataTransfer()
     cy.get(`[data-cy="drop-elements-add-stack"]`).click()
-    cy.get(`[data-cy="element-item-${this.data.FTML2.title}"]`)
-      .contains(this.data.FTML2.title)
-      .trigger('dragstart', {
-        dataTransfer2,
-      })
-    cy.get(`[data-cy="drop-elements-stack-1"]`).trigger('drop', {
-      dataTransfer2,
+    cy.dragAndDropElement({
+      element: this.data.FTML2.title,
+      target: 'drop-elements-stack-1',
     })
     cy.get(`[data-cy="element-0-stack-1"]`).contains(
       this.data.FTML2.title.substring(0, 20)
@@ -1467,7 +1437,6 @@ describe('Different practice quiz workflows', function () {
 
     // stack 2
     cy.findByText(this.data.NRML2.content).should('exist')
-    cy.findByText(this.data.manipulation.newNRTitle).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="input-numerical-0"]').clear().type('10')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
@@ -1492,7 +1461,6 @@ describe('Different practice quiz workflows', function () {
 
     // stack 2
     cy.findByText(this.data.NRML2.content).should('exist')
-    cy.findByText(this.data.manipulation.newNRTitle).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="input-numerical-0"]').clear().type('10')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
@@ -1544,7 +1512,6 @@ describe('Different practice quiz workflows', function () {
     data: any
   ) {
     cy.get(`[data-cy="activity-name-${activityName}"]`).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(
       data.SCML.title.substring(0, 20)
     )
@@ -1600,7 +1567,7 @@ describe('Different practice quiz workflows', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz1, data)
 
     // for a scheduled practice quiz the following options should be available: access link, open preview, lti link, duplicate, share, unpublish, delete
@@ -1627,7 +1594,7 @@ describe('Different practice quiz workflows', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz2, data)
 
     // for a running practice quiz the following options should be available: evaluation, access link, open preview, lti link, duplicate, share, delete
@@ -1654,7 +1621,7 @@ describe('Different practice quiz workflows', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz3}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz3, data)
   }
 
@@ -1674,8 +1641,8 @@ describe('Different practice quiz workflows', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -1701,7 +1668,7 @@ describe('Different practice quiz workflows', function () {
     cy.get(`[data-cy="remove-practice-quiz-${data.sharing.quiz1}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz1, data)
 
@@ -1719,7 +1686,7 @@ describe('Different practice quiz workflows', function () {
     cy.get(`[data-cy="remove-practice-quiz-${data.sharing.quiz2}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz2, data)
 
@@ -1741,7 +1708,7 @@ describe('Different practice quiz workflows', function () {
       groupPermission ? 'not.exist' : 'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz3}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz3, data)
   }
 
@@ -1761,8 +1728,8 @@ describe('Different practice quiz workflows', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -1792,7 +1759,7 @@ describe('Different practice quiz workflows', function () {
       groupPermission ? 'not.exist' : 'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz1, data)
 
     // for a scheduled practice quiz the following options should be available: access link, open preview, lti link, unpublish, remove
@@ -1813,7 +1780,7 @@ describe('Different practice quiz workflows', function () {
       groupPermission ? 'not.exist' : 'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz2, data)
 
     // for a running practice quiz the following options should be available: evaluation, access link, open preview, lti link, remove
@@ -1834,7 +1801,7 @@ describe('Different practice quiz workflows', function () {
       groupPermission ? 'not.exist' : 'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz3}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz3, data)
   }
 
@@ -1854,8 +1821,8 @@ describe('Different practice quiz workflows', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -1888,7 +1855,7 @@ describe('Different practice quiz workflows', function () {
       groupPermission ? 'not.exist' : 'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz1, data)
 
     // for a scheduled practice quiz the following options should be available: access link, open preview, lti link, unpublish, remove
@@ -1909,7 +1876,7 @@ describe('Different practice quiz workflows', function () {
       groupPermission ? 'not.exist' : 'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz2, data)
 
     // for a running practice quiz the following options should be available: evaluation, access link, open preview, lti link, remove
@@ -1930,7 +1897,7 @@ describe('Different practice quiz workflows', function () {
       groupPermission ? 'not.exist' : 'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz3}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz3, data)
   }
 
@@ -1950,8 +1917,8 @@ describe('Different practice quiz workflows', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -1993,7 +1960,7 @@ describe('Different practice quiz workflows', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz1, data)
 
     // for a scheduled practice quiz the following options should be available: access link, open preview, lti link, duplicate, share, unpublish, remove, delete
@@ -2023,7 +1990,7 @@ describe('Different practice quiz workflows', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz2, data)
 
     // for a running practice quiz the following options should be available: evaluation, access link, open preview, lti link, duplicate, share, remove, delete
@@ -2053,7 +2020,7 @@ describe('Different practice quiz workflows', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz3}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz3, data)
   }
 
@@ -2106,8 +2073,8 @@ describe('Different practice quiz workflows', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((element) => {
-      cy.get(`[data-cy="element-item-${element}"]`).should('not.exist')
+    ]).each((element: string) => {
+      cy.validateElement({ element, shouldExist: false })
     })
 
     // previously shared practice quizzes should no longer be visible
@@ -2699,38 +2666,49 @@ describe('Different practice quiz workflows', function () {
     cy.get(`[data-cy="activity-name-${this.data.details.name}"]`).click()
     cy.assertAsynchronousActivityPoints({ totalPoints: 100 })
 
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
-
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').contains('20 P.')
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').contains('80 P.')
+    cy.get('[data-cy="activity-details-stack-header-0"]').contains('20 P.')
+    cy.get('[data-cy="activity-details-stack-header-1"]').contains('80 P.')
 
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.FC.title)
     cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.CT.title)
 
-    cy.get('[data-cy="stack-0-instance-0"]').click()
-    cy.assertAsynchronousInstancePoints({ totalPoints: 20 })
-
-    cy.get('[data-cy="stack-0-instance-1"]').click()
-    cy.assertAsynchronousInstancePoints({ totalPoints: 0 })
-
-    cy.get('[data-cy="stack-0-instance-2"]').click()
-    cy.assertAsynchronousInstancePoints({ totalPoints: 0 })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 20,
+      stackIx: 0,
+      instanceIx: 0,
+    })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 0,
+      stackIx: 0,
+      instanceIx: 1,
+    })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 0,
+      stackIx: 0,
+      instanceIx: 2,
+    })
 
     cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-1-instance-1"]').contains(this.data.MCML.title)
     cy.get('[data-cy="stack-1-instance-2"]').contains(this.data.NRML.title)
     cy.get('[data-cy="stack-1-instance-3"]').contains(this.data.FTML.title)
 
-    cy.get('[data-cy="stack-1-instance-0"]').click()
-    cy.assertAsynchronousInstancePoints({ totalPoints: 20 })
-
-    cy.get('[data-cy="stack-1-instance-1"]').click()
-    cy.assertAsynchronousInstancePoints({ totalPoints: 20 })
-
-    cy.get('[data-cy="stack-1-instance-2"]').click()
-    cy.assertAsynchronousInstancePoints({ totalPoints: 20 })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 20,
+      stackIx: 1,
+      instanceIx: 0,
+    })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 20,
+      stackIx: 1,
+      instanceIx: 1,
+    })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 20,
+      stackIx: 1,
+      instanceIx: 2,
+    })
 
     cy.get('[data-cy="close-activity-details-modal"]').click()
   })
@@ -2769,13 +2747,11 @@ describe('Different practice quiz workflows', function () {
     ).click()
     cy.assertNoActivityPoints()
 
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').should(
+    cy.get('[data-cy="activity-details-stack-header-0"]').should(
       'not.contain',
       '20 P.'
     )
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').should(
+    cy.get('[data-cy="activity-details-stack-header-1"]').should(
       'not.contain',
       '80 P.'
     )
@@ -2784,28 +2760,18 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.FC.title)
     cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.CT.title)
 
-    cy.get('[data-cy="stack-0-instance-0"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-1"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-2"]').click()
-    cy.assertNoInstancePoints()
+    cy.assertNoInstancePoints({ stackIx: 0, instanceIx: 0 })
+    cy.assertNoInstancePoints({ stackIx: 0, instanceIx: 1 })
+    cy.assertNoInstancePoints({ stackIx: 0, instanceIx: 2 })
 
     cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-1-instance-1"]').contains(this.data.MCML.title)
     cy.get('[data-cy="stack-1-instance-2"]').contains(this.data.NRML.title)
     cy.get('[data-cy="stack-1-instance-3"]').contains(this.data.FTML.title)
 
-    cy.get('[data-cy="stack-1-instance-0"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-1"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-2"]').click()
-    cy.assertNoInstancePoints()
+    cy.assertNoInstancePoints({ stackIx: 1, instanceIx: 0 })
+    cy.assertNoInstancePoints({ stackIx: 1, instanceIx: 1 })
+    cy.assertNoInstancePoints({ stackIx: 1, instanceIx: 2 })
 
     cy.get('[data-cy="close-activity-details-modal"]').click()
   })

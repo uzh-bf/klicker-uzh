@@ -3,7 +3,7 @@ import type { TextFieldClassName } from '@uzh-bf/design-system'
 import { FormikTextField } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
-import React, { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface DebouncedUsernameFieldProps {
@@ -85,7 +85,7 @@ function DebouncedUsernameField({
             ? 'py-0! animate-spin bg-transparent'
             : !valid || typeof meta.error !== 'undefined'
               ? 'bg-red-50 text-red-600'
-              : 'text-green-600',
+              : 'text-green-700',
           className?.icon
         ),
         input: twMerge(

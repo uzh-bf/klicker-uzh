@@ -21,6 +21,7 @@ import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import nookies from 'nookies'
 import Layout from '../../../../../components/Layout'
 import PreviewMessage from '../../../../../components/common/PreviewMessage'
 import MicroLearningSubscriber from '../../../../../components/microLearning/MicroLearningSubscriber'
@@ -36,6 +37,10 @@ function MicrolearningIntroduction({
 }) {
   const t = useTranslations()
   const router = useRouter()
+
+  const pageInFrame =
+    global?.window &&
+    global?.window?.location !== global?.window?.parent.location
 
   useParticipantToken({
     participantToken,
@@ -102,29 +107,31 @@ function MicrolearningIntroduction({
             />
           ) : (
             <UserNotification type="warning" className={{ root: 'mb-4' }}>
-              {t.rich('pwa.general.userNotLoggedIn', {
-                login: (text) => (
-                  <Button
-                    basic
-                    className={{
-                      root: 'hover:text-primary-100 p-0! font-bold hover:bg-transparent',
-                    }}
-                    onClick={() =>
-                      router.push(
-                        `/login?expired=true&redirect_to=${
-                          encodeURIComponent(
-                            window?.location?.pathname +
-                              (window?.location?.search ?? '')
-                          ) ?? '/'
-                        }`
-                      )
-                    }
-                    data={{ cy: 'login-to-start-microlearning' }}
-                  >
-                    <Button.Label>{text}</Button.Label>
-                  </Button>
-                ),
-              })}
+              {pageInFrame
+                ? t('pwa.general.userNotLoggedInFrame')
+                : t.rich('pwa.general.userNotLoggedIn', {
+                    login: (text) => (
+                      <Button
+                        basic
+                        className={{
+                          root: 'hover:text-primary-100 p-0! font-bold hover:bg-transparent',
+                        }}
+                        onClick={() =>
+                          router.push(
+                            `/login?expired=true&redirect_to=${
+                              encodeURIComponent(
+                                window?.location?.pathname +
+                                  (window?.location?.search ?? '')
+                              ) ?? '/'
+                            }`
+                          )
+                        }
+                        data={{ cy: 'login-to-start-microlearning' }}
+                      >
+                        <Button.Label>{text}</Button.Label>
+                      </Button>
+                    ),
+                  })}
             </UserNotification>
           ))}
         {microLearningPast ? (
@@ -203,46 +210,68 @@ function MicrolearningIntroduction({
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
-  if (
-    typeof ctx.params?.courseId !== 'string' ||
-    typeof ctx.params?.id !== 'string'
-  ) {
+  try {
+    if (
+      typeof ctx.params?.courseId !== 'string' ||
+      typeof ctx.params?.id !== 'string'
+    ) {
+      return {
+        redirect: {
+          destination: `${ctx.locale ? `/${ctx.locale}` : ''}/404`,
+          permanent: false,
+        },
+      }
+    }
+
+    const apolloClient = initializeApollo()
+
+    const { participantToken, cookiesAvailable } = await getParticipantToken({
+      apolloClient,
+      courseId: ctx.params.courseId,
+      ctx,
+    })
+
+    if (participantToken) {
+      return {
+        props: {
+          participantToken,
+          cookiesAvailable,
+          id: ctx.params.id,
+          messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+            .default,
+        },
+      }
+    }
+
+    return addApolloState(apolloClient, {
+      props: {
+        id: ctx.params.id,
+        courseId: ctx.params.courseId,
+        messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+          .default,
+      },
+    })
+  } catch (error) {
+    console.error('Error in getServerSideProps on microlearning:', error)
+
+    // remove the lti-token, if it is defined
+    try {
+      nookies.destroy(ctx, 'lti-token', {
+        domain: process.env.COOKIE_DOMAIN,
+        path: '/',
+      })
+    } catch (nookiesError) {
+      console.error(nookiesError)
+    }
+
+    // redirect to lti error page with redirect back to this page
     return {
       redirect: {
-        destination: '/404',
+        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/serverError?redirectTo=${encodeURIComponent(`/${ctx.locale}/course/${ctx.params?.courseId}/microLearnings/${ctx.params?.id}`)}`,
         permanent: false,
       },
     }
   }
-
-  const apolloClient = initializeApollo()
-
-  const { participantToken, cookiesAvailable } = await getParticipantToken({
-    apolloClient,
-    courseId: ctx.params.courseId,
-    ctx,
-  })
-
-  if (participantToken) {
-    return {
-      props: {
-        participantToken,
-        cookiesAvailable,
-        id: ctx.params.id,
-        messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
-          .default,
-      },
-    }
-  }
-
-  return addApolloState(apolloClient, {
-    props: {
-      id: ctx.params.id,
-      courseId: ctx.params.courseId,
-      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
-        .default,
-    },
-  })
 }
 
 export default MicrolearningIntroduction

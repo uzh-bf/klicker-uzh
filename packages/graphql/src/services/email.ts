@@ -1,5 +1,5 @@
+import * as DB from '@klicker-uzh/prisma/client'
 import nodemailer from 'nodemailer'
-import type { Context } from 'src/lib/context.js'
 
 type AVAILABLE_EMAIL_TEMPLATES =
   | 'MagicLinkRequested'
@@ -51,12 +51,12 @@ export async function hydrateTemplate(
     templateName: AVAILABLE_EMAIL_TEMPLATES
     variables?: Record<string, string>
   },
-  ctx: Context
+  prisma: DB.PrismaClient
 ) {
   let template
 
   try {
-    template = await ctx.prisma.emailTemplate.findUnique({
+    template = await prisma.emailTemplate.findUnique({
       where: { name: templateName },
     })
 

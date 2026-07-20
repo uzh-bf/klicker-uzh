@@ -1,21 +1,39 @@
+import { fileURLToPath } from 'node:url'
+
+const monorepoRoot = fileURLToPath(new URL('../..', import.meta.url))
+
 /** @type {import('next').NextConfig} */
 function getNextBaseConfig({
   BLOB_STORAGE_ACCOUNT_URL,
+  includeI18n = true,
   NODE_ENV,
   NEXT_PUBLIC_ENV,
 }) {
-  const isStaging = process.env.NEXT_PUBLIC_ENV === 'staging'
-  const isProduction = process.env.NEXT_PUBLIC_ENV === 'production'
+  const isStaging = NEXT_PUBLIC_ENV === 'staging'
+  const allowLocalImageOptimization =
+    NODE_ENV === 'development' || NODE_ENV === 'test'
+  const blobStorageHostname = getHostname(BLOB_STORAGE_ACCOUNT_URL)
 
   return {
-    // not supported with turbopack -> do we need it?
-    // experimental: {
-    //   esmExternals: 'loose',
-    // },
+    allowedDevOrigins:
+      NODE_ENV === 'development' ? ['**.klicker.localhost'] : undefined,
+    outputFileTracingRoot: monorepoRoot,
     productionBrowserSourceMaps: isStaging,
+    turbopack: {
+      root: monorepoRoot,
+    },
     webpack: (config, { isServer }) => {
       if (!isServer && isStaging) {
         config.devtool = 'cheap-module-source-map'
+      }
+      // Configure webpack to resolve conditional exports correctly
+      if (isServer) {
+        // For server builds: prioritize 'node' condition for packages like file-type
+        // that have Node.js-specific exports (e.g., PayloadCMS's file-type dependency)
+        config.resolve.conditionNames = ['node', 'development', '...']
+      } else {
+        // For client builds: use standard conditions plus 'development' for local packages
+        config.resolve.conditionNames = ['development', '...']
       }
       return config
     },
@@ -26,31 +44,33 @@ function getNextBaseConfig({
       '@klicker-uzh/shared-components',
       '@klicker-uzh/i18n',
       '@klicker-uzh/util',
+      '@klicker-uzh/prisma',
+      '@uzh-bf/design-system',
     ],
-    eslint: {
-      ignoreDuringBuilds: true,
-    },
-    typescript: {
-      ignoreBuildErrors: true,
-    },
-    i18n: {
-      locales: ['en', 'de'],
-      defaultLocale: 'en',
-    },
+    ...(includeI18n
+      ? {
+          i18n: {
+            locales: ['en', 'de'],
+            defaultLocale: 'en',
+          },
+        }
+      : {}),
     modularizeImports: {
       lodash: {
         transform: 'lodash/{{member}}',
       },
     },
     images: {
-      domains: [
-        '127.0.0.1',
-        'tc-klicker-prod.s3.amazonaws.com',
-        'klickeruzhdevimages.blob.core.windows.net',
-        'klickeruzhprodimages.blob.core.windows.net',
-        BLOB_STORAGE_ACCOUNT_URL ?? null,
-      ].filter(Boolean),
+      qualities: [75],
+      dangerouslyAllowLocalIP: allowLocalImageOptimization,
       remotePatterns: [
+        allowLocalImageOptimization
+          ? {
+              protocol: 'http',
+              hostname: '127.0.0.1',
+              pathname: '/**',
+            }
+          : null,
         {
           protocol: 'https',
           hostname: 'tc-klicker-prod.s3.amazonaws.com',
@@ -69,16 +89,26 @@ function getNextBaseConfig({
           port: '443',
           pathname: '/**',
         },
-        BLOB_STORAGE_ACCOUNT_URL
+        blobStorageHostname
           ? {
               protocol: 'https',
-              hostname: BLOB_STORAGE_ACCOUNT_URL,
+              hostname: blobStorageHostname,
               port: '443',
               pathname: '/**',
             }
           : null,
       ].filter(Boolean),
     },
+  }
+}
+
+function getHostname(value) {
+  if (!value) return null
+
+  try {
+    return new URL(value).hostname
+  } catch {
+    return value
   }
 }
 
@@ -91,7 +121,4 @@ function getNextPWAConfig({ NODE_ENV }) {
   }
 }
 
-module.exports = {
-  getNextBaseConfig,
-  getNextPWAConfig,
-}
+export { getNextBaseConfig, getNextPWAConfig }

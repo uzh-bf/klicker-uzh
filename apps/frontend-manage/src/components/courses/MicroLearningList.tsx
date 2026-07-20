@@ -1,7 +1,11 @@
 import { faCalendar } from '@fortawesome/free-regular-svg-icons'
 import { faLink } from '@fortawesome/free-solid-svg-icons'
-import { ActivityInfo, ActivityType } from '@klicker-uzh/graphql/dist/ops'
-import { Button, UserNotification } from '@uzh-bf/design-system'
+import {
+  ActivityInfo,
+  ActivityType,
+  LocaleType,
+} from '@klicker-uzh/graphql/dist/ops'
+import { Button, toast, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import ActivityList from '../activities/overview/ActivityList'
 import ActivityListLegend from '../activities/overview/ActivityListLegend'
@@ -9,11 +13,13 @@ import QRCodePopover from './QRCodePopover'
 
 function MicroLearningList({
   courseId,
+  courseLanguage,
   microLearnings,
   openCalendarView,
   highlightedActivity,
 }: {
   courseId: string
+  courseLanguage: LocaleType
   microLearnings: ActivityInfo[]
   openCalendarView: () => void
   highlightedActivity: string | null
@@ -37,18 +43,25 @@ function MicroLearningList({
           <QRCodePopover
             triggerStyle="basic"
             triggerText={t('manage.general.qrCode')}
-            relHref={`/course/${courseId}/microLearnings/overview`}
+            relHref={`/${courseLanguage}/course/${courseId}/microLearnings/overview`}
             data={{ cy: `qr-link-practice-quiz-list` }}
           />
           <Button
             basic
             onClick={async () => {
               try {
-                const link = `${process.env.NEXT_PUBLIC_LTI_URL}?redirectTo=${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/microLearnings/overview`
-                console.log(link)
+                const link = `${process.env.NEXT_PUBLIC_LTI_URL}?redirectTo=${process.env.NEXT_PUBLIC_PWA_URL}/${courseLanguage}/course/${courseId}/microLearnings/overview`
                 await navigator.clipboard.writeText(link)
+                toast({
+                  type: 'success',
+                  message: t('manage.course.linkLTICopied'),
+                })
               } catch (e) {
-                console.log(e)
+                console.error(e)
+                toast({
+                  type: 'error',
+                  message: t('manage.course.linkLTIError'),
+                })
               }
             }}
             className={{
@@ -66,6 +79,7 @@ function MicroLearningList({
         <div className="mt-0.5 flex w-full flex-col">
           <ActivityList
             hideActivityType
+            filtersActive={false}
             activities={microLearnings}
             noActivities={false}
             highlightedActivity={highlightedActivity}

@@ -1,0 +1,3 @@
+query QGetCourseVerificationRecordCount($courseId: String!) {
+  courseAssessmentReportRecordCount(courseId: $courseId)
+}

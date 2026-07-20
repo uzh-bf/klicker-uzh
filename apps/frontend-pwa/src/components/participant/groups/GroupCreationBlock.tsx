@@ -2,7 +2,6 @@ import { useMutation } from '@apollo/client'
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
 import {
   CreateParticipantGroupDocument,
-  GetCourseOverviewDataDocument,
   GetParticipantGroupsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
@@ -35,19 +34,12 @@ function GroupCreationBlock({
       })}
       onSubmit={async (value) => {
         const result = await createParticipantGroup({
-          variables: {
-            courseId: courseId,
-            name: value,
-          },
+          variables: { courseId: courseId, name: value },
+          // refetch is more effective here to avoid code duplication for participant aggregation
+          // -> performance implications are not relevant here, short loading circle is acceptable
+          // participant groups query is joint between course and separate -> separate call sufficient
           refetchQueries: [
-            {
-              query: GetParticipantGroupsDocument,
-              variables: { courseId: courseId },
-            },
-            {
-              query: GetCourseOverviewDataDocument,
-              variables: { courseId: courseId },
-            },
+            { query: GetParticipantGroupsDocument, variables: { courseId } },
           ],
         })
 

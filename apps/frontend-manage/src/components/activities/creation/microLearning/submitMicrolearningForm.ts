@@ -1,31 +1,61 @@
-import { GetSingleCourseDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ApolloCache,
+  DefaultContext,
+  FetchResult,
+  MutationFunctionOptions,
+} from '@apollo/client'
+import {
+  CreateMicroLearningMutation,
+  CreateMicroLearningMutationVariables,
+  EditMicroLearningMutation,
+  EditMicroLearningMutationVariables,
+  GetSingleCourseDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
 import {
   ElementStackFormValues,
   MicroLearningFormValues,
 } from '../WizardLayout'
 
-interface MicroLearningFormProps {
+interface MicroLearningFormSubmissionProps {
   id?: string
+  previousCourseId?: string
   values: MicroLearningFormValues
   editMode: boolean
-  createMicroLearning: any
-  editMicroLearning: any
-  setSelectedCourseId: (courseId?: string) => void
+  createMicroLearning: (
+    options?:
+      | MutationFunctionOptions<
+          CreateMicroLearningMutation,
+          CreateMicroLearningMutationVariables,
+          DefaultContext,
+          ApolloCache<any>
+        >
+      | undefined
+  ) => Promise<FetchResult<CreateMicroLearningMutation>>
+  editMicroLearning: (
+    options?:
+      | MutationFunctionOptions<
+          EditMicroLearningMutation,
+          EditMicroLearningMutationVariables,
+          DefaultContext,
+          ApolloCache<any>
+        >
+      | undefined
+  ) => Promise<FetchResult<EditMicroLearningMutation>>
   setIsWizardCompleted: (isCompleted: boolean) => void
   onError: () => void
 }
 
 async function submitMicrolearningForm({
   id,
+  previousCourseId,
   values,
   editMode,
   createMicroLearning,
   editMicroLearning,
-  setSelectedCourseId,
   setIsWizardCompleted,
   onError,
-}: MicroLearningFormProps) {
+}: MicroLearningFormSubmissionProps) {
   try {
     let success = false
 
@@ -33,68 +63,116 @@ async function submitMicrolearningForm({
       name: values.name,
       displayName: values.displayName,
       description: values.description,
-      stacks: values.stacks.map((stack: ElementStackFormValues, ix) => {
-        return {
+      stacks: values.stacks.map((stack: ElementStackFormValues, ix) => ({
+        order: ix,
+        displayName:
+          stack.displayName && stack.displayName.length > 0
+            ? stack.displayName
+            : undefined,
+        description:
+          stack.description && stack.description.length > 0
+            ? stack.description
+            : undefined,
+        elements: stack.elements.map((element, ix) => ({
+          elementId: element.id,
           order: ix,
-          displayName:
-            stack.displayName && stack.displayName.length > 0
-              ? stack.displayName
-              : undefined,
-          description:
-            stack.description && stack.description.length > 0
-              ? stack.description
-              : undefined,
-          elements: stack.elements.map((element, ix) => {
-            return {
-              elementId: element.id,
-              order: ix,
-              existingInstanceId: element.existingInstanceId,
-              duplicateInstance: element.duplicateInstance,
-            }
-          }),
-        }
-      }),
+          existingInstanceId: element.existingInstanceId,
+          duplicateInstance: element.duplicateInstance,
+        })),
+      })),
       startDate: dayjs(values.startDate).utc().format(),
       endDate: dayjs(values.endDate).utc().format(),
       multiplier: parseInt(values.multiplier),
-      courseId: values.courseId,
+      courseId: values.courseId!,
     }
 
-    if (editMode) {
-      const result = await editMicroLearning({
-        variables: {
-          id,
-          ...createUpdateJSON,
-        },
-        refetchQueries: [
-          {
-            query: GetSingleCourseDocument,
-            variables: {
-              courseId: values.courseId,
+    if (editMode && id) {
+      const { data: result } = await editMicroLearning({
+        variables: { id, ...createUpdateJSON },
+        update: (cache, { data: res }) => {
+          // if the mutation was not successful, return early
+          if (!res?.editMicroLearning?.courseId) return
+
+          // if the course assignment changed, remove the microlearning from the previous course
+          if (
+            previousCourseId &&
+            res.editMicroLearning.courseId !== previousCourseId
+          ) {
+            cache.updateQuery(
+              {
+                query: GetSingleCourseDocument,
+                variables: { courseId: previousCourseId },
+              },
+              (data) => {
+                if (!data?.course) return data
+
+                const activities =
+                  data.course.microLearningsInfo?.filter(
+                    (ml) => ml.id !== res.editMicroLearning!.id
+                  ) ?? []
+                return {
+                  course: { ...data.course, microLearningsInfo: activities },
+                }
+              }
+            )
+          }
+
+          // updated / add the microlearning in the currently assigned course
+          cache.updateQuery(
+            {
+              query: GetSingleCourseDocument,
+              variables: { courseId: res.editMicroLearning.courseId! },
             },
-          },
-        ],
+            (data) => {
+              if (!data?.course) return data
+
+              const activities = [
+                ...(data.course.microLearningsInfo?.filter(
+                  (ml) => ml.id !== res.editMicroLearning!.id
+                ) ?? []),
+                res.editMicroLearning!,
+              ]
+              return {
+                course: { ...data.course, microLearningsInfo: activities },
+              }
+            }
+          )
+        },
       })
-      success = Boolean(result.data?.editMicroLearning)
+      success = Boolean(result?.editMicroLearning)
     } else {
-      const result = await createMicroLearning({
-        variables: {
-          ...createUpdateJSON,
-        },
-        refetchQueries: [
-          {
-            query: GetSingleCourseDocument,
-            variables: {
-              courseId: values.courseId,
+      const { data: result } = await createMicroLearning({
+        variables: createUpdateJSON,
+        update: (cache, { data: res }) => {
+          // if the mutation was not successful, return early
+          if (!res?.createMicroLearning?.courseId) return
+
+          // change the status of the microlearning on the course overview back to draft
+          cache.updateQuery(
+            {
+              query: GetSingleCourseDocument,
+              variables: { courseId: res.createMicroLearning.courseId! },
             },
-          },
-        ],
+            (data) => {
+              if (!data?.course) return data
+
+              return {
+                course: {
+                  ...data.course,
+                  microLearningsInfo: [
+                    ...(data.course.microLearningsInfo ?? []),
+                    res.createMicroLearning!,
+                  ],
+                },
+              }
+            }
+          )
+        },
       })
-      success = Boolean(result.data?.createMicroLearning)
+      success = Boolean(result?.createMicroLearning)
     }
 
     if (success) {
-      setSelectedCourseId(values.courseId)
       setIsWizardCompleted(true)
     } else {
       onError()

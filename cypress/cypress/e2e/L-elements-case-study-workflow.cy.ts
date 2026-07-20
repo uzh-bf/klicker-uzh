@@ -18,20 +18,6 @@ type CriterionDataType = {
 }
 
 describe('Test creation and editing functionalities, validation, etc. for case study elements', function () {
-  before(() => {
-    cy.seed()
-
-    // set browser language to english (independent of local machine setting
-    Cypress.automation('remote:debugger:protocol', {
-      command: 'Emulation.setLocaleOverride',
-      params: { locale: 'en' },
-    })
-  })
-
-  after(() => {
-    cy.cleanup()
-  })
-
   beforeEach('Login the lecturer and load data fixture', function () {
     cy.fixture('DM-questions.json').then((data) => {
       this.data = data
@@ -42,12 +28,12 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     cy.get('[data-cy="analytics"]').should('exist')
   })
 
-  // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  // Fail-fast handled globally in support/e2e.ts
+
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
+  })
 
   // ! Case Study questions
   // #region
@@ -95,20 +81,20 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     ).realClick()
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
-      .type(this.data.CS.content)
+      .realType(this.data.CS.content)
     cy.get('[data-cy="insert-question-explanation"]')
       .realClick()
-      .type(this.data.CS.explanation)
+      .realType(this.data.CS.explanation)
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
 
     // select an answer collection
     cy.get('[data-cy="select-answer-collection"]').contains(
       messages.manage.elements.selectCollection
     )
-    cy.get('[data-cy="select-answer-collection"]').realClick()
-    cy.get(
-      `[data-cy="select-answer-collection-${this.data.CS.collection}"]`
-    ).realClick()
+    cy.selectOption(
+      '[data-cy="select-answer-collection"]',
+      this.data.CS.collection
+    )
     cy.get('[data-cy="select-answer-collection"]').contains(
       this.data.CS.collection
     )
@@ -230,7 +216,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
         cy.get(`[data-cy="case-title-${ix}"]`).click().type(caseItem.title)
         cy.get(`[data-cy="case-description-${ix}"]`)
           .realClick()
-          .type(caseItem.description)
+          .realType(caseItem.description)
 
         cy.get(`[data-cy="case-title-${ix}"]`).should(
           'have.value',
@@ -260,15 +246,14 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     cy.get('[data-cy="save-new-question"]').click()
     cy.wait(500)
 
-    cy.get(`[data-cy="element-item-${this.data.CS.title}"]`).contains(
-      this.data.CS.content
-    )
-    cy.get(`[data-cy="element-item-${this.data.CS.title}"]`).contains(
-      this.data.CS.title
-    )
-    cy.get(`[data-cy="element-item-${this.data.CS.title}"]`).contains(
-      messages.shared.READY.statusLabel
-    )
+    cy.validateElement({
+      element: this.data.CS.title,
+      contains: [
+        this.data.CS.content,
+        this.data.CS.title,
+        messages.shared.READY.statusLabel,
+      ],
+    })
   })
 
   it('Verify that the correct content has been saved', function () {
@@ -558,7 +543,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
-      .type(this.data.CS.content)
+      .realType(this.data.CS.content)
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
 
     // missing question explanation -> valid
@@ -566,7 +551,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
     cy.get('[data-cy="insert-question-explanation"]')
       .realClick()
-      .type(this.data.CS.explanation)
+      .realType(this.data.CS.explanation)
 
     // range criterion name, min, max, step required -> invalid (if removed)
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
@@ -865,17 +850,17 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .clear()
-      .type(this.data.CS.contentEdited)
+      .realType(this.data.CS.contentEdited)
 
-    cy.get('[data-cy="select-answer-collection"]').realClick()
-    cy.get(
-      `[data-cy="select-answer-collection-${this.data.CS.collectionEdited}"]`
-    ).realClick()
+    cy.selectOption(
+      '[data-cy="select-answer-collection"]',
+      this.data.CS.collectionEdited
+    )
     cy.get('[data-cy="cancel-change-collection"]').click()
-    cy.get('[data-cy="select-answer-collection"]').realClick()
-    cy.get(
-      `[data-cy="select-answer-collection-${this.data.CS.collectionEdited}"]`
-    ).realClick()
+    cy.selectOption(
+      '[data-cy="select-answer-collection"]',
+      this.data.CS.collectionEdited
+    )
     cy.get('[data-cy="confirm-change-collection"]').click()
     cy.get('[data-cy="select-answer-collection"]').contains(
       this.data.CS.collectionEdited
@@ -1021,7 +1006,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
         cy.get(`[data-cy="case-title-${ix}"]`).click().type(caseItem.title)
         cy.get(`[data-cy="case-description-${ix}"]`)
           .realClick()
-          .type(caseItem.description)
+          .realType(caseItem.description)
 
         cy.get(`[data-cy="case-title-${ix}"]`).should(
           'have.value',
@@ -1274,10 +1259,10 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     ).realClick()
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
-      .type(this.data.CS_INLINE.content)
+      .realType(this.data.CS_INLINE.content)
     cy.get('[data-cy="insert-question-explanation"]')
       .realClick()
-      .type(this.data.CS_INLINE.explanation)
+      .realType(this.data.CS_INLINE.explanation)
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
 
     // check if button for manual creation is present and click it
@@ -1352,7 +1337,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
         cy.get(`[data-cy="case-title-${ix}"]`).click().type(caseItem.title)
         cy.get(`[data-cy="case-description-${ix}"]`)
           .realClick()
-          .type(caseItem.description)
+          .realType(caseItem.description)
       }
     )
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
@@ -1438,9 +1423,10 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     cy.get('[data-cy="save-new-question"]').click()
     cy.wait(500)
 
-    cy.get(`[data-cy="element-item-${this.data.CS_INLINE.title}"]`).contains(
-      this.data.CS_INLINE.content
-    )
+    cy.validateElement({
+      element: this.data.CS_INLINE.title,
+      contains: [this.data.CS_INLINE.title, this.data.CS_INLINE.content],
+    })
   })
 
   it('Verify that a new answer collection was created when creating the case study', function () {
@@ -1468,11 +1454,11 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .clear()
-      .type(this.data.CS_INLINE.contentEdited)
+      .realType(this.data.CS_INLINE.contentEdited)
     cy.get('[data-cy="insert-question-explanation"]')
       .realClick()
       .clear()
-      .type(this.data.CS_INLINE.explanationEdited)
+      .realType(this.data.CS_INLINE.explanationEdited)
 
     // ensure that switching to manual item creation is not possible during editing
     cy.get('[data-cy="create-inline-answer-collection"]').should('not.exist')
@@ -1482,9 +1468,13 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     cy.wait(500)
 
     // verify the changes were saved
-    cy.get(
-      `[data-cy="element-item-${this.data.CS_INLINE.titleEdited}"]`
-    ).contains(this.data.CS_INLINE.contentEdited)
+    cy.validateElement({
+      element: this.data.CS_INLINE.titleEdited,
+      contains: [
+        this.data.CS_INLINE.titleEdited,
+        this.data.CS_INLINE.contentEdited,
+      ],
+    })
   })
 
   it('Verify that all changes to the inline created case study have been saved correctly', function () {

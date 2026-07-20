@@ -1,4 +1,4 @@
-import { PrismaClient } from '@klicker-uzh/prisma'
+import { PrismaClient } from '@klicker-uzh/prisma/client'
 import dayjs from 'dayjs'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
@@ -238,6 +238,12 @@ describe('OLAT-API /api/configuration/activityTypes', () => {
           isEmailTransferRequired: false,
           olatConfigurationKey: 'micro-learning',
           path: '/microLearnings',
+        },
+        {
+          id: 'CHATBOT',
+          isEmailTransferRequired: false,
+          olatConfigurationKey: 'chatbot',
+          path: '/chatbot',
         },
         {
           id: 'COURSE_LEADERBOARD',

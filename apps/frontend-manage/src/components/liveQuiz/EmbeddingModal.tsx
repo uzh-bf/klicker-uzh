@@ -10,9 +10,11 @@ import HMACLink from './HMACLink'
 function EmbeddingModal({
   onClose,
   quizId,
+  isGamificationEnabled,
 }: {
   onClose: () => void
   quizId: string
+  isGamificationEnabled: boolean
 }) {
   const t = useTranslations()
   const [showSolution, setShowSolution] = useState(false)
@@ -50,6 +52,7 @@ function EmbeddingModal({
           label={t('manage.evaluation.showSolution')}
           checked={showSolution}
           onCheckedChange={(val) => setShowSolution(val)}
+          data={{ cy: 'embedding-show-solution-switch' }}
         />
         <div className="pl-13 mb-3 text-sm">
           {t('manage.evaluation.showSolutionInfo')}
@@ -59,6 +62,7 @@ function EmbeddingModal({
           label={t('manage.evaluation.showExplanation')}
           checked={showExplanation}
           onCheckedChange={(val) => setShowExplanation(val)}
+          data={{ cy: 'embedding-show-explanation-switch' }}
         />
         <div className="pl-13 mb-3 text-sm">
           {t('manage.evaluation.showExplanationInfo')}
@@ -68,10 +72,10 @@ function EmbeddingModal({
           <Select
             value={language}
             onChange={(newValue) => setLanguage(newValue as LocaleType)}
-            items={[
-              { label: t('shared.generic.english'), value: 'en' },
-              { label: t('shared.generic.german'), value: 'de' },
-            ]}
+            items={routing.locales.map((loc) => ({
+              label: t(`shared.generic.${loc}`),
+              value: loc,
+            }))}
           />
         </div>
       </div>
@@ -103,18 +107,20 @@ function EmbeddingModal({
             </div>
           )
         })}
-        <div>
-          <div className="w-30 font-bold">
-            {t('shared.generic.leaderboard')}:
+        {isGamificationEnabled && (
+          <div>
+            <div className="w-30 font-bold">
+              {t('shared.generic.leaderboard')}:
+            </div>
+            <HMACLink
+              quizId={quizId}
+              hmac={data?.getLiveQuizEmbeddingInfo?.hmac ?? ''}
+              params="leaderboard=true&hideControls=true"
+              identifier="leaderboard"
+              language={language}
+            />
           </div>
-          <HMACLink
-            quizId={quizId}
-            hmac={data?.getLiveQuizEmbeddingInfo?.hmac ?? ''}
-            params="leaderboard=true&hideControls=true"
-            identifier="leaderboard"
-            language={language}
-          />
-        </div>
+        )}
       </div>
     </Modal>
   )

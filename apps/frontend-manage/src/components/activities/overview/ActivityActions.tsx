@@ -1,7 +1,8 @@
-import { faEllipsis } from '@fortawesome/free-solid-svg-icons'
+import { faEllipsis, faInfoCircle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ActivityType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Dropdown } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { ActivityAction } from '../actions/useAvailableActions'
 
 function ActivityActions({
@@ -9,14 +10,18 @@ function ActivityActions({
   activityId,
   activityName,
   activityType,
+  openActivityDetailsModal,
 }: {
   availableActions: ActivityAction[]
   activityId: string
   activityName: string
   activityType: ActivityType
+  openActivityDetailsModal: () => void
 }) {
+  const t = useTranslations()
+
   return (
-    <div className="-mr-1 -mt-1 flex flex-row items-end gap-1">
+    <div className="-mr-1 flex flex-row items-end gap-1">
       {availableActions.slice(0, 1).map((action) => {
         return (
           <Button
@@ -35,35 +40,39 @@ function ActivityActions({
         )
       })}
 
-      {availableActions.length > 1 && (
-        <Dropdown
-          items={availableActions.slice(1).map((action) => ({
-            id: action.label,
-            label: (
-              <div
-                className={`flex cursor-pointer items-center rounded px-1.5 py-0.5 ${
-                  action.className ?? ''
-                }`}
-              >
-                <FontAwesomeIcon
-                  icon={action.icon}
-                  className="mr-2.5 h-4 w-4"
-                />
-                {action.label}
-              </div>
-            ),
-            onClick: action.onClick,
-            data: action.data,
-          }))}
-          trigger={<FontAwesomeIcon icon={faEllipsis} />}
-          data={{ cy: `actions-${activityType}-${activityName}` }}
-          className={{
-            viewport: 'z-20', // ensure that dropdown is shown above other elements on course overview
-            item: 'py-0.5 text-sm',
-            trigger: 'h-8 w-8 border-none bg-transparent text-sm',
-          }}
-        />
-      )}
+      <Dropdown
+        items={[
+          {
+            label: t('manage.activities.activityInformation'),
+            icon: faInfoCircle,
+            className: '',
+            onClick: () => openActivityDetailsModal(),
+            data: { cy: `activity-information-${activityName}` },
+          },
+          ...availableActions.slice(1),
+        ].map((action) => ({
+          id: action.label,
+          label: (
+            <div
+              className={`flex cursor-pointer items-center rounded px-1.5 py-0.5 ${
+                action.className ?? ''
+              }`}
+            >
+              <FontAwesomeIcon icon={action.icon} className="mr-2.5 h-4 w-4" />
+              {action.label}
+            </div>
+          ),
+          onClick: action.onClick,
+          data: action.data,
+        }))}
+        trigger={<FontAwesomeIcon icon={faEllipsis} />}
+        data={{ cy: `actions-${activityType}-${activityName}` }}
+        className={{
+          viewport: 'z-20', // ensure that dropdown is shown above other elements on course overview
+          item: 'py-0.5 text-sm',
+          trigger: 'h-8 w-8 border-none bg-transparent text-sm',
+        }}
+      />
     </div>
   )
 }

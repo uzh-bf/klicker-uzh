@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/office-addin",
-  "version": "3.3.0-alpha.78",
+  "version": "3.4.0-alpha.64",
   "license": "AGPL-3.0",
   "dependencies": {
     "core-js": "3.36.0",
@@ -8,13 +8,13 @@
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "~28.0.2",
-    "@rollup/plugin-node-resolve": "~15.3.0",
-    "@rollup/plugin-replace": "~6.0.2",
+    "@rollup/plugin-node-resolve": "~15.3.1",
+    "@rollup/plugin-replace": "~6.0.3",
     "@rollup/plugin-terser": "~0.4.4",
-    "@rollup/plugin-typescript": "~12.1.2",
-    "@types/node": "^20.16.1",
-    "@types/office-js": "^1.0.377",
-    "@types/office-runtime": "^1.0.35",
+    "@rollup/plugin-typescript": "~12.1.4",
+    "@types/node": "^24.10.1",
+    "@types/office-js": "^1.0.591",
+    "@types/office-runtime": "^1.0.37",
     "acorn": "~8.11.3",
     "cross-env": "~7.0.3",
     "eslint-plugin-office-addins": "~4.0.3",
@@ -25,7 +25,7 @@
     "office-addin-lint": "~3.0.3",
     "office-addin-manifest": "~2.0.3",
     "office-addin-prettier-config": "~2.0.1",
-    "rollup": "~4.34.2",
+    "rollup": "~4.34.9",
     "rollup-plugin-copy": "~3.5.0",
     "rollup-plugin-livereload": "~2.0.5",
     "rollup-plugin-serve": "~3.0.0",
@@ -51,15 +51,12 @@
     "validate": "office-addin-manifest validate manifest.xml"
   },
   "engines": {
-    "node": "=20"
+    "node": "=24"
   },
   "volta": {
     "extends": "../../package.json"
   },
-  "browserslist": [
-    "last 2 versions",
-    "ie 11"
-  ],
+  "browserslist": ["last 2 versions", "ie 11"],
   "config": {
     "app_to_debug": "powerpoint",
     "app_type_to_debug": "desktop",

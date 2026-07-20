@@ -1,23 +1,28 @@
-import * as DB from '@klicker-uzh/prisma'
+import { PrismaTransactionContextWithUser } from '@/lib/context.js'
+import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
-import { PrismaTransactionContextWithUser } from 'src/lib/context.js'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivityService from '../services/activities.js'
 import * as AnalyticsService from '../services/analytics.js'
+import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseService from '../services/courses.js'
+import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
-import * as QuestionService from '../services/questions.js'
 import * as ResourcesService from '../services/resources.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
 import * as TemplateService from '../services/templates.js'
-import { ActivityDetails, ActivityInfo } from './activities.js'
+import {
+  ActivityDetails,
+  CourseActivityList,
+  UserActivityList,
+} from './activities.js'
 import {
   ActivityType,
   CourseActivityAnalytics,
@@ -27,15 +32,36 @@ import {
   WeeklyCourseActivities,
 } from './analytics.js'
 import {
+  ActivityStudentPerformance,
+  AssessmentResultsCourse,
+  AssessmentResultsLiveQuiz,
+  PointCorrection,
+  StudentAssessmentBlockResponse,
+  StudentAssessmentResults,
+} from './assessment.js'
+import {
+  AssessmentParticipant,
   Course,
   CourseLeaderboard,
+  CourseListEntry,
   CourseOverview,
   CourseStudentTimeline,
   CourseSummary,
   LeaderboardEntry,
+  LiveQuizSelectionItem,
   StudentCourse,
 } from './course.js'
-import { ElementType } from './elementData.js'
+import {
+  Element,
+  ElementInstance,
+  ElementInstanceVersionInfo,
+  ElementSummary,
+  InstanceUpdateActivityInfo,
+  SortByType,
+  Tag,
+  UserElementList,
+} from './element.js'
+import { ElementStatus, ElementType } from './elementData.js'
 import { ActivityEvaluation } from './evaluation.js'
 import {
   GroupActivity,
@@ -63,17 +89,16 @@ import {
   ActivitySummary,
   ElementStack,
   PracticeQuiz,
+  PublicationStatus,
+  ReviewStatus,
   StackFeedback,
 } from './practiceQuiz.js'
 import {
-  Element,
-  ElementInstance,
-  ElementInstanceVersionInfo,
-  ElementSummary,
-  InstanceUpdateActivityInfo,
-  Tag,
-} from './question.js'
-import { AnswerCollection, AnswerCollectionPreviewEntry } from './resource.js'
+  AnswerCollection,
+  AnswerCollectionPreviewEntry,
+  ChatModelCapability,
+  Chatbot,
+} from './resource.js'
 import {
   ActivityLogEntry,
   CatalogCollection,
@@ -83,7 +108,7 @@ import {
   DerivedPermissionOriginInformation,
   ObjectSharingRequest,
   ObjectType,
-  PermissionInfo,
+  PermissionsList,
   UserGroup,
 } from './sharing.js'
 import {
@@ -100,7 +125,6 @@ const withPermission = SharingService.withPermission
 
 export const Query = builder.queryType({
   fields(t) {
-    const asAuthenticated = { authenticated: true }
     const asParticipant = { authenticated: true, role: DB.UserRole.PARTICIPANT }
     const asUser = { authenticated: true, role: DB.UserRole.USER }
     const asAdmin = { authenticated: true, role: DB.UserRole.ADMIN }
@@ -109,7 +133,8 @@ export const Query = builder.queryType({
       self: t.field({
         nullable: true,
         type: Participant,
-        resolve: async (_, __, ctx) => ParticipantService.getSelf(ctx),
+        args: { liveQuizId: t.arg.string({ required: false }) },
+        resolve: async (_, args, ctx) => ParticipantService.getSelf(args, ctx),
       }),
 
       selfWithAchievements: t.withAuth(asParticipant).field({
@@ -231,17 +256,63 @@ export const Query = builder.queryType({
 
       userElements: t.withAuth(asUser).field({
         nullable: true,
-        type: [Element],
+        type: UserElementList,
+        args: {
+          status: t.arg({ type: ElementStatus, required: false }),
+          type: t.arg({ type: ElementType, required: false }),
+          hasSampleSolution: t.arg.boolean({ required: true }),
+          hasAnswerFeedbacks: t.arg.boolean({ required: true }),
+          searchString: t.arg.string({ required: false }),
+          showOwned: t.arg.boolean({ required: false }),
+          showShared: t.arg.boolean({ required: false }),
+          showDependencies: t.arg.boolean({ required: false }),
+          tagIds: t.arg.intList({ required: true }),
+          activityId: t.arg.string({ required: false }),
+          multiplier: t.arg.int({ required: false }),
+          showUntagged: t.arg.boolean({ required: true }),
+          sortByType: t.arg({ type: SortByType, required: true }),
+          sortByAsc: t.arg.boolean({ required: true }),
+          showArchived: t.arg.boolean({ required: true }),
+          numEntries: t.arg.int({ required: true }),
+          offset: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ElementService.getUserElements(args, ctx)
+        },
+      }),
+
+      getUserActivitiesCourses: t.withAuth(asUser).field({
+        nullable: true,
+        type: [CourseListEntry],
         resolve: async (_, __, ctx) => {
-          return await QuestionService.getUserElements(ctx)
+          return await ActivityService.getUserActivitiesCourses(ctx)
         },
       }),
 
       userActivities: t.withAuth(asUser).field({
         nullable: true,
-        type: [ActivityInfo],
-        resolve: async (_, __, ctx) => {
-          return await ActivityService.getUserActivities(ctx)
+        type: UserActivityList,
+        args: {
+          statusFilter: t.arg({ type: [PublicationStatus], required: false }),
+          activityTypeFilter: t.arg({ type: ActivityType, required: false }),
+          courseId: t.arg.string({ required: false }),
+          withoutCourse: t.arg.boolean({ required: false }),
+          searchString: t.arg.string({ required: false }),
+          showOwned: t.arg.boolean({ required: false }),
+          showShared: t.arg.boolean({ required: false }),
+          showDependencies: t.arg.boolean({ required: false }),
+          multiplier: t.arg.int({ required: false }),
+          reviewStatus: t.arg({ type: ReviewStatus, required: false }),
+          isGamificationEnabled: t.arg.boolean({ required: false }),
+          isAssessmentEnabled: t.arg.boolean({ required: false }),
+          isPinProtected: t.arg.boolean({ required: false }),
+          sortByType: t.arg({ type: SortByType, required: true }),
+          sortByAsc: t.arg.boolean({ required: true }),
+          numEntries: t.arg.int({ required: false }),
+          offset: t.arg.int({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ActivityService.getUserActivities(args, ctx)
         },
       }),
 
@@ -368,6 +439,15 @@ export const Query = builder.queryType({
         },
       }),
 
+      getCourseActivityIds: t.withAuth(asUser).field({
+        nullable: true,
+        type: CourseActivityList,
+        args: { courseId: t.arg.string({ required: false }) },
+        resolve: async (_, args, ctx) => {
+          return await ActivityService.getCourseActivityIds(args, ctx)
+        },
+      }),
+
       getCourseSummary: t.withAuth(asUser).field({
         nullable: true,
         type: CourseSummary,
@@ -402,9 +482,7 @@ export const Query = builder.queryType({
       shortnameQuizzes: t.field({
         nullable: true,
         type: [LiveQuiz],
-        args: {
-          shortname: t.arg.string({ required: true }),
-        },
+        args: { shortname: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await LiveQuizService.getShortnameQuizzes(args, ctx)
         },
@@ -413,9 +491,7 @@ export const Query = builder.queryType({
       getLiveQuizSummary: t.withAuth(asUser).field({
         nullable: true,
         type: LiveQuizSummary,
-        args: {
-          quizId: t.arg.string({ required: true }),
-        },
+        args: { quizId: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ liveQuizId: args.quizId }),
           DB.PermissionLevel.READ,
@@ -453,9 +529,7 @@ export const Query = builder.queryType({
       getCoursePublishedMicroLearnings: t.field({
         nullable: true,
         type: [MicroLearning],
-        args: {
-          courseId: t.arg.string({ required: true }),
-        },
+        args: { courseId: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await MicroLearningService.getCoursePublishedMicroLearnings(
             args,
@@ -480,20 +554,10 @@ export const Query = builder.queryType({
         },
       }),
 
-      userLiveQuizzes: t.withAuth(asUser).field({
-        nullable: true,
-        type: [LiveQuiz],
-        resolve: async (_, __, ctx) => {
-          return await LiveQuizService.getUserLiveQuizzes(ctx)
-        },
-      }),
-
       cockpitQuiz: t.withAuth(asUser).field({
         nullable: true,
         type: LiveQuiz,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
+        args: { id: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ liveQuizId: args.id }),
           DB.PermissionLevel.EXECUTE,
@@ -506,9 +570,7 @@ export const Query = builder.queryType({
       controlLiveQuiz: t.withAuth(asUser).field({
         nullable: true,
         type: LiveQuiz,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
+        args: { id: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ liveQuizId: args.id }),
           DB.PermissionLevel.READ,
@@ -521,9 +583,7 @@ export const Query = builder.queryType({
       practiceQuiz: t.field({
         nullable: true,
         type: PracticeQuiz,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
+        args: { id: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await PracticeQuizService.getPracticeQuizData(args, ctx)
         },
@@ -532,9 +592,7 @@ export const Query = builder.queryType({
       getPreviousStackEvaluation: t.field({
         nullable: true,
         type: StackFeedback,
-        args: {
-          stackId: t.arg.int({ required: true }),
-        },
+        args: { stackId: t.arg.int({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await StacksService.getPreviousStackEvaluation(args, ctx)
         },
@@ -543,9 +601,7 @@ export const Query = builder.queryType({
       getPracticeQuizEvaluation: t.withAuth(asUser).field({
         nullable: true,
         type: ActivityEvaluation,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
+        args: { id: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ practiceQuizId: args.id }),
           DB.PermissionLevel.READ,
@@ -561,9 +617,7 @@ export const Query = builder.queryType({
       microLearning: t.field({
         nullable: true,
         type: MicroLearning,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
+        args: { id: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await MicroLearningService.getMicroLearningData(args, ctx)
         },
@@ -572,9 +626,7 @@ export const Query = builder.queryType({
       getMicroLearningEvaluation: t.withAuth(asUser).field({
         nullable: true,
         type: ActivityEvaluation,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
+        args: { id: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ microLearningId: args.id }),
           DB.PermissionLevel.READ,
@@ -590,9 +642,7 @@ export const Query = builder.queryType({
       getSinglePracticeQuiz: t.withAuth(asUser).field({
         nullable: true,
         type: PracticeQuiz,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
+        args: { id: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ practiceQuizId: args.id }),
           DB.PermissionLevel.READ,
@@ -605,9 +655,7 @@ export const Query = builder.queryType({
       getSingleMicroLearning: t.withAuth(asUser).field({
         nullable: true,
         type: MicroLearning,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
+        args: { id: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ microLearningId: args.id }),
           DB.PermissionLevel.READ,
@@ -651,9 +699,7 @@ export const Query = builder.queryType({
       studentLiveQuiz: t.field({
         nullable: true,
         type: LiveQuiz,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
+        args: { id: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await LiveQuizService.getRunningLiveQuiz(args, ctx)
         },
@@ -670,12 +716,10 @@ export const Query = builder.queryType({
         },
       }),
 
-      participantGroups: t.withAuth(asAuthenticated).field({
+      participantGroups: t.field({
         nullable: true,
         type: [ParticipantGroup],
-        args: {
-          courseId: t.arg.string({ required: true }),
-        },
+        args: { courseId: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await GroupService.getParticipantGroups(args, ctx)
         },
@@ -684,9 +728,7 @@ export const Query = builder.queryType({
       getCourseGroups: t.withAuth(asUser).field({
         nullable: true,
         type: Course,
-        args: {
-          courseId: t.arg.string({ required: true }),
-        },
+        args: { courseId: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ courseId: args.courseId }),
           DB.PermissionLevel.READ,
@@ -712,9 +754,7 @@ export const Query = builder.queryType({
       getLecturerViewLiveQuiz: t.withAuth(asUser).field({
         nullable: true,
         type: LiveQuiz,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
+        args: { id: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ liveQuizId: args.id }),
           DB.PermissionLevel.READ,
@@ -727,9 +767,7 @@ export const Query = builder.queryType({
       course: t.withAuth(asUser).field({
         nullable: true,
         type: Course,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
+        args: { id: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ courseId: args.id }),
           DB.PermissionLevel.READ,
@@ -776,7 +814,7 @@ export const Query = builder.queryType({
         ),
       }),
 
-      question: t.withAuth(asUser).field({
+      element: t.withAuth(asUser).field({
         nullable: true,
         type: Element,
         args: {
@@ -786,7 +824,7 @@ export const Query = builder.queryType({
           (args) => ({ elementId: args.id }),
           DB.PermissionLevel.READ,
           async (_, args, ctx) => {
-            return await QuestionService.getSingleQuestion(args, ctx)
+            return await ElementService.getSingleElement(args, ctx)
           }
         ),
       }),
@@ -803,7 +841,7 @@ export const Query = builder.queryType({
           (args) => ({ elementId: args.elementId }),
           DB.PermissionLevel.WRITE,
           async (_, args, ctx) => {
-            return await QuestionService.getInstanceUpdateActivities(args, ctx)
+            return await ElementService.getInstanceUpdateActivities(args, ctx)
           }
         ),
       }),
@@ -818,7 +856,7 @@ export const Query = builder.queryType({
           (args) => ({ elementId: args.id }),
           DB.PermissionLevel.ADMIN,
           async (_, args, ctx) => {
-            return await QuestionService.getElementSummary(args, ctx)
+            return await ElementService.getElementSummary(args, ctx)
           }
         ),
       }),
@@ -830,7 +868,7 @@ export const Query = builder.queryType({
           instanceIds: t.arg.intList({ required: true }),
         },
         resolve: async (_, args, ctx) => {
-          return await QuestionService.getOutdatedElementInstances(args, ctx)
+          return await ElementService.getOutdatedElementInstances(args, ctx)
         },
       }),
 
@@ -844,7 +882,7 @@ export const Query = builder.queryType({
           (args) => ({ elementId: args.elementId }),
           DB.PermissionLevel.READ,
           async (_, args, ctx) => {
-            return await QuestionService.getArtificialElementInstance(args, ctx)
+            return await ElementService.getArtificialElementInstance(args, ctx)
           }
         ),
       }),
@@ -857,7 +895,7 @@ export const Query = builder.queryType({
         },
         resolve: async (_, args, ctx) => {
           // access validation to the activity that contains this instance is performed inside the serive function
-          return await QuestionService.getSingleElementInstance(args, ctx)
+          return await ElementService.getSingleElementInstance(args, ctx)
         },
       }),
 
@@ -873,11 +911,75 @@ export const Query = builder.queryType({
         },
       }),
 
+      studentAssessmentResults: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: StudentAssessmentResults,
+        args: { courseId: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await CourseService.getStudentAssessmentResults(
+            { courseId: args.courseId, participantId: ctx.user.sub },
+            ctx
+          )
+        },
+      }),
+
+      studentCourseResults: t.withAuth(asUser).field({
+        nullable: true,
+        type: [ActivityStudentPerformance],
+        args: {
+          courseId: t.arg.string({ required: true }),
+          participantId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          const studentResults =
+            await CourseService.getStudentAssessmentResults(args, ctx)
+          return studentResults?.liveQuizzes ?? []
+        },
+      }),
+
+      assessmentResultsLiveQuiz: t.withAuth(asUser).field({
+        nullable: true,
+        type: AssessmentResultsLiveQuiz,
+        args: { liveQuizId: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await CourseService.getAssessmentResultsLiveQuiz(args, ctx)
+        },
+      }),
+
+      assessmentResultsCourse: t.withAuth(asUser).field({
+        nullable: true,
+        type: AssessmentResultsCourse,
+        args: { courseId: t.arg.string({ required: true }) },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            return await CourseService.getAssessmentResultsCourse(args, ctx)
+          }
+        ),
+      }),
+
+      liveQuizStudentAssessmentResponses: t.withAuth(asUser).field({
+        nullable: true,
+        type: [StudentAssessmentBlockResponse],
+        args: {
+          liveQuizId: t.arg.string({ required: true }),
+          participantId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await CourseService.getLiveQuizStudentAssessmentResponses(
+            args,
+            ctx
+          )
+        },
+      }),
+
       participations: t.withAuth(asParticipant).field({
         nullable: true,
         type: [Participation], // TODO: if possible, link student course instead of normal course here
         args: {
           endpoint: t.arg.string({ required: false }),
+          assessmentOnly: t.arg.boolean({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await ParticipantService.getParticipations(args, ctx)
@@ -903,7 +1005,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      getCourseOverviewData: t.withAuth(asParticipant).field({
+      getCourseOverviewData: t.field({
         nullable: true,
         type: ParticipantLearningData,
         args: {
@@ -914,7 +1016,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      getStudentCourseLeaderboard: t.withAuth(asParticipant).field({
+      getStudentCourseLeaderboard: t.field({
         nullable: true,
         type: StudentCourseLeaderboard,
         args: {
@@ -926,7 +1028,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      groupActivities: t.withAuth(asParticipant).field({
+      groupActivities: t.field({
         nullable: true,
         type: [GroupActivity],
         args: {
@@ -1219,6 +1321,48 @@ export const Query = builder.queryType({
         ),
       }),
 
+      endedLiveQuizzesCourse: t.withAuth(asUser).field({
+        nullable: true,
+        type: [LiveQuizSelectionItem],
+        args: { courseId: t.arg.string({ required: true }) },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.READ,
+          async (_, args, ctx) => {
+            return await CourseService.getEndedLiveQuizzesCourse(args, ctx)
+          }
+        ),
+      }),
+
+      previousPointCorrections: t.withAuth(asUser).field({
+        nullable: true,
+        type: [PointCorrection],
+        args: {
+          courseId: t.arg.string({ required: false }),
+          liveQuizId: t.arg.string({ required: false }),
+          instanceId: t.arg.int({ required: false }),
+        },
+        resolve: (_, args, ctx) => {
+          return CourseService.getPreviousPointCorrections(args, ctx)
+        },
+      }),
+
+      assessmentCourseParticipants: t.withAuth(asUser).field({
+        nullable: true,
+        type: [AssessmentParticipant],
+        args: { courseId: t.arg.string({ required: true }) },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            return await CourseService.getAssessmentCourseParticipants(
+              args,
+              ctx
+            )
+          }
+        ),
+      }),
+
       getActivityAnalytics: t.withAuth(asUser).field({
         nullable: true,
         type: QuizAnalytics,
@@ -1269,6 +1413,22 @@ export const Query = builder.queryType({
         type: [AnswerCollection],
         resolve: async (_, __, ctx) => {
           return await ResourcesService.getAnswerCollectionsInfo(ctx)
+        },
+      }),
+
+      getChatbotsInfo: t.withAuth(asUser).field({
+        nullable: true,
+        type: [Chatbot],
+        resolve: async (_, __, ctx) => {
+          return await ChatbotsService.getChatbotsInfo(ctx)
+        },
+      }),
+
+      getChatModelRegistry: t.withAuth(asUser).field({
+        nullable: false,
+        type: [ChatModelCapability],
+        resolve: async () => {
+          return ChatbotsService.getChatModelRegistry()
         },
       }),
 
@@ -1460,7 +1620,7 @@ export const Query = builder.queryType({
 
       getObjectPermissions: t.withAuth(asUser).field({
         nullable: true,
-        type: [PermissionInfo],
+        type: PermissionsList,
         args: {
           objectId: t.arg.string({ required: true }),
           objectType: t.arg({ type: ObjectType, required: true }),

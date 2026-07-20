@@ -3,6 +3,7 @@ CREATE DATABASE "shadow";
 CREATE DATABASE "klicker-prod-lti";
 CREATE DATABASE "klicker-qa";
 CREATE DATABASE "klicker-qa-lti";
+CREATE DATABASE "hatchet";
 
 -- Create roles expected by production dumps
 -- These prevent permission errors during restore
@@ -21,6 +22,13 @@ $$;
 CREATE ROLE "klicker-prod-lti" WITH LOGIN PASSWORD 'klicker';
 CREATE ROLE "klicker-qa" WITH LOGIN PASSWORD 'klicker';
 CREATE ROLE "klicker-qa-lti" WITH LOGIN PASSWORD 'klicker';
+CREATE ROLE "hatchet" WITH LOGIN PASSWORD 'hatchet';
+
+-- Grant permissions
+ALTER DATABASE "hatchet" OWNER TO "hatchet";
+ALTER DATABASE "klicker-prod-lti" OWNER TO "klicker-prod-lti";
+ALTER DATABASE "klicker-qa" OWNER TO "klicker-qa";
+ALTER DATABASE "klicker-qa-lti" OWNER TO "klicker-qa-lti";
 
 -- Grant basic permissions to LTI roles
 -- These match what the production dump expects

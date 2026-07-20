@@ -26,41 +26,28 @@ function useRemoveUserFromGroup() {
       },
       update: (cache, { data }) => {
         // check if request was successful
-        const success = data?.removeUserFromGroup
-        if (!success) return
+        if (!data?.removeUserFromGroup) return
 
         // update members and admins of user group
-        const userGroups = cache.readQuery({
-          query: GetUserGroupsUserDocument,
-        })
-
-        if (userGroups?.getUserGroupsUser) {
-          cache.writeQuery({
-            query: GetUserGroupsUserDocument,
-            data: {
-              getUserGroupsUser: userGroups?.getUserGroupsUser.map(
-                (existingGroup) => {
-                  if (groupId === existingGroup.id) {
-                    return {
-                      ...existingGroup,
-                      numOfMembers: Math.max(
-                        (existingGroup.numOfMembers ?? 1) - 1,
-                        0
-                      ),
-                      admins: existingGroup.admins?.filter(
-                        (admin) => admin.id !== userId
-                      ),
-                      members: existingGroup.members?.filter(
-                        (member) => member.id !== userId
-                      ),
-                    }
+        cache.updateQuery({ query: GetUserGroupsUserDocument }, (qData) => {
+          if (!qData?.getUserGroupsUser) return qData
+          return {
+            getUserGroupsUser: qData.getUserGroupsUser.map((group) =>
+              group.id === groupId
+                ? {
+                    ...group,
+                    numOfMembers: Math.max((group.numOfMembers ?? 1) - 1, 0),
+                    members: group.members?.filter(
+                      (member) => member.id !== userId
+                    ),
+                    admins: group.admins?.filter(
+                      (admin) => admin.id !== userId
+                    ),
                   }
-                  return existingGroup
-                }
-              ),
-            },
-          })
-        }
+                : group
+            ),
+          }
+        })
       },
     })
   }

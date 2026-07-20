@@ -1,10 +1,12 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
 import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
-import { checkCronToken } from '../lib/util.js'
 import * as AccountService from '../services/accounts.js'
+import * as ActivitiesService from '../services/activities.js'
+import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseService from '../services/courses.js'
+import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
@@ -12,13 +14,25 @@ import * as MicroLearningService from '../services/microLearning.js'
 import * as NotificationService from '../services/notifications.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
-import * as QuestionService from '../services/questions.js'
 import * as ResourcesService from '../services/resources.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
 import * as TemplateService from '../services/templates.js'
+import { ActivityInfo } from './activities.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
+import { PointCorrection, PointCorrectionType } from './assessment.js'
 import { Course } from './course.js'
+import {
+  Element,
+  ElementInstance,
+  OptionsCaseStudyInput,
+  OptionsChoicesInput,
+  OptionsFreeTextInput,
+  OptionsNumericalInput,
+  OptionsSelectionInput,
+  Tag,
+  TemplateBlockInput,
+} from './element.js'
 import { ElementStatus, ElementType } from './elementData.js'
 import {
   GroupActivity,
@@ -51,22 +65,16 @@ import {
   ElementOrderType,
   ElementStackInput,
   PracticeQuiz,
+  ReviewStatus,
   StackFeedback,
   StackResponseInput,
 } from './practiceQuiz.js'
 import {
-  ArchivedElementList,
-  Element,
-  ElementInstance,
-  OptionsCaseStudyInput,
-  OptionsChoicesInput,
-  OptionsFreeTextInput,
-  OptionsNumericalInput,
-  OptionsSelectionInput,
-  Tag,
-  TemplateBlockInput,
-} from './question.js'
-import { AnswerCollection, AnswerCollectionEntry } from './resource.js'
+  AnswerCollection,
+  AnswerCollectionEntry,
+  Chatbot,
+  ChatbotReasoningConfigInput,
+} from './resource.js'
 import {
   ActivityLogEntry,
   CatalogCollection,
@@ -127,9 +135,7 @@ export const Mutation = builder.mutationType({
       changeParticipantLocale: t.field({
         nullable: true,
         type: Participant,
-        args: {
-          locale: t.arg({ type: LocaleType, required: true }),
-        },
+        args: { locale: t.arg({ type: LocaleType, required: true }) },
         resolve: async (_, args, ctx) => {
           return await AccountService.changeParticipantLocale(args, ctx)
         },
@@ -197,9 +203,7 @@ export const Mutation = builder.mutationType({
 
       loginParticipantMagicLink: t.id({
         nullable: true,
-        args: {
-          token: t.arg.string({ required: true }),
-        },
+        args: { token: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await AccountService.loginParticipantMagicLink(args, ctx)
         },
@@ -207,9 +211,7 @@ export const Mutation = builder.mutationType({
 
       activateParticipantAccount: t.id({
         nullable: true,
-        args: {
-          token: t.arg.string({ required: true }),
-        },
+        args: { token: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await AccountService.activateParticipantAccount(args, ctx)
         },
@@ -217,11 +219,9 @@ export const Mutation = builder.mutationType({
 
       sendMagicLink: t.boolean({
         nullable: true,
-        args: {
-          usernameOrEmail: t.arg.string({ required: true }),
-        },
+        args: { usernameOrEmail: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
-          // TOD await O: at some point we should do rate limiting or similar things here (to prevent spamming)
+          // TODO: at some point we should do rate limiting or similar things here (to prevent spamming)
           return AccountService.sendMagicLink(args, ctx)
         },
       }),
@@ -253,6 +253,21 @@ export const Mutation = builder.mutationType({
       //   },
       // }),
 
+      setLiveQuizPin: t.field({
+        nullable: false,
+        type: 'Boolean',
+        args: {
+          liveQuizId: t.arg.string({ required: true }),
+          pin: t.arg.string({
+            required: true,
+            validate: { minLength: 6, maxLength: 6, regex: /^[A-Z0-9]+$/ },
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await LiveQuizService.setLiveQuizPinCookie(args, ctx)
+        },
+      }),
+
       respondToElementStack: t.field({
         nullable: true,
         type: StackFeedback,
@@ -260,42 +275,11 @@ export const Mutation = builder.mutationType({
           isOwner: t.arg.boolean({ required: true }),
           stackId: t.arg.int({ required: true }),
           courseId: t.arg.string({ required: true }),
-          responses: t.arg({
-            type: [StackResponseInput],
-            required: true,
-          }),
+          responses: t.arg({ type: [StackResponseInput], required: true }),
           stackAnswerTime: t.arg.int({ required: true }),
         },
         resolve: async (_, args, ctx) => {
           return await StacksService.respondToElementStack(args, ctx)
-        },
-      }),
-
-      updateGroupAverageScores: t.boolean({
-        resolve: async (_, __, ctx) => {
-          checkCronToken(ctx)
-          return await GroupService.updateGroupAverageScores(ctx)
-        },
-      }),
-
-      sendPushNotifications: t.boolean({
-        resolve: async (_, __, ctx) => {
-          checkCronToken(ctx)
-          return await NotificationService.sendPushNotifications(ctx)
-        },
-      }),
-
-      publishScheduledActivities: t.boolean({
-        resolve: async (_, __, ctx) => {
-          checkCronToken(ctx)
-          return await CourseService.publishScheduledActivities(ctx)
-        },
-      }),
-
-      endExpiredActivities: t.boolean({
-        resolve: async (_, __, ctx) => {
-          checkCronToken(ctx)
-          return await CourseService.endExpiredActivities(ctx)
         },
       }),
 
@@ -345,6 +329,15 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      ensureParticipation: t.withAuth(asParticipant).boolean({
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await CourseService.ensureParticipation(args, ctx)
+        },
+      }),
+
       joinCourseLeaderboard: t.withAuth(asParticipant).field({
         nullable: true,
         type: ParticipantLearningData,
@@ -382,26 +375,10 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      runningRandomGroupAssignments: t.boolean({
-        resolve: async (_, __, ctx) => {
-          checkCronToken(ctx)
-          return await GroupService.runningRandomGroupAssignments(ctx)
-        },
-      }),
-
-      finalRandomGroupAssignments: t.boolean({
-        resolve: async (_, __, ctx) => {
-          checkCronToken(ctx)
-          return await GroupService.finalRandomGroupAssignments(ctx)
-        },
-      }),
-
       manualRandomGroupAssignments: t.withAuth(asUser).field({
-        type: Course,
+        type: [ParticipantGroup],
         nullable: true,
-        args: {
-          courseId: t.arg.string({ required: true }),
-        },
+        args: { courseId: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ courseId: args.courseId }),
           DB.PermissionLevel.WRITE,
@@ -444,10 +421,7 @@ export const Mutation = builder.mutationType({
         type: Participant,
         args: {
           avatar: t.arg.string({ required: true }),
-          avatarSettings: t.arg({
-            type: AvatarSettingsInput,
-            required: true,
-          }),
+          avatarSettings: t.arg({ type: AvatarSettingsInput, required: true }),
         },
         resolve: async (_, args, ctx) => {
           return await ParticipantService.updateParticipantAvatar(args, ctx)
@@ -509,10 +483,7 @@ export const Mutation = builder.mutationType({
         type: 'Int',
         args: {
           activityId: t.arg.int({ required: true }),
-          responses: t.arg({
-            type: [StackResponseInput],
-            required: true,
-          }),
+          responses: t.arg({ type: [StackResponseInput], required: true }),
         },
         resolve: async (_, args, ctx) => {
           return await GroupService.submitGroupActivityDecisions(args, ctx)
@@ -528,9 +499,7 @@ export const Mutation = builder.mutationType({
 
       logoutTemporaryParticipant: t.withAuth(asTemporaryParticipant).boolean({
         nullable: true,
-        args: {
-          liveQuizId: t.arg.string({ required: true }),
-        },
+        args: { liveQuizId: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await AccountService.logoutTemporaryParticipant(args, ctx)
         },
@@ -539,9 +508,7 @@ export const Mutation = builder.mutationType({
       leaveCourseLeaderboard: t.withAuth(asParticipant).field({
         nullable: true,
         type: LeaveCourseParticipation,
-        args: {
-          courseId: t.arg.string({ required: true }),
-        },
+        args: { courseId: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await CourseService.leaveCourseLeaderboard(args, ctx)
         },
@@ -576,9 +543,7 @@ export const Mutation = builder.mutationType({
 
       joinRandomCourseGroupPool: t.withAuth(asParticipant).boolean({
         nullable: false,
-        args: {
-          courseId: t.arg.string({ required: true }),
-        },
+        args: { courseId: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await GroupService.joinRandomCourseGroupPool(args, ctx)
         },
@@ -586,9 +551,7 @@ export const Mutation = builder.mutationType({
 
       leaveRandomCourseGroupPool: t.withAuth(asParticipant).boolean({
         nullable: false,
-        args: {
-          courseId: t.arg.string({ required: true }),
-        },
+        args: { courseId: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await GroupService.leaveRandomCourseGroupPool(args, ctx)
         },
@@ -646,9 +609,7 @@ export const Mutation = builder.mutationType({
       changeUserLocale: t.withAuth(asUser).field({
         nullable: true,
         type: User,
-        args: {
-          locale: t.arg({ type: LocaleType, required: true }),
-        },
+        args: { locale: t.arg({ type: LocaleType, required: true }) },
         resolve: async (_, args, ctx) => {
           return await AccountService.changeUserLocale(args, ctx)
         },
@@ -657,9 +618,7 @@ export const Mutation = builder.mutationType({
       cancelLiveQuiz: t.withAuth(asUserSessionExec).field({
         nullable: true,
         type: LiveQuiz,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
+        args: { id: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ liveQuizId: args.id }),
           DB.PermissionLevel.EXECUTE,
@@ -672,9 +631,7 @@ export const Mutation = builder.mutationType({
       enableCourseGamification: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Course,
-        args: {
-          courseId: t.arg.string({ required: true }),
-        },
+        args: { courseId: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ courseId: args.courseId }),
           DB.PermissionLevel.WRITE,
@@ -687,9 +644,7 @@ export const Mutation = builder.mutationType({
       deleteCourse: t.withAuth(asUser).field({
         nullable: true,
         type: Course,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
+        args: { id: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ courseId: args.id }),
           DB.PermissionLevel.ADMIN,
@@ -702,25 +657,21 @@ export const Mutation = builder.mutationType({
       deleteTag: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Tag,
-        args: {
-          id: t.arg.int({ required: true }),
-        },
+        args: { id: t.arg.int({ required: true }) },
         resolve: async (_, args, ctx) => {
-          return await QuestionService.deleteTag(args, ctx)
+          return await ElementService.deleteTag(args, ctx)
         },
       }),
 
       deleteElement: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Element,
-        args: {
-          id: t.arg.int({ required: true }),
-        },
+        args: { id: t.arg.int({ required: true }) },
         resolve: withPermission(
           (args) => ({ elementId: args.id }),
           DB.PermissionLevel.ADMIN,
           async (_, args, ctx) => {
-            return await QuestionService.deleteElement(args, ctx)
+            return await ElementService.deleteElement(args, ctx)
           }
         ),
       }),
@@ -733,16 +684,14 @@ export const Mutation = builder.mutationType({
           name: t.arg.string({ required: true }),
         },
         resolve: async (_, args, ctx) => {
-          return await QuestionService.editTag(args, ctx)
+          return await ElementService.editTag(args, ctx)
         },
       }),
 
       endLiveQuiz: t.withAuth(asUserSessionExec).field({
         nullable: true,
         type: LiveQuiz,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
+        args: { id: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ liveQuizId: args.id }),
           DB.PermissionLevel.EXECUTE,
@@ -755,14 +704,41 @@ export const Mutation = builder.mutationType({
       startLiveQuiz: t.withAuth(asUserSessionExec).field({
         nullable: true,
         type: LiveQuizMeta,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
+        args: { id: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ liveQuizId: args.id }),
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await LiveQuizService.startLiveQuiz(args, ctx)
+          }
+        ),
+      }),
+
+      scheduleLiveQuiz: t.withAuth(asUserSessionExec).field({
+        nullable: true,
+        type: LiveQuizMeta,
+        args: {
+          id: t.arg.string({ required: true }),
+          availableFrom: t.arg({ type: 'Date', required: false }),
+        },
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.id }),
+          DB.PermissionLevel.EXECUTE,
+          async (_, args, ctx) => {
+            return await LiveQuizService.scheduleLiveQuiz(args, ctx)
+          }
+        ),
+      }),
+
+      unpublishLiveQuiz: t.withAuth(asUserSessionExec).field({
+        nullable: true,
+        type: LiveQuizMeta,
+        args: { id: t.arg.string({ required: true }) },
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.id }),
+          DB.PermissionLevel.EXECUTE,
+          async (_, args, ctx) => {
+            return await LiveQuizService.unpublishLiveQuiz(args, ctx)
           }
         ),
       }),
@@ -874,9 +850,8 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      deactivateLiveQuizBlock: t.withAuth(asUserSessionExec).field({
+      deactivateLiveQuizBlock: t.withAuth(asUserSessionExec).boolean({
         nullable: true,
-        type: LiveQuiz,
         args: {
           quizId: t.arg.string({ required: true }),
           blockId: t.arg.int({ required: true }),
@@ -898,7 +873,6 @@ export const Mutation = builder.mutationType({
           isLiveQAEnabled: t.arg.boolean({ required: false }),
           isConfusionFeedbackEnabled: t.arg.boolean({ required: false }),
           isModerationEnabled: t.arg.boolean({ required: false }),
-          isGamificationEnabled: t.arg.boolean({ required: false }),
         },
         resolve: withPermission(
           (args) => ({ liveQuizId: args.id }),
@@ -927,15 +901,12 @@ export const Mutation = builder.mutationType({
 
       createLiveQuiz: t.withAuth(asUserFullAccess).field({
         nullable: true,
-        type: LiveQuiz,
+        type: ActivityInfo,
         args: {
           name: t.arg.string({ required: true }),
           displayName: t.arg.string({ required: true }),
           description: t.arg.string({ required: false }),
-          blocks: t.arg({
-            type: [ElementBlockInput],
-            required: true,
-          }),
+          blocks: t.arg({ type: [ElementBlockInput], required: true }),
           courseId: t.arg.string({ required: false }),
           multiplier: t.arg.int({ required: true }),
 
@@ -944,6 +915,7 @@ export const Mutation = builder.mutationType({
           maxBonusPoints: t.arg.int({ required: false }),
           timeToZeroBonus: t.arg.int({ required: false }),
           isGamificationEnabled: t.arg.boolean({ required: true }),
+          isPinProtected: t.arg.boolean({ required: true }),
           isConfusionFeedbackEnabled: t.arg.boolean({ required: true }),
           isLiveQAEnabled: t.arg.boolean({ required: true }),
           isModerationEnabled: t.arg.boolean({ required: true }),
@@ -955,16 +927,13 @@ export const Mutation = builder.mutationType({
 
       editLiveQuiz: t.withAuth(asUserFullAccess).field({
         nullable: true,
-        type: LiveQuiz,
+        type: ActivityInfo,
         args: {
           id: t.arg.string({ required: true }),
           name: t.arg.string({ required: true }),
           displayName: t.arg.string({ required: true }),
           description: t.arg.string({ required: false }),
-          blocks: t.arg({
-            type: [ElementBlockInput],
-            required: true,
-          }),
+          blocks: t.arg({ type: [ElementBlockInput], required: true }),
           courseId: t.arg.string({ required: false }),
           multiplier: t.arg.int({ required: true }),
 
@@ -973,6 +942,7 @@ export const Mutation = builder.mutationType({
           maxBonusPoints: t.arg.int({ required: false }),
           timeToZeroBonus: t.arg.int({ required: false }),
           isGamificationEnabled: t.arg.boolean({ required: true }),
+          isPinProtected: t.arg.boolean({ required: true }),
           isConfusionFeedbackEnabled: t.arg.boolean({ required: true }),
           isLiveQAEnabled: t.arg.boolean({ required: true }),
           isModerationEnabled: t.arg.boolean({ required: true }),
@@ -996,7 +966,7 @@ export const Mutation = builder.mutationType({
           (args) => ({ elementId: args.elementId }),
           DB.PermissionLevel.READ,
           async (_, args, ctx) => {
-            return await QuestionService.changeElementStatus(args, ctx)
+            return await ElementService.changeElementStatus(args, ctx)
           }
         ),
       }),
@@ -1030,7 +1000,7 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await QuestionService.manipulateQuestion(
+          return await ElementService.manipulateElement(
             { ...args, type: DB.ElementType.CONTENT },
             ctx
           )
@@ -1067,7 +1037,7 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await QuestionService.manipulateQuestion(
+          return await ElementService.manipulateElement(
             { ...args, type: DB.ElementType.FLASHCARD },
             ctx
           )
@@ -1108,7 +1078,7 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await QuestionService.manipulateQuestion(args, ctx)
+          return await ElementService.manipulateElement(args, ctx)
         },
       }),
 
@@ -1145,7 +1115,7 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await QuestionService.manipulateQuestion(
+          return await ElementService.manipulateElement(
             { ...args, type: DB.ElementType.NUMERICAL },
             ctx
           )
@@ -1185,7 +1155,7 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await QuestionService.manipulateQuestion(
+          return await ElementService.manipulateElement(
             { ...args, type: DB.ElementType.FREE_TEXT },
             ctx
           )
@@ -1225,7 +1195,7 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await QuestionService.manipulateQuestion(
+          return await ElementService.manipulateElement(
             { ...args, type: DB.ElementType.SELECTION },
             ctx
           )
@@ -1265,10 +1235,54 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await QuestionService.manipulateQuestion(
+          return await ElementService.manipulateElement(
             { ...args, type: DB.ElementType.CASE_STUDY },
             ctx
           )
+        },
+      }),
+
+      setActivityReviewStatus: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: ReviewStatus,
+        args: {
+          activityId: t.arg.string({ required: true }),
+          activityType: t.arg({ type: ActivityType, required: true }),
+          isReviewed: t.arg.boolean({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ActivitiesService.setActivityReviewStatus(args, ctx)
+        },
+      }),
+
+      applyElementBatchOperations: t.withAuth(asUserFullAccess).int({
+        args: {
+          elementIds: t.arg.intList({ required: true }),
+          archive: t.arg.boolean({ required: true }),
+          unarchive: t.arg.boolean({ required: true }),
+          status: t.arg({ type: ElementStatus, required: false }),
+          multiplier: t.arg.int({ required: false }),
+          basePoints: t.arg.boolean({ required: false }),
+          updateInstances: t.arg.boolean({ required: true }),
+          updateTemplateInstances: t.arg.boolean({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ElementService.applyElementBatchOperations(args, ctx)
+        },
+      }),
+
+      applyActivityBatchOperations: t.withAuth(asUserFullAccess).int({
+        args: {
+          activityIds: t.arg.stringList({ required: true }),
+          multiplier: t.arg.int({ required: false }),
+          courseId: t.arg.string({ required: false }),
+          basePoints: t.arg.int({ required: false }),
+          correctnessPoints: t.arg.int({ required: false }),
+          bonusPoints: t.arg.int({ required: false }),
+          timeToZeroBonus: t.arg.int({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ActivitiesService.applyActivityBatchOperations(args, ctx)
         },
       }),
 
@@ -1283,21 +1297,28 @@ export const Mutation = builder.mutationType({
           (args) => ({ elementId: args.elementId }),
           DB.PermissionLevel.WRITE,
           async (_, args, ctx) => {
-            return await QuestionService.updateElementInstances(args, ctx)
+            return await ElementService.updateElementInstances(
+              args,
+              ctx.prisma,
+              ctx.emitter,
+              ctx.user.sub
+            )
           }
         ),
       }),
 
       flagOutdatedElementInstances: t.withAuth(asUserFullAccess).boolean({
         nullable: true,
-        args: {
-          elementId: t.arg.int({ required: true }),
-        },
+        args: { elementId: t.arg.int({ required: true }) },
         resolve: withPermission(
           (args) => ({ elementId: args.elementId }),
           DB.PermissionLevel.WRITE,
           async (_, args, ctx) => {
-            return await QuestionService.flagOutdatedElementInstances(args, ctx)
+            return await ElementService.flagOutdatedElementInstances(
+              args,
+              ctx.prisma,
+              ctx.emitter
+            )
           }
         ),
       }),
@@ -1316,6 +1337,7 @@ export const Mutation = builder.mutationType({
           groupDeadlineDate: t.arg({ type: 'Date', required: true }),
           maxGroupSize: t.arg.int({ required: true }),
           preferredGroupSize: t.arg.int({ required: true }),
+          language: t.arg({ type: LocaleType, required: true }),
           notificationEmail: t.arg.string({
             required: false,
             validate: { email: true },
@@ -1340,6 +1362,7 @@ export const Mutation = builder.mutationType({
           endDate: t.arg({ type: 'Date', required: false }),
           isGroupCreationEnabled: t.arg.boolean({ required: false }),
           groupDeadlineDate: t.arg({ type: 'Date', required: false }),
+          language: t.arg({ type: LocaleType, required: true }),
           notificationEmail: t.arg.string({
             required: false,
             validate: { email: false },
@@ -1355,28 +1378,36 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
+      updateChatbotModelSettings: t.withAuth(asUser).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          modelSelection: t.arg.boolean({ required: true }),
+          allowedModelIds: t.arg.stringList({ required: true }),
+          allowedReasoningEffortsByModel: t.arg({
+            type: [ChatbotReasoningConfigInput],
+            required: false,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.updateChatbotModelSettings(args, ctx)
+        },
+      }),
+
       updateWeeklyTimelineEntriesCourse: t.withAuth(asUserFullAccess).boolean({
         nullable: true,
-        args: {
-          courseId: t.arg.string({ required: true }),
-        },
+        args: { courseId: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ courseId: args.courseId }),
           DB.PermissionLevel.READ,
           async (_, args, ctx) => {
             return await ParticipantService.updateWeeklyTimelineEntriesCourse(
               args,
-              ctx
+              ctx.prisma
             )
           }
         ),
-      }),
-
-      updateWeeklyTimelineEntries: t.boolean({
-        resolve: async (_, __, ctx) => {
-          checkCronToken(ctx)
-          return await ParticipantService.updateWeeklyTimelineEntries(ctx)
-        },
       }),
 
       toggleArchiveCourse: t.withAuth(asUser).field({
@@ -1395,18 +1426,6 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
-      toggleIsArchived: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: ArchivedElementList,
-        args: {
-          elementIds: t.arg.intList({ required: true }),
-          isArchived: t.arg.boolean({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await QuestionService.toggleIsArchived(args, ctx)
-        },
-      }),
-
       updateTagOrdering: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: [Tag],
@@ -1415,16 +1434,14 @@ export const Mutation = builder.mutationType({
           targetIx: t.arg.int({ required: true }),
         },
         resolve: async (_, args, ctx) => {
-          return await QuestionService.updateTagOrdering(args, ctx)
+          return await ElementService.updateTagOrdering(args, ctx)
         },
       }),
 
       deleteLiveQuiz: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: LiveQuiz,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
+        args: { id: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ liveQuizId: args.id }),
           DB.PermissionLevel.ADMIN,
@@ -1432,6 +1449,63 @@ export const Mutation = builder.mutationType({
             return await LiveQuizService.deleteLiveQuiz(args, ctx)
           }
         ),
+      }),
+
+      resetAssessmentLiveQuiz: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: ActivityInfo,
+        args: { id: t.arg.string({ required: true }) },
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.id }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            return await LiveQuizService.resetAssessmentLiveQuiz(args, ctx)
+          }
+        ),
+      }),
+
+      correctAssessmentPointsInstance: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: PointCorrection,
+        args: {
+          instanceId: t.arg.int({ required: true }),
+          awardBasePoints: t.arg.boolean({ required: false }),
+          awardCorrectnessPoints: t.arg.boolean({ required: false }),
+          awardBonusPoints: t.arg.boolean({ required: false }),
+          deductBasePoints: t.arg.boolean({ required: false }),
+          deductCorrectnessPoints: t.arg.boolean({ required: false }),
+          deductBonusPoints: t.arg.boolean({ required: false }),
+          reason: t.arg.string({ required: true }),
+          studentReason: t.arg.string({ required: true }),
+          scope: t.arg({ type: PointCorrectionType, required: true }),
+          participantId: t.arg.string({ required: false }),
+          participantIds: t.arg.stringList({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await CourseService.correctAssessmentPointsInstance(args, ctx)
+        },
+      }),
+
+      correctAssessmentPointsLiveQuiz: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: PointCorrection,
+        args: {
+          liveQuizId: t.arg.string({ required: true }),
+          awardBasePoints: t.arg.boolean({ required: false }),
+          awardCorrectnessPoints: t.arg.boolean({ required: false }),
+          awardBonusPoints: t.arg.boolean({ required: false }),
+          deductBasePoints: t.arg.boolean({ required: false }),
+          deductCorrectnessPoints: t.arg.boolean({ required: false }),
+          deductBonusPoints: t.arg.boolean({ required: false }),
+          reason: t.arg.string({ required: true }),
+          studentReason: t.arg.string({ required: true }),
+          scope: t.arg({ type: PointCorrectionType, required: true }),
+          participantId: t.arg.string({ required: false }),
+          participantIds: t.arg.stringList({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await CourseService.correctAssessmentPointsLiveQuiz(args, ctx)
+        },
       }),
 
       changeActivityName: t.withAuth(asUserFullAccess).boolean({
@@ -1516,16 +1590,14 @@ export const Mutation = builder.mutationType({
           contentType: t.arg.string({ required: true }),
         },
         resolve: async (_, args, ctx) => {
-          return await QuestionService.getFileUploadSas(args, ctx)
+          return await ElementService.getFileUploadSas(args, ctx)
         },
       }),
 
       changeShortname: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: User,
-        args: {
-          shortname: t.arg.string({ required: true }),
-        },
+        args: { shortname: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await AccountService.changeShortname(args, ctx)
         },
@@ -1534,9 +1606,7 @@ export const Mutation = builder.mutationType({
       changeEmailSettings: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: User,
-        args: {
-          projectUpdates: t.arg.boolean({ required: true }),
-        },
+        args: { projectUpdates: t.arg.boolean({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await AccountService.changeEmailSettings(args, ctx)
         },
@@ -1558,9 +1628,7 @@ export const Mutation = builder.mutationType({
 
       grantPrivatePreviewAccess: t.withAuth(asAdmin).int({
         nullable: true,
-        args: {
-          email: t.arg.string({ required: true }),
-        },
+        args: { email: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await AccountService.grantPrivatePreviewAccess(args, ctx)
         },
@@ -1582,9 +1650,7 @@ export const Mutation = builder.mutationType({
       duplicateAnswerCollection: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: AnswerCollection,
-        args: {
-          id: t.arg.int({ required: true }),
-        },
+        args: { id: t.arg.int({ required: true }) },
         resolve: withPermission(
           (args) => ({ answerCollectionId: args.id }),
           DB.PermissionLevel.READ,
@@ -1673,18 +1739,14 @@ export const Mutation = builder.mutationType({
       }),
 
       leaveUserGroup: t.withAuth(asUserFullAccess).boolean({
-        args: {
-          groupId: t.arg.int({ required: true }),
-        },
+        args: { groupId: t.arg.int({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await SharingService.leaveUserGroup(args, ctx)
         },
       }),
 
       deleteUserGroup: t.withAuth(asUserFullAccess).boolean({
-        args: {
-          groupId: t.arg.int({ required: true }),
-        },
+        args: { groupId: t.arg.int({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await SharingService.deleteUserGroup(args, ctx)
         },
@@ -1756,10 +1818,8 @@ export const Mutation = builder.mutationType({
       resolveActivityLogEntry: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: ActivityLogEntry,
-        args: {
-          id: t.arg.int({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
+        args: { id: t.arg.int({ required: true }) },
+        resolve: async (_, __, ___) => {
           return null
 
           // TODO: implement resolveActivityLogEntry
@@ -1852,6 +1912,16 @@ export const Mutation = builder.mutationType({
           }
 
           return await SharingService.addActivityMessage(args, ctx)
+        },
+      }),
+
+      deleteActivityMessage: t.withAuth(asUserFullAccess).boolean({
+        args: { id: t.arg.int({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await SharingService.deleteActivityMessage(
+            { messageId: args.id },
+            ctx
+          )
         },
       }),
 
@@ -2033,9 +2103,7 @@ export const Mutation = builder.mutationType({
       deleteAnswerCollection: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: 'Int',
-        args: {
-          collectionId: t.arg.int({ required: true }),
-        },
+        args: { collectionId: t.arg.int({ required: true }) },
         resolve: withPermission(
           (args) => ({ answerCollectionId: args.collectionId }),
           DB.PermissionLevel.ADMIN,
@@ -2121,9 +2189,7 @@ export const Mutation = builder.mutationType({
 
       deleteCatalogCollection: t.withAuth(asUserFullAccess).string({
         nullable: true,
-        args: {
-          catalogCollectionId: t.arg.string({ required: true }),
-        },
+        args: { catalogCollectionId: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ catalogCollectionId: args.catalogCollectionId }),
           DB.PermissionLevel.ADMIN,
@@ -2902,7 +2968,7 @@ export const Mutation = builder.mutationType({
               ctx
             )
           } else if (args.objectType === DB.ObjectType.ELEMENT) {
-            return await QuestionService.removeElement(
+            return await ElementService.removeElement(
               { id: parseInt(args.objectId) },
               ctx
             )
@@ -2936,9 +3002,7 @@ export const Mutation = builder.mutationType({
 
       removeCatalogObjectAssignment: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
-        args: {
-          assignmentId: t.arg.int({ required: true }),
-        },
+        args: { assignmentId: t.arg.int({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await SharingService.removeCatalogObjectAssignment(args, ctx)
         },
@@ -2986,7 +3050,7 @@ export const Mutation = builder.mutationType({
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
           nullable: true,
-          type: PracticeQuiz,
+          type: ActivityInfo,
           args: {
             name: t.arg.string({ required: true }),
             displayName: t.arg.string({ required: true }),
@@ -3012,7 +3076,7 @@ export const Mutation = builder.mutationType({
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
           nullable: true,
-          type: PracticeQuiz,
+          type: ActivityInfo,
           args: {
             id: t.arg.string({ required: true }),
             name: t.arg.string({ required: true }),
@@ -3043,7 +3107,7 @@ export const Mutation = builder.mutationType({
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
           nullable: true,
-          type: MicroLearning,
+          type: ActivityInfo,
           args: {
             name: t.arg.string({ required: true }),
             displayName: t.arg.string({ required: true }),
@@ -3063,7 +3127,7 @@ export const Mutation = builder.mutationType({
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
           nullable: true,
-          type: MicroLearning,
+          type: ActivityInfo,
           args: {
             id: t.arg.string({ required: true }),
             name: t.arg.string({ required: true }),
@@ -3110,9 +3174,7 @@ export const Mutation = builder.mutationType({
         .field({
           nullable: true,
           type: MicroLearning,
-          args: {
-            id: t.arg.string({ required: true }),
-          },
+          args: { id: t.arg.string({ required: true }) },
           resolve: withPermission(
             (args) => ({ microLearningId: args.id }),
             DB.PermissionLevel.EXECUTE,
@@ -3126,7 +3188,7 @@ export const Mutation = builder.mutationType({
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
           nullable: true,
-          type: GroupActivity,
+          type: ActivityInfo,
           args: {
             name: t.arg.string({ required: true }),
             displayName: t.arg.string({ required: true }),
@@ -3147,7 +3209,7 @@ export const Mutation = builder.mutationType({
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
           nullable: true,
-          type: GroupActivity,
+          type: ActivityInfo,
           args: {
             id: t.arg.string({ required: true }),
             name: t.arg.string({ required: true }),
@@ -3210,9 +3272,7 @@ export const Mutation = builder.mutationType({
         .field({
           nullable: true,
           type: MicroLearning,
-          args: {
-            id: t.arg.string({ required: true }),
-          },
+          args: { id: t.arg.string({ required: true }) },
           resolve: withPermission(
             (args) => ({ microLearningId: args.id }),
             DB.PermissionLevel.EXECUTE,
@@ -3227,9 +3287,7 @@ export const Mutation = builder.mutationType({
         .field({
           nullable: true,
           type: PracticeQuiz,
-          args: {
-            id: t.arg.string({ required: true }),
-          },
+          args: { id: t.arg.string({ required: true }) },
           resolve: withPermission(
             (args) => ({ practiceQuizId: args.id }),
             DB.PermissionLevel.EXECUTE,
@@ -3244,9 +3302,7 @@ export const Mutation = builder.mutationType({
         .field({
           nullable: true,
           type: MicroLearning,
-          args: {
-            id: t.arg.string({ required: true }),
-          },
+          args: { id: t.arg.string({ required: true }) },
           resolve: withPermission(
             (args) => ({ microLearningId: args.id }),
             DB.PermissionLevel.EXECUTE,
@@ -3264,9 +3320,7 @@ export const Mutation = builder.mutationType({
         .field({
           nullable: true,
           type: PracticeQuiz,
-          args: {
-            id: t.arg.string({ required: true }),
-          },
+          args: { id: t.arg.string({ required: true }) },
           resolve: withPermission(
             (args) => ({ practiceQuizId: args.id }),
             DB.PermissionLevel.ADMIN,
@@ -3281,9 +3335,7 @@ export const Mutation = builder.mutationType({
         .field({
           nullable: true,
           type: MicroLearning,
-          args: {
-            id: t.arg.string({ required: true }),
-          },
+          args: { id: t.arg.string({ required: true }) },
           resolve: withPermission(
             (args) => ({ microLearningId: args.id }),
             DB.PermissionLevel.ADMIN,
@@ -3298,9 +3350,7 @@ export const Mutation = builder.mutationType({
         .field({
           nullable: true,
           type: GroupActivity,
-          args: {
-            id: t.arg.string({ required: true }),
-          },
+          args: { id: t.arg.string({ required: true }) },
           resolve: withPermission(
             (args) => ({ groupActivityId: args.id }),
             DB.PermissionLevel.EXECUTE,
@@ -3315,9 +3365,7 @@ export const Mutation = builder.mutationType({
         .field({
           nullable: true,
           type: GroupActivity,
-          args: {
-            id: t.arg.string({ required: true }),
-          },
+          args: { id: t.arg.string({ required: true }) },
           resolve: withPermission(
             (args) => ({ groupActivityId: args.id }),
             DB.PermissionLevel.EXECUTE,
@@ -3332,9 +3380,7 @@ export const Mutation = builder.mutationType({
         .field({
           nullable: true,
           type: GroupActivity,
-          args: {
-            id: t.arg.string({ required: true }),
-          },
+          args: { id: t.arg.string({ required: true }) },
           resolve: withPermission(
             (args) => ({ groupActivityId: args.id }),
             DB.PermissionLevel.EXECUTE,
@@ -3349,9 +3395,7 @@ export const Mutation = builder.mutationType({
         .field({
           nullable: true,
           type: GroupActivity,
-          args: {
-            id: t.arg.string({ required: true }),
-          },
+          args: { id: t.arg.string({ required: true }) },
           resolve: withPermission(
             (args) => ({ groupActivityId: args.id }),
             DB.PermissionLevel.EXECUTE,
@@ -3366,9 +3410,7 @@ export const Mutation = builder.mutationType({
         .field({
           nullable: true,
           type: GroupActivity,
-          args: {
-            id: t.arg.string({ required: true }),
-          },
+          args: { id: t.arg.string({ required: true }) },
           resolve: withPermission(
             (args) => ({ groupActivityId: args.id }),
             DB.PermissionLevel.ADMIN,
@@ -3405,9 +3447,7 @@ export const Mutation = builder.mutationType({
         .field({
           nullable: true,
           type: GroupActivity,
-          args: {
-            id: t.arg.string({ required: true }),
-          },
+          args: { id: t.arg.string({ required: true }) },
           resolve: withPermission(
             (args) => ({ groupActivityId: args.id }),
             DB.PermissionLevel.WRITE,
@@ -3448,9 +3488,7 @@ export const Mutation = builder.mutationType({
       deleteUserLogin: t.withAuth(asUserOwner).field({
         nullable: true,
         type: UserLogin,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
+        args: { id: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await AccountService.deleteUserLogin(args, ctx)
         },

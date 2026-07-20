@@ -1,8 +1,7 @@
 // pn exec:prod scripts/fixPointsInconsistency.ts
 
-import { PrismaClient } from '@klicker-uzh/prisma'
+import { prisma } from '@klicker-uzh/prisma'
 import { Redis } from 'ioredis'
-const prisma = new PrismaClient()
 
 const redisExec = new Redis({
   family: 4,

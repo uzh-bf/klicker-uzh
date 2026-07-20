@@ -1,7 +1,10 @@
-import { ChoicesActivityEvaluationData } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ChoicesActivityEvaluationData,
+  LocaleType,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { CHART_COLORS } from '@klicker-uzh/shared-components/src/constants'
-import { useLocalStorage } from '@uidotdev/usehooks'
+import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
 import { ActivityEvaluationType } from '../ActivityEvaluation'
 import { TextSizeType } from '../textSizes'
@@ -9,6 +12,9 @@ import LiveQuizEvaluationQRCode from './LiveQuizEvaluationQRCode'
 
 interface ChoicesSidebarProps {
   instance: ChoicesActivityEvaluationData
+  courseLanguage?: LocaleType | null
+  isAssessmentEnabled: boolean
+  pinCode?: string | null
   textSize: TextSizeType
   showSolution: boolean
   type: ActivityEvaluationType
@@ -16,29 +22,24 @@ interface ChoicesSidebarProps {
 
 function ChoicesSidebar({
   instance,
+  courseLanguage,
+  isAssessmentEnabled,
+  pinCode,
   textSize,
   showSolution,
   type,
 }: ChoicesSidebarProps) {
-  const [hideQR, setHideQR] = useLocalStorage<boolean>(
-    `hide-qr-evaluation`,
-    false
-  )
+  const router = useRouter()
 
   return (
     <div
       className={twMerge(
-        'order-1 flex h-full w-full flex-col justify-between overflow-hidden px-3 py-2 md:order-2',
+        'order-1 flex h-full w-full flex-col justify-between overflow-hidden pb-1 pt-2 md:order-2',
         textSize.text
       )}
     >
-      <div className="flex h-max max-h-full flex-col gap-2 overflow-y-auto">
-        <div
-          className={twMerge(
-            'flex flex-1 flex-col gap-2.5 overflow-y-auto',
-            textSize.text
-          )}
-        >
+      <div className="flex h-max max-h-full flex-col gap-2 overflow-y-auto px-2">
+        <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto">
           {instance.results.choices.map((choice, innerIndex) => {
             const correctFraction =
               instance.results.totalAnswers > 0
@@ -87,8 +88,12 @@ function ChoicesSidebar({
           })}
         </div>
       </div>
-      {type === 'LiveQuiz' && !hideQR && (
-        <LiveQuizEvaluationQRCode setHideQR={setHideQR} />
+      {type === 'LiveQuiz' && !router.query.hmac && (
+        <LiveQuizEvaluationQRCode
+          language={courseLanguage}
+          isAssessmentEnabled={isAssessmentEnabled}
+          pinCode={pinCode}
+        />
       )}
     </div>
   )

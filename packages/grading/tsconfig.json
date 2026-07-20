@@ -1,7 +1,6 @@
 {
   "include": ["**/**/*"],
   "compilerOptions": {
-    "baseUrl": ".",
     /* Base Options: */
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -10,22 +9,24 @@
     "resolveJsonModule": true,
     "moduleDetection": "force",
     "isolatedModules": true,
-    "verbatimModuleSyntax": false,
+    "verbatimModuleSyntax": true,
     /* Strictness */
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
+    "noErrorTruncation": true,
     /* If transpiling with TypeScript: */
     "module": "NodeNext",
     "outDir": "dist",
     "sourceMap": true,
     /* AND if you're building for a library: */
     "declaration": true,
-    /* AND if you're building for a library in a monorepo: */
-    "composite": true,
+    /* Incremental build cache: */
+    "incremental": true,
     "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
     "declarationMap": true,
     /* If your code doesn't run in the DOM: */
-    "lib": ["es2022"]
+    "lib": ["es2022"],
+    "types": ["vitest/globals"]
   }
 }

@@ -39,6 +39,8 @@ function useImportCatalogObject({
           objectType,
           catalogCollectionId,
         },
+        // generic return type supporting multiple object types is not available
+        // proper cache update therefore impractical -> refetch query is acceptable here
         refetchQueries: [
           ...(objectType === ObjectType.AnswerCollection
             ? [{ query: GetAnswerCollectionsInfoDocument }]

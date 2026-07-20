@@ -1,4 +1,4 @@
-import { ElementType, PrismaClient } from '@klicker-uzh/prisma'
+import { ElementType, PrismaClient } from '@klicker-uzh/prisma/client'
 import { createHash } from 'node:crypto'
 
 async function run() {

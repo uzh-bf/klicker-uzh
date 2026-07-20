@@ -1,27 +1,57 @@
-import { GetSingleCourseDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ApolloCache,
+  DefaultContext,
+  FetchResult,
+  MutationFunctionOptions,
+} from '@apollo/client'
+import {
+  CreatePracticeQuizMutation,
+  CreatePracticeQuizMutationVariables,
+  EditPracticeQuizMutation,
+  EditPracticeQuizMutationVariables,
+  GetSingleCourseDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { ElementStackFormValues, PracticeQuizFormValues } from '../WizardLayout'
 
-interface PracticeQuizFormProps {
+interface PracticeQuizFormSubmissionProps {
   id?: string
+  previousCourseId?: string
   values: PracticeQuizFormValues
   editMode: boolean
-  createPracticeQuiz: any
-  editPracticeQuiz: any
-  setSelectedCourseId: (courseId?: string) => void
+  createPracticeQuiz: (
+    options?:
+      | MutationFunctionOptions<
+          CreatePracticeQuizMutation,
+          CreatePracticeQuizMutationVariables,
+          DefaultContext,
+          ApolloCache<any>
+        >
+      | undefined
+  ) => Promise<FetchResult<CreatePracticeQuizMutation>>
+  editPracticeQuiz: (
+    options?:
+      | MutationFunctionOptions<
+          EditPracticeQuizMutation,
+          EditPracticeQuizMutationVariables,
+          DefaultContext,
+          ApolloCache<any>
+        >
+      | undefined
+  ) => Promise<FetchResult<EditPracticeQuizMutation>>
   setIsWizardCompleted: (isCompleted: boolean) => void
   onError: () => void
 }
 
 async function submitPracticeQuizForm({
   id,
+  previousCourseId,
   values,
   editMode,
   createPracticeQuiz,
   editPracticeQuiz,
-  setSelectedCourseId,
   setIsWizardCompleted,
   onError,
-}: PracticeQuizFormProps) {
+}: PracticeQuizFormSubmissionProps) {
   try {
     let success = false
 
@@ -51,39 +81,94 @@ async function submitPracticeQuizForm({
         }
       }),
       multiplier: parseInt(values.multiplier),
-      courseId: values.courseId,
+      courseId: values.courseId!,
       order: values.order,
       resetTimeDays: parseInt(values.resetTimeDays),
     }
 
-    if (editMode) {
+    if (editMode && id) {
       const result = await editPracticeQuiz({
-        variables: {
-          id,
-          ...createOrUpdateJSON,
-        },
-        refetchQueries: [
-          {
-            query: GetSingleCourseDocument,
-            variables: {
-              courseId: values.courseId,
+        variables: { id, ...createOrUpdateJSON },
+        update: (cache, { data: res }) => {
+          // if the mutation was not successful, return early
+          if (!res?.editPracticeQuiz?.courseId) return
+
+          // if the course assignment changed, remove the practice quiz from the previous course
+          if (
+            previousCourseId &&
+            res.editPracticeQuiz.courseId !== previousCourseId
+          ) {
+            cache.updateQuery(
+              {
+                query: GetSingleCourseDocument,
+                variables: { courseId: previousCourseId! },
+              },
+              (data) => {
+                if (!data?.course) return data
+
+                const activities =
+                  data.course.practiceQuizzesInfo?.filter(
+                    (pq) => pq.id !== res.editPracticeQuiz!.id
+                  ) ?? []
+                return {
+                  course: { ...data.course, practiceQuizzesInfo: activities },
+                }
+              }
+            )
+          }
+
+          // updated / add the practice quiz in the currently assigned course
+          cache.updateQuery(
+            {
+              query: GetSingleCourseDocument,
+              variables: { courseId: res.editPracticeQuiz.courseId },
             },
-          },
-        ],
+            (data) => {
+              if (!data?.course) return data
+
+              const activities = [
+                ...(data.course.practiceQuizzesInfo?.filter(
+                  (pq) => pq.id !== res.editPracticeQuiz!.id
+                ) ?? []),
+                res.editPracticeQuiz!,
+              ]
+              return {
+                course: { ...data.course, practiceQuizzesInfo: activities },
+              }
+            }
+          )
+        },
       })
 
       success = Boolean(result.data?.editPracticeQuiz)
     } else {
       const result = await createPracticeQuiz({
         variables: createOrUpdateJSON,
-        refetchQueries: [
-          {
-            query: GetSingleCourseDocument,
-            variables: {
-              courseId: values.courseId,
+        update: (cache, { data: res }) => {
+          // if the mutation was not successful, return early
+          if (!res?.createPracticeQuiz?.courseId) return
+
+          // change the status of the practice quiz on the course overview back to draft
+          cache.updateQuery(
+            {
+              query: GetSingleCourseDocument,
+              variables: { courseId: res.createPracticeQuiz.courseId! },
             },
-          },
-        ],
+            (data) => {
+              if (!data?.course) return data
+
+              return {
+                course: {
+                  ...data.course,
+                  practiceQuizzesInfo: [
+                    ...(data.course.practiceQuizzesInfo ?? []),
+                    res.createPracticeQuiz!,
+                  ],
+                },
+              }
+            }
+          )
+        },
       })
 
       success = Boolean(result.data?.createPracticeQuiz)
@@ -91,7 +176,6 @@ async function submitPracticeQuizForm({
 
     if (success) {
       setIsWizardCompleted(true)
-      setSelectedCourseId(values.courseId)
     } else {
       onError()
     }

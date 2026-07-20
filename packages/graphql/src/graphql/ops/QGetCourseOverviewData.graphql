@@ -22,6 +22,7 @@ query GetCourseOverviewData($courseId: String!) {
       color
       description
       isGamificationEnabled
+      isAssessmentEnabled
       groupDeadlineDate
       isGroupDeadlinePassed
       isGroupCreationEnabled

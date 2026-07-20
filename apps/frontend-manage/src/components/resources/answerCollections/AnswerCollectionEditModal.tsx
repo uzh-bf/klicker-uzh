@@ -64,7 +64,6 @@ function AnswerCollectionEditModal({
     fetchPolicy: 'cache-and-network',
     skip: !open,
   })
-
   const collection = data?.getSingleAnswerCollection
 
   // setup search

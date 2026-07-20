@@ -13,13 +13,24 @@ function useObjectPermissions({
   objectId: string | number
   objectType: ObjectType
   skip: boolean
-}): { permissions: PermissionInfo[]; loading: boolean } {
+}): {
+  permissions: PermissionInfo[]
+  ownerPermission?: PermissionInfo
+  isOwner: boolean
+  loading: boolean
+} {
   const { data, loading } = useQuery(GetObjectPermissionsDocument, {
     variables: { objectId: String(objectId), objectType },
     skip,
+    fetchPolicy: 'cache-and-network',
   })
 
-  return { permissions: data?.getObjectPermissions ?? [], loading }
+  return {
+    permissions: data?.getObjectPermissions?.permissions ?? [],
+    ownerPermission: data?.getObjectPermissions?.ownerPermission ?? undefined,
+    isOwner: data?.getObjectPermissions?.isOwner ?? false,
+    loading,
+  }
 }
 
 export default useObjectPermissions

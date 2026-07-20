@@ -40,28 +40,23 @@ function CatalogCollectionDeletionModal({
           await deleteCatalogCollection({
             variables: { catalogCollectionId },
             update: (cache, { data }) => {
+              // check if the deletion was successful
               if (!data?.deleteCatalogCollection) return
 
-              const prevCollections = cache.readQuery({
-                query: GetCatalogCollectionsListDocument,
-              })
-
-              if (!prevCollections?.getCatalogCollectionsList) {
-                return
-              }
-
-              const newCollections =
-                prevCollections.getCatalogCollectionsList.filter(
-                  (collection) =>
-                    collection.id !== data.deleteCatalogCollection!
-                )
-
-              cache.writeQuery({
-                query: GetCatalogCollectionsListDocument,
-                data: {
-                  getCatalogCollectionsList: newCollections,
-                },
-              })
+              // remove the catalog collection from the list
+              cache.updateQuery(
+                { query: GetCatalogCollectionsListDocument },
+                (data) => {
+                  if (!data?.getCatalogCollectionsList) return data
+                  return {
+                    ...data,
+                    getCatalogCollectionsList:
+                      data.getCatalogCollectionsList.filter(
+                        (collection) => collection.id !== catalogCollectionId
+                      ),
+                  }
+                }
+              )
             },
           })
 

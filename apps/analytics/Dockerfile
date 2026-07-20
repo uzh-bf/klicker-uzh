@@ -1,13 +1,19 @@
+FROM ghcr.io/astral-sh/uv:0.11.12 AS uv
+
 FROM python:3.12
 
 WORKDIR /app
 
-COPY apps/analytics/requirements.txt .
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy
 
-RUN pip install -r requirements.txt
+COPY --from=uv /uv /uvx /bin/
+COPY apps/analytics/pyproject.toml apps/analytics/uv.lock ./
+
+RUN uv sync --frozen --no-dev --no-install-project
 
 COPY apps/analytics/ .
-COPY packages/prisma/src/prisma/schema/*.prisma apps/analytics/prisma/schema/
-RUN rm apps/analytics/prisma/schema/js.prisma
+COPY packages/prisma/src/prisma/schema/*.prisma prisma/schema/
+RUN rm prisma/schema/js.prisma
 
-RUN prisma generate
+RUN uv run --no-sync prisma generate

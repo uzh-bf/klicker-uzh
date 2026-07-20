@@ -1,14 +1,33 @@
-import * as DB from '@klicker-uzh/prisma'
-import { ActivityType, SharingType } from '@klicker-uzh/types'
-import { levelFromXp, recomputeDerivedPermissions } from '@klicker-uzh/util'
+import { ICourse, type ILeaderboardEntry } from '@/schema/course.js'
+import * as DB from '@klicker-uzh/prisma/client'
+import {
+  ActivityStudentPerformance,
+  ActivityType,
+  AssessmentResultsCourse,
+  AssessmentResultsLiveQuiz,
+  PointCorrectionType,
+  SharingType,
+  StudentAssessmentBlockResponse,
+  StudentAssessmentInstanceResponse,
+  StudentAssessmentResultsItem,
+  StudentPointCorrection,
+} from '@klicker-uzh/types'
+import {
+  levelFromXp,
+  PrismaTransactionClient,
+  recomputeDerivedPermissions,
+} from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat.js'
 import { random } from 'mathjs'
 import { prop, sortBy } from 'remeda'
-import { ICourse, type ILeaderboardEntry } from 'src/schema/course.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import convertDateToUTCDatetime from '../lib/convertDateToUTCDatetime.js'
-import { orderStacks, sendTeamsNotifications } from '../lib/util.js'
+import { computeRanks, orderStacks } from '../lib/util.js'
+import {
+  calculateAssessmentCourseScores,
+  getInstanceAvailablePoints,
+} from './assessmentScores.js'
 import { checkAccess } from './sharing.js'
 
 // custom date parser
@@ -35,7 +54,7 @@ export async function joinCourseWithPin(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { pinCode: pin },
+    where: { pinCode: pin, isAssessmentEnabled: false },
   })
 
   if (
@@ -44,6 +63,11 @@ export async function joinCourseWithPin(
     ctx.user.role !== DB.UserRole.PARTICIPANT
   ) {
     return null
+  }
+
+  // Assessment courses can only be joined via invitation, not PIN
+  if (course.isAssessmentEnabled) {
+    throw new Error('Assessment courses can only be joined via invitation')
   }
 
   // update the participants participations and set the newest one to be active
@@ -73,11 +97,7 @@ export async function joinCourseWithPin(
 }
 
 export async function joinCourseLeaderboard(
-  {
-    courseId,
-  }: {
-    courseId: string
-  },
+  { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
   // upsert or activate participation in the course
@@ -90,20 +110,10 @@ export async function joinCourseLeaderboard(
     },
     create: {
       isActive: true,
-      course: {
-        connect: {
-          id: courseId,
-        },
-      },
-      participant: {
-        connect: {
-          id: ctx.user.sub,
-        },
-      },
+      course: { connect: { id: courseId } },
+      participant: { connect: { id: ctx.user.sub } },
     },
-    update: {
-      isActive: true,
-    },
+    update: { isActive: true },
   })
 
   if (!participation) return null
@@ -119,21 +129,9 @@ export async function joinCourseLeaderboard(
     },
     create: {
       type: DB.LeaderboardType.COURSE,
-      participant: {
-        connect: {
-          id: ctx.user.sub,
-        },
-      },
-      course: {
-        connect: {
-          id: courseId,
-        },
-      },
-      participation: {
-        connect: {
-          id: participation.id,
-        },
-      },
+      participant: { connect: { id: ctx.user.sub } },
+      course: { connect: { id: courseId } },
+      participation: { connect: { id: participation.id } },
       score: 0,
     },
     update: {},
@@ -156,17 +154,48 @@ export async function joinCourseLeaderboard(
   }
 }
 
-// leave a course leaderboard as a participant
-// deletes the leaderboard entries related to the course and sets the participation to inactive
-// meaning that no further points will be collected
-export async function leaveCourseLeaderboard(
-  {
-    courseId,
-  }: {
-    courseId: string
-  },
+export async function ensureParticipation(
+  { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
+  try {
+    const course = await ctx.prisma.course.findUnique({
+      where: { id: courseId },
+      select: { id: true },
+    })
+
+    if (!course) {
+      return false
+    }
+
+    const participation = await ctx.prisma.participation.findUnique({
+      where: {
+        courseId_participantId: {
+          courseId,
+          participantId: ctx.user.sub,
+        },
+      },
+      select: { id: true },
+    })
+
+    return participation !== null
+  } catch (error) {
+    console.error('ensureParticipation failed', {
+      courseId,
+      participantId: ctx.user.sub,
+      error,
+    })
+    return false
+  }
+}
+
+export async function leaveCourseLeaderboard(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  // leave a course leaderboard as a participant
+  // deletes the leaderboard entries related to the course and sets the participation to inactive
+  // meaning that no further points will be collected
   const participation = await ctx.prisma.participation.update({
     where: {
       courseId_participantId: {
@@ -220,7 +249,7 @@ export async function leaveCourseLeaderboard(
 
 export async function getCourseOverviewData(
   { courseId }: { courseId: string },
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   // TODO: a lot of fetching seems to be duplicated with the large joins here - optimize where possible
   if (ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT) {
@@ -236,21 +265,12 @@ export async function getCourseOverviewData(
           include: {
             participantGroups: true,
             awards: {
-              include: {
-                participant: true,
-                participantGroup: true,
-              },
-              orderBy: {
-                order: 'asc',
-              },
+              include: { participant: true, participantGroup: true },
+              orderBy: { order: 'asc' },
             },
           },
         },
-        participant: {
-          include: {
-            participantGroups: true,
-          },
-        },
+        participant: { include: { participantGroups: true } },
       },
     })
 
@@ -260,7 +280,7 @@ export async function getCourseOverviewData(
         sum: number
         count: number
       }>(
-        (acc, group, ix) => {
+        (acc, group) => {
           const score = group.averageMemberScore + group.groupActivityScore
           return {
             mapped: [
@@ -277,11 +297,7 @@ export async function getCourseOverviewData(
             sum: acc.sum + score,
           }
         },
-        {
-          mapped: [],
-          count: 0,
-          sum: 0,
-        }
+        { mapped: [], count: 0, sum: 0 }
       )
 
       const sortedGroupEntries = sortBy(
@@ -290,9 +306,7 @@ export async function getCourseOverviewData(
         [prop('name'), 'asc']
       )
 
-      const filteredGroupEntries = sortedGroupEntries.flatMap((entry, ix) => {
-        return { ...entry, rank: ix + 1 }
-      })
+      const filteredGroupEntries = computeRanks(sortedGroupEntries)
 
       const groupCreationPoolEntry =
         await ctx.prisma.groupAssignmentPoolEntry.findUnique({
@@ -325,12 +339,7 @@ export async function getCourseOverviewData(
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId },
     include: {
-      awards: {
-        include: {
-          participant: true,
-          participantGroup: true,
-        },
-      },
+      awards: { include: { participant: true, participantGroup: true } },
     },
   })
 
@@ -351,6 +360,1909 @@ export async function getCourseOverviewData(
   }
 }
 
+function getStudentAssessmentQuizPerformance({
+  quiz,
+}: {
+  quiz: DB.LiveQuiz & {
+    blocks: (DB.ElementBlock & {
+      elements: (DB.ElementInstance & {
+        liveQuizResponses: (DB.LiveQuizResponse & {
+          appliedCorrections: (DB.AppliedPointCorrection & {
+            pointCorrection: DB.PointCorrection
+          })[]
+        })[]
+      })[]
+    })[]
+  }
+}) {
+  // extract the scoring-related parameters from the live quiz
+  const defaultPoints = quiz.defaultPoints
+  const defaultCorrectPoints = quiz.defaultCorrectPoints
+  const defaultMaxBonusPoints = quiz.maxBonusPoints
+
+  const quizResults = quiz.blocks.reduce<
+    Omit<ActivityStudentPerformance, 'corrections'> & {
+      corrections: (StudentPointCorrection & { createdAt: Date })[]
+    }
+  >(
+    (quizAcc, block) => {
+      const instanceResults = block.elements.reduce<
+        Omit<
+          ActivityStudentPerformance,
+          | 'id'
+          | 'activityId'
+          | 'displayName'
+          | 'finishedAt'
+          | 'multiplier'
+          | 'corrections'
+        > & {
+          corrections: (StudentPointCorrection & { createdAt: Date })[]
+        }
+      >(
+        (blockAcc, instance) => {
+          const { basePoints, correctnessPoints, bonusPoints } =
+            getInstanceAvailablePoints({
+              instance,
+              activityBasePoints: defaultPoints,
+              activityCorrectnessPoints: defaultCorrectPoints,
+              activityBonusPoints: defaultMaxBonusPoints,
+            })
+
+          blockAcc.availableBasePoints += basePoints
+          blockAcc.availableCorrectnessPoints += correctnessPoints
+          blockAcc.availableBonusPoints += bonusPoints
+
+          if (
+            instance.liveQuizResponses.length > 0 &&
+            instance.liveQuizResponses[0]
+          ) {
+            const response = instance.liveQuizResponses[0]
+            blockAcc.basePoints += response.basePoints
+            blockAcc.correctnessPoints += response.correctnessPoints
+            blockAcc.bonusPoints += response.bonusPoints
+
+            if (response.appliedCorrections.length > 0) {
+              blockAcc.corrections.push(
+                ...response.appliedCorrections.map((correction) => ({
+                  id: correction.pointCorrectionId,
+                  createdAt: correction.pointCorrection.createdAt,
+                  lecturerReason: correction.pointCorrection.reason,
+                  studentReason: correction.pointCorrection.studentReason,
+                  awardedBasePoints: correction.awardedBasePoints,
+                  awardedCorrectnessPoints: correction.awardedCorrectnessPoints,
+                  awardedBonusPoints: correction.awardedBonusPoints,
+                  deductedBasePoints: correction.deductedBasePoints,
+                  deductedCorrectnessPoints:
+                    correction.deductedCorrectnessPoints,
+                  deductedBonusPoints: correction.deductedBonusPoints,
+                }))
+              )
+            }
+          }
+
+          return blockAcc
+        },
+        {
+          basePoints: 0,
+          availableBasePoints: 0,
+          correctnessPoints: 0,
+          availableCorrectnessPoints: 0,
+          bonusPoints: 0,
+          availableBonusPoints: 0,
+          corrections: [],
+        }
+      )
+
+      // increment the results of the block corresponding to the instance results
+      quizAcc.basePoints += instanceResults.basePoints
+      quizAcc.availableBasePoints += instanceResults.availableBasePoints
+      quizAcc.correctnessPoints += instanceResults.correctnessPoints
+      quizAcc.availableCorrectnessPoints +=
+        instanceResults.availableCorrectnessPoints
+      quizAcc.bonusPoints += instanceResults.bonusPoints
+      quizAcc.availableBonusPoints += instanceResults.availableBonusPoints
+      quizAcc.corrections.push(...instanceResults.corrections)
+
+      return quizAcc
+    },
+    {
+      id: quiz.id,
+      activityId: quiz.id,
+      displayName: quiz.displayName,
+      finishedAt: quiz.finishedAt!,
+      multiplier: quiz.pointsMultiplier,
+      basePoints: 0,
+      availableBasePoints: 0,
+      correctnessPoints: 0,
+      availableCorrectnessPoints: 0,
+      bonusPoints: 0,
+      availableBonusPoints: 0,
+      corrections: [],
+    }
+  )
+
+  // deduplicate the corrections on quiz level -> only one entry per correction on student view
+  let deduplicatedCorrections: (StudentPointCorrection & {
+    createdAt: Date
+  })[] = []
+  if (quizResults.corrections.length > 0) {
+    // group the corrections by correctionId and aggregate the contained corrections
+    // -> per applied correction by the lecturer, only one entry should be shown on the quiz performance entry
+    const groupedCorrections = quizResults.corrections.reduce<
+      Record<string, (StudentPointCorrection & { createdAt: Date })[]>
+    >((acc, correction) => {
+      if (!acc[correction.id]) {
+        acc[correction.id] = []
+      }
+      acc[correction.id]!.push(correction)
+      return acc
+    }, {})
+
+    // for each group, create a new aggregated correction object
+    for (const [correctionId, corrections] of Object.entries(
+      groupedCorrections
+    )) {
+      const aggregatedCorrection = corrections.reduce<
+        StudentPointCorrection & { createdAt: Date }
+      >(
+        (acc, appliedCorrection) => {
+          acc.awardedBasePoints += appliedCorrection.awardedBasePoints
+          acc.awardedCorrectnessPoints +=
+            appliedCorrection.awardedCorrectnessPoints
+          acc.awardedBonusPoints += appliedCorrection.awardedBonusPoints
+          acc.deductedBasePoints += appliedCorrection.deductedBasePoints
+          acc.deductedCorrectnessPoints +=
+            appliedCorrection.deductedCorrectnessPoints
+          acc.deductedBonusPoints += appliedCorrection.deductedBonusPoints
+          return acc
+        },
+        {
+          id: parseInt(correctionId),
+          createdAt: corrections[0]!.createdAt,
+          lecturerReason: corrections[0]!.lecturerReason,
+          studentReason: corrections[0]!.studentReason,
+          awardedBasePoints: 0,
+          awardedCorrectnessPoints: 0,
+          awardedBonusPoints: 0,
+          deductedBasePoints: 0,
+          deductedCorrectnessPoints: 0,
+          deductedBonusPoints: 0,
+        }
+      )
+
+      deduplicatedCorrections.push(aggregatedCorrection)
+    }
+  }
+
+  return {
+    ...quizResults,
+    corrections: sortBy(deduplicatedCorrections, [prop('createdAt'), 'desc']),
+  }
+}
+
+export async function getStudentAssessmentResults(
+  { courseId, participantId }: { courseId: string; participantId: string },
+  ctx: ContextWithUser
+) {
+  // check if the user is logged in as an assessment course admin -> skip validation of participant
+  const isAssessmentCourseAdmin = await ctx.prisma.derivedPermission.findUnique(
+    {
+      where: {
+        courseId_userId: {
+          courseId,
+          userId: ctx.user.sub,
+        },
+        permissionLevel: {
+          in: [DB.PermissionLevel.OWNER, DB.PermissionLevel.ADMIN],
+        },
+        course: { isAssessmentEnabled: true },
+      },
+    }
+  )
+
+  // Participant access is backed by the accepted course invitation, independent
+  // of the login mechanism used for the current session.
+  if (!isAssessmentCourseAdmin) {
+    if (participantId !== ctx.user.sub) {
+      throw new Error(
+        'Participants can only access their own assessment results'
+      )
+    }
+
+    const participation = await ctx.prisma.participation.findFirst({
+      where: {
+        courseId,
+        participantId,
+        isActive: true,
+        participant: { isActive: true },
+        course: {
+          isAssessmentEnabled: true,
+          participantInvitations: {
+            some: {
+              participantId,
+              status: DB.InvitationStatus.ACCEPTED,
+              acceptedAt: { not: null },
+            },
+          },
+        },
+      },
+      select: { id: true },
+    })
+
+    if (!participation) {
+      throw new Error(
+        'Active assessment participation with an accepted invitation not found'
+      )
+    }
+  }
+
+  // fetch all activities of the course, including the participants results
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId, isAssessmentEnabled: true },
+    include: {
+      liveQuizzes: {
+        where: { isDeleted: false, finishedAt: { not: null } },
+        orderBy: { finishedAt: 'desc' },
+        include: {
+          blocks: {
+            include: {
+              elements: {
+                include: {
+                  liveQuizResponses: {
+                    where: { participantId },
+                    include: {
+                      appliedCorrections: {
+                        include: { pointCorrection: true },
+                        orderBy: { createdAt: 'desc' },
+                      },
+                    },
+                    orderBy: { createdAt: 'desc' },
+                    take: 1,
+                  },
+                },
+                orderBy: { order: 'asc' },
+              },
+            },
+            orderBy: { order: 'asc' },
+          },
+        },
+      },
+    },
+  })
+
+  if (!course) {
+    return {
+      liveQuizzes: [],
+      practiceQuizzes: [],
+      microLearnings: [],
+      groupActivities: [],
+    }
+  }
+
+  const liveQuizResults = course.liveQuizzes.reduce<
+    ActivityStudentPerformance[]
+  >((acc, lq) => {
+    // extract the scoring-related parameters from the live quiz
+    const quizResults = getStudentAssessmentQuizPerformance({ quiz: lq })
+    return acc.concat(quizResults)
+  }, [])
+
+  return {
+    liveQuizzes: liveQuizResults,
+    practiceQuizzes: [],
+    microLearnings: [],
+    groupActivities: [],
+  }
+}
+
+export async function getAssessmentResultsLiveQuiz(
+  {
+    liveQuizId,
+    preferredAffiliation = 'uzh',
+  }: { liveQuizId: string; preferredAffiliation?: string },
+  ctx: ContextWithUser
+): Promise<AssessmentResultsLiveQuiz | null> {
+  // fetch the live quiz and verify that the requesting user is an admin of the associated assessment course
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: {
+      id: liveQuizId,
+      isAssessmentEnabled: true,
+      course: {
+        isAssessmentEnabled: true,
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
+            permissionLevel: {
+              in: [DB.PermissionLevel.OWNER, DB.PermissionLevel.ADMIN],
+            },
+          },
+        },
+      },
+    },
+    include: {
+      blocks: {
+        include: {
+          elements: {
+            include: {
+              liveQuizResponses: {
+                include: {
+                  participant: {
+                    include: {
+                      accounts: { where: { ssoType: preferredAffiliation } },
+                    },
+                  },
+                },
+              },
+              _count: { select: { corrections: true } },
+            },
+          },
+        },
+      },
+      course: {
+        include: {
+          participations: {
+            include: {
+              participant: {
+                include: {
+                  accounts: { where: { ssoType: preferredAffiliation } },
+                },
+              },
+            },
+          },
+        },
+      },
+      _count: { select: { corrections: true } },
+    },
+  })
+
+  if (!liveQuiz || !liveQuiz.course) return null
+
+  // initial student results object with all participants in the course
+  const initialStudentResults = liveQuiz.course.participations.reduce<{
+    [participantId: string]: StudentAssessmentResultsItem
+  }>((acc, participation) => {
+    const email =
+      participation.participant.accounts[0]?.ssoEmail ??
+      participation.participant.email ??
+      'Missing E-Mail'
+    acc[participation.participantId] = {
+      participantId: participation.participantId,
+      participantEmail: email,
+      basePoints: 0,
+      correctnessPoints: 0,
+      bonusPoints: 0,
+    }
+    return acc
+  }, {})
+
+  // aggreagte the collected points by students (and overall available points) for the quiz
+  const liveQuizResults = liveQuiz.blocks.reduce<{
+    basePoints: number
+    correctnessPoints: number
+    bonusPoints: number
+    students: { [participantId: string]: StudentAssessmentResultsItem }
+  }>(
+    (quizAcc, block) => {
+      block.elements.forEach((instance) => {
+        const { basePoints, correctnessPoints, bonusPoints } =
+          getInstanceAvailablePoints({
+            instance,
+            activityBasePoints: liveQuiz.defaultPoints,
+            activityCorrectnessPoints: liveQuiz.defaultCorrectPoints,
+            activityBonusPoints: liveQuiz.maxBonusPoints,
+          })
+
+        quizAcc.basePoints += basePoints
+        quizAcc.correctnessPoints += correctnessPoints
+        quizAcc.bonusPoints += bonusPoints
+
+        // iterate over the student responses and aggregate them into the quiz results object
+        instance.liveQuizResponses
+          .filter(
+            (response) => response.elementBlockExecution === block.execution
+          )
+          .forEach((response) => {
+            // get the student's affiliation email, if available
+            const email =
+              response.participant.accounts[0]?.ssoEmail ??
+              response.participant.email ??
+              'Missing E-Mail'
+
+            // check if the student already has an entry in the results object and set it otherwise
+            if (quizAcc.students[response.participantId]) {
+              // increment the results object with the student response content
+              quizAcc.students[response.participantId]!.basePoints +=
+                response.basePoints
+              quizAcc.students[response.participantId]!.correctnessPoints +=
+                response.correctnessPoints
+              quizAcc.students[response.participantId]!.bonusPoints +=
+                response.bonusPoints
+            } else {
+              // set up a new student entry in the results object with the response content
+              quizAcc.students[response.participantId] = {
+                participantId: response.participantId,
+                participantEmail: email,
+                basePoints: response.basePoints,
+                correctnessPoints: response.correctnessPoints,
+                bonusPoints: response.bonusPoints,
+              }
+            }
+          })
+      })
+
+      return quizAcc
+    },
+    {
+      basePoints: 0,
+      correctnessPoints: 0,
+      bonusPoints: 0,
+      students: initialStudentResults,
+    }
+  )
+
+  // return the aggregated data in the correct format
+  return {
+    name: liveQuiz.name,
+    quizBasePoints: liveQuiz.defaultPoints,
+    quizCorrectnessPoints: liveQuiz.defaultCorrectPoints,
+    quizBonusPoints: liveQuiz.maxBonusPoints,
+    availableBasePoints: liveQuizResults.basePoints,
+    availableCorrectnessPoints: liveQuizResults.correctnessPoints,
+    availableBonusPoints: liveQuizResults.bonusPoints,
+    numberOfCorrections:
+      liveQuiz._count.corrections +
+      liveQuiz.blocks.reduce(
+        (acc, block) =>
+          acc +
+          block.elements.reduce(
+            (eAcc, element) => eAcc + element._count.corrections,
+            0
+          ),
+        0
+      ),
+    studentResults: Object.values(liveQuizResults.students),
+  }
+}
+
+export async function getAssessmentResultsCourse(
+  {
+    courseId,
+    preferredAffiliation = 'uzh',
+  }: { courseId: string; preferredAffiliation?: string },
+  ctx: ContextWithUser
+): Promise<AssessmentResultsCourse | null> {
+  const scores = await calculateAssessmentCourseScores(
+    { courseId, participantScope: 'ALL' },
+    ctx
+  )
+  if (!scores) return null
+
+  const participants = await ctx.prisma.participant.findMany({
+    where: {
+      id: { in: scores.studentResults.map((result) => result.participantId) },
+    },
+    select: {
+      id: true,
+      email: true,
+      accounts: {
+        where: { ssoType: preferredAffiliation },
+        select: { ssoEmail: true },
+        take: 1,
+      },
+    },
+  })
+  const emails = new Map(
+    participants.map((participant) => [
+      participant.id,
+      participant.accounts[0]?.ssoEmail ??
+        participant.email ??
+        'Missing E-Mail',
+    ])
+  )
+
+  return {
+    ...scores,
+    studentResults: scores.studentResults.map((result) => ({
+      ...result,
+      participantEmail: emails.get(result.participantId) ?? 'Missing E-Mail',
+    })),
+  }
+}
+
+export async function getLiveQuizStudentAssessmentResponses(
+  { liveQuizId, participantId }: { liveQuizId: string; participantId: string },
+  ctx: ContextWithUser
+) {
+  // fetch the live quiz and verify that the requesting user is an assessment course admin
+  // include the participant's responses to the live quiz and the relevant instance information
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: {
+      id: liveQuizId,
+      isAssessmentEnabled: true,
+      course: {
+        isAssessmentEnabled: true,
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
+            permissionLevel: {
+              in: [DB.PermissionLevel.OWNER, DB.PermissionLevel.ADMIN],
+            },
+          },
+        },
+      },
+    },
+    include: {
+      blocks: {
+        include: {
+          elements: {
+            include: {
+              liveQuizResponses: {
+                where: { participantId },
+                include: {
+                  appliedCorrections: {
+                    include: {
+                      pointCorrection: {
+                        include: {
+                          correctedBy: true,
+                          participant: true,
+                          liveQuiz: true,
+                        },
+                      },
+                    },
+                    orderBy: { createdAt: 'desc' },
+                  },
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 1,
+              },
+            },
+            orderBy: { order: 'asc' },
+          },
+        },
+        orderBy: { order: 'asc' },
+      },
+    },
+  })
+
+  if (!liveQuiz) return null
+
+  // extract the relevant information from the fetched data
+  const studentResponses = liveQuiz.blocks.reduce<
+    StudentAssessmentBlockResponse[]
+  >((quizAcc, block) => {
+    const instances = block.elements.map<StudentAssessmentInstanceResponse>(
+      (instance) => {
+        const response = instance.liveQuizResponses[0]
+
+        if (response) {
+          return {
+            instance,
+            corrections: response.appliedCorrections.map(
+              (appliedCorrection) => ({
+                ...appliedCorrection,
+                pointCorrection: {
+                  ...appliedCorrection.pointCorrection,
+                  instance,
+                },
+              })
+            ),
+            basePoints: response.basePoints,
+            correctnessPoints: response.correctnessPoints,
+            bonusPoints: response.bonusPoints,
+            correctness: response.correctness,
+            submission: response.response,
+          }
+        }
+
+        // if the student submitted no response, simply return the instance with zero points
+        return {
+          instance,
+          corrections: [],
+          basePoints: 0,
+          correctnessPoints: 0,
+          bonusPoints: 0,
+          correctness: null,
+          submission: null,
+        }
+      }
+    )
+
+    // push the instances together with the block information into the results array
+    quizAcc.push({ blockId: block.id, instances })
+    return quizAcc
+  }, [])
+
+  return studentResponses
+}
+
+async function upsertResponseAppliedCorrection(
+  {
+    correctionId,
+    instance,
+    response,
+    participantId,
+    awardBasePoints,
+    awardCorrectnessPoints,
+    awardBonusPoints,
+    deductBasePoints,
+    deductCorrectnessPoints,
+    deductBonusPoints,
+    availableBasePoints,
+    availableCorrectnessPoints,
+    availableBonusPoints,
+  }: {
+    correctionId: number
+    instance: DB.ElementInstance & { elementBlock: DB.ElementBlock }
+    response?: DB.LiveQuizResponse | null
+    participantId: string
+    awardBasePoints?: boolean | null // true = award, null / undefined = no change
+    awardCorrectnessPoints?: boolean | null // true = award, null / undefined = no change
+    awardBonusPoints?: boolean | null // true = award, null / undefined = no change
+    deductBasePoints?: boolean | null // true = deduct, null / undefined = no change
+    deductCorrectnessPoints?: boolean | null // true = deduct, null / undefined = no change
+    deductBonusPoints?: boolean | null // true = deduct, null / undefined = no change
+    availableBasePoints: number
+    availableCorrectnessPoints: number
+    availableBonusPoints: number
+  },
+  tx: PrismaTransactionClient,
+  ctx: ContextWithUser
+) {
+  // upsert live quiz response with the corrected points
+  const lqr = await tx.liveQuizResponse.upsert({
+    where:
+      response !== null && typeof response !== 'undefined'
+        ? { id: response.id }
+        : { id: -1 },
+    // response is not set -> defaults to null (setting it to null explicitly does not work, since this would be interpreted as the JSON value being null -> violates DB constraint)
+    create: {
+      correctionOnly: true,
+      submittedAt: new Date(),
+      timeSpent: -1,
+      correctness: DB.ResponseCorrectness.CORRECT,
+      basePoints: awardBasePoints === true ? availableBasePoints : 0,
+      correctnessPoints:
+        awardCorrectnessPoints === true ? availableCorrectnessPoints : 0,
+      bonusPoints: awardBonusPoints === true ? availableBonusPoints : 0,
+      elementBlockExecution: instance.elementBlock.execution,
+      instance: { connect: { id: instance.id } },
+      participant: { connect: { id: participantId } },
+    },
+    update: {
+      basePoints:
+        awardBasePoints === true
+          ? availableBasePoints
+          : deductBasePoints === true
+            ? 0
+            : undefined,
+      correctnessPoints:
+        awardCorrectnessPoints === true
+          ? availableCorrectnessPoints
+          : deductCorrectnessPoints === true
+            ? 0
+            : undefined,
+      bonusPoints:
+        awardBonusPoints === true
+          ? availableBonusPoints
+          : deductBonusPoints === true
+            ? 0
+            : undefined,
+    },
+  })
+
+  // update applied correction entry
+  const appliedCorrection = await tx.appliedPointCorrection.create({
+    data: {
+      // awarded and deducted points (true as award, false as deduction, null as no change)
+      awardedBasePoints:
+        awardBasePoints === true
+          ? availableBasePoints - (response?.basePoints ?? 0)
+          : 0,
+      awardedCorrectnessPoints:
+        awardCorrectnessPoints === true
+          ? availableCorrectnessPoints - (response?.correctnessPoints ?? 0)
+          : 0,
+      awardedBonusPoints:
+        awardBonusPoints === true
+          ? availableBonusPoints - (response?.bonusPoints ?? 0)
+          : 0,
+      deductedBasePoints:
+        deductBasePoints === true ? (response?.basePoints ?? 0) : 0,
+      deductedCorrectnessPoints:
+        deductCorrectnessPoints === true
+          ? (response?.correctnessPoints ?? 0)
+          : 0,
+      deductedBonusPoints:
+        deductBonusPoints === true ? (response?.bonusPoints ?? 0) : 0,
+      // link to point correction
+      pointCorrection: { connect: { id: correctionId } },
+      // upsert live quiz response with corresponding points
+      response: { connect: { id: lqr.id } },
+    },
+  })
+
+  return {
+    message: {
+      info: `[INFO] [Correct Assessment Points Instance] User ${ctx.user.sub} corrected points for participant ${lqr.participantId} on instance ${instance.id}. Deducted points: base ${appliedCorrection.deductedBasePoints}, correctness ${appliedCorrection.deductedCorrectnessPoints}, bonus ${appliedCorrection.deductedBonusPoints}. Awarded points: base ${appliedCorrection.awardedBasePoints}, correctness ${appliedCorrection.awardedCorrectnessPoints}, bonus ${appliedCorrection.awardedBonusPoints}.`,
+    },
+  }
+}
+
+export async function correctAssessmentPointsInstance(
+  {
+    instanceId,
+    awardBasePoints,
+    awardCorrectnessPoints,
+    awardBonusPoints,
+    deductBasePoints,
+    deductCorrectnessPoints,
+    deductBonusPoints,
+    reason,
+    studentReason,
+    scope,
+    participantId,
+    participantIds,
+  }: {
+    instanceId: number
+    awardBasePoints?: boolean | null // true = award, null / undefined = no change
+    awardCorrectnessPoints?: boolean | null // true = award, null / undefined = no change
+    awardBonusPoints?: boolean | null // true = award, null / undefined = no change
+    deductBasePoints?: boolean | null // true = deduct, null / undefined = no change
+    deductCorrectnessPoints?: boolean | null // true = deduct, null / undefined = no change
+    deductBonusPoints?: boolean | null // true = deduct, null / undefined = no change
+    reason: string
+    studentReason: string
+    scope: DB.PointCorrectionType // SINGLE = single participant, MULTIPLE = multiple participants, PARTICIPATING = all participants with a response to this instance, ALL_COURSE = all participants of the assessment course
+    participantId?: string | null
+    participantIds?: string[] | null
+  },
+  ctx: ContextWithUser
+) {
+  // if the scope is set to a single participant, but no participant is provided, return early
+  if (scope === PointCorrectionType.SINGLE && !participantId) {
+    return null
+  }
+
+  // if the scope is set to multiple participants, but no participants are provided, return early
+  if (
+    scope === PointCorrectionType.MULTIPLE &&
+    (!participantIds || participantIds.length === 0)
+  ) {
+    return null
+  }
+
+  // if no updates should be applied, return early
+  if (
+    (awardBasePoints === null ||
+      typeof awardBasePoints === 'undefined' ||
+      awardBasePoints === false) &&
+    (awardCorrectnessPoints === null ||
+      typeof awardCorrectnessPoints === 'undefined' ||
+      awardCorrectnessPoints === false) &&
+    (awardBonusPoints === null ||
+      typeof awardBonusPoints === 'undefined' ||
+      awardBonusPoints === false) &&
+    (deductBasePoints === null ||
+      typeof deductBasePoints === 'undefined' ||
+      deductBasePoints === false) &&
+    (deductCorrectnessPoints === null ||
+      typeof deductCorrectnessPoints === 'undefined' ||
+      deductCorrectnessPoints === false) &&
+    (deductBonusPoints === null ||
+      typeof deductBonusPoints === 'undefined' ||
+      deductBonusPoints === false)
+  ) {
+    return null
+  }
+
+  // if for one of the point categories both award and deduct is set, return early
+  if (
+    (awardBasePoints === true && deductBasePoints === true) ||
+    (awardCorrectnessPoints === true && deductCorrectnessPoints === true) ||
+    (awardBonusPoints === true && deductBonusPoints === true)
+  ) {
+    return null
+  }
+
+  // check that the requesting user is an assessment course admin and fetch the instance
+  const instance = await ctx.prisma.elementInstance.findUnique({
+    where: {
+      id: instanceId,
+      elementBlock: {
+        liveQuiz: {
+          isAssessmentEnabled: true,
+          course: {
+            isAssessmentEnabled: true,
+            permissions: {
+              some: {
+                userId: ctx.user.sub,
+                permissionLevel: {
+                  in: [DB.PermissionLevel.OWNER, DB.PermissionLevel.ADMIN],
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    include: { elementBlock: { include: { liveQuiz: true } } },
+  })
+
+  if (
+    !instance ||
+    !instance.elementBlock ||
+    !instance.elementBlock.liveQuiz.courseId
+  )
+    return null
+
+  // compute the achievable points for this instance
+  const {
+    basePoints: availableBasePoints,
+    correctnessPoints: availableCorrectnessPoints,
+    bonusPoints: availableBonusPoints,
+  } = getInstanceAvailablePoints({
+    instance,
+    activityBasePoints: instance.elementBlock.liveQuiz.defaultPoints,
+    activityCorrectnessPoints:
+      instance.elementBlock.liveQuiz.defaultCorrectPoints,
+    activityBonusPoints: instance.elementBlock.liveQuiz.maxBonusPoints,
+  })
+
+  // if the points of a single participant should be modified, fetch the corresponding response and update it
+  if (scope === PointCorrectionType.SINGLE && participantId) {
+    const response = await ctx.prisma.liveQuizResponse.findUnique({
+      where: {
+        instanceId_elementBlockExecution_participantId: {
+          instanceId,
+          elementBlockExecution: instance.elementBlock.execution,
+          participantId,
+        },
+      },
+    })
+
+    // compute the points that should be incremented / decremented and make the
+    // corresponding change in a transaction (including audit logging)
+    const createdCorrection = await ctx.prisma.$transaction(
+      async (tx) => {
+        // create point correction entry
+        const correction = await tx.pointCorrection.create({
+          data: {
+            basePoints: awardBasePoints
+              ? true
+              : deductBasePoints
+                ? false
+                : null,
+            correctnessPoints: awardCorrectnessPoints
+              ? true
+              : deductCorrectnessPoints
+                ? false
+                : null,
+            bonusPoints: awardBonusPoints
+              ? true
+              : deductBonusPoints
+                ? false
+                : null,
+            reason,
+            studentReason,
+            type: PointCorrectionType.SINGLE,
+            correctedBy: { connect: { id: ctx.user.sub } },
+            participant: { connect: { id: participantId } },
+            instance: { connect: { id: instanceId } },
+          },
+          include: { correctedBy: true, participant: true, instance: true },
+        })
+
+        const logObject = await upsertResponseAppliedCorrection(
+          {
+            correctionId: correction.id,
+            instance: instance as DB.ElementInstance & {
+              elementBlock: DB.ElementBlock
+            },
+            response,
+            participantId,
+            awardBasePoints,
+            awardCorrectnessPoints,
+            awardBonusPoints,
+            deductBasePoints,
+            deductCorrectnessPoints,
+            deductBonusPoints,
+            availableBasePoints,
+            availableCorrectnessPoints,
+            availableBonusPoints,
+          },
+          tx,
+          ctx
+        )
+
+        // add an audit log entry for the correction
+        await ctx.tasks.createAuditLogEntry.runNoWait([logObject])
+
+        // return the correction to display it to the lecturer
+        return correction
+      },
+      { timeout: 300000 } // 5 min timeout to ensure success for the moment -> until asynchronous execution is available
+    )
+
+    return createdCorrection
+  }
+
+  // if the points of all participating students should be modified, fetch all responses with a participantId and update them
+  if (scope === PointCorrectionType.PARTICIPATING) {
+    // find all live quiz responses for the given instance (excluding the ones generated through corrections with null as a response)
+    const responses = await ctx.prisma.liveQuizResponse.findMany({
+      where: {
+        instanceId,
+        elementBlockExecution: instance.elementBlock.execution,
+        correctionOnly: false,
+      },
+    })
+
+    const createdCorrection = await ctx.prisma.$transaction(
+      async (tx) => {
+        // create point correction entry
+        const correction = await tx.pointCorrection.create({
+          data: {
+            basePoints: awardBasePoints
+              ? true
+              : deductBasePoints
+                ? false
+                : null,
+            correctnessPoints: awardCorrectnessPoints
+              ? true
+              : deductCorrectnessPoints
+                ? false
+                : null,
+            bonusPoints: awardBonusPoints
+              ? true
+              : deductBonusPoints
+                ? false
+                : null,
+            reason,
+            studentReason,
+            type: PointCorrectionType.PARTICIPATING,
+            correctedBy: { connect: { id: ctx.user.sub } },
+            instance: { connect: { id: instanceId } },
+          },
+          include: { correctedBy: true, instance: true },
+        })
+
+        // initialize the audit log entries that should be executed
+        const logEntries: { message: { info: string } }[] = []
+
+        // loop over all responses and update them with the corrected points
+        await Promise.all(
+          responses.map(async (response) => {
+            const logObject = await upsertResponseAppliedCorrection(
+              {
+                correctionId: correction.id,
+                instance: instance as DB.ElementInstance & {
+                  elementBlock: DB.ElementBlock
+                },
+                response,
+                participantId: response.participantId,
+                awardBasePoints,
+                awardCorrectnessPoints,
+                awardBonusPoints,
+                deductBasePoints,
+                deductCorrectnessPoints,
+                deductBonusPoints,
+                availableBasePoints,
+                availableCorrectnessPoints,
+                availableBonusPoints,
+              },
+              tx,
+              ctx
+            )
+
+            // add the log object to the list of log entries
+            logEntries.push(logObject)
+          })
+        )
+
+        // create the collected audit log entries
+        await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
+
+        // return the correction to display it to the lecturer
+        return correction
+      },
+      { timeout: 300000 } // 5 min timeout to ensure success for the moment -> until asynchronous execution is available
+    )
+
+    return createdCorrection
+  }
+
+  // if the points of multiple students / all students in the course should be modified, fetch all responses and update them
+  if (
+    scope === PointCorrectionType.ALL_COURSE ||
+    scope === PointCorrectionType.MULTIPLE
+  ) {
+    // find all participants of the course and the corresponding responses for the given instance
+    const participations = await ctx.prisma.participation.findMany({
+      where: {
+        courseId: instance.elementBlock.liveQuiz.courseId!,
+        participantId:
+          scope === PointCorrectionType.MULTIPLE
+            ? { in: participantIds! }
+            : undefined,
+      },
+      include: {
+        participant: {
+          include: {
+            liveQuizResponses: {
+              where: {
+                instanceId,
+                elementBlockExecution: instance.elementBlock.execution,
+              },
+            },
+          },
+        },
+      },
+    })
+
+    const createdCorrection = await ctx.prisma.$transaction(
+      async (tx) => {
+        // create point correction entry
+        const correction = await tx.pointCorrection.create({
+          data: {
+            basePoints: awardBasePoints
+              ? true
+              : deductBasePoints
+                ? false
+                : null,
+            correctnessPoints: awardCorrectnessPoints
+              ? true
+              : deductCorrectnessPoints
+                ? false
+                : null,
+            bonusPoints: awardBonusPoints
+              ? true
+              : deductBonusPoints
+                ? false
+                : null,
+            reason,
+            studentReason,
+            type: scope,
+            correctedBy: { connect: { id: ctx.user.sub } },
+            participants:
+              scope === PointCorrectionType.MULTIPLE
+                ? { connect: participantIds!.map((id) => ({ id })) }
+                : undefined,
+            instance: { connect: { id: instanceId } },
+          },
+          include: { correctedBy: true, participants: true, instance: true },
+        })
+
+        // initialize the audit log entries that should be executed
+        const logEntries: { message: { info: string } }[] = []
+
+        // loop over all responses and update them with the corrected points
+        await Promise.all(
+          participations.map(async (participation) => {
+            const logEntry = await upsertResponseAppliedCorrection(
+              {
+                correctionId: correction.id,
+                instance: instance as DB.ElementInstance & {
+                  elementBlock: DB.ElementBlock
+                },
+                response: participation.participant.liveQuizResponses[0],
+                participantId: participation.participantId,
+                awardBasePoints,
+                awardCorrectnessPoints,
+                awardBonusPoints,
+                deductBasePoints,
+                deductCorrectnessPoints,
+                deductBonusPoints,
+                availableBasePoints,
+                availableCorrectnessPoints,
+                availableBonusPoints,
+              },
+              tx,
+              ctx
+            )
+
+            // push the log object to the list of log entries
+            logEntries.push(logEntry)
+          })
+        )
+
+        // create the collected audit log entries
+        await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
+
+        // return the correction to display it to the lecturer
+        return correction
+      },
+      { timeout: 300000 } // 5 min timeout to ensure success for the moment -> until asynchronous execution is available
+    )
+
+    return createdCorrection
+  }
+
+  // fallback case if no correct scope was defined
+  return null
+}
+
+export async function correctAssessmentPointsLiveQuiz(
+  {
+    liveQuizId,
+    awardBasePoints,
+    awardCorrectnessPoints,
+    awardBonusPoints,
+    deductBasePoints,
+    deductCorrectnessPoints,
+    deductBonusPoints,
+    reason,
+    studentReason,
+    scope,
+    participantId,
+    participantIds,
+  }: {
+    liveQuizId: string
+    awardBasePoints?: boolean | null // true = award, null / undefined = no change
+    awardCorrectnessPoints?: boolean | null // true = award, null / undefined = no change
+    awardBonusPoints?: boolean | null // true = award, null / undefined = no change
+    deductBasePoints?: boolean | null // true = deduct, null / undefined = no change
+    deductCorrectnessPoints?: boolean | null // true = deduct, null / undefined = no change
+    deductBonusPoints?: boolean | null // true = deduct, null / undefined = no change
+    reason: string
+    studentReason: string
+    scope: DB.PointCorrectionType // SINGLE -> single participant, MULTIPLE -> multiple participants, PARTICIPATING -> all participants with a response to some question, ALL_COURSE -> all participants in the assessment course
+    participantId?: string | null
+    participantIds?: string[] | null
+  },
+  ctx: ContextWithUser
+) {
+  // if the scope is set to a single participant, but no participant is provided, return early
+  if (scope === PointCorrectionType.SINGLE && !participantId) {
+    return null
+  }
+
+  // if the scope is set to multiple participants, but no participants are provided, return early
+  if (
+    scope === PointCorrectionType.MULTIPLE &&
+    (!participantIds || participantIds.length === 0)
+  ) {
+    return null
+  }
+
+  // if no updates should be applied, return early
+  if (
+    (awardBasePoints === null ||
+      typeof awardBasePoints === 'undefined' ||
+      awardBasePoints === false) &&
+    (awardCorrectnessPoints === null ||
+      typeof awardCorrectnessPoints === 'undefined' ||
+      awardCorrectnessPoints === false) &&
+    (awardBonusPoints === null ||
+      typeof awardBonusPoints === 'undefined' ||
+      awardBonusPoints === false) &&
+    (deductBasePoints === null ||
+      typeof deductBasePoints === 'undefined' ||
+      deductBasePoints === false) &&
+    (deductCorrectnessPoints === null ||
+      typeof deductCorrectnessPoints === 'undefined' ||
+      deductCorrectnessPoints === false) &&
+    (deductBonusPoints === null ||
+      typeof deductBonusPoints === 'undefined' ||
+      deductBonusPoints === false)
+  ) {
+    return null
+  }
+
+  // if for one of the point categories both award and deduct is set, return early
+  if (
+    (awardBasePoints === true && deductBasePoints === true) ||
+    (awardCorrectnessPoints === true && deductCorrectnessPoints === true) ||
+    (awardBonusPoints === true && deductBonusPoints === true)
+  ) {
+    return null
+  }
+
+  // check that the requesting user is an assessment course admin
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: {
+      id: liveQuizId,
+      isAssessmentEnabled: true,
+      course: {
+        isAssessmentEnabled: true,
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
+            permissionLevel: {
+              in: [DB.PermissionLevel.OWNER, DB.PermissionLevel.ADMIN],
+            },
+          },
+        },
+      },
+    },
+    include: {
+      blocks: {
+        include: { elements: { orderBy: { order: 'asc' } } },
+        orderBy: { order: 'asc' },
+      },
+    },
+  })
+
+  if (!liveQuiz || !liveQuiz.courseId) return null
+
+  // compute the available points for the instances (and aggregated for the entire quiz)
+  const availablePoints = liveQuiz.blocks.reduce<{
+    [instanceId: number]: {
+      availableBasePoints: number
+      availableCorrectnessPoints: number
+      availableBonusPoints: number
+    }
+  }>((blockAcc, block) => {
+    block.elements.forEach((instance) => {
+      const { basePoints, correctnessPoints, bonusPoints } =
+        getInstanceAvailablePoints({
+          instance,
+          activityBasePoints: liveQuiz.defaultPoints,
+          activityCorrectnessPoints: liveQuiz.defaultCorrectPoints,
+          activityBonusPoints: liveQuiz.maxBonusPoints,
+        })
+
+      blockAcc[instance.id] = {
+        availableBasePoints: basePoints,
+        availableCorrectnessPoints: correctnessPoints,
+        availableBonusPoints: bonusPoints,
+      }
+    })
+
+    return blockAcc
+  }, {})
+
+  // if the points of a single participant should be modified, fetch the corresponding response and update it
+  if (scope === PointCorrectionType.SINGLE && participantId) {
+    // compute the points that should be incremented / decremented and make the
+    // corresponding change in a transaction (including audit logging)
+    const createdCorrection = await ctx.prisma.$transaction(
+      async (tx) => {
+        // create point correction entry
+        const correction = await tx.pointCorrection.create({
+          data: {
+            basePoints: awardBasePoints
+              ? true
+              : deductBasePoints
+                ? false
+                : null,
+            correctnessPoints: awardCorrectnessPoints
+              ? true
+              : deductCorrectnessPoints
+                ? false
+                : null,
+            bonusPoints: awardBonusPoints
+              ? true
+              : deductBonusPoints
+                ? false
+                : null,
+            reason,
+            studentReason,
+            type: PointCorrectionType.SINGLE,
+            correctedBy: { connect: { id: ctx.user.sub } },
+            participant: { connect: { id: participantId } },
+            liveQuiz: { connect: { id: liveQuiz.id } },
+          },
+          include: {
+            correctedBy: true,
+            participant: true,
+            participants: true,
+            liveQuiz: true,
+          },
+        })
+
+        // initialize the audit log entries that should be executed
+        const logEntries: { message: { info: string } }[] = []
+
+        // loop over all instances and update the corresponding responses with the corrected points
+        await Promise.all(
+          liveQuiz.blocks.map(async (block) => {
+            await Promise.all(
+              block.elements.map(async (instance) => {
+                const {
+                  availableBasePoints,
+                  availableCorrectnessPoints,
+                  availableBonusPoints,
+                } = availablePoints[instance.id]!
+
+                // try to find an existing response of the participant for the instance
+                const response = await tx.liveQuizResponse.findUnique({
+                  where: {
+                    instanceId_elementBlockExecution_participantId: {
+                      instanceId: instance.id,
+                      elementBlockExecution: block.execution,
+                      participantId,
+                    },
+                  },
+                })
+
+                const logEntry = await upsertResponseAppliedCorrection(
+                  {
+                    correctionId: correction.id,
+                    instance: { ...instance, elementBlock: block },
+                    response,
+                    participantId,
+                    awardBasePoints,
+                    awardCorrectnessPoints,
+                    awardBonusPoints,
+                    deductBasePoints,
+                    deductCorrectnessPoints,
+                    deductBonusPoints,
+                    availableBasePoints,
+                    availableCorrectnessPoints,
+                    availableBonusPoints,
+                  },
+                  tx,
+                  ctx
+                )
+
+                // push the log object to the list of log entries
+                logEntries.push(logEntry)
+              })
+            )
+          })
+        )
+
+        // create the collected audit log entries
+        await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
+
+        return correction
+      },
+      { timeout: 300000 } // 5 min timeout to ensure success for the moment -> until asynchronous execution is available
+    )
+
+    return createdCorrection
+  }
+
+  // if the points of all participating students should be modified, fetch all responses with a participantId and update them
+  if (scope === PointCorrectionType.PARTICIPATING) {
+    // fetch the live quiz again, this time including all responses
+    const quizWithResponses = await ctx.prisma.liveQuiz.findUnique({
+      where: { id: liveQuiz.id },
+      include: {
+        blocks: {
+          include: { elements: { include: { liveQuizResponses: true } } },
+        },
+      },
+    })
+
+    if (!quizWithResponses) return null
+
+    // create a map between the participant ids and the instances they have answered with their responses
+    const participantResponseMap = quizWithResponses.blocks.reduce<{
+      [pId: string]: { [instanceId: number]: DB.LiveQuizResponse }
+    }>((blockAcc, block) => {
+      block.elements.forEach((instance) => {
+        instance.liveQuizResponses
+          .filter(
+            (response) => response.elementBlockExecution === block.execution
+          )
+          .forEach((response) => {
+            if (!blockAcc[response.participantId]) {
+              blockAcc[response.participantId] = {}
+            }
+
+            blockAcc[response.participantId]![instance.id] = response
+          })
+      })
+      return blockAcc
+    }, {})
+
+    // exclude all participants that only have null responses (only corrections, but no actual submission)
+    const filteredParticipantResponseMap = Object.fromEntries(
+      Object.entries(participantResponseMap).filter(([, instanceResponseMap]) =>
+        Object.values(instanceResponseMap).some(
+          (lqr) => lqr.correctionOnly === false
+        )
+      )
+    )
+
+    // update the responses of all participants that have submitted at least one response to the live quiz
+    const createdCorrection = await ctx.prisma.$transaction(
+      async (tx) => {
+        // create point correction entry
+        const correction = await tx.pointCorrection.create({
+          data: {
+            basePoints: awardBasePoints
+              ? true
+              : deductBasePoints
+                ? false
+                : null,
+            correctnessPoints: awardCorrectnessPoints
+              ? true
+              : deductCorrectnessPoints
+                ? false
+                : null,
+            bonusPoints: awardBonusPoints
+              ? true
+              : deductBonusPoints
+                ? false
+                : null,
+            reason,
+            studentReason,
+            type: PointCorrectionType.PARTICIPATING,
+            correctedBy: { connect: { id: ctx.user.sub } },
+            liveQuiz: { connect: { id: liveQuiz.id } },
+          },
+          include: { correctedBy: true, liveQuiz: true },
+        })
+
+        // initialize the audit log entries that should be executed
+        const logEntries: { message: { info: string } }[] = []
+
+        // loop over all instances and participants to upsert all relevant responses
+        await Promise.all(
+          liveQuiz.blocks.map(async (block) => {
+            await Promise.all(
+              block.elements.map(async (instance) => {
+                const {
+                  availableBasePoints,
+                  availableCorrectnessPoints,
+                  availableBonusPoints,
+                } = availablePoints[instance.id]!
+
+                await Promise.all(
+                  Object.entries(filteredParticipantResponseMap).map(
+                    async ([pId, instanceResponseMap]) => {
+                      const response = instanceResponseMap[instance.id]
+
+                      const logEntry = await upsertResponseAppliedCorrection(
+                        {
+                          correctionId: correction.id,
+                          instance: { ...instance, elementBlock: block },
+                          response,
+                          participantId: pId,
+                          awardBasePoints,
+                          awardCorrectnessPoints,
+                          awardBonusPoints,
+                          deductBasePoints,
+                          deductCorrectnessPoints,
+                          deductBonusPoints,
+                          availableBasePoints,
+                          availableCorrectnessPoints,
+                          availableBonusPoints,
+                        },
+                        tx,
+                        ctx
+                      )
+
+                      // push the log object to the list of log entries
+                      logEntries.push(logEntry)
+                    }
+                  )
+                )
+              })
+            )
+          })
+        )
+
+        // create the collected audit log entries
+        await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
+
+        return correction
+      },
+      { timeout: 300000 } // 5 min timeout to ensure success for the moment -> until asynchronous execution is available
+    )
+
+    return createdCorrection
+  }
+
+  // if the points of multiple students / all students in the course should be modified, fetch all responses and update them
+  if (
+    scope === PointCorrectionType.ALL_COURSE ||
+    scope === PointCorrectionType.MULTIPLE
+  ) {
+    // get all participations of the course, including the linked participants
+    const participations = await ctx.prisma.participation.findMany({
+      where: {
+        courseId: liveQuiz.courseId,
+        participantId:
+          scope === PointCorrectionType.MULTIPLE
+            ? { in: participantIds! }
+            : undefined,
+      },
+      include: { participant: true },
+    })
+
+    // update the responses of all participants in the course
+    const createdCorrection = await ctx.prisma.$transaction(
+      async (tx) => {
+        // create point correction entry
+        const correction = await tx.pointCorrection.create({
+          data: {
+            basePoints: awardBasePoints
+              ? true
+              : deductBasePoints
+                ? false
+                : null,
+            correctnessPoints: awardCorrectnessPoints
+              ? true
+              : deductCorrectnessPoints
+                ? false
+                : null,
+            bonusPoints: awardBonusPoints
+              ? true
+              : deductBonusPoints
+                ? false
+                : null,
+            reason,
+            studentReason,
+            type: scope,
+            correctedBy: { connect: { id: ctx.user.sub } },
+            participants:
+              scope === PointCorrectionType.MULTIPLE
+                ? { connect: participantIds!.map((id) => ({ id })) }
+                : undefined,
+            liveQuiz: { connect: { id: liveQuiz.id } },
+          },
+          include: { correctedBy: true, participants: true, liveQuiz: true },
+        })
+
+        // initialize the audit log entries that should be executed
+        const logEntries: { message: { info: string } }[] = []
+
+        // loop over all instances and participants to upsert all relevant responses
+        await Promise.all(
+          liveQuiz.blocks.map(async (block) => {
+            await Promise.all(
+              block.elements.map(async (instance) => {
+                const {
+                  availableBasePoints,
+                  availableCorrectnessPoints,
+                  availableBonusPoints,
+                } = availablePoints[instance.id]!
+
+                await Promise.all(
+                  participations.map(async (participation) => {
+                    const pId = participation.participantId
+                    const response = await tx.liveQuizResponse.findUnique({
+                      where: {
+                        instanceId_elementBlockExecution_participantId: {
+                          instanceId: instance.id,
+                          elementBlockExecution: block.execution,
+                          participantId: pId,
+                        },
+                      },
+                    })
+
+                    const logEntry = await upsertResponseAppliedCorrection(
+                      {
+                        correctionId: correction.id,
+                        instance: { ...instance, elementBlock: block },
+                        response,
+                        participantId: pId,
+                        awardBasePoints,
+                        awardCorrectnessPoints,
+                        awardBonusPoints,
+                        deductBasePoints,
+                        deductCorrectnessPoints,
+                        deductBonusPoints,
+                        availableBasePoints,
+                        availableCorrectnessPoints,
+                        availableBonusPoints,
+                      },
+                      tx,
+                      ctx
+                    )
+
+                    // push the log object to the list of log entries
+                    logEntries.push(logEntry)
+                  })
+                )
+              })
+            )
+          })
+        )
+
+        // create the collected audit log entries
+        await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
+
+        return correction
+      },
+      { timeout: 300000 } // 5 min timeout to ensure success for the moment -> until asynchronous execution is available
+    )
+
+    return createdCorrection
+  }
+
+  // fallback case if no correct scope was defined
+  return null
+}
+
+export async function getPreviousPointCorrections(
+  {
+    courseId,
+    liveQuizId,
+    instanceId,
+    preferredAffiliation = 'uzh',
+  }: {
+    courseId?: string | null
+    liveQuizId?: string | null
+    instanceId?: number | null
+    preferredAffiliation?: string
+  },
+  ctx: ContextWithUser
+) {
+  // if neither a live quiz id nor an instance id is provided, return early
+  if (
+    (courseId === null || typeof courseId === 'undefined' || courseId === '') &&
+    (liveQuizId === null ||
+      typeof liveQuizId === 'undefined' ||
+      liveQuizId === '') &&
+    (instanceId === null || typeof instanceId === 'undefined')
+  ) {
+    return []
+  }
+
+  // get the previous corrections applied to the selected live quiz or a specific instance only
+  if (instanceId !== null && typeof instanceId !== 'undefined') {
+    const instance = await ctx.prisma.elementInstance.findUnique({
+      where: {
+        id: instanceId,
+        elementBlock: {
+          liveQuiz: {
+            isAssessmentEnabled: true,
+            course: {
+              isAssessmentEnabled: true,
+              permissions: {
+                some: {
+                  userId: ctx.user.sub,
+                  permissionLevel: {
+                    in: [DB.PermissionLevel.OWNER, DB.PermissionLevel.ADMIN],
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      include: {
+        corrections: {
+          include: {
+            correctedBy: true,
+            participant: {
+              include: {
+                accounts: { where: { ssoType: preferredAffiliation } },
+              },
+            },
+            participants: {
+              include: {
+                accounts: { where: { ssoType: preferredAffiliation } },
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    })
+
+    return instance?.corrections
+      ? instance.corrections.map((correction) => {
+          let participant = correction.participant
+          let participants = correction.participants
+          if (!participant && !participants) return correction
+
+          if (participant) {
+            participant['email'] =
+              correction.participant?.accounts[0]?.ssoEmail ??
+              correction.participant?.email ??
+              null
+          } else if (participants) {
+            participants = correction.participants.map((p) => {
+              p['email'] = p.accounts[0]?.ssoEmail ?? p.email ?? null
+              return p
+            })
+          }
+
+          return { ...correction, participant, participants, instance }
+        })
+      : []
+  } else if (liveQuizId !== null && typeof liveQuizId !== 'undefined') {
+    const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+      where: {
+        id: liveQuizId!,
+        isAssessmentEnabled: true,
+        course: {
+          isAssessmentEnabled: true,
+          permissions: {
+            some: {
+              userId: ctx.user.sub,
+              permissionLevel: {
+                in: [DB.PermissionLevel.OWNER, DB.PermissionLevel.ADMIN],
+              },
+            },
+          },
+        },
+      },
+      include: {
+        corrections: {
+          include: {
+            correctedBy: true,
+            participant: {
+              include: {
+                accounts: { where: { ssoType: preferredAffiliation } },
+              },
+            },
+            participants: {
+              include: {
+                accounts: { where: { ssoType: preferredAffiliation } },
+              },
+            },
+          },
+        },
+        // include the corrections of all instances as well
+        blocks: {
+          include: {
+            elements: {
+              include: {
+                corrections: {
+                  include: {
+                    correctedBy: true,
+                    participant: {
+                      include: {
+                        accounts: { where: { ssoType: preferredAffiliation } },
+                      },
+                    },
+                    participants: {
+                      include: {
+                        accounts: { where: { ssoType: preferredAffiliation } },
+                      },
+                    },
+                  },
+                },
+              },
+              orderBy: { order: 'asc' },
+            },
+          },
+          orderBy: { order: 'asc' },
+        },
+      },
+    })
+
+    const instanceCorrections = liveQuiz?.blocks.flatMap((block) =>
+      block.elements.flatMap((element) =>
+        element.corrections.map((correction) => {
+          let participant = correction.participant
+          let participants = correction.participants
+          if (!participant && !participants)
+            return { ...correction, instance: element }
+
+          if (participant) {
+            participant['email'] =
+              correction.participant?.accounts[0]?.ssoEmail ??
+              correction.participant?.email ??
+              null
+          } else if (participants) {
+            participants = correction.participants.map((p) => {
+              p['email'] = p.accounts[0]?.ssoEmail ?? p.email ?? null
+              return p
+            })
+          }
+
+          return {
+            ...correction,
+            instance: element,
+            participant,
+            participants,
+          }
+        })
+      )
+    )
+
+    const quizCorrections = liveQuiz?.corrections.map((correction) => {
+      let participant = correction.participant
+      let participants = correction.participants
+      if (!participant && !participants) return correction
+
+      if (participant) {
+        participant['email'] =
+          correction.participant?.accounts[0]?.ssoEmail ??
+          correction.participant?.email ??
+          null
+      } else if (participants) {
+        participants = correction.participants.map((p) => {
+          p['email'] = p.accounts[0]?.ssoEmail ?? p.email ?? null
+          return p
+        })
+      }
+
+      return { ...correction, participant, participants }
+    })
+
+    // return both the quiz- and instance-level corrections
+    const corrections = [
+      ...(quizCorrections ?? []),
+      ...(instanceCorrections ?? []),
+    ]
+    return sortBy(corrections, [prop('createdAt'), 'desc'])
+  }
+
+  // fetch the course and include all live quiz and instance corrections
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId! },
+    include: {
+      liveQuizzes: {
+        include: {
+          corrections: {
+            include: {
+              correctedBy: true,
+              participant: {
+                include: {
+                  accounts: { where: { ssoType: preferredAffiliation } },
+                },
+              },
+            },
+          },
+          blocks: {
+            include: {
+              elements: {
+                include: {
+                  corrections: {
+                    include: {
+                      correctedBy: true,
+                      participant: {
+                        include: {
+                          accounts: {
+                            where: { ssoType: preferredAffiliation },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+                orderBy: { order: 'asc' },
+              },
+            },
+            orderBy: { order: 'asc' },
+          },
+        },
+      },
+    },
+  })
+
+  const instanceCorrections = course?.liveQuizzes.flatMap((lq) =>
+    lq.blocks.flatMap((block) =>
+      block.elements.flatMap((element) =>
+        element.corrections.map((correction) => {
+          let participant = correction.participant
+          if (!participant) return { ...correction, instance: element }
+
+          participant['email'] =
+            correction.participant?.accounts[0]?.ssoEmail ??
+            correction.participant?.email ??
+            null
+
+          return {
+            ...correction,
+            instance: element,
+            participant,
+          }
+        })
+      )
+    )
+  )
+
+  const quizCorrections = course?.liveQuizzes.flatMap((lq) =>
+    lq.corrections.map((correction) => {
+      let participant = correction.participant
+      if (!participant) return correction
+
+      participant['email'] =
+        correction.participant?.accounts[0]?.ssoEmail ??
+        correction.participant?.email ??
+        null
+
+      return { ...correction, participant }
+    })
+  )
+
+  // return both the quiz- and instance-level corrections
+  const corrections = [
+    ...(quizCorrections ?? []),
+    ...(instanceCorrections ?? []),
+  ]
+  return sortBy(corrections, [prop('createdAt'), 'desc'])
+}
+
 async function computeRollingLeaderboardEntries(
   { courseId, days }: { courseId: string; days: number },
   ctx: ContextWithUser
@@ -369,68 +2281,38 @@ async function computeRollingLeaderboardEntries(
         include: {
           leaderboard: true,
         },
-        where: {
-          finishedAt: {
-            lte: detailsEarliest,
-            gt: detailsLatest,
-          },
-        },
+        where: { finishedAt: { lte: detailsEarliest, gt: detailsLatest } },
       },
       practiceQuizzes: {
         include: {
           responseDetails: {
-            where: {
-              createdAt: {
-                lte: detailsEarliest,
-                gt: detailsLatest,
-              },
-            },
+            where: { createdAt: { lte: detailsEarliest, gt: detailsLatest } },
           },
         },
       },
       microLearnings: {
         include: {
           responseDetails: {
-            where: {
-              createdAt: {
-                lte: detailsEarliest,
-                gt: detailsLatest,
-              },
-            },
+            where: { createdAt: { lte: detailsEarliest, gt: detailsLatest } },
           },
         },
       },
       participations: {
-        where: {
-          isActive: true,
-        },
-        include: {
-          participant: true,
-        },
+        where: { isActive: true },
+        include: { participant: true },
       },
       timelineEntries: {
         where: {
           type: DB.TimelineEntryType.DAILY,
-          timestamp: {
-            gt: dayjs().subtract(days, 'days').toDate(),
-          },
-          participation: {
-            isActive: true,
-          },
+          timestamp: { gt: dayjs().subtract(days, 'days').toDate() },
+          participation: { isActive: true },
         },
-        include: {
-          participation: true,
-        },
+        include: { participation: true },
       },
     },
   })
 
-  if (!course)
-    return {
-      leaderboardEntries: [],
-      count: 0,
-      sum: 0,
-    }
+  if (!course) return { leaderboardEntries: [], count: 0, sum: 0 }
 
   // initialize the leaderboard entries form the active course participations
   const leaderboardScores = course?.participations.reduce<{
@@ -491,10 +2373,12 @@ async function computeRollingLeaderboardEntries(
   })
 
   // sort the leaderboard entries and add rank, level, and compute statistics
-  const sortedScores = sortBy(
-    Object.values(leaderboardScores),
-    [prop('score'), 'desc'],
-    [prop('username'), 'asc']
+  const sortedScores = computeRanks(
+    sortBy(
+      Object.values(leaderboardScores),
+      [prop('score'), 'desc'],
+      [prop('username'), 'asc']
+    )
   )
   const { leaderboardEntries, count, sum } = sortedScores.reduce<{
     leaderboardEntries: {
@@ -510,7 +2394,7 @@ async function computeRollingLeaderboardEntries(
     count: number
     sum: number
   }>(
-    (acc, scoreEntry, ix) => {
+    (acc, scoreEntry) => {
       acc.leaderboardEntries.push({
         id: Math.floor(random(1000000000)),
         participantId: scoreEntry.participantId,
@@ -518,7 +2402,7 @@ async function computeRollingLeaderboardEntries(
         avatar: scoreEntry.avatar,
         score: scoreEntry.score,
         isSelf: scoreEntry.isSelf,
-        rank: ix + 1,
+        rank: scoreEntry.rank,
         level: levelFromXp(scoreEntry.xp),
       })
       acc.count += 1
@@ -534,7 +2418,7 @@ async function computeRollingLeaderboardEntries(
 
 export async function getStudentCourseLeaderboard(
   { courseId, mode }: { courseId: string; mode: string },
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   if (
     ctx.user?.sub &&
@@ -543,14 +2427,9 @@ export async function getStudentCourseLeaderboard(
   ) {
     const participation = await ctx.prisma.participation.findUnique({
       where: {
-        courseId_participantId: {
-          courseId,
-          participantId: ctx.user.sub,
-        },
+        courseId_participantId: { courseId, participantId: ctx.user.sub },
       },
-      include: {
-        participant: true,
-      },
+      include: { participant: true },
     })
 
     const course = ctx.prisma.course.findUnique({
@@ -615,17 +2494,18 @@ export async function getStudentCourseLeaderboard(
         }
       )
 
-      const sortedEntries = sortBy(
-        allEntries.mapped,
-        [prop('score'), 'desc'],
-        [prop('username'), 'asc']
+      const sortedEntries = computeRanks(
+        sortBy(
+          allEntries.mapped,
+          [prop('score'), 'desc'],
+          [prop('username'), 'asc']
+        )
       )
 
-      const filteredEntries = sortedEntries.flatMap((entry, ix) => {
-        if (ix < 10 || entry.participantId === ctx.user?.sub)
-          return { ...entry, rank: ix + 1 }
-        return []
-      })
+      // keep the top 10 entries, plus the requesting participant's own entry
+      const filteredEntries = sortedEntries.filter(
+        (entry, ix) => ix < 10 || entry.participantId === ctx.user?.sub
+      )
 
       return {
         leaderboard: filteredEntries,
@@ -642,7 +2522,10 @@ export async function getStudentCourseLeaderboard(
     mode === 'biweekly'
   ) {
     const { leaderboardEntries, count, sum } =
-      await computeRollingLeaderboardEntries({ courseId, days: 14 }, ctx)
+      await computeRollingLeaderboardEntries(
+        { courseId, days: 14 },
+        ctx as ContextWithUser // user id and role have been validated in if statement
+      )
 
     return {
       leaderboard: leaderboardEntries,
@@ -673,8 +2556,10 @@ interface CreateCourseArgs {
   groupDeadlineDate?: Date | null
   maxGroupSize?: number | null
   preferredGroupSize?: number | null
+  language: DB.Locale
   notificationEmail?: string | null
   isGamificationEnabled: boolean
+  isAssessmentEnabled?: boolean | null
 }
 
 export async function createCourse(
@@ -689,13 +2574,18 @@ export async function createCourse(
     groupDeadlineDate,
     maxGroupSize,
     preferredGroupSize,
+    language,
     notificationEmail,
     isGamificationEnabled,
+    isAssessmentEnabled,
   }: CreateCourseArgs,
   ctx: ContextWithUser
 ) {
   // TODO: ensure that PINs are unique
-  const randomPin = Math.floor(Math.random() * 900000000 + 100000000)
+  // Assessment courses don't get PINs - they use invitations instead
+  const randomPin = isAssessmentEnabled
+    ? null
+    : Math.floor(Math.random() * 900000000 + 100000000)
 
   // convert times from local time to UTC
   // startDate.setHours(startDate.getHours() - startDate.getTimezoneOffset() / 60)
@@ -709,7 +2599,8 @@ export async function createCourse(
         data: {
           name: name.trim(),
           displayName: displayName.trim(),
-          description: description,
+          description,
+          language,
           color: color ?? '#CCD5ED',
           startDate: startDate,
           endDate: endDate,
@@ -719,6 +2610,7 @@ export async function createCourse(
           preferredGroupSize: preferredGroupSize ?? defaultPreferredGroupSize,
           notificationEmail: notificationEmail,
           isGamificationEnabled: isGamificationEnabled,
+          isAssessmentEnabled: isAssessmentEnabled ?? false,
           pinCode: randomPin,
           owner: {
             connect: {
@@ -736,7 +2628,17 @@ export async function createCourse(
         prisma
       )
 
-      return newCourse
+      return {
+        ...newCourse,
+        derivedAccess: false,
+        numSharedUsers: 0,
+        permissionLevel: DB.PermissionLevel.OWNER,
+        isOwner: true,
+        isManager: true,
+        isEditor: true,
+        isShared: false,
+        isRemovable: false,
+      }
     },
     { timeout: 60000 }
   )
@@ -766,8 +2668,10 @@ interface UpdateCourseSettingsArgs {
   endDate?: Date | null
   isGroupCreationEnabled?: boolean | null
   groupDeadlineDate?: Date | null
+  language: DB.Locale
   notificationEmail?: string | null
   isGamificationEnabled?: boolean | null
+  isAssessmentEnabled?: boolean | null
 }
 
 export async function updateCourseSettings(
@@ -781,8 +2685,10 @@ export async function updateCourseSettings(
     endDate,
     isGroupCreationEnabled,
     groupDeadlineDate,
+    language,
     notificationEmail,
     isGamificationEnabled,
+    isAssessmentEnabled,
   }: UpdateCourseSettingsArgs,
   ctx: ContextWithUser
 ) {
@@ -815,14 +2721,24 @@ export async function updateCourseSettings(
     course._count.groupActivities > 0
   const containsGroups = course._count.participantGroups > 0
 
+  // check if the gamification and/or assessment settings were changed
+  const newGamificationSetting =
+    course.isGamificationEnabled !== isGamificationEnabled &&
+    (isGamificationEnabled || (!containsActivities && !containsGroups))
+      ? (isGamificationEnabled ?? false)
+      : undefined
+  const newAssessmentSetting =
+    course.isAssessmentEnabled !== isAssessmentEnabled
+      ? (isAssessmentEnabled ?? undefined)
+      : undefined
+
   const updatedCourse = await ctx.prisma.course.update({
-    where: {
-      id,
-    },
+    where: { id },
     data: {
       name: name ?? undefined,
       displayName: displayName ?? undefined,
-      description: description ?? undefined,
+      description,
+      language: language ?? DB.Locale.en,
       color: color ?? undefined,
       startDate: currentStartDatePast || !startDate ? undefined : startDate,
       endDate: endDate ?? undefined,
@@ -834,10 +2750,10 @@ export async function updateCourseSettings(
       groupDeadlineDate: groupDeadlineDate ?? undefined,
       notificationEmail: notificationEmail ?? undefined,
       // only enable gamification or disable it if there are no activities or groups
-      isGamificationEnabled:
-        isGamificationEnabled || (!containsActivities && !containsGroups)
-          ? (isGamificationEnabled ?? false)
-          : undefined,
+      isGamificationEnabled: newGamificationSetting,
+      // set assessment mode - if enabling, remove PIN
+      isAssessmentEnabled: isAssessmentEnabled ?? undefined,
+      pinCode: isAssessmentEnabled ? null : undefined,
       // reset the random assignment tracking if the group deadline is extended
       randomAssignmentFinalized: !newGroupDeadlinePast ? false : undefined,
       // if group creation is disabled and there are no groups, remove all participants from the random assignment pool
@@ -845,6 +2761,83 @@ export async function updateCourseSettings(
         !isGroupCreationEnabled && !containsGroups
           ? { deleteMany: {} }
           : undefined,
+      // if the gamification or assessment setting was changed, update all activities assigned to the course
+      ...(newGamificationSetting || newAssessmentSetting
+        ? {
+            liveQuizzes: {
+              updateMany: {
+                where: {
+                  isDeleted: false,
+                  status: {
+                    in: [
+                      DB.PublicationStatus.DRAFT,
+                      DB.PublicationStatus.SCHEDULED,
+                      DB.PublicationStatus.PUBLISHED,
+                    ],
+                  },
+                },
+                data: {
+                  isGamificationEnabled: newGamificationSetting,
+                  isAssessmentEnabled: newAssessmentSetting,
+                },
+              },
+            },
+            practiceQuizzes: {
+              updateMany: {
+                where: {
+                  isDeleted: false,
+                  status: {
+                    in: [
+                      DB.PublicationStatus.DRAFT,
+                      DB.PublicationStatus.SCHEDULED,
+                      DB.PublicationStatus.PUBLISHED,
+                    ],
+                  },
+                },
+                data: {
+                  isGamificationEnabled: newGamificationSetting,
+                  isAssessmentEnabled: newAssessmentSetting,
+                },
+              },
+            },
+            microLearnings: {
+              updateMany: {
+                where: {
+                  isDeleted: false,
+                  status: {
+                    in: [
+                      DB.PublicationStatus.DRAFT,
+                      DB.PublicationStatus.SCHEDULED,
+                      DB.PublicationStatus.PUBLISHED,
+                    ],
+                  },
+                },
+                data: {
+                  isGamificationEnabled: newGamificationSetting,
+                  isAssessmentEnabled: newAssessmentSetting,
+                },
+              },
+            },
+            groupActivities: {
+              updateMany: {
+                where: {
+                  isDeleted: false,
+                  status: {
+                    in: [
+                      DB.PublicationStatus.DRAFT,
+                      DB.PublicationStatus.SCHEDULED,
+                      DB.PublicationStatus.PUBLISHED,
+                    ],
+                  },
+                },
+                data: {
+                  isGamificationEnabled: newGamificationSetting,
+                  isAssessmentEnabled: newAssessmentSetting,
+                },
+              },
+            },
+          }
+        : {}),
     },
   })
 
@@ -853,9 +2846,7 @@ export async function updateCourseSettings(
 
 export async function getUserCourses(ctx: ContextWithUser) {
   const userCourses = await ctx.prisma.user.findUnique({
-    where: {
-      id: ctx.user.sub,
-    },
+    where: { id: ctx.user.sub },
     include: {
       objects: {
         where: { courseId: { not: null } },
@@ -920,20 +2911,33 @@ export async function getActiveUserCourses(
   const userCourses = await ctx.prisma.user.findUnique({
     where: { id: ctx.user.sub },
     include: {
-      courses: {
+      objects: {
         where: {
-          endDate: {
-            gte: new Date(),
-          },
-          isArchived: false,
+          courseId: { not: null },
+          course: { endDate: { gte: new Date() }, isArchived: false },
         },
-        orderBy: {
-          createdAt: 'desc',
-        },
+        include: { course: true },
+        orderBy: [
+          { course: { startDate: 'asc' } },
+          { course: { name: 'asc' } },
+        ],
       },
     },
   })
-  const courses = userCourses?.courses ?? []
+
+  const courses =
+    userCourses?.objects?.map((object) => ({
+      ...object.course!,
+      isOwner: object.permissionLevel === DB.PermissionLevel.OWNER,
+      isManager:
+        object.permissionLevel === DB.PermissionLevel.OWNER ||
+        object.permissionLevel === DB.PermissionLevel.ADMIN,
+      isEditor:
+        object.permissionLevel === DB.PermissionLevel.OWNER ||
+        object.permissionLevel === DB.PermissionLevel.ADMIN ||
+        object.permissionLevel === DB.PermissionLevel.WRITE,
+      isShared: object.permissionLevel !== DB.PermissionLevel.OWNER,
+    })) ?? []
 
   if (
     activityId &&
@@ -1017,10 +3021,25 @@ export async function getActiveUserCourses(
 
     // deduplicate the course linked to the activity with the other user courses and sort it accordingly
     if (activityCourse) {
-      const sortedCourses = [
-        ...(activityCourse ? [activityCourse] : []),
-        ...courses.filter((course) => course.id !== activityCourse.id),
-      ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      const userHasActivityCourseAssess = courses.some(
+        (course) => course.id === activityCourse.id
+      )
+      const augmentedCourses = userHasActivityCourseAssess
+        ? courses
+        : [
+            ...courses,
+            {
+              ...activityCourse,
+              isOwner: false,
+              isManager: false,
+              isEditor: false,
+              isShared: false,
+            },
+          ]
+
+      const sortedCourses = augmentedCourses.sort(
+        (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+      )
 
       return sortedCourses
     } else {
@@ -1073,7 +3092,7 @@ export async function deleteCourse(
   // live quizzes, which are only disconnected from the course need to be handled separately
   // elements that are contained in asynchronous activities (cascading delete) need to be updated manually
   const course = await ctx.prisma.course.findUnique({
-    where: { id },
+    where: { id, isAssessmentEnabled: false },
     include: {
       liveQuizzes: true,
       practiceQuizzes: { include: { stacks: { include: { elements: true } } } },
@@ -1128,6 +3147,59 @@ export async function deleteCourse(
     },
     { timeout: 60000 }
   )
+
+  // cancel any remaining scheduled publication or ending hatchet jobs for the asynchronous activities of the course
+  for (const pq of course.practiceQuizzes) {
+    if (pq.scheduledPublicationTaskId) {
+      try {
+        await ctx.hatchet.scheduled.delete(pq.scheduledPublicationTaskId)
+      } catch (e) {
+        console.log(
+          `Failed to delete scheduled publication hatchet job for practice quiz ${pq.id}`
+        )
+      }
+    }
+  }
+  for (const ml of course.microLearnings) {
+    if (ml.scheduledPublicationTaskId) {
+      try {
+        await ctx.hatchet.scheduled.delete(ml.scheduledPublicationTaskId)
+      } catch (e) {
+        console.log(
+          `Failed to delete scheduled publication hatchet job for micro learning ${ml.id}`
+        )
+      }
+    }
+    if (ml.scheduledCompletionTaskId) {
+      try {
+        await ctx.hatchet.scheduled.delete(ml.scheduledCompletionTaskId)
+      } catch (e) {
+        console.log(
+          `Failed to delete scheduled completion hatchet job for micro learning ${ml.id}`
+        )
+      }
+    }
+  }
+  for (const ga of course.groupActivities) {
+    if (ga.scheduledPublicationTaskId) {
+      try {
+        await ctx.hatchet.scheduled.delete(ga.scheduledPublicationTaskId)
+      } catch (e) {
+        console.log(
+          `Failed to delete scheduled publication hatchet job for group activity ${ga.id}`
+        )
+      }
+    }
+    if (ga.scheduledCompletionTaskId) {
+      try {
+        await ctx.hatchet.scheduled.delete(ga.scheduledCompletionTaskId)
+      } catch (e) {
+        console.log(
+          `Failed to delete scheduled completion hatchet job for group activity ${ga.id}`
+        )
+      }
+    }
+  }
 
   ctx.emitter.emit('invalidate', { typename: 'Course', id })
   return deletedCourse
@@ -1185,16 +3257,8 @@ export async function removeCourse(
 
 export async function getParticipantCourses(ctx: ContextWithUser) {
   const participantCourses = await ctx.prisma.participant.findUnique({
-    where: {
-      id: ctx.user.sub,
-    },
-    include: {
-      participations: {
-        include: {
-          course: true,
-        },
-      },
-    },
+    where: { id: ctx.user.sub },
+    include: { participations: { include: { course: true } } },
   })
 
   return participantCourses?.participations.map((p) => p.course) ?? []
@@ -1268,7 +3332,7 @@ export async function getCourseData(
           templateInfo: true,
           _count: { select: { permissions: true } },
         },
-        orderBy: { updatedAt: 'desc' },
+        orderBy: { name: 'desc' },
       },
       practiceQuizzes: {
         where: { isDeleted: false },
@@ -1284,7 +3348,7 @@ export async function getCourseData(
           templateInfo: true,
           _count: { select: { permissions: true } },
         },
-        orderBy: { updatedAt: 'desc' },
+        orderBy: { name: 'asc' },
       },
       groupActivities: {
         where: { isDeleted: false },
@@ -1300,7 +3364,7 @@ export async function getCourseData(
           templateInfo: true,
           _count: { select: { permissions: true } },
         },
-        orderBy: { updatedAt: 'desc' },
+        orderBy: { scheduledStartAt: 'asc' },
       },
       microLearnings: {
         where: { isDeleted: false },
@@ -1316,7 +3380,7 @@ export async function getCourseData(
           templateInfo: true,
           _count: { select: { permissions: true } },
         },
-        orderBy: { scheduledStartAt: 'desc' },
+        orderBy: { scheduledStartAt: 'asc' },
       },
       leaderboard: {
         include: { participation: { include: { participant: true } } },
@@ -1334,6 +3398,11 @@ export async function getCourseData(
   if (!coursePermission) {
     return null
   }
+
+  // check if the user is a course admin
+  const isActivityReviewer =
+    coursePermission.permissionLevel === DB.PermissionLevel.ADMIN ||
+    coursePermission.permissionLevel === DB.PermissionLevel.OWNER
 
   const {
     isOwner: courseOwner,
@@ -1370,11 +3439,15 @@ export async function getCourseData(
       templateId: liveQuiz.templateInfo?.id ?? null,
       name: liveQuiz.name,
       displayName: liveQuiz.displayName,
+      reviewStatus: liveQuiz.reviewStatus,
+      isGamificationEnabled: liveQuiz.isGamificationEnabled,
+      isAssessmentEnabled: liveQuiz.isAssessmentEnabled,
       type: ActivityType.LIVE_QUIZ,
       status: liveQuiz.status,
       courseId: course.id,
       courseName: course.name,
       courseStartDate: course.startDate,
+      courseLanguage: course.language,
       numOfStacks: liveQuiz.blocks.length,
       numOfElements: liveQuiz.blocks.reduce(
         (acc, block) => acc + block._count.elements,
@@ -1384,12 +3457,14 @@ export async function getCourseData(
       derivedAccess: permission.derived,
       areInstancesOutdated: liveQuiz.areInstancesOutdated,
       numSharedUsers: liveQuiz._count.permissions - 1,
+      pinCode: liveQuiz.pinCode,
       isOwner,
       isManager,
       isEditor,
       isExecutor,
       isShared,
       isRemovable,
+      isActivityReviewer,
       sharingType,
       updatedAt: liveQuiz.updatedAt,
     }
@@ -1419,11 +3494,15 @@ export async function getCourseData(
       templateId: practiceQuiz.templateInfo?.id ?? null,
       name: practiceQuiz.name,
       displayName: practiceQuiz.displayName,
+      reviewStatus: practiceQuiz.reviewStatus,
+      isGamificationEnabled: practiceQuiz.isGamificationEnabled,
+      isAssessmentEnabled: practiceQuiz.isAssessmentEnabled,
       type: ActivityType.PRACTICE_QUIZ,
       status: practiceQuiz.status,
       courseId: course.id,
       courseName: course.name,
       courseStartDate: course.startDate,
+      courseLanguage: course.language,
       numOfStacks: practiceQuiz.stacks.length,
       numOfElements: practiceQuiz.stacks.reduce(
         (acc, block) => acc + block._count.elements,
@@ -1440,6 +3519,7 @@ export async function getCourseData(
       isExecutor,
       isShared,
       isRemovable,
+      isActivityReviewer,
       sharingType,
       updatedAt: practiceQuiz.updatedAt,
     }
@@ -1469,11 +3549,15 @@ export async function getCourseData(
       templateId: microLearning.templateInfo?.id ?? null,
       name: microLearning.name,
       displayName: microLearning.displayName,
+      reviewStatus: microLearning.reviewStatus,
+      isGamificationEnabled: microLearning.isGamificationEnabled,
+      isAssessmentEnabled: microLearning.isAssessmentEnabled,
       type: ActivityType.MICRO_LEARNING,
       status: microLearning.status,
       courseId: course.id,
       courseName: course.name,
       courseStartDate: course.startDate,
+      courseLanguage: course.language,
       numOfStacks: microLearning.stacks.length,
       numOfElements: microLearning.stacks.reduce(
         (acc, block) => acc + block._count.elements,
@@ -1491,6 +3575,7 @@ export async function getCourseData(
       isExecutor,
       isShared,
       isRemovable,
+      isActivityReviewer,
       sharingType,
       updatedAt: microLearning.updatedAt,
     }
@@ -1521,11 +3606,15 @@ export async function getCourseData(
         templateId: groupActivity.templateInfo?.id ?? null,
         name: groupActivity.name,
         displayName: groupActivity.displayName,
+        reviewStatus: groupActivity.reviewStatus,
+        isGamificationEnabled: groupActivity.isGamificationEnabled,
+        isAssessmentEnabled: groupActivity.isAssessmentEnabled,
         type: ActivityType.GROUP_ACTIVITY,
         status: groupActivity.status,
         courseId: course.id,
         courseName: course.name,
         courseStartDate: course.startDate,
+        courseLanguage: course.language,
         numOfStacks: groupActivity.stacks.length,
         numOfElements: groupActivity.stacks.reduce(
           (acc, block) => acc + block._count.elements,
@@ -1545,6 +3634,7 @@ export async function getCourseData(
         isExecutor,
         isShared,
         isRemovable,
+        isActivityReviewer,
         sharingType,
         updatedAt: groupActivity.updatedAt,
       }
@@ -1933,6 +4023,7 @@ export async function getCoursePracticeQuiz(
     stacks: orderedStacks.slice(0, 25),
     numOfStacks: 25,
     availableFrom: null,
+    areInstancesOutdated: false,
     course,
     courseId,
     isDeleted: false,
@@ -1952,220 +4043,6 @@ export async function enableGamification(
   })
 
   return course
-}
-
-export async function publishScheduledActivities(ctx: Context) {
-  // ! Publish scheduled practice quizzes
-  const quizzesToPublish = await ctx.prisma.practiceQuiz.findMany({
-    where: {
-      status: DB.PublicationStatus.SCHEDULED,
-      availableFrom: {
-        lte: new Date(),
-      },
-    },
-  })
-
-  const updatedQuizzes = await Promise.all(
-    quizzesToPublish.map((quiz) =>
-      ctx.prisma.practiceQuiz.update({
-        where: {
-          id: quiz.id,
-        },
-        data: {
-          status: DB.PublicationStatus.PUBLISHED,
-        },
-        include: {
-          stacks: true,
-        },
-      })
-    )
-  )
-
-  await Promise.all(
-    updatedQuizzes.map((quiz) =>
-      ctx.prisma.course.update({
-        where: {
-          id: quiz.courseId,
-        },
-        data: {
-          elementStacks: {
-            connect: quiz.stacks.map((stack) => ({ id: stack.id })),
-          },
-        },
-      })
-    )
-  )
-
-  if (updatedQuizzes.length !== 0) {
-    await sendTeamsNotifications(
-      'graphql/publishScheduledPracticeQuizzes',
-      `Successfully published ${updatedQuizzes.length} scheduled practice quizzes`
-    )
-  }
-
-  updatedQuizzes.forEach((quiz) => {
-    ctx.emitter.emit('invalidate', {
-      typename: 'PracticeQuiz',
-      id: quiz.id,
-    })
-  })
-
-  // ! Publish scheduled microlearnings
-  const microlearningsToPublish = await ctx.prisma.microLearning.findMany({
-    where: {
-      status: DB.PublicationStatus.SCHEDULED,
-      scheduledStartAt: {
-        lte: new Date(),
-      },
-    },
-  })
-
-  const updatedMicroLearnings = await Promise.all(
-    microlearningsToPublish.map((micro) =>
-      ctx.prisma.microLearning.update({
-        where: {
-          id: micro.id,
-        },
-        data: {
-          status: DB.PublicationStatus.PUBLISHED,
-        },
-      })
-    )
-  )
-
-  if (updatedMicroLearnings.length !== 0) {
-    await sendTeamsNotifications(
-      'graphql/publishScheduledMicroLearnings',
-      `Successfully published ${updatedMicroLearnings.length} scheduled microlearnings`
-    )
-  }
-
-  updatedMicroLearnings.forEach((micro) => {
-    ctx.emitter.emit('invalidate', {
-      typename: 'MicroLearning',
-      id: micro.id,
-    })
-  })
-
-  // ! Publish scheduled group activities
-  const groupActivitiesToPublish = await ctx.prisma.groupActivity.findMany({
-    where: {
-      status: DB.PublicationStatus.SCHEDULED,
-      scheduledStartAt: {
-        lte: new Date(),
-      },
-    },
-  })
-
-  const updatedGroupActivities = await Promise.all(
-    groupActivitiesToPublish.map((group) =>
-      ctx.prisma.groupActivity.update({
-        where: {
-          id: group.id,
-        },
-        data: {
-          status: DB.PublicationStatus.PUBLISHED,
-        },
-      })
-    )
-  )
-
-  if (updatedGroupActivities.length !== 0) {
-    await sendTeamsNotifications(
-      'graphql/publishScheduledGroupActivities',
-      `Successfully published ${updatedGroupActivities.length} scheduled group activities`
-    )
-  }
-
-  updatedGroupActivities.forEach((group) => {
-    ctx.emitter.emit('invalidate', {
-      typename: 'GroupActivity',
-      id: group.id,
-    })
-  })
-
-  return true
-}
-
-export async function endExpiredActivities(ctx: Context) {
-  // ! Set microlearning status to ended for all published microlearnings that have ended
-  const microlearningsToEnd = await ctx.prisma.microLearning.findMany({
-    where: {
-      status: DB.PublicationStatus.PUBLISHED,
-      scheduledEndAt: {
-        lte: new Date(),
-      },
-    },
-  })
-
-  const updatedMicroLearningsToEnd = await Promise.all(
-    microlearningsToEnd.map((micro) =>
-      ctx.prisma.microLearning.update({
-        where: {
-          id: micro.id,
-        },
-        data: {
-          status: DB.PublicationStatus.ENDED,
-        },
-      })
-    )
-  )
-
-  if (updatedMicroLearningsToEnd.length !== 0) {
-    await sendTeamsNotifications(
-      'graphql/endMicroLearningsCronjob',
-      `Successfully ended ${updatedMicroLearningsToEnd.length} microlearnings`
-    )
-  }
-
-  updatedMicroLearningsToEnd.forEach((micro) => {
-    ctx.pubSub.publish('microLearningEnded', micro)
-    ctx.emitter.emit('invalidate', {
-      typename: 'MicroLearning',
-      id: micro.id,
-    })
-  })
-
-  // ! Set group activity status to ended for all published group activities that have ended
-  const groupActivitiesToEnd = await ctx.prisma.groupActivity.findMany({
-    where: {
-      status: DB.PublicationStatus.PUBLISHED,
-      scheduledEndAt: {
-        lte: new Date(),
-      },
-    },
-  })
-
-  const updatedGroupActivitiesToEnd = await Promise.all(
-    groupActivitiesToEnd.map((group) =>
-      ctx.prisma.groupActivity.update({
-        where: {
-          id: group.id,
-        },
-        data: {
-          status: DB.PublicationStatus.ENDED,
-        },
-      })
-    )
-  )
-
-  if (updatedGroupActivitiesToEnd.length !== 0) {
-    await sendTeamsNotifications(
-      'graphql/endGroupActivitiesCronjob',
-      `Successfully ended ${updatedGroupActivitiesToEnd.length} group activities`
-    )
-  }
-
-  updatedGroupActivitiesToEnd.forEach((activity) => {
-    ctx.pubSub.publish('groupActivityEnded', activity)
-    ctx.pubSub.publish('singleGroupActivityEnded', activity)
-    ctx.emitter.emit('invalidate', {
-      typename: 'GroupActivity',
-      id: activity.id,
-    })
-  })
-
-  return true
 }
 
 export async function getCourseActivities(
@@ -2194,4 +4071,76 @@ export async function getCourseActivities(
   })
 
   return course
+}
+
+export async function getEndedLiveQuizzesCourse(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId },
+    include: {
+      liveQuizzes: {
+        where: { isDeleted: false, status: DB.PublicationStatus.ENDED },
+        include: {
+          blocks: {
+            include: { elements: { orderBy: { order: 'asc' } } },
+            orderBy: { order: 'asc' },
+          },
+        },
+        orderBy: { finishedAt: 'desc' },
+      },
+    },
+  })
+
+  if (!course) return []
+
+  return (
+    course.liveQuizzes.map((quiz) => ({
+      id: quiz.id,
+      name: quiz.name,
+      displayName: quiz.displayName,
+      instances: quiz.blocks.flatMap((b) =>
+        b.elements.map((e) => ({
+          id: e.id.toString(),
+          name: e.elementData.name,
+        }))
+      ),
+    })) ?? []
+  )
+}
+
+export async function getAssessmentCourseParticipants(
+  {
+    courseId,
+    preferredAffiliation = 'uzh',
+  }: { courseId: string; preferredAffiliation?: string },
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId, isAssessmentEnabled: true },
+    include: {
+      participations: {
+        include: {
+          participant: {
+            include: { accounts: { where: { ssoType: preferredAffiliation } } },
+          },
+        },
+      },
+    },
+  })
+
+  if (!course) return []
+
+  return sortBy(
+    course.participations.map((p) => ({
+      id: p.participant.id,
+      email:
+        p.participant.accounts[0]?.ssoEmail ??
+        p.participant.email ??
+        'E-Mail Missing',
+      username: p.participant.username,
+    })),
+    [prop('email'), 'asc']
+  )
 }

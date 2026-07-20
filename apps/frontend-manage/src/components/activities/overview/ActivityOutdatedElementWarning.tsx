@@ -29,6 +29,7 @@ function ActivityOutdatedElementWarning({
       <FontAwesomeIcon
         icon={faExclamationTriangle}
         className="text-uzh-red-100"
+        data-cy="activity-outdated-element-warning"
       />
     </Tooltip>
   )

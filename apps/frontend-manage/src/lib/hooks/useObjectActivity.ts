@@ -1,40 +1,28 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   ActivityLogEntry,
-  ActivityLogType,
   AddActivityMessageDocument,
+  DeleteActivityMessageDocument,
   GetObjectActivityDocument,
   ObjectType,
   ResolveActivityLogEntryDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 
-/**
- * A generic hook for fetching and managing activity entries for any object type
- * Uses a unified query that takes object type as a parameter
- *
- * @param options Options for the hook
- * @returns Object containing activity data, loading state, error state, and functions to add messages
- */
 export function useObjectActivity({
   objectId,
   objectType,
+  visible = true,
 }: {
   objectId: string | number
   objectType: ObjectType
+  visible?: boolean
 }) {
-  // debug logging for tracking purposes
-  if (process.env.NODE_ENV !== 'production') {
-    console.debug(
-      `[useObjectActivity] Type: ${objectType}, Raw ID: ${objectId}, String ID: ${String(objectId)}`
-    )
-  }
-
   // query for fetching activity entries using the unified query
   const { data, loading, error, refetch } = useQuery(
     GetObjectActivityDocument,
     {
       variables: { objectId: String(objectId), objectType },
-      skip: !objectId,
+      skip: !objectId || !visible,
       fetchPolicy: 'cache-and-network',
     }
   )
@@ -46,18 +34,14 @@ export function useObjectActivity({
 
   // mutation for resolving/unresolving messages
   const [resolveMessage, { loading: resolvingMessage }] = useMutation(
-    ResolveActivityLogEntryDocument,
-    {
-      // TODO: implement proper cache update
-    }
+    ResolveActivityLogEntryDocument
   )
 
-  /**
-   * Add a new message to the activity log
-   *
-   * @param message Message content to add
-   * @returns Promise that resolves when the message is added
-   */
+  // mutation for deleting messages
+  const [deleteMessage, { loading: deletingMessage }] = useMutation(
+    DeleteActivityMessageDocument
+  )
+
   const addActivityMessage = async (message: string) => {
     if (!objectId) {
       console.error(
@@ -72,56 +56,34 @@ export function useObjectActivity({
         objectType,
         message,
       },
-      optimisticResponse: {
-        addActivityMessage: {
-          __typename: 'ActivityLogEntry',
-          id: -1, // temporary ID that will be replaced by the server
-          type: ActivityLogType.Message,
-          objectType, // include this for consistency
-          message,
-          resolved: false,
-          resolvedAt: null,
-          username: 'self', // indicating it's the current user's message
-          isEdited: false,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      },
       update: (cache, { data }) => {
-        // Update the cache with the new message
-        const existingData = cache.readQuery({
-          query: GetObjectActivityDocument,
-          variables: { objectId: String(objectId), objectType },
-        })
+        // verify that the posting of the message was successful
+        if (!data?.addActivityMessage) return
 
-        if (existingData && data?.addActivityMessage) {
-          cache.writeQuery({
+        // update the displayed messages
+        cache.updateQuery(
+          {
             query: GetObjectActivityDocument,
             variables: { objectId: String(objectId), objectType },
-            data: {
+          },
+          (qData) => {
+            if (!qData?.getObjectActivity) return qData
+
+            return {
               getObjectActivity: [
-                ...(existingData.getObjectActivity || []),
-                data.addActivityMessage,
+                ...(qData.getObjectActivity || []),
+                data.addActivityMessage!,
               ],
-            },
-          })
-        }
+            }
+          }
+        )
       },
     })
   }
 
-  /**
-   * Toggle the resolved status of a message
-   *
-   * @param id The ID of the activity log entry to resolve/unresolve
-   * @param resolved Whether to set the status to resolved (true) or unresolved (false)
-   * @returns Promise that resolves when the status is updated
-   */
   const resolveActivityLogEntry = async (id: number, resolved: boolean) => {
     return resolveMessage({
-      variables: {
-        id,
-      },
+      variables: { id },
       optimisticResponse: {
         resolveActivityLogEntry: {
           __typename: 'ActivityLogEntry',
@@ -131,7 +93,60 @@ export function useObjectActivity({
           resolvedAt: resolved ? new Date().toISOString() : null,
         },
       },
-      // TODO: add proper cache update here, once the corresponding mutation is implemented
+      update: (cache, { data }) => {
+        // verify that the resolution was successful
+        if (!data?.resolveActivityLogEntry) return
+
+        // update the displayed messages
+        cache.updateQuery(
+          {
+            query: GetObjectActivityDocument,
+            variables: { objectId: String(objectId), objectType },
+          },
+          (qData) => {
+            if (!qData?.getObjectActivity) return qData
+
+            return {
+              getObjectActivity: qData.getObjectActivity.map((entry) =>
+                entry.id === id
+                  ? {
+                      ...entry,
+                      resolved: data.resolveActivityLogEntry!.resolved,
+                      resolvedAt: data.resolveActivityLogEntry!.resolvedAt,
+                    }
+                  : entry
+              ),
+            }
+          }
+        )
+      },
+    })
+  }
+
+  const deleteActivityMessage = async (id: number) => {
+    return deleteMessage({
+      variables: { id },
+      update: (cache, { data }) => {
+        // verify that the deletion was successful
+        if (!data?.deleteActivityMessage) return
+
+        // update the displayed messages
+        cache.updateQuery(
+          {
+            query: GetObjectActivityDocument,
+            variables: { objectId: String(objectId), objectType },
+          },
+          (qData) => {
+            if (!qData?.getObjectActivity) return qData
+
+            return {
+              getObjectActivity: qData.getObjectActivity.filter(
+                (entry) => entry.id !== id
+              ),
+            }
+          }
+        )
+      },
     })
   }
 
@@ -144,8 +159,10 @@ export function useObjectActivity({
     error,
     addActivityMessage,
     resolveActivityLogEntry,
+    deleteActivityMessage,
     isAddingMessage: addingMessage,
     isResolvingMessage: resolvingMessage,
+    isDeletingMessage: deletingMessage,
     refetch,
   }
 }

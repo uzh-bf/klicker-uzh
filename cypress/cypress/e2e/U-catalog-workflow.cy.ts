@@ -1,20 +1,6 @@
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Test all functionalities of catalog collections and objects contained therein', function () {
-  before(() => {
-    cy.seed()
-
-    // set browser language to english (independent of local machine setting
-    Cypress.automation('remote:debugger:protocol', {
-      command: 'Emulation.setLocaleOverride',
-      params: { locale: 'en' },
-    })
-  })
-
-  after(() => {
-    cy.cleanup()
-  })
-
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('U-catalog.json').then((data) => {
       this.data = data
@@ -24,12 +10,12 @@ describe('Test all functionalities of catalog collections and objects contained 
     })
   })
 
-  // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  // Fail-fast handled globally in support/e2e.ts
+
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
+  })
 
   // ! Helpers
   function verifyAdminOwnerPermissionsCCPublic({
@@ -242,7 +228,8 @@ describe('Test all functionalities of catalog collections and objects contained 
       collectionName: this.data.AC2.name,
       userId: Cypress.env('LECTURER_IND_ID'),
     })
-    cy.get(`[data-cy="element-item-${this.data.SEML.title}"]`).should('exist')
+    cy.validateElement({ element: this.data.SEML.title })
+
     cy.createQuestionSE({
       name: this.data.SEML2.title,
       content: this.data.SEML2.content,
@@ -250,7 +237,7 @@ describe('Test all functionalities of catalog collections and objects contained 
       collectionName: this.data.AC2.name,
       userId: Cypress.env('LECTURER_IND_ID'),
     })
-    cy.get(`[data-cy="element-item-${this.data.SEML2.title}"]`).should('exist')
+    cy.validateElement({ element: this.data.SEML2.title })
   })
 
   it('Create the questions that will be required for this test workflow', function () {
@@ -1971,10 +1958,17 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="delete-catalog-collection"]').click()
     cy.get('[data-cy="confirm-delete-collection"]').click()
     cy.get(
+      `[data-cy="catalog-collection-${this.data.CCPublic}-actions"]`
+    ).should('not.exist')
+
+    cy.get(
       `[data-cy="catalog-collection-${this.data.CCRestricted}-actions"]`
     ).realClick()
     cy.get('[data-cy="delete-catalog-collection"]').click()
     cy.get('[data-cy="confirm-delete-collection"]').click()
+    cy.get(
+      `[data-cy="catalog-collection-${this.data.CCRestricted}-actions"]`
+    ).should('not.exist')
 
     cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).should(
       'not.exist'

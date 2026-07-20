@@ -1,10 +1,16 @@
-query Self {
-  self {
+query Self($liveQuizId: String) {
+  self(liveQuizId: $liveQuizId) {
     id
     role
     scopeQuizId
+    isCourseParticipant
+    isCourseParticipationActive
+
     email
+    institutionalEmail
+
     username
+    locale
     avatar
     avatarSettings {
       skinTone

@@ -1,4 +1,4 @@
-FROM docker.io/library/node:20.18.1-alpine AS base
+FROM docker.io/library/node:24.16.0-alpine AS base
 
 
 FROM base AS deps
@@ -7,7 +7,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@9.15.4 turbo@2.1.0
+RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.5.6
 
 COPY . .
 
@@ -20,12 +20,12 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@9.15.4 turbo@2.1.0
+RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.5.6
 
 COPY --from=deps /app/out/json/ .
 COPY --from=deps /app/out/pnpm* .
 
-RUN pnpm i --frozen-lockfile --ignore-scripts
+RUN pnpm i --ignore-scripts
 
 ARG NODE_ENV="production"
 
@@ -38,17 +38,18 @@ WORKDIR /app
 
 ARG NODE_ENV="production"
 
-RUN npm i -g --ignore-scripts pnpm@9.15.4 turbo@2.1.0
+RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.5.6
 
 COPY --from=deps /app/out/json/ .
 COPY --from=deps /app/out/pnpm* .
 
-RUN pnpm i --frozen-lockfile --prod --ignore-scripts
+RUN pnpm i --prod --ignore-scripts
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 
 COPY --from=builder /app/packages/prisma/dist/ /app/packages/prisma/dist/
+COPY --from=builder /app/packages/types/dist/ /app/packages/types/dist/
 COPY --from=builder /app/apps/olat-api/dist/ /app/apps/olat-api/dist/
 COPY --from=builder /app/apps/olat-api/static /app/apps/olat-api/static/
 

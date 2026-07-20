@@ -1,6 +1,6 @@
 import { ValidateAvailableLiveQuizDocument } from '@klicker-uzh/graphql/dist/ops'
 import { GetServerSidePropsContext } from 'next'
-import { initializeApollo } from '~/lib/apollo'
+import { initializeApollo } from '../../../../lib/apollo'
 
 function CourseLiveQuiz() {
   return null
@@ -13,7 +13,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   ) {
     return {
       redirect: {
-        destination: '/404',
+        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/404`,
         permanent: false,
       },
     }
@@ -32,7 +32,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   if (!liveQuizValid.data?.validateAvailableLiveQuiz) {
     return {
       redirect: {
-        destination: '/404',
+        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/404`,
         permanent: false,
       },
     }
@@ -40,7 +40,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   return {
     redirect: {
-      destination: `/session/${quizId}`,
+      destination: `${ctx.locale ? `/${ctx.locale}` : ''}/session/${quizId}`,
       permanent: false,
     },
   }

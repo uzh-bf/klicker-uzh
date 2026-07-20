@@ -145,6 +145,7 @@ export default {
       completed: 'Completed',
       running: 'Running',
       points: 'Points',
+      pointsSmall: 'points',
       title: 'KlickerUZH',
       send: 'Send',
       next: 'Next',
@@ -158,6 +159,7 @@ export default {
       confirm: 'Confirm',
       close: 'Close',
       approve: 'Approve',
+      apply: 'Apply',
       sendAnswer: 'Send answer',
       begin: 'Begin',
       finish: 'Finish',
@@ -199,6 +201,7 @@ export default {
       microlearnings: 'Microlearnings',
       microlearning: 'Microlearning',
       activeLiveQuizzes: 'Active Live Quizzes',
+      assessmentLiveQuizzes: 'Assessment Live Quizzes',
       activePracticeQuizzes: 'Active Practice Quizzes',
       activeMicroLearnings: 'Active Microlearnings',
       groupActivity: 'Group Activity',
@@ -236,6 +239,7 @@ export default {
       solution: 'Solution',
       sampleSolution: 'Sample solution',
       gamification: 'Gamification',
+      interaction: 'Interaction',
       basePoints: 'Base points',
       awardedPoints: 'Awarded points',
       additionalPoints: 'Additional points',
@@ -276,12 +280,15 @@ export default {
       recompute: 'Recompute',
       ok: 'OK',
       language: 'Language',
-      english: 'English',
-      german: 'German',
+      en: 'English',
+      enShort: 'en',
+      de: 'German',
+      deShort: 'de',
       practicePool: 'Practice',
       practiceTitle: 'Practice Pool',
       practice: 'Practice Activities',
       clues: 'Clues',
+      server: 'Server',
       value: 'Value',
       passed: 'Passed',
       failed: 'Failed',
@@ -303,11 +310,13 @@ export default {
         'Please review the following instructions. This action cannot be undone.',
       comingSoon: 'Coming soon...',
       pinCode: 'PIN Code',
-      withGroups: 'With groups',
-      withoutGroups: 'Without groups',
       forgotPassword: 'Forgot password?',
+      archive: 'Archive',
       archived: 'Archived',
       ended: 'Ended',
+      assessment: 'Assessment',
+      pin: 'PIN',
+      pinProtected: 'PIN Protected',
       learningAnalytics: 'Learning Analytics',
       monday: 'Monday',
       tuesday: 'Tuesday',
@@ -378,6 +387,20 @@ export default {
       month: 'Month',
       week: 'Week',
       day: 'Day',
+      total: 'Total',
+      reviewStatus: 'Review Status',
+      reviewStatusINCOMPLETE: 'Review pending',
+      reviewStatusREVIEWED: 'Reviewed',
+      reviewStatusMODIFIED_AFTER_REVIEW: 'Modified after review',
+      modifiedAfterReviewInformation:
+        'The content of this object was modified after the last review. Please mark it as reviewed again if you agree with the updated content.',
+      availableActions: 'Available Actions',
+      configuration: 'Configuration',
+      unknownUser: 'Unknown User',
+      deletedUser: 'Deleted User',
+      correction: 'Correction',
+      filter: 'Filter',
+      listExamples: 'e.g.',
     },
     types: {
       ACTIVITIES: 'Activities',
@@ -440,6 +463,14 @@ export default {
       averagePoints: 'Average points: {number}',
       noPointsCollected:
         'No points have been collected in this quiz so far. As soon as this changes, podium and leaderboard will be displayed here.',
+      liveQuizGamifiedNoGamifiedCourse:
+        'This live quiz is gamified but not part of a gamified course. Since you are logged in, any points collected by you in the quiz will be automatically displayed on the leaderboard. If you do not wish to appear on the leaderboard, please <logout>log out</logout> and rejoin the quiz via the link.',
+      liveQuizGamifiedCourseNoParticipation:
+        'This live quiz is part of a gamified course. Since you have not joined this course, you will only collect points within this quiz. Your points will appear on the quiz leaderboard. If you do not want this, please <logout>log out</logout> and rejoin the quiz via the link.',
+      liveQuizCourseParticipationInactive:
+        'This live quiz is part of a gamified course, but you are currently not participating in the gamification. To join the leaderboard and collect points in this quiz, join the <link>leaderboard on the course overview</link> and rejoin the quiz.',
+      liveQuizGamifiedAssessment:
+        'Diese Live Quiz ist gamifiziert und gleichzeitig Teil eines Assessment-Kurses. Um nicht mit Ihrem Pseudonym auf dem Leaderboard zu erscheinen, gehen Sie bitte in die Profileinstellungen und stellen Sie die Anzeigeoption Ihres Profils entsprechend um.',
       rank: 'Rank',
       username: 'Username',
       email: 'Email',
@@ -488,6 +519,9 @@ export default {
       waitingForActivation:
         'Your account has been created. Please check your inbox for an activation link.',
       myCourses: 'My Courses',
+      myAssessmentCourses: 'My Assessment Courses',
+      noAssessmentCourseAssignments:
+        'You have not been assigned to any assessment courses yet. Please contact your lecturers.',
       insights: 'Insights',
       timeline: 'Timeline',
       myBookmarks: 'My Bookmarks',
@@ -502,6 +536,8 @@ export default {
       liveQA: 'Live-Q&A',
       userNotLoggedIn:
         'You are currently not logged in. <login>Please log in</login> if you want to collect points and XP and see an overview of your learning progress.',
+      userNotLoggedInFrame:
+        'You are currently not logged in. Please log in through the platform embedding this page if you want to collect points and XP and see an overview of your learning progress.',
       noLiveQuizzesActive: 'No live quizzes active.',
       activeLiveQuizzesBy: 'Active live quizzes by {name}',
       activeLiveQuizzesInCourse: 'Active live quizzes in {name}',
@@ -518,6 +554,14 @@ Other participants will only see your public **participant profile**, including 
 `,
       activityPreview:
         'You are seeing an activity preview for the {activity} "{name}" (display name "{displayName}"). Please note that this preview is meant for the lecturer to test the activity from a student perspective. While most interaction functionalities are supported, no submitted responses are stored or will appear in the evaluation view.',
+    },
+    chatbot: {
+      loginRequiredMessage:
+        'You need a KlickerUZH account to access this chatbot. Please log in or create an account first.',
+      goToLogin: 'Go to login',
+      participationRequiredMessage:
+        'We could not activate your participation for this course. Open the course in OLAT/KlickerUZH and ensure you have joined it before trying again.',
+      goToCourse: 'Open course',
     },
     insights: {
       noCourseDataAvailable:
@@ -550,6 +594,8 @@ Your data will never be shared with other parties beside the above and will neve
         'I agree to the KlickerUZH [privacy policy](https://www.klicker.uzh.ch/privacy_policy) and [terms of service](https://www.klicker.uzh.ch/terms_of_service) and consent to the processing of my data as described therein. I am aware that I can participate in learning activities anonymously and without an account if I do not agree to these conditions.',
     },
     studentDocs: {
+      assessmentInstanceWarning:
+        'Please note that you are currently in the <b>assessment instance</b> of KlickerUZH. The following documentation refers to the regular student application, which may differ from the assessment instance.',
       pageList: `
 In this documentation you will find the most important information about KlickerUZH in your course:
 
@@ -559,91 +605,96 @@ In this documentation you will find the most important information about Klicker
       `,
       featuresTitle: 'Feature Overview',
       features: `
-KlickerUZH offers you as a course participant a significant amount of functionalities. This overview summarizes the most important ones. The concrete functions available depend on the settings of your lecturers (e.g., whether group activities or a challenge are available) and will be communicated to you directly by the lecturers.
+KlickerUZH offers a comprehensive set of functionalities for course participants. This overview summarizes the most important ones. The specific activities that are available to you depend on the content offered by your lecturers (e.g., whether group activities or a challenge are available) and will be communicated to you directly by them.
 
 #### Polls and Live Quizzes
 
 ![Live Quiz _on the left_](/img/06_live_quiz.png)
 
-During the lecture, you have the possibility to answer the questions asked by the lecturers on [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname}) or in the KlickerUZH app (or, if available, in OLAT under the "Live Quiz" module). The results are displayed graphically without delay and can thus be presented and commented on by the lecturers after the answering time has expired.
+During the lecture, you have the possibility to answer questions asked by the lecturers through live quizzes in the KlickerUZH app, via your LMS (e.g., OLAT under the "Live Quiz" module), or directly at
+\`https://pwa.klicker.uzh.ch/join/&lt;shortname&gt;\`. Results are shown live in the lecturer evaluation view and can be presented and discussed once the answering time has expired.
 
-No login is required to answer the questions. With a login you can participate in the challenge of your course and collect points.
+No login is required to answer questions during a live quiz. However, using a KlickerUZH account, you can participate in the course challenge and collect points. If available, you can also join the KlickerUZH course with your Klicker account, allowing us to directly display a list of all ongoing live quizzes to you.
+If you want to collect points in one specific gamified quiz only, KlickerUZH also offers you the possibility to define a temporary pseudonym and avatar.
 
 #### Live Q&A and Real-time Feedback
 
-![Live Q&A and Real-time Feedback _on the right_](/img/06_live_quiz.png)
+![Live Q&A and Feedback _on the right_](/img/06_live_quiz.png)
 
-Do you have a question or would you like to give direct feedback on the lecture? With the Live Q&A you can ask the lecturers or assistants a question directly during the lecture - even if you are participating in the lecture from home. In addition, with the KlickerUZH you have the possibility to give the lecturers direct feedback on the speed and difficulty of the lecture during the lecture.
+Have a question or want to give direct feedback on the lecture? Live Q&A lets you ask questions to the lecturer or teaching assistants during the lecture — even when participating remotely. In addition, you may provide direct feedback on the speed and difficulty of the lecture via two simple sliders.
 
-Participation is possible at [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname}) (also anonymously) or via the KlickerUZH app.
+Participation is possible at \`https://pwa.klicker.uzh.ch/join/&lt;shortname&gt;\` (also anonymously) or via the KlickerUZH app. Availability of the live Q&A and live feedback functionalities depends on whether the lecturer enables these features during a live quiz.
 
 #### Practice Quizzes, Microlearning, and Flashcards
 
 ![Practice Quiz in OLAT](/img/07_practice_quiz.png)
 
-Practice quizzes, and microlearning and flashcards allow you to repeat the course content outside of the lecture time and receive direct feedback on your solution. Practice quizzes and flashcards are always and arbitrarily often available, microlearning on the other hand only once and in a limited time frame (e.g., once per week). All elements are directly accessible via the KlickerUZH app, or via the link provided by your lecturers (also anonymously). Flash cards are still being implemented and will be available after around 5 weeks of the fall term 2023.
+Practice quizzes, microlearnings, and flashcards help you repeat course content outside of lecture time and receive immediate feedback. Practice quizzes (optionally with flashcards) are available at any time and can be repeated arbitrarily often; microlearnings are available only once and within a limited time frame. All elements are accessible via the KlickerUZH app or via links provided by your lecturers (also supporting anonymous participation).
 
-While answering the questions, you can, if you are logged in, set personal bookmarks on important questions, and create your own question pool through that. You can send feedback on unclear questions to your lecturers using the report function.
+While answering questions, logged-in participants can set personal bookmarks on important questions to build a private study pool. If you spot issues with a question, use the flagging function to report them to your lecturers.
 
 #### Groups and Group Activities
 
-During the semester, you might be provided with practical group activities that can only be solved as a group. These activities are intended to be entertaining, promote exchange with fellow students, and support the application of theories. Forming a group of 2-5 people is possible during the first few weeks of a course (as specified by the lecturer), typically before the first group activity begins. After that, the group remains active for the semester and competes against the other groups in the same course. Group formation and activities are only available to participants with a KlickerUZH account.
+Some courses use group activities that can only be solved collaboratively. Lecturers may enable randomized group creation and specify a preferred group size. Once groups are formed and a group activity is published, hints are distributed across group members, and the group can solve the activity together within a limited time window (one submission per group). Group formation and activities are available to participants with a KlickerUZH account.
 
-Within a group, you can compare your points with those of your fellow students; together you can also compare the group's performance with other groups. The accumulated points from group activities together with the aggregated points of all group members (average) result in the total group score.
+Within a group, you can compare your points with your peers; together you can also compare your group's performance with other groups. The total group score combines points from group activities with the aggregated points of all group members.
 
-#### Challenge
+#### Courses, Leaderboards, and Achievements
 
-![Gamification](/img/08_gamification.png)
+Lecturers can enable course leaderboards and define challenges and achievements. By joining a leaderboard, you collect points across activities and can see your rank, level, XP, and achievements (if allowed by your privacy settings). By activating anonymous participation in your profile settings, you can hide your profile from other participants while still participating in the leaderboard.
 
-All activities in KlickerUZH are, if activated by the lecturers, part of a gamified challenge. As part of the challenge, you collect points for the course leaderboard (if you participate while logged in), experience points, and achievements.
+#### Challenge and Scoring
+
+![Leaderboard (for gamified courses) and course information](/img/08_gamification.png)
+
+All activities in KlickerUZH can be part of a gamified challenge. As part of the challenge, you collect points for the course leaderboard (if you participate while logged in), experience points, and achievements.
 
 The following activities are part of the challenge:
 
-- Polls and Live Quizzes: 10 points per participation in a vote and up to 70 bonus points for a fast and correct answer to content questions. The fastest correct answer receives the most points.
-- Practice Quizzes: 10 points if the first answer to a question is correct. 5 points for each additional correct repetition of a question (after the specified lock time has expired). In KPRIM questions, one mistake results in a halving of the score, and two or more mistakes yield no points.
-- Microlearning: 10 points per correctly answered question in a microlearning. In KPRIM questions, one mistake results in a halving of the score, and two or more mistakes yield no points.
-- Group Activities: Points on the group leaderboard based on the correctness of the activity (e.g., 800 of 1000 points if 80% was solved correctly). Additionally, achievements and points on the individual leaderboard can be distributed for each group member when passing a group activity (with a passing threshold of 50% of achievable points).
-- Achievements: Collected achievements (e.g., reaching first place in a large live quiz) can result in bonus points, as noted on the corresponding achievements. Achievements are distributed automatically or manually by the lecturers.
-- Multipliers: If multipliers are set on questions and/or activities, these multipliers are applied to the score (e.g., 2x, 3x, 4x). Multipliers are shown beside questions in practice quizzes and microlearning, and not visible in live quizzes.
-      `,
+- Polls and Live Quizzes: 10 points per participation in a question and up to 50 bonus points for fast and correct answers. The fastest correct answer receives the most points. Lecturers may customize the scoring scheme or apply multipliers to individual activities / questions; for more information, please contact your lecturers.
+- Practice Quizzes: 10 points are awarded if the first answer to a question is correct. On repetition, the same amount of points is awarded only after the specified lock time.
+- Microlearnings: 10 points are awarded for a correct answer to a question. Microlearnings cannot be repeated.
+- Group Activities: By default, up to 25 points can be awarded per question in the group activity. Group activities are graded manually by the lecturers alongside the pass/fail decision.
+- Achievements: Certain achievements (e.g., winning a large live quiz) yield bonus points. Achievements are awarded automatically or manually by lecturers.
+- Multipliers: Question- and activity-level multipliers (e.g., 2x/3x/4x) increase the awarded points. In asynchronous activities (practice quizzes and microlearnings), activity multipliers are displayed at the beginning of the activity.
+`,
       firstLoginTitle: 'First Login & Account Setup',
       firstLogin: `
-If you are participating in KlickerUZH activities for the first time, you can register for a KlickerUZH participant account. A KlickerUZH participant account allows you to easily manage and access the learning content of your courses using KlickerUZH, as well as to add important elements to your private repetition library and participate in the gamified elements of your courses.
-
-Depending on the technical set up of your course, you can proceed as follows:
+If you are participating in KlickerUZH activities for the first time, you can register for a KlickerUZH participant account. A KlickerUZH participant account allows you to easily manage and access the learning content of your courses using KlickerUZH, add important elements to your private repetition library, and participate in the gamified elements of your courses. For practice quizzes, accounts are required to unlock core functionalities like spaced repetition practice modes (only available with accounts for data protection reasons). Depending on the technical setup of your course, you can proceed as follows:
 
 #### Courses with LMS integration (e.g., OLAT)
 
-Open the KlickerUZH module in the OLAT course of your lecture. To manage your KlickerUZH account or create a new one, click on "Manage account" within the KlickerUZH module.
+Open the KlickerUZH module in the OLAT course of your lecture. To manage your KlickerUZH account or create a new one, click on "Manage account" within the KlickerUZH module. Please note that this block might be named differently in your course; your lecturers will inform you about this.
 
 ![](/img/01_create_account.png)
 
-If you already possess a KlickerUZH account, simply visit any of the KlickerUZH activities in the LMS course and you should be logged in automatically. In case you are not logged in automatically, you can log in using the button on the top right.
+If you already have a valid KlickerUZH account and joined the course (either using the PIN or by visiting the account management block), simply visit any of the KlickerUZH activities in the LMS course and you should be logged in automatically. In case you are not logged in automatically, you can log in using the button on the top right.
 
 If no KlickerUZH account exists for you yet, you will be greeted by a welcome page, which will allow you to create a new account. On this page you set an (anonymous) username and password, as well as your personal avatar.
 
 #### Courses without LMS integration
 
-If you already have a KlickerUZH account (e.g., from other courses), open the KlickerUZH app and click "Join course" below the course overview. Enter the 9-digit PIN you received from your lecturers. You are now part of the course and can participate in all activities.
+If you already have a KlickerUZH account (e.g., from other courses), open the KlickerUZH app and click "Join course" on your home screen. Enter the 9-digit PIN you received from your lecturers. You are now part of the course and can participate in all activities.
 
 ![](/img/05_join_course.png)
 
-If you are participating in a course with KlickerUZH for the first time, open the access link you received from the lecturers of your course (e.g., _{pwa_url}/course/XYZ/join?pin=111111111_). You can use this to create a new KlickerUZH account with an (anonymous) username and password. With this data you can then log in and create your personal avatar, as well as participate in activities.
+If you are participating in a course with KlickerUZH for the first time, open the access link you received from the lecturers of your course (e.g.,
+\`https://pwa.klicker.uzh.ch/course/XYZ/join?pin=111111111\`). You can use this to create a new KlickerUZH account with an (anonymous) username and password. With this data you can then log in and create your personal avatar, as well as participate in activities.
 
 #### Anonymous participation
 
-In general, it is also possible to participate anonymously in all elements of KlickerUZH. For live quizzes, you can find these for your course under: [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname})
-Practice quizzes and microlearning are available via direct links that you can receive from your lecturers. When accessing KlickerUZH via the OLAT integration, you can choose to create an account and will thereafter be logged in automatically. If you do not have a KlickerUZH account, your participation in practice quizzes will remain anonymous.
-      `,
+In general, it is also possible to participate anonymously in all activities of KlickerUZH except group activities. For live quizzes, you can access the running quizzes of an account via
+\`https://pwa.klicker.uzh.ch/join/&lt;shortname&gt;\`. Practice quizzes and microlearnings are available via direct links provided by lecturers. When accessing KlickerUZH via the OLAT integration, you can choose to create an account and will thereafter be logged in automatically. Without a KlickerUZH account, your participation in embedded activities will remain anonymous.
+`,
       appSetupTitle: 'App Installation',
       appSetup: `
-In order to be able to access KlickerUZH from anywhere, there is a KlickerUZH app. The app allows you to easily manage and access the learning content of your courses (using KlickerUZH), as well as add important elements to your private repetition library and participate in the gamified elements (Challenge). In addition, you can activate the push notifications for microlearning in your courses.
+In order to be able to access KlickerUZH from anywhere, we offer a KlickerUZH mobile application. The app allows you to easily manage and access the learning content of your courses (using KlickerUZH), as well as add important elements to your private repetition library and participate in the gamified elements (challenge). In addition, you can activate the push notifications for microlearning in your courses.
 
 You can set up the KlickerUZH app as follows:
 
 #### Android
 
-You can download the KlickerUZH app on the Google Play store using the following link:
+You can download the KlickerUZH app from the Google Play store using the following link:
 
 [https://play.google.com/store/apps/details?id=ch.uzh.bf.klicker.pwa](https://play.google.com/store/apps/details?id=ch.uzh.bf.klicker.pwa)
 
@@ -651,12 +702,12 @@ After installation, you should find the app on your home screen and can log in a
 
 #### iOS
 
-Since the KlickerUZH app is not yet available on the iOS App Store, follow these instructions to add the app onto your home screen.
+Since the KlickerUZH app is not yet available in the iOS App Store, follow these instructions to add the app to your home screen. The version added to the home screen then behaves like a regular app.
 
 1. Open the following link on your smartphone: [{pwa_url}/login]({pwa_url}/login)
-2. Use the share dialogue and click on the button “Add to Homescreen” / “Zum Startbildschirm zufügen”.
+2. Use the share dialogue and click on the button “Add to Home Screen / “Zum Startbildschirm zufügen”.
 3. Accept that the app is being installed. Once the app is installed, you should be redirected to the log-in. You will also find a new KlickerUZH icon on your home screen.
-      `,
+`,
     },
     login: {
       installAndroid:
@@ -671,7 +722,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       signup: 'Sign up',
       coursePinInvalid: 'The entered course PIN is invalid.',
     },
-
     courses: {
       courseInformation: 'Course Information',
       createJoinGroup: 'Create/Join Group',
@@ -679,6 +729,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       joinGroup: 'Join Group',
       groupName: 'Group Name',
       randomGroup: 'Random Group',
+      assessmentResults: 'Assessment Results',
       createJoinRandomGroup:
         'Click here to be automatically assigned to a random group with other students.',
       joinGroupError:
@@ -694,6 +745,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       groupLeaderboard: 'Group Leaderboard',
       individualLeaderboardUpdate:
         'The individual leaderboard will be updated hourly.',
+      courseOverviewOnlyWithLogin:
+        "The course overview of this course is only accessible to logged-in participants. Please log in to KlickerUZH and join the course before accessing the course overview. If you are accessing KlickerUZH from an LMS (e.g. OLAT), please visit the 'Manage Account' module to manage your account information.",
+      gamificationOnlyForLoggedInUsers:
+        'Gamification elements at the course level are only accessible to logged-in users and course members.',
       noGroups: "No groups have been created yet. Let's go!",
       noGroupPoints: "No group points have been collected yet. Let's go!",
       groupLeaderboardUpdate:
@@ -736,6 +791,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       coursePinFormat: 'Course-PIN (format: ### ### ###)',
       coursePinNumerical: 'Please enter a numerical course PIN.',
       coursePinRequired: 'Please enter the course PIN.',
+      invalidPin: 'PIN invalid',
+      genericError:
+        'There was an error when trying to join the course. Please try again or ask your lecturer for assistance.',
     },
     practiceQuiz: {
       flashcardClick: 'Click to turn card',
@@ -811,7 +869,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     liveQuiz: {
       noActiveQuestion:
         'Currently, no question is active... Once a new question is activated, it will be shown automatically. Alternatively, you may also <reload>refresh</reload> the page to enforce an update.',
-      allQuestionsAnswered: 'You have already answered all active questions.',
+      allQuestionsAnswered:
+        'You have already answered all active questions or the block has been closed.',
       previousCase: 'Previous case',
       nextCase: 'Next case',
       thisLiveQuizGamified: 'This live quiz is gamified!',
@@ -843,6 +902,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noQuizDescription:
         'There is currently no running live quiz available under this link. Please check your link or contact your instructor.',
       refreshPage: 'Refresh Page',
+      pinRequired: 'A PIN is required to access this quiz.',
+      enterPinTitle: 'Enter PIN Code',
+      invalidPin: 'The provided PIN is invalid.',
+      enterPinLabel: 'PIN Code',
+      enterPinPlaceholder: 'Enter PIN',
+      submitPin: 'Submit PIN',
     },
     feedbacks: {
       title: 'Feedback Channel',
@@ -863,6 +928,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       editProfile: 'Edit profile',
       editProfileFailed:
         'Unfortunately, an error occurred while saving the changes. The username you have chosen may already be taken. Please check your entries and try again.',
+      createProfileFailed:
+        'Unfortunately, your account could not be created or linked. Please check your entries and try again.',
       editProfileSuccess: 'Your profile has been updated successfully.',
       achievements: 'Achievements',
       myProfile: 'My Profile',
@@ -897,6 +964,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'An error occurred while logging out of your temporary pseudonym. Please try again.',
       loggedInAs: 'Logged in as',
       temporaryPseudonym: 'temporary pseudonym',
+    },
+    serverError: {
+      warning: 'An unexpected error has occurred',
+      serverSideError:
+        'An unexpected error occurred while processing your request. Please reset your cookies and try again. If the problem persists, contact your course instructor.',
+      tryAgain: 'Try Again',
     },
     avatar: {
       hair: 'Hair',
@@ -1001,6 +1074,136 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       groupActivityEnded:
         'This group activity has ended already. You cannot start it anymore or submit any answers.',
     },
+    assessment: {
+      homepageHint:
+        'Welcome to the assessment instance of KlickerUZH! If you want to use activities outside of an assessment course, please log in at <link>{pwa_url}</link> instead.',
+      title: 'Assessment Login',
+      warning:
+        'This is an assessment application. All your data and activities will be visible to your lecturers.',
+      loginWithEduId: 'Login with Edu-ID',
+      eduIdRequired: 'Edu-ID authentication is required for assessments',
+      submissionInputsInvalid:
+        'An error occurred while submitting your answer. Please check your inputs for error messages.',
+      submissionSuccessful:
+        'Your answer has been successfully submitted and saved.',
+      submissionGeneralError:
+        'An error occurred while submitting your answer. Please try again.',
+      submissionAlreadyRecorded:
+        'You have already answered this question. Your previous response has been saved.',
+      submissionUnauthorizedError:
+        'Your login could not be verified correctly. Please log in again and answer the question again.',
+      submissionServerError:
+        'A server error occurred while submitting your answer. Please try again.',
+      missingAssessmentCourseParticipation:
+        'You are not part of the assessment course to which this quiz belongs. Please contact your lecturers.',
+      accountDeletionMessage:
+        'Since you are currently using your KlickerUZH account to participate in an assessment course, you cannot delete your account yourself. For more information on how to delete your account and leave the course, please contact your course instructors.',
+      respondedAt: 'Responded at {date}',
+      failedToLoadActivityResults:
+        'An error occurred while loading the results for the activities in this assessment course. Please try again or contact your lecturers if the problem persists.',
+      activityResultsDescription:
+        'The following overview lists all activities that were made available to you in the assessment course. Activities that are conducted live in the lecture hall or are only available for a certain period of time (e.g., microlearnings) will appear in this overview once they have been completed by the lecturer. For more information regarding the correctness of your specific answers within an activity, please contact your lecturers.',
+      noCompletedLiveQuizzesYet:
+        'No live quizzes have been completed in this assessment course yet.',
+      completedOn: 'Completed on {date}',
+      notCompletedYet: 'Not completed yet',
+      multiplier: 'Multiplier',
+      basePoints: 'Base points',
+      correctnessPoints: 'Correctness points',
+      bonusPoints: 'Bonus points',
+      ofAvailable: 'of {value} available',
+      totalPoints: 'Total points',
+      aggregatedTitle: 'Aggregated totals',
+      excludingBonus: '(excluding bonus: {value})',
+      corrections: 'Corrections',
+      noPointsCorrection: '+ 0 Points (no change): {reason}',
+      nonZeroPointCorrection:
+        '{points} Points ({basePoints} base points, {correctnessPoints} correctness points, {bonusPoints} bonus points): {reason}',
+      reportTitle: 'Assessment performance report',
+      issuedAt: 'Issued at',
+      reportTimeZone: 'Europe/Zurich',
+      courseReferenceLabel: 'Internal course reference',
+      identitySourceLabel: 'Verified identity source',
+      identitySourceCourseInvitation:
+        'Accepted assessment-course invitation email',
+      achievedPointsLabel: 'Achieved',
+      availablePointsLabel: 'Available',
+      performanceInsightsTitle: 'Peer comparison',
+      percentileText: 'Percentile rank: {percentile}.',
+      percentileExplanation:
+        'The percentile indicates the percentage of participants who achieved a score less than or equal to yours. For example, a percentile of 75% means your performance was equal to or better than 75% of the peer group.',
+      histogramTitle: 'Score Distribution',
+      histogramDescription:
+        'The chart shows the aggregated distribution of total scores for active participants. Your score range is highlighted.',
+      histogramUserRange: 'Your score range: {range}.',
+      notEnoughDataForComparison:
+        'No peer comparison is available. It is only included for at least 10 active participants and a non-zero available score range.',
+      exportReportButton: 'Export Performance Report (HTML)',
+      exportReportExplanation:
+        'Issue an HTML report from the current assessment record. Once it is ready, you can open it or download the file. The report includes a link for checking its current status and claims.',
+      exportReportReady:
+        'Your assessment report is ready. Open it in a new tab or download the HTML file.',
+      viewReportButton: 'View report',
+      downloadReportButton: 'Download report',
+      refreshReportButton: 'Refresh report',
+      exportReportNotEligibleError:
+        'No assessment report can be issued for this course. Confirm that you are enrolled and that assessed activities have ended, or contact your lecturers.',
+      exportReportIdentityUnverifiedError:
+        'No accepted assessment-course invitation email could be confirmed. Please contact the course administrator or support.',
+      exportReportRevokedError:
+        'This unchanged assessment report was revoked and cannot be issued again. Contact your lecturers if the authoritative report data should be corrected.',
+      exportReportInvalidDataError:
+        'The assessment data could not be validated for a report. Please try again later or contact your lecturers.',
+      exportReportIssuanceError:
+        'The assessment report could not be issued. Check your connection and try again.',
+      exportReportDownloadError:
+        'The report was issued, but the HTML file could not be created. Please try again.',
+      exportReportViewError:
+        'The report could not be opened in a new tab. Allow pop-ups for this page or download the HTML file instead.',
+      privacyAndTransparencyNotice:
+        'Peer comparison is released only for at least 10 active participants. Ten initial score ranges are merged until every displayed range represents at least 3 participants. The report contains no peer scores or identifiers.',
+      courseNameLabel: 'Course',
+      studentEmailLabel: 'Student',
+      pointsSummaryLabel: 'Points Summary',
+      yourScoreLabel: 'You',
+      countLabel: 'Count',
+      binLabel: 'Points Range',
+      privacyNoticeTitle: 'Privacy & Transparency',
+      verificationTitle: 'Check this assessment record',
+      verificationText:
+        'KlickerUZH stores the assessment snapshot represented in this report. Open the verification page to check the record status and compare its current claims with this file.',
+      verificationLink: 'Open verification page',
+      verificationQrAlt: 'QR code for the KlickerUZH verification page',
+      verificationPageTitle: 'Verify assessment report | KlickerUZH',
+      verificationHeading: 'Assessment report verification',
+      verificationIntro:
+        'Check the current status and server-held claims of a KlickerUZH assessment report.',
+      verificationLoading: 'Loading assessment record',
+      verificationInvalidLinkTitle: 'Invalid verification link',
+      verificationMissingToken:
+        'This link does not contain a verification token.',
+      verificationInvalidToken:
+        'The verification token in this link has an invalid format.',
+      verificationLoadError:
+        'The assessment record could not be loaded. Please try again later.',
+      verificationNotFoundTitle: 'Assessment record not found',
+      verificationNotFoundText:
+        'No assessment report exists for this verification link.',
+      verificationActiveTitle: 'Active assessment record',
+      verificationActiveText:
+        'The claims below match the active snapshot stored by KlickerUZH. Compare them with the downloaded report.',
+      verificationRevokedTitle: 'Revoked assessment record',
+      verificationRevokedText:
+        'This report, issued on {date}, was revoked and must no longer be treated as active. Its claims are not disclosed.',
+      verificationSupersededTitle: 'Superseded assessment record',
+      verificationSupersededText:
+        'A changed assessment snapshot was issued later. This older report is no longer active, and its claims are not disclosed.',
+      verificationDataUnavailableTitle: 'Assessment data unavailable',
+      verificationDataUnavailableText:
+        'The record exists, but its stored claims cannot be validated safely. No claims are disclosed.',
+      verificationIdentityTitle: 'Report identity',
+      cohortSizeLabel: 'Comparison cohort: {count} active participants',
+    },
   },
   manage: {
     general: {
@@ -1020,9 +1223,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       '404Message':
         'The page you requested does not exist. Please return to the <link>library</link> or use the main menu at the top for further navigation.',
       date: 'Date',
-      dateCreated: 'Date Created',
-      dateModified: 'Date Modified',
+      dateCreated: 'Creation Date',
+      dateModified: 'Modification Date',
       title: 'Title',
+      elementType: 'Element Type',
+      activityType: 'Activity Type',
+      status: 'Status',
       searchPlaceholder: 'Search...',
       sortBy: 'Sort by...',
       catalystRequired:
@@ -1041,6 +1247,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       pointsMultiplierDescription: 'Multiplier',
       sampleSolutionDescription: 'Sample Solution',
       gradingDescription: 'Documentation',
+      showingResults: 'Showing {start} to {end} of {total} results',
+      NEntriesPerPage: '{N} entries per page',
+      previousPage: 'Previous',
+      nextPage: 'Next',
     },
     admin: {
       pageName: 'Admin Panel',
@@ -1065,10 +1275,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     },
     activities: {
       activityType: 'Activity Type',
+      modeFilters: 'Mode',
       noActivitiesAvailable:
-        'Currently, no activities are available. You can easily create new activities by combining questions in the <link>library</link>.',
-      noActivitiesForFilters:
-        'No activities were found for the currently selected filters or the entered search term. Please try with different filters or a different search term.',
+        'Currently, no activities are available. You can easily create new activities by combining elements in the <link>library</link>.',
+      noActivitiesWarning:
+        'We could not find any activities that meet the desired criteria.',
       liveQuizInfo: '{numOfBlocks} block(s), {numOfElements} element(s)',
       activityInfo: '{numOfStacks} stack(s), {numOfElements} element(s)',
       activityDetails: 'Activity Details',
@@ -1089,6 +1300,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'If this activity is assigned to a course that you have access to, it cannot be completely removed for technical reasons. In this case, you will automatically receive a derived permission on the activity after triggering its removal. Once the associated course is deleted or removed, the element will be automatically removed as well.',
       activityRemovalDependencyAccess:
         'Derived access rights to included elements and resources will be automatically revoked (unless technically required).',
+      activeFiltersWarning:
+        'There are currently active filters that might affect the activities listed here. To view all activities, please <reset>reset</reset> the filters or update them on the right side.',
       changeActivityName: 'Change Activity Name',
       activityNameChangeSuccess:
         'The name of the activity has been successfully changed.',
@@ -1098,6 +1311,143 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       actionsLegend: 'Actions Legend',
       activityDetailsNoInstanceSelected:
         'Please select an element from a block to view a preview and the corresponding scoring.',
+      previewElement: 'Preview Element',
+      editElement: 'Edit Element',
+      noElementEditPermissions:
+        'You do not have sufficient permissions to edit this element.',
+      deletedElement:
+        'This element has been deleted and can no longer be edited.',
+      activityInformation: 'Activity Information',
+      activityMultiplier: 'Activity Multiplier',
+      reviewCompleted: 'Review completed',
+      resetReview: 'Reset Review',
+      reviewStatusUpdated: 'Review status updated successfully',
+      reviewStatusUpdateFailed: 'Update of review status failed',
+      openElementsInLibrary: 'Open elements in library',
+      batchOperations: 'Batch operations ({numActivities} activities)',
+      batchOperationsOnlyDraftScheduled:
+        'Batch operations can only be performed on draft or scheduled activities.',
+      batchOperationsActivities: 'Activities - Batch Operations',
+      batchNotApplicableExplanation:
+        'The selected batch operations cannot be applied to this activity for the following reasons:',
+      modifyMultiplier: 'Modify multiplier',
+      changeCourse: 'Change course assignment',
+      modifyLiveQuizPoints: 'Adjust scoring (Live Quiz only)',
+      enableLiveQuizPointsModification:
+        'Modify base, correctness and bonus points',
+      bonusTime: 'Bonus time',
+      bonusTimeNonNegative:
+        'The time period during which bonus points are awarded must be at least 1 second. To not award any bonus points, set the bonus points to 0.',
+      noActivitiesWillBeUpdated: 'No activities will be updated',
+      nActivitiesWillBeUpdated: '{number} activities will be updated',
+      activityContainsNoElements:
+        'This {activity} does not contain any elements.',
+      multiplierRequiresGamifiedAssessmentCourse:
+        'A multiplier can only be defined for gamified activities or activities in assessment courses, as points can only be collected in these courses. You have chosen an assignment to a course that does not meet these requirements.',
+      liveQuizPointsRequireGamifiedAssessmentCourse:
+        'The scoring can only be adjusted for gamified live quizzes or live quizzes in assessment courses, as points can only be collected in these courses. You have chosen an assignment to a course that does not meet these requirements.',
+      batchNoCoursesAvailable:
+        'There are no ongoing or planned courses available to which you could assign your activities. Please create a corresponding course under "Courses" first.',
+      batchOperationsInformation: `Depending on the selected actions and the available permissions for the selected activities, the following rules apply:
+<ul>
+<li>Changes to the multiplier are only possible for gamified activities or activities that are part of assessment courses. If a new course assignment is chosen as a batch operation in the same step, the gamification and assessment settings of that course will apply.</li>
+<li>Activities can generally be assigned to all ongoing and future courses. For microlearnings and group activities, only assignments where the availability interval of the activity is fully within the course duration are allowed.</li>
+<li>Base, correctness, and bonus points can only be defined and adjusted for live quizzes. If this option is activated, other activity types will not be updated.</li>
+<li>All adjustments require at least write permissions on the respective activities.</li>
+</ul>
+      `,
+      selectedActivitiesDescription:
+        'You have selected the following activities. All activities affected by the selected actions are marked. Hover over the icon for unaffected elements for more information. Please note: Some actions can only be performed individually or require specific access rights (see tooltip). Carefully review the selected actions before applying them.',
+      batchInvalidStatus:
+        'Only draft and scheduled activities can be adjusted via batch operations.',
+      batchNeedEditorPermissions:
+        'To adjust an activity via batch operations, you need at least write access.',
+      batchMultiplierRequiresGamificationOrAssessment:
+        'A multiplier can only be set for gamified activities or activities in assessment courses, as points can only be collected in these courses.',
+      batchGroupActivityRequiresGroupsEnabled:
+        'Group activities can only be assigned to courses where group formation is enabled.',
+      batchAssessmentRemovalAdminOnly:
+        'Activities that are in assessment mode (assigned to an assessment course) can only be removed from it by administrators of the corresponding course.',
+      batchActivityDatesOutsideCourse:
+        'The availability interval of group activities and microlearnings must be fully within the course duration.',
+      batchGroupActivityRequiresFinalizedGroups:
+        'Group activities can only be assigned to courses where group formation is completed by the start date of the activity.',
+      batchPointsOnlyLiveQuiz:
+        'Base, correctness, and bonus points can only be defined and adjusted for live quizzes.',
+      batchPracticeQuizScheduledWithinCourse:
+        'Scheduled practice quizzes (with a defined publication time) must have their publication time within the course duration.',
+      batchOperationSuccess: 'Your batch operation was successfully applied.',
+      batchOperationPartialSuccess:
+        'Only a part of your batch operation could be applied successfully. Please check the affected activities and your permissions.',
+      batchOperationFailed:
+        'An error occurred while applying the batch operation. Please check your permissions and try again.',
+    },
+    assessment: {
+      assessmentResults: 'Assessment Results',
+      liveQuizStudentResultsTitle: 'Student Results',
+      liveQuizStudentEmailColumn: 'Student (email)',
+      liveQuizStudentResultsEmpty: 'No student results available yet.',
+      errorLoadingLiveQuizResults:
+        'An error occurred while loading the results. Please try again.',
+      errorLoadingCourseResults:
+        'An error occurred while loading the course results. Please try again.',
+      liveQuizSelectStudentInfo:
+        'To view the answers submitted by a specific student, please select them from the list on the left side. You will then receive an overview of all the questions included in the quiz, along with the respective submitted answers and their scoring.',
+      courseSelectStudentInfo:
+        'To view the points achieved by a specific student at the quiz level, please select them from the list on the left side. You will then receive an overview of all quizzes included in the course, the points achieved for each, and the maximum achievable points.',
+      liveQuizElement: 'Element',
+      liveQuizStudentHasNoResponses:
+        'This student has not submitted any responses yet.',
+      liveQuizResponse: 'Response',
+      liveQuizOpenResponse: 'View response',
+      liveQuizOpenCorrection: 'Open point correction modal',
+      liveQuizNoResponseSubmitted: 'No response submitted',
+      liveQuizQuestionAnswered: 'Answered',
+      liveQuizQuestionNotAnswered: 'Not answered',
+      liveQuizResponseFromBlock: 'Response from {block}',
+      liveQuizCorrect: 'Correct',
+      liveQuizPartiallyCorrect: 'Partially correct',
+      liveQuizIncorrect: 'Incorrect',
+      liveQuizNotAnswered: 'Not answered',
+      errorLoadingStudentLiveQuizResponses:
+        'An error occurred while loading the student responses. Please try again.',
+      responseBy: 'Response by {email}',
+      noSampleSolution: 'No sample solution',
+      detailedResultsLiveQuiz: 'Detailed results for this live quiz',
+      reportRecordsButton: 'Assessment reports ({count})',
+      reportRecordsTitle: 'Issued assessment reports',
+      reportRecordsLoadError:
+        'The assessment reports could not be loaded. Check your permissions and try again.',
+      reportRecordsEmpty: 'No matching assessment reports were found.',
+      reportSearchPlaceholder: 'Search recipient email',
+      reportStatusAll: 'All statuses',
+      reportStatusActive: 'Active',
+      reportStatusRevoked: 'Revoked',
+      reportStatusSuperseded: 'Superseded',
+      reportRecipient: 'Recipient',
+      reportToken: 'Verification token',
+      reportIssuedAt: 'Issued',
+      reportStatus: 'Status',
+      reportStatusChangedAt: 'Status changed',
+      reportActions: 'Actions',
+      reportCopyLinkTooltip: 'Copy verification link',
+      reportLinkCopied: 'The verification link was copied.',
+      reportLinkCopyError: 'The verification link could not be copied.',
+      reportRevoke: 'Revoke',
+      reportRevokeTitle: 'Revoke assessment report',
+      reportRevokeConfirm: 'Revoke report',
+      reportRevokeMessage:
+        'Revoke the active assessment report for {email}? The existing verification link will immediately show the record as revoked.',
+      reportRevokePolicy:
+        'The same unchanged assessment snapshot cannot be issued again. If authoritative identity, course, or score claims later change, the student can issue a new active report.',
+      reportRevocationSuccess: 'The assessment report was revoked.',
+      reportAlreadyInactive:
+        'The assessment report became inactive before it could be revoked. Its current status is shown in the list.',
+      reportRevocationError:
+        'The assessment report could not be revoked. No local status was changed.',
+      reportRecordsRefreshError:
+        'The report status changed, but the visible list could not be refreshed. Close and reopen the dialog to load the current status.',
+      reportTimeZone: 'Europe/Zurich',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
@@ -1169,6 +1519,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       READ_ONLY: 'Read Only',
       ACCOUNT_OWNER: 'Account Owner',
       OTP: 'One-Time Password',
+      EDUID: 'Edu-ID',
       ACTIVATION: 'Activation',
       lastUsed: 'last used: {date}',
       lastUsedNever: 'last used: never',
@@ -1187,10 +1538,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       passwordTooltip:
         'The password is automatically generated. Please write it down before creating the login, it will not be visible anymore afterwards. If you want to change it, you can generate a new one using the button on the right.',
       shortnameRequirements:
-        'The shortname plays an important role across KlickerUZH, as it allows for easy access to courses and other practice quizzes in many places. Please follow the following rules when choosing the shortname: <ul><li>The shortname must be at least 5 and at most 8 characters long.</li><li>The shortname may only consist of letters and numbers.</li></ul>',
+        'The shortname plays an important role across KlickerUZH, as it allows for easy access to courses and other practice quizzes in many places. Please follow the following rules when choosing the shortname: <ul><li>The shortname must be at least 5 and at most 10 characters long.</li><li>The shortname may only consist of letters and numbers.</li></ul>',
       shortnameRequired: 'Please enter a shortname.',
       shortnameMin: 'The shortname must be at least 5 characters long.',
-      shortnameMax: 'The shortname must be at most 8 characters long.',
+      shortnameMax: 'The shortname must be at most 10 characters long.',
       shortnameAlphanumeric:
         'The shortname may only consist of letters and numbers.',
       shortnameTaken: 'The shortname you have chosen is already taken.',
@@ -1219,7 +1570,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       createMicrolearning: 'Create microlearning',
       createPracticeQuiz: 'Create practice quiz',
       createGroupTask: 'Create group activity',
-      createQuestion: 'Create Element',
+      createElement: 'Create Element',
       resetFilters: 'Reset filters',
       showArchived: 'Show archived',
       hideArchived: 'Hide archived',
@@ -1229,9 +1580,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       selectOrType: 'Select or Type...',
       untagged: 'Untagged',
       noTagsAvailable: 'No tags available',
+      activityUsage: 'Activity Usage',
+      selectActivity: 'Select Activity...',
       answerFeedbacks: 'Answer feedbacks',
-      noQuestionsWarning:
-        'We could not find any questions that meet the desired criteria.',
+      noElementsWarning:
+        'We could not find any elements that meet the desired criteria.',
       activeFiltersWarning:
         'There are currently active filters that might affect the elements shown here. To view all elements (except archived ones), please <reset>reset</reset> the filters or update them on the right side.',
       deleteElement: 'Delete element',
@@ -1263,24 +1616,63 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       numSelected: '{count}/{total}',
       moveToArchive: 'Move to archive',
       restoreFromArchive: 'Restore from archive',
-      archivingSuccess:
-        'All selected elements have been successfully archived.',
-      archivingPartialSuccess:
-        'All elements with sufficient permissions have been successfully archived. Please note that at least admin permissions on the corresponding object are required to archive elements.',
-      archivingFailed:
-        'None of the selected elements could be archived. Please check your permissions (admin rights are required for this operation) and try again.',
-      restoreFromArchiveSuccess:
-        'All selected elements have been successfully restored from the archive.',
-      restoreFromArchivePartialSuccess:
-        'Some elements could not be restored from the archive. Please check your permissions (admin rights are required for this operation) and try again.',
-      restoreFromArchiveFailed:
-        'No elements could be restored from the archive. Please check your permissions (admin rights are required for this operation) and try again.',
       showFeedbacksExplanation: 'Show answer feedbacks & explanation',
       showExplanation: 'Show explanation',
       showFeedbacksExplanationTooltip:
         'View a preview of how the explanation and answer feedbacks will be shown in <b>asynchronous activities</b> once a student has responded to the element.',
       showExplanationTooltip:
         'View a preview of how the explanation will be shown in <b>asynchronous activities</b> once a student has responded to the element.',
+      sampleSolutionUnavailableTypes:
+        'Sample solutions can only be added to questions. Content elements and flashcards do not support sample solutions.',
+      answerFeedbacksUnavailableTypes:
+        'Answer feedbacks can only be recorded for single-choice, multiple-choice, and Kprime questions.',
+      batchOperations: 'Batch operations ({numElements} elements)',
+      batchOperationsElements: 'Elements - Batch Operations',
+      selectedElementsDescription:
+        'You have selected the following elements. All elements, which are affected by the selected actions, are marked. Hover over the icon for unaffected elements for more information. Please note: Some actions can only be performed separately or require specific permissions (see tooltip). Carefully review the selected actions and affected elements before applying them.',
+      actionApplies: 'Action applies',
+      modifyStatus: 'Modify status',
+      modifyMultiplier: 'Modify multiplier',
+      modifyBasePoints: 'Modify base points',
+      awardBasePoints: 'Award base points',
+      noElementsWillBeUpdated: 'No elements will be updated',
+      nElementsWillBeUpdated: '{number} elements will be updated',
+      batchUpdatesInformation: `Depending on the selected actions and the permissions on the selected elements, the following rules apply:
+<ul>
+<li>Archiving elements / recovering elements from the archive only applies to non-archived / archived elements, respectively. This action can only be executed by users with admin permissions on the elements in question.</li>
+<li>Multipliers can only be changed for questions with a defined sample solution. This action requires at least write permissions.</li>
+<li>Base points can only be enabled / disabled for questions (not flashcards or content elements). This action requires at least write permissions.</li>
+<li>Element status changes can be performed by all users.</li>
+</ul>
+      `,
+      updateActivitiesBatchInfo:
+        'Choose here if the modifications made to the selected elements should also be applied to all activities in draft and scheduled state. Optionally, you can also include activity templates with this element in the update.',
+      activityUpdates: 'Activity updates',
+      draftScheduledActivities: 'Draft and scheduled activities',
+      templateUpdates: 'Activity template updates',
+      batchOperationSuccess: 'Your batch operation was successfully applied.',
+      batchOperationPartialSuccess:
+        'Only a part of your batch operation could be applied successfully. Please check the affected elements and your permissions.',
+      batchOperationFailed:
+        'An error occurred while applying the batch operation. Please check your permissions and try again.',
+      batchNotApplicableExplanation:
+        'The selected batch operations cannot be applied to this element for the following reasons:',
+      batchUnarchiveOnlyArchivedElements:
+        'Restoring elements from the archive is only possible for archived elements',
+      batchUnarchiveOnlyManagerElements:
+        'Restoring elements from the archive requires at least admin permissions',
+      batchArchiveOnlyUnarchivedElements:
+        'Archiving elements is only possible for non-archived elements',
+      batchArchiveOnlyManagerElements:
+        'Archiving elements requires at least admin permissions',
+      batchMultiplierOnlyEditorElements:
+        'Changing the element multiplier requires at least write permissions.',
+      batchMultiplierOnlySampleSolution:
+        'Changing the element multiplier is only possible for questions with a defined sample solution.',
+      batchBasePointsOnlyEditorElements:
+        'Changing the element base points requires at least write permissions.',
+      batchBasePointsOnlyQuestions:
+        'Base points can only be enabled / disabled for questions (not flashcards or content elements).',
     },
     tags: {
       deleteTag: 'Delete tag',
@@ -1521,6 +1913,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       pasteSelectionElements: 'Add {count} elements',
       pasteSingleElementsBlock: 'Add {count} blocks with 1 element',
       pasteSingleElementsStack: 'Add {count} stacks with 1 element',
+      pinProtected: 'PIN protection',
+      pinProtectedTooltip:
+        'When enabled, the system automatically generates a PIN that students must enter when joining the quiz.',
       displayNameTooltip: 'The display name is shown to participants.',
       stackDescriptionTitle: 'Stack {stackIx}: Description (optional)',
       stackDisplayName: 'Stack title',
@@ -1614,9 +2009,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The name should allow you to distinguish this live quiz from others. It will not be shown to the participants, please use the display name (next field) for this.',
       liveQuizDescField:
         'Here you can enter an optional description of the live quiz. This will be displayed to the students at the beginning of the quiz.',
-      liveQuizDescCourse: 'You can assign your live quiz to a course.',
+      liveQuizDescCourse:
+        'You can assign your live quiz to a course. If your course is gamified or has assessment enabled, these settings will automatically propagate to the activity. For non-gamified courses or live quizzes without course assignment, you may activate gamification separately. For more information, please also refer to the documentation on <link>gamified live quizzes</link>.',
       liveQuizSelectCourse: 'Select course',
       liveQuizNoCourse: 'No course',
+      assessmentCourseRemovalRestricted:
+        'Activities in assessment mode can only be removed from it by an administrator of the corresponding course.',
       liveQuizEnableGamification:
         'Select a gamified course to activate gamification.',
       liveQuizMultiplier:
@@ -1639,8 +2037,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'For more information on the student view, visit the <link>Student Documentation</link>.',
       liveQuizStartNow: 'Start now',
       liveQuizAdvancedSettings: 'Advanced Settings',
+      liveQuizCustomizedGrading: 'Customized Grading',
       liveQuizPointsExplanation:
         'These advanced settings allow you to change the point allocation in a live quiz. Please note that all point settings and the illustrations of the point allocation refer to elements with a multiplier of 1x. Larger multipliers are applied to all components except from the standard points. The multiplier set on the activity is already included in the illustration. The answer time starts running as soon as the first participant has answered the question completely correctly. For more information, please consult our <link>documentation</link>.',
+      liveQuizNoCustomizedScoring:
+        'Questions in this live quiz are currently not scored. To enable scoring, assign it to a gamified and/or assessment course or manually activate gamification.',
       liveQuizDefaultPoints: 'Standard points',
       liveQuizDefaultPointsTooltip:
         'Participants in a live quiz receive this number of points for participating in a question. If no sample solution is defined, only standard points are awarded. The default value is {defaultValue}.',
@@ -1874,6 +2275,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       replacingElement: 'element replaced',
       creatingElement: 'element created',
       forGamifiedCourses: 'for gamified courses',
+      gamificationDisabled: 'Gamification & Assessment disabled',
+      gamificationDisabledInfo:
+        'Please select a gamified or assessment course, or enable gamification for your live quiz to view the scoring logic here.',
       confirmSettings: 'Confirm Settings',
       settingsNotSaved:
         'Please save your changes to the settings before continuing to edit the template.',
@@ -2021,6 +2425,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       lecturerCockpit: 'Lecturer Cockpit',
       liveQuizEvaluation: 'Quiz Evaluation',
       startLiveQuiz: 'Start Quiz',
+      scheduleLiveQuiz: 'Schedule Live Quiz',
+      unpublishLiveQuiz: 'Unpublish Live Quiz',
       editLiveQuiz: 'Edit Quiz',
       duplicateLiveQuiz: 'Duplicate Live Quiz',
       viewLiveQuiz: 'View Live Quiz',
@@ -2034,7 +2440,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       blockXQuestions: 'Block {block} ({questions} question(s))',
       shareLiveQuiz: 'Share Live Quiz',
       removeLiveQuiz: 'Remove Live Quiz',
+      resetLiveQuiz: 'Reset Live Quiz',
       deleteLiveQuiz: 'Delete Live Quiz',
+      resetLiveQuizMessage:
+        'Please confirm the reset of this assessment live quiz. All responses from students and collected points will be deleted. This action will be documented in the audit log and cannot be undone.',
       deleteLiveQuizMessage:
         'Please confirm the deletion of all results and feedbacks associated with this live quiz. Points collected by participants will not be affected by the deletion.',
       noResponsesToDelete:
@@ -2049,12 +2458,22 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'For this live quiz no confusion feedbacks have been submitted yet.',
       deleteConfusionFeedbacks:
         '{number} confusion feedback(s) will be irreversibly deleted.',
+      noLeaderboardEntriesToDelete:
+        'For this live quiz no quiz leaderboard entries have been created yet.',
+      deleteLeaderboardEntries:
+        '{number} quiz leaderboard entries will be deleted and all participants will lose their collected points.',
       evaluationLinksEmbedding: 'Links for Embedding Evaluation Views',
       noLiveQuizzes: 'No live quizzes available',
       creationExplanation:
         'To create your first live quiz, go back to the <link>question pool</link>. There you can create all different types of KlickerUZH activities and add questions from the question pool.',
       embeddingLinkCopied:
         'The embedding link has been copied to the clipboard successfully.',
+      liveQuizSchedulingDateRequired:
+        'Please enter a date for the automatic start of the live quiz.',
+      liveQuizSchedulingFutureAfterCourseStart:
+        'The date for the automatic start of the live quiz must be in the future and, if associated with a course, after the start time of that course.',
+      scheduleLiveQuizHint:
+        'When scheduling the live quiz "{title}", it will automatically start at the time you set. Before the scheduled publication date is reached, the quiz can still be unpublished and edited.',
     },
     practiceQuizzes: {
       viewPracticeQuiz: 'View Practice Quiz',
@@ -2086,11 +2505,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     cockpit: {
       liveQuizQRCodes: 'Live Quiz QR-Code',
       qrCodeAccountLinkTitle: 'Account Link',
+      qrCodeAccountLinkPinWarning: 'PIN not included',
+      qrCodeDirectLinkIncluded: 'PIN included',
       qrCodeAccountLinkDescription:
-        'Your account link lists all of your active live quizzes. If only one quiz is active, participants will be redirected automatically, otherwise they will be able to choose which quiz to participate in. This link is recommended for addition to slides, as it stays the same as long as you do not change your shortname.',
+        'Your account link lists all of your active live quizzes. If only one quiz is active, participants will be redirected automatically, otherwise they will be able to choose which quiz to participate in. This link is recommended for addition to slides, as it stays the same as long as you do not change your shortname. For quizzes assigned to a course, the course language will be automatically embedded in the link.',
       qrCodeDirectLinkTitle: 'Direct Link',
       qrCodeDirectLinkDescription:
-        'The direct link leads participants directly and only to this quiz. Once the quiz has been completed, the link will no longer be valid. This link is recommended if you run a lot of quizzes in parallel and want participants to join a specific quiz only.',
+        'The direct link leads participants directly and only to this quiz. Once the quiz has been completed, the link will no longer be valid. This link is recommended if you run a lot of quizzes in parallel and want participants to join a specific quiz only. For quizzes assigned to a course, the course language will be automatically embedded in the link. If a PIN code is enabled, it is directly embedded in the link.',
       firstBlock: 'Start first block',
       blockActive: 'Close block',
       nextBlock: 'Start next block',
@@ -2099,6 +2520,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       evaluationResults: 'Evaluation (results)',
       abortLiveQuiz: 'Abort quiz',
       confirmAbortLiveQuiz: 'Abort live quiz {title}?',
+      noAbortionAssessmentQuiz:
+        'Assessment quizzes cannot be aborted once a block has been started. If you have started the quiz for testing purposes, please proceed through all blocks and end the quiz. Users with administrator rights in the assessment course can then reset the live quiz.',
       cancelLiveQuizMessage:
         'Please confirm the deletion of all elements associated with this live quiz and confirm the irreversible abortion of this live quiz.',
       noResponsesToDelete:
@@ -2116,7 +2539,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noLeaderboardEntriesToDelete:
         'For this live quiz no quiz leaderboard entries have been created yet.',
       deleteLeaderboardEntries:
-        '{number} quiz leaderboard entries will be deleted and all participants will loose their collected points.',
+        '{number} quiz leaderboard entries will be deleted and all participants will lose their collected points.',
       printTitle: 'Live Quiz "{name}" - Feedback Channel',
       lecturerView: 'Lecturer View',
       liveQA: 'Live Q&A',
@@ -2176,6 +2599,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'I understand that moderation will be disabled.',
       confirmPublishUnpublished:
         'I confirm that all {count} unpublished feedback(s) should be published.',
+      confirmCloseBlockTitle: 'Close Active Block',
+      confirmCloseBlock:
+        'Please confirm that the active block should be closed. After your confirmation, the system will not accept any further answers from the students and the complete evaluation (including sample solution) can be displayed.',
     },
     evaluation: {
       evaluationNotYetAvailable:
@@ -2194,6 +2620,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This option allows you to pre-select whether or not the sample solution should be shown on the embedded evaluation view, as soon as you open the corresponding page or slide. This setting can be modified once the corresponding view has been opened.',
       showExplanationInfo:
         'This option allows you to pre-select whether or not the explanation (if captured) should be shown on the embedded evaluation view, as soon as you open the corresponding page or slide. This setting can be modified once the corresponding view has been opened.',
+      solutionHiddenWhileActive:
+        'The sample solution and explanation will only be shown in the evaluation view after closing the active block.',
       fontSize: 'Font size',
       validSolutionRange: 'Valid solution range',
       correctSolutionRanges: 'Correct solution ranges',
@@ -2243,6 +2671,26 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       displayedWindow: 'Displayed running window: {window} times interval',
       table: 'Table',
       wordCloud: 'Word Cloud',
+      wordCloudFilterMode: 'Filter Mode',
+      wordCloudLanguageFilter: 'Language Filter',
+      wordCloudLanguageFilterTooltip:
+        'When a language is selected, stopwords for that language (e.g. "the", "and") are filtered out. Disable the filter to show all words.',
+      wordCloudLanguageNone: 'Disabled',
+      wordCloudDisplayLimit: 'Display limit',
+      wordCloudDisplayLimitAll: 'All',
+      wordCloudModeWords: 'Individual words',
+      wordCloudOmittedWords:
+        '{count} {count, plural, one {word} other {words}} could not be displayed due to the display limit or space constraints.',
+      wordCloudOmittedSentences:
+        '{count} {count, plural, one {response} other {responses}} could not be displayed due to the display limit or space constraints.',
+      wordCloudModeSentences: 'Full responses',
+      wordCloudNoResponses:
+        'No participants have submitted responses for this question 😔.',
+      wordCloudNoResponsesFiltered:
+        'No responses match the current filter settings 🧐.',
+      wordCloudNoResponsesDisplayed:
+        'No responses are displayed due to the current filter settings or the provided font sizes 😰.',
+      numberOfVotes: 'Frequency: {number}',
       histogram: 'Histogram',
       barChart: 'Bar Chart',
       scatterPlot: 'Scatter Plot',
@@ -2269,6 +2717,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       answerRemembered: 'Answer remembered',
       frontSide: 'Front Side',
       backSide: 'Back Side',
+      blockActive: 'Block is active',
+      blockActiveInfo:
+        'The currently selected block has not been closed yet. Participants in your quiz can still submit answers. Please confirm that you want to display the results.',
+      showResults: 'Show Results',
+      showQRCodes: 'Show QR Codes',
     },
     lecturer: {
       noDataAvailable: 'No data available...',
@@ -2280,7 +2733,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       showDetails: 'Show course details',
       selectCourse: 'Please select a course',
       createNewCourse: 'Create new course',
-      noCoursesFound: 'No courses found.',
+      noCoursesFound: 'No courses found. Please create a new course.',
       createCourseNow: 'Create a course now!',
       courseNameReq: 'Please enter a name for the course.',
       courseDisplayNameReq: 'Please enter a display name for the course.',
@@ -2313,6 +2766,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       notificationEmailInvalid: 'Please enter a valid email address.',
       notificationEmailReq:
         'Please enter a course-specific notification email address.',
+      courseLanguage: 'Course Language',
       startDate: 'Start date',
       startDateTooltip:
         "After the start date, students can access the course's content. The start date can be changed after creating the course.",
@@ -2320,6 +2774,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       endDateTooltip:
         'After the end date, the course will be shown as archived to students, but they can still access the content. The end date can be changed after creating the course.',
       courseColor: 'Course color',
+      languageTooltip:
+        'Choose a language that will be used as the default when exporting activity access links, etc. Students can still change the language in the student app.',
       courseCreationFailed: 'Failed to create course...',
       groupDeadlineFuture: 'The group creation deadline must be in the future.',
       groupDeadlineBeforeEnd:
@@ -2350,7 +2806,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       preferredGroupSizeTooltip:
         'The preferred number of students in a group. After the creation of the course, this setting cannot be modified anymore. In case the students choose the automated group formation function, the algorithm will create as many groups as possible with this size.',
       groupDeadlineChangedToPast:
-        'The group creation deadline has been changed to the past. With this settings, students will no longer be able to create or join groups and students, which selected random group formation, will be automatically assigned to groups within a day, if possible. Should you want to finalize the group formation immediately, please use the corresponding button on the group overview.',
+        'The group creation deadline is in the past. With this settings, students will no longer be able to create or join groups and students, which selected random group formation, will be automatically assigned to groups within a day, if possible. Should you want to finalize the group formation immediately, please use the corresponding button on the group overview.',
       gamificationGroupsFixed:
         'Gamification and group creation are enabled for this course. These settings cannot be disabled once gamified activities or participant groups exist. Initially disabled options can be enabled later.',
       gamificationFixed:
@@ -2359,6 +2815,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       openEvaluation: 'Open Evaluation',
       archiveOnlyPastCourses:
         'Only courses with an end date in the past can be archived.',
+      noDeletionAssessment: 'Courses in assessment mode cannot be deleted.',
       archiveCourse: 'Archive course',
       unarchiveCourse: 'Unarchive course',
       confirmCourseArchive:
@@ -2372,10 +2829,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please confirm the deletion of all elements associated with this course and the irreversible deletion of the course. Note that all students will lose access to the course alongside all associated course materials and activities.',
       noParticipationsToDelete: 'This course contains no participations.',
       deleteParticipations:
-        '{number} participant(s) of this course will loose their collected points and access to all course materials and activities.',
+        '{number} participant(s) of this course will lose their collected points and access to all course materials and activities.',
       noLiveQuizzesDisconnected: 'This course contains no live quizzes.',
       disconnectLiveQuizzes:
-        '{number} live quizze(s) will be disconnected from the course. They can still be accessed through the live quiz list.',
+        '{number} live quizze(s) will be disconnected from the course. They can still be accessed through the activity list.',
       noPracticeQuizzesToDelete: 'This course contains no practice quizzes.',
       deletePracticeQuizzes:
         '{number} practice quizze(s) (including their results) will be irreversibly deleted.',
@@ -2399,6 +2856,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       modifyCourse: 'Modify course',
       shareCourse: 'Share course',
       learningAnalytics: 'Learning Analytics',
+      pointCorrections: 'Point Corrections',
+      assessmentResults: 'Assessment Results',
+      appliedCorrections: 'Applied Point Corrections',
       nameWithPin: 'Course: {name} (PIN: {pin})',
       joinCourse: 'Join course',
       viewCourse: 'View Course',
@@ -2419,6 +2879,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       nParticipants: '{number} participants',
       saveDescription: 'Save description',
       noDescriptionNotification: 'No description available.',
+      reviewProgress: 'Review progress',
+      activityNotAvailableAssessment:
+        '{activityType} are currently not supported in assessment courses.',
+      withGroups: 'With Groups',
+      assessmentWithGroups: 'With Groups (Assessment)',
+      withoutGroups: 'Without Groups',
       changedDate: 'Date has been successfully adjusted.',
       dateChangeFailed:
         'An error occurred while adjusting the date. Please check the input.',
@@ -2472,6 +2938,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The link for accessing the item has been copied to the clipboard.',
       linkLTICopied:
         'The link for embedding the item via LTI (e.g. in OpenOLAT) has been copied to the clipboard.',
+      linkLTIError:
+        'An error occurred while copying the LTI link. Please try again.',
       linkLTILeaderboardLabel: 'Leaderboard',
       linkLTIDocsLabel: 'Documentation',
       linkLTILiveQuizzesLabel: 'Live Quizzes',
@@ -2605,10 +3073,192 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Scheduling the practice quiz "{title}" for publication at a certain point in time, it will automatically become available to all students in the course at that time. Before the scheduled publication date is reached, the activity can still be unpublished and edited again. When entering a date in the past, the practice quiz will be published immediately.',
       confirmScheduling: 'Confirm Scheduling',
     },
+    pointCorrections: {
+      stepIndicator: 'Step {current} of {total}',
+      actionApply: 'Apply Corrections',
+      errorNoAdjustment: 'Please select at least one point adjustment.',
+      scopeTitle: 'Select scope',
+      scopeDescription:
+        'Please decide whether you want to update the points for a single element in a live quiz or for all elements in a quiz at the same time.',
+      scopeLabel: 'Scope',
+      scopePlaceholder: 'Choose a scope',
+      scopeOptionInstanceTitle: 'Single quiz element',
+      scopeOptionInstanceDescription:
+        'Modification of the base, correctness, or bonus points for a single question within a quiz.',
+      scopeOptionQuizTitle: 'Entire quiz',
+      scopeOptionQuizDescription:
+        'Modification of the base, correctness, or bonus points for all questions within a quiz.',
+      selectQuizAndInstanceDescription:
+        'Please select the quiz and, if applicable, the specific question to which the point correction should be applied.',
+      quizLabel: 'Quiz',
+      quizPlaceholder: 'Select a quiz',
+      instanceLabel: 'Instance',
+      instancePlaceholder: 'Select an instance',
+      historyTitle: 'Previously Applied Corrections',
+      historyToggleShow: 'Show all previous corrections',
+      historyToggleHide: 'Hide previous corrections',
+      historyPlaceholder:
+        'Once points corrections have been made for the selected quiz, they will appear here.',
+      historyPlaceholderInstance:
+        'Once points corrections have been made specifically for the selected quiz question, they will appear here. Point corrections applied to the entire live quiz are not shown when one single question is selected for corrections.',
+      historyApplied: 'Applied on {appliedAt} by {user}',
+      historyScopeParticipantUnknown: 'Unknown participant',
+      historyScopeParticipantsUnknown: 'Unknown participants',
+      historyScopeSingle: 'Single participant ({participant})',
+      historyScopeMultiple: 'Multiple participants ({participants})',
+      historyScopeParticipatingQuiz:
+        'All students with at least one answer in this quiz',
+      historyScopeParticipatingInstance:
+        'All students who submitted an answer for the following question: {name}',
+      historyScopeCourse: 'All assessment course participants',
+      historyScopeUnknown: 'Scope unavailable',
+      audienceTitle: 'Choose the Audience',
+      audienceDescription:
+        'Select to whose responses the point correction should be applied to. You can choose a single participant, all participating users in scope, or all assessment course participants. Participating users for a question are those who have submitted an answer for the corresponding question in the quiz, while participating users of a quiz must have submitted an answer for at least one question in the respective quiz. Users that are selected but have not submitted a corresponding response will still receive the specified points.',
+      audienceLabel: 'Audience',
+      audiencePlaceholder: 'Select an audience',
+      audienceOptionSingle: 'Single participant',
+      audienceOptionMultiple: 'Multiple participants',
+      audienceOptionParticipating: 'All participating users',
+      audienceOptionCourse: 'All assessment course participants',
+      participantLabel: 'Participant',
+      participantsLabel: 'Participants',
+      participantPlaceholder: 'Select a participant',
+      participantsPlaceholder: 'Select participants',
+      participantScopeSingle: 'Selected participant',
+      participantScopeMultiple: 'Selected participants',
+      participantScopeParticipating: 'All participating users',
+      participantScopeCourse: 'All assessment course participants',
+      adjustmentsTitle: 'Adjust Points',
+      adjustmentsDescription:
+        'Select which point categories should be awarded or deducted. Awarding and deducting the same category is mutually exclusive. Awarding one type of points means that all affected students will receive the <b>maximum amount of available points</b> for this category, while deducting them <b>sets the value to zero</b> on all affected submissions.',
+      adjustmentsBaseLabel: 'Base points',
+      adjustmentsCorrectnessLabel: 'Correctness points',
+      adjustmentsBonusLabel: 'Bonus points',
+      adjustmentsAwardLabel: 'Award points',
+      adjustmentsDeductLabel: 'Deduct points',
+      reasonTitle: 'Explain the Correction',
+      reasonDescription:
+        'Please document why this correction is necessary. Provide an internal note for your own reference or for other administrators of the assessment course and formulate the message that will be displayed to students in connection with the correction.',
+      reasonLecturerLabel: 'Internal note for reference',
+      reasonLecturerPlaceholder:
+        'Reason for the point correction (not visible to students).',
+      reasonUseSameMessageLabel: 'Use the internal note as the student message',
+      reasonStudentLabel: 'Message for students (visible to students)',
+      reasonStudentPlaceholder:
+        'Reason for the point correction (visible to students).',
+      summaryTitle: 'Review and Confirm',
+      summaryDescription:
+        'Please review your entries and confirm the application of the specified point correction. Applied corrections cannot be undone. In case of an error, please create another correction.',
+      summaryScopeLabel: 'Scope',
+      summaryQuizLabel: 'Quiz',
+      summaryInstanceLabel: 'Instance',
+      summaryParticipantLabel: 'Audience',
+      summaryAdjustmentsLabel: 'Point changes',
+      summaryLecturerReasonLabel: 'Lecturer note',
+      summaryStudentReasonLabel: 'Student note',
+      summaryQuizNotSelected: 'No quiz selected yet',
+      summaryInstanceNotSelected: 'No instance selected yet',
+      summaryAllInstances: 'All instances within the quiz',
+      summaryParticipantScopeNotSelected: 'No audience selected yet',
+      summaryParticipantNotSelected: 'No participant selected yet',
+      summaryAdjustmentBaseAward: 'Award base points',
+      summaryAdjustmentBaseDeduct: 'Deduct base points',
+      summaryAdjustmentCorrectnessAward: 'Award correctness points',
+      summaryAdjustmentCorrectnessDeduct: 'Deduct correctness points',
+      summaryAdjustmentBonusAward: 'Award bonus points',
+      summaryAdjustmentBonusDeduct: 'Deduct bonus points',
+      summaryNoAdjustments: 'No point adjustments selected yet.',
+      errorQuizRequired: 'Please select a quiz.',
+      errorInstanceRequired:
+        'Please select an instance if you want to make a point correction for a single quiz question.',
+      errorParticipantRequired:
+        'Please select a participant if you want to make a point correction for a single person.',
+      errorParticipantsRequired:
+        'Please select at least one participant if you want to make a point correction for multiple people.',
+      errorLecturerReasonRequired:
+        'Please provide a note for this correction that allows you to reference it at a later time.',
+      errorStudentReasonRequired:
+        'Please provide a message for the students that will be displayed in connection with the correction.',
+      missingInputsSubmission:
+        'Your inputs for the point correction are incomplete. Please review your entries and try again.',
+      successSubmission: 'The point correction was successfully applied.',
+      errorSubmission:
+        'An error occurred while applying the point correction. Please try again.',
+      responseCorrectionsApplied:
+        'Point corrections that have been applied to this response and their effects on the awarded points:',
+      noAdjustmentsApplied:
+        'No point corrections have been applied to this response.',
+    },
     resources: {
       mediaLibrary: 'Media Library',
       mediaLibraryAvailableSoon:
         'Your media library will be available here soon, allowing you to access all your uploaded resources.',
+      chatbots: 'Chatbots',
+      availableChatbots: 'Available Chatbots',
+      noChatbots: 'No chatbots have been created yet.',
+      chatbotDetails: 'Chatbot Details',
+      overview: 'Overview',
+      chatbotId: 'Chatbot ID',
+      avatarUrl: 'Avatar URL',
+      avatarNone: 'No avatar',
+      linkedCourses: 'Linked Courses',
+      linkedCoursesList: 'Linked to: {courses}',
+      noLinkedCourses: 'No courses linked yet.',
+      credits: 'Credits',
+      creditInitialCredits: 'Initial credits',
+      creditResetPeriod: 'Reset period',
+      creditResetAmount: 'Reset amount',
+      creditMaxCredits: 'Max credits',
+      modelSelection: 'Model selection',
+      modelSelectionEnabled: 'Enabled',
+      modelSelectionDisabled: 'Disabled',
+      modelSelectionEnabledDescription:
+        'Participants can choose among the allowed models.',
+      modelSelectionDisabledDescription:
+        'Model selection is automatic and based on credit availability.',
+      allowedModels: 'Allowed models',
+      allowedModelsAll: 'All',
+      chatbotModelSettings: 'Model & Reasoning Settings',
+      reasoningEffortsByModel: 'Reasoning efforts by model',
+      singleReasoningEffortFixed: 'Fixed by model: {effort}',
+      chatbotModelSettingsSave: 'Save model settings',
+      chatbotModelSettingsSaving: 'Saving...',
+      chatbotModelSettingsSaveSuccess: 'Model settings saved.',
+      chatbotModelSettingsSaveError:
+        'Could not save chatbot model settings. Please try again.',
+      creditResetPeriodDaily: 'Daily',
+      creditResetPeriodWeekly: 'Weekly',
+      creditResetPeriodBiweekly: 'Biweekly',
+      creditResetPeriodMonthly: 'Monthly',
+      creditResetPeriodNone: 'No reset',
+      usageSummary: 'Usage Summary',
+      usageThreads: 'Threads',
+      usageMessages: 'Messages',
+      usageParticipants: 'Participants',
+      usageLastActivity: 'Last activity',
+      usageTotalCredits: 'Total credits',
+      usageCurrentCredits: 'Current credits',
+      usageTotalResets: 'Total resets',
+      usageLastReset: 'Last reset',
+      disclaimer: 'Disclaimer',
+      noDisclaimer: 'No disclaimer assigned.',
+      disclaimerName: 'Name',
+      disclaimerTitle: 'Title',
+      disclaimerAccepted: 'Accepted',
+      disclaimerDeclined: 'Declined',
+      disclaimerPending: 'Pending',
+      mcpConfigurations: 'MCP Configurations',
+      noMcpConfigurations: 'No MCP configurations.',
+      mcpServerActive: 'Server active',
+      mcpServerInactive: 'Server inactive',
+      mcpChatMode: 'Chat mode',
+      mcpStatus: 'Status',
+      mcpStatusEnabled: 'Enabled',
+      mcpStatusDisabled: 'Disabled',
+      mcpPriority: 'Priority',
+      mcpAllowedTools: 'Allowed tools',
+      openChatbot: 'Open Chatbot',
       answerCollections: 'Answer Collections',
       answerCollectionsDescription:
         'Here you can find all your answer collections. You need these to create certain complex question types, such as selection questions and case studies. To import existing answer collections form other users or request access to these, please visit the <link>catalog</link>.',
@@ -2819,6 +3469,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noObjectsAvailable: 'No objects available for the selected type',
       objectAddedSuccess: 'Object successfully added to the catalog collection',
       objectAddedError: 'Failed to add object to the catalog collection',
+      objectRemovalSuccess:
+        'The object was successfully removed from the catalog collection',
+      objectRemovalFailed:
+        'An error occurred while removing the object from the catalog collection, please try again',
       selectObjectTypeFirst: 'Please select an object type first',
       changeAccessTitle: 'Change Access Level',
       changeAccessDescription:

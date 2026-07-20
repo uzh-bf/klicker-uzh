@@ -1,3 +1,4 @@
+import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   AuditLogType,
   ElementType,
@@ -6,7 +7,7 @@ import {
   PermissionLevel,
   PrismaClient,
   PublicationStatus,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import {
   MISSING_CATALOG_COLLECTION_ID,
   recomputeDerivedPermissions,
@@ -42,20 +43,25 @@ import {
   userTwo,
 } from './userData.js'
 
-describe('Unit tests for object access validation', () => {
+describe('Integration tests for object access validation', () => {
   // shared resources used across tests
   let prisma: PrismaClient
+  let hatchet: Hatchet
   let emitter: EventEmitter
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
   let userThreeCtx: ContextWithUser
   let userFourCtx: ContextWithUser
   let userFiveCtx: ContextWithUser
-  let userSixCtx: ContextWithUser
 
   beforeAll(async () => {
-    const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
+    const {
+      prisma: newPrisma,
+      hatchet: newHatchet,
+      emitter: newEmitter,
+    } = await initializePrisma()
     prisma = newPrisma
+    hatchet = newHatchet
     emitter = newEmitter
   })
 
@@ -71,20 +77,16 @@ describe('Unit tests for object access validation', () => {
       userThreeCtx: ctx3,
       userFourCtx: ctx4,
       userFiveCtx: ctx5,
-      userSixCtx: ctx6,
-    } = await testInitialization(prisma, emitter)
+    } = await testInitialization(prisma, hatchet, emitter)
 
     userOneCtx = ctx1
     userTwoCtx = ctx2
     userThreeCtx = ctx3
     userFourCtx = ctx4
     userFiveCtx = ctx5
-    userSixCtx = ctx6
   })
 
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
   // ! Access Validation
   // #region
@@ -3538,7 +3540,7 @@ describe('Unit tests for object access validation', () => {
         permissionLevel: PermissionLevel.ADMIN,
       },
     })
-    const permission4 = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         catalogCollectionId: publicCatalog.id,
         userId: userFour.id,
@@ -3581,7 +3583,7 @@ describe('Unit tests for object access validation', () => {
         permissionLevel: PermissionLevel.ADMIN,
       },
     })
-    const groupPermission2 = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         catalogCollectionId: publicCatalog.id,
         userGroupId: userGroup2.id,
@@ -4083,7 +4085,7 @@ describe('Unit tests for object access validation', () => {
         permissionLevel: PermissionLevel.ADMIN,
       },
     })
-    const permission4 = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         catalogCollectionId: publicCatalog.id,
         userId: userFour.id,
@@ -4126,7 +4128,7 @@ describe('Unit tests for object access validation', () => {
         permissionLevel: PermissionLevel.ADMIN,
       },
     })
-    const groupPermission2 = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         catalogCollectionId: publicCatalog.id,
         userGroupId: userGroup2.id,

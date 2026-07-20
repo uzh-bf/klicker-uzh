@@ -1,6 +1,24 @@
 import {
+  handleEndExpiredGroupActivity,
+  handlePublishScheduledGroupActivity,
+} from '@/services/groups.js'
+import {
+  handleAssessmentLiveQuizBlockClosureAggregation,
+  handlePublishScheduledLiveQuiz,
+  handleStandardLiveQuizBlockClosureAggregation,
+} from '@/services/liveQuizzes.js'
+import {
+  handleEndExpiredMicroLearning,
+  handlePublishScheduledMicroLearning,
+} from '@/services/microLearning.js'
+import { handlePublishScheduledPracticeQuiz } from '@/services/practiceQuizzes.js'
+import type { Hatchet } from '@hatchet-dev/typescript-sdk'
+import { hatchetClient } from '@klicker-uzh/hatchet'
+import { prisma } from '@klicker-uzh/prisma'
+import {
   AnswerCollection,
   CatalogCollection,
+  CourseAuthType,
   Element,
   ElementInstanceType,
   ElementStackType,
@@ -9,16 +27,28 @@ import {
   PermissionLevel,
   PrismaClient,
   PublicationStatus,
+  ResponseCorrectness,
   UserLoginScope,
   UserRole,
-} from '@klicker-uzh/prisma'
-import { ElementData, ElementInstanceResults } from '@klicker-uzh/types'
+} from '@klicker-uzh/prisma/client'
 import {
+  DisplayMode,
+  ElementData,
+  ElementInstanceOptions,
+  ElementInstanceResults,
+} from '@klicker-uzh/types'
+import {
+  getInitialInstanceResults,
   MISSING_CATALOG_COLLECTION_ID,
+  processElementData,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
+import generatePassword from 'generate-password'
+import { createPubSub, Repeater } from 'graphql-yoga'
+import { Redis } from 'ioredis'
 import { v4 as uuidv4 } from 'uuid'
+import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { createAnswerCollection } from '../src/services/resources.js'
 import { createCatalogCollection } from '../src/services/sharing.js'
@@ -37,9 +67,22 @@ import {
   userTwo,
 } from './userData.js'
 
+type TestInitializationResult = {
+  userOneCtx: ContextWithUser
+  userTwoCtx: ContextWithUser
+  userThreeCtx: ContextWithUser
+  userFourCtx: ContextWithUser
+  userFiveCtx: ContextWithUser
+  userSixCtx: ContextWithUser
+}
+
 // ! General Test Suite Helpers (general setup, user seeding, database connections, cleanup, etc.)
 // #region
-export async function testInitialization(prisma: PrismaClient, emitter) {
+export async function testInitialization(
+  prisma: PrismaClient,
+  hatchet: Hatchet,
+  emitter: EventEmitter
+): Promise<TestInitializationResult> {
   // upsert all users in the database
   await Promise.all(
     [userOne, userTwo, userThree, userFour, userFive, userSix].map(
@@ -83,8 +126,162 @@ export async function testInitialization(prisma: PrismaClient, emitter) {
     update: {},
   })
 
+  const pubSub = createPubSub()
+  const redisExec = new Redis({ host: '127.0.0.1', port: 6379 })
+  const redisAssessmentExec = new Redis({ host: '127.0.0.1', port: 6380 })
+
+  const hatchetCtx = {
+    hatchet,
+    pubSub,
+    emitter,
+    redisExec,
+    redisAssessmentExec,
+    prisma,
+  }
+
+  // initialize tasks to be called
+  const tasks = {
+    createAuditLogEntry: hatchet.task({
+      name: 'create-audit-log-entry',
+      fn: async ({
+        message,
+      }: {
+        message: Record<string, string | undefined> & {
+          correlationId?: string
+          info: string
+        }
+      }) => {
+        console.info('Audit log triggered', message)
+        return { success: true }
+      },
+    }),
+    publishScheduledMicroLearning: hatchet.task({
+      name: 'publish-scheduled-micro-learning',
+      fn: async (
+        { microLearningId }: { microLearningId: string },
+        executionCtx
+      ) => {
+        const success = await handlePublishScheduledMicroLearning(
+          { microLearningId },
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      },
+    }),
+    publishScheduledPracticeQuiz: hatchet.task({
+      name: 'publish-scheduled-practice-quiz',
+      fn: async (
+        { practiceQuizId }: { practiceQuizId: string },
+        executionCtx
+      ) => {
+        const success = await handlePublishScheduledPracticeQuiz(
+          { practiceQuizId },
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      },
+    }),
+    publishScheduledGroupActivity: hatchet.task({
+      name: 'publish-scheduled-group-activity',
+      fn: async (
+        { groupActivityId }: { groupActivityId: string },
+        executionCtx
+      ) => {
+        const success = await handlePublishScheduledGroupActivity(
+          { groupActivityId },
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      },
+    }),
+    publishScheduledLiveQuiz: hatchet.task({
+      name: 'publish-scheduled-live-quiz',
+      fn: async ({ liveQuizId }: { liveQuizId: string }, executionCtx) => {
+        const success = await handlePublishScheduledLiveQuiz(
+          { liveQuizId },
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      },
+    }),
+    endExpiredMicroLearning: hatchet.task({
+      name: 'end-expired-micro-learning',
+      fn: async (
+        { microLearningId }: { microLearningId: string },
+        executionCtx
+      ) => {
+        const success = await handleEndExpiredMicroLearning(
+          { microLearningId },
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      },
+    }),
+    endExpiredGroupActivity: hatchet.task({
+      name: 'end-expired-group-activity',
+      fn: async (
+        { groupActivityId }: { groupActivityId: string },
+        executionCtx
+      ) => {
+        const success = await handleEndExpiredGroupActivity(
+          { groupActivityId },
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      },
+    }),
+    aggregateLiveQuizBlockResultsStandard: hatchet.task({
+      name: 'aggregate-block-closure-standard',
+      retries: 3,
+      fn: async (
+        {
+          liveQuizId,
+          blockId,
+        }: {
+          liveQuizId: string
+          blockId: number
+        },
+        executionContext
+      ) => {
+        const success = await handleStandardLiveQuizBlockClosureAggregation(
+          { liveQuizId, blockId },
+          hatchetCtx,
+          executionContext
+        )
+        return { success }
+      },
+    }),
+    aggregateLiveQuizBlockResultsAssessment: hatchet.task({
+      name: 'aggregate-block-closure-assessment',
+      retries: 3,
+      fn: async (
+        {
+          liveQuizId,
+          blockId,
+        }: {
+          liveQuizId: string
+          blockId: number
+        },
+        executionContext
+      ) => {
+        const success = await handleAssessmentLiveQuizBlockClosureAggregation(
+          { liveQuizId, blockId },
+          hatchetCtx,
+          executionContext
+        )
+        return { success }
+      },
+    }),
+  }
+
   // mock context with user including all required properties
-  const userOneCtx = {
+  const userOneCtx: ContextWithUser = {
     user: {
       sub: userOne.sub,
       role: UserRole.USER,
@@ -93,31 +290,37 @@ export async function testInitialization(prisma: PrismaClient, emitter) {
       catalystIndividual: true,
     },
     prisma,
+    hatchet,
+    tasks,
     emitter,
-    redisExec: jest.fn() as unknown as ContextWithUser['redisExec'],
-    pubSub: { publish: jest.fn(), subscribe: jest.fn() },
+    redisExec,
+    redisAssessmentExec,
+    pubSub: {
+      publish: vi.fn(),
+      subscribe: vi.fn().mockReturnValue(new Repeater(() => {})),
+    } as ContextWithUser['pubSub'],
     req: {} as any,
     res: {} as any,
   }
 
   // mock remaining contexts
-  const userTwoCtx = {
+  const userTwoCtx: ContextWithUser = {
     ...userOneCtx,
     user: { ...userOneCtx.user, sub: userTwo.sub },
   }
-  const userThreeCtx = {
+  const userThreeCtx: ContextWithUser = {
     ...userOneCtx,
     user: { ...userOneCtx.user, sub: userThree.sub },
   }
-  const userFourCtx = {
+  const userFourCtx: ContextWithUser = {
     ...userOneCtx,
     user: { ...userOneCtx.user, sub: userFour.sub },
   }
-  const userFiveCtx = {
+  const userFiveCtx: ContextWithUser = {
     ...userOneCtx,
     user: { ...userOneCtx.user, sub: userFive.sub },
   }
-  const userSixCtx = {
+  const userSixCtx: ContextWithUser = {
     ...userOneCtx,
     user: { ...userOneCtx.user, sub: userSix.sub },
   }
@@ -168,29 +371,19 @@ export function getDatabaseUrl() {
   }
 
   // as a fallback, use default PostgreSQL connection
-  return 'postgresql://klicker-prod:klicker@localhost:5432/klicker-prod'
+  process.env.DATABASE_URL =
+    'postgresql://klicker-prod:klicker@localhost:5432/klicker-prod'
 }
 
 export async function initializePrisma() {
   // configure database
-  const databaseUrl = getDatabaseUrl()
+  getDatabaseUrl()
 
   try {
-    // initialize PrismaClient with the database URL
-    const prisma = new PrismaClient({
-      datasources: {
-        db: { url: databaseUrl },
-      },
-      log: ['error', 'warn'],
-    })
-
-    // test database connection
-    await prisma.$connect()
-
     // create EventEmitter for test context
     const emitter = new EventEmitter()
 
-    return { prisma, emitter }
+    return { prisma, hatchet: hatchetClient, emitter }
   } catch (error) {
     console.error('Failed to initialize test environment:', error)
     throw new Error(`Database connection failed: ${error}`)
@@ -268,7 +461,18 @@ export async function seedElements(
       type: ElementType.SC,
       name: 'SC Element',
       content: 'SC Content',
-      options: {},
+      explanation: 'SC Explanation',
+      options: {
+        hasSampleSolution: true,
+        hasAnswerFeedbacks: true,
+        displayMode: 'LIST',
+        choices: [
+          { ix: 0, value: 'Choice 1', correct: true, feedback: 'Feedback 1' },
+          { ix: 1, value: 'Choice 2', correct: false, feedback: 'Feedback 2' },
+          { ix: 2, value: 'Choice 3', correct: false, feedback: 'Feedback 3' },
+          { ix: 3, value: 'Choice 4', correct: false, feedback: 'Feedback 4' },
+        ],
+      },
       ownerId: userContext.user.sub,
     },
   })
@@ -584,9 +788,13 @@ export async function seedCourse(
   {
     startDate,
     endDate,
+    isGamificationEnabled,
+    isAssessmentEnabled,
   }: {
     startDate?: Date
     endDate?: Date
+    isGamificationEnabled?: boolean
+    isAssessmentEnabled?: boolean
   },
   ctx: ContextWithUser
 ) {
@@ -597,11 +805,16 @@ export async function seedCourse(
       name: uuidv4(),
       displayName: uuidv4(),
       description: uuidv4(),
-      pinCode: Math.floor(Math.random() * 9000 + 1000),
+      pinCode: !isAssessmentEnabled
+        ? Math.floor(Math.random() * 9000 + 1000)
+        : null,
       startDate: startDate ?? defaultStartDate,
       endDate: endDate ?? defaultEndDate,
       groupDeadlineDate: endDate ?? defaultEndDate,
+      isGamificationEnabled,
+      isAssessmentEnabled,
       ownerId: ctx.user.sub,
+      authType: isAssessmentEnabled ? CourseAuthType.SSO : CourseAuthType.PIN,
     },
   })
 
@@ -629,6 +842,13 @@ export async function seedLiveQuiz(
   },
   ctx: ContextWithUser
 ) {
+  // if a courseId is defined, fetch the corresponding course
+  const course = courseId
+    ? await ctx.prisma.course.findUnique({
+        where: { id: courseId },
+      })
+    : null
+
   const liveQuiz = await ctx.prisma.liveQuiz.create({
     data: {
       name: uuidv4(),
@@ -637,6 +857,17 @@ export async function seedLiveQuiz(
       status,
       courseId,
       ownerId: ctx.user.sub,
+      isAssessmentEnabled: course?.isAssessmentEnabled ?? false,
+      isGamificationEnabled: course?.isGamificationEnabled ?? false,
+      pinCode: course?.isAssessmentEnabled
+        ? generatePassword.generate({
+            length: 6,
+            numbers: true,
+            uppercase: true,
+            lowercase: false,
+            symbols: false,
+          })
+        : null,
       blocks: {
         create: elements.map((element, index) => ({
           order: index,
@@ -658,6 +889,7 @@ export async function seedLiveQuiz(
         })),
       },
     },
+    include: { blocks: true },
   })
 
   return liveQuiz
@@ -847,5 +1079,298 @@ export async function seedGroupActivity(
   })
 
   return groupActivity
+}
+// #endregion
+
+// ! Specific test case helpers (e.g. seeding of live quiz including responses to test correction workflows)
+// #region
+export async function seedLiveQuizWithResponses({
+  userOneCtx,
+  userTwoCtx,
+  userThreeCtx,
+  userFourCtx,
+}: {
+  userOneCtx: ContextWithUser
+  userTwoCtx: ContextWithUser
+  userThreeCtx: ContextWithUser
+  userFourCtx: ContextWithUser
+}) {
+  const SCQuestion = await prisma.element.create({
+    data: {
+      status: 'READY',
+      type: 'SC',
+      name: 'Single Choice Question',
+      content: 'What is the capital of Switzerland?',
+      explanation: 'The capital of Switzerland is Bern.',
+      options: {
+        choices: [
+          { ix: 0, value: 'Zurich', correct: false },
+          { ix: 1, value: 'Bern', correct: true },
+          { ix: 2, value: 'Geneva', correct: false },
+          { ix: 3, value: 'Lucerne', correct: true },
+        ],
+        displayMode: DisplayMode.LIST,
+        hasSampleSolution: true,
+        hasAnswerFeedbacks: true,
+      },
+      basePoints: false,
+      pointsMultiplier: 1,
+      ownerId: userOneCtx.user.sub,
+    },
+  })
+  await recomputeDerivedPermissions(
+    { elementId: SCQuestion.id, userId: userOneCtx.user.sub },
+    prisma
+  )
+
+  const MCQuestion = await prisma.element.create({
+    data: {
+      status: 'READY',
+      type: 'MC',
+      name: 'Multiple Choice Question',
+      content: 'What are the capitals of Switzerland?',
+      explanation: 'The capital of Switzerland is Bern.',
+      options: {
+        choices: [
+          { ix: 0, value: 'Zurich', correct: false },
+          { ix: 1, value: 'Bern', correct: true },
+          { ix: 2, value: 'Geneva', correct: false },
+          { ix: 3, value: 'Lucerne', correct: true },
+        ],
+        displayMode: DisplayMode.LIST,
+        hasSampleSolution: true,
+        hasAnswerFeedbacks: true,
+      },
+      basePoints: true,
+      pointsMultiplier: 2,
+      ownerId: userOneCtx.user.sub,
+    },
+  })
+  await recomputeDerivedPermissions(
+    { elementId: MCQuestion.id, userId: userOneCtx.user.sub },
+    prisma
+  )
+
+  // create an assessment course
+  const assessmentCourse = await prisma.course.create({
+    data: {
+      name: 'Assessment Course',
+      displayName: 'Assessment Course',
+      isGamificationEnabled: false,
+      isAssessmentEnabled: true,
+      authType: 'SSO',
+      startDate: new Date(),
+      endDate: new Date(new Date().getTime() + 1000 * 60 * 60 * 24 * 30), // 30 days from now
+      groupDeadlineDate: new Date(),
+      owner: { connect: { id: userOneCtx.user.sub } },
+    },
+  })
+  await recomputeDerivedPermissions(
+    { courseId: assessmentCourse.id, userId: userOneCtx.user.sub },
+    prisma
+  )
+
+  // create a live quiz with both questions
+  const liveQuiz = await prisma.liveQuiz.create({
+    data: {
+      name: 'Live Quiz',
+      displayName: 'Live Quiz',
+      ownerId: userOneCtx.user.sub,
+      pointsMultiplier: 1,
+      isGamificationEnabled: false,
+      isAssessmentEnabled: true,
+      pinCode: 'D5G4HU',
+      courseId: assessmentCourse.id,
+      defaultPoints: 20,
+      defaultCorrectPoints: 50,
+      maxBonusPoints: 30,
+      blocks: {
+        create: [
+          {
+            order: 0,
+            elements: {
+              create: [
+                {
+                  type: ElementInstanceType.LIVE_QUIZ,
+                  elementId: SCQuestion.id,
+                  elementType: ElementType.SC,
+                  order: 0,
+                  options: {
+                    pointsMultiplier: 1,
+                    basePoints: false,
+                  } as ElementInstanceOptions,
+                  elementData: processElementData(SCQuestion),
+                  results: getInitialInstanceResults(
+                    processElementData(SCQuestion)
+                  ),
+                  anonymousResults: getInitialInstanceResults(
+                    processElementData(SCQuestion)
+                  ),
+                  ownerId: userOneCtx.user.sub,
+                },
+                {
+                  type: ElementInstanceType.LIVE_QUIZ,
+                  elementId: MCQuestion.id,
+                  elementType: ElementType.MC,
+                  order: 1,
+                  options: {
+                    pointsMultiplier: 2,
+                    basePoints: true,
+                  } as ElementInstanceOptions,
+                  elementData: processElementData(MCQuestion),
+                  results: getInitialInstanceResults(
+                    processElementData(MCQuestion)
+                  ),
+                  anonymousResults: getInitialInstanceResults(
+                    processElementData(MCQuestion)
+                  ),
+                  ownerId: userOneCtx.user.sub,
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+    include: {
+      blocks: { include: { elements: { orderBy: { order: 'asc' } } } },
+    },
+  })
+  await recomputeDerivedPermissions(
+    { liveQuizId: liveQuiz.id, userId: userOneCtx.user.sub },
+    prisma
+  )
+  const instanceId1 = liveQuiz.blocks[0]!.elements[0]!.id
+  const instanceId2 = liveQuiz.blocks[0]!.elements[1]!.id
+
+  // share the course with users two, three, and four
+  await prisma.permission.createMany({
+    data: [
+      {
+        userId: userTwoCtx.user.sub,
+        courseId: assessmentCourse.id,
+        permissionLevel: PermissionLevel.READ,
+      },
+      {
+        userId: userThreeCtx.user.sub,
+        courseId: assessmentCourse.id,
+        permissionLevel: PermissionLevel.WRITE,
+      },
+      {
+        userId: userFourCtx.user.sub,
+        courseId: assessmentCourse.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    ],
+  })
+  await recomputeDerivedPermissions({ courseId: assessmentCourse.id }, prisma)
+
+  // create participant 1 with a correct answer to both questions
+  const participant1 = await prisma.participant.create({
+    data: {
+      id: '36a3b9cf-00eb-46f3-a701-b222b68d0386',
+      username: 'participant1',
+      password: 'participant1',
+      participations: { create: [{ courseId: assessmentCourse.id }] },
+    },
+  })
+  const p1Response1 = await prisma.liveQuizResponse.create({
+    data: {
+      submittedAt: new Date(),
+      response: {
+        choices: [
+          { ix: 0, selected: false },
+          { ix: 1, selected: true },
+          { ix: 2, selected: false },
+          { ix: 3, selected: false },
+        ],
+      },
+      correctness: ResponseCorrectness.CORRECT,
+      basePoints: 0, // no base points for this question
+      correctnessPoints: 50,
+      bonusPoints: 30,
+      timeSpent: -1,
+      elementBlockExecution: 0,
+      instance: { connect: { id: instanceId1 } },
+      participant: { connect: { id: participant1.id } },
+    },
+  })
+  const p1Response2 = await prisma.liveQuizResponse.create({
+    data: {
+      submittedAt: new Date(),
+      response: {
+        choices: [
+          { ix: 0, selected: false },
+          { ix: 1, selected: true },
+          { ix: 2, selected: false },
+          { ix: 3, selected: false },
+        ],
+      },
+      correctness: ResponseCorrectness.CORRECT,
+      basePoints: 20,
+      correctnessPoints: 100,
+      bonusPoints: 60,
+      timeSpent: -1,
+      elementBlockExecution: 0,
+      instance: { connect: { id: instanceId2 } },
+      participant: { connect: { id: participant1.id } },
+    },
+  })
+
+  // create participant 2 with a partially correct answer to the first question and no answer to the second one
+  const participant2 = await prisma.participant.create({
+    data: {
+      id: 'fbdc8107-0f7e-4b9b-9dc5-9268c99dc784',
+      username: 'participant2',
+      password: 'participant2',
+      participations: { create: [{ courseId: assessmentCourse.id }] },
+    },
+  })
+  const p2Response1 = await prisma.liveQuizResponse.create({
+    data: {
+      submittedAt: new Date(),
+      response: {
+        choices: [
+          { ix: 0, selected: false },
+          { ix: 1, selected: true },
+          { ix: 2, selected: true },
+          { ix: 3, selected: false },
+        ],
+      },
+      correctness: ResponseCorrectness.PARTIAL, // correctness assumed to be 50%
+      basePoints: 0, // no base points for this question
+      correctnessPoints: 25,
+      bonusPoints: 15,
+      timeSpent: -1,
+      elementBlockExecution: 0,
+      instance: { connect: { id: instanceId1 } },
+      participant: { connect: { id: participant2.id } },
+    },
+  })
+
+  // create participant 3 with a course participation but no answers
+  const participant3 = await prisma.participant.create({
+    data: {
+      id: '56409db9-4bba-425d-81f6-98864ca3daed',
+      username: 'participant3',
+      password: 'participant3',
+      participations: { create: [{ courseId: assessmentCourse.id }] },
+    },
+  })
+
+  return {
+    assessmentCourse,
+    liveQuiz,
+    instanceId1,
+    instanceId2,
+    SCQuestion,
+    MCQuestion,
+    participant1,
+    participant2,
+    participant3,
+    p1Response1,
+    p1Response2,
+    p2Response1,
+  }
 }
 // #endregion

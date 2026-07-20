@@ -1,3 +1,4 @@
+import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   AuditLogType,
   ElementType,
@@ -5,7 +6,7 @@ import {
   ObjectType,
   PermissionLevel,
   PrismaClient,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import {
   MISSING_CATALOG_COLLECTION_ID,
   recomputeDerivedPermissions,
@@ -41,9 +42,10 @@ import {
 import { answerCollection1, answerCollection2 } from './testData.js'
 import { userFive, userFour, userOne, userThree, userTwo } from './userData.js'
 
-describe('Unit tests for sharing functionalities of resources (e.g. answer collections)', () => {
+describe('Integration tests for sharing functionalities of resources (e.g. answer collections)', () => {
   // shared resources used across tests
   let prisma: PrismaClient
+  let hatchet: Hatchet
   let emitter: EventEmitter
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
@@ -52,8 +54,13 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
   let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
-    const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
+    const {
+      prisma: newPrisma,
+      hatchet: newHatchet,
+      emitter: newEmitter,
+    } = await initializePrisma()
     prisma = newPrisma
+    hatchet = newHatchet
     emitter = newEmitter
   })
 
@@ -69,7 +76,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
       userThreeCtx: ctx3,
       userFourCtx: ctx4,
       userFiveCtx: ctx5,
-    } = await testInitialization(prisma, emitter)
+    } = await testInitialization(prisma, hatchet, emitter)
 
     userOneCtx = ctx1
     userTwoCtx = ctx2
@@ -78,9 +85,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     userFiveCtx = ctx5
   })
 
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
   // TODO - as soon as elements and courses can also be shared, add additional small test suites with essential sharing functionalities
   // TODO: make sure to extend tests once element and activity sharing is available with modifications and impact on derived permissions when executing the following actions
@@ -856,21 +861,20 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     const { publicCatalog } = await seedCatalogCollections(userOneCtx)
 
     // add the answer collection to the top-level catalog collection
-    const assignmentPublic = await prisma.catalogCollectionAssignment.create({
+    await prisma.catalogCollectionAssignment.create({
       data: {
         catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
         answerCollectionId: AC1!.id,
         access: ObjectAccess.PUBLIC,
       },
     })
-    const assignmentRestricted =
-      await prisma.catalogCollectionAssignment.create({
-        data: {
-          catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
-          answerCollectionId: AC2!.id,
-          access: ObjectAccess.RESTRICTED,
-        },
-      })
+    await prisma.catalogCollectionAssignment.create({
+      data: {
+        catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
+        answerCollectionId: AC2!.id,
+        access: ObjectAccess.RESTRICTED,
+      },
+    })
 
     // when querying an invalid assignment, null should be returned
     const failure = await getAnswerCollectionCatalogInfo(
@@ -1628,10 +1632,8 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     await recomputeDerivedPermissions({ answerCollectionId: AC1!.id }, prisma)
 
     // fetch the direct permissions and make sure that they are correct
-    const directPermissions = await getAnswerCollectionPermissions(
-      { id: AC1!.id },
-      userOneCtx
-    )
+    const { permissions: directPermissions } =
+      await getAnswerCollectionPermissions({ id: AC1!.id }, userOneCtx)
     expect(directPermissions).not.toBeNull()
     expect(directPermissions.length).toBe(2)
 
@@ -1682,7 +1684,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
 
     // derived permissions that are copies of direct permissions / resolved group permissions,
     // should not show up in the derived permissions query
-    const permission4 = await prisma.derivedPermission.create({
+    await prisma.derivedPermission.create({
       data: {
         permissionLevel: PermissionLevel.READ,
         userId: userFive.id,

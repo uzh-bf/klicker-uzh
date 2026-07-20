@@ -1,3 +1,4 @@
+import { ICaseStudyElementEvaluationResults } from '@/schema/evaluation.js'
 import {
   computeAwardedXp,
   computeSimpleAwardedPoints,
@@ -9,7 +10,7 @@ import {
   gradeQuestionSC,
   gradeQuestionSelection,
 } from '@klicker-uzh/grading'
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import type {
   CaseStudyElementData,
   CaseStudySolutionsObject,
@@ -59,7 +60,6 @@ import dayjs from 'dayjs'
 import { max, mean, median, min, quantileSeq, round, std } from 'mathjs'
 import { createHash } from 'node:crypto'
 import { toLowerCase } from 'remeda'
-import { ICaseStudyElementEvaluationResults } from 'src/schema/evaluation.js'
 import type { Context } from '../lib/context.js'
 import type {
   CaseStudyCaseResponse,
@@ -1647,7 +1647,7 @@ export function updateChoicesResults({
     response.choices === null ||
     typeof response.choices === 'undefined'
   ) {
-    return { results: results, modified: false }
+    return { results, modified: false }
   }
 
   updatedResults.choices = (
@@ -1687,7 +1687,7 @@ export function updateNumericalResults({
     response.value === null ||
     response.value === ''
   ) {
-    return { results: results, modified: false }
+    return { results, modified: false }
   }
 
   // make sure that restrictions are fulfilled
@@ -1701,7 +1701,7 @@ export function updateNumericalResults({
     parsedValue > 1e30 || // prevent overflow
     parsedValue < -1e30 // prevent underflow
   ) {
-    return { results: results, modified: false }
+    return { results, modified: false }
   }
 
   const value = String(parsedValue)
@@ -1755,7 +1755,7 @@ export function updateFreeTextResults({
     (typeof elementData.options.restrictions?.maxLength === 'number' &&
       response.value.length > elementData.options.restrictions?.maxLength)
   ) {
-    return { results: results, modified: false }
+    return { results, modified: false }
   }
 
   const value = toLowerCase(response.value.trim())
@@ -2601,15 +2601,15 @@ async function updateLeaderboardOnQuestionResponse({
 
 export async function respondToQuestion(
   {
-    courseId,
     id,
+    courseId,
     response,
     answerTime,
     participation,
     skipTracking,
   }: {
-    courseId: string
     id: number
+    courseId: string
     response: ResponseInput
     answerTime: number
     participation: (DB.Participation & { participant: DB.Participant }) | null
@@ -2928,7 +2928,7 @@ async function respondToElement({
     const result = await respondToFlashcard(
       {
         id: response.instanceId,
-        courseId: courseId,
+        courseId,
         response: response.flashcardResponse!,
         answerTime,
         participation,
@@ -2963,7 +2963,7 @@ async function respondToElement({
     const result = await respondToContent(
       {
         id: response.instanceId,
-        courseId: courseId,
+        courseId,
         answerTime,
         participation,
         skipTracking,
@@ -2997,8 +2997,8 @@ async function respondToElement({
   ) {
     const result = await respondToQuestion(
       {
-        courseId: courseId,
         id: response.instanceId,
+        courseId,
         response: { choices: response.choicesResponse },
         answerTime,
         participation,
@@ -3026,8 +3026,8 @@ async function respondToElement({
   } else if (response.type === DB.ElementType.NUMERICAL) {
     const result = await respondToQuestion(
       {
-        courseId: courseId,
         id: response.instanceId,
+        courseId,
         response: { value: String(response.numericalResponse) },
         answerTime,
         participation,
@@ -3055,8 +3055,8 @@ async function respondToElement({
   } else if (response.type === DB.ElementType.FREE_TEXT) {
     const result = await respondToQuestion(
       {
-        courseId: courseId,
         id: response.instanceId,
+        courseId,
         response: { value: response.freeTextResponse },
         answerTime,
         participation,
@@ -3084,10 +3084,12 @@ async function respondToElement({
   } else if (response.type === DB.ElementType.SELECTION) {
     const result = await respondToQuestion(
       {
-        courseId: courseId,
         id: response.instanceId,
+        courseId,
         response: {
-          selection: response.selectionResponse?.filter((r) => r !== -1), // only forward valid responses
+          selection: response.selectionResponse?.filter(
+            (r) => r !== -1 && typeof r !== 'undefined' && r !== null
+          ), // only forward valid responses
         },
         answerTime,
         participation,
@@ -3115,8 +3117,8 @@ async function respondToElement({
   } else if (response.type === DB.ElementType.CASE_STUDY) {
     const result = await respondToQuestion(
       {
-        courseId: courseId,
         id: response.instanceId,
+        courseId,
         response: {
           assessment: response.caseStudyResponse,
         },
@@ -3459,6 +3461,9 @@ function combineCaseStudyResults({
               // extract values from merged results
               const responses = Object.values(mergedResults)
 
+              // if the criterion is a liker criterion, make sure the entire valid bar is included in the solution interval
+              const isLikertCriterion = !!criterion.labels
+
               return {
                 criterionId: criterion.id,
                 name: criterion.name,
@@ -3468,8 +3473,16 @@ function combineCaseStudyResults({
                 unit: criterion.unit,
                 labels: criterion.labels,
 
-                solutionMin: criterionSolution?.min,
-                solutionMax: criterionSolution?.max,
+                solutionMin: criterionSolution?.min
+                  ? isLikertCriterion
+                    ? criterionSolution?.min - 0.5
+                    : criterionSolution?.min
+                  : undefined,
+                solutionMax: criterionSolution?.max
+                  ? isLikertCriterion
+                    ? criterionSolution?.max + 0.5
+                    : criterionSolution?.max
+                  : undefined,
 
                 statistics:
                   responses && responses.length > 0
@@ -3813,8 +3826,8 @@ function computeInstanceEvaluation({
 
 export function computeStackEvaluation(
   stacks: (
-    | (DB.ElementStack & { elements: DB.ElementInstance[] })
-    | (DB.ElementBlock & { elements: DB.ElementInstance[] })
+    | (DB.ElementStack & { elements: DB.ElementInstance[]; active?: boolean })
+    | (DB.ElementBlock & { elements: DB.ElementInstance[]; active?: boolean })
   )[]
 ) {
   return stacks.map((stack) => ({
@@ -3822,7 +3835,10 @@ export function computeStackEvaluation(
     stackName: 'displayName' in stack ? stack.displayName : null,
     stackDescription: 'description' in stack ? stack.description : null,
     stackOrder: stack.order,
-
+    stackActive: stack.active ?? false,
+    status: 'status' in stack ? stack.status : null,
+    expiresAt: 'expiresAt' in stack ? stack.expiresAt : null,
+    timeLimit: 'timeLimit' in stack ? stack.timeLimit : null,
     instances: stack.elements
       .map((instance) => computeInstanceEvaluation({ instance }))
       .filter((instance) => typeof instance !== 'undefined'),

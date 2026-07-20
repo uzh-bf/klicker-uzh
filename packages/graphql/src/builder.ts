@@ -1,4 +1,9 @@
-import { PrismaClient, UserLoginScope, UserRole } from '@klicker-uzh/prisma'
+import { prisma } from '@klicker-uzh/prisma'
+import {
+  UserLoginScope,
+  UserRole,
+  type PrismaTypes,
+} from '@klicker-uzh/prisma/client'
 import SchemaBuilder from '@pothos/core'
 import DirectivePlugin from '@pothos/plugin-directives'
 import PrismaPlugin from '@pothos/plugin-prisma'
@@ -6,11 +11,8 @@ import ScopeAuthPlugin from '@pothos/plugin-scope-auth'
 import ZodPlugin from '@pothos/plugin-zod'
 import { GraphQLError } from 'graphql'
 import { DateTimeResolver, JSONResolver } from 'graphql-scalars'
-import './types/app.js'
-
 import type { Context, ContextWithUser } from './lib/context.js'
-
-const prisma = new PrismaClient({})
+import './types/app.js'
 
 const builder = new SchemaBuilder<{
   DefaultFieldNullability: false
@@ -33,7 +35,6 @@ const builder = new SchemaBuilder<{
     scope?: UserLoginScope
     catalyst?: boolean
   }
-  // @ts-expect-error
   PrismaTypes: PrismaTypes
   Scalars: {
     Date: {
@@ -112,7 +113,7 @@ const builder = new SchemaBuilder<{
     }),
   },
   zod: {
-    validationError: (zodError, args, context, info) => {
+    validationError: (zodError) => {
       return new GraphQLError(
         zodError.issues.map((issue) => issue.message).join(', ')
       )

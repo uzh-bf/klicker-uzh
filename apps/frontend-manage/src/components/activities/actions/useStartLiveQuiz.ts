@@ -9,20 +9,26 @@ function useStartLiveQuiz({ id, name }: { id: string; name: string }) {
   const [startLiveQuiz, { loading: startingQuiz }] = useMutation(
     StartLiveQuizDocument,
     {
-      variables: { id: id },
-      update(cache) {
-        const data = cache.readQuery({
-          query: GetUserRunningLiveQuizzesDocument,
-        })
-        cache.writeQuery({
-          query: GetUserRunningLiveQuizzesDocument,
-          data: {
-            userRunningLiveQuizzes: [
-              ...(data?.userRunningLiveQuizzes ?? []),
-              { id: id, name: name },
-            ],
-          },
-        })
+      variables: { id },
+      update(cache, { data: res }) {
+        // return early if the mutation failed
+        if (!res?.startLiveQuiz) return
+
+        cache.updateQuery(
+          { query: GetUserRunningLiveQuizzesDocument },
+          (data) => {
+            // if no data is present, return early
+            if (!data?.userRunningLiveQuizzes) return data
+
+            // add the new live quiz to the existing list
+            return {
+              userRunningLiveQuizzes: [
+                ...data.userRunningLiveQuizzes,
+                { id: res.startLiveQuiz!.id, name: res.startLiveQuiz!.name },
+              ],
+            }
+          }
+        )
       },
       optimisticResponse: {
         startLiveQuiz: {

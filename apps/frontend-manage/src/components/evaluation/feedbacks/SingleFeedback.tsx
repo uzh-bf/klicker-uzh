@@ -14,7 +14,7 @@ function SingleFeedback({ feedback }: SingleFeedbackProps) {
 
   return (
     <div key={feedback.content} className="break-inside-avoid">
-      <div className="border-uzh-grey-40 w-full rounded-md border border-solid p-2">
+      <div className="border-border w-full rounded-md border border-solid p-2">
         <div className="flex flex-row justify-between">
           <div>{feedback.content}</div>
           <div className="flex flex-row items-center text-gray-500">
@@ -34,7 +34,7 @@ function SingleFeedback({ feedback }: SingleFeedbackProps) {
       </div>
       {feedback.responses?.map((response) => (
         <div key={response?.content} className="mt-1 w-full pl-12 text-base">
-          <div className="border-uzh-grey-40 bg-primary-20 rounded border border-solid bg-opacity-50 p-1.5">
+          <div className="border-border bg-primary-20 rounded border border-solid bg-opacity-50 p-1.5">
             {response?.content}
           </div>
         </div>

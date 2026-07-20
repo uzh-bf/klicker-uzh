@@ -10,9 +10,7 @@ def compute_participant_course_analytics(db, df_courses, verbose=False):
     courses_without_responses = 0
 
     for idx, course in df_courses.iterrows():
-        print(
-            f"Computing participant analytics for course {idx} out of {len(df_courses)}"
-        )
+        print(f"Computing participant analytics for course {idx} out of {len(df_courses)}")
         course_id = course["id"]
         course_start_date = course["startDate"]
         course_end_date = course["endDate"]
@@ -48,11 +46,7 @@ def compute_participant_course_analytics(db, df_courses, verbose=False):
         responses = [item for sublist in responses_dict for item in sublist]
         if len(details) == 0 or len(responses) == 0:
             courses_without_responses += 1
-            print(
-                "No detail responses or response entries found for course {}".format(
-                    course_id
-                )
-            )
+            print("No detail responses or response entries found for course {}".format(course_id))
             continue
 
         # Create pandas dataframe containing all question responses and details
@@ -76,9 +70,7 @@ def compute_participant_course_analytics(db, df_courses, verbose=False):
         df_details, df_element_instances = compute_correctness(db, df_details, verbose)
 
         if df_details is None:
-            print(
-                f"No participant responses found for {course_start_date} to {course_end_date}."
-            )
+            print(f"No participant responses found for {course_start_date} to {course_end_date}.")
             del df_details
             del df_element_instances
             continue
@@ -89,11 +81,7 @@ def compute_participant_course_analytics(db, df_courses, verbose=False):
         # Save the aggreagted analytics into the database
         end_curr_date = datetime.now().strftime("%Y-%m-%d") + "T23:59:59.999Z"
         course_end_date_ext = course_end_date.strftime("%Y-%m-%d") + "T23:59:59.999Z"
-        timestamp = (
-            course_end_date_ext
-            if course_end_date_ext < end_curr_date
-            else end_curr_date
-        )
+        timestamp = course_end_date_ext if course_end_date_ext < end_curr_date else end_curr_date
         save_participant_analytics(db, df_analytics, timestamp, "COURSE")
 
         # Delete the dataframes to avoid conflicts in the next iteration

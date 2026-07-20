@@ -1,5 +1,6 @@
-cypress/e2e/
 node_modules/
+.pnpm-store/
+**/.venv/
 .next/
 .turbo/
 .vercel/
@@ -7,6 +8,14 @@ dist/
 out/
 build/
 email/
+.claude/
+.serena/
+project/
+.agents/skills/**/.agnix.toml
+
+# Symlinks
+.github/skills
+CLAUDE.md
 
 ops.schema.json
 ops.ts
@@ -16,6 +25,7 @@ client.json
 server.json
 
 *.sql
+*.prisma
 
 CHANGELOG.md
 
@@ -39,3 +49,19 @@ static/
 .tsup/
 
 pnpm-lock.yaml
+
+# Shell scripts
+*.sh
+
+# Dumps
+*.tar
+*.gpg
+
+# Unsupported file types
+**/*.toml
+**/*.gitignore
+**/Dockerfile*
+**/*.prisma
+**/*.py
+**/*.txt
+**/.codex/

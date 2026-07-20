@@ -1,6 +1,7 @@
-import { Prisma, PrismaClient } from '@klicker-uzh/prisma'
+import { PrismaClient } from '@klicker-uzh/prisma/client'
 import type {
   ActivityLogModificationDetails,
+  AssessmentReportSnapshotV1,
   AvatarSettings,
   ElementData,
   ElementInstanceOptions,
@@ -9,10 +10,11 @@ import type {
   GroupActivityDecisions,
   GroupActivityResults,
   SingleQuestionResponse,
+  SingleQuestionResponseLiveQuiz,
 } from '@klicker-uzh/types'
 
 export type PrismaMigrationClient = Omit<
-  PrismaClient<Prisma.PrismaClientOptions, never>,
+  InstanceType<typeof PrismaClient>,
   '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
 >
 
@@ -31,6 +33,8 @@ declare global {
 declare global {
   namespace PrismaJson {
     type PrismaSingleQuestionResponse = SingleQuestionResponse
+    type PrismaSingleQuestionResponseLiveQuiz =
+      SingleQuestionResponseLiveQuiz | null
     type PrismaElementOptions = ElementOptions
     type PrismaElementResults = ElementInstanceResults
     type PrismaElementData = ElementData
@@ -38,6 +42,7 @@ declare global {
     type PrismaGroupActivityDecisions = GroupActivityDecisions
     type PrismaGroupActivityResults = GroupActivityResults
     type PrismaActivityLogModificationDetails = ActivityLogModificationDetails
+    type PrismaAssessmentReportSnapshot = AssessmentReportSnapshotV1
   }
 }
 // #endregion

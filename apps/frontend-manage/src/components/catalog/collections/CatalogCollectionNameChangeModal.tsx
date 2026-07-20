@@ -57,27 +57,24 @@ function CatalogCollectionNameChangeModal({
               },
               update: (cache, { data }) => {
                 // check if request was successful
-                const success = data?.changeCatalogCollectionName
-                if (!success) return
+                if (!data?.changeCatalogCollectionName) return
 
                 // update list of catalog collections
-                const queryData = cache.readQuery({
-                  query: GetCatalogCollectionsListDocument,
-                })
+                cache.updateQuery(
+                  { query: GetCatalogCollectionsListDocument },
+                  (qData) => {
+                    if (!qData?.getCatalogCollectionsList) return qData
 
-                if (queryData?.getCatalogCollectionsList) {
-                  cache.writeQuery({
-                    query: GetCatalogCollectionsListDocument,
-                    data: {
+                    return {
                       getCatalogCollectionsList:
-                        queryData?.getCatalogCollectionsList.map((obj) =>
+                        qData.getCatalogCollectionsList.map((obj) =>
                           obj.id === catalogCollectionId
                             ? { ...obj, name: values.name }
                             : obj
                         ),
-                    },
-                  })
-                }
+                    }
+                  }
+                )
               },
             })
 

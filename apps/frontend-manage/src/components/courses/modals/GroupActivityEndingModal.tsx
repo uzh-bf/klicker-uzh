@@ -14,10 +14,12 @@ function GroupActivityEndingModal({
   onClose,
   activityId,
   courseId,
+  refetchActivities,
 }: {
   onClose: () => void
   activityId: string
   courseId: string
+  refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
   const { data: summaryData, loading: summaryLoading } = useQuery(
@@ -41,9 +43,31 @@ function GroupActivityEndingModal({
           __typename: 'GroupActivity',
         },
       },
-      refetchQueries: [
-        { query: GetSingleCourseDocument, variables: { courseId } },
-      ],
+      update(cache, { data }) {
+        cache.updateQuery(
+          { query: GetSingleCourseDocument, variables: { courseId } },
+          (qData) => {
+            const endedGa = data?.endGroupActivity
+            if (!qData?.course?.groupActivitiesInfo || !endedGa) return qData
+
+            return {
+              course: {
+                ...qData.course,
+                groupActivitiesInfo: qData.course.groupActivitiesInfo.map(
+                  (groupActivity) =>
+                    groupActivity.id === endedGa.id
+                      ? {
+                          ...groupActivity,
+                          scheduledEndAt: endedGa.scheduledEndAt,
+                          status: endedGa.status,
+                        }
+                      : groupActivity
+                ),
+              },
+            }
+          }
+        )
+      },
     }
   )
 
@@ -63,7 +87,6 @@ function GroupActivityEndingModal({
   }, [summaryData?.getGroupActivitySummary])
 
   if (!summaryData?.getGroupActivitySummary) return null
-
   const summary = summaryData.getGroupActivitySummary
 
   return (
@@ -71,7 +94,10 @@ function GroupActivityEndingModal({
       onClose={onClose}
       title={t('manage.course.endGroupActivity')}
       message={t('manage.course.endGroupActivityMessage')}
-      onSubmit={async () => await endGroupActivity()}
+      onSubmit={async () => {
+        await endGroupActivity()
+        await refetchActivities?.()
+      }}
       submitting={endingGroupActivity}
       confirmations={confirmations}
       confirmationsInitializing={summaryLoading}

@@ -7,7 +7,6 @@ import {
   GroupActivity,
   ParameterType,
 } from '@klicker-uzh/graphql/dist/ops'
-import useCoursesGroupsSplit from '@lib/hooks/useCoursesGroupsSplit'
 import { toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { FormikProps } from 'formik'
@@ -15,7 +14,8 @@ import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
-import { ElementSelectCourse } from '../../ElementCreation'
+import useCoursesGroupActivitySplit from '../../../../lib/hooks/useCoursesGroupActivitySplit'
+import { ElementSelectCourse } from '../../ActivityCreation'
 import CompletionStep from '../CompletionStep'
 import WizardLayout, {
   GroupActivityClueFormValues,
@@ -36,8 +36,9 @@ export interface GroupActivityWizardStepProps {
   stepValidity: boolean[]
   validationSchema: any
   coursesWithGroups?: ElementSelectCourse[]
+  assessmentCoursesWithGroups?: ElementSelectCourse[]
   coursesWithoutGroups?: ElementSelectCourse[]
-  onSubmit?: (newValues: GroupActivityFormValues) => void
+  onSubmit?: (newValues: GroupActivityFormValues) => Promise<void>
   setStepValidity: Dispatch<SetStateAction<boolean[]>>
   onPrevStep?: (newValues: GroupActivityFormValues) => void
   onNextStep?: (newValues: GroupActivityFormValues) => void
@@ -78,16 +79,17 @@ function GroupActivityWizard({
 }: GroupActivityWizardProps) {
   const t = useTranslations()
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
-  const [selectedCourseId, setSelectedCourseId] = useState<string | undefined>(
-    undefined
-  )
   const [activeStep, setActiveStep] = useState(0)
   const [stepValidity, setStepValidity] = useState<boolean[]>(
     Array(4).fill(!!initialValues)
   )
   const formRef = useRef<FormikProps<GroupActivityFormValues>>(null)
 
-  const { coursesWithGroups, coursesWithoutGroups } = useCoursesGroupsSplit({
+  const {
+    coursesWithGroups,
+    assessmentCoursesWithGroups,
+    coursesWithoutGroups,
+  } = useCoursesGroupActivitySplit({
     courseSelection: courses,
   })
 
@@ -298,17 +300,22 @@ function GroupActivityWizard({
     courseId: initialValues?.course?.id || formDefaultValues.courseId,
   })
 
-  const [createGroupActivity] = useMutation(CreateGroupActivityDocument)
-  const [editGroupActivity] = useMutation(EditGroupActivityDocument)
+  const [createGroupActivity, { data: creationData }] = useMutation(
+    CreateGroupActivityDocument
+  )
+  const [editGroupActivity, { data: editingData }] = useMutation(
+    EditGroupActivityDocument
+  )
+
   const handleSubmit = useCallback(
-    async (values: GroupActivityFormValues) => {
-      submitGroupActivityForm({
+    (values: GroupActivityFormValues) => {
+      return submitGroupActivityForm({
         id: initialValues?.id,
+        previousCourseId: initialValues?.course?.id,
         values,
         createGroupActivity,
         editGroupActivity,
         setIsWizardCompleted,
-        setSelectedCourseId,
         onError: () =>
           toast({
             type: 'error',
@@ -328,6 +335,13 @@ function GroupActivityWizard({
     },
     [createGroupActivity, editGroupActivity, initialValues?.id]
   )
+
+  const selectedCourseId =
+    creationData?.createGroupActivity?.courseId ??
+    editingData?.editGroupActivity?.courseId
+  const isActivityReviewer =
+    creationData?.createGroupActivity?.isActivityReviewer ??
+    editingData?.editGroupActivity?.isActivityReviewer
 
   return (
     <WizardLayout
@@ -355,7 +369,11 @@ function GroupActivityWizard({
           )}
           name={formData.name}
           editMode={editMode}
-          viewElementHref={`/courses/${selectedCourseId}?tab=groupActivities`}
+          viewElementHref={
+            isActivityReviewer
+              ? `/courses/${selectedCourseId}?tab=groupActivities`
+              : '/activities'
+          }
           onRestartForm={() => {
             setIsWizardCompleted(false)
             closeWizard()
@@ -414,6 +432,7 @@ function GroupActivityWizard({
           stepValidity={stepValidity}
           validationSchema={settingsValidationSchema}
           coursesWithGroups={coursesWithGroups}
+          assessmentCoursesWithGroups={assessmentCoursesWithGroups}
           coursesWithoutGroups={coursesWithoutGroups}
           setStepValidity={setStepValidity}
           onNextStep={(newValues: Partial<GroupActivityFormValues>) => {

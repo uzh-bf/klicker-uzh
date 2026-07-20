@@ -1,7 +1,7 @@
 import type { SelectionElementOptions } from '@klicker-uzh/graphql/dist/ops'
 import { FormLabel } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import React, { useMemo } from 'react'
+import { useMemo } from 'react'
 import Select from 'react-select'
 import { twMerge } from 'tailwind-merge'
 import type { SelectionStudentResponseType } from '../StudentElement'
@@ -27,7 +27,10 @@ function SELECTIONAnswerOptions({
 
   // get the selected options, which are not unselected
   const selectedValues = Object.values(responses).filter(
-    (selectedValue) => selectedValue !== -1
+    (selectedValue) =>
+      selectedValue !== -1 &&
+      selectedValue !== null &&
+      typeof selectedValue !== 'undefined'
   )
 
   // compute selection options for the select field
@@ -86,10 +89,12 @@ function SELECTIONAnswerOptions({
                 isClearable
                 id={`selection-${elementIx}-field-${Number(inputIndex)}`}
                 instanceId={`selection-${elementIx}-field-${Number(inputIndex)}`}
-                menuPlacement="auto"
+                menuPlacement="top"
                 isDisabled={disabled}
                 value={
-                  typeof selectedValue !== 'undefined' && selectedValue !== -1
+                  selectedValue !== -1 &&
+                  typeof selectedValue !== 'undefined' &&
+                  selectedValue !== null
                     ? { label: selectedLabel, value: selectedValue }
                     : undefined
                 }
@@ -98,7 +103,14 @@ function SELECTIONAnswerOptions({
                   container: () => 'w-full',
                 }}
                 onChange={(newValue) => {
-                  onChange({ ...responses, [inputIndex]: newValue?.value })
+                  onChange({
+                    ...responses,
+                    [inputIndex]:
+                      newValue?.value !== null &&
+                      typeof newValue?.value !== 'undefined'
+                        ? newValue.value
+                        : -1,
+                  })
                 }}
                 placeholder={t('shared.questions.seSelectOption')}
                 noOptionsMessage={() =>

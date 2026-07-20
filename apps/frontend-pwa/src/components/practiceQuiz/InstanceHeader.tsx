@@ -1,6 +1,7 @@
 import { useMutation } from '@apollo/client'
 import { faThumbsDown, faThumbsUp } from '@fortawesome/free-regular-svg-icons'
 import {
+  faChartBar,
   faCheck,
   faCheckDouble,
   faThumbsDown as faThumbsDownSolid,
@@ -31,6 +32,8 @@ interface InstanceHeaderProps {
   stackInstanceIds: number[]
   showSeparator?: boolean
   className?: string
+  evaluationOpen?: boolean
+  onToggleEvaluation?: () => void
 }
 
 function InstanceHeader({
@@ -44,6 +47,8 @@ function InstanceHeader({
   stackInstanceIds,
   showSeparator = false,
   className,
+  evaluationOpen,
+  onToggleEvaluation,
 }: InstanceHeaderProps) {
   const t = useTranslations()
   const [rateElement, { loading: ratingLoading }] =
@@ -83,46 +88,39 @@ function InstanceHeader({
         rateElement: {
           __typename: 'ElementFeedback',
           id: 0,
+          elementInstanceId: instanceId,
           upvote,
           downvote: !upvote,
+          feedback: feedbackValue ?? null,
         },
       },
-      update(cache, { data: dataRating }) {
-        const dataQuery = cache.readQuery({
-          query: GetStackElementFeedbacksDocument,
-          variables: { instanceIds: stackInstanceIds },
-        })
+      update(cache, { data }) {
+        // verify that the rating operation was successful
+        if (!data?.rateElement) return
 
-        const feedbackIx = dataQuery?.getStackElementFeedbacks?.findIndex(
-          (feedback) => feedback.elementInstanceId === instanceId
-        )
-        let newFeedbacks = [...(dataQuery?.getStackElementFeedbacks ?? [])]
-        if (typeof feedbackIx === 'undefined' || feedbackIx === -1) {
-          newFeedbacks.push({
-            __typename: 'ElementFeedback',
-            id:
-              dataRating?.rateElement?.id ??
-              Math.round(Math.random() * -1000000),
-            elementInstanceId: instanceId,
-            upvote,
-            downvote: !upvote,
-            feedback: null,
-          })
-        } else {
-          newFeedbacks[feedbackIx] = {
-            ...newFeedbacks[feedbackIx],
-            upvote,
-            downvote: !upvote,
-          }
-        }
-
-        cache.writeQuery({
-          query: GetStackElementFeedbacksDocument,
-          variables: { instanceIds: stackInstanceIds },
-          data: {
-            getStackElementFeedbacks: newFeedbacks,
+        // add or replace the element feedback in the corresponding list
+        cache.updateQuery(
+          {
+            query: GetStackElementFeedbacksDocument,
+            variables: { instanceIds: stackInstanceIds },
           },
-        })
+          (qData) => {
+            if (!qData?.getStackElementFeedbacks) {
+              return { getStackElementFeedbacks: [data.rateElement!] }
+            }
+
+            return {
+              getStackElementFeedbacks: [
+                ...qData.getStackElementFeedbacks.filter(
+                  (feedback) =>
+                    feedback.elementInstanceId !==
+                    data.rateElement!.elementInstanceId
+                ),
+                data.rateElement!,
+              ],
+            }
+          }
+        )
       },
     })
 
@@ -143,25 +141,47 @@ function InstanceHeader({
   return (
     <div className={className}>
       <div className="flex flex-row justify-between">
-        <div className="flex flex-row items-center gap-2">
-          {correctness === ResponseCorrectnessType.Correct && (
-            <FontAwesomeIcon icon={faCheckDouble} className="text-green-600" />
-          )}
-          {correctness === ResponseCorrectnessType.Partial && (
-            <FontAwesomeIcon icon={faCheck} className="text-yellow-600" />
-          )}
-          {correctness === ResponseCorrectnessType.Incorrect && (
-            <FontAwesomeIcon icon={faXmark} className="text-red-600" />
-          )}
-          <div
-            className="text-lg font-bold"
-            data-cy={`element-instance-header-${name}`}
-          >
-            {name}
+        {typeof correctness !== 'undefined' ? (
+          <div className="flex flex-row items-center gap-2">
+            {correctness === ResponseCorrectnessType.Correct && (
+              <FontAwesomeIcon
+                icon={faCheckDouble}
+                className="text-green-700"
+              />
+            )}
+            {correctness === ResponseCorrectnessType.Partial && (
+              <FontAwesomeIcon icon={faCheck} className="text-yellow-600" />
+            )}
+            {correctness === ResponseCorrectnessType.Incorrect && (
+              <FontAwesomeIcon icon={faXmark} className="text-red-600" />
+            )}
+            <div
+              className="text-lg font-bold"
+              data-cy={`element-instance-header-${name}`}
+            >
+              {name}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div />
+        )}
         {withParticipant && (
           <div className="flex flex-row items-center gap-1">
+            {onToggleEvaluation && (
+              <Button
+                basic
+                onClick={onToggleEvaluation}
+                className={{
+                  root: twMerge(
+                    'text-uzh-grey-100 hover:text-primary-80 px-1',
+                    evaluationOpen && 'text-primary-100'
+                  ),
+                }}
+                data={{ cy: `toggle-evaluation-${index}-button` }}
+              >
+                <Button.Icon withoutLabel icon={faChartBar} />
+              </Button>
+            )}
             <Button
               basic
               disabled={ratingLoading}

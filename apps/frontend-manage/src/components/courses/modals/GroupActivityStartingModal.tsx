@@ -18,6 +18,7 @@ interface GroupActivityStartingModalProps {
   courseId: string
   groupDeadlineDate: string
   numOfParticipantGroups: number
+  refetchActivities?: () => Promise<void>
 }
 
 function GroupActivityStartingModal({
@@ -27,9 +28,9 @@ function GroupActivityStartingModal({
   courseId,
   groupDeadlineDate,
   numOfParticipantGroups,
+  refetchActivities,
 }: GroupActivityStartingModalProps) {
   const t = useTranslations()
-
   const [openGroupActivity, { loading: openingGroupActivity }] = useMutation(
     OpenGroupActivityDocument,
     {
@@ -43,9 +44,36 @@ function GroupActivityStartingModal({
           __typename: 'GroupActivity',
         },
       },
-      refetchQueries: [
-        { query: GetSingleCourseDocument, variables: { courseId } },
-      ],
+      update: (cache, { data }) => {
+        // check if the starting was successful
+        if (!data?.openGroupActivity) return
+
+        // update the group activity on the course overview
+        cache.updateQuery(
+          { query: GetSingleCourseDocument, variables: { courseId } },
+          (qData) => {
+            if (!qData?.course) return qData
+
+            return {
+              course: {
+                ...qData.course,
+                groupActivitiesInfo: (
+                  qData.course.groupActivitiesInfo ?? []
+                ).map((ga) =>
+                  ga.id === data.openGroupActivity!.id
+                    ? {
+                        ...ga,
+                        status: data.openGroupActivity!.status,
+                        scheduledStartAt:
+                          data.openGroupActivity!.scheduledStartAt,
+                      }
+                    : ga
+                ),
+              },
+            }
+          }
+        )
+      },
     }
   )
 
@@ -67,7 +95,10 @@ function GroupActivityStartingModal({
       onClose={onClose}
       title={t('manage.course.startGroupActivityNow')}
       message={t('manage.course.startGroupActivityNowMessage')}
-      onSubmit={async () => await openGroupActivity()}
+      onSubmit={async () => {
+        await openGroupActivity()
+        await refetchActivities?.()
+      }}
       submitting={openingGroupActivity}
       confirmations={confirmations}
       confirmationsInitializing={false}

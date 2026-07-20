@@ -1,32 +1,18 @@
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Create, edit and share answer collections', function () {
-  before(() => {
-    cy.seed()
-
-    // set browser language to english (independent of local machine setting
-    Cypress.automation('remote:debugger:protocol', {
-      command: 'Emulation.setLocaleOverride',
-      params: { locale: 'en' },
-    })
-  })
-
-  after(() => {
-    cy.cleanup()
-  })
-
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('T-resources.json').then((data) => {
       this.data = data
     })
   })
 
-  // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  // Fail-fast handled globally in support/e2e.ts
+
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
+  })
 
   // ! Helper functions
   // #region
@@ -87,7 +73,7 @@ describe('Create, edit and share answer collections', function () {
 
     cy.get('[data-cy="answer-collection-description"]')
       .realClick()
-      .type(this.data.public.description)
+      .realType(this.data.public.description)
     cy.get('[data-cy="answer-collection-description"]')
       .realClick()
       .contains(this.data.public.description)
@@ -173,7 +159,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="answer-collection-description"]')
       .realClick()
       .clear()
-      .type(this.data.public.descriptionNew)
+      .realType(this.data.public.descriptionNew)
     cy.get('[data-cy="answer-collection-description"]')
       .realClick()
       .contains(this.data.public.descriptionNew)
@@ -329,9 +315,7 @@ describe('Create, edit and share answer collections', function () {
     })
 
     // check that question exists
-    cy.get(`[data-cy="element-item-${this.data.question.title}"]`).should(
-      'exist'
-    )
+    cy.validateElement({ element: this.data.question.title })
   })
 
   it("Verify that the private answer collection cannot be integrated into a question by user 'pro1'", function () {
@@ -362,13 +346,12 @@ describe('Create, edit and share answer collections', function () {
   it('Delete the selection question that depends on the private answer collection', function () {
     cy.loginLecturer()
     cy.get('[data-cy="library"]').click()
-    cy.get(`[data-cy="element-item-${this.data.question.title}"]`).should(
-      'exist'
-    )
+    cy.validateElement({ element: this.data.question.title })
     cy.deleteElement({ elementName: this.data.question.title })
-    cy.get(`[data-cy="element-item-${this.data.question.title}"]`).should(
-      'not.exist'
-    )
+    cy.validateElement({
+      element: this.data.question.title,
+      shouldExist: false,
+    })
   })
 
   it('Verify that the private answer collection can be deleted', function () {
@@ -831,13 +814,12 @@ describe('Create, edit and share answer collections', function () {
   it('Delete the selection question (user pro1)', function () {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="library"]').click()
-    cy.get(`[data-cy="element-item-${this.data.question.title}"]`).should(
-      'exist'
-    )
+    cy.validateElement({ element: this.data.question.title })
     cy.deleteElement({ elementName: this.data.question.title })
-    cy.get(`[data-cy="element-item-${this.data.question.title}"]`).should(
-      'not.exist'
-    )
+    cy.validateElement({
+      element: this.data.question.title,
+      shouldExist: false,
+    })
   })
 
   it('Verify that restricted answer collection can be removed by user pro1', function () {
@@ -1067,16 +1049,15 @@ describe('Create, edit and share answer collections', function () {
 
     // delete the dependent question
     cy.get('[data-cy="library"]').click()
-    cy.get(`[data-cy="edit-element-${this.data.question.title}"]`).click()
+    cy.editElement({ element: this.data.question.title })
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
     cy.get('[data-cy="close-element-modal"]').click()
-    cy.get(`[data-cy="element-item-${this.data.question.title}"]`).should(
-      'exist'
-    )
+    cy.validateElement({ element: this.data.question.title })
     cy.deleteElement({ elementName: this.data.question.title })
-    cy.get(`[data-cy="element-item-${this.data.question.title}"]`).should(
-      'not.exist'
-    )
+    cy.validateElement({
+      element: this.data.question.title,
+      shouldExist: false,
+    })
   })
   // #endregion
 
@@ -1428,9 +1409,7 @@ describe('Create, edit and share answer collections', function () {
     })
 
     // check that question exists
-    cy.get(`[data-cy="element-item-${this.data.question.title}"]`).should(
-      'exist'
-    )
+    cy.validateElement({ element: this.data.question.title })
   })
 
   it("Verify that imported answer collection cannot be deleted by user 'pro2' as it is used in a question", function () {
@@ -1490,13 +1469,12 @@ describe('Create, edit and share answer collections', function () {
   it('Delete the selection question for user pro2', function () {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="library"]').click()
-    cy.get(`[data-cy="element-item-${this.data.question.title}"]`).should(
-      'exist'
-    )
+    cy.validateElement({ element: this.data.question.title })
     cy.deleteElement({ elementName: this.data.question.title })
-    cy.get(`[data-cy="element-item-${this.data.question.title}"]`).should(
-      'not.exist'
-    )
+    cy.validateElement({
+      element: this.data.question.title,
+      shouldExist: false,
+    })
   })
 
   it('Remove the imported answer collection from user pro2', function () {

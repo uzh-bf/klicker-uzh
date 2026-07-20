@@ -11,6 +11,7 @@ mutation EditLiveQuiz(
   $maxBonusPoints: Int!
   $timeToZeroBonus: Int!
   $isGamificationEnabled: Boolean!
+  $isPinProtected: Boolean!
   $isConfusionFeedbackEnabled: Boolean!
   $isLiveQAEnabled: Boolean!
   $isModerationEnabled: Boolean!
@@ -28,30 +29,11 @@ mutation EditLiveQuiz(
     maxBonusPoints: $maxBonusPoints
     timeToZeroBonus: $timeToZeroBonus
     isGamificationEnabled: $isGamificationEnabled
+    isPinProtected: $isPinProtected
     isConfusionFeedbackEnabled: $isConfusionFeedbackEnabled
     isLiveQAEnabled: $isLiveQAEnabled
     isModerationEnabled: $isModerationEnabled
   ) {
-    id
-    name
-    displayName
-    description
-    blocks {
-      id
-      status
-      timeLimit
-      elements {
-        id
-        ...ElementDataInfo
-      }
-    }
-    course {
-      id
-    }
-    pointsMultiplier
-    isGamificationEnabled
-    isConfusionFeedbackEnabled
-    isLiveQAEnabled
-    isModerationEnabled
+    ...ActivityInfoData
   }
 }

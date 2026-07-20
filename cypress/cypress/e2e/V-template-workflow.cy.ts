@@ -1,20 +1,6 @@
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Test all functionalities related to the creation, management, sharing and use of templates', function () {
-  before(() => {
-    cy.seed()
-
-    // set browser language to english (independent of local machine setting
-    Cypress.automation('remote:debugger:protocol', {
-      command: 'Emulation.setLocaleOverride',
-      params: { locale: 'en' },
-    })
-  })
-
-  after(() => {
-    cy.cleanup()
-  })
-
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('questions.json').then((questionData) => {
       this.data = questionData
@@ -24,12 +10,12 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
   })
 
-  // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  // Fail-fast handled globally in support/e2e.ts
+
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
+  })
 
   // ! Part 0: Preparation
   // #region
@@ -129,7 +115,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
 
     cy.get('[data-cy="library"]').click()
-    cy.get(`[data-cy="element-item-${this.data.SC.title}"]`).should('exist') // verify that switch to the library was successful
+    cy.validateElement({ element: this.data.SC.title }) // verify that switch to the library was successful
     cy.createQuestionSE({
       name: this.data.SE.title,
       content: this.data.SE.content,
@@ -272,7 +258,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
 
     cy.get('[data-cy="library"]').click()
-    cy.get(`[data-cy="element-item-${this.data.SC2.title}"]`).should('exist') // verify that switch to the library was successful
+    cy.validateElement({ element: this.data.SC2.title }) // verify that switch to the library was successful
     cy.createQuestionSE({
       name: this.data.SE2.title,
       content: this.data.SE2.content,
@@ -415,7 +401,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
 
     cy.get('[data-cy="library"]').click()
-    cy.get(`[data-cy="element-item-${this.data.SC3.title}"]`).should('exist') // verify that switch to the library was successful
+    cy.validateElement({ element: this.data.SC3.title }) // verify that switch to the library was successful
     cy.createQuestionSE({
       name: this.data.SE3.title,
       content: this.data.SE3.content,
@@ -570,11 +556,11 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="submit-template-creation"]').should('be.disabled')
     cy.get('[data-cy="template-description"]')
       .realClick()
-      .type(this.data.liveQuiz.template1Orig.description)
+      .realType(this.data.liveQuiz.template1Orig.description)
     cy.get('[data-cy="submit-template-creation"]').should('be.disabled')
     cy.get('[data-cy="template-instructions"]')
       .realClick()
-      .type(this.data.liveQuiz.template1Orig.instructions)
+      .realType(this.data.liveQuiz.template1Orig.instructions)
     cy.get('[data-cy="submit-template-creation"]').click()
 
     // verify that the template has been created and that the original live quiz still exists with all functionalities
@@ -604,7 +590,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get(
       `[data-cy="template-from-live-quiz-${this.data.liveQuiz.name}"]`
     ).should('exist')
-    cy.get(`[data-cy="activity-name-${this.data.liveQuiz.name}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     cy.get(
       `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.template1Orig.name}"]`
@@ -615,9 +601,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get(
       `[data-cy="delete-template-${this.data.liveQuiz.template1Orig.name}"]`
     ).should('exist')
-    cy.get(
-      `[data-cy="activity-name-${this.data.liveQuiz.template1Orig.name}"]`
-    ).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
   })
 
   it('Convert the live quiz into a second template', function () {
@@ -649,11 +633,11 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="submit-template-creation"]').should('be.disabled')
     cy.get('[data-cy="template-description"]')
       .realClick()
-      .type(this.data.liveQuiz.template2.description)
+      .realType(this.data.liveQuiz.template2.description)
     cy.get('[data-cy="submit-template-creation"]').should('be.disabled')
     cy.get('[data-cy="template-instructions"]')
       .realClick()
-      .type(this.data.liveQuiz.template2.instructions)
+      .realType(this.data.liveQuiz.template2.instructions)
     cy.get('[data-cy="submit-template-creation"]').click()
 
     // verify that the template has been created and that the original live quiz does not exist anymore
@@ -675,9 +659,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get(
       `[data-cy="delete-template-${this.data.liveQuiz.template2.name}"]`
     ).should('exist')
-    cy.get(
-      `[data-cy="activity-name-${this.data.liveQuiz.template2.name}"]`
-    ).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'not.exist'
@@ -710,7 +692,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="template-description"]')
       .realClick()
       .clear()
-      .type(this.data.liveQuiz.template1.description)
+      .realType(this.data.liveQuiz.template1.description)
 
     cy.get('[data-cy="submit-template-edit"]').should('not.be.disabled')
     cy.get('[data-cy="template-instructions"]').contains(
@@ -719,7 +701,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="template-instructions"]')
       .realClick()
       .clear()
-      .type(this.data.liveQuiz.template1.instructions)
+      .realType(this.data.liveQuiz.template1.instructions)
     cy.get('[data-cy="submit-template-edit"]').click()
 
     // verify that the template is shown in an updated version
@@ -1343,19 +1325,17 @@ describe('Test all functionalities related to the creation, management, sharing 
           'have.value',
           oldTitle
         )
-        cy.wait(1000) // wait for the form to be fully populated to avoid overlapping inputs
+        cy.wait(2000) // wait for the form to be fully populated to avoid overlapping inputs
 
         cy.get('[data-cy="insert-question-title"]')
           .click()
           .clear()
           .type(newTitle)
         cy.get('[data-cy="insert-question-text"]')
-          .realClick()
+          .click()
           .clear()
           .type(newContent)
         cy.get('[data-cy="save-new-question"]').click()
-        cy.wait(500) // wait for element to be properly saved and UI to update
-
         cy.get('[data-cy="student-element-preview"]').contains(newContent)
         cy.get(`[data-cy="next-template-element-${identifier}"]`).click()
       }
@@ -1412,7 +1392,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       this.data.activity1.newElements.MC.title,
       this.data.activity1.newElements.KP.title,
     ]).each((element: string) => {
-      cy.get(`[data-cy="element-item-${element}"]`).should('exist')
+      cy.validateElement({ element })
     })
   })
 
@@ -1631,11 +1611,23 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.findByText(this.data.SEML2.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
     cy.findByText(this.data.CSML2.content).should('exist')
+
     cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.activity1.newElements.SC.content).should(
+      'not.exist'
+    )
+    cy.get('[data-cy="show-results-evaluation"]').click()
     cy.findByText(this.data.activity1.newElements.SC.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.activity1.newElements.MC.content).should('exist')
+    cy.get('[data-cy="evaluate-previous-question"]').click()
+    cy.findByText(this.data.activity1.newElements.SC.content).should('exist') // on second access, results should be shown (after confirmation)
+
     cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.get('[data-cy="show-results-evaluation"]').click()
+    cy.findByText(this.data.activity1.newElements.MC.content).should('exist')
+
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.get('[data-cy="show-results-evaluation"]').click()
     cy.findByText(this.data.activity1.newElements.KP.content).should('exist')
 
     // end the live quiz
@@ -2102,7 +2094,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       this.data.SE.title,
       this.data.CS.title,
     ]).each((element: string) => {
-      cy.get(`[data-cy="element-item-${element}"]`).should('exist')
+      cy.validateElement({ element })
     })
 
     // modified versions of elements (new elements) should have been created as new elements in the pool
@@ -2115,7 +2107,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       this.data.activity2.newElements.SE.title,
       this.data.activity2.newElements.CS.title,
     ]).each((element: string) => {
-      cy.get(`[data-cy="element-item-${element}"]`).should('exist')
+      cy.validateElement({ element })
     })
 
     // read permissions on the shared and used answer collections should have been granted automatically
@@ -2472,10 +2464,16 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="evaluate-next-question"]').click()
     cy.findByText(this.data.activity2.newElements.CS.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.SCMLAF3.content).should('not.exist') // results of active elements should only be shown after confirmation
+    cy.get('[data-cy="show-results-evaluation"]').click()
     cy.findByText(this.data.SCMLAF3.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.MCMLAF3.content).should('not.exist')
+    cy.get('[data-cy="show-results-evaluation"]').click()
     cy.findByText(this.data.MCMLAF3.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.KPMLAF3.content).should('not.exist')
+    cy.get('[data-cy="show-results-evaluation"]').click()
     cy.findByText(this.data.KPMLAF3.content).should('exist')
 
     // end the live quiz
@@ -2576,7 +2574,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.loginInstitutionalCatalyst()
 
     // verify that the content of the selection element has been stored correctly
-    cy.get(`[data-cy="edit-element-${this.data.activity3.SETitle}"]`).click()
+    cy.editElement({ element: this.data.activity3.SETitle })
     cy.get('[data-cy="create-inline-answer-collection"]').should('not.exist') // ensure that switching to manual item creation is not possible during editing
     cy.get('[id="selection-0-field-0"]').click()
     cy.wrap(this.data.collection.options).each((value: string) => {
@@ -2585,7 +2583,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="close-element-modal"]').click()
 
     // verify that the content of the case study element has been stored correctly
-    cy.get(`[data-cy="edit-element-${this.data.activity3.CSTitle}"]`).click()
+    cy.editElement({ element: this.data.activity3.CSTitle })
     cy.get('[data-cy="create-inline-answer-collection"]').should('not.exist') // ensure that switching to manual item creation is not possible during editing
     cy.wrap(this.data.collection2.options).each((item: string) => {
       cy.get('[data-cy="choose-case-study-items"]').contains(item) // verify that the correct items are available for assessment

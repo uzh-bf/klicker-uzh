@@ -2,7 +2,6 @@ import { useLazyQuery, useMutation, useSuspenseQuery } from '@apollo/client'
 import {
   ChangeInitialSettingsDocument,
   CheckShortnameAvailableDocument,
-  GetUserElementsDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
@@ -14,6 +13,7 @@ import {
   faListCheck,
   faPeopleGroup,
 } from '@fortawesome/free-solid-svg-icons'
+import { routing } from '@klicker-uzh/i18n'
 import {
   Button,
   FormikSelectField,
@@ -26,7 +26,11 @@ import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 
-function SuspendedFirstLoginModal() {
+function SuspendedFirstLoginModal({
+  refetchElements,
+}: {
+  refetchElements: () => Promise<void>
+}) {
   const [firstLogin, setFirstLogin] = useState(false)
   const [showGenericError, setShowGenericError] = useState(false)
   const [isShortnameAvailable, setIsShortnameAvailable] = useState<
@@ -80,7 +84,7 @@ function SuspendedFirstLoginModal() {
             shortname: Yup.string()
               .required(t('manage.settings.shortnameRequired'))
               .min(5, t('manage.settings.shortnameMin'))
-              .max(8, t('manage.settings.shortnameMax'))
+              .max(10, t('manage.settings.shortnameMax'))
               .matches(
                 /^[a-zA-Z0-9]*$/,
                 t('manage.settings.shortnameAlphanumeric')
@@ -108,8 +112,8 @@ function SuspendedFirstLoginModal() {
                 sendUpdates: values.sendProjectUpdates,
                 seedDemoElements: values.seedDemoElements ?? false,
               },
-              refetchQueries: [{ query: GetUserElementsDocument }],
             })
+            await refetchElements()
 
             if (!result) {
               setShowGenericError(true)
@@ -159,10 +163,10 @@ function SuspendedFirstLoginModal() {
                   label={t('shared.generic.language')}
                   labelType="large"
                   name="locale"
-                  items={[
-                    { label: t('shared.generic.english'), value: 'en' },
-                    { label: t('shared.generic.german'), value: 'de' },
-                  ]}
+                  items={routing.locales.map((loc) => ({
+                    label: t(`shared.generic.${loc}`),
+                    value: loc,
+                  }))}
                   className={{
                     root: 'w-full md:w-max',
                     select: { trigger: 'w-40' },

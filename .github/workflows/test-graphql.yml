@@ -3,42 +3,258 @@ name: Test graphql package logic functionalities
 on:
   push:
     branches: ['v3', 'v3*']
-    paths:
-      - 'packages/graphql/**'
-      - '.github/workflows/test-graphql.yml'
   pull_request:
-    branches: ['v3', 'v3*']
     types: [opened, synchronize, reopened, ready_for_review]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
-  test:
-    if: github.event.pull_request.draft == false
+  filter:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Check for changes
+        id: check
+        uses: ./.github/actions/changed-paths
+        with:
+          pattern: '^(packages/graphql/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|apps/hatchet-worker-general/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/)'
+
+  test-graphql:
+    needs: filter
+    if: needs.filter.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
 
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: klicker
+          POSTGRES_PASSWORD: klicker
+          POSTGRES_DB: klicker-prod
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      postgres_hatchet:
+        image: postgres:15
+        env:
+          POSTGRES_USER: hatchet
+          POSTGRES_PASSWORD: hatchet
+          POSTGRES_DB: hatchet
+        options: >-
+          --health-cmd "pg_isready -U hatchet -d hatchet"
+          --health-interval 5s
+          --health-timeout 10s
+          --health-retries 10
+          --health-start-period 30s
+        ports:
+          - 5433:5432
+
+      hatchet:
+        image: ghcr.io/hatchet-dev/hatchet/hatchet-lite:v0.73.1
+        env:
+          DATABASE_URL: 'postgresql://hatchet:hatchet@postgres_hatchet:5432/hatchet?sslmode=disable'
+          SERVER_AUTH_COOKIE_DOMAIN: localhost
+          SERVER_AUTH_COOKIE_INSECURE: 't'
+          SERVER_GRPC_BIND_ADDRESS: '0.0.0.0'
+          SERVER_GRPC_INSECURE: 't'
+          SERVER_GRPC_BROADCAST_ADDRESS: localhost:7077
+          SERVER_INTERNAL_CLIENT_INTERNAL_GRPC_BROADCAST_ADDRESS: localhost:7077
+          SERVER_GRPC_PORT: '7077'
+          SERVER_URL: http://localhost:8888
+          SERVER_AUTH_SET_EMAIL_VERIFIED: 't'
+          SERVER_DEFAULT_ENGINE_VERSION: 'V1'
+          SERVER_LOGGER_LEVEL: debug
+          SERVER_LOGGER_FORMAT: console
+        options: >-
+          --health-cmd "curl -f http://localhost:8888/healthz"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 10
+        ports:
+          - 8888:8888
+          - 7077:7077
+
+      redis_exec:
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        image: redis:7
+        ports:
+          - 6379:6379
+
+      redis_assessment:
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        image: redis:7
+        ports:
+          - 6380:6379
+
+      redis_cache:
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        image: redis:7
+        ports:
+          - 6381:6379
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - uses: pnpm/action-setup@v2
+      - name: Define node version
+        uses: actions/setup-node@v4
         with:
-          version: 9.15.4
+          node-version-file: package.json
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.0
           run_install: true
 
-      - name: Run tests using Docker
+      - name: Build dependency packages
         run: |
           cd packages/prisma
           pnpm run build
           cd ../types
           pnpm run build
-          cd ../util
-          pnpm run build
           cd ../grading
           pnpm run build
+          cd ../util
+          pnpm run build
           cd ../graphql
-          pnpm run test
+          pnpm run build
+          cd ../hatchet
+          pnpm run build
+          cd ../../apps/hatchet-worker-general
+          pnpm run build
+
+      - name: Setup database
+        run: |
+          cd packages/prisma
+          pnpm run prisma:reset:raw -f
+        env:
+          DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
+
+      - name: Run tests
+        run: |
+          set -euo pipefail
+
+          . ./util/_create_hatchet_token_graphql.sh
+
+          HATCHET_CLIENT_TOKEN=$(grep -m1 '^HATCHET_CLIENT_TOKEN=' packages/graphql/.env | cut -d'=' -f2-)
+          if [[ -z "${HATCHET_CLIENT_TOKEN}" ]]; then
+            echo "Failed to read HATCHET_CLIENT_TOKEN from packages/graphql/.env" >&2
+            exit 1
+          fi
+
+          WORKER_ENV_FILE=apps/hatchet-worker-general/.env.test.ci
+
+          cat <<EOF > "${WORKER_ENV_FILE}"
+          HATCHET_CLIENT_TOKEN=${HATCHET_CLIENT_TOKEN}
+          HATCHET_CLIENT_HOST_PORT=localhost:7077
+          HATCHET_CLIENT_TLS_STRATEGY=none
+          HATCHET_API_URL=http://localhost:8888
+          HATCHET_HOST_PORT=localhost:7077
+          HATCHET_LOG_LEVEL=DEBUG
+          HATCHET_TENANT_ID=707d0855-80ab-4e1f-a156-f1c4546cbf52
+          HATCHET_WORKER_NAME=hatchet-worker-general
+          LOG_LEVEL=info
+          NODE_ENV=test
+          DATABASE_URL=postgresql://klicker:klicker@localhost:5432/klicker-prod
+          REDIS_HOST=localhost
+          REDIS_PORT=6379
+          REDIS_ASSESSMENT_HOST=localhost
+          REDIS_ASSESSMENT_PORT=6380
+          REDIS_CACHE_HOST=localhost
+          REDIS_CACHE_PORT=6381
+          APP_ORIGIN_API=http://api.klicker.com
+          APP_ORIGIN_AUTH=http://auth.klicker.com
+          APP_ORIGIN_LTI=http://lti.klicker.com
+          APP_ORIGIN_PWA=http://pwa.klicker.com
+          APP_ORIGIN_MANAGE=http://manage.klicker.com
+          APP_ORIGIN_CONTROL=http://control.klicker.com
+          APP_ORIGIN_ASSESSMENT_API=http://assessment-api.klicker.com
+          APP_ORIGIN_ASSESSMENT_PWA=http://assessment.klicker.com
+          EOF
+
+          cleanup() {
+            if [[ -n "${HATCHET_WORKER_PID:-}" ]]; then
+              if kill -0 "${HATCHET_WORKER_PID}" >/dev/null 2>&1; then
+                kill "${HATCHET_WORKER_PID}" >/dev/null 2>&1 || true
+                wait "${HATCHET_WORKER_PID}" 2>/dev/null || true
+              fi
+            fi
+            rm -f "${WORKER_ENV_FILE}"
+          }
+          trap cleanup EXIT
+
+          node --env-file "${WORKER_ENV_FILE}" apps/hatchet-worker-general/dist/index.js &
+          HATCHET_WORKER_PID=$!
+
+          sleep 5
+          if ! kill -0 "${HATCHET_WORKER_PID}" >/dev/null 2>&1; then
+            echo "Hatchet worker failed to start. See logs above." >&2
+            exit 1
+          fi
+
+          cd packages/graphql
+          pnpm vitest run
+        env:
+          DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
+          HATCHET_CLIENT_TLS_STRATEGY: none
+          HATCHET_CLIENT_HOST_PORT: localhost:7077
+          NODE_ENV: test
+          HATCHET_API_URL: http://localhost:8888
+          HATCHET_TENANT_ID: 707d0855-80ab-4e1f-a156-f1c4546cbf52
+          HATCHET_HOST_PORT: 7077
+          # Provide all app origins for consistency
+          APP_ORIGIN_API: http://api.klicker.com
+          APP_ORIGIN_AUTH: http://auth.klicker.com
+          APP_ORIGIN_LTI: http://lti.klicker.com
+          APP_ORIGIN_PWA: http://pwa.klicker.com
+          APP_ORIGIN_MANAGE: http://manage.klicker.com
+          APP_ORIGIN_CONTROL: http://control.klicker.com
+          APP_ORIGIN_ASSESSMENT_API: http://assessment-api.klicker.com
+          APP_ORIGIN_ASSESSMENT_PWA: http://assessment.klicker.com
+
+  # Always reports a status even when the tests are skipped by the path filter,
+  # so this job can be used as a required check in branch protection.
+  test-graphql-status:
+    needs: [filter, test-graphql]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check result
+        run: |
+          if [ "${{ needs.filter.result }}" != "success" ]; then
+            echo "Filter job failed: ${{ needs.filter.result }}"
+            exit 1
+          fi
+          if [ "${{ needs.filter.outputs.should_run }}" != "true" ]; then
+            echo "Tests skipped by path filter."
+            exit 0
+          fi
+          if [ "${{ needs.test-graphql.result }}" != "success" ]; then
+            echo "test-graphql result: ${{ needs.test-graphql.result }}"
+            exit 1
+          fi

@@ -1,4 +1,5 @@
-import * as DB from '@klicker-uzh/prisma'
+import { ContextWithUser } from '@/lib/context.js'
+import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityFeedback,
   ActivityPerformance,
@@ -9,7 +10,6 @@ import {
   ParticipantActivityPerformance,
 } from '@klicker-uzh/types'
 import dayjs from 'dayjs'
-import { ContextWithUser } from 'src/lib/context.js'
 
 export async function getCourseActivityAnalytics(
   { courseId }: { courseId: string },

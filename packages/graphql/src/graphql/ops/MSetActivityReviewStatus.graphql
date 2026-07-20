@@ -1,0 +1,11 @@
+mutation SetActivityReviewStatus(
+  $activityId: String!
+  $activityType: ActivityType!
+  $isReviewed: Boolean!
+) {
+  setActivityReviewStatus(
+    activityId: $activityId
+    activityType: $activityType
+    isReviewed: $isReviewed
+  )
+}

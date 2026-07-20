@@ -8,8 +8,8 @@
 
 - [x] Re-check live PR state on 2026-07-20: [PR #4643](https://github.com/uzh-bf/klicker-uzh/pull/4643) remains open and draft at `ee6afaa3b`; branch is 459 commits behind and 26 ahead of `origin/v3`.
 - [x] Re-check Office settings semantics against current Microsoft documentation. `Office.context.document.settings` is specific to the content-add-in instance and document, so the new `embeddedUrl` key does not collapse separate embedded add-in instances. Section 2.1 is superseded by this evidence; keep the simpler instance-scoped key and verify it in PowerPoint when available.
-- [ ] Slice 1 active: merge current `origin/v3`, resolve package/lockfile conflicts, and establish a clean Node 24 baseline.
-- [ ] Slice 2: fix the production build/deployment pipeline, remove the Tailwind Play CDN and non-runtime artifacts, and prove `dist/` equals the deployed static directory.
+- [x] Slice 1: merged current `origin/v3`; resolved only the expected Office manifest/lockfile conflicts; frozen pnpm 11.5.0 install completed under Node 24; Office typecheck and production Rollup build passed. The Microsoft debugging stack requires one reviewed native-broker binary-copy install script; unnecessary no-op/cleanup scripts stay disabled in `pnpm-workspace.yaml`.
+- [ ] Slice 2 active: fix the production build/deployment pipeline, remove the Tailwind Play CDN and non-runtime artifacts, and prove `dist/` equals the deployed static directory.
 - [ ] Slice 3: audit and refresh compatible Office Add-in dependencies; document deferred majors and browser/runtime support.
 - [ ] Slice 4: finish code, docs, tests, and source-backed review-thread resolution.
 - [ ] Finish: full verification, security/maintainability/cross-model reviews, whole-branch PR refresh, ready transition, and ready-only CI monitoring.
@@ -75,7 +75,7 @@ Note: the *other* external script in `content.html` — `https://appsforoffice.m
 
 ### 1.3 Merge conflicts with `v3`
 
-- [ ] **Rebase/merge `v3` into `NewPPT`**
+- [x] **Merge `v3` into `NewPPT`**
 
 **Evidence:** `git merge-tree --write-tree --name-only origin/NewPPT origin/v3` → conflicts in `apps/office-addin/package.json` and `pnpm-lock.yaml`. GitHub shows `mergeable: CONFLICTING`.
 

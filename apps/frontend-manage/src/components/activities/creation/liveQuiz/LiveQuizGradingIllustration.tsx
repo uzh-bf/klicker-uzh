@@ -37,7 +37,7 @@ function LiveQuizGradingIllustration({
   const timeToZero = parseInt(timeToZeroValue, 10) ?? 0
 
   return (
-    <ResponsiveContainer className="mb-4" height={245}>
+    <ResponsiveContainer className="mb-4" height={215}>
       <LineChart
         data={[
           {

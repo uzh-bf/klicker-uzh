@@ -1,11 +1,11 @@
 import { useQuery } from '@apollo/client'
-import ActivityEvaluation from '@components/evaluation/ActivityEvaluation'
 import { GetLiveQuizEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useRouter } from 'next/router'
+import ActivityEvaluation from '../../../components/evaluation/ActivityEvaluation'
 import EvaluationUnavailableNotification from '../../../components/evaluation/EvaluationUnavailableNotification'
 
-function Evaluation() {
+function LiveQuizEvaluation() {
   const router = useRouter()
 
   // fetch evaluation data
@@ -27,9 +27,8 @@ function Evaluation() {
 
   if (
     !data?.liveQuizEvaluation ||
-    !data?.liveQuizLeaderboard ||
     (data.liveQuizEvaluation.results.length === 0 &&
-      data.liveQuizLeaderboard.length === 0 &&
+      data.liveQuizLeaderboard?.length === 0 &&
       data.liveQuizEvaluation.feedbacks?.length === 0 &&
       data.liveQuizEvaluation.confusionFeedbacks?.length === 0)
   ) {
@@ -41,13 +40,17 @@ function Evaluation() {
 
   return (
     <ActivityEvaluation
+      type="LiveQuiz"
+      hideActiveBlockResults={!router.query.hmac} // hide the results for active blocks when not inside PPT
       activityId={router.query.id as string}
       activityName={evaluation?.displayName ?? ''}
+      courseLanguage={evaluation?.courseLanguage}
       stacks={evaluation?.results ?? []}
       feedbacks={evaluation?.feedbacks}
       confusionFeedbacks={evaluation?.confusionFeedbacks}
+      isAssessmentEnabled={evaluation?.isAssessmentEnabled ?? false}
+      pinCode={evaluation?.pinCode ?? null}
       leaderboard={leaderboard}
-      type="LiveQuiz"
     />
   )
 }
@@ -68,4 +71,4 @@ export function getStaticPaths() {
   }
 }
 
-export default Evaluation
+export default LiveQuizEvaluation

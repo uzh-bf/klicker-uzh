@@ -1,9 +1,10 @@
+import { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
-  Prisma,
   PrismaClient,
   UserLoginScope,
   UserRole,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
+import type { PreparedHatchetTasks } from '@klicker-uzh/types'
 import type { Request, Response } from 'express'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
@@ -17,6 +18,7 @@ interface BaseContext {
 export interface Context extends BaseContext {
   prisma: PrismaClient
   redisExec: Redis
+  redisAssessmentExec: Redis
   pubSub: PubSub<any>
   emitter: EventEmitter
   user?: {
@@ -27,6 +29,10 @@ export interface Context extends BaseContext {
     catalystIndividual: boolean
     // affiliations?: string[]
   }
+  // hatchet client to access / modify existing hatchet tasks
+  hatchet: Hatchet
+  // available hatchet tasks
+  tasks: PreparedHatchetTasks
 }
 
 export interface ContextWithUser extends Context {
@@ -45,7 +51,7 @@ export type PrismaTransactionContextWithUser = Omit<
   'prisma'
 > & {
   prisma: Omit<
-    PrismaClient<Prisma.PrismaClientOptions, never>,
+    PrismaClient,
     '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
   >
 }

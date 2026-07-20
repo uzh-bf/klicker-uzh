@@ -1,7 +1,9 @@
-import { useQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import {
   ActivityInfo,
   ActivityType,
+  DeleteLiveQuizDocument,
+  GetSingleCourseDocument,
   ObjectType,
   PublicationStatus,
   UserProfileDocument,
@@ -10,6 +12,8 @@ import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import LiveQuizDeletionModal from '../../courses/modals/LiveQuizDeletionModal'
+import LiveQuizResetModal from '../../courses/modals/LiveQuizResetModal'
+import LiveQuizSchedulingModal from '../../courses/modals/LiveQuizSchedulingModal'
 import TemplateConversionModal from '../../courses/modals/TemplateConversionModal'
 import TemplateDeletionModal from '../../courses/modals/TemplateDeletionModal'
 import TemplateEditModal from '../../courses/modals/TemplateEditModal'
@@ -18,7 +22,6 @@ import EmbeddingModal from '../../liveQuiz/EmbeddingModal'
 import ActivityLogDialog from '../../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import useAvailableActions from '../actions/useAvailableActions'
-import useDeleteLiveQuiz from '../actions/useDeleteLiveQuiz'
 import useLiveQuizActions from '../actions/useLiveQuizActions'
 import useStartLiveQuiz from '../actions/useStartLiveQuiz'
 import ActivityActions from './ActivityActions'
@@ -28,6 +31,7 @@ import ActivityRemovalModal from './ActivityRemovalModal'
 const statusActionMap = {
   [PublicationStatus.Draft]: [
     'startLiveQuiz',
+    'scheduleLiveQuiz',
     'editLiveQuiz',
     'qrCode',
     'embeddingEvaluation',
@@ -45,6 +49,7 @@ const statusActionMap = {
     'embeddingEvaluation',
     'activityLog',
     'shareLiveQuiz',
+    'unpublishLiveQuiz',
     'removeLiveQuiz',
     'deleteLiveQuiz',
   ],
@@ -56,6 +61,7 @@ const statusActionMap = {
     'duplicateLiveQuiz',
     'activityLog',
     'shareLiveQuiz',
+    'liveQuizAssessmentResults',
     'removeLiveQuiz',
   ],
   [PublicationStatus.Ended]: [
@@ -64,7 +70,9 @@ const statusActionMap = {
     'embeddingEvaluation',
     'activityLog',
     'shareLiveQuiz',
+    'liveQuizAssessmentResults',
     'removeLiveQuiz',
+    'resetLiveQuiz',
     'deleteLiveQuiz',
   ],
   [PublicationStatus.Template]: [
@@ -80,17 +88,23 @@ function LiveQuizActions({
   isTemplate,
   sharingModal,
   setSharingModal,
+  setShowDetails,
+  refetchActivities,
 }: {
   liveQuiz: ActivityInfo
   isTemplate: boolean
   sharingModal: boolean
   setSharingModal: Dispatch<SetStateAction<boolean>>
+  setShowDetails: Dispatch<SetStateAction<boolean>>
+  refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
   const [activityLogOpen, setActivityLogOpen] = useState(false)
+  const [schedulingModal, setSchedulingModal] = useState(false)
   const [embeddingModal, setEmbeddingModal] = useState(false)
   const [qrModal, setQRModal] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
+  const [resetModal, setResetModal] = useState(false)
   const [removalModal, setRemovalModal] = useState(false)
   const [templateEditingModal, setTemplateEditingModal] = useState(false)
   const [templateDeletionModal, setTemplateDeletionModal] = useState(false)
@@ -104,8 +118,38 @@ function LiveQuizActions({
     id: liveQuiz.id,
     name: liveQuiz.name,
   })
-  const { onDelete, deleting } = useDeleteLiveQuiz({ id: liveQuiz.id })
 
+  const [deleteLiveQuiz, { loading: deleting }] = useMutation(
+    DeleteLiveQuizDocument,
+    {
+      variables: { id: liveQuiz.id },
+      update: (cache, { data: res }) => {
+        // if the live quiz is not part of a course or the mutation was not successful, return early
+        if (!liveQuiz.courseId || !res?.deleteLiveQuiz?.id) return
+
+        // change the status of the live quiz on the course overview back to draft
+        cache.updateQuery(
+          {
+            query: GetSingleCourseDocument,
+            variables: { courseId: liveQuiz.courseId! },
+          },
+          (data) => {
+            if (!data?.course) return data
+
+            return {
+              course: {
+                ...data.course,
+                liveQuizzesInfo:
+                  data.course.liveQuizzesInfo?.filter(
+                    (lq) => lq.id !== res.deleteLiveQuiz!.id
+                  ) ?? [],
+              },
+            }
+          }
+        )
+      },
+    }
+  )
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
   })
@@ -119,26 +163,53 @@ function LiveQuizActions({
         ...(user?.privatePreview
           ? ['templateFromLiveQuiz', 'shareLiveQuiz']
           : []),
-        'deleteLiveQuiz',
+        // the results of assessment live quizzes can be inspected in more detail
+        ...(liveQuiz.isActivityReviewer && liveQuiz.isAssessmentEnabled
+          ? ['liveQuizAssessmentResults']
+          : []),
+        // assessment live quizzes can only be deleted when not completed and only by course admins
+        ...(!liveQuiz.isAssessmentEnabled
+          ? ['deleteLiveQuiz']
+          : liveQuiz.isActivityReviewer &&
+              (liveQuiz.status === PublicationStatus.Draft ||
+                liveQuiz.status === PublicationStatus.Scheduled)
+            ? ['deleteLiveQuiz']
+            : []),
+        // completed assessment live quizzes can be reset by assessment course admins
+        ...(liveQuiz.isAssessmentEnabled && liveQuiz.isActivityReviewer
+          ? ['resetLiveQuiz']
+          : []),
         'deleteTemplate',
       ],
       isEditor: ['editLiveQuiz', 'editTemplate'],
-      isExecutor: ['startLiveQuiz', 'lecturerCockpit'],
+      isExecutor: [
+        'startLiveQuiz',
+        'scheduleLiveQuiz',
+        'unpublishLiveQuiz',
+        'lecturerCockpit',
+      ],
       isShared: [
         'qrCode',
         'embeddingEvaluation',
         'liveQuizEvaluation',
         'useTemplate',
-        ...(user?.privatePreview ? ['activityLog'] : []),
+        'activityLog',
       ],
       isRemovable: ['removeLiveQuiz'],
     }
-  }, [user?.privatePreview])
+  }, [
+    user?.privatePreview,
+    liveQuiz.id,
+    liveQuiz.status,
+    liveQuiz.isAssessmentEnabled,
+    liveQuiz.isActivityReviewer,
+  ])
 
   const actions = useLiveQuizActions({
     quiz: liveQuiz,
     onStart,
     starting,
+    setSchedulingModal,
     setEmbeddingModal,
     setQRModal,
     setTemplateEditingModal,
@@ -148,6 +219,7 @@ function LiveQuizActions({
     setRemovalModal,
     setDeletionModal,
     setActivityLogOpen,
+    setResetModal,
   })
 
   // get all available actions based on permissions and status
@@ -171,14 +243,40 @@ function LiveQuizActions({
         activityId={liveQuiz.id}
         activityName={liveQuiz.name}
         activityType={liveQuiz.type}
+        openActivityDetailsModal={() => setShowDetails(true)}
       />
       <div>
+        {schedulingModal && (
+          <LiveQuizSchedulingModal
+            activityId={liveQuiz.id}
+            title={liveQuiz.name}
+            courseId={liveQuiz.courseId}
+            courseStartDate={liveQuiz.courseStartDate}
+            onClose={() => setSchedulingModal(false)}
+          />
+        )}
+
         {deletionModal && (
           <LiveQuizDeletionModal
             quizId={liveQuiz.id}
             onClose={() => setDeletionModal(false)}
-            onDelete={onDelete}
+            onDelete={async () => {
+              await deleteLiveQuiz()
+              await refetchActivities?.()
+            }}
             deleting={deleting}
+          />
+        )}
+
+        {resetModal && (
+          <LiveQuizResetModal
+            quizId={liveQuiz.id}
+            courseId={liveQuiz.courseId}
+            isGamificationEnabled={liveQuiz.isGamificationEnabled}
+            onClose={() => setResetModal(false)}
+            onSuccess={async () => {
+              await refetchActivities?.()
+            }}
           />
         )}
 
@@ -186,6 +284,7 @@ function LiveQuizActions({
           <TemplateDeletionModal
             activityId={liveQuiz.id}
             activityType={ActivityType.LiveQuiz}
+            courseId={liveQuiz.courseId}
             onClose={() => setTemplateDeletionModal(false)}
             onSuccess={() =>
               toast({
@@ -201,6 +300,7 @@ function LiveQuizActions({
                 options: { duration: 4500 },
               })
             }
+            refetchActivities={refetchActivities}
           />
         )}
         {templateEditingModal && (
@@ -222,12 +322,16 @@ function LiveQuizActions({
                 options: { duration: 4500 },
               })
             }
+            refetchActivities={refetchActivities}
           />
         )}
 
         {qrModal && (
           <LiveQuizQRModal
             quizId={liveQuiz.id}
+            quizPin={liveQuiz.pinCode}
+            isAssessmentEnabled={liveQuiz.isAssessmentEnabled ?? false}
+            language={liveQuiz.courseLanguage}
             onClose={() => setQRModal(false)}
           />
         )}
@@ -237,6 +341,7 @@ function LiveQuizActions({
             key={liveQuiz.id}
             onClose={() => setEmbeddingModal(false)}
             quizId={liveQuiz.id}
+            isGamificationEnabled={liveQuiz.isGamificationEnabled ?? false}
           />
         )}
 
@@ -246,8 +351,8 @@ function LiveQuizActions({
             objectName={liveQuiz.name}
             objectType={ObjectType.LiveQuiz}
             isTemplate={isTemplate}
-            isOwner={liveQuiz.isOwner ?? false}
             onClose={() => setSharingModal(false)}
+            refetchActivities={refetchActivities}
           />
         ) : null}
 
@@ -258,6 +363,7 @@ function LiveQuizActions({
             title={liveQuiz.name}
             isModalOpen={removalModal}
             setModalOpen={setRemovalModal}
+            refetchActivities={refetchActivities}
           />
         )}
 
@@ -281,6 +387,7 @@ function LiveQuizActions({
                 message: t('manage.template.templateCreationError'),
               })
             }
+            refetchActivities={refetchActivities}
           />
         )}
 

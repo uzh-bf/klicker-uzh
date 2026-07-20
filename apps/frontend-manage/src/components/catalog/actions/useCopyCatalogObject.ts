@@ -2,7 +2,6 @@ import { useMutation } from '@apollo/client'
 import {
   CopyCatalogObjectToAccountDocument,
   GetAnswerCollectionsInfoDocument,
-  GetUserElementsDocument,
   ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 
@@ -39,12 +38,11 @@ function useCopyCatalogObject({
           objectType,
           catalogCollectionId,
         },
+        // generic return type supporting multiple object types is not available
+        // proper cache update therefore impractical -> refetch query is acceptable here
         refetchQueries: [
           ...(objectType === ObjectType.AnswerCollection
             ? [{ query: GetAnswerCollectionsInfoDocument }]
-            : []),
-          ...(objectType === ObjectType.Element
-            ? [{ query: GetUserElementsDocument }]
             : []),
         ],
       })

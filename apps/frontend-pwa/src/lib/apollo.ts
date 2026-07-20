@@ -32,18 +32,26 @@ export const APOLLO_STATE_PROP_NAME = '__APOLLO_STATE__'
 
 let apolloClient: ApolloClient<NormalizedCacheObject>
 
-function createIsomorphLink() {
+function createIsomorphLink(ctx?: GetServerSidePropsContext) {
   const isBrowser = typeof window !== 'undefined'
 
   const persistedLink =
     process.env.NODE_ENV === 'development'
       ? []
       : [
-          createPersistedQueryLink({
-            useGETForHashedQueries: true, // Optional but allows better caching
-            // eslint-disable-next-line react-hooks/rules-of-hooks
-            generateHash: usePregeneratedHashes(hashes),
-          }),
+          split(
+            ({ operationName }) => operationName === 'QGetVerifiableCredential',
+            createPersistedQueryLink({
+              useGETForHashedQueries: false,
+              // eslint-disable-next-line react-hooks/rules-of-hooks
+              generateHash: usePregeneratedHashes(hashes),
+            }),
+            createPersistedQueryLink({
+              useGETForHashedQueries: true,
+              // eslint-disable-next-line react-hooks/rules-of-hooks
+              generateHash: usePregeneratedHashes(hashes),
+            })
+          ),
         ]
 
   const authLink = setContext((_, { headers }) => {
@@ -58,7 +66,12 @@ function createIsomorphLink() {
       }
     }
     return {
-      headers,
+      headers: {
+        ...headers,
+        ...(ctx?.req?.headers?.cookie
+          ? { cookie: ctx.req.headers.cookie }
+          : {}),
+      },
     }
   })
 
@@ -96,7 +109,9 @@ function createIsomorphLink() {
   let link: ApolloLink = new HttpLink({
     uri: isBrowser
       ? process.env.NEXT_PUBLIC_API_URL
-      : process.env.NEXT_PUBLIC_API_URL_SSR || process.env.NEXT_PUBLIC_API_URL,
+      : process.env.API_URL_SSR ||
+        process.env.NEXT_PUBLIC_API_URL_SSR ||
+        process.env.NEXT_PUBLIC_API_URL,
     credentials: 'include',
     headers: {
       'x-graphql-yoga-csrf': 'true',
@@ -161,7 +176,7 @@ function createApolloClient(ctx?: GetServerSidePropsContext) {
 
   return new ApolloClient({
     ssrMode: typeof window === 'undefined',
-    link: createIsomorphLink(),
+    link: createIsomorphLink(ctx),
     cache: new InMemoryCache(),
     connectToDevTools: process.env.NODE_ENV === 'development',
   })

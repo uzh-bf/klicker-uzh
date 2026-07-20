@@ -1,4 +1,8 @@
-import { Element, ElementInstance, PrismaClient } from '@klicker-uzh/prisma'
+import {
+  Element,
+  ElementInstance,
+  PrismaClient,
+} from '@klicker-uzh/prisma/client'
 
 const DEBUG = false
 

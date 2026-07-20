@@ -14,7 +14,7 @@ import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
-import { ElementSelectCourse } from '../../ElementCreation'
+import { ElementSelectCourse } from '../../ActivityCreation'
 import CompletionStep from '../CompletionStep'
 import StackCreationStep from '../StackCreationStep'
 import WizardLayout, { MicroLearningFormValues } from '../WizardLayout'
@@ -33,7 +33,8 @@ export interface MicroLearningWizardStepProps {
   validationSchema: any
   gamifiedCourses?: ElementSelectCourse[]
   nonGamifiedCourses?: ElementSelectCourse[]
-  onSubmit?: (newValues: MicroLearningFormValues) => void
+  assessmentCourses?: ElementSelectCourse[]
+  onSubmit?: (newValues: MicroLearningFormValues) => Promise<void>
   setStepValidity: Dispatch<SetStateAction<boolean[]>>
   onPrevStep?: (newValues: MicroLearningFormValues) => void
   onNextStep?: (newValues: MicroLearningFormValues) => void
@@ -75,18 +76,16 @@ function MicroLearningWizard({
 }: MicroLearningWizardProps) {
   const t = useTranslations()
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
-  const [selectedCourseId, setSelectedCourseId] = useState<string | undefined>(
-    undefined
-  )
   const [activeStep, setActiveStep] = useState(0)
   const [stepValidity, setStepValidity] = useState<boolean[]>(
     Array(4).fill(!!initialValues)
   )
   const formRef = useRef<FormikProps<MicroLearningFormValues>>(null)
 
-  const { gamifiedCourses, nonGamifiedCourses } = useCoursesGamificationSplit({
-    courseSelection: courses,
-  })
+  const { gamifiedCourses, nonGamifiedCourses, assessmentCourses } =
+    useCoursesGamificationSplit({
+      courseSelection: courses,
+    })
 
   const nameValidationSchema = yup.object().shape({
     name: yup.string().required(t('manage.activityWizard.activityName')),
@@ -267,21 +266,21 @@ function MicroLearningWizard({
     courseId: initialValues?.course?.id ?? formDefaultValues.courseId,
   })
 
-  const [createMicroLearning, { data: microLearningCreateData }] = useMutation(
+  const [createMicroLearning, { data: creationData }] = useMutation(
     CreateMicroLearningDocument
   )
-  const [editMicroLearning, { data: microLearningEditData }] = useMutation(
+  const [editMicroLearning, { data: editingData }] = useMutation(
     EditMicroLearningDocument
   )
   const handleSubmit = useCallback(
-    async (values: MicroLearningFormValues) => {
-      submitMicrolearningForm({
+    (values: MicroLearningFormValues) => {
+      return submitMicrolearningForm({
         id: initialValues?.id,
+        previousCourseId: initialValues?.course?.id,
         values,
         editMode,
         createMicroLearning,
         editMicroLearning,
-        setSelectedCourseId,
         setIsWizardCompleted,
         onError: () =>
           toast({
@@ -302,6 +301,15 @@ function MicroLearningWizard({
     },
     [createMicroLearning, editMicroLearning, editMode, initialValues?.id]
   )
+
+  const activityId =
+    creationData?.createMicroLearning?.id ?? editingData?.editMicroLearning?.id
+  const selectedCourseId =
+    creationData?.createMicroLearning?.courseId ??
+    editingData?.editMicroLearning?.courseId
+  const isActivityReviewer =
+    creationData?.createMicroLearning?.isActivityReviewer ??
+    editingData?.editMicroLearning?.isActivityReviewer
 
   return (
     <WizardLayout
@@ -329,8 +337,12 @@ function MicroLearningWizard({
           )}
           name={formData.name}
           editMode={editMode}
-          previewElementHref={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${selectedCourseId}/microLearnings/${microLearningCreateData?.createMicroLearning?.id || microLearningEditData?.editMicroLearning?.id}/`}
-          viewElementHref={`/courses/${selectedCourseId}?tab=microLearnings`}
+          previewElementHref={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${selectedCourseId}/microLearnings/${activityId}/`}
+          viewElementHref={
+            isActivityReviewer
+              ? `/courses/${selectedCourseId}?tab=microLearnings`
+              : '/activities'
+          }
           onRestartForm={() => {
             setIsWizardCompleted(false)
             closeWizard()
@@ -392,6 +404,7 @@ function MicroLearningWizard({
           validationSchema={settingsValidationSchema}
           gamifiedCourses={gamifiedCourses}
           nonGamifiedCourses={nonGamifiedCourses}
+          assessmentCourses={assessmentCourses}
           setStepValidity={setStepValidity}
           onNextStep={(newValues: Partial<MicroLearningFormValues>) => {
             setFormData((prev) => ({ ...prev, ...newValues }))

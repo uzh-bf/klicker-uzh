@@ -1,10 +1,23 @@
+import { configure } from '@testing-library/cypress'
 import '@testing-library/cypress/add-commands'
 import 'cypress-real-events'
 import * as jose from 'jose'
-import * as localforage from 'localforage'
+import localforage from 'localforage'
 import messages from '../../../packages/i18n/messages/en'
 
 /// <reference types="cypress" />
+
+// Only do this in headless/CI runs to keep rich errors locally
+if (!Cypress.config('isInteractive')) {
+  configure({
+    // Return only the message, skip prettyDOM DOM dump
+    getElementError: (message /*, container */) => {
+      const err = new Error(message)
+      err.name = 'TestingLibraryElementError'
+      return err
+    },
+  })
+}
 
 // Custom command for reliable select interactions
 Cypress.Commands.add('selectOption', (selector: string, optionText: string) => {
@@ -80,6 +93,19 @@ Cypress.Commands.add('seed', () => {
   cy.reload()
 })
 
+Cypress.Commands.add('seedActivities', () => {
+  // seed all required initial data directly into the database
+  cy.task('seedActivities').then((result: boolean) => {
+    // check if the query was successful
+    if (result === null) {
+      throw new Error(
+        'Seeding of required activities into database was not successful!'
+      )
+    }
+  })
+  cy.reload()
+})
+
 Cypress.Commands.add('cleanup', () => {
   // delete all objects and clear entire database
   cy.task('cleanupDatabase').then((result: boolean) => {
@@ -91,15 +117,28 @@ Cypress.Commands.add('cleanup', () => {
   cy.reload()
 })
 
+const clearPersistedClientState = () => {
+  return cy.wrap(null, { log: false }).then(async () => {
+    await localforage.clear()
+  })
+}
+
+const assertManageSession = () => {
+  cy.location('origin').should('eq', Cypress.env('URL_MANAGE'))
+  cy.location('pathname').should('not.eq', '/login')
+  cy.location('search').should('not.contain', 'expired=true')
+}
+
 const loginFactory = (
   tokenData: {
     email: string
     sub: string
-    role: 'ADMIN' | 'USER'
-    scope: 'ACCOUNT_OWNER'
-    catalystInstitutional: boolean
-    catalystIndividual: boolean
+    role: 'ADMIN' | 'USER' | 'PARTICIPANT'
+    scope: 'ACCOUNT_OWNER' | 'EDUID'
+    catalystInstitutional?: boolean
+    catalystIndividual?: boolean
   },
+  cookieName: string = 'next-auth.session-token',
   redirectUrl?: string
 ) => {
   return () => {
@@ -110,7 +149,7 @@ const loginFactory = (
     cy.viewport('macbook-16')
     localforage.setItem('hideLecturerSurvey', 'true')
 
-    const secret = new TextEncoder().encode('abcd')
+    const secret = new TextEncoder().encode(Cypress.env('APP_SECRET'))
     const alg = 'HS256'
 
     cy.wrap(null).then(async () => {
@@ -118,9 +157,10 @@ const loginFactory = (
         .setProtectedHeader({ alg })
         .setIssuedAt()
         .setExpirationTime('2h')
+        .setIssuer(process.env.APP_ORIGIN_AUTH)
         .sign(secret)
 
-      cy.setCookie('next-auth.session-token', token, {
+      cy.setCookie(cookieName, token, {
         domain: '127.0.0.1',
         path: '/',
         httpOnly: true,
@@ -130,6 +170,10 @@ const loginFactory = (
     })
 
     cy.visit(redirectUrl ?? Cypress.env('URL_MANAGE'))
+
+    if (!redirectUrl) {
+      assertManageSession()
+    }
   }
 }
 
@@ -156,6 +200,7 @@ Cypress.Commands.add(
       catalystInstitutional: true,
       catalystIndividual: true,
     },
+    undefined,
     Cypress.env('URL_CONTROL')
   )
 )
@@ -232,20 +277,66 @@ Cypress.Commands.add(
   })
 )
 
+// TODO: before using this function validate its correctness -> not used yet
+Cypress.Commands.add(
+  'loginAssessmentStudent',
+  loginFactory(
+    {
+      email: 'testuser1@test.uzh.ch',
+      sub: '6f45065c-667f-4259-818c-c6f6b477eb48',
+      role: 'PARTICIPANT',
+      scope: 'EDUID',
+    },
+    'next-auth.participant-session-token',
+    Cypress.env('URL_ASSESSMENT')
+  )
+)
+
 Cypress.Commands.add('logoutUser', () => {
+  cy.clearAllLocalStorage()
+  cy.clearAllSessionStorage()
+  clearPersistedClientState()
   cy.clearCookie('next-auth.session-token')
 })
 
-Cypress.Commands.add('loginStudent', () => {
-  cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME') })
+interface StudentLoginOptions {
+  preserveClientState?: boolean
+}
+
+Cypress.Commands.add('loginStudent', (options: StudentLoginOptions = {}) => {
+  cy.loginStudentPassword({
+    username: Cypress.env('STUDENT_USERNAME'),
+    preserveClientState: options.preserveClientState,
+  })
 })
 
 Cypress.Commands.add(
   'loginStudentPassword',
-  ({ username }: { username: string }) => {
+  ({
+    username,
+    preserveClientState = false,
+  }: { username: string } & StudentLoginOptions) => {
     cy.clearAllCookies()
     cy.clearAllLocalStorage()
-    cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
+    cy.visit(
+      Cypress.env('URL_STUDENT_LOGIN'),
+      preserveClientState
+        ? undefined
+        : {
+            onBeforeLoad: (win) => {
+              win.localStorage.clear()
+              win.sessionStorage.clear()
+              try {
+                win.indexedDB?.deleteDatabase('localforage')
+              } catch {
+                // Fall back to the regular localforage clear after load.
+              }
+            },
+          }
+    )
+    if (!preserveClientState) {
+      clearPersistedClientState()
+    }
     cy.get('[data-cy="username-field"]').click().type(username)
     cy.get('[data-cy="password-field"]')
       .click()
@@ -332,12 +423,59 @@ Cypress.Commands.add(
   }
 )
 
+interface ValidateElementArgs {
+  element: string // name / title of the element in question
+  shouldExist?: boolean // whether the element should exist or not (default: true)
+  contains?: string[] // optional array of strings that the element item should contain
+}
+
+Cypress.Commands.add(
+  'validateElement',
+  ({ element, shouldExist = true, contains }: ValidateElementArgs) => {
+    const elementSelector = `[data-cy="element-item-${element}"]`
+
+    // search for the element in the list (required due to pagination)
+    cy.get('[data-cy="elements-search-input"]')
+      .clear()
+      .type(`${element}{enter}`)
+
+    // verify the element's existence / non-existence
+    if (shouldExist) {
+      cy.get(elementSelector).should('exist')
+    } else {
+      cy.get(elementSelector).should('not.exist')
+    }
+
+    // if the element should contain specific text, verify that
+    if (contains) {
+      contains.forEach((text) => {
+        cy.get(elementSelector).contains(text)
+      })
+    }
+
+    // clear the search input after validating the element
+    cy.get('[data-cy="elements-search-input"]').clear()
+  }
+)
+
+interface EditElementArgs {
+  element: string // name / title of the element in question
+}
+Cypress.Commands.add('editElement', ({ element }: EditElementArgs) => {
+  // search for the element in the list (required due to pagination)
+  cy.get('[data-cy="elements-search-input"]').clear().type(`${element}{enter}`)
+
+  // click the edit button for the element
+  cy.get(`[data-cy="edit-element-${element}"]`).click()
+})
+
 interface CreateChoicesQuestionArgs {
   name: string
   content: string
   explanation?: string
   choices: { value: string; correct?: boolean; feedback?: string }[]
   multiplier?: number
+  isArchived?: boolean
   userId: string
 }
 
@@ -349,6 +487,7 @@ Cypress.Commands.add(
     explanation,
     choices,
     multiplier,
+    isArchived = false,
     userId,
   }: CreateChoicesQuestionArgs) => {
     // trigger single choice question creation directly through prisma action
@@ -359,6 +498,7 @@ Cypress.Commands.add(
       explanation,
       multiplier,
       choices,
+      isArchived,
       userId,
     }).then((result: boolean) => {
       // check if the query was successful
@@ -369,7 +509,7 @@ Cypress.Commands.add(
 
     // check if the created question is visible
     cy.reload()
-    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
+    cy.validateElement({ element: name })
   }
 )
 
@@ -381,6 +521,7 @@ Cypress.Commands.add(
     explanation,
     choices,
     multiplier,
+    isArchived = false,
     userId,
   }: CreateChoicesQuestionArgs) => {
     // trigger multiple choice question creation directly through prisma action
@@ -391,6 +532,7 @@ Cypress.Commands.add(
       explanation,
       multiplier,
       choices,
+      isArchived,
       userId,
     }).then((result: boolean) => {
       // check if the query was successful
@@ -401,7 +543,7 @@ Cypress.Commands.add(
 
     // check if the created question is visible
     cy.reload()
-    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
+    cy.validateElement({ element: name })
   }
 )
 
@@ -413,6 +555,7 @@ Cypress.Commands.add(
     explanation,
     choices,
     multiplier,
+    isArchived = false,
     userId,
   }: CreateChoicesQuestionArgs) => {
     // trigger kprim question creation directly through prisma action
@@ -423,6 +566,7 @@ Cypress.Commands.add(
       explanation,
       multiplier,
       choices,
+      isArchived,
       userId,
     }).then((result: boolean) => {
       // check if the query was successful
@@ -433,7 +577,7 @@ Cypress.Commands.add(
 
     // check if the created question is visible
     cy.reload()
-    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
+    cy.validateElement({ element: name })
   }
 )
 
@@ -448,6 +592,7 @@ interface CreateQuestionNRArgs {
   accuracy?: string
   solutionRanges?: { min: string; max: string }[] | null
   exactSolutions?: string[] | null
+  isArchived?: boolean
   userId: string
 }
 
@@ -464,6 +609,7 @@ Cypress.Commands.add(
     accuracy,
     solutionRanges,
     exactSolutions,
+    isArchived = false,
     userId,
   }: CreateQuestionNRArgs) => {
     // trigger numerical question creation directly through prisma action
@@ -478,6 +624,7 @@ Cypress.Commands.add(
       accuracy,
       solutionRanges,
       exactSolutions,
+      isArchived,
       userId,
     }).then((result: boolean) => {
       // check if the query was successful
@@ -488,7 +635,7 @@ Cypress.Commands.add(
 
     // check if the created question is visible
     cy.reload()
-    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
+    cy.validateElement({ element: name })
   }
 )
 
@@ -499,6 +646,7 @@ interface CreateQuestionFTArgs {
   multiplier?: number
   maxLength?: string
   solutions?: string[]
+  isArchived?: boolean
   userId: string
 }
 
@@ -511,6 +659,7 @@ Cypress.Commands.add(
     multiplier,
     maxLength,
     solutions,
+    isArchived = false,
     userId,
   }: CreateQuestionFTArgs) => {
     // trigger free text question creation directly through prisma action
@@ -521,6 +670,7 @@ Cypress.Commands.add(
       multiplier,
       maxLength,
       solutions,
+      isArchived,
       userId,
     }).then((result: boolean) => {
       // check if the query was successful
@@ -531,7 +681,7 @@ Cypress.Commands.add(
 
     // check if the created question is visible
     cy.reload()
-    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
+    cy.validateElement({ element: name })
   }
 )
 
@@ -543,6 +693,7 @@ interface CreateSelectionArgs {
   collectionName: string
   numberOfInputs: number
   correctAnswers?: string[]
+  isArchived?: boolean
   userId: string
 }
 
@@ -556,6 +707,7 @@ Cypress.Commands.add(
     collectionName,
     numberOfInputs,
     correctAnswers,
+    isArchived = false,
     userId,
   }: CreateSelectionArgs) => {
     // trigger selection question creation directly through prisma action
@@ -567,6 +719,7 @@ Cypress.Commands.add(
       collectionName,
       numberOfInputs,
       correctAnswers,
+      isArchived,
       userId,
     }).then((result: boolean) => {
       // check if the query was successful
@@ -577,7 +730,7 @@ Cypress.Commands.add(
 
     // check if the created question is visible
     cy.reload()
-    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
+    cy.validateElement({ element: name })
   }
 )
 
@@ -620,6 +773,7 @@ interface CreateCaseStudyArgs {
       }
     }
   }
+  isArchived?: boolean
   userId: string
 }
 
@@ -635,6 +789,7 @@ Cypress.Commands.add(
     criteria,
     cases,
     solutions,
+    isArchived = false,
     userId,
   }: CreateCaseStudyArgs) => {
     // trigger case study question creation directly through prisma action
@@ -648,6 +803,7 @@ Cypress.Commands.add(
       criteria,
       cases,
       solutions,
+      isArchived,
       userId,
     }).then((result: boolean) => {
       // check if the query was successful
@@ -658,7 +814,7 @@ Cypress.Commands.add(
 
     // check if the created question is visible
     cy.reload()
-    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
+    cy.validateElement({ element: name })
   }
 )
 
@@ -666,17 +822,25 @@ interface CreateFlashcardArgs {
   name: string
   content: string
   explanation: string
+  isArchived?: boolean
   userId: string
 }
 
 Cypress.Commands.add(
   'createFlashcard',
-  ({ name, content, explanation, userId }: CreateFlashcardArgs) => {
+  ({
+    name,
+    content,
+    explanation,
+    isArchived = false,
+    userId,
+  }: CreateFlashcardArgs) => {
     // trigger flashcard creation directly through prisma action
     cy.task('createFlashcard', {
       name,
       content,
       explanation,
+      isArchived,
       userId,
     }).then((result: boolean) => {
       // check if the query was successful
@@ -687,23 +851,25 @@ Cypress.Commands.add(
 
     // check if the created flashcard is visible
     cy.reload()
-    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
+    cy.validateElement({ element: name })
   }
 )
 
 interface CreateContentArgs {
   name: string
   content: string
+  isArchived?: boolean
   userId: string
 }
 
 Cypress.Commands.add(
   'createContent',
-  ({ name, content, userId }: CreateContentArgs) => {
+  ({ name, content, isArchived = false, userId }: CreateContentArgs) => {
     // trigger flashcard creation directly through prisma action
     cy.task('createContentElement', {
       name,
       content,
+      isArchived,
       userId,
     }).then((result: boolean) => {
       // check if the query was successful
@@ -714,42 +880,43 @@ Cypress.Commands.add(
 
     // check if the created content element is visible
     cy.reload()
-    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
+    cy.validateElement({ element: name })
   }
 )
 
 interface DeleteElementArgs {
   elementName: string
-  privatePreview?: boolean
 }
 
-Cypress.Commands.add(
-  'deleteElement',
-  ({ elementName, privatePreview = true }: DeleteElementArgs) => {
-    if (privatePreview) {
-      cy.get(`[data-cy="actions-element-${elementName}"]`).first().realClick()
+Cypress.Commands.add('deleteElement', ({ elementName }: DeleteElementArgs) => {
+  // find the element in the list (required due to pagination)
+  cy.get('[data-cy="elements-search-input"]')
+    .clear()
+    .type(`${elementName}{enter}`)
+
+  cy.get(`[data-cy="actions-element-${elementName}"]`).first().realClick()
+  cy.get(`[data-cy="delete-element-${elementName}"]`).first().click()
+  cy.get(`[data-cy="confirm-deletion-final"]`).click()
+
+  // only click confirmation buttons if they exist
+  cy.get('body').then(($body) => {
+    if ($body.find(`[data-cy="confirm-other-users-access"]`).length > 0) {
+      cy.get(`[data-cy="confirm-other-users-access"]`).click()
     }
+    if ($body.find(`[data-cy="confirm-derived-access"]`).length > 0) {
+      cy.get(`[data-cy="confirm-derived-access"]`).click()
+    }
+    if ($body.find(`[data-cy="confirm-dependency-access"]`).length > 0) {
+      cy.get(`[data-cy="confirm-dependency-access"]`).click()
+    }
+  })
 
-    cy.get(`[data-cy="delete-element-${elementName}"]`).first().click()
-    cy.get(`[data-cy="confirm-deletion-final"]`).click()
+  cy.get('[data-cy="confirmation-modal-confirm"]').click()
+  cy.wait(500)
 
-    // only click confirmation buttons if they exist
-    cy.get('body').then(($body) => {
-      if ($body.find(`[data-cy="confirm-other-users-access"]`).length > 0) {
-        cy.get(`[data-cy="confirm-other-users-access"]`).click()
-      }
-      if ($body.find(`[data-cy="confirm-derived-access"]`).length > 0) {
-        cy.get(`[data-cy="confirm-derived-access"]`).click()
-      }
-      if ($body.find(`[data-cy="confirm-dependency-access"]`).length > 0) {
-        cy.get(`[data-cy="confirm-dependency-access"]`).click()
-      }
-    })
-
-    cy.get('[data-cy="confirmation-modal-confirm"]').click()
-    cy.wait(500)
-  }
-)
+  // reset the search
+  cy.get('[data-cy="elements-search-input"]').clear()
+})
 
 Cypress.Commands.add('deleteAllElements', () => {
   // trigger the deletion of all elements
@@ -767,6 +934,8 @@ interface CreateLiveQuizArgs {
   displayName: string
   courseName?: string
   multiplier?: string
+  gamificationWithoutCourse?: boolean
+  pinProtectionWithoutCourse?: boolean
   blocks: { elements: string[] }[]
 }
 
@@ -777,6 +946,8 @@ Cypress.Commands.add(
     displayName,
     courseName,
     multiplier,
+    gamificationWithoutCourse,
+    pinProtectionWithoutCourse,
     blocks,
   }: CreateLiveQuizArgs) => {
     cy.get('[data-cy="create-live-quiz"]').click()
@@ -802,6 +973,13 @@ Cypress.Commands.add(
         cy.get(`[data-cy="select-multiplier-${multiplier}"]`).realClick()
         cy.get('[data-cy="select-multiplier"]').contains(multiplier)
       }
+    }
+
+    if (gamificationWithoutCourse) {
+      cy.get('[data-cy="set-quiz-gamification"]').click()
+    }
+    if (pinProtectionWithoutCourse) {
+      cy.get('[data-cy="set-quiz-pin-protection"]').click()
     }
 
     cy.get('[data-cy="next-or-submit"]').click()
@@ -871,6 +1049,38 @@ Cypress.Commands.add(
   }
 )
 
+interface DragAndDropElementArgs {
+  element: string // the name of the element to be dragged
+  target: string // testing attribute of the dropping target
+}
+
+Cypress.Commands.add(
+  'dragAndDropElement',
+  ({ element, target }: DragAndDropElementArgs) => {
+    const dataTransfer = new DataTransfer()
+
+    // search for the element in the list (required due to pagination)
+    cy.get('[data-cy="elements-search-input"]')
+      .clear()
+      .type(`${element}{enter}`)
+
+    // start dragging the element
+    cy.get(`[data-cy="element-item-${element}"]`)
+      .contains(element)
+      .trigger('dragstart', {
+        dataTransfer,
+      })
+
+    // drop the element on the target
+    cy.get(`[data-cy="${target}"]`).trigger('drop', {
+      dataTransfer,
+    })
+
+    // clear the element list search input to avoid any impact on other statements
+    cy.get('[data-cy="elements-search-input"]').clear()
+  }
+)
+
 interface StackType {
   elements: string[]
 }
@@ -883,6 +1093,12 @@ interface DatetimeType {
   validation: string // validation string to be used for the date input
 }
 
+interface DateType {
+  monthDelta: number // month delta to be set relative to the default values
+  day: number // day of the month to be set
+  validation: string // validation string to be used for the date input
+}
+
 function createStacks({
   stacks,
   type = 'stack',
@@ -891,14 +1107,9 @@ function createStacks({
   type?: 'block' | 'stack'
 }) {
   cy.wrap(stacks[0].elements).each((element: string, ix) => {
-    const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="element-item-${element}"]`)
-      .contains(element)
-      .trigger('dragstart', {
-        dataTransfer,
-      })
-    cy.get(`[data-cy="drop-elements-${type}-0"]`).trigger('drop', {
-      dataTransfer,
+    cy.dragAndDropElement({
+      element,
+      target: `drop-elements-${type}-0`,
     })
     cy.get(`[data-cy="element-${ix}-${type}-0"]`).contains(
       element.substring(0, 20)
@@ -909,15 +1120,12 @@ function createStacks({
     cy.wrap(stacks.slice(1)).each((stack: { elements: string[] }, ix) => {
       cy.get(`[data-cy="drop-elements-add-${type}"]`).click()
       cy.wrap(stack.elements).each((element: string, jx) => {
-        const dataTransfer = new DataTransfer()
-        cy.get(`[data-cy="element-item-${element}"]`)
-          .contains(element)
-          .trigger('dragstart', {
-            dataTransfer,
-          })
-        cy.get(`[data-cy="drop-elements-${type}-${ix + 1}"]`).trigger('drop', {
-          dataTransfer,
+        cy.dragAndDropElement({
+          element,
+          target: `drop-elements-${type}-${ix + 1}`,
         })
+
+        // verify that the element was dropped correctly
         cy.get(`[data-cy="element-${jx}-${type}-${ix + 1}"]`).contains(
           element.substring(0, 20)
         )
@@ -981,38 +1189,118 @@ Cypress.Commands.add(
   }
 )
 
-function setDatetime(
-  cyString: string,
-  deselectorString: string,
-  datetime: DatetimeType
-) {
-  cy.get(`[data-cy="${cyString}"]`).realClick()
-
-  if (datetime.monthDelta > 0) {
-    for (let i = 0; i < datetime.monthDelta; i++) {
-      cy.get(`[data-cy="${cyString}-next-month"]`).realClick().wait(100) // navigate forward one month
-    }
-  } else if (datetime.monthDelta < 0) {
-    for (let i = 0; i < Math.abs(datetime.monthDelta); i++) {
-      cy.get(`[data-cy="${cyString}-previous-month"]`).realClick().wait(100) // navigate back one month
-    }
-  }
-
-  cy.get(`[data-cy="${cyString}-calendar"]`)
-    .findByText(String(datetime.day))
-    .realClick()
-    .wait(100)
-  cy.get(`[data-cy="${cyString}-hours"]`)
-    .realClick()
-    .type(String(datetime.hour))
-  cy.get(`[data-cy="${cyString}-minutes"]`)
-    .realClick()
-    .type(String(datetime.minute))
-  cy.get(`[data-cy="${deselectorString}"]`).realClick() // deselect calendar
-  cy.get(`[data-cy="${cyString}-minutes"]`).should('not.exist')
-  cy.get(`[data-cy="${cyString}"]`).should('contain', datetime.validation) // verify correct date
+interface SetDatetimeArgs {
+  cyString: string // data-cy attribute of the datetime input
+  deselectorString: string // data-cy attribute of the element to deselect the calendar
+  datetime: DatetimeType // object containing monthDelta, day, hour, minute, and validation string
 }
-Cypress.Commands.add('setDatetime', setDatetime)
+
+function getCalendarDataDay(validation: string) {
+  const match = validation.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/)
+  if (!match) {
+    throw new Error(
+      `setDate/setDatetime: cannot parse date from "${validation}"`
+    )
+  }
+  const [, dayString, monthString, yearString] = match
+  return new Date(
+    Number(yearString),
+    Number(monthString) - 1,
+    Number(dayString)
+  ).toLocaleDateString()
+}
+
+Cypress.Commands.add(
+  'setDatetime',
+  ({ cyString, deselectorString, datetime }: SetDatetimeArgs) => {
+    cy.get(`[data-cy="${cyString}"]`).realClick()
+
+    const hour = String(datetime.hour).padStart(2, '0')
+    const minute = String(datetime.minute).padStart(2, '0')
+    const targetDataDay = getCalendarDataDay(datetime.validation)
+
+    if (datetime.monthDelta > 0) {
+      for (let i = 0; i < datetime.monthDelta; i++) {
+        cy.get(`[data-cy="${cyString}-next-month"]`)
+          .closest('button')
+          .should('not.be.disabled')
+          .should('not.have.attr', 'aria-disabled', 'true')
+          .realClick()
+          .wait(100)
+      }
+    } else if (datetime.monthDelta < 0) {
+      for (let i = 0; i < Math.abs(datetime.monthDelta); i++) {
+        cy.get(`[data-cy="${cyString}-previous-month"]`)
+          .closest('button')
+          .should('not.be.disabled')
+          .should('not.have.attr', 'aria-disabled', 'true')
+          .realClick()
+          .wait(100)
+      }
+    }
+
+    cy.get(`[data-cy="${cyString}-calendar"]`)
+      .find(`[data-day="${targetDataDay}"]`)
+      .should('have.length', 1)
+      .realClick()
+      .wait(100)
+    cy.get(`[data-cy="${cyString}-hours"]`)
+      .realClick()
+      .type(hour, { delay: 50 })
+    cy.get(`[data-cy="${cyString}-minutes"]`)
+      .realClick()
+      .type(minute, { delay: 50 })
+    cy.get(`[data-cy="${deselectorString}"]`).realClick()
+    cy.get(`[data-cy="${cyString}-minutes"]`).should('not.exist')
+    cy.get(`[data-cy="${cyString}"]`, { timeout: 10000 }).should(
+      'contain',
+      datetime.validation
+    )
+  }
+)
+
+interface SetDateArgs {
+  cyString: string // data-cy attribute of the datetime input
+  deselectorString: string // data-cy attribute of the element to deselect the calendar
+  date: DateType // object containing monthDelta, day, and validation string
+}
+
+Cypress.Commands.add(
+  'setDate',
+  ({ cyString, deselectorString, date }: SetDateArgs) => {
+    cy.get(`[data-cy="${cyString}"]`).realClick()
+
+    const targetDataDay = getCalendarDataDay(date.validation)
+
+    if (date.monthDelta > 0) {
+      for (let i = 0; i < date.monthDelta; i++) {
+        cy.get(`[data-cy="${cyString}-next-month"]`)
+          .closest('button')
+          .realClick()
+          .wait(100)
+      }
+    } else if (date.monthDelta < 0) {
+      for (let i = 0; i < Math.abs(date.monthDelta); i++) {
+        cy.get(`[data-cy="${cyString}-previous-month"]`)
+          .closest('button')
+          .realClick()
+          .wait(100)
+      }
+    }
+
+    cy.get(`[data-cy="${cyString}-calendar"]`)
+      .find(`[data-day="${targetDataDay}"]`)
+      .should('have.length', 1)
+      .realClick()
+      .wait(100)
+    cy.get(`[data-cy="${deselectorString}"]`).realClick()
+    cy.get(`[data-cy="${cyString}-minutes"]`).should('not.exist')
+    cy.get(`[data-cy="${cyString}"]`, { timeout: 10000 }).should(
+      'contain',
+      date.validation
+    )
+  }
+)
 
 interface CreateMicrolearningArgs {
   name: string
@@ -1057,8 +1345,16 @@ Cypress.Commands.add(
     // Step 3: Settings
     cy.selectOption('[data-cy="select-course"]', courseName)
     cy.get('[data-cy="select-course"]').should('exist').contains(courseName)
-    setDatetime('select-start-date', 'availability-section-header', startDate)
-    setDatetime('select-end-date', 'availability-section-header', endDate)
+    cy.setDatetime({
+      cyString: 'select-start-date',
+      deselectorString: 'availability-section-header',
+      datetime: { ...startDate, monthDelta: startDate.monthDelta - 1 }, // pre-selected date is at beginning of next month
+    })
+    cy.setDatetime({
+      cyString: 'select-end-date',
+      deselectorString: 'availability-section-header',
+      datetime: { ...endDate, monthDelta: endDate.monthDelta - 1 }, // pre-selected date is at beginning of next month
+    })
 
     if (multiplier) {
       cy.get('[data-cy="select-multiplier"]').realClick()
@@ -1133,16 +1429,22 @@ Cypress.Commands.add(
       cy.get('[data-cy="select-multiplier"]').contains(multiplier)
     }
 
-    setDatetime(
-      'select-start-date',
-      'availability-section-header',
-      scheduledStartDate
-    )
-    setDatetime(
-      'select-end-date',
-      'availability-section-header',
-      scheduledEndDate
-    )
+    cy.setDatetime({
+      cyString: 'select-start-date',
+      deselectorString: 'availability-section-header',
+      datetime: {
+        ...scheduledStartDate,
+        monthDelta: scheduledStartDate.monthDelta - 1,
+      }, // pre-selected date is at beginning of next month
+    })
+    cy.setDatetime({
+      cyString: 'select-end-date',
+      deselectorString: 'availability-section-header',
+      datetime: {
+        ...scheduledEndDate,
+        monthDelta: scheduledEndDate.monthDelta - 1,
+      }, // pre-selected date is at beginning of next month
+    })
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 4: Clues
@@ -1175,6 +1477,91 @@ Cypress.Commands.add(
     // Step 4: Questions / Elements
     cy.createStacks({ stacks: [stack] })
     cy.get('[data-cy="next-or-submit"]').click()
+  }
+)
+
+interface CreateCourseArgs {
+  name: string
+  displayName: string
+  description?: string
+  notificationEmail?: string
+  startDate?: Date
+  endDate?: Date
+  color?: string
+  isAssessmentEnabled?: boolean
+  isGamificationEnabled?: boolean
+  isGroupCreationEnabled?: boolean
+  groupDeadlineDate?: Date
+  maxGroupSize?: number
+  preferredGroupSize?: number
+  participants?: string[]
+}
+
+Cypress.Commands.add(
+  'createCourse',
+  ({
+    name,
+    displayName,
+    description,
+    notificationEmail,
+    startDate,
+    endDate,
+    color,
+    isAssessmentEnabled = false,
+    isGamificationEnabled = true,
+    isGroupCreationEnabled = true,
+    groupDeadlineDate,
+    maxGroupSize = 4,
+    preferredGroupSize = 2,
+    participants = [],
+  }: CreateCourseArgs) => {
+    // trigger answer collection creation directly through prisma action
+    cy.get('[data-cy="courses"]').click()
+    cy.task('createCourse', {
+      name,
+      displayName,
+      description,
+      notificationEmail,
+      startDate,
+      endDate,
+      color,
+      isAssessmentEnabled,
+      isGamificationEnabled,
+      isGroupCreationEnabled,
+      groupDeadlineDate,
+      maxGroupSize,
+      preferredGroupSize,
+      participants,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === false) {
+        throw new Error('Course creation failed!')
+      }
+    })
+
+    // check if the course is in the list
+    cy.reload()
+    cy.get('[data-cy="courses"]').click()
+    cy.findByText(name).should('exist')
+  }
+)
+
+interface ShareObjectArgs {
+  usernameOrEmail: string
+  permissionLevel: string
+}
+
+Cypress.Commands.add(
+  'shareObject',
+  ({ usernameOrEmail, permissionLevel }: ShareObjectArgs) => {
+    cy.get('[data-cy="new-permission-username-or-email"]')
+      .click()
+      .type(usernameOrEmail)
+    cy.selectOption('[data-cy="new-permission-access-level"]', permissionLevel)
+    cy.get('[data-cy="new-permission-submit"]').click().wait(500)
+    cy.get(`[data-cy="permission-${usernameOrEmail}"]`)
+      .should('exist')
+      .contains(permissionLevel)
   }
 )
 
@@ -1367,6 +1754,8 @@ interface AssertInstancePointsArgs {
   correctnessPoints: number
   bonusPoints: number
   totalPoints: number
+  stackIx: number
+  instanceIx: number
 }
 
 Cypress.Commands.add(
@@ -1376,13 +1765,21 @@ Cypress.Commands.add(
     correctnessPoints,
     bonusPoints,
     totalPoints,
+    stackIx,
+    instanceIx,
   }: AssertInstancePointsArgs) => {
-    cy.get('[data-cy="base-points-instance"]').contains(`${basePoints} P.`)
-    cy.get('[data-cy="correctness-points-instance"]').contains(
-      `${correctnessPoints} P.`
-    )
-    cy.get('[data-cy="bonus-points-instance"]').contains(`${bonusPoints} P.`)
-    cy.get('[data-cy="total-points-instance"]').contains(`${totalPoints} P.`)
+    cy.get(
+      `[data-cy="base-points-stack-${stackIx}-instance-${instanceIx}"]`
+    ).contains(`${basePoints} P.`)
+    cy.get(
+      `[data-cy="correctness-points-stack-${stackIx}-instance-${instanceIx}"]`
+    ).contains(`${correctnessPoints} P.`)
+    cy.get(
+      `[data-cy="bonus-points-stack-${stackIx}-instance-${instanceIx}"]`
+    ).contains(`${bonusPoints} P.`)
+    cy.get(
+      `[data-cy="total-points-stack-${stackIx}-instance-${instanceIx}"]`
+    ).contains(`${totalPoints} P.`)
   }
 )
 
@@ -1393,12 +1790,28 @@ Cypress.Commands.add('assertNoActivityPoints', () => {
   cy.get('[data-cy="total-points-activity"]').should('not.exist')
 })
 
-Cypress.Commands.add('assertNoInstancePoints', () => {
-  cy.get('[data-cy="base-points-instance"]').should('not.exist')
-  cy.get('[data-cy="correctness-points-instance"]').should('not.exist')
-  cy.get('[data-cy="bonus-points-instance"]').should('not.exist')
-  cy.get('[data-cy="total-points-instance"]').should('not.exist')
-})
+interface StackInstanceArgs {
+  stackIx: number
+  instanceIx: number
+}
+
+Cypress.Commands.add(
+  'assertNoInstancePoints',
+  ({ stackIx, instanceIx }: StackInstanceArgs) => {
+    cy.get(
+      `[data-cy="base-points-stack-${stackIx}-instance-${instanceIx}"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="correctness-points-stack-${stackIx}-instance-${instanceIx}"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="bonus-points-stack-${stackIx}-instance-${instanceIx}"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="total-points-stack-${stackIx}-instance-${instanceIx}"]`
+    ).should('not.exist')
+  }
+)
 
 interface TotalPointsArgs {
   totalPoints: number
@@ -1413,8 +1826,23 @@ Cypress.Commands.add(
 
 Cypress.Commands.add(
   'assertAsynchronousInstancePoints',
-  ({ totalPoints }: TotalPointsArgs) => {
-    cy.get('[data-cy="total-points-instance"]').contains(`${totalPoints} P.`)
+  ({
+    totalPoints,
+    stackIx,
+    instanceIx,
+  }: TotalPointsArgs & StackInstanceArgs) => {
+    cy.get(
+      `[data-cy="total-points-stack-${stackIx}-instance-${instanceIx}"]`
+    ).contains(`${totalPoints} P.`)
+  }
+)
+
+// override type command to have minimal delay for faster test workflows
+Cypress.Commands.overwrite<'type', 'element'>(
+  'type',
+  (originalFn, element, text, options = {}) => {
+    options.delay = options.delay ?? 2
+    return originalFn(element, text, options)
   }
 )
 
@@ -1422,6 +1850,7 @@ declare global {
   namespace Cypress {
     interface Chainable {
       seed(): Chainable<void>
+      seedActivities(): Chainable<void>
       cleanup(): Chainable<void>
       loginLecturer(): Chainable<void>
       loginLecturerControl(): Chainable<void>
@@ -1432,8 +1861,12 @@ declare global {
       loginInstitutionalCatalyst3(): Chainable<void>
       loginInstitutionalCatalyst4(): Chainable<void>
       logoutUser(): Chainable<void>
-      loginStudent(): Chainable<void>
-      loginStudentPassword({ username }: { username: string }): Chainable<void>
+      loginStudent(options?: StudentLoginOptions): Chainable<void>
+      loginAssessmentStudent(): Chainable<void>
+      loginStudentPassword({
+        username,
+        preserveClientState,
+      }: { username: string } & StudentLoginOptions): Chainable<void>
       createAnswerCollection({
         name,
         description,
@@ -1448,6 +1881,12 @@ declare global {
         objectType,
         permissionLevel,
       }: AddObjectToCatalogArgs): Chainable<void>
+      validateElement({
+        element,
+        shouldExist,
+        contains,
+      }: ValidateElementArgs): Chainable<void>
+      editElement({ element }: EditElementArgs): Chainable<void>
       createQuestionSC({
         name,
         content,
@@ -1526,16 +1965,15 @@ declare global {
         content,
         userId,
       }: CreateContentArgs): Chainable<void>
-      deleteElement({
-        elementName,
-        privatePreview,
-      }: DeleteElementArgs): Chainable<void>
+      deleteElement({ elementName }: DeleteElementArgs): Chainable<void>
       deleteAllElements(): Chainable<void>
       createLiveQuiz({
         name,
         displayName,
         courseName,
         multiplier,
+        gamificationWithoutCourse,
+        pinProtectionWithoutCourse,
         blocks,
       }: CreateLiveQuizArgs): Chainable<void>
       convertLiveQuizToTemplate({
@@ -1546,6 +1984,10 @@ declare global {
         copyBeforeConversion,
         resourceAccessRequired,
       }: ConvertLiveQuizToTemplateArgs): Chainable<void>
+      dragAndDropElement({
+        element,
+        target,
+      }: DragAndDropElementArgs): Chainable<void>
       createStacks({
         stacks,
         type,
@@ -1553,11 +1995,20 @@ declare global {
         stacks: StackType[]
         type?: 'block' | 'stack'
       }): Chainable<void>
-      setDatetime(
-        cyString: string,
-        deselectorString: string,
-        datetime: DatetimeType
-      ): Chainable<void>
+      setDatetime({
+        cyString,
+        deselectorString,
+        datetime,
+      }: SetDatetimeArgs): Chainable<void>
+      setDate({
+        cyString,
+        deselectorString,
+        date,
+      }: SetDateArgs): Chainable<void>
+      shareObject({
+        usernameOrEmail,
+        permissionLevel,
+      }: ShareObjectArgs): Chainable<void>
       createPracticeQuiz({
         name,
         displayName,
@@ -1587,6 +2038,21 @@ declare global {
         clues,
         stack,
       }: CreateGroupActivityArgs): Chainable<void>
+      createCourse({
+        name,
+        displayName,
+        description,
+        notificationEmail,
+        startDate,
+        endDate,
+        color,
+        isAssessmentEnabled,
+        isGamificationEnabled,
+        isGroupCreationEnabled,
+        groupDeadlineDate,
+        maxGroupSize,
+        preferredGroupSize,
+      }: CreateCourseArgs): Chainable<void>
       caseStudyLoop({ object, callback }: CaseStudyLoopArgs): Chainable<void>
       answerCaseStudy({
         elementIx,
@@ -1614,15 +2080,22 @@ declare global {
         correctnessPoints,
         bonusPoints,
         totalPoints,
+        stackIx,
+        instanceIx,
       }: AssertInstancePointsArgs): Chainable<void>
       assertNoActivityPoints(): Chainable<void>
-      assertNoInstancePoints(): Chainable<void>
+      assertNoInstancePoints({
+        stackIx,
+        instanceIx,
+      }: StackInstanceArgs): Chainable<void>
       assertAsynchronousActivityPoints({
         totalPoints,
       }: TotalPointsArgs): Chainable<void>
       assertAsynchronousInstancePoints({
         totalPoints,
-      }: TotalPointsArgs): Chainable<void>
+        stackIx,
+        instanceIx,
+      }: TotalPointsArgs & StackInstanceArgs): Chainable<void>
     }
   }
 }

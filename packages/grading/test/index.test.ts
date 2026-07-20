@@ -949,6 +949,7 @@ describe('@klicker-uzh/grading', () => {
       defaultCorrectPoints: 5,
       basePoints: true,
       pointsPercentage: 1,
+      roundedResult: true,
     })
     expect(points).toEqual(45)
 
@@ -963,6 +964,7 @@ describe('@klicker-uzh/grading', () => {
       pointsPercentage: 1,
       basePoints: true,
       pointsMultiplier: 2,
+      roundedResult: true,
     })
     expect(pointsMultiplier).toEqual(80)
 
@@ -976,6 +978,7 @@ describe('@klicker-uzh/grading', () => {
       defaultCorrectPoints: 5,
       pointsPercentage: null,
       basePoints: true,
+      roundedResult: true,
     })
     expect(points2).toEqual(45)
 
@@ -990,6 +993,7 @@ describe('@klicker-uzh/grading', () => {
       pointsPercentage: null,
       basePoints: true,
       pointsMultiplier: 3,
+      roundedResult: true,
     })
     expect(points2Multiplier).toEqual(115)
 
@@ -1003,6 +1007,7 @@ describe('@klicker-uzh/grading', () => {
       defaultCorrectPoints: 5,
       pointsPercentage: 0.5,
       basePoints: true,
+      roundedResult: true,
     })
     expect(points3).toEqual(28)
 
@@ -1017,6 +1022,7 @@ describe('@klicker-uzh/grading', () => {
       pointsPercentage: 0.5,
       basePoints: true,
       pointsMultiplier: 2,
+      roundedResult: true,
     })
     expect(points3Multiplier).toEqual(45)
 
@@ -1030,6 +1036,7 @@ describe('@klicker-uzh/grading', () => {
       defaultCorrectPoints: 5,
       pointsPercentage: 1,
       basePoints: true,
+      roundedResult: true,
     })
     expect(points4).toEqual(30)
 
@@ -1044,6 +1051,7 @@ describe('@klicker-uzh/grading', () => {
       pointsPercentage: 1,
       basePoints: true,
       pointsMultiplier: 2,
+      roundedResult: true,
     })
     expect(points4Multiplier).toEqual(50)
 
@@ -1057,6 +1065,7 @@ describe('@klicker-uzh/grading', () => {
       defaultCorrectPoints: 5,
       pointsPercentage: 0.5,
       basePoints: true,
+      roundedResult: true,
     })
     expect(points5).toEqual(20)
 
@@ -1070,6 +1079,7 @@ describe('@klicker-uzh/grading', () => {
       defaultCorrectPoints: 5,
       pointsPercentage: null,
       basePoints: true,
+      roundedResult: true,
     })
     expect(points6).toEqual(30)
 
@@ -1084,6 +1094,7 @@ describe('@klicker-uzh/grading', () => {
       pointsPercentage: null,
       basePoints: true,
       pointsMultiplier: 2,
+      roundedResult: true,
     })
     expect(points6Multiplier).toEqual(50)
 
@@ -1097,6 +1108,7 @@ describe('@klicker-uzh/grading', () => {
       defaultCorrectPoints: 5,
       pointsPercentage: 0,
       basePoints: true,
+      roundedResult: true,
     })
     expect(points7).toEqual(10)
 
@@ -1111,6 +1123,7 @@ describe('@klicker-uzh/grading', () => {
       pointsPercentage: 0,
       basePoints: true,
       pointsMultiplier: 3,
+      roundedResult: true,
     })
     expect(points7Multiplier).toEqual(10)
 
@@ -1124,6 +1137,7 @@ describe('@klicker-uzh/grading', () => {
       defaultCorrectPoints: 5,
       pointsPercentage: 1,
       basePoints: true,
+      roundedResult: true,
     })
     expect(points8).toEqual(15)
 
@@ -1138,6 +1152,7 @@ describe('@klicker-uzh/grading', () => {
       pointsPercentage: 1,
       basePoints: true,
       pointsMultiplier: 2,
+      roundedResult: true,
     })
     expect(points8Multiplier).toEqual(20)
 
@@ -1151,6 +1166,7 @@ describe('@klicker-uzh/grading', () => {
       defaultCorrectPoints: 5,
       basePoints: true,
       pointsPercentage: 0,
+      roundedResult: true,
     })
     expect(points9).toEqual(10)
 
@@ -1165,6 +1181,7 @@ describe('@klicker-uzh/grading', () => {
       pointsPercentage: 0,
       basePoints: true,
       pointsMultiplier: 2,
+      roundedResult: true,
     })
     expect(points9Multiplier).toEqual(10)
 
@@ -1178,6 +1195,7 @@ describe('@klicker-uzh/grading', () => {
       defaultCorrectPoints: 5,
       basePoints: true,
       pointsPercentage: 0.5,
+      roundedResult: true,
     })
     expect(points10).toEqual(13)
 
@@ -1192,6 +1210,7 @@ describe('@klicker-uzh/grading', () => {
       pointsPercentage: 0.5,
       basePoints: true,
       pointsMultiplier: 2,
+      roundedResult: true,
     })
     expect(points10Multiplier).toEqual(15)
 
@@ -1206,6 +1225,7 @@ describe('@klicker-uzh/grading', () => {
       defaultCorrectPoints: 5,
       basePoints: false,
       pointsPercentage: 1,
+      roundedResult: true,
     })
     expect(points11).toEqual(35)
 
@@ -1220,6 +1240,7 @@ describe('@klicker-uzh/grading', () => {
       pointsPercentage: 1,
       basePoints: false,
       pointsMultiplier: 2,
+      roundedResult: true,
     })
     expect(points11Multiplier).toEqual(70)
 
@@ -1233,6 +1254,7 @@ describe('@klicker-uzh/grading', () => {
       defaultCorrectPoints: 5,
       pointsPercentage: null,
       basePoints: false,
+      roundedResult: true,
     })
     expect(points12).toEqual(35)
 
@@ -1247,8 +1269,172 @@ describe('@klicker-uzh/grading', () => {
       pointsPercentage: null,
       basePoints: false,
       pointsMultiplier: 3,
+      roundedResult: true,
     })
     expect(points12Multiplier).toEqual(105)
+
+    // verify that rounding parameter is handled correclty
+    const floatPoints = computeAwardedPoints({
+      firstResponseReceivedAt: null,
+      responseTimestamp: 2000,
+      maxBonus: 30,
+      timeToZeroBonus: 20,
+      getsMaxPoints: false,
+      defaultPoints: 10,
+      defaultCorrectPoints: 5,
+      pointsPercentage: 0.5,
+      basePoints: true,
+      roundedResult: false,
+    })
+    expect(floatPoints).toEqual(27.5)
+
+    const roundedPoints = computeAwardedPoints({
+      firstResponseReceivedAt: null,
+      responseTimestamp: 2000,
+      maxBonus: 30,
+      timeToZeroBonus: 20,
+      getsMaxPoints: false,
+      defaultPoints: 10,
+      defaultCorrectPoints: 5,
+      pointsPercentage: 0.5,
+      basePoints: true,
+      roundedResult: true,
+    })
+    expect(roundedPoints).toEqual(28)
+
+    const floatPoints2 = computeAwardedPoints({
+      firstResponseReceivedAt: null,
+      responseTimestamp: 2000,
+      maxBonus: 30,
+      timeToZeroBonus: 20,
+      getsMaxPoints: false,
+      defaultPoints: 10,
+      defaultCorrectPoints: 4.5,
+      pointsPercentage: 0.5,
+      basePoints: true,
+      roundedResult: false,
+    })
+    expect(floatPoints2).toEqual(27.25)
+
+    const roundedPoints2 = computeAwardedPoints({
+      firstResponseReceivedAt: null,
+      responseTimestamp: 2000,
+      maxBonus: 30,
+      timeToZeroBonus: 20,
+      getsMaxPoints: false,
+      defaultPoints: 10,
+      defaultCorrectPoints: 4.5,
+      pointsPercentage: 0.5,
+      basePoints: true,
+      roundedResult: true,
+    })
+    expect(roundedPoints2).toEqual(27)
+
+    // make sure that negative response timestamps with respect to the first response default to same time
+    const edgeCase1 = computeAwardedPoints({
+      firstResponseReceivedAt: '1000',
+      responseTimestamp: 500,
+      maxBonus: 30,
+      timeToZeroBonus: 20,
+      getsMaxPoints: false,
+      defaultPoints: 10,
+      defaultCorrectPoints: 5,
+      pointsPercentage: 1,
+      basePoints: true,
+      roundedResult: true,
+    })
+    expect(edgeCase1).toEqual(45)
+
+    // make sure that zero time to zero bonus does not cause division by zero -> defaults to 1
+    const edgeCase2 = computeAwardedPoints({
+      firstResponseReceivedAt: null,
+      responseTimestamp: 2000,
+      maxBonus: 20,
+      timeToZeroBonus: 0,
+      getsMaxPoints: false,
+      defaultPoints: 10,
+      defaultCorrectPoints: 5,
+      pointsPercentage: 1,
+      basePoints: true,
+      roundedResult: true,
+    })
+    expect(edgeCase2).toEqual(35)
+
+    // make sure that negative base points are not accepted -> default to zero
+    const edgeCase3 = computeAwardedPoints({
+      firstResponseReceivedAt: null,
+      responseTimestamp: 2000,
+      maxBonus: 30,
+      timeToZeroBonus: 20,
+      getsMaxPoints: false,
+      defaultPoints: -10,
+      defaultCorrectPoints: 5,
+      pointsPercentage: 1,
+      basePoints: true,
+      roundedResult: true,
+    })
+    expect(edgeCase3).toEqual(35)
+
+    // make sure that negative correctness points are not accepted -> default to zero
+    const edgeCase4 = computeAwardedPoints({
+      firstResponseReceivedAt: null,
+      responseTimestamp: 2000,
+      maxBonus: 30,
+      timeToZeroBonus: 20,
+      getsMaxPoints: false,
+      defaultPoints: 10,
+      defaultCorrectPoints: -5,
+      pointsPercentage: 1,
+      basePoints: true,
+      roundedResult: true,
+    })
+    expect(edgeCase4).toEqual(40)
+
+    // make sure that negative bonus points are not accepted -> default to zero
+    const edgeCase5 = computeAwardedPoints({
+      firstResponseReceivedAt: null,
+      responseTimestamp: 2000,
+      maxBonus: -30,
+      timeToZeroBonus: 20,
+      getsMaxPoints: false,
+      defaultPoints: 10,
+      defaultCorrectPoints: 15,
+      pointsPercentage: 1,
+      basePoints: true,
+      roundedResult: true,
+    })
+    expect(edgeCase5).toEqual(25)
+
+    // make sure that zero or negative multipliers are not accepted -> default to 1
+    const edgeCase6 = computeAwardedPoints({
+      firstResponseReceivedAt: null,
+      responseTimestamp: 2000,
+      maxBonus: 30,
+      timeToZeroBonus: 20,
+      getsMaxPoints: false,
+      defaultPoints: 10,
+      defaultCorrectPoints: 5,
+      pointsPercentage: 1,
+      basePoints: true,
+      pointsMultiplier: 0,
+      roundedResult: true,
+    })
+    expect(edgeCase6).toEqual(45)
+
+    const edgeCase7 = computeAwardedPoints({
+      firstResponseReceivedAt: null,
+      responseTimestamp: 2000,
+      maxBonus: 30,
+      timeToZeroBonus: 20,
+      getsMaxPoints: false,
+      defaultPoints: 10,
+      defaultCorrectPoints: 5,
+      pointsPercentage: 1,
+      basePoints: true,
+      pointsMultiplier: -3,
+      roundedResult: true,
+    })
+    expect(edgeCase7).toEqual(45)
   })
 
   it('should compute the awarded points correctly for practice quizzes and microlearnings', () => {

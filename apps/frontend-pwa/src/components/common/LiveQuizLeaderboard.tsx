@@ -1,6 +1,7 @@
-import { useQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import {
   GetLiveQuizLeaderboardDocument,
+  LogoutParticipantDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -11,6 +12,8 @@ import React, { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
 import Rank1Img from '../../../public/rank1.svg'
 import Rank2Img from '../../../public/rank2.svg'
 import Rank3Img from '../../../public/rank3.svg'
@@ -22,15 +25,27 @@ type BlockResult = {
 
 function LiveQuizLeaderboard({
   quizId,
+  courseId,
   className,
+  showLeaderboardGamifiedQuizHint = false,
+  isPartOfGamifiedCourse = false,
+  isBeforeFirstBlock = false,
+  isAssessmentEnabled = false,
 }: {
   quizId: string
+  courseId?: string | null
   className?: string
+  showLeaderboardGamifiedQuizHint?: boolean
+  isPartOfGamifiedCourse?: boolean | null
+  isBeforeFirstBlock?: boolean
+  isAssessmentEnabled?: boolean
 }): React.ReactElement {
   const t = useTranslations()
+  const router = useRouter()
   const [blockDelta, setBlockDelta] = useState<BlockResult>(null)
 
   const { data: selfData } = useQuery(SelfDocument, {
+    variables: { liveQuizId: quizId },
     fetchPolicy: 'cache-only',
   })
 
@@ -41,6 +56,9 @@ function LiveQuizLeaderboard({
     // TODO: otherwise, this could overload the server if 1000 simultaneous users are on the leaderboard
     fetchPolicy: 'network-only',
   })
+
+  // logout mutation in case user decides not to participate in gamification
+  const [logoutParticipant] = useMutation(LogoutParticipantDocument)
 
   // save the current leaderboard to local storage
   useEffect(() => {
@@ -86,9 +104,14 @@ function LiveQuizLeaderboard({
 
   const leaderboard = data.liveQuizLeaderboard ?? []
   return (
-    <div className={twMerge('space-y-4 pt-4 md:pt-2', className)}>
+    <div
+      className={twMerge(
+        'mx-auto w-max max-w-full space-y-4 pt-4 md:pt-2',
+        className
+      )}
+    >
       <H2>{t('shared.leaderboard.lqLeaderboard')}</H2>
-      <div>
+      <div className="w-200 max-w-full">
         {leaderboard.length && leaderboard.length > 0 ? (
           <Leaderboard
             leaderboard={leaderboard ?? []}
@@ -108,6 +131,95 @@ function LiveQuizLeaderboard({
           />
         )}
       </div>
+
+      {/* live quiz is not part of gamified course, but still gamified, 
+      participant is logged in with standard account, participation not relevant */}
+      {selfData?.self?.id &&
+      !selfData.self.scopeQuizId && // regular user login
+      showLeaderboardGamifiedQuizHint &&
+      !isPartOfGamifiedCourse &&
+      isBeforeFirstBlock ? (
+        <UserNotification
+          type="warning"
+          className={{ root: 'w-200 -mt-1 max-w-full md:text-base' }}
+          data={{ cy: 'notification-live-quiz-no-gamified-course' }}
+        >
+          {isAssessmentEnabled
+            ? t('shared.leaderboard.liveQuizGamifiedAssessment')
+            : t.rich('shared.leaderboard.liveQuizGamifiedNoGamifiedCourse', {
+                logout: (text) => (
+                  <span
+                    onClick={async () => {
+                      await logoutParticipant()
+                      router.reload()
+                    }}
+                    className="cursor-pointer underline"
+                  >
+                    {text}
+                  </span>
+                ),
+              })}
+        </UserNotification>
+      ) : null}
+
+      {/* live quiz is part of gamified course, but user has no participation in course */}
+      {selfData?.self?.id &&
+      !selfData.self.scopeQuizId && // regular user login
+      !selfData.self.isCourseParticipant && // user is not a participant in the course
+      showLeaderboardGamifiedQuizHint &&
+      isPartOfGamifiedCourse &&
+      isBeforeFirstBlock ? (
+        <UserNotification
+          type="warning"
+          className={{ root: 'w-200 -mt-1 max-w-full md:text-base' }}
+          data={{
+            cy: 'notification-live-quiz-gamified-course-no-participation',
+          }}
+        >
+          {isAssessmentEnabled
+            ? t('shared.leaderboard.liveQuizGamifiedAssessment')
+            : t.rich(
+                'shared.leaderboard.liveQuizGamifiedCourseNoParticipation',
+                {
+                  logout: (text) => (
+                    <span
+                      onClick={async () => {
+                        await logoutParticipant()
+                        router.reload()
+                      }}
+                      className="cursor-pointer underline"
+                    >
+                      {text}
+                    </span>
+                  ),
+                }
+              )}
+        </UserNotification>
+      ) : null}
+
+      {/* live quiz is part of gamified course, but user has an inactive participation in course */}
+      {selfData?.self?.id &&
+      !selfData.self.scopeQuizId && // regular user login
+      selfData.self.isCourseParticipant && // user is a participant of the course
+      selfData.self.isCourseParticipationActive === false && // but participation is inactive
+      showLeaderboardGamifiedQuizHint &&
+      isPartOfGamifiedCourse &&
+      isBeforeFirstBlock ? (
+        <UserNotification
+          type="warning"
+          className={{ root: 'w-200 -mt-1 max-w-full md:text-base' }}
+          data={{ cy: 'notification-live-quiz-course-participation-inactive' }}
+        >
+          {t.rich('shared.leaderboard.liveQuizCourseParticipationInactive', {
+            link: (text) => (
+              <Link href={`/course/${courseId}`} className="underline">
+                {text}
+              </Link>
+            ),
+          })}
+        </UserNotification>
+      ) : null}
+
       {blockDelta && (
         <div className="flex flex-row gap-4 text-xl">
           <div>

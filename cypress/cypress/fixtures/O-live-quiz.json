@@ -36,6 +36,11 @@
     "newSCTitle": "New SC Title",
     "newSCContent": "New SC Content"
   },
+  "liveQuizWordCloud": {
+    "course": "Testkurs",
+    "name": "Live Quiz Word Cloud",
+    "displayName": "Live Quiz Word Cloud (Display)"
+  },
   "sharing": {
     "quiz1": "Sharing Live Quiz 1",
     "quiz1Display": "Sharing Live Quiz 1 (Display)",
@@ -70,5 +75,17 @@
     "courseNonGamified": "Non-Gamified Course",
     "nameNoCourse": "Live Quiz Details without Course",
     "displayNameNoCourse": "Live Quiz Details without Course (Display)"
+  },
+  "protected": {
+    "gamifiedCourse": {
+      "name": "PIN-Protected Course 1",
+      "displayName": "PIN-Protected Course 1 (Display)",
+      "liveQuiz": "PIN-Protected Live Quiz Gamified"
+    },
+    "nonGamifiedCourse": {
+      "name": "PIN-Protected Course 2",
+      "displayName": "PIN-Protected Course 2 (Display)",
+      "liveQuiz": "PIN-Protected Live Quiz Non-Gamified"
+    }
   }
 }

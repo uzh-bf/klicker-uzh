@@ -1,0 +1,9 @@
+# Backup dumps and archives
+dumps/
+
+# Temporary files
+*.tmp
+*.log
+
+# Environment-specific files
+.env.*

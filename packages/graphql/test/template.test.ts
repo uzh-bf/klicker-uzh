@@ -1,3 +1,4 @@
+import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   ElementInstanceType,
   ElementType,
@@ -5,7 +6,7 @@ import {
   PermissionLevel,
   PrismaClient,
   PublicationStatus,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import { ActivityType } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
@@ -15,7 +16,7 @@ import {
 } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
-import { updateElementInstances } from '../src/services/questions.js'
+import { updateElementInstances } from '../src/services/elements.js'
 import {
   getAnswerCollectionsElements,
   getAnswerCollectionsInfo,
@@ -36,9 +37,10 @@ import {
 import { questionsSLAF } from './testData.js'
 import { userFour, userOne, userThree, userTwo } from './userData.js'
 
-describe('Unit tests for template service', () => {
+describe('Integration tests for template service', () => {
   // shared resources used across tests
   let prisma: PrismaClient
+  let hatchet: Hatchet
   let emitter: EventEmitter
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
@@ -47,8 +49,13 @@ describe('Unit tests for template service', () => {
   let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
-    const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
+    const {
+      prisma: newPrisma,
+      hatchet: newHatchet,
+      emitter: newEmitter,
+    } = await initializePrisma()
     prisma = newPrisma
+    hatchet = newHatchet
     emitter = newEmitter
   })
 
@@ -64,7 +71,7 @@ describe('Unit tests for template service', () => {
       userThreeCtx: ctx3,
       userFourCtx: ctx4,
       userFiveCtx: ctx5,
-    } = await testInitialization(prisma, emitter)
+    } = await testInitialization(prisma, hatchet, emitter)
 
     userOneCtx = ctx1
     userTwoCtx = ctx2
@@ -73,13 +80,11 @@ describe('Unit tests for template service', () => {
     userFiveCtx = ctx5
   })
 
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
   it('Verify that matching questions are correctly filtered when loaded from the database', async () => {
     // seed a number of minimal elements into the database
-    const elements = await Promise.all(
+    await Promise.all(
       questionsSLAF.map(async (question) => {
         const newElement = await prisma.element.create({
           data: {
@@ -612,7 +617,7 @@ describe('Unit tests for template service', () => {
     )
 
     // create activity template with answer collection (user 1)
-    const template = await prisma.activityTemplate.create({
+    await prisma.activityTemplate.create({
       data: {
         id: templateId,
         description: '',
@@ -853,7 +858,7 @@ describe('Unit tests for template service', () => {
     const activityId = 'a7b750a4-5fd9-4575-85f1-9f981206477f'
     const SEElementData = processElementData(SEQuestion)
     const CSElementData = processElementData(CSQuestion)
-    const LQ = await prisma.liveQuiz.create({
+    await prisma.liveQuiz.create({
       data: {
         id: activityId,
         name: 'Test Quiz',
@@ -978,7 +983,9 @@ describe('Unit tests for template service', () => {
     })
     await updateElementInstances(
       { elementId: SEQuestion.id, includeTemplates: false },
-      userOneCtx
+      userOneCtx.prisma,
+      userOneCtx.emitter,
+      userOneCtx.user.sub
     )
     const template2 = await prisma.activityTemplate.findUnique({
       where: {
@@ -1007,7 +1014,9 @@ describe('Unit tests for template service', () => {
     // trigger another element instance update, this time including the activity templates
     await updateElementInstances(
       { elementId: SEQuestion.id, includeTemplates: true },
-      userOneCtx
+      userOneCtx.prisma,
+      userOneCtx.emitter,
+      userOneCtx.user.sub
     )
 
     // verify that the content of the corresponding element instance has changed, the answer collections linked to the template not
@@ -1062,7 +1071,9 @@ describe('Unit tests for template service', () => {
     })
     await updateElementInstances(
       { elementId: SEQuestion.id, includeTemplates: true },
-      userOneCtx
+      userOneCtx.prisma,
+      userOneCtx.emitter,
+      userOneCtx.user.sub
     )
 
     // verify that the instance was correctly updated and that answer collections 2 and 3 are now linked to the template
@@ -1121,7 +1132,9 @@ describe('Unit tests for template service', () => {
     })
     await updateElementInstances(
       { elementId: CSQuestion.id, includeTemplates: true },
-      userOneCtx
+      userOneCtx.prisma,
+      userOneCtx.emitter,
+      userOneCtx.user.sub
     )
 
     // verify that the instance was correctly updated and that only answer collection 3 is now linked to the template
@@ -1178,7 +1191,9 @@ describe('Unit tests for template service', () => {
     })
     await updateElementInstances(
       { elementId: CSQuestion.id, includeTemplates: true },
-      userOneCtx
+      userOneCtx.prisma,
+      userOneCtx.emitter,
+      userOneCtx.user.sub
     )
 
     // verify that the instance was correctly updated and that answer collections 1 and 3 is now linked to the template
@@ -1222,7 +1237,7 @@ describe('Unit tests for template service', () => {
     )
 
     // modify the answer collection entries used in the case study question (same answer collection, but options 2 & 3 instead of 1 & 2)
-    const CSQuestion4 = await prisma.element.update({
+    await prisma.element.update({
       where: { id: CSQuestion.id },
       data: {
         name: 'Updated Case Study Question 4',
@@ -1234,7 +1249,9 @@ describe('Unit tests for template service', () => {
     })
     await updateElementInstances(
       { elementId: CSQuestion.id, includeTemplates: true },
-      userOneCtx
+      userOneCtx.prisma,
+      userOneCtx.emitter,
+      userOneCtx.user.sub
     )
 
     // verify that the update was successful and that the corresponding answer collection entries are now linked to the template
@@ -1408,7 +1425,7 @@ describe('Unit tests for template service', () => {
     expect(res5).toBeTruthy()
 
     // add LQ2 to public catalog collection with public access rights -> should be accessible to everyone
-    const assignment2 = await prisma.catalogCollectionAssignment.upsert({
+    await prisma.catalogCollectionAssignment.upsert({
       where: {
         liveQuizId_catalogCollectionId: {
           liveQuizId: activityId2,
@@ -1461,7 +1478,7 @@ describe('Unit tests for template service', () => {
     expect(res10).toBeTruthy()
 
     // add LQ3 to restricted catalog collection with public access rights -> should be accessible to users with access to the restricted catalog collection
-    const assignment3 = await prisma.catalogCollectionAssignment.upsert({
+    await prisma.catalogCollectionAssignment.upsert({
       where: {
         liveQuizId_catalogCollectionId: {
           liveQuizId: activityId3,

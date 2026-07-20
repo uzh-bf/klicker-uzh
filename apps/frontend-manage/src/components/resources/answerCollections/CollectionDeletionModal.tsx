@@ -22,10 +22,24 @@ function CollectionDeletionModal({
     DeleteAnswerCollectionDocument,
     {
       variables: { collectionId: collection.id },
-      optimisticResponse: {
-        deleteAnswerCollection: collection.id,
+      update: (cache, { data }) => {
+        // check if the removal was successful
+        if (!data?.deleteAnswerCollection) return
+
+        // update the cache to remove the deleted collection
+        cache.updateQuery(
+          { query: GetAnswerCollectionsInfoDocument },
+          (qData) => {
+            if (!qData?.getAnswerCollectionsInfo) return qData
+
+            return {
+              getAnswerCollectionsInfo: qData.getAnswerCollectionsInfo.filter(
+                (collection) => collection.id !== data.deleteAnswerCollection
+              ),
+            }
+          }
+        )
       },
-      refetchQueries: [{ query: GetAnswerCollectionsInfoDocument }],
     }
   )
 

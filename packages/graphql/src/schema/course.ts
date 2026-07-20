@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import dayjs from 'dayjs'
 import builder from '../builder.js'
 import {
@@ -22,7 +22,7 @@ import {
 } from './participant.js'
 import { IPracticeQuiz, PracticeQuiz } from './practiceQuiz.js'
 import { PermissionLevel } from './sharing.js'
-import { type IUser, UserRef } from './user.js'
+import { type IUser, LocaleType, UserRef } from './user.js'
 
 export interface ICourse extends DB.Course {
   numOfParticipants?: number
@@ -60,10 +60,12 @@ export const Course = builder.objectType(CourseRef, {
 
     pinCode: t.exposeInt('pinCode', { nullable: true }),
 
+    language: t.expose('language', { type: LocaleType }),
     color: t.exposeString('color'),
     description: t.exposeString('description', { nullable: true }),
     isArchived: t.exposeBoolean('isArchived'),
     isGamificationEnabled: t.exposeBoolean('isGamificationEnabled'),
+    isAssessmentEnabled: t.exposeBoolean('isAssessmentEnabled'),
 
     numOfParticipants: t.exposeInt('numOfParticipants', {
       nullable: true,
@@ -176,6 +178,19 @@ export const Course = builder.objectType(CourseRef, {
       type: UserRef,
       nullable: true,
     }),
+  }),
+})
+
+export interface ICourseListEntry {
+  id: string
+  name: string
+}
+export const CourseListEntryRef =
+  builder.objectRef<ICourseListEntry>('CourseListEntry')
+export const CourseListEntry = builder.objectType(CourseListEntryRef, {
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    name: t.exposeString('name'),
   }),
 })
 
@@ -319,6 +334,56 @@ export const CourseStudentTimeline = CourseStudentTimelineRef.implement({
   }),
 })
 
+export const LiveQuizSelectionItemRef = builder.objectRef<{
+  id: string
+  name: string
+  displayName: string
+  instances: { id: string; name: string }[]
+}>('LiveQuizSelectionItem')
+export const LiveQuizSelectionItem = builder.objectType(
+  LiveQuizSelectionItemRef,
+  {
+    fields: (t) => ({
+      id: t.exposeString('id'),
+      name: t.exposeString('name'),
+      displayName: t.exposeString('displayName'),
+      instances: t.expose('instances', {
+        type: [ElementInstanceSelectionItemRef],
+      }),
+    }),
+  }
+)
+
+export const ElementInstanceSelectionItemRef = builder.objectRef<{
+  id: string // stringified version of instance id for compatibility with select fields
+  name: string
+}>('ElementInstanceSelectionItem')
+export const ElementInstanceSelectionItem = builder.objectType(
+  ElementInstanceSelectionItemRef,
+  {
+    fields: (t) => ({
+      id: t.exposeString('id'),
+      name: t.exposeString('name'),
+    }),
+  }
+)
+
+export const AssessmentParticipantRef = builder.objectRef<{
+  id: string
+  email: string
+}>('AssessmentParticipant')
+export const AssessmentParticipant = builder.objectType(
+  AssessmentParticipantRef,
+  {
+    fields: (t) => ({
+      id: t.exposeString('id'),
+      email: t.exposeString('email'),
+    }),
+  }
+)
+
+// ! GAMIFICATION
+// #region
 export interface ILeaderboardEntry
   extends Omit<
     DB.LeaderboardEntry,
@@ -429,3 +494,4 @@ export const AwardEntry = AwardEntryRef.implement({
     }),
   }),
 })
+// #endregion

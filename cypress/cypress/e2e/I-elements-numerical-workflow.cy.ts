@@ -1,20 +1,6 @@
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Test creation and editing functionalities, validation, etc. for numerical elements', function () {
-  before(() => {
-    cy.seed()
-
-    // set browser language to english (independent of local machine setting
-    Cypress.automation('remote:debugger:protocol', {
-      command: 'Emulation.setLocaleOverride',
-      params: { locale: 'en' },
-    })
-  })
-
-  after(() => {
-    cy.cleanup()
-  })
-
   beforeEach('Login the lecturer and load data fixture', function () {
     cy.loginLecturer()
     cy.fixture('DM-questions.json').then((data) => {
@@ -22,12 +8,12 @@ describe('Test creation and editing functionalities, validation, etc. for numeri
     })
   })
 
-  // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  // Fail-fast handled globally in support/e2e.ts
+
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
+  })
 
   // ! Numerical questions
   // #region
@@ -51,7 +37,7 @@ describe('Test creation and editing functionalities, validation, etc. for numeri
     ).realClick()
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
-      .type(this.data.NR.content)
+      .realType(this.data.NR.content)
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
     cy.get('[data-cy="set-numerical-minimum"]')
       .click()
@@ -66,15 +52,14 @@ describe('Test creation and editing functionalities, validation, etc. for numeri
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
 
-    cy.get(`[data-cy="element-item-${this.data.NR.title}"]`).contains(
-      this.data.NR.content
-    )
-    cy.get(`[data-cy="element-item-${this.data.NR.title}"]`).contains(
-      this.data.NR.title
-    )
-    cy.get(`[data-cy="element-item-${this.data.NR.title}"]`).contains(
-      messages.shared.READY.statusLabel
-    )
+    cy.validateElement({
+      element: this.data.NR.title,
+      contains: [
+        this.data.NR.content,
+        this.data.NR.title,
+        messages.shared.READY.statusLabel,
+      ],
+    })
     cy.get(`[data-cy="edit-element-${this.data.NR.title}"]`).click()
     cy.get('[data-cy="input-numerical-minimum"]').contains(
       `Min: ${this.data.NR.min}`
@@ -128,7 +113,7 @@ describe('Test creation and editing functionalities, validation, etc. for numeri
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .clear()
-      .type(this.data.NR.contentEdited)
+      .realType(this.data.NR.contentEdited)
     cy.get('[data-cy="set-numerical-minimum"]')
       .click()
       .clear()
@@ -199,12 +184,10 @@ describe('Test creation and editing functionalities, validation, etc. for numeri
 
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
-    cy.get(`[data-cy="element-item-${this.data.NR.titleEdited}"]`).contains(
-      this.data.NR.titleEdited
-    )
-    cy.get(`[data-cy="element-item-${this.data.NR.titleEdited}"]`).contains(
-      this.data.NR.contentEdited
-    )
+    cy.validateElement({
+      element: this.data.NR.titleEdited,
+      contains: [this.data.NR.contentEdited, this.data.NR.titleEdited],
+    })
   })
 
   it('Check that edited Numerical question is stored and loaded correctly', function () {

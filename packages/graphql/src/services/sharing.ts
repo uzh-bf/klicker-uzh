@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityLogModificationFieldType,
   ActivityType,
@@ -2358,45 +2358,6 @@ export async function revokeObjectAccess(
 
 // ! Sharing Modal Queries and Mutations
 // #region
-export async function getCatalogCollectionPermissions(
-  { id }: { id: string },
-  ctx: ContextWithUser
-) {
-  const catalogCollection = await ctx.prisma.catalogCollection.findUnique({
-    where: { id },
-    include: {
-      directPermissions: {
-        include: {
-          user: { select: { id: true, shortname: true, email: true } },
-          userGroup: { select: { id: true, name: true } },
-        },
-      },
-    },
-  })
-
-  if (!catalogCollection) {
-    return []
-  }
-
-  return catalogCollection.directPermissions
-    .map((permission) => ({
-      permissionId: permission.id,
-      userId: permission.user?.id,
-      username: permission.user?.shortname,
-      userEmail: permission.user?.email,
-      userGroupId: permission.userGroup?.id,
-      userGroupName: permission.userGroup?.name,
-      permissionLevel: permission.permissionLevel,
-      isOwn: permission.userId === ctx.user.sub,
-    }))
-    .sort((a, b) => {
-      if (a.username === b.username) {
-        return (a.userGroupName ?? '').localeCompare(b.userGroupName ?? '')
-      }
-      return (a.username ?? '').localeCompare(b.username ?? '')
-    })
-}
-
 export async function transferCatalogCollectionOwnership(
   { id, shortnameOrEmail }: { id: string; shortnameOrEmail: string },
   ctx: ContextWithUser
@@ -2533,6 +2494,47 @@ function mapDirectPermissions(
     })
 }
 
+export async function getCatalogCollectionPermissions(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const catalogCollection = await ctx.prisma.catalogCollection.findUnique({
+    where: { id },
+    include: {
+      directPermissions: {
+        include: {
+          user: { select: { id: true, shortname: true, email: true } },
+          userGroup: { select: { id: true, name: true } },
+        },
+      },
+      owner: { select: { id: true, shortname: true, email: true } },
+    },
+  })
+
+  if (!catalogCollection) {
+    return { isOwner: false, ownerPermission: undefined, permissions: [] }
+  }
+
+  return {
+    isOwner: catalogCollection.ownerId === ctx.user.sub,
+    ownerPermission: catalogCollection.owner
+      ? {
+          permissionId: -1, // no valid ID required -> owner permission is non-removable
+          userId: catalogCollection.owner.id,
+          username: catalogCollection.owner.shortname,
+          userEmail: catalogCollection.owner.email,
+          permissionLevel: DB.PermissionLevel.OWNER,
+          propagation: false,
+          isOwn: catalogCollection.owner.id === ctx.user.sub,
+        }
+      : undefined,
+    permissions: mapDirectPermissions(
+      catalogCollection.directPermissions,
+      ctx.user.sub
+    ),
+  }
+}
+
 export async function getAnswerCollectionPermissions(
   { id }: { id: number },
   ctx: ContextWithUser
@@ -2546,14 +2548,30 @@ export async function getAnswerCollectionPermissions(
           userGroup: { select: { id: true, name: true } },
         },
       },
+      owner: { select: { id: true, shortname: true, email: true } },
     },
   })
 
   if (!collection) {
-    return []
+    return { isOwner: false, ownerPermission: undefined, permissions: [] }
   }
 
-  return mapDirectPermissions(collection.directPermissions, ctx.user.sub)
+  return {
+    isOwner: collection.ownerId === ctx.user.sub,
+    ownerPermission: {
+      permissionId: -1, // no valid ID required -> owner permission is non-removable
+      userId: collection.owner.id,
+      username: collection.owner.shortname,
+      userEmail: collection.owner.email,
+      permissionLevel: DB.PermissionLevel.OWNER,
+      propagation: false,
+      isOwn: collection.owner.id === ctx.user.sub,
+    },
+    permissions: mapDirectPermissions(
+      collection.directPermissions,
+      ctx.user.sub
+    ),
+  }
 }
 
 export async function getElementPermissions(
@@ -2569,14 +2587,27 @@ export async function getElementPermissions(
           userGroup: { select: { id: true, name: true } },
         },
       },
+      owner: { select: { id: true, shortname: true, email: true } },
     },
   })
 
   if (!element) {
-    return []
+    return { isOwner: false, ownerPermission: undefined, permissions: [] }
   }
 
-  return mapDirectPermissions(element.directPermissions, ctx.user.sub)
+  return {
+    isOwner: element.ownerId === ctx.user.sub,
+    ownerPermission: {
+      permissionId: -1, // no valid ID required -> owner permission is non-removable
+      userId: element.owner.id,
+      username: element.owner.shortname,
+      userEmail: element.owner.email,
+      permissionLevel: DB.PermissionLevel.OWNER,
+      propagation: false,
+      isOwn: element.owner.id === ctx.user.sub,
+    },
+    permissions: mapDirectPermissions(element.directPermissions, ctx.user.sub),
+  }
 }
 
 export async function getCoursePermissions(
@@ -2592,14 +2623,27 @@ export async function getCoursePermissions(
           userGroup: { select: { id: true, name: true } },
         },
       },
+      owner: { select: { id: true, shortname: true, email: true } },
     },
   })
 
   if (!course) {
-    return []
+    return { isOwner: false, ownerPermission: undefined, permissions: [] }
   }
 
-  return mapDirectPermissions(course.directPermissions, ctx.user.sub)
+  return {
+    isOwner: course.ownerId === ctx.user.sub,
+    ownerPermission: {
+      permissionId: -1, // no valid ID required -> owner permission is non-removable
+      userId: course.owner.id,
+      username: course.owner.shortname,
+      userEmail: course.owner.email,
+      permissionLevel: DB.PermissionLevel.OWNER,
+      propagation: false,
+      isOwn: course.owner.id === ctx.user.sub,
+    },
+    permissions: mapDirectPermissions(course.directPermissions, ctx.user.sub),
+  }
 }
 
 export async function getLiveQuizPermissions(
@@ -2615,14 +2659,27 @@ export async function getLiveQuizPermissions(
           userGroup: { select: { id: true, name: true } },
         },
       },
+      owner: { select: { id: true, shortname: true, email: true } },
     },
   })
 
   if (!liveQuiz) {
-    return []
+    return { isOwner: false, ownerPermission: undefined, permissions: [] }
   }
 
-  return mapDirectPermissions(liveQuiz.directPermissions, ctx.user.sub)
+  return {
+    isOwner: liveQuiz.ownerId === ctx.user.sub,
+    ownerPermission: {
+      permissionId: -1, // no valid ID required -> owner permission is non-removable
+      userId: liveQuiz.owner.id,
+      username: liveQuiz.owner.shortname,
+      userEmail: liveQuiz.owner.email,
+      permissionLevel: DB.PermissionLevel.OWNER,
+      propagation: false,
+      isOwn: liveQuiz.owner.id === ctx.user.sub,
+    },
+    permissions: mapDirectPermissions(liveQuiz.directPermissions, ctx.user.sub),
+  }
 }
 
 export async function getPracticeQuizPermissions(
@@ -2638,14 +2695,30 @@ export async function getPracticeQuizPermissions(
           userGroup: { select: { id: true, name: true } },
         },
       },
+      owner: { select: { id: true, shortname: true, email: true } },
     },
   })
 
   if (!practiceQuiz) {
-    return []
+    return { isOwner: false, ownerPermission: undefined, permissions: [] }
   }
 
-  return mapDirectPermissions(practiceQuiz.directPermissions, ctx.user.sub)
+  return {
+    isOwner: practiceQuiz.ownerId === ctx.user.sub,
+    ownerPermission: {
+      permissionId: -1, // no valid ID required -> owner permission is non-removable
+      userId: practiceQuiz.owner.id,
+      username: practiceQuiz.owner.shortname,
+      userEmail: practiceQuiz.owner.email,
+      permissionLevel: DB.PermissionLevel.OWNER,
+      propagation: false,
+      isOwn: practiceQuiz.owner.id === ctx.user.sub,
+    },
+    permissions: mapDirectPermissions(
+      practiceQuiz.directPermissions,
+      ctx.user.sub
+    ),
+  }
 }
 
 export async function getMicroLearningPermissions(
@@ -2661,14 +2734,30 @@ export async function getMicroLearningPermissions(
           userGroup: { select: { id: true, name: true } },
         },
       },
+      owner: { select: { id: true, shortname: true, email: true } },
     },
   })
 
   if (!microLearning) {
-    return []
+    return { isOwner: false, ownerPermission: undefined, permissions: [] }
   }
 
-  return mapDirectPermissions(microLearning.directPermissions, ctx.user.sub)
+  return {
+    isOwner: microLearning.ownerId === ctx.user.sub,
+    ownerPermission: {
+      permissionId: -1, // no valid ID required -> owner permission is non-removable
+      userId: microLearning.owner.id,
+      username: microLearning.owner.shortname,
+      userEmail: microLearning.owner.email,
+      permissionLevel: DB.PermissionLevel.OWNER,
+      propagation: false,
+      isOwn: microLearning.owner.id === ctx.user.sub,
+    },
+    permissions: mapDirectPermissions(
+      microLearning.directPermissions,
+      ctx.user.sub
+    ),
+  }
 }
 
 export async function getGroupActivityPermissions(
@@ -2684,14 +2773,30 @@ export async function getGroupActivityPermissions(
           userGroup: { select: { id: true, name: true } },
         },
       },
+      owner: { select: { id: true, shortname: true, email: true } },
     },
   })
 
   if (!groupActivity) {
-    return []
+    return { isOwner: false, ownerPermission: undefined, permissions: [] }
   }
 
-  return mapDirectPermissions(groupActivity.directPermissions, ctx.user.sub)
+  return {
+    isOwner: groupActivity.ownerId === ctx.user.sub,
+    ownerPermission: {
+      permissionId: -1, // no valid ID required -> owner permission is non-removable
+      userId: groupActivity.owner.id,
+      username: groupActivity.owner.shortname,
+      userEmail: groupActivity.owner.email,
+      permissionLevel: DB.PermissionLevel.OWNER,
+      propagation: false,
+      isOwn: groupActivity.owner.id === ctx.user.sub,
+    },
+    permissions: mapDirectPermissions(
+      groupActivity.directPermissions,
+      ctx.user.sub
+    ),
+  }
 }
 
 function mapDerivedPermissions({
@@ -6712,17 +6817,38 @@ export async function addActivityMessage(
         objectType === DB.ObjectType.GROUP_ACTIVITY ? objectId : undefined,
       userId: ctx.user.sub,
     },
-    include: {
-      user: { select: { shortname: true } },
-    },
+    include: { user: { select: { shortname: true } } },
   })
 
   return {
     ...newActivityEntry,
     username: newActivityEntry.user!.shortname,
+    isOwn: true, // created message has to be the user's own message
     isEdited: false, // flag to signal if an object has been edited
     options: {},
   }
+}
+
+export async function deleteActivityMessage(
+  { messageId }: { messageId: number },
+  ctx: ContextWithUser
+) {
+  // fetch the activity message
+  const activityMessage = await ctx.prisma.activityLogEntry.findUnique({
+    where: { id: messageId },
+  })
+
+  // check if the message exists and if it belongs to the user
+  if (!activityMessage || activityMessage.userId !== ctx.user.sub) {
+    return false
+  }
+
+  // delete the message
+  await ctx.prisma.activityLogEntry.delete({
+    where: { id: messageId, userId: ctx.user.sub },
+  })
+
+  return true
 }
 
 export async function getObjectActivity(
@@ -6770,7 +6896,8 @@ export async function getObjectActivity(
       oldValue: entry.modificationDetails?.oldValue,
       newValue: entry.modificationDetails?.newValue,
     },
-    username: entry.user?.shortname ?? 'Unknown User',
+    username: entry.user?.shortname ?? '',
+    isOwn: entry.userId === ctx.user.sub,
     isEdited: entry.updatedAt.getTime() > entry.createdAt.getTime(),
   }))
 }

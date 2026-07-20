@@ -1,8 +1,8 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import builder from '../builder.js'
 import { CourseRef } from './course.js'
+import { ElementInstanceRef } from './element.js'
 import { PublicationStatus } from './practiceQuiz.js'
-import { ElementInstanceRef } from './question.js'
 
 export const LiveQuizAccessMode = builder.enumType('LiveQuizAccessMode', {
   values: Object.values(DB.AccessMode),
@@ -88,6 +88,8 @@ export interface ILiveQuiz extends DB.LiveQuiz {
   confusionSummary?: IConfusionSummary | null
   numOfBlocks?: number
   numOfInstances?: number
+  isPartOfGamifiedCourse?: boolean | null
+  isPinProtected?: boolean | null
   beforeFirstBlock?: boolean
 }
 
@@ -100,7 +102,7 @@ export const LiveQuiz = LiveQuizRef.implement({
     name: t.exposeString('name'),
     description: t.exposeString('description', { nullable: true }),
     displayName: t.exposeString('displayName'),
-    pinCode: t.exposeInt('pinCode', { nullable: true }),
+    pinCode: t.exposeString('pinCode', { nullable: true }),
     templateId: t.exposeString('templateId', { nullable: true }),
     templateName: t.exposeString('templateName', { nullable: true }),
 
@@ -108,6 +110,11 @@ export const LiveQuiz = LiveQuizRef.implement({
     isConfusionFeedbackEnabled: t.exposeBoolean('isConfusionFeedbackEnabled'),
     isModerationEnabled: t.exposeBoolean('isModerationEnabled'),
     isGamificationEnabled: t.exposeBoolean('isGamificationEnabled'),
+    isAssessmentEnabled: t.exposeBoolean('isAssessmentEnabled'),
+    isPartOfGamifiedCourse: t.exposeBoolean('isPartOfGamifiedCourse', {
+      nullable: true,
+    }),
+    isPinProtected: t.exposeBoolean('isPinProtected', { nullable: true }),
 
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
     defaultPoints: t.exposeInt('defaultPoints'),
@@ -173,6 +180,7 @@ interface ILiveQuizMeta {
   id: string
   name: string
   status: DB.PublicationStatus
+  availableFrom?: Date | null
 }
 
 export const LiveQuizMetaRef = builder.objectRef<ILiveQuizMeta>('LiveQuizMeta')
@@ -181,6 +189,7 @@ export const LiveQuizMeta = LiveQuizMetaRef.implement({
     id: t.exposeID('id'),
     name: t.exposeString('name'),
     status: t.expose('status', { type: PublicationStatus }),
+    availableFrom: t.expose('availableFrom', { type: 'Date', nullable: true }),
   }),
 })
 

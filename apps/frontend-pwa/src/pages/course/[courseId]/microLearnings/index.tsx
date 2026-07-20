@@ -8,7 +8,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   if (typeof ctx.params?.courseId !== 'string') {
     return {
       redirect: {
-        destination: '/404',
+        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/404`,
         permanent: false,
       },
     }
@@ -16,7 +16,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   return {
     redirect: {
-      destination: `/course/${ctx.params.courseId}/microLearnings/overview`,
+      destination: `${ctx.locale ? `/${ctx.locale}` : ''}/course/${ctx.params.courseId}/microLearnings/overview`,
       permanent: false,
     },
   }

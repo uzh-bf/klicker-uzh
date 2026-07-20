@@ -4,7 +4,6 @@ import { faUserGroup } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetSingleCourseDocument,
-  GetUserActivitiesDocument,
   PublishPracticeQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormikDatetimePicker, H3, Modal } from '@uzh-bf/design-system'
@@ -14,23 +13,52 @@ import { useTranslations } from 'next-intl'
 import * as yup from 'yup'
 
 interface PracticeQuizPublishingModalProps {
-  elementId: string
+  activityId: string
   title: string
   courseId: string
   courseStartDate: string
   onClose: () => void
+  refetchActivities?: () => Promise<void>
 }
 
 function PracticeQuizPublishingModal({
-  elementId,
+  activityId,
   title,
   courseId,
   courseStartDate,
   onClose,
+  refetchActivities,
 }: PracticeQuizPublishingModalProps) {
   const t = useTranslations()
   const [publishPracticeQuiz, { loading: practiceQuizPublishing }] =
-    useMutation(PublishPracticeQuizDocument)
+    useMutation(PublishPracticeQuizDocument, {
+      update(cache, { data }) {
+        cache.updateQuery(
+          { query: GetSingleCourseDocument, variables: { courseId } },
+          (qData) => {
+            const publishedPq = data?.publishPracticeQuiz
+            if (!qData?.course?.practiceQuizzesInfo || !publishedPq)
+              return qData
+
+            return {
+              course: {
+                ...qData.course,
+                practiceQuizzesInfo: qData.course.practiceQuizzesInfo.map(
+                  (practiceQuiz) =>
+                    practiceQuiz.id === publishedPq.id
+                      ? {
+                          ...practiceQuiz,
+                          automaticPublicationAt: publishedPq.availableFrom,
+                          status: publishedPq.status,
+                        }
+                      : practiceQuiz
+                ),
+              },
+            }
+          }
+        )
+      },
+    })
 
   return (
     <Modal
@@ -55,19 +83,8 @@ function PracticeQuizPublishingModal({
           <Button
             primary
             onClick={async () => {
-              await publishPracticeQuiz({
-                variables: {
-                  id: elementId,
-                },
-                // TODO: replace with cache update
-                refetchQueries: [
-                  {
-                    query: GetSingleCourseDocument,
-                    variables: { id: courseId },
-                  },
-                  { query: GetUserActivitiesDocument },
-                ],
-              })
+              await publishPracticeQuiz({ variables: { id: activityId } })
+              await refetchActivities?.()
               onClose()
             }}
             loading={practiceQuizPublishing}
@@ -95,18 +112,11 @@ function PracticeQuizPublishingModal({
               setSubmitting(true)
               await publishPracticeQuiz({
                 variables: {
-                  id: elementId,
+                  id: activityId,
                   availableFrom: dayjs(values.availableFrom).utc().format(),
                 },
-                // TODO: replace with cache update
-                refetchQueries: [
-                  {
-                    query: GetSingleCourseDocument,
-                    variables: { id: courseId },
-                  },
-                  { query: GetUserActivitiesDocument },
-                ],
               })
+              await refetchActivities?.()
               onClose()
             }}
             validationSchema={yup.object().shape({

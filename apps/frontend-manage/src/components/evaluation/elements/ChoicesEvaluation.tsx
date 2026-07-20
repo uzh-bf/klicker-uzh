@@ -1,4 +1,7 @@
-import { ChoicesActivityEvaluationData } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ChoicesActivityEvaluationData,
+  LocaleType,
+} from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import {
   ResizableHandle,
@@ -13,19 +16,25 @@ import ChoicesSidebar from './ChoicesSidebar'
 
 interface ChoicesEvaluationProps {
   instanceEvaluation: ChoicesActivityEvaluationData
+  courseLanguage?: LocaleType | null
   textSize: TextSizeType
   chartType: ChartType
   showSolution: boolean
   showExplanation: boolean
+  isAssessmentEnabled: boolean
+  pinCode?: string | null
   type: ActivityEvaluationType
 }
 
 function ChoicesEvaluation({
   instanceEvaluation,
+  courseLanguage,
   textSize,
   chartType,
   showSolution,
   showExplanation,
+  isAssessmentEnabled,
+  pinCode,
   type,
 }: ChoicesEvaluationProps) {
   return (
@@ -53,6 +62,9 @@ function ChoicesEvaluation({
       >
         <ChoicesSidebar
           instance={instanceEvaluation}
+          courseLanguage={courseLanguage}
+          isAssessmentEnabled={isAssessmentEnabled}
+          pinCode={pinCode}
           textSize={textSize}
           showSolution={showSolution}
           type={type}

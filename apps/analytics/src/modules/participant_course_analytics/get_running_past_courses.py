@@ -16,10 +16,6 @@ def get_running_past_courses(db):
     )
 
     df_courses = pd.DataFrame(list(map(lambda x: x.dict(), courses)))
-    print(
-        "Found {} courses with a start date before {}".format(
-            len(df_courses), curr_date
-        )
-    )
+    print("Found {} courses with a start date before {}".format(len(df_courses), curr_date))
 
     return df_courses

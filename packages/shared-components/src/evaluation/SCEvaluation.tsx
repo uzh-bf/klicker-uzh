@@ -1,7 +1,6 @@
 import type { ChoicesInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { Progress } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface Props {
@@ -21,7 +20,7 @@ function SCEvaluation({ evaluation }: Props) {
           className={{
             root: twMerge(
               'h-8',
-              choice.ix == correctIx && 'font-bold text-green-600'
+              choice.ix == correctIx && 'font-bold text-green-700'
             ),
             indicator: twMerge(
               'h-8',

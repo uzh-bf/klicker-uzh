@@ -13,10 +13,12 @@ function GroupActivityDeletionModal({
   onClose,
   activityId,
   courseId,
+  refetchActivities,
 }: {
   onClose: () => void
   activityId: string
   courseId: string
+  refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
   const { data: summaryData, loading: summaryLoading } = useQuery(
@@ -30,19 +32,32 @@ function GroupActivityDeletionModal({
   const [deleteGroupActivity, { loading: deletingGroupActivity }] = useMutation(
     DeleteGroupActivityDocument,
     {
-      variables: {
-        id: activityId,
+      variables: { id: activityId },
+      update: (cache, { data: res }) => {
+        // if the group activity is not part of a course or the mutation was not successful, return early
+        if (!res?.deleteGroupActivity?.id) return
+
+        // change the status of the group activity on the course overview back to draft
+        cache.updateQuery(
+          {
+            query: GetSingleCourseDocument,
+            variables: { courseId },
+          },
+          (data) => {
+            if (!data?.course) return data
+
+            return {
+              course: {
+                ...data.course,
+                groupActivitiesInfo:
+                  data.course.groupActivitiesInfo?.filter(
+                    (ga) => ga.id !== res.deleteGroupActivity!.id
+                  ) ?? [],
+              },
+            }
+          }
+        )
       },
-      optimisticResponse: {
-        __typename: 'Mutation',
-        deleteGroupActivity: {
-          __typename: 'GroupActivity',
-          id: activityId,
-        },
-      },
-      refetchQueries: [
-        { query: GetSingleCourseDocument, variables: { courseId } },
-      ],
     }
   )
 
@@ -71,7 +86,10 @@ function GroupActivityDeletionModal({
       onClose={onClose}
       title={t('manage.course.deleteGroupActivity')}
       message={t('manage.course.deleteGroupActivityMessage')}
-      onSubmit={async () => await deleteGroupActivity()}
+      onSubmit={async () => {
+        await deleteGroupActivity()
+        await refetchActivities?.()
+      }}
       submitting={deletingGroupActivity}
       confirmations={confirmations}
       confirmationsInitializing={summaryLoading}

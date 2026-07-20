@@ -75,21 +75,22 @@ function UserGroupCreationForm({
                 members: values.members!,
               },
               update: (cache, { data }) => {
+                // check if the creation was successful
                 if (!data?.createUserGroup) return
-                const queryData = cache.readQuery({
-                  query: GetUserGroupsUserDocument,
-                })
-                const previousGroups = queryData?.getUserGroupsUser
-                if (!previousGroups) return
-                cache.writeQuery({
-                  query: GetUserGroupsUserDocument,
-                  data: {
-                    getUserGroupsUser: [
-                      ...previousGroups,
-                      data.createUserGroup,
-                    ],
-                  },
-                })
+
+                // update the list of user groups
+                cache.updateQuery(
+                  { query: GetUserGroupsUserDocument },
+                  (qData) => {
+                    if (!qData?.getUserGroupsUser) return qData
+                    return {
+                      getUserGroupsUser: [
+                        ...qData.getUserGroupsUser,
+                        data.createUserGroup!,
+                      ],
+                    }
+                  }
+                )
               },
             })
 

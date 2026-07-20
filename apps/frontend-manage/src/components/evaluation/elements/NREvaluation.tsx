@@ -1,4 +1,7 @@
-import { NumericalActivityEvaluationData } from '@klicker-uzh/graphql/dist/ops'
+import {
+  LocaleType,
+  NumericalActivityEvaluationData,
+} from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import { useState } from 'react'
 import { ActivityEvaluationType } from '../ActivityEvaluation'
@@ -15,6 +18,9 @@ import { twMerge } from 'tailwind-merge'
 
 interface NREvaluationProps {
   instanceEvaluation: NumericalActivityEvaluationData
+  courseLanguage?: LocaleType | null
+  isAssessmentEnabled: boolean
+  pinCode?: string | null
   textSize: TextSizeType
   chartType: ChartType
   showSolution: boolean
@@ -32,6 +38,9 @@ export interface ShowStatisticsType {
 
 function NREvaluation({
   instanceEvaluation,
+  courseLanguage,
+  isAssessmentEnabled,
+  pinCode,
   textSize,
   chartType,
   showSolution,
@@ -76,6 +85,9 @@ function NREvaluation({
         {!isCollapsed && (
           <NRSidebar
             instance={instanceEvaluation}
+            courseLanguage={courseLanguage}
+            isAssessmentEnabled={isAssessmentEnabled}
+            pinCode={pinCode}
             chartType={chartType}
             textSize={textSize}
             showSolution={showSolution}

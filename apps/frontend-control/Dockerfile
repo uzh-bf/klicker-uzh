@@ -1,4 +1,4 @@
-FROM docker.io/library/node:20.18.1-alpine AS base
+FROM docker.io/library/node:24.16.0-alpine AS base
 
 
 FROM base AS builder
@@ -7,7 +7,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@9.15.4 turbo@2.1.0
+RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.5.6
 
 COPY . .
 
@@ -20,13 +20,12 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@9.15.4 turbo@2.1.0
+RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.5.6
 
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/pnpm* .
 
-# RUN pnpm i --frozen-lockfile
-RUN pnpm i
+RUN pnpm i --ignore-scripts
 
 ARG NODE_ENV="production"
 ARG COOKIE_DOMAIN
@@ -37,6 +36,7 @@ ARG NEXT_PUBLIC_API_URL_SSR
 ARG NEXT_PUBLIC_PWA_URL
 ARG NEXT_PUBLIC_MANAGE_URL
 ARG NEXT_PUBLIC_CONTROL_URL
+ARG NEXT_PUBLIC_CHAT_URL
 ARG NEXT_PUBLIC_MATOMO_URL
 ARG NEXT_PUBLIC_MATOMO_ID
 ARG BLOB_STORAGE_ACCOUNT_URL

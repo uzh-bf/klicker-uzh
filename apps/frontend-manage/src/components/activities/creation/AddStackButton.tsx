@@ -7,7 +7,7 @@ import { useTranslations } from 'next-intl'
 import { useDrop } from 'react-dnd'
 import { isEmpty } from 'remeda'
 import { twMerge } from 'tailwind-merge'
-import { ElementDragDropTypes } from '../../questions/Element'
+import { ElementDragDropTypes } from '../../elements/Element'
 import { ElementBlockFormValues, ElementStackFormValues } from './WizardLayout'
 
 interface AddStackButtonProps {

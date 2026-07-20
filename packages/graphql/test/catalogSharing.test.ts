@@ -1,10 +1,11 @@
+import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   AuditLogType,
   ObjectAccess,
   ObjectType,
   PermissionLevel,
   PrismaClient,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import {
   MISSING_CATALOG_COLLECTION_ID,
   recomputeDerivedPermissions,
@@ -44,9 +45,10 @@ import {
 } from './helpers.js'
 import { userFive, userFour, userOne, userThree, userTwo } from './userData.js'
 
-describe('Unit tests for sharing functionalities of catalog collections', () => {
+describe('Integration tests for sharing functionalities of catalog collections', () => {
   // shared resources used across tests
   let prisma: PrismaClient
+  let hatchet: Hatchet
   let emitter: EventEmitter
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
@@ -55,8 +57,13 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
   let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
-    const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
+    const {
+      prisma: newPrisma,
+      hatchet: newHatchet,
+      emitter: newEmitter,
+    } = await initializePrisma()
     prisma = newPrisma
+    hatchet = newHatchet
     emitter = newEmitter
   })
 
@@ -72,7 +79,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
       userThreeCtx: ctx3,
       userFourCtx: ctx4,
       userFiveCtx: ctx5,
-    } = await testInitialization(prisma, emitter)
+    } = await testInitialization(prisma, hatchet, emitter)
 
     userOneCtx = ctx1
     userTwoCtx = ctx2
@@ -81,9 +88,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     userFiveCtx = ctx5
   })
 
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
   // ! Catalog Collection Access Validation
   // #region
@@ -131,24 +136,22 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(catalog3?.id).toBe(restrictedCatalog.id)
 
     // verify that the validation fails for user 2 without access to neither catalog collection
-    const { valid: valid4, catalogCollection: catalog4 } =
-      await validateCatalogCollectionPermissions(
-        {
-          catalogCollectionId: publicCatalog.id,
-          minimumPermissionLevel: PermissionLevel.READ,
-        },
-        userTwoCtx
-      )
+    const { valid: valid4 } = await validateCatalogCollectionPermissions(
+      {
+        catalogCollectionId: publicCatalog.id,
+        minimumPermissionLevel: PermissionLevel.READ,
+      },
+      userTwoCtx
+    )
     expect(valid4).toBe(false)
 
-    const { valid: valid5, catalogCollection: catalog5 } =
-      await validateCatalogCollectionPermissions(
-        {
-          catalogCollectionId: restrictedCatalog.id,
-          minimumPermissionLevel: PermissionLevel.WRITE,
-        },
-        userTwoCtx
-      )
+    const { valid: valid5 } = await validateCatalogCollectionPermissions(
+      {
+        catalogCollectionId: restrictedCatalog.id,
+        minimumPermissionLevel: PermissionLevel.WRITE,
+      },
+      userTwoCtx
+    )
     expect(valid5).toBe(false)
 
     // create explicit permissions for users 3 and 4 on the collections
@@ -212,24 +215,22 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(catalog8).not.toBeNull()
     expect(catalog8?.id).toBe(restrictedCatalog.id)
 
-    const { valid: failed1, catalogCollection: failedCatalog1 } =
-      await validateCatalogCollectionPermissions(
-        {
-          catalogCollectionId: publicCatalog.id,
-          minimumPermissionLevel: PermissionLevel.ADMIN,
-        },
-        userThreeCtx
-      )
+    const { valid: failed1 } = await validateCatalogCollectionPermissions(
+      {
+        catalogCollectionId: publicCatalog.id,
+        minimumPermissionLevel: PermissionLevel.ADMIN,
+      },
+      userThreeCtx
+    )
     expect(failed1).toBe(false)
 
-    const { valid: failed2, catalogCollection: failedCatalog2 } =
-      await validateCatalogCollectionPermissions(
-        {
-          catalogCollectionId: restrictedCatalog.id,
-          minimumPermissionLevel: PermissionLevel.OWNER,
-        },
-        userFourCtx
-      )
+    const { valid: failed2 } = await validateCatalogCollectionPermissions(
+      {
+        catalogCollectionId: restrictedCatalog.id,
+        minimumPermissionLevel: PermissionLevel.OWNER,
+      },
+      userFourCtx
+    )
     expect(failed2).toBe(false)
   })
 
@@ -1803,10 +1804,11 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     )
 
     // fetch the direct permissions and make sure that they are correct
-    const directPermissions = await getCatalogCollectionPermissions(
-      { id: publicCatalog.id },
-      userOneCtx
-    )
+    const { permissions: directPermissions } =
+      await getCatalogCollectionPermissions(
+        { id: publicCatalog.id },
+        userOneCtx
+      )
     expect(directPermissions).not.toBeNull()
     expect(directPermissions.length).toBe(2)
 
@@ -2402,6 +2404,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
       userOneCtx
     )
     expect(success).toBe(true)
+
     const success2 = await changeCatalogObjectAccess(
       { assignmentId: assignment2.id, access: ObjectAccess.PUBLIC },
       userOneCtx
@@ -2411,9 +2414,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     // verify that the catalog object assignments have been updated correctly
     const updatedAssignment1 =
       await prisma.catalogCollectionAssignment.findUnique({
-        where: {
-          id: assignment1.id,
-        },
+        where: { id: assignment1.id },
       })
     expect(updatedAssignment1).not.toBeNull()
     expect(updatedAssignment1?.access).toBe(ObjectAccess.RESTRICTED)
@@ -2424,9 +2425,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
 
     const updatedAssignment2 =
       await prisma.catalogCollectionAssignment.findUnique({
-        where: {
-          id: assignment2.id,
-        },
+        where: { id: assignment2.id },
       })
     expect(updatedAssignment2).not.toBeNull()
     expect(updatedAssignment2?.access).toBe(ObjectAccess.PUBLIC)
@@ -2434,17 +2433,32 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(updatedAssignment2?.catalogCollectionId).toBe(publicCatalog.id)
 
     // verify that audit log entries have been created for these changes
-    const auditLog1 = await prisma.auditLogEntry.findFirst({
+    const auditLogs1 = await prisma.auditLogEntry.findMany({
       where: {
         type: AuditLogType.CATALOG_ASSIGNMENT_MODIFIED,
         objectType: ObjectType.ANSWER_COLLECTION,
         objectId: String(AC1!.id),
       },
+      orderBy: { createdAt: 'desc' },
     })
-    expect(auditLog1).toBeTruthy()
-    expect(auditLog1?.sourceUserId).toBe(userOne.id)
-    expect(auditLog1?.message).toBe(
+    expect(auditLogs1[1]).toBeTruthy()
+    expect(auditLogs1[1]!.sourceUserId).toBe(userOne.id)
+    expect(auditLogs1[1]!.message).toBe(
       `Catalog object assignment (ID ${updatedAssignment1!.id} for ${ObjectType.ANSWER_COLLECTION} with ID ${AC1!.id}) access level changed to ${ObjectAccess.RESTRICTED}`
+    )
+
+    const auditLogs2 = await prisma.auditLogEntry.findMany({
+      where: {
+        type: AuditLogType.CATALOG_ASSIGNMENT_MODIFIED,
+        objectType: ObjectType.ANSWER_COLLECTION,
+        objectId: String(AC1!.id),
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+    expect(auditLogs2[0]).toBeTruthy()
+    expect(auditLogs2[0]!.sourceUserId).toBe(userOne.id)
+    expect(auditLogs2[0]!.message).toBe(
+      `Catalog object assignment (ID ${updatedAssignment2!.id} for ${ObjectType.ANSWER_COLLECTION} with ID ${AC1!.id}) access level changed to ${ObjectAccess.PUBLIC}`
     )
   })
   // #endregion

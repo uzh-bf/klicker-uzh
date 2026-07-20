@@ -1,10 +1,6 @@
 mutation PinFeedback($id: Int!, $isPinned: Boolean!, $liveQuizId: String!) {
   pinFeedback(id: $id, isPinned: $isPinned, liveQuizId: $liveQuizId) {
     id
-    isPublished
     isPinned
-    isResolved
-    content
-    votes
   }
 }

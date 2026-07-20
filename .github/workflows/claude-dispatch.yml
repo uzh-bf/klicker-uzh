@@ -1,0 +1,55 @@
+# IMPORTANT: Do not move this file in your repo! Make sure it's located at .github/workflows/claude-dispatch.yml
+name: Claude Code Dispatch
+
+# IMPORTANT: Do not modify this `on` section!
+on:
+  repository_dispatch:
+    types: [claude-dispatch]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  claude-dispatch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      # - name: Preliminary Setup
+      # run: |
+      # echo "Setting up environment..."
+      # Add any preliminary setup commands here to setup Claude's dev environment
+      # e.g., npm install, etc.
+
+      - name: Run Claude Code
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+          # Claude arguments including MCP config and allowed tools
+          claude_args: |
+            --model claude-opus-4-1-20250805
+            --mcp-config .github/mcp-config.json
+            --allowedTools Bash(pnpm:*)
+            --allowedTools mcp__serena__*
+            --allowedTools mcp__context7__*
+            --allowedTools mcp__sequential-thinking__*
+            --system-prompt "You are operating in remote agent mode with full MCP server access. Use serena MCP for semantic code analysis and project understanding. Use context7 MCP for up-to-date library documentation. Use sequential-thinking MCP for complex problem breakdown and structured analysis. Always leverage these MCP tools to provide deeper insights."
+
+          # Custom environment variables for MCP servers
+          settings: |
+            {
+              "env": {
+                "CONTEXT7_API_KEY": "${{ secrets.CONTEXT7_API_KEY }}"
+              }
+            }

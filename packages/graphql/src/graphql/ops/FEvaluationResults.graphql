@@ -4,6 +4,12 @@ fragment EvaluationResults on ActivityEvaluation {
     stackName
     stackDescription
     stackOrder
+    stackActive
+
+    # live quiz specific information
+    status
+    expiresAt
+    timeLimit
 
     instances {
       ... on ChoicesActivityEvaluationData {

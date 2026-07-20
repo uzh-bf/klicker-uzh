@@ -1,4 +1,4 @@
-import { faBook, faGears } from '@fortawesome/free-solid-svg-icons'
+import { faBook } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   LQ_DEFAULT_CORRECT_POINTS,
@@ -6,14 +6,14 @@ import {
   LQ_MAX_BONUS_POINTS,
   LQ_TIME_TO_ZERO_BONUS,
 } from '@klicker-uzh/shared-components/src/constants'
-import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButton'
-import { Button, FormikNumberField, Modal } from '@uzh-bf/design-system'
+import { FormikNumberField, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { Dispatch, SetStateAction } from 'react'
 import LiveQuizGradingIllustration from './LiveQuizGradingIllustration'
 
 function AdvancedLiveQuizSettings({
+  modalOpen,
+  setModalOpen,
   multiplier,
   defaultPointsValue,
   correctPointsValue,
@@ -21,6 +21,8 @@ function AdvancedLiveQuizSettings({
   timeToZeroValue,
   showError,
 }: {
+  modalOpen: boolean
+  setModalOpen: Dispatch<SetStateAction<boolean>>
   multiplier: string
   defaultPointsValue: string
   correctPointsValue: string
@@ -29,32 +31,12 @@ function AdvancedLiveQuizSettings({
   showError: boolean
 }) {
   const t = useTranslations()
-  const [open, setOpen] = useState(false)
 
   return (
     <Modal
-      open={open}
-      onClose={() => setOpen(false)}
-      trigger={
-        <ForwardRefButton
-          basic
-          onClick={() => setOpen(true)}
-          overrideClassName="h-7 w-7"
-          data={{ cy: 'live-quiz-advanced-settings' }}
-        >
-          <Button.Icon
-            withoutLabel
-            icon={faGears}
-            className={{
-              root: twMerge(
-                'h-5 w-5',
-                showError && 'text-red-600 hover:text-red-700'
-              ),
-            }}
-          />
-        </ForwardRefButton>
-      }
-      title={t('manage.activityWizard.liveQuizAdvancedSettings')}
+      open={modalOpen}
+      onClose={() => setModalOpen(false)}
+      title={t('manage.activityWizard.liveQuizCustomizedGrading')}
       className={{ content: 'pb-0' }}
       dataCloseButton={{ cy: 'live-quiz-advanced-settings-close' }}
       hideCloseButton={showError}

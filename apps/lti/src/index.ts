@@ -1,8 +1,14 @@
-// @ts-ignore
-import JWT from 'jsonwebtoken'
+import { signJWT } from '@klicker-uzh/util'
 import { Provider } from 'ltijs'
 // @ts-ignore
 import Database from 'ltijs-sequelize'
+import { appendJwt, resolveLaunchTarget } from './launchTarget.js'
+
+// Validate required environment variables
+if (!process.env.APP_ORIGIN_LTI) {
+  console.error('APP_ORIGIN_LTI is required but not defined')
+  process.exit(1)
+}
 
 const PROVIDER_OPTIONS = {
   appRoute: '/',
@@ -52,10 +58,16 @@ if (process.env.LTI_DB_TYPE === 'postgres') {
 }
 
 // LTI launch callback (token has been verified by ltijs beforehand)
-Provider.onConnect((token, req, res) => {
+// @ts-ignore The type here is wrong, a Promise is accepted as per official docs
+Provider.onConnect(async (token, req, res) => {
   console.log('LTI launch callback:', token)
 
-  const jwt = JWT.sign(
+  if (!process.env.APP_ORIGIN_LTI) {
+    console.error('APP_ORIGIN_LTI is required but not defined')
+    process.exit(1)
+  }
+
+  const jwt = await signJWT(
     {
       sub: token.user,
       email: token.userInfo.email,
@@ -65,6 +77,7 @@ Provider.onConnect((token, req, res) => {
     {
       algorithm: 'HS256',
       expiresIn: '5m',
+      issuer: process.env.APP_ORIGIN_LTI,
     }
   )
 
@@ -74,41 +87,35 @@ Provider.onConnect((token, req, res) => {
     domain: process.env.COOKIE_DOMAIN as string,
   })
 
-  if (typeof req.query.redirectTo === 'string') {
-    if (
-      !req.query.redirectTo.includes(process.env.COOKIE_DOMAIN as string) &&
-      !req.query.redirectTo.includes(process.env.DF_DOMAIN as string)
-    ) {
-      throw new Error(
-        'COOKIE_DOMAIN or DF_DOMAIN is not part of redirectTo. Please check your configuration.'
-      )
-    }
+  const launchTarget = resolveLaunchTarget(token, {
+    query: req.query as Record<string, unknown>,
+  })
 
-    // TODO: treat DF_DOMAIN separately with different secret
+  if (!launchTarget.ok) {
+    console.error(
+      `event=lti_launch_rejected targetSource=${launchTarget.source ?? 'null'} reason=${launchTarget.reason} rawType=${getRawType(launchTarget.rawValue)}`
+    )
 
-    const url = req.query.redirectTo as string
-    console.log('Redirecting to:', url)
-    res.redirect(`${url}?jwt=${jwt}`)
-  } else if (typeof process.env.LTI_REDIRECT_URL === 'string') {
-    if (
-      !process.env.LTI_REDIRECT_URL.includes(
-        process.env.COOKIE_DOMAIN as string
-      ) &&
-      !process.env.LTI_REDIRECT_URL.includes(process.env.DF_DOMAIN as string)
-    ) {
-      throw new Error(
-        'COOKIE_DOMAIN or DF_DOMAIN is not part of LTI_REDIRECT_URL. Please check your configuration.'
-      )
-    }
+    // remove lti token to avoid issues caused by this cookie
+    res.clearCookie('lti-token', {
+      secure: true,
+      sameSite: 'none',
+      domain: process.env.COOKIE_DOMAIN as string,
+    })
 
-    // TODO: treat DF_DOMAIN separately with different secret
-
-    const url = process.env.LTI_REDIRECT_URL as string
-    console.log('Redirecting to:', url)
-    res.redirect(`${url}?jwt=${jwt}`)
+    return res.status(400).json({
+      error: 'invalid_launch_target',
+      reason: launchTarget.reason,
+      source: launchTarget.source,
+    })
   }
 
-  res.end()
+  const redirectUrl = appendJwt(launchTarget.target, jwt)
+  console.log(
+    `event=lti_launch_redirect targetSource=${launchTarget.source} targetHost=${launchTarget.target.hostname}`
+  )
+
+  return res.redirect(redirectUrl)
 })
 
 // setup function
@@ -165,3 +172,9 @@ Provider.app.get('/info', async (req, res) => {
 })
 
 setup().catch((e) => console.error(e))
+
+function getRawType(value: unknown): string {
+  if (value === null) return 'null'
+  if (Array.isArray(value)) return 'array'
+  return typeof value
+}

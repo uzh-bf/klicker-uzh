@@ -1,5 +1,57 @@
 query GetActivityDetails($activityId: String!, $activityType: ActivityType!) {
   activityDetails(activityId: $activityId, activityType: $activityType) {
-    ...ActivityDetailsData
+    id
+    name
+    displayName
+    status
+    reviewStatus
+    isActivityReviewer
+    isActivityManager
+    courseId
+
+    ownerShortname
+    ownerEmail
+
+    isGamificationEnabled
+    arePointsAwarded
+    pointsMultiplier
+    totalBasePoints
+    totalCorrectnessPoints
+    totalBonusPoints
+    totalPoints
+
+    isAssessmentEnabled
+    isPinProtected
+    pinCode
+
+    stacks {
+      id
+      numOfParticipants
+      timeLimit
+      stackTitle
+      stackDescription
+      stackPoints
+
+      elements {
+        basePoints
+        correctnessPoints
+        bonusPoints
+        totalPoints
+        hasSampleSolution
+
+        isEditor
+        isDeleted
+
+        instance {
+          id
+          type
+          elementType
+          options {
+            pointsMultiplier
+          }
+          ...ElementData
+        }
+      }
+    }
   }
 }

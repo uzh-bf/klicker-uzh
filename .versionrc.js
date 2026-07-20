@@ -10,21 +10,23 @@ module.exports = {
     'apps/auth/',
     'apps/docs/',
     'apps/backend-docker/',
-    'apps/func-incoming-responses/',
-    'apps/func-response-processor/',
     'apps/frontend-manage/',
     'apps/frontend-pwa/',
     'apps/frontend-control/',
     'apps/office-addin/',
+    'apps/hatchet-worker-general',
+    'apps/hatchet-worker-response-processor',
     'packages/grading/',
     'packages/graphql/',
     'packages/lti/',
     'packages/prisma/',
     'packages/markdown/',
+    'packages/word-cloud',
     'packages/shared-components',
     'packages/next-config',
     'packages/i18n',
     'packages/util',
+    'packages/hatchet-tasks',
   ].reduce(
     (acc, path) => {
       return acc.concat({
@@ -32,12 +34,13 @@ module.exports = {
         type: 'json',
       })
     },
-    [
-      {
-        filename: `deploy/charts/klicker-uzh-v3/Chart.yaml`,
-        updater: 'util/yaml-updater.js',
-      },
-    ]
+    []
+    // [
+    //   {
+    //     filename: `deploy/charts/klicker-uzh-v2/Chart.yaml`,
+    //     updater: 'util/yaml-updater.js',
+    //   },
+    // ]
   ),
   types: [
     {

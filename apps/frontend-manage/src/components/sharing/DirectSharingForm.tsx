@@ -150,7 +150,7 @@ function DirectSharingForm({
         submitForm,
         validateForm,
       }) => (
-        <tr className="border-t border-gray-200 hover:bg-gray-50">
+        <tr className="border-t border-gray-200">
           <td className="px-4 py-3 text-sm text-gray-900">
             <TextField
               value={values.shortnameOrEmail || ''}
@@ -257,8 +257,9 @@ function DirectSharingForm({
               disabled={!isValid}
               className={{
                 root: twMerge(
-                  'mr-2 p-1.5 hover:text-white',
-                  isValid && 'bg-primary-100 hover:bg-primary-80 text-white',
+                  'mr-2 p-1.5',
+                  isValid &&
+                    'bg-primary-100 hover:bg-primary-80 text-white hover:text-white',
                   isSubmitting && 'hover:cursor-progress'
                 ),
               }}

@@ -1,0 +1,43 @@
+name: Test markdown package functionalities
+
+on:
+  push:
+    branches: ['v3', 'v3*']
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  test-markdown:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for changes
+        id: filter
+        uses: ./.github/actions/changed-paths
+        with:
+          pattern: '^(packages/markdown/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-markdown\.yml|\.github/actions/changed-paths/)'
+
+      - name: Define node version
+        if: steps.filter.outputs.should_run == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+
+      - uses: pnpm/action-setup@v4
+        if: steps.filter.outputs.should_run == 'true'
+        with:
+          version: 11.5.0
+          run_install: true
+
+      - name: Test markdown package
+        if: steps.filter.outputs.should_run == 'true'
+        run: pnpm --filter @klicker-uzh/markdown test

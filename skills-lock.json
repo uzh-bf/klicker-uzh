@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "skills": {
+    "cypress-author": {
+      "source": "cypress-io/ai-toolkit",
+      "sourceType": "github",
+      "skillPath": "skills/cypress-author/SKILL.md",
+      "computedHash": "f537b3a2e715270c7600b062bbd35d7035bdcdd0b7ec1134949f391b9d83e103"
+    },
+    "klicker-cypress-e2e": {
+      "source": ".agents/skills/klicker-cypress-e2e",
+      "sourceType": "local",
+      "skillPath": "SKILL.md",
+      "computedHash": "4fd33ea288e5af5c03a5e617a72d5ad1f33d9ddbaf3396f191a8260ad529bf8e"
+    },
+    "klicker-playwright-e2e": {
+      "source": ".agents/skills/klicker-playwright-e2e",
+      "sourceType": "local",
+      "skillPath": "SKILL.md",
+      "computedHash": "d9481b828ff61f8c2deb107ba161f94353cc5baba52a918b759c1be2cc5dce06"
+    },
+    "playwright-best-practices": {
+      "source": "currents-dev/playwright-best-practices-skill",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "320eaf861e3a0a923bfaad0726cb311a3fe30093378f8d26c89b9c5ae5c42b35"
+    },
+    "playwright-cli": {
+      "source": "microsoft/playwright-cli",
+      "sourceType": "github",
+      "skillPath": "skills/playwright-cli/SKILL.md",
+      "computedHash": "32cf6cf8733ae75ae41f5241347bca74459629f90bcfbd4e25540ede5d4b8f95"
+    }
+  }
+}

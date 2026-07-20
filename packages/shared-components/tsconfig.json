@@ -1,8 +1,7 @@
 {
   "include": ["**/**/*"],
   "compilerOptions": {
-    "baseUrl": ".",
-    "jsx": "react",
+    "jsx": "react-jsx",
     /* Base Options: */
     "esModuleInterop": true,
     "skipLibCheck": true,

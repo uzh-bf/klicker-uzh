@@ -8,7 +8,7 @@ import {
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
-import QR from '~/pages/qr/[...args]'
+import QR from '../../pages/qr/[...args]'
 
 function QRCodePopover({
   triggerStyle,

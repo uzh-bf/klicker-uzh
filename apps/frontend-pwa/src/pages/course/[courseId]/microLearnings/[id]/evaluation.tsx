@@ -65,7 +65,7 @@ function MicrolearningEvaluation() {
         <div className="flex flex-row items-center gap-4">
           <FontAwesomeIcon
             icon={faCheckCircle}
-            className="text-green-600"
+            className="text-green-700"
             size="3x"
           />
           <div>
@@ -149,10 +149,7 @@ function MicrolearningEvaluation() {
               loading={markingAsCompleted}
               onClick={async () => {
                 await markMicrolearningCompleted({
-                  variables: {
-                    courseId: microlearning.course!.id,
-                    id,
-                  },
+                  variables: { courseId: microlearning.course!.id, id },
                 })
                 router.replace('/')
               }}

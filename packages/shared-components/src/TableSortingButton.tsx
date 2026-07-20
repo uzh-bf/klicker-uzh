@@ -1,17 +1,16 @@
 import { faSort, faSortDown, faSortUp } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from '@uzh-bf/design-system'
-import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 function TableSortingButton({
   column,
   title,
-  buttonTextSize,
+  className,
 }: {
   column: any
   title: string
-  buttonTextSize?: string
+  className?: string
 }) {
   return (
     <Button
@@ -19,8 +18,8 @@ function TableSortingButton({
       onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
       className={{
         root: twMerge(
-          'pl-0! hover:bg-transparen h-7 whitespace-nowrap',
-          buttonTextSize
+          'h-auto w-full flex-wrap justify-start whitespace-normal break-words !pl-0 text-left hover:bg-transparent',
+          className
         ),
       }}
     >

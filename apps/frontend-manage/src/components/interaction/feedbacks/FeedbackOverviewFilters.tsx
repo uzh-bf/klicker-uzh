@@ -7,12 +7,12 @@ import {
   faThumbTack,
   faThumbTackSlash,
 } from '@fortawesome/free-solid-svg-icons'
-import { Button } from '@uzh-bf/design-system'
+import { Accordion, Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useMemo, useState } from 'react'
+import { Dispatch, SetStateAction, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-import TagHeader from '../../questions/tags/TagHeader'
-import TagItem from '../../questions/tags/TagItem'
+import FilterItem from '../../elements/tags/FilterItem'
+import FilterListEntry from '../../elements/tags/FilterListEntry'
 
 export interface FeedbackOverviewFilterProps {
   showResolved: boolean
@@ -46,9 +46,6 @@ function FeedbackOverviewFilters({
   handleReset,
 }: FeedbackOverviewFilterProps) {
   const t = useTranslations()
-  const [statusVisible, setStatusVisible] = useState(true)
-  const [visibilityVisible, setVisibilityVisible] = useState(true)
-  const [pinningVisible, setPinningVisible] = useState(true)
 
   const resetDisabled = useMemo(
     () =>
@@ -114,81 +111,85 @@ function FeedbackOverviewFilters({
 
   return (
     <div className="flex h-max max-h-full flex-1 flex-col overflow-y-auto rounded-md border border-solid p-2 text-sm md:w-56">
-      <TagHeader
-        text={t('shared.generic.status')}
-        state={statusVisible}
-        setState={setStatusVisible}
-      />
-      {statusVisible && (
-        <ul className="list-none">
-          <TagItem
+      <Accordion
+        type="multiple"
+        defaultValue={[
+          'status-filters',
+          'pinning-filters',
+          'visibility-filters',
+        ]}
+        className="w-full"
+      >
+        <FilterListEntry
+          trigger={t('shared.generic.status')}
+          value="status-filters"
+          active={!showResolved || !showOpen}
+          data={{ cy: `collapse-tag-header-status` }}
+        >
+          <FilterItem
             text={t('manage.cockpit.filterSolved')}
             icon={[faCheck, faCheck]}
             active={showResolved}
             onClick={toggleResolvedFilter}
             data={{ cy: 'feedback-filter-resolved' }}
           />
-          <TagItem
+          <FilterItem
             text={t('manage.cockpit.filterOpen')}
             icon={[faComment, faComment]}
             active={showOpen}
             onClick={toggleOpenFilter}
             data={{ cy: 'feedback-filter-open' }}
           />
-        </ul>
-      )}
+        </FilterListEntry>
 
-      <TagHeader
-        text={t('manage.cockpit.pinning')}
-        state={pinningVisible}
-        setState={setPinningVisible}
-      />
-      {pinningVisible && (
-        <ul className="list-none">
-          <TagItem
+        <FilterListEntry
+          trigger={t('manage.cockpit.pinning')}
+          value="pinning-filters"
+          active={showPinned || showUnpinned}
+          data={{ cy: `collapse-tag-header-pinning` }}
+        >
+          <FilterItem
             text={t('manage.cockpit.filterPinned')}
             icon={[faThumbTack, faThumbTack]}
             active={showPinned}
             onClick={togglePinnedFilter}
             data={{ cy: 'feedback-filter-pinned' }}
           />
-          <TagItem
+          <FilterItem
             text={t('manage.cockpit.filterUnpinned')}
             icon={[faThumbTackSlash, faThumbTackSlash]}
             active={showUnpinned}
             onClick={toggleUnpinnedFilter}
             data={{ cy: 'feedback-filter-unpinned' }}
           />
-        </ul>
-      )}
+        </FilterListEntry>
 
-      <TagHeader
-        text={t('manage.cockpit.visibility')}
-        state={visibilityVisible}
-        setState={setVisibilityVisible}
-      />
-      {visibilityVisible && (
-        <ul className="list-none">
-          <TagItem
+        <FilterListEntry
+          trigger={t('manage.cockpit.visibility')}
+          value="visibility-filters"
+          active={showPublished || showUnpublished}
+          data={{ cy: `collapse-tag-header-visibility` }}
+        >
+          <FilterItem
             text={t('manage.cockpit.filterPublished')}
             icon={[faEye, faEye]}
             active={showPublished}
             onClick={togglePublishedFilter}
             data={{ cy: 'feedback-filter-published' }}
           />
-          <TagItem
+          <FilterItem
             text={t('manage.cockpit.filterUnpublished')}
             icon={[faEyeSlash, faEyeSlash]}
             active={showUnpublished}
             onClick={toggleUnpublishedFilter}
             data={{ cy: 'feedback-filter-unpublished' }}
           />
-        </ul>
-      )}
+        </FilterListEntry>
+      </Accordion>
 
       <Button
         className={{
-          root: twMerge('mt-4 h-8 text-sm', !resetDisabled && 'border-red-600'),
+          root: twMerge('mt-2 h-8 text-sm', !resetDisabled && 'border-red-600'),
         }}
         disabled={resetDisabled}
         onClick={handleReset}

@@ -1,21 +1,7 @@
 import messages from '../../../packages/i18n/messages/en'
-import { getDatetimeValidationString } from './helpers'
+import { getDatetimeValidationString, getFutureDate } from './helpers'
 
 describe('Different live-quiz workflows', function () {
-  before(() => {
-    cy.seed()
-
-    // set browser language to english (independent of local machine setting
-    Cypress.automation('remote:debugger:protocol', {
-      command: 'Emulation.setLocaleOverride',
-      params: { locale: 'en' },
-    })
-  })
-
-  after(() => {
-    cy.cleanup()
-  })
-
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('questions.json').then((questionData) => {
       this.data = questionData
@@ -25,12 +11,41 @@ describe('Different live-quiz workflows', function () {
     })
   })
 
-  // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  // Fail-fast handled globally in support/e2e.ts
+
+  function openNextBlock() {
+    cy.get('[data-cy="next-block-timeline"]', { timeout: 30000 })
+      .should('be.visible')
+      .and('not.be.disabled')
+      .click()
+    cy.get('[data-cy="next-block-timeline"]', { timeout: 30000 }).should(
+      'be.visible'
+    )
+  }
+
+  function visitEvaluationFromCockpit() {
+    cy.get('[data-cy="evaluation-results-cockpit"]', { timeout: 30000 })
+      .should('be.visible')
+      .closest('a')
+      .invoke('attr', 'href')
+      .should('include', '/evaluation')
+      .then((href) => {
+        const evaluationHref = String(href)
+        const evaluationUrl = evaluationHref.startsWith('http')
+          ? evaluationHref
+          : `${Cypress.env('URL_MANAGE')}${evaluationHref}`
+
+        cy.visit({ url: evaluationUrl })
+      })
+    cy.get('[data-cy="change-chart-type"]', { timeout: 30000 }).should(
+      'be.visible'
+    )
+  }
+
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
+  })
 
   // ! Part 0: Preparation
   // #region
@@ -41,13 +56,22 @@ describe('Different live-quiz workflows', function () {
     cy.createQuestionSC({
       name: this.data.SC.title,
       content: this.data.SC.content,
+      explanation: this.data.SC.explanation,
       choices: this.data.SC.choices,
       userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionSC({
       name: this.data.SCML.title,
       content: this.data.SCML.content,
+      explanation: this.data.SCML.explanation,
       choices: this.data.SCML.choices,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createQuestionSC({
+      name: this.data.SCML2.title,
+      content: this.data.SCML2.content,
+      explanation: this.data.SCML2.explanation,
+      choices: this.data.SCML2.choices,
       userId: Cypress.env('LECTURER_ID'),
     })
 
@@ -55,13 +79,22 @@ describe('Different live-quiz workflows', function () {
     cy.createQuestionMC({
       name: this.data.MC.title,
       content: this.data.MC.content,
+      explanation: this.data.MC.explanation,
       choices: this.data.MC.choices,
       userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionMC({
       name: this.data.MCML.title,
       content: this.data.MCML.content,
+      explanation: this.data.MCML.explanation,
       choices: this.data.MCML.choices,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createQuestionMC({
+      name: this.data.MCML2.title,
+      content: this.data.MCML2.content,
+      explanation: this.data.MCML2.explanation,
+      choices: this.data.MCML2.choices,
       userId: Cypress.env('LECTURER_ID'),
     })
 
@@ -69,13 +102,22 @@ describe('Different live-quiz workflows', function () {
     cy.createQuestionKPRIM({
       name: this.data.KP.title,
       content: this.data.KP.content,
+      explanation: this.data.KP.explanation,
       choices: this.data.KP.choices,
       userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionKPRIM({
       name: this.data.KPML.title,
       content: this.data.KPML.content,
+      explanation: this.data.KPML.explanation,
       choices: this.data.KPML.choices,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createQuestionKPRIM({
+      name: this.data.KPML2.title,
+      content: this.data.KPML2.content,
+      explanation: this.data.KPML2.explanation,
+      choices: this.data.KPML2.choices,
       userId: Cypress.env('LECTURER_ID'),
     })
 
@@ -83,13 +125,22 @@ describe('Different live-quiz workflows', function () {
     cy.createQuestionNR({
       name: this.data.NR.title,
       content: this.data.NR.content,
+      explanation: this.data.NR.explanation,
       ...this.data.NR.options,
       userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionNR({
       name: this.data.NRML.title,
       content: this.data.NRML.content,
+      explanation: this.data.NRML.explanation,
       ...this.data.NRML.options,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createQuestionNR({
+      name: this.data.NRML2.title,
+      content: this.data.NRML2.content,
+      explanation: this.data.NRML2.explanation,
+      ...this.data.NRML2.options,
       userId: Cypress.env('LECTURER_ID'),
     })
 
@@ -97,13 +148,22 @@ describe('Different live-quiz workflows', function () {
     cy.createQuestionFT({
       name: this.data.FT.title,
       content: this.data.FT.content,
+      explanation: this.data.FT.explanation,
       ...this.data.FT.options,
       userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionFT({
       name: this.data.FTML.title,
       content: this.data.FTML.content,
+      explanation: this.data.FTML.explanation,
       ...this.data.FTML.options,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createQuestionFT({
+      name: this.data.FTML2.title,
+      content: this.data.FTML2.content,
+      explanation: this.data.FTML2.explanation,
+      ...this.data.FTML2.options,
       userId: Cypress.env('LECTURER_ID'),
     })
 
@@ -120,9 +180,13 @@ describe('Different live-quiz workflows', function () {
 
     // create selection and case study questions (with and without sample solution)
     cy.get('[data-cy="library"]').click()
+    cy.get('[data-cy="elements-search-input"]', { timeout: 30000 }).should(
+      'exist'
+    )
     cy.createQuestionSE({
       name: this.data.SE.title,
       content: this.data.SE.content,
+      explanation: this.data.SE.explanation,
       numberOfInputs: this.data.SE.inputs,
       collectionName: this.data.collection.name,
       userId: Cypress.env('LECTURER_ID'),
@@ -130,10 +194,22 @@ describe('Different live-quiz workflows', function () {
     cy.createQuestionSE({
       name: this.data.SEML.title,
       content: this.data.SEML.content,
+      explanation: this.data.SEML.explanation,
       numberOfInputs: this.data.SEML.inputs,
       collectionName: this.data.collection.name,
       correctAnswers: this.data.collection.options.filter((_, i) =>
         this.data.SEML.solutions.includes(i)
+      ),
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createQuestionSE({
+      name: this.data.SEML2.title,
+      content: this.data.SEML2.content,
+      explanation: this.data.SEML2.explanation,
+      numberOfInputs: this.data.SEML2.inputs,
+      collectionName: this.data.collection.name,
+      correctAnswers: this.data.collection.options.filter((_, i) =>
+        this.data.SEML2.solutions.includes(i)
       ),
       userId: Cypress.env('LECTURER_ID'),
     })
@@ -163,6 +239,19 @@ describe('Different live-quiz workflows', function () {
       criteria: this.data.CSML.criteria,
       cases: this.data.CSML.cases,
       solutions: this.data.CSML.solutions,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createQuestionCS({
+      name: this.data.CSML2.title,
+      content: this.data.CSML2.content,
+      explanation: this.data.CSML2.explanation,
+      collectionName: this.data.collection.name,
+      selectedItems: this.data.collection.options.filter((_, i) =>
+        this.data.CSML2.selectedItems.includes(i)
+      ),
+      criteria: this.data.CSML2.criteria,
+      cases: this.data.CSML2.cases,
+      solutions: this.data.CSML2.solutions,
       userId: Cypress.env('LECTURER_ID'),
     })
 
@@ -217,7 +306,7 @@ describe('Different live-quiz workflows', function () {
     )
     cy.get('[data-cy="insert-live-description"]')
       .realClick()
-      .type(this.data.course1.quiz.description)
+      .realType(this.data.course1.quiz.description)
     cy.get('[data-cy="insert-live-description"]').contains(
       this.data.course1.quiz.description
     )
@@ -445,6 +534,9 @@ describe('Different live-quiz workflows', function () {
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
 
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.course1.quiz.name}{enter}`
+    )
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.course1.quiz.name}"]`
     ).should('exist')
@@ -474,7 +566,7 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="insert-live-description"]')
       .realClick()
       .clear()
-      .type(this.data.course1.quiz.descriptionNew)
+      .realType(this.data.course1.quiz.descriptionNew)
     cy.get('[data-cy="insert-live-description"]')
       .realClick()
       .contains(this.data.course1.quiz.descriptionNew)
@@ -685,6 +777,9 @@ describe('Different live-quiz workflows', function () {
   it('Duplicate the live quiz', function () {
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.course1.quiz.nameNew}{enter}`
+    )
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.course1.quiz.nameNew}"]`
     ).should('exist')
@@ -721,6 +816,7 @@ describe('Different live-quiz workflows', function () {
       .should('exist')
       .should('contain', this.data.SC.title.substring(0, 20))
     cy.get('[data-cy="next-or-submit"]').click()
+
     cy.get('[data-cy="open-activity-overview"]').click()
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.course1.quiz.nameDupl}"]`
@@ -730,6 +826,9 @@ describe('Different live-quiz workflows', function () {
   it('Cleanup: Delete the duplicated live quiz', function () {
     cy.loginLecturer()
     cy.get(`[data-cy="activities"]`).click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.course1.quiz.nameDupl}{enter}`
+    )
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.course1.quiz.nameDupl}"]`
     ).should('exist')
@@ -761,6 +860,9 @@ describe('Different live-quiz workflows', function () {
   it('Start the created live quizzes, abort it, and restart & complete it', function () {
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.course1.quiz.nameNew}{enter}`
+    )
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.course1.quiz.nameNew}"]`
     ).should('exist')
@@ -803,6 +905,9 @@ describe('Different live-quiz workflows', function () {
     cy.loginLecturer()
     cy.get(`[data-cy="activities"]`).click()
 
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.course1.quiz.nameNew}{enter}`
+    )
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.course1.quiz.nameNew}"]`
     ).should('exist')
@@ -858,7 +963,7 @@ describe('Different live-quiz workflows', function () {
     )
     cy.get('[data-cy="insert-live-description"]')
       .realClick()
-      .type(this.data.course2.quiz.description)
+      .realType(this.data.course2.quiz.description)
     cy.get('[data-cy="insert-live-description"]')
       .realClick()
       .contains(this.data.course2.quiz.description)
@@ -896,9 +1001,9 @@ describe('Different live-quiz workflows', function () {
       stacks: [
         {
           elements: [
-            this.data.SC.title,
-            this.data.MC.title,
-            this.data.KP.title,
+            this.data.SCML.title,
+            this.data.MCML.title,
+            this.data.KPML.title,
             this.data.NR.title,
             this.data.FT.title,
             this.data.SE.title,
@@ -908,13 +1013,13 @@ describe('Different live-quiz workflows', function () {
         },
         {
           elements: [
-            this.data.SCML.title,
-            this.data.MCML.title,
-            this.data.KPML.title,
-            this.data.NRML.title,
-            this.data.FTML.title,
-            this.data.SEML.title,
-            this.data.CSML.title,
+            this.data.SCML2.title,
+            this.data.MCML2.title,
+            this.data.KPML2.title,
+            this.data.NRML2.title,
+            this.data.FTML2.title,
+            this.data.SEML2.title,
+            this.data.CSML2.title,
             this.data.CT2.title,
           ],
         },
@@ -936,9 +1041,9 @@ describe('Different live-quiz workflows', function () {
     // check if live quiz description is shown to students on desktop view
     cy.loginStudent()
     cy.findByText(this.data.course2.quiz.displayName).click()
-    cy.get('[data-cy="live-quiz-description"]').contains(
-      this.data.course2.quiz.displayName
-    )
+    cy.get('[data-cy="live-quiz-description"]', { timeout: 15_000 })
+      .should('be.visible')
+      .and('contain', this.data.course2.quiz.displayName)
 
     // check if the description is also shown correctly on mobile view
     cy.viewport('iphone-x')
@@ -992,9 +1097,12 @@ describe('Different live-quiz workflows', function () {
   it('Test the live quiz functionalities on mobile devices', function () {
     // login student again on mobile, test navigation and answer second question
     cy.viewport('iphone-x')
-    cy.loginStudent()
-    cy.findByText(this.data.course2.quiz.displayName).click()
-    cy.findByText(this.data.NR.content).should('exist')
+    cy.loginStudent({ preserveClientState: true })
+    cy.findByText(this.data.course2.quiz.displayName).should('exist').click()
+    cy.findByText(this.data.NR.content, { timeout: 10000 }).should('exist')
+    cy.findByText(messages.pwa.liveQuiz.allQuestionsAnswered).should(
+      'not.exist'
+    )
 
     cy.get('[data-cy="mobile-menu-leaderboard"]').click()
     cy.get('[data-cy="mobile-menu-feedbacks"]').click()
@@ -1069,7 +1177,13 @@ describe('Different live-quiz workflows', function () {
     // make both feedbacks visible and respond to one of them (moderation enabled)
     cy.get(
       `[data-cy="publish-feedback-${this.data.course2.quiz.feedbackDesktop}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="publish-feedback-${this.data.course2.quiz.feedbackDesktop}"]`
     ).click()
+    cy.get(
+      `[data-cy="publish-feedback-${this.data.course2.quiz.feedbackMobile}"]`
+    ).should('exist')
     cy.get(
       `[data-cy="publish-feedback-${this.data.course2.quiz.feedbackMobile}"]`
     ).click()
@@ -1148,9 +1262,9 @@ describe('Different live-quiz workflows', function () {
     // CS question - skipping not permitted, partial answers not possible
     cy.answerCaseStudy({
       elementIx: 6,
-      answers: this.data.CSML.answers,
-      cases: this.data.CSML.cases,
-      criteria: this.data.CSML.criteria,
+      answers: this.data.CSML2.answers,
+      cases: this.data.CSML2.cases,
+      criteria: this.data.CSML2.criteria,
       initialValidation: cy
         .get('[data-cy="student-submit-answer"]')
         .should('be.disabled'),
@@ -1247,17 +1361,17 @@ describe('Different live-quiz workflows', function () {
     cy.get('@publicLinkEvaluation').then((link) => {
       cy.visit(String(link))
     })
-    cy.findByText(this.data.SC.content).should('exist')
+    cy.findByText(this.data.SCML.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.MC.content).should('exist')
+    cy.findByText(this.data.MCML.content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click()
-    cy.findByText(this.data.SC.content).should('exist')
+    cy.findByText(this.data.SCML.content).should('exist')
 
     // check out specific question evaluation
     cy.get('@publicLinkQuestion0').then((link) => {
       cy.visit(String(link))
     })
-    cy.findByText(this.data.SC.content).should('exist')
+    cy.findByText(this.data.SCML.content).should('exist')
     cy.get('@publicLinkQuestion6').then((link) => {
       cy.visit(String(link))
     })
@@ -1269,15 +1383,120 @@ describe('Different live-quiz workflows', function () {
     cy.get('@publicLinkQuestion9').then((link) => {
       cy.visit(String(link))
     })
-    cy.findByText(this.data.MCML.content).should('exist')
+    cy.findByText(this.data.MCML2.content).should('exist')
 
     // check out leaderboard
     cy.get('@publicLinkLeaderboard').then((link) => {
       cy.visit(String(link))
     })
+
+    // sample solution / explanation settings
+    // verify that solution and explanation are only enabled for completed blocks
+    cy.loginLecturer()
+    cy.get('[data-cy="activities"]').click()
+    cy.get(
+      `[data-cy="live-quiz-cockpit-${this.data.course2.quiz.name}"]`
+    ).click()
+    cy.wait(1000)
+
+    cy.get('[data-cy="embed-evaluation-cockpit"]').click()
+    cy.get('[data-cy="embedding-show-solution-switch"]').click() // enable sample solution on evaluation
+    cy.get('[data-cy="embedding-show-explanation-switch"]').click() // enable sample explanation on evaluation
+
+    // SC question with sample solution and explanation (closed block)
+    cy.get('[data-cy="open-embedding-link-question-0"]')
+      .invoke('text')
+      .then((text) => {
+        cy.wrap(text).as('solutionEvaluationLink0')
+      })
+    // NR question without sample solution but with explanation (closed block)
+    cy.get('[data-cy="open-embedding-link-question-3"]')
+      .invoke('text')
+      .then((text) => {
+        cy.wrap(text).as('solutionEvaluationLink3')
+      })
+
+    // CT element without sample solution or explanation (closed block)
+    cy.get('[data-cy="open-embedding-link-question-7"]')
+      .invoke('text')
+      .then((text) => {
+        cy.wrap(text).as('solutionEvaluationLink7')
+      })
+
+    // MC question with sample solution and explanation (active block)
+    cy.get('[data-cy="open-embedding-link-question-9"]')
+      .invoke('text')
+      .then((text) => {
+        cy.wrap(text).as('solutionEvaluationLink9')
+      })
+
+    // for past SC question with sample solution and explanation, both switches should be active
+    cy.get('@solutionEvaluationLink0').then((link) => {
+      cy.visit(String(link))
+    })
+    cy.findByText(this.data.SCML.content).should('exist')
+    cy.findByText(this.data.SCML.explanation).should('exist')
+    cy.get('[data-cy="evaluation-footer-show-solution"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+    cy.get('[data-cy="evaluation-footer-show-explanation"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+
+    // for past NR question without sample solution but with explanation (closed block)
+    cy.get('@solutionEvaluationLink3').then((link) => {
+      cy.visit(String(link))
+    })
+    cy.findByText(this.data.NR.content).should('exist')
+    cy.findByText(this.data.NR.explanation).should('exist')
+    cy.get('[data-cy="evaluation-footer-show-solution"]').should('not.exist')
+    cy.get('[data-cy="evaluation-footer-show-explanation"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+
+    // for content elements, neither the sample solution nor the explanation switch should exist
+    cy.get('@solutionEvaluationLink7').then((link) => {
+      cy.visit(String(link))
+    })
+    cy.findByText(this.data.CT.content).should('exist')
+    cy.get('[data-cy="evaluation-footer-show-solution"]').should('not.exist')
+    cy.get('[data-cy="evaluation-footer-show-explanation"]').should('not.exist')
+
+    // for the active block, both the sample solution and explanation should be unchecked and disabled
+    cy.get('@solutionEvaluationLink9').then((link) => {
+      cy.visit(String(link))
+    })
+    cy.findByText(this.data.MCML2.content).should('exist')
+    cy.findByText(this.data.MCML2.explanation).should('not.exist')
+    cy.get('[data-cy="evaluation-footer-show-solution"]').should(
+      'have.attr',
+      'data-state',
+      'unchecked'
+    )
+    cy.get('[data-cy="evaluation-footer-show-explanation"]').should(
+      'have.attr',
+      'data-state',
+      'unchecked'
+    )
+    cy.get('[data-cy="evaluation-footer-show-solution"]').should(
+      'have.attr',
+      'disabled',
+      'disabled'
+    )
+    cy.get('[data-cy="evaluation-footer-show-explanation"]').should(
+      'have.attr',
+      'disabled',
+      'disabled'
+    )
   })
 
-  it('Check out evaluation view of live quiz and its content', function () {
+  it('Check out the evaluation view of the live quiz and its content', function () {
     cy.loginLecturer()
 
     cy.get('[data-cy="activities"]').click()
@@ -1293,31 +1512,36 @@ describe('Different live-quiz workflows', function () {
     })
 
     // check content of evaluation view
-    cy.findByText(this.data.SC.content).should('exist')
+    cy.findByText(this.data.SCML.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.MC.content).should('exist')
+    cy.findByText(this.data.MCML.content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click()
-    cy.findByText(this.data.SC.content).should('exist')
+    cy.findByText(this.data.SCML.content).should('exist')
 
     // test instance navigation
     cy.get('[data-cy="evaluate-question-select"]')
       .should('exist')
-      .contains(this.data.SC.title)
+      .contains(this.data.SCML.title)
     cy.get('[data-cy="evaluate-question-select"]').realClick()
     cy.get(
-      `[data-cy="evaluation-select-instance-${this.data.KP.title}"]`
+      `[data-cy="evaluation-select-instance-${this.data.KPML.title}"]`
     ).realClick()
-    cy.get('[data-cy="evaluate-question-select"]').contains(this.data.KP.title)
+    cy.get('[data-cy="evaluate-question-select"]').contains(
+      this.data.KPML.title
+    )
     cy.get('[data-cy="evaluate-question-select"]').realClick()
     cy.get(
-      `[data-cy="evaluation-select-instance-${this.data.SC.title}"]`
+      `[data-cy="evaluation-select-instance-${this.data.SCML.title}"]`
     ).realClick()
-    cy.get('[data-cy="evaluate-question-select"]').contains(this.data.SC.title)
+    cy.get('[data-cy="evaluate-question-select"]').contains(
+      this.data.SCML.title
+    )
 
     // navigate forwards and backwards through all questions
+    // results of closed blocks should be shown directly - active blocks require confirmation
     cy.get('[data-cy="evaluate-next-question"]').click()
     cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.KP.title).should('exist')
+    cy.findByText(this.data.KPML.title).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
     cy.findByText(this.data.NR.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
@@ -1328,28 +1552,39 @@ describe('Different live-quiz workflows', function () {
     cy.findByText(this.data.CS.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
     cy.findByText(this.data.CT.content).should('exist')
+
+    // results of active block should only be shown after confirmation
+    // on second visit (after confirmation), no additional measures are required
     cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.SCML.content).should('exist')
+    cy.findByText(this.data.SCML2.content).should('not.exist')
+    cy.get('[data-cy="show-results-evaluation"]').click()
+    cy.findByText(this.data.SCML2.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.MCML.content).should('exist')
+    cy.get('[data-cy="show-results-evaluation"]').click()
+    cy.findByText(this.data.MCML2.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.KPML.content).should('exist')
+    cy.get('[data-cy="show-results-evaluation"]').click()
+    cy.findByText(this.data.KPML2.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.NRML.content).should('exist')
+    cy.get('[data-cy="show-results-evaluation"]').click()
+    cy.findByText(this.data.NRML2.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.FTML.content).should('exist')
+    cy.get('[data-cy="show-results-evaluation"]').click()
+    cy.findByText(this.data.FTML2.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.SEML.content).should('exist')
+    cy.get('[data-cy="show-results-evaluation"]').click()
+    cy.findByText(this.data.SEML2.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.CSML.content).should('exist')
+    cy.get('[data-cy="show-results-evaluation"]').click()
+    cy.findByText(this.data.CSML2.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.CT2.content).should('exist')
+    cy.findByText(this.data.CT2.content).should('exist') // content elements are always displayed (even without results confirmation)
     cy.get('[data-cy="evaluate-previous-question"]').click()
-    cy.findByText(this.data.CSML.content).should('exist')
+    cy.findByText(this.data.CSML2.content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click().click().click()
-    cy.findByText(this.data.NRML.content).should('exist')
+    cy.findByText(this.data.NRML2.content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click().click().click()
-    cy.findByText(this.data.SCML.content).should('exist')
+    cy.findByText(this.data.SCML2.content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click()
     cy.findByText(this.data.CT.content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click()
@@ -1359,15 +1594,15 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="evaluate-previous-question"]').click()
     cy.findByText(this.data.FT.content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click().click().click()
-    cy.findByText(this.data.MC.title).should('exist')
+    cy.findByText(this.data.MCML.title).should('exist')
 
     // test navigation through blocks
     cy.get('[data-cy="evaluate-stack-1"]').click()
-    cy.findByText(this.data.SCML.content).should('exist')
+    cy.findByText(this.data.SCML2.content).should('exist')
     cy.get('[data-cy="evaluate-stack-0"]').click()
-    cy.findByText(this.data.SC.title).should('exist')
+    cy.findByText(this.data.SCML.title).should('exist')
     cy.get('[data-cy="evaluate-stack-1"]').click()
-    cy.findByText(this.data.SCML.content).should('exist')
+    cy.findByText(this.data.SCML2.content).should('exist')
   })
 
   it('Close block and delete feedback / feedback response', function () {
@@ -1391,6 +1626,113 @@ describe('Different live-quiz workflows', function () {
     cy.get(
       `[data-cy="delete-response-${this.data.course2.quiz.feedbackResponse}"]`
     ).click()
+  })
+
+  it('Verify that after closing the active live quiz block, the sample solution is shown', function () {
+    cy.loginLecturer()
+
+    cy.loginLecturer()
+    cy.get('[data-cy="activities"]').click()
+    cy.get(
+      `[data-cy="live-quiz-cockpit-${this.data.course2.quiz.name}"]`
+    ).click()
+    cy.wait(1000)
+
+    cy.get('[data-cy="embed-evaluation-cockpit"]').click()
+    cy.get('[data-cy="embedding-show-solution-switch"]').click() // enable sample solution on evaluation
+    cy.get('[data-cy="embedding-show-explanation-switch"]').click() // enable sample explanation on evaluation
+
+    // SC question with sample solution and explanation (closed block)
+    cy.get('[data-cy="open-embedding-link-question-0"]')
+      .invoke('text')
+      .then((text) => {
+        cy.wrap(text).as('solutionEvaluationLink0')
+      })
+    // NR question without sample solution but with explanation (closed block)
+    cy.get('[data-cy="open-embedding-link-question-3"]')
+      .invoke('text')
+      .then((text) => {
+        cy.wrap(text).as('solutionEvaluationLink3')
+      })
+
+    // CT element without sample solution or explanation (closed block)
+    cy.get('[data-cy="open-embedding-link-question-7"]')
+      .invoke('text')
+      .then((text) => {
+        cy.wrap(text).as('solutionEvaluationLink7')
+      })
+
+    // MC question with sample solution and explanation (active block)
+    cy.get('[data-cy="open-embedding-link-question-9"]')
+      .invoke('text')
+      .then((text) => {
+        cy.wrap(text).as('solutionEvaluationLink9')
+      })
+
+    // for past SC question with sample solution and explanation, both switches should be active
+    cy.get('@solutionEvaluationLink0').then((link) => {
+      cy.visit(String(link))
+    })
+    cy.findByText(this.data.SCML.content).should('exist')
+    cy.findByText(this.data.SCML.explanation).should('exist')
+    cy.get('[data-cy="evaluation-footer-show-solution"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+    cy.get('[data-cy="evaluation-footer-show-explanation"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+
+    // for past NR question without sample solution but with explanation (closed block)
+    cy.get('@solutionEvaluationLink3').then((link) => {
+      cy.visit(String(link))
+    })
+    cy.findByText(this.data.NR.content).should('exist')
+    cy.findByText(this.data.NR.explanation).should('exist')
+    cy.get('[data-cy="evaluation-footer-show-solution"]').should('not.exist')
+    cy.get('[data-cy="evaluation-footer-show-explanation"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+
+    // for content elements, neither the sample solution nor the explanation switch should exist
+    cy.get('@solutionEvaluationLink7').then((link) => {
+      cy.visit(String(link))
+    })
+    cy.findByText(this.data.CT.content).should('exist')
+    cy.get('[data-cy="evaluation-footer-show-solution"]').should('not.exist')
+    cy.get('[data-cy="evaluation-footer-show-explanation"]').should('not.exist')
+
+    // for the active block, both the sample solution and explanation should be unchecked and disabled
+    cy.get('@solutionEvaluationLink9').then((link) => {
+      cy.visit(String(link))
+    })
+    cy.findByText(this.data.MCML2.content).should('exist')
+    cy.findByText(this.data.MCML2.explanation).should('exist')
+    cy.get('[data-cy="evaluation-footer-show-solution"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+    cy.get('[data-cy="evaluation-footer-show-explanation"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+    cy.get('[data-cy="evaluation-footer-show-solution"]').should(
+      'not.have.attr',
+      'disabled',
+      'disabled'
+    )
+    cy.get('[data-cy="evaluation-footer-show-explanation"]').should(
+      'not.have.attr',
+      'disabled',
+      'disabled'
+    )
   })
 
   it('Check that the deleted feedbacks are not visible anymore', function () {
@@ -1417,6 +1759,9 @@ describe('Different live-quiz workflows', function () {
     cy.loginLecturer()
     cy.get(`[data-cy="activities"]`).click()
 
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.course2.quiz.name}{enter}`
+    )
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.course2.quiz.name}"]`
     ).should('exist')
@@ -1427,7 +1772,8 @@ describe('Different live-quiz workflows', function () {
       `[data-cy="delete-live-quiz-${this.data.course2.quiz.name}"]`
     ).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).should('be.disabled')
-    cy.get(`[data-cy="confirm-deletion-responses"]`).should('not.exist') // ? azure functions do not work in cypress CI actions
+    cy.get('body').contains('16 response(s) in this live quiz')
+    cy.get(`[data-cy="confirm-deletion-responses"]`).realClick()
     cy.get(`[data-cy="confirm-deletion-qa-feedbacks"]`).click()
     cy.get(`[data-cy="confirm-deletion-confusion-feedbacks"]`).should(
       'not.exist'
@@ -1441,6 +1787,7 @@ describe('Different live-quiz workflows', function () {
       `[data-cy="delete-live-quiz-${this.data.course2.quiz.name}"]`
     ).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).should('be.disabled')
+    cy.get(`[data-cy="confirm-deletion-responses"]`).realClick()
     cy.get(`[data-cy="confirm-deletion-qa-feedbacks"]`).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.findByText(this.data.course2.quiz.name).should('not.exist')
@@ -1490,7 +1837,6 @@ describe('Different live-quiz workflows', function () {
       'exist'
     )
     cy.get(`[data-cy="activity-name-${this.data.liveQuiz.name}"]`).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SC2.title)
     cy.get('[data-cy="close-activity-details-modal"]').click()
   })
@@ -1499,7 +1845,7 @@ describe('Different live-quiz workflows', function () {
     cy.loginLecturer()
 
     // modify single choice question
-    cy.get(`[data-cy="edit-element-${this.data.SC2.title}"]`).click()
+    cy.editElement({ element: this.data.SC2.title })
     cy.get('[data-cy="instance-update-switch"]').click() // deactivate instance updates (on by default)
     cy.get('[data-cy="insert-question-title"]')
       .clear()
@@ -1507,8 +1853,9 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .clear()
-      .type(this.data.liveQuiz.newSCContent)
+      .realType(this.data.liveQuiz.newSCContent)
     cy.get('[data-cy="save-new-question"]').click()
+    cy.wait(1000) // wait for the question to be saved and the modal to be closed
 
     // edit and save the live quiz without changing the question content
     cy.get('[data-cy="activities"]').click()
@@ -1528,7 +1875,6 @@ describe('Different live-quiz workflows', function () {
       'exist'
     )
     cy.get(`[data-cy="activity-name-${this.data.liveQuiz.name}"]`).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SC2.title)
     cy.get('[data-cy="close-activity-details-modal"]').click()
   })
@@ -1555,29 +1901,20 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="element-0-block-0"]').should('exist')
 
-    const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="element-item-${this.data.liveQuiz.newSCTitle}"]`)
-      .contains(this.data.liveQuiz.newSCTitle)
-      .trigger('dragstart', {
-        dataTransfer,
-      })
-    cy.get(`[data-cy="drop-elements-block-0"]`).trigger('drop', {
-      dataTransfer,
+    cy.dragAndDropElement({
+      element: this.data.liveQuiz.newSCTitle,
+      target: 'drop-elements-block-0',
     })
     cy.get(`[data-cy="element-1-block-0"]`).contains(
       this.data.liveQuiz.newSCTitle.substring(0, 20)
     )
 
-    const dataTransfer2 = new DataTransfer()
-    cy.get(`[data-cy="drop-elements-add-block"]`).click()
-    cy.get(`[data-cy="element-item-${this.data.MC2.title}"]`)
-      .contains(this.data.MC2.title)
-      .trigger('dragstart', {
-        dataTransfer2,
-      })
-    cy.get(`[data-cy="drop-elements-block-1"]`).trigger('drop', {
-      dataTransfer2,
+    cy.get('[data-cy="drop-elements-add-block"]').click()
+    cy.dragAndDropElement({
+      element: this.data.MC2.title,
+      target: 'drop-elements-block-1',
     })
+    cy.get(`[data-cy="element-0-block-1"]`).should('exist')
     cy.get(`[data-cy="element-0-block-1"]`).contains(
       this.data.MC2.title.substring(0, 20)
     )
@@ -1589,12 +1926,10 @@ describe('Different live-quiz workflows', function () {
       'exist'
     )
     cy.get(`[data-cy="activity-name-${this.data.liveQuiz.name}"]`).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SC2.title)
     cy.get('[data-cy="stack-0-instance-1"]').contains(
       this.data.liveQuiz.newSCTitle
     )
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
     cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.MC2.title)
     cy.get('[data-cy="close-activity-details-modal"]').click()
   })
@@ -1624,9 +1959,6 @@ describe('Different live-quiz workflows', function () {
       'exist'
     )
     cy.get(`[data-cy="activity-name-${this.data.liveQuiz.name}"]`).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
-
     cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.SC2.title)
     cy.get('[data-cy="stack-1-instance-1"]').contains(
       this.data.liveQuiz.newSCTitle
@@ -1739,6 +2071,9 @@ describe('Different live-quiz workflows', function () {
   it('Duplicate the live quiz and check that the same questions are contained therein', function () {
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.liveQuiz.name}{enter}`
+    )
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'exist'
     )
@@ -1774,8 +2109,6 @@ describe('Different live-quiz workflows', function () {
     cy.get(
       `[data-cy="activity-name-${this.data.liveQuiz.duplicateName}"]`
     ).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
 
     cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.SC2.title)
     cy.get('[data-cy="stack-1-instance-1"]').contains(
@@ -1901,7 +2234,8 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="activities"]').click()
     cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).click()
     cy.get(`[data-cy="delete-live-quiz-${this.data.liveQuiz.name}"]`).click()
-    cy.get(`[data-cy="confirmation-modal-confirm"]`).click() // answer submission does not work in cypress
+    cy.get(`[data-cy="confirm-deletion-responses"]`).realClick()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).realClick()
 
     cy.get(
       `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.duplicateName}"]`
@@ -1909,7 +2243,8 @@ describe('Different live-quiz workflows', function () {
     cy.get(
       `[data-cy="delete-live-quiz-${this.data.liveQuiz.duplicateName}"]`
     ).click()
-    cy.get(`[data-cy="confirmation-modal-confirm"]`).click() // answer submission does not work in cypress
+    cy.get(`[data-cy="confirm-deletion-responses"]`).realClick()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).realClick()
   })
   // #endregion
 
@@ -1917,7 +2252,6 @@ describe('Different live-quiz workflows', function () {
   // #region
   function verifyLiveQuizDetailsModalContent(activityName: string, data: any) {
     cy.get(`[data-cy="activity-name-${activityName}"]`).click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
     cy.get('[data-cy="stack-0-instance-0"]').contains(
       data.SCML.title.substring(0, 20)
     )
@@ -1967,7 +2301,7 @@ describe('Different live-quiz workflows', function () {
     cy.get(`[data-cy="share-live-quiz-${data.sharing.quiz1}"]`).should('exist')
     cy.get(`[data-cy="delete-live-quiz-${data.sharing.quiz1}"]`).should('exist')
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyLiveQuizDetailsModalContent(data.sharing.quiz1, data)
 
     // for a scheduled live quiz the following options should be available: start, duplicate, qr code, dropdown: embed, share, delete
@@ -1987,7 +2321,7 @@ describe('Different live-quiz workflows', function () {
     cy.get(`[data-cy="share-live-quiz-${data.sharing.quiz2}"]`).should('exist')
     cy.get(`[data-cy="delete-live-quiz-${data.sharing.quiz2}"]`).should('exist')
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyLiveQuizDetailsModalContent(data.sharing.quiz2, data)
 
     // for a running live quiz the following options should be available: cockpit, evaluation, qr code, dropdown: embed, duplicate, share
@@ -2011,7 +2345,7 @@ describe('Different live-quiz workflows', function () {
     )
     cy.get(`[data-cy="share-live-quiz-${data.sharing.quiz3}"]`).should('exist')
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz3}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyLiveQuizDetailsModalContent(data.sharing.quiz3, data)
 
     // for a completed live quiz the following options should be available: evaluation, duplicate, embed, dropdown: share, delete
@@ -2032,7 +2366,7 @@ describe('Different live-quiz workflows', function () {
     cy.get(`[data-cy="share-live-quiz-${data.sharing.quiz4}"]`).should('exist')
     cy.get(`[data-cy="delete-live-quiz-${data.sharing.quiz4}"]`).should('exist')
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz4}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyLiveQuizDetailsModalContent(data.sharing.quiz4, data)
   }
 
@@ -2049,8 +2383,8 @@ describe('Different live-quiz workflows', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -2081,7 +2415,7 @@ describe('Different live-quiz workflows', function () {
         'exist'
       )
     }
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     verifyLiveQuizDetailsModalContent(data.sharing.quiz1, data)
 
@@ -2101,7 +2435,7 @@ describe('Different live-quiz workflows', function () {
         'exist'
       )
     }
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     verifyLiveQuizDetailsModalContent(data.sharing.quiz2, data)
 
@@ -2122,7 +2456,7 @@ describe('Different live-quiz workflows', function () {
       !groupPermission ? 'exist' : 'not.exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz3}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyLiveQuizDetailsModalContent(data.sharing.quiz3, data)
 
     // on ended activities, the following actions should be available: evaluation, embed, remove, no dropdown
@@ -2143,7 +2477,7 @@ describe('Different live-quiz workflows', function () {
         'exist'
       )
     }
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz4}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     verifyLiveQuizDetailsModalContent(data.sharing.quiz4, data)
   }
@@ -2164,8 +2498,8 @@ describe('Different live-quiz workflows', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -2194,7 +2528,7 @@ describe('Different live-quiz workflows', function () {
     cy.get(`[data-cy="remove-live-quiz-${data.sharing.quiz1}"]`).should(
       !groupPermission ? 'exist' : 'not.exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     verifyLiveQuizDetailsModalContent(data.sharing.quiz1, data)
 
@@ -2212,7 +2546,7 @@ describe('Different live-quiz workflows', function () {
     cy.get(`[data-cy="remove-live-quiz-${data.sharing.quiz2}"]`).should(
       !groupPermission ? 'exist' : 'not.exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     verifyLiveQuizDetailsModalContent(data.sharing.quiz2, data)
 
@@ -2235,7 +2569,7 @@ describe('Different live-quiz workflows', function () {
     cy.get(`[data-cy="remove-live-quiz-${data.sharing.quiz3}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz3}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyLiveQuizDetailsModalContent(data.sharing.quiz3, data)
 
     // on ended activities, the following actions should be available: evaluation, embed, remove, no dropdown
@@ -2256,7 +2590,7 @@ describe('Different live-quiz workflows', function () {
         'exist'
       )
     }
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz4}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     verifyLiveQuizDetailsModalContent(data.sharing.quiz4, data)
   }
@@ -2274,8 +2608,8 @@ describe('Different live-quiz workflows', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -2308,7 +2642,7 @@ describe('Different live-quiz workflows', function () {
     cy.get(`[data-cy="remove-live-quiz-${data.sharing.quiz1}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyLiveQuizDetailsModalContent(data.sharing.quiz1, data)
 
     // on scheduled activities, the following actions should be available: start, qr code, embed, dropdown: remove
@@ -2325,7 +2659,7 @@ describe('Different live-quiz workflows', function () {
     cy.get(`[data-cy="remove-live-quiz-${data.sharing.quiz2}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     verifyLiveQuizDetailsModalContent(data.sharing.quiz2, data)
 
@@ -2348,7 +2682,7 @@ describe('Different live-quiz workflows', function () {
     cy.get(`[data-cy="remove-live-quiz-${data.sharing.quiz3}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz3}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyLiveQuizDetailsModalContent(data.sharing.quiz3, data)
 
     // on ended activities, the following actions should be available: evaluation, embed, remove, no dropdown
@@ -2369,7 +2703,7 @@ describe('Different live-quiz workflows', function () {
         'exist'
       )
     }
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz4}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     verifyLiveQuizDetailsModalContent(data.sharing.quiz4, data)
   }
@@ -2387,8 +2721,8 @@ describe('Different live-quiz workflows', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -2430,7 +2764,7 @@ describe('Different live-quiz workflows', function () {
     )
     cy.get(`[data-cy="delete-live-quiz-${data.sharing.quiz1}"]`).should('exist')
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyLiveQuizDetailsModalContent(data.sharing.quiz1, data)
 
     // for a scheduled live quiz the following options should be available: start, duplicate, qr code, dropdown: embed, share, delete
@@ -2453,7 +2787,7 @@ describe('Different live-quiz workflows', function () {
     )
     cy.get(`[data-cy="delete-live-quiz-${data.sharing.quiz2}"]`).should('exist')
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyLiveQuizDetailsModalContent(data.sharing.quiz2, data)
 
     // for a running live quiz the following options should be available: cockpit, evaluation, qr code, dropdown: embed, duplicate, share
@@ -2480,7 +2814,7 @@ describe('Different live-quiz workflows', function () {
       groupPermission ? 'not.exist' : 'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz3}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyLiveQuizDetailsModalContent(data.sharing.quiz3, data)
 
     // for a completed live quiz the following options should be available: evaluation, duplicate, embed, dropdown: share, delete
@@ -2504,7 +2838,7 @@ describe('Different live-quiz workflows', function () {
     )
     cy.get(`[data-cy="delete-live-quiz-${data.sharing.quiz4}"]`).should('exist')
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz4}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyLiveQuizDetailsModalContent(data.sharing.quiz4, data)
   }
 
@@ -2566,8 +2900,8 @@ describe('Different live-quiz workflows', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((element) => {
-      cy.get(`[data-cy="element-item-${element}"]`).should('not.exist')
+    ]).each((element: string) => {
+      cy.validateElement({ element, shouldExist: false })
     })
 
     // previously shared live quizzes should no longer be visible
@@ -2657,7 +2991,7 @@ describe('Different live-quiz workflows', function () {
     verifyLiveQuizOwnerPermissions(this.data)
   })
 
-  it('Share the live quizzes individual with different users and different permissions', function () {
+  it('Share the live quizzes individually with different users and different permissions', function () {
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
 
@@ -3185,15 +3519,15 @@ describe('Different live-quiz workflows', function () {
         day: 16,
         hour: 2,
         minute: 0,
-        validation: getDatetimeValidationString(-2, '16') + ', 02:00',
-      }, // 2 months in the past at 2:00
+        validation: getDatetimeValidationString(-3, '16') + ', 02:00',
+      }, // 3 months in the past at 2:00
       endDate: {
         monthDelta: 3,
         day: 14,
         hour: 18,
         minute: 0,
-        validation: getDatetimeValidationString(4, '14') + ', 18:00',
-      }, // 4 months in the future at 18:00
+        validation: getDatetimeValidationString(3, '14') + ', 18:00',
+      }, // 3 months in the future at 18:00
       stacks: [
         { elements: [this.data.SCML.title] },
         { elements: [this.data.MCML.title] },
@@ -3380,11 +3714,11 @@ describe('Different live-quiz workflows', function () {
           args: {
             username: Cypress.env('STUDENT_USERNAME'),
             password: Cypress.env('STUDENT_PASSWORD'),
-            quizLink,
+            quizName: this.data.modes.displayName,
             messages,
           },
         },
-        ({ username, password, quizLink, messages }) => {
+        ({ username, password, quizName, messages }) => {
           // choose regular login
           cy.get('[data-cy="login-with-account"]').click()
           cy.get('[data-cy="username-field"]').type(username)
@@ -3393,9 +3727,7 @@ describe('Different live-quiz workflows', function () {
           cy.wait(1000) // wait for the live quiz to load
 
           // verify that the participant has been automatically redirected to the live quiz
-          cy.location('href').then((href) => {
-            expect(href).to.include(quizLink)
-          })
+          cy.get('[data-cy="header-page-title"]').contains(quizName)
 
           // verify that the correct account actions are available
           cy.get('[data-cy="header-avatar"]').click()
@@ -3491,12 +3823,8 @@ describe('Different live-quiz workflows', function () {
       totalPoints: 730,
     })
 
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').contains('70 P.')
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').contains(
-      '660 P.'
-    )
+    cy.get('[data-cy="activity-details-stack-header-0"]').contains('70 P.')
+    cy.get('[data-cy="activity-details-stack-header-1"]').contains('660 P.')
 
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SC.title)
     cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.MC.title)
@@ -3507,68 +3835,69 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="stack-0-instance-6"]').contains(this.data.CS.title)
     cy.get('[data-cy="stack-0-instance-7"]').contains(this.data.CT.title)
 
-    cy.get('[data-cy="stack-0-instance-0"]').click()
     cy.assertInstancePoints({
       basePoints: 10,
       correctnessPoints: 0,
       bonusPoints: 0,
       totalPoints: 10,
+      stackIx: 0,
+      instanceIx: 0,
     })
-
-    cy.get('[data-cy="stack-0-instance-1"]').click()
     cy.assertInstancePoints({
       basePoints: 10,
       correctnessPoints: 0,
       bonusPoints: 0,
       totalPoints: 10,
+      stackIx: 0,
+      instanceIx: 1,
     })
-
-    cy.get('[data-cy="stack-0-instance-2"]').click()
     cy.assertInstancePoints({
       basePoints: 10,
       correctnessPoints: 0,
       bonusPoints: 0,
       totalPoints: 10,
+      stackIx: 0,
+      instanceIx: 2,
     })
-
-    cy.get('[data-cy="stack-0-instance-3"]').click()
     cy.assertInstancePoints({
       basePoints: 10,
       correctnessPoints: 0,
       bonusPoints: 0,
       totalPoints: 10,
+      stackIx: 0,
+      instanceIx: 3,
     })
-
-    cy.get('[data-cy="stack-0-instance-4"]').click()
     cy.assertInstancePoints({
       basePoints: 10,
       correctnessPoints: 0,
       bonusPoints: 0,
       totalPoints: 10,
+      stackIx: 0,
+      instanceIx: 4,
     })
-
-    cy.get('[data-cy="stack-0-instance-5"]').click()
     cy.assertInstancePoints({
       basePoints: 10,
       correctnessPoints: 0,
       bonusPoints: 0,
       totalPoints: 10,
+      stackIx: 0,
+      instanceIx: 5,
     })
-
-    cy.get('[data-cy="stack-0-instance-6"]').click()
     cy.assertInstancePoints({
       basePoints: 10,
       correctnessPoints: 0,
       bonusPoints: 0,
       totalPoints: 10,
+      stackIx: 0,
+      instanceIx: 6,
     })
-
-    cy.get('[data-cy="stack-0-instance-7"]').click()
     cy.assertInstancePoints({
       basePoints: 0,
       correctnessPoints: 0,
       bonusPoints: 0,
       totalPoints: 0,
+      stackIx: 0,
+      instanceIx: 7,
     })
 
     cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.SCML.title)
@@ -3579,60 +3908,61 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="stack-1-instance-5"]').contains(this.data.CSML.title)
     cy.get('[data-cy="stack-1-instance-6"]').contains(this.data.CT2.title)
 
-    cy.get('[data-cy="stack-1-instance-0"]').click()
     cy.assertInstancePoints({
       basePoints: 10,
       correctnessPoints: 10,
       bonusPoints: 90,
       totalPoints: 110,
+      stackIx: 1,
+      instanceIx: 0,
     })
-
-    cy.get('[data-cy="stack-1-instance-1"]').click()
     cy.assertInstancePoints({
       basePoints: 10,
       correctnessPoints: 10,
       bonusPoints: 90,
       totalPoints: 110,
+      stackIx: 1,
+      instanceIx: 1,
     })
-
-    cy.get('[data-cy="stack-1-instance-2"]').click()
     cy.assertInstancePoints({
       basePoints: 10,
       correctnessPoints: 10,
       bonusPoints: 90,
       totalPoints: 110,
+      stackIx: 1,
+      instanceIx: 2,
     })
-
-    cy.get('[data-cy="stack-1-instance-3"]').click()
     cy.assertInstancePoints({
       basePoints: 10,
       correctnessPoints: 10,
       bonusPoints: 90,
       totalPoints: 110,
+      stackIx: 1,
+      instanceIx: 3,
     })
-
-    cy.get('[data-cy="stack-1-instance-4"]').click()
     cy.assertInstancePoints({
       basePoints: 10,
       correctnessPoints: 10,
       bonusPoints: 90,
       totalPoints: 110,
+      stackIx: 1,
+      instanceIx: 4,
     })
-
-    cy.get('[data-cy="stack-1-instance-5"]').click()
     cy.assertInstancePoints({
       basePoints: 10,
       correctnessPoints: 10,
       bonusPoints: 90,
       totalPoints: 110,
+      stackIx: 1,
+      instanceIx: 5,
     })
-
-    cy.get('[data-cy="stack-1-instance-6"]').click()
     cy.assertInstancePoints({
       basePoints: 0,
       correctnessPoints: 0,
       bonusPoints: 0,
       totalPoints: 0,
+      stackIx: 1,
+      instanceIx: 6,
     })
     cy.get('[data-cy="close-activity-details-modal"]').click()
   })
@@ -3679,13 +4009,11 @@ describe('Different live-quiz workflows', function () {
     ).click()
     cy.assertNoActivityPoints()
 
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').should(
+    cy.get('[data-cy="activity-details-stack-header-0"]').should(
       'not.contain',
       '70 P.'
     )
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').should(
+    cy.get('[data-cy="activity-details-stack-header-1"]').should(
       'not.contain',
       '660 P.'
     )
@@ -3699,29 +4027,38 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="stack-0-instance-6"]').contains(this.data.CS.title)
     cy.get('[data-cy="stack-0-instance-7"]').contains(this.data.CT.title)
 
-    cy.get('[data-cy="stack-0-instance-0"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-1"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-2"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-3"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-4"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-5"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-6"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-7"]').click()
-    cy.assertNoInstancePoints()
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 0,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 1,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 2,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 3,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 4,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 5,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 6,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 7,
+    })
 
     cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-1-instance-1"]').contains(this.data.MCML.title)
@@ -3731,26 +4068,34 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="stack-1-instance-5"]').contains(this.data.CSML.title)
     cy.get('[data-cy="stack-1-instance-6"]').contains(this.data.CT2.title)
 
-    cy.get('[data-cy="stack-1-instance-0"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-1"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-2"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-3"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-4"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-5"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-6"]').click()
-    cy.assertNoInstancePoints()
+    cy.assertNoInstancePoints({
+      stackIx: 1,
+      instanceIx: 0,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 1,
+      instanceIx: 1,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 1,
+      instanceIx: 2,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 1,
+      instanceIx: 3,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 1,
+      instanceIx: 4,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 1,
+      instanceIx: 5,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 1,
+      instanceIx: 6,
+    })
     cy.get('[data-cy="close-activity-details-modal"]').click()
   })
 
@@ -3786,6 +4131,9 @@ describe('Different live-quiz workflows', function () {
       ],
     })
     cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.details.nameNoCourse}{enter}`
+    )
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.details.nameNoCourse}"]`
     ).should('exist')
@@ -3795,13 +4143,11 @@ describe('Different live-quiz workflows', function () {
     ).click()
     cy.assertNoActivityPoints()
 
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').click()
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').click()
-    cy.get('[data-cy="activity-details-accordion-trigger-0"]').should(
+    cy.get('[data-cy="activity-details-stack-header-0"]').should(
       'not.contain',
       '70 P.'
     )
-    cy.get('[data-cy="activity-details-accordion-trigger-1"]').should(
+    cy.get('[data-cy="activity-details-stack-header-1"]').should(
       'not.contain',
       '660 P.'
     )
@@ -3815,29 +4161,38 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="stack-0-instance-6"]').contains(this.data.CS.title)
     cy.get('[data-cy="stack-0-instance-7"]').contains(this.data.CT.title)
 
-    cy.get('[data-cy="stack-0-instance-0"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-1"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-2"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-3"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-4"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-5"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-6"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-0-instance-7"]').click()
-    cy.assertNoInstancePoints()
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 0,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 1,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 2,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 3,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 4,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 5,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 6,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 0,
+      instanceIx: 7,
+    })
 
     cy.get('[data-cy="stack-1-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-1-instance-1"]').contains(this.data.MCML.title)
@@ -3847,27 +4202,662 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="stack-1-instance-5"]').contains(this.data.CSML.title)
     cy.get('[data-cy="stack-1-instance-6"]').contains(this.data.CT2.title)
 
-    cy.get('[data-cy="stack-1-instance-0"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-1"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-2"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-3"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-4"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-5"]').click()
-    cy.assertNoInstancePoints()
-
-    cy.get('[data-cy="stack-1-instance-6"]').click()
-    cy.assertNoInstancePoints()
+    cy.assertNoInstancePoints({
+      stackIx: 1,
+      instanceIx: 0,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 1,
+      instanceIx: 1,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 1,
+      instanceIx: 2,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 1,
+      instanceIx: 3,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 1,
+      instanceIx: 4,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 1,
+      instanceIx: 5,
+    })
+    cy.assertNoInstancePoints({
+      stackIx: 1,
+      instanceIx: 6,
+    })
     cy.get('[data-cy="close-activity-details-modal"]').click()
   })
+  // #endregion
+
+  // ! Part 7: PIN-protected Live Quizzes
+  // #region
+  function createAndStartProtectedLiveQuizzes(data: any) {
+    cy.get('[data-cy="library"]').click()
+    cy.createLiveQuiz({
+      name: data.protected.gamifiedCourse.liveQuiz,
+      displayName: data.protected.gamifiedCourse.liveQuiz,
+      courseName: data.protected.gamifiedCourse.name,
+      pinProtectionWithoutCourse: true,
+      blocks: [{ elements: [data.SCML.title, data.MC.title] }],
+    })
+    cy.get('[data-cy="create-new-activity"]').click()
+    cy.createLiveQuiz({
+      name: data.protected.nonGamifiedCourse.liveQuiz,
+      displayName: data.protected.nonGamifiedCourse.liveQuiz,
+      courseName: data.protected.nonGamifiedCourse.name,
+      pinProtectionWithoutCourse: true,
+      blocks: [{ elements: [data.SCML.title, data.MC.title] }],
+    })
+    cy.get('[data-cy="create-new-activity"]').click()
+
+    // start both live quizzes
+    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${data.protected.gamifiedCourse.liveQuiz}{enter}`
+    )
+    cy.get(
+      `[data-cy="activity-LIVE_QUIZ-${data.protected.gamifiedCourse.liveQuiz}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="start-live-quiz-${data.protected.gamifiedCourse.liveQuiz}"]`
+    ).click()
+    cy.get('[data-cy="abort-live-quiz-cockpit"]').should('exist')
+    cy.get('[data-cy="next-block-timeline"]').click() // start the first block of the live quiz
+    cy.wait(500)
+
+    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${data.protected.nonGamifiedCourse.liveQuiz}{enter}`
+    )
+    cy.get(
+      `[data-cy="activity-LIVE_QUIZ-${data.protected.nonGamifiedCourse.liveQuiz}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="start-live-quiz-${data.protected.nonGamifiedCourse.liveQuiz}"]`
+    ).click()
+    cy.get('[data-cy="abort-live-quiz-cockpit"]').should('exist')
+    cy.get('[data-cy="next-block-timeline"]').click()
+    cy.wait(500)
+  }
+
+  function enterPinAnswerFirstBlock(pin: string, data: any) {
+    cy.get('[data-cy="live-quiz-pin-input-1"]').should('exist')
+    cy.get('[data-cy="live-quiz-submit-pin"]').should('be.disabled')
+    cy.get('[data-cy="live-quiz-pin-input-1"]').realClick().realType(pin)
+    cy.get('[data-cy="live-quiz-submit-pin"]').click()
+
+    // verify and answer the contained questions
+    // answer the first provided question
+    cy.get('[data-cy="instance-question-content"]').contains(data.SCML.content)
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.get('[data-cy="sc-0-answer-option-0"]').click()
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="instance-question-content"]').contains(data.MC.content)
+
+    // reload the page and verify that the entered PIN persists (leave second block to following test case)
+    cy.reload()
+    cy.get('[data-cy="instance-question-content"]').contains(data.MC.content)
+  }
+
+  function studentAccountLinkAccess(
+    link: string,
+    data: any,
+    loggedIn: boolean,
+    gamified: boolean
+  ) {
+    // open the live quiz link and participate in the live quiz anonymously
+    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.origin(
+      Cypress.env('URL_STUDENT'),
+      {
+        args: {
+          username: Cypress.env('STUDENT_USERNAME'),
+          password: Cypress.env('STUDENT_PASSWORD'),
+          scQuestion: data.SCML.content,
+          mcQuestion: data.MC.content,
+          link,
+          loggedIn,
+          gamified,
+        },
+      },
+      async ({
+        username,
+        password,
+        scQuestion,
+        mcQuestion,
+        link,
+        loggedIn,
+        gamified,
+      }) => {
+        if (loggedIn) {
+          // log in as a student
+          cy.get('[data-cy="username-field"]').click().type(username)
+          cy.get('[data-cy="password-field"]').click().type(password)
+          cy.get('[data-cy="submit-login"]').click()
+        }
+
+        // visit the live quiz directly through the link and verify that the PIN is already filled in
+        cy.visit(String(link))
+        cy.get('[data-cy="live-quiz-pin-input-1"]').should('exist')
+        cy.get('[data-cy="live-quiz-submit-pin"]')
+          .should('not.be.disabled')
+          .click()
+
+        // if the quiz is gamified and the user is not logged in, select anonymous participation
+        if (!loggedIn) {
+          if (gamified) {
+            // participate in the live quiz anonymously
+            cy.get('[data-cy="participate-anonymously"]').click()
+          } else {
+            cy.get('[data-cy="participate-anonymously"]').should('not.exist')
+          }
+
+          // verify and answer the contained questions
+          // answer the first provided question
+          cy.get('[data-cy="instance-question-content"]').contains(scQuestion)
+          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+          cy.get('[data-cy="sc-0-answer-option-0"]').click()
+          cy.get('[data-cy="student-submit-answer"]').click()
+          cy.wait(500)
+          cy.get('[data-cy="instance-question-content"]').contains(mcQuestion)
+
+          // reload the page and verify that the entered PIN persists (leave second block to following test case)
+          cy.reload()
+          cy.get('[data-cy="instance-question-content"]').contains(mcQuestion)
+        }
+
+        // verify that the second question is shown (first one has already been completed earlier)
+        cy.get('[data-cy="instance-question-content"]').contains(mcQuestion)
+
+        // reload the page and verify that the entered PIN persists
+        cy.reload()
+        cy.get('[data-cy="instance-question-content"]').contains(mcQuestion)
+
+        // answer the second provided question
+        cy.get('[data-cy="instance-question-content"]').contains(mcQuestion)
+        cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+        cy.get('[data-cy="mc-1-answer-option-1"]').click()
+        cy.get('[data-cy="mc-1-answer-option-3"]').click()
+        cy.get('[data-cy="student-submit-answer"]').click()
+        cy.wait(500)
+      }
+    )
+  }
+
+  function getPinProtectedQuizLinks(data: any) {
+    // obtain the live quiz pin for both quizzes from the lecturer cockpit
+    cy.loginLecturer()
+    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${data.protected.gamifiedCourse.liveQuiz}{enter}`
+    )
+    cy.get(
+      `[data-cy="live-quiz-cockpit-${data.protected.gamifiedCourse.liveQuiz}"]`
+    ).click()
+    cy.get('[data-cy="open-qr-modal"]').click()
+    cy.get('[data-cy="qr-link-direct"]')
+      .invoke('text')
+      .then((text) => cy.wrap(text).as('protectedQuizLink'))
+    cy.get('[data-cy="live-quiz-qr-modal-close"]').click()
+
+    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${data.protected.nonGamifiedCourse.liveQuiz}{enter}`
+    )
+    cy.get(
+      `[data-cy="live-quiz-cockpit-${data.protected.nonGamifiedCourse.liveQuiz}"]`
+    ).click()
+    cy.get('[data-cy="open-qr-modal"]').click()
+    cy.get('[data-cy="qr-link-direct"]')
+      .invoke('text')
+      .then((text) => cy.wrap(text).as('protectedQuizLink2'))
+    cy.get('[data-cy="live-quiz-qr-modal-close"]').click()
+  }
+
+  function endPinProtectedLiveQuizzes(data: any) {
+    cy.wrap([
+      data.protected.gamifiedCourse.liveQuiz,
+      data.protected.nonGamifiedCourse.liveQuiz,
+    ]).each((quiz) => {
+      // end the live quiz
+      cy.get('[data-cy="running-live-quiz-dropdown"]').click()
+      cy.get(`[data-cy="running-live-quiz-${quiz}"]`).click()
+      cy.get('[data-cy="next-block-timeline"]').click()
+      cy.wait(500)
+      cy.get('[data-cy="next-block-timeline"]').click()
+      cy.wait(500)
+
+      // delete and re-create the live quiz for the anonymous test case (with the same name)
+      cy.task('deleteLiveQuiz', { name: quiz })
+    })
+  }
+
+  it('Preparation: Reset the database and create all required content for the PIN-protected live quizzes', function () {
+    cy.cleanup()
+    cy.seed()
+
+    // login the lecturer
+    cy.loginLecturer()
+
+    // seed two questions
+    cy.createQuestionSC({
+      name: this.data.SCML.title,
+      content: this.data.SCML.content,
+      explanation: this.data.SCML.explanation,
+      choices: this.data.SCML.choices,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createQuestionMC({
+      name: this.data.MC.title,
+      content: this.data.MC.content,
+      explanation: this.data.MC.explanation,
+      choices: this.data.MC.choices,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+
+    // create two regular courses (one with gamification, one without)
+    cy.createCourse({
+      name: this.data.protected.gamifiedCourse.name,
+      displayName: this.data.protected.gamifiedCourse.displayName,
+      isAssessmentEnabled: false,
+      isGamificationEnabled: true,
+      isGroupCreationEnabled: true,
+      startDate: getFutureDate(-1, '11'), // 1 month ago
+      endDate: getFutureDate(6, '20'), // 6 months from now
+      groupDeadlineDate: getFutureDate(2, '12'), // 2 months from now
+      maxGroupSize: 4,
+      preferredGroupSize: 2,
+      participants: [Cypress.env('STUDENT_USERNAME')],
+    })
+    cy.createCourse({
+      name: this.data.protected.nonGamifiedCourse.name,
+      displayName: this.data.protected.nonGamifiedCourse.displayName,
+      isAssessmentEnabled: false,
+      isGamificationEnabled: false,
+      isGroupCreationEnabled: false,
+      startDate: getFutureDate(-1, '11'), // 1 month ago
+      endDate: getFutureDate(6, '20'), // 6 months from now
+      groupDeadlineDate: getFutureDate(2, '12'), // 2 months from now
+      participants: [Cypress.env('STUDENT_USERNAME')],
+    })
+
+    // create one live quiz in each of the courses
+    createAndStartProtectedLiveQuizzes(this.data)
+  })
+
+  it('Have the a student with a valid account join both courses', function () {
+    cy.loginStudent()
+    cy.task('getCoursePin', {
+      courseName: this.data.protected.gamifiedCourse.name,
+    }).then((pin: number) => {
+      // check if the pin was fetched successfully
+      if (!pin) {
+        throw new Error(
+          'No course pin found. Please ensure that the previous test case has run successfully and generated a course pin.'
+        )
+      }
+
+      // join the course
+      cy.get('[data-cy="join-new-course"]').click()
+      cy.get('[data-cy="join-course-pin-field-1"]')
+        .realClick()
+        .realType(String(pin))
+      cy.get('[data-cy="join-course-submit-form"]').click()
+      cy.get(
+        `[data-cy="course-button-${this.data.protected.gamifiedCourse.displayName}"]`
+      ).should('exist')
+    })
+
+    cy.task('getCoursePin', {
+      courseName: this.data.protected.nonGamifiedCourse.name,
+    }).then((pin: number) => {
+      // check if the pin was fetched successfully
+      if (!pin) {
+        throw new Error(
+          'No course pin found. Please ensure that the previous test case has run successfully and generated a course pin.'
+        )
+      }
+
+      // join the course
+      cy.get('[data-cy="join-new-course"]').click()
+      cy.get('[data-cy="join-course-pin-field-1"]')
+        .realClick()
+        .realType(String(pin))
+      cy.get('[data-cy="join-course-submit-form"]').click()
+      cy.get(
+        `[data-cy="course-button-${this.data.protected.nonGamifiedCourse.displayName}"]`
+      ).should('exist')
+    })
+  })
+
+  it('Verify that the shown PINs are identical with the stored ones', function () {
+    // combine approach of loading and entering on student view does not work due to limitations of cypress
+    // obtain the shown pins for both created live quizzes
+    cy.loginLecturer()
+    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.protected.gamifiedCourse.liveQuiz}{enter}`
+    )
+    cy.get(
+      `[data-cy="live-quiz-cockpit-${this.data.protected.gamifiedCourse.liveQuiz}"]`
+    ).click()
+    cy.get('[data-cy="live-quiz-pin"]')
+      .invoke('text')
+      .then((text) => {
+        cy.wrap(text.split(':')[1].replace(/\s+/g, '')).as('protectedQuizPin')
+      })
+
+    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.protected.nonGamifiedCourse.liveQuiz}{enter}`
+    )
+    cy.get(
+      `[data-cy="live-quiz-cockpit-${this.data.protected.nonGamifiedCourse.liveQuiz}"]`
+    ).click()
+    cy.get('[data-cy="live-quiz-pin"]')
+      .invoke('text')
+      .then((text) => {
+        cy.wrap(text.split(':')[1].replace(/\s+/g, '')).as('protectedQuizPin2')
+      })
+
+    // verify that these pins are equal to the ones stored in the database
+    cy.get('@protectedQuizPin').then((pin) => {
+      cy.task('verifyLiveQuizPin', {
+        pin,
+        name: this.data.protected.gamifiedCourse.liveQuiz,
+      }).then((result: boolean) => {
+        // check if the correct pin is shown
+        if (result === false) {
+          throw new Error(
+            'The wrong live quiz is shown for the quiz in question'
+          )
+        }
+
+        // dummy action
+        cy.visit(Cypress.env('URL_MANAGE'))
+      })
+    })
+    cy.get('@protectedQuizPin2').then((pin) => {
+      cy.task('verifyLiveQuizPin', {
+        pin,
+        name: this.data.protected.nonGamifiedCourse.liveQuiz,
+      }).then((result: boolean) => {
+        // check if the correct pin is shown
+        if (result === false) {
+          throw new Error(
+            'The wrong live quiz is shown for the quiz in question'
+          )
+        }
+
+        // dummy action
+        cy.visit(Cypress.env('URL_MANAGE'))
+      })
+    })
+  })
+
+  it('Log in as one of the course participants and access both live quizzes using the provided PINs', function () {
+    // this test case is only relevant for students with account and course participation -> otherwise direct quiz access
+    cy.loginStudent()
+
+    cy.task('getLiveQuizPin', {
+      name: this.data.protected.gamifiedCourse.liveQuiz,
+    }).then((pin: string) => {
+      // open the live quiz and enter the loaded PIN
+      cy.get(
+        `[data-cy="live-quiz-${this.data.protected.gamifiedCourse.liveQuiz}"]`
+      ).click()
+
+      // enter the live quiz pin and answer the data in the first block
+      enterPinAnswerFirstBlock(pin, this.data)
+    })
+    cy.get('[data-cy="header-home"]').click()
+
+    cy.task('getLiveQuizPin', {
+      name: this.data.protected.nonGamifiedCourse.liveQuiz,
+    }).then((pin: string) => {
+      // open the live quiz and enter the loaded PIN
+      cy.get(
+        `[data-cy="live-quiz-${this.data.protected.nonGamifiedCourse.liveQuiz}"]`
+      ).click()
+
+      // enter the live quiz pin and answer the data in the first block
+      enterPinAnswerFirstBlock(pin, this.data)
+    })
+  })
+
+  it('Test the direct access links for the live quiz with embedded PIN (logged in users)', function () {
+    getPinProtectedQuizLinks(this.data)
+
+    // verify that a logged-in user can use the corresponding direct access links to join the live quizzes
+    // --> no account selector dialog is shown and questions can be answered (reload should not affect availability)
+    cy.get('@protectedQuizLink').then(function (link) {
+      cy.clearAllCookies()
+      cy.clearAllLocalStorage()
+      studentAccountLinkAccess(String(link), this.data, true, true)
+    })
+
+    cy.get('@protectedQuizLink2').then(function (link) {
+      cy.clearAllCookies()
+      cy.clearAllLocalStorage()
+      studentAccountLinkAccess(String(link), this.data, true, false)
+    })
+  })
+
+  it('Test the direct access links for the live quiz with embedded PIN (anonymous users)', function () {
+    cy.loginLecturer()
+
+    // end, delete and recreate both live quizzes
+    endPinProtectedLiveQuizzes(this.data)
+
+    // recreate both live quizzes
+    createAndStartProtectedLiveQuizzes(this.data)
+
+    // get the protected quiz access links for the two quizzes
+    getPinProtectedQuizLinks(this.data)
+
+    // verify that student without login can use the corresponding direct access links to join the live quizzes
+    // --> anonymous participation and temporary pseudonym should both be available and questions can be answered
+    cy.clearAllCookies()
+    cy.clearAllLocalStorage()
+
+    cy.get('@protectedQuizLink').then(function (link) {
+      studentAccountLinkAccess(String(link), this.data, false, true)
+    })
+
+    cy.get('@protectedQuizLink2').then(function (link) {
+      studentAccountLinkAccess(String(link), this.data, false, false)
+    })
+
+    // dummy action
+    cy.visit(Cypress.env('URL_MANAGE'))
+  })
+
+  it('End the two protected live quizzes', function () {
+    cy.loginLecturer()
+
+    // end, delete and recreate both live quizzes
+    endPinProtectedLiveQuizzes(this.data)
+  })
+  // #endregion
+
+  // ! Part 8: Word Cloud
+  // #region
+  it('Test word cloud display', function () {
+    cy.loginLecturer()
+
+    // create questions
+    cy.createQuestionNR({
+      name: this.data.NR4.title,
+      content: this.data.NR4.content,
+      explanation: this.data.NR4.explanation,
+      ...this.data.NR4.options,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createQuestionFT({
+      name: this.data.FT4.title,
+      content: this.data.FT4.content,
+      explanation: this.data.FT4.explanation,
+      ...this.data.FT4.options,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createQuestionFT({
+      name: this.data.FT5.title,
+      content: this.data.FT5.content,
+      explanation: this.data.FT5.explanation,
+      ...this.data.FT5.options,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+
+    // create live quiz
+    cy.createLiveQuiz({
+      name: this.data.liveQuizWordCloud.name,
+      displayName: this.data.liveQuizWordCloud.displayName,
+      courseName: this.data.liveQuizWordCloud.course,
+      blocks: [
+        {
+          elements: [
+            this.data.NR4.title,
+            this.data.FT4.title,
+            this.data.FT5.title,
+          ],
+        },
+      ],
+    })
+    cy.wait(500)
+
+    // start live quiz from the creation success screen
+    cy.get('[data-cy="quick-start"]').click()
+    cy.get('[data-cy="next-block-timeline"]', { timeout: 30000 }).should(
+      'exist'
+    )
+    openNextBlock()
+
+    visitEvaluationFromCockpit()
+    cy.get('[data-cy="change-chart-type"]').click()
+    cy.get('[data-cy="change-chart-type-manage.evaluation.wordCloud"]').click()
+    cy.get('[data-cy="show-results-evaluation"]').click()
+    cy.wait(1000)
+
+    const noResponsesReceivedMessage =
+      'No participants have submitted responses for this question 😔.'
+    cy.get('[data-cy="word-cloud"]').should(
+      'contain',
+      noResponsesReceivedMessage
+    )
+    cy.get('[data-cy="word-cloud-language-filter"]').should('not.exist')
+    cy.get('[data-cy="word-cloud-display-limit"]').should('not.exist')
+
+    cy.get('[data-cy="evaluate-question-select"]').click()
+    cy.get(
+      `[data-cy="evaluation-select-instance-${this.data.FT4.title}"]`
+    ).click()
+    cy.get('[data-cy="change-chart-type"]').click()
+    cy.get('[data-cy="change-chart-type-manage.evaluation.wordCloud"]').click()
+    cy.get('[data-cy="show-results-evaluation"]').click()
+    cy.get('[data-cy="word-cloud"]').should(
+      'contain',
+      noResponsesReceivedMessage
+    )
+    cy.get('[data-cy="word-cloud-language-filter"]').should('exist')
+    cy.get('[data-cy="word-cloud-display-limit"]').should('exist')
+
+    cy.get('[data-cy="evaluate-question-select"]').click()
+    cy.get(
+      `[data-cy="evaluation-select-instance-${this.data.FT5.title}"]`
+    ).click()
+    cy.get('[data-cy="change-chart-type"]').click()
+    cy.get('[data-cy="change-chart-type-manage.evaluation.wordCloud"]').click()
+    cy.get('[data-cy="show-results-evaluation"]').click()
+    cy.get('[data-cy="word-cloud"]').should(
+      'contain',
+      noResponsesReceivedMessage
+    )
+    cy.get('[data-cy="word-cloud-language-filter"]').should('exist')
+    cy.get('[data-cy="word-cloud-display-limit"]').should('exist')
+  })
+
+  it('Seed live quiz answers for word cloud display', function () {
+    cy.task('seedWordCloudLiveQuizResponses', {
+      freeTextAnswer: this.data.FT4.answer,
+      freeTextTitle: this.data.FT4.title,
+      numericalAnswer: this.data.NR4.answer,
+      numericalTitle: this.data.NR4.title,
+      quizName: this.data.liveQuizWordCloud.name,
+      secondFreeTextAnswer: this.data.FT5.answer,
+      secondFreeTextTitle: this.data.FT5.title,
+    })
+  })
+
+  it('Test word cloud display after receiving answers', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="activities-search-input"]', { timeout: 30000 })
+      .clear()
+      .type(`${this.data.liveQuizWordCloud.name}{enter}`)
+    cy.get(
+      `[data-cy="live-quiz-cockpit-${this.data.liveQuizWordCloud.name}"]`,
+      { timeout: 30000 }
+    ).click()
+    openNextBlock()
+    visitEvaluationFromCockpit()
+    cy.get('[data-cy="change-chart-type"]').click()
+    cy.get('[data-cy="change-chart-type-manage.evaluation.wordCloud"]').click()
+    cy.wait(1000)
+
+    cy.get('[data-cy="word-cloud"]').should('contain', '50')
+    cy.get('[data-cy="word-cloud-language-filter"]').should('not.exist')
+    cy.get('[data-cy="word-cloud-display-limit"]').should('not.exist')
+
+    // check for correct behaviour of filters
+    cy.get('[data-cy="evaluate-question-select"]').click()
+    cy.get(
+      `[data-cy="evaluation-select-instance-${this.data.FT4.title}"]`
+    ).click()
+    cy.get('[data-cy="change-chart-type"]').click()
+    cy.get('[data-cy="change-chart-type-manage.evaluation.wordCloud"]').click()
+    cy.wait(1000)
+
+    cy.get('[data-cy="word-cloud"]').should('contain', 'hello')
+    cy.get('[data-cy="word-cloud"]').should('contain', '42')
+    cy.get('[data-cy="word-cloud"]').should('not.contain', 'of')
+
+    cy.selectOption('[data-cy="word-cloud-language-select"]', 'none')
+    cy.wait(500)
+    cy.get('[data-cy="word-cloud"]').should('contain', 'of')
+
+    cy.selectOption('[data-cy="word-cloud-mode-select"]', 'sentences')
+    cy.wait(500)
+    cy.get('[data-cy="word-cloud"]').should('contain', 'of')
+    cy.get('[data-cy="word-cloud-language-filter"]').should('not.exist')
+    cy.get('[data-cy="word-cloud-display-limit"]').should('not.exist')
+
+    cy.get('[data-cy="evaluate-question-select"]').click()
+    cy.get(
+      `[data-cy="evaluation-select-instance-${this.data.FT5.title}"]`
+    ).click()
+    cy.get('[data-cy="change-chart-type"]').click()
+    cy.get('[data-cy="change-chart-type-manage.evaluation.wordCloud"]').click()
+    cy.wait(1000)
+
+    cy.get('[data-cy="word-cloud"]').should('contain', 'hallo')
+    cy.get('[data-cy="word-cloud"]').should('contain', '42')
+    cy.get('[data-cy="word-cloud"]').should('contain', 'von')
+
+    cy.selectOption('[data-cy="word-cloud-language-select"]', 'de')
+    cy.wait(500)
+    cy.get('[data-cy="word-cloud"]').should('contain', 'hallo')
+    cy.get('[data-cy="word-cloud"]').should('not.contain', 'von')
+  })
+  // #endregion
+
+  // ! Part 8: Assessment Live Quizzes
+  // #region
+  // TODO
   // #endregion
 })

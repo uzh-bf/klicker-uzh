@@ -10,6 +10,7 @@ module.exports = {
       'tutorials/course_management',
       'tutorials/element_stacks',
       'tutorials/answer_collections',
+      'tutorials/element_batch_operations',
     ],
     'Lecturer - Activities': [
       'tutorials/live_quiz',
@@ -19,12 +20,15 @@ module.exports = {
       'tutorials/participant_group_management',
       'tutorials/group_activity',
       // 'tutorials/activity_templates',
+      'tutorials/activity_batch_operations',
+      'tutorials/element_updates_activities',
     ],
     'Lecturer - Sharing': [
       // 'tutorials/permissions_groups',
       // 'tutorials/direct_sharing',
       // 'tutorials/catalog_sharing',
       'tutorials/delegated_access',
+      'tutorials/review',
     ],
     'Lecturer - Integrations': [
       'tutorials/ppt_integration',

@@ -1,12 +1,20 @@
 import type {
+  AppliedPointCorrection,
   Element,
+  ElementInstance,
   ElementStatus,
   ElementType,
   ObjectAccess,
   ObjectType,
   ParameterType,
   PerformanceLevel,
-} from '@klicker-uzh/prisma'
+  PointCorrection,
+  ResponseCorrectness as PrismaResponseCorrectness,
+} from '@klicker-uzh/prisma/client'
+
+// ----- HATCHET (WORKER/TASK) TYPES -----
+export * from './assessmentReport.js'
+export * from './hatchet.js'
 
 // ----- ACTIVITY LOG TYPES -----
 // #region
@@ -29,6 +37,14 @@ export type ElementKeys = keyof Element
 export enum DisplayMode {
   LIST = 'LIST',
   GRID = 'GRID',
+}
+
+export enum SortByType {
+  TITLE = 'TITLE',
+  TYPE = 'TYPE',
+  STATUS = 'STATUS',
+  CREATED = 'CREATED',
+  MODIFIED = 'MODIFIED',
 }
 
 export enum ActivityType {
@@ -82,6 +98,14 @@ export type CaseStudyItemResponse = {
 export type CaseStudyCaseResponse = {
   caseId: string
   itemResponses: CaseStudyItemResponse[]
+}
+
+export type CaseStudyResponseObject = {
+  [caseId: string]: {
+    [itemId: number]: {
+      [criterionId: string]: number // value = response
+    }
+  }
 }
 
 export type ChoiceInput = {
@@ -186,10 +210,19 @@ export type OptionsSelectionInput = {
 }
 
 export type ResponseInput = {
-  choices?: ChoicesResponse[] | null
-  value?: string | null
-  selection?: number[] | null
-  assessment?: CaseStudyCaseResponse[] | null
+  choices?: ChoicesResponse[] | null // SC / MC / KPRIM
+  value?: string | null // FREE_TEXT / NUMERICAL
+  selection?: number[] | null // SELECTION
+  assessment?: CaseStudyCaseResponse[] | null // CASE_STUDY
+  viewed?: boolean | null // CONTENT
+}
+
+export type LiveQuizResponseInput = {
+  choices?: ChoicesResponse[] | null // SC / MC / KPRIM
+  value?: string | null // FREE_TEXT / NUMERICAL
+  selection?: number[] | null // SELECTION
+  assessment?: CaseStudyResponseObject | null // CASE_STUDY - no need to convert to array for pothos validation in live quiz submissions
+  viewed?: boolean | null // CONTENT
 }
 
 export type ElementOptionsInput = OptionsChoicesInput &
@@ -378,7 +411,6 @@ export type CatalogObject = {
   isRequested: boolean
   isShared: boolean
 }
-
 // #endregion
 
 // ----- ELEMENT DATA AND INSTANCES -----
@@ -444,6 +476,18 @@ export type SingleQuestionResponse =
   | SingleQuestionResponseContent
   | SingleQuestionResponseSelection
   | SingleQuestionResponseCaseStudy
+
+export type SingleQuestionResponseLiveQuizCaseStudy = {
+  assessment: CaseStudyResponseObject
+}
+
+export type SingleQuestionResponseLiveQuiz =
+  | SingleQuestionResponseChoices
+  | SingleQuestionResponseValue
+  | SingleQuestionResponseFlashcard
+  | SingleQuestionResponseContent
+  | SingleQuestionResponseSelection
+  | SingleQuestionResponseLiveQuizCaseStudy
 
 export type Choice = {
   ix: number
@@ -923,5 +967,85 @@ export type ActivityQuizAnalytics = {
   totalErrorRate: number
   totalPartialRate: number
   totalCorrectRate: number
+}
+// #endregion
+
+// ----- ASSESSMENT -----
+// #region
+export type ActivityStudentPerformance = {
+  id: string
+  activityId: string
+  displayName: string
+  finishedAt: Date
+  multiplier: number
+  basePoints: number
+  availableBasePoints: number
+  correctnessPoints: number
+  availableCorrectnessPoints: number
+  bonusPoints: number
+  availableBonusPoints: number
+  corrections: StudentPointCorrection[]
+}
+
+export type StudentPointCorrection = {
+  id: number
+  lecturerReason?: string | null
+  studentReason: string
+  awardedBasePoints: number
+  awardedCorrectnessPoints: number
+  awardedBonusPoints: number
+  deductedBasePoints: number
+  deductedCorrectnessPoints: number
+  deductedBonusPoints: number
+}
+
+export type StudentAssessmentResultsItem = {
+  participantId: string
+  participantEmail: string
+  basePoints: number
+  correctnessPoints: number
+  bonusPoints: number
+}
+export type AssessmentResultsLiveQuiz = {
+  name: string
+  quizBasePoints: number
+  quizCorrectnessPoints: number
+  quizBonusPoints: number
+  availableBasePoints: number
+  availableCorrectnessPoints: number
+  availableBonusPoints: number
+  numberOfCorrections: number
+  studentResults: StudentAssessmentResultsItem[]
+}
+export type AssessmentResultsCourse = {
+  name: string
+  availableBasePoints: number
+  availableCorrectnessPoints: number
+  availableBonusPoints: number
+  numberOfCorrections: number
+  studentResults: StudentAssessmentResultsItem[]
+}
+
+export type StudentAssessmentBlockResponse = {
+  blockId: number
+  instances: StudentAssessmentInstanceResponse[]
+}
+export type StudentAssessmentInstanceResponse = {
+  instance: ElementInstance
+  corrections: (AppliedPointCorrection & {
+    pointCorrection: PointCorrection
+  })[]
+  basePoints: number
+  correctnessPoints: number
+  bonusPoints: number
+  correctness?: PrismaResponseCorrectness | null
+  submission?: SingleQuestionResponseLiveQuiz | null
+}
+
+export enum PointCorrectionType {
+  ALL_COURSE = 'ALL_COURSE',
+  PARTICIPATING = 'PARTICIPATING',
+  SINGLE = 'SINGLE',
+  MULTIPLE = 'MULTIPLE',
 }
 // #endregion

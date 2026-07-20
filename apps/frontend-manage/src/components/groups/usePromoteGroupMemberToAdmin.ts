@@ -12,64 +12,45 @@ function usePromoteGroupMemberToAdmin() {
   const onPromotion = async ({
     groupId,
     memberId,
-    memberShortname,
-    memberEmail,
   }: {
     groupId: number
     memberId: string
-    memberShortname: string
-    memberEmail: string
   }) => {
     try {
       await promoteGroupMemberToAdmin({
-        variables: {
-          groupId: groupId,
-          memberId: memberId!,
-        },
-        optimisticResponse: {
-          promoteGroupMemberToAdmin: true,
-        },
-        // TODO: re-introduce once UI updates correctly with corresponding changes
-        // update: (cache, { data }) => {
-        //   // check if request was successful
-        //   const success = data?.promoteGroupMemberToAdmin
-        //   if (!success) return
+        variables: { groupId, memberId },
+        optimisticResponse: { promoteGroupMemberToAdmin: true },
+        update: (cache, { data }) => {
+          // verify that the promotion was successful
+          if (!data?.promoteGroupMemberToAdmin) return
 
-        //   // update members and admins of user group
-        //   const userGroups = cache.readQuery({
-        //     query: GetUserGroupsUserDocument,
-        //   })
+          cache.updateQuery({ query: GetUserGroupsUserDocument }, (qData) => {
+            if (!qData?.getUserGroupsUser) return qData
 
-        //   if (userGroups?.getUserGroupsUser) {
-        //     cache.writeQuery({
-        //       query: GetUserGroupsUserDocument,
-        //       data: {
-        //         getUserGroupsUser: userGroups?.getUserGroupsUser.map(
-        //           (existingGroup) => {
-        //             if (groupId === existingGroup.id) {
-        //               return {
-        //                 ...existingGroup,
-        //                 admins: [
-        //                   ...(existingGroup.admins ?? []),
-        //                   {
-        //                     id: memberId,
-        //                     shortname: memberShortname,
-        //                     email: memberEmail,
-        //                   },
-        //                 ],
-        //                 members: existingGroup.members?.filter(
-        //                   (m) => m.id !== memberId
-        //                 ),
-        //               }
-        //             }
-        //             return existingGroup
-        //           }
-        //         ),
-        //       },
-        //     })
-        //   }
-        // },
-        refetchQueries: [{ query: GetUserGroupsUserDocument }],
+            return {
+              getUserGroupsUser: qData.getUserGroupsUser.map(
+                (existingGroup) => {
+                  if (groupId === existingGroup.id) {
+                    const promotedMember = existingGroup.members?.find(
+                      (m) => m.id === memberId
+                    )
+                    if (!promotedMember) return existingGroup
+
+                    return {
+                      ...existingGroup,
+                      admins: [...(existingGroup.admins ?? []), promotedMember],
+                      members: existingGroup.members?.filter(
+                        (m) => m.id !== memberId
+                      ),
+                    }
+                  }
+
+                  return existingGroup
+                }
+              ),
+            }
+          })
+        },
       })
     } catch (e) {
       console.error(e)

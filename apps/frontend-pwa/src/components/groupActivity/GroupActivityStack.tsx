@@ -48,6 +48,8 @@ function GroupActivityStack({
 
   const [submitGroupActivityDecisions, { loading: submitLoading }] =
     useMutation(SubmitGroupActivityDecisionsDocument, {
+      // previous submissions need to be loaded in the correct format
+      // duplication of logic for rarely called function is probably not worth it
       refetchQueries: [
         {
           query: GroupActivityDetailsDocument,
@@ -328,7 +330,9 @@ function GroupActivityStack({
                           value.response!
                         ).filter(
                           (entry) =>
-                            typeof entry !== 'undefined' && entry !== -1
+                            entry !== -1 &&
+                            typeof entry !== 'undefined' &&
+                            entry !== null
                         ),
                       }
                     } else if (value.type === ElementType.CaseStudy) {

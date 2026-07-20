@@ -12,7 +12,7 @@ import StudentElement, {
 import { H3 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useMemo, useState } from 'react'
-import useArtificialElementInstance from '../../questions/manipulation/useArtificialElementInstance'
+import useArtificialElementInstance from '../../elements/manipulation/useArtificialElementInstance'
 import { ActivityTemplateElementFormValues } from './types'
 
 function TemplateElementPreview({

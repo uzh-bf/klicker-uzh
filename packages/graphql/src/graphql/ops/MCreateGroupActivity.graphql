@@ -20,12 +20,6 @@ mutation CreateGroupActivity(
     clues: $clues
     stack: $stack
   ) {
-    id
-    name
-    displayName
-    description
-    scheduledStartAt
-    scheduledEndAt
-    pointsMultiplier
+    ...ActivityInfoData
   }
 }
