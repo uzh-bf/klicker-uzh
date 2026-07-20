@@ -11,6 +11,8 @@ import { initializePrisma } from './helpers.js'
 
 const SECRET = 'kb-webhook-test-secret'
 const OWNER_ID = 'c08036f0-5354-47dc-aac0-408a89c251a5'
+const INGESTION_ATTEMPT_ID = 'e69e7cbd-c301-41d4-b653-bb645576d637'
+const STALE_ATTEMPT_ID = 'f92f85a3-bbbc-47cb-8739-f93ed85bdce5'
 
 describe('KB ingestion webhook contract', () => {
   let prisma: PrismaClient
@@ -62,6 +64,7 @@ describe('KB ingestion webhook contract', () => {
         title: 'Webhook test resource',
         sourceUrl: 'https://example.com/resource',
         status: KBResourceStatus.QUEUED,
+        ingestionAttemptId: INGESTION_ATTEMPT_ID,
       },
     })
     resourceId = resource.id
@@ -83,6 +86,7 @@ describe('KB ingestion webhook contract', () => {
   it('accepts a valid signed PROCESSING transition', async () => {
     const request = createRequest({
       resourceId,
+      ingestionAttemptId: INGESTION_ATTEMPT_ID,
       status: 'PROCESSING',
     })
 
@@ -102,6 +106,7 @@ describe('KB ingestion webhook contract', () => {
     })
     const request = createRequest({
       resourceId,
+      ingestionAttemptId: INGESTION_ATTEMPT_ID,
       status: 'READY',
       statusMessage: 'Graph created',
     })
@@ -119,6 +124,7 @@ describe('KB ingestion webhook contract', () => {
   it('persists the message for a valid FAILED transition', async () => {
     const request = createRequest({
       resourceId,
+      ingestionAttemptId: INGESTION_ATTEMPT_ID,
       status: 'FAILED',
       statusMessage: 'Source could not be read',
     })
@@ -133,7 +139,11 @@ describe('KB ingestion webhook contract', () => {
   })
 
   it('rejects an invalid signature', async () => {
-    const request = createRequest({ resourceId, status: 'PROCESSING' })
+    const request = createRequest({
+      resourceId,
+      ingestionAttemptId: INGESTION_ATTEMPT_ID,
+      status: 'PROCESSING',
+    })
 
     await expect(
       handleKBIngestionWebhook({
@@ -152,7 +162,11 @@ describe('KB ingestion webhook contract', () => {
 
   it('rejects a stale timestamp', async () => {
     const request = createRequest(
-      { resourceId, status: 'PROCESSING' },
+      {
+        resourceId,
+        ingestionAttemptId: INGESTION_ATTEMPT_ID,
+        status: 'PROCESSING',
+      },
       Math.floor(Date.now() / 1000) - 301
     )
 
@@ -168,7 +182,11 @@ describe('KB ingestion webhook contract', () => {
   })
 
   it('rejects a status outside the webhook allow-list', async () => {
-    const request = createRequest({ resourceId, status: 'ADDED' })
+    const request = createRequest({
+      resourceId,
+      ingestionAttemptId: INGESTION_ATTEMPT_ID,
+      status: 'ADDED',
+    })
 
     await expect(
       handleKBIngestionWebhook({ prisma, ...request })
@@ -186,7 +204,11 @@ describe('KB ingestion webhook contract', () => {
       where: { id: resourceId },
       data: { status: KBResourceStatus.ADDED },
     })
-    const request = createRequest({ resourceId, status: 'READY' })
+    const request = createRequest({
+      resourceId,
+      ingestionAttemptId: INGESTION_ATTEMPT_ID,
+      status: 'READY',
+    })
 
     await expect(
       handleKBIngestionWebhook({ prisma, ...request })
@@ -198,8 +220,16 @@ describe('KB ingestion webhook contract', () => {
   })
 
   it('does not let a concurrent PROCESSING callback regress READY', async () => {
-    const processing = createRequest({ resourceId, status: 'PROCESSING' })
-    const ready = createRequest({ resourceId, status: 'READY' })
+    const processing = createRequest({
+      resourceId,
+      ingestionAttemptId: INGESTION_ATTEMPT_ID,
+      status: 'PROCESSING',
+    })
+    const ready = createRequest({
+      resourceId,
+      ingestionAttemptId: INGESTION_ATTEMPT_ID,
+      status: 'READY',
+    })
 
     await Promise.all([
       handleKBIngestionWebhook({ prisma, ...processing }),
@@ -212,7 +242,11 @@ describe('KB ingestion webhook contract', () => {
   })
 
   it('rejects malformed resource identifiers before accessing Prisma', async () => {
-    const request = createRequest({ resourceId: 'not-a-uuid', status: 'READY' })
+    const request = createRequest({
+      resourceId: 'not-a-uuid',
+      ingestionAttemptId: INGESTION_ATTEMPT_ID,
+      status: 'READY',
+    })
 
     await expect(
       handleKBIngestionWebhook({ prisma, ...request })
@@ -222,9 +256,50 @@ describe('KB ingestion webhook contract', () => {
     })
   })
 
+  it('rejects malformed ingestion attempt identifiers before accessing Prisma', async () => {
+    const request = createRequest({
+      resourceId,
+      ingestionAttemptId: 'not-a-uuid',
+      status: 'READY',
+    })
+
+    await expect(
+      handleKBIngestionWebhook({ prisma, ...request })
+    ).resolves.toEqual({
+      statusCode: 400,
+      body: { error: 'Invalid request' },
+    })
+    await expect(getResource()).resolves.toMatchObject({
+      ingestionAttemptId: INGESTION_ATTEMPT_ID,
+      status: KBResourceStatus.QUEUED,
+      ingestedAt: null,
+    })
+  })
+
+  it('does not let a stale attempt mutate the latest ingestion', async () => {
+    const request = createRequest({
+      resourceId,
+      ingestionAttemptId: STALE_ATTEMPT_ID,
+      status: 'READY',
+    })
+
+    await expect(
+      handleKBIngestionWebhook({ prisma, ...request })
+    ).resolves.toEqual({ statusCode: 200, body: { ok: true } })
+    await expect(getResource()).resolves.toMatchObject({
+      ingestionAttemptId: INGESTION_ATTEMPT_ID,
+      status: KBResourceStatus.QUEUED,
+      ingestedAt: null,
+    })
+  })
+
   it('returns 503 without revealing details when the secret is missing', async () => {
     delete process.env.KB_WEBHOOK_SECRET
-    const request = createRequest({ resourceId, status: 'PROCESSING' })
+    const request = createRequest({
+      resourceId,
+      ingestionAttemptId: INGESTION_ATTEMPT_ID,
+      status: 'PROCESSING',
+    })
 
     await expect(
       handleKBIngestionWebhook({ prisma, ...request })

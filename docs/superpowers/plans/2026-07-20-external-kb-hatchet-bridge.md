@@ -152,7 +152,7 @@ git commit -m "feat(kb): track latest external ingestion attempt"
 - Modify: `packages/graphql/src/services/knowledgeWebhooks.ts`
 - Modify: `packages/graphql/test/knowledgeWebhooks.test.ts`
 
-- [ ] **Step 1: Write the failing shared signing tests**
+- [x] **Step 1: Write the failing shared signing tests**
 
 Cover:
 
@@ -183,7 +183,7 @@ pnpm --filter @klicker-uzh/util exec vitest run test/kbWebhook.test.ts
 
 Expected: FAIL because `kbWebhook.ts` does not exist.
 
-- [ ] **Step 2: Move the byte-exact helper without changing its API**
+- [x] **Step 2: Move the byte-exact helper without changing its API**
 
 Implement `packages/util/src/kbWebhook.ts` with the current `Buffer.concat`, timestamp header, and HMAC-SHA256 hex behavior. Export it from `packages/util/src/index.ts`.
 
@@ -197,7 +197,7 @@ export { signKBIngestionWebhook } from '@klicker-uzh/util'
 
 Keep `timingSafeEqual` local to verification.
 
-- [ ] **Step 3: Make the webhook payload attempt-correlated**
+- [x] **Step 3: Make the webhook payload attempt-correlated**
 
 Extend the parsed payload:
 
@@ -222,7 +222,7 @@ where: {
 
 Continue returning `{ statusCode: 200, body: { ok: true } }` when a correctly signed stale attempt updates zero rows.
 
-- [ ] **Step 4: Update the integration fixture and add the stale-attempt regression**
+- [x] **Step 4: Update the integration fixture and add the stale-attempt regression**
 
 Use fixed valid UUIDs for `ingestionAttemptId` and `staleAttemptId`. Store the current ID in `beforeEach`, include it in every valid payload, and add:
 
@@ -247,7 +247,7 @@ it('does not let a stale attempt mutate the latest ingestion', async () => {
 
 Add a malformed-attempt UUID test returning 400 before database mutation.
 
-- [ ] **Step 5: Run focused tests and type checks**
+- [x] **Step 5: Run focused tests and type checks**
 
 ```bash
 pnpm --filter @klicker-uzh/util exec vitest run test/kbWebhook.test.ts
@@ -259,7 +259,7 @@ pnpm --filter @klicker-uzh/graphql check
 
 Expected: all tests and checks pass; the old GraphQL export path remains usable.
 
-- [ ] **Step 6: Commit Task 2**
+- [x] **Step 6: Commit Task 2**
 
 ```bash
 git add packages/util/src/kbWebhook.ts packages/util/test/kbWebhook.test.ts packages/util/src/index.ts packages/graphql/src/services/knowledgeWebhooks.ts packages/graphql/test/knowledgeWebhooks.test.ts

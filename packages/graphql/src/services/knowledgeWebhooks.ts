@@ -1,5 +1,8 @@
 import { KBResourceStatus, type PrismaClient } from '@klicker-uzh/prisma/client'
-import { createHmac, timingSafeEqual } from 'node:crypto'
+import { signKBIngestionWebhook } from '@klicker-uzh/util'
+import { timingSafeEqual } from 'node:crypto'
+
+export { signKBIngestionWebhook } from '@klicker-uzh/util'
 
 const SIGNATURE_MAX_AGE_SECONDS = 300
 const UUID_PATTERN =
@@ -9,6 +12,7 @@ type WebhookHeaders = Record<string, string | string[] | undefined>
 
 type KBIngestionWebhookPayload = {
   resourceId: string
+  ingestionAttemptId: string
   status:
     | typeof KBResourceStatus.PROCESSING
     | typeof KBResourceStatus.READY
@@ -40,6 +44,8 @@ function parsePayload(rawBody: Buffer): KBIngestionWebhookPayload | null {
   if (
     typeof payload.resourceId !== 'string' ||
     !UUID_PATTERN.test(payload.resourceId) ||
+    typeof payload.ingestionAttemptId !== 'string' ||
+    !UUID_PATTERN.test(payload.ingestionAttemptId) ||
     (payload.status !== KBResourceStatus.PROCESSING &&
       payload.status !== KBResourceStatus.READY &&
       payload.status !== KBResourceStatus.FAILED) ||
@@ -51,33 +57,11 @@ function parsePayload(rawBody: Buffer): KBIngestionWebhookPayload | null {
 
   return {
     resourceId: payload.resourceId,
+    ingestionAttemptId: payload.ingestionAttemptId,
     status: payload.status,
     ...(payload.statusMessage === undefined
       ? {}
       : { statusMessage: payload.statusMessage }),
-  }
-}
-
-export function signKBIngestionWebhook({
-  rawBody,
-  secret,
-  timestamp,
-}: {
-  rawBody: Buffer
-  secret: string
-  timestamp: number | string
-}) {
-  const timestampHeader = String(timestamp)
-  const signedPayload = Buffer.concat([
-    Buffer.from(`${timestampHeader}.`, 'utf8'),
-    rawBody,
-  ])
-
-  return {
-    'x-kb-timestamp': timestampHeader,
-    'x-kb-signature': createHmac('sha256', secret)
-      .update(signedPayload)
-      .digest('hex'),
   }
 }
 
@@ -142,6 +126,7 @@ export async function handleKBIngestionWebhook({
   await prisma.kBResource.updateMany({
     where: {
       id: payload.resourceId,
+      ingestionAttemptId: payload.ingestionAttemptId,
       status: { in: allowedSources },
     },
     data: {
