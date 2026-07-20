@@ -37,24 +37,66 @@ const elementTypeSchema = z.enum([
 const elementStatusSchema = z.enum(['DRAFT', 'REVIEW', 'READY'])
 
 export const courseListSchema = z.object({
-  includeArchived: z.boolean().default(false),
-  limit: z.number().int().min(1).max(MAX_COURSES).default(10),
-  query: z.string().trim().min(1).max(120).optional(),
+  includeArchived: z
+    .boolean()
+    .default(false)
+    .describe('Include archived courses in the results. Defaults to false.'),
+  limit: z
+    .number()
+    .int()
+    .min(1)
+    .max(MAX_COURSES)
+    .default(10)
+    .describe(`Maximum number of courses to return (1-${MAX_COURSES}).`),
+  query: z
+    .string()
+    .trim()
+    .min(1)
+    .max(120)
+    .optional()
+    .describe(
+      'Optional case-insensitive substring to match against the course name, e.g. "statistics". Omit to list all accessible courses.'
+    ),
 })
 
 export const courseGetSchema = z.object({
-  courseId: z.string().uuid(),
+  courseId: z
+    .string()
+    .uuid()
+    .describe('Readable course id (uuid) to fetch details for.'),
 })
 
 export const elementSearchSchema = z.object({
-  limit: z.number().int().min(1).max(MAX_ELEMENTS).default(5),
-  query: z.string().trim().min(1).max(120).optional(),
-  status: elementStatusSchema.optional(),
-  type: elementTypeSchema.optional(),
+  limit: z
+    .number()
+    .int()
+    .min(1)
+    .max(MAX_ELEMENTS)
+    .default(5)
+    .describe(`Maximum number of elements to return (1-${MAX_ELEMENTS}).`),
+  query: z
+    .string()
+    .trim()
+    .min(1)
+    .max(120)
+    .optional()
+    .describe(
+      'Optional case-insensitive substring to match against element name or content, e.g. "standard deviation". Omit to list recent elements.'
+    ),
+  status: elementStatusSchema
+    .optional()
+    .describe('Optional status filter: DRAFT, REVIEW, or READY.'),
+  type: elementTypeSchema
+    .optional()
+    .describe('Optional element type filter, e.g. SC or NUMERICAL.'),
 })
 
 export const elementGetSchema = z.object({
-  elementId: z.number().int().positive(),
+  elementId: z
+    .number()
+    .int()
+    .positive()
+    .describe('Readable element id (positive integer) to fetch details for.'),
 })
 
 export const questionDraftSchema = z.object({
@@ -443,6 +485,18 @@ function optionalSnippet(value: string | null | undefined, maxChars: number) {
   return text || null
 }
 
+// Prisma `contains` is a literal substring match, so glob/regex sentinels a
+// model might pass to mean "everything" (`*`, `.*`, `.+`, `%`) would instead
+// filter to rows literally containing those characters and surface nothing.
+// Treat a query made up only of such wildcards or whitespace as "no filter".
+function normalizeQuery(query: string | undefined): string | undefined {
+  if (!query) return undefined
+  const trimmed = query.trim()
+  if (trimmed.length === 0) return undefined
+  if (/^[\s.*+%]+$/.test(trimmed)) return undefined
+  return trimmed
+}
+
 function cappedJson(value: unknown): unknown {
   const serialized = JSON.stringify(value ?? null)
   if (serialized.length <= DETAIL_OPTIONS_CHARS) {
@@ -662,6 +716,7 @@ export function createLecturerReadService(
 
     async listCourses(input, session) {
       const args: CourseListInput = courseListSchema.parse(input ?? {})
+      const query = normalizeQuery(args.query)
       const rows = (await prisma.derivedPermission.findMany({
         include: {
           course: {
@@ -684,18 +739,18 @@ export function createLecturerReadService(
         where: {
           course: {
             ...(args.includeArchived ? {} : { isArchived: false }),
-            ...(args.query
+            ...(query
               ? {
                   OR: [
                     {
                       displayName: {
-                        contains: args.query,
+                        contains: query,
                         mode: 'insensitive',
                       },
                     },
                     {
                       name: {
-                        contains: args.query,
+                        contains: query,
                         mode: 'insensitive',
                       },
                     },
@@ -771,6 +826,7 @@ export function createLecturerReadService(
 
     async searchElements(input, session) {
       const args: ElementSearchInput = elementSearchSchema.parse(input ?? {})
+      const query = normalizeQuery(args.query)
       const rows = (await prisma.derivedPermission.findMany({
         include: {
           element: {
@@ -797,18 +853,18 @@ export function createLecturerReadService(
             isDeleted: false,
             ...(args.status ? { status: args.status } : {}),
             ...(args.type ? { type: args.type } : {}),
-            ...(args.query
+            ...(query
               ? {
                   OR: [
                     {
                       name: {
-                        contains: args.query,
+                        contains: query,
                         mode: 'insensitive',
                       },
                     },
                     {
                       content: {
-                        contains: args.query,
+                        contains: query,
                         mode: 'insensitive',
                       },
                     },

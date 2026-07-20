@@ -44,4 +44,6 @@ Land the merge-blocker fix batch: green CI + a working lecturer course-list + cl
 
 - Plan committed `9a025d610`.
 - Slice 1 (N2) done in worktree: `thread.tsx` moved `data-cy="chat-assistant-message-content"` from avatar-wrapper div to the text div wrapping `Unstable_PartsGrouped`; `Y-chat.spec.ts:344` welcome assertion `'How can I help you'` → `'Ask'` (matches shipped `Ask {chatbotName}`). Verification: local Playwright suite NOT run — its `global-setup` wipes the DB (`cleanupDatabase` deletes all courses/users/participants), which would destroy the running worktree dev stack's data; the mocked-stream Y-chat specs are the CI `test-playwright` gate against an ephemeral DB, which is the authoritative check on push. No user-visible rendering change (welcome copy unchanged, data-cy invisible), so no separate browser screenshot. Pre-commit `check:all` (tsc+lint+format) gates the edit.
-- Next: commit slice 1, then slice 2 (F5).
+- Slice 1 committed `54aaaf639` (pre-commit check:all green, 25 tasks).
+- Slice 2 (F5) done: `service.ts` added `normalizeQuery` (wildcard/whitespace-only `*` `.*` `.+` `%` → no filter) applied in `listCourses` + `searchElements`; added `.describe()` to all four read schemas (courseList/courseGet/elementSearch/elementGet). `service.test.ts` +3 tests (genuine query keeps OR, wildcard-only course/element query drops OR). Verification: `pnpm --filter @klicker-uzh/mcp-lecturer test` → 36 passed (8 files); `check` (tsc --noEmit) clean, both in-container.
+- Next: commit slice 2, then slice 3 (F6).

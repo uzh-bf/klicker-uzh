@@ -80,6 +80,37 @@ describe('lecturer MCP read service', () => {
     expect(JSON.stringify(result)).not.toContain('pinCode')
   })
 
+  it('applies a case-insensitive substring OR filter for a genuine course query', async () => {
+    const prisma = makePrisma()
+    vi.mocked(prisma.derivedPermission.findMany).mockResolvedValue([])
+
+    await createLecturerReadService(prisma).listCourses(
+      { query: 'stats' },
+      session
+    )
+
+    const where = vi.mocked(prisma.derivedPermission.findMany).mock.calls[0]![0]
+      .where
+    expect(where.course.OR).toEqual([
+      { displayName: { contains: 'stats', mode: 'insensitive' } },
+      { name: { contains: 'stats', mode: 'insensitive' } },
+    ])
+  })
+
+  it('treats a wildcard-only course query as no filter', async () => {
+    const prisma = makePrisma()
+    vi.mocked(prisma.derivedPermission.findMany).mockResolvedValue([])
+
+    await createLecturerReadService(prisma).listCourses(
+      { query: '.*' },
+      session
+    )
+
+    const where = vi.mocked(prisma.derivedPermission.findMany).mock.calls[0]![0]
+      .where
+    expect(where.course).not.toHaveProperty('OR')
+  })
+
   it('gets a course only with a matching derived READ permission', async () => {
     const prisma = makePrisma()
     vi.mocked(prisma.course.findFirst).mockResolvedValue({
@@ -194,6 +225,20 @@ describe('lecturer MCP read service', () => {
     })
     expect(result.elements[0]!.snippet.length).toBeLessThanOrEqual(500)
     expect(result.elements[0]!.snippet).not.toContain('<b>')
+  })
+
+  it('treats a wildcard-only element query as no filter', async () => {
+    const prisma = makePrisma()
+    vi.mocked(prisma.derivedPermission.findMany).mockResolvedValue([])
+
+    await createLecturerReadService(prisma).searchElements(
+      { query: '*' },
+      session
+    )
+
+    const where = vi.mocked(prisma.derivedPermission.findMany).mock.calls[0]![0]
+      .where
+    expect(where.element).not.toHaveProperty('OR')
   })
 
   it('gets an element only with a matching derived READ permission and caps detailed fields', async () => {
