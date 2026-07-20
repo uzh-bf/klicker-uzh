@@ -4,6 +4,18 @@
 **Scope:** `apps/office-addin` (React/Webpack → vanilla TS/Rollup), deployed artifacts in `apps/docs/static/office-addin`, PLAN/CLAUDE docs, lockfile.
 **Verdict:** Solid direction (bundle shrinks massively, React removed, validation UX added), but **not production-ready**. Two release blockers would break the add-in for every user, plus a functional regression for multi-embed decks. All findings below include evidence and step-by-step fixes.
 
+## Progress
+
+- [x] Re-check live PR state on 2026-07-20: [PR #4643](https://github.com/uzh-bf/klicker-uzh/pull/4643) remains open and draft at `ee6afaa3b`; branch is 459 commits behind and 26 ahead of `origin/v3`.
+- [x] Re-check Office settings semantics against current Microsoft documentation. `Office.context.document.settings` is specific to the content-add-in instance and document, so the new `embeddedUrl` key does not collapse separate embedded add-in instances. Section 2.1 is superseded by this evidence; keep the simpler instance-scoped key and verify it in PowerPoint when available.
+- [ ] Slice 1 active: merge current `origin/v3`, resolve package/lockfile conflicts, and establish a clean Node 24 baseline.
+- [ ] Slice 2: fix the production build/deployment pipeline, remove the Tailwind Play CDN and non-runtime artifacts, and prove `dist/` equals the deployed static directory.
+- [ ] Slice 3: audit and refresh compatible Office Add-in dependencies; document deferred majors and browser/runtime support.
+- [ ] Slice 4: finish code, docs, tests, and source-backed review-thread resolution.
+- [ ] Finish: full verification, security/maintainability/cross-model reviews, whole-branch PR refresh, ready transition, and ready-only CI monitoring.
+
+**Scope decisions:** preserve one persisted key per content-add-in instance; no toolbar/ribbon work; no executable packaging; no merge. If PowerPoint sideloading is unavailable, record it as a manual release check instead of claiming host-level proof.
+
 How to read this file: work top to bottom. Each item has **Evidence** (where to look, what you'll see) and **Fix** (exact steps). Check the box when done. Run the verification loop (section 6) after every fix batch.
 
 ---
