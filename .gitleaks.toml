@@ -1,0 +1,25 @@
+# Gitleaks configuration for KlickerUZH (public repo).
+# Extends the built-in default ruleset; the allowlist below covers verified
+# false positives only. Docs: https://github.com/gitleaks/gitleaks#configuration
+title = "KlickerUZH gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Verified false positives (generated manifests, public client configs, templates, doc/test fixtures)"
+paths = [
+  # GraphQL persisted-operation manifest — values are SHA-256 hashes of queries.
+  '''packages/graphql/src/public/client\.json''',
+  # Firebase Android client key — embedded in the shipped app, restricted by
+  # package name / signing, not confidential (Google documents it as public).
+  '''apps/frontend-pwa/android/app/google-services\.json''',
+  # Docusaurus config holds the public Algolia DocSearch (search-only) API key.
+  '''apps/docs/docusaurus\.config\.ts''',
+  # Self-host docker-compose example env — placeholder/template values only.
+  '''deploy/compose-traefik-proxy/.*\.env$''',
+  # Illustrative tokens in docs, skill examples, and load-test fixtures.
+  '''\.agents/skills/.*\.md$''',
+  '''project/.*\.md$''',
+  '''util/load-test/.*''',
+]
