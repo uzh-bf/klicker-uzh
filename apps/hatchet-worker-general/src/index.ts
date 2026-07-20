@@ -3,7 +3,11 @@
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import { handlers } from '@klicker-uzh/graphql'
 import type { PreparedHatchetTasks } from '@klicker-uzh/hatchet'
-import { hatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
+import {
+  hatchetClient,
+  prepareHatchetTasks,
+  validateKBIngestionWorkerConfig,
+} from '@klicker-uzh/hatchet'
 import EventEmitter from 'events'
 import { createPubSub } from 'graphql-yoga'
 import { Redis } from 'ioredis'
@@ -58,6 +62,7 @@ function selectWorkflows(workflows: PreparedHatchetTasks) {
 }
 
 async function main() {
+  validateKBIngestionWorkerConfig()
   logger.info({ workerName: HATCHET_WORKER_NAME }, 'Starting Hatchet worker')
 
   const redisExec = new Redis({

@@ -564,7 +564,7 @@ git commit -m "feat(kb): dispatch selected resources to external Hatchet"
 - Modify: `packages/hatchet/src/index.ts`
 - Modify: `apps/hatchet-worker-general/src/index.ts`
 
-- [ ] **Step 1: Add failing signed-webhook and sweep tests**
+- [x] **Step 1: Add failing signed-webhook and sweep tests**
 
 Test `sendKBIngestionStatus` with a fixed clock and secret. Assert the POST body contains:
 
@@ -598,7 +598,7 @@ pnpm --filter @klicker-uzh/hatchet test
 
 Expected: FAIL because status posting/sweeping is not implemented.
 
-- [ ] **Step 2: Implement the shared signed webhook sender**
+- [x] **Step 2: Implement the shared signed webhook sender**
 
 Serialize the payload once to `Buffer`, sign those exact bytes with `signKBIngestionWebhook`, and POST the same bytes to `KB_WEBHOOK_URL`. Require `KB_WEBHOOK_URL` and `KB_WEBHOOK_SECRET` only when sending. Return no response body to callers and throw a generic error for non-2xx responses.
 
@@ -613,7 +613,7 @@ The final local dispatch failure reports:
 
 The webhook attempt guard makes a delayed local failure a no-op after a newer click.
 
-- [ ] **Step 3: Implement one sequential database-driven sweep**
+- [x] **Step 3: Implement one sequential database-driven sweep**
 
 Query only rows matching:
 
@@ -636,7 +636,7 @@ Process with `for ... of`, not `Promise.all`. For each row:
 
 Checking terminal status before timeout prevents a completed run from being mislabeled when a sweep occurs just after the duration boundary.
 
-- [ ] **Step 4: Retain S5 and register both local tasks**
+- [x] **Step 4: Retain S5 and register both local tasks**
 
 In `packages/hatchet/src/index.ts`, keep this log unchanged in place:
 
@@ -667,13 +667,13 @@ const monitorKBIngestions = hatchet.task({
 
 Return `monitorKBIngestions` from `prepareHatchetTasks`; the general worker's existing dynamic selection then registers it automatically. Do not add it to the GraphQL-context `PreparedHatchetTasks` interface because GraphQL never triggers the cron directly.
 
-- [ ] **Step 5: Validate timeout only in the actual general worker process**
+- [x] **Step 5: Validate timeout only in the actual general worker process**
 
 At the beginning of `main()` in `apps/hatchet-worker-general/src/index.ts`, call `validateKBIngestionWorkerConfig()` before Redis clients are created. This intentionally validates the timeout at worker startup while preserving lazy external-client configuration.
 
 Do not validate in `prepareHatchetTasks()`: the GraphQL backend also calls that function to obtain task declarations, and external worker configuration must not prevent the API from starting.
 
-- [ ] **Step 6: Test the declaration and worker startup behavior**
+- [x] **Step 6: Test the declaration and worker startup behavior**
 
 Add a lightweight mocked `hatchet.task` assertion or exported declaration constants proving:
 
@@ -694,7 +694,7 @@ pnpm --filter @klicker-uzh/hatchet-worker-general check
 
 Expected: all tests/checks pass. A process started with `KB_INGESTION_TIMEOUT_SECONDS=abc` exits during startup; an absent value resolves to 3600.
 
-- [ ] **Step 7: Commit Task 5**
+- [x] **Step 7: Commit Task 5**
 
 ```bash
 git add packages/hatchet/src/kbIngestion.ts packages/hatchet/test/kbIngestion.test.ts packages/hatchet/src/index.ts apps/hatchet-worker-general/src/index.ts

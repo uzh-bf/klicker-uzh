@@ -1,6 +1,10 @@
-import { HatchetClient } from '@hatchet-dev/typescript-sdk'
+import {
+  ConcurrencyLimitStrategy,
+  HatchetClient,
+} from '@hatchet-dev/typescript-sdk'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import type { IngestKBResourceInput } from '@klicker-uzh/types'
+import { createHmac } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import {
   buildExternalKBIngestionPayload,
@@ -9,9 +13,13 @@ import {
   getKBIngestionSourceUrl,
   getKBIngestionTimeoutSeconds,
   KB_INGESTION_ATTEMPT_METADATA_KEY,
+  monitorActiveKBIngestions,
+  sendKBIngestionStatus,
   validateKBIngestionWorkerConfig,
   type ExternalHatchetClient,
+  type ExternalHatchetStatus,
   type KBIngestionLogger,
+  type KBIngestionStatusPayload,
 } from '../src/kbIngestion.js'
 
 const NOW = new Date('2026-07-20T12:00:00.000Z')
@@ -91,12 +99,15 @@ function createPrisma({
 function createClient({
   rows = [],
   runId = 'external-run-id',
+  status = 'QUEUED',
 }: {
   rows?: Array<{ workflowRunExternalId: string; createdAt: string }>
   runId?: string
+  status?: ExternalHatchetStatus
 } = {}) {
   return {
     runs: {
+      get_status: vi.fn().mockResolvedValue(status),
       list: vi.fn().mockResolvedValue({ rows }),
       cancel: vi.fn().mockResolvedValue({}),
     },
@@ -186,6 +197,388 @@ describe('KB ingestion worker configuration', () => {
     ).not.toThrow()
     expect(init).not.toHaveBeenCalled()
     init.mockRestore()
+  })
+})
+
+describe('KB ingestion status webhook', () => {
+  it('signs and posts the exact serialized bytes', async () => {
+    const fetchRequest = vi.fn().mockResolvedValue({ ok: true })
+    const payload = {
+      resourceId: RESOURCE_ID,
+      ingestionAttemptId: ATTEMPT_ID,
+      status: 'PROCESSING',
+    } satisfies KBIngestionStatusPayload
+    const rawBody = Buffer.from(JSON.stringify(payload), 'utf8')
+    const timestamp = Math.floor(NOW.getTime() / 1000)
+
+    await sendKBIngestionStatus(payload, {
+      env: {
+        KB_WEBHOOK_URL: 'https://klicker.example/api/kb/ingestion-webhook',
+        KB_WEBHOOK_SECRET: 'webhook-secret',
+      },
+      now: () => NOW,
+      fetch: fetchRequest,
+    })
+
+    expect(fetchRequest).toHaveBeenCalledTimes(1)
+    const [url, request] = fetchRequest.mock.calls[0]!
+    expect(url).toBe('https://klicker.example/api/kb/ingestion-webhook')
+    expect(request).toMatchObject({
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-kb-timestamp': String(timestamp),
+        'x-kb-signature': createHmac('sha256', 'webhook-secret')
+          .update(Buffer.concat([Buffer.from(`${timestamp}.`), rawBody]))
+          .digest('hex'),
+      },
+    })
+    expect(Buffer.isBuffer(request.body)).toBe(true)
+    expect(request.body).toEqual(rawBody)
+  })
+
+  it('rejects a non-success response without exposing response details', async () => {
+    const fetchRequest = vi.fn().mockResolvedValue({ ok: false })
+
+    await expect(
+      sendKBIngestionStatus(
+        {
+          resourceId: RESOURCE_ID,
+          ingestionAttemptId: ATTEMPT_ID,
+          status: 'FAILED',
+        },
+        {
+          env: {
+            KB_WEBHOOK_URL: 'https://klicker.example/webhook',
+            KB_WEBHOOK_SECRET: 'webhook-secret',
+          },
+          now: () => NOW,
+          fetch: fetchRequest,
+        }
+      )
+    ).rejects.toThrow('KB ingestion status webhook failed')
+  })
+})
+
+type MonitorResource = {
+  id: string
+  kbId: string
+  ingestionAttemptId: string | null
+  externalWorkflowRunId: string | null
+  externalWorkflowStartedAt: Date | null
+}
+
+function createMonitorPrisma(resources: MonitorResource[]) {
+  return {
+    kBResource: {
+      findMany: vi.fn().mockResolvedValue(resources),
+    },
+  } as unknown as Pick<PrismaClient, 'kBResource'>
+}
+
+function createMonitorResource(
+  overrides: Partial<MonitorResource> = {}
+): MonitorResource {
+  return {
+    id: RESOURCE_ID,
+    kbId: KB_ID,
+    ingestionAttemptId: ATTEMPT_ID,
+    externalWorkflowRunId: 'external-run-id',
+    externalWorkflowStartedAt: new Date('2026-07-20T11:59:00.000Z'),
+    ...overrides,
+  }
+}
+
+describe('external KB ingestion monitor', () => {
+  it('queries only active resources with complete external metadata', async () => {
+    const prisma = createMonitorPrisma([])
+
+    await monitorActiveKBIngestions({
+      prisma,
+      client: createClient(),
+      env: {},
+      now: () => NOW,
+      sendStatus: vi.fn(),
+    })
+
+    expect(prisma.kBResource.findMany).toHaveBeenCalledWith({
+      where: {
+        status: { in: ['QUEUED', 'PROCESSING'] },
+        ingestionAttemptId: { not: null },
+        externalWorkflowRunId: { not: null },
+        externalWorkflowStartedAt: { not: null },
+      },
+      select: {
+        id: true,
+        kbId: true,
+        ingestionAttemptId: true,
+        externalWorkflowRunId: true,
+        externalWorkflowStartedAt: true,
+      },
+    })
+  })
+
+  it.each<{
+    externalStatus: ExternalHatchetStatus
+    expectedPayload?: KBIngestionStatusPayload
+  }>([
+    { externalStatus: 'QUEUED' },
+    {
+      externalStatus: 'RUNNING',
+      expectedPayload: {
+        resourceId: RESOURCE_ID,
+        ingestionAttemptId: ATTEMPT_ID,
+        status: 'PROCESSING',
+      },
+    },
+    {
+      externalStatus: 'COMPLETED',
+      expectedPayload: {
+        resourceId: RESOURCE_ID,
+        ingestionAttemptId: ATTEMPT_ID,
+        status: 'READY',
+      },
+    },
+    {
+      externalStatus: 'FAILED',
+      expectedPayload: {
+        resourceId: RESOURCE_ID,
+        ingestionAttemptId: ATTEMPT_ID,
+        status: 'FAILED',
+        statusMessage: 'External ingestion workflow failed.',
+      },
+    },
+    {
+      externalStatus: 'CANCELLED',
+      expectedPayload: {
+        resourceId: RESOURCE_ID,
+        ingestionAttemptId: ATTEMPT_ID,
+        status: 'FAILED',
+        statusMessage: 'External ingestion workflow was cancelled.',
+      },
+    },
+  ])(
+    'maps $externalStatus to the expected local webhook action',
+    async ({ externalStatus, expectedPayload }) => {
+      const sendStatus = vi.fn().mockResolvedValue(undefined)
+
+      await monitorActiveKBIngestions({
+        prisma: createMonitorPrisma([createMonitorResource()]),
+        client: createClient({ status: externalStatus }),
+        env: {},
+        now: () => NOW,
+        sendStatus,
+      })
+
+      if (expectedPayload) {
+        expect(sendStatus).toHaveBeenCalledWith(expectedPayload)
+      } else {
+        expect(sendStatus).not.toHaveBeenCalled()
+      }
+    }
+  )
+
+  it('checks terminal status before applying the timeout', async () => {
+    const client = createClient({ status: 'COMPLETED' })
+    const sendStatus = vi.fn().mockResolvedValue(undefined)
+
+    await monitorActiveKBIngestions({
+      prisma: createMonitorPrisma([
+        createMonitorResource({
+          externalWorkflowStartedAt: new Date('2026-07-20T11:00:00.000Z'),
+        }),
+      ]),
+      client,
+      env: { KB_INGESTION_TIMEOUT_SECONDS: '60' },
+      now: () => NOW,
+      sendStatus,
+    })
+
+    expect(client.runs.cancel).not.toHaveBeenCalled()
+    expect(sendStatus).toHaveBeenCalledWith({
+      resourceId: RESOURCE_ID,
+      ingestionAttemptId: ATTEMPT_ID,
+      status: 'READY',
+    })
+  })
+
+  it('reports a configured timeout even when external cancellation rejects', async () => {
+    const client = createClient({ status: 'RUNNING' })
+    const sendStatus = vi.fn().mockResolvedValue(undefined)
+    const logger = { error: vi.fn() } satisfies KBIngestionLogger
+    client.runs.cancel.mockRejectedValue(
+      new Error('secret raw response from external Hatchet')
+    )
+
+    await monitorActiveKBIngestions({
+      prisma: createMonitorPrisma([
+        createMonitorResource({
+          externalWorkflowStartedAt: new Date('2026-07-20T11:58:59.000Z'),
+        }),
+      ]),
+      client,
+      env: { KB_INGESTION_TIMEOUT_SECONDS: '60' },
+      now: () => NOW,
+      logger,
+      sendStatus,
+    })
+
+    expect(client.runs.cancel).toHaveBeenCalledWith({
+      ids: ['external-run-id'],
+    })
+    expect(sendStatus).toHaveBeenCalledWith({
+      resourceId: RESOURCE_ID,
+      ingestionAttemptId: ATTEMPT_ID,
+      status: 'FAILED',
+      statusMessage: 'External ingestion timed out.',
+    })
+    expect(JSON.stringify(logger.error.mock.calls)).not.toContain('secret')
+    expect(JSON.stringify(logger.error.mock.calls)).not.toContain(
+      'raw response'
+    )
+  })
+
+  it('isolates both status-query and webhook failures between resources', async () => {
+    const firstId = '4cf9d88e-75b1-4d7b-abfe-d5f57ae9276f'
+    const secondId = 'a7a874a8-f919-4fb9-88ea-f1a40ca6f479'
+    const thirdId = 'b79e5239-0763-4336-aa96-b1e1356c37a5'
+    const prisma = createMonitorPrisma([
+      createMonitorResource({
+        id: firstId,
+        externalWorkflowRunId: 'run-status-fails',
+      }),
+      createMonitorResource({
+        id: secondId,
+        externalWorkflowRunId: 'run-webhook-fails',
+      }),
+      createMonitorResource({
+        id: thirdId,
+        externalWorkflowRunId: 'run-succeeds',
+      }),
+    ])
+    const client = createClient()
+    client.runs.get_status.mockImplementation(async (runId) => {
+      if (runId === 'run-status-fails') {
+        throw new Error('secret status response')
+      }
+      return runId === 'run-succeeds' ? 'COMPLETED' : 'RUNNING'
+    })
+    const sendStatus = vi.fn().mockImplementation(async (payload) => {
+      if (payload.resourceId === secondId) {
+        throw new Error('secret webhook response')
+      }
+    })
+    const logger = { error: vi.fn() } satisfies KBIngestionLogger
+
+    await monitorActiveKBIngestions({
+      prisma,
+      client,
+      env: {},
+      now: () => NOW,
+      logger,
+      sendStatus,
+    })
+
+    expect(client.runs.get_status.mock.calls.map(([runId]) => runId)).toEqual([
+      'run-status-fails',
+      'run-webhook-fails',
+      'run-succeeds',
+    ])
+    expect(sendStatus).toHaveBeenLastCalledWith({
+      resourceId: thirdId,
+      ingestionAttemptId: ATTEMPT_ID,
+      status: 'READY',
+    })
+    const logged = JSON.stringify(logger.error.mock.calls)
+    expect(logged).not.toContain('secret')
+    expect(logged).not.toContain('response')
+  })
+})
+
+describe('KB ingestion Hatchet declarations', () => {
+  it('preserves dispatch order, failure correlation, and singleton cron settings', async () => {
+    vi.resetModules()
+    const callOrder: string[] = []
+    const dispatchKBIngestion = vi.fn().mockImplementation(async () => {
+      callOrder.push('dispatch')
+    })
+    const sendKBIngestionStatus = vi.fn().mockResolvedValue(undefined)
+    const monitorActiveKBIngestions = vi.fn().mockResolvedValue(undefined)
+    const mockedPrisma = { kBResource: {} }
+
+    vi.doMock('../src/client.js', () => ({ hatchetClient: {} }))
+    vi.doMock('@klicker-uzh/prisma', () => ({ prisma: mockedPrisma }))
+    vi.doMock('../src/kbIngestion.js', async () => {
+      const actual = await vi.importActual('../src/kbIngestion.js')
+      return {
+        ...actual,
+        dispatchKBIngestion,
+        sendKBIngestionStatus,
+        monitorActiveKBIngestions,
+      }
+    })
+
+    const { prepareHatchetTasks } = await import('../src/index.js')
+    const declarations = new Map<string, any>()
+    const hatchet = {
+      task: vi.fn((definition) => {
+        declarations.set(definition.name, definition)
+        return { definition }
+      }),
+    } as unknown as HatchetClient
+    const prepared = prepareHatchetTasks({
+      hatchet,
+      pubSub: {} as any,
+      emitter: {} as any,
+      redisExec: {} as any,
+      redisAssessmentExec: {} as any,
+      handlers: {} as any,
+    })
+    const ingestDefinition = declarations.get('ingest-kb-resource')
+    const monitorDefinition = declarations.get('monitor-kb-ingestions')
+    const logger = {
+      info: vi.fn().mockImplementation(async () => {
+        callOrder.push('log')
+      }),
+    }
+
+    await ingestDefinition.fn(urlInput, { logger })
+
+    expect(callOrder).toEqual(['log', 'dispatch'])
+    expect(logger.info).toHaveBeenCalledWith('KB ingestion dispatch stub', {
+      resourceId: RESOURCE_ID,
+      kbId: KB_ID,
+      type: 'URL',
+    })
+    expect(ingestDefinition.retries).toBe(3)
+    expect(ingestDefinition.onFailure.retries).toBe(3)
+
+    await ingestDefinition.onFailure.fn(urlInput)
+
+    expect(sendKBIngestionStatus).toHaveBeenCalledWith({
+      resourceId: RESOURCE_ID,
+      ingestionAttemptId: ATTEMPT_ID,
+      status: 'FAILED',
+      statusMessage: 'The external ingestion workflow could not be started.',
+    })
+    expect(monitorDefinition).toMatchObject({
+      name: 'monitor-kb-ingestions',
+      onCrons: ['* * * * *'],
+      concurrency: {
+        expression: '"monitor-kb-ingestions"',
+        maxRuns: 1,
+      },
+    })
+    expect(monitorDefinition.concurrency.limitStrategy).toBe(
+      ConcurrencyLimitStrategy.CANCEL_NEWEST
+    )
+
+    await monitorDefinition.fn()
+
+    expect(monitorActiveKBIngestions).toHaveBeenCalledWith({
+      prisma: mockedPrisma,
+    })
+    expect(prepared).toHaveProperty('monitorKBIngestions')
   })
 })
 

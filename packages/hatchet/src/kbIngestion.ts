@@ -8,6 +8,7 @@ import {
 import { HatchetClient } from '@hatchet-dev/typescript-sdk'
 import { KBResourceStatus, type PrismaClient } from '@klicker-uzh/prisma/client'
 import type { IngestKBResourceInput } from '@klicker-uzh/types'
+import { signKBIngestionWebhook } from '@klicker-uzh/util'
 
 const DEFAULT_KB_INGESTION_TIMEOUT_SECONDS = 3600
 const KB_BLOB_SAS_CLOCK_SKEW_MS = 5 * 60 * 1000
@@ -36,6 +37,7 @@ export type ExternalHatchetClient = {
     options: { additionalMetadata: Record<string, string> }
   ) => Promise<{ getWorkflowRunId: () => Promise<string> }>
   runs: {
+    get_status: (runId: string) => Promise<ExternalHatchetStatus>
     list: (options: {
       workflowNames: string[]
       additionalMetadata: Record<string, string>
@@ -63,12 +65,46 @@ export type KBIngestionLogger = {
 
 type KBIngestionPrisma = Pick<PrismaClient, 'kBResource'>
 
+export type ExternalHatchetStatus =
+  | 'QUEUED'
+  | 'RUNNING'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'CANCELLED'
+
+export type KBIngestionStatusPayload = {
+  resourceId: string
+  ingestionAttemptId: string
+  status: 'PROCESSING' | 'READY' | 'FAILED'
+  statusMessage?: string
+}
+
+type KBIngestionFetch = (
+  input: string | URL,
+  init?: RequestInit
+) => Promise<Pick<Response, 'ok'>>
+
 export type DispatchKBIngestionDependencies = {
   prisma: KBIngestionPrisma
   client?: ExternalHatchetClient
   env?: NodeJS.ProcessEnv
   now?: () => Date
   logger?: KBIngestionLogger
+}
+
+export type SendKBIngestionStatusDependencies = {
+  env?: NodeJS.ProcessEnv
+  now?: () => Date
+  fetch?: KBIngestionFetch
+}
+
+export type MonitorKBIngestionsDependencies = {
+  prisma: KBIngestionPrisma
+  client?: ExternalHatchetClient
+  env?: NodeJS.ProcessEnv
+  now?: () => Date
+  logger?: KBIngestionLogger
+  sendStatus?: (payload: KBIngestionStatusPayload) => Promise<void>
 }
 
 export type ExternalKBIngestionPayload = {
@@ -167,6 +203,39 @@ export function getExternalHatchetClient(
   return externalHatchetClient
 }
 
+export async function sendKBIngestionStatus(
+  payload: KBIngestionStatusPayload,
+  dependencies: SendKBIngestionStatusDependencies = {}
+): Promise<void> {
+  const env = dependencies.env ?? process.env
+  const webhookUrl = requireEnvironmentVariable(env, 'KB_WEBHOOK_URL')
+  const webhookSecret = requireEnvironmentVariable(env, 'KB_WEBHOOK_SECRET')
+  const now = dependencies.now ?? (() => new Date())
+  const fetchRequest = dependencies.fetch ?? fetch
+  const rawBody = Buffer.from(JSON.stringify(payload), 'utf8')
+  const signatureHeaders = signKBIngestionWebhook({
+    rawBody,
+    secret: webhookSecret,
+    timestamp: Math.floor(now().getTime() / 1000),
+  })
+
+  try {
+    const response = await fetchRequest(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        ...signatureHeaders,
+      },
+      body: rawBody,
+    })
+    if (!response.ok) {
+      throw new Error('Webhook returned a non-success status')
+    }
+  } catch {
+    throw new Error('KB ingestion status webhook failed')
+  }
+}
+
 export function buildExternalKBIngestionPayload(
   input: IngestKBResourceInput,
   sourceUrl: string
@@ -245,6 +314,130 @@ async function cancelRunBestEffort({
       kbId: input.kbId,
       ingestionAttemptId: input.ingestionAttemptId,
     })
+  }
+}
+
+async function logMonitorErrorBestEffort(
+  logger: KBIngestionLogger | undefined,
+  message: string,
+  identifiers: Record<string, string>
+): Promise<void> {
+  try {
+    await logger?.error?.(message, identifiers)
+  } catch {
+    // Monitoring must continue even when the logger transport is unavailable.
+  }
+}
+
+export async function monitorActiveKBIngestions(
+  dependencies: MonitorKBIngestionsDependencies
+): Promise<void> {
+  const env = dependencies.env ?? process.env
+  const now = dependencies.now ?? (() => new Date())
+  const timeoutMilliseconds = getKBIngestionTimeoutSeconds(env) * 1000
+  const sendStatus =
+    dependencies.sendStatus ??
+    ((payload: KBIngestionStatusPayload) =>
+      sendKBIngestionStatus(payload, { env, now }))
+  const resources = await dependencies.prisma.kBResource.findMany({
+    where: {
+      status: {
+        in: [KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING],
+      },
+      ingestionAttemptId: { not: null },
+      externalWorkflowRunId: { not: null },
+      externalWorkflowStartedAt: { not: null },
+    },
+    select: {
+      id: true,
+      kbId: true,
+      ingestionAttemptId: true,
+      externalWorkflowRunId: true,
+      externalWorkflowStartedAt: true,
+    },
+  })
+  if (resources.length === 0) {
+    return
+  }
+  const client = dependencies.client ?? getExternalHatchetClient(env)
+
+  for (const resource of resources) {
+    const {
+      ingestionAttemptId,
+      externalWorkflowRunId,
+      externalWorkflowStartedAt,
+    } = resource
+    if (
+      !ingestionAttemptId ||
+      !externalWorkflowRunId ||
+      !externalWorkflowStartedAt
+    ) {
+      continue
+    }
+
+    const identifiers = {
+      resourceId: resource.id,
+      kbId: resource.kbId,
+      ingestionAttemptId,
+    }
+    const statusPayload = (
+      status: KBIngestionStatusPayload['status'],
+      statusMessage?: string
+    ): KBIngestionStatusPayload => ({
+      resourceId: resource.id,
+      ingestionAttemptId,
+      status,
+      ...(statusMessage ? { statusMessage } : {}),
+    })
+
+    try {
+      const externalStatus = await client.runs.get_status(externalWorkflowRunId)
+
+      if (externalStatus === 'COMPLETED') {
+        await sendStatus(statusPayload('READY'))
+        continue
+      }
+      if (externalStatus === 'FAILED') {
+        await sendStatus(
+          statusPayload('FAILED', 'External ingestion workflow failed.')
+        )
+        continue
+      }
+      if (externalStatus === 'CANCELLED') {
+        await sendStatus(
+          statusPayload('FAILED', 'External ingestion workflow was cancelled.')
+        )
+        continue
+      }
+
+      const elapsedMilliseconds =
+        now().getTime() - externalWorkflowStartedAt.getTime()
+      if (elapsedMilliseconds > timeoutMilliseconds) {
+        try {
+          await client.runs.cancel({ ids: [externalWorkflowRunId] })
+        } catch {
+          await logMonitorErrorBestEffort(
+            dependencies.logger,
+            'External KB ingestion timeout cancellation failed',
+            identifiers
+          )
+        }
+        await sendStatus(
+          statusPayload('FAILED', 'External ingestion timed out.')
+        )
+        continue
+      }
+
+      if (externalStatus === 'RUNNING') {
+        await sendStatus(statusPayload('PROCESSING'))
+      }
+    } catch {
+      await logMonitorErrorBestEffort(
+        dependencies.logger,
+        'External KB ingestion monitor failed',
+        identifiers
+      )
+    }
   }
 }
 
