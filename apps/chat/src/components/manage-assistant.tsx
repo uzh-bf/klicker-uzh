@@ -19,6 +19,7 @@ import { EmbeddedSettings } from './embedded-settings'
 import { Thread } from './thread'
 
 const MANAGE_ASSISTANT_NAME = 'KlickerUZH Assistant'
+const MANAGE_ASSISTANT_WELCOME = 'Hello! How can I help you?'
 
 export function ManageAssistant() {
   return (
@@ -61,6 +62,7 @@ function ManageAssistantInner() {
           chatbotName={MANAGE_ASSISTANT_NAME}
           contextLabel={contextLabel}
           suggestionMode="manage"
+          welcomeMessage={MANAGE_ASSISTANT_WELCOME}
         />
       </div>
     </ManageAssistantRuntimeProvider>

@@ -71,6 +71,9 @@ type ThreadProps = {
   contextLabel?: string | null
   contextualSuggestions?: boolean
   suggestionMode?: 'student' | 'manage'
+  // Friendly greeting shown above the suggestions (e.g. the manage assistant).
+  // When unset, the welcome falls back to `Ask {chatbotName}`.
+  welcomeMessage?: string
 }
 const EMPTY_REMOVED_ATTACHMENT_KEYS: string[] = []
 const attachmentLimitErrorMessage = () =>
@@ -234,6 +237,7 @@ export const Thread: FC<ThreadProps> = ({
   contextLabel,
   contextualSuggestions,
   suggestionMode = 'student',
+  welcomeMessage,
 }) => {
   const { embedded } = useChatUi()
 
@@ -260,6 +264,7 @@ export const Thread: FC<ThreadProps> = ({
           contextLabel={contextLabel}
           contextualSuggestions={contextualSuggestions ?? Boolean(contextLabel)}
           suggestionMode={suggestionMode}
+          welcomeMessage={welcomeMessage}
         />
 
         <ThreadPrimitive.Messages
@@ -313,6 +318,7 @@ const ThreadWelcome: FC<{
   contextLabel?: string | null
   contextualSuggestions: boolean
   suggestionMode: 'student' | 'manage'
+  welcomeMessage?: string
 }> = ({
   chatbotAvatar,
   chatbotFallbackIcon,
@@ -320,6 +326,7 @@ const ThreadWelcome: FC<{
   contextLabel,
   contextualSuggestions,
   suggestionMode,
+  welcomeMessage,
 }) => {
   const { embedded } = useChatUi()
 
@@ -350,7 +357,7 @@ const ThreadWelcome: FC<{
               embedded ? 'text-sm' : 'text-base'
             )}
           >
-            Ask {chatbotName}
+            {welcomeMessage ?? `Ask ${chatbotName}`}
           </p>
           {contextLabel && (
             <p className="text-muted-foreground mt-1 max-w-xs text-xs">
