@@ -49,16 +49,10 @@ export default {
   ],
   versionGroups: [
     {
-      // A separate PR replaces the Office Add-in; keep its manifest on the v3 versions.
-      label: 'Office Add-in React versions can differ',
-      dependencies: ['react', 'react-dom', '@types/react', '@types/react-dom'],
-      packages: ['@klicker-uzh/office-addin'],
-      isIgnored: true,
-    },
-    {
-      // Office Add-in compiler/tooling is owned by a separate upgrade PR.
-      label: 'Office Add-in TypeScript can differ from the workspace',
-      dependencies: ['typescript'],
+      // Rollup 4.59 fixes an arbitrary-file-write advisory. Keep the add-in
+      // patched until the workspace-wide Rollup upgrade is handled separately.
+      label: 'Office Add-in Rollup security floor can differ',
+      dependencies: ['rollup'],
       packages: ['@klicker-uzh/office-addin'],
       isIgnored: true,
     },

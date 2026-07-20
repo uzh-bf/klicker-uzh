@@ -49,10 +49,7 @@ onlyBuiltDependencies:
 
 allowBuilds:
   '@apollo/protobufjs': true
-  '@azure/msal-node-extensions': false
-  '@azure/msal-node-runtime': true
   '@hatchet-dev/typescript-sdk': true
-  '@microsoft/m365agentstoolkit-cli': false
   '@microsoft/teamsapp-cli': false
   '@prisma/client': true
   '@prisma/engines': true

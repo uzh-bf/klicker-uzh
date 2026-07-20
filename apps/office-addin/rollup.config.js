@@ -3,7 +3,6 @@ import typescript from '@rollup/plugin-typescript'
 import fs from 'node:fs'
 import { defineConfig } from 'rollup'
 import copy from 'rollup-plugin-copy'
-import livereload from 'rollup-plugin-livereload'
 import serve from 'rollup-plugin-serve'
 import { visualizer } from 'rollup-plugin-visualizer'
 
@@ -93,7 +92,6 @@ async function createConfig() {
           https: httpsOptions,
           headers: { 'Access-Control-Allow-Origin': '*' },
         }),
-      isDev && livereload('dist'),
       shouldAnalyze &&
         visualizer({
           filename: 'dist/bundle-analysis.html',

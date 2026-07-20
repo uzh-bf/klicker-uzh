@@ -8,14 +8,32 @@
 
 - [x] Re-check live PR state on 2026-07-20: [PR #4643](https://github.com/uzh-bf/klicker-uzh/pull/4643) remains open and draft at `ee6afaa3b`; branch is 459 commits behind and 26 ahead of `origin/v3`.
 - [x] Re-check Office settings semantics against current Microsoft documentation. `Office.context.document.settings` is specific to the content-add-in instance and document, so the new `embeddedUrl` key does not collapse separate embedded add-in instances. Section 2.1 is superseded by this evidence; keep the simpler instance-scoped key and verify it in PowerPoint when available.
-- [x] Slice 1: merged current `origin/v3`; resolved only the expected `apps/office-addin/package.json` and `pnpm-lock.yaml` conflicts; frozen pnpm 11.5.0 install completed under Node 24; Office typecheck and production Rollup build passed. The Microsoft debugging stack requires one reviewed native-broker binary-copy install script; unnecessary no-op/cleanup scripts stay disabled in `pnpm-workspace.yaml`. The package does not ship a Linux ARM64 broker binary, so Microsoft account sign-in remains a host-tooling check rather than part of the ARM64 verification container.
+- [x] Slice 1: merged current `origin/v3`; resolved only the expected `apps/office-addin/package.json` and `pnpm-lock.yaml` conflicts; frozen pnpm 11.5.0 install completed under Node 24; Office typecheck and production Rollup build passed. The merge initially surfaced Microsoft debug-launcher install scripts; Slice 3 removed that optional dependency tree and its build-policy entries after the security audit, so native-broker sign-in is no longer part of this app's workflow.
 - [x] Slice 2: reduced the production build to one bundle, replaced the Tailwind Play CDN with local semantic CSS, corrected `/office-addin/` production URLs, removed non-runtime artifacts, and added exact build-to-docs synchronization. Node 24 typecheck, lint, build, manifest validation, and 13-file deployment parity passed. A local `agent-browser` run with an Office API stub verified the 1024×768 and manifest-sized 600×400 layouts, invalid and valid URL states, embed/fullscreen, Change URL, and zero browser errors; this is UI evidence, not a PowerPoint host test.
 - [x] Slice 2 follow-up: independent review found that Rollup watch mode ignored non-TypeScript inputs. HTML, CSS, manifest, and asset files are now explicit watch inputs; the simplification pass also removed unused type packages, redundant local types and state branches, and unlinked sign-in aliases. The explicit `typescript-eslint` dependency remains necessary because the Office plugin currently exposes an undefined bundled parser. Reverification passed before dependency work began.
-- [ ] Slice 3 active: audit and refresh compatible Office Add-in dependencies; document deferred majors and browser/runtime support.
-- [ ] Slice 4: finish code, docs, tests, and source-backed review-thread resolution.
+- [x] Slice 3: updated Office tooling, Office types, TypeScript ESLint, and Rollup within their current majors; moved the app from TypeScript 5.6 to the workspace's TypeScript 6.0.3; removed the obsolete React/TypeScript syncpack exceptions and TS6-deprecated `baseUrl`; and made Office global types explicit. A narrow Rollup exception keeps this app above the 4.59 security floor until the coordinated workspace upgrade. The optional Microsoft debug launcher and live-reload trees were removed after the audit found high/critical transitive advisories; local HTTPS development and manual sideloading remain. Typecheck, lint, build/deploy parity, and the Office manifest acceptance service passed.
+- [ ] Slice 4 active: finish code, docs, tests, and source-backed review-thread resolution.
 - [ ] Finish: full verification, security/maintainability/cross-model reviews, whole-branch PR refresh, ready transition, and ready-only CI monitoring.
 
 **Scope decisions:** preserve one persisted key per content-add-in instance; no toolbar/ribbon work; no executable packaging; no merge. If PowerPoint sideloading is unavailable, record it as a manual release check instead of claiming host-level proof.
+
+### Dependency audit (2026-07-20)
+
+| Package | Before | Verified version | Decision |
+| --- | ---: | ---: | --- |
+| `@types/office-js` | 1.0.591 | 1.0.598 | Update Office API types |
+| `@rollup/plugin-typescript` | 12.1.4 | 12.1.4 | Keep aligned with the workspace; 12.3.0 requires a coordinated update |
+| `office-addin-debugging` | 6.0.7 | removed | Drop the optional native launcher and its vulnerable transitive tree; use manual sideloading |
+| `office-addin-manifest` | 2.0.3 | 2.1.5 | Update validator within major |
+| `rollup` | 4.34.9 | 4.62.2 | Update past the 4.59 arbitrary-file-write security floor; keep a narrow syncpack exception until the workspace follows |
+| `typescript` | 5.6.3 | 6.0.3 | Align with the approved workspace baseline |
+| `typescript-eslint` | 8.62.0 | 8.63.0 | Update within major; keep explicit because the Office plugin currently exposes an undefined bundled parser |
+
+The manifest floors for `eslint-plugin-office-addins`, `office-addin-dev-certs`, `office-addin-lint`, and `rollup-plugin-visualizer` now match their already-resolved current-major versions. `rollup-plugin-copy` and `rollup-plugin-serve` were already current. The build and dependency simplification removed unused browser/polyfill, resolver, debug-launcher, live-reload, CLI, formatting, and type packages.
+
+The shared current-major update `@rollup/plugin-typescript` 12.1.4→12.3.0 and workspace-wide Rollup alignment remain deferred to a coordinated build-tool change. Three optional build-only majors are also deferred: `cross-env` 7→10, `rollup-plugin-visualizer` 6→7, and `@rollup/plugin-terser` 0→1. All retained versions are non-deprecated and pass the Node 24 build; the broader or major updates are unrelated to the native rewrite and require separate explicit scope.
+
+After removing the debug launcher and live-reload packages and raising Rollup past its security floor, `pnpm audit` reports two Office Add-in paths: `uuid` (moderate) and `adm-zip` (high), both transitive dependencies of the current `office-addin-manifest` 2.1.5 validator. The validator only processes this repository's reviewed manifest during development and CI; it is not shipped or exposed to untrusted runtime input. Keep it as a release gate, track its upstream dependencies, and reassess when Microsoft publishes a patched validator.
 
 How to read this file: work top to bottom. Each item has **Evidence** (where to look, what you'll see) and **Fix** (exact steps). Check the box when done. Run the verification loop (section 6) after every fix batch.
 

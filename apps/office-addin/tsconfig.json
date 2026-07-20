@@ -1,12 +1,10 @@
 {
   "include": ["src/**/*.ts"],
   "compilerOptions": {
-    "baseUrl": ".",
     /* Base Options: */
     "esModuleInterop": true,
     "skipLibCheck": true,
     "target": "es2022",
-    "resolveJsonModule": true,
     "moduleDetection": "force",
     "isolatedModules": true,
     "verbatimModuleSyntax": false,
@@ -20,6 +18,7 @@
     "noEmit": true,
     "sourceMap": true,
     /* If your code runs in the DOM: */
-    "lib": ["es2022", "dom", "dom.iterable"]
+    "lib": ["es2022", "dom", "dom.iterable"],
+    "types": ["office-js"]
   }
 }
