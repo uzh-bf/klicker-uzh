@@ -76,7 +76,7 @@
 - Create: `packages/prisma/src/prisma/schema/migrations/20260720120000_kb_external_ingestion_bridge/migration.sql`
 - Generate locally (ignored): `apps/analytics/prisma/schema/knowledge.prisma`
 
-- [ ] **Step 1: Confirm the new fields are absent**
+- [x] **Step 1: Confirm the new fields are absent**
 
 Run:
 
@@ -86,7 +86,7 @@ rg -n "ingestionAttemptId|externalWorkflowRunId|externalWorkflowStartedAt" packa
 
 Expected: exit code 1 and no matches.
 
-- [ ] **Step 2: Extend `KBResource` with the approved nullable fields**
+- [x] **Step 2: Extend `KBResource` with the approved nullable fields**
 
 Add after `ingestedAt`:
 
@@ -98,7 +98,7 @@ Add after `ingestedAt`:
 
 Keep them nullable so existing rows and the first deployment migrate without a backfill.
 
-- [ ] **Step 3: Add the additive SQL migration**
+- [x] **Step 3: Add the additive SQL migration**
 
 Create the exact migration:
 
@@ -111,7 +111,7 @@ ADD COLUMN "externalWorkflowStartedAt" TIMESTAMP(3);
 
 Do not edit the already-applied `20260715213657_kb_poc_schema` migration.
 
-- [ ] **Step 4: Regenerate and mirror the schema**
+- [x] **Step 4: Regenerate and mirror the schema**
 
 Run:
 
@@ -123,7 +123,7 @@ pnpm --filter @klicker-uzh/prisma check
 
 Expected: Prisma generation and TypeScript checks pass; `apps/analytics/prisma/schema/knowledge.prisma` contains the same three fields.
 
-- [ ] **Step 5: Verify migration application against the disposable/local database**
+- [x] **Step 5: Verify migration application against the disposable/local database**
 
 Run:
 
@@ -133,7 +133,7 @@ pnpm --filter @klicker-uzh/prisma prisma:deploy:raw
 
 Expected: migration `20260720120000_kb_external_ingestion_bridge` applies successfully. Use a disposable database if the current local database must not be mutated.
 
-- [ ] **Step 6: Commit Task 1**
+- [x] **Step 6: Commit Task 1**
 
 ```bash
 git add packages/prisma/src/prisma/schema/knowledge.prisma packages/prisma/src/prisma/schema/migrations/20260720120000_kb_external_ingestion_bridge/migration.sql
