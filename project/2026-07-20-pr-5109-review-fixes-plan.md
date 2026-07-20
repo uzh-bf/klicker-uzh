@@ -84,7 +84,7 @@ Local-only runtime changes still in place for the user to click-verify: `util/li
 
 User-reported, reproduced live in-browser on the running worktree stack. Same PR/branch (#5109, `codex/manage-assistant-mcp-v3-ai`).
 
-### Bugs (all one root cause except the welcome copy)
+### Bugs (three share one root cause; welcome copy is a new feature)
 
 - Composer send button never enables when the lecturer types.
 - Image upload does nothing.
@@ -93,23 +93,25 @@ User-reported, reproduced live in-browser on the running worktree stack. Same PR
 
 ### Root cause (confirmed live)
 
-`ManageAssistantRuntimeProvider` (`apps/chat/src/components/manage-assistant.tsx`) built the runtime with `useChatRuntime` (react-ai-sdk) — a **thread-list** `RemoteThreadListRuntime`. With only `<Thread/>` rendered (no `<ThreadList/>`, no cloud/persistence), the main thread stays inactive, so its composer is the NoOp composer (`isEditing === false`). assistant-ui's `ComposerInput` bails on every `onChange` when `!isEditing` and forces `value = ""`, so typed text is silently discarded → `isEmpty` never clears → send stays disabled, and `ComposerPrimitive.Send` / `ThreadPrimitive.Suggestion autoSend` / attachment adapter are all dead.
+Nothing in the manage assistant hydrates in a **devrouter linked worktree**. `packages/next-config/index.js` set `allowedDevOrigins: ['**.klicker.localhost']`. That glob matches the primary checkout host (`chat.klicker.localhost`) but NOT devrouter's workspace-namespaced host `chat.klicker.<workspace>.localhost` — devrouter inserts the workspace token between `klicker` and `localhost`, so the suffix is `.<workspace>.localhost`, not `.klicker.localhost`. Next 16 dev blocks cross-origin dev resources (`/_next/*` HMR, fonts) from non-allowed origins, so the turbopack dev runtime never finishes booting and **no React tree becomes interactive** — for every app in the worktree, not just chat. A dead React tree means the composer never enables, suggestion `autoSend` never fires, and the attachment button does nothing.
 
-Evidence: typed "hello can you help me" via the real browser input path — composer stayed empty (placeholder), send stayed muted. The working **student** chat (`RuntimeProvider.tsx`) uses a single-thread `useExternalStoreRuntime` (always-active composer), which is why the same `Thread` component works there.
+Evidence: `grep -c "Blocked cross-origin" /tmp/dev.log` was non-zero before the fix; a trivial `useState` counter page did not increment; both chat and frontend-manage were affected.
+
+### Correction — the earlier runtime hypothesis was wrong
+
+An earlier draft blamed `useChatRuntime` (thread-list runtime) for the disabled composer and proposed swapping it for `useAISDKRuntime`. That hypothesis was formed while hydration was globally broken, so no app was interactive and the swap looked necessary. After fixing `allowedDevOrigins`, **unmodified HEAD** (`useChatRuntime`, no dep changes) works end to end: type → send enables → `POST /api/manage/chat 200`; each suggestion → `POST 200`; image upload → attachment chip + preview → send with attachment → `POST 200`, no console errors. The runtime swap and the `@ai-sdk/react` dependency were reverted — they are not needed.
 
 ### Decisions
 
-- Fix: replace the thread-list `useChatRuntime` with the single-thread `useAISDKRuntime(useChat({ transport }))` (react-ai-sdk exports both; `useChat` from `@ai-sdk/react`). This is the always-active-composer runtime `useChatRuntime` wraps internally, minus the thread-list layer the manage assistant does not use. One change repairs composer + upload + suggestions.
-- Transport: plain `DefaultChatTransport` (from `ai`), not `AssistantChatTransport`. The `/api/manage/chat` route builds the system prompt + MCP tools server-side and reads only `{ manageContext, messages }`, so client-side context enrichment (system/tools/config, `setRuntime`) is unnecessary.
-- Dynamic manage context: keep one stable transport; inject the latest context per request via `prepareSendMessagesRequest` reading a `contextRef` (no `useChat` re-creation, so message state is preserved across manage-context updates from the parent frame).
-- New dep: `@ai-sdk/react@3.0.186` (exact) added to `apps/chat` — already resolved in the store transitively via react-ai-sdk; `useChat` is not re-exported so a direct dep is required. No lockfile version drift expected.
+- Fix: `allowedDevOrigins: ['**.localhost']` (dev-only; `undefined` in production). Matches both primary and workspace-namespaced devrouter hosts. Dev-only origin allowlist widening, so low risk. This is a shared `@klicker-uzh/next-config` change that unblocks hydration for every app in a linked worktree — the direct cause of the reported manage-assistant bugs. Flagged to the user as slightly broader than PR #5109's feature scope; kept in this PR because it is the root cause of what the user saw.
+- No manage-assistant code change and no new dependency for the three interaction bugs.
 - Welcome message: `ThreadWelcome` in the shared `thread.tsx` renders `Ask {chatbotName}`. Add a friendly greeting; scope changes to avoid regressing the student chat.
 
 ### Slices
 
-1. **Runtime fix (composer + upload + suggestions).** `apps/chat/package.json` (+`@ai-sdk/react`), `apps/chat/src/components/manage-assistant.tsx` (`useChatRuntime`→`useAISDKRuntime`+`useChat`+`DefaultChatTransport`+context ref). Verify live: type→send enables, suggestion→sends, image upload attaches. Commit `fix(chat): use single-thread runtime so manage assistant composer works`.
-2. **Welcome message.** `apps/chat/src/components/thread.tsx` `ThreadWelcome`. Verify live render. Commit `feat(chat): add manage assistant welcome greeting`.
+1. **Dev-origin hydration fix (composer + upload + suggestions).** `packages/next-config/index.js` (`allowedDevOrigins` glob). Verified live: type→send enables, suggestion→sends, image upload attaches + sends. Commit `fix(next-config): allow workspace-namespaced dev origins so worktree apps hydrate`.
+2. **Welcome message.** `apps/chat/src/components/thread.tsx` `ThreadWelcome`, scoped to manage via a new optional prop. Verify live render. Commit `feat(chat): add manage assistant welcome greeting`.
 
 ### Progress
 
-- Root cause confirmed live (real-browser type → send stays disabled). Facts gathered: route reads only `{manageContext,messages}`; `@ai-sdk/react@3.0.186` in store; `DefaultChatTransport`/`useAISDKRuntime` exports + `prepareSendMessagesRequest` signature verified. Plan (Batch 2) committed next; then Slice 1 impl + live verify.
+- Slice 1 done + verified. Real root cause = `allowedDevOrigins` not matching devrouter workspace-namespaced hosts (`{app}.klicker.<workspace>.localhost`); Next 16 dev blocked cross-origin resources → no app hydrated in the worktree. Fix applied in `packages/next-config/index.js` (`['**.klicker.localhost']` → `['**.localhost']`). Live verify on unmodified HEAD manage assistant: composer send enables on typing (`POST /api/manage/chat 200`), all three suggestions fire (`POST 200`), image upload attaches (chip+preview) and sends with the attachment (`POST 200`), no console errors. Earlier `useChatRuntime`→`useAISDKRuntime` runtime hypothesis disproven and reverted; `@ai-sdk/react` dep removed. Next: Slice 2 (welcome greeting) + per-slice review/simplify, then finish gates.

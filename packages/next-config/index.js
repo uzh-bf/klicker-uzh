@@ -15,8 +15,13 @@ function getNextBaseConfig({
   const blobStorageHostname = getHostname(BLOB_STORAGE_ACCOUNT_URL)
 
   return {
+    // Allow any `*.localhost` dev origin so devrouter's workspace-namespaced
+    // hosts (`{app}.klicker.<workspace>.localhost`) are permitted, not only the
+    // primary checkout's `{app}.klicker.localhost`. Otherwise Next dev blocks
+    // cross-origin dev resources (HMR, fonts) from linked worktrees, which
+    // silently breaks client hydration for every app. Dev-only.
     allowedDevOrigins:
-      NODE_ENV === 'development' ? ['**.klicker.localhost'] : undefined,
+      NODE_ENV === 'development' ? ['**.localhost'] : undefined,
     outputFileTracingRoot: monorepoRoot,
     productionBrowserSourceMaps: isStaging,
     turbopack: {
