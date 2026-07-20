@@ -160,10 +160,6 @@ a:focus-visible {
   border-color: #dc2626;
 }
 
-#url-input[data-validation='pending'] {
-  border-color: #ca8a04;
-}
-
 .validation-message {
   font-size: 0.75rem;
   margin-top: 0.25rem;
@@ -176,10 +172,6 @@ a:focus-visible {
 
 .validation-message[data-type='error'] {
   color: #dc2626;
-}
-
-.validation-message[data-type='pending'] {
-  color: #a16207;
 }
 
 #embed-button {

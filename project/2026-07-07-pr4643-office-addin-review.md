@@ -12,7 +12,7 @@
 - [x] Slice 2: reduced the production build to one bundle, replaced the Tailwind Play CDN with local semantic CSS, corrected `/office-addin/` production URLs, removed non-runtime artifacts, and added exact build-to-docs synchronization. Node 24 typecheck, lint, build, manifest validation, and 13-file deployment parity passed. A local `agent-browser` run with an Office API stub verified the 1024×768 and manifest-sized 600×400 layouts, invalid and valid URL states, embed/fullscreen, Change URL, and zero browser errors; this is UI evidence, not a PowerPoint host test.
 - [x] Slice 2 follow-up: independent review found that Rollup watch mode ignored non-TypeScript inputs. HTML, CSS, manifest, and asset files are now explicit watch inputs; the simplification pass also removed unused type packages, redundant local types and state branches, and unlinked sign-in aliases. The explicit `typescript-eslint` dependency remains necessary because the Office plugin currently exposes an undefined bundled parser. Reverification passed before dependency work began.
 - [x] Slice 3: updated Office tooling, Office types, TypeScript ESLint, and Rollup within their current majors; moved the app from TypeScript 5.6 to the workspace's TypeScript 6.0.3; removed the obsolete React/TypeScript syncpack exceptions and TS6-deprecated `baseUrl`; and made Office global types explicit. A narrow Rollup exception keeps this app above the 4.59 security floor until the coordinated workspace upgrade. The optional Microsoft debug launcher and live-reload trees were removed after the audit found high/critical transitive advisories; local HTTPS development and manual sideloading remain. Typecheck, lint, build/deploy parity, and the Office manifest acceptance service passed.
-- [x] Slice 4a: replaced permissive regex validation with a small URL parser and Node tests; reduced `content.ts` from 605 to 323 lines; removed stale debug/browser metadata, the Office lint wrapper, the asset-copy wrapper, and the 1,369-line branch-local plan; rewrote package docs; and updated the wiki. The exact Node 24 suite passed. A fresh `agent-browser` run reverified both viewports, invalid/valid URLs, fullscreen, Change URL, and zero console/page errors. The CLI's `Page.captureScreenshot` command timed out on three fresh capture attempts; the earlier Slice 2 screenshots remain the visual evidence because markup and CSS did not change in this slice.
+- [x] Slice 4a: replaced permissive regex validation with a small URL parser and Node tests; reduced `content.ts` from 605 lines; serialized startup so legacy migration cannot overwrite user input; removed stale debug/browser metadata, the Office lint wrapper, the asset-copy wrapper, and the 1,369-line branch-local plan; rewrote package docs; and updated the wiki. The exact Node 24 suite passed. A fresh `agent-browser` run reverified both viewports, invalid/valid URLs, fullscreen, Change URL, and zero console/page errors. The CLI's `Page.captureScreenshot` command timed out on three fresh capture attempts; the earlier Slice 2 screenshots remain the visual evidence because markup and CSS did not change in this slice.
 - [ ] Slice 4b active: commit/review the implementation and resolve GitHub review threads with source-backed responses.
 - [ ] Finish: full verification, security/maintainability/cross-model reviews, whole-branch PR refresh, ready transition, and ready-only CI monitoring.
 
@@ -30,9 +30,9 @@
 | `typescript` | 5.6.3 | 6.0.3 | Align with the approved workspace baseline |
 | `typescript-eslint` | 8.62.0 | 8.63.0 | Update within major; keep explicit because the Office plugin currently exposes an undefined bundled parser |
 
-The manifest floors for `eslint-plugin-office-addins`, `office-addin-dev-certs`, and `rollup-plugin-visualizer` now match their already-resolved current-major versions; `rollup-plugin-serve` was already current. The build and dependency simplification removed unused browser/polyfill, resolver, debug-launcher, live-reload, lint-wrapper, asset-copy, CLI, formatting, and type packages. The add-in now uses the workspace ESLint version directly and its existing Rollup plugin owns every emitted asset.
+The manifest floors for `eslint-plugin-office-addins` and `office-addin-dev-certs` now match their already-resolved current-major versions; `rollup-plugin-serve` was already current. The build and dependency simplification removed unused browser/polyfill, resolver, debug-launcher, live-reload, lint-wrapper, asset-copy, bundle-analysis, CLI, formatting, and type packages. The add-in now uses the workspace ESLint version directly and its existing Rollup plugin owns every emitted asset.
 
-The shared current-major update `@rollup/plugin-typescript` 12.1.4→12.3.0 and workspace-wide Rollup alignment remain deferred to a coordinated build-tool change. Three optional build-only majors are also deferred: `cross-env` 7→10, `rollup-plugin-visualizer` 6→7, and `@rollup/plugin-terser` 0→1. All retained versions are non-deprecated and pass the Node 24 build; the broader or major updates are unrelated to the native rewrite and require separate explicit scope.
+The shared current-major update `@rollup/plugin-typescript` 12.1.4→12.3.0 and workspace-wide Rollup alignment remain deferred to a coordinated build-tool change. Two optional build-only majors are also deferred: `cross-env` 7→10 and `@rollup/plugin-terser` 0→1. All retained versions are non-deprecated and pass the Node 24 build; the broader or major updates are unrelated to the native rewrite and require separate explicit scope.
 
 After removing the debug launcher and live-reload packages and raising Rollup past its security floor, `pnpm audit` reports two Office Add-in paths: `uuid` (moderate) and `adm-zip` (high), both transitive dependencies of the current `office-addin-manifest` 2.1.5 validator. The validator only processes this repository's reviewed manifest during development and CI; it is not shipped or exposed to untrusted runtime input. Keep it as a release gate, track its upstream dependencies, and reassess when Microsoft publishes a patched validator.
 
@@ -134,9 +134,9 @@ The initial review inferred that `Office.context.document.settings` was shared b
 **Fix:**
 
 1. In `tsconfig.json` drop `composite`, `declaration`, `declarationMap`, `tsBuildInfoFile` (keep `sourceMap` if you want debuggable prod, that's a legitimate choice).
-2. In `rollup.config.js`, only emit `bundle-analysis.html` when explicitly analyzing (e.g., gate the `visualizer` plugin behind `process.env.ANALYZE === 'true'`, wired to the `build:analyze` script), and never copy it to docs.
+2. Remove the unused bundle analyzer so analysis output cannot enter a production deploy.
 3. Delete the stray files from `apps/docs/static/office-addin/` in this PR.
-4. The dist→docs copy step is currently undocumented (no mention of `docs`/`static` in the new README/CLAUDE.md). Add an npm script, e.g. `"deploy:docs": "rm -rf ../docs/static/office-addin && cp -r dist ../docs/static/office-addin"`, and document it in the README — this is also what makes item 1.1 reproducible instead of a hand-copied one-off. (PR checklist already lists the README/docs update as open.)
+4. Keep build and deployment together in `build:docs`; `verify:docs` checks exact parity without allowing a stale `dist` copy.
 
 ### 3.2 iframe hardening regressed
 
@@ -175,7 +175,7 @@ The initial review inferred that `Office.context.document.settings` was shared b
 
 ### 4.1 URL contract and examples
 
-- [x] The UI asks users to paste the generated KlickerUZH link instead of showing a fake URL. `evaluation-url.ts` implements the route emitted by `apps/frontend-manage/src/components/liveQuiz/HMACLink.tsx`: exact production origin, optional two-letter locale, `quizzes` or legacy `sessions`, UUID, `evaluation`, one 64-character hexadecimal HMAC, and optional extra query parameters. Node tests cover accepted and rejected variants.
+- [x] The UI asks users to paste the generated KlickerUZH link instead of showing a fake URL. `evaluation-url.ts` implements the route emitted by `apps/frontend-manage/src/components/liveQuiz/HMACLink.tsx`: exact production origin, optional `en` or `de` locale, `quizzes` or legacy `sessions`, UUID, `evaluation`, one 64-character hexadecimal HMAC, and optional extra query parameters. Node tests cover accepted and rejected variants.
 
 ### 4.2 Allowed origin
 
@@ -194,7 +194,7 @@ The initial review inferred that `Office.context.document.settings` was shared b
 ## 5. What's good (keep)
 
 - React/Formik/Webpack removal: bundle went from multi-chunk vendor+polyfill+content (with a 3901-line CSS file) to two small IIFE bundles — the minified `content.js` is a few KB. Right call for a single-view add-in.
-- URL validation with debounced real-time feedback, paste handling, and disabled-button state is a genuine UX upgrade over V1's submit-time-only validation.
+- URL validation with immediate real-time feedback and disabled-button state is a genuine UX upgrade over V1's submit-time-only validation.
 - `getSlideID()` retry with exponential backoff and Office API pre-checks is more robust than V1.
 - Legacy settings migration is attempted at all (V1→V2 continuity was thought about) — it just needs the per-slide decision from 2.1.
 - Single manifest replacing taskpane+content dual setup reduces confusion.

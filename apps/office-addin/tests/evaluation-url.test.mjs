@@ -37,6 +37,9 @@ test('rejects URLs outside the exact KlickerUZH evaluation contract', () => {
     `https://manage.klicker.uzh.ch/quizzes/${quizId}/evaluation?hmac=${'z'.repeat(64)}`,
     `https://manage.klicker.uzh.ch/quizzes/${quizId}/evaluation?hmac=${hmac}&hmac=${hmac}`,
     `https://manage.klicker.uzh.ch/quizzes/${quizId}/evaluation#hmac=${hmac}`,
+    `https://manage.klicker.uzh.ch/fr/quizzes/${quizId}/evaluation?hmac=${hmac}`,
+    `https://manage.klicker.uzh.ch/quizzes//${quizId}/evaluation?hmac=${hmac}`,
+    `https://manage.klicker.uzh.ch/quizzes/${quizId}/evaluation/?hmac=${hmac}`,
   ]
 
   for (const url of invalidUrls) {

@@ -1,7 +1,7 @@
 import { isValidEvaluationUrl } from './evaluation-url'
 
 type MessageType = 'success' | 'error' | 'info' | 'warning'
-type ValidationState = 'valid' | 'invalid' | 'empty' | 'pending'
+type ValidationState = 'valid' | 'invalid' | 'empty'
 
 interface AppElements {
   appContainer: HTMLDivElement
@@ -19,12 +19,11 @@ const SETTINGS_KEY = 'embeddedUrl'
 const LEGACY_SETTINGS_PREFIX = 'selectedURL'
 
 let elements: AppElements
-let validationTimeout: ReturnType<typeof setTimeout> | undefined
 let messageTimeout: ReturnType<typeof setTimeout> | undefined
 let hideMessageTimeout: ReturnType<typeof setTimeout> | undefined
 
 Office.onReady((info) => {
-  const initialize = () => initializeOfficeAddin(info)
+  const initialize = () => void initializeOfficeAddin(info)
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initialize, { once: true })
@@ -33,10 +32,10 @@ Office.onReady((info) => {
   }
 })
 
-function initializeOfficeAddin(info: {
+async function initializeOfficeAddin(info: {
   host: Office.HostType
   platform: Office.PlatformType
-}): void {
+}): Promise<void> {
   if (info.host !== Office.HostType.PowerPoint) {
     console.error('This add-in is designed to run only in PowerPoint.')
     document.body.textContent = 'This add-in only works in PowerPoint.'
@@ -55,14 +54,15 @@ function initializeOfficeAddin(info: {
     urlValidationMessage: getElement('url-validation-message'),
   }
 
+  elements.urlInput.disabled = true
+  await loadInitialState()
+  elements.urlInput.disabled = false
+
   elements.embedButton.addEventListener('click', () => void handleEmbedClick())
   elements.changeUrlButton.addEventListener('click', () =>
     showInitialView(true)
   )
   elements.urlInput.addEventListener('input', handleUrlInput)
-  elements.urlInput.addEventListener('blur', handleUrlBlur)
-
-  void loadInitialState()
 }
 
 function getElement<T extends HTMLElement>(id: string): T {
@@ -182,30 +182,10 @@ function delay(milliseconds: number): Promise<void> {
 }
 
 function handleUrlInput(): void {
-  clearTimeout(validationTimeout)
   const url = elements.urlInput.value.trim()
-
-  if (!url) {
-    setValidationState('empty')
-    return
-  }
-
-  setValidationState('pending')
-  validationTimeout = setTimeout(() => validateUrlInput(url), 300)
-}
-
-function handleUrlBlur(): void {
-  clearTimeout(validationTimeout)
-  const url = elements.urlInput.value.trim()
-  setValidationState(url ? getValidationState(url) : 'empty')
-}
-
-function validateUrlInput(url: string): void {
-  setValidationState(getValidationState(url))
-}
-
-function getValidationState(url: string): ValidationState {
-  return isValidEvaluationUrl(url) ? 'valid' : 'invalid'
+  setValidationState(
+    !url ? 'empty' : isValidEvaluationUrl(url) ? 'valid' : 'invalid'
+  )
 }
 
 function setValidationState(state: ValidationState): void {
@@ -224,10 +204,6 @@ function setValidationState(state: ValidationState): void {
       )
       elements.embedButton.disabled = true
       break
-    case 'pending':
-      showValidationMessage('Validating...', 'pending')
-      elements.embedButton.disabled = true
-      break
     case 'empty':
       elements.urlValidationMessage.textContent = ''
       elements.embedButton.disabled = true
@@ -237,7 +213,7 @@ function setValidationState(state: ValidationState): void {
 
 function showValidationMessage(
   message: string,
-  type: 'success' | 'error' | 'pending'
+  type: 'success' | 'error'
 ): void {
   elements.urlValidationMessage.textContent = message
   elements.urlValidationMessage.dataset.type = type

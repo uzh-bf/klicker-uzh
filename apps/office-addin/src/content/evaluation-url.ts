@@ -2,7 +2,7 @@ const MANAGE_ORIGIN = 'https://manage.klicker.uzh.ch'
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const HMAC_PATTERN = /^[0-9a-f]{64}$/i
-const LOCALE_PATTERN = /^[a-z]{2}$/
+const ALLOWED_LOCALES = new Set(['de', 'en'])
 
 export function isValidEvaluationUrl(value: string): boolean {
   let url: URL
@@ -22,10 +22,13 @@ export function isValidEvaluationUrl(value: string): boolean {
     return false
   }
 
-  const segments = url.pathname.split('/').filter(Boolean)
-  const hasLocale =
-    segments.length === 4 && LOCALE_PATTERN.test(segments[0] ?? '')
-  const routeSegments = hasLocale ? segments.slice(1) : segments
+  const segments = url.pathname.split('/')
+  const routeSegments =
+    segments.length === 5 && ALLOWED_LOCALES.has(segments[1] ?? '')
+      ? segments.slice(2)
+      : segments.length === 4
+        ? segments.slice(1)
+        : []
 
   if (routeSegments.length !== 3) {
     return false

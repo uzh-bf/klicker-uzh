@@ -3,10 +3,8 @@ import typescript from '@rollup/plugin-typescript'
 import fs from 'node:fs'
 import { defineConfig } from 'rollup'
 import serve from 'rollup-plugin-serve'
-import { visualizer } from 'rollup-plugin-visualizer'
 
 const isDev = process.env.NODE_ENV === 'development'
-const shouldAnalyze = process.env.ANALYZE === 'true'
 const urlDev = 'https://localhost:3020/'
 const urlProd = 'https://www.klicker.uzh.ch/office-addin/'
 
@@ -99,12 +97,6 @@ async function createConfig() {
           port: 3020,
           https: httpsOptions,
           headers: { 'Access-Control-Allow-Origin': '*' },
-        }),
-      shouldAnalyze &&
-        visualizer({
-          filename: 'dist/bundle-analysis.html',
-          open: false,
-          gzipSize: true,
         }),
     ].filter(Boolean),
     watch: { clearScreen: false },
