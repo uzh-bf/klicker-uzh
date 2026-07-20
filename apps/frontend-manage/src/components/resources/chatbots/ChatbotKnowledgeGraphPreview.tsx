@@ -299,6 +299,7 @@ function ChatbotKnowledgeGraphPreview({
         unavailableMessage={t(
           'manage.resources.knowledgeGraphPreviewUnavailable'
         )}
+        className="!h-[42rem]"
       />
     </div>
   )

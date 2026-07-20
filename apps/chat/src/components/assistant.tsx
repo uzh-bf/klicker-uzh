@@ -331,7 +331,7 @@ function SidebarMain({
   }
 
   return (
-    <SidebarInset>
+    <SidebarInset className="min-w-0">
       <div
         className={twMerge(
           'flex shrink-0 items-center gap-2 border-b bg-gray-50 px-2 py-1.5',

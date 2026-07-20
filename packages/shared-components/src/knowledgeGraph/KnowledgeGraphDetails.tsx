@@ -66,7 +66,7 @@ export function KnowledgeGraphDetails({
   return (
     <aside
       aria-label={labels.ariaLabel}
-      className="fixed inset-x-0 bottom-0 z-30 max-h-[70vh] overflow-y-auto rounded-t-2xl border border-[#E9E9E9] bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.12)] md:static md:z-auto md:h-full md:max-h-none md:w-80 md:shrink-0 md:rounded-none md:border-y-0 md:border-r-0 md:shadow-none"
+      className="fixed inset-x-0 bottom-0 z-30 max-h-[70vh] overflow-y-auto rounded-t-2xl border border-[#E9E9E9] bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.12)] md:!relative md:z-auto md:h-full md:max-h-none md:w-80 md:shrink-0 md:rounded-none md:border-y-0 md:border-r-0 md:shadow-none"
       data-cy="knowledge-graph-details"
     >
       <div

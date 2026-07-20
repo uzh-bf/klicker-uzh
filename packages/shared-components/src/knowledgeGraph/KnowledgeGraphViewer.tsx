@@ -549,6 +549,9 @@ export function KnowledgeGraphViewer({
       cy.nodes().forEach((node) => {
         positionsRef.current.set(String(node.data('graphId')), node.position())
       })
+      if (isInitialLayout) {
+        cy.fit(cy.elements(), 40)
+      }
     })
     layout.run()
     if (expansionOriginWasLoaded) {
@@ -734,7 +737,7 @@ export function KnowledgeGraphViewer({
   return (
     <section
       aria-label={labels.explorerAriaLabel}
-      className={`relative flex h-full min-h-[32rem] overflow-hidden rounded-lg border border-[#E9E9E9] bg-white ${className}`}
+      className={`relative flex h-full min-h-[32rem] w-full min-w-0 overflow-hidden rounded-lg border border-[#E9E9E9] bg-white ${className}`}
       data-cy="knowledge-graph-viewer"
     >
       <div className="flex min-w-0 flex-1 flex-col">
@@ -792,16 +795,16 @@ export function KnowledgeGraphViewer({
           ) : null}
         </div>
 
-        <div className="relative min-h-0 flex-1 bg-[#FAFAFA]">
+        <div className="relative min-h-80 flex-1 bg-[#FAFAFA]">
           <div
             id="knowledge-graph-canvas"
             ref={containerRef}
             role="img"
             aria-label={labels.canvasAriaLabel}
-            className="absolute inset-0"
+            className="h-full w-full"
           />
 
-          <div className="absolute left-3 top-3 flex flex-wrap gap-2">
+          <div className="absolute left-3 right-3 top-3 flex flex-wrap gap-2 md:right-auto">
             <button
               type="button"
               onClick={() => changeZoom(1.25)}
@@ -841,7 +844,7 @@ export function KnowledgeGraphViewer({
           {legendEntries.length === 0 ? null : (
             <div
               aria-label={labels.legendAriaLabel}
-              className="absolute right-3 top-3 max-w-48 rounded-lg border border-[#E9E9E9] bg-white/95 p-3 text-xs text-[#121212] shadow-sm"
+              className="absolute bottom-3 right-3 hidden max-w-48 rounded-lg border border-[#E9E9E9] bg-white/95 p-3 text-xs text-[#121212] shadow-sm sm:block md:bottom-auto md:top-3"
             >
               <p className="mb-2 font-semibold">{labels.conceptTypes}</p>
               <ul className="space-y-1.5">
@@ -926,7 +929,9 @@ export function KnowledgeGraphViewer({
           ) : null}
         </div>
 
-        <div className="grid max-h-64 shrink-0 grid-cols-1 overflow-y-auto border-t border-[#E9E9E9] bg-white md:h-56 md:grid-cols-3 md:overflow-hidden">
+        <div
+          className={`grid max-h-64 shrink-0 grid-cols-1 overflow-y-auto border-t border-[#E9E9E9] bg-white md:h-56 md:overflow-hidden ${state.searchResults.length === 0 ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}
+        >
           {state.searchResults.length === 0 ? null : (
             <section
               aria-labelledby="knowledge-graph-search-results-heading"
@@ -947,7 +952,7 @@ export function KnowledgeGraphViewer({
                       className="min-h-11 w-full rounded px-3 py-2 text-left text-sm text-[#121212] hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5]"
                     >
                       <span className="font-semibold">{node.displayLabel}</span>
-                      <span className="ml-2 text-[#4C4C4C]">{node.kind}</span>
+                      <span className="block text-[#4C4C4C]">{node.kind}</span>
                     </button>
                   </li>
                 ))}
@@ -971,7 +976,7 @@ export function KnowledgeGraphViewer({
                 {labels.noConceptsLoaded}
               </p>
             ) : (
-              <ul className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+              <ul className="grid grid-cols-1 gap-1">
                 {state.nodes.map((node) => (
                   <li key={node.id}>
                     <button
@@ -981,7 +986,7 @@ export function KnowledgeGraphViewer({
                       className="min-h-11 w-full rounded px-3 py-2 text-left text-sm text-[#121212] hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] aria-pressed:bg-[#F5F5FB] aria-pressed:text-[#0028A5]"
                     >
                       <span className="font-semibold">{node.displayLabel}</span>
-                      <span className="ml-2 text-[#4C4C4C]">{node.kind}</span>
+                      <span className="block text-[#4C4C4C]">{node.kind}</span>
                     </button>
                   </li>
                 ))}
