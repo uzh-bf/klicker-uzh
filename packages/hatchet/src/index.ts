@@ -16,6 +16,7 @@ import type { Redis } from 'ioredis'
 import {
   dispatchChatbotKnowledgeGraphIngestion,
   markChatbotKnowledgeGraphBuildFailed,
+  monitorActiveChatbotKnowledgeGraphIngestions,
 } from './kbGraphIngestion.js'
 import {
   dispatchKBIngestion,
@@ -365,7 +366,22 @@ export function prepareHatchetTasks({
       maxRuns: 1,
       limitStrategy: ConcurrencyLimitStrategy.CANCEL_NEWEST,
     },
-    fn: async () => monitorActiveKBIngestions({ prisma }),
+    fn: async () => {
+      let monitoringFailed = false
+      try {
+        await monitorActiveKBIngestions({ prisma })
+      } catch {
+        monitoringFailed = true
+      }
+      try {
+        await monitorActiveChatbotKnowledgeGraphIngestions({ prisma })
+      } catch {
+        monitoringFailed = true
+      }
+      if (monitoringFailed) {
+        throw new Error('KB ingestion monitoring failed')
+      }
+    },
   })
 
   // ? temporarily paused workflow, since the functionality is currently not available and needs fixing

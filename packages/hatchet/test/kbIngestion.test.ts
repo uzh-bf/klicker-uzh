@@ -504,7 +504,10 @@ describe('KB ingestion Hatchet declarations', () => {
     })
     const sendKBIngestionStatus = vi.fn().mockResolvedValue(undefined)
     const monitorActiveKBIngestions = vi.fn().mockResolvedValue(undefined)
-    const mockedPrisma = { kBResource: {} }
+    const monitorActiveChatbotKnowledgeGraphIngestions = vi
+      .fn()
+      .mockResolvedValue(undefined)
+    const mockedPrisma = { kBResource: {}, chatbotKnowledgeGraph: {} }
 
     vi.doMock('../src/client.js', () => ({ hatchetClient: {} }))
     vi.doMock('@klicker-uzh/prisma', () => ({ prisma: mockedPrisma }))
@@ -516,6 +519,10 @@ describe('KB ingestion Hatchet declarations', () => {
         sendKBIngestionStatus,
         monitorActiveKBIngestions,
       }
+    })
+    vi.doMock('../src/kbGraphIngestion.js', async () => {
+      const actual = await vi.importActual('../src/kbGraphIngestion.js')
+      return { ...actual, monitorActiveChatbotKnowledgeGraphIngestions }
     })
 
     const { prepareHatchetTasks } = await import('../src/index.js')
@@ -578,6 +585,31 @@ describe('KB ingestion Hatchet declarations', () => {
     expect(monitorActiveKBIngestions).toHaveBeenCalledWith({
       prisma: mockedPrisma,
     })
+    expect(monitorActiveChatbotKnowledgeGraphIngestions).toHaveBeenCalledWith({
+      prisma: mockedPrisma,
+    })
+
+    monitorActiveKBIngestions.mockClear()
+    monitorActiveChatbotKnowledgeGraphIngestions.mockClear()
+    monitorActiveKBIngestions.mockRejectedValueOnce(
+      new Error('secret legacy monitor response')
+    )
+    await expect(monitorDefinition.fn()).rejects.toThrow(
+      'KB ingestion monitoring failed'
+    )
+    expect(monitorActiveKBIngestions).toHaveBeenCalledOnce()
+    expect(monitorActiveChatbotKnowledgeGraphIngestions).toHaveBeenCalledOnce()
+
+    monitorActiveKBIngestions.mockClear()
+    monitorActiveChatbotKnowledgeGraphIngestions.mockClear()
+    monitorActiveChatbotKnowledgeGraphIngestions.mockRejectedValueOnce(
+      new Error('secret graph monitor response')
+    )
+    await expect(monitorDefinition.fn()).rejects.toThrow(
+      'KB ingestion monitoring failed'
+    )
+    expect(monitorActiveKBIngestions).toHaveBeenCalledOnce()
+    expect(monitorActiveChatbotKnowledgeGraphIngestions).toHaveBeenCalledOnce()
     expect(prepared).toHaveProperty('monitorKBIngestions')
   })
 })

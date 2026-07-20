@@ -8,9 +8,11 @@ import {
   KB_GRAPH_INGESTION_ATTEMPT_METADATA_KEY,
   KB_GRAPH_INGESTION_CHATBOT_METADATA_KEY,
   markChatbotKnowledgeGraphBuildFailed,
+  monitorActiveChatbotKnowledgeGraphIngestions,
 } from '../src/kbGraphIngestion.js'
 import type {
   ExternalHatchetClient,
+  ExternalHatchetStatus,
   KBIngestionLogger,
 } from '../src/kbIngestion.js'
 
@@ -121,6 +123,59 @@ function createClient({
       getWorkflowRunId: vi.fn().mockResolvedValue(runId),
     }),
   } satisfies ExternalHatchetClient
+}
+
+type MonitorGraph = {
+  id: string
+  chatbotId: string
+  selectionRevision: number
+  activeAttemptId: string | null
+  activeBuildRevision: number | null
+  externalWorkflowRunId: string | null
+  externalStartedAt: Date | null
+}
+
+function createMonitorGraph(
+  overrides: Partial<MonitorGraph> = {}
+): MonitorGraph {
+  return {
+    id: GRAPH_ID,
+    chatbotId: CHATBOT_ID,
+    selectionRevision: 3,
+    activeAttemptId: ATTEMPT_ID,
+    activeBuildRevision: 3,
+    externalWorkflowRunId: 'external-run-id',
+    externalStartedAt: new Date('2026-07-20T11:59:00.000Z'),
+    ...overrides,
+  }
+}
+
+function createMonitorPrisma(graphs: MonitorGraph[]) {
+  const prisma = {
+    chatbotKnowledgeGraph: {
+      findMany: vi.fn().mockResolvedValue(graphs),
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+    },
+  }
+  return prisma as typeof prisma & MockPrisma
+}
+
+function activeGraphGuard(graph: MonitorGraph) {
+  return {
+    id: graph.id,
+    chatbotId: graph.chatbotId,
+    activeAttemptId: graph.activeAttemptId,
+    activeBuildRevision: graph.activeBuildRevision,
+    externalWorkflowRunId: graph.externalWorkflowRunId,
+    status: { in: ['QUEUED', 'PROCESSING'] },
+  }
+}
+
+const clearedActiveGraph = {
+  activeAttemptId: null,
+  activeBuildRevision: null,
+  externalWorkflowRunId: null,
+  externalStartedAt: null,
 }
 
 describe('chatbot knowledge graph external dispatch', () => {
@@ -394,6 +449,281 @@ describe('chatbot knowledge graph external dispatch', () => {
       })
     ).rejects.toThrow('External chatbot knowledge graph dispatch failed')
     expect(JSON.stringify(logger.error.mock.calls)).not.toContain('sig=secret')
+  })
+})
+
+describe('chatbot knowledge graph external monitor', () => {
+  it('queries only active graph attempts with complete external metadata', async () => {
+    const prisma = createMonitorPrisma([])
+
+    await monitorActiveChatbotKnowledgeGraphIngestions({
+      prisma,
+      client: createClient(),
+      env: {},
+      now: () => NOW,
+    })
+
+    expect(prisma.chatbotKnowledgeGraph.findMany).toHaveBeenCalledWith({
+      where: {
+        status: { in: ['QUEUED', 'PROCESSING'] },
+        activeAttemptId: { not: null },
+        activeBuildRevision: { not: null },
+        externalWorkflowRunId: { not: null },
+        externalStartedAt: { not: null },
+      },
+      select: {
+        id: true,
+        chatbotId: true,
+        selectionRevision: true,
+        activeAttemptId: true,
+        activeBuildRevision: true,
+        externalWorkflowRunId: true,
+        externalStartedAt: true,
+      },
+    })
+  })
+
+  it.each<{
+    externalStatus: ExternalHatchetStatus
+    expectedData?: Record<string, unknown>
+  }>([
+    { externalStatus: 'QUEUED' },
+    {
+      externalStatus: 'RUNNING',
+      expectedData: { status: 'PROCESSING', statusMessage: null },
+    },
+    {
+      externalStatus: 'COMPLETED',
+      expectedData: {
+        status: 'READY',
+        statusMessage: null,
+        builtRevision: 3,
+        lastBuiltAt: NOW,
+        ...clearedActiveGraph,
+      },
+    },
+    {
+      externalStatus: 'FAILED',
+      expectedData: {
+        status: 'FAILED',
+        statusMessage: 'External ingestion workflow failed.',
+        ...clearedActiveGraph,
+      },
+    },
+    {
+      externalStatus: 'CANCELLED',
+      expectedData: {
+        status: 'FAILED',
+        statusMessage: 'External ingestion workflow was cancelled.',
+        ...clearedActiveGraph,
+      },
+    },
+  ])(
+    'maps current $externalStatus to the guarded graph transition',
+    async ({ externalStatus, expectedData }) => {
+      const isTerminal =
+        externalStatus === 'COMPLETED' ||
+        externalStatus === 'FAILED' ||
+        externalStatus === 'CANCELLED'
+      const graph = createMonitorGraph(
+        isTerminal
+          ? { externalStartedAt: new Date('2026-07-20T10:00:00.000Z') }
+          : {}
+      )
+      const prisma = createMonitorPrisma([graph])
+      const client = createClient()
+      client.runs.get_status.mockResolvedValue(externalStatus)
+
+      await monitorActiveChatbotKnowledgeGraphIngestions({
+        prisma,
+        client,
+        env: {},
+        now: () => NOW,
+      })
+
+      if (!expectedData) {
+        expect(prisma.chatbotKnowledgeGraph.updateMany).not.toHaveBeenCalled()
+        return
+      }
+      if (isTerminal) expect(client.runs.cancel).not.toHaveBeenCalled()
+      expect(prisma.chatbotKnowledgeGraph.updateMany).toHaveBeenCalledWith({
+        where: {
+          ...activeGraphGuard(graph),
+          ...(externalStatus === 'RUNNING'
+            ? {}
+            : { selectionRevision: graph.activeBuildRevision }),
+        },
+        data: expectedData,
+      })
+    }
+  )
+
+  it.each<{
+    externalStatus: 'COMPLETED' | 'FAILED' | 'CANCELLED'
+  }>([
+    { externalStatus: 'COMPLETED' },
+    { externalStatus: 'FAILED' },
+    { externalStatus: 'CANCELLED' },
+  ])(
+    'marks a stale $externalStatus attempt DIRTY without publishing it',
+    async ({ externalStatus }) => {
+      const graph = createMonitorGraph({ selectionRevision: 4 })
+      const prisma = createMonitorPrisma([graph])
+      const client = createClient()
+      client.runs.get_status.mockResolvedValue(externalStatus)
+
+      await monitorActiveChatbotKnowledgeGraphIngestions({
+        prisma,
+        client,
+        env: {},
+        now: () => NOW,
+      })
+
+      expect(prisma.chatbotKnowledgeGraph.updateMany).toHaveBeenCalledWith({
+        where: {
+          ...activeGraphGuard(graph),
+          selectionRevision: { not: graph.activeBuildRevision },
+        },
+        data: {
+          status: 'DIRTY',
+          statusMessage: null,
+          ...clearedActiveGraph,
+        },
+      })
+      const serializedUpdates = JSON.stringify(
+        prisma.chatbotKnowledgeGraph.updateMany.mock.calls
+      )
+      expect(serializedUpdates).not.toContain('builtRevision')
+      expect(serializedUpdates).not.toContain('lastBuiltAt')
+      expect(serializedUpdates).not.toContain('READY')
+      expect(serializedUpdates).not.toContain('FAILED')
+    }
+  )
+
+  it.each([
+    { selectionRevision: 3, expectedStatus: 'FAILED' },
+    { selectionRevision: 4, expectedStatus: 'DIRTY' },
+  ])(
+    'times out and clears a revision-$selectionRevision attempt as $expectedStatus',
+    async ({ selectionRevision, expectedStatus }) => {
+      const graph = createMonitorGraph({
+        selectionRevision,
+        externalStartedAt: new Date('2026-07-20T10:59:59.000Z'),
+      })
+      const prisma = createMonitorPrisma([graph])
+      const client = createClient()
+      client.runs.get_status.mockResolvedValue('RUNNING')
+      client.runs.cancel.mockRejectedValue(new Error('secret external error'))
+      const logger = { error: vi.fn() } satisfies KBIngestionLogger
+
+      await monitorActiveChatbotKnowledgeGraphIngestions({
+        prisma,
+        client,
+        env: {},
+        now: () => NOW,
+        logger,
+      })
+
+      expect(client.runs.cancel).toHaveBeenCalledWith({
+        ids: ['external-run-id'],
+      })
+      expect(prisma.chatbotKnowledgeGraph.updateMany).toHaveBeenCalledWith({
+        where: {
+          ...activeGraphGuard(graph),
+          selectionRevision:
+            selectionRevision === 3
+              ? graph.activeBuildRevision
+              : { not: graph.activeBuildRevision },
+        },
+        data: {
+          status: expectedStatus,
+          statusMessage:
+            expectedStatus === 'FAILED'
+              ? 'External ingestion timed out.'
+              : null,
+          ...clearedActiveGraph,
+        },
+      })
+      expect(JSON.stringify(logger.error.mock.calls)).not.toContain('secret')
+    }
+  )
+
+  it('isolates status lookup failures and continues with later graphs', async () => {
+    const first = createMonitorGraph({
+      id: '4cf9d88e-75b1-4d7b-abfe-d5f57ae9276f',
+      externalWorkflowRunId: 'run-status-fails',
+    })
+    const second = createMonitorGraph({
+      id: 'a7a874a8-f919-4fb9-88ea-f1a40ca6f479',
+      externalWorkflowRunId: 'run-succeeds',
+    })
+    const prisma = createMonitorPrisma([first, second])
+    const client = createClient()
+    client.runs.get_status.mockImplementation(async (runId) => {
+      if (runId === 'run-status-fails') throw new Error('secret status lookup')
+      return 'COMPLETED'
+    })
+    const logger = { error: vi.fn() } satisfies KBIngestionLogger
+
+    await monitorActiveChatbotKnowledgeGraphIngestions({
+      prisma,
+      client,
+      env: {},
+      now: () => NOW,
+      logger,
+    })
+
+    expect(client.runs.get_status.mock.calls.map(([runId]) => runId)).toEqual([
+      'run-status-fails',
+      'run-succeeds',
+    ])
+    expect(prisma.chatbotKnowledgeGraph.updateMany).toHaveBeenCalledTimes(1)
+    expect(prisma.chatbotKnowledgeGraph.updateMany).toHaveBeenCalledWith({
+      where: {
+        ...activeGraphGuard(second),
+        selectionRevision: second.activeBuildRevision,
+      },
+      data: {
+        status: 'READY',
+        statusMessage: null,
+        builtRevision: second.activeBuildRevision,
+        lastBuiltAt: NOW,
+        ...clearedActiveGraph,
+      },
+    })
+    expect(JSON.stringify(logger.error.mock.calls)).not.toContain('secret')
+  })
+
+  it('isolates guarded transition failures and continues with later graphs', async () => {
+    const first = createMonitorGraph({
+      id: '4cf9d88e-75b1-4d7b-abfe-d5f57ae9276f',
+      externalWorkflowRunId: 'run-update-fails',
+    })
+    const second = createMonitorGraph({
+      id: 'a7a874a8-f919-4fb9-88ea-f1a40ca6f479',
+      externalWorkflowRunId: 'run-update-succeeds',
+    })
+    const prisma = createMonitorPrisma([first, second])
+    prisma.chatbotKnowledgeGraph.updateMany
+      .mockRejectedValueOnce(new Error('secret database response'))
+      .mockResolvedValueOnce({ count: 1 })
+    const client = createClient()
+    client.runs.get_status.mockResolvedValue('COMPLETED')
+    const logger = { error: vi.fn() } satisfies KBIngestionLogger
+
+    await monitorActiveChatbotKnowledgeGraphIngestions({
+      prisma,
+      client,
+      env: {},
+      now: () => NOW,
+      logger,
+    })
+
+    expect(prisma.chatbotKnowledgeGraph.updateMany).toHaveBeenCalledTimes(2)
+    expect(
+      prisma.chatbotKnowledgeGraph.updateMany.mock.calls[1]![0]
+    ).toMatchObject({ where: { id: second.id }, data: { status: 'READY' } })
+    expect(JSON.stringify(logger.error.mock.calls)).not.toContain('secret')
   })
 })
 

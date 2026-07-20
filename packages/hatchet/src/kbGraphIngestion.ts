@@ -8,6 +8,7 @@ import {
   getExternalHatchetClient,
   getExternalHatchetConfig,
   getKBIngestionSourceUrl,
+  getKBIngestionTimeoutSeconds,
   recoverExternalKBIngestionRun,
   type ExternalHatchetClient,
   type ExternalKBIngestionPayload,
@@ -22,6 +23,14 @@ export const KB_GRAPH_INGESTION_CHATBOT_METADATA_KEY =
 type ChatbotKnowledgeGraphPrisma = Pick<PrismaClient, 'chatbotKnowledgeGraph'>
 
 export type DispatchChatbotKnowledgeGraphDependencies = {
+  prisma: ChatbotKnowledgeGraphPrisma
+  client?: ExternalHatchetClient
+  env?: NodeJS.ProcessEnv
+  now?: () => Date
+  logger?: KBIngestionLogger
+}
+
+export type MonitorChatbotKnowledgeGraphIngestionsDependencies = {
   prisma: ChatbotKnowledgeGraphPrisma
   client?: ExternalHatchetClient
   env?: NodeJS.ProcessEnv
@@ -79,6 +88,167 @@ export function buildExternalChatbotKnowledgeGraphPayload(
     export_to_falkordb: true,
     falkordb_graph_name: `klickeruzh:${input.chatbotId}`,
     speed_mode: input.speedMode,
+  }
+}
+
+export async function monitorActiveChatbotKnowledgeGraphIngestions(
+  dependencies: MonitorChatbotKnowledgeGraphIngestionsDependencies
+): Promise<void> {
+  const env = dependencies.env ?? process.env
+  const now = dependencies.now ?? (() => new Date())
+  const timeoutMilliseconds = getKBIngestionTimeoutSeconds(env) * 1000
+  const graphs = await dependencies.prisma.chatbotKnowledgeGraph.findMany({
+    where: {
+      status: {
+        in: [
+          ChatbotKnowledgeGraphStatus.QUEUED,
+          ChatbotKnowledgeGraphStatus.PROCESSING,
+        ],
+      },
+      activeAttemptId: { not: null },
+      activeBuildRevision: { not: null },
+      externalWorkflowRunId: { not: null },
+      externalStartedAt: { not: null },
+    },
+    select: {
+      id: true,
+      chatbotId: true,
+      selectionRevision: true,
+      activeAttemptId: true,
+      activeBuildRevision: true,
+      externalWorkflowRunId: true,
+      externalStartedAt: true,
+    },
+  })
+  if (graphs.length === 0) return
+
+  const client = dependencies.client ?? getExternalHatchetClient(env)
+  for (const graph of graphs) {
+    const {
+      activeAttemptId,
+      activeBuildRevision,
+      externalWorkflowRunId,
+      externalStartedAt,
+    } = graph
+    if (
+      !activeAttemptId ||
+      activeBuildRevision === null ||
+      !externalWorkflowRunId ||
+      !externalStartedAt
+    ) {
+      continue
+    }
+
+    const identifiers = {
+      graphId: graph.id,
+      chatbotId: graph.chatbotId,
+      attemptId: activeAttemptId,
+    }
+    const activeAttempt = {
+      id: graph.id,
+      chatbotId: graph.chatbotId,
+      activeAttemptId,
+      activeBuildRevision,
+      externalWorkflowRunId,
+      status: {
+        in: [
+          ChatbotKnowledgeGraphStatus.QUEUED,
+          ChatbotKnowledgeGraphStatus.PROCESSING,
+        ],
+      },
+    }
+    const clearActiveAttempt = {
+      activeAttemptId: null,
+      activeBuildRevision: null,
+      externalWorkflowRunId: null,
+      externalStartedAt: null,
+    }
+    const finishAttempt = async (currentRevisionData: {
+      status:
+        | typeof ChatbotKnowledgeGraphStatus.READY
+        | typeof ChatbotKnowledgeGraphStatus.FAILED
+      statusMessage: string | null
+      builtRevision?: number
+      lastBuiltAt?: Date
+    }) => {
+      const publishable = activeBuildRevision === graph.selectionRevision
+      await dependencies.prisma.chatbotKnowledgeGraph.updateMany({
+        where: {
+          ...activeAttempt,
+          selectionRevision: publishable
+            ? activeBuildRevision
+            : { not: activeBuildRevision },
+        },
+        data: publishable
+          ? { ...currentRevisionData, ...clearActiveAttempt }
+          : {
+              status: ChatbotKnowledgeGraphStatus.DIRTY,
+              statusMessage: null,
+              ...clearActiveAttempt,
+            },
+      })
+    }
+
+    try {
+      const externalStatus = await client.runs.get_status(externalWorkflowRunId)
+      const observedAt = now()
+
+      if (externalStatus === 'COMPLETED') {
+        await finishAttempt({
+          status: ChatbotKnowledgeGraphStatus.READY,
+          statusMessage: null,
+          builtRevision: activeBuildRevision,
+          lastBuiltAt: observedAt,
+        })
+        continue
+      }
+      if (externalStatus === 'FAILED') {
+        await finishAttempt({
+          status: ChatbotKnowledgeGraphStatus.FAILED,
+          statusMessage: 'External ingestion workflow failed.',
+        })
+        continue
+      }
+      if (externalStatus === 'CANCELLED') {
+        await finishAttempt({
+          status: ChatbotKnowledgeGraphStatus.FAILED,
+          statusMessage: 'External ingestion workflow was cancelled.',
+        })
+        continue
+      }
+
+      const elapsedMilliseconds =
+        observedAt.getTime() - externalStartedAt.getTime()
+      if (elapsedMilliseconds > timeoutMilliseconds) {
+        await cancelExternalKBIngestionRunBestEffort({
+          client,
+          runId: externalWorkflowRunId,
+          identifiers,
+          logger: dependencies.logger,
+        })
+        await finishAttempt({
+          status: ChatbotKnowledgeGraphStatus.FAILED,
+          statusMessage: 'External ingestion timed out.',
+        })
+        continue
+      }
+
+      if (externalStatus === 'RUNNING') {
+        await dependencies.prisma.chatbotKnowledgeGraph.updateMany({
+          where: activeAttempt,
+          data: {
+            status: ChatbotKnowledgeGraphStatus.PROCESSING,
+            statusMessage: null,
+          },
+        })
+      }
+    } catch {
+      await logErrorBestEffort(
+        dependencies.logger,
+        'External chatbot knowledge graph monitor failed',
+        identifiers
+      )
+    }
   }
 }
 
