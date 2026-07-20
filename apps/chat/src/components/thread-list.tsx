@@ -5,6 +5,7 @@ import type { FC } from 'react'
 import { useMemo, useState } from 'react'
 
 import { TextField } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { useParams, useRouter } from 'next/navigation'
 import { useChatStore, type Thread } from '../stores/chatStore'
 
@@ -17,6 +18,7 @@ export const ThreadList: FC = () => {
 }
 
 const ThreadListItems: FC = () => {
+  const t = useTranslations()
   const { chatbotId, threadId } = useParams<{
     chatbotId: string
     threadId?: string
@@ -28,10 +30,10 @@ const ThreadListItems: FC = () => {
 
   return (
     <div data-cy="chat-thread-list" className="flex flex-col gap-2 p-1">
-      {groupedThreads.map(({ label, items }) => (
-        <div key={label} className="flex flex-col gap-0.5">
+      {groupedThreads.map(({ key, items }) => (
+        <div key={key} className="flex flex-col gap-0.5">
           <p className="text-muted-foreground px-2 text-xs font-semibold uppercase">
-            {label}
+            {t(`chat.threadList.${key}`)}
           </p>
           {items.map((thread) => (
             <ThreadListItem
@@ -58,12 +60,10 @@ const groupThreadsByDate = (threads: Thread[]) => {
   const yesterdayStart = addDays(todayStart, -1)
   const weekStart = startOfWeek(todayStart)
 
-  const groups: Record<string, Thread[]> = {
-    Today: [],
-    Yesterday: [],
-    'This Week': [],
-    Earlier: [],
-  }
+  const today: Thread[] = []
+  const yesterday: Thread[] = []
+  const thisWeek: Thread[] = []
+  const earlier: Thread[] = []
 
   const sortedThreads = [...threads].sort((a, b) => {
     const aTime = new Date(a.updatedAt).getTime()
@@ -75,26 +75,31 @@ const groupThreadsByDate = (threads: Thread[]) => {
     const updatedAt = startOfDay(new Date(thread.updatedAt))
 
     if (updatedAt >= todayStart) {
-      groups.Today.push(thread)
+      today.push(thread)
       return
     }
 
     if (updatedAt >= yesterdayStart) {
-      groups.Yesterday.push(thread)
+      yesterday.push(thread)
       return
     }
 
     if (updatedAt >= weekStart) {
-      groups['This Week'].push(thread)
+      thisWeek.push(thread)
       return
     }
 
-    groups.Earlier.push(thread)
+    earlier.push(thread)
   })
 
-  return Object.entries(groups)
-    .filter(([, items]) => items.length > 0)
-    .map(([label, items]) => ({ label, items }))
+  return (
+    [
+      { key: 'groupToday', items: today },
+      { key: 'groupYesterday', items: yesterday },
+      { key: 'groupThisWeek', items: thisWeek },
+      { key: 'groupEarlier', items: earlier },
+    ] as const
+  ).filter(({ items }) => items.length > 0)
 }
 
 const startOfDay = (date: Date) =>
@@ -125,6 +130,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
   onSelect,
   onDelete,
 }) => {
+  const t = useTranslations()
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState('')
@@ -142,10 +148,10 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
           : firstUserMessage.content
         return content
           ? content.slice(0, 30) + (content.length > 30 ? '...' : '')
-          : 'New Chat'
+          : t('chat.threadList.newChatTitle')
       }
     }
-    return 'New Chat'
+    return t('chat.threadList.newChatTitle')
   }
 
   const handleEditStart = () => {
@@ -192,21 +198,21 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
             type="button"
             data-cy="chat-thread-title-save"
             onClick={handleEditSave}
-            aria-label="Save"
+            aria-label={t('chat.threadList.save')}
             className="text-foreground focus-visible:ring-ring mr-1 inline-flex size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors hover:text-green-600 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
           >
             <CheckIcon />
-            <span className="sr-only">Save</span>
+            <span className="sr-only">{t('chat.threadList.save')}</span>
           </button>
           <button
             type="button"
             data-cy="chat-thread-title-cancel"
             onClick={handleEditCancel}
-            aria-label="Cancel"
+            aria-label={t('chat.threadList.cancel')}
             className="text-foreground focus-visible:ring-ring mr-2 inline-flex size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors hover:text-red-600 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
           >
             <XIcon />
-            <span className="sr-only">Cancel</span>
+            <span className="sr-only">{t('chat.threadList.cancel')}</span>
           </button>
         </>
       ) : (
@@ -223,21 +229,21 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
             type="button"
             data-cy="chat-thread-edit-button"
             onClick={handleEditStart}
-            aria-label="Edit name"
+            aria-label={t('chat.threadList.editName')}
             className={`text-foreground hover:text-primary focus-visible:ring-ring mr-1 size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4 ${isActive ? 'inline-flex' : 'hidden group-focus-within/thread:inline-flex group-hover/thread:inline-flex'}`}
           >
             <EditIcon />
-            <span className="sr-only">Edit name</span>
+            <span className="sr-only">{t('chat.threadList.editName')}</span>
           </button>
           <button
             type="button"
             data-cy="chat-thread-delete-button"
             onClick={onDelete}
-            aria-label="Delete chat"
+            aria-label={t('chat.threadList.deleteChat')}
             className={`text-foreground hover:text-destructive focus-visible:ring-ring mr-2 size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4 ${isActive ? 'inline-flex' : 'hidden group-focus-within/thread:inline-flex group-hover/thread:inline-flex'}`}
           >
             <Trash2 />
-            <span className="sr-only">Delete chat</span>
+            <span className="sr-only">{t('chat.threadList.deleteChat')}</span>
           </button>
         </>
       )}

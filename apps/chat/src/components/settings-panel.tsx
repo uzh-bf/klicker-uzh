@@ -57,7 +57,9 @@ export function SettingsPanel() {
         onClick={() => setOpen(!open)}
       >
         <Settings2 className="h-4 w-4" />
-        <span className="text-basefont-medium">Settings</span>
+        <span className="text-basefont-medium">
+          {t('chat.settingsPanel.title')}
+        </span>
         {/* up and down arrow on the right based on whether is opened or not */}
         <span className="ml-auto">
           {!open ? (
@@ -75,7 +77,9 @@ export function SettingsPanel() {
           <div>
             {/* mode selection */}
             <div data-cy="chat-mode-selection" className="space-y-1">
-              <label className="text-sm font-bold">Chat Mode</label>
+              <label className="text-sm font-bold">
+                {t('chat.settingsPanel.chatModeLabel')}
+              </label>
               <Select
                 data={{ cy: 'chat-mode-select' }}
                 placeholder={t('chat.settingsPanel.selectChatMode')}
@@ -96,12 +100,14 @@ export function SettingsPanel() {
 
             {/* model selection */}
             <div data-cy="chat-model-selection" className="mt-2 space-y-1">
-              <label className="text-sm font-bold">AI Model</label>
+              <label className="text-sm font-bold">
+                {t('chat.settingsPanel.aiModelLabel')}
+              </label>
               {modelSelectionEnabled ? (
                 <>
                   <Select
                     data={{ cy: 'chat-model-select' }}
-                    placeholder="Select AI Model"
+                    placeholder={t('chat.settingsPanel.selectAiModel')}
                     items={modelOptions.map((option) => ({
                       value: option.id,
                       label: option.name,
@@ -128,10 +134,10 @@ export function SettingsPanel() {
                       ?.name || selectedModel}
                   </div>
                   <p className="text-muted-foreground text-sm">
-                    Automatic selection based on credit availability.
+                    {t('chat.settingsPanel.autoSelectionInfo')}{' '}
                     {credits.current > 0
-                      ? ' Using primary model with available credits.'
-                      : ' Using fallback model (no credits remaining).'}
+                      ? t('chat.settingsPanel.usingPrimaryModel')
+                      : t('chat.settingsPanel.usingFallbackModel')}
                   </p>
                 </>
               )}
@@ -142,10 +148,12 @@ export function SettingsPanel() {
                 data-cy="chat-reasoning-effort-selection"
                 className="mt-2 space-y-1"
               >
-                <label className="text-sm font-bold">Reasoning Effort</label>
+                <label className="text-sm font-bold">
+                  {t('chat.settingsPanel.reasoningEffortLabel')}
+                </label>
                 <Select
                   data={{ cy: 'chat-reasoning-effort-select' }}
-                  placeholder="Select reasoning effort"
+                  placeholder={t('chat.settingsPanel.selectReasoningEffort')}
                   items={availableReasoningEfforts.map((value) => ({
                     value,
                     label: value.charAt(0).toUpperCase() + value.slice(1),
@@ -156,8 +164,7 @@ export function SettingsPanel() {
                   value={selectedReasoningEffort}
                 />
                 <p className="text-muted-foreground text-sm">
-                  Higher effort can improve difficult responses at the cost of
-                  additional latency.
+                  {t('chat.settingsPanel.reasoningEffortHint')}
                 </p>
               </div>
             ) : null}
@@ -170,7 +177,9 @@ export function SettingsPanel() {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Zap className="h-4 w-4" />
-            <span className="text-sm font-medium">Available Credits</span>
+            <span className="text-sm font-medium">
+              {t('chat.settingsPanel.availableCredits')}
+            </span>
           </div>
           <div className="space-y-1">
             <div className="flex justify-between text-sm">
@@ -198,8 +207,7 @@ export function SettingsPanel() {
                 data-cy="chat-credits-empty-message"
                 className="text-muted-foreground text-sm"
               >
-                You have used up all your credits. However, you can still use
-                the smaller model.
+                {t('chat.settingsPanel.creditsExhausted')}
               </div>
             ) : null}
           </div>

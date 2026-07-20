@@ -8,6 +8,7 @@ import {
   useSidebar,
 } from '@uzh-bf/design-system'
 import { Loader2, Plus } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -44,6 +45,7 @@ export const Assistant = ({
 }: {
   chatbot: { id: string; name: string; avatar?: string }
 }) => {
+  const t = useTranslations()
   const embedded = useEmbedded()
   const { participationRequired, participationMessage } = useChatStore()
   const [disclaimer, setDisclaimer] = useState<ChatbotDisclaimer | null>(null)
@@ -179,7 +181,7 @@ export const Assistant = ({
               embedded ? 'text-lg' : 'text-2xl'
             )}
           >
-            Course Access Required
+            {t('chat.assistant.participationRequiredTitle')}
           </h1>
           <p
             className={twMerge(
@@ -188,7 +190,7 @@ export const Assistant = ({
             )}
           >
             {participationMessage ??
-              'You need to join the corresponding KlickerUZH course before you can use this chatbot. Please enrol in the course or contact your instructor for access.'}
+              t('chat.assistant.participationRequiredDefaultMessage')}
           </p>
           {!embedded && (
             <Link
@@ -196,7 +198,7 @@ export const Assistant = ({
               className="bg-uzh-blue hover:bg-uzh-blue-80 focus-visible:outline-uzh-blue-40 mt-8 inline-flex w-full items-center justify-center rounded-md px-4 py-2 text-base font-semibold text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
               prefetch={false}
             >
-              Open KlickerUZH
+              {t('chat.assistant.openKlickerUzh')}
             </Link>
           )}
         </div>
@@ -215,7 +217,7 @@ export const Assistant = ({
         )}
       >
         <div className={embedded ? 'text-sm' : 'text-lg'}>
-          Loading chatbot...
+          {t('chat.assistant.loading')}
         </div>
       </div>
     )
@@ -244,11 +246,10 @@ export const Assistant = ({
                 embedded ? 'mb-2 text-base' : 'mb-4 text-xl'
               )}
             >
-              Chatbot unavailable
+              {t('chat.assistant.disclaimerDeclinedTitle')}
             </h2>
             <p className={twMerge('text-red-700', embedded && 'text-sm')}>
-              You declined the chatbot disclaimer. Accept the terms to continue
-              using the chatbot.
+              {t('chat.assistant.disclaimerDeclinedMessage')}
             </p>
             {!embedded && (
               <button
@@ -256,7 +257,7 @@ export const Assistant = ({
                 onClick={() => setShowDisclaimerModal(true)}
                 className="mt-4 rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
               >
-                Show disclaimer again
+                {t('chat.assistant.showDisclaimerAgain')}
               </button>
             )}
           </div>
@@ -302,6 +303,7 @@ function SidebarMain({
   chatbot: { id: string; name: string; avatar?: string }
   showFooter: boolean
 }) {
+  const t = useTranslations()
   const { open } = useSidebar()
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const router = useRouter()
@@ -335,10 +337,10 @@ function SidebarMain({
               className="text-muted-foreground hover:text-foreground ml-auto inline-flex size-5 items-center justify-center rounded-sm transition-colors disabled:pointer-events-none disabled:opacity-50"
             >
               <Plus className="size-4" />
-              <span className="sr-only">New Chat</span>
+              <span className="sr-only">{t('chat.sidebar.newChat')}</span>
             </button>
           </TooltipTrigger>
-          <TooltipContent>New Chat</TooltipContent>
+          <TooltipContent>{t('chat.sidebar.newChat')}</TooltipContent>
         </Tooltip>
       </div>
       <div className="flex min-h-0 flex-1 flex-col">

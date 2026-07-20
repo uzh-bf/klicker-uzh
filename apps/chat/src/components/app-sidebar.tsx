@@ -10,6 +10,7 @@ import {
   SidebarTrigger,
 } from '@uzh-bf/design-system'
 import { Plus } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
@@ -23,6 +24,7 @@ export function AppSidebar({
   chatbotName,
   ...props
 }: React.ComponentProps<typeof Sidebar> & { chatbotName?: string }) {
+  const t = useTranslations()
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const router = useRouter()
   const { createThread, participationRequired } = useChatStore()
@@ -55,16 +57,18 @@ export function AppSidebar({
                     className="text-muted-foreground hover:text-foreground ml-auto mr-1 inline-flex size-4 items-center justify-center rounded-sm transition-colors disabled:pointer-events-none disabled:opacity-50"
                   >
                     <Plus className="size-4" />
-                    <span className="sr-only">New Chat</span>
+                    <span className="sr-only">{t('chat.sidebar.newChat')}</span>
                   </button>
                 </TooltipTrigger>
-                <TooltipContent>New Chat</TooltipContent>
+                <TooltipContent>{t('chat.sidebar.newChat')}</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <SidebarTrigger className="mr-2 size-4 shrink-0" />
                 </TooltipTrigger>
-                <TooltipContent>Close sidebar</TooltipContent>
+                <TooltipContent>
+                  {t('chat.sidebar.closeSidebar')}
+                </TooltipContent>
               </Tooltip>
             </div>
           </SidebarMenuItem>
@@ -87,7 +91,7 @@ export function AppSidebar({
               >
                 <Image
                   src="/KlickerLogo.png"
-                  alt="Klicker Logo"
+                  alt={t('chat.sidebar.logoAlt')}
                   width={120}
                   height={60}
                   className="h-6 w-auto object-contain md:h-8"
