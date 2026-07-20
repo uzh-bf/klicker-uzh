@@ -1,4 +1,9 @@
 export default {
+  chat: {
+    settingsPanel: {
+      selectChatMode: 'Select Chat Mode',
+    },
+  },
   shared: {
     table: {
       download: 'Download as CSV',

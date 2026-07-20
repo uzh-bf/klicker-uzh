@@ -7,8 +7,10 @@ import { useSettingsStore } from '../stores/settingsStore'
 
 import { Progress, Select } from '@uzh-bf/design-system'
 import { ChevronDown, ChevronUp, Settings2, Zap } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 export function SettingsPanel() {
+  const t = useTranslations()
   const {
     selectedModel,
     selectedMode,
@@ -76,7 +78,7 @@ export function SettingsPanel() {
               <label className="text-sm font-bold">Chat Mode</label>
               <Select
                 data={{ cy: 'chat-mode-select' }}
-                placeholder="Select Chat Mode"
+                placeholder={t('chat.settingsPanel.selectChatMode')}
                 items={
                   Object.keys(modeOptions).length > 0
                     ? Object.entries(modeOptions).map(([key]) => ({
