@@ -900,7 +900,7 @@ git commit -m "chore(kb): configure external Hatchet ingestion bridge"
 - Modify after evidence exists: `project/2026-07-15-pr-5174-kb-poc-plan.md`
 - Modify after review: draft PR #5182 body or comment
 
-- [ ] **Step 1: Run all targeted deterministic tests**
+- [x] **Step 1: Run all targeted deterministic tests**
 
 ```bash
 pnpm --filter @klicker-uzh/util exec vitest run test/kbWebhook.test.ts
@@ -910,7 +910,7 @@ pnpm --filter @klicker-uzh/hatchet test
 
 Expected: shared signer, GraphQL/database, bridge/retry/SAS, and sweeper suites are all green.
 
-- [ ] **Step 2: Run package and application checks**
+- [x] **Step 2: Run package and application checks**
 
 ```bash
 pnpm --filter @klicker-uzh/prisma check
@@ -925,7 +925,7 @@ pnpm --filter @klicker-uzh/frontend-manage check
 
 Expected: all focused type checks pass.
 
-- [ ] **Step 3: Run whole-repository quality gates**
+- [x] **Step 3: Run whole-repository quality gates**
 
 ```bash
 pnpm run check:all
@@ -935,7 +935,7 @@ git diff --check
 
 Expected: repository checks pass. Classify any repository-wide pre-existing Opengrep findings separately; no new finding may be ignored without explicit rationale.
 
-- [ ] **Step 4: Run a local end-to-end status loop**
+- [x] **Step 4: Run a local end-to-end status loop**
 
 Using mocked/local external Hatchet configuration where appropriate:
 
@@ -950,6 +950,13 @@ Capture terminal-state screenshots if they differ materially from the existing S
 
 - [ ] **Step 5: Run the real cluster smoke test after configuration is installed**
 
+Manual deployment prerequisite (2026-07-20): the external Hatchet
+host/API/TLS/workflow values and the three out-of-repo secrets have not yet
+been installed in the general-worker deployment, so the real cluster smoke
+test cannot run from this branch workspace. Local deterministic and real-UI
+status-loop verification is complete; keep this checkbox open until deployment
+configuration is available.
+
 Configure the external Hatchet host/API/TLS/workflow values and the three secrets in the general-worker deployment. Then:
 
 1. Upload a real PDF to its existing private `kb-<user UUID>` container.
@@ -963,7 +970,7 @@ Configure the external Hatchet host/API/TLS/workflow values and the three secret
 
 If cluster credentials/configuration are not yet available, mark only this step as a manual deployment prerequisite; deterministic local tests must still be complete.
 
-- [ ] **Step 6: Perform the required independent reviews**
+- [x] **Step 6: Perform the required independent reviews**
 
 Before publishing the final branch update:
 
@@ -972,7 +979,7 @@ Before publishing the final branch update:
 3. Have a separate review agent inspect the complete branch diff against `kb-poc`, with particular attention to task registration in both the backend and worker processes.
 4. Re-run affected tests after accepted fixes.
 
-- [ ] **Step 7: Update the original implementation record without rewriting S5**
+- [x] **Step 7: Update the original implementation record without rewriting S5**
 
 Append a dated follow-on progress entry to `project/2026-07-15-pr-5174-kb-poc-plan.md` that states:
 
@@ -986,7 +993,7 @@ Append a dated follow-on progress entry to `project/2026-07-15-pr-5174-kb-poc-pl
 
 Do not edit the original S5 evidence into claiming it originally contained the external call.
 
-- [ ] **Step 8: Commit final evidence if needed**
+- [x] **Step 8: Commit final evidence if needed**
 
 ```bash
 git add project/2026-07-15-pr-5174-kb-poc-plan.md project/screenshots
