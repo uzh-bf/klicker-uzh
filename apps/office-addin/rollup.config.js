@@ -31,6 +31,15 @@ async function getHttpsOptions() {
 function officeAddinPlugin() {
   return {
     name: 'office-addin',
+    buildStart() {
+      this.addWatchFile('manifest.xml')
+      this.addWatchFile('src/content/content.html')
+      this.addWatchFile('src/styles.css')
+
+      for (const asset of fs.readdirSync('assets')) {
+        this.addWatchFile(`assets/${asset}`)
+      }
+    },
     generateBundle: {
       order: 'post',
       handler() {
@@ -75,7 +84,7 @@ async function createConfig() {
         ],
       }),
       officeAddinPlugin(),
-      !isDev && terser({ compress: { drop_console: false } }),
+      !isDev && terser(),
       isDev &&
         serve({
           contentBase: 'dist',

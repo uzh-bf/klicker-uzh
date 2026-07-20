@@ -6,14 +6,6 @@
 
 // --- TypeScript Interfaces ---
 
-interface SlideData {
-  id: number
-  title?: string
-  index: number
-}
-
-// Removed unused interfaces - keeping only what's actually used
-
 type MessageType = 'success' | 'error' | 'info' | 'warning'
 
 // --- DOM Element References ---
@@ -216,7 +208,7 @@ async function getSlideID(maxRetries = 3): Promise<number> {
             valueFormat: Office.ValueFormat.Unformatted,
             filterType: Office.FilterType.All, // Ensure we get slide details
           },
-          (asyncResult: Office.AsyncResult<{ slides: SlideData[] }>) => {
+          (asyncResult: Office.AsyncResult<Office.SlideRange>) => {
             // Handle the API callback
             if (asyncResult.status === Office.AsyncResultStatus.Succeeded) {
               if (!asyncResult.value?.slides?.length) {
@@ -452,7 +444,7 @@ function handleEmbedClick(): void {
  */
 function saveUrlToSettings(
   url: string,
-  callback?: (success: boolean) => void
+  callback: (success: boolean) => void
 ): void {
   // Set the setting value in memory
   Office.context.document.settings.set(SETTINGS_KEY, url)
@@ -460,11 +452,9 @@ function saveUrlToSettings(
   // Persist the change asynchronously
   Office.context.document.settings.saveAsync((asyncResult) => {
     if (asyncResult.status === Office.AsyncResultStatus.Succeeded) {
-      // If persistence succeeded
-      if (callback) callback(true) // Notify success via callback
+      callback(true)
     } else {
-      // If persistence failed
-      if (callback) callback(false) // Notify failure via callback
+      callback(false)
     }
   })
 }
@@ -589,7 +579,6 @@ function showMessage(
   messageBox.hidden = false
 
   // Make the message box visible and transition opacity
-  messageBox.classList.remove('hidden')
   // Use a slight delay before setting opacity to 1 to ensure transition works
   setTimeout(() => {
     if (messageBox) {

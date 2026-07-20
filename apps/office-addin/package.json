@@ -5,9 +5,7 @@
   "devDependencies": {
     "@rollup/plugin-terser": "~0.4.4",
     "@rollup/plugin-typescript": "~12.1.4",
-    "@types/node": "^24.10.1",
     "@types/office-js": "^1.0.591",
-    "@types/office-runtime": "^1.0.37",
     "cross-env": "~7.0.3",
     "eslint-plugin-office-addins": "~4.0.3",
     "office-addin-debugging": "~6.0.3",
@@ -34,8 +32,6 @@
     "dev": "cross-env NODE_ENV=development rollup -c --watch",
     "lint": "office-addin-lint check --files src/content/content.ts",
     "lint:fix": "office-addin-lint fix --files src/content/content.ts",
-    "signin": "office-addin-dev-settings m365-account login",
-    "signout": "office-addin-dev-settings m365-account logout",
     "start": "office-addin-debugging start manifest.xml",
     "stop": "office-addin-debugging stop manifest.xml",
     "validate": "office-addin-manifest validate manifest.xml",
