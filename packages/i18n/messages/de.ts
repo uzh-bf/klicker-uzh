@@ -25,6 +25,7 @@ export default {
     sidebar: {
       newChat: 'Neuer Chat',
       closeSidebar: 'Seitenleiste schliessen',
+      conversationsLabel: 'Konversationen',
       logoAlt: 'Klicker-Logo',
     },
     assistant: {

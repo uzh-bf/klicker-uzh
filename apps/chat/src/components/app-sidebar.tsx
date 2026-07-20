@@ -75,6 +75,9 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
+        <p className="text-foreground px-3 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide">
+          {t('chat.sidebar.conversationsLabel')}
+        </p>
         <ThreadList />
       </SidebarContent>
 

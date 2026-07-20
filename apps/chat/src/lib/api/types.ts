@@ -18,6 +18,7 @@ export interface ApiThread {
   title?: string
   createdAt: string
   updatedAt: string
+  lastChatMode?: string | null
 }
 
 /**
@@ -142,6 +143,7 @@ export const convertApiThreadToThread = (apiThread: ApiThread): Thread => ({
   isRunning: false,
   createdAt: new Date(apiThread.createdAt),
   updatedAt: new Date(apiThread.updatedAt),
+  lastChatMode: apiThread.lastChatMode ?? null,
 })
 
 /**
