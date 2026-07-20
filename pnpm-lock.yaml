@@ -405,6 +405,9 @@ importers:
       '@klicker-uzh/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@klicker-uzh/knowledge-graph':
+        specifier: workspace:*
+        version: link:../../packages/knowledge-graph
       '@klicker-uzh/markdown':
         specifier: workspace:*
         version: link:../../packages/markdown
