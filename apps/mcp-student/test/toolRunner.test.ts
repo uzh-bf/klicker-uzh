@@ -46,7 +46,7 @@ describe('student MCP tool runner', () => {
     )
   })
 
-  it('preserves unauthenticated error JSON and logs the error code only', async () => {
+  it('masks unauthenticated errors and logs the error code only', async () => {
     const info = vi.spyOn(console, 'info').mockImplementation(() => {})
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const execute = vi.fn()
@@ -60,7 +60,7 @@ describe('student MCP tool runner', () => {
     expect(JSON.parse(output)).toEqual({
       error: {
         code: 'UNAUTHENTICATED',
-        message: 'Missing authenticated participant session',
+        message: 'Student practice authentication failed',
       },
     })
     expect(execute).not.toHaveBeenCalled()
@@ -79,7 +79,7 @@ describe('student MCP tool runner', () => {
     )
   })
 
-  it('keeps student domain error codes stable without logging messages', async () => {
+  it('keeps domain error codes stable and never surfaces the raw message', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     const output = await runStudentTool({
@@ -90,12 +90,15 @@ describe('student MCP tool runner', () => {
       toolName: 'submit_practice_stack_answer',
     })
 
+    // The raw message embeds a response value; the client-facing error must
+    // carry only the fixed safe message, not the leaked payload.
     expect(JSON.parse(output)).toEqual({
       error: {
         code: 'QUESTION_REF_EXPIRED',
-        message: 'questionRef has expired for student-answer-payload',
+        message: 'Question reference has expired; request a new question',
       },
     })
+    expect(output).not.toContain('student-answer-payload')
     expect(warn).toHaveBeenCalledWith(
       'mcp_tool_call',
       expect.objectContaining({

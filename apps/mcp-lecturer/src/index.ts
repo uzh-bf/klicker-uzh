@@ -21,3 +21,17 @@ await server.start({
 console.log(
   `Lecturer MCP server listening on http://${settings.host}:${settings.port}${settings.mcpEndpoint}`
 )
+
+async function shutdown(signal: NodeJS.Signals) {
+  console.log(`Received ${signal}, shutting down Lecturer MCP server...`)
+  try {
+    await server.stop()
+  } catch (error) {
+    console.error('Error during Lecturer MCP server shutdown:', error)
+  } finally {
+    process.exit(0)
+  }
+}
+
+process.on('SIGTERM', shutdown)
+process.on('SIGINT', shutdown)

@@ -90,10 +90,7 @@ export function studentToolErrorCode(error: unknown): StudentMcpToolErrorCode {
   return 'UNKNOWN'
 }
 
-function safeStudentToolMessage(
-  code: StudentMcpToolErrorCode,
-  message: string
-) {
+function safeStudentToolMessage(code: StudentMcpToolErrorCode): string {
   switch (code) {
     case 'BACKEND_UNAVAILABLE':
       return 'Student practice backend unavailable'
@@ -103,26 +100,30 @@ function safeStudentToolMessage(
       return 'Invalid student practice tool input'
     case 'NOT_FOUND':
       return 'Student practice object not found'
+    case 'PRACTICE_POOL_UNAVAILABLE':
+      return 'No practice pool is currently available'
+    case 'QUESTION_REF_EXPIRED':
+      return 'Question reference has expired; request a new question'
+    case 'QUESTION_REF_INVALID':
+      return 'Question reference is invalid'
+    case 'QUESTION_REF_STALE':
+      return 'Question reference is no longer valid for this request'
+    case 'SUBMISSION_INVALID':
+      return 'Submission is invalid'
     case 'UNAUTHENTICATED':
-      return message === 'Missing authenticated participant session' ||
-        message === 'Missing Authorization bearer token'
-        ? message
-        : 'Student practice authentication failed'
+      return 'Student practice authentication failed'
     case 'UNKNOWN':
       return 'Student practice tool call failed'
-    default:
-      return message
   }
 }
 
 export function toStudentToolError(error: unknown): StudentMcpToolErrorOutput {
-  const message = errorMessage(error)
   const code = studentToolErrorCode(error)
 
   return {
     error: {
       code,
-      message: safeStudentToolMessage(code, message),
+      message: safeStudentToolMessage(code),
     },
   }
 }

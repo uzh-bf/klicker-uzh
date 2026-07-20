@@ -55,4 +55,4 @@ ENV NODE_ENV=production \
 
 EXPOSE 7080
 
-CMD node /app/apps/mcp-student/dist/index.js
+CMD ["node", "/app/apps/mcp-student/dist/index.js"]

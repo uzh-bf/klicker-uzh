@@ -2,14 +2,49 @@ import { describe, expect, it } from 'vitest'
 import { studentToolErrorCode, toStudentToolError } from '../src/toolErrors.js'
 
 describe('student MCP tool errors', () => {
-  it('keeps question reference failures domain-specific', () => {
+  it('classifies question reference failures with a fixed safe message', () => {
     expect(
       toStudentToolError(new Error('Invalid questionRef signature'))
     ).toEqual({
       error: {
         code: 'QUESTION_REF_INVALID',
-        message: 'Invalid questionRef signature',
+        message: 'Question reference is invalid',
       },
+    })
+    // A raw message carrying an internal detail must not leak through the
+    // domain-specific code path.
+    expect(
+      toStudentToolError(
+        new Error('questionRef has expired at backend host db-7')
+      ).error
+    ).toEqual({
+      code: 'QUESTION_REF_EXPIRED',
+      message: 'Question reference has expired; request a new question',
+    })
+  })
+
+  it('masks stale, submission, and practice-pool failures with fixed messages', () => {
+    expect(
+      toStudentToolError(
+        new Error('questionRef no longer eligible for participant secret')
+      ).error
+    ).toEqual({
+      code: 'QUESTION_REF_STALE',
+      message: 'Question reference is no longer valid for this request',
+    })
+    expect(
+      toStudentToolError(new Error('Submission must answer every stack')).error
+    ).toEqual({
+      code: 'SUBMISSION_INVALID',
+      message: 'Submission is invalid',
+    })
+    expect(
+      toStudentToolError(
+        new Error('No practice pool is available for course x')
+      ).error
+    ).toEqual({
+      code: 'PRACTICE_POOL_UNAVAILABLE',
+      message: 'No practice pool is currently available',
     })
   })
 
