@@ -57,7 +57,7 @@ export function CourseChatDrawer({
   const chatbots = useMemo(() => data?.courseChatbots ?? [], [data])
   const selectedChatbot =
     chatbots.find((chatbot) => chatbot.id === selectedChatbotId) ?? chatbots[0]
-  const chatOrigin = useMemo(getChatOrigin, [])
+  const chatOrigin = useMemo(() => getChatOrigin(), [])
 
   const contextLabel = useMemo(() => {
     const { currentStep, totalSteps } = context.question ?? {}
