@@ -295,6 +295,30 @@ export function getKBIngestionSourceUrl(
   return `${blobClient.url}?${sas}`
 }
 
+async function logErrorBestEffort(
+  logger: KBIngestionLogger | undefined,
+  message: string,
+  identifiers: Record<string, string>
+): Promise<void> {
+  try {
+    await logger?.error?.(message, identifiers)
+  } catch {
+    // Error handling must continue when the logger transport is unavailable.
+  }
+}
+
+async function logInfoBestEffort(
+  logger: KBIngestionLogger | undefined,
+  message: string,
+  identifiers: Record<string, string>
+): Promise<void> {
+  try {
+    await logger?.info?.(message, identifiers)
+  } catch {
+    // A completed dispatch must not fail when the logger transport is unavailable.
+  }
+}
+
 async function cancelRunBestEffort({
   client,
   runId,
@@ -309,23 +333,15 @@ async function cancelRunBestEffort({
   try {
     await client.runs.cancel({ ids: [runId] })
   } catch {
-    await logger?.error?.('External KB ingestion cancellation failed', {
-      resourceId: input.resourceId,
-      kbId: input.kbId,
-      ingestionAttemptId: input.ingestionAttemptId,
-    })
-  }
-}
-
-async function logMonitorErrorBestEffort(
-  logger: KBIngestionLogger | undefined,
-  message: string,
-  identifiers: Record<string, string>
-): Promise<void> {
-  try {
-    await logger?.error?.(message, identifiers)
-  } catch {
-    // Monitoring must continue even when the logger transport is unavailable.
+    await logErrorBestEffort(
+      logger,
+      'External KB ingestion cancellation failed',
+      {
+        resourceId: input.resourceId,
+        kbId: input.kbId,
+        ingestionAttemptId: input.ingestionAttemptId,
+      }
+    )
   }
 }
 
@@ -416,7 +432,7 @@ export async function monitorActiveKBIngestions(
         try {
           await client.runs.cancel({ ids: [externalWorkflowRunId] })
         } catch {
-          await logMonitorErrorBestEffort(
+          await logErrorBestEffort(
             dependencies.logger,
             'External KB ingestion timeout cancellation failed',
             identifiers
@@ -432,7 +448,7 @@ export async function monitorActiveKBIngestions(
         await sendStatus(statusPayload('PROCESSING'))
       }
     } catch {
-      await logMonitorErrorBestEffort(
+      await logErrorBestEffort(
         dependencies.logger,
         'External KB ingestion monitor failed',
         identifiers
@@ -543,12 +559,15 @@ export async function dispatchKBIngestion(
       return undefined
     }
 
-    await dependencies.logger?.info?.('External KB ingestion dispatched', {
-      ...identifiers,
-    })
+    await logInfoBestEffort(
+      dependencies.logger,
+      'External KB ingestion dispatched',
+      identifiers
+    )
     return runId
   } catch {
-    await dependencies.logger?.error?.(
+    await logErrorBestEffort(
+      dependencies.logger,
       'External KB ingestion dispatch failed',
       identifiers
     )

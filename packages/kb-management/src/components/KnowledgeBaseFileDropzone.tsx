@@ -82,8 +82,8 @@ function KnowledgeBaseFileDropzone({ kbId }: { kbId: string }) {
         awaitRefetchQueries: true,
       })
       toast({ type: 'success', message: t('kb.fileUploadSuccess') })
-    } catch (error) {
-      console.error('Failed to upload KB file', error)
+    } catch {
+      console.error('Failed to upload KB file')
       toast({ type: 'error', message: t('kb.fileUploadError') })
     } finally {
       setUploading(false)

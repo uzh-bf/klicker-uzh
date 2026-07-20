@@ -285,7 +285,11 @@ function KnowledgeBaseResourceList({
                 </Button>
                 <Button
                   destructive
-                  disabled={ingestingId !== null}
+                  disabled={
+                    ingestingId !== null ||
+                    resource.status === KbResourceStatus.Queued ||
+                    resource.status === KbResourceStatus.Processing
+                  }
                   onClick={() => setDeletionTarget(resource)}
                   data={{ cy: `delete-kb-resource-${resource.id}` }}
                   className={{ root: 'w-full sm:w-auto' }}

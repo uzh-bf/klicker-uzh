@@ -106,6 +106,41 @@ async function getOwnedKbResourceOrThrow(ctx: ContextWithUser, id: string) {
   return resource
 }
 
+async function lockOwnedKbOrThrow(
+  prisma: DB.Prisma.TransactionClient,
+  id: string,
+  ownerId: string
+) {
+  const lockedKb = await prisma.$queryRaw<Array<{ id: string }>>`
+    SELECT "id"
+    FROM "public"."KB"
+    WHERE "id" = CAST(${id} AS UUID)
+      AND "ownerId" = CAST(${ownerId} AS UUID)
+    FOR UPDATE
+  `
+  if (lockedKb.length === 0) {
+    throw new GraphQLError('KB not found')
+  }
+}
+
+async function lockOwnedKbResourceOrThrow(
+  prisma: DB.Prisma.TransactionClient,
+  id: string,
+  ownerId: string
+) {
+  const lockedResource = await prisma.$queryRaw<Array<{ id: string }>>`
+    SELECT resource."id"
+    FROM "public"."KBResource" AS resource
+    INNER JOIN "public"."KB" AS kb ON kb."id" = resource."kbId"
+    WHERE resource."id" = CAST(${id} AS UUID)
+      AND kb."ownerId" = CAST(${ownerId} AS UUID)
+    FOR UPDATE OF resource
+  `
+  if (lockedResource.length === 0) {
+    throw new GraphQLError('KB resource not found')
+  }
+}
+
 export async function getUserKbs(ctx: ContextWithUser) {
   return ctx.prisma.kB.findMany({
     where: { ownerId: ctx.user.sub },
@@ -153,28 +188,45 @@ export async function createKb(
 }
 
 export async function deleteKb({ id }: { id: string }, ctx: ContextWithUser) {
-  await getOwnedKbOrThrow(ctx, id)
+  return ctx.prisma.$transaction(async (prisma) => {
+    await lockOwnedKbOrThrow(prisma, id, ctx.user.sub)
+    await prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT "id"
+      FROM "public"."KBResource"
+      WHERE "kbId" = CAST(${id} AS UUID)
+      FOR UPDATE
+    `
+    const resources = await prisma.kBResource.findMany({ where: { kbId: id } })
 
-  const blobResources = await ctx.prisma.kBResource.findMany({
-    where: { kbId: id, type: DB.KBResourceType.BLOB },
-    select: { blobName: true },
-  })
+    if (
+      resources.some(
+        ({ status }) =>
+          status === DB.KBResourceStatus.QUEUED ||
+          status === DB.KBResourceStatus.PROCESSING
+      )
+    ) {
+      throw new GraphQLError('KB cannot be deleted')
+    }
 
-  if (blobResources.length > 0) {
-    const { containerClient } = getKbBlobContainer(ctx.user.sub)
-    await Promise.all(
-      blobResources.map(({ blobName }) => {
-        if (!blobName) {
-          throw new GraphQLError('KB blob metadata is invalid')
-        }
-        return containerClient.getBlobClient(blobName).deleteIfExists()
-      })
+    const blobResources = resources.filter(
+      ({ type }) => type === DB.KBResourceType.BLOB
     )
-  }
+    if (blobResources.length > 0) {
+      const { containerClient } = getKbBlobContainer(ctx.user.sub)
+      await Promise.all(
+        blobResources.map(({ blobName }) => {
+          if (!blobName) {
+            throw new GraphQLError('KB blob metadata is invalid')
+          }
+          return containerClient.getBlobClient(blobName).deleteIfExists()
+        })
+      )
+    }
 
-  return ctx.prisma.kB.delete({
-    where: { id },
-    include: { resources: true },
+    return prisma.kB.delete({
+      where: { id },
+      include: { resources: true },
+    })
   })
 }
 
@@ -362,17 +414,29 @@ export async function deleteKbResource(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  const resource = await getOwnedKbResourceOrThrow(ctx, id)
+  return ctx.prisma.$transaction(async (prisma) => {
+    await lockOwnedKbResourceOrThrow(prisma, id, ctx.user.sub)
+    const resource = await prisma.kBResource.findUniqueOrThrow({
+      where: { id },
+    })
 
-  if (resource.type === DB.KBResourceType.BLOB) {
-    if (!resource.blobName) {
-      throw new GraphQLError('KB blob metadata is invalid')
+    if (
+      resource.status === DB.KBResourceStatus.QUEUED ||
+      resource.status === DB.KBResourceStatus.PROCESSING
+    ) {
+      throw new GraphQLError('KB resource cannot be deleted')
     }
-    const { containerClient } = getKbBlobContainer(ctx.user.sub)
-    await containerClient.getBlobClient(resource.blobName).deleteIfExists()
-  }
 
-  return ctx.prisma.kBResource.delete({ where: { id } })
+    if (resource.type === DB.KBResourceType.BLOB) {
+      if (!resource.blobName) {
+        throw new GraphQLError('KB blob metadata is invalid')
+      }
+      const { containerClient } = getKbBlobContainer(ctx.user.sub)
+      await containerClient.getBlobClient(resource.blobName).deleteIfExists()
+    }
+
+    return prisma.kBResource.delete({ where: { id } })
+  })
 }
 
 export async function ingestKbResource(

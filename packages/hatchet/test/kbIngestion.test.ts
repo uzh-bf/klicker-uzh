@@ -761,6 +761,38 @@ describe('external KB ingestion dispatch', () => {
     }
   )
 
+  it('returns the persisted run when the success logger rejects', async () => {
+    const prisma = createPrisma()
+    const client = createClient({ runId: 'persisted-run-id' })
+    const logger = {
+      info: vi.fn().mockRejectedValue(new Error('logger transport failed')),
+    } satisfies KBIngestionLogger
+
+    await expect(
+      dispatchKBIngestion(urlInput, {
+        prisma,
+        client,
+        env: externalEnv,
+        logger,
+      })
+    ).resolves.toBe('persisted-run-id')
+    expect(prisma.kBResource.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          externalWorkflowRunId: 'persisted-run-id',
+        }),
+      })
+    )
+    expect(logger.info).toHaveBeenCalledWith(
+      'External KB ingestion dispatched',
+      {
+        resourceId: RESOURCE_ID,
+        kbId: KB_ID,
+        ingestionAttemptId: ATTEMPT_ID,
+      }
+    )
+  })
+
   it('best-effort cancels when the guarded run persistence loses the race', async () => {
     const prisma = createPrisma({ updateCount: 0 })
     const client = createClient({ runId: 'orphaned-run-id' })
@@ -825,6 +857,32 @@ describe('external KB ingestion dispatch', () => {
     ).resolves.toBeUndefined()
     expect(JSON.stringify(logger.error.mock.calls)).not.toContain('secret')
     expect(JSON.stringify(logger.error.mock.calls)).not.toContain('signed URL')
+  })
+
+  it('does not let a rejecting logger escape cancellation cleanup', async () => {
+    const prisma = createPrisma({ updateCount: 0 })
+    const client = createClient({ runId: 'orphaned-run-id' })
+    const logger = {
+      error: vi.fn().mockRejectedValue(new Error('logger transport failed')),
+    } satisfies KBIngestionLogger
+    client.runs.cancel.mockRejectedValue(new Error('cancellation failed'))
+
+    await expect(
+      dispatchKBIngestion(urlInput, {
+        prisma,
+        client,
+        env: externalEnv,
+        logger,
+      })
+    ).resolves.toBeUndefined()
+    expect(logger.error).toHaveBeenCalledWith(
+      'External KB ingestion cancellation failed',
+      {
+        resourceId: RESOURCE_ID,
+        kbId: KB_ID,
+        ingestionAttemptId: ATTEMPT_ID,
+      }
+    )
   })
 
   it('sanitizes logger calls and thrown errors when the SDK echoes a SAS URL', async () => {

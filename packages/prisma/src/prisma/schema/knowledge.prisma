@@ -60,6 +60,7 @@ model KBResource {
   updatedAt DateTime @updatedAt
 
   @@index([kbId, status])
+  @@index([status])
 }
 
 // #endregion
