@@ -43,6 +43,7 @@ This is a **living document**: when you discover such a pattern during a task, a
 
 - **Infisical + Turbo env sync**: Any Infisical-managed env var used by tasks must be listed in `turbo.json` `globalEnv`; otherwise task runs/cache behavior can become stale or inconsistent across environments.
 - **Helm v3 secrets are external**: `deploy/charts/klicker-uzh-v3/` deployments reference `envFrom.secretRef` names, but the chart currently defines no `Secret` manifests; secrets must be provisioned out-of-band with matching names. (`deploy/charts/klicker-uzh-v3/templates/`)
+- **FalkorDB deployment boundary**: `KB_FALKORDB_USERNAME` and `KB_FALKORDB_PASSWORD` must exist in both external `*-secret-backend-graphql` and `*-secret-chat` secrets. Only backend GraphQL and chat need network access to the cross-namespace RESP service; this feature exposes no FalkorDB ingress. (`deploy/charts/klicker-uzh-v3/`)
 - **Production rollout strategy**: Do not use `Recreate` for production web/API Deployments; PDBs do not protect against Deployment-driven scale-downs, so slow image pulls can leave services with zero endpoints. Use `RollingUpdate` in `deploy/env-uzh-prd/values.yaml`, with `maxUnavailable: 0` only for singleton services and `1` for multi-replica services.
 - **Turborepo persistent dev tasks**: Persistent dev tasks must set `"cache": false`; otherwise Turbo can replay stale `EADDRINUSE` logs from previous failed `dev:test` runs while no process is actually listening on that port. (`turbo.json`)
 

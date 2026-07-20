@@ -32,6 +32,13 @@ blobStorage:
   accountName: ''
   accessKey: ''
 
+knowledgeGraph:
+  falkordb:
+    host: ''
+    port: 6379
+    tls: false
+    queryTimeoutMs: 5000
+
 vapid:
   publicKey: ''
   privateKey: ''
