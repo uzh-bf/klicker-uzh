@@ -20,6 +20,7 @@ import { AppSidebar } from './app-sidebar'
 import { ChatUiProvider, useChatUi } from './chat-ui-context'
 import { DisclaimerModal } from './disclaimer-modal'
 import { EmbeddedSettings } from './embedded-settings'
+import { ModeSwitcher } from './mode-switcher'
 import { Thread } from './thread'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
@@ -321,20 +322,28 @@ function SidebarMain({
 
   return (
     <SidebarInset>
-      <div
-        className={twMerge(
-          'flex shrink-0 items-center gap-2 border-b bg-gray-50 px-2 py-1.5',
-          open && 'md:hidden'
-        )}
-      >
-        <SidebarTrigger className="size-5" />
-        <span className="min-w-0 truncate text-sm">{chatbot.name}</span>
+      <div className="flex shrink-0 items-center gap-2 border-b bg-gray-50 px-2 py-1.5">
+        <div
+          className={twMerge(
+            'flex min-w-0 items-center gap-2',
+            open && 'md:hidden'
+          )}
+        >
+          <SidebarTrigger className="size-5" />
+          <span className="min-w-0 truncate text-sm">{chatbot.name}</span>
+        </div>
+        <div className="flex flex-1 justify-center">
+          <ModeSwitcher />
+        </div>
         <Tooltip>
           <TooltipTrigger asChild>
             <button
               onClick={handleNewThread}
               disabled={participationRequired}
-              className="text-muted-foreground hover:text-foreground ml-auto inline-flex size-5 items-center justify-center rounded-sm transition-colors disabled:pointer-events-none disabled:opacity-50"
+              className={twMerge(
+                'text-muted-foreground hover:text-foreground inline-flex size-5 items-center justify-center rounded-sm transition-colors disabled:pointer-events-none disabled:opacity-50',
+                open && 'md:hidden'
+              )}
             >
               <Plus className="size-4" />
               <span className="sr-only">{t('chat.sidebar.newChat')}</span>

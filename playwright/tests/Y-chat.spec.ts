@@ -903,24 +903,29 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(page.getByTestId('chat-settings-panel')).toHaveCount(0)
   })
 
-  test('Chat mode section shows available modes', async ({ page }) => {
+  test('Mode switcher shows available modes', async ({ page }) => {
     await visitChat(page)
-    await openSettings(page)
 
-    const modeSection = page.getByTestId('chat-mode-selection')
-    await expect(modeSection).toBeVisible()
-    await expect(modeSection).toContainText('Chat Mode')
+    await expect(page.getByTestId('chat-mode-switcher')).toBeVisible()
+    await expect(page.getByTestId('chat-mode-option-tutor')).toContainText(
+      'Tutor'
+    )
+    await expect(page.getByTestId('chat-mode-option-explainer')).toContainText(
+      'Explainer'
+    )
   })
 
   test('Selecting a different chat mode updates the selection', async ({
     page,
   }) => {
     await visitChat(page)
-    await openSettings(page)
 
-    await selectOption(page, '[data-cy="chat-mode-select"]', 'Explainer')
-    await expect(page.getByTestId('chat-mode-selection')).toContainText(
-      'Explainer'
+    const explainerOption = page.getByTestId('chat-mode-option-explainer')
+    await explainerOption.click()
+    await expect(explainerOption).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByTestId('chat-mode-option-tutor')).toHaveAttribute(
+      'aria-pressed',
+      'false'
     )
   })
 

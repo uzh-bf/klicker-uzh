@@ -13,14 +13,11 @@ export function SettingsPanel() {
   const t = useTranslations()
   const {
     selectedModel,
-    selectedMode,
     selectedReasoningEffort,
     credits,
     modelOptions,
-    modeOptions,
     modelSelectionEnabled,
     setSelectedModel,
-    setSelectedMode,
     setSelectedReasoningEffort,
   } = useSettingsStore()
   const [open, setOpen] = useState(false)
@@ -30,10 +27,6 @@ export function SettingsPanel() {
 
   const handleModelChange = (value: string) => {
     setSelectedModel(value as ModelID)
-  }
-
-  const handleModeChange = (value: string) => {
-    setSelectedMode(value as string)
   }
 
   const handleReasoningEffortChange = (value: string) => {
@@ -75,31 +68,8 @@ export function SettingsPanel() {
           className="border-muted space-y-3 border-t px-3 pb-2 pt-2"
         >
           <div>
-            {/* mode selection */}
-            <div data-cy="chat-mode-selection" className="space-y-1">
-              <label className="text-sm font-bold">
-                {t('chat.settingsPanel.chatModeLabel')}
-              </label>
-              <Select
-                data={{ cy: 'chat-mode-select' }}
-                placeholder={t('chat.settingsPanel.selectChatMode')}
-                items={
-                  Object.keys(modeOptions).length > 0
-                    ? Object.entries(modeOptions).map(([key]) => ({
-                        value: key,
-                        label: key.charAt(0).toUpperCase() + key.slice(1),
-                      }))
-                    : []
-                }
-                onChange={(newValue) => {
-                  handleModeChange(newValue)
-                }}
-                value={selectedMode}
-              />
-            </div>
-
             {/* model selection */}
-            <div data-cy="chat-model-selection" className="mt-2 space-y-1">
+            <div data-cy="chat-model-selection" className="space-y-1">
               <label className="text-sm font-bold">
                 {t('chat.settingsPanel.aiModelLabel')}
               </label>

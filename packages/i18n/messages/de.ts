@@ -1,9 +1,12 @@
 export default {
   chat: {
+    modes: {
+      switcherLabel: 'Chat-Modus',
+      tutor: 'Tutor',
+      explainer: 'Erklärer',
+    },
     settingsPanel: {
       title: 'Einstellungen',
-      selectChatMode: 'Chat-Modus auswählen',
-      chatModeLabel: 'Chat-Modus',
       aiModelLabel: 'KI-Modell',
       selectAiModel: 'KI-Modell auswählen',
       autoSelectionInfo:
