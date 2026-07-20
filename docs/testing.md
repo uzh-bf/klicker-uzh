@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the two e2e stacks and their seeds, and the CI test matrix.
-timestamp: '2026-07-19'
+timestamp: '2026-07-20'
 tags:
   - testing
   - ci
@@ -19,8 +19,11 @@ tags:
 | Pure logic (grading, util, export, word-cloud, markdown, chat logic) | package vitest — **safe without any services**                                             | `pnpm --filter @klicker-uzh/grading test` (etc.)                                                   |
 | GraphQL services/resolvers                                           | `packages/graphql` vitest — needs REAL Postgres + Redis + Hatchet + `HATCHET_CLIENT_TOKEN` | `pnpm --filter @klicker-uzh/graphql test:local` (one-command bootstrap: `test/run-tests-local.sh`) |
 | UI / user flows                                                      | Playwright e2e (new specs); Cypress only for legacy maintenance                            | see routing below                                                                                  |
+| Office Add-in URL validation                                         | Node's built-in test runner — safe without services                                        | `pnpm --filter @klicker-uzh/office-addin test`                                                     |
 
 **Never run root `pnpm run test:run` blind** — the turbo fan-out includes Cypress, which needs a running, seeded stack. The graphql vitest config forces `pool: forks, singleFork: true` (serialized specs sharing DB state) — don't parallelize it.
+
+The Office Add-in has a separate host boundary. Its pure URL contract runs under Node, while `check`, `lint`, `build:docs`, `verify:docs`, and `validate` cover compilation, source quality, the production bundle, exact deployment parity, and manifest acceptance. A browser run with a stubbed Office API verifies UI states only. Persistence, multiple content-add-in instances, and embedded evaluation rendering require a real PowerPoint sideload before release.
 
 ## Two e2e stacks, one selector convention
 

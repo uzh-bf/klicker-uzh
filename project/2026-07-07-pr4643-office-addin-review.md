@@ -1,8 +1,8 @@
 # PR #4643 Review — Office Add-in Rewrite (Vanilla TS)
 
-**Reviewed:** 2026-07-07 · branch `NewPPT` @ `05ce026fb` vs `v3`
-**Scope:** `apps/office-addin` (React/Webpack → vanilla TS/Rollup), deployed artifacts in `apps/docs/static/office-addin`, PLAN/CLAUDE docs, lockfile.
-**Verdict:** Solid direction (bundle shrinks massively, React removed, validation UX added), but **not production-ready**. Two release blockers would break the add-in for every user, plus a functional regression for multi-embed decks. All findings below include evidence and step-by-step fixes.
+**Reviewed:** 2026-07-07; execution resumed against current `v3` on 2026-07-20.
+**Scope:** `apps/office-addin` (React/Webpack → vanilla TS/Rollup), deployed artifacts in `apps/docs/static/office-addin`, package documentation, lockfile.
+**Verdict:** The original blockers are resolved. Final branch reviews, current-head CI, PR refresh, and the ready transition remain; a real PowerPoint sideload is an explicit manual release check.
 
 ## Progress
 
@@ -12,7 +12,8 @@
 - [x] Slice 2: reduced the production build to one bundle, replaced the Tailwind Play CDN with local semantic CSS, corrected `/office-addin/` production URLs, removed non-runtime artifacts, and added exact build-to-docs synchronization. Node 24 typecheck, lint, build, manifest validation, and 13-file deployment parity passed. A local `agent-browser` run with an Office API stub verified the 1024×768 and manifest-sized 600×400 layouts, invalid and valid URL states, embed/fullscreen, Change URL, and zero browser errors; this is UI evidence, not a PowerPoint host test.
 - [x] Slice 2 follow-up: independent review found that Rollup watch mode ignored non-TypeScript inputs. HTML, CSS, manifest, and asset files are now explicit watch inputs; the simplification pass also removed unused type packages, redundant local types and state branches, and unlinked sign-in aliases. The explicit `typescript-eslint` dependency remains necessary because the Office plugin currently exposes an undefined bundled parser. Reverification passed before dependency work began.
 - [x] Slice 3: updated Office tooling, Office types, TypeScript ESLint, and Rollup within their current majors; moved the app from TypeScript 5.6 to the workspace's TypeScript 6.0.3; removed the obsolete React/TypeScript syncpack exceptions and TS6-deprecated `baseUrl`; and made Office global types explicit. A narrow Rollup exception keeps this app above the 4.59 security floor until the coordinated workspace upgrade. The optional Microsoft debug launcher and live-reload trees were removed after the audit found high/critical transitive advisories; local HTTPS development and manual sideloading remain. Typecheck, lint, build/deploy parity, and the Office manifest acceptance service passed.
-- [ ] Slice 4 active: finish code, docs, tests, and source-backed review-thread resolution.
+- [x] Slice 4a: replaced permissive regex validation with a small URL parser and Node tests; reduced `content.ts` from 605 to 323 lines; removed stale debug/browser metadata, the Office lint wrapper, the asset-copy wrapper, and the 1,369-line branch-local plan; rewrote package docs; and updated the wiki. The exact Node 24 suite passed. A fresh `agent-browser` run reverified both viewports, invalid/valid URLs, fullscreen, Change URL, and zero console/page errors. The CLI's `Page.captureScreenshot` command timed out on three fresh capture attempts; the earlier Slice 2 screenshots remain the visual evidence because markup and CSS did not change in this slice.
+- [ ] Slice 4b active: commit/review the implementation and resolve GitHub review threads with source-backed responses.
 - [ ] Finish: full verification, security/maintainability/cross-model reviews, whole-branch PR refresh, ready transition, and ready-only CI monitoring.
 
 **Scope decisions:** preserve one persisted key per content-add-in instance; no toolbar/ribbon work; no executable packaging; no merge. If PowerPoint sideloading is unavailable, record it as a manual release check instead of claiming host-level proof.
@@ -29,7 +30,7 @@
 | `typescript` | 5.6.3 | 6.0.3 | Align with the approved workspace baseline |
 | `typescript-eslint` | 8.62.0 | 8.63.0 | Update within major; keep explicit because the Office plugin currently exposes an undefined bundled parser |
 
-The manifest floors for `eslint-plugin-office-addins`, `office-addin-dev-certs`, `office-addin-lint`, and `rollup-plugin-visualizer` now match their already-resolved current-major versions. `rollup-plugin-copy` and `rollup-plugin-serve` were already current. The build and dependency simplification removed unused browser/polyfill, resolver, debug-launcher, live-reload, CLI, formatting, and type packages.
+The manifest floors for `eslint-plugin-office-addins`, `office-addin-dev-certs`, and `rollup-plugin-visualizer` now match their already-resolved current-major versions; `rollup-plugin-serve` was already current. The build and dependency simplification removed unused browser/polyfill, resolver, debug-launcher, live-reload, lint-wrapper, asset-copy, CLI, formatting, and type packages. The add-in now uses the workspace ESLint version directly and its existing Rollup plugin owns every emitted asset.
 
 The shared current-major update `@rollup/plugin-typescript` 12.1.4→12.3.0 and workspace-wide Rollup alignment remain deferred to a coordinated build-tool change. Three optional build-only majors are also deferred: `cross-env` 7→10, `rollup-plugin-visualizer` 6→7, and `@rollup/plugin-terser` 0→1. All retained versions are non-deprecated and pass the Node 24 build; the broader or major updates are unrelated to the native rewrite and require separate explicit scope.
 
@@ -109,25 +110,13 @@ Note: the *other* external script in `content.html` — `https://appsforoffice.m
 
 ---
 
-## 2. Functional Regression (decide before merge)
+## 2. Functional Semantics (resolved)
 
-### 2.1 Per-slide embeds collapsed into one document-global URL
+### 2.1 Settings scope
 
-- [ ] **Decision needed: restore per-slide keying or accept one-embed-per-deck**
+- [x] **Keep one key per Office content-add-in instance**
 
-**Evidence:**
-
-- Old (`v3`, `apps/office-addin/src/content/components/App.tsx`): settings key `'selectedURL' + slideID` — each embedded add-in instance stored its own URL keyed by the slide it lives on.
-- New (`src/content/content.ts` line ~36): single constant `SETTINGS_KEY = 'embeddedUrl'`.
-- `Office.context.document.settings` is **shared across all instances of the same add-in in a document**. With the new code, a lecturer who embeds evaluation A on slide 3 and evaluation B on slide 10 gets: whichever was embedded last wins; both slides' panes show the same URL after reopening the file.
-- The legacy migration in `loadInitialState()` compounds this: it reads the legacy key for the **currently selected slide** (`getSlideID()` uses `getSelectedDataAsync`, which returns the slide selected in the editor — not necessarily the slide hosting the add-in instance), promotes that one URL to the global key, and deletes the legacy key. A multi-embed legacy deck gets silently collapsed to one URL, with the other slides' settings left orphaned.
-
-**Impact:** real KlickerUZH use case — lecturers embedding several question evaluations across a deck — silently breaks. Nothing in the PR description flags this as intentional.
-
-**Fix options (pick one, document the choice in the PR body):**
-
-- **A (recommended):** keep per-slide keys. On init, resolve the hosting slide the same way V1 did and use `SETTINGS_KEY + slideID`. Keep the retry logic already written for `getSlideID()`. Migration becomes a no-op rename per slide. Caveat to verify while testing: `getSelectedDataAsync(SlideRange)` reflects the *selection*, not the host slide — V1 had the same weakness, so this is no worse, but test the "two embeds, reopen file" scenario explicitly.
-- **B:** accept single-embed-per-document, but then (1) state it in the PR body + docs, (2) warn in the UI when a second instance is inserted, (3) don't delete legacy keys during migration (leave them so a rollback to V1 still works).
+The initial review inferred that `Office.context.document.settings` was shared by every instance in a presentation. Current Microsoft documentation says the settings are specific to the content-add-in instance and document, so that premise was incorrect. The plain `embeddedUrl` key preserves independent embeds without another identifier. Keep the old `selectedURL<slideId>` lookup only as a one-time migration path and verify multiple instances in PowerPoint before release.
 
 ---
 
@@ -182,33 +171,23 @@ Note: the *other* external script in `content.html` — `https://appsforoffice.m
 
 ---
 
-## 4. Medium Priority
+## 4. Medium Priority (resolved)
 
-### 4.1 Placeholder/example URLs fail the add-in's own validation
+### 4.1 URL contract and examples
 
-**Evidence:** `content.html` input placeholder: `https://manage.klicker.uzh.ch/quizzes/12345/evaluation?hmac=xyz`. The regex in `isValidUrl()` (`content.ts` bottom) requires a 36-char id and 64-char hmac — `12345`/`xyz` would show a red "invalid" state if typed. The error toast in `handleEmbedClick` shows the same misleading shape (`.../evaluation?hmac=...`).
+- [x] The UI asks users to paste the generated KlickerUZH link instead of showing a fake URL. `evaluation-url.ts` implements the route emitted by `apps/frontend-manage/src/components/liveQuiz/HMACLink.tsx`: exact production origin, optional two-letter locale, `quizzes` or legacy `sessions`, UUID, `evaluation`, one 64-character hexadecimal HMAC, and optional extra query parameters. Node tests cover accepted and rejected variants.
 
-Real URL shape for reference (generated by `apps/frontend-manage/src/components/liveQuiz/HMACLink.tsx`): `${MANAGE_URL}[/locale]/quizzes/<uuid-36>/evaluation?hmac=<sha256-hex-64>[&params]`. The regex is correct for prod (LiveQuiz id is `@db.Uuid` = 36 chars; HMAC is sha256 hex = 64 chars) — the *examples* are what's wrong.
+### 4.2 Allowed origin
 
-**Fix:** use a realistic dummy, e.g. `https://manage.klicker.uzh.ch/quizzes/00000000-0000-0000-0000-000000000000/evaluation?hmac=…` or shorten placeholder to `Paste the evaluation link from the Embed dialog`.
+- [x] Keep the released add-in restricted to the exact production Manage origin. Adding environment-specific allowed hosts would expand build configuration and is not required for this production-only integration; browser UI tests use an Office API stub without weakening URL validation.
 
-### 4.2 Hardcoded prod host blocks staging/QA
+### 4.3 Core implementation
 
-**Evidence:** `isValidUrl()` regex pins `https://manage.klicker.uzh.ch`. No way to test the add-in against a stg deployment or local dev URL — validation rejects everything else.
+- [x] The Office initialization object is typed, the non-PowerPoint path writes directly to the document, obsolete browser/polyfill metadata is gone, and the simplified implementation has no explicit `any`.
 
-**Fix:** inject allowed hosts at build time via the existing `@rollup/plugin-replace` (e.g. `process.env.ALLOWED_MANAGE_HOSTS`, default prod, dev build adds `127.0.0.1`/stg host). Keep the strict prod default. This also fixes "how do I develop against this locally" for the next person.
+### 4.4 Repository hygiene
 
-### 4.3 `any` and dead weight in `content.ts`
-
-- `initializeOfficeAddin(info: any)` — type it as the `Office.onReady` info object (`{ host: Office.HostType; platform: Office.PlatformType }`). PR checklist "Remove all any" is unchecked; this is the only obvious one in the new file, so it's a 2-minute win.
-- Non-PowerPoint host path calls `showMessage(...)` before `initializeApp()` ran, so `messageBox`/`messageText` are still null → the user sees nothing, only a console error. Either initialize the DOM refs first or write the error directly into `document.body`.
-- `browserslist: ["last 2 versions", "ie 11"]` + full `core-js/stable` import while `tsconfig` targets `es2022`: the emitted syntax (optional chaining etc. survive at es2022) will crash IE11 regardless, so the ~full core-js payload buys nothing. Either genuinely target older runtimes (lower the `target`, keep core-js) or — recommended — drop the ie11 browserslist entry and import only needed polyfills. Office on Windows uses WebView2/Trident depending on Office version; decide the support floor deliberately and write it in the README.
-
-### 4.4 Repo hygiene
-
-- `apps/office-addin/PLAN.md` (1369 lines) is an AI migration planning doc with historical issue logs. Don't ship it in the app folder — move the durable parts into the PR description / `project/` docs and delete the rest.
-- `apps/office-addin/CLAUDE.md` (216 lines): fine to keep per-app agent docs, but verify its claims still match reality after the fixes above (it was written mid-migration).
-- Old cleanup leftovers to double-check on the branch: `scripts/clean-cache.js` was deleted but `package.json` still has a `clean:cache` script (now inlined to office-addin-dev-certs — OK, just confirm it works).
+- [x] The historical 1,369-line package plan was deleted; this project artifact is the durable plan. `README.md` documents real development and release steps, and `CLAUDE.md` is a 36-line package-specific invariant sheet.
 
 ---
 

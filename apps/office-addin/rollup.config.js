@@ -2,7 +2,6 @@ import terser from '@rollup/plugin-terser'
 import typescript from '@rollup/plugin-typescript'
 import fs from 'node:fs'
 import { defineConfig } from 'rollup'
-import copy from 'rollup-plugin-copy'
 import serve from 'rollup-plugin-serve'
 import { visualizer } from 'rollup-plugin-visualizer'
 
@@ -34,6 +33,7 @@ function officeAddinPlugin() {
       this.addWatchFile('manifest.xml')
       this.addWatchFile('src/content/content.html')
       this.addWatchFile('src/styles.css')
+      this.addWatchFile('assets')
 
       for (const asset of fs.readdirSync('assets')) {
         this.addWatchFile(`assets/${asset}`)
@@ -54,6 +54,20 @@ function officeAddinPlugin() {
           fileName: 'manifest.xml',
           source: isDev ? manifest : manifest.replaceAll(urlDev, urlProd),
         })
+
+        this.emitFile({
+          type: 'asset',
+          fileName: 'styles.css',
+          source: fs.readFileSync('src/styles.css'),
+        })
+
+        for (const asset of fs.readdirSync('assets')) {
+          this.emitFile({
+            type: 'asset',
+            fileName: `assets/${asset}`,
+            source: fs.readFileSync(`assets/${asset}`),
+          })
+        }
       },
     },
   }
@@ -75,12 +89,6 @@ async function createConfig() {
       typescript({
         tsconfig: './tsconfig.json',
         rootDir: 'src',
-      }),
-      copy({
-        targets: [
-          { src: 'assets/*', dest: 'dist/assets' },
-          { src: 'src/styles.css', dest: 'dist' },
-        ],
       }),
       officeAddinPlugin(),
       !isDev && terser(),

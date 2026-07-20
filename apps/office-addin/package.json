@@ -7,12 +7,11 @@
     "@rollup/plugin-typescript": "~12.1.4",
     "@types/office-js": "^1.0.598",
     "cross-env": "~7.0.3",
+    "eslint": "~9.30.1",
     "eslint-plugin-office-addins": "~4.0.9",
     "office-addin-dev-certs": "~2.0.9",
-    "office-addin-lint": "~3.0.9",
     "office-addin-manifest": "~2.1.5",
     "rollup": "~4.62.2",
-    "rollup-plugin-copy": "~3.5.0",
     "rollup-plugin-serve": "~3.0.0",
     "rollup-plugin-visualizer": "~6.0.11",
     "typescript": "~6.0.3",
@@ -28,8 +27,10 @@
     "clean:cache": "office-addin-dev-certs uninstall && office-addin-dev-certs install",
     "deploy:docs": "node scripts/sync-docs.mjs",
     "dev": "cross-env NODE_ENV=development rollup -c --watch",
-    "lint": "office-addin-lint check --files src/content/content.ts",
-    "lint:fix": "office-addin-lint fix --files src/content/content.ts",
+    "lint": "eslint src/content",
+    "lint:fix": "eslint --fix src/content",
+    "test": "node --test tests/*.test.mjs",
+    "test:run": "node --test tests/*.test.mjs",
     "validate": "office-addin-manifest validate manifest.xml",
     "verify:docs": "node scripts/sync-docs.mjs --check"
   },
@@ -38,14 +39,6 @@
   },
   "volta": {
     "extends": "../../package.json"
-  },
-  "browserslist": [
-    "last 2 versions"
-  ],
-  "config": {
-    "app_to_debug": "powerpoint",
-    "app_type_to_debug": "desktop",
-    "dev_server_port": 3020
   },
   "type": "module"
 }
