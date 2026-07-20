@@ -78,15 +78,23 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-:root {
-  --radius: 0.625rem;
+/* Elevated specificity so chat's tokens win the cascade over the shadcn token
+   defaults shipped by a dependency stylesheet (assistant-ui), whose chunk loads
+   after globals.css and would otherwise shadow these tokens at equal `:root`
+   specificity. Both theme blocks are raised in lockstep: light uses `:root:root`
+   and dark uses `:root.dark` (both 0,2,0). They outrank the dependency's
+   `:root`/`.dark` (0,1,0), and — being equal to each other — the later
+   `:root.dark` still overrides light when the `dark` class is present, so dark
+   mode keeps working if it is ever wired up. */
+:root:root {
+  --radius: 0.5rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.141 0.005 285.823);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.21 0.006 285.885);
+  --primary: var(--color-uzh-blue);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.006 285.885);
@@ -97,7 +105,7 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.92 0.004 286.32);
   --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.705 0.015 286.067);
+  --ring: var(--color-uzh-blue);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -107,13 +115,13 @@
   --sidebar-foreground: oklch(0.141 0.005 285.823);
   --sidebar-primary: oklch(0.21 0.006 285.885);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
+  --sidebar-accent: var(--color-uzh-blue-20);
+  --sidebar-accent-foreground: var(--color-uzh-blue);
   --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.705 0.015 286.067);
+  --sidebar-ring: var(--color-uzh-blue);
 }
 
-.dark {
+:root.dark {
   --background: oklch(0.141 0.005 285.823);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.21 0.006 285.885);
