@@ -5,6 +5,7 @@ import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivityService from '../services/activities.js'
 import * as AnalyticsService from '../services/analytics.js'
+import * as ChatbotKnowledgeGraphService from '../services/chatbotKnowledgeGraphs.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
@@ -40,6 +41,10 @@ import {
   StudentAssessmentBlockResponse,
   StudentAssessmentResults,
 } from './assessment.js'
+import {
+  AvailableChatbotKnowledgeGraphResourceGroupRef,
+  ChatbotKnowledgeGraphConfigRef,
+} from './chatbotKnowledgeGraph.js'
 import {
   AssessmentParticipant,
   Course,
@@ -1425,6 +1430,30 @@ export const Query = builder.queryType({
         args: { id: t.arg.id({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.getKb(args, ctx)
+        },
+      }),
+
+      getChatbotKnowledgeGraphConfig: t.withAuth(asUser).field({
+        nullable: false,
+        type: ChatbotKnowledgeGraphConfigRef,
+        args: { chatbotId: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotKnowledgeGraphService.getChatbotKnowledgeGraphConfig(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      getAvailableChatbotKnowledgeGraphResources: t.withAuth(asUser).field({
+        nullable: false,
+        type: [AvailableChatbotKnowledgeGraphResourceGroupRef],
+        args: { chatbotId: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotKnowledgeGraphService.getAvailableChatbotKnowledgeGraphResources(
+            args,
+            ctx
+          )
         },
       }),
 

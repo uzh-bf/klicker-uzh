@@ -149,7 +149,16 @@ export async function getUserKbs(ctx: ContextWithUser) {
   return ctx.prisma.kB.findMany({
     where: { ownerId: ctx.user.sub },
     include: {
-      resources: { orderBy: { updatedAt: 'desc' } },
+      resources: {
+        include: {
+          knowledgeGraph: {
+            select: {
+              chatbot: { select: { id: true, name: true } },
+            },
+          },
+        },
+        orderBy: { updatedAt: 'desc' },
+      },
     },
     orderBy: { updatedAt: 'desc' },
   })
@@ -161,7 +170,16 @@ export async function getKb({ id }: { id: string }, ctx: ContextWithUser) {
   return ctx.prisma.kB.findUniqueOrThrow({
     where: { id },
     include: {
-      resources: { orderBy: { updatedAt: 'desc' } },
+      resources: {
+        include: {
+          knowledgeGraph: {
+            select: {
+              chatbot: { select: { id: true, name: true } },
+            },
+          },
+        },
+        orderBy: { updatedAt: 'desc' },
+      },
     },
   })
 }
@@ -212,6 +230,10 @@ export async function deleteKb({ id }: { id: string }, ctx: ContextWithUser) {
             status === DB.KBResourceStatus.PROCESSING
         )
       ) {
+        throw new GraphQLError('KB cannot be deleted')
+      }
+
+      if (resources.some(({ knowledgeGraphId }) => knowledgeGraphId !== null)) {
         throw new GraphQLError('KB cannot be deleted')
       }
 
@@ -436,6 +458,10 @@ export async function deleteKbResource(
         resource.status === DB.KBResourceStatus.QUEUED ||
         resource.status === DB.KBResourceStatus.PROCESSING
       ) {
+        throw new GraphQLError('KB resource cannot be deleted')
+      }
+
+      if (resource.knowledgeGraphId !== null) {
         throw new GraphQLError('KB resource cannot be deleted')
       }
 

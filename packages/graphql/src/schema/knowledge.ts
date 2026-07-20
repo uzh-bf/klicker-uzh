@@ -32,7 +32,30 @@ export const KBSpeedMode = builder.enumType('KBSpeedMode', {
   } as const,
 })
 
-export const KBResourceRef = builder.objectRef<DB.KBResource>('KBResource')
+interface IKBResource extends DB.KBResource {
+  knowledgeGraph?: {
+    chatbot: { id: string; name: string }
+  } | null
+}
+
+interface IKBResourceKnowledgeGraphAssignment {
+  chatbotId: string
+  chatbotName: string
+}
+
+export const KBResourceKnowledgeGraphAssignmentRef =
+  builder.objectRef<IKBResourceKnowledgeGraphAssignment>(
+    'KBResourceKnowledgeGraphAssignment'
+  )
+export const KBResourceKnowledgeGraphAssignment =
+  KBResourceKnowledgeGraphAssignmentRef.implement({
+    fields: (t) => ({
+      chatbotId: t.exposeID('chatbotId'),
+      chatbotName: t.exposeString('chatbotName'),
+    }),
+  })
+
+export const KBResourceRef = builder.objectRef<IKBResource>('KBResource')
 export const KBResource = KBResourceRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
@@ -45,13 +68,24 @@ export const KBResource = KBResourceRef.implement({
     status: t.expose('status', { type: KBResourceStatus }),
     statusMessage: t.exposeString('statusMessage', { nullable: true }),
     ingestedAt: t.expose('ingestedAt', { type: 'Date', nullable: true }),
+    knowledgeGraphAssignment: t.field({
+      type: KBResourceKnowledgeGraphAssignmentRef,
+      nullable: true,
+      resolve: (resource) => {
+        if (!resource.knowledgeGraph) return null
+        return {
+          chatbotId: resource.knowledgeGraph.chatbot.id,
+          chatbotName: resource.knowledgeGraph.chatbot.name,
+        }
+      },
+    }),
     createdAt: t.expose('createdAt', { type: 'Date' }),
     updatedAt: t.expose('updatedAt', { type: 'Date' }),
   }),
 })
 
 interface IKB extends DB.KB {
-  resources: DB.KBResource[]
+  resources: IKBResource[]
 }
 
 export const KBRef = builder.objectRef<IKB>('KB')

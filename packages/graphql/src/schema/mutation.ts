@@ -4,6 +4,7 @@ import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
+import * as ChatbotKnowledgeGraphService from '../services/chatbotKnowledgeGraphs.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
@@ -22,6 +23,7 @@ import * as TemplateService from '../services/templates.js'
 import { ActivityInfo } from './activities.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
 import { PointCorrection, PointCorrectionType } from './assessment.js'
+import { ChatbotKnowledgeGraphConfigRef } from './chatbotKnowledgeGraph.js'
 import { Course } from './course.js'
 import {
   Element,
@@ -1718,6 +1720,21 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.ingestKbResource(args, ctx)
+        },
+      }),
+
+      updateChatbotKnowledgeGraphResources: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: ChatbotKnowledgeGraphConfigRef,
+        args: {
+          chatbotId: t.arg.id({ required: true }),
+          resourceIds: t.arg.idList({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotKnowledgeGraphService.updateChatbotKnowledgeGraphResources(
+            args,
+            ctx
+          )
         },
       }),
 
