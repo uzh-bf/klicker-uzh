@@ -15,6 +15,9 @@ import type {
 // ----- HATCHET (WORKER/TASK) TYPES -----
 export * from './hatchet.js'
 
+// ----- KNOWLEDGE GRAPH TYPES -----
+export * from './knowledgeGraph.js'
+
 // ----- ACTIVITY LOG TYPES -----
 // #region
 export enum ActivityLogModificationFieldType {
