@@ -11,6 +11,7 @@ import {
   useIsMarkdownCodeBlock,
 } from '@assistant-ui/react-markdown'
 import { CheckIcon, CopyIcon } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { FC, memo, useState } from 'react'
 import remarkGfm from 'remark-gfm'
 
@@ -32,6 +33,7 @@ const MarkdownTextImpl = () => {
 export const MarkdownText = memo(MarkdownTextImpl)
 
 const CodeHeader: FC<CodeHeaderProps> = ({ language, code }) => {
+  const t = useTranslations()
   const { isCopied, copyToClipboard } = useCopyToClipboard()
   const onCopy = () => {
     if (!code || isCopied) return
@@ -49,10 +51,10 @@ const CodeHeader: FC<CodeHeaderProps> = ({ language, code }) => {
           >
             {!isCopied && <CopyIcon />}
             {isCopied && <CheckIcon />}
-            <span className="sr-only">Copy</span>
+            <span className="sr-only">{t('chat.markdown.copyCode')}</span>
           </button>
         </TooltipTrigger>
-        <TooltipContent>Copy</TooltipContent>
+        <TooltipContent>{t('chat.markdown.copyCode')}</TooltipContent>
       </Tooltip>
     </div>
   )

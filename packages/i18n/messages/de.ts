@@ -1,7 +1,141 @@
 export default {
   chat: {
     settingsPanel: {
+      title: 'Einstellungen',
       selectChatMode: 'Chat-Modus auswählen',
+      chatModeLabel: 'Chat-Modus',
+      aiModelLabel: 'KI-Modell',
+      selectAiModel: 'KI-Modell auswählen',
+      autoSelectionInfo:
+        'Automatische Auswahl basierend auf verfügbaren Credits.',
+      usingPrimaryModel:
+        'Primäres Modell wird mit verfügbaren Credits verwendet.',
+      usingFallbackModel: 'Ausweichmodell wird verwendet (keine Credits mehr).',
+      reasoningEffortLabel: 'Denkaufwand',
+      selectReasoningEffort: 'Denkaufwand auswählen',
+      reasoningEffortHint:
+        'Ein höherer Aufwand kann schwierige Antworten verbessern, erhöht aber die Wartezeit.',
+      availableCredits: 'Verfügbare Credits',
+      creditsExhausted:
+        'Du hast alle Deine Credits aufgebraucht. Du kannst jedoch weiterhin das kleinere Modell verwenden.',
+    },
+    sidebar: {
+      newChat: 'Neuer Chat',
+      closeSidebar: 'Seitenleiste schliessen',
+      logoAlt: 'Klicker-Logo',
+    },
+    assistant: {
+      participationRequiredTitle: 'Kurszugang erforderlich',
+      participationRequiredDefaultMessage:
+        'Du musst dem entsprechenden KlickerUZH-Kurs beitreten, bevor Du diesen Chatbot verwenden kannst. Bitte tritt dem Kurs bei oder wende Dich für den Zugang an Deine Dozierenden.',
+      openKlickerUzh: 'KlickerUZH öffnen',
+      loading: 'Chatbot wird geladen...',
+      disclaimerDeclinedTitle: 'Chatbot nicht verfügbar',
+      disclaimerDeclinedMessage:
+        'Du hast den Haftungsausschluss des Chatbots abgelehnt. Akzeptiere die Bedingungen, um den Chatbot weiterhin zu verwenden.',
+      showDisclaimerAgain: 'Haftungsausschluss erneut anzeigen',
+    },
+    branchPicker: {
+      previous: 'Vorherige Variante',
+      next: 'Nächste Variante',
+    },
+    disclaimer: {
+      mediaTitle: 'Haftungsausschluss-Medien',
+      introAlt: 'Chatbot-Einführung',
+      studentResponsibilityTitle: 'Verantwortung der Studierenden',
+      studentResponsibilityText:
+        'Antworten des Chatbots können mehr oder weniger Informationen enthalten, als zum Bestehen des Kurses erforderlich sind, und sind daher für sich genommen nicht prüfungsrelevant (nur das zugrunde liegende Kursmaterial ist es). Wir sind zwar bestrebt, über den Chatbot korrekte Informationen bereitzustellen, übernehmen jedoch keine Gewähr für die Richtigkeit, Vollständigkeit oder Aktualität der Antworten. Bitte überprüfe wichtige Informationen anhand der offiziellen Kursmaterialien und Quellen.',
+      dataProtectionTitle: 'Datenschutz',
+      dataProtectionText:
+        'Teile keine persönlichen Informationen mit dem Chatbot. Deine Eingaben werden ausschliesslich über Azure-OpenAI-Instanzen verarbeitet, die in der EU oder in der Schweiz gehostet werden. Unterhaltungen können in anonymisierter Form vom KlickerUZH-Team oder Deinen Dozierenden überprüft werden, um die Qualität des Chatbots und die Kursinhalte zu verbessern.',
+      consentText:
+        'Durch die Nutzung des Chatbots erkennst Du diese Bedingungen an und akzeptierst sie. Bei Feedback oder Bedenken wende Dich bitte an Deine Dozierenden.',
+      decline: 'Ablehnen',
+      saving: 'Wird gespeichert...',
+      acceptAndContinue: 'Akzeptieren und fortfahren',
+      consequenceTitle: 'Was nach Deiner Wahl geschieht:',
+      consequenceAccept:
+        'Akzeptieren: Du kannst den Chatbot nutzen und auf alle Funktionen zugreifen.',
+      consequenceDecline:
+        'Ablehnen: Der Chatbot bleibt gesperrt und Du kannst keine Nachrichten senden.',
+    },
+    markdown: {
+      copyCode: 'Kopieren',
+    },
+    attachments: {
+      hydrationError:
+        'Die Bildanhänge für diese Nachricht konnten nicht geladen werden. Bitte versuche es erneut.',
+      attachedImageAlt: 'Angehängtes Bild {index}',
+    },
+    imageViewer: {
+      previewUnavailable: 'Vorschau nicht verfügbar',
+      title: 'Bildanhang',
+      loading: 'Vollständiges Bild wird geladen...',
+      retry: 'Erneut versuchen',
+    },
+    threadList: {
+      groupToday: 'Heute',
+      groupYesterday: 'Gestern',
+      groupThisWeek: 'Diese Woche',
+      groupEarlier: 'Früher',
+      newChatTitle: 'Neuer Chat',
+      save: 'Speichern',
+      cancel: 'Abbrechen',
+      editName: 'Namen bearbeiten',
+      deleteChat: 'Chat löschen',
+    },
+    thread: {
+      scrollToBottom: 'Nach unten scrollen',
+      welcomeTitle: 'Hallo!',
+      welcomeSubtitle: 'Wie kann ich Dir helfen?',
+    },
+    message: {
+      creditsUsed: '{credits} Credits',
+      reasoningToggle: 'Denkprozess',
+      editUnavailable: 'Bearbeiten nicht verfügbar',
+      edit: 'Bearbeiten',
+      editDisabledTooltip:
+        'Bearbeiten nicht möglich: Das ausgewählte Modell unterstützt keine Bilder',
+      copy: 'Kopieren',
+      refresh: 'Aktualisieren',
+      reasoningGroupLabel: 'Denkprozess ({count} Teile)',
+      toolCallsGroupLabel: '{count} Tool-Aufrufe',
+    },
+    composer: {
+      placeholder: 'Nachricht schreiben...',
+      attachmentLimitError: 'Du kannst höchstens {max} Bilder anhängen.',
+      dismissError: 'Fehler schliessen',
+      dropImages: 'Bilder zum Anhängen hier ablegen',
+      attachmentPreviewAlt: 'Anhang-Vorschau',
+      removeAttachment: 'Anhang entfernen',
+      attachImage: 'Bild anhängen',
+      attachmentFallbackLabel: 'Anhang',
+      editCancel: 'Abbrechen',
+      editSend: 'Senden',
+    },
+    toolFallback: {
+      showLess: 'Weniger anzeigen',
+      showMore: 'Mehr anzeigen ({count} weitere Zeilen)',
+    },
+    tools: {
+      rag: {
+        searching: 'Vorlesungsinhalte werden durchsucht nach: {query}...',
+        searchErrorTitle: 'Suchfehler',
+        searchErrorMessage:
+          'Vorlesungsinhalte konnten nicht durchsucht werden nach: {query}',
+        errorTitle: 'RAG-Suchfehler',
+        resultTitle: 'Vorlesungsinhalt',
+        questionLabel: 'Frage:',
+        noContent: 'Kein Inhalt verfügbar',
+      },
+    },
+    noLogin: {
+      title: 'Anmeldung erforderlich',
+      message:
+        'Du musst ein KlickerUZH-Konto erstellen oder Dich anmelden, bevor Du auf diesen Chatbot zugreifen kannst.',
+      redirectNotice:
+        'Kehre nach der Anmeldung zu <url>{redirectUrl}</url> zurück, um Deine Unterhaltung fortzusetzen.',
+      loginButton: 'Zur KlickerUZH-Anmeldung',
     },
   },
   shared: {

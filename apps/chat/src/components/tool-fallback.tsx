@@ -4,11 +4,13 @@ import {
   LoaderCircleIcon,
   MoveRightIcon,
 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { useState, type FC } from 'react'
 
 const MAX_PREVIEW_LINES = 10
 
 function TruncatedOutput({ text }: { text: string }) {
+  const t = useTranslations()
   const [showAll, setShowAll] = useState(false)
   const lines = text.split('\n')
   const needsTruncation = lines.length > MAX_PREVIEW_LINES
@@ -23,7 +25,7 @@ function TruncatedOutput({ text }: { text: string }) {
             onClick={() => setShowAll(false)}
             className="text-muted-foreground hover:text-foreground mt-1 text-xs underline"
           >
-            Show less
+            {t('chat.toolFallback.showLess')}
           </button>
         )}
       </div>
@@ -40,7 +42,9 @@ function TruncatedOutput({ text }: { text: string }) {
         onClick={() => setShowAll(true)}
         className="text-muted-foreground hover:text-foreground mt-1 text-xs underline"
       >
-        Show more ({lines.length - MAX_PREVIEW_LINES} more lines)
+        {t('chat.toolFallback.showMore', {
+          count: lines.length - MAX_PREVIEW_LINES,
+        })}
       </button>
     </div>
   )
