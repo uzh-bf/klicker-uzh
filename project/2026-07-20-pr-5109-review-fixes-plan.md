@@ -42,4 +42,6 @@ Land the merge-blocker fix batch: green CI + a working lecturer course-list + cl
 
 ## Progress
 
-- Plan written. Next: commit plan, start slice 1 (N2).
+- Plan committed `9a025d610`.
+- Slice 1 (N2) done in worktree: `thread.tsx` moved `data-cy="chat-assistant-message-content"` from avatar-wrapper div to the text div wrapping `Unstable_PartsGrouped`; `Y-chat.spec.ts:344` welcome assertion `'How can I help you'` → `'Ask'` (matches shipped `Ask {chatbotName}`). Verification: local Playwright suite NOT run — its `global-setup` wipes the DB (`cleanupDatabase` deletes all courses/users/participants), which would destroy the running worktree dev stack's data; the mocked-stream Y-chat specs are the CI `test-playwright` gate against an ephemeral DB, which is the authoritative check on push. No user-visible rendering change (welcome copy unchanged, data-cy invisible), so no separate browser screenshot. Pre-commit `check:all` (tsc+lint+format) gates the edit.
+- Next: commit slice 1, then slice 2 (F5).

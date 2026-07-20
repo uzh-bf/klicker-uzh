@@ -341,9 +341,7 @@ test.describe('Chatbot Messaging Interface', () => {
     await visitChat(page)
 
     await expect(page.getByTestId('chat-welcome-message')).toBeVisible()
-    await expect(page.getByTestId('chat-welcome-message')).toContainText(
-      'How can I help you'
-    )
+    await expect(page.getByTestId('chat-welcome-message')).toContainText('Ask')
   })
 
   test('Composer input is visible and accepts text', async ({ page }) => {

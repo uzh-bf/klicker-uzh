@@ -1267,7 +1267,6 @@ const AssistantMessage: FC<{
       )}
     >
       <div
-        data-cy="chat-assistant-message-content"
         className={twMerge(
           'col-start-1 row-span-2 row-start-1 flex items-start',
           embedded ? 'mt-2' : 'mr-2 mt-2 pr-1 sm:mr-3 sm:mt-3 sm:pr-2'
@@ -1284,6 +1283,7 @@ const AssistantMessage: FC<{
         />
       </div>
       <div
+        data-cy="chat-assistant-message-content"
         className={twMerge(
           'text-foreground row-start-1 my-1.5 break-words leading-7',
           embedded
