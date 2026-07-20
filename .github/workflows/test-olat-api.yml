@@ -50,6 +50,8 @@ jobs:
         run: |
           cd packages/prisma
           pnpm run build
+          cd ../types
+          pnpm run build
           cd ../grading
           pnpm run build
           cd ../util
