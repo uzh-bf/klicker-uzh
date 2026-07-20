@@ -8,9 +8,9 @@
 
 - [x] Re-check live PR state on 2026-07-20: [PR #4643](https://github.com/uzh-bf/klicker-uzh/pull/4643) remains open and draft at `ee6afaa3b`; branch is 459 commits behind and 26 ahead of `origin/v3`.
 - [x] Re-check Office settings semantics against current Microsoft documentation. `Office.context.document.settings` is specific to the content-add-in instance and document, so the new `embeddedUrl` key does not collapse separate embedded add-in instances. Section 2.1 is superseded by this evidence; keep the simpler instance-scoped key and verify it in PowerPoint when available.
-- [x] Slice 1: merged current `origin/v3`; resolved only the expected Office manifest/lockfile conflicts; frozen pnpm 11.5.0 install completed under Node 24; Office typecheck and production Rollup build passed. The Microsoft debugging stack requires one reviewed native-broker binary-copy install script; unnecessary no-op/cleanup scripts stay disabled in `pnpm-workspace.yaml`.
-- [ ] Slice 2 active: fix the production build/deployment pipeline, remove the Tailwind Play CDN and non-runtime artifacts, and prove `dist/` equals the deployed static directory.
-- [ ] Slice 3: audit and refresh compatible Office Add-in dependencies; document deferred majors and browser/runtime support.
+- [x] Slice 1: merged current `origin/v3`; resolved only the expected `apps/office-addin/package.json` and `pnpm-lock.yaml` conflicts; frozen pnpm 11.5.0 install completed under Node 24; Office typecheck and production Rollup build passed. The Microsoft debugging stack requires one reviewed native-broker binary-copy install script; unnecessary no-op/cleanup scripts stay disabled in `pnpm-workspace.yaml`. The package does not ship a Linux ARM64 broker binary, so Microsoft account sign-in remains a host-tooling check rather than part of the ARM64 verification container.
+- [x] Slice 2: reduced the production build to one bundle, replaced the Tailwind Play CDN with local semantic CSS, corrected `/office-addin/` production URLs, removed non-runtime artifacts, and added exact build-to-docs synchronization. Node 24 typecheck, lint, build, manifest validation, and 13-file deployment parity passed.
+- [ ] Slice 3 active: audit and refresh compatible Office Add-in dependencies; document deferred majors and browser/runtime support.
 - [ ] Slice 4: finish code, docs, tests, and source-backed review-thread resolution.
 - [ ] Finish: full verification, security/maintainability/cross-model reviews, whole-branch PR refresh, ready transition, and ready-only CI monitoring.
 
@@ -24,7 +24,7 @@ How to read this file: work top to bottom. Each item has **Evidence** (where to 
 
 ### 1.1 Production manifest points to a 404
 
-- [ ] **Fix `urlProd` replacement so paths include `/office-addin/`**
+- [x] **Fix `urlProd` replacement so paths include `/office-addin/`**
 
 **Evidence:**
 
@@ -52,7 +52,7 @@ How to read this file: work top to bottom. Each item has **Evidence** (where to 
 
 ### 1.2 Tailwind Play CDN in production
 
-- [ ] **Replace `cdn.tailwindcss.com` with a build-time generated CSS file**
+- [x] **Replace `cdn.tailwindcss.com` with a local CSS file**
 
 **Evidence:** `apps/office-addin/src/content/content.html` line ~124: `<script src="https://cdn.tailwindcss.com"></script>`. Also present in the committed `apps/docs/static/office-addin/content.html`.
 
@@ -116,7 +116,7 @@ Note: the *other* external script in `content.html` — `https://appsforoffice.m
 
 ### 3.1 Build artifacts committed into `apps/docs/static/office-addin`
 
-- [ ] **Remove non-runtime artifacts from the deployed folder; document/script the deploy step**
+- [x] **Remove non-runtime artifacts from the deployed folder; document/script the deploy step**
 
 **Evidence** (`git show origin/NewPPT:apps/docs/static/office-addin/` — tree listing):
 
@@ -132,7 +132,7 @@ Note: the *other* external script in `content.html` — `https://appsforoffice.m
 
 ### 3.2 iframe hardening regressed
 
-- [ ] **Restore `referrerPolicy`, drop `allow-popups` unless needed**
+- [x] **Restore `referrerPolicy`, drop `allow-popups` unless needed**
 
 **Evidence:** old iframe (`App.tsx` on `v3`): `sandbox="allow-scripts allow-same-origin allow-forms" referrerPolicy="no-referrer"`. New (`src/content/content.html`, `#content-iframe`): `sandbox="allow-scripts allow-same-origin allow-forms allow-popups"`, no `referrerPolicy`.
 
@@ -142,7 +142,7 @@ Note: the *other* external script in `content.html` — `https://appsforoffice.m
 
 ### 3.3 Lint CI red
 
-- [ ] **Make the `lint` workflow pass**
+- [x] **Make the `lint` workflow pass**
 
 **Evidence:** check run "lint" = FAILURE on the PR head (workflow "Check linting", run 16693264801). The PR checklist itself has "Fix linting conflicting with prettier" unchecked. The package uses `office-addin-lint` (`.eslintrc.json` extends `plugin:office-addins/recommended`), which ships its own prettier config (`"prettier": "office-addin-prettier-config"` in `package.json`) that fights the repo-wide prettier setup (no-semi, single quotes).
 

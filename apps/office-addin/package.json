@@ -2,53 +2,44 @@
   "name": "@klicker-uzh/office-addin",
   "version": "3.4.0-alpha.64",
   "license": "AGPL-3.0",
-  "dependencies": {
-    "core-js": "3.36.0",
-    "regenerator-runtime": "0.14.1"
-  },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "~28.0.2",
-    "@rollup/plugin-node-resolve": "~15.3.1",
-    "@rollup/plugin-replace": "~6.0.3",
     "@rollup/plugin-terser": "~0.4.4",
     "@rollup/plugin-typescript": "~12.1.4",
     "@types/node": "^24.10.1",
     "@types/office-js": "^1.0.591",
     "@types/office-runtime": "^1.0.37",
-    "acorn": "~8.11.3",
     "cross-env": "~7.0.3",
     "eslint-plugin-office-addins": "~4.0.3",
-    "npm-run-all": "~4.1.5",
-    "office-addin-cli": "~2.0.3",
     "office-addin-debugging": "~6.0.3",
     "office-addin-dev-certs": "~2.0.3",
     "office-addin-lint": "~3.0.3",
     "office-addin-manifest": "~2.0.3",
-    "office-addin-prettier-config": "~2.0.1",
     "rollup": "~4.34.9",
     "rollup-plugin-copy": "~3.5.0",
     "rollup-plugin-livereload": "~2.0.5",
     "rollup-plugin-serve": "~3.0.0",
     "rollup-plugin-visualizer": "~6.0.3",
-    "typescript": "~5.6.3"
+    "typescript": "~5.6.3",
+    "typescript-eslint": "~8.62.0"
   },
   "scripts": {
     "build": "cross-env NODE_ENV=production rollup -c",
-    "build:analyze": "cross-env NODE_ENV=production rollup -c && echo 'Bundle analysis available at dist/bundle-analysis.html'",
+    "build:analyze": "cross-env NODE_ENV=production ANALYZE=true rollup -c",
+    "build:docs": "cross-env NODE_ENV=production rollup -c && node scripts/sync-docs.mjs",
     "build:dev": "cross-env NODE_ENV=development rollup -c",
-    "build:test": "pnpm run build",
+    "build:test": "cross-env NODE_ENV=production rollup -c",
     "check": "tsc --noEmit",
     "clean:cache": "office-addin-dev-certs uninstall && office-addin-dev-certs install",
+    "deploy:docs": "node scripts/sync-docs.mjs",
     "dev": "cross-env NODE_ENV=development rollup -c --watch",
-    "dev-server": "cross-env NODE_ENV=development rollup -c --watch",
-    "lint": "office-addin-lint check",
-    "lint:fix": "office-addin-lint fix",
-    "prettier": "office-addin-lint prettier",
+    "lint": "office-addin-lint check --files src/content/content.ts",
+    "lint:fix": "office-addin-lint fix --files src/content/content.ts",
     "signin": "office-addin-dev-settings m365-account login",
     "signout": "office-addin-dev-settings m365-account logout",
     "start": "office-addin-debugging start manifest.xml",
     "stop": "office-addin-debugging stop manifest.xml",
-    "validate": "office-addin-manifest validate manifest.xml"
+    "validate": "office-addin-manifest validate manifest.xml",
+    "verify:docs": "node scripts/sync-docs.mjs --check"
   },
   "engines": {
     "node": "=24"
@@ -56,12 +47,13 @@
   "volta": {
     "extends": "../../package.json"
   },
-  "browserslist": ["last 2 versions", "ie 11"],
+  "browserslist": [
+    "last 2 versions"
+  ],
   "config": {
     "app_to_debug": "powerpoint",
     "app_type_to_debug": "desktop",
     "dev_server_port": 3020
   },
-  "prettier": "office-addin-prettier-config",
   "type": "module"
 }

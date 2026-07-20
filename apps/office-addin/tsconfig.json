@@ -1,12 +1,11 @@
 {
-  "include": ["**/**/*"],
+  "include": ["src/**/*.ts"],
   "compilerOptions": {
     "baseUrl": ".",
     /* Base Options: */
     "esModuleInterop": true,
     "skipLibCheck": true,
     "target": "es2022",
-    "allowJs": true,
     "resolveJsonModule": true,
     "moduleDetection": "force",
     "isolatedModules": true,
@@ -18,14 +17,8 @@
     /* If transpiling with TypeScript: */
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "outDir": "dist",
+    "noEmit": true,
     "sourceMap": true,
-    /* AND if you're building for a library: */
-    "declaration": true,
-    /* AND if you're building for a library in a monorepo: */
-    "composite": true,
-    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
-    "declarationMap": true,
     /* If your code runs in the DOM: */
     "lib": ["es2022", "dom", "dom.iterable"]
   }

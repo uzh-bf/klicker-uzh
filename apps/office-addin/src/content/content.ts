@@ -55,14 +55,16 @@ Office.onReady((info) => {
  * Initializes the Office add-in after ensuring both Office.js and DOM are ready.
  * @param info - Office host information from Office.onReady callback
  */
-function initializeOfficeAddin(info: any) {
+function initializeOfficeAddin(info: {
+  host: Office.HostType
+  platform: Office.PlatformType
+}): void {
   // Check if the host application is PowerPoint
   if (info.host === Office.HostType.PowerPoint) {
     initializeApp() // Proceed with add-in initialization
   } else {
-    // Log error and show message if not running in PowerPoint
     console.error('This add-in is designed to run only in PowerPoint.')
-    showMessage('This add-in only works in PowerPoint.', 'error')
+    document.body.textContent = 'This add-in only works in PowerPoint.'
   }
 }
 
@@ -177,7 +179,7 @@ async function loadInitialState(): Promise<void> {
         // No legacy URL found for this slide, or it's invalid
         showInitialView() // Show initial view, no migration needed/possible
       }
-    } catch (error) {
+    } catch {
       // Error during migration attempt (e.g., getSlideID failed or other unexpected error)
       // Do not show error to user, just proceed to initial view as a fallback
       showInitialView()
@@ -349,26 +351,16 @@ function validateUrlInput(url: string): void {
 function setValidationState(state: ValidationState): void {
   if (!urlInput || !urlValidationMessage) return
 
-  // Reset all classes
-  urlInput.classList.remove(
-    'border-red-500',
-    'border-green-500',
-    'border-yellow-500',
-    'focus:ring-red-500',
-    'focus:ring-green-500',
-    'focus:ring-yellow-500'
-  )
-  urlValidationMessage.classList.add('hidden')
+  urlInput.dataset.validation = state
+  urlValidationMessage.hidden = state === 'empty'
 
   switch (state) {
     case 'valid':
-      urlInput.classList.add('border-green-500', 'focus:ring-green-500')
       showValidationMessage('✓ Valid KlickerUZH evaluation URL', 'success')
       updateEmbedButton(true)
       break
 
     case 'invalid':
-      urlInput.classList.add('border-red-500', 'focus:ring-red-500')
       showValidationMessage(
         'Please enter a valid KlickerUZH evaluation URL',
         'error'
@@ -377,13 +369,12 @@ function setValidationState(state: ValidationState): void {
       break
 
     case 'pending':
-      urlInput.classList.add('border-yellow-500', 'focus:ring-yellow-500')
       showValidationMessage('Validating...', 'pending')
       updateEmbedButton(false)
       break
 
     case 'empty':
-      // Neutral state, no special styling
+      urlValidationMessage.textContent = ''
       updateEmbedButton(false)
       break
   }
@@ -401,25 +392,8 @@ function showValidationMessage(
   if (!urlValidationMessage) return
 
   urlValidationMessage.textContent = message
-  urlValidationMessage.classList.remove(
-    'text-red-600',
-    'text-green-600',
-    'text-yellow-600'
-  )
-
-  switch (type) {
-    case 'success':
-      urlValidationMessage.classList.add('text-green-600')
-      break
-    case 'error':
-      urlValidationMessage.classList.add('text-red-600')
-      break
-    case 'pending':
-      urlValidationMessage.classList.add('text-yellow-600')
-      break
-  }
-
-  urlValidationMessage.classList.remove('hidden')
+  urlValidationMessage.dataset.type = type
+  urlValidationMessage.hidden = false
 }
 
 /**
@@ -429,15 +403,7 @@ function showValidationMessage(
 function updateEmbedButton(isValid: boolean): void {
   if (!embedButton) return
 
-  if (isValid) {
-    embedButton.disabled = false
-    embedButton.classList.remove('opacity-50', 'cursor-not-allowed')
-    embedButton.classList.add('hover:border-gray-400', 'hover:bg-gray-300')
-  } else {
-    embedButton.disabled = true
-    embedButton.classList.add('opacity-50', 'cursor-not-allowed')
-    embedButton.classList.remove('hover:border-gray-400', 'hover:bg-gray-300')
-  }
+  embedButton.disabled = !isValid
 }
 
 // --- Event Handlers ---
@@ -525,13 +491,10 @@ function displayIframe(url: string): void {
 
   // Show iframe container and change button, hide initial input area
   if (iframeContainer) {
-    iframeContainer.classList.remove('hidden')
+    iframeContainer.hidden = false
   }
   if (changeEmbeddedUrlButton) {
-    changeEmbeddedUrlButton.classList.remove('hidden')
-  }
-  if (urlInput?.parentElement) {
-    urlInput.parentElement.classList.add('hidden') // Hide the input bar area
+    changeEmbeddedUrlButton.hidden = false
   }
 }
 
@@ -549,13 +512,10 @@ function showInitialView(): void {
 
   // Hide iframe container and change button, show initial input area
   if (iframeContainer) {
-    iframeContainer.classList.add('hidden')
+    iframeContainer.hidden = true
   }
   if (changeEmbeddedUrlButton) {
-    changeEmbeddedUrlButton.classList.add('hidden')
-  }
-  if (urlInput?.parentElement) {
-    urlInput.parentElement.classList.remove('hidden') // Show the input bar area
+    changeEmbeddedUrlButton.hidden = true
   }
   if (contentIframe) {
     contentIframe.src = 'about:blank' // Clear the iframe source
@@ -625,54 +585,27 @@ function showMessage(
 
   messageText.textContent = message // Set the message text
 
-  // Reset any existing type classes and visibility/opacity classes
-  messageBox.classList.remove(
-    'bg-red-500',
-    'bg-green-500',
-    'bg-blue-500',
-    'bg-yellow-400', // Warning color
-    'hidden',
-    'opacity-0',
-    'opacity-100'
-  )
-
-  // Apply the appropriate background color based on the message type
-  switch (type) {
-    case 'success':
-      messageBox.classList.add('bg-green-500')
-      break
-    case 'error':
-      messageBox.classList.add('bg-red-500')
-      break
-    case 'info':
-      messageBox.classList.add('bg-blue-500')
-      break
-    case 'warning':
-      messageBox.classList.add('bg-yellow-400', 'text-black') // Warning often looks better with black text
-      break
-    default:
-      messageBox.classList.add('bg-gray-500') // Default fallback color
-  }
+  messageBox.dataset.type = type
+  messageBox.hidden = false
 
   // Make the message box visible and transition opacity
   messageBox.classList.remove('hidden')
   // Use a slight delay before setting opacity to 1 to ensure transition works
   setTimeout(() => {
     if (messageBox) {
-      messageBox.classList.add('opacity-100')
+      messageBox.classList.add('is-visible')
     }
   }, 10) // 10ms delay
 
   // Set a timer to hide the message box after the specified duration
   setTimeout(() => {
     if (messageBox) {
-      messageBox.classList.remove('opacity-100')
+      messageBox.classList.remove('is-visible')
     }
     // Wait for the fade-out transition to complete before hiding the element
     setTimeout(() => {
       if (messageBox) {
-        messageBox.classList.add('hidden')
-        messageBox.classList.remove('text-black') // Remove text color override if present
+        messageBox.hidden = true
       }
       // Clear text and remove specific styling if needed
       if (messageText) {
