@@ -245,7 +245,6 @@ export default function CourseVerifiableCredentialsModal({
               numOfObjects={totalCount}
               pageSize={pageSize}
               setPageSize={setPageSizeAndReset}
-              className="border-t border-slate-200 pt-2"
             />
           </>
         )}

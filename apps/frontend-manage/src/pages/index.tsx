@@ -441,7 +441,7 @@ function Index() {
                     numOfObjects={numOfElements}
                     pageSize={pageSize}
                     setPageSize={setPageSize}
-                    className="flex-none border-t border-slate-200 pt-2"
+                    className="flex-none"
                   />
                 )}
               </div>
