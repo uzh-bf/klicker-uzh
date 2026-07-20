@@ -711,7 +711,7 @@ git commit -m "feat(kb): monitor external ingestion runs with one cron"
 - Modify: `packages/i18n/messages/en.ts`
 - Modify: `packages/i18n/messages/de.ts`
 
-- [ ] **Step 1: Establish the browser validation path before editing UI**
+- [x] **Step 1: Establish the browser validation path before editing UI**
 
 Read `.agents/skills/agent-browser/SKILL.md` completely. Confirm that the real manage app can be reached after:
 
@@ -722,7 +722,7 @@ pnpm run dev
 
 Use delegated local credentials `lecturer` / `abcd`; do not use Edu-ID. Record the working route, normally `http://manage.klicker.com/resources/knowledgeBases` or the direct local manage port when routing is unavailable.
 
-- [ ] **Step 2: Add localized labels with exact EN/DE parity**
+- [x] **Step 2: Add localized labels with exact EN/DE parity**
 
 Add keys:
 
@@ -737,9 +737,9 @@ English: `Speed`, `Balanced`, `Quality`, `Fast`.
 
 German: `Geschwindigkeit`, `Ausgewogen`, `Qualität`, `Schnell`.
 
-- [ ] **Step 3: Render one controlled selector per resource row**
+- [x] **Step 3: Render one controlled selector per resource row**
 
-Import generated `KbSpeedMode` and design-system `SelectField`. Keep a per-resource state map whose missing value resolves to `KbSpeedMode.Balanced`. Render three items and stable selectors:
+Import generated `KbSpeedMode` and the design-system `Select`. Keep a per-resource state map whose missing value resolves to `KbSpeedMode.Balanced`. Render three items and stable selectors. Compose `Select` with a sibling native label because design-system 4.1.6 `SelectField` does not forward its ID or ARIA labeling to the Radix combobox trigger:
 
 ```ts
 data={{ cy: `kb-speed-mode-${resource.id}` }}
@@ -758,7 +758,7 @@ variables: {
 
 The state may remain for the current mounted page but is never persisted to the server or resource model.
 
-- [ ] **Step 4: Verify types, formatting, and translations**
+- [x] **Step 4: Verify types, formatting, and translations**
 
 ```bash
 pnpm --filter @klicker-uzh/kb-management check
@@ -768,7 +768,7 @@ pnpm exec prettier --check packages/kb-management/src/components/KnowledgeBaseRe
 
 Expected: checks pass and EN/DE `kb.*` keys remain identical.
 
-- [ ] **Step 5: Run the mandatory real browser walkthrough**
+- [x] **Step 5: Run the mandatory real browser walkthrough**
 
 With the local dependencies, backend, local Hatchet worker, and manage app running:
 
@@ -786,7 +786,7 @@ Capture committed screenshots under:
 - `project/screenshots/kb-external-ingestion-speed-en-desktop.png`
 - `project/screenshots/kb-external-ingestion-speed-de-mobile.png`
 
-- [ ] **Step 6: Commit Task 6**
+- [x] **Step 6: Commit Task 6**
 
 ```bash
 git add packages/kb-management/src/components/KnowledgeBaseResourceList.tsx packages/i18n/messages/en.ts packages/i18n/messages/de.ts project/screenshots/kb-external-ingestion-speed-en-desktop.png project/screenshots/kb-external-ingestion-speed-de-mobile.png

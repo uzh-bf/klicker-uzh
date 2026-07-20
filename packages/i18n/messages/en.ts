@@ -1170,6 +1170,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     ingestResource: 'Ingest',
     ingestResourceSuccess: 'Resource queued for ingestion.',
     ingestResourceError: 'The resource could not be queued for ingestion.',
+    speedModeLabel: 'Speed',
+    speedModeBalanced: 'Balanced',
+    speedModeQuality: 'Quality',
+    speedModeFast: 'Fast',
   },
   manage: {
     general: {
