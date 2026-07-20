@@ -57,4 +57,59 @@ Land the merge-blocker fix batch: green CI + a working lecturer course-list + cl
   - `$security-review` over `9a025d610..HEAD`: no high-confidence vulns. N3 leaves the auth decision unchanged (only error type/message); N6 removes the raw-message leak (safeStudentToolMessage no longer takes/returns `message`); F5 preserves `userId: session.userId` scoping (guard only rewrites the OR sub-clause), regex anchored/single-class over ≤120 chars (no ReDoS); exec-form CMD removes the shell. Net security-positive.
   - `$thermo-nuclear-code-quality-review` is user-invocation-only (`disable-model-invocation`) — substituted an independent read-only review subagent over the same range with the review rubric. Result: no BLOCKERs. Confirmed data-cy move is a real correctness fix, exhaustive switch is tsc-complete (all 11 codes), 401 fix traced into `node_modules/mcp-proxy` `errorMessage.includes("Authentication")` (case-sensitive), no scope creep.
   - Accepted 1 finding: shutdown handlers exited 0 even on `server.stop()` failure → now `exitCode = 1` on catch (both index.ts). Declined 2 NITs (regex `?`/`_` = scope creep beyond approved F5 sentinels; shutdown re-entrancy guard = YAGNI). Re-verified: both packages tsc clean.
-- Next: commit review adjustment, push HEAD to `codex/manage-assistant-mcp-v3-ai` (non-force FF), update PR #5109 body, watch CI (esp. test-playwright Y-chat + mcp image builds).
+- Review adjustment committed `50346484d`. Pushed `d93c2ce1d..50346484d` → `codex/manage-assistant-mcp-v3-ai` (clean FF, pre-push build green). PR #5109 body updated (whole-branch, added Post-review fixes section, refreshed head/counts).
+- CI on new head: builds mostly green; `test-playwright` (Y-chat E2E gate — the authoritative check for slice 1) is gated behind `build-and-compile`, still pending. `GitGuardian` fails on the PRE-EXISTING June 2-secret history finding, not this batch (batch adds no secret/env/data files). Monitoring CI to terminal.
+- Terminal condition: fix batch landed on PR head + PR updated + CI's test-playwright/check-types/test-graphql confirmed. React only if a job fails on this batch's code.
+- CI TERMINAL on `50346484d`: **45 pass, 1 fail**. All 8 `test-playwright` shards green — shard 5 (8m50s, carries the Y-chat specs) confirms the N2 fix that could NOT be validated locally. `test-graphql` (5m41s), `check-types` (3m27s), `check-format`/`check-lint`/`check-syncpack`, `test-olat-api`, `build-and-compile`, all image builds green. Only failure: `GitGuardian` (2s scan) on the PRE-EXISTING June branch-history staging-JWT finding — batch touched 16 files (source/test/plan), zero secret/env/data files. Loop closed on every deferred check.
+- DONE. Not merged (no merge authority for this batch); PR left in author's non-draft state. Residual: GitGuardian history finding (separate remediation — rotate staging JWT signing secret; tracked in memory).
+
+## Local live verification (2026-07-20, uncommitted — evidence only)
+
+Ran the full dev stack to verify the fixes in a browser. All fix-batch items verified live; found two dev-stack (non-fix-batch, non-production) blockers to the manage assistant answering, plus a clean end-to-end demo.
+
+- **N2 live**: `Ask KlickerUZH Assistant` welcome renders standalone (`/manage`) and in the embedded drawer.
+- **N3 live**: mcp-student returns `401` with `Authentication failed:` prefix on no-auth and bad-token.
+- **F5 live (MCP layer, direct smoke as owner 8821)**: `course_list` no-query=6, `query '*'`=6, `query '.*'`=6 (wildcards → no filter → all courses); genuine `query 'Testkurs'`=3; `query 'zzz...'`=0. `element_search` `*`/`%` = all. Confirms the wildcard guard vs literal-substring bug.
+- **F5+F6 live (full assistant, end-to-end)**: logged in as delegated `lecturer` (owner 8821, 6 courses). Assistant → `klicker_lecturer_course_list` with model-supplied `query:".*"` → F5 guard returned all 6 → bulleted names (Testkurs, Non-Gamified Course, Assessment Course, Gamified Assessment Course, Testkurs Calendar View, Testkurs 2), **no raw UUIDs** (F6). Path: session auth → LLM (Responses API via litellm→OpenRouter) → mcp-lecturer tool → synthesis.
+- Composer-submit could not be driven via browser automation (assistant-ui controlled store ignores synthetic input); backend proven via same-origin `fetch` to `/api/manage/chat` (200, streams, tool calls). Human-browser composer expected fine; not independently proven.
+
+### Dev-stack blockers found (NOT this fix batch; production unaffected)
+
+1. **litellm dev model/provider breaks the manage assistant.** Committed `util/litellm/config.yaml` routes all model ids to `openrouter/openai/gpt-5.6-luna` — now rejected by OpenRouter (`400 not a valid model ID`, stealth model withdrawn). Separately, the `openrouter/` provider does not translate the OpenAI **Responses API** (leaks the `openrouter/` prefix to OpenRouter). The manage assistant uses the Responses API (`createManageAssistantModel` → default `createOpenAI()(id)`), so it errors regardless of model. Earlier PR "verification" only probed `/chat/completions` (works), which masked this. Local fix that works: `model: openai/openai/gpt-4.1` + `api_base: https://openrouter.ai/api/v1` (generic OpenAI-compatible; OpenRouter serves `/responses`). Production points at a real Responses-capable provider (litellm is dev-only) → unaffected.
+2. **MCP servers not started by the dev stack + issuer mismatch.** `apps/mcp-lecturer` (7081) and `apps/mcp-student` (7080) are not in `dev:container`'s turbo filter, so the assistant's tools fail unless started manually. They must run with the workspace-namespaced `APP_ORIGIN_AUTH` (e.g. `https://auth.klicker.<workspace>.localhost`) or the chat-minted JWT is rejected `401 invalid lecturer MCP token` (issuer check). Launch: `docker exec <app> bash -lc 'cd apps/mcp-lecturer && setsid env NODE_ENV=development APP_ORIGIN_AUTH=<workspace-auth-url> pnpm exec tsx src/index.ts &'` (same for mcp-student).
+
+Local-only runtime changes still in place for the user to click-verify: `util/litellm/config.yaml` gpt-5.5→`openai/openai/gpt-4.1` (uncommitted; revert with `git checkout -- util/litellm/config.yaml`), both MCP servers running. Open decision for the user: whether to make (1)/(2) permanent PR fixes (dev-chat wiring, author's call) — out of the merge-blocker batch scope.
+
+## Batch 2 — Manage assistant UI fixes (2026-07-20)
+
+User-reported, reproduced live in-browser on the running worktree stack. Same PR/branch (#5109, `codex/manage-assistant-mcp-v3-ai`).
+
+### Bugs (all one root cause except the welcome copy)
+
+- Composer send button never enables when the lecturer types.
+- Image upload does nothing.
+- The three suggestion buttons (Draft question / Find questions / Improve feedback) do nothing.
+- Missing a friendly welcome message ("hello how can I help you").
+
+### Root cause (confirmed live)
+
+`ManageAssistantRuntimeProvider` (`apps/chat/src/components/manage-assistant.tsx`) built the runtime with `useChatRuntime` (react-ai-sdk) — a **thread-list** `RemoteThreadListRuntime`. With only `<Thread/>` rendered (no `<ThreadList/>`, no cloud/persistence), the main thread stays inactive, so its composer is the NoOp composer (`isEditing === false`). assistant-ui's `ComposerInput` bails on every `onChange` when `!isEditing` and forces `value = ""`, so typed text is silently discarded → `isEmpty` never clears → send stays disabled, and `ComposerPrimitive.Send` / `ThreadPrimitive.Suggestion autoSend` / attachment adapter are all dead.
+
+Evidence: typed "hello can you help me" via the real browser input path — composer stayed empty (placeholder), send stayed muted. The working **student** chat (`RuntimeProvider.tsx`) uses a single-thread `useExternalStoreRuntime` (always-active composer), which is why the same `Thread` component works there.
+
+### Decisions
+
+- Fix: replace the thread-list `useChatRuntime` with the single-thread `useAISDKRuntime(useChat({ transport }))` (react-ai-sdk exports both; `useChat` from `@ai-sdk/react`). This is the always-active-composer runtime `useChatRuntime` wraps internally, minus the thread-list layer the manage assistant does not use. One change repairs composer + upload + suggestions.
+- Transport: plain `DefaultChatTransport` (from `ai`), not `AssistantChatTransport`. The `/api/manage/chat` route builds the system prompt + MCP tools server-side and reads only `{ manageContext, messages }`, so client-side context enrichment (system/tools/config, `setRuntime`) is unnecessary.
+- Dynamic manage context: keep one stable transport; inject the latest context per request via `prepareSendMessagesRequest` reading a `contextRef` (no `useChat` re-creation, so message state is preserved across manage-context updates from the parent frame).
+- New dep: `@ai-sdk/react@3.0.186` (exact) added to `apps/chat` — already resolved in the store transitively via react-ai-sdk; `useChat` is not re-exported so a direct dep is required. No lockfile version drift expected.
+- Welcome message: `ThreadWelcome` in the shared `thread.tsx` renders `Ask {chatbotName}`. Add a friendly greeting; scope changes to avoid regressing the student chat.
+
+### Slices
+
+1. **Runtime fix (composer + upload + suggestions).** `apps/chat/package.json` (+`@ai-sdk/react`), `apps/chat/src/components/manage-assistant.tsx` (`useChatRuntime`→`useAISDKRuntime`+`useChat`+`DefaultChatTransport`+context ref). Verify live: type→send enables, suggestion→sends, image upload attaches. Commit `fix(chat): use single-thread runtime so manage assistant composer works`.
+2. **Welcome message.** `apps/chat/src/components/thread.tsx` `ThreadWelcome`. Verify live render. Commit `feat(chat): add manage assistant welcome greeting`.
+
+### Progress
+
+- Root cause confirmed live (real-browser type → send stays disabled). Facts gathered: route reads only `{manageContext,messages}`; `@ai-sdk/react@3.0.186` in store; `DefaultChatTransport`/`useAISDKRuntime` exports + `prepareSendMessagesRequest` signature verified. Plan (Batch 2) committed next; then Slice 1 impl + live verify.
