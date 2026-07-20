@@ -5,7 +5,10 @@ import {
   StorageSharedKeyCredential,
 } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma/client'
-import type { IngestKBResourceInput } from '@klicker-uzh/types'
+import type {
+  IngestKBResourceInput,
+  KBIngestionSpeedMode,
+} from '@klicker-uzh/types'
 import { randomUUID } from 'crypto'
 import { GraphQLError } from 'graphql'
 import { validate as validateUuid } from 'uuid'
@@ -373,7 +376,7 @@ export async function deleteKbResource(
 }
 
 export async function ingestKbResource(
-  { id }: { id: string },
+  { id, speedMode }: { id: string; speedMode: KBIngestionSpeedMode },
   ctx: ContextWithUser
 ) {
   const resource = await getOwnedKbResourceOrThrow(ctx, id)
@@ -385,10 +388,13 @@ export async function ingestKbResource(
     throw new GraphQLError('KB resource cannot be ingested')
   }
 
+  const ingestionAttemptId = randomUUID()
   const basePayload = {
     resourceId: resource.id,
     kbId: resource.kbId,
     title: resource.title,
+    ingestionAttemptId,
+    speedMode,
   }
   let payload: IngestKBResourceInput
   if (resource.type === DB.KBResourceType.BLOB) {
@@ -413,8 +419,20 @@ export async function ingestKbResource(
   }
 
   const claim = await ctx.prisma.kBResource.updateMany({
-    where: { id: resource.id, status: resource.status },
-    data: { status: DB.KBResourceStatus.QUEUED },
+    where: {
+      id: resource.id,
+      status: resource.status,
+      ingestionAttemptId: resource.ingestionAttemptId,
+      kb: { ownerId: ctx.user.sub },
+    },
+    data: {
+      status: DB.KBResourceStatus.QUEUED,
+      statusMessage: null,
+      ingestedAt: null,
+      ingestionAttemptId,
+      externalWorkflowRunId: null,
+      externalWorkflowStartedAt: null,
+    },
   })
   if (claim.count !== 1) {
     throw new GraphQLError('KB resource cannot be ingested')
@@ -427,8 +445,16 @@ export async function ingestKbResource(
       where: {
         id: resource.id,
         status: DB.KBResourceStatus.QUEUED,
+        ingestionAttemptId,
       },
-      data: { status: resource.status },
+      data: {
+        status: resource.status,
+        statusMessage: resource.statusMessage,
+        ingestedAt: resource.ingestedAt,
+        ingestionAttemptId: resource.ingestionAttemptId,
+        externalWorkflowRunId: resource.externalWorkflowRunId,
+        externalWorkflowStartedAt: resource.externalWorkflowStartedAt,
+      },
     })
     throw new GraphQLError('KB ingestion could not be queued')
   }

@@ -10,6 +10,7 @@ import {
   IngestKbResourceDocument,
   KbResourceStatus,
   KbResourceType,
+  KbSpeedMode,
   type GetKbQuery,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Badge, Button, H3, toast, Tooltip } from '@uzh-bf/design-system'
@@ -123,7 +124,7 @@ function KnowledgeBaseResourceList({
     setIngestingId(resource.id)
     try {
       await ingestResource({
-        variables: { id: resource.id },
+        variables: { id: resource.id, speedMode: KbSpeedMode.Balanced },
         refetchQueries: [{ query: GetKbDocument, variables: { id: kbId } }],
         awaitRefetchQueries: true,
       })

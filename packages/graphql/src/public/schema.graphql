@@ -1643,6 +1643,12 @@ enum KBResourceType {
   URL
 }
 
+enum KBSpeedMode {
+  BALANCED
+  FAST
+  QUALITY
+}
+
 type LeaderboardEntry {
   avatar: String
   email: String
@@ -1885,7 +1891,7 @@ type Mutation {
   gradeGroupActivitySubmission(gradingDecisions: GroupActivityGradingInput!, groupActivityId: String!, id: Int!): GroupActivityInstance
   grantPrivatePreviewAccess(email: String!): Int
   importCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!): Boolean!
-  ingestKbResource(id: ID!): KBResource!
+  ingestKbResource(id: ID!, speedMode: KBSpeedMode!): KBResource!
   joinCourseLeaderboard(courseId: String!): ParticipantLearningData
   joinCourseWithPin(pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: String!): String

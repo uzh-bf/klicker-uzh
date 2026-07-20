@@ -284,7 +284,7 @@ git commit -m "feat(kb): correlate signed ingestion callbacks"
 - Generate: `packages/graphql/src/public/client.json`
 - Generate: `packages/graphql/src/public/server.json`
 
-- [ ] **Step 1: Write failing service tests for mode, metadata, rollback, and races**
+- [x] **Step 1: Write failing service tests for mode, metadata, rollback, and races**
 
 Update the owned URL and BLOB expectations so the local payload contains:
 
@@ -310,7 +310,7 @@ pnpm --filter @klicker-uzh/graphql exec vitest run test/knowledge.test.ts
 
 Expected: FAIL because the API and payload do not yet accept the new fields.
 
-- [ ] **Step 2: Define one shared lowercase speed-mode contract**
+- [x] **Step 2: Define one shared lowercase speed-mode contract**
 
 In `packages/types/src/hatchet.ts` add:
 
@@ -326,7 +326,7 @@ ingestionAttemptId: string
 speedMode: KBIngestionSpeedMode
 ```
 
-- [ ] **Step 3: Add the GraphQL enum and required mutation argument**
+- [x] **Step 3: Add the GraphQL enum and required mutation argument**
 
 In `schema/knowledge.ts`, map GraphQL enum names to the lowercase internal contract:
 
@@ -353,7 +353,7 @@ mutation IngestKbResource($id: ID!, $speedMode: KBSpeedMode!) {
 
 GraphQL itself now rejects values outside the three enum members.
 
-- [ ] **Step 4: Generate and conditionally claim the latest attempt**
+- [x] **Step 4: Generate and conditionally claim the latest attempt**
 
 Change the service signature to receive `speedMode: KBIngestionSpeedMode`. Generate one `randomUUID()` before the conditional claim. The successful claim must set:
 
@@ -380,7 +380,7 @@ where: {
 
 This retains the existing S5 claim/rollback behavior while preventing a stale failure from reverting a newer attempt.
 
-- [ ] **Step 5: Regenerate GraphQL and run the focused checks**
+- [x] **Step 5: Regenerate GraphQL and run the focused checks**
 
 ```bash
 pnpm --filter @klicker-uzh/graphql generate
@@ -391,7 +391,7 @@ pnpm --filter @klicker-uzh/graphql check
 
 Expected: all mode/attempt/race tests pass and generated operation types expose `KbSpeedMode`.
 
-- [ ] **Step 6: Commit Task 3**
+- [x] **Step 6: Commit Task 3**
 
 Stage the hand-written and generated GraphQL artifacts reported by `git status`, then:
 

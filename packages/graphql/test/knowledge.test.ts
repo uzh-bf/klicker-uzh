@@ -2,6 +2,8 @@ import { BlobServiceClient } from '@azure/storage-blob'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import { KBResourceType, PrismaClient } from '@klicker-uzh/prisma/client'
 import { EventEmitter } from 'events'
+import { readFileSync } from 'fs'
+import { buildSchema, parse, validate } from 'graphql'
 import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
@@ -16,6 +18,31 @@ import {
   requestKbFileUpload,
 } from '../src/services/knowledge.js'
 import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+
+describe('Knowledge base GraphQL contract', () => {
+  it('rejects an invalid ingestion speed enum literal during validation', () => {
+    const schema = buildSchema(
+      readFileSync(
+        new URL('../src/public/schema.graphql', import.meta.url),
+        'utf8'
+      )
+    )
+    const document = parse(`
+      mutation {
+        ingestKbResource(id: "resource-id", speedMode: TURBO) {
+          id
+        }
+      }
+    `)
+
+    expect(validate(schema, document).map(({ message }) => message)).toEqual([
+      'Value "TURBO" does not exist in "KBSpeedMode" enum.',
+    ])
+  })
+})
 
 describe('Integration tests for knowledge base CRUD', () => {
   let prisma: PrismaClient
@@ -572,7 +599,50 @@ describe('Integration tests for knowledge base CRUD', () => {
     ).resolves.toBeTruthy()
   })
 
-  it('queues an owned URL resource with a self-contained Hatchet payload', async () => {
+  it.each(['balanced', 'quality', 'fast'] as const)(
+    'queues an owned URL resource with the %s speed mode and a fresh attempt',
+    async (speedMode) => {
+      const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+      const resource = await createKbUrlResource(
+        {
+          kbId: created.id,
+          title: 'Lecture recording',
+          url: 'https://video.example.test/course',
+        },
+        userOneCtx
+      )
+      const runNoWait = vi
+        .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
+        .mockResolvedValue({} as never)
+
+      const queued = await ingestKbResource(
+        { id: resource.id, speedMode },
+        userOneCtx
+      )
+
+      expect(queued).toMatchObject({
+        status: 'QUEUED',
+        ingestionAttemptId: expect.stringMatching(UUID_PATTERN),
+      })
+      expect(runNoWait).toHaveBeenCalledWith({
+        resourceId: resource.id,
+        kbId: created.id,
+        type: 'URL',
+        title: 'Lecture recording',
+        sourceUrl: 'https://video.example.test/course',
+        ingestionAttemptId: queued.ingestionAttemptId,
+        speedMode,
+      })
+      await expect(
+        prisma.kBResource.findUnique({ where: { id: resource.id } })
+      ).resolves.toMatchObject({
+        status: 'QUEUED',
+        ingestionAttemptId: queued.ingestionAttemptId,
+      })
+    }
+  )
+
+  it('clears prior external metadata when claiming a new attempt', async () => {
     const created = await createKb({ name: 'Finance notes' }, userOneCtx)
     const resource = await createKbUrlResource(
       {
@@ -582,23 +652,43 @@ describe('Integration tests for knowledge base CRUD', () => {
       },
       userOneCtx
     )
+    const oldAttemptId = '1f9aa27b-ee62-4b52-9c76-5f9f024347fd'
+    const ingestedAt = new Date('2026-07-19T12:00:00.000Z')
+    await prisma.kBResource.update({
+      where: { id: resource.id },
+      data: {
+        status: 'READY',
+        statusMessage: 'Previous ingestion completed',
+        ingestedAt,
+        ingestionAttemptId: oldAttemptId,
+        externalWorkflowRunId: 'old-run-id',
+        externalWorkflowStartedAt: new Date('2026-07-19T11:30:00.000Z'),
+      },
+    })
     const runNoWait = vi
       .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
       .mockResolvedValue({} as never)
 
-    const queued = await ingestKbResource({ id: resource.id }, userOneCtx)
+    const queued = await ingestKbResource(
+      { id: resource.id, speedMode: 'balanced' },
+      userOneCtx
+    )
 
-    expect(queued.status).toBe('QUEUED')
-    expect(runNoWait).toHaveBeenCalledWith({
-      resourceId: resource.id,
-      kbId: created.id,
-      type: 'URL',
-      title: 'Lecture recording',
-      sourceUrl: 'https://video.example.test/course',
+    expect(queued).toMatchObject({
+      status: 'QUEUED',
+      statusMessage: null,
+      ingestedAt: null,
+      externalWorkflowRunId: null,
+      externalWorkflowStartedAt: null,
     })
-    await expect(
-      prisma.kBResource.findUnique({ where: { id: resource.id } })
-    ).resolves.toMatchObject({ status: 'QUEUED' })
+    expect(queued.ingestionAttemptId).toMatch(UUID_PATTERN)
+    expect(queued.ingestionAttemptId).not.toBe(oldAttemptId)
+    expect(runNoWait).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ingestionAttemptId: queued.ingestionAttemptId,
+        speedMode: 'balanced',
+      })
+    )
   })
 
   it('queues a READY blob resource with its private container location', async () => {
@@ -621,7 +711,10 @@ describe('Integration tests for knowledge base CRUD', () => {
       .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
       .mockResolvedValue({} as never)
 
-    const queued = await ingestKbResource({ id: resource.id }, userOneCtx)
+    const queued = await ingestKbResource(
+      { id: resource.id, speedMode: 'quality' },
+      userOneCtx
+    )
 
     expect(queued.status).toBe('QUEUED')
     expect(runNoWait).toHaveBeenCalledWith({
@@ -631,6 +724,8 @@ describe('Integration tests for knowledge base CRUD', () => {
       title: 'Finance notes',
       blobName: resource.blobName,
       containerName: `kb-${userOneCtx.user.sub}`,
+      ingestionAttemptId: queued.ingestionAttemptId,
+      speedMode: 'quality',
     })
   })
 
@@ -649,14 +744,14 @@ describe('Integration tests for knowledge base CRUD', () => {
       .mockResolvedValue({} as never)
 
     await expect(
-      ingestKbResource({ id: resource.id }, userTwoCtx)
+      ingestKbResource({ id: resource.id, speedMode: 'balanced' }, userTwoCtx)
     ).rejects.toThrow('KB resource not found')
     await prisma.kBResource.update({
       where: { id: resource.id },
       data: { status: 'PROCESSING' },
     })
     await expect(
-      ingestKbResource({ id: resource.id }, userOneCtx)
+      ingestKbResource({ id: resource.id, speedMode: 'balanced' }, userOneCtx)
     ).rejects.toThrow('KB resource cannot be ingested')
     expect(runNoWait).not.toHaveBeenCalled()
   })
@@ -676,8 +771,8 @@ describe('Integration tests for knowledge base CRUD', () => {
       .mockResolvedValue({} as never)
 
     const results = await Promise.allSettled([
-      ingestKbResource({ id: resource.id }, userOneCtx),
-      ingestKbResource({ id: resource.id }, userOneCtx),
+      ingestKbResource({ id: resource.id, speedMode: 'balanced' }, userOneCtx),
+      ingestKbResource({ id: resource.id, speedMode: 'quality' }, userOneCtx),
     ])
 
     expect(
@@ -687,12 +782,73 @@ describe('Integration tests for knowledge base CRUD', () => {
       results.filter((result) => result.status === 'rejected')
     ).toHaveLength(1)
     expect(runNoWait).toHaveBeenCalledTimes(1)
+    const dispatchedAttemptId = (
+      runNoWait.mock.calls[0]?.[0] as unknown as {
+        ingestionAttemptId: string
+      }
+    ).ingestionAttemptId
+    expect(dispatchedAttemptId).toMatch(UUID_PATTERN)
     await expect(
       prisma.kBResource.findUnique({ where: { id: resource.id } })
-    ).resolves.toMatchObject({ status: 'QUEUED' })
+    ).resolves.toMatchObject({
+      status: 'QUEUED',
+      ingestionAttemptId: dispatchedAttemptId,
+    })
   })
 
-  it('restores a FAILED resource status when Hatchet dispatch fails', async () => {
+  it('rejects an ABA claim when the observed attempt changes at the same status', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const observedAttemptId = '60bf5833-1a03-4586-a9a0-f7e1ea0f7eef'
+    const newerAttemptId = '9c739b93-4f48-4f0d-bac1-5db4e27c821d'
+    const resource = await prisma.kBResource.create({
+      data: {
+        kbId: created.id,
+        type: KBResourceType.URL,
+        title: 'Lecture recording',
+        sourceUrl: 'https://video.example.test/course',
+        status: 'READY',
+        ingestionAttemptId: observedAttemptId,
+      },
+    })
+    const runNoWait = vi
+      .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
+      .mockResolvedValue({} as never)
+    const kbResource = prisma.kBResource
+    const abaCtx = {
+      ...userOneCtx,
+      prisma: {
+        kBResource: {
+          findFirst: kbResource.findFirst.bind(kbResource),
+          updateMany: async (
+            args: Parameters<typeof kbResource.updateMany>[0]
+          ) => {
+            await kbResource.update({
+              where: { id: resource.id },
+              data: {
+                ingestionAttemptId: newerAttemptId,
+                statusMessage: 'Newer same-status attempt',
+              },
+            })
+            return kbResource.updateMany(args)
+          },
+        },
+      },
+    } as unknown as ContextWithUser
+
+    await expect(
+      ingestKbResource({ id: resource.id, speedMode: 'balanced' }, abaCtx)
+    ).rejects.toThrow('KB resource cannot be ingested')
+    expect(runNoWait).not.toHaveBeenCalled()
+    await expect(
+      prisma.kBResource.findUniqueOrThrow({ where: { id: resource.id } })
+    ).resolves.toMatchObject({
+      status: 'READY',
+      statusMessage: 'Newer same-status attempt',
+      ingestionAttemptId: newerAttemptId,
+    })
+  })
+
+  it('restores the complete pre-click snapshot when Hatchet dispatch fails', async () => {
     const created = await createKb({ name: 'Finance notes' }, userOneCtx)
     const resource = await createKbUrlResource(
       {
@@ -702,20 +858,37 @@ describe('Integration tests for knowledge base CRUD', () => {
       },
       userOneCtx
     )
+    const oldAttemptId = '3b894217-e5dc-4d39-a94d-b21b08f4725e'
+    const oldIngestedAt = new Date('2026-07-18T09:00:00.000Z')
+    const oldExternalStartedAt = new Date('2026-07-18T08:30:00.000Z')
     await prisma.kBResource.update({
       where: { id: resource.id },
-      data: { status: 'FAILED' },
+      data: {
+        status: 'FAILED',
+        statusMessage: 'Previous external run failed',
+        ingestedAt: oldIngestedAt,
+        ingestionAttemptId: oldAttemptId,
+        externalWorkflowRunId: 'previous-run-id',
+        externalWorkflowStartedAt: oldExternalStartedAt,
+      },
     })
     vi.spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait').mockRejectedValue(
       new Error('Hatchet unavailable')
     )
 
     await expect(
-      ingestKbResource({ id: resource.id }, userOneCtx)
+      ingestKbResource({ id: resource.id, speedMode: 'fast' }, userOneCtx)
     ).rejects.toThrow('KB ingestion could not be queued')
     await expect(
       prisma.kBResource.findUnique({ where: { id: resource.id } })
-    ).resolves.toMatchObject({ status: 'FAILED' })
+    ).resolves.toMatchObject({
+      status: 'FAILED',
+      statusMessage: 'Previous external run failed',
+      ingestedAt: oldIngestedAt,
+      ingestionAttemptId: oldAttemptId,
+      externalWorkflowRunId: 'previous-run-id',
+      externalWorkflowStartedAt: oldExternalStartedAt,
+    })
   })
 
   it('does not roll back a resource that advanced after dispatch began', async () => {
@@ -739,10 +912,51 @@ describe('Integration tests for knowledge base CRUD', () => {
     )
 
     await expect(
-      ingestKbResource({ id: resource.id }, userOneCtx)
+      ingestKbResource({ id: resource.id, speedMode: 'balanced' }, userOneCtx)
     ).rejects.toThrow('KB ingestion could not be queued')
     await expect(
       prisma.kBResource.findUnique({ where: { id: resource.id } })
     ).resolves.toMatchObject({ status: 'PROCESSING' })
+  })
+
+  it('does not let a stale dispatch failure roll back a newer queued attempt', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const resource = await createKbUrlResource(
+      {
+        kbId: created.id,
+        title: 'Lecture recording',
+        url: 'https://video.example.test/course',
+      },
+      userOneCtx
+    )
+    const newerAttemptId = '7adf2e60-82b8-436a-90bd-ae6eb142385a'
+    const newerStartedAt = new Date('2026-07-20T08:30:00.000Z')
+    vi.spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait').mockImplementation(
+      async () => {
+        await prisma.kBResource.update({
+          where: { id: resource.id },
+          data: {
+            ingestionAttemptId: newerAttemptId,
+            externalWorkflowRunId: 'newer-run-id',
+            externalWorkflowStartedAt: newerStartedAt,
+            statusMessage: 'Newer attempt accepted',
+          },
+        })
+        throw new Error('Stale Hatchet response lost')
+      }
+    )
+
+    await expect(
+      ingestKbResource({ id: resource.id, speedMode: 'fast' }, userOneCtx)
+    ).rejects.toThrow('KB ingestion could not be queued')
+    await expect(
+      prisma.kBResource.findUnique({ where: { id: resource.id } })
+    ).resolves.toMatchObject({
+      status: 'QUEUED',
+      statusMessage: 'Newer attempt accepted',
+      ingestionAttemptId: newerAttemptId,
+      externalWorkflowRunId: 'newer-run-id',
+      externalWorkflowStartedAt: newerStartedAt,
+    })
   })
 })
