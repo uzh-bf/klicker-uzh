@@ -10,6 +10,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: true
 
+# Least privilege: the job only checks out and scans; a compromised binary or
+# dependency therefore cannot use the workflow token to write to the repo.
+permissions:
+  contents: read
+
 jobs:
   check-gitleaks:
     runs-on: ubuntu-latest

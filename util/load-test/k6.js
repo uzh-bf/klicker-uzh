@@ -22,13 +22,14 @@ export function setup() {
   check(res, { 'status 200': (r) => r.status === 200 })
   sleep(1)
 
-  // authenticated
+  // authenticated — tokens are injected at runtime, never committed:
+  //   k6 run -e KLICKER_SESSION_TOKEN=... -e KLICKER_PARTICIPANT_TOKEN=... k6.js
+  // This repo is public and staging JWTs grant real access; capture fresh
+  // tokens from an authenticated staging session each run.
   const cookies = {
     cookies: {
-      'next-auth.session-token':
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImxlY3R1cmVyQGRmLnV6aC5jaCIsInN1YiI6Ijc2MDQ3MzQ1LTM4MDEtNDYyOC1hZTdiLWFkYmViY2ZlODgyMSIsInNob3J0bmFtZSI6ImxlY3R1cmVyIiwic2NvcGUiOiJGVUxMX0FDQ0VTUyIsImNhdGFseXN0SW5zdGl0dXRpb25hbCI6dHJ1ZSwiY2F0YWx5c3RJbmRpdmlkdWFsIjp0cnVlLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3NjMwNDg2OTEsImlzcyI6Imh0dHBzOi8vYXV0aC5rbGlja2VyLnN0Zy5kZi1hcHAuY2gifQ.wVgW8eDFQ9Ygvc2Qd3eNmQkdeGg5ukwwiPAXhtO9Qfo',
-      participant_token:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2ZjQ1MDY1Yy02NjdmLTQyNTktODE4Yy1jNmY2YjQ3N2ViNDgiLCJyb2xlIjoiUEFSVElDSVBBTlQiLCJpYXQiOjE3NjMxMDgyMjksImV4cCI6MTc2NDMxNzgyOSwiaXNzIjoiaHR0cHM6Ly9hcGkua2xpY2tlci5zdGcuZGYtYXBwLmNoIn0.gV7lD0PJGbiD45EX8yEF0V9CT3kFSgZIWoyljgBKQmA',
+      'next-auth.session-token': __ENV.KLICKER_SESSION_TOKEN || '',
+      participant_token: __ENV.KLICKER_PARTICIPANT_TOKEN || '',
     },
   }
   res = http.get(`https://pwa.klicker.stg.df-app.ch/session/${id}`, cookies)
