@@ -55,6 +55,13 @@ hatchet:
     apiUrl: ""
     tenantId: ""
     hostPort: ""
+  kbIngestion:
+    clientHostPort: ""
+    apiUrl: ""
+    tlsStrategy: "none"
+    workflowName: ""
+    timeoutSeconds: 3600
+    webhookUrl: ""
   workers:
     general:
       replicaCount: 1

@@ -804,7 +804,7 @@ git commit -m "feat(kb): select ingestion speed per resource"
 - Modify: `deploy/charts/klicker-uzh-v3/values.yaml`
 - Modify: `deploy/charts/klicker-uzh-v3/templates/cm-hatchet-workers.yaml`
 
-- [ ] **Step 1: Add documented local placeholders without credentials**
+- [x] **Step 1: Add documented local placeholders without credentials**
 
 Add to `apps/hatchet-worker-general/.env.example`:
 
@@ -821,11 +821,11 @@ BLOB_STORAGE_ACCESS_KEY=__BLOB_STORAGE_ACCESS_KEY__
 
 Keep the existing `KB_WEBHOOK_URL` and `KB_WEBHOOK_SECRET`. Do not add real namespace/service addresses or secrets.
 
-- [ ] **Step 2: Add every new variable to Turbo's allow-list**
+- [x] **Step 2: Add every new variable to Turbo's allow-list**
 
 Add the six `KB_INGESTION_*` variables. `BLOB_STORAGE_*` and `KB_WEBHOOK_*` are already present; do not duplicate them.
 
-- [ ] **Step 3: Define non-secret Helm values**
+- [x] **Step 3: Define non-secret Helm values**
 
 Under `hatchet`, add:
 
@@ -841,7 +841,7 @@ kbIngestion:
 
 Reuse the existing top-level `blobStorage.accountName`. Do not add token, webhook-secret, or access-key values to the ConfigMap section.
 
-- [ ] **Step 4: Map only non-secrets into the general-worker ConfigMap**
+- [x] **Step 4: Map only non-secrets into the general-worker ConfigMap**
 
 Add:
 
@@ -867,7 +867,7 @@ The existing `*-secret-hatchet-worker-general` reference must receive these keys
 
 Do not create a chart-managed Secret containing those values.
 
-- [ ] **Step 5: Render and inspect the chart**
+- [x] **Step 5: Render and inspect the chart**
 
 Run:
 
@@ -877,7 +877,7 @@ helm template klicker deploy/charts/klicker-uzh-v3 --set hatchet.kbIngestion.tim
 
 Expected: seven non-secret ConfigMap entries appear with timeout `3600`; token, secret, and access key do not appear in rendered ConfigMap data.
 
-- [ ] **Step 6: Run config checks and commit**
+- [x] **Step 6: Run config checks and commit**
 
 ```bash
 pnpm exec prettier --check turbo.json apps/hatchet-worker-general/.env.example deploy/charts/klicker-uzh-v3/values.yaml deploy/charts/klicker-uzh-v3/templates/cm-hatchet-workers.yaml
