@@ -110,7 +110,11 @@ function createClient({
   rows = [],
   runId = 'external-run-id',
 }: {
-  rows?: Array<{ workflowRunExternalId: string; createdAt: string }>
+  rows?: Array<{
+    workflowRunExternalId: string
+    createdAt: string
+    additionalMetadata?: Record<string, unknown>
+  }>
   runId?: string
 } = {}) {
   return {
@@ -264,6 +268,10 @@ describe('chatbot knowledge graph external dispatch', () => {
         {
           workflowRunExternalId: 'recovered-run-id',
           createdAt: '2026-07-20T11:57:00.000Z',
+          additionalMetadata: {
+            [KB_GRAPH_INGESTION_ATTEMPT_METADATA_KEY]: ATTEMPT_ID,
+            [KB_GRAPH_INGESTION_CHATBOT_METADATA_KEY]: CHATBOT_ID,
+          },
         },
       ],
     })
@@ -280,7 +288,6 @@ describe('chatbot knowledge graph external dispatch', () => {
       workflowNames: ['course-kg-ingestion'],
       additionalMetadata: {
         [KB_GRAPH_INGESTION_ATTEMPT_METADATA_KEY]: ATTEMPT_ID,
-        [KB_GRAPH_INGESTION_CHATBOT_METADATA_KEY]: CHATBOT_ID,
       },
       onlyTasks: false,
       includePayloads: false,
@@ -304,6 +311,41 @@ describe('chatbot knowledge graph external dispatch', () => {
     })
   })
 
+  it('rejects an unrelated run returned by the metadata lookup', async () => {
+    const prisma = createPrisma()
+    const client = createClient({
+      rows: [
+        {
+          workflowRunExternalId: 'unrelated-run-id',
+          createdAt: '2026-07-20T11:57:00.000Z',
+          additionalMetadata: {
+            [KB_GRAPH_INGESTION_ATTEMPT_METADATA_KEY]: 'another-attempt-id',
+            [KB_GRAPH_INGESTION_CHATBOT_METADATA_KEY]: CHATBOT_ID,
+          },
+        },
+      ],
+      runId: 'new-run-id',
+    })
+
+    await expect(
+      dispatchChatbotKnowledgeGraphIngestion(graphInput, {
+        prisma,
+        client,
+        env: externalEnv,
+        now: () => NOW,
+      })
+    ).resolves.toBe('new-run-id')
+    expect(client.runNoWait).toHaveBeenCalledOnce()
+    expect(prisma.chatbotKnowledgeGraph.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: {
+          externalWorkflowRunId: 'new-run-id',
+          externalStartedAt: NOW,
+        },
+      })
+    )
+  })
+
   it('recovers a delayed retry from the immutable graph creation time after updatedAt advances', async () => {
     const prisma = createPrisma({
       graph: {
@@ -322,6 +364,10 @@ describe('chatbot knowledge graph external dispatch', () => {
         {
           workflowRunExternalId: 'delayed-recovered-run-id',
           createdAt: '2026-07-20T11:57:00.000Z',
+          additionalMetadata: {
+            [KB_GRAPH_INGESTION_ATTEMPT_METADATA_KEY]: ATTEMPT_ID,
+            [KB_GRAPH_INGESTION_CHATBOT_METADATA_KEY]: CHATBOT_ID,
+          },
         },
       ],
     })
@@ -418,6 +464,10 @@ describe('chatbot knowledge graph external dispatch', () => {
         {
           workflowRunExternalId: 'recovered-run-id',
           createdAt: '2026-07-20T11:57:00.000Z',
+          additionalMetadata: {
+            [KB_GRAPH_INGESTION_ATTEMPT_METADATA_KEY]: ATTEMPT_ID,
+            [KB_GRAPH_INGESTION_CHATBOT_METADATA_KEY]: CHATBOT_ID,
+          },
         },
       ],
     })

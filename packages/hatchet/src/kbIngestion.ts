@@ -46,7 +46,11 @@ export type ExternalHatchetClient = {
       limit: number
       since: Date
     }) => Promise<{
-      rows: Array<{ workflowRunExternalId: string; createdAt: string }>
+      rows: Array<{
+        workflowRunExternalId: string
+        createdAt: string
+        additionalMetadata?: Record<string, unknown>
+      }>
     }>
     cancel: (options: { ids: string[] }) => Promise<unknown>
   }
@@ -315,22 +319,35 @@ export async function recoverExternalKBIngestionRun({
   client,
   workflowName,
   additionalMetadata,
+  primaryMetadataKey,
   recoveryAnchor,
 }: {
   client: ExternalHatchetClient
   workflowName: string
   additionalMetadata: Record<string, string>
+  primaryMetadataKey: string
   recoveryAnchor: Date
 }): Promise<RecoveredExternalKBIngestionRun | undefined> {
+  const primaryMetadataValue = additionalMetadata[primaryMetadataKey]
+  if (!primaryMetadataValue) {
+    throw new Error('Primary KB ingestion recovery metadata is missing')
+  }
+
   const existingRuns = await client.runs.list({
     workflowNames: [workflowName],
-    additionalMetadata,
+    // Hatchet combines multiple metadata filters with OR semantics. Query by the
+    // unique attempt identifier, then verify the complete metadata set locally.
+    additionalMetadata: { [primaryMetadataKey]: primaryMetadataValue },
     onlyTasks: false,
     includePayloads: false,
     limit: 1,
     since: new Date(recoveryAnchor.getTime() - KB_BLOB_SAS_CLOCK_SKEW_MS),
   })
-  const recoveredRun = existingRuns.rows[0]
+  const recoveredRun = existingRuns.rows.find((run) =>
+    Object.entries(additionalMetadata).every(
+      ([key, value]) => run.additionalMetadata?.[key] === value
+    )
+  )
   if (!recoveredRun) return undefined
 
   return {
@@ -540,6 +557,7 @@ export async function dispatchKBIngestion(
       client,
       workflowName: config.workflowName,
       additionalMetadata,
+      primaryMetadataKey: KB_INGESTION_ATTEMPT_METADATA_KEY,
       recoveryAnchor: resource.updatedAt,
     })
 

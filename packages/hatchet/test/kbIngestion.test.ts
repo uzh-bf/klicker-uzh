@@ -101,7 +101,11 @@ function createClient({
   runId = 'external-run-id',
   status = 'QUEUED',
 }: {
-  rows?: Array<{ workflowRunExternalId: string; createdAt: string }>
+  rows?: Array<{
+    workflowRunExternalId: string
+    createdAt: string
+    additionalMetadata?: Record<string, unknown>
+  }>
   runId?: string
   status?: ExternalHatchetStatus
 } = {}) {
@@ -709,6 +713,9 @@ describe('external KB ingestion dispatch', () => {
         {
           workflowRunExternalId: 'recovered-run-id',
           createdAt: '2026-07-20T11:57:00.000Z',
+          additionalMetadata: {
+            [KB_INGESTION_ATTEMPT_METADATA_KEY]: ATTEMPT_ID,
+          },
         },
       ],
     })
@@ -855,6 +862,9 @@ describe('external KB ingestion dispatch', () => {
         {
           workflowRunExternalId: 'recovered-run-id',
           createdAt: '2026-07-20T11:57:00.000Z',
+          additionalMetadata: {
+            [KB_INGESTION_ATTEMPT_METADATA_KEY]: ATTEMPT_ID,
+          },
         },
       ],
     })

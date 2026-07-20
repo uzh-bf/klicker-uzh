@@ -296,6 +296,7 @@ export async function dispatchChatbotKnowledgeGraphIngestion(
       client,
       workflowName: config.workflowName,
       additionalMetadata,
+      primaryMetadataKey: KB_GRAPH_INGESTION_ATTEMPT_METADATA_KEY,
       recoveryAnchor: graph.createdAt,
     })
 
