@@ -145,6 +145,7 @@
         "@klicker-uzh/util#build",
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
+        "@klicker-uzh/hatchet#build",
         "@klicker-uzh/markdown#build",
         "@klicker-uzh/word-cloud#build",
         "@klicker-uzh/transactional#build"
@@ -157,6 +158,7 @@
         "@klicker-uzh/util#build",
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
+        "@klicker-uzh/hatchet#build",
         "@klicker-uzh/markdown#build",
         "@klicker-uzh/word-cloud#build",
         "@klicker-uzh/transactional#build"
@@ -169,6 +171,7 @@
         "@klicker-uzh/util#build",
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
+        "@klicker-uzh/hatchet#build",
         "@klicker-uzh/markdown#build",
         "@klicker-uzh/word-cloud#build",
         "@klicker-uzh/transactional#build"
@@ -181,6 +184,7 @@
         "@klicker-uzh/util#build",
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
+        "@klicker-uzh/hatchet#build",
         "@klicker-uzh/markdown#build",
         "@klicker-uzh/word-cloud#build",
         "@klicker-uzh/transactional#build"

@@ -25,25 +25,37 @@ pattern. It also follows Turborepo's package-specific `package#task`
 ordering mechanism: each persistent development task starts only after the
 Hatchet package build succeeds.
 
-No package scripts, application code, dependencies, environment variables,
-or runtime retry loops will change.
+Clean-start verification exposed a second, independent failure in the
+existing development runtime. Hatchet SDK 1.9.4 assumes every heartbeat
+worker-thread message contains a log-level `type`, but `tsx --watch` also
+sends control messages without that shape. The shared Hatchet logger therefore
+accepts a no-op `undefined` method until that SDK behavior changes. The general
+worker's Pino pretty formatter also runs in-process because `pino.transport()`
+creates another worker thread that collides with the same watch mechanism.
+
+No package scripts, dependencies, environment variables, or runtime retry
+loops will change. Production JSON logging remains unchanged.
 
 ## Runtime Flow
 
 1. A developer starts one of the four supported development variants.
 2. Turborepo builds the Hatchet package before starting persistent `dev`
    processes.
-3. The general worker imports a complete Hatchet package and registers its
+3. The development logger absorbs non-Hatchet watch control messages and uses
+   in-process pretty formatting.
+4. The general worker imports a complete Hatchet package and registers its
    workflows with local Hatchet.
-4. A knowledge-graph Build request can enqueue
+5. A knowledge-graph Build request can enqueue
    `build-chatbot-knowledge-graph`, which can then dispatch the configured
    external `course-kg-ingestion` workflow.
 
 ## Error Handling
 
 Build failures remain visible through Turbo and prevent the persistent
-development processes from starting with incomplete dependencies. Existing
-worker and GraphQL error handling remains unchanged.
+development processes from starting with incomplete dependencies. The logger
+compatibility handler ignores only messages that lack the SDK's expected log
+type; normal Hatchet log levels and existing worker/GraphQL error handling are
+unchanged.
 
 ## Verification
 
@@ -59,6 +71,6 @@ worker and GraphQL error handling remains unchanged.
 
 ## Scope
 
-The change fixes local development startup ordering only. It does not alter
-production deployment ordering, external Hatchet configuration, FalkorDB
-connectivity, or the separate chat i18n module-resolution issue.
+The change fixes local development startup and watch compatibility only. It
+does not alter production deployment ordering, external Hatchet configuration,
+FalkorDB connectivity, or the separate chat i18n module-resolution issue.
