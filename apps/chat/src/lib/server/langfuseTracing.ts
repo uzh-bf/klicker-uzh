@@ -1,6 +1,21 @@
 import { createTraceId } from '@langfuse/tracing'
 
 /**
+ * Killswitch shared with `instrumentation.ts`, which skips registering the
+ * span processor entirely when it is off. Scoring honours the same flag: with
+ * tracing disabled — as it is on staging today — a score would attach to a
+ * trace that was never emitted.
+ */
+export const isAiTelemetryEnabled =
+  process.env.CHAT_ENABLE_AI_TELEMETRY !== 'false'
+
+/** Where the SDK itself points when no base url is configured. */
+const LANGFUSE_CLOUD_URL = 'https://cloud.langfuse.com'
+
+/** A slow or unreachable Langfuse must never hold a student's click open. */
+const SCORE_TIMEOUT_MS = 5000
+
+/**
  * Langfuse v4 is OpenTelemetry-based: a trace is addressed by its W3C trace id,
  * and the v3 `metadata.langfuseTraceId` convention is silently ignored. To reach
  * a trace later from an unrelated request we therefore have to *derive* the same
@@ -25,13 +40,19 @@ export function getParentSpanContext(traceId: string) {
 const SCORE_NAME = 'user-feedback'
 
 function getLangfuseConfig() {
+  if (!isAiTelemetryEnabled) return null
+
   const publicKey = process.env.LANGFUSE_PUBLIC_KEY
   const secretKey = process.env.LANGFUSE_SECRET_KEY
-  // The SDK reads LANGFUSE_BASE_URL (LANGFUSE_BASEURL is its legacy spelling);
-  // LANGFUSE_HOST, which turbo.json also lists, is not one it looks at.
-  const baseUrl = process.env.LANGFUSE_BASE_URL ?? process.env.LANGFUSE_BASEURL
+  // Resolved exactly as the SDK resolves it — LANGFUSE_BASE_URL, its legacy
+  // spelling LANGFUSE_BASEURL, then the cloud default. Anything stricter would
+  // silently drop scores on a config where traces still get exported.
+  const baseUrl =
+    process.env.LANGFUSE_BASE_URL ??
+    process.env.LANGFUSE_BASEURL ??
+    LANGFUSE_CLOUD_URL
 
-  if (!publicKey || !secretKey || !baseUrl) return null
+  if (!publicKey || !secretKey) return null
 
   return {
     baseUrl: baseUrl.replace(/\/+$/, ''),
@@ -66,16 +87,21 @@ export async function recordFeedbackScore(
 
     const response =
       rating === null
-        ? await fetch(`${config.baseUrl}/api/public/scores/${scoreId}`, {
-            method: 'DELETE',
-            headers: { Authorization: config.authorization },
-          })
+        ? await fetch(
+            `${config.baseUrl}/api/public/scores/${encodeURIComponent(scoreId)}`,
+            {
+              method: 'DELETE',
+              headers: { Authorization: config.authorization },
+              signal: AbortSignal.timeout(SCORE_TIMEOUT_MS),
+            }
+          )
         : await fetch(`${config.baseUrl}/api/public/scores`, {
             method: 'POST',
             headers: {
               Authorization: config.authorization,
               'Content-Type': 'application/json',
             },
+            signal: AbortSignal.timeout(SCORE_TIMEOUT_MS),
             body: JSON.stringify({
               id: scoreId,
               traceId,

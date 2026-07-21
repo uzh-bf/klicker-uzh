@@ -11,7 +11,8 @@ import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import {
   getParentSpanContext,
   getTraceIdForMessage,
-} from '@/src/lib/server/langfuseFeedback'
+  isAiTelemetryEnabled,
+} from '@/src/lib/server/langfuseTracing'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import { CreditsService } from '@/src/services/credits'
 import { DisclaimersService } from '@/src/services/disclaimers'
@@ -64,7 +65,6 @@ if (!process.env.OPENAI_API_KEY) {
 }
 const CHAT_LOG_PREFIX = '[chat:dev]'
 const isDevLogging = process.env.NODE_ENV === 'development'
-const isAiTelemetryEnabled = process.env.CHAT_ENABLE_AI_TELEMETRY !== 'false'
 const MAX_LOG_STRING_LENGTH = 500
 const HASH_DIGEST_LENGTH = 12
 
