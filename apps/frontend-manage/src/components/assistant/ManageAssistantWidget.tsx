@@ -32,9 +32,12 @@ export function ManageAssistantWidget() {
   const [open, setOpen] = useState(false)
   const [frameLoaded, setFrameLoaded] = useState(false)
 
-  const enabled = isManageAssistantEnabled(
-    process.env.NEXT_PUBLIC_MANAGE_ASSISTANT_ENABLED
-  )
+  // Mounted app-wide rather than inside Layout, so the login screen has to be
+  // excluded explicitly: every other Manage route requires a signed-in user.
+  const enabled =
+    isManageAssistantEnabled(
+      process.env.NEXT_PUBLIC_MANAGE_ASSISTANT_ENABLED
+    ) && router.pathname !== '/login'
   const assistantUrl = useMemo(
     () =>
       buildManageAssistantUrl({

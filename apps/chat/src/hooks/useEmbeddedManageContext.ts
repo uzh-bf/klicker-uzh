@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   sanitizeManageAssistantContext,
   type ManageAssistantContext,
@@ -13,9 +13,11 @@ const MANAGE_CONTEXT_ACK_MESSAGE_TYPE = 'klicker:manage-context-ack'
 export function useEmbeddedManageContext() {
   const embedded = useEmbedded()
   const [context, setContext] = useState<ManageAssistantContext | null>(null)
+  const contextKeyRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (!embedded) {
+      contextKeyRef.current = null
       setContext(null)
       return
     }
@@ -30,7 +32,16 @@ export function useEmbeddedManageContext() {
       const messageId =
         typeof event.data.messageId === 'number' ? event.data.messageId : null
 
-      setContext(nextContext)
+      // Manage re-posts the same context on open and on every retry until it is
+      // acked, and its memo also recomputes whenever the router object changes
+      // identity. Publishing a fresh object each time would re-render the whole
+      // assistant for an unchanged payload, so only publish real changes.
+      const nextKey = JSON.stringify(nextContext)
+      if (nextKey !== contextKeyRef.current) {
+        contextKeyRef.current = nextKey
+        setContext(nextContext)
+      }
+
       window.parent.postMessage(
         {
           type: MANAGE_CONTEXT_ACK_MESSAGE_TYPE,

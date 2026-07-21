@@ -8,7 +8,6 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import React, { useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { ManageAssistantWidget } from './assistant/ManageAssistantWidget'
 import Header from './common/Header'
 
 interface LayoutProps {
@@ -87,7 +86,6 @@ function Layout({
       >
         {children}
       </div>
-      <ManageAssistantWidget />
       <Footer />
     </>
   )
