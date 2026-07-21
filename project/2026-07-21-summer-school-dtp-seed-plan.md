@@ -99,11 +99,23 @@ participant workbook, with the same safety contract as the portfolio round.
   preparation script, package commands, wiki update; Prettier and targeted
   typecheck clean (the 106 remaining package typecheck errors are pre-existing
   and in untouched files).
-- Blocked: Slice 3. The Infisical CLI cannot fetch secrets for this project in
-  any environment — `GET https://inf.stg.df-app.ch/api/v4/secrets?...projectId=d071be96-5136-4f23-a6cb-e0c7f9b9a6c8`
-  returns 404 `Project ... not found during bot lookup` for `dev`, `stg`, and
-  `prd` alike. Without it there is no production `DATABASE_URL`, so neither the
-  Busy Bee derivation nor the dry-run can execute. Needs a re-authenticated CLI
-  session or the correct Infisical domain for this project.
-- Next: once Infisical resolves, run `seed:prod:summerschool:dtp-input`, review
-  the reported Busy Bee count, then run `seed:prod:summerschool:dtp` in dry-run.
+- Secret access resolved. The plain `infisical` CLI is pinned to
+  `inf.stg.df-app.ch` and 404s on this project in every environment; the project
+  actually lives on `https://inf.prd.df-app.ch`, and `--domain` does not override
+  a stored profile domain. Working path, approved by the user: a new
+  `rs-infisical-operator` profile `klicker-prd` (project `klicker-uzh-dev`,
+  environment `prd`, readable `DATABASE_URL`, writable none, reusing the
+  `klicker-dev` machine identity). Injection verified.
+- Blocked: Slice 3. Production `DATABASE_URL` targets `127.0.0.1:7432`, so a
+  tunnel to the production database must be open; without it Prisma fails
+  `P1001 DatabaseNotReachable`. No tunnel command is documented in this
+  repository.
+- Next: with the tunnel open, run
+
+  ```bash
+  rs-infisical-operator --profile klicker-prd run --map DATABASE_URL=DATABASE_URL \
+    -- npx tsx src/data/prepareSummerSchoolDTPInput2026.ts
+  ```
+
+  from `packages/prisma-data`, review the reported microlearning list and Busy Bee
+  count, then repeat with `src/data/seedSummerSchoolDTP2026.ts` for the dry run.
