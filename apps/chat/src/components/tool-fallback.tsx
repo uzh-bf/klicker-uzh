@@ -2,7 +2,6 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
   LoaderCircleIcon,
-  MoveRightIcon,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useState, type FC } from 'react'
@@ -50,13 +49,23 @@ function TruncatedOutput({ text }: { text: string }) {
   )
 }
 
+/**
+ * MCP tools arrive namespaced as `Server_tool_name` (see `toSafeToolName` in
+ * `services/mcpClients.ts`). Students have no use for the server slug, so the
+ * chip shows the readable tool part only and the raw identifier moves into the
+ * expanded panel.
+ *
+ * Two accepted limitations of that trade-off:
+ * - A chatbot may have several MCP servers on one mode, so two servers exposing
+ *   the same tool name collapse to the same chip label. Expanding tells them
+ *   apart; the alternative — a server badge on every chip — puts a slug back in
+ *   front of students for a case they will rarely hit.
+ * - Tool names come from third parties, so no transform guarantees plain
+ *   language: `queryDocuments` stays `queryDocuments`. Only `_` is unpacked.
+ */
 function formatToolName(raw: string) {
   const sep = raw.indexOf('_')
-  if (sep === -1) return { server: null, tool: raw }
-  return {
-    server: raw.slice(0, sep),
-    tool: raw.slice(sep + 1).replace(/_/g, ' '),
-  }
+  return (sep === -1 ? raw : raw.slice(sep + 1)).replace(/_/g, ' ')
 }
 
 interface ToolFallbackProps {
@@ -72,8 +81,10 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
   result,
   status,
 }) => {
+  const t = useTranslations()
   const [isCollapsed, setIsCollapsed] = useState(true)
-  const { server, tool } = formatToolName(toolName)
+  const isRunning = status.type === 'running'
+  const tool = formatToolName(toolName)
 
   const resultText =
     result === undefined
@@ -87,42 +98,30 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
       <button
         type="button"
         onClick={() => setIsCollapsed(!isCollapsed)}
-        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs"
+        aria-expanded={!isCollapsed}
+        className="text-muted-foreground hover:bg-accent hover:text-foreground inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs transition-colors"
       >
         {isCollapsed ? (
           <ChevronRightIcon className="size-3" />
         ) : (
           <ChevronDownIcon className="size-3" />
         )}
-        {status.type === 'running' ? (
-          <>
-            <LoaderCircleIcon className="size-3 animate-spin" />
-            {server && (
-              <>
-                <span className="font-medium uppercase">{server}</span>
-                <MoveRightIcon className="size-2.5" />
-              </>
-            )}
-            {tool}...
-          </>
-        ) : (
-          <>
-            {server && (
-              <>
-                <span className="font-medium uppercase">{server}</span>
-                <MoveRightIcon className="size-2.5" />
-              </>
-            )}
-            {tool}
-          </>
+        {isRunning && (
+          <LoaderCircleIcon className="text-primary size-3 animate-spin" />
         )}
+        {isRunning
+          ? t('chat.toolFallback.running', { tool })
+          : t('chat.toolFallback.done', { tool })}
       </button>
 
       {!isCollapsed && (
-        <div className="mt-1 rounded bg-slate-50 p-2 text-xs">
+        <div className="bg-muted mt-1 rounded p-2 text-xs">
+          {/* Not `text-muted-foreground`: that token only reaches 4.39:1 on
+              `--muted`, under the 4.5:1 AA floor for 12px text. */}
+          <p className="mb-1 font-mono">{toolName}</p>
           <pre className="whitespace-pre-wrap">{argsText}</pre>
           {resultText !== undefined && (
-            <div className="mt-2 border-t border-dashed border-slate-200 pt-2">
+            <div className="border-border mt-2 border-t border-dashed pt-2">
               <TruncatedOutput text={resultText} />
             </div>
           )}

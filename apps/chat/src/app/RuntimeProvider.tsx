@@ -264,7 +264,6 @@ export function RuntimeProvider({
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      {/* <RAGToolUI /> */}
       {children}
     </AssistantRuntimeProvider>
   )
