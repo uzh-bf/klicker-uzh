@@ -49,13 +49,16 @@ Three independent seed paths — changing one does NOT update the others:
 
 ### Production batch seeds
 
-Production batch inputs, comparison sheets, and state dumps stay local and gitignored. The Summer School portfolio seed is isolated from the earlier activity seed and is safe-by-default:
+Production batch inputs, comparison sheets, and state dumps stay local and gitignored. Each Summer School activity round gets its own script and its own `summerschool_*` input/dump filenames, so no round can replay another round's payload:
 
 ```bash
-pnpm --filter @klicker-uzh/prisma-data seed:prod:summerschool:portfolio
+pnpm --filter @klicker-uzh/prisma-data seed:prod:summerschool:portfolio   # PFM game, achievement 21
+pnpm --filter @klicker-uzh/prisma-data seed:prod:summerschool:dtp         # DTP game, achievements 11/16/14/3
 ```
 
 The default command only validates production references, resolves usernames case-insensitively, writes a comparison CSV and payload-bound before-state dump, and reports the intended point/XP and achievement changes. A write requires a separate `DRY_RUN=false` execution and refuses to start if production state or the payload no longer matches that dump. Dry-run cannot overwrite a changed snapshot, and an after-state dump blocks accidental replay. Writes run atomically and are verified before commit; the after-state dump records the result. Never reuse an earlier Summer School payload for a later activity.
+
+Points earned inside Klicker (Swiss Quiz, microlearnings) are already on the leaderboard and are never part of these payloads — only externally-run activities are seeded. Awards that depend on in-platform behaviour are derived from the database rather than the workbook: Busy Bee is granted when `ParticipantActivityPerformance.completion` is `1` for every non-deleted `MicroLearning` in the course.
 
 ## Typed Json fields
 
