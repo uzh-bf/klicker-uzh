@@ -144,7 +144,17 @@ participant workbook, with the same safety contract as the portfolio round.
   in-transaction check is therefore corroborated rather than trusted alone.
   Targeted typecheck and Prettier clean; the throwaway verification script was
   removed afterwards.
-- Next: retain the ignored before/after dumps and comparison CSV locally for
+- Follow-up round: three further participants were nominated for Shooting Star
+  after the DTP write. They are already among the 36 seeded participants, so
+  their points are applied and must not be repeated. `seedSummerSchoolDTP2026.ts`
+  cannot express this: it is replay-locked by its after-state dump and requires a
+  positive `points_delta` per row. Added `seedSummerSchoolShootingStar2026.ts`, a
+  badge-only round with its own `summerschool_shootingstar_*` filenames, the same
+  safety contract, and a post-write check that fails the transaction if score or
+  XP changed. Production result: 3 successes, zero mismatches, zero point and XP
+  delta; independent read-back confirms unchanged score and XP, `achievedCount`
+  of 1 for all three, and a Shooting Star total of 25 instances platform-wide.
+- Next: retain the ignored before/after dumps and comparison CSVs locally for
   operational audit; no further seed action required for this round.
 - Data hygiene: workbook v2 is the full master workbook and carries participant
   names, birthdates, nationalities, study programs, group assignments, and an

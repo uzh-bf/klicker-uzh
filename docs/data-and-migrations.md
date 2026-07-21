@@ -54,7 +54,10 @@ Production batch inputs, comparison sheets, and state dumps stay local and gitig
 ```bash
 pnpm --filter @klicker-uzh/prisma-data seed:prod:summerschool:portfolio   # PFM game, achievement 21
 pnpm --filter @klicker-uzh/prisma-data seed:prod:summerschool:dtp         # DTP game, achievements 11/16/14/3
+pnpm --filter @klicker-uzh/prisma-data seed:prod:summerschool:shootingstar # badge-only follow-up, achievement 16
 ```
+
+A late addition to an already-seeded round needs its own script, not a rerun: the original is replay-locked by its after-state dump, and a badge-only follow-up cannot pass a payload validator that requires a positive point delta per row. A badge-only script drops the `leaderboardEntry`/`Participant.xp` writes entirely and asserts in its post-write check that score and XP are unchanged, so a recipient who already received points cannot be paid twice.
 
 The default command only validates production references, resolves usernames case-insensitively, writes a comparison CSV and payload-bound before-state dump, and reports the intended point/XP and achievement changes. A write requires a separate `DRY_RUN=false` execution and refuses to start if production state or the payload no longer matches that dump. Dry-run cannot overwrite a changed snapshot, and an after-state dump blocks accidental replay. Writes run atomically and are verified before commit; the after-state dump records the result. Never reuse an earlier Summer School payload for a later activity.
 
