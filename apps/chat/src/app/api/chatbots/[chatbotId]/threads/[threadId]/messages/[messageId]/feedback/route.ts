@@ -1,5 +1,5 @@
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
-import { recordFeedbackScore } from '@/src/lib/server/langfuseFeedback'
+import { recordFeedbackScore } from '@/src/lib/server/langfuseTracing'
 import { prisma } from '@klicker-uzh/prisma'
 import { ChatMessageRating } from '@klicker-uzh/prisma/client'
 import { NextRequest, NextResponse } from 'next/server'
