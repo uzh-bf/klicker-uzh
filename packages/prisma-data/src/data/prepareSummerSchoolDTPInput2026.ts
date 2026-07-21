@@ -3,7 +3,13 @@
  *
  * The workbook column for Busy Bee is empty because the award depends on
  * in-platform behaviour, so it is derived here instead: a participant qualifies
- * when they fully completed every non-deleted microlearning of the course.
+ * when they answered every element instance of every non-deleted microlearning
+ * in the course.
+ *
+ * Completion is read from QuestionResponse rather than from
+ * ParticipantActivityPerformance or MicroLearning.completedCount: for this course
+ * those two are empty (zero rows, zero counters) even though responses exist, so
+ * they would silently derive zero awards.
  *
  * Reads the gitignored base input (workbook-derived, without busy_bee) and writes
  * the gitignored seed input consumed by seedSummerSchoolDTP2026.ts. Executes zero
@@ -36,20 +42,33 @@ async function main() {
       id: true,
       name: true,
       status: true,
-      startedCount: true,
-      completedCount: true,
-      scheduledStartAt: true,
-      scheduledEndAt: true,
+      stacks: { select: { elements: { select: { id: true } } } },
     },
     orderBy: { scheduledStartAt: 'asc' },
   })
 
+  if (microLearnings.length === 0) {
+    throw new Error(`Course ${COURSE_ID} has no microlearnings`)
+  }
+
+  const requiredInstances = microLearnings.map((microLearning) => {
+    const instanceIds = microLearning.stacks.flatMap((stack) =>
+      stack.elements.map((element) => element.id)
+    )
+    if (instanceIds.length === 0) {
+      throw new Error(
+        `Microlearning ${microLearning.name} has no element instances`
+      )
+    }
+    return { ...microLearning, instanceIds }
+  })
+
   console.log(
-    `\nMicrolearnings in course ${COURSE_ID}: ${microLearnings.length}`
+    `\nMicrolearnings in course ${COURSE_ID}: ${requiredInstances.length}`
   )
-  for (const ml of microLearnings) {
+  for (const microLearning of requiredInstances) {
     console.log(
-      `  ${ml.id} | ${ml.name} | ${ml.status} | started ${ml.startedCount} | completed ${ml.completedCount} | ${ml.scheduledStartAt.toISOString()} -> ${ml.scheduledEndAt.toISOString()}`
+      `  ${microLearning.name} | ${microLearning.status} | ${microLearning.instanceIds.length} instances`
     )
   }
 
@@ -80,64 +99,66 @@ async function main() {
     return { ...entry, participantId: candidate.id }
   })
 
-  const microLearningIds = microLearnings.map((ml) => ml.id)
-  const performances = await prisma.participantActivityPerformance.findMany({
+  const participantIds = resolved.map((entry) => entry.participantId)
+  const responses = await prisma.questionResponse.findMany({
     where: {
-      microLearningId: { in: microLearningIds },
-      participantId: { in: resolved.map((entry) => entry.participantId) },
+      microLearningId: { in: requiredInstances.map((item) => item.id) },
+      participantId: { in: participantIds },
     },
     select: {
       participantId: true,
       microLearningId: true,
-      completion: true,
-      totalScore: true,
+      elementInstanceId: true,
     },
   })
 
-  const completionByParticipant = new Map<string, Map<string, number>>()
-  for (const performance of performances) {
-    if (!performance.microLearningId) continue
-    const map =
-      completionByParticipant.get(performance.participantId) ??
-      new Map<string, number>()
-    map.set(performance.microLearningId, performance.completion)
-    completionByParticipant.set(performance.participantId, map)
+  const answered = new Map<string, Set<number>>()
+  for (const response of responses) {
+    const key = `${response.participantId}:${response.microLearningId}`
+    const set = answered.get(key) ?? new Set<number>()
+    set.add(response.elementInstanceId)
+    answered.set(key, set)
   }
 
+  const completedPerMicroLearning = new Map<string, number>()
   const histogram = new Map<number, number>()
-  const partialCounts = new Map<number, number>()
-  const entries = resolved.map((entry) => {
-    const map = completionByParticipant.get(entry.participantId) ?? new Map()
-    const completed = microLearningIds.filter(
-      (id) => (map.get(id) ?? 0) >= 1
-    ).length
-    const partial = microLearningIds.filter((id) => {
-      const value = map.get(id) ?? 0
-      return value > 0 && value < 1
-    }).length
 
-    histogram.set(completed, (histogram.get(completed) ?? 0) + 1)
-    partialCounts.set(partial, (partialCounts.get(partial) ?? 0) + 1)
+  const entries = resolved.map((entry) => {
+    const completed = requiredInstances.filter((microLearning) => {
+      const set =
+        answered.get(`${entry.participantId}:${microLearning.id}`) ??
+        new Set<number>()
+      return microLearning.instanceIds.every((id) => set.has(id))
+    })
+
+    for (const microLearning of completed) {
+      completedPerMicroLearning.set(
+        microLearning.name,
+        (completedPerMicroLearning.get(microLearning.name) ?? 0) + 1
+      )
+    }
+    histogram.set(completed.length, (histogram.get(completed.length) ?? 0) + 1)
 
     const { participantId: _participantId, ...rest } = entry
-    return { ...rest, busy_bee: completed === microLearningIds.length }
+    return { ...rest, busy_bee: completed.length === requiredInstances.length }
   })
 
-  console.log('\nFully completed microlearnings per participant:')
-  for (const [completed, count] of [...histogram].sort((a, b) => a[0] - b[0])) {
+  console.log('\nFully completed, per microlearning:')
+  for (const microLearning of requiredInstances) {
     console.log(
-      `  ${completed}/${microLearningIds.length}: ${count} participants`
+      `  ${microLearning.name}: ${completedPerMicroLearning.get(microLearning.name) ?? 0} of ${entries.length}`
     )
   }
-  console.log('Partially completed (0 < completion < 1) per participant:')
-  for (const [partial, count] of [...partialCounts].sort(
-    (a, b) => a[0] - b[0]
-  )) {
-    console.log(`  ${partial}: ${count} participants`)
+  console.log('Fully completed microlearnings per participant:')
+  for (const [completed, count] of [...histogram].sort((a, b) => a[0] - b[0])) {
+    console.log(
+      `  ${completed}/${requiredInstances.length}: ${count} participants`
+    )
   }
 
-  const busyBees = entries.filter((entry) => entry.busy_bee).length
-  console.log(`\nBusy Bee awards: ${busyBees}`)
+  console.log(
+    `\nBusy Bee awards: ${entries.filter((entry) => entry.busy_bee).length}`
+  )
   console.log(
     `Point/XP delta: ${entries.reduce((sum, entry) => sum + entry.points_delta, 0)}`
   )

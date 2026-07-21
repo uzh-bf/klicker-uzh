@@ -36,8 +36,8 @@ participant workbook, with the same safety contract as the portfolio round.
   | L | `DTP (ink. Präsi)` | `points_delta` (score + XP) | 26,200 across 36 |
   | M | `Award DTP` | Creative Mastermind (11) | 7 |
   | N | `Award Hapiness (Insta Takeover)` | Shooting Star (16) | 6 |
-  | O | `Award Busy Bee (beide Microlearnings gemacht)` | Busy Bee (3) | empty, derived from DB |
-  | P | `Award Happiness (present throughout …)` | Happiness (14) | 21 |
+  | O | `Award Busy Bee (beide Microlearnings gemacht)` | Busy Bee (3) | empty, derived from DB: 4 |
+  | P | `Award Happiness (present throughout …)` | Happiness (14) | 20 |
 
 - Decision: column N's header is stale. Its cell literal is `Badge Shooting Start`
   for every populated row, and column P separately carries `Award Happiness`.
@@ -46,11 +46,27 @@ participant workbook, with the same safety contract as the portfolio round.
   points go to all 36 participants alongside the 7 badges, mirroring the J/K
   portfolio round. Confirmed by the user.
 - Decision: Busy Bee is derived from the database, not the workbook, because
-  column O is empty and the award depends on in-platform behaviour. Rule:
-  `ParticipantActivityPerformance.completion === 1` for every non-deleted
-  `MicroLearning` of the course. Encoded in a committed preparation script so the
-  rule is reviewable; its output is frozen into the ignored input file so the
-  seed keeps its payload-hash replay safety.
+  column O is empty and the award depends on in-platform behaviour. Rule: the
+  participant has a `QuestionResponse` for every `ElementInstance` of every
+  non-deleted `MicroLearning` of the course. Encoded in a committed preparation
+  script so the rule is reviewable; its output is frozen into the ignored input
+  file so the seed keeps its payload-hash replay safety.
+- Correction: the first derivation used `ParticipantActivityPerformance.completion`
+  and returned zero Busy Bees for all 36. That table has zero rows for this
+  course, and `MicroLearning.startedCount` / `completedCount` are both zero as
+  well, so all three signals fail silently rather than erroring. `QuestionResponse`
+  is the reliable one. Corroboration: it yields 13 full completions of
+  `Accounting and Corporate Finance`, exactly matching the 13 non-empty cells of
+  workbook column G.
+- The course has exactly 2 microlearnings, matching "beide Microlearnings":
+  `Accounting and Corporate Finance` (9 instances, 13 of 36 complete) and
+  `Portfolio Management` (5 instances, 6 of 36 complete). Their intersection is
+  4 Busy Bee awards.
+- Source workbook v2 (`project/_local/20260721b_SS_Participants.xlsx`) is the full
+  multi-sheet master; the awards data is sheet `Auswertung1`, and the first sheet
+  is an unrelated personal-data roster. Only column P changed against v1:
+  Happiness 21 to 20 (two removed, one added). All other columns, all 36
+  usernames, and every numeric sum are identical.
 - Decision: add a third round-specific script rather than generalizing the two
   audited scripts, so each round keeps its own replay lock and dump filenames.
 - Workbook columns C (Swiss Quiz) and G (Microlearning) are in-platform point
@@ -106,16 +122,20 @@ participant workbook, with the same safety contract as the portfolio round.
   `rs-infisical-operator` profile `klicker-prd` (project `klicker-uzh-dev`,
   environment `prd`, readable `DATABASE_URL`, writable none, reusing the
   `klicker-dev` machine identity). Injection verified.
-- Blocked: Slice 3. Production `DATABASE_URL` targets `127.0.0.1:7432`, so a
-  tunnel to the production database must be open; without it Prisma fails
+  Production `DATABASE_URL` targets `127.0.0.1:7432`, so an SSH tunnel to the
+  production database must be open first; without it Prisma fails
   `P1001 DatabaseNotReachable`. No tunnel command is documented in this
   repository.
-- Next: with the tunnel open, run
-
-  ```bash
-  rs-infisical-operator --profile klicker-prd run --map DATABASE_URL=DATABASE_URL \
-    -- npx tsx src/data/prepareSummerSchoolDTPInput2026.ts
-  ```
-
-  from `packages/prisma-data`, review the reported microlearning list and Busy Bee
-  count, then repeat with `src/data/seedSummerSchoolDTP2026.ts` for the dry run.
+- Slice 3 done. Production dry run against workbook v2, zero database writes:
+  36 participants matched, 26,200 point and XP delta, Creative Mastermind 7,
+  Shooting Star 6, Happiness 20, Busy Bee 4 — all of them not yet held by any
+  recipient. Comparison CSV and before-state dump written.
+- Dry-run warnings, both matching the July portfolio round and therefore expected:
+  one participant has no course participation row but does have prior course
+  leaderboard state, and one enrolled participant is inactive.
+- Awaiting: explicit approval for the `DRY_RUN=false` production write.
+- Data hygiene: workbook v2 is the full master workbook and carries participant
+  names, birthdates, nationalities, study programs, group assignments, and an
+  external company list. It is in the gitignored `project/_local/` only. Nothing
+  derived from it beyond Klicker usernames and the award columns reaches any
+  tracked file.
