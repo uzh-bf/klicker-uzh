@@ -1,43 +1,54 @@
 /**
- * Prepares the Summer School 2026 DTP seed input by deriving the Busy Bee flag.
+ * Optional pre-step for seedCourseAwards.ts: derives the round's `derivedAward`
+ * from in-platform behaviour instead of from the lecturer workbook.
  *
- * The workbook column for Busy Bee is empty because the award depends on
- * in-platform behaviour, so it is derived here instead: a participant qualifies
- * when they answered every element instance of every non-deleted microlearning
- * in the course.
+ * Rule: a participant qualifies when they answered every element instance of
+ * every non-deleted microlearning in the course ("completed all microlearnings").
  *
- * Completion is read from QuestionResponse rather than from
- * ParticipantActivityPerformance or MicroLearning.completedCount: for this course
- * those two are empty (zero rows, zero counters) even though responses exist, so
- * they would silently derive zero awards.
+ * Completion is read from QuestionResponse, never from
+ * ParticipantActivityPerformance.completion or MicroLearning.completedCount /
+ * startedCount: for the Summer School 2026 course all three are empty (zero rows,
+ * zero counters) even though responses exist, so they derive zero awards silently
+ * instead of failing.
  *
- * Reads the gitignored base input (workbook-derived, without busy_bee) and writes
- * the gitignored seed input consumed by seedSummerSchoolDTP2026.ts. Executes zero
- * database writes.
+ * Reads the gitignored `_local/<round>_base.json` (workbook-derived rows without
+ * the derived award) and writes `_local/<round>_data.json` for the seed. Executes
+ * zero database writes; freezing the result into the payload keeps the seed's
+ * payload-hash replay safety intact.
+ *
+ * Usage:
+ *   ROUND=<key> pnpm --filter @klicker-uzh/prisma-data seed:prod:course-awards:prepare
  */
 import { prisma } from '@klicker-uzh/prisma'
 import fs from 'node:fs'
+import { resolveRound, roundFile } from './courseAwardRounds.js'
 
 interface BaseEntry {
   username: string
-  points_delta: number
-  creative_mastermind: boolean
-  shooting_star: boolean
-  happiness: boolean
+  points?: number
+  awards?: string[]
 }
 
-const baseUrl = new URL('summerschool_dtp_base.json', import.meta.url)
-const outputUrl = new URL('summerschool_dtp_data.json', import.meta.url)
-
-const COURSE_ID =
-  process.env.COURSE_ID || '043a156f-c3d4-484a-9b98-bbf7c54b92cc'
+const { key: ROUND, config } = resolveRound()
+const baseUrl = roundFile(ROUND, 'base.json')
+const outputUrl = roundFile(ROUND, 'data.json')
 
 async function main() {
+  const derivedAward = config.derivedAward
+  if (!derivedAward) {
+    throw new Error(`Round ${ROUND} declares no derivedAward`)
+  }
+  if (!config.awards.some((award) => award.key === derivedAward)) {
+    throw new Error(
+      `Round ${ROUND} derives ${derivedAward}, which is not one of its awards`
+    )
+  }
+
   const base: BaseEntry[] = JSON.parse(fs.readFileSync(baseUrl, 'utf-8'))
-  console.log(`Base input entries: ${base.length}`)
+  console.log(`Base payload entries: ${base.length}`)
 
   const microLearnings = await prisma.microLearning.findMany({
-    where: { courseId: COURSE_ID, isDeleted: false },
+    where: { courseId: config.courseId, isDeleted: false },
     select: {
       id: true,
       name: true,
@@ -48,10 +59,10 @@ async function main() {
   })
 
   if (microLearnings.length === 0) {
-    throw new Error(`Course ${COURSE_ID} has no microlearnings`)
+    throw new Error(`Course ${config.courseId} has no microlearnings`)
   }
 
-  const requiredInstances = microLearnings.map((microLearning) => {
+  const required = microLearnings.map((microLearning) => {
     const instanceIds = microLearning.stacks.flatMap((stack) =>
       stack.elements.map((element) => element.id)
     )
@@ -64,9 +75,9 @@ async function main() {
   })
 
   console.log(
-    `\nMicrolearnings in course ${COURSE_ID}: ${requiredInstances.length}`
+    `\nMicrolearnings in course ${config.courseId}: ${required.length}`
   )
-  for (const microLearning of requiredInstances) {
+  for (const microLearning of required) {
     console.log(
       `  ${microLearning.name} | ${microLearning.status} | ${microLearning.instanceIds.length} instances`
     )
@@ -88,22 +99,20 @@ async function main() {
   }
 
   const resolved = base.map((entry) => {
-    const candidates =
-      byUsername.get(entry.username.toLocaleLowerCase('en-US')) ?? []
-    const candidate = candidates[0]
-    if (candidates.length !== 1 || !candidate) {
+    const candidates = byUsername.get(entry.username.toLocaleLowerCase('en-US'))
+    const candidate = candidates?.[0]
+    if (candidates?.length !== 1 || !candidate) {
       throw new Error(
-        `Expected exactly one participant match for ${entry.username}, found ${candidates.length}`
+        `Expected exactly one participant match for ${entry.username}, found ${candidates?.length ?? 0}`
       )
     }
     return { ...entry, participantId: candidate.id }
   })
 
-  const participantIds = resolved.map((entry) => entry.participantId)
   const responses = await prisma.questionResponse.findMany({
     where: {
-      microLearningId: { in: requiredInstances.map((item) => item.id) },
-      participantId: { in: participantIds },
+      microLearningId: { in: required.map((item) => item.id) },
+      participantId: { in: resolved.map((entry) => entry.participantId) },
     },
     select: {
       participantId: true,
@@ -124,7 +133,7 @@ async function main() {
   const histogram = new Map<number, number>()
 
   const entries = resolved.map((entry) => {
-    const completed = requiredInstances.filter((microLearning) => {
+    const completed = required.filter((microLearning) => {
       const set =
         answered.get(`${entry.participantId}:${microLearning.id}`) ??
         new Set<number>()
@@ -140,36 +149,43 @@ async function main() {
     histogram.set(completed.length, (histogram.get(completed.length) ?? 0) + 1)
 
     const { participantId: _participantId, ...rest } = entry
-    return { ...rest, busy_bee: completed.length === requiredInstances.length }
+    const awards = (rest.awards ?? []).filter((award) => award !== derivedAward)
+    return {
+      ...rest,
+      awards:
+        completed.length === required.length
+          ? [...awards, derivedAward]
+          : awards,
+    }
   })
 
   console.log('\nFully completed, per microlearning:')
-  for (const microLearning of requiredInstances) {
+  for (const microLearning of required) {
     console.log(
       `  ${microLearning.name}: ${completedPerMicroLearning.get(microLearning.name) ?? 0} of ${entries.length}`
     )
   }
   console.log('Fully completed microlearnings per participant:')
   for (const [completed, count] of [...histogram].sort((a, b) => a[0] - b[0])) {
+    console.log(`  ${completed}/${required.length}: ${count} participants`)
+  }
+
+  const derivedCount = entries.filter((entry) =>
+    entry.awards.includes(derivedAward)
+  ).length
+  console.log(`\n${derivedAward} awards: ${derivedCount}`)
+  console.log(
+    `Point delta: ${entries.reduce((sum, entry) => sum + (entry.points ?? 0), 0)}`
+  )
+  for (const award of config.awards) {
     console.log(
-      `  ${completed}/${requiredInstances.length}: ${count} participants`
+      `${award.key}: ${entries.filter((entry) => entry.awards.includes(award.key)).length}`
     )
   }
 
-  console.log(
-    `\nBusy Bee awards: ${entries.filter((entry) => entry.busy_bee).length}`
-  )
-  console.log(
-    `Point/XP delta: ${entries.reduce((sum, entry) => sum + entry.points_delta, 0)}`
-  )
-  console.log(
-    `creative_mastermind: ${entries.filter((e) => e.creative_mastermind).length}`
-  )
-  console.log(`shooting_star: ${entries.filter((e) => e.shooting_star).length}`)
-  console.log(`happiness: ${entries.filter((e) => e.happiness).length}`)
-
+  fs.mkdirSync(new URL('.', outputUrl), { recursive: true })
   fs.writeFileSync(outputUrl, `${JSON.stringify(entries, null, 2)}\n`)
-  console.log(`\nSeed input written: ${outputUrl.pathname}`)
+  console.log(`\nSeed payload written: ${outputUrl.pathname}`)
 }
 
 main()

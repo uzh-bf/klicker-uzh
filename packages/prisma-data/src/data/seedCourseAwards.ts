@@ -1,24 +1,46 @@
+/**
+ * Production seed for externally-earned course points and achievements.
+ *
+ * One script for every round; the round is selected with ROUND and defined in
+ * courseAwardRounds.ts. Points earned inside Klicker (quizzes, microlearnings)
+ * are already on the leaderboard and must never appear in a payload — only
+ * activities run outside the platform are seeded here.
+ *
+ * Payload: `_local/<round>_data.json`, gitignored because it carries real
+ * usernames.
+ *
+ *   [{ "username": "someuser", "points": 400, "awards": ["shooting_star"] }]
+ *
+ * `points` (default 0) and `awards` (default none) are both optional, but a row
+ * must do at least one of the two. A round that only hands out badges therefore
+ * needs no special case: its rows carry no points, and the post-write check then
+ * asserts that score and XP did not move, so nobody can be paid twice.
+ *
+ * Safety contract, unchanged from the audited single-round scripts:
+ *   - dry run by default; a write needs an explicit DRY_RUN=false
+ *   - the dry run freezes a payload-bound before-state dump, and the write
+ *     refuses to start unless database and payload still match it
+ *   - the after-state dump is the replay lock: once it exists the round is done
+ *   - the write is a single Serializable transaction, verified before commit
+ *
+ * Usage:
+ *   ROUND=<key> pnpm --filter @klicker-uzh/prisma-data seed:prod:course-awards
+ *   ROUND=<key> DRY_RUN=false pnpm --filter … seed:prod:course-awards
+ */
 import { prisma } from '@klicker-uzh/prisma'
 import type { Prisma } from '@klicker-uzh/prisma/client'
 import { createHash } from 'node:crypto'
 import fs from 'node:fs'
+import type { RoundConfig } from './courseAwardRounds.js'
+import { resolveRound, roundFile } from './courseAwardRounds.js'
 
-type AwardKey =
-  | 'creative_mastermind'
-  | 'shooting_star'
-  | 'happiness'
-  | 'busy_bee'
-
-interface DTPSeedEntry {
+interface SeedEntry {
   username: string
-  points_delta: number
-  creative_mastermind: boolean
-  shooting_star: boolean
-  happiness: boolean
-  busy_bee: boolean
+  points: number
+  awards: string[]
 }
 
-interface ResolvedSeedEntry extends DTPSeedEntry {
+interface ResolvedEntry extends SeedEntry {
   participantId: string
   matchedUsername: string
 }
@@ -32,110 +54,102 @@ interface ParticipantState {
 }
 
 interface StateDump {
+  round: string
   courseId: string
   achievementIds: number[]
   payloadHash: string
   entries: ParticipantState[]
 }
 
-const inputUrl = new URL('summerschool_dtp_data.json', import.meta.url)
-const comparisonUrl = new URL(
-  'summerschool_dtp_comparison.csv',
-  import.meta.url
-)
-const beforeDumpUrl = new URL(
-  'summerschool_dtp_dump_before.json',
-  import.meta.url
-)
-const afterDumpUrl = new URL(
-  'summerschool_dtp_dump_after.json',
-  import.meta.url
-)
-
-const COURSE_ID =
-  process.env.COURSE_ID || '043a156f-c3d4-484a-9b98-bbf7c54b92cc'
 const DRY_RUN = process.env.DRY_RUN !== 'false'
 
-// Achievement ID mappings in the database, verified against nameEN before any write
-const AWARDS: { key: AwardKey; id: number; nameEN: string }[] = [
-  { key: 'creative_mastermind', id: 11, nameEN: 'Creative Mastermind' },
-  { key: 'shooting_star', id: 16, nameEN: 'Shooting Star' },
-  { key: 'happiness', id: 14, nameEN: 'Happiness' },
-  { key: 'busy_bee', id: 3, nameEN: 'Busy Bee' },
-]
+const { key: ROUND, config } = resolveRound()
+const inputUrl = roundFile(ROUND, 'data.json')
+const comparisonUrl = roundFile(ROUND, 'comparison.csv')
+const beforeDumpUrl = roundFile(ROUND, 'dump_before.json')
+const afterDumpUrl = roundFile(ROUND, 'dump_after.json')
 
-const ACHIEVEMENT_IDS = AWARDS.map((award) => award.id).sort((a, b) => a - b)
-const ALLOWED_INPUT_KEYS = new Set<string>([
-  'username',
-  'points_delta',
-  ...AWARDS.map((award) => award.key),
-])
+const AWARDS_BY_KEY = new Map(config.awards.map((award) => [award.key, award]))
+const ACHIEVEMENT_IDS = config.awards
+  .map((award) => award.id)
+  .sort((a, b) => a - b)
+const ALLOWED_INPUT_KEYS = new Set(['username', 'points', 'awards'])
 
-function loadInput(): DTPSeedEntry[] {
+function loadInput(): SeedEntry[] {
   if (!fs.existsSync(inputUrl)) {
-    throw new Error(`Missing sanitized input file at ${inputUrl.pathname}`)
+    throw new Error(`Missing sanitized payload at ${inputUrl.pathname}`)
   }
 
   const input: unknown = JSON.parse(fs.readFileSync(inputUrl, 'utf-8'))
   if (!Array.isArray(input) || input.length === 0) {
-    throw new Error('Input must be a non-empty array')
+    throw new Error('Payload must be a non-empty array')
   }
 
-  const entries = input.map((value, index): DTPSeedEntry => {
-    if (typeof value !== 'object' || value === null) {
-      throw new Error(`Input row ${index + 1} must be an object`)
+  const entries = input.map((value, index): SeedEntry => {
+    const row = index + 1
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+      throw new Error(`Payload row ${row} must be an object`)
     }
 
-    const row = value as Record<string, unknown>
-    const unsupportedKeys = Object.keys(row).filter(
-      (key) => !ALLOWED_INPUT_KEYS.has(key)
+    const record = value as Record<string, unknown>
+    const unsupported = Object.keys(record).filter(
+      (field) => !ALLOWED_INPUT_KEYS.has(field)
     )
-    if (unsupportedKeys.length > 0) {
+    if (unsupported.length > 0) {
       throw new Error(
-        `Input row ${index + 1} contains unsupported fields: ${unsupportedKeys.join(', ')}`
+        `Payload row ${row} contains unsupported fields: ${unsupported.join(', ')}`
       )
     }
 
-    const username = typeof row.username === 'string' ? row.username.trim() : ''
+    const username =
+      typeof record.username === 'string' ? record.username.trim() : ''
     if (username.length === 0) {
-      throw new Error(`Input row ${index + 1} has no username`)
+      throw new Error(`Payload row ${row} has no username`)
     }
-    if (!Number.isInteger(row.points_delta) || Number(row.points_delta) <= 0) {
+
+    const points = record.points ?? 0
+    if (!Number.isInteger(points) || Number(points) < 0) {
+      throw new Error(`Payload row ${row} has an invalid points value`)
+    }
+
+    const awards = record.awards ?? []
+    if (
+      !Array.isArray(awards) ||
+      awards.some((award) => typeof award !== 'string')
+    ) {
+      throw new Error(`Payload row ${row} has an invalid awards value`)
+    }
+    const awardKeys = awards as string[]
+    if (new Set(awardKeys).size !== awardKeys.length) {
+      throw new Error(`Payload row ${row} lists the same award twice`)
+    }
+    const unknown = awardKeys.filter((award) => !AWARDS_BY_KEY.has(award))
+    if (unknown.length > 0) {
       throw new Error(
-        `Input row ${index + 1} has an invalid points_delta value`
+        `Payload row ${row} references awards outside round ${ROUND}: ${unknown.join(', ')}`
       )
     }
 
-    const awards = {} as Record<AwardKey, boolean>
-    for (const award of AWARDS) {
-      if (typeof row[award.key] !== 'boolean') {
-        throw new Error(
-          `Input row ${index + 1} has an invalid ${award.key} value`
-        )
-      }
-      awards[award.key] = row[award.key] as boolean
+    if (Number(points) === 0 && awardKeys.length === 0) {
+      throw new Error(`Payload row ${row} grants neither points nor an award`)
     }
 
-    return {
-      username,
-      points_delta: Number(row.points_delta),
-      ...awards,
-    }
+    return { username, points: Number(points), awards: awardKeys }
   })
 
-  const normalizedUsernames = entries.map((entry) =>
+  const normalized = entries.map((entry) =>
     entry.username.toLocaleLowerCase('en-US')
   )
-  if (new Set(normalizedUsernames).size !== entries.length) {
-    throw new Error('Input contains duplicate usernames (case-insensitive)')
+  if (new Set(normalized).size !== entries.length) {
+    throw new Error('Payload contains duplicate usernames (case-insensitive)')
   }
 
   return entries
 }
 
 async function resolveParticipants(
-  entries: DTPSeedEntry[]
-): Promise<ResolvedSeedEntry[]> {
+  entries: SeedEntry[]
+): Promise<ResolvedEntry[]> {
   const participants = await prisma.participant.findMany({
     where: {
       OR: entries.map((entry) => ({
@@ -152,12 +166,11 @@ async function resolveParticipants(
   }
 
   return entries.map((entry) => {
-    const key = entry.username.toLocaleLowerCase('en-US')
-    const candidates = matches.get(key) ?? []
-    const candidate = candidates[0]
-    if (candidates.length !== 1 || !candidate) {
+    const candidates = matches.get(entry.username.toLocaleLowerCase('en-US'))
+    const candidate = candidates?.[0]
+    if (candidates?.length !== 1 || !candidate) {
       throw new Error(
-        `Expected exactly one participant match for ${entry.username}, found ${candidates.length}`
+        `Expected exactly one participant match for ${entry.username}, found ${candidates?.length ?? 0}`
       )
     }
 
@@ -169,7 +182,10 @@ async function resolveParticipants(
   })
 }
 
-async function validateDatabaseReferences(entries: ResolvedSeedEntry[]) {
+async function validateDatabaseReferences(
+  round: RoundConfig,
+  entries: ResolvedEntry[]
+) {
   const achievements = await prisma.achievement.findMany({
     where: { id: { in: ACHIEVEMENT_IDS } },
     select: { id: true, nameEN: true, type: true, scope: true },
@@ -178,7 +194,7 @@ async function validateDatabaseReferences(entries: ResolvedSeedEntry[]) {
     achievements.map((achievement) => [achievement.id, achievement])
   )
 
-  for (const award of AWARDS) {
+  for (const award of round.awards) {
     const achievement = achievementsById.get(award.id)
     if (
       achievement?.nameEN !== award.nameEN ||
@@ -191,33 +207,32 @@ async function validateDatabaseReferences(entries: ResolvedSeedEntry[]) {
     }
   }
 
-  const participantIds = entries.map((entry) => entry.participantId)
   const participations = await prisma.participation.findMany({
     where: {
-      courseId: COURSE_ID,
-      participantId: { in: participantIds },
+      courseId: round.courseId,
+      participantId: { in: entries.map((entry) => entry.participantId) },
     },
     select: { participantId: true, isActive: true },
   })
-  const enrolledIds = new Set(
+  const enrolled = new Set(
     participations.map((participation) => participation.participantId)
   )
-  const missingUsernames = entries
-    .filter((entry) => !enrolledIds.has(entry.participantId))
+  const missing = entries
+    .filter((entry) => !enrolled.has(entry.participantId))
     .map((entry) => entry.username)
-  if (missingUsernames.length > 0) {
+  if (missing.length > 0) {
     console.warn(
-      `Warning: ${missingUsernames.length} participants have no course participation row but must still have prior course leaderboard state: ${missingUsernames.join(', ')}`
+      `Warning: ${missing.length} participants have no course participation row but must still have prior course leaderboard state: ${missing.join(', ')}`
     )
   }
 
-  const inactiveIds = new Set(
+  const inactive = new Set(
     participations
       .filter((participation) => !participation.isActive)
       .map((participation) => participation.participantId)
   )
   const inactiveUsernames = entries
-    .filter((entry) => inactiveIds.has(entry.participantId))
+    .filter((entry) => inactive.has(entry.participantId))
     .map((entry) => entry.username)
   if (inactiveUsernames.length > 0) {
     console.warn(
@@ -228,7 +243,8 @@ async function validateDatabaseReferences(entries: ResolvedSeedEntry[]) {
 
 async function readState(
   client: typeof prisma | Prisma.TransactionClient,
-  entries: ResolvedSeedEntry[]
+  round: RoundConfig,
+  entries: ResolvedEntry[]
 ): Promise<ParticipantState[]> {
   const participantIds = entries.map((entry) => entry.participantId)
   const [participants, leaderboardEntries, achievementInstances] =
@@ -240,7 +256,7 @@ async function readState(
       client.leaderboardEntry.findMany({
         where: {
           type: 'COURSE',
-          courseId: COURSE_ID,
+          courseId: round.courseId,
           participantId: { in: participantIds },
         },
         select: { participantId: true, score: true },
@@ -260,10 +276,10 @@ async function readState(
   const scoresById = new Map(
     leaderboardEntries.map((entry) => [entry.participantId, entry.score])
   )
-  const achievementsById = new Map<string, number[]>()
+  const heldById = new Map<string, number[]>()
   for (const instance of achievementInstances) {
-    achievementsById.set(instance.participantId, [
-      ...(achievementsById.get(instance.participantId) ?? []),
+    heldById.set(instance.participantId, [
+      ...(heldById.get(instance.participantId) ?? []),
       instance.achievementId,
     ])
   }
@@ -282,19 +298,19 @@ async function readState(
       username: participant.username,
       score,
       xp: participant.xp,
-      achievements: (achievementsById.get(participant.id) ?? []).sort(
-        (a, b) => a - b
-      ),
+      achievements: (heldById.get(participant.id) ?? []).sort((a, b) => a - b),
     }
   })
 }
 
 function createDump(
+  round: RoundConfig,
   entries: ParticipantState[],
   payloadHash: string
 ): StateDump {
   return {
-    courseId: COURSE_ID,
+    round: ROUND,
+    courseId: round.courseId,
     achievementIds: ACHIEVEMENT_IDS,
     payloadHash,
     entries,
@@ -307,10 +323,14 @@ function assertSameDump(actual: StateDump, expected: StateDump, label: string) {
   }
 }
 
+/**
+ * Score and XP must move by exactly the payload delta and nothing else, so a
+ * badge-only round (delta 0) fails if it touches the leaderboard at all.
+ */
 function assertExpectedChanges(
   before: ParticipantState[],
   after: ParticipantState[],
-  entries: ResolvedSeedEntry[]
+  entries: ResolvedEntry[]
 ) {
   const mismatches: string[] = []
 
@@ -325,13 +345,13 @@ function assertExpectedChanges(
     const expectedAchievements = [
       ...new Set([
         ...beforeState.achievements,
-        ...AWARDS.filter((award) => entry[award.key]).map((award) => award.id),
+        ...entry.awards.map((award) => AWARDS_BY_KEY.get(award)?.id ?? -1),
       ]),
     ].sort((a, b) => a - b)
 
     if (
-      afterState.score !== beforeState.score + entry.points_delta ||
-      afterState.xp !== beforeState.xp + entry.points_delta ||
+      afterState.score !== beforeState.score + entry.points ||
+      afterState.xp !== beforeState.xp + entry.points ||
       JSON.stringify(afterState.achievements) !==
         JSON.stringify(expectedAchievements)
     ) {
@@ -347,25 +367,24 @@ function assertExpectedChanges(
 }
 
 function csvCell(value: string | number | boolean): string {
-  const text = String(value)
-  return `"${text.replaceAll('"', '""')}"`
+  return `"${String(value).replaceAll('"', '""')}"`
 }
 
-function writeComparison(entries: ResolvedSeedEntry[]) {
+function writeComparison(round: RoundConfig, entries: ResolvedEntry[]) {
   const rows = [
     [
       'Source Username',
       'Matched Database Username',
       'Participant ID',
-      'Points Delta',
-      ...AWARDS.map((award) => award.nameEN),
+      'Points',
+      ...round.awards.map((award) => award.nameEN),
     ],
     ...entries.map((entry) => [
       entry.username,
       entry.matchedUsername,
       entry.participantId,
-      entry.points_delta,
-      ...AWARDS.map((award) => entry[award.key]),
+      entry.points,
+      ...round.awards.map((award) => entry.awards.includes(award.key)),
     ]),
   ]
   fs.writeFileSync(
@@ -375,34 +394,35 @@ function writeComparison(entries: ResolvedSeedEntry[]) {
 }
 
 function writeDump(url: URL, dump: StateDump) {
+  fs.mkdirSync(new URL('.', url), { recursive: true })
   fs.writeFileSync(url, `${JSON.stringify(dump, null, 2)}\n`)
 }
 
 async function main() {
-  const input = loadInput()
   if (fs.existsSync(afterDumpUrl)) {
     throw new Error(
-      'After-state dump exists. This seed has already completed and must not be rerun.'
+      `Round ${ROUND} already has an after-state dump. It has completed and must not be rerun.`
     )
   }
 
+  const input = loadInput()
   const payloadHash = createHash('sha256')
     .update(JSON.stringify(input))
     .digest('hex')
-  const totalPoints = input.reduce((sum, entry) => sum + entry.points_delta, 0)
+  const totalPoints = input.reduce((sum, entry) => sum + entry.points, 0)
 
-  console.log('Summer School 2026 DTP seed')
-  console.log(`Course ID: ${COURSE_ID}`)
+  console.log(`Course award seed: ${config.label} (round ${ROUND})`)
+  console.log(`Course ID: ${config.courseId}`)
   console.log(
     `Dry Run Mode: ${DRY_RUN ? 'ENABLED (no database writes)' : 'DISABLED (database writes active)'}`
   )
 
   const entries = await resolveParticipants(input)
-  await validateDatabaseReferences(entries)
-  writeComparison(entries)
+  await validateDatabaseReferences(config, entries)
+  writeComparison(config, entries)
 
-  const before = await readState(prisma, entries)
-  const currentDump = createDump(before, payloadHash)
+  const before = await readState(prisma, config, entries)
+  const currentDump = createDump(config, before, payloadHash)
 
   if (DRY_RUN) {
     if (fs.existsSync(beforeDumpUrl)) {
@@ -412,13 +432,17 @@ async function main() {
       assertSameDump(currentDump, savedDump, 'Dry-run state and payload')
     }
     writeDump(beforeDumpUrl, currentDump)
+
     console.log(`Participants matched: ${entries.length}`)
     console.log(`Point and XP delta: ${totalPoints}`)
-    for (const award of AWARDS) {
-      const total = input.filter((entry) => entry[award.key]).length
+    for (const award of config.awards) {
+      const total = entries.filter((entry) =>
+        entry.awards.includes(award.key)
+      ).length
       const pending = entries.filter(
         (entry, index) =>
-          entry[award.key] && !before[index]?.achievements.includes(award.id)
+          entry.awards.includes(award.key) &&
+          !before[index]?.achievements.includes(award.id)
       ).length
       console.log(
         `${award.nameEN} (ID ${award.id}) to award: ${total} (${pending} not yet held)`
@@ -442,31 +466,36 @@ async function main() {
 
   const after = await prisma.$transaction(
     async (tx) => {
-      const transactionBefore = await readState(tx, entries)
+      const transactionBefore = await readState(tx, config, entries)
       assertSameDump(
-        createDump(transactionBefore, payloadHash),
+        createDump(config, transactionBefore, payloadHash),
         savedDump,
         'Transaction starting state'
       )
 
       for (const entry of entries) {
-        await tx.leaderboardEntry.update({
-          where: {
-            type_participantId_courseId: {
-              type: 'COURSE',
-              participantId: entry.participantId,
-              courseId: COURSE_ID,
+        if (entry.points > 0) {
+          await tx.leaderboardEntry.update({
+            where: {
+              type_participantId_courseId: {
+                type: 'COURSE',
+                participantId: entry.participantId,
+                courseId: config.courseId,
+              },
             },
-          },
-          data: { score: { increment: entry.points_delta } },
-        })
-        await tx.participant.update({
-          where: { id: entry.participantId },
-          data: { xp: { increment: entry.points_delta } },
-        })
+            data: { score: { increment: entry.points } },
+          })
+          await tx.participant.update({
+            where: { id: entry.participantId },
+            data: { xp: { increment: entry.points } },
+          })
+        }
 
-        for (const award of AWARDS) {
-          if (!entry[award.key]) continue
+        for (const key of entry.awards) {
+          const award = AWARDS_BY_KEY.get(key)
+          if (!award) {
+            throw new Error(`Unknown award ${key} reached the write path`)
+          }
 
           await tx.participantAchievementInstance.upsert({
             where: {
@@ -486,14 +515,14 @@ async function main() {
         }
       }
 
-      const transactionAfter = await readState(tx, entries)
+      const transactionAfter = await readState(tx, config, entries)
       assertExpectedChanges(transactionBefore, transactionAfter, entries)
       return transactionAfter
     },
     { isolationLevel: 'Serializable', maxWait: 10_000, timeout: 60_000 }
   )
 
-  writeDump(afterDumpUrl, createDump(after, payloadHash))
+  writeDump(afterDumpUrl, createDump(config, after, payloadHash))
   console.log(`Verification Summary: ${entries.length} Successes, 0 Mismatches`)
   console.log(`After-state dump: ${afterDumpUrl.pathname}`)
 }

@@ -154,6 +154,31 @@ participant workbook, with the same safety contract as the portfolio round.
   XP changed. Production result: 3 successes, zero mismatches, zero point and XP
   delta; independent read-back confirms unchanged score and XP, `achievedCount`
   of 1 for all three, and a Shooting Star total of 25 instances platform-wide.
+- Consolidation after both rounds landed. The four round-specific scripts had
+  diverged into near-copies, so they were replaced by one parameterized template:
+  `seedCourseAwards.ts` plus a `ROUNDS` registry in `courseAwardRounds.ts` and the
+  optional derivation step `prepareMicrolearningAwards.ts`. A round is now one
+  config entry and one payload file. Payload rows carry optional `points` and
+  optional `awards`, so a badge-only round is ordinary rather than a special case;
+  the post-write check demands score and XP move by exactly the payload delta,
+  which for such a round means not at all. The three completed rounds stay in the
+  registry as worked examples. Deleted: `seedSummerSchool.ts` (entirely
+  commented-out dead code), `seedSummerSchool2026.ts`,
+  `seedSummerSchoolPortfolio2026.ts`, `seedSummerSchoolDTP2026.ts`,
+  `seedSummerSchoolShootingStar2026.ts`, `prepareSummerSchoolDTPInput2026.ts`.
+- Data hygiene improved with it: artefacts moved from the prefix-matched
+  `summerschool_*` ignore rules into `packages/prisma-data/src/data/_local/`,
+  ignored as a whole directory. A future round cannot leak a payload by choosing
+  a filename the prefix rules do not cover.
+- Verified: the three completed rounds still refuse to run (after-state dump check
+  fires before any database access, under `DRY_RUN=false` too); a missing or
+  unknown `ROUND` fails with the list of valid rounds; payload validation rejects
+  unknown award keys, no-op rows, negative points, unsupported fields, duplicate
+  usernames, and repeated awards, while points-only and badge-only rows pass.
+  Targeted typecheck reports zero errors in the three new files.
+- Follow-up filed: doing this through the CLI at all is the real problem. ClickUp
+  task for the lecturer-facing UI (single assignment plus CSV bulk import with
+  username mapping) is linked from this plan's PR.
 - Next: retain the ignored before/after dumps and comparison CSVs locally for
   operational audit; no further seed action required for this round.
 - Data hygiene: workbook v2 is the full master workbook and carries participant
