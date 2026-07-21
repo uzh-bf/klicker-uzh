@@ -2,7 +2,7 @@
 
 import { CheckIcon, EditIcon, Trash2, XIcon } from 'lucide-react'
 import type { FC } from 'react'
-import { useMemo, useState } from 'react'
+import { createElement, useMemo, useState } from 'react'
 
 import { TextField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -180,9 +180,6 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
     }
   }
 
-  // Badge the row with the icon of the mode the thread was last used in (D6).
-  const ModeIcon = thread.lastChatMode ? getModeIcon(thread.lastChatMode) : null
-
   return (
     <div
       data-cy="chat-thread-item"
@@ -227,9 +224,15 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
             onClick={onSelect}
             className="flex min-w-0 flex-grow items-center gap-2 px-3 py-1 text-start"
           >
-            {ModeIcon && (
-              <ModeIcon className="text-muted-foreground size-4 shrink-0" />
-            )}
+            {/* Badge the row with the icon of the mode the thread was last
+                used in (D6). Rendered via createElement rather than bound to a
+                capitalized local: assigning the looked-up icon in the render
+                body reads to the React Compiler lint as defining a new
+                component on every render. */}
+            {thread.lastChatMode &&
+              createElement(getModeIcon(thread.lastChatMode), {
+                className: 'text-muted-foreground size-4 shrink-0',
+              })}
             <p className="truncate text-sm">{getThreadTitle()}</p>
           </button>
           <button
