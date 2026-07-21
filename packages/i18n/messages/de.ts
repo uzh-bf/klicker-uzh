@@ -124,20 +124,10 @@ export default {
       editSend: 'Senden',
     },
     toolFallback: {
+      running: '{tool} wird verwendet...',
+      done: '{tool} verwendet',
       showLess: 'Weniger anzeigen',
       showMore: 'Mehr anzeigen ({count} weitere Zeilen)',
-    },
-    tools: {
-      rag: {
-        searching: 'Vorlesungsinhalte werden durchsucht nach: {query}...',
-        searchErrorTitle: 'Suchfehler',
-        searchErrorMessage:
-          'Vorlesungsinhalte konnten nicht durchsucht werden nach: {query}',
-        errorTitle: 'RAG-Suchfehler',
-        resultTitle: 'Vorlesungsinhalt',
-        questionLabel: 'Frage:',
-        noContent: 'Kein Inhalt verfügbar',
-      },
     },
     noLogin: {
       title: 'Anmeldung erforderlich',

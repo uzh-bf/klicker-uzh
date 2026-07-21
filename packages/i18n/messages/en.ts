@@ -122,19 +122,10 @@ export default {
       editSend: 'Send',
     },
     toolFallback: {
+      running: 'Using {tool}...',
+      done: 'Used {tool}',
       showLess: 'Show less',
       showMore: 'Show more ({count} more lines)',
-    },
-    tools: {
-      rag: {
-        searching: 'Searching lecture content for: {query}...',
-        searchErrorTitle: 'Search Error',
-        searchErrorMessage: 'Failed to search lecture content for: {query}',
-        errorTitle: 'RAG Search Error',
-        resultTitle: 'Lecture Content',
-        questionLabel: 'Question:',
-        noContent: 'No content available',
-      },
     },
     noLogin: {
       title: 'Login Required',
