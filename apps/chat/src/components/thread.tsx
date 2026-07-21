@@ -212,7 +212,7 @@ const AssistantReasoningPart: FC<ReasoningMessagePartProps> = ({ text }) => {
       </button>
 
       {isOpen ? (
-        <div className="text-muted-foreground mb-2 border-l-2 border-slate-200 pl-3 text-sm">
+        <div className="text-muted-foreground border-border mb-2 border-l-2 pl-3 text-sm">
           <Markdown
             content={normalizeCustomMathTags(normalizedText)}
             singleDollarTextMath
@@ -1015,32 +1015,32 @@ const EditComposer: FC = () => {
             dataCy="chat-edit-composer"
           />
           <div className="ml-auto flex items-center justify-center gap-2">
+            {/* Cancel keeps the design-system default (outline) variant. */}
             <Button
               data-cy="chat-edit-cancel-button"
               onClick={() => {
                 clearEditRemovedAttachmentKeys(message.id)
                 messageRuntime.composer.cancel()
               }}
-              style={{
-                backgroundColor: '#000000',
-                color: '#ffffff',
-              }}
-              className={{
-                root: 'rounded-full font-semibold hover:!bg-gray-800',
-              }}
+              className={{ root: 'rounded-full font-semibold' }}
             >
               <Button.Label>{t('chat.composer.editCancel')}</Button.Label>
             </Button>
+            {/*
+             * Send is the primary action → UZH-blue fill, applied by hand: the
+             * design-system `primary` prop paints `bg-primary-100`, a token this
+             * app never defines. Overriding through `className.root` means every
+             * class the `outline` variant sets must be answered explicitly, since
+             * twMerge only drops classes in the same conflict group — hence
+             * `hover:text-primary-foreground` (without it the label keeps the
+             * variant's `hover:text-accent-foreground`, i.e. black on blue).
+             */}
             <Button
               data-cy="chat-edit-send-button"
               onClick={() => void handleSend()}
               disabled={!canSubmit}
-              style={{
-                backgroundColor: '#ffffff',
-                color: '#000000',
-              }}
               className={{
-                root: 'rounded-full font-semibold hover:!bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50',
+                root: 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground disabled:hover:bg-primary rounded-full border-transparent font-semibold',
               }}
             >
               <Button.Label>{t('chat.composer.editSend')}</Button.Label>
@@ -1106,7 +1106,7 @@ const PartGroup: FC<
         {label}
       </button>
       {isOpen ? (
-        <div className="mt-1 border-l-2 border-slate-200 pl-3">{children}</div>
+        <div className="border-border mt-1 border-l-2 pl-3">{children}</div>
       ) : null}
     </div>
   )
@@ -1137,7 +1137,7 @@ const AssistantMessage: FC<{
             width={chatbotAvatar ? '35' : '32'}
             height="35"
             className={twMerge(
-              'hover:bg-uzh-red-20 hidden cursor-pointer rounded-full bg-white sm:block',
+              'hidden rounded-full bg-white sm:block',
               chatbotAvatar ? '' : 'p-1'
             )}
           />
@@ -1151,7 +1151,7 @@ const AssistantMessage: FC<{
             width="24"
             height="24"
             className={twMerge(
-              'hover:bg-uzh-red-20 cursor-pointer rounded-full bg-white sm:hidden',
+              'rounded-full bg-white sm:hidden',
               chatbotAvatar ? '' : 'p-1'
             )}
           />
