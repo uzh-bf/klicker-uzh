@@ -16,8 +16,14 @@ export default {
       selectReasoningEffort: 'Select reasoning effort',
       reasoningEffortHint:
         'Higher effort can improve difficult responses at the cost of additional latency.',
-      availableCredits: 'Available Credits',
-      creditsExhausted:
+    },
+    credits: {
+      title: 'Available credits',
+      costHint:
+        'Every message uses credits — how many depends on the model and the length of the exchange.',
+      resetAt: 'Refills on {date}.',
+      resetNone: 'These credits do not refill automatically.',
+      exhausted:
         'You have used up all your credits. However, you can still use the smaller model.',
     },
     sidebar: {

@@ -5,8 +5,8 @@ import { type ModelID } from '../lib/config/models'
 import { type ReasoningEffort } from '../lib/config/reasoning'
 import { useSettingsStore } from '../stores/settingsStore'
 
-import { Progress, Select } from '@uzh-bf/design-system'
-import { ChevronDown, ChevronUp, Settings2, Zap } from 'lucide-react'
+import { Select } from '@uzh-bf/design-system'
+import { ChevronDown, ChevronUp, Settings2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 export function SettingsPanel() {
@@ -21,9 +21,6 @@ export function SettingsPanel() {
     setSelectedReasoningEffort,
   } = useSettingsStore()
   const [open, setOpen] = useState(false)
-
-  const creditsPercentage =
-    credits.total > 0 ? (credits.current / credits.total) * 100 : 0
 
   const handleModelChange = (value: string) => {
     setSelectedModel(value as ModelID)
@@ -46,7 +43,7 @@ export function SettingsPanel() {
     <div>
       <div
         data-cy="chat-settings-toggle"
-        className="flex cursor-pointer items-center gap-2 border-t px-3 py-2 hover:bg-gray-100"
+        className="hover:bg-accent flex cursor-pointer items-center gap-2 border-t px-3 py-2 transition-colors"
         onClick={() => setOpen(!open)}
       >
         <Settings2 className="h-4 w-4" />
@@ -141,48 +138,6 @@ export function SettingsPanel() {
           </div>
         </div>
       )}
-
-      <div data-cy="chat-credits-section" className="border-t px-3 py-2">
-        {/* credits display */}
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Zap className="h-4 w-4" />
-            <span className="text-sm font-medium">
-              {t('chat.settingsPanel.availableCredits')}
-            </span>
-          </div>
-          <div className="space-y-1">
-            <div className="flex justify-between text-sm">
-              <span
-                data-cy="chat-credits-display"
-                className="text-muted-foreground"
-              >
-                {Math.round(credits.current)} / {credits.total}
-              </span>
-              <span className="text-muted-foreground">
-                {Math.round(creditsPercentage)}%
-              </span>
-            </div>
-            <Progress
-              value={creditsPercentage}
-              max={100}
-              className={{
-                root: 'h-2 font-bold',
-                indicator: `h-2 ${creditsPercentage < 10 ? 'bg-red-600' : creditsPercentage < 20 ? 'bg-yellow-400' : 'bg-blue-400'}`,
-              }}
-              formatter={() => null}
-            />
-            {credits.current === 0 ? (
-              <div
-                data-cy="chat-credits-empty-message"
-                className="text-muted-foreground text-sm"
-              >
-                {t('chat.settingsPanel.creditsExhausted')}
-              </div>
-            ) : null}
-          </div>
-        </div>
-      </div>
     </div>
   )
 }
