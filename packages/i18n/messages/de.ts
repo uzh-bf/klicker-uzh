@@ -3245,6 +3245,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       knowledgeGraphBuildTitle: 'Wissensgraph erstellen',
       knowledgeGraphBuildDescription:
         'Wählen Sie einen Verarbeitungsmodus und starten Sie die externe Graph-Pipeline ausdrücklich.',
+      knowledgeGraphGenerationModel: 'Generierungsmodell',
+      knowledgeGraphCleaningModel: 'Bereinigungsmodell',
       knowledgeGraphSaveBeforeBuild:
         'Speichern Sie die geänderte Ressourcenauswahl, bevor Sie den Graphen erstellen.',
       knowledgeGraphBuild: 'Erstellen',

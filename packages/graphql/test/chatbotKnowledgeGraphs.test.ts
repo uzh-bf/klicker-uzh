@@ -68,6 +68,11 @@ function createDeferred<T = void>() {
   return { promise, resolve, reject }
 }
 
+const VALID_BUILD_MODELS = {
+  generationModel: 'klickeruzh/azure/gpt-5.4',
+  cleaningModel: 'klickeruzh/azure/gpt-4.1-nano',
+} as const
+
 function rawQueryText(args: unknown[]) {
   const query = args[0]
   if (Array.isArray(query)) return query.join(' ')
@@ -868,7 +873,11 @@ describe('Integration tests for chatbot knowledge graph selection', () => {
 
     await expect(
       rebuildChatbotKnowledgeGraph(
-        { chatbotId: chatbot.id, speedMode: 'balanced' },
+        {
+          chatbotId: chatbot.id,
+          speedMode: 'balanced',
+          ...VALID_BUILD_MODELS,
+        },
         userOneCtx
       )
     ).rejects.toThrow('Chatbot knowledge graph has no selected resources')
@@ -880,10 +889,92 @@ describe('Integration tests for chatbot knowledge graph selection', () => {
 
     await expect(
       rebuildChatbotKnowledgeGraph(
-        { chatbotId: chatbot.id, speedMode: 'balanced' },
+        {
+          chatbotId: chatbot.id,
+          speedMode: 'balanced',
+          ...VALID_BUILD_MODELS,
+        },
         userOneCtx
       )
     ).rejects.toThrow('Chatbot not found')
+  })
+
+  it('rejects an unsupported generation model before claiming a build', async () => {
+    const chatbot = await createChatbot(userOneCtx, 'Course assistant')
+    const { resource } = await createUrlResource(
+      userOneCtx,
+      'Lecture notes',
+      'Lecture 1'
+    )
+    await updateChatbotKnowledgeGraphResources(
+      { chatbotId: chatbot.id, resourceIds: [resource.id] },
+      userOneCtx
+    )
+    const runNoWait = vi.spyOn(
+      userOneCtx.tasks.buildChatbotKnowledgeGraph,
+      'runNoWait'
+    )
+
+    await expect(
+      rebuildChatbotKnowledgeGraph(
+        {
+          chatbotId: chatbot.id,
+          speedMode: 'balanced',
+          generationModel: 'unsupported/model',
+          cleaningModel: VALID_BUILD_MODELS.cleaningModel,
+        },
+        userOneCtx
+      )
+    ).rejects.toThrow('Unsupported knowledge graph generation model')
+    expect(runNoWait).not.toHaveBeenCalled()
+    await expect(
+      prisma.chatbotKnowledgeGraph.findUniqueOrThrow({
+        where: { chatbotId: chatbot.id },
+      })
+    ).resolves.toMatchObject({
+      status: ChatbotKnowledgeGraphStatus.DIRTY,
+      activeAttemptId: null,
+      activeBuildRevision: null,
+    })
+  })
+
+  it('rejects an unsupported cleaning model before claiming a build', async () => {
+    const chatbot = await createChatbot(userOneCtx, 'Course assistant')
+    const { resource } = await createUrlResource(
+      userOneCtx,
+      'Lecture notes',
+      'Lecture 1'
+    )
+    await updateChatbotKnowledgeGraphResources(
+      { chatbotId: chatbot.id, resourceIds: [resource.id] },
+      userOneCtx
+    )
+    const runNoWait = vi.spyOn(
+      userOneCtx.tasks.buildChatbotKnowledgeGraph,
+      'runNoWait'
+    )
+
+    await expect(
+      rebuildChatbotKnowledgeGraph(
+        {
+          chatbotId: chatbot.id,
+          speedMode: 'balanced',
+          generationModel: VALID_BUILD_MODELS.generationModel,
+          cleaningModel: 'unsupported/model',
+        },
+        userOneCtx
+      )
+    ).rejects.toThrow('Unsupported knowledge graph cleaning model')
+    expect(runNoWait).not.toHaveBeenCalled()
+    await expect(
+      prisma.chatbotKnowledgeGraph.findUniqueOrThrow({
+        where: { chatbotId: chatbot.id },
+      })
+    ).resolves.toMatchObject({
+      status: ChatbotKnowledgeGraphStatus.DIRTY,
+      activeAttemptId: null,
+      activeBuildRevision: null,
+    })
   })
 
   it('claims a fresh attempt and dispatches a complete immutable snapshot', async () => {
@@ -917,7 +1008,11 @@ describe('Integration tests for chatbot knowledge graph selection', () => {
       .mockResolvedValue({} as never)
 
     const claimed = await rebuildChatbotKnowledgeGraph(
-      { chatbotId: chatbot.id, speedMode: 'balanced' },
+      {
+        chatbotId: chatbot.id,
+        speedMode: 'balanced',
+        ...VALID_BUILD_MODELS,
+      },
       userOneCtx
     )
 
@@ -939,6 +1034,8 @@ describe('Integration tests for chatbot knowledge graph selection', () => {
       attemptId: string
       selectionRevision: number
       speedMode: APIKBIngestionSpeedMode
+      generationModel: string
+      cleaningModel: string
       resources: Array<Record<string, unknown>>
     }
     expect(payload).toMatchObject({
@@ -947,6 +1044,7 @@ describe('Integration tests for chatbot knowledge graph selection', () => {
       attemptId: claimed.activeAttemptId,
       selectionRevision: 1,
       speedMode: 'balanced',
+      ...VALID_BUILD_MODELS,
     })
     expect(payload.resources).toHaveLength(2)
     expect(payload.resources).toEqual(
@@ -993,7 +1091,7 @@ describe('Integration tests for chatbot knowledge graph selection', () => {
         .mockResolvedValue({} as never)
 
       const claimed = await rebuildChatbotKnowledgeGraph(
-        { chatbotId: chatbot.id, speedMode },
+        { chatbotId: chatbot.id, speedMode, ...VALID_BUILD_MODELS },
         userOneCtx
       )
 
@@ -1026,13 +1124,21 @@ describe('Integration tests for chatbot knowledge graph selection', () => {
     })
 
     const firstBuild = rebuildChatbotKnowledgeGraph(
-      { chatbotId: chatbot.id, speedMode: 'balanced' },
+      {
+        chatbotId: chatbot.id,
+        speedMode: 'balanced',
+        ...VALID_BUILD_MODELS,
+      },
       userOneCtx
     )
     await dispatchStarted.promise
     await expect(
       rebuildChatbotKnowledgeGraph(
-        { chatbotId: chatbot.id, speedMode: 'fast' },
+        {
+          chatbotId: chatbot.id,
+          speedMode: 'fast',
+          ...VALID_BUILD_MODELS,
+        },
         userOneCtx
       )
     ).rejects.toThrow('Chatbot knowledge graph build is already active')
@@ -1060,7 +1166,11 @@ describe('Integration tests for chatbot knowledge graph selection', () => {
 
     await expect(
       rebuildChatbotKnowledgeGraph(
-        { chatbotId: chatbot.id, speedMode: 'balanced' },
+        {
+          chatbotId: chatbot.id,
+          speedMode: 'balanced',
+          ...VALID_BUILD_MODELS,
+        },
         userOneCtx
       )
     ).rejects.toThrow('Chatbot knowledge graph build could not be queued')
@@ -1104,7 +1214,11 @@ describe('Integration tests for chatbot knowledge graph selection', () => {
     })
 
     const build = rebuildChatbotKnowledgeGraph(
-      { chatbotId: chatbot.id, speedMode: 'quality' },
+      {
+        chatbotId: chatbot.id,
+        speedMode: 'quality',
+        ...VALID_BUILD_MODELS,
+      },
       userOneCtx
     )
     const rejectedBuild = expect(build).rejects.toThrow(

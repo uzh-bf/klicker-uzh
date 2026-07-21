@@ -1,8 +1,15 @@
 mutation RebuildChatbotKnowledgeGraph(
   $chatbotId: ID!
   $speedMode: KBSpeedMode!
+  $generationModel: String!
+  $cleaningModel: String!
 ) {
-  rebuildChatbotKnowledgeGraph(chatbotId: $chatbotId, speedMode: $speedMode) {
+  rebuildChatbotKnowledgeGraph(
+    chatbotId: $chatbotId
+    speedMode: $speedMode
+    generationModel: $generationModel
+    cleaningModel: $cleaningModel
+  ) {
     id
     chatbotId
     status

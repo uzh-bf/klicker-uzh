@@ -7,7 +7,10 @@ import {
 } from '@azure/storage-blob'
 import { HatchetClient } from '@hatchet-dev/typescript-sdk'
 import { KBResourceStatus, type PrismaClient } from '@klicker-uzh/prisma/client'
-import type { IngestKBResourceInput } from '@klicker-uzh/types'
+import type {
+  IngestKBResourceInput,
+  KBIngestionModelId,
+} from '@klicker-uzh/types'
 import { signKBIngestionWebhook } from '@klicker-uzh/util'
 
 const DEFAULT_KB_INGESTION_TIMEOUT_SECONDS = 3600
@@ -118,6 +121,8 @@ export type ExternalKBIngestionPayload = {
   export_to_falkordb: true
   falkordb_graph_name: string
   speed_mode: IngestKBResourceInput['speedMode']
+  generation_model?: KBIngestionModelId
+  cleaning_model?: KBIngestionModelId
 }
 
 export type KBIngestionSourceInput =

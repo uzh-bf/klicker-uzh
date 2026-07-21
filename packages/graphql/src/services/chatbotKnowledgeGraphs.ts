@@ -1,16 +1,17 @@
 import {
-  KnowledgeGraphNotPublishedError,
-  type PublishedKnowledgeGraph,
   getPublishedKnowledgeGraph,
+  KnowledgeGraphNotPublishedError,
   readKnowledgeGraphNeighbors,
   readKnowledgeGraphOverview,
   searchKnowledgeGraph,
+  type PublishedKnowledgeGraph,
 } from '@klicker-uzh/knowledge-graph'
 import * as DB from '@klicker-uzh/prisma/client'
-import type {
-  BuildChatbotKnowledgeGraphInput,
-  KBIngestionSpeedMode,
-  KnowledgeGraphResponse,
+import {
+  isKBIngestionModelId,
+  type BuildChatbotKnowledgeGraphInput,
+  type KBIngestionSpeedMode,
+  type KnowledgeGraphResponse,
 } from '@klicker-uzh/types'
 import { randomUUID } from 'crypto'
 import { GraphQLError } from 'graphql'
@@ -466,10 +467,24 @@ export async function rebuildChatbotKnowledgeGraph(
   {
     chatbotId,
     speedMode,
-  }: { chatbotId: string; speedMode: KBIngestionSpeedMode },
+    generationModel,
+    cleaningModel,
+  }: {
+    chatbotId: string
+    speedMode: KBIngestionSpeedMode
+    generationModel: string
+    cleaningModel: string
+  },
   ctx: ContextWithUser
 ): Promise<ChatbotKnowledgeGraphConfig> {
   await getOwnedChatbotOrThrow(ctx, chatbotId)
+
+  if (!isKBIngestionModelId(generationModel)) {
+    throw new GraphQLError('Unsupported knowledge graph generation model')
+  }
+  if (!isKBIngestionModelId(cleaningModel)) {
+    throw new GraphQLError('Unsupported knowledge graph cleaning model')
+  }
 
   const graph = await ctx.prisma.chatbotKnowledgeGraph.findUnique({
     where: { chatbotId },
@@ -506,6 +521,8 @@ export async function rebuildChatbotKnowledgeGraph(
     attemptId,
     selectionRevision: graph.selectionRevision,
     speedMode,
+    generationModel,
+    cleaningModel,
     resources,
   }
   const claim = await ctx.prisma.chatbotKnowledgeGraph.updateMany({

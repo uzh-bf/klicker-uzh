@@ -8,6 +8,10 @@ import {
   RebuildChatbotKnowledgeGraphDocument,
   UpdateChatbotKnowledgeGraphResourcesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import {
+  kbIngestionModelIds,
+  type KBIngestionModelId,
+} from '@klicker-uzh/types'
 import { Badge, Button, Checkbox, Select } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
@@ -17,6 +21,11 @@ const ACTIVE_GRAPH_STATUSES = new Set<ChatbotKnowledgeGraphStatus>([
   ChatbotKnowledgeGraphStatus.Queued,
   ChatbotKnowledgeGraphStatus.Processing,
 ])
+const DEFAULT_KB_MODEL: KBIngestionModelId = 'klickeruzh/azure/gpt-4.1-nano'
+const KB_MODEL_ITEMS = kbIngestionModelIds.map((model) => ({
+  value: model,
+  label: model,
+}))
 
 type SelectionState = {
   chatbotId: string
@@ -37,6 +46,10 @@ function ChatbotKnowledgeGraphPanel({ chatbotId }: { chatbotId: string }) {
     resourceIds: [],
   })
   const [speedMode, setSpeedMode] = useState<KbSpeedMode>(KbSpeedMode.Balanced)
+  const [generationModel, setGenerationModel] =
+    useState<KBIngestionModelId>(DEFAULT_KB_MODEL)
+  const [cleaningModel, setCleaningModel] =
+    useState<KBIngestionModelId>(DEFAULT_KB_MODEL)
   const [operationError, setOperationError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [publicationSuppressed, setPublicationSuppressed] = useState(false)
@@ -122,7 +135,6 @@ function ChatbotKnowledgeGraphPanel({ chatbotId }: { chatbotId: string }) {
     ],
     [t]
   )
-
   const toggleResource = (resourceId: string) => {
     if (!selectionReady || isSavingSelection) return
 
@@ -185,7 +197,12 @@ function ChatbotKnowledgeGraphPanel({ chatbotId }: { chatbotId: string }) {
     setIsRebuildingGraph(true)
     try {
       await rebuildGraph({
-        variables: { chatbotId, speedMode },
+        variables: {
+          chatbotId,
+          speedMode,
+          generationModel,
+          cleaningModel,
+        },
       })
       await refetch()
     } catch {
@@ -426,7 +443,7 @@ function ChatbotKnowledgeGraphPanel({ chatbotId }: { chatbotId: string }) {
           </div>
 
           <div className="rounded-lg border border-[#E9E9E9] bg-[#FAFAFA] p-4">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="flex flex-col gap-4">
               <div className="flex min-w-0 flex-1 flex-col gap-1">
                 <h5 className="font-semibold text-[#121212]">
                   {t('manage.resources.knowledgeGraphBuildTitle')}
@@ -437,8 +454,8 @@ function ChatbotKnowledgeGraphPanel({ chatbotId }: { chatbotId: string }) {
                     : t('manage.resources.knowledgeGraphBuildDescription')}
                 </p>
               </div>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                <div className="flex min-w-40 flex-col">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:items-end">
+                <div className="flex min-w-0 flex-col">
                   <label
                     htmlFor="chatbot-knowledge-graph-speed-mode"
                     className="mb-1 text-sm font-semibold text-[#4C4C4C]"
@@ -455,26 +472,68 @@ function ChatbotKnowledgeGraphPanel({ chatbotId }: { chatbotId: string }) {
                     className={{ root: 'w-full', trigger: 'w-full' }}
                   />
                 </div>
-                <Button
-                  primary
-                  loading={isRebuildingGraph}
-                  disabled={
-                    isSavingSelection ||
-                    !selectionReady ||
-                    isActive ||
-                    hasUnsavedSelection ||
-                    selectedResourceIds.length === 0
-                  }
-                  onClick={() => void handleRebuild()}
-                  data={{ cy: 'chatbot-knowledge-graph-rebuild' }}
-                >
-                  <Button.Label>
-                    {config.builtRevision === null ||
-                    config.builtRevision === undefined
-                      ? t('manage.resources.knowledgeGraphBuild')
-                      : t('manage.resources.knowledgeGraphRebuild')}
-                  </Button.Label>
-                </Button>
+                <div className="flex min-w-0 flex-col">
+                  <label
+                    htmlFor="chatbot-knowledge-graph-generation-model"
+                    className="mb-1 text-sm font-semibold text-[#4C4C4C]"
+                  >
+                    {t('manage.resources.knowledgeGraphGenerationModel')}
+                  </label>
+                  <Select
+                    id="chatbot-knowledge-graph-generation-model"
+                    value={generationModel}
+                    items={KB_MODEL_ITEMS}
+                    onChange={(value) =>
+                      setGenerationModel(value as KBIngestionModelId)
+                    }
+                    disabled={isActive || isRebuildingGraph}
+                    data={{
+                      cy: 'chatbot-knowledge-graph-generation-model',
+                    }}
+                    className={{ root: 'w-full', trigger: 'w-full' }}
+                  />
+                </div>
+                <div className="flex min-w-0 flex-col">
+                  <label
+                    htmlFor="chatbot-knowledge-graph-cleaning-model"
+                    className="mb-1 text-sm font-semibold text-[#4C4C4C]"
+                  >
+                    {t('manage.resources.knowledgeGraphCleaningModel')}
+                  </label>
+                  <Select
+                    id="chatbot-knowledge-graph-cleaning-model"
+                    value={cleaningModel}
+                    items={KB_MODEL_ITEMS}
+                    onChange={(value) =>
+                      setCleaningModel(value as KBIngestionModelId)
+                    }
+                    disabled={isActive || isRebuildingGraph}
+                    data={{ cy: 'chatbot-knowledge-graph-cleaning-model' }}
+                    className={{ root: 'w-full', trigger: 'w-full' }}
+                  />
+                </div>
+                <div className="flex min-w-0 items-end sm:justify-end">
+                  <Button
+                    primary
+                    loading={isRebuildingGraph}
+                    disabled={
+                      isSavingSelection ||
+                      !selectionReady ||
+                      isActive ||
+                      hasUnsavedSelection ||
+                      selectedResourceIds.length === 0
+                    }
+                    onClick={() => void handleRebuild()}
+                    data={{ cy: 'chatbot-knowledge-graph-rebuild' }}
+                  >
+                    <Button.Label>
+                      {config.builtRevision === null ||
+                      config.builtRevision === undefined
+                        ? t('manage.resources.knowledgeGraphBuild')
+                        : t('manage.resources.knowledgeGraphRebuild')}
+                    </Button.Label>
+                  </Button>
+                </div>
               </div>
             </div>
 

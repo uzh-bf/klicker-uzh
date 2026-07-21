@@ -88,6 +88,8 @@ export function buildExternalChatbotKnowledgeGraphPayload(
     export_to_falkordb: true,
     falkordb_graph_name: `klickeruzh:${input.chatbotId}`,
     speed_mode: input.speedMode,
+    generation_model: input.generationModel,
+    cleaning_model: input.cleaningModel,
   }
 }
 

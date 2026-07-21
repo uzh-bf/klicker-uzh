@@ -1744,6 +1744,8 @@ export const Mutation = builder.mutationType({
         args: {
           chatbotId: t.arg.id({ required: true }),
           speedMode: t.arg({ type: KBSpeedMode, required: true }),
+          generationModel: t.arg.string({ required: true }),
+          cleaningModel: t.arg.string({ required: true }),
         },
         resolve: async (_, args, ctx) => {
           return await ChatbotKnowledgeGraphService.rebuildChatbotKnowledgeGraph(

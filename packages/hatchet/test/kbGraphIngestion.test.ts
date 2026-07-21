@@ -42,6 +42,8 @@ const graphInput: BuildChatbotKnowledgeGraphInput = {
   attemptId: ATTEMPT_ID,
   selectionRevision: 3,
   speedMode: 'balanced',
+  generationModel: 'klickeruzh/azure/gpt-5.4',
+  cleaningModel: 'klickeruzh/azure/gpt-4.1-nano',
   resources: [
     {
       resourceId: PDF_RESOURCE_ID,
@@ -202,6 +204,8 @@ describe('chatbot knowledge graph external dispatch', () => {
       export_to_falkordb: true,
       falkordb_graph_name: `klickeruzh:${CHATBOT_ID}`,
       speed_mode: 'balanced',
+      generation_model: 'klickeruzh/azure/gpt-5.4',
+      cleaning_model: 'klickeruzh/azure/gpt-4.1-nano',
     })
   })
 
@@ -234,6 +238,8 @@ describe('chatbot knowledge graph external dispatch', () => {
       export_to_falkordb: true,
       falkordb_graph_name: `klickeruzh:${CHATBOT_ID}`,
       speed_mode: 'balanced',
+      generation_model: 'klickeruzh/azure/gpt-5.4',
+      cleaning_model: 'klickeruzh/azure/gpt-4.1-nano',
     })
     const sourceUrl = new URL(payload.sources[0]!.source_url)
     expect(`${sourceUrl.origin}${sourceUrl.pathname}`).toBe(

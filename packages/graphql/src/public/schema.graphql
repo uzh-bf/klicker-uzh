@@ -2007,7 +2007,7 @@ type Mutation {
   publishMicroLearning(id: String!): MicroLearning
   publishPracticeQuiz(availableFrom: Date, id: String!): PracticeQuiz
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
-  rebuildChatbotKnowledgeGraph(chatbotId: ID!, speedMode: KBSpeedMode!): ChatbotKnowledgeGraphConfig!
+  rebuildChatbotKnowledgeGraph(chatbotId: ID!, cleaningModel: String!, generationModel: String!, speedMode: KBSpeedMode!): ChatbotKnowledgeGraphConfig!
   removeCatalogObjectAssignment(assignmentId: Int!): Boolean!
   removeObject(objectId: String!, objectType: ObjectType!): String
   removeUserFromGroup(groupId: Int!, userId: String!): Boolean!

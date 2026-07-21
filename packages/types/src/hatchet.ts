@@ -22,6 +22,22 @@ export interface HatchetHandlerGlobalContext {
 export const kbIngestionSpeedModes = ['balanced', 'quality', 'fast'] as const
 export type KBIngestionSpeedMode = (typeof kbIngestionSpeedModes)[number]
 
+export const kbIngestionModelIds = [
+  'klickeruzh/azure/gpt-4.1',
+  'klickeruzh/azure/gpt-5.1',
+  'klickeruzh/azure/gpt-5.5',
+  'klickeruzh/azure/gpt-5.4',
+  'klickeruzh/azure/gpt-4.1-nano',
+] as const
+
+export type KBIngestionModelId = (typeof kbIngestionModelIds)[number]
+
+export function isKBIngestionModelId(
+  value: string
+): value is KBIngestionModelId {
+  return (kbIngestionModelIds as readonly string[]).includes(value)
+}
+
 type IngestKBResourceInputBase = JsonObject & {
   resourceId: string
   kbId: string
@@ -49,6 +65,8 @@ export type BuildChatbotKnowledgeGraphInput = JsonObject & {
   attemptId: string
   selectionRevision: number
   speedMode: KBIngestionSpeedMode
+  generationModel: KBIngestionModelId
+  cleaningModel: KBIngestionModelId
   resources: Array<
     | {
         resourceId: string

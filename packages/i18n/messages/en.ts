@@ -3189,6 +3189,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       knowledgeGraphBuildTitle: 'Build knowledge graph',
       knowledgeGraphBuildDescription:
         'Choose a processing mode and explicitly start the external graph pipeline.',
+      knowledgeGraphGenerationModel: 'Generation model',
+      knowledgeGraphCleaningModel: 'Cleaning model',
       knowledgeGraphSaveBeforeBuild:
         'Save the changed resource selection before building the graph.',
       knowledgeGraphBuild: 'Build',
