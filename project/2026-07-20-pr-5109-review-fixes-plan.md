@@ -119,3 +119,41 @@ An earlier draft blamed `useChatRuntime` (thread-list runtime) for the disabled 
 - Review: simplification subagent suggested deriving the greeting from `suggestionMode === 'manage'` instead of a separate `welcomeMessage` prop. Declined (subagent flagged it non-must-fix): the explicit prop keeps manage-specific copy in `manage-assistant.tsx` and avoids overloading `suggestionMode` (which selects suggestions, not welcome copy). Its two comment notes judged justified.
 - Correctness review: both fixes verified correct against Next 16.2.10 source (`matchWildcardDomain` in `csrf-protection.js`) — old `**.klicker.localhost` structurally cannot match the 4-label workspace host `chat.klicker.<ws>.localhost`; new `**.localhost` matches any depth; `blockCrossSiteDEV` is wired only into dev branches of `router-server.js`, never production; student chat has no regression (both `<Thread>` call sites omit `welcomeMessage`). Nits integrated: fixed the plan's welcome-order wording (avatar → text → suggestions). Deferred: no automated assertion for the manage welcome text — the existing student-welcome Playwright test (`Y-chat.spec.ts` "Empty chat shows welcome message", asserts `chat-welcome-message` contains `Ask`) already guards the shared `ThreadWelcome` against regressing the student path; a manage-surface assertion needs a new lecturer-authed chat e2e harness (auth + `/api/manage/chat` mock), out of scope for this batch. Recommended follow-up.
 - Finish gates: security self-assessment — dev-only config (undefined in prod) + a static, React-escaped greeting constant = no attacker-controlled surface; the two review subagents cover maintainability for this 13-line scope. Next: commit this Progress update, push clean FF to `codex/manage-assistant-mcp-v3-ai` via gh HTTPS credential, update PR #5109 body.
+
+## Batch 3 — Proposal confirmation + assistant persistence (2026-07-21)
+
+User-reported on the same PR/branch: "Proposal confirmation failed" when the assistant tries to create a question, and the embedded assistant "still flickers" while the new-tab chat works.
+
+### Bug 1 — Proposal confirmation failed (root cause: turbo strict env)
+
+`POST /api/manage/proposals/confirm` calls the GraphQL API server-to-server over HTTPS. Traefik serves an mkcert leaf, so Node needs `NODE_EXTRA_CA_CERTS=/etc/devrouter/mkcert-rootCA.pem` or the call throws `UNABLE_TO_VERIFY_LEAF_SIGNATURE` and the route returns its 502 branch ("Proposal confirmation failed"). The devcontainer exports the variable, but `turbo run dev` executes tasks in **strict env mode**: only names listed in `turbo.json` `globalEnv` are passed to task processes. `NODE_EXTRA_CA_CERTS` was not listed, so every app process ran without it.
+
+Evidence: the top-level dev process had the variable set; the actual chat app processes (pids 3752/3781/4480/4510) reported `0` matches for it in `/proc/<pid>/environ`. After adding it to `globalEnv`, all chat processes report `1`.
+
+Browser traffic was unaffected (the host trusts the mkcert CA), which is why only the server-side path failed and the symptom looked assistant-specific.
+
+An earlier attempt injected the variable in `.devcontainer/post-start.sh`; it was reverted once the turbo root cause was found — the launch env was never the problem.
+
+### Bug 2 — Embedded assistant reloads (root cause: Layout remount)
+
+`ManageAssistantWidget` was mounted inside `Layout`, which the pages router re-renders per page. Every navigation between manage pages unmounted the widget, closed the drawer, and reloaded the iframe, dropping the conversation. Mounted in `_app` instead (inside `DndProvider`), which survives route changes. Because it no longer inherits Layout's signed-in-only rendering, it is gated on `router.pathname !== '/login'`.
+
+An Apollo `cache-only` `UserProfile` gate was tried first and removed: the cache is empty on first paint, so the trigger button never appeared.
+
+### Correction — the transport hypothesis was wrong
+
+An earlier draft blamed `manage-assistant.tsx` creating a new `AssistantChatTransport` per context change, assuming that remounts the Thread. Reading `@assistant-ui/react-ai-sdk`'s `useChatRuntime` (`useDynamicChatTransport`) disproved it: the transport is wrapped in a `Proxy` over a ref refreshed each render, so a new transport object does not recreate the runtime. `manage-assistant.tsx` was restored unchanged.
+
+### Slices
+
+1. **`NODE_EXTRA_CA_CERTS` passthrough.** `turbo.json` `globalEnv`. Commit `fix(dev): pass NODE_EXTRA_CA_CERTS through turbo to the apps` (`54c9d4c33`).
+2. **Assistant survives navigation.** `_app.tsx` + `Layout.tsx` + `ManageAssistantWidget.tsx`, plus a chat-side dedup guard in `useEmbeddedManageContext.ts`. Commit `fix(manage-assistant): keep the assistant mounted across manage navigation` (`1789487b3`).
+
+### Progress
+
+- Slice 1 done + verified live: the assistant created a draft question end to end ("DRAFT CREATED ... Capital of Switzerland (#31)"), and the element is present in the question pool.
+- Slice 2 done + verified live: sent "Say PERSIST.", then navigated `/` → `/courses`; the drawer stayed open with the conversation intact. Before the change, every navigation closed the drawer and reloaded the iframe.
+- Chat-side dedup guard: `useEmbeddedManageContext` only publishes a context whose serialized payload changed. Manage re-posts the same payload on open and on every unacked retry, and its memo recomputes whenever the router object changes identity, so each post previously produced a fresh object and a redundant re-render. The ack is still sent for every message. Not claimed as the flicker fix.
+- **Not reproduced: idle or in-page flicker.** Instrumented the iframe with a `load` counter and a `MutationObserver`: 0 loads / 0 additions / 0 removals over 30s idle and across search and filter interactions in Chromium. No Firefox engine is available in this environment, so a browser-specific repaint cannot be ruled out.
+- Verification: `pnpm --filter @klicker-uzh/chat check` and `pnpm --filter @klicker-uzh/frontend-manage check` both pass; the pre-commit `check:all` and pre-push `build` gates passed for both commits.
+- **Open, unrelated to this diff:** the local manage stack later degraded to a permanent `Layout` loader with zero client GraphQL requests. Reproduced with the three manage files stashed (`cy:false, btn:false, gql:0`), so it is not caused by this change. Clearing `apps/frontend-manage/.next/dev`, a full `devrouter stop` + `ensure`, and touching the auth route did not restore it. Direct GraphQL from the page context works and `NEXT_PUBLIC_API_URL` is correctly namespaced. Environmental; unresolved.
