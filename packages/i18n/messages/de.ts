@@ -108,6 +108,8 @@ export default {
         'Bearbeiten nicht möglich: Das ausgewählte Modell unterstützt keine Bilder',
       copy: 'Kopieren',
       refresh: 'Aktualisieren',
+      rateUp: 'Hilfreiche Antwort',
+      rateDown: 'Keine hilfreiche Antwort',
       reasoningGroupLabel: 'Denkprozess ({count} Teile)',
       toolCallsGroupLabel: '{count} Tool-Aufrufe',
     },

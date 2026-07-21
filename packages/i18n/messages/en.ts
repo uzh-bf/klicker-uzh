@@ -106,6 +106,8 @@ export default {
         'Cannot edit: selected model does not support images',
       copy: 'Copy',
       refresh: 'Refresh',
+      rateUp: 'Helpful answer',
+      rateDown: 'Not a helpful answer',
       reasoningGroupLabel: 'Reasoning ({count} parts)',
       toolCallsGroupLabel: '{count} tool calls',
     },

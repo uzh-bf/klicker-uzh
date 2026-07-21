@@ -27,6 +27,8 @@ import {
   RefreshCwIcon,
   SendHorizontalIcon,
   SquareIcon,
+  ThumbsDownIcon,
+  ThumbsUpIcon,
   XIcon,
 } from 'lucide-react'
 import {
@@ -47,6 +49,7 @@ import {
   hasAnyImageAttachmentData,
 } from '@/src/lib/attachments/attachmentState'
 import { getAttachmentPreviewSrc } from '@/src/lib/attachments/attachmentUi'
+import { useChatStore } from '@/src/stores/chatStore'
 import {
   MAX_IMAGE_ATTACHMENTS,
   useComposerStore,
@@ -60,6 +63,7 @@ import { ToolFallback } from './tool-fallback'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 import Image from 'next/image'
+import { useParams } from 'next/navigation'
 
 import { Markdown } from '@klicker-uzh/markdown'
 import { useTranslations } from 'next-intl'
@@ -1183,6 +1187,9 @@ const AssistantMessage: FC<{
   )
 }
 
+const actionBarButtonClassName =
+  'hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50'
+
 const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
   const t = useTranslations()
   const { showMessageActions } = useChatUi()
@@ -1205,7 +1212,7 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
             <ActionBarPrimitive.Copy asChild>
               <button
                 data-cy="chat-copy-message-button"
-                className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
+                className={actionBarButtonClassName}
               >
                 <MessagePrimitive.If copied>
                   <CheckIcon />
@@ -1224,7 +1231,7 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
             <ActionBarPrimitive.Reload asChild>
               <button
                 data-cy="chat-reload-message-button"
-                className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
+                className={actionBarButtonClassName}
               >
                 <RefreshCwIcon />
                 <span className="sr-only">{t('chat.message.refresh')}</span>
@@ -1234,9 +1241,79 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
           <TooltipContent>{t('chat.message.refresh')}</TooltipContent>
         </Tooltip>
 
+        <MessageRatingButtons />
+
         <BranchPickerWrapper />
       </ActionBarPrimitive.Root>
     </div>
+  )
+}
+
+const MessageRatingButtons: FC = () => {
+  const t = useTranslations()
+  const message = useMessage()
+  const { chatbotId } = useParams<{ chatbotId: string }>()
+  const rateMessage = useChatStore((state) => state.rateMessage)
+  // The runtime's message object does not carry our own fields, so the current
+  // vote is read back from the store the mutation writes to.
+  const rating = useChatStore(
+    (state) =>
+      state.threads
+        .find((thread) => thread.id === state.activeThreadId)
+        ?.messages.find((entry) => entry.id === message.id)?.rating ?? null
+  )
+
+  if (!chatbotId) return null
+
+  const options = [
+    {
+      value: 'UP' as const,
+      Icon: ThumbsUpIcon,
+      label: t('chat.message.rateUp'),
+    },
+    {
+      value: 'DOWN' as const,
+      Icon: ThumbsDownIcon,
+      label: t('chat.message.rateDown'),
+    },
+  ]
+
+  return (
+    <>
+      {options.map(({ value, Icon, label }) => {
+        const isActive = rating === value
+        return (
+          <Tooltip key={value}>
+            <TooltipTrigger asChild>
+              <button
+                data-cy={`chat-rate-${value.toLowerCase()}-button`}
+                aria-pressed={isActive}
+                // Clicking the active vote clears it, so a misclick is undoable.
+                onClick={() =>
+                  void rateMessage(
+                    chatbotId,
+                    message.id,
+                    isActive ? null : value
+                  )
+                }
+                className={twMerge(
+                  actionBarButtonClassName,
+                  isActive && 'text-primary'
+                )}
+              >
+                {/* The cast icon is filled, not merely recoloured: primary
+                    against muted-foreground is only ~2.4:1 (~2.0:1 in dark
+                    mode), so colour alone would leave the active vote
+                    indistinguishable under WCAG 1.4.1/1.4.11. */}
+                <Icon className={isActive ? 'fill-current' : undefined} />
+                <span className="sr-only">{label}</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{label}</TooltipContent>
+          </Tooltip>
+        )
+      })}
+    </>
   )
 }
 

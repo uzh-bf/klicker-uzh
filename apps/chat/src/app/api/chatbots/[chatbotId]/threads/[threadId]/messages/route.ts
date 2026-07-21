@@ -45,6 +45,7 @@ export async function GET(
         modelId: msg.modelId ?? null,
         reasoningEffort: msg.reasoningEffort ?? null,
         reasoningContent: msg.reasoningContent ?? null,
+        rating: msg.rating ?? null,
         creditsUsed:
           msg.creditsUsed != null
             ? (
