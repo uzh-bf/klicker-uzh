@@ -133,7 +133,19 @@ participant workbook, with the same safety contract as the portfolio round.
 - Dry-run warnings, both matching the July portfolio round and therefore expected:
   one participant has no course participation row but does have prior course
   leaderboard state, and one enrolled participant is inactive.
-- Awaiting: explicit approval for the `DRY_RUN=false` production write.
+- Production write executed with explicit user approval. Result: 36 successes,
+  zero mismatches; leaderboard score +26,200; XP +26,200; 37 achievement
+  instances granted (Creative Mastermind 7, Shooting Star 6, Happiness 20,
+  Busy Bee 4). After-state dump written, so the script now refuses any rerun.
+- Verification: an independent read-back script, written separately from the
+  seed and reusing none of its helpers, re-queried all 36 participants and
+  confirmed every score, XP, achievement presence, and `achievedCount === 1`
+  against the before-state dump plus the payload — all match. The seed's own
+  in-transaction check is therefore corroborated rather than trusted alone.
+  Targeted typecheck and Prettier clean; the throwaway verification script was
+  removed afterwards.
+- Next: retain the ignored before/after dumps and comparison CSV locally for
+  operational audit; no further seed action required for this round.
 - Data hygiene: workbook v2 is the full master workbook and carries participant
   names, birthdates, nationalities, study programs, group assignments, and an
   external company list. It is in the gitignored `project/_local/` only. Nothing
