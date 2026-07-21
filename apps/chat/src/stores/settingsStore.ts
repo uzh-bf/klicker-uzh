@@ -52,7 +52,13 @@ interface SettingsState {
   credits: {
     current: number
     total: number
+    // ISO timestamp of the next refill; null when the chatbot never refills.
+    nextResetAt: string | null
   }
+  // False until a credits fetch has succeeded. The placeholder credits below
+  // would otherwise read as "0 left, never refills", which is a claim we
+  // cannot make before the server has answered.
+  creditsLoaded: boolean
   modelSelectionEnabled: boolean
 
   // Available options
@@ -79,7 +85,9 @@ export const useSettingsStore = create<SettingsState>()(
       credits: {
         current: 0.0,
         total: 0.0,
+        nextResetAt: null,
       },
+      creditsLoaded: false,
       modelSelectionEnabled: false,
       modeOptions: {},
 
@@ -200,6 +208,7 @@ export const useSettingsStore = create<SettingsState>()(
           const creditsData = {
             current: data.current ?? 0,
             total: data.total ?? 0,
+            nextResetAt: data.nextResetAt ?? null,
           }
           const availableModels: ModelOption[] = data.availableModels ?? []
           const automaticModelId: string | undefined = data.automaticModelId
@@ -229,6 +238,7 @@ export const useSettingsStore = create<SettingsState>()(
 
             return {
               credits: creditsData,
+              creditsLoaded: true,
               modelOptions: availableModels,
               selectedModel,
               selectedReasoningEffort,

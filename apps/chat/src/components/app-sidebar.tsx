@@ -16,6 +16,7 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import * as React from 'react'
 import { useChatStore } from '../stores/chatStore'
+import { CreditsFooter } from './credits-footer'
 import { SettingsPanel } from './settings-panel'
 import { ThreadList } from './thread-list'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
@@ -84,6 +85,7 @@ export function AppSidebar({
       <SidebarRail />
       <SidebarFooter className="p-0">
         <SettingsPanel />
+        <CreditsFooter />
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>

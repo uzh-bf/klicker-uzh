@@ -18,8 +18,14 @@ export default {
       selectReasoningEffort: 'Denkaufwand auswählen',
       reasoningEffortHint:
         'Ein höherer Aufwand kann schwierige Antworten verbessern, erhöht aber die Wartezeit.',
-      availableCredits: 'Verfügbare Credits',
-      creditsExhausted:
+    },
+    credits: {
+      title: 'Verfügbare Credits',
+      costHint:
+        'Jede Nachricht verbraucht Credits — wie viele, hängt vom Modell und der Länge des Austauschs ab.',
+      resetAt: 'Werden am {date} wieder aufgefüllt.',
+      resetNone: 'Diese Credits werden nicht automatisch aufgefüllt.',
+      exhausted:
         'Du hast alle Deine Credits aufgebraucht. Du kannst jedoch weiterhin das kleinere Modell verwenden.',
     },
     sidebar: {
