@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const boundaries = vi.hoisted(() => ({
   getPublishedKnowledgeGraph: vi.fn(),
+  isKnowledgeGraphNotPublishedError: vi.fn(),
   readKnowledgeGraphNeighbors: vi.fn(),
   readKnowledgeGraphOverview: vi.fn(),
   searchKnowledgeGraph: vi.fn(),
@@ -21,19 +22,17 @@ vi.mock('@klicker-uzh/prisma', () => ({
   prisma: { chatbotKnowledgeGraph: {} },
 }))
 
-vi.mock('@klicker-uzh/knowledge-graph', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('@klicker-uzh/knowledge-graph')>()
+vi.mock('@/src/lib/server/knowledgeGraphRuntime', () => {
   return {
-    ...actual,
     getPublishedKnowledgeGraph: boundaries.getPublishedKnowledgeGraph,
+    isKnowledgeGraphNotPublishedError:
+      boundaries.isKnowledgeGraphNotPublishedError,
     readKnowledgeGraphNeighbors: boundaries.readKnowledgeGraphNeighbors,
     readKnowledgeGraphOverview: boundaries.readKnowledgeGraphOverview,
     searchKnowledgeGraph: boundaries.searchKnowledgeGraph,
   }
 })
 
-import { KnowledgeGraphNotPublishedError } from '@klicker-uzh/knowledge-graph'
 import { GET } from '../src/app/api/chatbots/[chatbotId]/knowledge-graph/route'
 
 const chatbotId = '11111111-1111-4111-8111-111111111111'
@@ -102,6 +101,10 @@ beforeEach(() => {
     chatbot: { courseId: 'course-id' },
   })
   boundaries.getPublishedKnowledgeGraph.mockResolvedValue(publication)
+  boundaries.isKnowledgeGraphNotPublishedError.mockImplementation(
+    (error) =>
+      error instanceof Error && error.name === 'KnowledgeGraphNotPublishedError'
+  )
   boundaries.readKnowledgeGraphOverview.mockResolvedValue(response)
   boundaries.searchKnowledgeGraph.mockResolvedValue(response)
   boundaries.readKnowledgeGraphNeighbors.mockResolvedValue(response)
@@ -144,9 +147,14 @@ describe('participant knowledge graph route', () => {
   it.each(['EMPTY', 'DIRTY', 'QUEUED', 'PROCESSING', 'FAILED'] as const)(
     'returns a safe 409 for an unpublished %s graph',
     async (publicationStatus) => {
-      boundaries.getPublishedKnowledgeGraph.mockRejectedValue(
-        new KnowledgeGraphNotPublishedError(publicationStatus)
+      const error = Object.assign(
+        new Error('Knowledge graph is not published'),
+        {
+          code: publicationStatus,
+          name: 'KnowledgeGraphNotPublishedError',
+        }
       )
+      boundaries.getPublishedKnowledgeGraph.mockRejectedValue(error)
 
       const result = await callRoute('operation=overview')
 

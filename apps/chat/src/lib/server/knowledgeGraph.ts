@@ -1,9 +1,3 @@
-import {
-  getPublishedKnowledgeGraph,
-  readKnowledgeGraphNeighbors,
-  readKnowledgeGraphOverview,
-  searchKnowledgeGraph,
-} from '@klicker-uzh/knowledge-graph'
 import { prisma } from '@klicker-uzh/prisma'
 import type {
   KnowledgeGraphEdge,
@@ -11,6 +5,14 @@ import type {
   KnowledgeGraphResponse,
   KnowledgeGraphSourceReference,
 } from '@klicker-uzh/types'
+import {
+  getPublishedKnowledgeGraph,
+  readKnowledgeGraphNeighbors,
+  readKnowledgeGraphOverview,
+  searchKnowledgeGraph,
+} from './knowledgeGraphRuntime'
+
+export { isKnowledgeGraphNotPublishedError } from './knowledgeGraphRuntime'
 
 export type ChatbotKnowledgeGraphReadRequest =
   | { operation: 'overview' }

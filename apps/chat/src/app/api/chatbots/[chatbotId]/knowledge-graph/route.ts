@@ -1,9 +1,9 @@
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
   type ChatbotKnowledgeGraphReadRequest,
+  isKnowledgeGraphNotPublishedError,
   readPublishedChatbotKnowledgeGraph,
 } from '@/src/lib/server/knowledgeGraph'
-import { KnowledgeGraphNotPublishedError } from '@klicker-uzh/knowledge-graph'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -72,7 +72,7 @@ export async function GET(
     )
     return NextResponse.json(response)
   } catch (error) {
-    if (error instanceof KnowledgeGraphNotPublishedError) {
+    if (isKnowledgeGraphNotPublishedError(error)) {
       return NextResponse.json(
         {
           code: 'KNOWLEDGE_GRAPH_NOT_PUBLISHED',
