@@ -1,4 +1,8 @@
-import { ExtendedThreadMessageLike, Thread } from '../../stores/chatStore'
+import {
+  ExtendedThreadMessageLike,
+  MessageRating,
+  Thread,
+} from '../../stores/chatStore'
 import { sortAttachmentsByPosition } from '../attachments/attachmentState'
 import { type ReasoningEffort } from '../config/reasoning'
 
@@ -71,6 +75,7 @@ export interface ApiMessage {
   reasoningEffort?: ReasoningEffort | null
   reasoningContent?: string | null
   creditsUsed?: number | null
+  rating?: MessageRating | null
   imageAttachments?: ApiImageAttachment[]
   parentId?: string | null
   createdAt: string
@@ -201,6 +206,7 @@ export const convertApiMessageToMessage = (
     reasoningEffort: apiMessage.reasoningEffort ?? null,
     reasoningContent: apiMessage.reasoningContent ?? null,
     creditsUsed: apiMessage.creditsUsed ?? null,
+    rating: apiMessage.rating ?? null,
     imageAttachments: sortAttachmentsByPosition(
       apiMessage.imageAttachments ?? []
     ),

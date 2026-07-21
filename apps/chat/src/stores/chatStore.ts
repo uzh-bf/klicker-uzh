@@ -1,5 +1,6 @@
 'use client'
 import { ThreadMessageLike } from '@assistant-ui/react'
+import type { ChatMessageRating } from '@klicker-uzh/prisma/client'
 import { create } from 'zustand'
 import {
   apiCall,
@@ -26,6 +27,13 @@ import { type ReasoningEffort } from '../lib/config/reasoning'
 import { useSettingsStore } from './settingsStore'
 
 /**
+ * Participant feedback on an assistant answer. Aliased from the Prisma enum
+ * rather than re-typed so a new rating value cannot silently drift out of sync
+ * here; `import type` is erased at build time, so no server code is pulled in.
+ */
+export type MessageRating = ChatMessageRating
+
+/**
  * Extended thread message type that includes parentId for conversation branching
  */
 export type ExtendedThreadMessageLike = ThreadMessageLike & {
@@ -36,6 +44,7 @@ export type ExtendedThreadMessageLike = ThreadMessageLike & {
   reasoningEffort?: ReasoningEffort | null
   reasoningContent?: string | null
   creditsUsed?: number | null
+  rating?: MessageRating | null
   imageAttachments?: {
     id?: string
     type: 'image'
@@ -89,6 +98,11 @@ interface ChatState {
     sourceMessageId?: string
   ) => Promise<ExtendedThreadMessageLike | undefined>
   setMessages: (messages: ExtendedThreadMessageLike[]) => void
+  rateMessage: (
+    chatbotId: string,
+    messageId: string,
+    rating: MessageRating | null
+  ) => Promise<void>
   setIsRunning: (isRunning: boolean) => void
   resetSession: () => void
 
@@ -790,6 +804,60 @@ export const useChatStore = create<ChatState>((set, get) => {
           thread.id === state.activeThreadId ? { ...thread, messages } : thread
         ),
       }))
+    },
+
+    /**
+     * Records the participant's thumbs up/down on an assistant message.
+     *
+     * Applied optimistically and rolled back on failure: the vote is a
+     * throwaway gesture, so waiting on a round-trip costs more than the rare
+     * revert. Passing null clears an existing vote.
+     */
+    rateMessage: async (chatbotId, messageId, rating) => {
+      const threadId = get().activeThreadId
+      if (!threadId) return
+
+      const applyRating = (next: MessageRating | null) => {
+        const setRating = (messages: ExtendedThreadMessageLike[]) =>
+          messages.map((message) =>
+            message.id === messageId ? { ...message, rating: next } : message
+          )
+
+        set((state) => ({
+          threads: state.threads.map((thread) =>
+            thread.id !== threadId
+              ? thread
+              : {
+                  ...thread,
+                  messages: setRating(thread.messages),
+                  allMessages: setRating(thread.allMessages),
+                }
+          ),
+        }))
+      }
+
+      const readRating = () =>
+        get()
+          .threads.find((thread) => thread.id === threadId)
+          ?.messages.find((message) => message.id === messageId)?.rating ?? null
+
+      const previous = readRating()
+
+      applyRating(rating)
+
+      try {
+        await apiCall(
+          `/chatbots/${chatbotId}/threads/${threadId}/messages/${messageId}/feedback`,
+          { method: 'POST', body: JSON.stringify({ rating }) }
+        )
+      } catch (error) {
+        console.error('Failed to save message feedback:', error)
+        // Only undo our own optimistic write. Changing one's mind mid-flight
+        // starts a second request, and if this (now superseded) one then fails,
+        // rolling back to its stale snapshot would contradict the vote that
+        // actually got persisted.
+        if (readRating() === rating) applyRating(previous)
+      }
     },
 
     /**
