@@ -12,35 +12,47 @@
 # the client secret never leaves the host Keychain:
 #   rs-infisical-operator --profile <p> run \
 #     --map OPENROUTER_API_KEY=UPSTREAM_OPENAI_API_KEY -- devrouter ensure .
-# The `openrouter/` provider means no api_base is needed.
+#
+# Routing uses the OpenAI-compatible passthrough (`openai/` + explicit api_base)
+# rather than litellm's `openrouter/` provider. On the Responses API
+# (`/v1/responses`, which the AI SDK uses for reasoning models such as the manage
+# assistant) the `openrouter/` provider forwards the provider-prefixed id
+# `openrouter/openai/gpt-5.6-luna` upstream and OpenRouter rejects it with
+# `not a valid model ID`. The passthrough sends `openai/gpt-5.6-luna` verbatim,
+# which OpenRouter accepts on both `/v1/responses` and `/v1/chat/completions`.
 
 model_list:
   - model_name: 'gpt-5.5'
     litellm_params:
-      model: 'openrouter/openai/gpt-5.6-luna'
+      model: 'openai/openai/gpt-5.6-luna'
+      api_base: 'https://openrouter.ai/api/v1'
       api_key: 'os.environ/UPSTREAM_OPENAI_API_KEY'
       reasoning_effort: 'medium'
 
   - model_name: 'gpt-5.4'
     litellm_params:
-      model: 'openrouter/openai/gpt-5.6-luna'
+      model: 'openai/openai/gpt-5.6-luna'
+      api_base: 'https://openrouter.ai/api/v1'
       api_key: 'os.environ/UPSTREAM_OPENAI_API_KEY'
       reasoning_effort: 'medium'
 
   - model_name: 'gpt-5.1'
     litellm_params:
-      model: 'openrouter/openai/gpt-5.6-luna'
+      model: 'openai/openai/gpt-5.6-luna'
+      api_base: 'https://openrouter.ai/api/v1'
       api_key: 'os.environ/UPSTREAM_OPENAI_API_KEY'
       reasoning_effort: 'medium'
 
   - model_name: 'gpt-4.1'
     litellm_params:
-      model: 'openrouter/openai/gpt-5.6-luna'
+      model: 'openai/openai/gpt-5.6-luna'
+      api_base: 'https://openrouter.ai/api/v1'
       api_key: 'os.environ/UPSTREAM_OPENAI_API_KEY'
       reasoning_effort: 'medium'
 
   - model_name: 'gpt-4.1-mini'
     litellm_params:
-      model: 'openrouter/openai/gpt-5.6-luna'
+      model: 'openai/openai/gpt-5.6-luna'
+      api_base: 'https://openrouter.ai/api/v1'
       api_key: 'os.environ/UPSTREAM_OPENAI_API_KEY'
       reasoning_effort: 'medium'
