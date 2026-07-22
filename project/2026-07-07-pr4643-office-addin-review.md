@@ -1,8 +1,8 @@
 # PR #4643 Review — Office Add-in Rewrite (Vanilla TS)
 
-**Reviewed:** 2026-07-07; execution resumed against current `v3` on 2026-07-20.
+**Reviewed:** 2026-07-07; execution resumed against current `v3` on 2026-07-20 and finalized on 2026-07-22.
 **Scope:** `apps/office-addin` (React/Webpack → vanilla TS/Rollup), deployed artifacts in `apps/docs/static/office-addin`, package documentation, lockfile.
-**Verdict:** The original blockers are resolved. Final branch reviews, current-head CI, PR refresh, and the ready transition remain; a real PowerPoint sideload is an explicit manual release check.
+**Verdict:** The original blockers and final review findings are resolved. Publishing, current-head CI, PR refresh, and the ready transition remain; a real PowerPoint sideload is an explicit manual pre-merge check.
 
 ## Progress
 
@@ -13,8 +13,9 @@
 - [x] Slice 2 follow-up: independent review found that Rollup watch mode ignored non-TypeScript inputs. HTML, CSS, manifest, and asset files are now explicit watch inputs; the simplification pass also removed unused type packages, redundant local types and state branches, and unlinked sign-in aliases. The explicit `typescript-eslint` dependency remains necessary because the Office plugin currently exposes an undefined bundled parser. Reverification passed before dependency work began.
 - [x] Slice 3: updated Office tooling, Office types, TypeScript ESLint, and Rollup within their current majors; moved the app from TypeScript 5.6 to the workspace's TypeScript 6.0.3; removed the obsolete React/TypeScript syncpack exceptions and TS6-deprecated `baseUrl`; and made Office global types explicit. A narrow Rollup exception keeps this app above the 4.59 security floor until the coordinated workspace upgrade. The optional Microsoft debug launcher and live-reload trees were removed after the audit found high/critical transitive advisories; local HTTPS development and manual sideloading remain. Typecheck, lint, build/deploy parity, and the Office manifest acceptance service passed.
 - [x] Slice 4a: replaced permissive regex validation with a small URL parser and Node tests; reduced `content.ts` from 605 lines; serialized startup so legacy migration cannot overwrite user input; removed stale debug/browser metadata, the Office lint wrapper, the asset-copy wrapper, and the 1,369-line branch-local plan; rewrote package docs; and updated the wiki. The exact Node 24 suite passed. A fresh `agent-browser` run reverified both viewports, invalid/valid URLs, fullscreen, Change URL, and zero console/page errors. The CLI's `Page.captureScreenshot` command timed out on three fresh capture attempts; the earlier Slice 2 screenshots remain the visual evidence because markup and CSS did not change in this slice.
-- [ ] Slice 4b active: commit/review the implementation and resolve GitHub review threads with source-backed responses.
-- [ ] Finish: full verification, security/maintainability/cross-model reviews, whole-branch PR refresh, ready transition, and ready-only CI monitoring.
+- [x] Slice 4b: committed the implementation, merged `v3` at `c8de9c897`, fixed the final maintainability findings, and completed independent review. Security and thermo-nuclear reviews passed with no reportable findings; Agy with Gemini 3.5 Flash High returned “Clean. No reportable findings.” GitHub thread replies remain a publication step after the new head is pushed.
+- [x] Finish verification: under pinned Node 24.16.0 and pnpm 11.5.0, the frozen install, full production build (22 tasks), full test build (20 tasks), all 24 type-check tasks, lint, syncpack, AGENTS.md smoke check, Prisma sync/namespace checks, tracked-branch formatting, Office URL tests, production build/deploy parity (13 files), and Microsoft manifest validation passed. Existing build warnings are unrelated to the add-in rewrite.
+- [ ] Finish publication: push the branch, correct and resolve stale GitHub discussion, refresh the whole-branch PR title/body, monitor current-head CI, and mark ready when the automated gates are green. Never merge from this plan.
 
 **Scope decisions:** preserve one persisted key per content-add-in instance; no toolbar/ribbon work; no executable packaging; no merge. If PowerPoint sideloading is unavailable, record it as a manual release check instead of claiming host-level proof.
 
@@ -22,10 +23,12 @@
 
 | Package | Before | Verified version | Decision |
 | --- | ---: | ---: | --- |
-| `@types/office-js` | 1.0.591 | 1.0.598 | Update Office API types |
+| `@types/office-js` | 1.0.591 | 1.0.599 | Update Office API types through the latest patch |
 | `@rollup/plugin-typescript` | 12.1.4 | 12.1.4 | Keep aligned with the workspace; 12.3.0 requires a coordinated update |
 | `office-addin-debugging` | 6.0.7 | removed | Drop the optional native launcher and its vulnerable transitive tree; use manual sideloading |
-| `office-addin-manifest` | 2.0.3 | 2.1.5 | Update validator within major |
+| `eslint-plugin-office-addins` | 4.0.9 | 4.0.10 | Update Office lint rules through the latest patch |
+| `office-addin-dev-certs` | 2.0.9 | 2.0.10 | Update local HTTPS tooling through the latest patch |
+| `office-addin-manifest` | 2.0.3 | 2.1.6 | Update validator within major; removes its vulnerable `uuid` dependency |
 | `rollup` | 4.34.9 | 4.62.2 | Update past the 4.59 arbitrary-file-write security floor; keep a narrow syncpack exception until the workspace follows |
 | `typescript` | 5.6.3 | 6.0.3 | Align with the approved workspace baseline |
 | `typescript-eslint` | 8.62.0 | 8.63.0 | Update within major; keep explicit because the Office plugin currently exposes an undefined bundled parser |
@@ -34,7 +37,9 @@ The manifest floors for `eslint-plugin-office-addins` and `office-addin-dev-cert
 
 The shared current-major update `@rollup/plugin-typescript` 12.1.4→12.3.0 and workspace-wide Rollup alignment remain deferred to a coordinated build-tool change. Two optional build-only majors are also deferred: `cross-env` 7→10 and `@rollup/plugin-terser` 0→1. All retained versions are non-deprecated and pass the Node 24 build; the broader or major updates are unrelated to the native rewrite and require separate explicit scope.
 
-After removing the debug launcher and live-reload packages and raising Rollup past its security floor, `pnpm audit` reports two Office Add-in paths: `uuid` (moderate) and `adm-zip` (high), both transitive dependencies of the current `office-addin-manifest` 2.1.5 validator. The validator only processes this repository's reviewed manifest during development and CI; it is not shipped or exposed to untrusted runtime input. Keep it as a release gate, track its upstream dependencies, and reassess when Microsoft publishes a patched validator.
+The final 2026-07-22 audit reports two Office Add-in paths. `adm-zip` (high) remains pinned by Microsoft's latest `office-addin-manifest` 2.1.6 validator; that development-only validator processes this repository's reviewed manifest and is not shipped to users. `brace-expansion` (high) is under the current TypeScript ESLint/minimatch lint-only tree; the patched transitive release exists, but applying it now requires a workspace-wide override or a broad lockfile refresh. Keep both out of untrusted-input paths and update them through their owning upstream packages rather than widening this PR. The earlier `uuid` advisory is resolved by the manifest-validator patch.
+
+The final outdated check has no remaining Office-specific current-major patches. Deferred updates are `@rollup/plugin-typescript` 12.1.4→12.3.0, which remains coordinated with the workspace, plus the unrelated `cross-env` 7→10, ESLint 9→10, and terser-plugin 0→1 majors.
 
 How to read this file: work top to bottom. Each item has **Evidence** (where to look, what you'll see) and **Fix** (exact steps). Check the box when done. Run the verification loop (section 6) after every fix batch.
 
