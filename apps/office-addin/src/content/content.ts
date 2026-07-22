@@ -59,8 +59,9 @@ async function initializeOfficeAddin(info: {
   elements.urlInput.disabled = false
 
   elements.embedButton.addEventListener('click', () => void handleEmbedClick())
-  elements.changeUrlButton.addEventListener('click', () =>
-    showInitialView(true)
+  elements.changeUrlButton.addEventListener(
+    'click',
+    () => void handleChangeUrlClick()
   )
   elements.urlInput.addEventListener('input', handleUrlInput)
 }
@@ -255,25 +256,31 @@ function displayIframe(url: string): void {
   elements.changeUrlButton.hidden = false
 }
 
-function showInitialView(clearSavedUrl = false): void {
+async function handleChangeUrlClick(): Promise<void> {
+  const savedUrl = getStringSetting(SETTINGS_KEY)
+  elements.changeUrlButton.disabled = true
+  Office.context.document.settings.remove(SETTINGS_KEY)
+
+  if (!(await saveSettings())) {
+    if (savedUrl) {
+      Office.context.document.settings.set(SETTINGS_KEY, savedUrl)
+    }
+    elements.changeUrlButton.disabled = false
+    showMessage('Could not clear the saved URL.', 'warning')
+    return
+  }
+
+  showInitialView()
+  elements.changeUrlButton.disabled = false
+}
+
+function showInitialView(): void {
   elements.appContainer.classList.remove('fullscreen-mode')
   elements.iframeContainer.hidden = true
   elements.changeUrlButton.hidden = true
   elements.contentIframe.src = 'about:blank'
   elements.urlInput.value = ''
   setValidationState('empty')
-
-  if (!clearSavedUrl) {
-    return
-  }
-
-  Office.context.document.settings.remove(SETTINGS_KEY)
-  Office.context.document.settings.saveAsync((result) => {
-    if (result.status !== Office.AsyncResultStatus.Succeeded) {
-      console.error('Failed to clear the saved URL:', result.error?.message)
-      showMessage('Could not clear the saved URL.', 'warning')
-    }
-  })
 }
 
 function showMessage(

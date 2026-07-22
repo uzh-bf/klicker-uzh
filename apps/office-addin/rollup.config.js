@@ -9,18 +9,13 @@ const urlDev = 'https://localhost:3020/'
 const urlProd = 'https://www.klicker.uzh.ch/office-addin/'
 
 async function getHttpsOptions() {
-  try {
-    const devCerts = await import('office-addin-dev-certs')
-    const httpsOptions = await devCerts.default.getHttpsServerOptions()
+  const devCerts = await import('office-addin-dev-certs')
+  const httpsOptions = await devCerts.default.getHttpsServerOptions()
 
-    return {
-      ca: httpsOptions.ca,
-      key: httpsOptions.key,
-      cert: httpsOptions.cert,
-    }
-  } catch (error) {
-    console.warn('Could not load dev certificates:', error)
-    return undefined
+  return {
+    ca: httpsOptions.ca,
+    key: httpsOptions.key,
+    cert: httpsOptions.cert,
   }
 }
 
