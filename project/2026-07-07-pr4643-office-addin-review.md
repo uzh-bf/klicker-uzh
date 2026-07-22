@@ -55,12 +55,12 @@ How to read this file: work top to bottom. Each item has **Evidence** (where to 
 
 - `apps/office-addin/rollup.config.js` line ~16: `const urlProd = 'https://www.klicker.uzh.ch/'`. The build replaces `https://localhost:3020/` with that string.
 - Result, committed at `apps/docs/static/office-addin/manifest.xml`:
-  ```
+  ```xml
   <SourceLocation DefaultValue="https://www.klicker.uzh.ch/content.html" />
   <IconUrl DefaultValue="https://www.klicker.uzh.ch/assets/icon-32.png" />
   ```
 - The docs site (Docusaurus) serves `apps/docs/static/office-addin/*` under `https://www.klicker.uzh.ch/office-addin/*`. Compare the **old** manifest on `v3` (`apps/docs/static/office-addin/manifest-content.xml`):
-  ```
+  ```xml
   <SourceLocation DefaultValue="https://www.klicker.uzh.ch/office-addin/content.html"/>
   <IconUrl DefaultValue="https://www.klicker.uzh.ch/office-addin/assets/icon-32.png"/>
   ```

@@ -79,5 +79,5 @@ verification.
 - `scripts/sync-docs.mjs` — deploy and exact-parity check.
 
 The manifest validator is development-only and processes the reviewed local
-manifest. Its current Microsoft package retains transitive `adm-zip` and `uuid`
-advisories; do not use it on untrusted manifest or archive input.
+manifest. Its current Microsoft package retains a transitive `adm-zip` advisory;
+do not use it on untrusted manifest or archive input.
