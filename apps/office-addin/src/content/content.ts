@@ -1,4 +1,4 @@
-import { isValidEvaluationUrl } from './evaluation-url'
+import { getSafeEvaluationUrl, isValidEvaluationUrl } from './evaluation-url'
 
 type MessageType = 'success' | 'error' | 'info' | 'warning'
 type ValidationState = 'valid' | 'invalid' | 'empty'
@@ -76,8 +76,9 @@ function getElement<T extends HTMLElement>(id: string): T {
 
 async function loadInitialState(): Promise<void> {
   const savedUrl = getStringSetting(SETTINGS_KEY)
-  if (savedUrl && isValidEvaluationUrl(savedUrl)) {
-    displayIframe(savedUrl)
+  const safeSavedUrl = savedUrl ? getSafeEvaluationUrl(savedUrl) : undefined
+  if (safeSavedUrl) {
+    displayIframe(safeSavedUrl)
     return
   }
 
@@ -100,12 +101,15 @@ async function migrateLegacySetting(): Promise<string | undefined> {
     const slideId = await getSlideId()
     const legacyKey = `${LEGACY_SETTINGS_PREFIX}${slideId}`
     const legacyUrl = getStringSetting(legacyKey)
+    const safeLegacyUrl = legacyUrl
+      ? getSafeEvaluationUrl(legacyUrl)
+      : undefined
 
-    if (!legacyUrl || !isValidEvaluationUrl(legacyUrl)) {
+    if (!safeLegacyUrl) {
       return undefined
     }
 
-    Office.context.document.settings.set(SETTINGS_KEY, legacyUrl)
+    Office.context.document.settings.set(SETTINGS_KEY, safeLegacyUrl)
     if (!(await saveSettings())) {
       Office.context.document.settings.remove(SETTINGS_KEY)
       showMessage(
@@ -125,7 +129,7 @@ async function migrateLegacySetting(): Promise<string | undefined> {
       4000
     )
 
-    return legacyUrl
+    return safeLegacyUrl
   } catch (error) {
     console.warn('Could not migrate the legacy slide setting:', error)
     return undefined
@@ -222,8 +226,8 @@ function showValidationMessage(
 }
 
 async function handleEmbedClick(): Promise<void> {
-  const url = elements.urlInput.value.trim()
-  if (!isValidEvaluationUrl(url)) {
+  const url = getSafeEvaluationUrl(elements.urlInput.value.trim())
+  if (!url) {
     showMessage(
       'Paste a valid KlickerUZH quiz evaluation link, including its HMAC.',
       'error'

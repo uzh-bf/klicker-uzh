@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { isValidEvaluationUrl } from '../src/content/evaluation-url.ts'
+import {
+  getSafeEvaluationUrl,
+  isValidEvaluationUrl,
+} from '../src/content/evaluation-url.ts'
 
 const quizId = '123e4567-e89b-12d3-a456-426614174000'
 const hmac = 'a'.repeat(64)
@@ -45,4 +48,13 @@ test('rejects URLs outside the exact KlickerUZH evaluation contract', () => {
   for (const url of invalidUrls) {
     assert.equal(isValidEvaluationUrl(url), false, url)
   }
+})
+
+test('rebuilds valid URLs with URI-encoded dynamic parameters', () => {
+  assert.equal(
+    getSafeEvaluationUrl(
+      `https://manage.klicker.uzh.ch/de/quizzes/${quizId}/evaluation?hmac=${hmac}&label=%3Cscript%3Ealert(1)%3C%2Fscript%3E`
+    ),
+    `https://manage.klicker.uzh.ch/de/quizzes/${quizId}/evaluation?hmac=${hmac}&label=%3Cscript%3Ealert(1)%3C%2Fscript%3E`
+  )
 })
