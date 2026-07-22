@@ -2,15 +2,24 @@
 
 import { useState } from 'react'
 import { type ModelID } from '../lib/config/models'
-import { type ReasoningEffort } from '../lib/config/reasoning'
+import {
+  formatReasoningEffort,
+  type ReasoningEffort,
+} from '../lib/config/reasoning'
 import { useSettingsStore } from '../stores/settingsStore'
 
 import { Select } from '@uzh-bf/design-system'
 import { ChevronDown, ChevronUp, Settings2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
-/** Ties the toggle's `aria-controls` to the panel it expands. */
-const PANEL_ID = 'chat-settings-panel'
+/**
+ * Ids that tie each visible label to the control it names. The design system
+ * leaks the `id` onto every `SelectItem` as well as the trigger, so while a
+ * popover is open these ids are duplicated; the trigger still wins `htmlFor`
+ * because the popover content is portaled to the end of the document.
+ */
+const MODEL_SELECT_ID = 'chat-model-select'
+const REASONING_EFFORT_SELECT_ID = 'chat-reasoning-effort-select'
 
 export function SettingsPanel() {
   const t = useTranslations()
@@ -51,7 +60,6 @@ export function SettingsPanel() {
         type="button"
         data-cy="chat-settings-toggle"
         aria-expanded={open}
-        aria-controls={PANEL_ID}
         className="hover:bg-accent focus-visible:ring-ring flex w-full items-center gap-2 border-t px-3 py-2 text-start transition-colors focus-visible:outline-none focus-visible:ring-1"
         onClick={() => setOpen(!open)}
       >
@@ -70,19 +78,29 @@ export function SettingsPanel() {
       </button>
       {open && (
         <div
-          id={PANEL_ID}
           data-cy="chat-settings-panel"
           className="border-muted space-y-3 border-t px-3 pb-2 pt-2"
         >
           <div>
             {/* model selection */}
             <div data-cy="chat-model-selection" className="space-y-1">
-              <label className="text-sm font-bold">
+              {/* htmlFor, not just visual proximity: the design-system Select
+                  renders a Radix combobox whose accessible name would otherwise
+                  be the currently selected value, leaving two comboboxes that
+                  screen readers cannot tell apart (WCAG 1.3.1 / 4.1.2). */}
+              <label
+                // Only the `modelSelectionEnabled` branch renders a control;
+                // the read-only branch is a plain div, and a `for` pointing at
+                // an element that is not in the DOM is worse than none.
+                htmlFor={modelSelectionEnabled ? MODEL_SELECT_ID : undefined}
+                className="text-sm font-bold"
+              >
                 {t('chat.settingsPanel.aiModelLabel')}
               </label>
               {modelSelectionEnabled ? (
                 <>
                   <Select
+                    id={MODEL_SELECT_ID}
                     data={{ cy: 'chat-model-select' }}
                     placeholder={t('chat.settingsPanel.selectAiModel')}
                     items={modelOptions.map((option) => ({
@@ -125,15 +143,19 @@ export function SettingsPanel() {
                 data-cy="chat-reasoning-effort-selection"
                 className="mt-2 space-y-1"
               >
-                <label className="text-sm font-bold">
+                <label
+                  htmlFor={REASONING_EFFORT_SELECT_ID}
+                  className="text-sm font-bold"
+                >
                   {t('chat.settingsPanel.reasoningEffortLabel')}
                 </label>
                 <Select
+                  id={REASONING_EFFORT_SELECT_ID}
                   data={{ cy: 'chat-reasoning-effort-select' }}
                   placeholder={t('chat.settingsPanel.selectReasoningEffort')}
                   items={availableReasoningEfforts.map((value) => ({
                     value,
-                    label: value.charAt(0).toUpperCase() + value.slice(1),
+                    label: formatReasoningEffort(t, value),
                   }))}
                   onChange={(newValue) => {
                     handleReasoningEffortChange(newValue)

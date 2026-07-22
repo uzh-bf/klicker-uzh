@@ -16,6 +16,12 @@ export default {
       selectReasoningEffort: 'Select reasoning effort',
       reasoningEffortHint:
         'Higher effort can improve difficult responses at the cost of additional latency.',
+      reasoningEfforts: {
+        minimal: 'Minimal',
+        low: 'Low',
+        medium: 'Medium',
+        high: 'High',
+      },
     },
     credits: {
       title: 'Available credits',
