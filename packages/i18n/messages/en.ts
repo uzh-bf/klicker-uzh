@@ -29,6 +29,7 @@ export default {
     sidebar: {
       newChat: 'New Chat',
       closeSidebar: 'Close sidebar',
+      openSidebar: 'Open sidebar',
       conversationsLabel: 'Conversations',
       logoAlt: 'Klicker Logo',
     },
@@ -98,7 +99,8 @@ export default {
       welcomeSubtitle: 'How can I help you?',
     },
     message: {
-      creditsUsed: '{credits} credits',
+      creditsUsed:
+        '{count, plural, one {{credits} credit} other {{credits} credits}}',
       reasoningToggle: 'Reasoning',
       editUnavailable: 'Edit unavailable',
       edit: 'Edit',
@@ -127,7 +129,8 @@ export default {
       running: 'Using {tool}...',
       done: 'Used {tool}',
       showLess: 'Show less',
-      showMore: 'Show more ({count} more lines)',
+      showMore:
+        '{count, plural, one {Show more (# more line)} other {Show more (# more lines)}}',
     },
     noLogin: {
       title: 'Login Required',

@@ -189,6 +189,10 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
         <>
           <TextField
             data-cy="chat-thread-title-input"
+            // The field carries no visible label, so without this it has no
+            // accessible name at all and screen-reader users hear only the
+            // current title read as a value.
+            aria-label={t('chat.threadList.editName')}
             value={editTitle}
             onChange={setEditTitle}
             onKeyDown={handleKeyDown}

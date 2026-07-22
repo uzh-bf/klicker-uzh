@@ -39,7 +39,12 @@ export function ModeSwitcher() {
               'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors',
               isActive
                 ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
+                : // Full foreground rather than muted-foreground: the inactive
+                  // tab sits on bg-muted, where muted-foreground only reaches
+                  // ~4.4:1 and misses the WCAG 1.4.3 AA floor for this text
+                  // size. The active state is carried by the filled pill, not
+                  // by the label colour.
+                  'text-foreground hover:bg-background/60'
             )}
           >
             <Icon className="size-4" />

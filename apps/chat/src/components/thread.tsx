@@ -56,10 +56,12 @@ import {
 } from '@/src/stores/composerStore'
 import { useSettingsStore } from '@/src/stores/settingsStore'
 import { Button } from '@uzh-bf/design-system'
+import { isKnownMode } from '../lib/config/modes'
 import { BranchPicker } from './branch-picker'
 import { useChatUi } from './chat-ui-context'
 import { MessageAttachments } from './message-attachments'
 import { ToolFallback } from './tool-fallback'
+import { actionBarButtonClassName } from './ui/action-bar-button'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 import Image from 'next/image'
@@ -155,7 +157,14 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
   const creditsUsed =
     typeof custom.creditsUsed === 'number' ? custom.creditsUsed : null
 
-  const modeLabel = chatMode ? formatTitleCase(chatMode) : null
+  // Same label the mode switcher shows, so the caption under an answer does not
+  // read "Explainer" in German while the live pill reads "Erklärer". Unknown
+  // per-chatbot keys have no translation and keep their raw name.
+  const modeLabel = !chatMode
+    ? null
+    : isKnownMode(chatMode)
+      ? t(`chat.modes.${chatMode}`)
+      : formatTitleCase(chatMode)
   const modelLabel = modelId
     ? modelOptions.find((option) => option.id === modelId)?.name || modelId
     : null
@@ -166,7 +175,12 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
   const parts = [modeLabel, modelLabel, reasoningLabel].filter(Boolean)
   if (includeCredits && typeof creditsUsed === 'number') {
     parts.push(
-      t('chat.message.creditsUsed', { credits: formatCredits(creditsUsed) })
+      // `count` only selects the plural form; `credits` carries the trimmed
+      // decimal that is actually displayed.
+      t('chat.message.creditsUsed', {
+        count: creditsUsed,
+        credits: formatCredits(creditsUsed),
+      })
     )
   }
 
@@ -279,7 +293,7 @@ const ThreadScrollToBottom: FC = () => {
     <Tooltip>
       <TooltipTrigger asChild>
         <ThreadPrimitive.ScrollToBottom asChild>
-          <button className="absolute bottom-full mb-4 inline-flex h-9 w-9 items-center justify-center whitespace-nowrap rounded-full border border-gray-200 bg-gray-100/80 text-sm font-medium shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-colors ease-in hover:border-gray-300 hover:bg-gray-200/80 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:invisible disabled:opacity-50">
+          <button className="border-border bg-background/80 hover:bg-accent absolute bottom-full mb-4 inline-flex h-9 w-9 items-center justify-center whitespace-nowrap rounded-full border text-sm font-medium shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-colors ease-in focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:invisible disabled:opacity-50">
             <ArrowDownIcon />
             <span className="sr-only">{t('chat.thread.scrollToBottom')}</span>
           </button>
@@ -833,10 +847,7 @@ const UserActionBar: FC = () => {
       <Tooltip>
         <TooltipTrigger asChild>
           {editDisabled ? (
-            <button
-              disabled
-              className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
-            >
+            <button disabled className={actionBarButtonClassName}>
               <PencilOffIcon />
               <span className="sr-only">
                 {t('chat.message.editUnavailable')}
@@ -846,7 +857,7 @@ const UserActionBar: FC = () => {
             <ActionBarPrimitive.Edit asChild>
               <button
                 data-cy="chat-edit-message-button"
-                className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
+                className={actionBarButtonClassName}
               >
                 <PencilIcon />
                 <span className="sr-only">{t('chat.message.edit')}</span>
@@ -864,7 +875,7 @@ const UserActionBar: FC = () => {
       <Tooltip>
         <TooltipTrigger asChild>
           <ActionBarPrimitive.Copy asChild>
-            <button className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50">
+            <button className={actionBarButtonClassName}>
               <MessagePrimitive.If copied>
                 <CheckIcon />
               </MessagePrimitive.If>
@@ -1186,9 +1197,6 @@ const AssistantMessage: FC<{
     </MessagePrimitive.Root>
   )
 }
-
-const actionBarButtonClassName =
-  'hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50'
 
 const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
   const t = useTranslations()
