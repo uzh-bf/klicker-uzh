@@ -296,6 +296,17 @@ export async function seedThread(
   return thread
 }
 
+/** Persisted thumbs rating of a message, as the feedback route stored it. */
+export async function getMessageRating(messageId: string) {
+  const prisma = await getPrisma()
+  const message = await prisma.chatMessage.findUnique({
+    where: { id: messageId },
+    select: { rating: true },
+  })
+
+  return message?.rating ?? null
+}
+
 // ---------------------------------------------------------------------------
 // Mocked LLM endpoint
 // ---------------------------------------------------------------------------

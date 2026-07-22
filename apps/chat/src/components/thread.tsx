@@ -57,6 +57,7 @@ import {
 import { useSettingsStore } from '@/src/stores/settingsStore'
 import { Button } from '@uzh-bf/design-system'
 import { isKnownMode } from '../lib/config/modes'
+import { formatReasoningEffort } from '../lib/config/reasoning'
 import { BranchPicker } from './branch-picker'
 import { useChatUi } from './chat-ui-context'
 import { MessageAttachments } from './message-attachments'
@@ -169,16 +170,17 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
     ? modelOptions.find((option) => option.id === modelId)?.name || modelId
     : null
   const reasoningLabel = reasoningEffort
-    ? formatTitleCase(reasoningEffort)
+    ? formatReasoningEffort(t, reasoningEffort)
     : null
 
   const parts = [modeLabel, modelLabel, reasoningLabel].filter(Boolean)
   if (includeCredits && typeof creditsUsed === 'number') {
     parts.push(
-      // `count` only selects the plural form; `credits` carries the trimmed
-      // decimal that is actually displayed.
+      // `count` selects the plural form and must be read off the *displayed*
+      // value: a raw 1.2 renders as "1" but plural-selects as `other`, so
+      // passing it through unrounded prints "1 credits".
       t('chat.message.creditsUsed', {
-        count: creditsUsed,
+        count: Number(formatCredits(creditsUsed)),
         credits: formatCredits(creditsUsed),
       })
     )
@@ -226,7 +228,9 @@ const AssistantReasoningPart: FC<ReasoningMessagePartProps> = ({ text }) => {
           <ChevronRightIcon className="size-3" />
         )}
         {t('chat.message.reasoningToggle')}
-        {reasoningEffort ? ` (${formatTitleCase(reasoningEffort)})` : ''}
+        {reasoningEffort
+          ? ` (${formatReasoningEffort(t, reasoningEffort)})`
+          : ''}
       </button>
 
       {isOpen ? (

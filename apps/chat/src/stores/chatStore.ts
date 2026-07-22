@@ -341,7 +341,18 @@ export const useChatStore = create<ChatState>((set, get) => {
           const { modeOptions, selectedMode, setSelectedMode } =
             useSettingsStore.getState()
           // `in` (not truthiness): a mode may have an empty description string.
-          if (lastMode in modeOptions && lastMode !== selectedMode) {
+          // An empty `modeOptions` means the chatbot's modes have simply not
+          // arrived yet — on a hard refresh into a thread URL, `loadThreads`
+          // and `loadModeOptions` race and the former often wins, which used to
+          // make this resync silently no-op for the rest of the page load.
+          // Trusting the thread's own mode in that window is safe because
+          // `loadModeOptions` re-validates `selectedMode` against the resolved
+          // options and falls back to the first one if it does not exist.
+          const optionsLoaded = Object.keys(modeOptions).length > 0
+          if (
+            (!optionsLoaded || lastMode in modeOptions) &&
+            lastMode !== selectedMode
+          ) {
             setSelectedMode(lastMode)
           }
         }

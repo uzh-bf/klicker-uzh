@@ -18,6 +18,12 @@ export default {
       selectReasoningEffort: 'Denkaufwand auswählen',
       reasoningEffortHint:
         'Ein höherer Aufwand kann schwierige Antworten verbessern, erhöht aber die Wartezeit.',
+      reasoningEfforts: {
+        minimal: 'Minimal',
+        low: 'Niedrig',
+        medium: 'Mittel',
+        high: 'Hoch',
+      },
     },
     credits: {
       title: 'Verfügbare Credits',
