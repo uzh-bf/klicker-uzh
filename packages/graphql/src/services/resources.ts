@@ -6,22 +6,23 @@ import type {
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
 import {
-  computeAnswerCollectionDidacticFingerprint,
-  IMPORT_EXPORT_FINGERPRINT_VERSION,
-} from '../lib/importExportFingerprintCanonicalization.js'
-import { enqueueImportExportFingerprintRefresh } from './importExportFingerprints.js'
+  ensureAnswerCollectionAndLinkedElementFingerprintsCurrent,
+  ensureAnswerCollectionFingerprintCurrent,
+} from './importExportFingerprints.js'
 import { validateTemplateAccessible } from './templates.js'
 
 // ! Answer Collections
 // #region
-function answerCollectionFingerprintData(
-  entries: readonly { value: string }[]
+async function lockAnswerCollectionForDidacticMutation(
+  collectionId: number,
+  prisma: PrismaTransactionContextWithUser['prisma']
 ) {
-  const result = computeAnswerCollectionDidacticFingerprint({ entries })
-  return {
-    importFingerprint: result?.fingerprint ?? null,
-    importFingerprintVersion: result?.version ?? null,
-  }
+  await prisma.$queryRaw`
+    SELECT "id"
+    FROM "public"."AnswerCollection"
+    WHERE "id" = ${collectionId}
+    FOR UPDATE
+  `
 }
 
 async function markAnswerCollectionDidacticChange(
@@ -32,14 +33,12 @@ async function markAnswerCollectionDidacticChange(
     where: { id: collectionId },
     data: {
       version: { increment: 1 },
-      importFingerprint: null,
-      importFingerprintVersion: null,
     },
   })
-  await prisma.element.updateMany({
-    where: { answerCollectionId: collectionId, isDeleted: false },
-    data: { importFingerprint: null, importFingerprintVersion: null },
-  })
+  await ensureAnswerCollectionAndLinkedElementFingerprintsCurrent(
+    collectionId,
+    prisma
+  )
 }
 
 function invalidateAnswerCollection(
@@ -69,7 +68,6 @@ export async function createAnswerCollection(
       data: {
         name,
         description,
-        ...answerCollectionFingerprintData(answers.map((value) => ({ value }))),
         entries: {
           create: answers.map((answer) => ({
             value: answer,
@@ -85,6 +83,8 @@ export async function createAnswerCollection(
         entries: true,
       },
     })
+
+    await ensureAnswerCollectionFingerprintCurrent(newCollection.id, prisma)
 
     // trigger recomputation of derived permissions (-> owner should get new one)
     await recomputeDerivedPermissions(
@@ -131,7 +131,6 @@ export async function duplicateAnswerCollection(
       data: {
         name,
         description: collection.description,
-        ...answerCollectionFingerprintData(collection.entries),
         entries: {
           create: collection.entries.map((entry) => ({
             value: entry.value,
@@ -145,6 +144,8 @@ export async function duplicateAnswerCollection(
       },
       include: { entries: true },
     })
+
+    await ensureAnswerCollectionFingerprintCurrent(newCollection.id, prisma)
 
     // trigger recomputation of derived permissions (-> owner should get new one)
     await recomputeDerivedPermissions(
@@ -443,8 +444,6 @@ export async function modifyAnswerCollection(
     return null
   }
 
-  const shouldResumeFingerprint =
-    collection.importFingerprintVersion !== IMPORT_EXPORT_FINGERPRINT_VERSION
   const updatedCollection = await ctx.prisma.$transaction(async (tx) => {
     // update changes in the database
     const updateResult = await tx.answerCollection.update({
@@ -456,6 +455,7 @@ export async function modifyAnswerCollection(
       },
       include: { entries: true },
     })
+    await ensureAnswerCollectionFingerprintCurrent(id, tx)
 
     // invalidate the answer collection
     ctx.emitter.emit('invalidate', {
@@ -468,10 +468,6 @@ export async function modifyAnswerCollection(
       numSharedUsers: collection._count.permissions - 1,
     }
   })
-
-  if (shouldResumeFingerprint) {
-    enqueueImportExportFingerprintRefresh({ answerCollectionId: id }, ctx)
-  }
 
   return updatedCollection
 }
@@ -710,19 +706,19 @@ export async function editAnswerCollectionEntry(
   }: { id: number; value: string; collectionId: number },
   ctx: ContextWithUser
 ) {
-  const updatedEntry = await ctx.prisma.$transaction(async (prisma) => {
-    const entry = await prisma.answerCollectionEntry.update({
-      where: { id, collectionId },
-      data: { value },
-    })
-    await markAnswerCollectionDidacticChange(collectionId, prisma)
-    return entry
-  })
-  invalidateAnswerCollection(collectionId, ctx)
-  enqueueImportExportFingerprintRefresh(
-    { answerCollectionId: collectionId },
-    ctx
+  const updatedEntry = await ctx.prisma.$transaction(
+    async (prisma) => {
+      await lockAnswerCollectionForDidacticMutation(collectionId, prisma)
+      const entry = await prisma.answerCollectionEntry.update({
+        where: { id, collectionId },
+        data: { value },
+      })
+      await markAnswerCollectionDidacticChange(collectionId, prisma)
+      return entry
+    },
+    { timeout: 60000 }
   )
+  invalidateAnswerCollection(collectionId, ctx)
 
   return updatedEntry
 }
@@ -745,18 +741,18 @@ export async function deleteAnswerCollectionEntry(
     return null
   }
 
-  const updatedEntry = await ctx.prisma.$transaction(async (prisma) => {
-    const deletedEntry = await prisma.answerCollectionEntry.delete({
-      where: { id },
-    })
-    await markAnswerCollectionDidacticChange(collectionId, prisma)
-    return deletedEntry
-  })
-  invalidateAnswerCollection(collectionId, ctx)
-  enqueueImportExportFingerprintRefresh(
-    { answerCollectionId: collectionId },
-    ctx
+  const updatedEntry = await ctx.prisma.$transaction(
+    async (prisma) => {
+      await lockAnswerCollectionForDidacticMutation(collectionId, prisma)
+      const deletedEntry = await prisma.answerCollectionEntry.delete({
+        where: { id },
+      })
+      await markAnswerCollectionDidacticChange(collectionId, prisma)
+      return deletedEntry
+    },
+    { timeout: 60000 }
   )
+  invalidateAnswerCollection(collectionId, ctx)
 
   return updatedEntry.id
 }
@@ -765,21 +761,21 @@ export async function addAnswerCollectionOption(
   { collectionId, value }: { collectionId: number; value: string },
   ctx: ContextWithUser
 ) {
-  const newEntry = await ctx.prisma.$transaction(async (prisma) => {
-    const entry = await prisma.answerCollectionEntry.create({
-      data: {
-        value,
-        collection: { connect: { id: collectionId } },
-      },
-    })
-    await markAnswerCollectionDidacticChange(collectionId, prisma)
-    return entry
-  })
-  invalidateAnswerCollection(collectionId, ctx)
-  enqueueImportExportFingerprintRefresh(
-    { answerCollectionId: collectionId },
-    ctx
+  const newEntry = await ctx.prisma.$transaction(
+    async (prisma) => {
+      await lockAnswerCollectionForDidacticMutation(collectionId, prisma)
+      const entry = await prisma.answerCollectionEntry.create({
+        data: {
+          value,
+          collection: { connect: { id: collectionId } },
+        },
+      })
+      await markAnswerCollectionDidacticChange(collectionId, prisma)
+      return entry
+    },
+    { timeout: 60000 }
   )
+  invalidateAnswerCollection(collectionId, ctx)
 
   return newEntry
 }

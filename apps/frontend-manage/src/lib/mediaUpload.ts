@@ -1,7 +1,7 @@
-// @azure/storage-blob 12.25.0 switches uploadData to block staging above
-// 256 MiB. Direct media SAS tokens are create-only, so accepted uploads must
-// remain within the SDK's single-request path.
-export const DIRECT_MEDIA_UPLOAD_MAX_BYTES = 256 * 1024 * 1024
+// @azure/storage-blob 12.25.0 switches uploadData to block staging above the
+// shared limit. Direct media SAS tokens are create-only, so accepted uploads
+// must remain within the SDK's single-request path.
+export { DIRECT_MEDIA_UPLOAD_MAX_BYTES } from '@klicker-uzh/types'
 
 export const MEDIA_UPLOAD_FINALIZATION_RETRY_DELAYS_MS = [250, 750] as const
 

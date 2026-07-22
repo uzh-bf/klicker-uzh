@@ -12,13 +12,14 @@ import {
   ImportExportDomainError,
   ImportExportErrorCode,
 } from '../lib/importExportErrors.js'
-import { IMPORT_EXPORT_FINGERPRINT_VERSION } from '../lib/importExportFingerprintCanonicalization.js'
+import { IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION } from '../lib/importExportFingerprintCanonicalization.js'
 import { MAX_IMPORT_EXPORT_MEDIA_BYTES } from '../lib/importExportPackageConfig.js'
 import { inferMediaFileExtension } from '../lib/mediaContentTypes.js'
 import {
   readAzureImportedMedia,
   writeAzureImportedMediaExclusive,
 } from './importExportAzureBlobStorage.js'
+import { invalidateAndRefreshElementFingerprintsForFinalizedMediaV1 } from './importExportFingerprints.js'
 import {
   createImportedMediaHref,
   readLocalImportedMedia,
@@ -120,29 +121,54 @@ export async function stageImportedMediaFile(
   })
 
   if (existing) {
-    if (existing.contentHash === null) {
-      const downloaded = await downloadKlickerMediaFile(existing.href, ctx)
-      if (
-        !downloaded ||
-        createHash('sha256').update(downloaded.buffer).digest('hex') !==
-          contentHash
-      ) {
-        throw new Error(
-          'Existing imported media could not be verified against the package.'
-        )
+    if (existing.contentHash !== null && existing.contentHash !== contentHash) {
+      throw new Error('Existing imported media has a conflicting content hash.')
+    }
+
+    if (
+      existing.contentHash === null ||
+      existing.importFingerprintVersion !==
+        IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION
+    ) {
+      const unclassifiedMedia = existing
+      if (existing.contentHash === null) {
+        const downloaded = await downloadKlickerMediaFile(existing.href, ctx)
+        if (
+          !downloaded ||
+          createHash('sha256').update(downloaded.buffer).digest('hex') !==
+            contentHash
+        ) {
+          throw new Error(
+            'Existing imported media could not be verified against the package.'
+          )
+        }
       }
 
-      await ctx.prisma.mediaFile.updateMany({
-        where: {
-          id: existing.id,
-          ownerId: ctx.user.sub,
-          contentHash: null,
+      await ctx.prisma.$transaction(
+        async (prisma) => {
+          const updated = await prisma.mediaFile.updateMany({
+            where: {
+              id: unclassifiedMedia.id,
+              ownerId: ctx.user.sub,
+              contentHash: unclassifiedMedia.contentHash,
+              importFingerprintVersion:
+                unclassifiedMedia.importFingerprintVersion,
+            },
+            data: {
+              contentHash,
+              importFingerprintVersion: IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
+            },
+          })
+
+          if (updated.count === 1) {
+            await invalidateAndRefreshElementFingerprintsForFinalizedMediaV1(
+              { href: unclassifiedMedia.href },
+              prisma
+            )
+          }
         },
-        data: {
-          contentHash,
-          importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
-        },
-      })
+        { timeout: 60000 }
+      )
       existing = await ctx.prisma.mediaFile.findUnique({
         where: {
           ownerId_originalId: {
@@ -153,7 +179,12 @@ export async function stageImportedMediaFile(
       })
     }
 
-    if (!existing || existing.contentHash !== contentHash) {
+    if (
+      !existing ||
+      existing.contentHash !== contentHash ||
+      existing.importFingerprintVersion !==
+        IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION
+    ) {
       throw new Error('Existing imported media has a conflicting content hash.')
     }
 
@@ -370,17 +401,22 @@ export async function finalizeStagedImportedMediaFile(
       href: staged.href,
       originalId: staged.originalId,
       contentHash: staged.contentHash,
-      importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+      importFingerprintVersion: IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
     },
     update: {},
     select: {
       id: true,
       href: true,
       contentHash: true,
+      importFingerprintVersion: true,
     },
   })
 
-  if (mediaFile.contentHash !== staged.contentHash) {
+  if (
+    mediaFile.contentHash !== staged.contentHash ||
+    mediaFile.importFingerprintVersion !==
+      IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION
+  ) {
     throw new Error('Imported media has a conflicting content hash.')
   }
 

@@ -1,7 +1,7 @@
 import { ElementStatus, ElementType } from '@klicker-uzh/prisma/client'
+import { createHash } from 'node:crypto'
 import { ImportExportErrorCode } from '../src/lib/importExportErrors.js'
 import { IMPORTED_EXTERNAL_MEDIA_OMISSION_MARKER } from '../src/lib/importExportMediaReferences.js'
-import { MAX_IMPORT_EXPORT_MEDIA_BYTES } from '../src/lib/importExportPackageConfig.js'
 import { parseZip } from '../src/lib/zip.js'
 import { validateElementImportPackageBuffer } from '../src/services/elementImportExport.js'
 import {
@@ -82,6 +82,7 @@ describe('Secure element import/export packages', () => {
                 bytes: mediaData.length,
                 contentType: 'image/png',
                 filename: 'original-source.png',
+                sha256: createHash('sha256').update(mediaData).digest('hex'),
               },
             ])
           )
@@ -230,6 +231,7 @@ describe('Secure element import/export packages', () => {
                 bytes: mediaData.length,
                 contentType: 'image/png',
                 filename: 'collection.png',
+                sha256: createHash('sha256').update(mediaData).digest('hex'),
               },
             ],
           ])
@@ -350,22 +352,8 @@ describe('Secure element import/export packages', () => {
         async () =>
           new Map([
             [unavailableHref, null],
-            [
-              oversizedHref,
-              {
-                bytes: MAX_IMPORT_EXPORT_MEDIA_BYTES + 1,
-                contentType: 'image/png',
-                filename: 'too-large.png',
-              },
-            ],
-            [
-              svgHref,
-              {
-                bytes: svgData.length,
-                contentType: 'image/svg+xml',
-                filename: 'vector.svg',
-              },
-            ],
+            [oversizedHref, null],
+            [svgHref, null],
           ])
       ),
       parseKlickerMediaUrl: vi.fn((href: string) =>
@@ -447,23 +435,9 @@ describe('Secure element import/export packages', () => {
         originalId: 'source-svg-id',
       })),
       finalizeStagedImportedMediaFile: vi.fn(),
-      getKlickerMediaFileExportMetadata: vi.fn(async () => ({
-        bytes: mediaData.length,
-        contentType: 'image/svg+xml',
-        filename: 'vector.svg',
-      })),
+      getKlickerMediaFileExportMetadata: vi.fn(async () => null),
       getKlickerMediaFilesExportMetadata: vi.fn(
-        async () =>
-          new Map([
-            [
-              firstPartyHref,
-              {
-                bytes: mediaData.length,
-                contentType: 'image/svg+xml',
-                filename: 'vector.svg',
-              },
-            ],
-          ])
+        async () => new Map([[firstPartyHref, null]])
       ),
       parseKlickerMediaUrl: vi.fn((href: string) =>
         href === firstPartyHref
@@ -565,6 +539,7 @@ describe('Secure element import/export packages', () => {
                 bytes: 32,
                 contentType: 'image/png',
                 filename: 'private.png',
+                sha256: 'a'.repeat(64),
               },
             ],
           ])

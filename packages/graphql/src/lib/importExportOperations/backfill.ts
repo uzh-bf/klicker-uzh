@@ -6,7 +6,12 @@ import {
   backfillMediaHashBatch,
 } from '../../services/importExportFingerprintMaintenance.js'
 import {
+  IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
+  IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
+} from '../importExportFingerprintCanonicalization.js'
+import {
   createOperationsPrisma,
+  getOperationsDatabaseIdentity,
   withAdvisoryLock,
   type OperationsPrisma,
 } from './database.js'
@@ -22,13 +27,15 @@ import {
 
 const BackfillProgressManifestSchema = z
   .object({
-    schemaVersion: z.literal(1),
+    schemaVersion: z.literal(2),
     operation: z.enum([
       'import-export-media-hash-backfill',
       'import-export-fingerprint-backfill',
     ]),
     environment: z.enum(['stg', 'prd']),
-    target: z.enum(['normal', 'assessment']),
+    target: z.literal('normal'),
+    databaseIdentity: z.string().regex(/^[a-f0-9]{64}$/),
+    fingerprintVersion: z.number().int().positive(),
     stage: z.enum(['MEDIA', 'ANSWER_COLLECTION', 'ELEMENT', 'COMPLETE']),
     resumeAfterId: z
       .union([z.string().min(1), z.number().int().positive()])
@@ -47,7 +54,11 @@ async function readProgressManifest(
   path: string | undefined,
   expected: Pick<
     BackfillProgressManifest,
-    'operation' | 'environment' | 'target'
+    | 'operation'
+    | 'environment'
+    | 'target'
+    | 'databaseIdentity'
+    | 'fingerprintVersion'
   >
 ) {
   if (!path) return undefined
@@ -62,7 +73,9 @@ async function readProgressManifest(
     if (
       manifest.operation !== expected.operation ||
       manifest.environment !== expected.environment ||
-      manifest.target !== expected.target
+      manifest.target !== expected.target ||
+      manifest.databaseIdentity !== expected.databaseIdentity ||
+      manifest.fingerprintVersion !== expected.fingerprintVersion
     ) {
       throw new Error('mismatch')
     }
@@ -81,12 +94,18 @@ async function persistProgress(
 
 function operationContext(
   operation: BackfillProgressManifest['operation'],
-  env: NodeJS.ProcessEnv
+  env: NodeJS.ProcessEnv,
+  databaseIdentity: string
 ) {
   return {
     operation,
     environment: parseOperationEnvironment(env),
     target: parseDatabaseTarget(env),
+    databaseIdentity,
+    fingerprintVersion:
+      operation === 'import-export-media-hash-backfill'
+        ? IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION
+        : IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
   } as const
 }
 
@@ -106,7 +125,11 @@ export async function runMediaHashBackfill({
   env?: NodeJS.ProcessEnv
 }) {
   requireMasterGateOff(env)
-  const context = operationContext('import-export-media-hash-backfill', env)
+  const context = operationContext(
+    'import-export-media-hash-backfill',
+    env,
+    await getOperationsDatabaseIdentity(prisma)
+  )
   const outputPath = progressPath(env)
   const existing = await readProgressManifest(
     env.IMPORT_EXPORT_RESUME_MANIFEST_PATH,
@@ -122,27 +145,34 @@ export async function runMediaHashBackfill({
 
   return await withAdvisoryLock({
     prisma,
-    operationKey: 1,
-    run: async () => {
+    run: async (assertLockHeld) => {
       let afterId =
+        existing?.complete !== true &&
         existing?.stage === 'MEDIA' &&
         typeof existing.resumeAfterId === 'string'
           ? existing.resumeAfterId
           : undefined
-      let processed = existing?.processed ?? 0
-      let batches = existing?.batches ?? 0
-      let complete = existing?.complete ?? false
+      let processed = existing?.complete ? 0 : (existing?.processed ?? 0)
+      let batches = existing?.complete ? 0 : (existing?.batches ?? 0)
+      // A completed manifest is evidence of a previous pass, not permission to
+      // skip a later repair run after invariant verification found new drift.
+      let complete = false
       let batchesThisRun = 0
 
       while (!complete && batchesThisRun < maximumBatches) {
-        const result = await backfillMediaHashBatch({ afterId }, prisma)
+        assertLockHeld()
+        const result = await backfillMediaHashBatch(
+          { afterId },
+          prisma,
+          assertLockHeld
+        )
         processed += result.processed
         batches++
         batchesThisRun++
         afterId = result.nextAfterId
         complete = typeof afterId === 'undefined'
         await persistProgress(outputPath, {
-          schemaVersion: 1,
+          schemaVersion: 2,
           ...context,
           stage: complete ? 'COMPLETE' : 'MEDIA',
           resumeAfterId: afterId ?? null,
@@ -150,6 +180,7 @@ export async function runMediaHashBackfill({
           batches,
           complete,
         })
+        assertLockHeld()
       }
 
       return createOperationOutput(
@@ -178,7 +209,11 @@ export async function runFingerprintBackfill({
   env?: NodeJS.ProcessEnv
 }) {
   requireMasterGateOff(env)
-  const context = operationContext('import-export-fingerprint-backfill', env)
+  const context = operationContext(
+    'import-export-fingerprint-backfill',
+    env,
+    await getOperationsDatabaseIdentity(prisma)
+  )
   const outputPath = progressPath(env)
   const existing = await readProgressManifest(
     env.IMPORT_EXPORT_RESUME_MANIFEST_PATH,
@@ -194,11 +229,10 @@ export async function runFingerprintBackfill({
 
   return await withAdvisoryLock({
     prisma,
-    operationKey: 2,
-    run: async () => {
+    run: async (assertLockHeld) => {
       let stage: 'ANSWER_COLLECTION' | 'ELEMENT' | 'COMPLETE' =
-        existing?.stage === 'ELEMENT' || existing?.stage === 'COMPLETE'
-          ? existing.stage
+        existing?.complete !== true && existing?.stage === 'ELEMENT'
+          ? 'ELEMENT'
           : 'ANSWER_COLLECTION'
       let afterId =
         existing &&
@@ -206,17 +240,19 @@ export async function runFingerprintBackfill({
         typeof existing.resumeAfterId === 'number'
           ? existing.resumeAfterId
           : undefined
-      let processed = existing?.processed ?? 0
-      let batches = existing?.batches ?? 0
+      let processed = existing?.complete ? 0 : (existing?.processed ?? 0)
+      let batches = existing?.complete ? 0 : (existing?.batches ?? 0)
       let batchesThisRun = 0
 
       while (stage !== 'COMPLETE' && batchesThisRun < maximumBatches) {
+        assertLockHeld()
         const result = await backfillFingerprintBatch(
           {
             resource: stage,
             afterId,
           },
-          prisma
+          prisma,
+          assertLockHeld
         )
         processed += result.processed
         batches++
@@ -226,7 +262,7 @@ export async function runFingerprintBackfill({
           stage = stage === 'ANSWER_COLLECTION' ? 'ELEMENT' : 'COMPLETE'
         }
         await persistProgress(outputPath, {
-          schemaVersion: 1,
+          schemaVersion: 2,
           ...context,
           stage,
           resumeAfterId: afterId ?? null,
@@ -234,6 +270,7 @@ export async function runFingerprintBackfill({
           batches,
           complete: stage === 'COMPLETE',
         })
+        assertLockHeld()
       }
 
       const complete = stage === 'COMPLETE'

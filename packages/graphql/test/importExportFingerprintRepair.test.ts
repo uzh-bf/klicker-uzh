@@ -1,10 +1,9 @@
-import { IMPORT_EXPORT_FINGERPRINT_VERSION } from '../src/lib/importExportFingerprintCanonicalization.js'
+import { IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION as IMPORT_EXPORT_FINGERPRINT_VERSION } from '../src/lib/importExportFingerprintCanonicalization.js'
 import { repairStaleImportExportFingerprints } from '../src/services/importExportFingerprintMaintenance.js'
 import {
   createFingerprintPrisma,
   isDirtyFingerprint,
   markFingerprintCurrent,
-  markFingerprintProcessedWithoutValue,
   type FakeFingerprintResource,
 } from './importExportFingerprintTestSupport.js'
 
@@ -16,11 +15,24 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('../src/services/importExportFingerprintPersistence.js', () => ({
-  refreshAnswerCollectionDidacticFingerprintV1:
+  refreshAnswerCollectionDidacticFingerprint:
     mocks.refreshAnswerCollectionDidacticFingerprintV1,
-  refreshElementDidacticFingerprintV1:
-    mocks.refreshElementDidacticFingerprintV1,
+  refreshElementDidacticFingerprint: mocks.refreshElementDidacticFingerprintV1,
 }))
+
+function persistFakeFingerprint(
+  resources: FakeFingerprintResource[],
+  id: number
+) {
+  markFingerprintCurrent(resources, id)
+  return {
+    status: 'updated' as const,
+    computed: {
+      version: IMPORT_EXPORT_FINGERPRINT_VERSION,
+      fingerprint: `fingerprint-${id}`,
+    },
+  }
+}
 
 describe('automatic import/export fingerprint repair', () => {
   beforeEach(() => {
@@ -42,7 +54,7 @@ describe('automatic import/export fingerprint repair', () => {
       elements,
     })
     mocks.refreshAnswerCollectionDidacticFingerprintV1.mockImplementation(
-      async (id) => markFingerprintCurrent(answerCollections, id)
+      async (id) => persistFakeFingerprint(answerCollections, id)
     )
     let stopChecks = 0
 
@@ -118,12 +130,12 @@ describe('automatic import/export fingerprint repair', () => {
     mocks.refreshAnswerCollectionDidacticFingerprintV1.mockImplementation(
       async (id) => {
         events.push(`collection:${id}`)
-        markFingerprintCurrent(answerCollections, id)
+        return persistFakeFingerprint(answerCollections, id)
       }
     )
     mocks.refreshElementDidacticFingerprintV1.mockImplementation(async (id) => {
       events.push(`element:${id}`)
-      markFingerprintCurrent(elements, id)
+      return persistFakeFingerprint(elements, id)
     })
 
     await expect(repairStaleImportExportFingerprints(prisma)).resolves.toEqual({
@@ -154,10 +166,10 @@ describe('automatic import/export fingerprint repair', () => {
     const { answerCollectionFindMany, elementFindMany, prisma } =
       createFingerprintPrisma({ answerCollections, elements })
     mocks.refreshAnswerCollectionDidacticFingerprintV1.mockImplementation(
-      async (id) => markFingerprintCurrent(answerCollections, id)
+      async (id) => persistFakeFingerprint(answerCollections, id)
     )
     mocks.refreshElementDidacticFingerprintV1.mockImplementation(async (id) =>
-      markFingerprintCurrent(elements, id)
+      persistFakeFingerprint(elements, id)
     )
 
     await expect(repairStaleImportExportFingerprints(prisma)).resolves.toEqual({
@@ -182,7 +194,7 @@ describe('automatic import/export fingerprint repair', () => {
     )
     const { prisma } = createFingerprintPrisma({ elements })
     mocks.refreshElementDidacticFingerprintV1.mockImplementation(async (id) =>
-      markFingerprintCurrent(elements, id)
+      persistFakeFingerprint(elements, id)
     )
 
     await expect(repairStaleImportExportFingerprints(prisma)).resolves.toEqual({
@@ -193,7 +205,7 @@ describe('automatic import/export fingerprint repair', () => {
     })
   })
 
-  it('reports a backlog when an optimistic refresh loses its stale guard', async () => {
+  it('retries an optimistic refresh that loses its stale guard', async () => {
     const elements: FakeFingerprintResource[] = [
       {
         id: 1,
@@ -203,20 +215,26 @@ describe('automatic import/export fingerprint repair', () => {
       },
     ]
     const { prisma } = createFingerprintPrisma({ elements })
-    mocks.refreshElementDidacticFingerprintV1.mockResolvedValue({
-      status: 'stale',
-      computed: null,
-    })
+    mocks.refreshElementDidacticFingerprintV1
+      .mockResolvedValueOnce({
+        status: 'stale',
+        computed: {
+          version: IMPORT_EXPORT_FINGERPRINT_VERSION,
+          fingerprint: 'computed-but-lost-race',
+        },
+      })
+      .mockImplementation(async (id) => persistFakeFingerprint(elements, id))
 
     await expect(repairStaleImportExportFingerprints(prisma)).resolves.toEqual({
       processedAnswerCollections: 0,
       processedElements: 1,
       answerCollectionBacklogRemaining: false,
-      elementBacklogRemaining: true,
+      elementBacklogRemaining: false,
     })
+    expect(mocks.refreshElementDidacticFingerprintV1).toHaveBeenCalledTimes(2)
   })
 
-  it('advances past more than five pages of permanently unfingerprintable rows', async () => {
+  it('repairs more than five pages of legacy rows with total fingerprints', async () => {
     const elements: FakeFingerprintResource[] = Array.from(
       { length: 601 },
       (_, index) => ({
@@ -228,7 +246,7 @@ describe('automatic import/export fingerprint repair', () => {
     )
     const { prisma } = createFingerprintPrisma({ elements })
     mocks.refreshElementDidacticFingerprintV1.mockImplementation(async (id) =>
-      markFingerprintProcessedWithoutValue(elements, id)
+      persistFakeFingerprint(elements, id)
     )
 
     await expect(repairStaleImportExportFingerprints(prisma)).resolves.toEqual({
@@ -247,7 +265,7 @@ describe('automatic import/export fingerprint repair', () => {
     expect(elements.every((element) => !isDirtyFingerprint(element))).toBe(true)
   })
 
-  it('treats a null fingerprint at the current version as processed', async () => {
+  it('repairs a null fingerprint even when its version is current', async () => {
     const elements: FakeFingerprintResource[] = [
       {
         id: 1,
@@ -270,12 +288,12 @@ describe('automatic import/export fingerprint repair', () => {
     ]
     const { prisma } = createFingerprintPrisma({ elements })
     mocks.refreshElementDidacticFingerprintV1.mockImplementation(async (id) =>
-      markFingerprintCurrent(elements, id)
+      persistFakeFingerprint(elements, id)
     )
 
     await expect(repairStaleImportExportFingerprints(prisma)).resolves.toEqual({
       processedAnswerCollections: 0,
-      processedElements: 2,
+      processedElements: 3,
       answerCollectionBacklogRemaining: false,
       elementBacklogRemaining: false,
     })
@@ -287,7 +305,7 @@ describe('automatic import/export fingerprint repair', () => {
       3,
       expect.anything()
     )
-    expect(mocks.refreshElementDidacticFingerprintV1).not.toHaveBeenCalledWith(
+    expect(mocks.refreshElementDidacticFingerprintV1).toHaveBeenCalledWith(
       1,
       expect.anything()
     )
@@ -315,10 +333,10 @@ describe('automatic import/export fingerprint repair', () => {
       elements,
     })
     mocks.refreshAnswerCollectionDidacticFingerprintV1.mockImplementation(
-      async (id) => markFingerprintCurrent(answerCollections, id)
+      async (id) => persistFakeFingerprint(answerCollections, id)
     )
     mocks.refreshElementDidacticFingerprintV1.mockImplementation(async (id) =>
-      markFingerprintCurrent(elements, id)
+      persistFakeFingerprint(elements, id)
     )
 
     await expect(repairStaleImportExportFingerprints(prisma)).resolves.toEqual({
@@ -339,7 +357,7 @@ describe('automatic import/export fingerprint repair', () => {
     expect(mocks.refreshElementDidacticFingerprintV1).toHaveBeenCalledOnce()
   })
 
-  it('does not select deleted or current-version resources', async () => {
+  it('does not select deleted or complete current-version resources', async () => {
     const elements: FakeFingerprintResource[] = [
       {
         id: 1,
@@ -368,16 +386,20 @@ describe('automatic import/export fingerprint repair', () => {
     ]
     const { prisma } = createFingerprintPrisma({ elements })
     mocks.refreshElementDidacticFingerprintV1.mockImplementation(async (id) =>
-      markFingerprintCurrent(elements, id)
+      persistFakeFingerprint(elements, id)
     )
 
     await expect(repairStaleImportExportFingerprints(prisma)).resolves.toEqual({
       processedAnswerCollections: 0,
-      processedElements: 1,
+      processedElements: 2,
       answerCollectionBacklogRemaining: false,
       elementBacklogRemaining: false,
     })
-    expect(mocks.refreshElementDidacticFingerprintV1).toHaveBeenCalledOnce()
+    expect(mocks.refreshElementDidacticFingerprintV1).toHaveBeenCalledTimes(2)
+    expect(mocks.refreshElementDidacticFingerprintV1).toHaveBeenCalledWith(
+      3,
+      expect.anything()
+    )
     expect(mocks.refreshElementDidacticFingerprintV1).toHaveBeenCalledWith(
       4,
       expect.anything()

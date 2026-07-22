@@ -41,13 +41,17 @@
     "script:qa": "ENV=development ../../util/_run_with_infisical.sh --env stg tsx",
     "seed": "ENV=development ../../util/_run_with_infisical.sh --env dev pnpm run seed:test",
     "seed:achievements": "ENV=development ../../util/_run_with_infisical.sh --env dev tsx src/data/seedAchievements.ts",
-    "seed:flashcards": "ENV=development ../../util/_run_with_infisical.sh --env dev tsx src/data/seedFlashcards.ts",
+    "seed:fingerprints": "pnpm --filter @klicker-uzh/graphql run script:seed-fingerprint-bootstrap",
+    "seed:flashcards": "ENV=development ../../util/_run_with_infisical.sh --env dev pnpm run seed:flashcards:with-fingerprints",
+    "seed:flashcards:raw": "ENV=development tsx src/data/seedFlashcards.ts",
+    "seed:flashcards:with-fingerprints": "run-s --continue-on-error --npm-path pnpm seed:flashcards:raw seed:fingerprints",
     "seed:prod:achievements": "ENV=production ../../util/_run_with_infisical.sh --env prd tsx src/data/seedAchievements.ts",
-    "seed:prod:flashcards": "ENV=development ../../util/_run_with_infisical.sh --env prd tsx src/data/seedFlashcards.ts",
+    "seed:prod:flashcards": "ENV=development ../../util/_run_with_infisical.sh --env prd pnpm run seed:flashcards:with-fingerprints",
     "seed:prod:repetitionPool": "ENV=development ../../util/_run_with_infisical.sh --env prd tsx src/data/seedRepetitionPool.ts",
-    "seed:qa": "ENV=development ../../util/_run_with_infisical.sh --env stg tsx src/data/seedTEST.ts",
-    "seed:raw": "ENV=development run-s --npm-path pnpm seed:test",
-    "seed:test": "ENV=development tsx src/data/seedTEST.ts"
+    "seed:qa": "ENV=development ../../util/_run_with_infisical.sh --env stg pnpm run seed:test",
+    "seed:raw": "ENV=development pnpm run seed:test",
+    "seed:test": "run-s --continue-on-error --npm-path pnpm seed:test:raw seed:fingerprints",
+    "seed:test:raw": "ENV=development tsx src/data/seedTEST.ts"
   },
   "engines": {
     "node": "=24"

@@ -6,7 +6,7 @@ import {
 } from '@klicker-uzh/prisma/client'
 import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { IMPORT_EXPORT_FINGERPRINT_VERSION } from '../src/lib/importExportFingerprintCanonicalization.js'
+import { IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION as IMPORT_EXPORT_FINGERPRINT_VERSION } from '../src/lib/importExportFingerprintCanonicalization.js'
 import {
   MAX_IMPORT_EXPORT_ANSWER_COLLECTIONS,
   MAX_IMPORT_EXPORT_ELEMENTS,

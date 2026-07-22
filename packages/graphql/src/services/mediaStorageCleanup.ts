@@ -2,14 +2,187 @@ import {
   ImportMediaStagingState,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
+import {
+  createDirectUploadCleanupOriginalId,
+  DIRECT_UPLOAD_CLEANUP_ORIGINAL_ID_PREFIX,
+  DIRECT_UPLOAD_PENDING_ORIGINAL_ID_PREFIX,
+  isDirectUploadCleanupMedia,
+  isPendingDirectUploadMedia,
+} from '../lib/importExportMediaIdentity.js'
 import { emitImportExportTelemetry } from '../lib/importExportTelemetry.js'
 import { isCanonicalImportedMediaTarget } from './importExportMediaBlobStore.js'
 import { findExpiredImportMediaStagingForCleanup } from './importExportPersistence.js'
 import { withLiveImportMediaLease } from './mediaStorageStaging.js'
 import {
+  deleteImportedMediaFile,
   deleteImportedMediaTarget,
   isImportExportMediaStorageConfigured,
+  resolveKlickerMediaHref,
 } from './mediaStorageTargets.js'
+
+export const ABANDONED_DIRECT_UPLOAD_MIN_AGE_MS = 60 * 60 * 1000
+const DIRECT_UPLOAD_CLEANUP_BATCH_SIZE = 100
+const DIRECT_UPLOAD_MAX_CLEANUP_BATCHES = 10
+
+export async function cleanupAbandonedDirectMediaUploads({
+  prisma,
+  now = new Date(),
+  dryRun = false,
+  shouldStop = () => false,
+}: {
+  prisma: PrismaClient
+  now?: Date
+  dryRun?: boolean
+  shouldStop?: () => boolean
+}) {
+  const createdBefore = new Date(
+    now.getTime() - ABANDONED_DIRECT_UPLOAD_MIN_AGE_MS
+  )
+  let deletedDirectUploadBlobs = 0
+  let deletedDirectUploadRows = 0
+  let wouldDeleteDirectUploads = 0
+  let failedDirectUploadCleanups = 0
+  let unsafeDirectUploadTargets = 0
+  let directUploadCleanupBatches = 0
+  let directUploadCleanupStoppedEarly = false
+  const attemptedIds: string[] = []
+
+  const findCandidates = async (take: number) =>
+    await prisma.mediaFile.findMany({
+      where: {
+        createdAt: { lte: createdBefore },
+        id: attemptedIds.length > 0 ? { notIn: attemptedIds } : undefined,
+        OR: [
+          {
+            originalId: {
+              startsWith: DIRECT_UPLOAD_PENDING_ORIGINAL_ID_PREFIX,
+            },
+          },
+          {
+            originalId: {
+              startsWith: DIRECT_UPLOAD_CLEANUP_ORIGINAL_ID_PREFIX,
+            },
+          },
+        ],
+      },
+      select: {
+        id: true,
+        href: true,
+        ownerId: true,
+        originalId: true,
+        createdAt: true,
+      },
+      orderBy: { id: 'asc' },
+      take,
+    })
+
+  for (let batch = 0; batch < DIRECT_UPLOAD_MAX_CLEANUP_BATCHES; batch++) {
+    if (shouldStop()) {
+      directUploadCleanupStoppedEarly = true
+      break
+    }
+    const candidates = await findCandidates(DIRECT_UPLOAD_CLEANUP_BATCH_SIZE)
+    if (candidates.length === 0) break
+    directUploadCleanupBatches++
+
+    for (const candidate of candidates) {
+      if (shouldStop()) {
+        directUploadCleanupStoppedEarly = true
+        break
+      }
+      attemptedIds.push(candidate.id)
+      const isPending = isPendingDirectUploadMedia(candidate)
+      const isClaimed = isDirectUploadCleanupMedia(candidate)
+      const target = resolveKlickerMediaHref(candidate.href)
+      if (
+        (!isPending && !isClaimed) ||
+        !target ||
+        target.storage !== 'azure' ||
+        target.canonicalHref !== candidate.href ||
+        target.ownerId !== candidate.ownerId
+      ) {
+        unsafeDirectUploadTargets++
+        emitImportExportTelemetry({
+          operation: 'cleanup',
+          outcome: 'rejected',
+          code: 'UNSAFE_DIRECT_UPLOAD_CLEANUP_TARGET',
+        })
+        continue
+      }
+
+      wouldDeleteDirectUploads++
+      if (dryRun) continue
+
+      try {
+        const cleanupOriginalId = createDirectUploadCleanupOriginalId(
+          candidate.id
+        )
+        if (isPending) {
+          const claimed = await prisma.mediaFile.updateMany({
+            where: {
+              id: candidate.id,
+              href: candidate.href,
+              ownerId: candidate.ownerId,
+              originalId: candidate.originalId,
+              createdAt: { lte: createdBefore },
+            },
+            data: { originalId: cleanupOriginalId },
+          })
+          if (claimed.count !== 1) continue
+        }
+
+        const deletedBlob = await deleteImportedMediaFile(candidate.href)
+        if (typeof deletedBlob !== 'boolean') {
+          throw new Error('Claimed direct upload target became noncanonical.')
+        }
+        if (deletedBlob) {
+          deletedDirectUploadBlobs++
+        }
+        const deleted = await prisma.mediaFile.deleteMany({
+          where: {
+            id: candidate.id,
+            href: candidate.href,
+            ownerId: candidate.ownerId,
+            originalId: cleanupOriginalId,
+            createdAt: { lte: createdBefore },
+          },
+        })
+        if (deleted.count !== 1) {
+          throw new Error('Claimed direct upload row could not be deleted.')
+        }
+        deletedDirectUploadRows++
+      } catch {
+        failedDirectUploadCleanups++
+        emitImportExportTelemetry({
+          operation: 'cleanup',
+          outcome: 'failure',
+          code: 'DIRECT_UPLOAD_CLEANUP_FAILED',
+        })
+      }
+    }
+
+    if (directUploadCleanupStoppedEarly) break
+    if (candidates.length < DIRECT_UPLOAD_CLEANUP_BATCH_SIZE) break
+  }
+
+  const directUploadCleanupBacklogRemaining =
+    directUploadCleanupStoppedEarly ||
+    (attemptedIds.length ===
+      DIRECT_UPLOAD_CLEANUP_BATCH_SIZE * DIRECT_UPLOAD_MAX_CLEANUP_BATCHES &&
+      (await findCandidates(1)).length > 0)
+
+  return {
+    deletedDirectUploadBlobs,
+    deletedDirectUploadRows,
+    wouldDeleteDirectUploads,
+    failedDirectUploadCleanups,
+    unsafeDirectUploadTargets,
+    directUploadCleanupBatches,
+    directUploadCleanupBacklogRemaining,
+    directUploadCleanupStoppedEarly,
+    attemptedCount: attemptedIds.length,
+  }
+}
 
 export async function cleanupPendingImportedMediaFile({
   stagingId,

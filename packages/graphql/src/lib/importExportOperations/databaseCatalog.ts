@@ -1,6 +1,10 @@
 import { Prisma } from '@klicker-uzh/prisma/client'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
+import {
+  IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
+  IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
+} from '../importExportFingerprintCanonicalization.js'
 import type { OperationsPrisma } from './database.js'
 import {
   IMPORT_EXPORT_MIGRATIONS,
@@ -44,6 +48,7 @@ type IndexRow = {
   access_method: string
   key_columns: string[]
   has_predicate: boolean
+  predicate: string | null
   has_expressions: boolean
   has_included_columns: boolean
   definition: string
@@ -93,7 +98,11 @@ type RawTriggerRow = Omit<TriggerRow, 'function_source_matches'> & {
   function_source: string
 }
 
-type CountRow = { count: string }
+export type ImportExportFingerprintInvariantInspection = Readonly<{
+  elements: number | null
+  answerCollections: number | null
+  mediaFiles: number | null
+}>
 
 export type ImportExportDatabaseInspection = Readonly<{
   migrations: ReadonlyArray<
@@ -109,11 +118,7 @@ export type ImportExportDatabaseInspection = Readonly<{
   constraints: readonly ConstraintRow[]
   triggers: readonly TriggerRow[]
   locks: readonly LockRow[]
-  staleVersions: Readonly<{
-    elements: number | null
-    answerCollections: number | null
-    mediaFiles: number | null
-  }>
+  staleVersions: ImportExportFingerprintInvariantInspection
 }>
 
 function repositoryMigrationUrl(migrationName: string) {
@@ -241,6 +246,7 @@ export async function inspectImportExportDatabase(
                ORDER BY key_column.position
              ) AS key_columns,
              index_state.indpred IS NOT NULL AS has_predicate,
+             pg_get_expr(index_state.indpred, index_state.indrelid) AS predicate,
              index_state.indexprs IS NOT NULL AS has_expressions,
              index_state.indnatts <> index_state.indnkeyatts AS has_included_columns,
              pg_get_indexdef(index_state.indexrelid) AS definition
@@ -386,12 +392,10 @@ export async function inspectImportExportDatabase(
     columns.map((column) => `${column.table_name}.${column.column_name}`)
   )
 
-  const [elements, answerCollections, mediaFiles] = await Promise.all([
-    staleVersionCount(prisma, columnSet, 'Element', 'isDeleted'),
-    staleVersionCount(prisma, columnSet, 'AnswerCollection', 'isDeleted'),
-    staleVersionCount(prisma, columnSet, 'MediaFile'),
-  ])
-  const staleVersions = { elements, answerCollections, mediaFiles }
+  const staleVersions = await countImportExportFingerprintInvariant(
+    prisma,
+    columnSet
+  )
 
   return {
     migrations: migrationRows.map((row) => {
@@ -420,19 +424,85 @@ export async function inspectImportExportDatabase(
   }
 }
 
-async function staleVersionCount(
+async function countImportExportFingerprintInvariant(
   prisma: OperationsPrisma,
-  columns: ReadonlySet<string>,
-  table: 'Element' | 'AnswerCollection' | 'MediaFile',
-  deletedColumn?: 'isDeleted'
-) {
-  if (!columns.has(`${table}.importFingerprintVersion`)) return null
-  const activePredicate = deletedColumn ? `AND "${deletedColumn}" = false` : ''
-  const rows = await prisma.$queryRawUnsafe<CountRow[]>(`
-    SELECT count(*)::text AS count
-    FROM "public"."${table}"
-    WHERE ("importFingerprintVersion" IS NULL OR "importFingerprintVersion" <> 1)
+  columns: ReadonlySet<string>
+): Promise<ImportExportFingerprintInvariantInspection> {
+  const countExpression = (
+    alias: 'answerCollections' | 'elements' | 'mediaFiles',
+    table: 'AnswerCollection' | 'Element' | 'MediaFile',
+    deletedColumn?: 'isDeleted'
+  ) => {
+    if (!columns.has(`${table}.importFingerprintVersion`)) {
+      return `NULL::text AS "${alias}"`
+    }
+    if (table !== 'MediaFile' && !columns.has(`${table}.importFingerprint`)) {
+      return `NULL::text AS "${alias}"`
+    }
+
+    const expectedVersion =
+      table === 'MediaFile'
+        ? IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION
+        : IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION
+    const activePredicate = deletedColumn
+      ? `AND "${deletedColumn}" = false`
+      : ''
+    const nonNullFingerprintPredicate =
+      table === 'MediaFile'
+        ? ''
+        : `OR "importFingerprint" IS NULL
+           OR "importFingerprint" !~ '^[a-f0-9]{64}$'`
+    return `(
+      SELECT count(*)::text
+      FROM "public"."${table}"
+      WHERE (
+        "importFingerprintVersion" IS NULL
+        OR "importFingerprintVersion" <> ${expectedVersion}
+        ${nonNullFingerprintPredicate}
+      )
       ${activePredicate}
+    ) AS "${alias}"`
+  }
+
+  const rows = await prisma.$queryRawUnsafe<
+    Array<{
+      answerCollections: string | null
+      elements: string | null
+      mediaFiles: string | null
+    }>
+  >(`
+    SELECT
+      ${countExpression('elements', 'Element', 'isDeleted')},
+      ${countExpression('answerCollections', 'AnswerCollection', 'isDeleted')},
+      ${countExpression('mediaFiles', 'MediaFile')}
   `)
-  return Number(rows[0]?.count ?? 0)
+  const row = rows[0]
+  const parseCount = (value: string | null | undefined) =>
+    typeof value === 'string' ? Number(value) : null
+  return {
+    elements: parseCount(row?.elements),
+    answerCollections: parseCount(row?.answerCollections),
+    mediaFiles: parseCount(row?.mediaFiles),
+  }
+}
+
+export async function inspectImportExportFingerprintInvariant(
+  prisma: OperationsPrisma
+): Promise<ImportExportFingerprintInvariantInspection> {
+  const columns = await prisma.$queryRawUnsafe<
+    Array<{ table_name: string; column_name: string }>
+  >(`
+    SELECT table_name::text AS table_name,
+           column_name::text AS column_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name IN ('Element', 'AnswerCollection', 'MediaFile')
+      AND column_name IN ('importFingerprint', 'importFingerprintVersion')
+  `)
+  return await countImportExportFingerprintInvariant(
+    prisma,
+    new Set(
+      columns.map((column) => `${column.table_name}.${column.column_name}`)
+    )
+  )
 }

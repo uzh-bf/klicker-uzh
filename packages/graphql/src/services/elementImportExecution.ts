@@ -5,6 +5,7 @@ import {
   ImportExportDomainError,
   ImportExportErrorCode,
 } from '../lib/importExportErrors.js'
+import { IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION } from '../lib/importExportFingerprintCanonicalization.js'
 import type {
   BoundElementImportExecutionElementPlan,
   BoundElementImportExecutionPlan,
@@ -93,6 +94,15 @@ function infrastructureFailure(cause?: unknown): never {
   )
 }
 
+function assertCurrentBoundFingerprint(fingerprint: string, version: number) {
+  if (
+    !/^[a-f0-9]{64}$/.test(fingerprint) ||
+    version !== IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION
+  ) {
+    infrastructureFailure('Import execution fingerprint is not current.')
+  }
+}
+
 function* batches<T>(values: readonly T[], size: number) {
   for (let offset = 0; offset < values.length; offset += size) {
     yield values.slice(offset, offset + size)
@@ -135,6 +145,10 @@ function prepareElementRows({
   entryIdByRef: ReadonlyMap<string, number>
 }): PreparedElement[] {
   return plan.elements.map((element) => {
+    assertCurrentBoundFingerprint(
+      element.importFingerprint,
+      element.importFingerprintVersion
+    )
     const answerCollectionId = element.answerCollectionRef
       ? collectionIdByRef.get(element.answerCollectionRef)
       : undefined
@@ -212,6 +226,10 @@ async function createCollections({
   const createdAnswerCollectionIds: number[] = []
 
   for (const collection of plan.answerCollections) {
+    assertCurrentBoundFingerprint(
+      collection.importFingerprint,
+      collection.importFingerprintVersion
+    )
     const created = await prisma.answerCollection.create({
       data: {
         name: collection.name,

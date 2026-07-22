@@ -7,7 +7,7 @@ import { z } from 'zod'
 export const IMPORT_EXPORT_OPERATION_SCHEMA_VERSION = 1 as const
 
 export type ImportExportEnvironment = 'stg' | 'prd'
-export type ImportExportDatabaseTarget = 'normal' | 'assessment'
+export type ImportExportDatabaseTarget = 'normal'
 
 export class ImportExportOperationError extends Error {
   constructor(readonly code: string) {
@@ -31,16 +31,18 @@ export function parseDatabaseTarget(
   env: NodeJS.ProcessEnv = process.env
 ): ImportExportDatabaseTarget {
   const target = env.IMPORT_EXPORT_DATABASE_TARGET ?? 'normal'
-  if (target === 'normal' || target === 'assessment') return target
+  if (target === 'normal') return target
+  if (target === 'assessment') {
+    throw new ImportExportOperationError(
+      'ASSESSMENT_DATABASE_TARGET_UNSUPPORTED'
+    )
+  }
   throw new ImportExportOperationError('DATABASE_TARGET_INVALID')
 }
 
 export function resolveDatabaseUrl(env: NodeJS.ProcessEnv = process.env) {
-  const target = parseDatabaseTarget(env)
-  const value =
-    target === 'assessment'
-      ? env.IMPORT_EXPORT_ASSESSMENT_DATABASE_URL
-      : env.DATABASE_URL
+  parseDatabaseTarget(env)
+  const value = env.DATABASE_URL
   if (!value) {
     throw new ImportExportOperationError('DATABASE_CONFIGURATION_MISSING')
   }
@@ -151,7 +153,7 @@ export async function runOperationCli(
           ...env,
           NODE_ENV: 'production',
           IMPORT_EXPORT_ENVIRONMENT: parseEnvironmentForFailure(env),
-          IMPORT_EXPORT_DATABASE_TARGET: parseTargetForFailure(env),
+          IMPORT_EXPORT_DATABASE_TARGET: 'normal',
         }
       ),
       stderr
@@ -166,23 +168,17 @@ function parseEnvironmentForFailure(
   return env.IMPORT_EXPORT_ENVIRONMENT === 'prd' ? 'prd' : 'stg'
 }
 
-function parseTargetForFailure(
-  env: NodeJS.ProcessEnv
-): ImportExportDatabaseTarget {
-  return env.IMPORT_EXPORT_DATABASE_TARGET === 'assessment'
-    ? 'assessment'
-    : 'normal'
-}
-
 const uuid = z.string().uuid()
 const boundedNumberIds = z.array(z.number().int().positive()).max(5000)
 const boundedUuidIds = z.array(uuid).max(5000)
 
 export const ImportExportRecoveryManifestSchema = z
   .object({
-    schemaVersion: z.literal(1),
+    schemaVersion: z.literal(2),
     environment: z.enum(['stg', 'prd']),
-    target: z.enum(['normal', 'assessment']),
+    target: z.literal('normal'),
+    databaseIdentity: z.string().regex(/^[a-f0-9]{64}$/),
+    storageIdentity: z.string().regex(/^[a-f0-9]{64}$/),
     ownerId: uuid,
     phase: z.enum([
       'initialized',
@@ -207,6 +203,16 @@ export const ImportExportRecoveryManifestSchema = z
 export type ImportExportRecoveryManifest = z.infer<
   typeof ImportExportRecoveryManifestSchema
 >
+
+export function getImportExportStorageIdentity(
+  env: NodeJS.ProcessEnv = process.env
+) {
+  const accountName = env.BLOB_STORAGE_ACCOUNT_NAME
+  if (!accountName || !/^[a-z0-9]{3,24}$/.test(accountName)) {
+    throw new ImportExportOperationError('STORAGE_IDENTITY_UNAVAILABLE')
+  }
+  return createHash('sha256').update(`azure-blob:${accountName}`).digest('hex')
+}
 
 const MAX_MANIFEST_BYTES = 1024 * 1024
 

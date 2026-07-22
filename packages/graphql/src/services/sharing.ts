@@ -15,8 +15,12 @@ import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
-import { computeAnswerCollectionDidacticFingerprint } from '../lib/importExportFingerprintCanonicalization.js'
-import { refreshElementImportFingerprint } from './importExportFingerprints.js'
+import { getImportExportRuntimeConfig } from '../lib/importExportRuntimeConfig.js'
+import {
+  ensureAnswerCollectionFingerprintCurrent,
+  ensureElementFingerprintCurrent,
+  lockElementFingerprintDependencies,
+} from './importExportFingerprints.js'
 
 // ! Helper functions
 // #region
@@ -4657,9 +4661,6 @@ export async function copyAnswerCollectionToAccount(
   })
 
   await ctx.prisma.$transaction(async (prisma) => {
-    const collectionFingerprint = computeAnswerCollectionDidacticFingerprint({
-      entries: collection.entries,
-    })
     // create new answer collection with the content of the original one
     const newCollection = await prisma.answerCollection.create({
       data: {
@@ -4669,8 +4670,6 @@ export async function copyAnswerCollectionToAccount(
             ? `${collection.name} (${importCount})`
             : collection.name,
         description: collection.description,
-        importFingerprint: collectionFingerprint?.fingerprint ?? null,
-        importFingerprintVersion: collectionFingerprint?.version ?? null,
         owner: {
           connect: {
             id: ctx.user.sub,
@@ -4686,6 +4685,8 @@ export async function copyAnswerCollectionToAccount(
         entries: true,
       },
     })
+
+    await ensureAnswerCollectionFingerprintCurrent(newCollection.id, prisma)
 
     // trigger recomputation of derived permissions for the object within the transaction
     await recomputeDerivedPermissions(
@@ -4765,6 +4766,14 @@ export async function copyElementToAccount(
   })
 
   await ctx.prisma.$transaction(async (prisma) => {
+    await lockElementFingerprintDependencies(
+      {
+        ...element,
+        requireVerifiedMedia: getImportExportRuntimeConfig().enabled,
+      },
+      prisma
+    )
+
     // create new element with the content of the original one
     const newElement = await prisma.element.create({
       data: {
@@ -4803,7 +4812,7 @@ export async function copyElementToAccount(
       { elementId: newElement.id, userId: ctx.user.sub },
       prisma
     )
-    await refreshElementImportFingerprint(newElement.id, prisma)
+    await ensureElementFingerprintCurrent(newElement.id, prisma)
 
     // if an answer collection is linked to the element, recompute the corresponding derived permissions
     if (newElement.answerCollectionId !== null) {

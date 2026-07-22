@@ -223,8 +223,10 @@ describe('import/export Azure storage deadlines', () => {
     const mediaId = randomUUID()
     azure.getProperties.mockImplementationOnce(never)
     const updateMany = vi.fn()
+    const executeRaw = vi.fn(async () => 1)
     const error = await settleDeadline(
       backfillMediaHashBatch({}, {
+        $executeRaw: executeRaw,
         mediaFile: {
           findMany: vi.fn(async () => [{ id: mediaId, href }]),
           findUnique: vi.fn(async () => ({
@@ -240,6 +242,7 @@ describe('import/export Azure storage deadlines', () => {
     )
 
     expectInfrastructureDeadline(error)
+    expect(executeRaw).toHaveBeenCalledTimes(1)
     expect(updateMany).not.toHaveBeenCalled()
   })
 

@@ -18,7 +18,9 @@ import {
   validateElementImportPackage,
   validateElementImportPackageBuffer,
 } from '../src/services/elementImportExport.js'
+import { manipulateElement } from '../src/services/elements.js'
 import { computeElementImportFingerprintFromDb } from '../src/services/importExportFingerprints.js'
+import { createAnswerCollection } from '../src/services/resources.js'
 import {
   clearPackageRateLimitKeys,
   expectPublicImportExportError,
@@ -556,8 +558,42 @@ describe('Secure element import/export packages', () => {
     })
 
     it('shows advisory duplicate warnings without blocking duplicate imports', async () => {
-      const { answerCollection, selection } =
-        await seedPackageFixture(userOneCtx)
+      const createdCollection = await createAnswerCollection(
+        {
+          name: 'Immediate duplicate collection',
+          description: 'Created through the authored write path',
+          answers: ['Alpha', 'Beta', 'Gamma'],
+        },
+        userOneCtx
+      )
+      if (!createdCollection) {
+        throw new Error('Failed to create the duplicate-test collection.')
+      }
+      const answerCollection = await prisma.answerCollection.findUniqueOrThrow({
+        where: { id: createdCollection.id },
+        include: { entries: { orderBy: { value: 'asc' } } },
+      })
+      const selection = await manipulateElement(
+        {
+          type: ElementType.SELECTION,
+          status: ElementStatus.READY,
+          name: 'Immediate duplicate selection',
+          content: 'Select the first answer',
+          explanation: 'Created through the authored write path',
+          basePoints: false,
+          pointsMultiplier: 1,
+          options: {
+            hasSampleSolution: true,
+            numberOfInputs: 1,
+            answerCollection: answerCollection.id,
+            correctAnswers: [answerCollection.entries[0]!.id],
+          },
+        },
+        userOneCtx
+      )
+      if (!selection) {
+        throw new Error('Failed to create the duplicate-test element.')
+      }
       const exported = await createElementExportPackage(
         { elementIds: [selection.id] },
         userOneCtx
@@ -581,13 +617,13 @@ describe('Secure element import/export packages', () => {
 
           expect(validation.errors).toEqual([])
           expect(validation.elements).toHaveLength(1)
-          expect(validation.elements[0]!.alreadyImported).toBe(false)
-          expect(validation.elements[0]!.existingElementId).toBeNull()
+          expect(validation.elements[0]!.alreadyImported).toBe(true)
+          expect(validation.elements[0]!.existingElementId).toBe(selection.id)
           expect(validation.answerCollections).toHaveLength(1)
-          expect(validation.answerCollections[0]!.alreadyImported).toBe(false)
+          expect(validation.answerCollections[0]!.alreadyImported).toBe(true)
           expect(
             validation.answerCollections[0]!.existingAnswerCollectionId
-          ).toBeNull()
+          ).toBe(answerCollection.id)
 
           await expect(
             importElementPackageBuffer(
@@ -617,14 +653,14 @@ describe('Secure element import/export packages', () => {
           )
           expect(normalizedValidation.elements[0]!.alreadyImported).toBe(true)
           expect(normalizedValidation.elements[0]!.existingElementId).toBe(
-            importedCopy.id
+            selection.id
           )
           expect(
             normalizedValidation.answerCollections[0]!.alreadyImported
           ).toBe(true)
 
-          await prisma.element.update({
-            where: { id: importedCopy.id },
+          await prisma.element.updateMany({
+            where: { id: { in: [selection.id, importedCopy.id] } },
             data: { importFingerprintVersion: 99 },
           })
           await clearPackageRateLimitKeys(userOneCtx)

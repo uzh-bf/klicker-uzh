@@ -1,15 +1,21 @@
 import { ElementType } from '@klicker-uzh/prisma/client'
 import { createHash } from 'node:crypto'
+import { canonicalizeElementSharedFields } from './elementDomain.js'
 import {
   collectElementMediaReferences,
   collectPlainTextMediaReferences,
   isPackageMediaHref,
   MediaReferenceKind,
-  rewriteElementMediaReferences,
+  rewriteExportElementMediaReferences,
 } from './importExportMediaReferences.js'
 
-export const IMPORT_EXPORT_FINGERPRINT_VERSION = 1 as const
+export const IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION = 2 as const
+export const IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION = 1 as const
 
+/**
+ * @deprecated Fingerprint v2 uses the package export omission marker. This
+ * legacy sentinel remains accepted as authored image input during migration.
+ */
 export const OMITTED_AUTO_LOAD_MEDIA_IDENTITY =
   'klicker-fingerprint-media:omitted'
 
@@ -25,7 +31,6 @@ export type VerifiedFingerprintMedia = {
 
 export type FingerprintMediaContext = {
   verifiedByHref?: ReadonlyMap<string, VerifiedFingerprintMedia>
-  unresolvedHrefs?: ReadonlySet<string>
 }
 
 export type PreparedPlainTextFingerprintValues = Readonly<{
@@ -54,7 +59,7 @@ export type ElementDidacticFingerprintInput = {
 }
 
 export type VersionedDidacticFingerprint = {
-  version: typeof IMPORT_EXPORT_FINGERPRINT_VERSION
+  version: typeof IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION
   fingerprint: string
 }
 
@@ -102,14 +107,14 @@ function createVersionedFingerprint(
     .update(
       stableJson({
         kind,
-        version: IMPORT_EXPORT_FINGERPRINT_VERSION,
+        version: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
         payload,
       })
     )
     .digest('hex')
 
   return {
-    version: IMPORT_EXPORT_FINGERPRINT_VERSION,
+    version: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
     fingerprint,
   }
 }
@@ -143,7 +148,7 @@ function normalizePlainTextValues(values: readonly string[]) {
 }
 
 /**
- * Prepares the exact canonical value array used by fingerprint version 1.
+ * Prepares the exact canonical value array used by fingerprint version 2.
  * Reusing this result avoids rescanning and resorting a shared answer pool for
  * every linked element without changing the hashed payload.
  */
@@ -175,25 +180,46 @@ function normalizeElementMedia(
     }
 
     const verifiedIdentity = getVerifiedMediaIdentity(reference.href, media)
-    if (verifiedIdentity === null) return null
-
     if (verifiedIdentity) {
       replacements.set(reference.href, verifiedIdentity)
       continue
     }
 
+    // A package-local image without a valid verified hash is malformed package
+    // transport and must still fail strict package-domain validation.
     if (isPackageMediaHref(reference.href)) {
       return null
     }
 
-    if (media?.unresolvedHrefs?.has(reference.href)) {
-      return null
-    }
-
-    replacements.set(reference.href, OMITTED_AUTO_LOAD_MEDIA_IDENTITY)
+    // External, unsupported, unavailable, or invalidly classified persisted
+    // images are omitted exactly as they are during package export. Leaving
+    // them out of the replacement map makes the export rewriter emit the
+    // deterministic omission marker while retaining any ordinary link that
+    // happens to use the same href.
   }
 
-  return rewriteElementMediaReferences(element, replacements)
+  return rewriteExportElementMediaReferences(element, replacements)
+}
+
+function normalizePersistedElementMedia(
+  element: Pick<
+    ElementDidacticFingerprintInput,
+    'type' | 'content' | 'explanation'
+  > & {
+    options: JsonRecord
+  },
+  media: FingerprintMediaContext | undefined
+) {
+  const replacements = new Map<string, string>()
+
+  for (const reference of collectElementMediaReferences(element)) {
+    if (reference.kind !== MediaReferenceKind.AUTO_LOAD) continue
+
+    const verifiedIdentity = getVerifiedMediaIdentity(reference.href, media)
+    if (verifiedIdentity) replacements.set(reference.href, verifiedIdentity)
+  }
+
+  return rewriteExportElementMediaReferences(element, replacements)
 }
 
 function getCaseStudyItemValue(
@@ -386,14 +412,21 @@ export function computeAnswerCollectionDidacticFingerprint(
 export function computeElementDidacticFingerprint(
   input: ElementDidacticFingerprintInput
 ): VersionedDidacticFingerprint | null {
+  const shared = canonicalizeElementSharedFields({
+    type: input.type,
+    content: input.content,
+    explanation: input.explanation,
+    basePoints: input.basePoints,
+    pointsMultiplier: input.pointsMultiplier,
+  })
   const normalizedOptions = normalizeElementOptions(input)
   if (!normalizedOptions) return null
 
   const mediaNormalizedElement = normalizeElementMedia(
     {
-      type: input.type,
-      content: input.content,
-      explanation: input.explanation,
+      type: shared.type,
+      content: shared.content,
+      explanation: shared.explanation,
       options: normalizedOptions,
     },
     input.media
@@ -410,13 +443,82 @@ export function computeElementDidacticFingerprint(
   if (!answerPoolValues || !selectedAnswerValues) return null
 
   return createVersionedFingerprint('element', {
+    type: shared.type,
+    content: mediaNormalizedElement.content,
+    explanation: mediaNormalizedElement.explanation ?? null,
+    options: mediaNormalizedElement.options,
+    pointsMultiplier: shared.pointsMultiplier,
+    basePoints: shared.basePoints,
+    answerPoolValues,
+    selectedAnswerValues,
+  })
+}
+
+const PERSISTED_LEGACY_FALLBACK_DOMAIN =
+  'klicker-import-export:persisted-legacy-fallback:v1'
+
+function normalizePersistedPlainTextValues(values: readonly string[]) {
+  return [...values].sort(compareStrings)
+}
+
+/**
+ * Computes the current fingerprint for a persisted answer collection.
+ *
+ * Strict portable resources retain exactly the package-domain identity. The
+ * fallback is reserved for historical persisted values that cannot satisfy
+ * that domain (for example, a legacy package transport href in a plain-text
+ * entry), and is explicitly domain-separated from canonical package hashes.
+ */
+export function computePersistedAnswerCollectionDidacticFingerprint(
+  input: AnswerCollectionDidacticFingerprintInput
+): VersionedDidacticFingerprint {
+  const strict = computeAnswerCollectionDidacticFingerprint(input)
+  if (strict) return strict
+
+  return createVersionedFingerprint('answer-collection', {
+    domain: PERSISTED_LEGACY_FALLBACK_DOMAIN,
+    values: normalizePersistedPlainTextValues(
+      input.preparedValues?.values ?? input.entries.map((entry) => entry.value)
+    ),
+  })
+}
+
+/**
+ * Computes the current fingerprint for a persisted element without producing
+ * a nullable state. Malformed historical didactic structures are hashed as a
+ * stable, domain-separated legacy payload. Media is first transformed with
+ * the exact package-export image rules, so unavailable auto-loading images are
+ * deterministic and ordinary links sharing their href remain authored data.
+ */
+export function computePersistedElementDidacticFingerprint(
+  input: ElementDidacticFingerprintInput
+): VersionedDidacticFingerprint {
+  const strict = computeElementDidacticFingerprint(input)
+  if (strict) return strict
+
+  const mediaNormalizedElement = normalizePersistedElementMedia(
+    {
+      type: input.type,
+      content: input.content,
+      explanation: input.explanation,
+      options: input.options,
+    },
+    input.media
+  )
+
+  return createVersionedFingerprint('element', {
+    domain: PERSISTED_LEGACY_FALLBACK_DOMAIN,
     type: input.type,
     content: mediaNormalizedElement.content,
     explanation: mediaNormalizedElement.explanation ?? null,
     options: mediaNormalizedElement.options,
     pointsMultiplier: input.pointsMultiplier,
     basePoints: input.basePoints,
-    answerPoolValues,
-    selectedAnswerValues,
+    answerPoolValues: normalizePersistedPlainTextValues(
+      input.preparedAnswerPoolValues?.values ?? input.answerPoolValues ?? []
+    ),
+    selectedAnswerValues: normalizePersistedPlainTextValues(
+      input.selectedAnswerValues ?? []
+    ),
   })
 }

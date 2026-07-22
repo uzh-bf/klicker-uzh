@@ -3,36 +3,35 @@ import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
+import { IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION } from '../lib/importExportFingerprintCanonicalization.js'
+import {
+  hasDirectUploadLifecycleMarker,
+  resolveKlickerMediaHref,
+  type ResolvedKlickerMediaHref,
+} from '../lib/importExportMediaIdentity.js'
 import { MAX_IMPORT_EXPORT_MEDIA_BYTES } from '../lib/importExportPackageConfig.js'
 import { DEFAULT_MEDIA_CONTENT_TYPE } from '../lib/mediaContentTypes.js'
 import { MediaExportOmissionError } from '../lib/mediaErrors.js'
 import {
   deleteAzureImportedMediaIfExists,
   getAzureImportedMediaProperties,
-  getAzureImportExportStorageAccountUrl,
   isAzureImportExportStorageConfigured,
   readAzureImportedMedia,
 } from './importExportAzureBlobStorage.js'
 import {
   createImportedMediaHref,
   deleteLocalImportedMediaIfExists,
-  parseLocalImportedMediaHref,
   readLocalImportedMedia,
   statLocalImportedMedia,
 } from './importExportMediaBlobStore.js'
 import { isLocalImportExportPackageStorageEnabled } from './importExportPackageBlobStore.js'
-
-const PACKAGE_CONTAINER_NAME = 'klicker-import-export'
 
 type BlobLocation = {
   containerName: string
   blobName: string
 }
 
-type ParsedMediaTarget = {
-  location: BlobLocation
-  storage: 'azure' | 'local'
-}
+type ParsedMediaTarget = ResolvedKlickerMediaHref
 
 type MediaContext = Pick<
   ContextWithUser | PrismaTransactionContextWithUser,
@@ -44,10 +43,6 @@ export function isImportExportMediaStorageConfigured() {
     isLocalImportExportPackageStorageEnabled() ||
     isAzureImportExportStorageConfigured()
   )
-}
-
-function getStorageAccount() {
-  return getAzureImportExportStorageAccountUrl()
 }
 
 function isBlobNotFoundError(error: unknown) {
@@ -91,47 +86,7 @@ export function isBlobAlreadyExistsError(error: unknown) {
 }
 
 function parseKlickerMediaTarget(href: string): ParsedMediaTarget | null {
-  const localLocation = parseLocalImportedMediaHref(href)
-  if (localLocation) {
-    return { location: localLocation, storage: 'local' }
-  }
-
-  let url: URL
-
-  try {
-    url = new URL(href)
-  } catch {
-    return null
-  }
-
-  let storageAccount: string
-  try {
-    storageAccount = getStorageAccount()
-  } catch {
-    return null
-  }
-
-  if (url.origin !== storageAccount) {
-    return null
-  }
-
-  const [containerName, ...blobParts] = url.pathname.split('/').filter(Boolean)
-
-  if (
-    !containerName ||
-    containerName === PACKAGE_CONTAINER_NAME ||
-    blobParts.length === 0
-  ) {
-    return null
-  }
-
-  return {
-    location: {
-      containerName,
-      blobName: blobParts.join('/'),
-    },
-    storage: 'azure',
-  }
+  return resolveKlickerMediaHref(href)
 }
 
 export function parseKlickerMediaUrl(href: string): BlobLocation | null {
@@ -139,11 +94,10 @@ export function parseKlickerMediaUrl(href: string): BlobLocation | null {
 }
 
 function getCanonicalImportedMediaHref(target: ParsedMediaTarget) {
-  const { location } = target
-  return target.storage === 'local'
-    ? createImportedMediaHref(location.containerName, location.blobName)
-    : `${getStorageAccount()}/${location.containerName}/${location.blobName}`
+  return target.canonicalHref
 }
+
+export { resolveKlickerMediaHref }
 
 async function readParsedMediaTarget(target: ParsedMediaTarget) {
   const { location } = target
@@ -218,7 +172,7 @@ export async function downloadKlickerMediaFile(
     throw new MediaExportOmissionError('unknown-size')
   }
   if (contentLength > MAX_IMPORT_EXPORT_MEDIA_BYTES) {
-    throw new MediaExportOmissionError('too-large')
+    throw new MediaExportOmissionError('too-large', contentLength)
   }
 
   let buffer
@@ -308,8 +262,10 @@ export async function getKlickerMediaFilesExportMetadata(
   const mediaFiles = await ctx.prisma.mediaFile.findMany({
     where: { href: { in: requested.map((item) => item.canonicalHref) } },
     select: {
+      contentHash: true,
       id: true,
       href: true,
+      importFingerprintVersion: true,
       name: true,
       originalId: true,
       ownerId: true,
@@ -326,7 +282,15 @@ export async function getKlickerMediaFilesExportMetadata(
       assertLease()
       const { location } = target
       const mediaFile = mediaFileByHref.get(canonicalHref)
-      if (!mediaFile || mediaFile.ownerId !== location.containerName) {
+      if (
+        !mediaFile ||
+        hasDirectUploadLifecycleMarker(mediaFile.originalId) ||
+        mediaFile.ownerId !== location.containerName ||
+        mediaFile.importFingerprintVersion !==
+          IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION ||
+        !mediaFile.contentHash ||
+        !/^[a-f0-9]{64}$/.test(mediaFile.contentHash)
+      ) {
         return [href, null] as const
       }
 
@@ -336,7 +300,9 @@ export async function getKlickerMediaFilesExportMetadata(
         assertLease()
       } catch (error) {
         assertLease()
-        if (isBlobNotFoundError(error)) return [href, null] as const
+        if (isBlobNotFoundError(error)) {
+          throw new MediaExportOmissionError('unknown-size')
+        }
         throw error
       }
       const bytes = properties.contentLength
@@ -359,6 +325,7 @@ export async function getKlickerMediaFilesExportMetadata(
           filename:
             mediaFile.name || path.basename(location.blobName) || 'media',
           originalId: mediaFile.originalId ?? mediaFile.id,
+          sha256: mediaFile.contentHash,
         },
       ] as const
     }
@@ -382,14 +349,13 @@ export async function deleteImportedMediaFile(href: string) {
   if (!target) return
 
   if (target.storage === 'local') {
-    await deleteLocalImportedMediaIfExists(
+    return await deleteLocalImportedMediaIfExists(
       target.location.containerName,
       target.location.blobName
     )
-    return
   }
 
-  await deleteAzureImportedMediaIfExists(target.location)
+  return await deleteAzureImportedMediaIfExists(target.location)
 }
 
 export async function getLocalImportedMediaDownload(

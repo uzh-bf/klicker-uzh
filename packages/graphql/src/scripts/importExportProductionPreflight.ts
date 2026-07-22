@@ -1,5 +1,4 @@
 import {
-  ImportExportOperationError,
   createOperationOutput,
   parseDatabaseTarget,
   requireMasterGateOff,
@@ -12,9 +11,7 @@ export async function runImportExportProductionPreflight(
   env: NodeJS.ProcessEnv = process.env
 ) {
   requireMasterGateOff(env)
-  if (parseDatabaseTarget(env) !== 'normal') {
-    throw new ImportExportOperationError('PREFLIGHT_NORMAL_TARGET_REQUIRED')
-  }
+  parseDatabaseTarget(env)
   assertImportExportTokenSecretConfig()
 
   // This entry point is production-only: a metadata-only check must never be

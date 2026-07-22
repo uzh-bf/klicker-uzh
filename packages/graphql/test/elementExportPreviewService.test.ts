@@ -31,6 +31,7 @@ describe('Secure element import/export packages', () => {
         contentType: string
         filename: string
         originalId: string
+        sha256: string
       }
     >
     let resolveMetadata!: (metadata: DeferredMediaMetadata) => void
@@ -108,6 +109,7 @@ describe('Secure element import/export packages', () => {
                   contentType: 'image/png',
                   filename: 'deferred.png',
                   originalId: 'media-original-id',
+                  sha256: 'a'.repeat(64),
                 },
               ],
             ])

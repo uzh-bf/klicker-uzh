@@ -4,19 +4,21 @@ import { randomUUID } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import {
   computeElementDidacticFingerprint,
-  IMPORT_EXPORT_FINGERPRINT_VERSION,
+  IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION as IMPORT_EXPORT_FINGERPRINT_VERSION,
+  IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
 } from '../src/lib/importExportFingerprintCanonicalization.js'
 import {
   backfillFingerprintBatch,
   repairStaleImportExportFingerprints,
 } from '../src/services/importExportFingerprintMaintenance.js'
 import {
-  computeAnswerCollectionDidacticFingerprintFromDbV1,
-  computeElementDidacticFingerprintFromDbV1,
+  computeAnswerCollectionDidacticFingerprintFromDb as computeAnswerCollectionDidacticFingerprintFromDbV1,
+  computeElementDidacticFingerprintFromDb as computeElementDidacticFingerprintFromDbV1,
   persistAnswerCollectionDidacticFingerprintSnapshot,
   persistElementDidacticFingerprintSnapshot,
-  refreshAnswerCollectionDidacticFingerprintV1,
-  refreshElementDidacticFingerprintV1,
+  refreshAnswerCollectionDidacticFingerprint as refreshAnswerCollectionDidacticFingerprintV1,
+  refreshElementDidacticFingerprint as refreshElementDidacticFingerprintV1,
+  refreshLinkedElementDidacticFingerprintPages,
 } from '../src/services/importExportFingerprintPersistence.js'
 import { invalidateElementFingerprintsForFinalizedMediaV1 } from '../src/services/importExportFingerprints.js'
 
@@ -25,6 +27,7 @@ const TEST_EMAIL_PREFIX = `fingerprint-v1-${TEST_RUN_ID}`
 const HASH_A = 'a'.repeat(64)
 const LEGACY_FINGERPRINT = 'c'.repeat(64)
 const OTHER_FINGERPRINT = 'd'.repeat(64)
+const PREVIOUS_STORAGE_ACCOUNT = process.env.BLOB_STORAGE_ACCOUNT_NAME
 
 let testSequence = 0
 let ownerId: string
@@ -124,6 +127,10 @@ async function createSelectionElement({
 }
 
 describe('DB-only didactic fingerprint persistence', () => {
+  beforeAll(() => {
+    process.env.BLOB_STORAGE_ACCOUNT_NAME = 'testaccount'
+  })
+
   beforeEach(async () => {
     await createTestOwner()
   })
@@ -134,10 +141,16 @@ describe('DB-only didactic fingerprint persistence', () => {
 
   afterAll(async () => {
     await cleanupTestOwners()
+    if (typeof PREVIOUS_STORAGE_ACCOUNT === 'undefined') {
+      delete process.env.BLOB_STORAGE_ACCOUNT_NAME
+    } else {
+      process.env.BLOB_STORAGE_ACCOUNT_NAME = PREVIOUS_STORAGE_ACCOUNT
+    }
   })
 
   it('matches the equivalent package fingerprint using DB pool and selected values', async () => {
-    const storedHref = `https://storage.invalid/${ownerId}/stored.png`
+    const storedHref = `https://testaccount.blob.core.windows.net/${ownerId}/stored.png`
+    const authoredHref = `${storedHref}?download=1`
     const packageHref = 'klicker-package-media://package-image'
     const collection = await createAnswerCollection()
     const selectedEntry = collection.entries.find(
@@ -146,7 +159,7 @@ describe('DB-only didactic fingerprint persistence', () => {
     const element = await createSelectionElement({
       collectionId: collection.id,
       selectedEntryId: selectedEntry.id,
-      content: `Select one ![diagram](<${storedHref}>)`,
+      content: `Select one ![diagram](<${authoredHref}>)`,
     })
     await prisma.mediaFile.create({
       data: {
@@ -155,7 +168,7 @@ describe('DB-only didactic fingerprint persistence', () => {
         name: 'stored-name.png',
         type: 'image/png',
         contentHash: HASH_A,
-        importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+        importFingerprintVersion: IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
       },
     })
 
@@ -187,8 +200,61 @@ describe('DB-only didactic fingerprint persistence', () => {
     expect(dbSnapshot?.computed).toEqual(packageFingerprint)
   })
 
+  it('bulk-persists linked fingerprints across nullable and unchanged prior states', async () => {
+    const collection = await createAnswerCollection()
+    const selectedEntry = collection.entries[0]!
+    const nullState = await createSelectionElement({
+      collectionId: collection.id,
+      selectedEntryId: selectedEntry.id,
+      importFingerprint: null,
+      importFingerprintVersion: null,
+    })
+    const legacyState = await createSelectionElement({
+      collectionId: collection.id,
+      selectedEntryId: selectedEntry.id,
+      importFingerprint: LEGACY_FINGERPRINT,
+      importFingerprintVersion: 7,
+    })
+    const unchangedState = await createSelectionElement({
+      collectionId: collection.id,
+      selectedEntryId: selectedEntry.id,
+    })
+    await refreshElementDidacticFingerprintV1(unchangedState.id, prisma)
+    const unchangedBefore = await prisma.element.findUniqueOrThrow({
+      where: { id: unchangedState.id },
+      select: { updatedAt: true },
+    })
+
+    await expect(
+      refreshLinkedElementDidacticFingerprintPages(collection.id, prisma)
+    ).resolves.toEqual({ staleElementIds: [] })
+
+    const persisted = await prisma.element.findMany({
+      where: {
+        id: { in: [nullState.id, legacyState.id, unchangedState.id] },
+      },
+      select: {
+        id: true,
+        importFingerprint: true,
+        importFingerprintVersion: true,
+        updatedAt: true,
+      },
+      orderBy: { id: 'asc' },
+    })
+    expect(persisted).toHaveLength(3)
+    for (const element of persisted) {
+      expect(element).toMatchObject({
+        importFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+        importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+      })
+    }
+    expect(
+      persisted.find(({ id }) => id === unchangedState.id)?.updatedAt
+    ).toEqual(unchangedBefore.updatedAt)
+  })
+
   it('rollout-revisits a scheduled null fingerprint after media classification', async () => {
-    const href = `https://storage.invalid/${ownerId}/unhashed.png`
+    const href = `https://testaccount.blob.core.windows.net/${ownerId}/unhashed.png`
     const mediaFile = await prisma.mediaFile.create({
       data: {
         ownerId,
@@ -208,7 +274,7 @@ describe('DB-only didactic fingerprint persistence', () => {
       element.id,
       prisma
     )
-    expect(unresolved?.computed).toBeNull()
+    expect(unresolved?.computed.fingerprint).toMatch(/^[a-f0-9]{64}$/)
     await expect(repairStaleImportExportFingerprints(prisma)).resolves.toEqual({
       processedAnswerCollections: 0,
       processedElements: 1,
@@ -225,7 +291,7 @@ describe('DB-only didactic fingerprint persistence', () => {
         },
       })
     ).resolves.toMatchObject({
-      importFingerprint: null,
+      importFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
       importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
     })
     const afterFirstRefresh = await prisma.element.findUniqueOrThrow({
@@ -234,7 +300,13 @@ describe('DB-only didactic fingerprint persistence', () => {
     })
     await expect(
       refreshElementDidacticFingerprintV1(element.id, prisma)
-    ).resolves.toMatchObject({ status: 'unchanged', computed: null })
+    ).resolves.toMatchObject({
+      status: 'unchanged',
+      computed: {
+        version: IMPORT_EXPORT_FINGERPRINT_VERSION,
+        fingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+      },
+    })
     await expect(
       prisma.element.findUniqueOrThrow({
         where: { id: element.id },
@@ -246,7 +318,7 @@ describe('DB-only didactic fingerprint persistence', () => {
       where: { id: mediaFile.id },
       data: {
         contentHash: HASH_A,
-        importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+        importFingerprintVersion: IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
       },
     })
     await expect(
@@ -274,7 +346,7 @@ describe('DB-only didactic fingerprint persistence', () => {
   })
 
   it('matches package omission identity for media classified as unbundled', async () => {
-    const storedHref = `https://storage.invalid/${ownerId}/unbundled.svg`
+    const storedHref = `https://testaccount.blob.core.windows.net/${ownerId}/unbundled.svg`
     await prisma.mediaFile.create({
       data: {
         ownerId,
@@ -282,7 +354,7 @@ describe('DB-only didactic fingerprint persistence', () => {
         name: 'unbundled.svg',
         type: 'image/svg+xml',
         contentHash: null,
-        importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+        importFingerprintVersion: IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
       },
     })
     const element = await createContentElement({
@@ -368,8 +440,8 @@ describe('DB-only didactic fingerprint persistence', () => {
     })
   })
 
-  it('invalidates an omission fingerprint when direct-upload media becomes available', async () => {
-    const href = `https://storage.invalid/${ownerId}/pending-direct-upload.png`
+  it('invalidates a media-dependent fingerprint without changing authored revision metadata', async () => {
+    const href = `https://testaccount.blob.core.windows.net/${ownerId}/pending-direct-upload.png`
     await prisma.mediaFile.create({
       data: {
         ownerId,
@@ -377,7 +449,7 @@ describe('DB-only didactic fingerprint persistence', () => {
         name: 'pending-direct-upload.png',
         type: 'image/png',
         contentHash: null,
-        importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+        importFingerprintVersion: IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
       },
     })
     const element = await createContentElement({
@@ -392,25 +464,44 @@ describe('DB-only didactic fingerprint persistence', () => {
     expect(staleSnapshot?.computed).not.toBeNull()
 
     await expect(
-      invalidateElementFingerprintsForFinalizedMediaV1(
-        { href, ownerId },
-        prisma
-      )
-    ).resolves.toBe(1)
-    await expect(
-      prisma.element.findUniqueOrThrow({
-        where: { id: element.id },
-        select: {
-          version: true,
-          importFingerprint: true,
-          importFingerprintVersion: true,
-        },
-      })
-    ).resolves.toEqual({
-      version: element.version + 1,
-      importFingerprint: null,
+      invalidateElementFingerprintsForFinalizedMediaV1({ href }, prisma)
+    ).resolves.toEqual([{ id: element.id }])
+    const firstInvalidation = await prisma.element.findUniqueOrThrow({
+      where: { id: element.id },
+      select: {
+        version: true,
+        updatedAt: true,
+        importFingerprint: true,
+        importFingerprintVersion: true,
+      },
+    })
+    expect(firstInvalidation).toEqual({
+      version: element.version,
+      updatedAt: element.updatedAt,
+      importFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
       importFingerprintVersion: null,
     })
+    await expect(
+      invalidateElementFingerprintsForFinalizedMediaV1({ href }, prisma)
+    ).resolves.toEqual([{ id: element.id }])
+    const secondInvalidation = await prisma.element.findUniqueOrThrow({
+      where: { id: element.id },
+      select: {
+        version: true,
+        updatedAt: true,
+        importFingerprint: true,
+        importFingerprintVersion: true,
+      },
+    })
+    expect(secondInvalidation).toEqual({
+      version: element.version,
+      updatedAt: element.updatedAt,
+      importFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+      importFingerprintVersion: null,
+    })
+    expect(secondInvalidation.importFingerprint).not.toBe(
+      firstInvalidation.importFingerprint
+    )
     await expect(
       persistElementDidacticFingerprintSnapshot(staleSnapshot!, prisma)
     ).resolves.toMatchObject({ status: 'stale' })

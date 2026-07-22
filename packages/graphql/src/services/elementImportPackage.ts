@@ -286,6 +286,8 @@ type StagedPackageMedia = PackageMedia & {
   staged: StagedImportedMediaFile
 }
 
+const IMPORT_MEDIA_STAGING_CONCURRENCY = 4
+
 async function stagePackageMediaFiles(
   mediaFiles: PackageMedia[],
   ctx: ContextWithUser,
@@ -296,31 +298,57 @@ async function stagePackageMediaFiles(
   const stagedMediaFiles: StagedPackageMedia[] = []
   const stagingExpiresAt = new Date(Date.now() + IMPORT_MEDIA_STAGING_TTL_MS)
 
-  for (const media of mediaFiles) {
+  for (
+    let offset = 0;
+    offset < mediaFiles.length;
+    offset += IMPORT_MEDIA_STAGING_CONCURRENCY
+  ) {
     leaseGuard?.assertLease()
-    const staged = await stageImportedMediaFile(
-      {
-        buffer: media.data,
-        contentType: media.contentType,
-        filename: media.filename,
-        originalId: `import-media:${media.sha256}`,
-        contentHash: media.sha256,
-        durableOperation: durableExecution
-          ? {
-              receiptId: durableExecution.receiptId,
-              operationId: durableExecution.leaseId,
-              packageMediaRef: media.ref,
-              expiresAt: stagingExpiresAt,
-            }
-          : undefined,
-      },
-      ctx
+    const batch = mediaFiles.slice(
+      offset,
+      offset + IMPORT_MEDIA_STAGING_CONCURRENCY
     )
-    leaseGuard?.assertLease()
-    if (staged.createdBlob && !staged.stagingId) {
-      createdStagedMediaHrefs.push(staged.href)
+    const results = await Promise.allSettled(
+      batch.map(async (media) => {
+        leaseGuard?.assertLease()
+        const staged = await stageImportedMediaFile(
+          {
+            buffer: media.data,
+            contentType: media.contentType,
+            filename: media.filename,
+            originalId: `import-media:${media.sha256}`,
+            contentHash: media.sha256,
+            durableOperation: durableExecution
+              ? {
+                  receiptId: durableExecution.receiptId,
+                  operationId: durableExecution.leaseId,
+                  packageMediaRef: media.ref,
+                  expiresAt: stagingExpiresAt,
+                }
+              : undefined,
+          },
+          ctx
+        )
+        // Record non-durable blobs before the post-I/O lease check so a lease
+        // loss cannot strand a successfully copied blob outside cleanup scope.
+        if (staged.createdBlob && !staged.stagingId) {
+          createdStagedMediaHrefs.push(staged.href)
+        }
+        leaseGuard?.assertLease()
+        return { ...media, staged }
+      })
+    )
+    for (const result of results) {
+      if (result.status === 'fulfilled') {
+        stagedMediaFiles.push(result.value)
+      }
     }
-    stagedMediaFiles.push({ ...media, staged })
+    const failure = results.find(
+      (result): result is PromiseRejectedResult => result.status === 'rejected'
+    )
+    if (failure) {
+      throw failure.reason
+    }
   }
 
   return stagedMediaFiles

@@ -1,22 +1,35 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { createHash } from 'node:crypto'
-import type { ContextWithUser } from '../lib/context.js'
 import {
   computeAnswerCollectionDidacticFingerprint,
   computeElementDidacticFingerprint,
-  IMPORT_EXPORT_FINGERPRINT_VERSION,
+  IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
   type FingerprintMediaContext,
+  type VersionedDidacticFingerprint,
 } from '../lib/importExportFingerprintCanonicalization.js'
+import {
+  createPendingDirectUploadOriginalId,
+  hasDirectUploadLifecycleMarker,
+  isPendingDirectUploadMedia,
+  resolveKlickerMediaHref,
+} from '../lib/importExportMediaIdentity.js'
+import {
+  collectElementMediaHrefs,
+  MediaReferenceKind,
+} from '../lib/importExportMediaReferences.js'
+import { MAX_DIRECT_MEDIA_UPLOAD_BYTES } from '../lib/importExportPackageConfig.js'
 import { isSupportedPackageMediaContentType } from '../lib/importExportPackageContract.js'
 import { MediaExportOmissionError } from '../lib/mediaErrors.js'
 import {
-  computeAnswerCollectionDidacticFingerprintFromDbV1,
-  computeElementDidacticFingerprintFromDbV1,
-  refreshAnswerCollectionDidacticFingerprintV1,
-  refreshElementDidacticFingerprintV1,
+  computeAnswerCollectionDidacticFingerprintFromDb,
+  computeElementDidacticFingerprintFromDb,
+  refreshAnswerCollectionDidacticFingerprint,
+  refreshElementDidacticFingerprint,
+  refreshLinkedElementDidacticFingerprintPages,
+  type FingerprintBatchPrisma,
   type FingerprintPrisma,
 } from './importExportFingerprintPersistence.js'
-import { downloadKlickerMediaFile } from './mediaStorage.js'
+import { downloadKlickerMediaFile } from './mediaStorageTargets.js'
 
 type JsonRecord = Record<string, unknown>
 
@@ -25,57 +38,202 @@ type UploadedMediaFingerprintFinalizationInput = {
   ownerId: string
 }
 
-type ElementFingerprintInvalidationPrisma = Pick<DB.PrismaClient, '$executeRaw'>
+type ElementFingerprintInvalidationPrisma = Pick<DB.PrismaClient, '$queryRaw'>
 
-type FingerprintRefreshTarget =
-  | { elementId: number; answerCollectionId?: never }
-  | { answerCollectionId: number; elementId?: never }
+type FinalizedMediaFingerprintPrisma = FingerprintPrisma &
+  Pick<DB.PrismaClient, '$executeRaw' | '$queryRaw'>
 
-export function enqueueImportExportFingerprintRefresh(
-  target: FingerprintRefreshTarget,
-  ctx: Pick<ContextWithUser, 'tasks'>
+type ElementFingerprintDependencyPrisma = Pick<DB.PrismaClient, '$queryRaw'>
+
+export async function lockElementFingerprintDependencies(
+  input: {
+    answerCollectionId?: number | null
+    type: DB.ElementType
+    content: string
+    explanation?: string | null
+    options: unknown
+    requireVerifiedMedia?: boolean
+  },
+  prisma: ElementFingerprintDependencyPrisma
 ) {
-  const reportFailure = () =>
-    console.warn('[ImportExportFingerprint] REFRESH_ENQUEUE_FAILED')
+  if (typeof input.answerCollectionId === 'number') {
+    await prisma.$queryRaw`
+      SELECT "id"
+      FROM "public"."AnswerCollection"
+      WHERE "id" = ${input.answerCollectionId}
+      FOR SHARE
+    `
+  }
 
-  try {
-    void ctx.tasks.refreshImportExportFingerprints
-      .runNoWait(target)
-      .catch(reportFailure)
-  } catch {
-    reportFailure()
+  const resolvedMedia = Array.from(
+    new Map(
+      collectElementMediaHrefs(input, MediaReferenceKind.AUTO_LOAD).flatMap(
+        (href) => {
+          const resolved = resolveKlickerMediaHref(href)
+          return resolved ? [[resolved.canonicalHref, resolved] as const] : []
+        }
+      )
+    ).values()
+  ).sort((left, right) => left.canonicalHref.localeCompare(right.canonicalHref))
+  if (resolvedMedia.length === 0) return
+
+  const mediaFiles = await prisma.$queryRaw<
+    Array<{
+      id: string
+      href: string
+      ownerId: string
+      originalId: string | null
+      contentHash: string | null
+      importFingerprintVersion: number | null
+    }>
+  >`
+    SELECT "id", "href", "ownerId", "originalId", "contentHash",
+           "importFingerprintVersion"
+    FROM "public"."MediaFile"
+    WHERE "href" IN (${DB.Prisma.join(
+      resolvedMedia.map(({ canonicalHref }) => canonicalHref)
+    )})
+    ORDER BY "id" ASC
+    FOR SHARE
+  `
+  const mediaFileByHref = new Map(
+    mediaFiles.map((mediaFile) => [mediaFile.href, mediaFile])
+  )
+  const unresolved = resolvedMedia.some((resolved) => {
+    const mediaFile = mediaFileByHref.get(resolved.canonicalHref)
+    if (!mediaFile) return input.requireVerifiedMedia !== false
+    if (hasDirectUploadLifecycleMarker(mediaFile.originalId)) return true
+    if (input.requireVerifiedMedia === false) return false
+    return (
+      mediaFile.ownerId !== resolved.ownerId ||
+      mediaFile.importFingerprintVersion !==
+        IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION ||
+      (mediaFile.contentHash !== null &&
+        !/^[a-f0-9]{64}$/.test(mediaFile.contentHash))
+    )
+  })
+  if (unresolved) {
+    throw new Error(
+      'Element references first-party media that has not been finalized.'
+    )
   }
 }
 
 export async function invalidateElementFingerprintsForFinalizedMediaV1(
-  input: { href: string; ownerId: string },
+  input: { href: string },
   prisma: ElementFingerprintInvalidationPrisma
 ) {
-  // Incrementing the authored row version fences any refresh snapshot that
-  // observed the media before finalization. NULL remains the database-valid,
-  // durable stale marker consumed by scheduled repair.
-  return await prisma.$executeRaw`
+  // The transaction ID is a monotonic, epoch-extended value. Encoding it as a
+  // fingerprint-shaped token makes every committed invalidation a new CAS
+  // state without mutating the authored revision or modification timestamp.
+  return await prisma.$queryRaw<Array<{ id: number }>>`
     UPDATE "public"."Element"
-    SET "version" = "version" + 1,
-        "importFingerprint" = NULL,
+    SET "importFingerprint" = lpad(to_hex(txid_current()), 64, '0'),
         "importFingerprintVersion" = NULL
-    WHERE "ownerId" = ${input.ownerId}::uuid
-      AND "isDeleted" = false
-      AND (
-        "importFingerprintVersion" IS NULL
-        OR "importFingerprintVersion" = ${IMPORT_EXPORT_FINGERPRINT_VERSION}
-      )
+    WHERE "isDeleted" = false
       AND (
         strpos("content", ${input.href}) > 0
         OR strpos(COALESCE("explanation", ''), ${input.href}) > 0
         OR strpos("options"::text, ${input.href}) > 0
       )
+    RETURNING "id"
   `
+}
+
+const ENSURE_FINGERPRINT_MAX_ATTEMPTS = 3
+const LINKED_ELEMENT_FINGERPRINT_BATCH_SIZE = 100
+
+async function ensureFingerprintCurrent(
+  resource: 'answer collection' | 'element',
+  id: number,
+  refresh: () => Promise<
+    | {
+        status: 'updated' | 'unchanged' | 'stale'
+        computed: VersionedDidacticFingerprint
+      }
+    | { status: 'missing'; computed: null }
+  >
+) {
+  for (let attempt = 0; attempt < ENSURE_FINGERPRINT_MAX_ATTEMPTS; attempt++) {
+    const result = await refresh()
+    if (result.status === 'missing') {
+      throw new Error(`Cannot fingerprint missing ${resource} ${id}.`)
+    }
+    if (result.status !== 'stale') return result.computed
+  }
+
+  throw new Error(
+    `Could not persist a current import/export fingerprint for ${resource} ${id}.`
+  )
+}
+
+export async function ensureElementFingerprintCurrent(
+  elementId: number,
+  prisma: FingerprintPrisma
+) {
+  return await ensureFingerprintCurrent('element', elementId, () =>
+    refreshElementDidacticFingerprint(elementId, prisma)
+  )
+}
+
+export async function ensureAnswerCollectionFingerprintCurrent(
+  answerCollectionId: number,
+  prisma: FingerprintPrisma
+) {
+  return await ensureFingerprintCurrent(
+    'answer collection',
+    answerCollectionId,
+    () => refreshAnswerCollectionDidacticFingerprint(answerCollectionId, prisma)
+  )
+}
+
+export async function ensureAnswerCollectionAndLinkedElementFingerprintsCurrent(
+  answerCollectionId: number,
+  prisma: FingerprintBatchPrisma
+) {
+  await ensureAnswerCollectionFingerprintCurrent(answerCollectionId, prisma)
+
+  const result = await refreshLinkedElementDidacticFingerprintPages(
+    answerCollectionId,
+    prisma
+  )
+  if (!result) {
+    throw new Error(
+      `Cannot fingerprint missing answer collection ${answerCollectionId}.`
+    )
+  }
+  for (const elementId of result.staleElementIds) {
+    await ensureElementFingerprintCurrent(elementId, prisma)
+  }
+}
+
+export async function invalidateAndRefreshElementFingerprintsForFinalizedMediaV1(
+  input: { href: string },
+  prisma: FinalizedMediaFingerprintPrisma
+) {
+  const invalidated = await invalidateElementFingerprintsForFinalizedMediaV1(
+    input,
+    prisma
+  )
+  for (
+    let offset = 0;
+    offset < invalidated.length;
+    offset += LINKED_ELEMENT_FINGERPRINT_BATCH_SIZE
+  ) {
+    for (const element of invalidated.slice(
+      offset,
+      offset + LINKED_ELEMENT_FINGERPRINT_BATCH_SIZE
+    )) {
+      await ensureElementFingerprintCurrent(element.id, prisma)
+    }
+  }
+
+  return invalidated.length
 }
 
 export type FingerprintAnswerCollectionPayload = {
   // Retained for compatibility with existing callers; metadata/history are not
-  // part of version-1 didactic identity.
+  // part of didactic identity.
   name?: string
   description?: string
   version?: number | null
@@ -85,7 +243,7 @@ export type FingerprintAnswerCollectionPayload = {
 
 export type FingerprintElementPayload = {
   // Retained for compatibility with existing callers; names and workflow state
-  // are intentionally excluded from version-1 didactic identity.
+  // are intentionally excluded from didactic identity.
   name?: string
   content: string
   type: DB.ElementType
@@ -109,18 +267,15 @@ function toMediaContext(
   if (!identityByUrl || identityByUrl.size === 0) return undefined
 
   const verifiedByHref = new Map<string, { sha256: string }>()
-  const unresolvedHrefs = new Set<string>()
 
   for (const [href, identity] of identityByUrl) {
     const match = IMPORT_MEDIA_IDENTITY_PATTERN.exec(identity)
     if (match?.[1]) {
       verifiedByHref.set(href, { sha256: match[1] })
-    } else {
-      unresolvedHrefs.add(href)
     }
   }
 
-  return { verifiedByHref, unresolvedHrefs }
+  return { verifiedByHref }
 }
 
 export function computeAnswerCollectionImportFingerprint(
@@ -159,7 +314,7 @@ export async function computeElementImportFingerprintFromDb(
   elementId: number,
   prisma: FingerprintPrisma
 ) {
-  const snapshot = await computeElementDidacticFingerprintFromDbV1(
+  const snapshot = await computeElementDidacticFingerprintFromDb(
     elementId,
     prisma
   )
@@ -170,7 +325,7 @@ export async function refreshElementImportFingerprint(
   elementId: number,
   prisma: FingerprintPrisma
 ) {
-  const result = await refreshElementDidacticFingerprintV1(elementId, prisma)
+  const result = await refreshElementDidacticFingerprint(elementId, prisma)
   return result.computed?.fingerprint ?? null
 }
 
@@ -178,7 +333,7 @@ export async function computeAnswerCollectionImportFingerprintFromDb(
   answerCollectionId: number,
   prisma: FingerprintPrisma
 ) {
-  const snapshot = await computeAnswerCollectionDidacticFingerprintFromDbV1(
+  const snapshot = await computeAnswerCollectionDidacticFingerprintFromDb(
     answerCollectionId,
     prisma
   )
@@ -189,7 +344,7 @@ export async function refreshAnswerCollectionImportFingerprint(
   answerCollectionId: number,
   prisma: FingerprintPrisma
 ) {
-  const result = await refreshAnswerCollectionDidacticFingerprintV1(
+  const result = await refreshAnswerCollectionDidacticFingerprint(
     answerCollectionId,
     prisma
   )
@@ -205,22 +360,46 @@ export async function finalizeUploadedMediaFingerprintV1(
     select: {
       id: true,
       href: true,
+      originalId: true,
       contentHash: true,
       importFingerprintVersion: true,
     },
   })
   if (!mediaFile) return false
+  const pendingOriginalId = createPendingDirectUploadOriginalId(mediaFile.id)
+  const isPendingDirectUpload = isPendingDirectUploadMedia(mediaFile)
+  if (
+    hasDirectUploadLifecycleMarker(mediaFile.originalId) &&
+    !isPendingDirectUpload
+  ) {
+    return false
+  }
 
   let downloaded: Awaited<ReturnType<typeof downloadKlickerMediaFile>> = null
   let persistOmission = false
   if (
-    mediaFile.importFingerprintVersion !== IMPORT_EXPORT_FINGERPRINT_VERSION ||
+    mediaFile.importFingerprintVersion !==
+      IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION ||
     mediaFile.contentHash === null
   ) {
     try {
       downloaded = await downloadKlickerMediaFile(mediaFile.href, { prisma })
     } catch (error) {
       if (!(error instanceof MediaExportOmissionError)) throw error
+      // A pending zero/indeterminate-length object is not a valid completed
+      // upload. Keep its marker so the client can report failure and bounded
+      // cleanup can remove the abandoned row/blob. An object above the export
+      // limit but within the absolute direct-upload limit is valid authored
+      // media with a deterministic export omission.
+      if (
+        isPendingDirectUpload &&
+        (error.kind === 'unknown-size' ||
+          typeof error.contentLength !== 'number' ||
+          !Number.isSafeInteger(error.contentLength) ||
+          error.contentLength > MAX_DIRECT_MEDIA_UPLOAD_BYTES)
+      ) {
+        return false
+      }
       persistOmission = true
     }
 
@@ -233,73 +412,87 @@ export async function finalizeUploadedMediaFingerprintV1(
     downloaded && isSupportedPackageMediaContentType(downloaded.contentType)
       ? createHash('sha256').update(downloaded.buffer).digest('hex')
       : mediaFile.importFingerprintVersion ===
-            IMPORT_EXPORT_FINGERPRINT_VERSION && mediaFile.contentHash !== null
+            IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION &&
+          mediaFile.contentHash !== null
         ? mediaFile.contentHash
         : null
-  return await prisma.$transaction(async (tx) => {
-    const shouldUpdate =
-      mediaFile.importFingerprintVersion !==
-        IMPORT_EXPORT_FINGERPRINT_VERSION ||
-      (mediaFile.contentHash === null && contentHash !== null)
-    const updated = shouldUpdate
-      ? await tx.mediaFile.updateMany({
-          where: {
-            id: mediaFile.id,
-            ownerId: input.ownerId,
-            href: mediaFile.href,
-            OR: [
-              { importFingerprintVersion: null },
-              {
-                importFingerprintVersion: {
-                  not: IMPORT_EXPORT_FINGERPRINT_VERSION,
+  return await prisma.$transaction(
+    async (tx) => {
+      const shouldUpdate =
+        isPendingDirectUpload ||
+        mediaFile.importFingerprintVersion !==
+          IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION ||
+        (mediaFile.contentHash === null && contentHash !== null)
+      const updated = shouldUpdate
+        ? await tx.mediaFile.updateMany({
+            where: {
+              id: mediaFile.id,
+              ownerId: input.ownerId,
+              href: mediaFile.href,
+              originalId: mediaFile.originalId,
+              OR: [
+                ...(isPendingDirectUpload
+                  ? [{ originalId: pendingOriginalId }]
+                  : []),
+                { importFingerprintVersion: null },
+                {
+                  importFingerprintVersion: {
+                    not: IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
+                  },
                 },
-              },
-              ...(contentHash === null
-                ? []
-                : [
-                    {
-                      importFingerprintVersion:
-                        IMPORT_EXPORT_FINGERPRINT_VERSION,
-                      contentHash: null,
-                    },
-                  ]),
-            ],
-          },
-          data: {
-            contentHash,
-            importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
-          },
-        })
-      : { count: 0 }
-    if (updated.count !== 1) {
-      const exactTargetAlreadyPersisted =
-        (await tx.mediaFile.count({
-          where: {
-            id: mediaFile.id,
-            ownerId: input.ownerId,
-            href: mediaFile.href,
-            importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
-            contentHash,
-          },
-        })) === 1
-      if (!exactTargetAlreadyPersisted) return false
+                ...(contentHash === null
+                  ? []
+                  : [
+                      {
+                        importFingerprintVersion:
+                          IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
+                        contentHash: null,
+                      },
+                    ]),
+              ],
+            },
+            data: {
+              ...(isPendingDirectUpload ? { originalId: null } : {}),
+              contentHash,
+              importFingerprintVersion: IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
+            },
+          })
+        : { count: 0 }
+      if (updated.count !== 1) {
+        const exactTargetAlreadyPersisted =
+          (await tx.mediaFile.count({
+            where: {
+              id: mediaFile.id,
+              ownerId: input.ownerId,
+              href: mediaFile.href,
+              originalId: isPendingDirectUpload ? null : mediaFile.originalId,
+              importFingerprintVersion: IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
+              contentHash,
+            },
+          })) === 1
+        if (!exactTargetAlreadyPersisted) return false
 
-      // A genuinely idempotent rerun observed the current target before any
-      // work and must not bump referencing element versions again. When this
-      // invocation did need an update, however, an exact concurrent writer
-      // won the compare-and-set and this transaction still owns the required
-      // fingerprint invalidation.
-      if (!shouldUpdate) return true
-    }
+        // A genuinely idempotent rerun observed the current target before any
+        // work and must not bump referencing element versions again. When this
+        // invocation did need an update, however, an exact concurrent writer
+        // won the compare-and-set and this transaction still owns the required
+        // fingerprint invalidation.
+        if (!shouldUpdate) return true
+      }
 
-    // The media transition and invalidation are one transaction. A retry that
-    // observes an already-current media row skips this update, keeping the
-    // element version bump idempotent.
-    await invalidateElementFingerprintsForFinalizedMediaV1(
-      { href: mediaFile.href, ownerId: input.ownerId },
-      tx
-    )
+      // New direct uploads cannot have been referenced by a persisted element:
+      // element writes lock and reject their pending media row. Historical or
+      // previously classified rows lack the one-shot marker, so a late change
+      // from omission to verified bytes must refresh existing references.
+      if (!isPendingDirectUpload) {
+        await invalidateAndRefreshElementFingerprintsForFinalizedMediaV1(
+          { href: mediaFile.href },
+          tx
+        )
+      }
 
-    return true
-  })
+      return true
+    },
+    { timeout: 60_000 }
+  )
 }

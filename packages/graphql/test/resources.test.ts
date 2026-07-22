@@ -14,8 +14,7 @@ import {
 import { EventEmitter } from 'events'
 import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
-import { IMPORT_EXPORT_FINGERPRINT_VERSION } from '../src/lib/importExportFingerprintCanonicalization.js'
-import { repairStaleImportExportFingerprints } from '../src/services/importExportFingerprintMaintenance.js'
+import { IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION } from '../src/lib/importExportFingerprintCanonicalization.js'
 import { refreshElementImportFingerprint } from '../src/services/importExportFingerprints.js'
 import {
   addAnswerCollectionOption,
@@ -122,6 +121,10 @@ describe('Integration tests for resource management (e.g. answer collections)', 
     expect(dbAC!.name).toBe(answerCollection1.name)
     expect(dbAC!.description).toBe(answerCollection1.description)
     expect(dbAC!.entries.length).toBe(answerCollection1.entries.length)
+    expect(dbAC).toMatchObject({
+      importFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+      importFingerprintVersion: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
+    })
 
     for (const answer of answerCollection1.entries) {
       const dbAnswer = dbAC!.entries.find((entry) => entry.value === answer)
@@ -181,6 +184,10 @@ describe('Integration tests for resource management (e.g. answer collections)', 
       expect(collection.name).toBe(`${answerCollection1.name} (Copy)`)
       expect(collection.description).toBe(answerCollection1.description)
       expect(collection.entries.length).toBe(answerCollection1.entries.length)
+      expect(collection).toMatchObject({
+        importFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+        importFingerprintVersion: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
+      })
     }
   })
 
@@ -515,13 +522,13 @@ describe('Integration tests for resource management (e.g. answer collections)', 
     expect(after.importFingerprint).toBe(before.importFingerprint)
   })
 
-  it('does not enqueue metadata-only refresh for a processed null fingerprint', async () => {
+  it('retains a current collection fingerprint for metadata-only changes without Hatchet', async () => {
     const { AC1 } = await seedAnswerCollections(userOneCtx)
-    await prisma.answerCollection.update({
+    const before = await prisma.answerCollection.findUniqueOrThrow({
       where: { id: AC1!.id },
-      data: {
-        importFingerprint: null,
-        importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+      select: {
+        importFingerprint: true,
+        importFingerprintVersion: true,
       },
     })
     const runNoWait = vi.spyOn(
@@ -531,11 +538,24 @@ describe('Integration tests for resource management (e.g. answer collections)', 
 
     try {
       await modifyAnswerCollection(
-        { id: AC1!.id, name: 'Processed null metadata update' },
+        { id: AC1!.id, name: 'Metadata-only update' },
         userOneCtx
       )
 
       expect(runNoWait).not.toHaveBeenCalled()
+      await expect(
+        prisma.answerCollection.findUniqueOrThrow({
+          where: { id: AC1!.id },
+          select: {
+            importFingerprint: true,
+            importFingerprintVersion: true,
+          },
+        })
+      ).resolves.toEqual(before)
+      expect(before).toMatchObject({
+        importFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+        importFingerprintVersion: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
+      })
     } finally {
       runNoWait.mockRestore()
     }
@@ -1021,7 +1041,7 @@ describe('Integration tests for resource management (e.g. answer collections)', 
     expect(dbEntry!.collectionId).toBe(AC1!.id)
   })
 
-  it('dirties high-fan-out fingerprints atomically without waiting for Hatchet', async () => {
+  it('refreshes high-fan-out fingerprints atomically without Hatchet', async () => {
     const { AC1 } = await seedAnswerCollections(userOneCtx)
     const collection = await prisma.answerCollection.findUniqueOrThrow({
       where: { id: AC1!.id },
@@ -1036,16 +1056,16 @@ describe('Integration tests for resource management (e.g. answer collections)', 
         ownerId: userOne.id,
         answerCollectionId: collection.id,
         importFingerprint: 'a'.repeat(64),
-        importFingerprintVersion: 1,
+        importFingerprintVersion: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
       })),
     })
 
     const runNoWait = vi
       .spyOn(userOneCtx.tasks.refreshImportExportFingerprints, 'runNoWait')
-      .mockImplementation(() => new Promise(() => {}))
+      .mockRejectedValue(new Error('Hatchet unavailable'))
 
     try {
-      const mutation = editAnswerCollectionEntry(
+      const result = await editAnswerCollectionEntry(
         {
           id: collection.entries[0]!.id,
           collectionId: collection.id,
@@ -1053,21 +1073,16 @@ describe('Integration tests for resource management (e.g. answer collections)', 
         },
         userOneCtx
       )
-      const result = await Promise.race([
-        mutation,
-        new Promise<'timeout'>((resolve) =>
-          setTimeout(() => resolve('timeout'), 1000)
-        ),
-      ])
 
-      expect(result).not.toBe('timeout')
-      expect(runNoWait).toHaveBeenCalledTimes(1)
+      expect(result.value).toBe('Updated without waiting')
+      expect(runNoWait).not.toHaveBeenCalled()
       await expect(
         prisma.element.count({
           where: {
             answerCollectionId: collection.id,
-            importFingerprint: null,
-            importFingerprintVersion: null,
+            importFingerprint: { not: null },
+            importFingerprintVersion:
+              IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
           },
         })
       ).resolves.toBe(101)
@@ -1079,16 +1094,16 @@ describe('Integration tests for resource management (e.g. answer collections)', 
             importFingerprintVersion: true,
           },
         })
-      ).resolves.toEqual({
-        importFingerprint: null,
-        importFingerprintVersion: null,
+      ).resolves.toMatchObject({
+        importFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+        importFingerprintVersion: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
       })
     } finally {
       runNoWait.mockRestore()
     }
   })
 
-  it('keeps an entry write successful when fingerprint enqueueing fails', async () => {
+  it('persists collection and linked-element fingerprints without Hatchet', async () => {
     const { AC1 } = await seedAnswerCollections(userOneCtx)
     const collection = await prisma.answerCollection.findUniqueOrThrow({
       where: { id: AC1!.id },
@@ -1106,45 +1121,21 @@ describe('Integration tests for resource management (e.g. answer collections)', 
           connect: { id: collection.entries[0]!.id },
         },
         importFingerprint: 'a'.repeat(64),
-        importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+        importFingerprintVersion: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
       },
     })
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const runNoWait = vi
       .spyOn(userOneCtx.tasks.refreshImportExportFingerprints, 'runNoWait')
       .mockRejectedValue(new Error('Hatchet unavailable'))
 
     try {
       const entry = await addAnswerCollectionOption(
-        { collectionId: AC1!.id, value: 'Durably dirty' },
+        { collectionId: AC1!.id, value: 'Durably current' },
         userOneCtx
       )
-      await Promise.resolve()
 
-      expect(entry.value).toBe('Durably dirty')
-      expect(runNoWait).toHaveBeenCalledTimes(1)
-      expect(warn).toHaveBeenCalledWith(
-        '[ImportExportFingerprint] REFRESH_ENQUEUE_FAILED'
-      )
-      await expect(
-        prisma.answerCollection.findUniqueOrThrow({
-          where: { id: AC1!.id },
-          select: {
-            importFingerprint: true,
-            importFingerprintVersion: true,
-          },
-        })
-      ).resolves.toEqual({
-        importFingerprint: null,
-        importFingerprintVersion: null,
-      })
-
-      await expect(
-        repairStaleImportExportFingerprints(prisma)
-      ).resolves.toMatchObject({
-        processedAnswerCollections: expect.any(Number),
-        processedElements: expect.any(Number),
-      })
+      expect(entry.value).toBe('Durably current')
+      expect(runNoWait).not.toHaveBeenCalled()
       await expect(
         prisma.answerCollection.findUniqueOrThrow({
           where: { id: AC1!.id },
@@ -1155,7 +1146,7 @@ describe('Integration tests for resource management (e.g. answer collections)', 
         })
       ).resolves.toMatchObject({
         importFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
-        importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+        importFingerprintVersion: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
       })
       await expect(
         prisma.element.findUniqueOrThrow({
@@ -1167,7 +1158,7 @@ describe('Integration tests for resource management (e.g. answer collections)', 
         })
       ).resolves.toMatchObject({
         importFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
-        importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+        importFingerprintVersion: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
       })
       await expect(
         prisma.element.count({
@@ -1175,10 +1166,11 @@ describe('Integration tests for resource management (e.g. answer collections)', 
             answerCollectionId: collection.id,
             isDeleted: false,
             OR: [
+              { importFingerprint: null },
               { importFingerprintVersion: null },
               {
                 importFingerprintVersion: {
-                  not: IMPORT_EXPORT_FINGERPRINT_VERSION,
+                  not: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
                 },
               },
             ],
@@ -1187,7 +1179,6 @@ describe('Integration tests for resource management (e.g. answer collections)', 
       ).resolves.toBe(0)
     } finally {
       runNoWait.mockRestore()
-      warn.mockRestore()
     }
   })
 

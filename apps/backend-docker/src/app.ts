@@ -31,6 +31,7 @@ import {
 
 const require = createRequire(import.meta.url)
 const persistedOperations = require('@klicker-uzh/graphql/dist/server.json')
+const legacyPersistedOperations = require('@klicker-uzh/graphql/dist/legacy-server.json')
 declare namespace global {
   let __coverage__: any
 }
@@ -198,7 +199,10 @@ function prepareApp({
           process.env.NODE_ENV === 'development' ||
           process.env.NODE_ENV === 'test',
         getPersistedOperation(sha256Hash: string) {
-          return persistedOperations[sha256Hash]
+          return (
+            persistedOperations[sha256Hash] ??
+            legacyPersistedOperations[sha256Hash]
+          )
         },
       }),
       // process.env.SENTRY_DSN &&

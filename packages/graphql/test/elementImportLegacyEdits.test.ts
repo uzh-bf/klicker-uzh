@@ -6,12 +6,26 @@ import {
 } from '@klicker-uzh/prisma/client'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
-import { manipulateElement } from '../src/services/elements.js'
+import { IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION } from '../src/lib/importExportFingerprintCanonicalization.js'
+import {
+  manipulateElement,
+  manipulateElementInTransaction,
+} from '../src/services/elements.js'
 import {
   seedPackageFixture,
   useImportExportTestEnvironment,
 } from './elementImportExportTestSupport.js'
 import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
+
+function expectCurrentDidacticFingerprint(value: {
+  importFingerprint: string | null
+  importFingerprintVersion: number | null
+}) {
+  expect(value).toMatchObject({
+    importFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+    importFingerprintVersion: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
+  })
+}
 
 describe('Secure element import/export packages', () => {
   useImportExportTestEnvironment()
@@ -83,6 +97,29 @@ describe('Secure element import/export packages', () => {
         pointsMultiplier: previous.pointsMultiplier,
         options: previous.options,
       })
+      expectCurrentDidacticFingerprint(updated)
+    })
+
+    it('persists a current fingerprint when manipulation runs in an existing transaction', async () => {
+      const created = await prisma.$transaction(
+        async (tx) =>
+          await manipulateElementInTransaction(
+            {
+              type: ElementType.CONTENT,
+              status: ElementStatus.READY,
+              name: 'Transaction-scoped content',
+              content: 'Created in an existing transaction',
+              options: {},
+            },
+            { ...userOneCtx, prisma: tx }
+          )
+      )
+      expect(created).not.toBeNull()
+
+      const persisted = await prisma.element.findUniqueOrThrow({
+        where: { id: created!.id },
+      })
+      expectCurrentDidacticFingerprint(persisted)
     })
 
     it('preserves nonportable legacy options during unrelated partial edits', async () => {
@@ -119,9 +156,11 @@ describe('Secure element import/export packages', () => {
         )
       ).resolves.toMatchObject({ name: 'Renamed legacy numerical element' })
 
-      await expect(
-        prisma.element.findUniqueOrThrow({ where: { id: legacy.id } })
-      ).resolves.toMatchObject({ options: legacyOptions })
+      const persisted = await prisma.element.findUniqueOrThrow({
+        where: { id: legacy.id },
+      })
+      expect(persisted).toMatchObject({ options: legacyOptions })
+      expectCurrentDidacticFingerprint(persisted)
     })
 
     it('preserves unchanged answer-collection relations during partial edits', async () => {
@@ -205,11 +244,11 @@ describe('Secure element import/export packages', () => {
         name: 'Renamed detached legacy selection',
         answerCollectionId: null,
       })
-      await expect(
-        prisma.element.findUniqueOrThrow({
-          where: { id: detachedSelection.id },
-        })
-      ).resolves.toMatchObject({ answerCollectionId: null })
+      const persisted = await prisma.element.findUniqueOrThrow({
+        where: { id: detachedSelection.id },
+      })
+      expect(persisted).toMatchObject({ answerCollectionId: null })
+      expectCurrentDidacticFingerprint(persisted)
     })
   })
 })

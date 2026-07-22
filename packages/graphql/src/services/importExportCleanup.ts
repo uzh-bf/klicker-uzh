@@ -10,7 +10,10 @@ import {
   findExpiredPackageArtifactsForCleanup,
   findExpiredPendingImportReceiptsForCleanup,
 } from './importExportPersistence.js'
-import { cleanupOrphanedImportedMediaFiles } from './mediaStorage.js'
+import {
+  cleanupAbandonedDirectMediaUploads,
+  cleanupOrphanedImportedMediaFiles,
+} from './mediaStorage.js'
 
 const CLEANUP_BATCH_SIZE = 100
 const MAX_CLEANUP_BATCHES = 10
@@ -46,6 +49,9 @@ type ReceiptCleanupSummary = {
 type MediaCleanupSummary = Awaited<
   ReturnType<typeof cleanupOrphanedImportedMediaFiles>
 >
+type DirectUploadCleanupSummary = Awaited<
+  ReturnType<typeof cleanupAbandonedDirectMediaUploads>
+>
 
 function createCleanupStopController(
   getStopReason: () => ImportExportCleanupStopReason | null
@@ -76,6 +82,22 @@ function emptyMediaCleanupSummary(
     cleanupBatches: 0,
     cleanupBacklogRemaining: cleanupStoppedEarly,
     cleanupStoppedEarly,
+  }
+}
+
+function emptyDirectUploadCleanupSummary(
+  cleanupStoppedEarly: boolean
+): DirectUploadCleanupSummary {
+  return {
+    deletedDirectUploadBlobs: 0,
+    deletedDirectUploadRows: 0,
+    wouldDeleteDirectUploads: 0,
+    failedDirectUploadCleanups: 0,
+    unsafeDirectUploadTargets: 0,
+    directUploadCleanupBatches: 0,
+    directUploadCleanupBacklogRemaining: cleanupStoppedEarly,
+    directUploadCleanupStoppedEarly: cleanupStoppedEarly,
+    attemptedCount: 0,
   }
 }
 
@@ -435,6 +457,31 @@ export async function cleanupImportExportPackages({
     }
   }
 
+  let directUploadCleanup = emptyDirectUploadCleanupSummary(
+    packageCleanup.cleanupStoppedEarly || mediaCleanup.cleanupStoppedEarly
+  )
+  if (
+    !packageCleanup.cleanupStoppedEarly &&
+    !mediaCleanup.cleanupStoppedEarly
+  ) {
+    try {
+      directUploadCleanup = await cleanupAbandonedDirectMediaUploads({
+        prisma,
+        now,
+        dryRun,
+        shouldStop: stopController.shouldStop,
+      })
+    } catch {
+      directUploadCleanup.failedDirectUploadCleanups++
+      emitImportExportTelemetry({
+        operation: 'cleanup',
+        outcome: 'failure',
+        code: 'DIRECT_UPLOAD_CLEANUP_QUERY_FAILED',
+        cleanupFailureCount: 1,
+      })
+    }
+  }
+
   const receiptCleanup = await cleanupExpiredReceipts({
     prisma,
     now,
@@ -445,14 +492,17 @@ export async function cleanupImportExportPackages({
   const cleanupStoppedEarly =
     packageCleanup.cleanupStoppedEarly ||
     mediaCleanup.cleanupStoppedEarly ||
+    directUploadCleanup.directUploadCleanupStoppedEarly ||
     receiptCleanup.cleanupStoppedEarly ||
     stoppedAfterCleanup
   const cleanupFailures =
     packageCleanup.failedPackageCleanups +
     mediaCleanup.failedMediaCleanups +
+    directUploadCleanup.failedDirectUploadCleanups +
     receiptCleanup.failedReceiptCleanups +
     packageCleanup.unsafePackageTargets +
-    mediaCleanup.unsafeMediaTargets
+    mediaCleanup.unsafeMediaTargets +
+    directUploadCleanup.unsafeDirectUploadTargets
 
   emitImportExportTelemetry({
     service: 'worker',
@@ -470,26 +520,34 @@ export async function cleanupImportExportPackages({
             ? 'DRY_RUN_COMPLETED'
             : 'CLEANUP_COMPLETED',
     attemptedCount:
-      packageCleanup.attemptedCount + receiptCleanup.attemptedCount,
+      packageCleanup.attemptedCount +
+      directUploadCleanup.attemptedCount +
+      receiptCleanup.attemptedCount,
     deletedCount:
       packageCleanup.deletedPackages +
       receiptCleanup.deletedReceipts +
-      mediaCleanup.deletedMediaFiles,
+      mediaCleanup.deletedMediaFiles +
+      directUploadCleanup.deletedDirectUploadBlobs,
     wouldDeleteCount:
       packageCleanup.wouldDeletePackages +
       receiptCleanup.wouldDeleteReceipts +
-      mediaCleanup.wouldDeleteMediaFiles,
+      mediaCleanup.wouldDeleteMediaFiles +
+      directUploadCleanup.wouldDeleteDirectUploads,
     cleanupFailureCount: cleanupFailures,
     unsafeTargetCount:
-      packageCleanup.unsafePackageTargets + mediaCleanup.unsafeMediaTargets,
+      packageCleanup.unsafePackageTargets +
+      mediaCleanup.unsafeMediaTargets +
+      directUploadCleanup.unsafeDirectUploadTargets,
     batchCount:
       packageCleanup.packageCleanupBatches +
       receiptCleanup.receiptCleanupBatches +
-      mediaCleanup.cleanupBatches,
+      mediaCleanup.cleanupBatches +
+      directUploadCleanup.directUploadCleanupBatches,
     backlogRemaining:
       packageCleanup.packageCleanupBacklogRemaining ||
       receiptCleanup.receiptCleanupBacklogRemaining ||
-      mediaCleanup.cleanupBacklogRemaining,
+      mediaCleanup.cleanupBacklogRemaining ||
+      directUploadCleanup.directUploadCleanupBacklogRemaining,
   })
 
   return {
@@ -507,6 +565,7 @@ export async function cleanupImportExportPackages({
     receiptCleanupBacklogRemaining:
       receiptCleanup.receiptCleanupBacklogRemaining,
     ...mediaCleanup,
+    ...directUploadCleanup,
     cleanupStoppedEarly,
     cleanupStopReason: stopController.reason,
     cleanupFailures,
@@ -534,7 +593,7 @@ export const handleCleanupImportExportPackages: HatchetHandlers['handleCleanupIm
     }
 
     executionCtx.logger.info(
-      `[INFO] [CleanupImportExportPackages] Deleted ${result.deletedPackages}/${result.wouldDeletePackages} recorded package artifacts, ${result.deletedMediaFiles}/${result.wouldDeleteMediaFiles} recorded imported media blobs, and ${result.deletedReceipts}/${result.wouldDeleteReceipts} retained receipts; failures=${result.cleanupFailures}; unsafeTargets=${result.unsafePackageTargets + result.unsafeMediaTargets}; backlog=${result.packageCleanupBacklogRemaining || result.cleanupBacklogRemaining || result.receiptCleanupBacklogRemaining}; stoppedEarly=${result.cleanupStoppedEarly}`
+      `[INFO] [CleanupImportExportPackages] Deleted ${result.deletedPackages}/${result.wouldDeletePackages} recorded package artifacts, ${result.deletedMediaFiles}/${result.wouldDeleteMediaFiles} recorded imported media blobs, ${result.deletedDirectUploadRows}/${result.wouldDeleteDirectUploads} abandoned direct uploads, and ${result.deletedReceipts}/${result.wouldDeleteReceipts} retained receipts; failures=${result.cleanupFailures}; unsafeTargets=${result.unsafePackageTargets + result.unsafeMediaTargets + result.unsafeDirectUploadTargets}; backlog=${result.packageCleanupBacklogRemaining || result.cleanupBacklogRemaining || result.directUploadCleanupBacklogRemaining || result.receiptCleanupBacklogRemaining}; stoppedEarly=${result.cleanupStoppedEarly}`
     )
 
     if (result.cleanupFailures > 0) {

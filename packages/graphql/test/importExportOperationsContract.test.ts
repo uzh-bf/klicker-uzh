@@ -1,13 +1,19 @@
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import { execFileSync, spawnSync } from 'node:child_process'
-import { readFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 import {
   withAdvisoryLock,
   type OperationsPrisma,
 } from '../src/lib/importExportOperations/database.js'
-import type { ImportExportDatabaseInspection } from '../src/lib/importExportOperations/databaseCatalog.js'
+import {
+  inspectImportExportFingerprintInvariant,
+  type ImportExportDatabaseInspection,
+} from '../src/lib/importExportOperations/databaseCatalog.js'
 import {
   IMPORT_EXPORT_CHECK_CONSTRAINT_CONTRACT_PREFIX,
   IMPORT_EXPORT_MIGRATIONS,
@@ -16,10 +22,17 @@ import {
   REQUIRED_IMPORT_EXPORT_INDEXES,
   REQUIRED_IMPORT_EXPORT_TRIGGERS,
 } from '../src/lib/importExportOperations/databaseContract.js'
-import { evaluateImportExportInspection } from '../src/lib/importExportOperations/inspection.js'
+import {
+  createImportExportInspectionOutput,
+  evaluateImportExportBackfillInvariant,
+  evaluateImportExportInspection,
+} from '../src/lib/importExportOperations/inspection.js'
+import { runCanaryManifestOperation } from '../src/lib/importExportOperations/recovery.js'
 import {
   ImportExportOperationError,
+  parseDatabaseTarget,
   requireMasterGateOff,
+  resolveDatabaseUrl,
   runOperationCli,
 } from '../src/lib/importExportOperations/runtime.js'
 import {
@@ -29,14 +42,29 @@ import {
 } from '../src/services/importExportCleanup.js'
 import { cleanupOrphanedImportedMediaFiles } from '../src/services/mediaStorageCleanup.js'
 
+const databaseCatalogMocks = vi.hoisted(() => ({
+  inspectImportExportDatabase: vi.fn(),
+}))
+
+vi.mock('../src/lib/importExportOperations/databaseCatalog.js', async () => {
+  const actual = await vi.importActual<
+    typeof import('../src/lib/importExportOperations/databaseCatalog.js')
+  >('../src/lib/importExportOperations/databaseCatalog.js')
+  return {
+    ...actual,
+    inspectImportExportDatabase:
+      databaseCatalogMocks.inspectImportExportDatabase,
+  }
+})
+
 const SAFE_ENV = {
   NODE_ENV: 'production',
   IMPORT_EXPORT_ENVIRONMENT: 'stg',
-  IMPORT_EXPORT_DATABASE_TARGET: 'normal',
 } as const
 
 const OPERATION_ALIASES = [
   'inspect',
+  'readiness',
   'preflight',
   'media-hash-backfill',
   'fingerprint-backfill',
@@ -79,6 +107,8 @@ describe('import/export production operation aliases', () => {
           `../../util/_run_with_infisical.sh --env ${environment}`
         )
         expect(command).not.toContain('NODE_ENV=stg')
+        expect(command).not.toContain('IMPORT_EXPORT_DATABASE_TARGET')
+        expect(command).not.toContain('IMPORT_EXPORT_ASSESSMENT_DATABASE_URL')
         execFileSync('bash', ['-n', '-c', command!])
       }
     }
@@ -108,6 +138,129 @@ describe('import/export production operation aliases', () => {
     expect(invalidWatchMode.stderr).toContain(
       "INFISICAL_WRAPPER_WATCH must be 'true' or 'false'"
     )
+  })
+})
+
+describe('single-database operation configuration', () => {
+  it('uses only DATABASE_URL and defaults serialized evidence to normal', () => {
+    expect(resolveDatabaseUrl({ DATABASE_URL: 'postgresql://normal' })).toBe(
+      'postgresql://normal'
+    )
+    expect(parseDatabaseTarget({})).toBe('normal')
+    expect(
+      parseDatabaseTarget({ IMPORT_EXPORT_DATABASE_TARGET: 'normal' })
+    ).toBe('normal')
+  })
+
+  it('rejects the retired assessment selector without falling back to the normal database', () => {
+    expect(() =>
+      resolveDatabaseUrl({
+        DATABASE_URL: 'postgresql://normal',
+        IMPORT_EXPORT_DATABASE_TARGET: 'assessment',
+        IMPORT_EXPORT_ASSESSMENT_DATABASE_URL: 'postgresql://assessment',
+      })
+    ).toThrowError(
+      expect.objectContaining({
+        code: 'ASSESSMENT_DATABASE_TARGET_UNSUPPORTED',
+      })
+    )
+    expect(() =>
+      resolveDatabaseUrl({
+        IMPORT_EXPORT_ASSESSMENT_DATABASE_URL: 'postgresql://assessment',
+      })
+    ).toThrowError(
+      expect.objectContaining({ code: 'DATABASE_CONFIGURATION_MISSING' })
+    )
+  })
+})
+
+describe('rollout evidence identity and readiness', () => {
+  it('binds a schema-v2 canary manifest to its database and storage identities', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'klicker-canary-'))
+    const manifestPath = join(directory, 'recovery.json')
+    const databaseRow = {
+      databaseName: 'klicker-test',
+      serverAddress: '127.0.0.1',
+      serverPort: 5432,
+    }
+    const databaseIdentity = createHash('sha256')
+      .update(
+        JSON.stringify([
+          databaseRow.databaseName,
+          databaseRow.serverAddress,
+          databaseRow.serverPort,
+        ])
+      )
+      .digest('hex')
+    const storageIdentity = createHash('sha256')
+      .update('azure-blob:testaccount')
+      .digest('hex')
+
+    try {
+      await expect(
+        runCanaryManifestOperation({
+          prisma: {
+            $queryRaw: vi.fn().mockResolvedValue([databaseRow]),
+          } as unknown as OperationsPrisma,
+          env: {
+            ...SAFE_ENV,
+            BLOB_STORAGE_ACCOUNT_NAME: 'testaccount',
+            IMPORT_EXPORT_CANARY_MODE: 'initialize',
+            IMPORT_EXPORT_CANARY_OWNER_ID:
+              '11111111-1111-4111-8111-111111111111',
+            IMPORT_EXPORT_RECOVERY_MANIFEST_PATH: manifestPath,
+          },
+        })
+      ).resolves.toMatchObject({
+        outcome: 'success',
+        code: 'CANARY_MANIFEST_INITIALIZED',
+      })
+      const manifest = JSON.parse(await readFile(manifestPath, 'utf8'))
+      expect(manifest).toMatchObject({
+        schemaVersion: 2,
+        environment: 'stg',
+        target: 'normal',
+        databaseIdentity,
+        storageIdentity,
+      })
+    } finally {
+      await rm(directory, { force: true, recursive: true })
+    }
+  })
+
+  it('reports an incomplete operation when readiness is required and checks fail', async () => {
+    databaseCatalogMocks.inspectImportExportDatabase.mockResolvedValueOnce({
+      migrations: [],
+      missingMigrations: [...IMPORT_EXPORT_MIGRATIONS],
+      tableSizes: [],
+      columns: [],
+      indexes: [],
+      constraints: [],
+      triggers: [],
+      locks: [],
+      staleVersions: {
+        elements: null,
+        answerCollections: null,
+        mediaFiles: null,
+      },
+    })
+
+    await expect(
+      createImportExportInspectionOutput({
+        prisma: {} as OperationsPrisma,
+        env: SAFE_ENV,
+        requireReady: true,
+      })
+    ).resolves.toMatchObject({
+      operation: 'import-export-readiness',
+      outcome: 'incomplete',
+      code: 'TARGET_NOT_READY',
+      checks: {
+        migrationsPresent: false,
+        staleVersionsClear: false,
+        masterGateOff: true,
+      },
+    })
   })
 })
 
@@ -387,15 +540,87 @@ describe('import/export maintenance execution safety', () => {
 })
 
 describe('database operation safety', () => {
+  it('counts didactic-v2 nulls separately from media-v1 classification', async () => {
+    const queryRawUnsafe = vi
+      .fn()
+      .mockResolvedValueOnce([
+        { table_name: 'Element', column_name: 'importFingerprint' },
+        { table_name: 'Element', column_name: 'importFingerprintVersion' },
+        {
+          table_name: 'AnswerCollection',
+          column_name: 'importFingerprint',
+        },
+        {
+          table_name: 'AnswerCollection',
+          column_name: 'importFingerprintVersion',
+        },
+        {
+          table_name: 'MediaFile',
+          column_name: 'importFingerprintVersion',
+        },
+      ])
+      .mockResolvedValueOnce([
+        { elements: '1', answerCollections: '2', mediaFiles: '3' },
+      ])
+
+    await expect(
+      inspectImportExportFingerprintInvariant({
+        $queryRawUnsafe: queryRawUnsafe,
+      } as unknown as OperationsPrisma)
+    ).resolves.toEqual({
+      elements: 1,
+      answerCollections: 2,
+      mediaFiles: 3,
+    })
+
+    const invariantSql = queryRawUnsafe.mock.calls[1]![0] as string
+    expect(invariantSql).toContain('"importFingerprintVersion" <> 2')
+    expect(invariantSql.match(/OR "importFingerprint" IS NULL/g)).toHaveLength(
+      2
+    )
+    expect(invariantSql.match(/!~ '\^\[a-f0-9\]/g)).toHaveLength(2)
+    expect(invariantSql).toContain('"importFingerprintVersion" <> 1')
+  })
+
+  it('evaluates only the active fingerprint invariant for backfill verification', () => {
+    expect(
+      evaluateImportExportBackfillInvariant({
+        elements: 0,
+        answerCollections: 0,
+        mediaFiles: 0,
+      })
+    ).toEqual({
+      elementFingerprintsCurrentAndNonNull: true,
+      answerCollectionFingerprintsCurrentAndNonNull: true,
+      mediaClassificationsCurrent: true,
+    })
+    expect(
+      evaluateImportExportBackfillInvariant({
+        elements: 1,
+        answerCollections: null,
+        mediaFiles: 0,
+      })
+    ).toEqual({
+      elementFingerprintsCurrentAndNonNull: false,
+      answerCollectionFingerprintsCurrentAndNonNull: false,
+      mediaClassificationsCurrent: true,
+    })
+  })
+
   it('inspects the complete import/export migration and maintenance-index contract', async () => {
     expect(IMPORT_EXPORT_MIGRATIONS).toContain(
       '20260716085603_import_export_fingerprint_repair_indexes'
     )
+    expect(IMPORT_EXPORT_MIGRATIONS).toContain(
+      '20260722100000_import_export_null_fingerprint_repair_indexes'
+    )
     expect(REQUIRED_IMPORT_EXPORT_INDEXES.map(([, name]) => name)).toEqual(
       expect.arrayContaining([
         'AnswerCollection_repair_fpv_deleted_id_idx',
+        'AnswerCollection_repair_null_fp_id_idx',
         'Element_answer_collection_deleted_id_idx',
         'Element_repair_fpv_deleted_id_idx',
+        'Element_repair_null_fp_id_idx',
       ])
     )
 
@@ -407,38 +632,65 @@ describe('database operation safety', () => {
     expect(sealingMigration).toContain(
       `'${IMPORT_EXPORT_CHECK_CONSTRAINT_CONTRACT_PREFIX}' || live_expression`
     )
+
+    const nullFingerprintRepairMigration = await readRepositoryFile(
+      'packages/prisma/src/prisma/schema/migrations/20260722100000_import_export_null_fingerprint_repair_indexes/migration.sql'
+    )
+    expect(nullFingerprintRepairMigration).toContain(
+      'AnswerCollection_repair_null_fp_id_idx'
+    )
+    expect(nullFingerprintRepairMigration).toContain(
+      'Element_repair_null_fp_id_idx'
+    )
   })
 
   it('holds and releases one advisory lock around a bounded operation', async () => {
-    const queryRaw = vi
+    const query = vi
       .fn()
-      .mockResolvedValueOnce([{ acquired: true }])
-      .mockResolvedValueOnce([{ released: true }])
+      .mockResolvedValueOnce({ rows: [{ acquired: true }] })
+      .mockResolvedValueOnce({ rows: [{ released: true }] })
+    const session = {
+      connect: vi.fn().mockResolvedValue(undefined),
+      end: vi.fn().mockResolvedValue(undefined),
+      on: vi.fn(),
+      off: vi.fn(),
+      query,
+    }
     const run = vi.fn().mockResolvedValue('complete')
 
     await expect(
       withAdvisoryLock({
-        prisma: { $queryRaw: queryRaw } as unknown as OperationsPrisma,
-        operationKey: 2,
+        prisma: {} as OperationsPrisma,
+        createSession: () => session as never,
         run,
       })
     ).resolves.toBe('complete')
-    expect(run).toHaveBeenCalledOnce()
-    expect(queryRaw).toHaveBeenCalledTimes(2)
+    expect(session.connect).toHaveBeenCalledOnce()
+    expect(run).toHaveBeenCalledWith(expect.any(Function))
+    expect(query).toHaveBeenCalledTimes(2)
+    expect(query.mock.calls[0]?.[0]).toContain('pg_try_advisory_lock')
+    expect(query.mock.calls[1]?.[0]).toContain('pg_advisory_unlock')
+    expect(session.end).toHaveBeenCalledOnce()
   })
 
   it('refuses to overlap an operation when the advisory lock is held', async () => {
     const run = vi.fn()
+    const session = {
+      connect: vi.fn().mockResolvedValue(undefined),
+      end: vi.fn().mockResolvedValue(undefined),
+      on: vi.fn(),
+      off: vi.fn(),
+      query: vi.fn().mockResolvedValue({ rows: [{ acquired: false }] }),
+    }
     await expect(
       withAdvisoryLock({
-        prisma: {
-          $queryRaw: vi.fn().mockResolvedValue([{ acquired: false }]),
-        } as unknown as OperationsPrisma,
-        operationKey: 1,
+        prisma: {} as OperationsPrisma,
+        createSession: () => session as never,
         run,
       })
     ).rejects.toMatchObject({ code: 'OPERATION_ALREADY_RUNNING' })
     expect(run).not.toHaveBeenCalled()
+    expect(session.end).toHaveBeenCalledOnce()
   })
 
   it('requires exact migration checksums, ready indexes, validated constraints, no waits, and zero stale versions', () => {
@@ -467,7 +719,7 @@ describe('database operation safety', () => {
         })
       ),
       indexes: REQUIRED_IMPORT_EXPORT_INDEXES.map(
-        ([table_name, index_name, is_unique, key_columns]) => ({
+        ([table_name, index_name, is_unique, key_columns, predicate]) => ({
           table_name,
           index_name,
           is_ready: true,
@@ -475,7 +727,8 @@ describe('database operation safety', () => {
           is_unique,
           access_method: 'btree',
           key_columns: [...key_columns],
-          has_predicate: false,
+          has_predicate: typeof predicate === 'string',
+          predicate: predicate ?? null,
           has_expressions: false,
           has_included_columns: false,
           definition: 'operator evidence only',
@@ -577,6 +830,19 @@ describe('database operation safety', () => {
           { ...inspection.indexes[0]!, table_name: 'Element' },
           ...inspection.indexes.slice(1),
         ],
+      }).indexesReady
+    ).toBe(false)
+    const partialIndex = inspection.indexes.find(
+      (index) => index.index_name === 'Element_repair_null_fp_id_idx'
+    )!
+    expect(
+      evaluateImportExportInspection({
+        ...inspection,
+        indexes: inspection.indexes.map((index) =>
+          index === partialIndex
+            ? { ...index, predicate: '("isDeleted" = false)' }
+            : index
+        ),
       }).indexesReady
     ).toBe(false)
     expect(

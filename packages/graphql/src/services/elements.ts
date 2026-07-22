@@ -27,13 +27,19 @@ import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
-import { IMPORT_EXPORT_FINGERPRINT_VERSION } from '../lib/importExportFingerprintCanonicalization.js'
+import { IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION } from '../lib/importExportFingerprintCanonicalization.js'
+import {
+  createPendingDirectUploadOriginalId,
+  DIRECT_UPLOAD_CLEANUP_ORIGINAL_ID_PREFIX,
+  DIRECT_UPLOAD_PENDING_ORIGINAL_ID_PREFIX,
+} from '../lib/importExportMediaIdentity.js'
 import { getImportExportRuntimeConfig } from '../lib/importExportRuntimeConfig.js'
 import { SUPPORTED_MEDIA_CONTENT_TYPE_EXTENSIONS } from '../lib/mediaContentTypes.js'
 import { prepareElementMutation } from './elementMutationPreparation.js'
 import {
-  enqueueImportExportFingerprintRefresh,
+  ensureElementFingerprintCurrent,
   finalizeUploadedMediaFingerprintV1,
+  lockElementFingerprintDependencies,
 } from './importExportFingerprints.js'
 import { getAnswerCollectionsElements } from './resources.js'
 import { checkAccess } from './sharing.js'
@@ -415,6 +421,17 @@ export async function getSingleElementInstance(
 }
 
 export async function manipulateElement(
+  input: ElementManipulationInput,
+  ctx: ContextWithUser
+) {
+  return await ctx.prisma.$transaction(
+    async (prisma) =>
+      await manipulateElementInTransaction(input, { ...ctx, prisma }),
+    { timeout: 60000 }
+  )
+}
+
+export async function manipulateElementInTransaction(
   {
     id,
     status,
@@ -514,6 +531,18 @@ export async function manipulateElement(
   const { domain: canonicalDomain, relationWrite } = prepared
   const processedOptions = canonicalDomain.options
 
+  await lockElementFingerprintDependencies(
+    {
+      answerCollectionId: prepared.answerCollectionId,
+      type,
+      content: canonicalDomain.content,
+      explanation: canonicalDomain.explanation,
+      options: processedOptions,
+      requireVerifiedMedia: getImportExportRuntimeConfig().enabled,
+    },
+    ctx.prisma
+  )
+
   const element = await ctx.prisma.element.upsert({
     where: { id: typeof id !== 'undefined' && id !== null ? id : -1 },
     create: {
@@ -554,8 +583,6 @@ export async function manipulateElement(
             : undefined,
     },
     update: {
-      importFingerprint: null,
-      importFingerprintVersion: null,
       status: status ?? undefined,
       name: name ?? undefined,
       content:
@@ -620,6 +647,8 @@ export async function manipulateElement(
       answerCollectionItems: true,
     },
   })
+
+  await ensureElementFingerprintCurrent(element.id, ctx.prisma)
 
   // compute derived permissions as required for this question
   await recomputeDerivedPermissions(
@@ -688,8 +717,6 @@ export async function manipulateElement(
       id: prepared.answerCollectionId,
     })
   }
-
-  enqueueImportExportFingerprintRefresh({ elementId: element.id }, ctx)
 
   return {
     ...element,
@@ -807,17 +834,20 @@ export async function applyElementBatchOperations(
   // needs to be sequential since element instance updates potentially include derived permission updates
   const updatedElements: DB.Element[] = []
   for (const element of dbElements) {
-    const changesDidacticIdentity =
-      (typeof multiplier !== 'undefined' && multiplier !== null) ||
-      (typeof basePoints !== 'undefined' && basePoints !== null)
     const updatedElement = await ctx.prisma.$transaction(async (tx) => {
+      await lockElementFingerprintDependencies(
+        {
+          ...element,
+          requireVerifiedMedia: getImportExportRuntimeConfig().enabled,
+        },
+        tx
+      )
+
       // execute the element update
       const updatedElement = await tx.element.update({
         where: { id: element.id },
         data: {
           version: { increment: 1 },
-          importFingerprint: changesDidacticIdentity ? null : undefined,
-          importFingerprintVersion: changesDidacticIdentity ? null : undefined,
           isArchived: archive ? true : unarchive ? false : undefined,
           status: status ?? undefined,
           pointsMultiplier:
@@ -834,6 +864,8 @@ export async function applyElementBatchOperations(
         },
       })
 
+      await ensureElementFingerprintCurrent(updatedElement.id, tx)
+
       // if enabled, update the corresponding element instances
       if (updateInstances) {
         await updateElementInstances(
@@ -849,12 +881,6 @@ export async function applyElementBatchOperations(
 
       return updatedElement
     })
-    if (changesDidacticIdentity) {
-      enqueueImportExportFingerprintRefresh(
-        { elementId: updatedElement.id },
-        ctx
-      )
-    }
     updatedElements.push(updatedElement)
   }
 
@@ -866,35 +892,50 @@ export async function changeElementStatus(
   { elementId, status }: { elementId: number; status: DB.ElementStatus },
   ctx: ContextWithUser
 ) {
-  const previousElement = await ctx.prisma.element.findUnique({
-    where: { id: elementId },
-  })
+  const element = await ctx.prisma.$transaction(async (tx) => {
+    const previousElement = await tx.element.findUnique({
+      where: { id: elementId },
+    })
 
-  if (!previousElement) {
-    return false
-  }
+    if (!previousElement) return null
 
-  const element = await ctx.prisma.element.update({
-    where: { id: elementId },
-    data: { status },
-  })
+    await lockElementFingerprintDependencies(
+      {
+        ...previousElement,
+        requireVerifiedMedia: getImportExportRuntimeConfig().enabled,
+      },
+      tx
+    )
 
-  if (status && status !== previousElement.status) {
-    const modificationDetails: ActivityLogModificationDetails = {
-      field: ActivityLogModificationFieldType.STATUS,
-      oldValue: previousElement.status,
-      newValue: status,
+    const element = await tx.element.update({
+      where: { id: elementId },
+      data: { status },
+    })
+    await ensureElementFingerprintCurrent(element.id, tx)
+
+    if (status && status !== previousElement.status) {
+      const modificationDetails: ActivityLogModificationDetails = {
+        field: ActivityLogModificationFieldType.STATUS,
+        oldValue: previousElement.status,
+        newValue: status,
+      }
+
+      await tx.activityLogEntry.create({
+        data: {
+          type: DB.ActivityLogType.MODIFICATION,
+          modificationDetails,
+          objectType: DB.ObjectType.ELEMENT,
+          elementId,
+          userId: ctx.user.sub,
+        },
+      })
     }
 
-    await ctx.prisma.activityLogEntry.create({
-      data: {
-        type: DB.ActivityLogType.MODIFICATION,
-        modificationDetails,
-        objectType: DB.ObjectType.ELEMENT,
-        elementId,
-        userId: ctx.user.sub,
-      },
-    })
+    return element
+  })
+
+  if (!element) {
+    return false
   }
 
   ctx.emitter.emit('invalidate', {
@@ -1112,13 +1153,35 @@ export async function getUserMediaFiles(ctx: ContextWithUser) {
     where: { id: ctx.user.sub },
     include: {
       mediaFiles: {
-        ...(importExportEnabled
-          ? {
-              where: {
-                importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
-              },
-            }
-          : {}),
+        where: {
+          OR: [
+            { originalId: null },
+            {
+              AND: [
+                {
+                  NOT: {
+                    originalId: {
+                      startsWith: DIRECT_UPLOAD_PENDING_ORIGINAL_ID_PREFIX,
+                    },
+                  },
+                },
+                {
+                  NOT: {
+                    originalId: {
+                      startsWith: DIRECT_UPLOAD_CLEANUP_ORIGINAL_ID_PREFIX,
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+          ...(importExportEnabled
+            ? {
+                importFingerprintVersion:
+                  IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
+              }
+            : {}),
+        },
         orderBy: { createdAt: 'desc' },
       },
     },
@@ -1128,9 +1191,24 @@ export async function getUserMediaFiles(ctx: ContextWithUser) {
 }
 
 export async function getFileUploadSas(
-  { fileName, contentType }: { fileName: string; contentType: string },
+  {
+    fileName,
+    contentType,
+    requiresFinalization = false,
+  }: {
+    fileName: string
+    contentType: string
+    requiresFinalization?: boolean | null
+  },
   ctx: ContextWithUser
 ) {
+  const usesFinalizationProtocol = requiresFinalization === true
+  if (!usesFinalizationProtocol && getImportExportRuntimeConfig().enabled) {
+    throw new Error(
+      'This media upload client must be refreshed before uploading files.'
+    )
+  }
+
   const sharedKeyCredential = new StorageSharedKeyCredential(
     process.env.BLOB_STORAGE_ACCOUNT_NAME as string,
     process.env.BLOB_STORAGE_ACCESS_KEY as string
@@ -1182,6 +1260,9 @@ export async function getFileUploadSas(
       type: contentType,
       name: fileName,
       href: fileHref,
+      ...(usesFinalizationProtocol
+        ? { originalId: createPendingDirectUploadOriginalId(id) }
+        : {}),
     },
   })
 

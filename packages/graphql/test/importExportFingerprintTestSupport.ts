@@ -1,4 +1,4 @@
-import { IMPORT_EXPORT_FINGERPRINT_VERSION } from '../src/lib/importExportFingerprintCanonicalization.js'
+import { IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION as IMPORT_EXPORT_FINGERPRINT_VERSION } from '../src/lib/importExportFingerprintCanonicalization.js'
 import type { FingerprintPrisma } from '../src/services/importExportFingerprintPersistence.js'
 
 export type FakeFingerprintResource = {
@@ -25,6 +25,7 @@ type FingerprintFindFirstArgs = {
 
 export function isDirtyFingerprint(resource: FakeFingerprintResource) {
   return (
+    resource.importFingerprint === null ||
     resource.importFingerprintVersion === null ||
     resource.importFingerprintVersion !== IMPORT_EXPORT_FINGERPRINT_VERSION
   )
@@ -82,18 +83,6 @@ export function markFingerprintCurrent(
     throw new Error(`Missing fake fingerprint resource ${resourceId}`)
 
   resource.importFingerprint = `fingerprint-${resourceId}`
-  resource.importFingerprintVersion = IMPORT_EXPORT_FINGERPRINT_VERSION
-}
-
-export function markFingerprintProcessedWithoutValue(
-  resources: FakeFingerprintResource[],
-  resourceId: number
-) {
-  const resource = resources.find(({ id }) => id === resourceId)
-  if (!resource)
-    throw new Error(`Missing fake fingerprint resource ${resourceId}`)
-
-  resource.importFingerprint = null
   resource.importFingerprintVersion = IMPORT_EXPORT_FINGERPRINT_VERSION
 }
 

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { IMPORT_EXPORT_FINGERPRINT_VERSION } from '../src/lib/importExportFingerprintCanonicalization.js'
+import { IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION } from '../src/lib/importExportFingerprintCanonicalization.js'
 import {
   finalizeStagedImportedMediaFile,
   stageImportedMediaFile,
@@ -54,24 +54,39 @@ describe('imported media content-hash persistence', () => {
     process.env.BLOB_STORAGE_ACCESS_KEY = 'test-key'
     process.env.IMPORT_EXPORT_PACKAGE_STORAGE = 'azure'
     let persistedHash: string | null = null
+    let persistedVersion: number | null = null
+    const queryRaw = vi.fn(async () => [])
+    const executeRaw = vi.fn(async () => 0)
+    const transactionClient = {
+      $queryRaw: queryRaw,
+      $executeRaw: executeRaw,
+      mediaFile: {
+        findUnique: vi.fn(async () => ({
+          id: MEDIA_ID,
+          href: HREF,
+          ownerId: OWNER_ID,
+          type: 'image/png',
+          name: 'media.png',
+          originalId: `import-media:${contentHash}`,
+          contentHash: persistedHash,
+          importFingerprintVersion: persistedVersion,
+        })),
+        updateMany: vi.fn(async ({ data }) => {
+          persistedHash = data.contentHash
+          persistedVersion = data.importFingerprintVersion
+          return { count: 1 }
+        }),
+      },
+    }
+    const transaction = vi.fn(
+      async (action: (prisma: typeof transactionClient) => Promise<unknown>) =>
+        await action(transactionClient)
+    )
     const ctx = {
       user: { sub: OWNER_ID },
       prisma: {
-        mediaFile: {
-          findUnique: vi.fn(async () => ({
-            id: MEDIA_ID,
-            href: HREF,
-            ownerId: OWNER_ID,
-            type: 'image/png',
-            name: 'media.png',
-            originalId: `import-media:${contentHash}`,
-            contentHash: persistedHash,
-          })),
-          updateMany: vi.fn(async ({ data }) => {
-            persistedHash = data.contentHash
-            return { count: 1 }
-          }),
-        },
+        ...transactionClient,
+        $transaction: transaction,
       },
     }
 
@@ -93,6 +108,10 @@ describe('imported media content-hash persistence', () => {
         createdBlob: false,
       })
       expect(persistedHash).toBe(contentHash)
+      expect(persistedVersion).toBe(IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION)
+      expect(transaction).toHaveBeenCalledTimes(1)
+      expect(queryRaw).toHaveBeenCalledTimes(1)
+      expect(executeRaw).not.toHaveBeenCalled()
     } finally {
       if (previousAccount === undefined) {
         delete process.env.BLOB_STORAGE_ACCOUNT_NAME
@@ -118,6 +137,7 @@ describe('imported media content-hash persistence', () => {
       id: MEDIA_ID,
       href: HREF,
       contentHash,
+      importFingerprintVersion: IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
     }))
     const staged = {
       id: MEDIA_ID,
@@ -139,7 +159,7 @@ describe('imported media content-hash persistence', () => {
       expect.objectContaining({
         create: expect.objectContaining({
           contentHash,
-          importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+          importFingerprintVersion: IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
         }),
         update: {},
       })

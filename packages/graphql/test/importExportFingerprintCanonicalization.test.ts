@@ -2,11 +2,15 @@ import { ElementType } from '@klicker-uzh/prisma/client'
 import {
   computeAnswerCollectionDidacticFingerprint,
   computeElementDidacticFingerprint,
-  IMPORT_EXPORT_FINGERPRINT_VERSION,
+  computePersistedAnswerCollectionDidacticFingerprint,
+  computePersistedElementDidacticFingerprint,
+  IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
+  IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
   OMITTED_AUTO_LOAD_MEDIA_IDENTITY,
   preparePlainTextFingerprintValues,
   type ElementDidacticFingerprintInput,
 } from '../src/lib/importExportFingerprintCanonicalization.js'
+import { rewriteExportElementMediaReferences } from '../src/lib/importExportMediaReferences.js'
 
 const HASH_A = 'a'.repeat(64)
 const HASH_B = 'b'.repeat(64)
@@ -143,19 +147,42 @@ const allElementTypes: Array<{
   { type: ElementType.FLASHCARD, options: {} },
 ]
 
-describe('version 1 didactic fingerprint canonicalization', () => {
+describe('version 2 didactic fingerprint canonicalization', () => {
+  it('versions didactic identity independently from media classification', () => {
+    expect(IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION).toBe(2)
+    expect(IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION).toBe(1)
+  })
+
   it.each(allElementTypes)(
     'fingerprints canonical $type payloads',
     (fixture) => {
-      const result = computeElementDidacticFingerprint({
+      const input = {
         ...elementInput(fixture.type, fixture.options),
         ...fixture.relations,
-      })
+      }
+      const result = computeElementDidacticFingerprint(input)
 
       expect(result).toEqual({
-        version: IMPORT_EXPORT_FINGERPRINT_VERSION,
+        version: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
         fingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
       })
+      expect(computePersistedElementDidacticFingerprint(input)).toEqual(result)
+    }
+  )
+
+  it.each([ElementType.CONTENT, ElementType.FLASHCARD])(
+    'normalizes legacy persisted scoring defaults for %s to the portable domain',
+    (type) => {
+      const portable = computeElementDidacticFingerprint({
+        ...elementInput(type),
+        basePoints: false,
+      })
+      const persisted = computePersistedElementDidacticFingerprint({
+        ...elementInput(type),
+        basePoints: true,
+      })
+
+      expect(persisted).toEqual(portable)
     }
   )
 
@@ -180,7 +207,7 @@ describe('version 1 didactic fingerprint canonicalization', () => {
     expect(second).toEqual(first)
   })
 
-  it('reuses a prepared answer-pool payload without changing version 1 identity', () => {
+  it('reuses a prepared answer-pool payload without changing version 2 identity', () => {
     const answerPoolValues = ['Gamma', 'Alpha', 'Beta']
     const preparedAnswerPoolValues =
       preparePlainTextFingerprintValues(answerPoolValues)
@@ -357,6 +384,11 @@ describe('version 1 didactic fingerprint canonicalization', () => {
 
     expect(sameValues).toEqual(first)
     expect(changedValues).not.toEqual(first)
+    expect(
+      computePersistedAnswerCollectionDidacticFingerprint({
+        entries: entriesWithTransportIds,
+      })
+    ).toEqual(first)
   })
 
   it('normalizes verified media by SHA-256, not URL or filename', () => {
@@ -391,6 +423,59 @@ describe('version 1 didactic fingerprint canonicalization', () => {
 
     expect(storedFingerprint).toEqual(packageFingerprint)
     expect(changedMedia).not.toEqual(packageFingerprint)
+  })
+
+  it('matches the exact export image transformation and preserves shared ordinary links', () => {
+    const storedHref =
+      'https://storage.invalid/owner/imported/shared-source.png'
+    const packageHref = 'klicker-package-media://shared-source'
+    const source: ElementDidacticFingerprintInput = {
+      ...elementInput(ElementType.CONTENT),
+      content: [
+        `![inline image](<${storedHref}>)`,
+        `[ordinary link](<${storedHref}>)`,
+        '![reference image][shared-source]',
+        '[reference link][shared-source]',
+        '',
+        `[shared-source]: ${storedHref} "Shared source"`,
+      ].join('\n'),
+      media: {
+        verifiedByHref: new Map([[storedHref, { sha256: HASH_A }]]),
+      },
+    }
+    const exported = rewriteExportElementMediaReferences(
+      source,
+      new Map([[storedHref, packageHref]])
+    )
+
+    expect(exported.content).toContain(`[ordinary link](<${storedHref}>)`)
+    expect(exported.content).toContain('[reference link][shared-source]')
+    expect(exported.content).toContain(
+      `[shared-source]: ${storedHref} "Shared source"`
+    )
+    expect(
+      computeElementDidacticFingerprint({
+        ...exported,
+        media: {
+          verifiedByHref: new Map([[packageHref, { sha256: HASH_A }]]),
+        },
+      })
+    ).toEqual(computeElementDidacticFingerprint(source))
+  })
+
+  it('matches exported omission markers for unavailable persisted media', () => {
+    const unavailableHref =
+      'https://storage.invalid/owner/imported/unavailable.png'
+    const source: ElementDidacticFingerprintInput = {
+      ...elementInput(ElementType.CONTENT),
+      content: `Before ![unavailable diagram](<${unavailableHref}>) after`,
+    }
+    const exported = rewriteExportElementMediaReferences(source, new Map())
+
+    expect(computeElementDidacticFingerprint(source)).not.toBeNull()
+    expect(computeElementDidacticFingerprint(exported)).toEqual(
+      computeElementDidacticFingerprint(source)
+    )
   })
 
   it('uses one omission identity for external auto-loading media', () => {
@@ -476,16 +561,20 @@ describe('version 1 didactic fingerprint canonicalization', () => {
     expect(secondCollection).not.toEqual(firstCollection)
   })
 
-  it('returns null for unresolved media, invalid hashes, or package refs', () => {
+  it('omits unresolved persisted media but rejects invalid package transport refs', () => {
     const href = 'https://storage.invalid/owner/unhashed.png'
 
-    expect(
+    const unresolved = computeElementDidacticFingerprint({
+      ...elementInput(ElementType.CONTENT),
+      content: `![image](<${href}>)`,
+    })
+    expect(unresolved).not.toBeNull()
+    expect(unresolved).toEqual(
       computeElementDidacticFingerprint({
         ...elementInput(ElementType.CONTENT),
         content: `![image](<${href}>)`,
-        media: { unresolvedHrefs: new Set([href]) },
       })
-    ).toBeNull()
+    )
     expect(
       computeElementDidacticFingerprint({
         ...elementInput(ElementType.CONTENT),
@@ -569,6 +658,81 @@ describe('version 1 didactic fingerprint canonicalization', () => {
         relationValueByRef: new Map(),
       })
     ).toBeNull()
+  })
+
+  it('uses a deterministic total fallback for malformed persisted elements', () => {
+    const firstHref = 'https://one.example.test/unavailable.png'
+    const secondHref = 'https://two.example.test/unavailable.png'
+    const malformed = {
+      ...elementInput(ElementType.CASE_STUDY, {
+        cases: [
+          {
+            description: `![legacy diagram](<${firstHref}>)`,
+            solutions: 'not-an-array',
+            title: 'Legacy case',
+          },
+        ],
+        criteria: 'not-an-array',
+        hasSampleSolution: true,
+      }),
+      answerPoolValues: ['Beta', 'Alpha'],
+      selectedAnswerValues: ['Beta'],
+    } satisfies ElementDidacticFingerprintInput
+    const reordered = {
+      ...malformed,
+      options: {
+        hasSampleSolution: true,
+        criteria: 'not-an-array',
+        cases: [
+          {
+            title: 'Legacy case',
+            solutions: 'not-an-array',
+            description: `![legacy diagram](<${secondHref}>)`,
+          },
+        ],
+      },
+      answerPoolValues: ['Alpha', 'Beta'],
+    } satisfies ElementDidacticFingerprintInput
+
+    expect(computeElementDidacticFingerprint(malformed)).toBeNull()
+    expect(computeElementDidacticFingerprint(reordered)).toBeNull()
+    expect(computePersistedElementDidacticFingerprint(malformed)).toEqual(
+      computePersistedElementDidacticFingerprint(reordered)
+    )
+    expect(computePersistedElementDidacticFingerprint(malformed)).toEqual({
+      version: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
+      fingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+    })
+    expect(
+      computePersistedElementDidacticFingerprint({
+        ...malformed,
+        content: 'Changed authored content',
+      })
+    ).not.toEqual(computePersistedElementDidacticFingerprint(malformed))
+  })
+
+  it('uses a deterministic total fallback for malformed persisted collections', () => {
+    const first = {
+      entries: [
+        { value: 'Beta' },
+        { value: 'klicker-package-media://legacy-transport' },
+      ],
+    }
+    const reordered = {
+      entries: [
+        { value: 'klicker-package-media://legacy-transport' },
+        { value: 'Beta' },
+      ],
+    }
+
+    expect(computeAnswerCollectionDidacticFingerprint(first)).toBeNull()
+    expect(computePersistedAnswerCollectionDidacticFingerprint(first)).toEqual(
+      computePersistedAnswerCollectionDidacticFingerprint(reordered)
+    )
+    expect(computePersistedAnswerCollectionDidacticFingerprint(first)).toEqual({
+      version: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
+      fingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+    })
   })
 
   it('matches package and persisted representations of the same case study', () => {

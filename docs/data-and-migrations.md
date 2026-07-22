@@ -2,7 +2,7 @@
 type: Data Layer
 title: Data & Migrations
 description: Split Prisma schema, the migrate→sync→generate ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-07-17'
+timestamp: '2026-07-22'
 tags:
   - backend
   - prisma
@@ -37,16 +37,16 @@ Migration `20260707120000_import_export_fingerprints` is published feature-branc
 
 That prior migration creates its two owner/fingerprint indexes with ordinary blocking `CREATE INDEX` statements. If it is absent on a measured-large target, the concurrent-index pre-step below cannot safely pre-create those same names because the published migration does not use `IF NOT EXISTS`. Never edit the published migration. Use the audited reconciliation procedure below only with a named DBA/release owner, recorded target evidence, and approval through the protected production change process.
 
-Migration `20260712205147_import_export_durable_state` is additive and compatible with the previous application: it adds new tables and nullable fields, while retaining the old owner/fingerprint indexes for mixed-version rollback. Follow-up migration `20260712223000_import_export_media_fingerprint_state` adds nullable `MediaFile.importFingerprintVersion`, a `NOT VALID` positive-version check, and the maintenance lookup index. Migration `20260713003000_element_import_receipt_identity_immutable` prevents updates to a receipt's token-binding identity while leaving the optional artifact relation detachable by expiry cleanup. Migration `20260713013000_import_export_result_and_target_immutability` makes completed receipt results monotonic and freezes the exact artifact/media cleanup identities; operational lease, state, expiry, orphan-ref, and media-link transitions remain mutable. Migration `20260713130636_import_export_duplicate_lookup_indexes` adds owner/version/fingerprint/active-state/trailing-`id` indexes for one bounded lowest-active-ID duplicate probe per package candidate, including under heavy soft-delete skew; the previous three-column indexes remain in place for mixed-version rollback. Migration `20260716085603_import_export_fingerprint_repair_indexes` adds version/deletion/ID indexes for the bounded scheduled-repair scans and an answer-collection/deletion/ID index for linked-element invalidation and refresh. Before sealing the server-canonical CHECK expressions, it installs and validates corrected durable-state constraints that explicitly require final bytes and SHA-256 for `READY` artifacts and a retention deadline for `COMPLETE` receipts; the previous comparison-only expressions could evaluate to SQL `NULL` and therefore pass a PostgreSQL CHECK. Constraint replacement and expression sealing run in one explicit transaction, so a validation or seal failure preserves the previously installed constraints; the preceding idempotent index creation and validation intentionally remain outside that transaction. Its NULL-safe compatibility guard also revalidates the four earlier concurrently pre-creatable indexes without modifying their published migrations. Production inspection reads only the public schema, rejects failed or duplicate active migration attempts, checks CHECK/FK column shapes and exact CHECK-expression seals, and compares every ownership/immutability trigger body to its immutable repository migration source. The media, duplicate-lookup, and repair/invalidation indexes use ordinary transactional creation on measured-small targets. On a large target, record real table sizes, approve the media-index maintenance/lock budget, and use the documented concurrent pre-create procedure for the duplicate-lookup and repair/invalidation indexes. The repository exposes manual deployment aliases:
+Migration `20260712205147_import_export_durable_state` is additive and compatible with the previous application: it adds new tables and nullable fields, while retaining the old owner/fingerprint indexes for mixed-version rollback. Follow-up migration `20260712223000_import_export_media_fingerprint_state` adds nullable `MediaFile.importFingerprintVersion`, a `NOT VALID` positive-version check, and the maintenance lookup index. Migration `20260713003000_element_import_receipt_identity_immutable` prevents updates to a receipt's token-binding identity while leaving the optional artifact relation detachable by expiry cleanup. Migration `20260713013000_import_export_result_and_target_immutability` makes completed receipt results monotonic and freezes the exact artifact/media cleanup identities; operational lease, state, expiry, orphan-ref, and media-link transitions remain mutable. Migration `20260713130636_import_export_duplicate_lookup_indexes` adds owner/version/fingerprint/active-state/trailing-`id` indexes for one bounded lowest-active-ID duplicate probe per package candidate, including under heavy soft-delete skew; the previous three-column indexes remain in place for mixed-version rollback. Migration `20260716085603_import_export_fingerprint_repair_indexes` adds version/deletion/ID indexes for the bounded scheduled-repair scans and an answer-collection/deletion/ID index for linked-element invalidation and refresh. Before sealing the server-canonical CHECK expressions, it installs and validates corrected durable-state constraints that explicitly require final bytes and SHA-256 for `READY` artifacts and a retention deadline for `COMPLETE` receipts; the previous comparison-only expressions could evaluate to SQL `NULL` and therefore pass a PostgreSQL CHECK. Constraint replacement and expression sealing run in one explicit transaction, so a validation or seal failure preserves the previously installed constraints; the preceding idempotent index creation and validation intentionally remain outside that transaction. Its NULL-safe compatibility guard also revalidates the four earlier concurrently pre-creatable indexes without modifying their published migrations. Migration `20260722100000_import_export_null_fingerprint_repair_indexes` adds the two active/null-fingerprint partial indexes in a new immutable follow-up, so databases that already applied the published repair migration keep a valid checksum and still receive the added scan support. Production inspection reads only the public schema, rejects failed or duplicate active migration attempts, checks CHECK/FK column shapes and exact CHECK-expression seals, and compares every ownership/immutability trigger body to its immutable repository migration source. The media, duplicate-lookup, and repair/invalidation indexes use ordinary transactional creation on measured-small targets. On a large target, record real table sizes, approve the media-index maintenance/lock budget, and use the documented concurrent pre-create procedure for the duplicate-lookup and repair/invalidation indexes. The repository exposes manual deployment aliases:
 
 ```bash
 pnpm --filter @klicker-uzh/prisma prisma:deploy:qa
 pnpm --filter @klicker-uzh/prisma prisma:deploy:prod
 ```
 
-The repository does not contain a workflow that orchestrates these production operations. A named operator must execute the inspection and environment-specific deploy paths for normal and assessment targets through an approved, reviewer-gated change process. The required network-capable runner, named owners, backup/PITR proof, large/partial-history DBA work, previous-image smoke, and target artifacts remain external release blockers. Follow the [Import/Export Production Runbook](./import-export-production-runbook.md); never run `migrate dev` against staging or production.
+The repository does not contain a workflow that approves or orchestrates these production migrations. A named operator must execute the inspection and environment-specific deployment through an approved, reviewer-gated change process. Import/export operations use only the selected Infisical environment's standard `DATABASE_URL`; they do not map an assessment database. The required network-capable runner, named owners, backup/PITR proof, large/partial-history DBA work, previous-image smoke, and target artifacts remain external release blockers. Follow the [Import/Export Production Runbook](./import-export-production-runbook.md); never run `migrate dev` against staging or production.
 
-Before deploying, record migration state and real table sizes for every normal and assessment database target:
+Before deploying, record migration state and real table sizes for the selected environment database:
 
 ```sql
 SELECT migration_name, checksum, started_at, finished_at,
@@ -59,7 +59,8 @@ WHERE migration_name IN (
   '20260713003000_element_import_receipt_identity_immutable',
   '20260713013000_import_export_result_and_target_immutability',
   '20260713130636_import_export_duplicate_lookup_indexes',
-  '20260716085603_import_export_fingerprint_repair_indexes'
+  '20260716085603_import_export_fingerprint_repair_indexes',
+  '20260722100000_import_export_null_fingerprint_repair_indexes'
 )
 ORDER BY migration_name;
 
@@ -99,10 +100,16 @@ The bounded duplicate-lookup migration checksum is `862ce0f89bbb1f6f74fcbf5ef2e4
 shasum -a 256 packages/prisma/src/prisma/schema/migrations/20260713130636_import_export_duplicate_lookup_indexes/migration.sql
 ```
 
-The bounded repair/invalidation-index, durable-state correction, and CHECK-expression-seal migration checksum is `7f3005b1bccda0a0a782f1e2c05f1a1f806e24399143568b3958da824234f30a`. Recompute and record it with the target migration state before deployment:
+The published bounded repair/invalidation-index, durable-state correction, and CHECK-expression-seal migration checksum remains `7f3005b1bccda0a0a782f1e2c05f1a1f806e24399143568b3958da824234f30a`. Recompute and record it with the target migration state before deployment:
 
 ```bash
 shasum -a 256 packages/prisma/src/prisma/schema/migrations/20260716085603_import_export_fingerprint_repair_indexes/migration.sql
+```
+
+The active/null-fingerprint repair-index follow-up checksum is `b6874fc6c0f12f6d2ae8db76f80d93b1d440877d69a4de868c0d8309346d38bf`:
+
+```bash
+shasum -a 256 packages/prisma/src/prisma/schema/migrations/20260722100000_import_export_null_fingerprint_repair_indexes/migration.sql
 ```
 
 ### Controlled reconciliation of the published fingerprint migration
@@ -179,7 +186,7 @@ For a failed/partial attempt, the DBA must choose exactly one recovery branch:
 
 Capture the before/after schema and `_prisma_migrations` output for either branch. Never combine `--rolled-back` and `--applied`, resolve a migration that is still running, or infer success from Prisma CLI exit status without the database verification queries.
 
-For measured-small targets, normal `migrate deploy` creates the versioned fingerprint indexes, the two active-state/trailing-`id` duplicate-lookup indexes, the two repair-scan indexes, and the linked-element invalidation index. For large targets, run the following audited pre-step immediately before `migrate deploy`. Each `CREATE INDEX CONCURRENTLY` statement must run outside a transaction:
+For measured-small targets, normal `migrate deploy` creates the versioned fingerprint indexes, the two active-state/trailing-`id` duplicate-lookup indexes, four repair-scan indexes (version-stale plus active-null for both resource tables), and the linked-element invalidation index. The two active-null indexes live in the separate `20260722100000_import_export_null_fingerprint_repair_indexes` follow-up; never add them to the already-published `20260716085603_import_export_fingerprint_repair_indexes` file. For large targets, run the following audited pre-step immediately before `migrate deploy`. Each `CREATE INDEX CONCURRENTLY` statement must run outside a transaction:
 
 ```sql
 ALTER TABLE "public"."AnswerCollection"
@@ -214,9 +221,19 @@ ON "public"."AnswerCollection"
 ("importFingerprintVersion", "isDeleted", "id");
 
 CREATE INDEX CONCURRENTLY IF NOT EXISTS
+"AnswerCollection_repair_null_fp_id_idx"
+ON "public"."AnswerCollection" ("id")
+WHERE "isDeleted" = false AND "importFingerprint" IS NULL;
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS
 "Element_repair_fpv_deleted_id_idx"
 ON "public"."Element"
 ("importFingerprintVersion", "isDeleted", "id");
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS
+"Element_repair_null_fp_id_idx"
+ON "public"."Element" ("id")
+WHERE "isDeleted" = false AND "importFingerprint" IS NULL;
 
 CREATE INDEX CONCURRENTLY IF NOT EXISTS
 "Element_answer_collection_deleted_id_idx"
@@ -224,7 +241,7 @@ ON "public"."Element"
 ("answerCollectionId", "isDeleted", "id");
 ```
 
-`IF NOT EXISTS` compares names, not definitions. Before continuing, verify both columns are nullable `integer` fields and all seven indexes have the exact definitions above with `indisready=true` and `indisvalid=true`. A failed concurrent build may leave an invalid same-name index; record and drop only that index concurrently, then retry before `migrate deploy`. The migrations independently reject incompatible columns and invalid or differently defined indexes after an `IF NOT EXISTS` no-op.
+`IF NOT EXISTS` compares names, not definitions. Before continuing, verify both columns are nullable `integer` fields and all nine indexes have the exact keys and predicates above with `indisready=true` and `indisvalid=true`. A failed concurrent build may leave an invalid same-name index; record and drop only that index concurrently, then retry before `migrate deploy`. The migrations independently reject incompatible columns and invalid or differently defined indexes after an `IF NOT EXISTS` no-op.
 
 ```sql
 SELECT table_name, column_name, data_type, is_nullable,
@@ -252,12 +269,14 @@ WHERE index_rel.relname IN (
   'AnswerCollection_owner_fpv_fp_id_idx',
   'Element_repair_fpv_deleted_id_idx',
   'AnswerCollection_repair_fpv_deleted_id_idx',
+  'Element_repair_null_fp_id_idx',
+  'AnswerCollection_repair_null_fp_id_idx',
   'Element_answer_collection_deleted_id_idx',
   'MediaFile_import_fpv_id_idx'
 );
 ```
 
-The media-hash and fingerprint-version checks are `NOT VALID`: they enforce every new write immediately without scanning existing large tables. After the operator-controlled media-hash and fingerprint backfills and a target lock-budget review, validate them one at a time before private preview:
+The media-hash and fingerprint-version checks are `NOT VALID`: they enforce every new write immediately without scanning existing large tables. Drain version-1/null-writing application and worker images, then run `./util/import-export-backfill.sh stg|prd`; it classifies media at version 1, backfills didactic fingerprints at version 2, and requires zero active-resource invariant violations. After that successful evidence and a target lock-budget review, validate the existing checks one at a time before private preview:
 
 ```sql
 ALTER TABLE "public"."MediaFile"
@@ -272,13 +291,19 @@ VALIDATE CONSTRAINT "AnswerCollection_importFingerprintVersion_check";
 
 Rehearse the exact immutable migration against a production-like database, recording duration, locks, WAL, row counts, constraints, and index validity. Run the previous application build against the migrated database with import/export disabled and smoke-test ordinary Element, AnswerCollection, and MediaFile reads/writes. Rollback disables import/export and rolls back application images; it does not drop the additive schema or stop record-scoped cleanup.
 
+A database constraint requiring every active element and answer collection to have a current non-null didactic fingerprint belongs in a separate follow-up migration after the environment backfill is recorded. Do not add it to the dark version-2 rollout: doing so would break previous-image writes during the compatibility window.
+
 ## Seeding
 
 Three independent seed paths — changing one does NOT update the others:
 
-1. **Dev seed**: `pnpm run prisma:setup` → reset + push + `packages/prisma-data/src/data/seedTEST.ts` (plus seedAccounts/Achievements/Levels/… modules). Creates the `testuser*` participants and seed courses (credentials: [AGENTS.md](../AGENTS.md) test-credentials section).
+1. **Dev seed**: `pnpm run prisma:setup` → reset + push + `packages/prisma-data/src/data/seedTEST.ts` (plus seedAccounts/Achievements/Levels/… modules) → canonical import/export fingerprint bootstrap. The devcontainer's `seed:raw` path uses the same post-seed bootstrap. These paths create the `testuser*` participants and seed courses (credentials: [AGENTS.md](../AGENTS.md) test-credentials section).
 2. **Cypress**: its own `seedDatabase()` task in `cypress/cypress.config.ts`.
 3. **Playwright**: its own `seedDatabase()` in `playwright/global-setup.ts` with its own fixtures.
+
+Supported `prisma-data` dev, QA, Playwright-CI, and production-flashcard seed wrappers run `packages/graphql/src/scripts/importExportSeedFingerprintBootstrap.ts` after their data writer. The sequential wrapper uses `--continue-on-error`, so it still repairs rows changed before a partial writer failure and then preserves a non-zero overall exit. The bootstrap uses the same rollout advisory mutex, a four-minute cooperative budget, and at most ten bounded repair passes; it succeeds only when no active answer collection or element remains null or version-stale. Reaching either bound fails closed with guidance to run the guarded rollout backfill rather than turning a seed into an unbounded database scan. Flashcard helper updates explicitly clear both fingerprint fields before changing an existing element, so content changes enter the stale repair path without forcing a full-corpus rescan in the normal case. A canonicalization, persistence, lock, or backlog failure makes the seed command fail. The bootstrap never chooses an environment itself: it inherits the exact `DATABASE_URL` already selected by the surrounding dev/staging/production seed wrapper, so it cannot silently switch to another target. `seed:test:raw` is the internal data writer; supported callers use fingerprint-safe `seed:test`.
+
+The Cypress and Playwright `seedDatabase()` baselines create users, courses, and related test fixtures but no active `Element` or `AnswerCollection` rows, so they do not run this bootstrap. Test-specific resources created later remain isolated test data and should exercise the normal GraphQL authoring paths when fingerprint behavior matters.
 
 `prisma:setup` is destructive — run only against demonstrably test-seeded databases.
 

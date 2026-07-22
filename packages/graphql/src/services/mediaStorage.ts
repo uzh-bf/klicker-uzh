@@ -1,4 +1,5 @@
 export {
+  cleanupAbandonedDirectMediaUploads,
   cleanupOrphanedImportedMediaFiles,
   cleanupPendingImportedMediaFile,
   reconcileAbandonedImportMediaStaging,
@@ -18,4 +19,5 @@ export {
   isImportExportMediaStorageConfigured,
   isKlickerMediaFileExportable,
   parseKlickerMediaUrl,
+  resolveKlickerMediaHref,
 } from './mediaStorageTargets.js'

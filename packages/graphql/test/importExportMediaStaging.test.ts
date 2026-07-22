@@ -1,5 +1,10 @@
 import { ImportMediaStagingState } from '@klicker-uzh/prisma/client'
 import { createHash, randomUUID } from 'node:crypto'
+import { IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION } from '../src/lib/importExportFingerprintCanonicalization.js'
+import {
+  createPendingDirectUploadOriginalId,
+  resolveKlickerMediaHref,
+} from '../src/lib/importExportMediaIdentity.js'
 
 const azure = vi.hoisted(() => ({
   deleteIfExists: vi.fn(async () => ({ succeeded: true })),
@@ -112,6 +117,28 @@ describe('durable imported-media staging', () => {
     }
   })
 
+  it('canonicalizes first-party URL aliases but rejects package artifacts', () => {
+    const canonicalHref = `https://testaccount.blob.core.windows.net/${OWNER_ID}/imported/media.png`
+
+    expect(
+      resolveKlickerMediaHref(`${canonicalHref}?download=1#preview`)
+    ).toEqual({
+      canonicalHref,
+      location: {
+        containerName: OWNER_ID,
+        blobName: 'imported/media.png',
+      },
+      ownerId: OWNER_ID,
+      storage: 'azure',
+      storageIdentity: `${OWNER_ID}\0imported/media.png`,
+    })
+    expect(
+      resolveKlickerMediaHref(
+        'https://testaccount.blob.core.windows.net/klicker-import-export/exports/private.zip'
+      )
+    ).toBeNull()
+  })
+
   it('rejects empty media before creating durable state', async () => {
     const buffer = Buffer.alloc(0)
     const contentHash = createHash('sha256').update(buffer).digest('hex')
@@ -128,6 +155,74 @@ describe('durable imported-media staging', () => {
         {} as any
       )
     ).rejects.toThrow('Media file must not be empty.')
+  })
+
+  it('atomically repairs a matching hash with a stale media-classification version', async () => {
+    const buffer = Buffer.from('previously imported media')
+    const contentHash = createHash('sha256').update(buffer).digest('hex')
+    const existing = {
+      id: randomUUID(),
+      href: `https://testaccount.blob.core.windows.net/${OWNER_ID}/imported/existing.png`,
+      ownerId: OWNER_ID,
+      type: 'image/png',
+      name: 'existing.png',
+      originalId: `import-media:${contentHash}`,
+      contentHash,
+      importFingerprintVersion: null as number | null,
+    }
+    const findUnique = vi.fn(async () => ({ ...existing }))
+    const updateMany = vi.fn(async ({ where, data }) => {
+      expect(where).toMatchObject({
+        id: existing.id,
+        ownerId: OWNER_ID,
+        contentHash,
+        importFingerprintVersion: null,
+      })
+      Object.assign(existing, data)
+      return { count: 1 }
+    })
+    const prisma: any = {
+      mediaFile: { findUnique, updateMany },
+      $queryRaw: vi.fn(async () => []),
+    }
+    prisma.$transaction = vi.fn(async (callback: (tx: any) => unknown) =>
+      callback(prisma)
+    )
+
+    await expect(
+      stageImportedMediaFile(
+        {
+          buffer,
+          contentType: 'image/png',
+          filename: 'existing.png',
+          originalId: existing.originalId,
+          contentHash,
+        },
+        { user: { sub: OWNER_ID }, prisma } as any
+      )
+    ).resolves.toMatchObject({
+      id: existing.id,
+      href: existing.href,
+      contentHash,
+      createdBlob: false,
+    })
+    expect(updateMany).toHaveBeenCalledWith({
+      where: {
+        id: existing.id,
+        ownerId: OWNER_ID,
+        contentHash,
+        importFingerprintVersion: null,
+      },
+      data: {
+        contentHash,
+        importFingerprintVersion: IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
+      },
+    })
+    expect(existing).toMatchObject({
+      contentHash,
+      importFingerprintVersion: IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
+    })
+    expect(findUnique).toHaveBeenCalledTimes(2)
   })
 
   it('records the exact target before copying and then CASes it to COPIED', async () => {
@@ -229,6 +324,8 @@ describe('durable imported-media staging', () => {
         originalId: null,
         ownerId: OWNER_ID,
         type: 'image/png',
+        contentHash: 'a'.repeat(64),
+        importFingerprintVersion: IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
       }))
     )
 
@@ -238,8 +335,79 @@ describe('durable imported-media staging', () => {
 
     expect(findMany).toHaveBeenCalledTimes(1)
     expect(maximumActive).toBe(4)
-    expect(result.get(hrefs[0]!)).toMatchObject({ bytes: 10 })
+    expect(result.get(hrefs[0]!)).toMatchObject({
+      bytes: 10,
+      sha256: 'a'.repeat(64),
+    })
     expect(result.get(hrefs[5]!)).toBeNull()
+  })
+
+  it('reads storage metadata only for current, hashed media classifications', async () => {
+    const hrefs = [
+      'current.png',
+      'omitted.png',
+      'stale.png',
+      'pending.png',
+    ].map(
+      (name) =>
+        `https://testaccount.blob.core.windows.net/${OWNER_ID}/imported/${name}`
+    )
+    const currentHash = 'b'.repeat(64)
+    const findMany = vi.fn(async () => [
+      {
+        id: randomUUID(),
+        href: hrefs[0],
+        name: 'current.png',
+        originalId: null,
+        ownerId: OWNER_ID,
+        type: 'image/png',
+        contentHash: currentHash,
+        importFingerprintVersion: IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
+      },
+      {
+        id: randomUUID(),
+        href: hrefs[1],
+        name: 'omitted.png',
+        originalId: null,
+        ownerId: OWNER_ID,
+        type: 'image/png',
+        contentHash: null,
+        importFingerprintVersion: IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
+      },
+      {
+        id: randomUUID(),
+        href: hrefs[2],
+        name: 'stale.png',
+        originalId: null,
+        ownerId: OWNER_ID,
+        type: 'image/png',
+        contentHash: 'c'.repeat(64),
+        importFingerprintVersion: null,
+      },
+      {
+        id: '44444444-4444-4444-8444-444444444444',
+        href: hrefs[3],
+        name: 'pending.png',
+        originalId: createPendingDirectUploadOriginalId(
+          '44444444-4444-4444-8444-444444444444'
+        ),
+        ownerId: OWNER_ID,
+        type: 'image/png',
+        contentHash: 'd'.repeat(64),
+        importFingerprintVersion: IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
+      },
+    ])
+
+    const result = await getKlickerMediaFilesExportMetadata(hrefs, {
+      prisma: { mediaFile: { findMany } },
+    } as any)
+
+    expect(azure.getProperties).toHaveBeenCalledOnce()
+    expect(azure.getProperties).toHaveBeenCalledWith('imported/current.png')
+    expect(result.get(hrefs[0]!)).toMatchObject({ sha256: currentHash })
+    expect(result.get(hrefs[1]!)).toBeNull()
+    expect(result.get(hrefs[2]!)).toBeNull()
+    expect(result.get(hrefs[3]!)).toBeNull()
   })
 
   it('stops metadata work after the first failure and waits for in-flight reads', async () => {
@@ -281,6 +449,8 @@ describe('durable imported-media staging', () => {
         originalId: null,
         ownerId: OWNER_ID,
         type: 'image/png',
+        contentHash: 'a'.repeat(64),
+        importFingerprintVersion: IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
       }))
     )
 
@@ -553,6 +723,7 @@ describe('durable imported-media staging', () => {
               id: stagingId,
               href: staged.href,
               contentHash,
+              importFingerprintVersion: IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
             })),
           },
           importMediaStaging: { updateMany },

@@ -35,6 +35,10 @@ builder.mutationFields((t) => ({
     args: {
       fileName: t.arg.string({ required: true }),
       contentType: t.arg.string({ required: true }),
+      requiresFinalization: t.arg.boolean({
+        required: false,
+        defaultValue: false,
+      }),
     },
     resolve: async (_, args, ctx) => {
       return await ElementService.getFileUploadSas(args, ctx)

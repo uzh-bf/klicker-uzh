@@ -110,7 +110,10 @@ psql "host=db.klicker.localhost port=5432 user=klicker-prod password=klicker \
 ## Auth model in dev
 
 EduID is replaced by klicker's own **credentials login** (no OIDC mock needed).
-Seeded users (`packages/prisma-data`): `lecturer`/`abcd` (ADMIN), `free`/`abcd`,
+The post-create `seed:raw` command finishes with the GraphQL canonical fingerprint
+bootstrap, so its active elements and answer collections are immediately usable for
+first-import duplicate detection. Seeded users (`packages/prisma-data`):
+`lecturer`/`abcd` (ADMIN), `free`/`abcd`,
 `pro1..3`/`abcd`, and `testuser1..50`/`abcdabcd`. Cross-app sessions work because
 every app is served under the same `klicker*.localhost` parent and the cookie
 domain resolves to that parent (`klicker.localhost` for the primary checkout,

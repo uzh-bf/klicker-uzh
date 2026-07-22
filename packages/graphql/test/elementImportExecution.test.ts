@@ -1,6 +1,7 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { randomUUID } from 'node:crypto'
 import { performance } from 'node:perf_hooks'
+import { IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION } from '../src/lib/importExportFingerprintCanonicalization.js'
 import {
   answerCollectionSchema,
   elementSchema,
@@ -342,6 +343,16 @@ describe('bounded element import execution', () => {
       elements,
     })
     const counters = createElementImportExecutionOperationCounters()
+    for (const element of plan.elements) {
+      expect(element).toMatchObject({
+        importFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+        importFingerprintVersion: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
+      })
+    }
+    expect(plan.answerCollections[0]).toMatchObject({
+      importFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+      importFingerprintVersion: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
+    })
     const result = await prisma.$transaction(
       async (tx) =>
         await executeElementImportExecutionPlan({
@@ -386,6 +397,8 @@ describe('bounded element import execution', () => {
         version: 1,
         isArchived: false,
         isDeleted: false,
+        importFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+        importFingerprintVersion: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
       })
       expect(element.tags).toEqual([])
       expect(element.permissions).toEqual([
@@ -408,6 +421,8 @@ describe('bounded element import execution', () => {
       ownerId,
       version: 1,
       originalId: null,
+      importFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+      importFingerprintVersion: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
     })
     expect(importedCollection.permissions).toEqual([
       expect.objectContaining({

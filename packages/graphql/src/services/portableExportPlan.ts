@@ -44,8 +44,6 @@ import type {
   ExportElementSnapshot,
 } from './elementExportSnapshot.js'
 
-const PREVIEW_MEDIA_SHA256 = '0'.repeat(64)
-
 export type PortableExportMediaHrefClassification = Readonly<{
   storageIdentity: string
 }>
@@ -81,7 +79,7 @@ export type PortableExportMediaOutcome =
       filename: string
       contentType: string
       bytes: number
-      sha256?: string
+      sha256: string
       data?: Buffer
     }>
 
@@ -595,16 +593,15 @@ function validateIncludedMediaOutcome(
 
   const computedSha256 = outcome.data ? hashMedia(outcome.data) : undefined
   if (
-    outcome.sha256 &&
-    (!/^[a-f0-9]{64}$/.test(outcome.sha256) ||
-      (computedSha256 && outcome.sha256 !== computedSha256))
+    !/^[a-f0-9]{64}$/.test(outcome.sha256) ||
+    (computedSha256 && outcome.sha256 !== computedSha256)
   ) {
     throw new ExportSourceContractError(
       'Included media checksum does not match its declaration.'
     )
   }
 
-  return computedSha256 ?? outcome.sha256 ?? PREVIEW_MEDIA_SHA256
+  return outcome.sha256
 }
 
 export function getPortableExportPlanWarnings(plan: PortableExportPlan) {

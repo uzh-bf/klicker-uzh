@@ -1,4 +1,5 @@
 import { ElementType } from '@klicker-uzh/prisma/client'
+import { createHash } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { ImportExportErrorCode } from '../src/lib/importExportErrors.js'
@@ -9,6 +10,7 @@ type MediaMetadata = {
   bytes: number
   contentType: string
   filename: string
+  sha256: string
 }
 
 function createPlan(count: number): PortableExportPlan {
@@ -54,12 +56,14 @@ function createPlan(count: number): PortableExportPlan {
 
 function metadataForPlan(
   plan: PortableExportPlan,
-  createMetadata: (index: number) => MediaMetadata
+  createMetadata: (
+    index: number
+  ) => Omit<MediaMetadata, 'sha256'> & Partial<Pick<MediaMetadata, 'sha256'>>
 ) {
   return new Map(
     plan.mediaInventory.firstParty.map((candidate, index) => [
       candidate.href,
-      createMetadata(index),
+      { sha256: 'a'.repeat(64), ...createMetadata(index) },
     ])
   )
 }
@@ -75,7 +79,7 @@ async function loadHydrationWithMocks({
   vi.doMock('../src/services/mediaStorage.js', () => ({
     downloadKlickerMediaFile: download,
     getKlickerMediaFilesExportMetadata,
-    parseKlickerMediaUrl: vi.fn(),
+    resolveKlickerMediaHref: vi.fn(),
   }))
 
   const { hydratePortableExportMediaOutcomes } = await import(
@@ -99,13 +103,11 @@ describe('portable export media hydration preflight', () => {
     vi.resetModules()
   })
 
-  it('omits 100 maximum-size SVG candidates after one metadata batch without downloading bodies', async () => {
+  it('omits 100 durably unclassified SVG candidates without downloading bodies', async () => {
     const plan = createPlan(100)
-    const metadata = metadataForPlan(plan, (index) => ({
-      bytes: MAX_IMPORT_EXPORT_MEDIA_BYTES,
-      contentType: 'image/svg+xml',
-      filename: `vector-${index + 1}.svg`,
-    }))
+    const metadata = new Map(
+      plan.mediaInventory.firstParty.map((candidate) => [candidate.href, null])
+    )
     const adapters = await loadHydrationWithMocks({
       metadata,
       download: vi.fn(),
@@ -149,61 +151,61 @@ describe('portable export media hydration preflight', () => {
     expect(adapters.download).not.toHaveBeenCalled()
   })
 
-  it('omits metadata/body size and content-type mismatches while preserving candidate order', async () => {
-    const plan = createPlan(3)
+  it('fails closed when downloaded bytes differ from the persisted hash', async () => {
+    const plan = createPlan(1)
     const validBody = Buffer.from('good')
-    const candidates = plan.mediaInventory.firstParty
     const adapters = await loadHydrationWithMocks({
       metadata: metadataForPlan(plan, (index) => ({
         bytes: 4,
         contentType: 'image/png',
         filename: `declared-${index + 1}.png`,
+        sha256: createHash('sha256').update(validBody).digest('hex'),
       })),
-      download: vi.fn(async (href: string) => {
-        if (href === candidates[0]!.href) {
-          return {
-            buffer: Buffer.from('wrong'),
-            contentType: 'image/png',
-            filename: 'body-1.png',
-          }
-        }
-        if (href === candidates[1]!.href) {
-          return {
-            buffer: Buffer.alloc(4),
-            contentType: 'image/jpeg',
-            filename: 'body-2.jpg',
-          }
-        }
-        return {
-          buffer: validBody,
-          contentType: 'image/png',
-          filename: 'body-3.png',
-        }
-      }),
+      download: vi.fn(async () => ({
+        buffer: Buffer.from('evil'),
+        contentType: 'image/png',
+        filename: 'body.png',
+      })),
+    })
+
+    await expect(
+      adapters.hydratePortableExportMediaOutcomes(plan, {} as ContextWithUser)
+    ).rejects.toMatchObject({
+      code: ImportExportErrorCode.INFRASTRUCTURE_FAILURE,
+    })
+  })
+
+  it('carries the persisted hash into a successfully hydrated outcome', async () => {
+    const plan = createPlan(1)
+    const body = Buffer.from('good')
+    const sha256 = createHash('sha256').update(body).digest('hex')
+    const candidate = plan.mediaInventory.firstParty[0]!
+    const adapters = await loadHydrationWithMocks({
+      metadata: metadataForPlan(plan, () => ({
+        bytes: body.length,
+        contentType: 'image/png',
+        filename: 'declared.png',
+        sha256,
+      })),
+      download: vi.fn(async () => ({
+        buffer: body,
+        contentType: 'image/png',
+        filename: 'body.png',
+      })),
     })
 
     await expect(
       adapters.hydratePortableExportMediaOutcomes(plan, {} as ContextWithUser)
     ).resolves.toEqual([
       {
-        storageIdentity: candidates[0]!.storageIdentity,
-        status: 'OMITTED',
-      },
-      {
-        storageIdentity: candidates[1]!.storageIdentity,
-        status: 'OMITTED',
-      },
-      {
-        storageIdentity: candidates[2]!.storageIdentity,
+        storageIdentity: candidate.storageIdentity,
         status: 'INCLUDED',
-        filename: 'declared-3.png',
+        filename: 'declared.png',
         contentType: 'image/png',
-        bytes: 4,
-        data: validBody,
+        bytes: body.length,
+        sha256,
+        data: body,
       },
     ])
-    expect(adapters.download.mock.calls.map(([href]) => href)).toEqual(
-      candidates.map(({ href }) => href)
-    )
   })
 })

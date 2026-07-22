@@ -3,6 +3,7 @@ import {
   ElementType,
   PermissionLevel,
 } from '@klicker-uzh/prisma/client'
+import { createHash } from 'node:crypto'
 import { ImportExportErrorCode } from '../src/lib/importExportErrors.js'
 import { MAX_IMPORT_EXPORT_CONTENT_LENGTH } from '../src/lib/importExportPackageConfig.js'
 import type { ElementExportSnapshot } from '../src/services/elementExportSnapshot.js'
@@ -128,6 +129,9 @@ function installExportAdapterMocks(
           contentType: 'image/png',
           filename: 'image.png',
           originalId: 'media-1',
+          sha256: createHash('sha256')
+            .update('snapshot-safe media')
+            .digest('hex'),
         },
       ],
     ])

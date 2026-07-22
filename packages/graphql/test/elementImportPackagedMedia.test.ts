@@ -11,7 +11,10 @@ import { EventEmitter } from 'node:events'
 import { mkdtemp, readdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { IMPORT_EXPORT_FINGERPRINT_VERSION } from '../src/lib/importExportFingerprintCanonicalization.js'
+import {
+  IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
+  IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
+} from '../src/lib/importExportFingerprintCanonicalization.js'
 import {
   createElementExportPackage,
   importElementPackage,
@@ -88,7 +91,7 @@ async function seedLocalMediaElement({
       type: 'image/png',
       originalId: `source-media:${mediaId}`,
       contentHash,
-      importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+      importFingerprintVersion: IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
     },
   })
 
@@ -255,7 +258,7 @@ describe.sequential('public packaged-media import with local providers', () => {
       ownerId: importerCtx.user.sub,
       href: expectedImportedHref,
       contentHash: selected.contentHash,
-      importFingerprintVersion: IMPORT_EXPORT_FINGERPRINT_VERSION,
+      importFingerprintVersion: IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
       originalId: `import-media:${selected.contentHash}`,
     })
     expect(staged.mediaFileId).toBe(importedMedia.id)
@@ -282,6 +285,10 @@ describe.sequential('public packaged-media import with local providers', () => {
     expect(importedElement.content).toBe(
       `![selected-media](<${expectedImportedHref}>)`
     )
+    expect(importedElement).toMatchObject({
+      importFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+      importFingerprintVersion: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
+    })
     expect(receipt.createdElementIds).toEqual([importedElement.id])
     await expect(
       prisma.element.count({

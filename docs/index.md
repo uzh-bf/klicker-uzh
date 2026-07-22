@@ -22,7 +22,7 @@ Conventions: one concept per file (OKF v0.1), claims cite `path:Symbol`, command
 - [Chat Platform](./chat-platform.md) - The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
 - [Testing](./testing.md) - Which test level to use when, what runs safely without services, the two e2e stacks and their seeds, and the CI test matrix.
 - [CI & Deployment](./ci-and-deployment.md) - PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
-- [Import/Export Production Runbook](./import-export-production-runbook.md) - Protected migration and post-deploy operations, exact aliases, evidence/owner blockers, canary recovery, rotation, and rollback.
+- [Import/Export Production Runbook](./import-export-production-runbook.md) - Protected migration and post-deploy operations, the guarded historical backfill runner, evidence/owner blockers, canary recovery, rotation, and rollback.
 - [Developing a Feature](./developing-a-feature.md) - The full-stack feature lifecycle step by step, with a real commit as the worked example and routing to the page or skill for each step.
 
 ## Skill routing

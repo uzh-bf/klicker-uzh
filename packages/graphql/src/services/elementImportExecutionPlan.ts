@@ -7,6 +7,7 @@ import {
 import {
   computeAnswerCollectionDidacticFingerprint,
   computeElementDidacticFingerprint,
+  IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
   preparePlainTextFingerprintValues,
   type FingerprintMediaContext,
 } from '../lib/importExportFingerprintCanonicalization.js'
@@ -60,8 +61,8 @@ export type ElementImportExecutionPlan = Readonly<{
 export type BoundElementImportExecutionCollectionPlan =
   ElementImportExecutionCollectionPlan &
     Readonly<{
-      importFingerprint: string | null
-      importFingerprintVersion: number | null
+      importFingerprint: string
+      importFingerprintVersion: typeof IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION
     }>
 
 export type BoundElementImportExecutionElementPlan =
@@ -69,8 +70,8 @@ export type BoundElementImportExecutionElementPlan =
     ? Element extends ElementImportExecutionElementPlan
       ? Element &
           Readonly<{
-            importFingerprint: string | null
-            importFingerprintVersion: number | null
+            importFingerprint: string
+            importFingerprintVersion: typeof IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION
           }>
       : never
     : never
@@ -291,6 +292,9 @@ export function bindStagedImportMedia(
     const fingerprint = computeAnswerCollectionDidacticFingerprint({
       entries: collection.entries,
     })
+    if (!fingerprint) {
+      infrastructureFailure('Answer collection fingerprint binding failed.')
+    }
     collectionByRef.set(collection.ref, {
       entryValueByRef: new Map(
         collection.entries.map((entry) => [entry.ref, entry.value])
@@ -302,8 +306,8 @@ export function bindStagedImportMedia(
 
     return {
       ...collection,
-      importFingerprint: fingerprint?.fingerprint ?? null,
-      importFingerprintVersion: fingerprint?.version ?? null,
+      importFingerprint: fingerprint.fingerprint,
+      importFingerprintVersion: fingerprint.version,
     }
   })
 
@@ -327,11 +331,14 @@ export function bindStagedImportMedia(
       relationValueByRef: indexedCollection?.entryValueByRef,
       media: fingerprintMedia,
     })
+    if (!fingerprint) {
+      infrastructureFailure('Element fingerprint binding failed.')
+    }
 
     return {
       ...element,
-      importFingerprint: fingerprint?.fingerprint ?? null,
-      importFingerprintVersion: fingerprint?.version ?? null,
+      importFingerprint: fingerprint.fingerprint,
+      importFingerprintVersion: fingerprint.version,
     }
   })
 

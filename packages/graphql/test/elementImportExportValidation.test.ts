@@ -591,10 +591,12 @@ describe('Secure element import/export packages', () => {
       maximumActive = Math.max(maximumActive, active)
       await Promise.resolve()
       active--
+      const body = Buffer.from(`bytes:${href}`)
       return {
-        bytes: 32,
+        bytes: body.length,
         contentType: 'image/png',
         filename: href.split('/').at(-1)!,
+        sha256: createHash('sha256').update(body).digest('hex'),
       }
     })
     const getKlickerMediaFilesExportMetadata = vi.fn(
@@ -764,6 +766,7 @@ describe('Secure element import/export packages', () => {
           bytes: sharedBytes.length,
           contentType: 'image/png',
           filename: `duplicate-${index + 1}.png`,
+          sha256: createHash('sha256').update(sharedBytes).digest('hex'),
         },
       ])
     )

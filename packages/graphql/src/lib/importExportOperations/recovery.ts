@@ -1,8 +1,13 @@
 // Recovery checks are exact-record and owner scoped.
-import { createOperationsPrisma, type OperationsPrisma } from './database.js'
+import {
+  createOperationsPrisma,
+  getOperationsDatabaseIdentity,
+  type OperationsPrisma,
+} from './database.js'
 import {
   ImportExportOperationError,
   createOperationOutput,
+  getImportExportStorageIdentity,
   parseDatabaseTarget,
   parseOperationEnvironment,
   readRecoveryManifest,
@@ -183,13 +188,18 @@ function recoveryManifestPath(env: NodeJS.ProcessEnv) {
   return path
 }
 
-function assertManifestContext(
+async function assertManifestContext(
   manifest: ImportExportRecoveryManifest,
-  env: NodeJS.ProcessEnv
+  env: NodeJS.ProcessEnv,
+  prisma: OperationsPrisma
 ) {
+  const databaseIdentity = await getOperationsDatabaseIdentity(prisma)
+  const storageIdentity = getImportExportStorageIdentity(env)
   if (
     manifest.environment !== parseOperationEnvironment(env) ||
-    manifest.target !== parseDatabaseTarget(env)
+    manifest.target !== parseDatabaseTarget(env) ||
+    manifest.databaseIdentity !== databaseIdentity ||
+    manifest.storageIdentity !== storageIdentity
   ) {
     throw new ImportExportOperationError('RECOVERY_MANIFEST_CONTEXT_MISMATCH')
   }
@@ -205,7 +215,7 @@ export async function runExactCleanupDryRun({
   requireMasterGateOff(env)
   const path = recoveryManifestPath(env)
   const manifest = await readRecoveryManifest(path)
-  assertManifestContext(manifest, env)
+  await assertManifestContext(manifest, env, prisma)
   const counts = await countExactRecoveryScope({
     prisma,
     ownerId: manifest.ownerId,
@@ -253,9 +263,11 @@ export async function runCanaryManifestOperation({
       throw new ImportExportOperationError('CANARY_OWNER_REQUIRED')
     }
     const manifest: ImportExportRecoveryManifest = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       environment: parseOperationEnvironment(env),
       target: parseDatabaseTarget(env),
+      databaseIdentity: await getOperationsDatabaseIdentity(prisma),
+      storageIdentity: getImportExportStorageIdentity(env),
       ownerId,
       phase: 'initialized',
       resources: {
@@ -284,7 +296,7 @@ export async function runCanaryManifestOperation({
     throw new ImportExportOperationError('CANARY_MODE_INVALID')
   }
   const manifest = await readRecoveryManifest(path)
-  assertManifestContext(manifest, env)
+  await assertManifestContext(manifest, env, prisma)
   const counts = await countExactRecoveryScope({
     prisma,
     ownerId: manifest.ownerId,

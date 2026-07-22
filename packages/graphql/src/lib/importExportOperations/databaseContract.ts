@@ -6,6 +6,7 @@ export const IMPORT_EXPORT_MIGRATIONS = [
   '20260713013000_import_export_result_and_target_immutability',
   '20260713130636_import_export_duplicate_lookup_indexes',
   '20260716085603_import_export_fingerprint_repair_indexes',
+  '20260722100000_import_export_null_fingerprint_repair_indexes',
 ] as const
 
 export const REQUIRED_IMPORT_EXPORT_COLUMNS = [
@@ -49,6 +50,13 @@ export const REQUIRED_IMPORT_EXPORT_INDEXES = [
     ['importFingerprintVersion', 'isDeleted', 'id'],
   ],
   [
+    'AnswerCollection',
+    'AnswerCollection_repair_null_fp_id_idx',
+    false,
+    ['id'],
+    '(("isDeleted" = false) AND ("importFingerprint" IS NULL))',
+  ],
+  [
     'Element',
     'Element_ownerId_importFingerprint_idx',
     false,
@@ -83,6 +91,13 @@ export const REQUIRED_IMPORT_EXPORT_INDEXES = [
     'Element_repair_fpv_deleted_id_idx',
     false,
     ['importFingerprintVersion', 'isDeleted', 'id'],
+  ],
+  [
+    'Element',
+    'Element_repair_null_fp_id_idx',
+    false,
+    ['id'],
+    '(("isDeleted" = false) AND ("importFingerprint" IS NULL))',
   ],
   [
     'MediaFile',

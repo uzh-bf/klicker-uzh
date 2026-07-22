@@ -2,7 +2,9 @@
 import type { OperationsPrisma } from './database.js'
 import {
   inspectImportExportDatabase,
+  inspectImportExportFingerprintInvariant,
   type ImportExportDatabaseInspection,
+  type ImportExportFingerprintInvariantInspection,
 } from './databaseCatalog.js'
 import {
   IMPORT_EXPORT_CHECK_CONSTRAINT_CONTRACT_PREFIX,
@@ -12,11 +14,7 @@ import {
   REQUIRED_IMPORT_EXPORT_INDEXES,
   REQUIRED_IMPORT_EXPORT_TRIGGERS,
 } from './databaseContract.js'
-import {
-  createOperationOutput,
-  parseDatabaseTarget,
-  requireMasterGateOff,
-} from './runtime.js'
+import { createOperationOutput, requireMasterGateOff } from './runtime.js'
 
 function hasSameOrderedValues(
   actual: readonly string[],
@@ -69,7 +67,7 @@ export function evaluateImportExportInspection(
       )
   )
   const indexesReady = REQUIRED_IMPORT_EXPORT_INDEXES.every(
-    ([tableName, indexName, isUnique, keyColumns]) =>
+    ([tableName, indexName, isUnique, keyColumns, predicate]) =>
       inspection.indexes.some(
         (index) =>
           index.table_name === tableName &&
@@ -78,7 +76,8 @@ export function evaluateImportExportInspection(
           index.is_valid &&
           index.is_unique === isUnique &&
           index.access_method === 'btree' &&
-          !index.has_predicate &&
+          index.has_predicate === (typeof predicate === 'string') &&
+          index.predicate === (predicate ?? null) &&
           !index.has_expressions &&
           !index.has_included_columns &&
           hasSameOrderedValues(index.key_columns, keyColumns)
@@ -176,14 +175,25 @@ export function evaluateImportExportInspection(
   }
 }
 
+export function evaluateImportExportBackfillInvariant(
+  staleVersions: ImportExportFingerprintInvariantInspection
+) {
+  return {
+    elementFingerprintsCurrentAndNonNull: staleVersions.elements === 0,
+    answerCollectionFingerprintsCurrentAndNonNull:
+      staleVersions.answerCollections === 0,
+    mediaClassificationsCurrent: staleVersions.mediaFiles === 0,
+  }
+}
+
 export async function createImportExportInspectionOutput({
   prisma,
   env = process.env,
-  verify = false,
+  requireReady = false,
 }: {
   prisma: OperationsPrisma
   env?: NodeJS.ProcessEnv
-  verify?: boolean
+  requireReady?: boolean
 }) {
   requireMasterGateOff(env)
   const inspection = await inspectImportExportDatabase(prisma)
@@ -191,17 +201,13 @@ export async function createImportExportInspectionOutput({
   const ready = Object.values(checks).every(Boolean)
 
   return createOperationOutput(
-    verify ? 'import-export-backfill-verify' : 'import-export-inspect',
+    requireReady ? 'import-export-readiness' : 'import-export-inspect',
     {
-      outcome: verify && !ready ? 'incomplete' : 'success',
-      code: verify && !ready ? 'TARGET_NOT_READY' : 'INSPECTION_COMPLETE',
+      outcome: requireReady && !ready ? 'incomplete' : 'success',
+      code: requireReady && !ready ? 'TARGET_NOT_READY' : 'INSPECTION_COMPLETE',
       checks: {
         ...checks,
         masterGateOff:
-          typeof env.IMPORT_EXPORT_ENABLED === 'undefined' ||
-          env.IMPORT_EXPORT_ENABLED === 'false',
-        assessmentResponsibilityOff:
-          parseDatabaseTarget(env) !== 'assessment' ||
           typeof env.IMPORT_EXPORT_ENABLED === 'undefined' ||
           env.IMPORT_EXPORT_ENABLED === 'false',
       },
@@ -228,6 +234,39 @@ export async function createImportExportInspectionOutput({
         constraints: inspection.constraints,
         triggers: inspection.triggers,
         locks: inspection.locks,
+      },
+    },
+    env
+  )
+}
+
+export async function createImportExportBackfillVerificationOutput({
+  prisma,
+  env = process.env,
+}: {
+  prisma: OperationsPrisma
+  env?: NodeJS.ProcessEnv
+}) {
+  requireMasterGateOff(env)
+  const staleVersions = await inspectImportExportFingerprintInvariant(prisma)
+  const checks = evaluateImportExportBackfillInvariant(staleVersions)
+  const ready = Object.values(checks).every(Boolean)
+
+  return createOperationOutput(
+    'import-export-backfill-verify',
+    {
+      outcome: ready ? 'success' : 'incomplete',
+      code: ready
+        ? 'FINGERPRINT_INVARIANT_VERIFIED'
+        : 'FINGERPRINT_INVARIANT_VIOLATED',
+      checks: {
+        ...checks,
+        masterGateOff: true,
+      },
+      counts: {
+        invalidActiveElements: staleVersions.elements ?? -1,
+        invalidActiveAnswerCollections: staleVersions.answerCollections ?? -1,
+        staleMediaClassifications: staleVersions.mediaFiles ?? -1,
       },
     },
     env

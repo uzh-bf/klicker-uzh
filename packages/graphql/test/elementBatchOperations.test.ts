@@ -15,6 +15,7 @@ import {
 import { EventEmitter } from 'events'
 import { v4 as uuid } from 'uuid'
 import type { ContextWithUser } from '../src/lib/context.js'
+import { IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION } from '../src/lib/importExportFingerprintCanonicalization.js'
 import { applyElementBatchOperations } from '../src/services/elements.js'
 import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
 
@@ -1120,18 +1121,17 @@ describe('Unit tests batch operations on elements', () => {
     expect(updatedInstanceWithUpdate?.options.pointsMultiplier).toEqual(6)
   })
 
-  it('keeps a didactic batch write successful when fingerprint enqueueing fails', async () => {
+  it('persists a current fingerprint for a didactic batch write without Hatchet', async () => {
     const elementId = await seedElement(
       {
         type: ElementType.SC,
         options: { hasSampleSolution: true },
         pointsMultiplier: 1,
         importFingerprint: 'a'.repeat(64),
-        importFingerprintVersion: 1,
+        importFingerprintVersion: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
       },
       prisma
     )
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const runNoWait = vi
       .spyOn(userOneCtx.tasks.refreshImportExportFingerprints, 'runNoWait')
       .mockRejectedValue(new Error('Hatchet unavailable'))
@@ -1150,12 +1150,8 @@ describe('Unit tests batch operations on elements', () => {
           userOneCtx
         )
       ).resolves.toBe(1)
-      await Promise.resolve()
 
-      expect(runNoWait).toHaveBeenCalledWith({ elementId })
-      expect(warn).toHaveBeenCalledWith(
-        '[ImportExportFingerprint] REFRESH_ENQUEUE_FAILED'
-      )
+      expect(runNoWait).not.toHaveBeenCalled()
       await expect(
         prisma.element.findUniqueOrThrow({
           where: { id: elementId },
@@ -1165,14 +1161,13 @@ describe('Unit tests batch operations on elements', () => {
             importFingerprintVersion: true,
           },
         })
-      ).resolves.toEqual({
+      ).resolves.toMatchObject({
         pointsMultiplier: 2,
-        importFingerprint: null,
-        importFingerprintVersion: null,
+        importFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+        importFingerprintVersion: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
       })
     } finally {
       runNoWait.mockRestore()
-      warn.mockRestore()
     }
   })
 })

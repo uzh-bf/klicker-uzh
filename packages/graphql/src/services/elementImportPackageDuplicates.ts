@@ -1,6 +1,6 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import type { ContextWithUser } from '../lib/context.js'
-import { IMPORT_EXPORT_FINGERPRINT_VERSION } from '../lib/importExportFingerprintCanonicalization.js'
+import { IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION } from '../lib/importExportFingerprintCanonicalization.js'
 import {
   MAX_IMPORT_EXPORT_ANSWER_COLLECTIONS,
   MAX_IMPORT_EXPORT_ELEMENTS,
@@ -72,7 +72,7 @@ export async function findImportPackageDuplicateMatchesByFingerprint(
               "id"
             ) >= ROW(
               ${ctx.user.sub}::uuid,
-              ${IMPORT_EXPORT_FINGERPRINT_VERSION}::integer,
+              ${IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION}::integer,
               candidates."importFingerprint",
               false,
               '-2147483648'::integer
@@ -85,7 +85,7 @@ export async function findImportPackageDuplicateMatchesByFingerprint(
                 "id"
               ) < ROW(
                 ${ctx.user.sub}::uuid,
-                ${IMPORT_EXPORT_FINGERPRINT_VERSION}::integer,
+                ${IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION}::integer,
                 candidates."importFingerprint",
                 true,
                 '-2147483648'::integer
@@ -121,7 +121,7 @@ export async function findImportPackageDuplicateMatchesByFingerprint(
               "id"
             ) >= ROW(
               ${ctx.user.sub}::uuid,
-              ${IMPORT_EXPORT_FINGERPRINT_VERSION}::integer,
+              ${IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION}::integer,
               candidates."importFingerprint",
               false,
               '-2147483648'::integer
@@ -134,7 +134,7 @@ export async function findImportPackageDuplicateMatchesByFingerprint(
                 "id"
               ) < ROW(
                 ${ctx.user.sub}::uuid,
-                ${IMPORT_EXPORT_FINGERPRINT_VERSION}::integer,
+                ${IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION}::integer,
                 candidates."importFingerprint",
                 true,
                 '-2147483648'::integer

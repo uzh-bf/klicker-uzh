@@ -23,13 +23,15 @@ const exitCode = await runOperationCli(
     try {
       return await withAdvisoryLock({
         prisma,
-        operationKey: 3,
-        run: async () => {
+        run: async (assertLockHeld) => {
+          assertLockHeld()
           await prisma.$executeRawUnsafe(`SET lock_timeout = '5s'`)
           await prisma.$executeRawUnsafe(`SET statement_timeout = '60s'`)
           for (const statement of CONSTRAINT_VALIDATION_STATEMENTS) {
+            assertLockHeld()
             await prisma.$executeRawUnsafe(statement)
           }
+          assertLockHeld()
           return createOperationOutput('import-export-validate-constraints', {
             outcome: 'success',
             code: 'CONSTRAINT_VALIDATION_COMPLETE',

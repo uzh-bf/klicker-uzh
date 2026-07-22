@@ -1908,6 +1908,9 @@ importers:
       nodemailer:
         specifier: 6.9.15
         version: 6.9.15
+      pg:
+        specifier: 8.16.3
+        version: 8.16.3
       remeda:
         specifier: 2.15.0
         version: 2.15.0
@@ -1984,6 +1987,9 @@ importers:
       '@types/nodemailer':
         specifier: ^6.4.23
         version: 6.4.23
+      '@types/pg':
+        specifier: ^8.15.5
+        version: 8.15.5
       '@types/uuid':
         specifier: ^10.0.0
         version: 10.0.0

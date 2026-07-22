@@ -204,9 +204,9 @@ function mediaOutcomes(data?: Buffer): PortableExportMediaOutcome[] {
       filename: 'Original Photo.PNG',
       contentType: 'image/png',
       bytes: includedData.length,
+      sha256: createHash('sha256').update(includedData).digest('hex'),
       ...(data
         ? {
-            sha256: createHash('sha256').update(includedData).digest('hex'),
             data,
           }
         : {}),
@@ -592,7 +592,9 @@ describe('portable export plan and archive rendering', () => {
     expect(hydrated.manifest.media[0]?.sha256).toBe(
       createHash('sha256').update(data).digest('hex')
     )
-    expect(preview.manifest.media[0]?.sha256).toBe('0'.repeat(64))
+    expect(preview.manifest.media[0]?.sha256).toBe(
+      createHash('sha256').update(data).digest('hex')
+    )
     expect({
       ...hydrated.manifest,
       media: hydrated.manifest.media.map(

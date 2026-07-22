@@ -39,6 +39,8 @@ A fixture needed by tests must be added to EACH consumer:
 | Cypress              | `seedDatabase()` task in `cypress/cypress.config.ts`                    |
 | Playwright           | `seedDatabase()` in `playwright/global-setup.ts`                        |
 
+Use the supported `prisma-data` seed wrappers rather than invoking `seedTEST.ts`, `seedFlashcards.ts`, or internal `seed:test:raw` directly. `seed`, `seed:raw`, `seed:test`, `seed:qa`, `seed:flashcards`, and `seed:prod:flashcards` run the GraphQL stale-fingerprint repair bootstrap after their writer attempt; they continue to the repair after a partial writer failure while preserving a non-zero overall exit. The bootstrap inherits the wrapper's already-selected `DATABASE_URL`, takes the rollout advisory lock, and is bounded to ten passes/four minutes; it must not select an environment independently or expand into an unbounded historical backfill. Any direct seed helper that updates an existing element must clear `importFingerprint` and `importFingerprintVersion` in the same update so the bounded repair finds semantic changes without a full-corpus scan.
+
 Reseeding dev (`pnpm run prisma:setup`) is **destructive** — apply `klicker-environment-doctor` check 8 first.
 
 ## Boot-time data migrations (rare)

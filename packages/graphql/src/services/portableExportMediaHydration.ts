@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import type { ContextWithUser } from '../lib/context.js'
 import {
   ImportExportDomainError,
@@ -24,6 +25,7 @@ import {
 } from './portableExportPlan.js'
 
 const EXPORT_PREFLIGHT_CREATED_AT = new Date(0).toISOString()
+const EXPORT_MEDIA_DOWNLOAD_CONCURRENCY = 4
 
 function classifyKlickerMediaHref(href: string) {
   const location = parseKlickerMediaUrl(href)
@@ -32,6 +34,13 @@ function classifyKlickerMediaHref(href: string) {
         storageIdentity: `${location.containerName}\0${location.blobName}`,
       }
     : null
+}
+
+function mediaIntegrityFailure(cause?: unknown): never {
+  throw new ImportExportDomainError(
+    ImportExportErrorCode.INFRASTRUCTURE_FAILURE,
+    cause
+  )
 }
 
 export function createStorageAwarePortableExportPlan(
@@ -66,17 +75,20 @@ export async function loadPortableExportPreviewMediaOutcomes(
   const outcomes = plan.mediaInventory.firstParty.map((candidate) => {
     assertLease()
     const metadata = metadataByHref.get(candidate.href)
-    if (
-      !metadata ||
-      !Number.isSafeInteger(metadata.bytes) ||
-      metadata.bytes <= 0 ||
-      !isSupportedPackageMediaContentType(metadata.contentType) ||
-      metadata.bytes > MAX_IMPORT_EXPORT_MEDIA_BYTES
-    ) {
+    if (!metadata) {
       return {
         storageIdentity: candidate.storageIdentity,
         status: PortableExportMediaOutcomeStatus.OMITTED,
       }
+    }
+    if (
+      !Number.isSafeInteger(metadata.bytes) ||
+      metadata.bytes <= 0 ||
+      !isSupportedPackageMediaContentType(metadata.contentType) ||
+      metadata.bytes > MAX_IMPORT_EXPORT_MEDIA_BYTES ||
+      !/^[a-f0-9]{64}$/.test(metadata.sha256)
+    ) {
+      mediaIntegrityFailure()
     }
 
     return {
@@ -85,6 +97,7 @@ export async function loadPortableExportPreviewMediaOutcomes(
       filename: metadata.filename,
       contentType: metadata.contentType,
       bytes: metadata.bytes,
+      sha256: metadata.sha256,
     }
   })
   assertLease()
@@ -126,53 +139,63 @@ export async function hydratePortableExportMediaOutcomes(
   }
 
   const outcomes: PortableExportMediaOutcome[] = []
+  for (
+    let offset = 0;
+    offset < plan.mediaInventory.firstParty.length;
+    offset += EXPORT_MEDIA_DOWNLOAD_CONCURRENCY
+  ) {
+    const batch = plan.mediaInventory.firstParty.slice(
+      offset,
+      offset + EXPORT_MEDIA_DOWNLOAD_CONCURRENCY
+    )
+    const hydrated = await Promise.all(
+      batch.map(async (candidate): Promise<PortableExportMediaOutcome> => {
+        const metadata = metadataByStorageIdentity.get(
+          candidate.storageIdentity
+        )
+        if (
+          !metadata ||
+          metadata.status === PortableExportMediaOutcomeStatus.OMITTED
+        ) {
+          return {
+            storageIdentity: candidate.storageIdentity,
+            status: PortableExportMediaOutcomeStatus.OMITTED,
+          }
+        }
 
-  for (const candidate of plan.mediaInventory.firstParty) {
-    const metadata = metadataByStorageIdentity.get(candidate.storageIdentity)
-    if (
-      !metadata ||
-      metadata.status === PortableExportMediaOutcomeStatus.OMITTED
-    ) {
-      outcomes.push({
-        storageIdentity: candidate.storageIdentity,
-        status: PortableExportMediaOutcomeStatus.OMITTED,
+        try {
+          const media = await downloadKlickerMediaFile(candidate.href, ctx)
+          if (
+            !media ||
+            media.buffer.length !== metadata.bytes ||
+            media.contentType !== metadata.contentType ||
+            !isSupportedPackageMediaContentType(media.contentType) ||
+            media.buffer.length > MAX_IMPORT_EXPORT_MEDIA_BYTES ||
+            createHash('sha256').update(media.buffer).digest('hex') !==
+              metadata.sha256
+          ) {
+            mediaIntegrityFailure()
+          }
+
+          return {
+            storageIdentity: candidate.storageIdentity,
+            status: PortableExportMediaOutcomeStatus.INCLUDED,
+            filename: metadata.filename,
+            contentType: metadata.contentType,
+            bytes: metadata.bytes,
+            sha256: metadata.sha256,
+            data: media.buffer,
+          }
+        } catch (error) {
+          if (error instanceof ImportExportDomainError) throw error
+          if (error instanceof MediaExportOmissionError) {
+            mediaIntegrityFailure(error)
+          }
+          throw error
+        }
       })
-      continue
-    }
-
-    try {
-      const media = await downloadKlickerMediaFile(candidate.href, ctx)
-      if (
-        !media ||
-        media.buffer.length !== metadata.bytes ||
-        media.contentType !== metadata.contentType ||
-        !isSupportedPackageMediaContentType(media.contentType) ||
-        media.buffer.length > MAX_IMPORT_EXPORT_MEDIA_BYTES
-      ) {
-        outcomes.push({
-          storageIdentity: candidate.storageIdentity,
-          status: PortableExportMediaOutcomeStatus.OMITTED,
-        })
-        continue
-      }
-
-      outcomes.push({
-        storageIdentity: candidate.storageIdentity,
-        status: PortableExportMediaOutcomeStatus.INCLUDED,
-        filename: metadata.filename,
-        contentType: metadata.contentType,
-        bytes: metadata.bytes,
-        data: media.buffer,
-      })
-    } catch (error) {
-      if (error instanceof ImportExportDomainError) throw error
-      if (!(error instanceof MediaExportOmissionError)) throw error
-
-      outcomes.push({
-        storageIdentity: candidate.storageIdentity,
-        status: PortableExportMediaOutcomeStatus.OMITTED,
-      })
-    }
+    )
+    outcomes.push(...hydrated)
   }
 
   return outcomes
