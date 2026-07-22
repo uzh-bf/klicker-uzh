@@ -65,7 +65,13 @@ export function AppSidebar({
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <SidebarTrigger className="mr-2 size-4 shrink-0" />
+                  {/* The design-system trigger ships a hardcoded English
+                      "Toggle Sidebar" sr-only label; an explicit aria-label
+                      wins over it so screen readers follow the UI locale. */}
+                  <SidebarTrigger
+                    className="mr-2 size-4 shrink-0"
+                    aria-label={t('chat.sidebar.closeSidebar')}
+                  />
                 </TooltipTrigger>
                 <TooltipContent>
                   {t('chat.sidebar.closeSidebar')}

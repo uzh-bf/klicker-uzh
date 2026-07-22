@@ -31,6 +31,7 @@ export default {
     sidebar: {
       newChat: 'Neuer Chat',
       closeSidebar: 'Seitenleiste schliessen',
+      openSidebar: 'Seitenleiste öffnen',
       conversationsLabel: 'Konversationen',
       logoAlt: 'Klicker-Logo',
     },
@@ -100,7 +101,8 @@ export default {
       welcomeSubtitle: 'Wie kann ich Dir helfen?',
     },
     message: {
-      creditsUsed: '{credits} Credits',
+      creditsUsed:
+        '{count, plural, one {{credits} Credit} other {{credits} Credits}}',
       reasoningToggle: 'Denkprozess',
       editUnavailable: 'Bearbeiten nicht verfügbar',
       edit: 'Bearbeiten',
@@ -129,7 +131,8 @@ export default {
       running: '{tool} wird verwendet...',
       done: '{tool} verwendet',
       showLess: 'Weniger anzeigen',
-      showMore: 'Mehr anzeigen ({count} weitere Zeilen)',
+      showMore:
+        '{count, plural, one {Mehr anzeigen (# weitere Zeile)} other {Mehr anzeigen (# weitere Zeilen)}}',
     },
     noLogin: {
       title: 'Anmeldung erforderlich',

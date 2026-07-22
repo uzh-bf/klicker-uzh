@@ -9,6 +9,9 @@ import { Select } from '@uzh-bf/design-system'
 import { ChevronDown, ChevronUp, Settings2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
+/** Ties the toggle's `aria-controls` to the panel it expands. */
+const PANEL_ID = 'chat-settings-panel'
+
 export function SettingsPanel() {
   const t = useTranslations()
   const {
@@ -41,13 +44,19 @@ export function SettingsPanel() {
 
   return (
     <div>
-      <div
+      {/* A real button, not a clickable div: this toggle is the only way to
+          reach the model and reasoning-effort selectors, so keyboard and switch
+          users must be able to focus and activate it (WCAG 2.1.1 / 4.1.2). */}
+      <button
+        type="button"
         data-cy="chat-settings-toggle"
-        className="hover:bg-accent flex cursor-pointer items-center gap-2 border-t px-3 py-2 transition-colors"
+        aria-expanded={open}
+        aria-controls={PANEL_ID}
+        className="hover:bg-accent focus-visible:ring-ring flex w-full items-center gap-2 border-t px-3 py-2 text-start transition-colors focus-visible:outline-none focus-visible:ring-1"
         onClick={() => setOpen(!open)}
       >
         <Settings2 className="h-4 w-4" />
-        <span className="text-basefont-medium">
+        <span className="text-base font-medium">
           {t('chat.settingsPanel.title')}
         </span>
         {/* up and down arrow on the right based on whether is opened or not */}
@@ -58,9 +67,10 @@ export function SettingsPanel() {
             <ChevronDown className="h-4 w-4" />
           )}
         </span>
-      </div>
+      </button>
       {open && (
         <div
+          id={PANEL_ID}
           data-cy="chat-settings-panel"
           className="border-muted space-y-3 border-t px-3 pb-2 pt-2"
         >

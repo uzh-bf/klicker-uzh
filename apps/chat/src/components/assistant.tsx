@@ -322,14 +322,18 @@ function SidebarMain({
 
   return (
     <SidebarInset>
-      <div className="flex shrink-0 items-center gap-2 border-b bg-gray-50 px-2 py-1.5">
+      <div className="bg-muted/50 flex shrink-0 items-center gap-2 border-b px-2 py-1.5">
         <div
           className={twMerge(
             'flex min-w-0 items-center gap-2',
             open && 'md:hidden'
           )}
         >
-          <SidebarTrigger className="size-5" />
+          {/* Overrides the design system's hardcoded English sr-only label. */}
+          <SidebarTrigger
+            className="size-5"
+            aria-label={t('chat.sidebar.openSidebar')}
+          />
           <span className="min-w-0 truncate text-sm">{chatbot.name}</span>
         </div>
         <div className="flex flex-1 justify-center">
@@ -385,7 +389,7 @@ function AssistantLayout({
 
   return (
     <div className="flex h-dvh w-full flex-col overflow-hidden">
-      <div className="flex shrink-0 items-center justify-between gap-2 border-b bg-gray-50 px-2 py-1.5 sm:gap-4 sm:px-4 sm:py-3">
+      <div className="bg-muted/50 flex shrink-0 items-center justify-between gap-2 border-b px-2 py-1.5 sm:gap-4 sm:px-4 sm:py-3">
         <div className="min-w-0 truncate text-xs font-semibold sm:text-sm">
           {chatbot.name}
         </div>

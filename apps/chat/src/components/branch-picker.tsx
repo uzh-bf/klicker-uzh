@@ -8,6 +8,7 @@ import {
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useCallback, useMemo } from 'react'
+import { actionBarButtonClassName } from './ui/action-bar-button'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []
@@ -90,7 +91,7 @@ export function BranchPicker({ messageId, className }: BranchPickerProps) {
             data-cy="chat-branch-previous"
             disabled={!hasPrevious}
             onClick={goToPrevious}
-            className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
+            className={actionBarButtonClassName}
           >
             <ChevronLeftIcon />
             <span className="sr-only">{t('chat.branchPicker.previous')}</span>
@@ -112,7 +113,7 @@ export function BranchPicker({ messageId, className }: BranchPickerProps) {
             data-cy="chat-branch-next"
             disabled={!hasNext}
             onClick={goToNext}
-            className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
+            className={actionBarButtonClassName}
           >
             <ChevronRightIcon />
             <span className="sr-only">{t('chat.branchPicker.next')}</span>

@@ -121,8 +121,10 @@ interface ChatState {
  * - API integration for persistence
  */
 export const useChatStore = create<ChatState>((set, get) => {
-  const DEFAULT_PARTICIPATION_MESSAGE =
-    'You need to join the corresponding KlickerUZH course before you can use this chatbot. Please enrol in the course or contact your instructor for access.'
+  // The generic 403 body the API returns when a participant is not enrolled.
+  // It is a server-side identifier, not display text — see below.
+  const GENERIC_PARTICIPATION_ERROR =
+    'No valid participation found for this chatbot'
   const attachmentHydrationRequests = new Map<
     string,
     Promise<ExtendedThreadMessageLike | undefined>
@@ -131,9 +133,10 @@ export const useChatStore = create<ChatState>((set, get) => {
   const markParticipationRequired = (message?: string) => {
     set({
       participationRequired: true,
-      participationMessage: message?.trim()
-        ? message
-        : DEFAULT_PARTICIPATION_MESSAGE,
+      // null means "the server gave no specific reason", which lets the notice
+      // render the localized `chat.assistant.participationRequiredDefaultMessage`
+      // instead of an English string the store cannot translate.
+      participationMessage: message?.trim() ? message : null,
     })
   }
 
@@ -207,12 +210,12 @@ export const useChatStore = create<ChatState>((set, get) => {
           ? ((error.body as { error?: string }).error ?? undefined)
           : undefined
 
-      const friendlyMessage =
-        apiMessage === 'No valid participation found for this chatbot'
-          ? DEFAULT_PARTICIPATION_MESSAGE
-          : apiMessage
-
-      markParticipationRequired(friendlyMessage)
+      // The generic enrolment error is dropped rather than shown: it is
+      // untranslated English aimed at API consumers, and dropping it hands the
+      // notice back to the localized default.
+      markParticipationRequired(
+        apiMessage === GENERIC_PARTICIPATION_ERROR ? undefined : apiMessage
+      )
     }
   }
 
