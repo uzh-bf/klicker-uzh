@@ -1451,8 +1451,8 @@ importers:
         specifier: ~12.1.4
         version: 12.1.4(rollup@4.62.2)(tslib@2.8.1)(typescript@6.0.3)
       '@types/office-js':
-        specifier: ^1.0.598
-        version: 1.0.598
+        specifier: ^1.0.599
+        version: 1.0.599
       cross-env:
         specifier: ~7.0.3
         version: 7.0.3
@@ -1460,14 +1460,14 @@ importers:
         specifier: ~9.30.1
         version: 9.30.1(jiti@2.6.1)
       eslint-plugin-office-addins:
-        specifier: ~4.0.9
-        version: 4.0.9(@types/eslint@9.6.1)(eslint@9.30.1(jiti@2.6.1))
+        specifier: ~4.0.10
+        version: 4.0.10(@types/eslint@9.6.1)(eslint@9.30.1(jiti@2.6.1))
       office-addin-dev-certs:
-        specifier: ~2.0.9
-        version: 2.0.9
+        specifier: ~2.0.10
+        version: 2.0.10
       office-addin-manifest:
-        specifier: ~2.1.5
-        version: 2.1.5
+        specifier: ~2.1.6
+        version: 2.1.6
       rollup:
         specifier: ~4.62.2
         version: 4.62.2
@@ -9184,8 +9184,8 @@ packages:
   '@types/object-hash@3.0.6':
     resolution: {integrity: sha512-fOBV8C1FIu2ELinoILQ+ApxcUKz4ngq+IWUYrxSGjXzzjUALijilampwkMgEtJ+h2njAW3pi853QpzNVCHB73w==}
 
-  '@types/office-js@1.0.598':
-    resolution: {integrity: sha512-8TPclNW2KJdk0InhTMlpwX5vkCxKwSR+3wPCx6PLZnHIP0yZGRLrwgO+b2enHvdNzcZl5cx5yw+ZvRsqG3dLyA==}
+  '@types/office-js@1.0.599':
+    resolution: {integrity: sha512-wipSNDGbnEVOGzzzbdsvVi9rULAmbBrTCUA+BtxbmPbCaFSywzehI5akEg+KZSt81pA97kx8MHMm+CNgGplytQ==}
 
   '@types/parse-json@4.0.2':
     resolution: {integrity: sha512-dISoDXWWQwUquiKsyZ4Ng+HX2KsPL7LyHKHQwgGFEA3IaKac4Obd+h2a/a6waisAoepJlBcx9paWqjA8/HVjCw==}
@@ -12146,8 +12146,8 @@ packages:
     peerDependencies:
       eslint: ^3 || ^4 || ^5 || ^6 || ^7 || ^8 || ^9
 
-  eslint-plugin-office-addins@4.0.9:
-    resolution: {integrity: sha512-wESh64cJyt53YAxM7MC6GE2/B22ged1SBfciwvowMAosm/8Brft1s7F1SkKpwNNQDzLAPFi1xS6rjGm9DwZv6Q==}
+  eslint-plugin-office-addins@4.0.10:
+    resolution: {integrity: sha512-R1oE+xmeetG3359ptgweLgEJN+q4PowjRfO8k/ObRs/FlxgjmuSweU+svJvA/dNSacdWTH9dgZEc2FnY3iYstg==}
     engines: {node: '>=0.10.0'}
     peerDependencies:
       eslint: ^9.0.0
@@ -15587,23 +15587,23 @@ packages:
   obuf@1.1.2:
     resolution: {integrity: sha512-PX1wu0AmAdPqOL1mWhqmlOd8kOIZQwGZw6rh7uby9fTc5lhaOWFLX3I6R1hrF9k3zUY40e6igsLGkDXK92LJNg==}
 
-  office-addin-cli@2.0.9:
-    resolution: {integrity: sha512-cVAEzolJLqua+ni6H8I2qNaeXWqNeQC7SqnGkm9umpuXUMXIUsGpFcCEP2t8WNHkfP8PLKroMapRps05lw/Omg==}
+  office-addin-cli@2.0.10:
+    resolution: {integrity: sha512-SfNM7vuEGqboHd+VQpm50DqNAbpJNtfvt5wIVSXj8O0KqiA4e4Hc/vi0dOcV0XTzVZ/uLobPoV9ieqKF70N8uA==}
     hasBin: true
 
-  office-addin-dev-certs@2.0.9:
-    resolution: {integrity: sha512-/z/ozc5ij28tc2A+RnJDAadbuevyQnqQqFsFoPG+0DflKG+qu0BN57DOjjxHJ9tGUYdwfeL+ExnOy7l2LZaffw==}
+  office-addin-dev-certs@2.0.10:
+    resolution: {integrity: sha512-njHuhfhVo7+df8risRjGp7PWivdE+KhG5B57kBov8YXSt4nrBoEE+i6tYHCj0WrULcgH+aHNUzVAVig3/E2Nzw==}
     hasBin: true
 
-  office-addin-manifest@2.1.5:
-    resolution: {integrity: sha512-C8fvAQwG/Q/MpSXeIwkuLNUCLAfuE4rswou9ZXckGJovJSKrWskSsQKlAstSR+k68ph1nSZWLs4VZchnpn/Vsw==}
+  office-addin-manifest@2.1.6:
+    resolution: {integrity: sha512-kxV247eRDdGhBKOZYBhAvgzm/PveXdUXvZR5bi0mDYWFeY6wHoDuCSjRw00khRR///1ZvgixfvS4CqSfezyptQ==}
     hasBin: true
 
-  office-addin-prettier-config@2.0.4:
-    resolution: {integrity: sha512-AZC0pDC/UV/gYR76c8jNmb2cgm1P44EVCsq7Oyp8EKv+l+OPZw2LzT+TFnFKtRvgwl3abfVeSPKOasRZyRxA2Q==}
+  office-addin-prettier-config@2.0.5:
+    resolution: {integrity: sha512-Mq36bLXBTPpEH/ZR1dB/2obRpnS9ejQnVHYInoYI3oFRLED3OvmVrwbNy1QD7LViI4sfgex1vf9xiyHMasNEJw==}
 
-  office-addin-usage-data@2.1.0:
-    resolution: {integrity: sha512-/0UtF9IBUU7uRxX2LuY8koiWvIxFl9+t3UyN6Qwq37OC8e22riC2rBZHH4WZbJqeADqk3jqGQJL6aoY2Vy0RTA==}
+  office-addin-usage-data@2.1.1:
+    resolution: {integrity: sha512-MUbcqOodtlOUNhLKjSdqeLBHFVd7Qh5pUODqmQe2VLBKk7PuRgl4dCk6bp2dU79vl6BcDyrRERpkyVnQg6zdFg==}
     hasBin: true
 
   ohash@2.0.11:
@@ -19285,6 +19285,10 @@ packages:
   uuid@10.0.0:
     resolution: {integrity: sha512-8XkAphELsDnEGrDxUOHB3RGvXz6TeuYSGEZBOjtTtPm2lwhGBjLgOzLHB63IUWfBpNucQjND6d3AOudO+H3RWQ==}
     deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+    hasBin: true
+
+  uuid@14.0.1:
+    resolution: {integrity: sha512-6ZxzVpzDXDa3bJWaHilVayA+BH/1zmxCJoVgvmqJnid/gPoKHxUrS/aC/T6LGQtNHT+XHG9fXPJB4d+IrU30Ew==}
     hasBin: true
 
   uuid@3.4.0:
@@ -27866,7 +27870,7 @@ snapshots:
 
   '@types/object-hash@3.0.6': {}
 
-  '@types/office-js@1.0.598': {}
+  '@types/office-js@1.0.599': {}
 
   '@types/parse-json@4.0.2': {}
 
@@ -28127,21 +28131,21 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@typescript-eslint/project-service@8.62.0(typescript@5.9.3)':
-    dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.62.0(typescript@5.9.3)
-      '@typescript-eslint/types': 8.62.0
-      debug: 4.4.3(supports-color@8.1.1)
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - supports-color
-
   '@typescript-eslint/project-service@8.62.0(typescript@6.0.3)':
     dependencies:
       '@typescript-eslint/tsconfig-utils': 8.62.0(typescript@6.0.3)
       '@typescript-eslint/types': 8.62.0
       debug: 4.4.3(supports-color@8.1.1)
       typescript: 6.0.3
+    transitivePeerDependencies:
+      - supports-color
+
+  '@typescript-eslint/project-service@8.63.0(typescript@5.9.3)':
+    dependencies:
+      '@typescript-eslint/tsconfig-utils': 8.63.0(typescript@5.9.3)
+      '@typescript-eslint/types': 8.63.0
+      debug: 4.4.3(supports-color@8.1.1)
+      typescript: 5.9.3
     transitivePeerDependencies:
       - supports-color
 
@@ -28169,13 +28173,13 @@ snapshots:
       '@typescript-eslint/types': 8.8.1
       '@typescript-eslint/visitor-keys': 8.8.1
 
-  '@typescript-eslint/tsconfig-utils@8.62.0(typescript@5.9.3)':
-    dependencies:
-      typescript: 5.9.3
-
   '@typescript-eslint/tsconfig-utils@8.62.0(typescript@6.0.3)':
     dependencies:
       typescript: 6.0.3
+
+  '@typescript-eslint/tsconfig-utils@8.63.0(typescript@5.9.3)':
+    dependencies:
+      typescript: 5.9.3
 
   '@typescript-eslint/tsconfig-utils@8.63.0(typescript@6.0.3)':
     dependencies:
@@ -28223,21 +28227,6 @@ snapshots:
 
   '@typescript-eslint/types@8.8.1': {}
 
-  '@typescript-eslint/typescript-estree@8.62.0(typescript@5.9.3)':
-    dependencies:
-      '@typescript-eslint/project-service': 8.62.0(typescript@5.9.3)
-      '@typescript-eslint/tsconfig-utils': 8.62.0(typescript@5.9.3)
-      '@typescript-eslint/types': 8.62.0
-      '@typescript-eslint/visitor-keys': 8.62.0
-      debug: 4.4.3(supports-color@8.1.1)
-      minimatch: 10.2.5
-      semver: 7.8.0
-      tinyglobby: 0.2.16
-      ts-api-utils: 2.5.0(typescript@5.9.3)
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - supports-color
-
   '@typescript-eslint/typescript-estree@8.62.0(typescript@6.0.3)':
     dependencies:
       '@typescript-eslint/project-service': 8.62.0(typescript@6.0.3)
@@ -28250,6 +28239,21 @@ snapshots:
       tinyglobby: 0.2.16
       ts-api-utils: 2.5.0(typescript@6.0.3)
       typescript: 6.0.3
+    transitivePeerDependencies:
+      - supports-color
+
+  '@typescript-eslint/typescript-estree@8.63.0(typescript@5.9.3)':
+    dependencies:
+      '@typescript-eslint/project-service': 8.63.0(typescript@5.9.3)
+      '@typescript-eslint/tsconfig-utils': 8.63.0(typescript@5.9.3)
+      '@typescript-eslint/types': 8.63.0
+      '@typescript-eslint/visitor-keys': 8.63.0
+      debug: 4.4.3(supports-color@8.1.1)
+      minimatch: 10.2.5
+      semver: 7.8.0
+      tinyglobby: 0.2.16
+      ts-api-utils: 2.5.0(typescript@5.9.3)
+      typescript: 5.9.3
     transitivePeerDependencies:
       - supports-color
 
@@ -31002,7 +31006,7 @@ snapshots:
 
   detective-typescript@14.1.2(typescript@5.9.3):
     dependencies:
-      '@typescript-eslint/typescript-estree': 8.62.0(typescript@5.9.3)
+      '@typescript-eslint/typescript-estree': 8.63.0(typescript@5.9.3)
       ast-module-types: 6.0.2
       node-source-walk: 7.0.2
       typescript: 5.9.3
@@ -31791,14 +31795,14 @@ snapshots:
       safe-regex-test: 1.1.0
       string.prototype.includes: 2.0.1
 
-  eslint-plugin-office-addins@4.0.9(@types/eslint@9.6.1)(eslint@9.30.1(jiti@2.6.1)):
+  eslint-plugin-office-addins@4.0.10(@types/eslint@9.6.1)(eslint@9.30.1(jiti@2.6.1)):
     dependencies:
       eslint: 9.30.1(jiti@2.6.1)
       eslint-config-prettier: 9.1.2(eslint@9.30.1(jiti@2.6.1))
       eslint-plugin-prettier: 5.5.4(@types/eslint@9.6.1)(eslint-config-prettier@9.1.2(eslint@9.30.1(jiti@2.6.1)))(eslint@9.30.1(jiti@2.6.1))(prettier@3.3.3)
       eslint-plugin-react: 7.37.5(eslint@9.30.1(jiti@2.6.1))
       eslint-plugin-react-native: 5.0.0(eslint@9.30.1(jiti@2.6.1))
-      office-addin-prettier-config: 2.0.4
+      office-addin-prettier-config: 2.0.5
       prettier: 3.3.3
       requireindex: 1.2.0
       typescript: 5.9.3
@@ -36340,7 +36344,7 @@ snapshots:
 
   obuf@1.1.2: {}
 
-  office-addin-cli@2.0.9:
+  office-addin-cli@2.0.10:
     dependencies:
       commander: 13.1.0
       node-fetch: 2.7.0
@@ -36348,17 +36352,17 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  office-addin-dev-certs@2.0.9:
+  office-addin-dev-certs@2.0.10:
     dependencies:
       commander: 13.1.0
       fs-extra: 11.2.0
       mkcert: 3.2.0
-      office-addin-cli: 2.0.9
-      office-addin-usage-data: 2.1.0
+      office-addin-cli: 2.0.10
+      office-addin-usage-data: 2.1.1
     transitivePeerDependencies:
       - encoding
 
-  office-addin-manifest@2.1.5:
+  office-addin-manifest@2.1.6:
     dependencies:
       '@microsoft/app-manifest': 1.0.6
       adm-zip: 0.5.16
@@ -36366,15 +36370,15 @@ snapshots:
       commander: 13.1.0
       fs-extra: 7.0.1
       node-fetch: 2.7.0
-      office-addin-usage-data: 2.1.0
-      uuid: 8.3.2
+      office-addin-usage-data: 2.1.1
+      uuid: 14.0.1
       xml2js: 0.5.0
     transitivePeerDependencies:
       - encoding
 
-  office-addin-prettier-config@2.0.4: {}
+  office-addin-prettier-config@2.0.5: {}
 
-  office-addin-usage-data@2.1.0:
+  office-addin-usage-data@2.1.1:
     dependencies:
       commander: 13.1.0
 
@@ -40880,6 +40884,8 @@ snapshots:
   utils-merge@1.0.1: {}
 
   uuid@10.0.0: {}
+
+  uuid@14.0.1: {}
 
   uuid@3.4.0: {}
 
