@@ -1,7 +1,7 @@
 const MANAGE_ORIGIN = 'https://manage.klicker.uzh.ch'
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-const HMAC_PATTERN = /^[0-9a-f]{64}$/i
+const HMAC_PATTERN = /^[0-9a-f]{64}$/
 const ALLOWED_LOCALES = new Set(['de', 'en'])
 
 export function getSafeEvaluationUrl(value: string): string | undefined {
