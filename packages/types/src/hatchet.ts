@@ -23,11 +23,25 @@ export const kbIngestionSpeedModes = ['balanced', 'quality', 'fast'] as const
 export type KBIngestionSpeedMode = (typeof kbIngestionSpeedModes)[number]
 
 export const kbIngestionModelIds = [
+  // Default
   'klickeruzh/azure/gpt-4.1',
-  'klickeruzh/azure/gpt-5.1',
-  'klickeruzh/azure/gpt-5.5',
-  'klickeruzh/azure/gpt-5.4',
+  'klickeruzh/azure/gpt-4.1-mini',
   'klickeruzh/azure/gpt-4.1-nano',
+  'klickeruzh/azure/gpt-5.1',
+  'klickeruzh/azure/gpt-5.4',
+  'klickeruzh/azure/gpt-5.5',
+  // Swiss Foundry
+  'klickeruzh/azure/gpt-5.4-low',
+  'klickeruzh/azure/gpt-5.4-medium',
+  'klickeruzh/azure/gpt-5.5-low',
+  'klickeruzh/azure/gpt-5.6-sol',
+  'klickeruzh/azure/gpt-5.6-terra',
+  'klickeruzh/azure/gpt-5.6-luna',
+  'klickeruzh/azure/gpt-5.6-luna-medium',
+  'klickeruzh/azure/gpt-5.6-luna-high',
+  'klickeruzh/azure/gpt-5.6-luna-xhigh',
+  'klickeruzh/azure/gpt-5.6-sol-low',
+  'klickeruzh/azure/gpt-5.6-sol-medium',
 ] as const
 
 export type KBIngestionModelId = (typeof kbIngestionModelIds)[number]
