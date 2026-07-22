@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-07-10'
+timestamp: '2026-07-22'
 tags:
   - frontend
   - chat
@@ -39,12 +39,33 @@ Three steps: `getParticipantId` → `getChatbotOr404` → `requireParticipation`
 
 Credit fields are Prisma `Decimal` — never truthy-check them ([Data & Migrations](./data-and-migrations.md)).
 
+## Theming and design tokens
+
+Chat carries the UZH brand through the shadcn semantic tokens in `src/app/globals.css` (`--primary` = `#0028a5` etc.), not through per-component colours. Two rules:
+
+- **The token blocks must be `:root:root` and `:root.dark`, not `:root` and `.dark`.** A dependency stylesheet (assistant-ui) defines the same shadcn tokens at plain `:root`, and its chunk loads _after_ `globals.css`, so an equal-specificity block silently loses the cascade and the brand colour never applies. Raise both blocks in lockstep — a light block at (0,2,0) would otherwise also outrank an untouched `.dark` at (0,1,0) and disable dark mode.
+- Use the semantic tokens (`bg-muted`, `border-border`, `text-foreground`) rather than raw `gray-*`/`slate-*` utilities, or the surface stops following the theme. Note that `text-muted-foreground` on `bg-muted` computes to ≈4.4:1 — below the WCAG AA floor for body text; use `text-foreground` for text that sits on a muted surface.
+- `@uzh-bf/design-system`'s `SidebarTrigger` renders a hardcoded English `sr-only` "Toggle Sidebar" label. Pass an explicit localized `aria-label`; it wins the accessible-name computation.
+
+## Localization
+
+Chat has no locale switcher: the locale comes from the `NEXT_LOCALE` cookie and falls back to `en`. It is resolved **directly in the chat-local `getRequestConfig`** (`src/types/i18n.ts`). Relying on `setRequestLocale`/`requestLocale` alone produces a split brain — `<html lang>` follows the cookie while server-side `getTranslations()` stays on the default locale. Strings live in `packages/i18n/messages/{en,de}.ts`; `apps/chat/src/types/app.d.ts` enforces en/de key parity through a `DeepIntersection`, so a missing key fails `pnpm --filter @klicker-uzh/chat check` rather than at runtime. German addressed to students is informal (`Du`/`Dein`/`Dir`), instructors are "Dozierende", and Swiss `ss` is used instead of `ß`.
+
+## Message feedback and Langfuse
+
+Participants rate assistant answers through `ChatMessage.rating` (`ChatMessageRating` enum, nullable — null means no vote). `POST …/threads/[threadId]/messages/[messageId]/feedback` scopes its lookup by participant _and_ chatbot and reports someone else's message as 404, not 403, so the endpoint cannot be used to probe which message ids exist.
+
+Each vote is mirrored to Langfuse as a score. **Langfuse v4 is OpenTelemetry-based**: a trace is addressed by its W3C trace id and the v3 `metadata.langfuseTraceId` convention is silently ignored. To reach a trace from a later, unrelated request, both sides derive the same id from the assistant message id with `createTraceId(messageId)` (`src/lib/server/langfuseTracing.ts`); the streaming route anchors the AI SDK's spans onto it via `startActiveObservation(..., { parentSpanContext })`. Scores go over `POST /api/public/scores` with HTTP Basic auth — no Langfuse client dependency — under a deterministic score id so a re-vote replaces rather than stacks, and a retracted vote issues the matching `DELETE`. Scoring honours the same `CHAT_ENABLE_AI_TELEMETRY` killswitch as the span processor; without it, a deployment with telemetry disabled writes scores against traces that were never emitted.
+
+> **Known gap:** `apps/chat` pins `@opentelemetry/sdk-trace-node@1.26.0` while `@langfuse/otel` needs 2.x, so span export throws and **no trace currently reaches Langfuse**. The scores are written correctly but are orphaned until the OTel major bump lands.
+
 ## Client-state gotchas
 
 - **Zustand async actions must set fallback state in `catch`**, not just log — otherwise the UI hangs in loading state on network errors.
 - **Edited-message image hydration** needs the persisted source message id (`attachmentSourceMessageId`) distinct from the fresh local message id (`src/hooks/useThreadManagement.ts`, `src/stores/chatStore.ts`).
 - **`ComposerPrimitive.AttachmentDropzone` must wrap both normal and edit composer roots** — it owns the drag/drop capture that prevents native browser file navigation (`src/components/thread.tsx`).
 - **Login redirects**: `src/app/noLogin/page.tsx` must pass an **absolute** chat URL as the PWA login `redirect_to`; a relative path makes the PWA redirect to its own domain and 404.
+- **Do not put user-facing English in the store.** `chatStore` maps the API's generic enrolment 403 to `null` so the notice component can render its localized default; substituting a readable English sentence in the store makes the translated fallback unreachable.
 
 ## Testing
 

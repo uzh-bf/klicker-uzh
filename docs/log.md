@@ -1,5 +1,9 @@
 # Log
 
+## 2026-07-22
+
+- **Update**: [chat-platform](./chat-platform.md) documents the UZH-blue token layer and its `:root:root` cascade requirement, the cookie-driven locale resolution in the chat-local `getRequestConfig`, and the message-rating endpoint with its Langfuse v4 trace addressing (derived trace ids, score replacement, telemetry killswitch, and the OTel peer mismatch that currently keeps traces from exporting).
+
 ## 2026-07-20
 
 - **Update**: [getting-started](./getting-started.md) now records that the vanilla Office Add-in follows the TypeScript 6 workspace baseline with explicit Office global types. [testing](./testing.md) and the `klicker-testing-verification` procedure cover its URL tests, build, deployment parity, manifest, browser, and PowerPoint host checks.
