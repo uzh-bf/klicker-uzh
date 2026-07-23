@@ -30,6 +30,7 @@ import schedule from 'node-schedule'
 import { createHash, createHmac } from 'node:crypto'
 import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
+import { getCodeActivityStackViolation } from '../lib/codeElementPolicy.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { computeRanks } from '../lib/util.js'
 import { getPermissionBooleans } from './activities.js'
@@ -49,7 +50,11 @@ const THIRD_ACHIEVEMENT_ID = 7
 export async function splitActivityInstances(
   {
     stacksOrBlocks,
-  }: { stacksOrBlocks: ElementStackInput[] | ElementBlockInput[] },
+    allowCodeElements = false,
+  }: {
+    stacksOrBlocks: ElementStackInput[] | ElementBlockInput[]
+    allowCodeElements?: boolean
+  },
   ctx: ContextWithUser
 ) {
   // in EDIT mode - compute map between id of instance that is kept and the new order attribute
@@ -158,6 +163,39 @@ export async function splitActivityInstances(
     },
     {}
   )
+
+  const instanceElementTypeMap = allInstances.reduce<
+    Record<number, DB.ElementType>
+  >((acc, instance) => {
+    acc[instance.id] = instance.element.type
+    return acc
+  }, {})
+
+  for (const stackOrBlock of stacksOrBlocks) {
+    const elementTypes = stackOrBlock.elements
+      .map((element) =>
+        element.existingInstanceId === null ||
+        typeof element.existingInstanceId === 'undefined'
+          ? elementMap[element.elementId]?.type
+          : instanceElementTypeMap[element.existingInstanceId]
+      )
+      .filter((type): type is DB.ElementType => typeof type !== 'undefined')
+
+    const violation = getCodeActivityStackViolation(
+      elementTypes,
+      allowCodeElements
+    )
+    if (violation === 'UNSUPPORTED_ACTIVITY') {
+      throw new GraphQLError(
+        'CODE elements are not supported in this activity type'
+      )
+    }
+    if (violation === 'CODE_MUST_BE_ONLY_ELEMENT') {
+      throw new GraphQLError(
+        'CODE elements must be the only element in their stack'
+      )
+    }
+  }
 
   return {
     persistentInstanceIds,

@@ -58,6 +58,10 @@ fragment PointCorrectionData on PointCorrection {
         id
         name
       }
+      ... on CodeElementData {
+        id
+        name
+      }
     }
   }
 }

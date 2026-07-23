@@ -1,5 +1,10 @@
 import * as DB from '@klicker-uzh/prisma/client'
 
+export {
+  getCodeActivityStackViolation,
+  type CodeActivityStackViolation,
+} from '@klicker-uzh/types'
+
 export function isAsynchronousActivityElementValid(
   type: DB.ElementType,
   hasSampleSolution?: boolean | null

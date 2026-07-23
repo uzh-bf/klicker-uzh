@@ -77,6 +77,12 @@ export type InstanceStackStudentResponseType =
       valid?: boolean
       evaluation?: InstanceEvaluation
     }
+  | {
+      type: ElementType.Code
+      response?: string
+      valid?: boolean
+      evaluation?: InstanceEvaluation
+    }
 
 export type StackStudentResponseType = Record<
   number,

@@ -137,6 +137,9 @@ export const ACTIVE_CHART_TYPES: Record<
   [ElementType.Content]: [
     { label: 'manage.evaluation.unset', value: ChartType.UNSET },
   ],
+  [ElementType.Code]: [
+    { label: 'manage.evaluation.unset', value: ChartType.UNSET },
+  ],
 }
 
 export interface ShowStatisticsType {

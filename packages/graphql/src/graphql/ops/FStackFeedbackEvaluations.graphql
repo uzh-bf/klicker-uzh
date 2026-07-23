@@ -243,5 +243,37 @@ fragment StackFeedbackEvaluations on StackFeedback {
       }
       correctness
     }
+
+    ... on CodeInstanceEvaluation {
+      instanceId
+      elementType
+      pointsMultiplier
+      explanation
+      feedbacks {
+        ix
+        feedback
+        correct
+        value
+      }
+      numAnswers
+      score
+      xp
+      pointsAwarded
+      percentile
+      newPointsFrom
+      xpAwarded
+      newXpFrom
+      testResults {
+        id
+        name
+        passedCount
+        totalCount
+      }
+      lastResponse {
+        __typename
+        code
+      }
+      correctness
+    }
   }
 }

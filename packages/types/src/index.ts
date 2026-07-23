@@ -55,6 +55,25 @@ export enum ActivityType {
   GROUP_ACTIVITY = 'GROUP_ACTIVITY',
 }
 
+export type CodeActivityStackViolation =
+  | 'UNSUPPORTED_ACTIVITY'
+  | 'CODE_MUST_BE_ONLY_ELEMENT'
+
+export function getCodeActivityStackViolation(
+  elementTypes: readonly string[],
+  allowCodeElements: boolean
+): CodeActivityStackViolation | null {
+  if (!elementTypes.includes('CODE')) {
+    return null
+  }
+
+  if (!allowCodeElements) {
+    return 'UNSUPPORTED_ACTIVITY'
+  }
+
+  return elementTypes.length === 1 ? null : 'CODE_MUST_BE_ONLY_ELEMENT'
+}
+
 export enum SharingType {
   OWNED = 'OWNED', // owned objects
   SHARED = 'SHARED', // objects shared directly with the user (potentially through user group)

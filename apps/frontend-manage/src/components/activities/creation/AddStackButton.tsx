@@ -2,6 +2,7 @@ import { faSquare } from '@fortawesome/free-regular-svg-icons'
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Element, ElementType } from '@klicker-uzh/graphql/dist/ops'
+import { getCodeActivityStackViolation } from '@klicker-uzh/types'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useDrop } from 'react-dnd'
@@ -34,6 +35,17 @@ function AddStackButton({
   acceptedTypes,
 }: AddStackButtonProps | AddBlockButtonProps) {
   const t = useTranslations()
+  const selectedQuestions = selection ? Object.values(selection) : []
+  const selectedTypesAccepted = selectedQuestions.every((question) =>
+    acceptedTypes.includes(question.type)
+  )
+  const canAddSelectionTogether =
+    selectedTypesAccepted &&
+    getCodeActivityStackViolation(
+      selectedQuestions.map((question) => question.type),
+      true
+    ) === null
+
   const [{ isOver }, drop] = useDrop(
     () => ({
       accept: acceptedTypes,
@@ -66,7 +78,7 @@ function AddStackButton({
         isOver: !!monitor.isOver(),
       }),
     }),
-    []
+    [acceptedTypes, push, type]
   )
 
   return (
@@ -75,11 +87,14 @@ function AddStackButton({
         <div className="flex flex-col gap-1.5">
           <Button
             fluid
+            disabled={!canAddSelectionTogether}
             className={{
               root: 'flex max-w-[135px] flex-1 flex-col gap-1 border-orange-300 bg-orange-100 text-sm hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
             }}
             onClick={() => {
-              const elements = Object.values(selection).map((question) => ({
+              if (!canAddSelectionTogether) return
+
+              const elements = selectedQuestions.map((question) => ({
                 id: question.id,
                 title: question.name,
                 type: question.type,
@@ -121,11 +136,14 @@ function AddStackButton({
           </Button>
           <Button
             fluid
+            disabled={!selectedTypesAccepted}
             className={{
               root: 'flex max-w-[135px] flex-1 flex-col gap-2 border-orange-300 bg-orange-100 text-sm hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
             }}
             onClick={() => {
-              Object.values(selection).forEach((question) => {
+              if (!selectedTypesAccepted) return
+
+              selectedQuestions.forEach((question) => {
                 const elements = [
                   {
                     id: question.id,

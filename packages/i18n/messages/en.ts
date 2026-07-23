@@ -96,6 +96,12 @@ export default {
       richtext:
         'Please evaluate all options with respect to the given criteria.',
     },
+    CODE: {
+      short: 'CODE',
+      typeLabel: 'Programming Question (CODE)',
+      text: 'Please enter your program.',
+      richtext: 'Please enter your <b>program</b>.',
+    },
     login: {
       installButton: 'Install Now',
     },
@@ -423,6 +429,7 @@ export default {
       FREE_TEXT: 'Free Text Question',
       SELECTION: 'Selection Question',
       CASE_STUDY: 'Case Study',
+      CODE: 'Programming Question',
       FLASHCARD: 'Flashcard',
       CONTENT: 'Content Element',
     },
@@ -1983,6 +1990,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       microlearningUseCase:
         '<link>Microlearnings</link> can be solved by students within a specified timespan. They are particularly suitable for reviewing learning content and preparing for exams.',
       minOneElementPerStack: 'Every stack must contain at least one element.',
+      codeOnlyStack:
+        'A programming question must be the only element in its stack.',
       minOneElementPerBlock: 'Every block must contain at least one element.',
       minOneQuestionGroupActivity:
         'A group activity must contain at least one question.',

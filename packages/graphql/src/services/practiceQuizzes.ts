@@ -214,7 +214,10 @@ export async function manipulatePracticeQuiz(
     duplicationInstances,
     elementMap,
     anyInstanceOutdated,
-  } = await splitActivityInstances({ stacksOrBlocks: stacks }, ctx)
+  } = await splitActivityInstances(
+    { stacksOrBlocks: stacks, allowCodeElements: true },
+    ctx
+  )
 
   // in EDIT mode - check which instances and stacks should be removed
   let instancesToDelete: number[] = []

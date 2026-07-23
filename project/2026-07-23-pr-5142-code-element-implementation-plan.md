@@ -65,11 +65,18 @@ Ship `ElementType.CODE` for Python programming questions in practice quizzes and
 - Check: Prisma format/generate/sync, focused validator tests, GraphQL package check/test, types/util checks, lecturer/full versus participant/public payload assertions, union-resolution tests, async activity-copy coverage, and template rejection.
 - Commit: `feat(code): add CODE authoring contracts`
 
-### Slice 2: Author CODE questions in Manage
+### Slice 2a: Enforce CODE-only activity stacks
+
+- Enforce one CODE element per stack in shared activity construction and backend validation.
+- Allow CODE only in practice quizzes and microlearning; reject it in live quizzes, group activities, mixed stacks, and multi-element stacks.
+- Keep the picker and form validation aligned with the backend policy.
+- Check: focused pure policy tests, GraphQL checks, frontend checks, and `agent-browser` stack-builder validation.
+- Commit: `feat(code): enforce CODE-only activity stacks`
+
+### Slice 2b: Author CODE questions in Manage
 
 - Add the shared CodeMirror wrapper and CODE authoring options form.
 - Add element picker, form state, validation, preview, edit mutation, and English/German labels.
-- Enforce one CODE element per stack in UI and backend authoring validation.
 - Check: focused frontend checks plus `agent-browser` create/edit/preview in desktop and mobile Manage.
 - Commit: `feat(code): add CODE authoring interface`
 
@@ -131,8 +138,9 @@ Ship `ElementType.CODE` for Python programming questions in practice quizzes and
 
 ## Progress
 
-- Active: commit the accepted Slice 1 review adjustments, then begin Slice 2.
-- Done: user approval; current `v3` merge; ADR acceptance; active-plan commit and independent review; CODE Prisma enum/model/migration and analytics-schema sync; shared authoring/participant/evaluation/receipt contracts; strict option validation and public-test projection; authenticated full lecturer instance projection; GraphQL authoring mutation, unions, operations, and generated artifacts; instance copying/results initialization; asynchronous-activity policy; explicit activity-template rejection; exact-commit correctness and simplification reviews of `f3c010123`.
-- Evidence: `prisma validate`, `@klicker-uzh/prisma check`, `@klicker-uzh/types check`, `@klicker-uzh/util check`, and `@klicker-uzh/graphql check` pass; focused CODE suites pass with 2 util and 18 GraphQL tests; `pnpm run check` passes after building the existing `markdown` and `word-cloud` workspace dependencies; GraphQL codegen and `git diff --check` pass. Review fixes cover lecturer/public instance separation and JSON `null`; simplifications consolidate duplicate evaluation types, remove a cast, and remove dead guards.
-- Next: commit the reviewed Slice 1 adjustments, record the Manage/PWA browser path, then start Slice 2 with backend CODE-only stack validation and the smallest authoring tracer.
-- Blockers: no Slice 1 implementation blocker. A local database was unavailable for applying the migration and DB-backed GraphQL service tests; schema validation, Prisma generation/type checks, and focused public-seam tests are green. Context7 is unavailable; live codeapi integration remains gated before Slice 3.
+- Active: finalize and review the Slice 2a CODE-only stack policy.
+- Done: user approval; current `v3` merge; ADR acceptance; active-plan commit and independent review; Slice 1 implementation commit `f3c010123a` and review-fix commit `a8ff34ae89`; CODE Prisma enum/model/migration and analytics-schema sync; shared authoring/participant/evaluation/receipt contracts; strict option validation and public-test projection; authenticated full lecturer instance projection; GraphQL authoring mutation, unions, operations, and generated artifacts; instance copying/results initialization; asynchronous-activity policy; explicit activity-template rejection; exact-commit correctness and simplification reviews. Slice 2 was split into policy and interface tracers so each remains independently verifiable. Slice 2a now has one shared CODE-stack policy, backend enforcement for every activity mutation, practice-quiz and microlearning allowlists, live-quiz exclusion, aligned drag/drop and bulk-selection guards, form validation, and exhaustive CODE handling in affected frontend projections.
+- Browser path: devrouter workspace `docs-codeapi-feature-plans`; Manage `https://manage.klicker.docs-codeapi-feature-plans.localhost`; PWA `https://pwa.klicker.docs-codeapi-feature-plans.localhost`; successful login/dashboard session `pr5142-verify`.
+- Evidence: `prisma validate`, `@klicker-uzh/prisma check`, `@klicker-uzh/types check`, `@klicker-uzh/util check`, and `@klicker-uzh/graphql check` pass; focused CODE suites pass with 2 util and 24 GraphQL tests across Slices 1 and 2a; `pnpm run check` passes after building the existing `markdown` and `word-cloud` workspace dependencies; GraphQL codegen and `git diff --check` pass. Slice 2a checks additionally cover `@klicker-uzh/frontend-manage check`, `@klicker-uzh/frontend-pwa check`, `@klicker-uzh/shared-components check`, focused 6/6 policy tests, and frontend lint with no errors. The full pre-commit gate caught and prompted the missing CODE evaluation fields in `FStackFeedbackEvaluations`; regeneration plus a fresh GraphQL build and PWA typecheck verify that consumer contract. `devrouter ensure .` applied the CODE migration, seeded the isolated database, and initially proved all ten worktree routes. `agent-browser` then completed delegated login and rendered the real seeded Manage dashboard on the exact namespaced route.
+- Next: commit Slice 2a, run exact-commit correctness and simplification reviews, integrate accepted findings, then start Slice 2b. Re-run the CODE stack-builder browser check as soon as Slice 2b can create its own fixture through the authoring UI.
+- Blockers: modified stack behavior is not yet browser-proven. During the disposable CODE-fixture step, devrouter repeatedly left `ensure . --json` holding its own DevPod recreation lock while the proxy returned intermittent HTTP/2 errors and 504s; the app process itself remained healthy. This is a runtime-verification blocker, not a code blocker, and remains open for the Slice 2b browser gate. Context7 is unavailable; live codeapi integration remains gated before Slice 3.

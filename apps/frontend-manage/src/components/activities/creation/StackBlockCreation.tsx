@@ -12,6 +12,7 @@ import {
   ElementInstanceVersionInfo,
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
+import { getCodeActivityStackViolation } from '@klicker-uzh/types'
 import { Button, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -81,7 +82,24 @@ function StackBlockCreation({
   const [{ isOver }, drop] = useDrop(
     () => ({
       accept: acceptedTypes,
+      canDrop: (item: ElementDragDropTypes) =>
+        getCodeActivityStackViolation(
+          [...stack.elements.map((element) => element.type), item.questionType],
+          true
+        ) === null,
       drop: (item: ElementDragDropTypes) => {
+        if (
+          getCodeActivityStackViolation(
+            [
+              ...stack.elements.map((element) => element.type),
+              item.questionType,
+            ],
+            true
+          ) !== null
+        ) {
+          return
+        }
+
         replace(stackIx, {
           ...stack,
           elements: [
@@ -98,10 +116,10 @@ function StackBlockCreation({
         })
       },
       collect: (monitor) => ({
-        isOver: !!monitor.isOver(),
+        isOver: monitor.isOver() && monitor.canDrop(),
       }),
     }),
-    [stack]
+    [acceptedTypes, replace, stack, stackIx]
   )
 
   const FTQuestionNoSLCount = highlightFTNoSL
@@ -262,6 +280,7 @@ function StackBlockCreation({
           resetSelection={resetSelection}
           stack={stack}
           replace={replace}
+          acceptedTypes={acceptedTypes}
         />
       )}
 

@@ -97,6 +97,12 @@ export default {
       richtext:
         'Bitte bewerten Sie alle Möglichkeiten auf die vorgegebenen Kriterien.',
     },
+    CODE: {
+      short: 'CODE',
+      typeLabel: 'Programmierfrage (CODE)',
+      text: 'Bitte geben Sie Ihr Programm ein.',
+      richtext: 'Bitte geben Sie Ihr <b>Programm</b> ein.',
+    },
     login: {
       installButton: 'Jetzt installieren',
     },
@@ -425,6 +431,7 @@ export default {
       FREE_TEXT: 'Freitext Frage',
       SELECTION: 'Auswahl Frage',
       CASE_STUDY: 'Fallstudie',
+      CODE: 'Programmierfrage',
       FLASHCARD: 'Lernkarte',
       CONTENT: 'Inhaltselement',
     },
@@ -1996,6 +2003,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         '<link>Microlearnings</link> können durch Studierende in einem zeitlich limitierten Rahmen bearbeitet werden. Sie eignen sich besonders für die Wiederholung von Lerninhalten und die Vorbereitung auf Prüfungen.',
       minOneElementPerStack:
         'Jeder Stack muss mindestens ein Element enthalten.',
+      codeOnlyStack:
+        'Eine Programmierfrage muss das einzige Element in ihrem Stack sein.',
       minOneElementPerBlock:
         'Jeder Block muss mindestens ein Element enthalten.',
       minOneQuestionGroupActivity:
