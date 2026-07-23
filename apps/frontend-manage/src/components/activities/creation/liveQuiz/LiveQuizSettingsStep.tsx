@@ -171,10 +171,12 @@ function LiveQuizSettingsStep({
                             if (selectedCourse?.isAssessmentEnabled) {
                               setFieldValue('isAssessmentEnabled', true)
                               setFieldValue('isPinProtected', true)
-                              setFieldValue(
-                                'responseCollectionMode',
-                                LiveQuizResponseCollectionMode.AggregatedAnonymous
-                              )
+                              if (!responseCollectionModeLocked) {
+                                setFieldValue(
+                                  'responseCollectionMode',
+                                  LiveQuizResponseCollectionMode.AggregatedAnonymous
+                                )
+                              }
                             } else {
                               setFieldValue('isAssessmentEnabled', false)
                             }
@@ -345,6 +347,7 @@ function LiveQuizSettingsStep({
                             }
                           }}
                           aria-labelledby="response-collection-mode-label"
+                          aria-describedby="response-collection-mode-description"
                           data-cy="set-quiz-response-collection-mode"
                           className="w-full"
                         >
@@ -369,14 +372,14 @@ function LiveQuizSettingsStep({
                             )}
                           </ToggleGroupItem>
                         </ToggleGroup>
-                        <p className="text-primary-80 mt-1 text-xs leading-4">
-                          {values.isAssessmentEnabled
-                            ? t(
-                                'manage.activityWizard.responseCollectionAssessment'
-                              )
-                            : responseCollectionModeLocked
+                        <div
+                          id="response-collection-mode-description"
+                          className="text-primary-80 mt-1 text-xs leading-4"
+                        >
+                          <p>
+                            {values.isAssessmentEnabled
                               ? t(
-                                  'manage.activityWizard.responseCollectionLocked'
+                                  'manage.activityWizard.responseCollectionAssessment'
                                 )
                               : values.responseCollectionMode ===
                                   LiveQuizResponseCollectionMode.CorrelatedExport
@@ -386,7 +389,16 @@ function LiveQuizSettingsStep({
                                 : t(
                                     'manage.activityWizard.responseCollectionAggregatedSummary'
                                   )}
-                        </p>
+                          </p>
+                          {!values.isAssessmentEnabled &&
+                          responseCollectionModeLocked ? (
+                            <p className="mt-1">
+                              {t(
+                                'manage.activityWizard.responseCollectionLocked'
+                              )}
+                            </p>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
                   </div>
