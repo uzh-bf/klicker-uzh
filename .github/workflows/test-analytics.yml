@@ -47,4 +47,5 @@ jobs:
               tests/test_chat_topic_clustering_script.py \
               tests/test_course_scope_sql.py \
               tests/test_db_helpers.py \
-              tests/test_participant_analytics_helpers.py
+              tests/test_participant_analytics_helpers.py \
+              tests/test_live_quiz_analytics_sql.py

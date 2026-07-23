@@ -1,8 +1,9 @@
 # Analytics Pipeline Improvements — Design Report
 
-**Status:** Design proposal
+**Status:** Historical design proposal; superseded for active execution by
+[`2026-07-23-learning-analytics-production-plan.md`](2026-07-23-learning-analytics-production-plan.md)
 **Scope:** `apps/analytics/`, `packages/hatchet/`, `packages/graphql/src/services/analyticsRecompute.ts`, analytics tables in `packages/prisma/src/prisma/schema/analytics.prisma`
-**Last reviewed:** 2026-04-19
+**Last reviewed:** 2026-07-23
 
 ---
 
@@ -165,16 +166,16 @@ The following indexes should be added to `packages/prisma/src/prisma/schema/` an
 | QuestionResponseDetail | BRIN on `createdAt` | Script 0 pushes each window into SQL; append order makes BRIN effective at low storage cost |
 | ChatMessage | `(threadId, createdAt)` | Scripts 8, 9, 10 |
 | ChatMessage | existing B-tree on `createdAt` | The base branch already supplies the time index; a second BRIN index is intentionally omitted |
-| LiveQuizResponse | `(instanceId, submittedAt)` | Script 14 reaches responses through `ElementInstance` and reads the first submission in time order |
+| LiveQuizResponse | `(instanceId, participantId, submittedAt)` | Script 14 ranks first and last attempts per participant and element instance |
 | LiveQuizResponse | BRIN on `createdAt` | Append-mostly date scans in platform analytics |
 | ParticipantAnalytics | `(courseId, type, timestamp)` | Script 1, 99 read participant rows per course-window |
 | AggregatedAnalytics | `(courseId, type, timestamp)` | API reads by these three keys |
 
 `EXPLAIN ANALYZE` on a 252k-row synthetic detail table showed that the originally proposed `(participantId, elementInstanceId, createdAt)` index still fetched every row because script 0 supplied every participant ID. Pushing the one-day predicate into SQL let the existing BRIN path complete in 0.44 ms, versus about 27 ms for the warm full-table path, so the unused composite is intentionally omitted.
 
-The original live-quiz proposal named a `liveQuizId` column that does not exist on `LiveQuizResponse` and used `createdAt` despite the query ordering by `submittedAt`. On a 2.0M-row synthetic fixture, `(instanceId, submittedAt)` replaced a bitmap scan plus sort with an ordered index lookup (about 2 ms to 0.05 ms, excluding one-time JIT setup).
+The original live-quiz proposal named a `liveQuizId` column that does not exist on `LiveQuizResponse` and used `createdAt` despite the query ordering by `submittedAt`. Slice 3C also found that the first-correctness query selected only the first respondent per instance and the last-correctness query averaged all responses. The corrected query ranks attempts per `(participantId, instanceId)` and uses `(instanceId, participantId, submittedAt)`. A warm full aggregation over the 2.0M-row synthetic fixture selects 2,530 assessment responses for 30 participants through that index and completes in about 4.1 ms with JIT disabled.
 
-BRIN indexes are near-free in size and rebuild cost; they pay off as soon as the table grows past a few hundred thousand rows. Prisma does not model BRIN natively, so these are declared via migration SQL. Shared environments prebuild all hot-table indexes with the checked-in concurrent SQL script, outside Prisma's migration transaction; the retry-safe Prisma migrations then no-op.
+BRIN indexes are near-free in size and rebuild cost; they pay off as soon as the table grows past a few hundred thousand rows. Prisma does not model BRIN natively, so these are declared via migration SQL. The Prisma package's deploy command prebuilds all hot-table indexes concurrently, validates them, baselines the unchanged historical migration when necessary, and only then runs the remaining migration chain.
 
 ### R5 — Fix the DAILY/WEEKLY/MONTHLY upsert-no-op bug
 

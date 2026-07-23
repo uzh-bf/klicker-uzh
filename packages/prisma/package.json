@@ -32,13 +32,13 @@
     "build": "run-s --npm-path pnpm generate build:ts",
     "build:test": "pnpm run build",
     "build:ts": "cross-env NODE_ENV=production rollup -c",
-    "check": "run-s --npm-path pnpm generate check:ts",
+    "check": "run-s --npm-path pnpm generate check:ts test:analytics-index-deploy",
     "check:ts": "tsc --noEmit -p tsconfig.check.json",
     "generate": "prisma generate",
     "prisma:deploy": "../../util/_run_with_infisical.sh --env dev pnpm run prisma:deploy:raw",
     "prisma:deploy:prod": "../../util/_run_with_infisical.sh --env prd pnpm run prisma:deploy:raw",
     "prisma:deploy:qa": "../../util/_run_with_infisical.sh --env stg pnpm run prisma:deploy:raw",
-    "prisma:deploy:raw": "prisma migrate deploy",
+    "prisma:deploy:raw": "node scripts/prepareAnalyticsIndexes.mjs && prisma migrate deploy",
     "prisma:diff": "../../util/_run_with_infisical.sh --env prd env SHADOW_DATABASE_URL=postgres://klicker-prod:klicker@localhost:5432/shadow pnpm run prisma:diff:raw",
     "prisma:diff:raw": "prisma migrate diff --from-config-datasource --to-migrations src/prisma/schema/migrations",
     "prisma:migrate": "../../util/_run_with_infisical.sh --env dev pnpm run prisma:migrate:raw",
@@ -68,7 +68,8 @@
     "prisma:studio": "../../util/_run_with_infisical.sh --env dev pnpm run prisma:studio:raw",
     "prisma:studio:prod": "../../util/_run_with_infisical.sh --env prd pnpm run prisma:studio:raw",
     "prisma:studio:qa": "../../util/_run_with_infisical.sh --env stg pnpm run prisma:studio:raw",
-    "prisma:studio:raw": "prisma studio"
+    "prisma:studio:raw": "prisma studio",
+    "test:analytics-index-deploy": "node --test scripts/prepareAnalyticsIndexes.test.mjs"
   },
   "engines": {
     "node": "=24"

@@ -15,11 +15,11 @@ WITH assessment_responses AS (
     lqr."bonusPoints",
     ROW_NUMBER() OVER (
       PARTITION BY lqr."participantId", ei.id
-      ORDER BY lqr."submittedAt" ASC
+      ORDER BY lqr."submittedAt" ASC, lqr.id ASC
     ) AS attempt_asc,
     ROW_NUMBER() OVER (
       PARTITION BY lqr."participantId", ei.id
-      ORDER BY lqr."submittedAt" DESC
+      ORDER BY lqr."submittedAt" DESC, lqr.id DESC
     ) AS attempt_desc
   FROM "LiveQuizResponse" lqr
   JOIN "ElementInstance" ei ON ei.id = lqr."instanceId"

@@ -15,9 +15,10 @@ WITH assessment_responses AS (
       PARTITION BY lqr."participantId", lqr."instanceId"
       ORDER BY lqr."submittedAt" ASC, lqr.id ASC
     ) AS attempt_asc,
-    COUNT(*) OVER (
+    ROW_NUMBER() OVER (
       PARTITION BY lqr."participantId", lqr."instanceId"
-    ) AS attempt_count
+      ORDER BY lqr."submittedAt" DESC, lqr.id DESC
+    ) AS attempt_desc
   FROM "LiveQuizResponse" lqr
   JOIN "ElementInstance" ei ON ei.id = lqr."instanceId"
   JOIN "ElementBlock"    eb ON eb.id = ei."elementBlockId"
@@ -44,7 +45,7 @@ rollup AS (
     COUNT(id) AS response_count,
     AVG(CASE WHEN attempt_asc = 1 THEN (correctness = 'CORRECT')::int END)::real
       AS mean_first_correctness,
-    AVG(CASE WHEN attempt_asc = attempt_count THEN (correctness = 'CORRECT')::int END)::real
+    AVG(CASE WHEN attempt_desc = 1 THEN (correctness = 'CORRECT')::int END)::real
       AS mean_last_correctness
   FROM assessment_responses
   GROUP BY "liveQuizId", "courseId"
@@ -52,10 +53,11 @@ rollup AS (
 late_rate AS (
   SELECT
     "liveQuizId",
-    AVG((
-      live_quiz_finished_at IS NOT NULL
-      AND first_submitted_at > live_quiz_finished_at
-    )::int)::real AS late_submitter_rate
+    CASE WHEN COUNT(*) = 0 THEN NULL
+         ELSE SUM(CASE WHEN live_quiz_finished_at IS NOT NULL
+                         AND first_submitted_at > live_quiz_finished_at
+                       THEN 1 ELSE 0 END)::float / COUNT(*)
+    END::real AS late_submitter_rate
   FROM participant_firsts
   GROUP BY "liveQuizId"
 )

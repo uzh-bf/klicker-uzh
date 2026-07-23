@@ -523,29 +523,47 @@ the repository script that replaces it before continuing.
   composite: the real script-0 path supplied every participant and still
   fetched every row. Pushing the daily window into SQL uses the existing BRIN
   index and reduces the warm plan from about 27 ms to 0.44 ms.
-- 2026-07-23: The designed live-quiz index named a column absent from
-  `LiveQuizResponse` and used the wrong timestamp. The real
-  `(instanceId, submittedAt)` path reduces script 14's first-response lookup
-  from a bitmap scan plus sort at about 1.98 ms (excluding one-time JIT setup)
-  to an ordered index lookup at about 0.05 ms.
+- 2026-07-23: Slice 3C review found that the designed live-quiz query selected
+  one first respondent per instance rather than one first attempt per
+  participant and instance; the existing "last" metric also averaged every
+  response instead of last attempts. The corrected window query now ranks both
+  directions per `(participantId, instanceId)`, has a multi-participant
+  database regression test, and uses
+  `(instanceId, participantId, submittedAt)`. On the 2.0M-row fixture, the
+  corrected full aggregation selects the 2,530 assessment responses for 30
+  participants through that index and completes a warm run in about 4.1 ms
+  with JIT disabled.
 - 2026-07-23: A fresh migration-chain test reproduced PostgreSQL error `25001`
   when `CREATE INDEX CONCURRENTLY` was placed directly in Prisma 6.16's
-  migration transaction. The corrected two-step rollout validates the
-  checked-in concurrent prebuild script against the scaled fixture and then
-  applies all 181 Prisma migrations successfully on an empty database. Retry-
-  safe migration statements no-op after the shared-environment prebuild.
+  migration transaction. Review then found that a manual runbook could still
+  be skipped and that editing a potentially applied migration was unsafe. The
+  historical migration is restored byte-for-byte. Every repository Prisma
+  deploy now runs an automated prebuild that checks migration history and
+  invalid indexes, creates indexes concurrently, validates them, baselines the
+  pending historical migration only when all earlier migrations are recorded,
+  and then invokes Prisma. The guarded command succeeds both on a fresh
+  181-migration database and on a disposable initialized-database simulation
+  with the historical migration pending; both analytics migrations and the
+  corrected index read back finished, valid, and ready.
+- 2026-07-23: A live read-only shared-environment migration audit was attempted,
+  but the Infisical endpoint `inf.prd.df-app.ch` timed out in DNS from this
+  environment. Restoring the historical migration removes the checksum risk;
+  the guarded deploy still verifies actual migration state before making any
+  production change.
 - 2026-07-23: Slice 3C also corrects scanner deduplication wording and records
   the dry-run buffer's downstream and incremental-union limitations. The
   window-query regression suite passes 38 tests.
-- 2026-07-23: Final Slice 3C verification passes 140 analytics tests with 3
-  integration skips, the exact isolated 61-test CI command, Prisma
-  generation/typecheck/patch tests, schema-mirror validation, Hatchet DAG
-  test/typecheck, Ruff, Prettier, and diff hygiene. A real scoped incremental
-  script-0 run completed in 98.7 seconds against the enlarged fixture and
-  wrote 94 DAILY, 16 WEEKLY, 6 MONTHLY, and 34 COURSE rows. Both evidence-backed
-  indexes report `indisvalid=true` and `indisready=true`.
-- Active: Verify, commit, and independently review Slice 3C.
-- Next: Build the native Python Hatchet runtime in Slice 4.
+- 2026-07-23: Final Slice 3C verification passes 141 analytics tests with 4
+  integration skips, the exact isolated 62-test analytics CI command with 1
+  database skip, and the new multi-participant database regression with both
+  tests active. Prisma generation/typecheck, 4 namespace patch tests, 8 guarded
+  deploy tests, schema-mirror validation, Hatchet DAG test/typecheck, Ruff,
+  Prettier, and diff hygiene pass. A real scoped incremental script-0 run
+  completed in 98.7 seconds against the enlarged fixture and wrote 94 DAILY,
+  16 WEEKLY, 6 MONTHLY, and 34 COURSE rows. Both evidence-backed indexes report
+  `indisvalid=true` and `indisready=true`.
+- Active: Verify and commit the accepted Slice 3C review fixes.
+- Next: Register the native Python Hatchet worker and proof task in Slice 4A.
 
 ## Finish evidence
 
@@ -559,6 +577,6 @@ the repository script that replaces it before continuing.
 
 ## Next Steps
 
-1. Verify, commit, and independently review Slice 3C.
+1. Close Slice 3C review findings.
 2. Register the native Python worker and proof task in Slice 4A.
 3. Continue one verified slice at a time until both draft PRs are current.
