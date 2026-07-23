@@ -54,16 +54,22 @@ function createParticipantContext(
   }
 }
 
-function createAnonymousContext(baseCtx: ContextWithUser): Context {
+function createAnonymousContext(
+  baseCtx: ContextWithUser,
+  {
+    ip = '127.0.0.1',
+    userAgent = 'vitest-anon',
+  }: { ip?: string; userAgent?: string } = {}
+): Context {
   return {
     ...baseCtx,
     user: undefined,
     req: {
       headers: {
-        'user-agent': 'vitest-anon',
-        'x-forwarded-for': '127.0.0.1',
+        'user-agent': userAgent,
+        'x-forwarded-for': ip,
       },
-      ip: '127.0.0.1',
+      ip,
       locals: {},
     } as any,
   }
@@ -532,10 +538,32 @@ describe('Integration tests for the course discussion platform', () => {
       )
 
     expect(await createAnonymousThread()).toBeTruthy()
+    const persistedScope = await prisma.discussionScope.findFirstOrThrow({
+      where: {
+        space: { courseId: course.id },
+        scopeKey: 'ext:lms:rate-limited-block',
+      },
+      select: {
+        updatedAt: true,
+        space: { select: { updatedAt: true } },
+      },
+    })
     expect(await createAnonymousThread()).toBeNull()
     expect(await createAnonymousThread()).toBeNull()
 
-    const rateLimitEvents = await prisma.discussionEvent.findMany({
+    const unchangedScope = await prisma.discussionScope.findFirstOrThrow({
+      where: {
+        space: { courseId: course.id },
+        scopeKey: 'ext:lms:rate-limited-block',
+      },
+      select: {
+        updatedAt: true,
+        space: { select: { updatedAt: true } },
+      },
+    })
+    expect(unchangedScope).toEqual(persistedScope)
+
+    let rateLimitEvents = await prisma.discussionEvent.findMany({
       where: {
         eventType: DiscussionEventType.ANON_RATE_LIMITED,
         space: { courseId: course.id },
@@ -549,6 +577,154 @@ describe('Integration tests for the course discussion platform', () => {
       limit: 1,
       ttlSec: 90,
     })
+
+    const [scopeCounterKey] = await anonymousCtx.redisExec.keys(
+      `discussion:anon:scope:${course.id}:*`
+    )
+    expect(scopeCounterKey).toBeDefined()
+    await anonymousCtx.redisExec.expire(scopeCounterKey!, 1)
+    await new Promise((resolve) => setTimeout(resolve, 1100))
+
+    expect(await createAnonymousThread()).toBeTruthy()
+    expect(await createAnonymousThread()).toBeNull()
+
+    rateLimitEvents = await prisma.discussionEvent.findMany({
+      where: {
+        eventType: DiscussionEventType.ANON_RATE_LIMITED,
+        space: { courseId: course.id },
+      },
+      select: { metadata: true },
+    })
+    expect(rateLimitEvents).toHaveLength(2)
+  })
+
+  it('bounds anonymous course and IP rate-limit events', async () => {
+    const courseWindowCourse = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, {
+      courseId: courseWindowCourse.id,
+      allowAnonymous: true,
+    })
+    await recomputeDerivedPermissions(
+      { courseId: courseWindowCourse.id },
+      prisma
+    )
+
+    const courseWindowCtx = createAnonymousContext(userOneCtx)
+    const courseWindowResults: Array<
+      Awaited<ReturnType<typeof createCourseDiscussionThread>>
+    > = []
+    for (let index = 0; index < 8; index++) {
+      const embedInfo = await getCourseDiscussionEmbeddingInfo(
+        {
+          courseId: courseWindowCourse.id,
+          externalBlock: {
+            externalSource: 'lms',
+            externalRef: `course-window-${index}`,
+          },
+          allowAnonymous: true,
+        },
+        userOneCtx
+      )
+
+      courseWindowResults.push(
+        await createCourseDiscussionThread(
+          {
+            courseId: courseWindowCourse.id,
+            content: `Course-window question ${index}`,
+            scope: {
+              scopeType: DiscussionScopeType.EXTERNAL_BLOCK,
+              externalSource: 'lms',
+              externalRef: `course-window-${index}`,
+            },
+            isAnonymous: true,
+            embedToken: embedInfo!.embedToken,
+          },
+          courseWindowCtx
+        )
+      )
+    }
+
+    expect(courseWindowResults.filter(Boolean)).toHaveLength(6)
+    expect(
+      await prisma.discussionEvent.findMany({
+        where: {
+          eventType: DiscussionEventType.ANON_RATE_LIMITED,
+          space: { courseId: courseWindowCourse.id },
+        },
+        select: { metadata: true },
+      })
+    ).toEqual([
+      {
+        metadata: {
+          reason: 'course_window',
+          limit: 6,
+          ttlSec: 3600,
+        },
+      },
+    ])
+
+    const ipWindowCourse = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, {
+      courseId: ipWindowCourse.id,
+      allowAnonymous: true,
+    })
+    await recomputeDerivedPermissions({ courseId: ipWindowCourse.id }, prisma)
+    const ipWindowEmbed = await getCourseDiscussionEmbeddingInfo(
+      {
+        courseId: ipWindowCourse.id,
+        externalBlock: {
+          externalSource: 'lms',
+          externalRef: 'ip-window',
+        },
+        allowAnonymous: true,
+      },
+      userOneCtx
+    )
+
+    const ipWindowResults: Array<
+      Awaited<ReturnType<typeof createCourseDiscussionThread>>
+    > = []
+    for (let index = 0; index < 22; index++) {
+      const anonymousCtx = createAnonymousContext(userOneCtx, {
+        ip: '192.0.2.1',
+        userAgent: `vitest-ip-window-${index}`,
+      })
+      ipWindowResults.push(
+        await createCourseDiscussionThread(
+          {
+            courseId: ipWindowCourse.id,
+            content: `IP-window question ${index}`,
+            scope: {
+              scopeType: DiscussionScopeType.EXTERNAL_BLOCK,
+              externalSource: 'lms',
+              externalRef: 'ip-window',
+            },
+            isAnonymous: true,
+            embedToken: ipWindowEmbed!.embedToken,
+          },
+          anonymousCtx
+        )
+      )
+    }
+
+    expect(ipWindowResults.filter(Boolean)).toHaveLength(20)
+    expect(
+      await prisma.discussionEvent.findMany({
+        where: {
+          eventType: DiscussionEventType.ANON_RATE_LIMITED,
+          space: { courseId: ipWindowCourse.id },
+        },
+        select: { metadata: true },
+      })
+    ).toEqual([
+      {
+        metadata: {
+          reason: 'ip_window',
+          limit: 20,
+          ttlSec: 3600,
+        },
+      },
+    ])
   })
 
   it('keeps upvotes behind both course discussion gates', async () => {

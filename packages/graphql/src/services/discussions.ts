@@ -222,6 +222,15 @@ function isSupportedCourseScopeKey(courseId: string, scopeKey: string) {
   )
 }
 
+function isPrismaUniqueConstraintError(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 'P2002'
+  )
+}
+
 function mapReply(
   reply: DiscussionReplyWithRelations
 ): DiscussionReplyWithRelations {
@@ -431,18 +440,27 @@ async function resolveOrCreateSpace(
     return null
   }
 
-  return ctx.prisma.discussionSpace.upsert({
+  const existingSpace = await ctx.prisma.discussionSpace.findUnique({
     where: { courseId: input.courseId },
-    create: {
-      spaceType: DB.DiscussionSpaceType.COURSE,
-      course: {
-        connect: { id: input.courseId },
-      },
-    },
-    update: {
-      spaceType: DB.DiscussionSpaceType.COURSE,
-    },
   })
+  if (existingSpace) return existingSpace
+
+  try {
+    return await ctx.prisma.discussionSpace.create({
+      data: {
+        spaceType: DB.DiscussionSpaceType.COURSE,
+        course: {
+          connect: { id: input.courseId },
+        },
+      },
+    })
+  } catch (error) {
+    if (!isPrismaUniqueConstraintError(error)) throw error
+
+    return ctx.prisma.discussionSpace.findUnique({
+      where: { courseId: input.courseId },
+    })
+  }
 }
 
 async function canonicalizeScope(
@@ -548,26 +566,46 @@ async function resolveOrCreateScope(
 
   if (!canonicalScope) return null
 
-  return ctx.prisma.discussionScope.upsert({
-    where: {
-      spaceId_scopeKey: {
-        spaceId: space.id,
-        scopeKey: canonicalScope.scopeKey,
-      },
-    },
-    create: {
-      space: { connect: { id: space.id } },
-      scopeType: canonicalScope.scopeType,
+  const scopeKey = {
+    spaceId_scopeKey: {
+      spaceId: space.id,
       scopeKey: canonicalScope.scopeKey,
-      scopeLabel: canonicalScope.scopeLabel,
-      stackId: canonicalScope.stackId,
-      externalSource: canonicalScope.externalSource,
-      externalRef: canonicalScope.externalRef,
     },
-    update: {
-      scopeLabel: canonicalScope.scopeLabel,
-    },
+  }
+  const existingScope = await ctx.prisma.discussionScope.findUnique({
+    where: scopeKey,
   })
+
+  if (existingScope) {
+    if (existingScope.scopeLabel === canonicalScope.scopeLabel) {
+      return existingScope
+    }
+
+    return ctx.prisma.discussionScope.update({
+      where: scopeKey,
+      data: { scopeLabel: canonicalScope.scopeLabel },
+    })
+  }
+
+  try {
+    return await ctx.prisma.discussionScope.create({
+      data: {
+        space: { connect: { id: space.id } },
+        scopeType: canonicalScope.scopeType,
+        scopeKey: canonicalScope.scopeKey,
+        scopeLabel: canonicalScope.scopeLabel,
+        stackId: canonicalScope.stackId,
+        externalSource: canonicalScope.externalSource,
+        externalRef: canonicalScope.externalRef,
+      },
+    })
+  } catch (error) {
+    if (!isPrismaUniqueConstraintError(error)) throw error
+
+    return ctx.prisma.discussionScope.findUnique({
+      where: scopeKey,
+    })
+  }
 }
 
 async function createDiscussionEvent(
