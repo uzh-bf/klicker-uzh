@@ -1,8 +1,10 @@
 import {
+  CodeLanguage,
   CodeTestVisibility,
   ElementData,
   ElementInstance,
   ElementInstanceType,
+  ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { nanoid } from 'nanoid'
 import { useMemo } from 'react'
@@ -53,8 +55,8 @@ function useArtificialElementInstance({
                     ? values.options.hasSampleSolution
                     : undefined,
                 language:
-                  'language' in values.options
-                    ? values.options.language
+                  values.type === ElementType.Code
+                    ? CodeLanguage.Python
                     : undefined,
                 starterCode:
                   'starterCode' in values.options
@@ -65,7 +67,7 @@ function useArtificialElementInstance({
                     ? values.options.entrypoint
                     : undefined,
                 executionLimits:
-                  'executionLimits' in values.options
+                  values.type === ElementType.Code
                     ? {
                         perTestTimeoutSeconds: 5,
                       }

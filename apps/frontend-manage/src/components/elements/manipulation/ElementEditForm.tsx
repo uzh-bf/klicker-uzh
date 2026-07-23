@@ -184,6 +184,10 @@ function ElementEditForm({
                       mode={mode}
                       values={values}
                       isSubmitting={isSubmitting}
+                      disableTypeSelection={
+                        mode === ElementEditMode.DUPLICATE &&
+                        initialValues.type === ElementType.Code
+                      }
                     />
                     <ElementContentInput
                       disabled={inputsDisabled}

@@ -2372,7 +2372,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       enterSolution: 'Please enter a solution.',
       FTMaxLength:
         'The maximum length of a free text question response has to be at least 1.',
-      COLanguageRequired: 'Please select a programming language.',
       COEntrypointRequired: 'Please enter an entrypoint function.',
       COEntrypointInvalid:
         'The entrypoint must be a valid Python function name.',

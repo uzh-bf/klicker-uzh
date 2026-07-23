@@ -27,6 +27,7 @@ interface ElementInformationFieldsProps {
   values: ElementFormTypes
   isSubmitting: boolean
   inputsDisabled?: boolean
+  disableTypeSelection?: boolean
 }
 
 function ElementInformationFields({
@@ -36,6 +37,7 @@ function ElementInformationFields({
   values,
   isSubmitting,
   inputsDisabled = false,
+  disableTypeSelection = false,
 }: ElementInformationFieldsProps) {
   const t = useTranslations()
   const statusOptions = useStatusOptions()
@@ -54,7 +56,12 @@ function ElementInformationFields({
           name="type"
           required={mode === ElementEditMode.CREATE}
           contentPosition="popper"
-          disabled={mode === ElementEditMode.EDIT || isTemplate || isSubmitting}
+          disabled={
+            mode === ElementEditMode.EDIT ||
+            isTemplate ||
+            isSubmitting ||
+            disableTypeSelection
+          }
           label={t('manage.elements.elementType')}
           placeholder={t('manage.elements.selectQuestionType')}
           items={questionTypeOptions}

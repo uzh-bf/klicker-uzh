@@ -1,5 +1,4 @@
 import {
-  CodeLanguage,
   CodeTestVisibility,
   ElementDisplayMode,
   ElementStatus,
@@ -464,10 +463,6 @@ function useOptionsSchemaCode() {
   const t = useTranslations()
 
   return {
-    language: yup
-      .string()
-      .oneOf([CodeLanguage.Python])
-      .required(t('manage.formErrors.COLanguageRequired')),
     starterCode: yup.string(),
     entrypoint: yup
       .string()
@@ -483,9 +478,6 @@ function useOptionsSchemaCode() {
       is: true,
       then: (schema) =>
         schema.required(t('manage.formErrors.COSampleSolutionRequired')),
-    }),
-    executionLimits: yup.object().shape({
-      perTestTimeoutSeconds: yup.string().oneOf(['5']).required(),
     }),
     testCases: yup
       .array()

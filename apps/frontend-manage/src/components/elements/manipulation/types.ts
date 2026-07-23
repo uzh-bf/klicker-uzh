@@ -1,5 +1,4 @@
 import {
-  CodeLanguage,
   CodeTestVisibility,
   ElementDisplayMode,
   ElementStatus,
@@ -72,14 +71,10 @@ export interface ElementFormTypesCode extends SharedQuestionFormProps {
   type: ElementType.Code
   explanation?: string | null
   options: {
-    language: CodeLanguage
     starterCode: string
     sampleSolution: string
     entrypoint: string
     hasSampleSolution: boolean
-    executionLimits: {
-      perTestTimeoutSeconds: '5'
-    }
     testCases: {
       id: string
       name: string

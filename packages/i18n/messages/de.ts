@@ -2399,7 +2399,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bei MC-Fragen muss mindestens eine Antwort korrekt sein.',
       enterSolution: 'Bitte geben Sie eine Lösung ein.',
       FTMaxLength: 'Die maximale Länge der Lösung muss mindestens 1 betragen.',
-      COLanguageRequired: 'Bitte wählen Sie eine Programmiersprache aus.',
       COEntrypointRequired: 'Bitte geben Sie eine Einstiegsfunktion ein.',
       COEntrypointInvalid:
         'Die Einstiegsfunktion muss ein gültiger Python-Funktionsname sein.',

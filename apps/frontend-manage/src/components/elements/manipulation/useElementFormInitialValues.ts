@@ -138,14 +138,10 @@ function useElementFormInitialValues({
         ...sharedAttributes,
         type: ElementType.Code,
         options: {
-          language: options.language,
           starterCode: options.starterCode ?? '',
           sampleSolution: options.sampleSolution ?? '',
           entrypoint: options.entrypoint,
           hasSampleSolution: options.hasSampleSolution ?? false,
-          executionLimits: {
-            perTestTimeoutSeconds: '5',
-          },
           testCases: options.testCases.map((testCase) => ({
             id: testCase.id,
             name: testCase.name,

@@ -5,6 +5,7 @@ import {
   MutationFunctionOptions,
 } from '@apollo/client'
 import {
+  CodeLanguage,
   CreateAnswerCollectionMutation,
   ElementStatus,
   Exact,
@@ -241,7 +242,7 @@ export function prepareCodeArgs({
     basePoints: values.basePoints,
     pointsMultiplier: parseInt(values.pointsMultiplier),
     options: {
-      language: values.options.language,
+      language: CodeLanguage.Python,
       starterCode: values.options.starterCode || undefined,
       sampleSolution: values.options.hasSampleSolution
         ? values.options.sampleSolution

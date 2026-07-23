@@ -1,4 +1,4 @@
-import { CodeLanguage, CodeTestVisibility } from '@klicker-uzh/graphql/dist/ops'
+import { CodeTestVisibility } from '@klicker-uzh/graphql/dist/ops'
 import CodeEditor from '@klicker-uzh/shared-components/src/CodeEditor'
 import {
   Button,
@@ -62,29 +62,27 @@ function FormikCodeEditor({
   )
 }
 
+function createCodeTest(name = '') {
+  return {
+    id: nanoid(),
+    name,
+    args: '[]',
+    expectedOutput: 'null',
+    visibility: CodeTestVisibility.Public,
+    weight: '1',
+  }
+}
+
 function createDefaultCodeOptions(
   hasSampleSolution: boolean,
   defaultTestName: string
 ): ElementFormTypesCode['options'] {
   return {
-    language: CodeLanguage.Python,
     starterCode: 'def solve():\n    pass',
     sampleSolution: '',
     entrypoint: 'solve',
     hasSampleSolution,
-    executionLimits: {
-      perTestTimeoutSeconds: '5',
-    },
-    testCases: [
-      {
-        id: nanoid(),
-        name: defaultTestName,
-        args: '[]',
-        expectedOutput: 'null',
-        visibility: CodeTestVisibility.Public,
-        weight: '1',
-      },
-    ],
+    testCases: [createCodeTest(defaultTestName)],
   }
 }
 
@@ -258,16 +256,7 @@ function CodeOptions({
             {!inputsDisabled && values.options.testCases.length < 20 ? (
               <Button
                 fluid
-                onClick={() =>
-                  push({
-                    id: nanoid(),
-                    name: '',
-                    args: '[]',
-                    expectedOutput: 'null',
-                    visibility: CodeTestVisibility.Public,
-                    weight: '1',
-                  })
-                }
+                onClick={() => push(createCodeTest())}
                 className={{ root: 'mt-3 border-gray-300 font-bold' }}
                 data={{ cy: 'add-code-test' }}
               >
