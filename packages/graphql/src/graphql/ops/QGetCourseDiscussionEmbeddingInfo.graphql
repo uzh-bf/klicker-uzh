@@ -1,6 +1,6 @@
 query GetCourseDiscussionEmbeddingInfo(
   $courseId: String!
-  $externalBlock: DiscussionExternalBlockInput!
+  $externalBlock: DiscussionExternalBlockInput
   $allowAnonymous: Boolean
   $expiresInHours: Int
 ) {

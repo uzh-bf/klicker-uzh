@@ -26,6 +26,19 @@ describe('Course Q&A embed workflow', function () {
     cy.get('[data-cy="tab-discussions"]').click()
     cy.get('details').find('summary').click()
 
+    cy.get('[data-cy="course-qa-embed-scope-course"]').click()
+    cy.get('[data-cy="course-qa-generate-embed"]').should('not.be.disabled')
+    cy.get('[data-cy="course-qa-generate-embed"]').click()
+    cy.get('[data-cy="course-qa-embed-url"]')
+      .invoke('text')
+      .then((courseEmbedUrl) => {
+        const url = new URL(courseEmbedUrl.trim())
+        expect(url.searchParams.get('scopeKey')).to.equal(
+          `course:${this.data.courseId}`
+        )
+      })
+
+    cy.get('[data-cy="course-qa-embed-scope-external"]').click()
     cy.get('[data-cy="course-qa-generate-embed"]').should('be.disabled')
     cy.get('[data-cy="course-qa-external-source"]').type(
       this.data.embed.externalSource

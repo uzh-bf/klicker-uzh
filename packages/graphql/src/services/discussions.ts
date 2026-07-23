@@ -78,10 +78,10 @@ export interface CourseDiscussionOverviewArgs {
 
 export interface GetCourseDiscussionEmbeddingInfoArgs {
   courseId: string
-  externalBlock: {
+  externalBlock?: {
     externalSource: string
     externalRef: string
-  }
+  } | null
   allowAnonymous?: boolean | null
   expiresInHours?: number | null
 }
@@ -1298,11 +1298,15 @@ export async function getCourseDiscussionEmbeddingInfo(
   const resolvedScope = await resolveOrCreateScope(
     {
       space,
-      scope: {
-        scopeType: DB.DiscussionScopeType.EXTERNAL_BLOCK,
-        externalSource: externalBlock.externalSource,
-        externalRef: externalBlock.externalRef,
-      },
+      scope: externalBlock
+        ? {
+            scopeType: DB.DiscussionScopeType.EXTERNAL_BLOCK,
+            externalSource: externalBlock.externalSource,
+            externalRef: externalBlock.externalRef,
+          }
+        : {
+            scopeType: DB.DiscussionScopeType.COURSE,
+          },
     },
     ctx
   )

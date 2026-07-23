@@ -1760,6 +1760,29 @@ describe('Integration tests for the course discussion platform', () => {
       DiscussionScopeType.EXTERNAL_BLOCK
     )
     expect(externalThread?.scope.scopeKey).toBe('ext:moodle:block-7')
+
+    const courseEmbedInfo = await getCourseDiscussionEmbeddingInfo(
+      {
+        courseId: course.id,
+        allowAnonymous: true,
+      },
+      userOneCtx
+    )
+    expect(courseEmbedInfo?.scopeKey).toBe(`course:${course.id}`)
+
+    const courseEmbedThread = await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: 'Course embed thread',
+        scope: { scopeType: DiscussionScopeType.COURSE },
+        isAnonymous: true,
+        embedToken: courseEmbedInfo!.embedToken,
+      },
+      createAnonymousContext(userOneCtx, {
+        ip: '127.0.0.2',
+      })
+    )
+    expect(courseEmbedThread?.scope.scopeType).toBe(DiscussionScopeType.COURSE)
   })
 
   it('keeps the discussion schema limited to the shipped alpha scope', async () => {

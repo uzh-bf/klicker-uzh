@@ -2976,6 +2976,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       embedLinkGenerator: 'Embed-Link Generator',
       embedExternalBlockHelp:
         'Generieren Sie einen Embed-Link für einen bestimmten externen Block, indem Sie Quelle und Referenz angeben.',
+      embedCourseHelp:
+        'Erstellen Sie einen Link zur Einbettung der kursweiten Q&A-Diskussion.',
+      embedScope: 'Diskussionsbereich',
+      embedScopeCourse: 'Gesamter Kurs',
+      embedScopeExternal: 'Externer Block',
       embedExternalSource: 'Externe Quelle',
       embedExternalSourcePlaceholder: 'z.B. moodle',
       embedExternalRef: 'Externe Referenz',

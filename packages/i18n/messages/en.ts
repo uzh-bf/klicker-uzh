@@ -2923,6 +2923,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       embedLinkGenerator: 'Embed Link Generator',
       embedExternalBlockHelp:
         'Generate an embed link for a specific external block by providing its source and reference.',
+      embedCourseHelp:
+        'Generate a link for embedding the course-wide Q&A discussion.',
+      embedScope: 'Discussion scope',
+      embedScopeCourse: 'Entire course',
+      embedScopeExternal: 'External block',
       embedExternalSource: 'External Source',
       embedExternalSourcePlaceholder: 'e.g. moodle',
       embedExternalRef: 'External Reference',

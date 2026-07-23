@@ -267,7 +267,7 @@ export const Query = builder.queryType({
           courseId: t.arg.string({ required: true }),
           externalBlock: t.arg({
             type: DiscussionExternalBlockInput,
-            required: true,
+            required: false,
           }),
           allowAnonymous: t.arg.boolean({ required: false }),
           expiresInHours: t.arg.int({ required: false }),
