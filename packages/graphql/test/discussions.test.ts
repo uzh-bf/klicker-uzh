@@ -1025,8 +1025,12 @@ describe('Integration tests for the course discussion platform', () => {
       { courseId: course.id, elements: [] },
       userOneCtx
     )
-    const microLearningStack = await prisma.elementStack.findFirstOrThrow({
-      where: { microLearningId: microLearning.id },
+    const microLearningStack = await prisma.elementStack.create({
+      data: {
+        type: ElementStackType.MICROLEARNING,
+        order: 0,
+        microLearningId: microLearning.id,
+      },
       select: { id: true },
     })
 
@@ -1055,7 +1059,7 @@ describe('Integration tests for the course discussion platform', () => {
     const removedSpaceColumns = await prisma.$queryRaw<
       Array<{ column_name: string }>
     >`
-      SELECT column_name
+      SELECT column_name::text
       FROM information_schema.columns
       WHERE table_schema = 'public'
         AND table_name = 'DiscussionSpace'
@@ -1067,7 +1071,7 @@ describe('Integration tests for the course discussion platform', () => {
     const discussionSpaceCourseColumn = await prisma.$queryRaw<
       Array<{ is_nullable: string }>
     >`
-      SELECT is_nullable
+      SELECT is_nullable::text
       FROM information_schema.columns
       WHERE table_schema = 'public'
         AND table_name = 'DiscussionSpace'
@@ -1079,7 +1083,7 @@ describe('Integration tests for the course discussion platform', () => {
     const removedScopeColumns = await prisma.$queryRaw<
       Array<{ column_name: string }>
     >`
-      SELECT column_name
+      SELECT column_name::text
       FROM information_schema.columns
       WHERE table_schema = 'public'
         AND table_name = 'DiscussionScope'
@@ -1091,7 +1095,7 @@ describe('Integration tests for the course discussion platform', () => {
     const discussionSpaceTypes = await prisma.$queryRaw<
       Array<{ label: string }>
     >`
-      SELECT enumlabel AS label
+      SELECT enumlabel::text AS label
       FROM pg_enum
       JOIN pg_type ON pg_enum.enumtypid = pg_type.oid
       WHERE pg_type.typname = 'DiscussionSpaceType'
@@ -1103,7 +1107,7 @@ describe('Integration tests for the course discussion platform', () => {
     const discussionScopeTypes = await prisma.$queryRaw<
       Array<{ label: string }>
     >`
-      SELECT enumlabel AS label
+      SELECT enumlabel::text AS label
       FROM pg_enum
       JOIN pg_type ON pg_enum.enumtypid = pg_type.oid
       WHERE pg_type.typname = 'DiscussionScopeType'
@@ -1119,7 +1123,11 @@ describe('Integration tests for the course discussion platform', () => {
 
   it('keeps default thread listing course-only even when other scopes exist', async () => {
     const course = await seedCourse({}, userOneCtx)
-    await enableCourseDiscussion(prisma, { courseId: course.id })
+    await enableCourseDiscussion(prisma, {
+      courseId: course.id,
+      allowAnonymous: true,
+    })
+    await recomputeDerivedPermissions({ courseId: course.id }, prisma)
 
     const participantId = await seedParticipantInCourse(prisma, {
       courseId: course.id,
