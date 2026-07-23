@@ -469,6 +469,8 @@ Later research:
 - 2026-07-23: Slice 3 implementation completed locally. Standard live quizzes show the approved aggregate or correlated copy in a compact persistent notification before and during blocks; correlated mode uses the existing information treatment, aggregate mode uses the quieter default treatment, and assessment quizzes show neither standard-mode notice.
 - 2026-07-23: Slice 3 static verification passed: GraphQL code generation/build/typecheck, frontend-pwa route generation/typecheck, and touched-file Prettier checks. The known GraphQL Rollup TypeScript warnings remain non-fatal and unchanged.
 - 2026-07-23: Slice 3 browser verification remains blocked by the same DevPod runtime. The seeded participant URL was opened through the real namespaced PWA route but returned `Gateway Timeout` after more than a minute; therefore desktop/mobile layout and EN/DE rendering are not claimed.
+- 2026-07-23: Independent Slice 3 correctness review found no qualifying defect. Separate simplification review found no worthwhile reduction at confidence 75 or higher. Both reviews retain the blocked desktop/mobile EN/DE browser matrix as a final PR-readiness gap.
+- 2026-07-23: Slice 3 is finalized. Slice 5 now runs before Slice 4, as allowed by the approved plan, so the first durable worker path covers existing temporary-pseudonym respondents as well as logged-in and anonymous respondents.
 
 ## Goal Prompt Requirements
 
@@ -484,6 +486,6 @@ If handed to another agent:
 
 ## Next Steps
 
-1. Complete Slice 2 with the manage UI setting and assessment-specific disabled state.
-2. Keep temporary-pseudonym response persistence out of Slice 4 until Slice 5 completes the unified respondent path.
+1. Align temporary leaderboard identities with `LiveQuizRespondent` through the staged compatibility path while preserving the current pseudonym and leaderboard UX.
+2. Persist correlated responses for logged-in, temporary-pseudonym, and anonymous respondents in Slice 4.
 3. Deliver the self-service CSV and evaluation-page action together in Slice 6.
