@@ -3,10 +3,11 @@
 ## Plan Identity
 
 - Plan: `project/2026-07-07-pr-5144-async-permission-propagation-plan.md`
-- Branch: `permission-propagation-plan` (plan commit); implementation continues on this branch
+- Branch: `permission-propagation-plan`; implementation continues in this PR
 - Target: `v3`
 - PR: [#5144](https://github.com/uzh-bf/klicker-uzh/pull/5144) (draft)
 - History: [PR #4808](https://github.com/uzh-bf/klicker-uzh/pull/4808) `[CONCEPT] New suggested approach for asynchronous permission propagation` (branch `transaction-concept`, draft, unmerged) — earlier attempt at same problem, reviewed below.
+- ADR: [ADR-0001](../docs/adr/0001-fail-closed-permission-propagation.md)
 
 ## Goal
 
@@ -16,7 +17,7 @@
 
 ## Research
 
-Codebase investigation via 4 subagents (3 explore + 1 PR review), 2026-07-07. No external research needed; all evidence local. Limitation: perf numbers are structural inference (row-count math), not measured — Slice 1 fixes that before optimization claims are trusted.
+Codebase investigation via 4 subagents (3 explore + 1 PR review), 2026-07-07. A fresh primary review, native fact-check, external `agy`/Gemini cross-check, and current Hatchet concurrency documentation were added on 2026-07-23. Limitation: perf numbers are structural inference (row-count math), not measured — Slice 1 fixes that before optimization claims are trusted.
 
 ### R1: Data model (evidence)
 
@@ -45,14 +46,15 @@ Codebase investigation via 4 subagents (3 explore + 1 PR review), 2026-07-07. No
 2. `changeElementStatus` gated at READ (`packages/graphql/src/schema/mutation.ts:959-972`), service does unfiltered `element.update` (`elements.ts:854-869`). RESOLVED as intentional design (user, 2026-07-07): reviewers get READ so they can move element status (draft → in review → ready) without write permissions on content. Not a gap — document the invariant (Slice 8), no code change.
 3. Batch ops (`applyElementBatchOperations`, `elements.ts:775-798`) filter on direct `permissions` relation only, not `DerivedPermission` — course-inherited editors silently excluded. Fails closed; correctness bug, bypasses canonical check path.
 4. `response-api` standard mode unauthenticated by design (`apps/response-api/src/index.ts:93-157`), trusts client `liveQuizId`/`instanceId`; assessment mode in same file fully gated. Out of scope here; separate audit (Next Steps).
-5. Child creation + reparenting: creating an element inside an activity (or activity inside course) implicitly grants inherited access to all parent-authorized users; moving an object between parents is a mixed revoke+grant. Verify where creation/move currently triggers recompute and route both through the Slice 6 classification table.
-6. Open verification items (from plan review, resolve before Slice 5): (a) `demoteGroupAdminToMember` (`sharing.ts:6469-6512`) calls no recompute — confirm group admin-vs-member carries no differential object-level access, else pre-existing bug, file separately; (b) `transferGroupOwnership` (`sharing.ts:6623-6697`) changes only `UserGroup.ownerId`/admins, touches no `DerivedPermission` — confirm group ownership (unlike entity ownership) has no derived-permission implications, so the "ownership transfers stay sync" bucket is complete.
+5. Child creation + reparenting: creating an element inside an activity (or activity inside course) implicitly grants inherited access to all parent-authorized users; moving an object between parents is a mixed revoke+grant. Verify where creation/move currently triggers recompute and route both through the conditional async classification table.
+6. Group-role changes are resolved no-ops for object access. `getMaxAccessLevelCombined` unions group owner, members, and admins without changing permission level (`packages/util/src/permissions/util.ts:138-175`). `promoteGroupMemberToAdmin`, `demoteGroupAdminToMember`, and `transferGroupOwnership` preserve that union. They must not enqueue or recompute `DerivedPermission`.
 
 ### R5: Existing async infra (evidence)
 
 - Hatchet client (`packages/hatchet/src/client.ts`), task registry `prepareHatchetTasks` (`packages/hatchet/src/index.ts`), handlers injected from `@klicker-uzh/graphql` (`packages/graphql/src/index.ts:69-84` — sharing service registers zero handlers today).
-- Reusable patterns from `apps/hatchet-worker-response-processor/src/index.ts`: durable tasks, `onFailure` → audit-log event push (L54-69), per-key concurrency `{expression: 'input.<key>', maxRuns: 1, GROUP_ROUND_ROBIN}` (L75-79).
+- Reusable patterns from `apps/hatchet-worker-response-processor/src/index.ts`: durable tasks, `onFailure` → event push (L54-69), per-key concurrency `{expression: 'input.<key>', maxRuns: 1, GROUP_ROUND_ROBIN}` (L75-79).
 - New-task wiring checklist: task in `packages/hatchet/src/index.ts` + types in `packages/types/src/hatchet.ts` + handler export in `packages/graphql/src/index.ts` + general worker picks up automatically (`HATCHET_WORKFLOWS` env or all).
+- Current limitation: `create-audit-log-entry` only calls `ctx.logger.info` and contains a TODO for a real audit service (`packages/hatchet/src/index.ts:41-57`). It is not a persistent failure record and cannot satisfy the async rollout gate.
 
 ## PR #4808 Review
 
@@ -73,32 +75,45 @@ Codebase investigation via 4 subagents (3 explore + 1 PR review), 2026-07-07. No
 
 ## Decisions
 
-- Keep `DerivedPermission` as materialized cache. Reduce recompute cost with set-based SQL first; async only for what remains slow.
-- Order: measure → harden → set-based rewrite → decouple → async grants → revoke fast-path → reconciliation. Re-evaluate need for async after Slice 4 measurements; grants-async (Slice 5) proceeds only if set-based is still too slow for group/course fan-outs.
-- Revokes + ownership transfers stay synchronous (fail-open lag unacceptable); grants + group-membership additions may be eventual (fail-closed lag acceptable).
-- Hatchet as execution substrate; recompute tasks are stateless idempotent full-re-derives; per-object concurrency key `maxRuns: 1` serializes racing recomputes; last write wins correctly because recompute derives from source of truth, never applies deltas.
-- No "access pending" UI in v1 — grants converge in seconds; revisit if Slice 5 telemetry shows longer lag.
+- [ADR-0001](../docs/adr/0001-fail-closed-permission-propagation.md) records the consistency boundary.
+- Keep `DerivedPermission` as the authorization read model. Reduce recompute cost with set-based SQL before considering async propagation.
+- Phase A is fixed: measure → harden checks → set-based rewrite. The post-Slice-3 gate uses measured mutation latency and transaction duration to decide whether Phase B is needed.
+- If Phase A meets the accepted SLO, keep recomputation synchronous and skip async propagation. Record the measured threshold and maintainer decision in `Progress`.
+- No production path may move a cascade outside its transaction until durable dispatch, persistent failure reporting, reconciliation, and a database fence shared by synchronous mutations and workers have landed together.
+- Revokes, downgrades, group removals, group deletion, and entity ownership transfers remain synchronous and fail-closed. Grants and group additions may become eventual only in conditional Phase B.
+- Hatchet concurrency limits task runs; it is a throughput control, not the correctness fence. It does not serialize GraphQL mutations or tasks with different keys that update overlapping hierarchy rows.
+- Async tasks must full-rederive from source state, be idempotent, and carry enough identity to recover missed or failed work. A persistent dirty marker or equivalent durable dispatch record must be written atomically with the source mutation.
+- Async failures must reach a persistent database audit record or alert sink. `create-audit-log-entry` logging alone is insufficient.
+- Do not add an "access pending" UI by default. Revisit it before Slice 7 if the approved recovery SLO or user testing shows that grant lag needs an explicit state.
 - Resolved by user (2026-07-07): (a) `changeElementStatus` stays READ-gated — intentional reviewer workflow (status transitions without write permissions); (b) [PR #4808](https://github.com/uzh-bf/klicker-uzh/pull/4808) stays open; new plan PR created and cross-linked via comment on #4808; (c) external `agy` review of this plan approved despite security findings in scope.
+- Resolved by review (2026-07-23): group owner/member/admin role changes do not affect group-derived object access; promotion, demotion, and group ownership transfer are excluded from recompute routing.
 
 ## Skill Routing
 
 - `$verification-before-completion` before each slice commit.
 - Review subagent + simplification subagent per slice (caveman basic form, severity-tagged).
-- `$security-review` as mandatory final gate before PR (branch scope: auth-critical).
-- `$df-mr-description-writer` for PR body.
-- Context7 for Hatchet TypeScript SDK docs before Slice 5 (API may have moved since worker code was written).
-- Independent final branch review: prefer `agy`; note plan/branch contains security findings → confirm with user before external cloud review, else Claude-independent subagent.
+- `$security-review` as mandatory final gate before the draft PR is marked ready (branch scope: auth-critical).
+- `$rs-mr-description-writer` for PR body.
+- Current Hatchet documentation before conditional Phase B; do not rely on the installed SDK examples alone.
+- Update `docs/auth-model.md`, `docs/async-and-workers.md`, and the relevant agent-facing skill when runtime behavior changes.
+- Independent final branch review: prefer `agy` in read-only plan mode.
 
 ## Slices
 
-Dependencies: 1 → (2, 3) independent of each other; 6 needs 3; 4 needs 3 + 6; 5 needs 4; 7 needs 5; 8 after all.
-Execution order: 1 → 2 → 3 → **6 → 4** → 5 → 7 → 8. Slice 6 (revoke fast-path) lands before Slice 4 (transaction shrink) — otherwise a crash between commit and out-of-transaction cascade would leave a revoked user's child rows intact (fail-open window, unbounded until reconciliation). Slice numbering kept for reference stability.
+Phase A is unconditional: 1 → 2 → 3 → Gate A. Phase B is conditional: 4 → 5 → 6 → 7. Slice 8 closes either path.
+
+Gate A after Slice 3:
+
+- Re-run Slice-1 benchmarks and record mutation latency, transaction duration, rows changed, and the slowest fan-out.
+- Maintainer decides whether synchronous set-based recompute meets the accepted SLO.
+- If yes: keep recompute synchronous, skip Slices 4-7, and finish Slice 8.
+- If no: run Slice 4. Do not move work out of transactions before its design is approved and Slices 5-6 have landed.
 
 ### Slice 1 — Perf baseline + instrumentation
 
-- Do: timing + node-count instrumentation around `recomputeDerivedPermissions` (duration, object type, mode user/object, child counts) via existing logger. Vitest-or-script benchmark on seeded DB: share/revoke/transfer on Testkurs-sized and synthetic-large (50 activities × 30 elements, 30 users) course; group-membership change on group with 20 object grants. Sub-task: create synthetic `UserGroup` + N-object-grant fixture — `packages/prisma-data` seed has zero `UserGroup` records today (grep-confirmed).
-- Check: recorded before-numbers in this file under Progress. No behavior change; `pnpm --filter @klicker-uzh/util check` + graphql tests green.
-- Commit: `perf(packages/util): instrument derived-permission recompute with timing + node counts`
+- Do: add benchmark-only timing, Prisma query count, rows changed, root object type, mode (user/object), and known descendant counts around `recomputeDerivedPermissions`. Avoid a production-wide mutable counter. Benchmark on a seeded DB: share/revoke/transfer on Testkurs-sized and synthetic-large (50 activities × 30 elements, 30 users) courses; group membership change on a group with 20 object grants. Create a synthetic `UserGroup` + N-object-grant fixture because `packages/prisma-data` has no reusable group fixture.
+- Check: record before-numbers and the proposed SLO in `Progress`. No behavior change; `pnpm --filter @klicker-uzh/util check` + focused GraphQL permission tests green.
+- Commit: `perf(packages/util): instrument derived-permission recompute baseline`
 
 ### Slice 2 — Harden check path
 
@@ -109,79 +124,89 @@ Execution order: 1 → 2 → 3 → **6 → 4** → 5 → 7 → 8. Slice 6 (revok
 
 ### Slice 3 — Set-based recompute rewrite
 
-- Do: rewrite internals of `recompute<Entity>Permissions{User,Object}` in `packages/util/src/permissions/*` as set-based SQL per hierarchy level: `INSERT ... SELECT` from `Permission` + group membership + ownership + parent joins `ON CONFLICT DO UPDATE`, and `DELETE ... USING` for removals (`$executeRaw`, parameterized — first raw-SQL use in this repo, grep-confirmed no precedent). Hard rule: `$executeRawUnsafe` and string interpolation into SQL are prohibited; only Prisma's tagged-template `$executeRaw`/`Prisma.sql` parameterization. `DerivedPermission` is one shared table with 8 parallel unique constraints — each module must name its exact conflict target (e.g. `ON CONFLICT ("courseId", "userId")`), else Postgres errors with "no unique or exclusion constraint matching". Preserve external function signatures + propagation semantics exactly (`getActivityAccessFromCourse` `util.ts:211-256`, incl. row-level `propagation`-flag conditional; activity→element rules `element.ts:21-49`). One entity module per sub-step, course last (deepest cascade).
-- Check: existing permission vitest suite green after each module (5 files, ~13k lines — solid base); Slice-1 benchmark re-run — expect order-of-magnitude drop; equivalence test: run old path vs new path on same seed, diff `DerivedPermission` table. Keep a slimmed equivalence test permanently in CI — raw SQL bypasses Prisma's type-checked builder, so a future `.prisma` column rename produces no `tsc` error; the permanent test is the schema-drift tripwire. Column names in raw SQL get a comment linking back to `sharing.prisma`.
+- Do: rewrite internals of `recompute<Entity>Permissions{User,Object}` in `packages/util/src/permissions/*` as set-based SQL per hierarchy level: `INSERT ... SELECT` from `Permission` + group membership + ownership + parent joins `ON CONFLICT DO UPDATE`, and `DELETE ... USING` for removals. This is the first runtime permission path using raw SQL, though scripts and Playwright setup already use `$executeRaw`. Hard rule: `$executeRawUnsafe` and string interpolation into SQL are prohibited; only Prisma's tagged-template `$executeRaw`/`Prisma.sql` parameterization. `DerivedPermission` is one shared table with 8 parallel unique constraints; each module must name its exact conflict target. Preserve external function signatures + propagation semantics exactly (`getActivityAccessFromCourse` `util.ts:211-256`, including the row-level `propagation` flag; activity→element rules `element.ts:21-49`). One entity module per sub-step, course last.
+- Check: existing permission DB test suites green after each module; Slice-1 benchmark re-run. While both paths exist, run old and new implementations on the same fixtures and diff canonicalized `DerivedPermission` rows. Before deleting the old path, convert the important scenarios into permanent expected-row fixtures/reference cases. The permanent suite, not retained production code, is the independent oracle and schema-drift tripwire.
 - Commit: per module — `perf(packages/util): set-based derived-permission recompute for <entity>`
 - Risk: highest-complexity slice. SQL must replicate max-level dedup (`getMaxAccessLevelCombined`) and propagation-flag semantics; equivalence-diff test is the guard. Split further if any module exceeds reviewable size.
 
-### Slice 4 — Shrink transaction scope (grants only; requires Slice 6 landed first)
+### Slice 4 — Prove the async safety contract (conditional)
 
-- Do: keep atomic: `Permission` upsert/delete + audit log + target-object `DerivedPermission` row. Move child cascade out of the `$transaction` (still in-process, after commit) **for grant-classified operations only** (per Slice 6 table); revoke-classified paths use the Slice 6 sync strip and are never left to a post-commit hook. Remove `{ timeout: 60000 }` overrides where no longer needed.
-- Check: benchmark: mutation latency ≈ constant regardless of course size; crash-between-commit-and-cascade leaves target object correct + children stale → document as accepted pre-Slice-7 window. Explicit test for the group fan-out case: crash mid `recomputePermissionsUserGroupMember` loop leaves an arbitrary subset of the group's granted objects stale for that user (blast radius = many objects, not one object's children) — verify only completed-so-far objects updated and note the window is bounded until Slice 7 lands. Vitest green.
-- Commit: `perf(packages/graphql): decouple permission cascade from sharing mutation transactions`
+- Trigger: Gate A shows synchronous set-based recompute misses the accepted SLO.
+- Do: create a bounded database-backed prototype and amend this plan/ADR with one chosen contract before production changes. It must prove: (a) source mutation + durable dirty/outbox record are atomic; (b) synchronous mutations and workers share a database fence; (c) tasks for different roots that touch overlapping hierarchy rows cannot commit stale state; (d) crash after source commit but before Hatchet enqueue is recovered; (e) failed work reaches a persistent database audit record or alert sink; (f) the maximum recovery SLO is explicit.
+- Candidate approaches: transactionally written dirty-state/outbox row with a monotonic generation; database locking plus a durable dirty marker; or keep recomputation synchronous. Hatchet `maxRuns` is not an eligible correctness mechanism by itself.
+- Check: deterministic tests reproduce the grant-worker/revoke race and the commit-before-enqueue crash. The stale worker must not resurrect access; missed dispatch must converge within the proposed SLO.
+- Commit: `docs(project): record async permission propagation safety contract` plus a test/prototype commit if code is needed.
+- Pause: maintainer approval required because the selected fence changes data shape and concurrency semantics.
 
-### Slice 5 — Async cascade via Hatchet (grants + group additions only) — conditional on Slice 4 measurements
+### Slice 5 — Durable async foundation + reconciliation (conditional)
 
-- Prereq: resolve R4.6 verification items (admin-demote no-op, group-ownership transfer) first.
-- Do: new task `recompute-derived-permissions` (payload `{objectType, objectId, userId?, mode}`; retries 3; `onFailure` → `create-audit-log-entry` event; concurrency key `objectId`, `maxRuns: 1`, GROUP_ROUND_ROBIN). Wire per R5 checklist. Converted call sites — grants only, named explicitly: `shareObject` (new grant path), `addUserToUserGroup`, `promoteGroupMemberToAdmin`. NOT converted (stay synchronous; revoke semantics): `revokeObjectAccess`, `removeUserFromGroup`, `demoteGroupAdminToMember`, all `transfer*Ownership`, and the downgrade path of `changeObjectPermissionLevel` (see Slice 6 decision table). Caution: grant and revoke group paths share `recomputePermissionsUserGroupMember` (`sharing.ts:5992`) today — a blanket "group changes async" edit would async-ify revokes and violate the fail-closed invariant; split or parameterize the helper so the revoke path provably keeps the sync branch, with a dedicated test asserting group-removal effects are visible synchronously. Group-add fan-out over N objects: enqueue as one batch call (array payload, as `createAuditLogEntry.runNoWait([...])` already does), not N sequential round-trips in the mutation handler. Optional: dedup back-to-back recomputes for the same target via task key `recompute:<objectId>:<userId|all>` — duplicates are harmless (idempotent full re-derive) but wasted work.
-- Check: integration test with hatchet-lite (Cypress/dev compose stack): share course → child `DerivedPermission` rows appear async; kill worker mid-cascade → retry converges; two concurrent shares on same course → serialized, final state correct; group removal → synchronous, no enqueue. Telemetry: propagation-lag metric logged. Deploy ordering: worker registering the new task ships before the graphql service that enqueues to it — verify on staging (share succeeds, task consumed) before merge.
-- Commit: `feat(packages/hatchet): async derived-permission propagation task` + `refactor(packages/graphql): enqueue permission cascade for grants`
-- Risk: eventual consistency for grants — recipient may briefly lack child access (fail closed, acceptable). Group-add fans out N per-object tasks for one user with no cross-object ordering — safe because each task is a full re-derive reading current `Permission`/group state fresh; there is no cross-object invariant to violate, so interleaving cannot produce a wrong final state for any single object.
+- Do: implement the approved durable dispatch record, generation/fence, `recompute-derived-permissions` task, persistent failure sink, and reconciliation task. Do not convert sharing call sites yet. Task identity must include object type and object ID; user/mode scope is included when the selected contract requires it. Reconciliation selects unresolved dirty records first, then unions recent `Permission`, `UserGroup`, ownership/audit, child creation, and reparent signals; it also samples the remaining graph and performs a bounded off-peak full sweep.
+- Check: source transaction rollback creates no work; crash after source commit but before enqueue is recovered; worker failure is persisted; synthetic drift heals; concurrent parent/child recomputes converge without stale writes. Hatchet-lite integration + focused DB tests green.
+- Commit: `enhance(packages/hatchet): add durable permission propagation foundation`
+- Deployment gate: worker and reconciliation support ship before any API call site enqueues work.
 
-### Slice 6 — Revoke fast-path (independent of Hatchet — can start right after Slice 3)
+### Slice 6 — Keep revokes fail-closed (conditional)
 
-- Do: revoke/downgrade: synchronous set-based `DELETE`/downgrade of all child `DerivedPermission` rows for affected users (fail-closed over-delete acceptable), then enqueue async recompute to restore anything still deserved via other grants/groups (until Slice 5 lands, "enqueue" = in-process post-commit call).
-- Mutation classification table (routing contract; a downgrade is a revoke of the delta plus a grant of the remainder — the strip is synchronous, the settle may be async):
+- Do: revoke/downgrade removes or downgrades affected child `DerivedPermission` rows synchronously under the approved fence. If a user still deserves access through another path, record a durable settle in the same source transaction. If Slice-3 full recompute meets the revoke SLO, prefer the simpler fully synchronous rederive over strip + settle.
+- Mutation classification table (routing contract; a downgrade revokes the delta, while a durable settle may restore the remainder):
 
   | Mutation | Class | Path |
   |---|---|---|
-  | `shareObject` (new grant) | grant | async cascade (Slice 5) |
+  | `shareObject` (new grant) | grant | async cascade (Slice 7) |
   | `shareObject` (upsert to higher level) | grant | async cascade |
   | `changeObjectPermissionLevel` upgrade | grant | async cascade |
-  | `changeObjectPermissionLevel` downgrade | revoke | sync strip + async settle (this slice) |
-  | `revokeObjectAccess` | revoke | sync strip + async settle |
-  | `addUserToUserGroup` / `promoteGroupMemberToAdmin` | grant | async cascade |
-  | `removeUserFromGroup` / `demoteGroupAdminToMember` | revoke | sync strip + async settle |
+  | `changeObjectPermissionLevel` downgrade | revoke | sync strip/rederive + durable settle |
+  | `revokeObjectAccess` | revoke | sync strip/rederive + durable settle |
+  | `addUserToUserGroup` | grant | async cascade |
+  | `removeUserFromGroup` / `leaveUserGroup` | revoke | sync strip/rederive + durable settle |
+  | `deleteUserGroup` | revoke | sync strip/rederive for affected users + durable settle |
+  | `promoteGroupMemberToAdmin` / `demoteGroupAdminToMember` / `transferGroupOwnership` | no access change | no recompute |
   | `transfer*Ownership` (entity-level) | mixed | fully synchronous initially¹ |
   | child-object creation (element added to activity, activity added to course) | grant | async cascade (inherit parent grants) |
-  | move/reparent (e.g. activity to different course), if supported | mixed | sync strip (old parent's derived rows) + async settle (new parent) |
+  | move/reparent (e.g. activity to different course), if supported | mixed | sync strip old-parent access + durable settle for new parent |
 
-  ¹ If Slice 1/4 benchmarks show transfers still slow post-Slice-3, split: sync strip old owner's derived rows + async settle new owner (new owner briefly lacking child access is fail-closed, acceptable).
-  Note: if R4.6(a) confirms group admin-vs-member carries no differential object-level access, drop `promoteGroupMemberToAdmin`/`demoteGroupAdminToMember` from the recompute routing entirely — no-op recompute is wasted lock traffic.
+  ¹ If Slice 1/3 benchmarks show transfers still slow post-Slice-3, split: sync strip old owner's derived rows + durable settle for the new owner (new owner briefly lacking child access is fail-closed, acceptable).
 
-- Check: test: user with two access paths (direct + group) loses direct → immediately loses over-granted child rows, async restore returns group-derived level; revoked-only user has zero rows immediately after mutation returns; ADMIN→READ downgrade strips ADMIN-derived child rows synchronously.
-- Commit: `fix(packages/graphql): fail-closed synchronous revoke with async permission restore`
+- Check: in-flight grant task + revoke cannot resurrect access; direct + group user loses only the revoked delta after settle; revoked-only user has zero rows when the mutation returns; ADMIN→READ downgrade removes ADMIN-derived access synchronously; group role changes enqueue nothing.
+- Commit: `fix(packages/graphql): fence fail-closed permission revokes`
 
-### Slice 7 — Reconciliation + observability
+### Slice 7 — Move grant cascades out of transactions (conditional)
 
-- Do: Hatchet cron (daily, pattern per `packages/hatchet/src/index.ts:213-275`): recompute-vs-stored diff, log discrepancies + auto-heal, audit-log entry on drift. Scope per run to bound DB load: objects with permission changes in the last 48h + a small random sample of the rest; full sweep only off-peak/weekly. Alerting hook = audit log for now.
-- Check: seed artificial drift (manual row delete) → cron heals + logs.
-- Commit: `feat(packages/hatchet): derived-permission reconciliation cron`
+- Do: atomically write the source grant, target-object `DerivedPermission`, audit entry, and durable dispatch record. Return after commit; Hatchet handles the child cascade. Convert only grant-classified call sites: new/higher `shareObject`, permission upgrade, `addUserToUserGroup`, and verified child creation. Group-add fan-out writes durable work in one database operation, not N network round-trips. Remove `{ timeout: 60000 }` only where measurements show it is no longer needed.
+- Check: share course → child rows appear within the approved SLO; crash before Hatchet enqueue still converges; two overlapping parent/child grants serialize through the correctness fence; group removal remains synchronous; propagation lag is recorded without object/user PII. Staging proves worker-before-API deployment ordering.
+- Commit: `perf(packages/graphql): dispatch grant permission cascades durably`
+- Risk: grant recipients may briefly lack child access. This is fail-closed and accepted only within the approved recovery SLO.
 
 ### Slice 8 — Docs + notes
 
-- Do: update `project/CODEBASE_NOTES.md` (permission architecture section: invariants, sync/async split, fail-closed rule); prune stale comments about sequential recompute.
+- Do: update `docs/auth-model.md`, `docs/async-and-workers.md`, and the relevant agent-facing skill. Document `DerivedPermission` invariants, the synchronous/async split, failure recovery, and the Gate-A decision. Prune stale comments about sequential recompute.
 - Check: `pnpm run check:all`.
 - Commit: `docs(project): document permission propagation architecture`
 
 ## Independent Plan Review
 
-- Reviewer: Claude-independent subagent (fresh context, adversarial prompt), 2026-07-07. Status: DONE_WITH_CONCERNS. External cloud review (`agy`/Codex) deliberately not used without asking: plan text contains security findings (R4), which per data-protection rules requires explicit user approval first — offer stands in Next Steps.
-- Reviewer re-verified all load-bearing file:line claims against the worktree; none found false. Additional facts established: no `$executeRaw` precedent in repo; no `UserGroup` in test seed; `runNoWait()` exists in installed `@hatchet-dev/typescript-sdk@1.9.4` but is unused so far; permission vitest suite = 5 files / ~13k lines.
-- Findings, all accepted and integrated: (C1) grant/revoke group paths share `recomputePermissionsUserGroupMember` — Slice 5 now names exact converted call sites + helper-split requirement; (C2) `demoteGroupAdminToMember` calls no recompute — added R4.6 verification item; (C3) downgrade-as-revoke classification — added routing table to Slice 6; (I4) group fan-out crash blast radius — Slice 4 check extended; (I5) cross-object same-user race safety — stated explicitly in Slice 5 risk; (I6) raw-SQL schema-drift tripwire — equivalence test now permanent CI test; (I7) `ON CONFLICT` constraint targeting on shared 8-constraint table — added to Slice 3; (I8) worker-before-enqueuer deploy ordering — added to Slice 5 check; (I9) `transferGroupOwnership` asymmetry — added R4.6 verification item; (M10) missing UserGroup fixture — Slice 1 sub-task; (M11) `UserActivities` evidence claim softened; (M12) Slice 6 independence noted in its header.
-
-- Round 2 (external, user-approved): `agy` (Antigravity CLI), Gemini 3.5 Flash (High), 2026-07-07. Status: DONE_WITH_CONCERNS, 9 findings. Integration: (C1) Slice 4 crash window fail-open for revokes until Slice 6 → **accepted**, execution order now 3 → 6 → 4, Slice 4 restricted to grant-classified ops; (I2) ownership transfer sync bottleneck → accepted as conditional footnote (split strip/settle only if benchmarks demand); (I3) child creation + reparenting missing from model → accepted, new R4.5 + two Slice 6 table rows; (I4) R4.6-vs-Slice-6 demote contradiction → accepted, conditional drop note; (I5) prohibit `$executeRawUnsafe`/interpolated SQL → accepted, Slice 3; (M6) batch enqueue instead of N sequential round-trips → accepted, Slice 5; (M7) task dedup keys → accepted as optional (duplicates harmless, idempotent re-derive); (M8) verify `onDelete: Cascade` → **rebutted**: already verified in investigation, all Permission/DerivedPermission object FKs cascade — made explicit in R1 instead; (M9) reconciliation cron DB load → accepted, 48h-window + sampling scope in Slice 7.
+- Round 1: native adversarial plan review, 2026-07-07. It verified the original code references and added downgrade classification, group fan-out, schema-drift, deployment-ordering, fixture, and hierarchy-race requirements.
+- Round 2: user-approved external `agy`/Gemini review, 2026-07-07. It added child creation/reparenting, raw-SQL safety, ownership-transfer, revoke-lag, and batched fan-out concerns. The 2026-07-23 review supersedes its earlier recommendation to enqueue grants before a durable dispatch and database-fence design existed.
+- Round 3: fresh primary review, native fact-check, and external `agy`/Gemini cross-check, 2026-07-23. Six accepted corrections reshaped the plan:
+  1. Hatchet per-key concurrency is not a correctness fence for GraphQL mutations or overlapping hierarchy tasks.
+  2. Best-effort post-commit enqueue can lose propagation work indefinitely.
+  3. Group promotion, demotion, and group ownership transfer do not change effective object access.
+  4. Permanent tests need expected-row fixtures or a reference model independent of the removed implementation.
+  5. Reconciliation must cover group, ownership, creation, and reparent signals, not only recent `Permission` rows.
+  6. `create-audit-log-entry` is application logging, not a persistent failure record.
+- Result: Phase A now optimizes the synchronous path first. Phase B is conditional and cannot convert production call sites until durable dispatch, a shared database fence, persistent failure reporting, and reconciliation are implemented and approved together.
 
 ## Progress
 
 - 2026-07-07: investigation done (4 subagents), [PR #4808](https://github.com/uzh-bf/klicker-uzh/pull/4808) reviewed, plan drafted, independent plan review integrated (12/12 findings accepted), plan committed to `permission-propagation-plan` and pushed.
 - 2026-07-07 (later): user decisions resolved (READ-gated status change intentional; #4808 stays open + cross-linked; agy approved). External agy review round 2 integrated (8 accepted, 1 rebutted). Execution order corrected to 3 → 6 → 4. Draft PR opened. Next: Slice 1.
+- 2026-07-23: branch synchronized with current `v3`. Fresh review found unsafe concurrency, durability, reconciliation, group-role, test-oracle, and audit assumptions. Plan revised around a synchronous-first Phase A and conditional, fenced Phase B; ADR-0001 added. Next: independent review of this revision, then Slice 1.
 
 ## Goal Prompt Requirements (for handoff)
 
-- Reference this plan by exact path; update `Progress` while working; one slice at a time; verification + review subagent + simplification subagent + clean conventional commit per slice; rename plan file with `pr-<id>` in separate metadata commit once PR exists; final `$security-review` + independent branch review before PR; PR body via `$df-mr-description-writer`; end with `Next Steps`.
+- Reference this plan by exact path; update `Progress` while working; execute one tracer-bullet slice at a time; run the fastest meaningful verification; make a clean conventional commit; send that exact commit or range to separate review and simplification subagents; integrate accepted findings and commit adjustments before the next slice. Run applicable E2E, `$security-review`, independent branch review, and `$thermo-nuclear-code-quality-review` before marking the draft PR ready. Maintain the PR body with `$rs-mr-description-writer`. Pause at Gate A and Slice 4 for the decisions recorded above.
 
 ## Next Steps
 
-- Execute Slice 1 on this branch.
+- Commit and independently review this revision, then execute Slice 1 on this branch.
 - Separate task (not this branch): response-api standard-mode auth audit (R4.4).
