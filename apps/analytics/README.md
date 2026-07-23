@@ -156,7 +156,7 @@ It registers the non-mutating `learning-analytics-native-proof` task plus two co
 - `recompute-learning-analytics` handles cron, incremental, and finalize runs. A newer run in the same course/global scope cancels the older run.
 - `recompute-learning-analytics-full` handles only guarded full rebuilds. A running full rebuild is protected and a newer full request is canceled.
 
-Both DAGs call the existing Python script entry points in-process with immutable per-run configuration and cooperative cancellation. `ANALYTICS_ALLOW_FULL=1` is still required for the full DAG. The TypeScript subprocess worker remains available as the pre-cutover rollback path until the native worker becomes the sole DAG owner.
+Both DAGs call the existing Python script entry points in-process with immutable per-run configuration and cooperative cancellation. `ANALYTICS_ALLOW_FULL=1` is still required for the full DAG. The TypeScript subprocess worker remains available as the pre-cutover rollback path until the native worker becomes the sole DAG owner. Cutover and rollback must be cold: stop the current owner before starting the other worker so exactly one analytics DAG consumes these events.
 
 ## Deploying analytics indexes
 
