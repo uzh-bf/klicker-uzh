@@ -7,9 +7,6 @@ from sqlalchemy.orm import Session, selectinload
 from src.db_helpers import coerce_timestamp, row_to_dict
 from src.models import (
     Course,
-    MicroLearning,
-    Participant,
-    PracticeQuiz,
     QuestionResponseDetail,
 )
 
@@ -21,18 +18,12 @@ def _coerce_window_bounds(start_date: object, end_date: object) -> tuple[datetim
     return coerce_timestamp(start_date), coerce_timestamp(end_date)
 
 
-def _load_course_windows(
-    session: Session, course_ids: set[str]
-) -> dict[str, dict[str, datetime]]:
+def _load_course_windows(session: Session, course_ids: set[str]) -> dict[str, dict[str, datetime]]:
     if not course_ids:
         return {}
 
     rows = (
-        session.execute(
-            select(Course.id, Course.startDate, Course.endDate).where(
-                Course.id.in_(course_ids)
-            )
-        )
+        session.execute(select(Course.id, Course.startDate, Course.endDate).where(Course.id.in_(course_ids)))
         .mappings()
         .all()
     )
@@ -59,29 +50,17 @@ def _detail_to_dict(
         course_window = course_windows.get(course_id)
         base["courseId"] = course_id
         base["course_start_date"] = (
-            coerce_timestamp(course_window["startDate"])
-            if course_window
-            else _MISSING_COURSE_START
+            coerce_timestamp(course_window["startDate"]) if course_window else _MISSING_COURSE_START
         )
-        base["course_end_date"] = (
-            coerce_timestamp(course_window["endDate"])
-            if course_window
-            else _MISSING_COURSE_END
-        )
+        base["course_end_date"] = coerce_timestamp(course_window["endDate"]) if course_window else _MISSING_COURSE_END
     elif detail.microLearning is not None:
         course_id = str(detail.microLearning.courseId)
         course_window = course_windows.get(course_id)
         base["courseId"] = course_id
         base["course_start_date"] = (
-            coerce_timestamp(course_window["startDate"])
-            if course_window
-            else _MISSING_COURSE_START
+            coerce_timestamp(course_window["startDate"]) if course_window else _MISSING_COURSE_START
         )
-        base["course_end_date"] = (
-            coerce_timestamp(course_window["endDate"])
-            if course_window
-            else _MISSING_COURSE_END
-        )
+        base["course_end_date"] = coerce_timestamp(course_window["endDate"]) if course_window else _MISSING_COURSE_END
     else:
         base["courseId"] = None
         base["course_start_date"] = _MISSING_COURSE_START
@@ -90,55 +69,48 @@ def _detail_to_dict(
     return base
 
 
-def get_participant_responses(
-    session: Session, start_date: str, end_date: str, verbose: bool = False
-):
+def get_participant_responses(session: Session, start_date: str, end_date: str, verbose: bool = False):
     """Return a dataframe of per-response detail rows for the window.
 
-    ``selectinload`` chains replace the Prisma ``include`` tree with one
-    ``IN (...)`` query per relation level — same round-trip count as before.
+    The time predicate stays in Postgres so the ``createdAt`` BRIN index can
+    prune the append-mostly detail table before relationships are loaded.
     """
-    participants = session.execute(
-        select(Participant).options(
-            selectinload(Participant.detailQuestionResponses).options(
+    start_ts, end_ts = _coerce_window_bounds(start_date, end_date)
+    details = (
+        session.execute(
+            select(QuestionResponseDetail)
+            .where(
+                QuestionResponseDetail.createdAt >= start_ts,
+                QuestionResponseDetail.createdAt <= end_ts,
+            )
+            .options(
                 selectinload(QuestionResponseDetail.practiceQuiz),
                 selectinload(QuestionResponseDetail.microLearning),
             )
         )
-    ).scalars().all()
-
-    start_ts, end_ts = _coerce_window_bounds(start_date, end_date)
+        .scalars()
+        .all()
+    )
 
     course_ids = {
         str(detail.practiceQuiz.courseId)
-        for participant in participants
-        for detail in participant.detailQuestionResponses
+        for detail in details
         if detail.practiceQuiz is not None and detail.practiceQuiz.courseId is not None
     } | {
         str(detail.microLearning.courseId)
-        for participant in participants
-        for detail in participant.detailQuestionResponses
+        for detail in details
         if detail.microLearning is not None and detail.microLearning.courseId is not None
     }
     course_windows = _load_course_windows(session, course_ids)
 
     rows = []
-    for participant in participants:
-        pid = participant.id
-        for detail in participant.detailQuestionResponses:
-            if detail.createdAt is None:
-                continue
-            detail_created_at = coerce_timestamp(detail.createdAt)
-            if not (start_ts <= detail_created_at <= end_ts):
-                continue
-            rows.append(_detail_to_dict(detail, pid, course_windows))
+    for detail in details:
+        if detail.createdAt is None:
+            continue
+        rows.append(_detail_to_dict(detail, str(detail.participantId), course_windows))
 
     if verbose:
-        print(
-            "Found {} detail responses for timespan {}..{}".format(
-                len(rows), start_date, end_date
-            )
-        )
+        print("Found {} detail responses for timespan {}..{}".format(len(rows), start_date, end_date))
 
     df_details = pd.DataFrame(rows)
     if df_details.empty:
