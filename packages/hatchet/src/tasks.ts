@@ -471,11 +471,9 @@ export function prepareHatchetTasks({
         `[scanEndedCourses] graceDays=${effectiveGrace} cutoff=${cutoff.toISOString()} candidates=${candidates.length}`
       )
 
-      // Day-bucketed idempotency key — a scanner retry inside the same UTC
-      // day reuses the key and Hatchet de-duplicates the emission. Workflow
-      // concurrency still cancels an in-progress older run on a new key, but
-      // the common case (CI retry, manual re-trigger) no longer costs a
-      // scheduling round trip per duplicate.
+      // Day-bucketed dashboard metadata makes scanner emissions identifiable.
+      // It does not deduplicate events; workflow concurrency cancels an
+      // in-progress older run when another event targets the same course.
       const today = new Date().toISOString().slice(0, 10)
       await Promise.all(
         candidates.map(({ id }) =>

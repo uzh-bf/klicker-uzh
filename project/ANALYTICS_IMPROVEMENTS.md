@@ -34,8 +34,8 @@ The recommendations below are ordered by risk/reward. The first three (unify on 
 | 9 | Chatbot adoption rollup | DAILY/WEEKLY/MONTHLY/COURSE | Raw SQL (weekly has its own file) | ChatMessage | AggregatedChatbotAnalytics |
 | 10 | Topic clustering per chatbot | Single pass × all chatbots (COURSE only) | sentence-transformers + UMAP + HDBSCAN | ChatMessage | ChatTopicCluster |
 | 11 | Chat × quiz correlation | Single pass (no windowing) | Raw SQL | ParticipantChatAnalytics, ParticipantPerformance | ParticipantChatOutcome, ParticipantCourseAnalytics |
-| 13 | Platform semester totals | Single pass | Raw SQL | ChatMessage, QuestionResponse, LiveQuizParticipantResponse | PlatformSemesterAnalytics, AggregatedCourseAnalytics |
-| 14 | Live quiz assessment stats | Single pass × all courses | Raw SQL | LiveQuizParticipantResponse, LiveQuiz | ParticipantLiveQuizAnalytics, AggregatedLiveQuizAnalytics |
+| 13 | Platform semester totals | Single pass | Raw SQL | ChatMessage, QuestionResponse, LiveQuizResponse | PlatformSemesterAnalytics, AggregatedCourseAnalytics |
+| 14 | Live quiz assessment stats | Single pass × all courses | Raw SQL | LiveQuizResponse, LiveQuiz | ParticipantLiveQuizAnalytics, AggregatedLiveQuizAnalytics |
 | 99 | Flip validity flags | Single pass | Raw SQL | ParticipantAnalytics, ParticipantChatAnalytics | Course |
 
 ### 2.2 Dependency Graph
@@ -79,7 +79,7 @@ Today's timeout is "each of the 15 scripts gets 1 hour." That means a pathologic
 
 ### P5 — Missing indexes on hot event tables
 
-The analytics pipeline queries `QuestionResponseDetail`, `QuestionResponse`, `ChatMessage`, and `LiveQuizParticipantResponse` with predicates like `WHERE courseId = $1 AND createdAt BETWEEN $2 AND $3`. Without a composite `(courseId, createdAt)` index, Postgres sequentially scans the table or falls back to a single-column `createdAt` index and then filters by course. A BRIN index on `createdAt` gives most of the pruning benefit for append-only event data at a fraction of the size of a B-tree.
+The analytics pipeline queries `QuestionResponse`, `QuestionResponseDetail`, `ChatMessage`, and `LiveQuizResponse` through different access paths. Course-window tables benefit from composite keys; append-mostly date scans benefit from BRIN; script 14 reaches responses through `ElementInstance` and orders by `submittedAt`. Indexes must match those concrete predicates and joins rather than applying one `(courseId, createdAt)` shape everywhere.
 
 ### P6 — No incremental path for topic clustering (script 10)
 
@@ -99,7 +99,7 @@ All orchestration lives in Node; Python scripts are blind subprocesses. If Pytho
 
 ### P10 — Partition readiness
 
-Event tables (`QuestionResponse`, `QuestionResponseDetail`, `ChatMessage`, `LiveQuizParticipantResponse`) will grow monotonically. At current scale (millions of rows) they do not need partitioning yet, but the migration is easier to do while still small. Deferring beyond 50M rows increases the migration cost to a full dual-write + backfill rollout.
+Event tables (`QuestionResponse`, `QuestionResponseDetail`, `ChatMessage`, `LiveQuizResponse`) will grow monotonically. At current scale (millions of rows) they do not need partitioning yet, but the migration is easier to do while still small. Deferring beyond 50M rows increases the migration cost to a full dual-write + backfill rollout.
 
 ---
 
@@ -162,15 +162,19 @@ The following indexes should be added to `packages/prisma/src/prisma/schema/` an
 | Table | Index | Rationale |
 |---|---|---|
 | QuestionResponse | `(courseId, createdAt)` | Scripts 0, 3, 4, 5, 6, 7 all filter by these two columns |
-| QuestionResponseDetail | `(participantId, elementInstanceId, createdAt)` | Script 0's per-attempt walk |
-| QuestionResponseDetail | BRIN on `createdAt` | Append-mostly log, saves 95% of B-tree size |
+| QuestionResponseDetail | BRIN on `createdAt` | Script 0 pushes each window into SQL; append order makes BRIN effective at low storage cost |
 | ChatMessage | `(threadId, createdAt)` | Scripts 8, 9, 10 |
-| ChatMessage | BRIN on `createdAt` | Append-only |
-| LiveQuizParticipantResponse | `(liveQuizId, createdAt)` | Script 14 |
+| ChatMessage | existing B-tree on `createdAt` | The base branch already supplies the time index; a second BRIN index is intentionally omitted |
+| LiveQuizResponse | `(instanceId, submittedAt)` | Script 14 reaches responses through `ElementInstance` and reads the first submission in time order |
+| LiveQuizResponse | BRIN on `createdAt` | Append-mostly date scans in platform analytics |
 | ParticipantAnalytics | `(courseId, type, timestamp)` | Script 1, 99 read participant rows per course-window |
 | AggregatedAnalytics | `(courseId, type, timestamp)` | API reads by these three keys |
 
-BRIN indexes are near-free in size and rebuild cost; they pay off as soon as the table grows past a few hundred thousand rows. Prisma does not model BRIN natively, so these need to be declared via `migrations/*/migration.sql` with a raw `CREATE INDEX USING BRIN`.
+`EXPLAIN ANALYZE` on a 252k-row synthetic detail table showed that the originally proposed `(participantId, elementInstanceId, createdAt)` index still fetched every row because script 0 supplied every participant ID. Pushing the one-day predicate into SQL let the existing BRIN path complete in 0.44 ms, versus about 27 ms for the warm full-table path, so the unused composite is intentionally omitted.
+
+The original live-quiz proposal named a `liveQuizId` column that does not exist on `LiveQuizResponse` and used `createdAt` despite the query ordering by `submittedAt`. On a 2.0M-row synthetic fixture, `(instanceId, submittedAt)` replaced a bitmap scan plus sort with an ordered index lookup (about 2 ms to 0.05 ms, excluding one-time JIT setup).
+
+BRIN indexes are near-free in size and rebuild cost; they pay off as soon as the table grows past a few hundred thousand rows. Prisma does not model BRIN natively, so these are declared via migration SQL. Shared environments prebuild all hot-table indexes with the checked-in concurrent SQL script, outside Prisma's migration transaction; the retry-safe Prisma migrations then no-op.
 
 ### R5 — Fix the DAILY/WEEKLY/MONTHLY upsert-no-op bug
 

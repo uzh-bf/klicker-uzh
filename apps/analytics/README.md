@@ -80,6 +80,13 @@ Running against an environment whose migrations lag behind the current branch is
 
 Scope (`ANALYTICS_COURSE_IDS`) and window floor (`ANALYTICS_WINDOW_SINCE`, auto-set from the course's `startDate`) are applied before the first script runs — the pipeline doesn't iterate daily windows that pre-date the course.
 
+### Known limitations
+
+- The in-memory buffer feeds captured writes into the downstream readers used by scripts 1, 2, 5, and 11. Scripts 13 and 99 still read the target database and therefore do not see same-run buffered rows.
+- A buffered table replaces that reader's database result; it is not unioned with rows already present in the database. Incremental-window dry runs can therefore under-report downstream aggregates that need both historical rows and rows captured in the current run.
+
+The workbook is a read-only inspection aid, not proof of exact downstream parity for those cases. Use a seeded writable database for end-to-end row comparisons.
+
 ### Creating the read-only role (one-time, per env)
 
 Run as a DB admin (Azure: a user with `azure_pg_admin`):
@@ -138,3 +145,37 @@ Configure with these env vars (all registered in root `turbo.json`):
 | `ANALYTICS_ALLOW_FULL`  | Must be `1` for the handler to accept `mode=full`; otherwise `full` dispatches are rejected before any subprocess starts | unset (opt-in)                     |
 
 Together they produce an invocation like `uv run python -m src.scripts.8_initial_chat_analytics` executed with cwd `ANALYTICS_CWD`.
+
+## Deploying analytics indexes
+
+The analytics index migrations cover hot response/event tables:
+
+- `20260420_analytics_covering_indexes`
+- `20260723180000_analytics_live_quiz_submitted_at_index`
+
+Prisma 6.16 applies these migrations inside a transaction, while PostgreSQL requires `CREATE INDEX CONCURRENTLY` to run outside one. Therefore shared environments use a two-step rollout:
+
+1. Check whether either migration already ran from an older branch version.
+2. Run `packages/prisma/scripts/create-analytics-indexes-concurrently.sql` with `psql`, without `BEGIN` / `COMMIT`.
+3. Run the normal `prisma migrate deploy`. Its `IF NOT EXISTS` statements see the prebuilt indexes and become no-ops.
+
+This follows [Prisma's PostgreSQL migration-safety guidance](https://www.prisma.io/docs/guides/integrations/pgfence), which recommends manually adding `CONCURRENTLY` and running that work outside a transaction.
+
+```sql
+SELECT migration_name, finished_at, rolled_back_at
+FROM "_prisma_migrations"
+WHERE migration_name IN (
+  '20260420_analytics_covering_indexes',
+  '20260723180000_analytics_live_quiz_submitted_at_index'
+);
+```
+
+Run the prebuild during a lower-traffic window. Concurrent builds preserve writes but still consume database I/O and CPU. Monitor active builds with:
+
+```sql
+SELECT relid::regclass AS table_name, index_relid::regclass AS index_name, phase,
+       blocks_done, blocks_total
+FROM pg_stat_progress_create_index;
+```
+
+If a prebuild is interrupted, inspect `pg_index.indisvalid`, drop only the invalid index with `DROP INDEX CONCURRENTLY`, and rerun the prebuild. If Prisma itself later records a failed migration, mark that migration rolled back with `prisma migrate resolve --rolled-back <migration>` before rerunning deploy. The `IF NOT EXISTS` clauses make already-valid indexes safe on retry.
