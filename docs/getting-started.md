@@ -2,7 +2,7 @@
 type: Guide
 title: Getting Started
 description: Toolchain, first-time setup, infrastructure bring-up, dev-server paths, and the exact failure signatures a fresh clone produces.
-timestamp: '2026-07-18'
+timestamp: '2026-07-23'
 tags:
   - environment
   - onboarding
@@ -22,7 +22,7 @@ You can set up the environment in two ways:
 
 ### Path A: Self-contained Devcontainer (Recommended)
 
-Clone-and-run via a self-contained devcontainer — no Infisical, no external EduID, no `/etc/hosts` edits needed. The container runs every routed app plus the two Hatchet workers through one `turbo dev` task set and houses all dependencies (Postgres, Redis, MailHog, Hatchet).
+Clone-and-run via a self-contained devcontainer — no Infisical, no external EduID, no `/etc/hosts` edits needed. The container runs every routed app plus the two Hatchet workers and the lecturer MCP server (`apps/mcp-lecturer`, port 7081, no route — `apps/chat` reaches it in-container) through one `turbo dev` task set and houses all dependencies (Postgres, Redis, MailHog, Hatchet). Without it, the manage assistant loads zero tools; it now starts automatically with the rest of the stack (`package.json:dev:container`), so no manual step is required.
 
 1. **Start and prove the checkout:**
    ```bash

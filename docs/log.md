@@ -1,5 +1,9 @@
 # Log
 
+## 2026-07-23
+
+- **Update**: [getting-started](./getting-started.md) documents that the devcontainer stack now also starts the lecturer MCP server (`apps/mcp-lecturer`, port 7081, no route) so the manage assistant always finds its tools without a manual step.
+
 ## 2026-07-18
 
 - **Update**: [getting-started](./getting-started.md) pins released devrouter `0.0.35`; the managed-process fingerprint now includes the exact adapter bytes and declared non-secret origin environment as well as workspace and command identity.

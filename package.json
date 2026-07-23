@@ -54,7 +54,7 @@
     "dev": "./util/_run_with_infisical.sh --env dev pnpm dev:raw",
     "dev:assessment": "./util/_run_with_infisical.sh --env dev-assessment turbo run dev:assessment --concurrency 30",
     "dev:cleverreach": "./util/_run_with_infisical.sh --env dev-cleverreach pnpm run dev:raw",
-    "dev:container": "turbo run dev --filter=@klicker-uzh/backend-docker --filter=@klicker-uzh/auth --filter=@klicker-uzh/frontend-pwa --filter=@klicker-uzh/frontend-manage --filter=@klicker-uzh/frontend-control --filter=@klicker-uzh/olat-api --filter=@klicker-uzh/response-api --filter=@klicker-uzh/lti-service --filter=@klicker-uzh/chat --filter=@klicker-uzh/hatchet-worker-general --filter=@klicker-uzh/hatchet-worker-response-processor --concurrency 30",
+    "dev:container": "turbo run dev --filter=@klicker-uzh/backend-docker --filter=@klicker-uzh/auth --filter=@klicker-uzh/frontend-pwa --filter=@klicker-uzh/frontend-manage --filter=@klicker-uzh/frontend-control --filter=@klicker-uzh/olat-api --filter=@klicker-uzh/response-api --filter=@klicker-uzh/lti-service --filter=@klicker-uzh/chat --filter=@klicker-uzh/hatchet-worker-general --filter=@klicker-uzh/hatchet-worker-response-processor --filter=@klicker-uzh/mcp-lecturer --concurrency 30",
     "dev:docs": "turbo run dev:docs",
     "dev:lti": "./util/_run_with_infisical.sh --env dev-lti turbo run dev:lti",
     "dev:offline": "./util/_run_with_infisical.sh --env dev turbo run dev:offline --concurrency 30",
