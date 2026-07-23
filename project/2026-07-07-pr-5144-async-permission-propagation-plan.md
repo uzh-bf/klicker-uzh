@@ -202,23 +202,25 @@ Gate A after Slice 3:
 - 2026-07-07: investigation done (4 subagents), [PR #4808](https://github.com/uzh-bf/klicker-uzh/pull/4808) reviewed, plan drafted, independent plan review integrated (12/12 findings accepted), plan committed to `permission-propagation-plan` and pushed.
 - 2026-07-07 (later): user decisions resolved (READ-gated status change intentional; #4808 stays open + cross-linked; agy approved). External agy review round 2 integrated (8 accepted, 1 rebutted). Execution order corrected to 3 → 6 → 4. Draft PR opened. Next: Slice 1.
 - 2026-07-23: branch synchronized with current `v3`. Fresh review found unsafe concurrency, durability, reconciliation, group-role, test-oracle, and audit assumptions. Plan revised around a synchronous-first Phase A and conditional, fenced Phase B; ADR-0001 added. Exact-commit review confirmed all six findings resolved and no blocker to Slice 1; three later-gate corrections were integrated. Next: Slice 1.
-- 2026-07-23 (implementation): Slice 1 benchmark and instrumentation implemented in an isolated linked-worktree devcontainer. Installed and repo-pinned devrouter are both 0.0.35; `devrouter upgrade` reports no newer target. Benchmark safeguards passed in dry-run and write mode: local-host guard, generated `@example.invalid` users, prefix-scoped writes, before/results snapshots under gitignored `project/_local/permission-propagation-benchmark/`, and cleanup verification (7 successes, 0 mismatches). The authoritative single-run report is `20260723170556-fe5ab117-results.json`.
+- 2026-07-23 (implementation): Slice 1 benchmark and instrumentation implemented in an isolated linked-worktree devcontainer. Installed and repo-pinned devrouter are both 0.0.35; `devrouter upgrade` reports no newer target. Exact-commit correctness and simplification reviews were integrated: util now rebuilds before every benchmark, write mode rejects `NODE_ENV=production` and requires `PERMISSION_BENCHMARK_CONFIRM_LOCAL=1`, audit cleanup is scoped only through generated users, Testkurs answer-collection links are cloned, and large group revoke is independently prepared outside the timed measurement. Benchmark safeguards passed in dry-run and write mode: local-host guard, generated `@example.invalid` users, prefix-scoped writes, before/results snapshots under gitignored `project/_local/permission-propagation-benchmark/`, and cleanup verification (8 successes, 0 mismatches). The authoritative single-run report is `20260723174833-b1618efa-results.json`.
 
-  | Scenario | Status | Total | Transaction | Queries | Rows changed | Nested recomputes |
-  |---|---:|---:|---:|---:|---:|---:|
-  | Testkurs-sized user share | success | 3.61 s | 3.61 s | 5,094 | 50 | 1 |
-  | Testkurs-sized user revoke | success | 30.67 s | 30.66 s | 4,178 | 50 | 1 |
-  | Testkurs-sized ownership transfer | success | 6.93 s | 6.92 s | 12,040 | 100 | 2 |
-  | Testkurs-sized group share | success | 2.94 s | 2.94 s | 10,418 | 50 | 1 |
-  | Testkurs-sized group revoke | success | 6.12 s | 6.12 s | 9,888 | 50 | 2 |
-  | Synthetic-large user share | success | 17.81 s | 17.81 s | 33,824 | 1,551 | 1 |
-  | Synthetic-large user revoke | success | 15.86 s | 15.86 s | 21,414 | 1,551 | 1 |
-  | Synthetic-large ownership transfer | success | 35.57 s | 35.57 s | 61,440 | 3,102 | 2 |
-  | Synthetic-large group share | timeout | 60.03 s | 60.03 s | 316,407 | 0 (rollback) | 1 |
-  | Synthetic-large group revoke | skipped | — | — | — | — | — |
-  | Add member to group with 20 object grants | success | 0.25 s | 0.24 s | 411 | 20 | 20 |
+  | Scenario | Status | Total ms | Tx ms | Queries | Query ms¹ | Rows | Recompute calls | Recompute total ms | Recompute max ms |
+  |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+  | Testkurs-sized user share | success | 4,168.64 | 4,167.17 | 6,114 | 3,032.98 | 52 | 1 | 4,142.95 | 4,142.95 |
+  | Testkurs-sized user revoke | success | 3,295.90 | 3,295.21 | 5,060 | 2,371.81 | 52 | 1 | 3,290.88 | 3,290.88 |
+  | Testkurs-sized ownership transfer | success | 8,206.23 | 8,204.69 | 14,560 | 5,943.37 | 104 | 2 | 8,198.84 | 4,129.36 |
+  | Testkurs-sized group share | success | 3,555.57 | 3,554.94 | 12,564 | 2,803.33 | 52 | 1 | 3,550.18 | 3,550.18 |
+  | Testkurs-sized group revoke | success | 7,186.07 | 7,179.92 | 11,967 | 5,215.53 | 52 | 2 | 7,174.93 | 3,910.23 |
+  | Synthetic-large user share | success | 18,362.37 | 18,361.84 | 33,824 | 12,644.50 | 1,551 | 1 | 18,357.01 | 18,357.01 |
+  | Synthetic-large user revoke | success | 15,055.59 | 15,054.74 | 21,414 | 9,875.42 | 1,551 | 1 | 15,049.99 | 15,049.99 |
+  | Synthetic-large ownership transfer | success | 38,003.89 | 38,002.66 | 61,440 | 27,027.86 | 3,102 | 2 | 37,997.75 | 19,254.83 |
+  | Synthetic-large group share | timeout | 60,022.17 | 60,018.23 | 302,475 | 23,753.62 | 1 | 1 | 60,016.12 | 60,016.12 |
+  | Synthetic-large group revoke | success | 31,881.63 | 31,874.51 | 50,580 | 21,729.17 | 1,551 | 2 | 31,865.03 | 17,279.29 |
+  | Add member to group with 20 object grants | success | 228.91 | 224.63 | 411 | 144.82 | 20 | 20 | 220.16 | 12.30 |
 
-  Testkurs-sized cloned the seeded Testkurs topology (20 activities, 29 unique elements, 286 element traversals). Synthetic-large used the approved 50 activities × 30 distinct elements and 30 permission users. Prisma query duration is retained in the report as a summed driver metric and may exceed wall time when queries run concurrently. Focused GraphQL verification passed: `coursePermissions.test.ts`, `courseSharing.test.ts`, and `userGroups.test.ts` (89/89 tests). Proposed SLO for maintainer approval before Slice 3: p95 mutation latency ≤ 2.0 s, p95 transaction duration ≤ 1.5 s, and a 5.0 s hard ceiling for any supported sharing mutation. This is an SLO proposal, not a claim derived from the single local run. Hatchet workers currently hit a pre-existing SDK logger crash during local startup; Slice 1 does not depend on workers, but conditional Phase B must resolve or isolate that environment failure before Hatchet verification.
+  ¹ Prisma query duration is a summed driver metric and may exceed wall time when queries run concurrently.
+
+  Testkurs-sized cloned the seeded Testkurs topology (20 activities, 29 unique elements, 286 element traversals, 2 linked answer collections). Synthetic-large used the approved 50 activities × 30 distinct elements and 30 permission users. The large group share timed out at Prisma's 60-second boundary and left one affected-user `DerivedPermission` snapshot difference; the independently prepared group revoke then completed in 31.88 seconds, and final prefix-scoped cleanup returned every benchmark table to zero. Focused GraphQL verification passed: `coursePermissions.test.ts`, `courseSharing.test.ts`, and `userGroups.test.ts` (89/89 tests). Proposed SLO for maintainer approval before Slice 3: p95 mutation latency ≤ 2.0 s, p95 transaction duration ≤ 1.5 s, and a 5.0 s hard ceiling for any supported sharing mutation. This is an SLO proposal, not a claim derived from the single local run. Hatchet workers currently hit a pre-existing SDK logger crash during local startup; Slice 1 does not depend on workers, but conditional Phase B must resolve or isolate that environment failure before Hatchet verification.
 
 ## Goal Prompt Requirements (for handoff)
 
@@ -226,5 +228,6 @@ Gate A after Slice 3:
 
 ## Next Steps
 
-- Execute Slice 1 on this branch.
+- Execute Slice 2 on this branch.
+- Obtain maintainer approval for the proposed Slice 1 SLO before Slice 3 begins.
 - Separate task (not this branch): response-api standard-mode auth audit (R4.4).

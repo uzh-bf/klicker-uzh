@@ -9,6 +9,7 @@ import {
   UserRole,
 } from '@klicker-uzh/prisma/client'
 import type { ElementData, ElementInstanceResults } from '@klicker-uzh/types'
+import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { createHash, randomUUID } from 'node:crypto'
 import { EventEmitter } from 'node:events'
@@ -46,6 +47,7 @@ type ActivityShape = {
 type CourseShape = {
   label: string
   activities: ActivityShape[]
+  answerCollectionKeyByElementKey: Record<string, string>
 }
 
 type CourseShapeStats = {
@@ -56,12 +58,12 @@ type CourseShapeStats = {
   groupActivities: number
   uniqueElements: number
   elementTraversals: number
+  answerCollections: number
 }
 
 type BenchmarkUser = {
   id: string
   shortname: string
-  email: string
 }
 
 type CourseFixture = {
@@ -71,7 +73,6 @@ type CourseFixture = {
   directTarget: BenchmarkUser
   transferTarget: BenchmarkUser
   groupMember: BenchmarkUser
-  ambientUsers: BenchmarkUser[]
   allUsers: BenchmarkUser[]
   stats: CourseShapeStats
   configuredPermissionUsers: number
@@ -80,10 +81,7 @@ type CourseFixture = {
 type DerivedPermissionSnapshot = Map<string, string>
 
 type RecomputeRecord = {
-  objectType: string
-  mode: 'user' | 'object'
   durationMs: number
-  outcome: 'success' | 'error'
 }
 
 type ActiveMeasurement = {
@@ -125,10 +123,19 @@ type ScopedSnapshot = {
   users: number
   courses: number
   elements: number
+  answerCollections: number
   userGroups: number
   directPermissions: number
   derivedPermissions: number
   auditLogEntries: number
+}
+
+type ScopedIds = {
+  userIds: string[]
+  courseIds: string[]
+  elementIds: number[]
+  answerCollectionIds: number[]
+  userGroupIds: number[]
 }
 
 type BenchmarkHarness = {
@@ -152,6 +159,16 @@ function getRunPrefix() {
 function assertLocalDatabase(databaseUrl: string | undefined) {
   if (!databaseUrl) {
     throw new Error('DATABASE_URL is required')
+  }
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'Permission propagation benchmarks reject NODE_ENV=production.'
+    )
+  }
+  if (process.env.PERMISSION_BENCHMARK_CONFIRM_LOCAL !== '1') {
+    throw new Error(
+      'Set PERMISSION_BENCHMARK_CONFIRM_LOCAL=1 to confirm that DATABASE_URL targets a disposable local database.'
+    )
   }
 
   const hostname = new URL(databaseUrl).hostname
@@ -261,6 +278,9 @@ function getShapeStats(shape: CourseShape): CourseShapeStats {
       (total, activity) => total + activity.elementKeys.length,
       0
     ),
+    answerCollections: new Set(
+      Object.values(shape.answerCollectionKeyByElementKey)
+    ).size,
   }
 }
 
@@ -289,7 +309,12 @@ async function loadTestkursShape(
           id: true,
           blocks: {
             select: {
-              elements: { select: { elementId: true } },
+              elements: {
+                select: {
+                  elementId: true,
+                  element: { select: { answerCollectionId: true } },
+                },
+              },
             },
           },
         },
@@ -299,7 +324,12 @@ async function loadTestkursShape(
           id: true,
           stacks: {
             select: {
-              elements: { select: { elementId: true } },
+              elements: {
+                select: {
+                  elementId: true,
+                  element: { select: { answerCollectionId: true } },
+                },
+              },
             },
           },
         },
@@ -309,7 +339,12 @@ async function loadTestkursShape(
           id: true,
           stacks: {
             select: {
-              elements: { select: { elementId: true } },
+              elements: {
+                select: {
+                  elementId: true,
+                  element: { select: { answerCollectionId: true } },
+                },
+              },
             },
           },
         },
@@ -319,7 +354,12 @@ async function loadTestkursShape(
           id: true,
           stacks: {
             select: {
-              elements: { select: { elementId: true } },
+              elements: {
+                select: {
+                  elementId: true,
+                  element: { select: { answerCollectionId: true } },
+                },
+              },
             },
           },
         },
@@ -368,12 +408,44 @@ async function loadTestkursShape(
     )
   )
 
-  return { label: 'testkurs-sized', activities }
+  const instanceElements = [
+    ...course.liveQuizzes.flatMap((activity) =>
+      activity.blocks.flatMap((block) => block.elements)
+    ),
+    ...course.practiceQuizzes.flatMap((activity) =>
+      activity.stacks.flatMap((stack) => stack.elements)
+    ),
+    ...course.microLearnings.flatMap((activity) =>
+      activity.stacks.flatMap((stack) => stack.elements)
+    ),
+    ...course.groupActivities.flatMap((activity) =>
+      activity.stacks.flatMap((stack) => stack.elements)
+    ),
+  ]
+  const answerCollectionKeyByElementKey = Object.fromEntries(
+    instanceElements.flatMap((instance) =>
+      instance.element.answerCollectionId === null
+        ? []
+        : [
+            [
+              `testkurs:${instance.elementId}`,
+              `testkurs:${instance.element.answerCollectionId}`,
+            ],
+          ]
+    )
+  )
+
+  return {
+    label: 'testkurs-sized',
+    activities,
+    answerCollectionKeyByElementKey,
+  }
 }
 
 function createLargeShape(): CourseShape {
   return {
     label: 'synthetic-large',
+    answerCollectionKeyByElementKey: {},
     activities: Array.from(
       { length: LARGE_ACTIVITY_COUNT },
       (_, activityIndex) => ({
@@ -401,7 +473,7 @@ async function createUsers(
       shortname: `${runPrefix}-${label}`,
       email: `${runPrefix}-${label}@example.invalid`,
     })),
-    select: { id: true, shortname: true, email: true },
+    select: { id: true, shortname: true },
   })
 
   return new Map(
@@ -618,6 +690,38 @@ async function createCourseFixture(
     },
   })
 
+  const answerCollectionKeys = [
+    ...new Set(Object.values(shape.answerCollectionKeyByElementKey)),
+  ].sort()
+  const answerCollectionNameByKey = new Map(
+    answerCollectionKeys.map((key, index) => [
+      key,
+      `${runPrefix}-${shape.label}-answer-collection-${index}`,
+    ])
+  )
+  const answerCollections = await prisma.answerCollection.createManyAndReturn({
+    data: answerCollectionKeys.map((key) => ({
+      name: answerCollectionNameByKey.get(key)!,
+      description:
+        'Synthetic permission propagation benchmark answer collection.',
+      ownerId: owner.id,
+    })),
+    select: { id: true, name: true },
+  })
+  const answerCollectionIdByName = new Map(
+    answerCollections.map((collection) => [collection.name, collection.id])
+  )
+  const answerCollectionIdByKey = new Map(
+    answerCollectionKeys.map((key) => {
+      const name = answerCollectionNameByKey.get(key)!
+      const id = answerCollectionIdByName.get(name)
+      if (typeof id === 'undefined') {
+        throw new Error(`Benchmark answer collection "${name}" was not created`)
+      }
+      return [key, id]
+    })
+  )
+
   const elementKeys = uniqueElementKeys(shape.activities)
   const elementNameByKey = new Map(
     elementKeys.map((key, index) => [
@@ -626,13 +730,26 @@ async function createCourseFixture(
     ])
   )
   const elements = await prisma.element.createManyAndReturn({
-    data: elementKeys.map((key) => ({
-      type: ElementType.CONTENT,
-      name: elementNameByKey.get(key)!,
-      content: 'Synthetic permission propagation benchmark element.',
-      options: {},
-      ownerId: owner.id,
-    })),
+    data: elementKeys.map((key) => {
+      const answerCollectionKey = shape.answerCollectionKeyByElementKey[key]
+      const answerCollectionId = answerCollectionKey
+        ? answerCollectionIdByKey.get(answerCollectionKey)
+        : null
+      if (answerCollectionKey && typeof answerCollectionId === 'undefined') {
+        throw new Error(
+          `Missing benchmark answer collection for key "${answerCollectionKey}"`
+        )
+      }
+
+      return {
+        type: ElementType.CONTENT,
+        name: elementNameByKey.get(key)!,
+        content: 'Synthetic permission propagation benchmark element.',
+        options: {},
+        ownerId: owner.id,
+        answerCollectionId,
+      }
+    }),
     select: { id: true, name: true },
   })
   const elementIdByName = new Map(
@@ -683,7 +800,6 @@ async function createCourseFixture(
     directTarget,
     transferTarget,
     groupMember,
-    ambientUsers,
     allUsers: [...userMap.values()],
     stats: getShapeStats(shape),
     configuredPermissionUsers,
@@ -776,17 +892,9 @@ function parseRecomputeRecord(message: unknown): RecomputeRecord | undefined {
   }
 
   const parsed = JSON.parse(message.slice(RECOMPUTE_LOG_PREFIX.length)) as {
-    objectType: string
-    mode: 'user' | 'object'
     durationMs: number
-    outcome: 'success' | 'error'
   }
-  return {
-    objectType: parsed.objectType,
-    mode: parsed.mode,
-    durationMs: parsed.durationMs,
-    outcome: parsed.outcome,
-  }
+  return { durationMs: parsed.durationMs }
 }
 
 function classifyError(error: unknown): {
@@ -1076,41 +1184,47 @@ async function benchmarkCourseFixture(
   })
   results.push(groupShare.measurement)
 
-  const groupPermissionId = groupShare.result?.permissionId
-  if (typeof groupPermissionId === 'number') {
-    const groupRevoke = await measureScenario(harness, {
-      scenario: `${fixture.label}:revoke-group`,
-      fixture: fixture.label,
-      operation: 'revoke',
-      rootObjectType: 'COURSE',
-      mode: 'user',
-      configuredPermissionUsers: fixture.configuredPermissionUsers,
-      descendants: fixture.stats,
-      affectedUserIds: [currentOwner.id, fixture.groupMember.id],
-      run: () =>
-        revokeObjectAccess(
-          {
-            permissionId: groupPermissionId,
-            courseId: fixture.courseId,
-          },
-          currentOwnerContext
-        ),
+  let groupPermissionId = groupShare.result?.permissionId
+  if (typeof groupPermissionId !== 'number') {
+    const preparedPermission = await harness.prisma.permission.create({
+      data: {
+        permissionLevel: PermissionLevel.ADMIN,
+        propagation: true,
+        courseId: fixture.courseId,
+        userGroupId: group.id,
+      },
+      select: { id: true },
     })
-    results.push(groupRevoke.measurement)
-  } else {
-    results.push(
-      skippedScenario({
-        scenario: `${fixture.label}:revoke-group`,
-        fixture: fixture.label,
-        operation: 'revoke',
-        rootObjectType: 'COURSE',
-        mode: 'user',
-        configuredPermissionUsers: fixture.configuredPermissionUsers,
-        descendants: fixture.stats,
-        reason: 'The prerequisite group share did not commit.',
-      })
+    await harness.prisma.$transaction(
+      async (prisma) =>
+        await recomputeDerivedPermissions(
+          { courseId: fixture.courseId },
+          prisma
+        ),
+      { timeout: 300000 }
     )
+    groupPermissionId = preparedPermission.id
   }
+
+  const groupRevoke = await measureScenario(harness, {
+    scenario: `${fixture.label}:revoke-group`,
+    fixture: fixture.label,
+    operation: 'revoke',
+    rootObjectType: 'COURSE',
+    mode: 'user',
+    configuredPermissionUsers: fixture.configuredPermissionUsers,
+    descendants: fixture.stats,
+    affectedUserIds: [currentOwner.id, fixture.groupMember.id],
+    run: () =>
+      revokeObjectAccess(
+        {
+          permissionId: groupPermissionId,
+          courseId: fixture.courseId,
+        },
+        currentOwnerContext
+      ),
+  })
+  results.push(groupRevoke.measurement)
 
   return results
 }
@@ -1177,37 +1291,15 @@ async function getScopedSnapshot(
   prisma: BenchmarkPrismaClient,
   prefix: string
 ): Promise<ScopedSnapshot> {
-  const users = await prisma.user.findMany({
-    where: { shortname: { startsWith: prefix } },
-    select: { id: true },
-  })
-  const courses = await prisma.course.findMany({
-    where: { name: { startsWith: prefix } },
-    select: { id: true },
-  })
-  const elements = await prisma.element.findMany({
-    where: { name: { startsWith: prefix } },
-    select: { id: true },
-  })
-  const userGroups = await prisma.userGroup.findMany({
-    where: { name: { startsWith: prefix } },
-    select: { id: true },
-  })
-  const userIds = users.map((user) => user.id)
-  const courseIds = courses.map((course) => course.id)
-  const elementIds = elements.map((element) => element.id)
-  const userGroupIds = userGroups.map((group) => group.id)
-  const objectIds = [
-    ...courseIds,
-    ...elementIds.map(String),
-    ...userGroupIds.map(String),
-  ]
+  const { userIds, courseIds, elementIds, answerCollectionIds, userGroupIds } =
+    await getScopedIds(prisma, prefix)
   const permissionScope = {
     OR: [
       { userId: { in: userIds } },
       { userGroupId: { in: userGroupIds } },
       { courseId: { in: courseIds } },
       { elementId: { in: elementIds } },
+      { answerCollectionId: { in: answerCollectionIds } },
     ],
   }
 
@@ -1220,6 +1312,7 @@ async function getScopedSnapshot(
             { userId: { in: userIds } },
             { courseId: { in: courseIds } },
             { elementId: { in: elementIds } },
+            { answerCollectionId: { in: answerCollectionIds } },
           ],
         },
       }),
@@ -1228,20 +1321,57 @@ async function getScopedSnapshot(
           OR: [
             { sourceUserId: { in: userIds } },
             { targetUserId: { in: userIds } },
-            { objectId: { in: objectIds } },
           ],
         },
       }),
     ])
 
   return {
-    users: users.length,
-    courses: courses.length,
-    elements: elements.length,
-    userGroups: userGroups.length,
+    users: userIds.length,
+    courses: courseIds.length,
+    elements: elementIds.length,
+    answerCollections: answerCollectionIds.length,
+    userGroups: userGroupIds.length,
     directPermissions,
     derivedPermissions,
     auditLogEntries,
+  }
+}
+
+async function getScopedIds(
+  prisma: BenchmarkPrismaClient,
+  prefix: string
+): Promise<ScopedIds> {
+  const [users, courses, elements, answerCollections, userGroups] =
+    await Promise.all([
+      prisma.user.findMany({
+        where: { shortname: { startsWith: prefix } },
+        select: { id: true },
+      }),
+      prisma.course.findMany({
+        where: { name: { startsWith: prefix } },
+        select: { id: true },
+      }),
+      prisma.element.findMany({
+        where: { name: { startsWith: prefix } },
+        select: { id: true },
+      }),
+      prisma.answerCollection.findMany({
+        where: { name: { startsWith: prefix } },
+        select: { id: true },
+      }),
+      prisma.userGroup.findMany({
+        where: { name: { startsWith: prefix } },
+        select: { id: true },
+      }),
+    ])
+
+  return {
+    userIds: users.map((user) => user.id),
+    courseIds: courses.map((course) => course.id),
+    elementIds: elements.map((element) => element.id),
+    answerCollectionIds: answerCollections.map((collection) => collection.id),
+    userGroupIds: userGroups.map((group) => group.id),
   }
 }
 
@@ -1253,35 +1383,13 @@ async function cleanupFixtures(
   prisma: BenchmarkPrismaClient,
   runPrefix: string
 ) {
-  const users = await prisma.user.findMany({
-    where: { shortname: { startsWith: runPrefix } },
-    select: { id: true },
-  })
-  const courses = await prisma.course.findMany({
-    where: { name: { startsWith: runPrefix } },
-    select: { id: true },
-  })
-  const elements = await prisma.element.findMany({
-    where: { name: { startsWith: runPrefix } },
-    select: { id: true },
-  })
-  const userGroups = await prisma.userGroup.findMany({
-    where: { name: { startsWith: runPrefix } },
-    select: { id: true },
-  })
-  const userIds = users.map((user) => user.id)
-  const objectIds = [
-    ...courses.map((course) => course.id),
-    ...elements.map((element) => String(element.id)),
-    ...userGroups.map((group) => String(group.id)),
-  ]
+  const { userIds } = await getScopedIds(prisma, runPrefix)
 
   await prisma.auditLogEntry.deleteMany({
     where: {
       OR: [
         { sourceUserId: { in: userIds } },
         { targetUserId: { in: userIds } },
-        { objectId: { in: objectIds } },
       ],
     },
   })
@@ -1289,6 +1397,9 @@ async function cleanupFixtures(
     where: { name: { startsWith: runPrefix } },
   })
   await prisma.element.deleteMany({
+    where: { name: { startsWith: runPrefix } },
+  })
+  await prisma.answerCollection.deleteMany({
     where: { name: { startsWith: runPrefix } },
   })
   await prisma.userGroup.deleteMany({
@@ -1319,13 +1430,14 @@ function dryRunSummary() {
     },
     safeguards: [
       'Reject non-local DATABASE_URL hosts.',
+      'Reject NODE_ENV=production and require PERMISSION_BENCHMARK_CONFIRM_LOCAL=1.',
       'Use only generated example.invalid users and synthetic objects.',
       'Capture scoped before and after dumps under project/_local.',
       'Delete only records carrying the unique benchmark prefix.',
       'Assert that no benchmark rows remain after cleanup.',
     ],
     runCommand:
-      'pnpm --filter @klicker-uzh/graphql benchmark:permission-propagation:run',
+      'PERMISSION_BENCHMARK_CONFIRM_LOCAL=1 pnpm --filter @klicker-uzh/graphql benchmark:permission-propagation:run',
   }
 }
 

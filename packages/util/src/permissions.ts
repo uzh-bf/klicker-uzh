@@ -93,44 +93,62 @@ export async function recomputeDerivedPermissions(
   const benchmarkEnabled = process.env.PERMISSION_RECOMPUTE_BENCHMARK === '1'
   const benchmarkStartedAt = benchmarkEnabled ? performance.now() : undefined
   let benchmarkOutcome: 'success' | 'error' = 'success'
+  let benchmarkObjectType = 'unknown'
+  let benchmarkObjectId: string | number | undefined
 
   try {
     if (typeof catalogCollectionId !== 'undefined') {
+      benchmarkObjectType = 'catalogCollection'
+      benchmarkObjectId = catalogCollectionId
       await recomputeCatalogCollectionPermissions(
         { id: catalogCollectionId, userId, updateAccessRequests },
         prisma
       )
     } else if (typeof answerCollectionId !== 'undefined') {
+      benchmarkObjectType = 'answerCollection'
+      benchmarkObjectId = answerCollectionId
       await recomputeAnswerCollectionPermissions(
         { id: answerCollectionId, userId, updateAccessRequests },
         prisma
       )
     } else if (typeof elementId !== 'undefined') {
+      benchmarkObjectType = 'element'
+      benchmarkObjectId = elementId
       await recomputeElementPermissions(
         { id: elementId, userId, updateAccessRequests },
         prisma
       )
     } else if (typeof liveQuizId !== 'undefined') {
+      benchmarkObjectType = 'liveQuiz'
+      benchmarkObjectId = liveQuizId
       await recomputeLiveQuizPermissions(
         { id: liveQuizId, userId, updateAccessRequests },
         prisma
       )
     } else if (typeof practiceQuizId !== 'undefined') {
+      benchmarkObjectType = 'practiceQuiz'
+      benchmarkObjectId = practiceQuizId
       await recomputePracticeQuizPermissions(
         { id: practiceQuizId, userId, updateAccessRequests },
         prisma
       )
     } else if (typeof microLearningId !== 'undefined') {
+      benchmarkObjectType = 'microLearning'
+      benchmarkObjectId = microLearningId
       await recomputeMicroLearningPermissions(
         { id: microLearningId, userId, updateAccessRequests },
         prisma
       )
     } else if (typeof groupActivityId !== 'undefined') {
+      benchmarkObjectType = 'groupActivity'
+      benchmarkObjectId = groupActivityId
       await recomputeGroupActivityPermissions(
         { id: groupActivityId, userId, updateAccessRequests },
         prisma
       )
     } else if (typeof courseId !== 'undefined') {
+      benchmarkObjectType = 'course'
+      benchmarkObjectId = courseId
       await recomputeCoursePermissions(
         { id: courseId, userId, updateAccessRequests },
         prisma
@@ -143,27 +161,10 @@ export async function recomputeDerivedPermissions(
     throw error
   } finally {
     if (typeof benchmarkStartedAt !== 'undefined') {
-      const [objectType, objectId] =
-        typeof catalogCollectionId !== 'undefined'
-          ? ['catalogCollection', catalogCollectionId]
-          : typeof answerCollectionId !== 'undefined'
-            ? ['answerCollection', answerCollectionId]
-            : typeof elementId !== 'undefined'
-              ? ['element', elementId]
-              : typeof liveQuizId !== 'undefined'
-                ? ['liveQuiz', liveQuizId]
-                : typeof practiceQuizId !== 'undefined'
-                  ? ['practiceQuiz', practiceQuizId]
-                  : typeof microLearningId !== 'undefined'
-                    ? ['microLearning', microLearningId]
-                    : typeof groupActivityId !== 'undefined'
-                      ? ['groupActivity', groupActivityId]
-                      : ['course', courseId]
-
       console.info(
         `PERMISSION_RECOMPUTE_BENCHMARK ${JSON.stringify({
-          objectType,
-          objectId,
+          objectType: benchmarkObjectType,
+          objectId: benchmarkObjectId,
           mode: typeof userId === 'undefined' ? 'object' : 'user',
           durationMs: Number(
             (performance.now() - benchmarkStartedAt).toFixed(2)
