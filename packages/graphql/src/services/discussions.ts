@@ -347,6 +347,12 @@ async function getCourseSettings(courseId: string, ctx: Context) {
   })
 }
 
+function isCourseDiscussionEnabled(
+  course: Awaited<ReturnType<typeof getCourseSettings>>
+): course is NonNullable<Awaited<ReturnType<typeof getCourseSettings>>> {
+  return Boolean(course?.isCourseQARolloutEnabled && course.isCourseQAEnabled)
+}
+
 async function getCourseAccessActor(
   {
     courseId,
@@ -867,11 +873,7 @@ export async function courseDiscussionThreads(
   const parsedCursor = parseCursor(cursor)
 
   const course = await getCourseSettings(courseId, ctx)
-  if (
-    !course ||
-    !course.isCourseQARolloutEnabled ||
-    !course.isCourseQAEnabled
-  ) {
+  if (!isCourseDiscussionEnabled(course)) {
     return {
       threads: [],
       nextCursor: null,
@@ -1045,11 +1047,7 @@ export async function courseDiscussionOverview(
   ctx: Context
 ): Promise<CourseDiscussionOverview> {
   const course = await getCourseSettings(courseId, ctx)
-  if (
-    !course ||
-    !course.isCourseQARolloutEnabled ||
-    !course.isCourseQAEnabled
-  ) {
+  if (!isCourseDiscussionEnabled(course)) {
     return { groups: [], nextCursor: null, hasMore: false, totalThreads: 0 }
   }
 
@@ -1147,8 +1145,7 @@ export async function getCourseDiscussionEmbeddingInfo(
   ctx: ContextWithUser
 ): Promise<CourseDiscussionEmbeddingInfo | null> {
   const course = await getCourseSettings(courseId, ctx)
-  if (!course || !course.isCourseQARolloutEnabled || !course.isCourseQAEnabled)
-    return null
+  if (!isCourseDiscussionEnabled(course)) return null
 
   const actor = await getCourseAccessActor(
     {
@@ -1239,8 +1236,7 @@ export async function createCourseDiscussionThread(
   if (!normalizedContent) return null
 
   const course = await getCourseSettings(courseId, ctx)
-  if (!course || !course.isCourseQARolloutEnabled || !course.isCourseQAEnabled)
-    return null
+  if (!isCourseDiscussionEnabled(course)) return null
 
   // Verify embed token early to reject courseId mismatches before creating
   // spaces or scopes as a side effect
@@ -1404,8 +1400,7 @@ export async function createCourseDiscussionReply(
   if (!normalizedContent) return null
 
   const course = await getCourseSettings(courseId, ctx)
-  if (!course || !course.isCourseQARolloutEnabled || !course.isCourseQAEnabled)
-    return null
+  if (!isCourseDiscussionEnabled(course)) return null
 
   // Verify embed token early to reject courseId mismatches before any lookups
   const embedClaims = await verifyEmbedToken(embedToken)
@@ -1675,8 +1670,7 @@ export async function toggleCourseDiscussionThreadUpvote(
   if (!resolved || !resolved.actor.participantId) return null
 
   const course = await getCourseSettings(resolved.courseId, ctx)
-  if (!course || !course.isCourseQARolloutEnabled || !course.isCourseQAEnabled)
-    return null
+  if (!isCourseDiscussionEnabled(course)) return null
 
   const participantId = resolved.actor.participantId
 
@@ -1757,8 +1751,7 @@ export async function toggleCourseDiscussionReplyUpvote(
   if (!resolved || !resolved.actor.participantId) return null
 
   const course = await getCourseSettings(resolved.courseId, ctx)
-  if (!course || !course.isCourseQARolloutEnabled || !course.isCourseQAEnabled)
-    return null
+  if (!isCourseDiscussionEnabled(course)) return null
 
   const participantId = resolved.actor.participantId
 
