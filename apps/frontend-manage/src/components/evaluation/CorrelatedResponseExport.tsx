@@ -7,7 +7,8 @@ import { useTranslations } from 'next-intl'
 function CorrelatedResponseExport({ liveQuizId }: { liveQuizId: string }) {
   const t = useTranslations()
   const [getExport, { loading }] = useLazyQuery(
-    GetCorrelatedLiveQuizResponseExportDocument
+    GetCorrelatedLiveQuizResponseExportDocument,
+    { fetchPolicy: 'no-cache' }
   )
 
   const downloadExport = async () => {

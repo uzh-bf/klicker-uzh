@@ -43,5 +43,15 @@
   "bin": {
     "klicker-export": "dist/scripts/export-course.js"
   },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./correlated-live-quiz-responses": {
+      "types": "./dist/correlatedLiveQuizResponses.d.ts",
+      "import": "./dist/correlatedLiveQuizResponses.js"
+    }
+  },
   "type": "module"
 }

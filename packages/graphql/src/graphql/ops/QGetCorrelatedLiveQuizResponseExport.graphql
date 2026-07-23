@@ -3,6 +3,5 @@ query GetCorrelatedLiveQuizResponseExport($id: String!) {
     filename
     content
     warning
-    respondentCount
   }
 }

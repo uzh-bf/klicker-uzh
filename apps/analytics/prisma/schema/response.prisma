@@ -147,6 +147,22 @@ model LiveQuizResponse {
   @@index([instanceId, elementBlockExecution])
 }
 
+model LiveQuizResponseExportLabel {
+  id Int @id @default(autoincrement())
+
+  identityHash String
+  label        Int
+
+  liveQuiz   LiveQuiz @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  liveQuizId String   @db.Uuid
+
+  createdAt DateTime @default(now())
+
+  @@unique([liveQuizId, identityHash])
+  @@unique([liveQuizId, label])
+  @@index([liveQuizId])
+}
+
 enum PointCorrectionType {
   ALL_COURSE
   PARTICIPATING

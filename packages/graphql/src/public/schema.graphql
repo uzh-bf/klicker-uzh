@@ -39,6 +39,7 @@ type ActivityDetails {
 }
 
 type ActivityEvaluation {
+  canExportCorrelatedResponses: Boolean
   confusionFeedbacks: [ConfusionTimestep!]
   courseId: String
   courseLanguage: LocaleType
@@ -947,7 +948,6 @@ type ContentInstanceEvaluation {
 type CorrelatedLiveQuizResponseExport {
   content: String!
   filename: String!
-  respondentCount: Int!
   warning: String!
 }
 

@@ -58,6 +58,7 @@ function LiveQuizEvaluation() {
       leaderboard={leaderboard}
       toolbarContent={
         !router.query.hmac &&
+        evaluation.canExportCorrelatedResponses &&
         evaluation.status === PublicationStatus.Ended &&
         evaluation.responseCollectionMode ===
           LiveQuizResponseCollectionMode.CorrelatedExport &&

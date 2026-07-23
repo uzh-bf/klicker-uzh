@@ -3,6 +3,7 @@ import {
   CORRELATED_LIVE_QUIZ_EXPORT_WARNING,
   CorrelatedLiveQuizExportSizeError,
   createCorrelatedLiveQuizResponseCsv,
+  DEFAULT_CORRELATED_LIVE_QUIZ_EXPORT_MAX_BYTES,
 } from '../src/correlatedLiveQuizResponses.js'
 
 const questions = [
@@ -48,23 +49,27 @@ const responses = [
   },
 ]
 
+const respondents = [
+  { identityKey: 'respondent:anonymous-id', label: 1 },
+  { identityKey: 'participant:account-id', label: 2 },
+]
+
 describe('createCorrelatedLiveQuizResponseCsv', () => {
-  it('creates one deterministic pseudonymous row per respondent', () => {
+  it('creates one stable pseudonymous row per assigned respondent label', () => {
     const first = createCorrelatedLiveQuizResponseCsv({
       quizName: 'Research Quiz',
-      exportSalt: 'quiz-specific-salt',
       questions,
+      respondents,
       responses,
     })
     const second = createCorrelatedLiveQuizResponseCsv({
       quizName: 'Research Quiz',
-      exportSalt: 'quiz-specific-salt',
       questions,
+      respondents: [...respondents].reverse(),
       responses: [...responses].reverse(),
     })
 
     expect(first.csv).toBe(second.csv)
-    expect(first.respondentCount).toBe(2)
     expect(first.filename).toBe('live-quiz-research-quiz-responses.csv')
     expect(first.warning).toBe(CORRELATED_LIVE_QUIZ_EXPORT_WARNING)
     expect(first.csv.match(/^respondent_\d{3},/gm)).toHaveLength(2)
@@ -73,8 +78,8 @@ describe('createCorrelatedLiveQuizResponseCsv', () => {
   it('orders clean response, correctness, and points headers by quiz structure', () => {
     const result = createCorrelatedLiveQuizResponseCsv({
       quizName: 'Quiz',
-      exportSalt: 'salt',
       questions,
+      respondents,
       responses,
     })
 
@@ -100,8 +105,8 @@ describe('createCorrelatedLiveQuizResponseCsv', () => {
   it('preserves free-text newlines, protects formulas, and escapes RFC 4180 CSV', () => {
     const result = createCorrelatedLiveQuizResponseCsv({
       quizName: 'Quiz',
-      exportSalt: 'salt',
       questions,
+      respondents,
       responses,
     })
 
@@ -114,8 +119,8 @@ describe('createCorrelatedLiveQuizResponseCsv', () => {
   it('uses canonical compact JSON for structured responses', () => {
     const result = createCorrelatedLiveQuizResponseCsv({
       quizName: 'Quiz',
-      exportSalt: 'salt',
       questions,
+      respondents,
       responses,
     })
 
@@ -127,8 +132,8 @@ describe('createCorrelatedLiveQuizResponseCsv', () => {
   it('does not expose source identifiers, hashes, types, or timestamps', () => {
     const result = createCorrelatedLiveQuizResponseCsv({
       quizName: 'Quiz',
-      exportSalt: 'salt',
       questions,
+      respondents,
       responses,
     })
 
@@ -143,8 +148,8 @@ describe('createCorrelatedLiveQuizResponseCsv', () => {
   it('leaves unanswered cells empty', () => {
     const result = createCorrelatedLiveQuizResponseCsv({
       quizName: 'Quiz',
-      exportSalt: 'salt',
       questions,
+      respondents: [respondents[1]!],
       responses: [responses[0]!],
     })
     const dataRow = result.csv.split('\r\n')[1]!
@@ -156,10 +161,16 @@ describe('createCorrelatedLiveQuizResponseCsv', () => {
     expect(() =>
       createCorrelatedLiveQuizResponseCsv({
         quizName: 'Quiz',
-        exportSalt: 'salt',
-        questions,
-        responses,
-        maxBytes: 20,
+        questions: [questions[0]!],
+        respondents: [respondents[1]!],
+        responses: [
+          {
+            ...responses[0]!,
+            response: {
+              value: 'x'.repeat(DEFAULT_CORRELATED_LIVE_QUIZ_EXPORT_MAX_BYTES),
+            },
+          },
+        ],
       })
     ).toThrow(CorrelatedLiveQuizExportSizeError)
   })

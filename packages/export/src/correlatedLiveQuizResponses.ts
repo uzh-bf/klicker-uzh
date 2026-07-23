@@ -1,5 +1,3 @@
-import { createHmac } from 'node:crypto'
-
 export const CORRELATED_LIVE_QUIZ_EXPORT_WARNING =
   'Export uses random respondent labels and does not include names, emails, account ids, usernames, or temporary pseudonyms. Free-text answers may still contain personal data entered by participants.'
 
@@ -12,6 +10,11 @@ export interface CorrelatedLiveQuizExportQuestion {
   questionOrder: number
   instanceId: number
   executions: number[]
+}
+
+export interface CorrelatedLiveQuizExportRespondent {
+  identityKey: string
+  label: number
 }
 
 export interface CorrelatedLiveQuizExportResponse {
@@ -86,22 +89,16 @@ function sanitizeFilenamePart(value: string) {
   return sanitized || 'quiz'
 }
 
-function getPseudonymHash(exportSalt: string, identityKey: string) {
-  return createHmac('sha256', exportSalt).update(identityKey).digest('hex')
-}
-
 export function createCorrelatedLiveQuizResponseCsv({
   quizName,
-  exportSalt,
   questions,
+  respondents,
   responses,
-  maxBytes = DEFAULT_CORRELATED_LIVE_QUIZ_EXPORT_MAX_BYTES,
 }: {
   quizName: string
-  exportSalt: string
   questions: CorrelatedLiveQuizExportQuestion[]
+  respondents: CorrelatedLiveQuizExportRespondent[]
   responses: CorrelatedLiveQuizExportResponse[]
-  maxBytes?: number
 }) {
   const columns = questions
     .flatMap((question) =>
@@ -119,22 +116,10 @@ export function createCorrelatedLiveQuizResponseCsv({
         left.execution - right.execution
     )
 
-  const identityKeys = [...new Set(responses.map((row) => row.identityKey))]
-    .map((identityKey) => ({
-      identityKey,
-      hash: getPseudonymHash(exportSalt, identityKey),
-    }))
-    .sort(
-      (left, right) =>
-        left.hash.localeCompare(right.hash) ||
-        left.identityKey.localeCompare(right.identityKey)
-    )
-  const labelWidth = Math.max(3, String(identityKeys.length).length)
-  const labels = new Map(
-    identityKeys.map(({ identityKey }, index) => [
-      identityKey,
-      `respondent_${String(index + 1).padStart(labelWidth, '0')}`,
-    ])
+  const orderedRespondents = [...respondents].sort(
+    (left, right) =>
+      left.label - right.label ||
+      left.identityKey.localeCompare(right.identityKey)
   )
 
   const responseByIdentityAndColumn = new Map<
@@ -156,8 +141,8 @@ export function createCorrelatedLiveQuizResponseCsv({
       `${prefix}_points`,
     ]),
   ]
-  const rows = identityKeys.map(({ identityKey }) => [
-    labels.get(identityKey)!,
+  const rows = orderedRespondents.map(({ identityKey, label }) => [
+    `respondent_${String(label).padStart(3, '0')}`,
     ...columns.flatMap(({ key }) => {
       const response = responseByIdentityAndColumn.get(`${identityKey}:${key}`)
       if (!response) return ['', '', '']
@@ -179,9 +164,9 @@ export function createCorrelatedLiveQuizResponseCsv({
       .join('\r\n') +
     '\r\n'
   const byteLength = Buffer.byteLength(csv, 'utf8')
-  if (byteLength > maxBytes) {
+  if (byteLength > DEFAULT_CORRELATED_LIVE_QUIZ_EXPORT_MAX_BYTES) {
     throw new CorrelatedLiveQuizExportSizeError(
-      `Correlated live quiz export exceeds ${maxBytes} bytes`
+      `Correlated live quiz export exceeds ${DEFAULT_CORRELATED_LIVE_QUIZ_EXPORT_MAX_BYTES} bytes`
     )
   }
 
@@ -189,7 +174,5 @@ export function createCorrelatedLiveQuizResponseCsv({
     csv,
     filename: `live-quiz-${sanitizeFilenamePart(quizName)}-responses.csv`,
     warning: CORRELATED_LIVE_QUIZ_EXPORT_WARNING,
-    respondentCount: identityKeys.length,
-    byteLength,
   }
 }

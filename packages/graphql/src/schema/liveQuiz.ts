@@ -190,7 +190,6 @@ export interface ICorrelatedLiveQuizResponseExport {
   filename: string
   content: string
   warning: string
-  respondentCount: number
 }
 export const CorrelatedLiveQuizResponseExportRef =
   builder.objectRef<ICorrelatedLiveQuizResponseExport>(
@@ -202,7 +201,6 @@ export const CorrelatedLiveQuizResponseExport =
       filename: t.exposeString('filename'),
       content: t.exposeString('content'),
       warning: t.exposeString('warning'),
-      respondentCount: t.exposeInt('respondentCount'),
     }),
   })
 

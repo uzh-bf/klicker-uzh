@@ -26,6 +26,7 @@ export interface IActivityEvaluation {
   courseLanguage?: DB.Locale | null
   status?: DB.PublicationStatus | null
   responseCollectionMode?: DB.LiveQuizResponseCollectionMode | null
+  canExportCorrelatedResponses?: boolean | null
   isAssessmentEnabled?: boolean | null
   pinCode?: string | null
   results: IStackEvaluation[]
@@ -258,6 +259,10 @@ export const ActivityEvaluation = ActivityEvaluationRef.implement({
       type: LiveQuizResponseCollectionMode,
       nullable: true,
     }),
+    canExportCorrelatedResponses: t.exposeBoolean(
+      'canExportCorrelatedResponses',
+      { nullable: true }
+    ),
     isAssessmentEnabled: t.exposeBoolean('isAssessmentEnabled', {
       nullable: true,
     }),
