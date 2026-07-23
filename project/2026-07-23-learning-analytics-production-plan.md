@@ -880,7 +880,7 @@ the repository script that replaces it before continuing.
 
 ## Next Steps
 
-1. Commit and independently review the final security adjustments.
-2. Run the final maintainability, simplification, and branch reviews.
+1. Commit the accepted test-isolation review adjustment.
+2. Run the final whole-branch maintainability and branch reviews.
 3. Publish `chat-analytics` against `v3`, refresh the stacked
    `analytics-phase-a` draft, and read back CI without merging or deploying.
