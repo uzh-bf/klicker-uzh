@@ -366,7 +366,7 @@ Focused slices run the relevant subset. Slice 6 reruns the complete matrix:
 | Diff hygiene | `git diff --check` | No errors |
 | Dependency policy | `volta run --node 24.16.0 pnpm run check:syncpack` | Exit 0 |
 | Analytics format | `cd apps/analytics && uv run ruff format --check . && uv run ruff check .` | Exit 0 |
-| Analytics types | `cd apps/analytics && uv run pyright` | Exit 0 |
+| Analytics types | Focused strict Pyright on changed typed boundaries; record the full Phase A baseline | No new findings in changed typed boundaries |
 | Analytics tests | `cd apps/analytics && uv run pytest` | All tests pass |
 | Hatchet packages | `volta run --node 24.16.0 pnpm exec turbo run check --filter=@klicker-uzh/hatchet --filter=@klicker-uzh/hatchet-worker-general` | Exit 0 |
 | GraphQL package | `volta run --node 24.16.0 pnpm exec turbo run check --filter=@klicker-uzh/graphql` | Exit 0 |
@@ -827,9 +827,46 @@ the repository script that replaces it before continuing.
   between image stages. Fresh ARM64 and AMD64 builds retain their separate
   runtime packages and both pass the non-root, no-network, read-only model,
   license, snapshot, and CPU-only smoke.
-- Active: Commit and review the final simplification, reconcile independent
-  branch findings, then run the finish gates and publish both stacked draft
-  PRs.
+- 2026-07-23: The refreshed Phase 1 base received three final correctness
+  commits (`3ba307ccef`, `f6df11d3a9`, and `1da4c868ba`). They correct
+  participant/instance first-and-last live-quiz attempts, require current
+  non-declined chatbot-disclaimer consent, and make daily through monthly
+  windows UTC-safe with exclusive next-midnight ends. Independent review found
+  no remaining Phase 1 blocker.
+- 2026-07-23: Merged final `chat-analytics` head `1da4c868ba` into Phase 2 as
+  `a23627c147`. The commit hook passed all 24 runnable repository typechecks,
+  lint, formatting, Syncpack, AGENTS validation, and Prisma schema sync.
+- 2026-07-23: The final database-backed SQL checks pass for current consent,
+  UTC window parameters, live-quiz first/last ranking, and clustering queries.
+  The complete database-enabled analytics suite passes 178 tests in
+  5 minutes 44 seconds. The run exposed and then verified a test-only
+  isolation defect: runtime tests imported `src.db` under fake database URLs
+  and retained those modules for later database tests. Autouse fixtures now
+  restore the prior module state after those tests.
+- 2026-07-23: Final local verification also passes Ruff formatting/lint across
+  125 files, uv lock validation, focused strict Pyright on the changed native
+  worker/runtime/model and SQL-test boundaries, Syncpack, GraphQL and Hatchet
+  typechecks, three GraphQL event-routing tests, the TypeScript cutover test,
+  Prisma schema-mirror validation, strict staging/production Helm lint and
+  renders, guarded `allowFull` rendering, and immutable-action workflow
+  validation. Full Phase A Pyright remains the recorded existing baseline of
+  about 2,300 findings rather than a false all-green gate.
+- 2026-07-23: Final ARM64 and AMD64 images rebuilt from the stacked head and
+  passed non-root, no-network, read-only, capability-dropped model and license
+  smoke. A final ARM64 worker registered the proof task and both 15-task DAGs
+  against disposable Hatchet v0.73.1, completed the proof task with the
+  expected immutable input, and exited gracefully.
+- 2026-07-23: Final security review found no high-confidence exploitable
+  vulnerability. Four focused Opengrep findings are allowlisted dynamic
+  imports or UUID-validated values interpolated into static SQL templates.
+  The GraphQL recompute mutation still requires full user access and course
+  administration; full rebuilds additionally require the server-side
+  `ANALYTICS_ALLOW_FULL` gate. Image CVE scanning and live
+  ExternalSecret/Infisical readiness remain explicit pre-deployment gates
+  because no scanner or live environment access is available here.
+- Active: Commit and independently review the test-isolation adjustment, run
+  the final whole-branch maintainability review, then publish and read back
+  both stacked draft PRs without merging or deploying.
 
 ## Finish evidence
 

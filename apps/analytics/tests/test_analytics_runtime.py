@@ -1,6 +1,7 @@
 import importlib
 import os
 import sys
+from collections.abc import Iterator
 from contextlib import nullcontext
 from types import ModuleType
 from typing import Any, cast
@@ -16,6 +17,25 @@ from src.modules.utils import (
     analytics_run_config_from_env,
     analytics_window_since,
 )
+
+_DATABASE_MODULES = (
+    "src.db",
+    "src.scripts.11_chat_quiz_correlation",
+    "src.scripts.13_platform_semester_analytics",
+)
+_MISSING = object()
+
+
+@pytest.fixture(autouse=True)
+def isolate_database_modules() -> Iterator[None]:
+    """Do not retain modules imported under a test-only DATABASE_URL."""
+    previous = {name: sys.modules.get(name, _MISSING) for name in _DATABASE_MODULES}
+    yield
+    for name, module in previous.items():
+        if module is _MISSING:
+            sys.modules.pop(name, None)
+        else:
+            sys.modules[name] = cast(ModuleType, module)
 
 
 def test_direct_runtime_uses_task_local_config_without_mutating_environment(

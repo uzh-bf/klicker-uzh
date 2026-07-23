@@ -3,8 +3,25 @@ from __future__ import annotations
 import importlib
 import sys
 import types
+from collections.abc import Iterator
+from typing import cast
 
 import pytest
+
+_DATABASE_MODULES = ("src.db", "src.scripts.10_chat_topic_clustering")
+_MISSING = object()
+
+
+@pytest.fixture(autouse=True)
+def isolate_database_modules() -> Iterator[None]:
+    """Do not retain modules imported under a test-only DATABASE_URL."""
+    previous = {name: sys.modules.get(name, _MISSING) for name in _DATABASE_MODULES}
+    yield
+    for name, module in previous.items():
+        if module is _MISSING:
+            sys.modules.pop(name, None)
+        else:
+            sys.modules[name] = cast(types.ModuleType, module)
 
 
 class _Scalars:
