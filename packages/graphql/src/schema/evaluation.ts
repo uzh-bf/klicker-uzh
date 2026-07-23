@@ -12,7 +12,9 @@ import {
   ElementBlockStatus,
   FeedbackRef,
   IFeedback,
+  LiveQuizResponseCollectionMode,
 } from './liveQuiz.js'
+import { PublicationStatus } from './practiceQuiz.js'
 import { LocaleType } from './user.js'
 
 export interface IActivityEvaluation {
@@ -22,6 +24,8 @@ export interface IActivityEvaluation {
   description?: string | null
   courseId?: string | null
   courseLanguage?: DB.Locale | null
+  status?: DB.PublicationStatus | null
+  responseCollectionMode?: DB.LiveQuizResponseCollectionMode | null
   isAssessmentEnabled?: boolean | null
   pinCode?: string | null
   results: IStackEvaluation[]
@@ -247,6 +251,11 @@ export const ActivityEvaluation = ActivityEvaluationRef.implement({
     courseId: t.exposeString('courseId', { nullable: true }),
     courseLanguage: t.expose('courseLanguage', {
       type: LocaleType,
+      nullable: true,
+    }),
+    status: t.expose('status', { type: PublicationStatus, nullable: true }),
+    responseCollectionMode: t.expose('responseCollectionMode', {
+      type: LiveQuizResponseCollectionMode,
       nullable: true,
     }),
     isAssessmentEnabled: t.exposeBoolean('isAssessmentEnabled', {

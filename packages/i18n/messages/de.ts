@@ -2880,6 +2880,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte bestätigen Sie, dass der Block geschlossen werden soll. Ab diesem Zeitpunkt akzeptiert das System keine weiteren Antworten der Studierenden und die vollständige Auswertung (inkl. Musterlösung) kann eingesehen werden.',
     },
     evaluation: {
+      downloadCorrelatedResponses: 'Antworten als CSV herunterladen',
+      responseExportPrivacyWarning:
+        'Die Personenbezeichnungen sind zufällig. Freitextantworten können weiterhin von Teilnehmenden eingegebene Personendaten enthalten.',
+      responseExportFailed:
+        'Der Antwortexport konnte nicht heruntergeladen werden.',
+      responseExportEmpty:
+        'Es sind keine verknüpften Antworten für den Export verfügbar.',
+      responseExportTooLarge:
+        'Dieser Antwortexport ist für den direkten Download zu gross.',
       evaluationNotYetAvailable:
         'Die Evaluation zu dieser Frage kann leider (noch) nicht angezeigt werden. Sollten Sie diese Seite irgendwo einbinden wollen, beispielsweise über das PowerPoint-Plugin, wird die Evaluation automatisch nach Starten der Frage angezeigt.',
       noSignedInStudents:

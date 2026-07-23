@@ -1,0 +1,8 @@
+query GetCorrelatedLiveQuizResponseExport($id: String!) {
+  correlatedLiveQuizResponseExport(id: $id) {
+    filename
+    content
+    warning
+    respondentCount
+  }
+}

@@ -70,6 +70,7 @@ import {
   GroupActivitySummary,
 } from './groupActivity.js'
 import {
+  CorrelatedLiveQuizResponseExport,
   Feedback,
   LiveQuiz,
   LiveQuizEmbeddingInfo,
@@ -695,6 +696,22 @@ export const Query = builder.queryType({
 
           return await LiveQuizService.getLiveQuizEvaluation(args, ctx)
         },
+      }),
+
+      correlatedLiveQuizResponseExport: t.withAuth(asUser).field({
+        nullable: true,
+        type: CorrelatedLiveQuizResponseExport,
+        args: { id: t.arg.string({ required: true }) },
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.id }),
+          DB.PermissionLevel.WRITE,
+          async (_, args, ctx) => {
+            return await LiveQuizService.getCorrelatedLiveQuizResponseExport(
+              args,
+              ctx
+            )
+          }
+        ),
       }),
 
       studentLiveQuiz: t.field({

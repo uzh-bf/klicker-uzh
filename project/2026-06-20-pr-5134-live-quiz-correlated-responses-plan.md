@@ -486,6 +486,8 @@ Later research:
 - 2026-07-23: Slice 4B verification passed: 10 focused worker tests cover all respondent types, token scope/hash rejection, legacy temporary logout, identity-safe persistence data, retry ownership, and execution scoping; the worker build passed; and the full repository `check:all` gate passed. The previously passing schema-backed collection-mode test was also retried, but the current DevPod command environment does not expose `HATCHET_CLIENT_TOKEN`, so that database suite could not initialize; Slice 4B does not change the schema.
 - 2026-07-23: Independent Slice 4B correctness and simplification reviews found that operational failures before persistence were acknowledged instead of retried, overlapping delivery of the same event could increment Redis aggregates twice, Redis command errors were not inspected, identified respondents were graded twice, and the response API's identity endpoint did not enforce the live quiz PIN. The findings were accepted. A five-minute owner-token processing lock now serializes one identity and execution, operational correlated failures rethrow for Hatchet retry without releasing the first-response claim, aggregate key types and transaction results are checked, one grading result feeds persistence and leaderboards, and both correlated identity initialization and submission enforce the quiz-scoped PIN cookie.
 - 2026-07-23: Slice 4B review-fix verification passed: 15 focused worker tests now include lock contention, post-persistence retry, different-event duplicate handling, processed-marker completion, and Redis key-type rejection; response API PIN tests passed; both applications built; and the full repository `check:all` gate passed. Slice 4B is finalized. Slice 6 starts with the deterministic respondent-row CSV generator, authorized GraphQL download, and ended-quiz evaluation action.
+- 2026-07-23: Slice 6 implementation completed locally. The export package now creates a deterministic UTF-8 BOM / CRLF CSV with one HMAC-ordered random respondent label per row, ordered response/correctness/points columns, canonical structured values, formula-injection protection, empty unanswered cells, a 5 MiB fail-closed size guard, and no source identifiers or timestamps. A WRITE-authorized GraphQL query exposes the CSV only for ended, non-assessment `CORRELATED_EXPORT` quizzes, and the manage evaluation page shows a compact bilingual warning and browser download action only in that state.
+- 2026-07-23: Slice 6 static verification passed: 7 focused CSV tests, 5 focused GraphQL export-service tests, export/GraphQL/manage typechecks, and the complete repository `check:all` gate. The full gate required Turbo loose environment mode, a temporary uv cache, and disabling pnpm's automatic pre-run dependency relink because this worktree was installed with an explicit supply-chain age-policy exclusion; no repository configuration was changed. DB-backed fixture export and mandatory agent-browser download verification remain part of the final runtime pass.
 
 ## Goal Prompt Requirements
 
@@ -501,6 +503,6 @@ If handed to another agent:
 
 ## Next Steps
 
-1. Deliver the self-service CSV and evaluation-page action together in Slice 6.
-2. Run independent correctness and simplification review for Slice 6.
-3. Close the blocked browser matrix before marking the draft PR ready.
+1. Commit Slice 6 and run independent correctness and simplification review.
+2. Resolve accepted Slice 6 findings and rerun focused plus repository checks.
+3. Close the blocked browser matrix and final security / maintainability gates before updating the draft PR.

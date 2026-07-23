@@ -49,7 +49,9 @@ type ActivityEvaluation {
   isAssessmentEnabled: Boolean
   name: String!
   pinCode: String
+  responseCollectionMode: LiveQuizResponseCollectionMode
   results: [StackEvaluation!]!
+  status: PublicationStatus
 }
 
 type ActivityFeedback {
@@ -940,6 +942,13 @@ type ContentInstanceEvaluation {
   score: Float!
   xp: Int
   xpAwarded: Int
+}
+
+type CorrelatedLiveQuizResponseExport {
+  content: String!
+  filename: String!
+  respondentCount: Int!
+  warning: String!
 }
 
 type Course {
@@ -2446,6 +2455,7 @@ type Query {
   controlCourse(id: String!): Course
   controlCourses: [Course!]
   controlLiveQuiz(id: String!): LiveQuiz
+  correlatedLiveQuizResponseExport(id: String!): CorrelatedLiveQuizResponseExport
   countCatalogSharingRequests: Int!
   course(id: String!): Course
   courseAssessmentReportRecordCount(courseId: String!): Int!

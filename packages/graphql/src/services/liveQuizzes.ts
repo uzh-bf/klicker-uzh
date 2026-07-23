@@ -1,3 +1,7 @@
+import {
+  CorrelatedLiveQuizExportSizeError,
+  createCorrelatedLiveQuizResponseCsv,
+} from '@klicker-uzh/export'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
@@ -2371,6 +2375,8 @@ export async function getLiveQuizEvaluation(
     displayName: liveQuiz.displayName,
     description: liveQuiz.description,
     courseLanguage: liveQuiz.course?.language,
+    status: liveQuiz.status,
+    responseCollectionMode: liveQuiz.responseCollectionMode,
     isAssessmentEnabled: liveQuiz.isAssessmentEnabled,
     pinCode: liveQuiz.pinCode,
     results: blockEvaluations,
@@ -2382,6 +2388,142 @@ export async function getLiveQuizEvaluation(
       liveQuiz.status === DB.PublicationStatus.ENDED
         ? liveQuiz.confusionFeedbacks
         : null, // only shown on evaluation for completed quizzes
+  }
+}
+
+export async function getCorrelatedLiveQuizResponseExport(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: { id, isDeleted: false },
+    select: {
+      displayName: true,
+      exportSalt: true,
+      isAssessmentEnabled: true,
+      name: true,
+      responseCollectionMode: true,
+      status: true,
+      blocks: {
+        where: { status: DB.ElementBlockStatus.EXECUTED },
+        orderBy: { order: 'asc' },
+        select: {
+          execution: true,
+          order: true,
+          elements: {
+            orderBy: { order: 'asc' },
+            select: { id: true, order: true },
+          },
+        },
+      },
+    },
+  })
+  if (!liveQuiz) {
+    throw new GraphQLError('LIVE_QUIZ_NOT_FOUND', {
+      extensions: { code: 'NOT_FOUND' },
+    })
+  }
+  if (liveQuiz.status !== DB.PublicationStatus.ENDED) {
+    throw new GraphQLError('LIVE_QUIZ_CORRELATED_EXPORT_NOT_READY', {
+      extensions: { code: 'BAD_USER_INPUT' },
+    })
+  }
+  if (
+    liveQuiz.isAssessmentEnabled ||
+    liveQuiz.responseCollectionMode !==
+      DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT ||
+    !liveQuiz.exportSalt
+  ) {
+    throw new GraphQLError('LIVE_QUIZ_CORRELATED_EXPORT_UNAVAILABLE', {
+      extensions: { code: 'BAD_USER_INPUT' },
+    })
+  }
+
+  const responses = await ctx.prisma.liveQuizResponse.findMany({
+    where: {
+      correctionOnly: false,
+      instance: { elementBlock: { liveQuizId: id } },
+    },
+    select: {
+      basePoints: true,
+      bonusPoints: true,
+      correctness: true,
+      correctnessPoints: true,
+      elementBlockExecution: true,
+      participantId: true,
+      respondentId: true,
+      response: true,
+      instanceId: true,
+    },
+    orderBy: [
+      { instance: { elementBlock: { order: 'asc' } } },
+      { instance: { order: 'asc' } },
+      { elementBlockExecution: 'asc' },
+      { id: 'asc' },
+    ],
+  })
+  if (responses.length === 0) {
+    throw new GraphQLError('LIVE_QUIZ_CORRELATED_EXPORT_EMPTY', {
+      extensions: { code: 'BAD_USER_INPUT' },
+    })
+  }
+
+  try {
+    const result = createCorrelatedLiveQuizResponseCsv({
+      quizName: liveQuiz.displayName || liveQuiz.name,
+      exportSalt: liveQuiz.exportSalt,
+      questions: liveQuiz.blocks.flatMap((block) =>
+        block.elements.map((instance) => ({
+          blockOrder: block.order,
+          questionOrder: instance.order,
+          instanceId: instance.id,
+          executions: Array.from(
+            { length: block.execution + 1 },
+            (_, index) => index
+          ),
+        }))
+      ),
+      responses: responses.map((response) => {
+        const identityKey = response.participantId
+          ? `participant:${response.participantId}`
+          : response.respondentId
+            ? `respondent:${response.respondentId}`
+            : null
+        if (!identityKey) {
+          throw new GraphQLError(
+            'LIVE_QUIZ_CORRELATED_EXPORT_INVALID_RESPONSE',
+            {
+              extensions: { code: 'INTERNAL_SERVER_ERROR' },
+            }
+          )
+        }
+
+        return {
+          identityKey,
+          instanceId: response.instanceId,
+          blockExecution: response.elementBlockExecution,
+          response: response.response,
+          correctness: response.correctness,
+          basePoints: response.basePoints,
+          correctnessPoints: response.correctnessPoints,
+          bonusPoints: response.bonusPoints,
+        }
+      }),
+    })
+
+    return {
+      filename: result.filename,
+      content: result.csv,
+      warning: result.warning,
+      respondentCount: result.respondentCount,
+    }
+  } catch (error) {
+    if (error instanceof CorrelatedLiveQuizExportSizeError) {
+      throw new GraphQLError('LIVE_QUIZ_CORRELATED_EXPORT_TOO_LARGE', {
+        extensions: { code: 'BAD_USER_INPUT' },
+      })
+    }
+    throw error
   }
 }
 // #endregion

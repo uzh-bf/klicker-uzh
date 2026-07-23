@@ -1657,6 +1657,9 @@ importers:
       '@hatchet-dev/typescript-sdk':
         specifier: 1.9.4
         version: 1.9.4
+      '@klicker-uzh/export':
+        specifier: workspace:*
+        version: link:../export
       '@klicker-uzh/grading':
         specifier: workspace:*
         version: link:../grading

@@ -2836,6 +2836,13 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Please confirm that the active block should be closed. After your confirmation, the system will not accept any further answers from the students and the complete evaluation (including sample solution) can be displayed.',
     },
     evaluation: {
+      downloadCorrelatedResponses: 'Download response CSV',
+      responseExportPrivacyWarning:
+        'Respondent labels are random. Free-text answers may still contain personal data entered by participants.',
+      responseExportFailed: 'The response export could not be downloaded.',
+      responseExportEmpty: 'No correlated responses are available to export.',
+      responseExportTooLarge:
+        'This response export is too large for direct download.',
       evaluationNotYetAvailable:
         'The evaluation for this question cannot be displayed yet. If you want to embed this page somewhere, e.g. via the PowerPoint plugin, the evaluation will be displayed automatically after starting the question.',
       noSignedInStudents:
