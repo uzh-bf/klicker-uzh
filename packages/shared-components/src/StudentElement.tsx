@@ -60,7 +60,7 @@ export type InstanceStackStudentResponseType =
       evaluation?: InstanceEvaluation
     }
   | {
-      type: ElementType.FreeText
+      type: ElementType.FreeText | ElementType.Code
       response?: string
       valid?: boolean
       evaluation?: InstanceEvaluation
@@ -74,12 +74,6 @@ export type InstanceStackStudentResponseType =
   | {
       type: ElementType.CaseStudy
       response?: CaseStudyStudentResponseType
-      valid?: boolean
-      evaluation?: InstanceEvaluation
-    }
-  | {
-      type: ElementType.Code
-      response?: string
       valid?: boolean
       evaluation?: InstanceEvaluation
     }
