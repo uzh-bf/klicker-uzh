@@ -22,7 +22,9 @@ def _capture_rows(monkeypatch, module):
 
 
 def test_participant_analytics_uses_one_utc_timestamp(monkeypatch):
-    module = importlib.import_module("src.modules.participant_analytics.save_participant_analytics")
+    module = importlib.import_module(
+        "src.modules.participant_analytics.save_participant_analytics"
+    )
     fixed_now = datetime(2026, 7, 23, 12, 30)
     captured = _capture_rows(monkeypatch, module)
     monkeypatch.setattr(module, "utcnow", lambda: fixed_now)
@@ -43,7 +45,9 @@ def test_participant_analytics_uses_one_utc_timestamp(monkeypatch):
         ]
     )
 
-    module.save_participant_analytics(_FakeSession(), df, "2026-07-23T00:00:00Z", "DAILY")
+    module.save_participant_analytics(
+        _FakeSession(), df, "2026-07-23T00:00:00Z", "DAILY"
+    )
 
     row = captured["rows"][0]
     assert row["computedAt"] == fixed_now.date()
@@ -53,7 +57,9 @@ def test_participant_analytics_uses_one_utc_timestamp(monkeypatch):
 
 
 def test_aggregated_analytics_uses_one_utc_timestamp(monkeypatch):
-    module = importlib.import_module("src.modules.aggregated_analytics.save_aggregated_analytics")
+    module = importlib.import_module(
+        "src.modules.aggregated_analytics.save_aggregated_analytics"
+    )
     fixed_now = datetime(2026, 7, 23, 12, 30)
     captured = _capture_rows(monkeypatch, module)
     monkeypatch.setattr(module, "utcnow", lambda: fixed_now)
@@ -70,7 +76,9 @@ def test_aggregated_analytics_uses_one_utc_timestamp(monkeypatch):
         ]
     )
 
-    module.save_aggregated_analytics(_FakeSession(), df, "2026-07-23T00:00:00Z", "DAILY")
+    module.save_aggregated_analytics(
+        _FakeSession(), df, "2026-07-23T00:00:00Z", "DAILY"
+    )
 
     row = captured["rows"][0]
     assert row["computedAt"] == fixed_now.date()

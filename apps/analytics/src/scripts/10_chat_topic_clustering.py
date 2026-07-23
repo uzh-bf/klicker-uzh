@@ -76,7 +76,9 @@ def main() -> None:
 
         if failures:
             failed_ids = ", ".join(failures)
-            raise RuntimeError(f"{len(failures)} of {len(chatbots)} chatbot clustering jobs failed: {failed_ids}")
+            raise RuntimeError(
+                f"{len(failures)} of {len(chatbots)} chatbot clustering jobs failed: {failed_ids}"
+            )
 
         script_exit(script=__name__, started=started, rows_written=total_rows)
 

@@ -11,7 +11,13 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, Session, load_only, mapped_c
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from src.db_helpers import bulk_upsert, coerce_date, coerce_timestamp, row_to_dict, utcnow
+from src.db_helpers import (
+    bulk_upsert,
+    coerce_date,
+    coerce_timestamp,
+    row_to_dict,
+    utcnow,
+)
 
 
 class _Base(DeclarativeBase):

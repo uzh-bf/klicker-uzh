@@ -311,6 +311,18 @@ describe('@klicker-uzh/grading', () => {
       response: 0.1,
     })
     expect(points17).toEqual(null)
+
+    const zeroUpperBound = gradeQuestionNumerical({
+      solutionRanges: [{ max: 0 }],
+      response: 1,
+    })
+    expect(zeroUpperBound).toEqual(0)
+
+    const zeroLowerBound = gradeQuestionNumerical({
+      solutionRanges: [{ min: 0 }],
+      response: -1,
+    })
+    expect(zeroLowerBound).toEqual(0)
   })
 
   it('should grade FREE_TEXT questions correctly', () => {

@@ -162,6 +162,63 @@ def _case_study_correctness(response, options):
     return "PARTIAL"
 
 
+def _numerical_correctness(response, options):
+    if not isinstance(response, dict) or not isinstance(options, dict):
+        return None
+
+    try:
+        response_value = float(response["value"])
+    except (KeyError, TypeError, ValueError):
+        return None
+
+    solution_ranges = options.get("solutionRanges") or []
+    exact_solutions = options.get("exactSolutions") or []
+    if not solution_ranges and not exact_solutions:
+        return None
+
+    if solution_ranges:
+        defined_ranges = [
+            solution_range
+            for solution_range in solution_ranges
+            if isinstance(solution_range, dict)
+            and (
+                solution_range.get("min") is not None
+                or solution_range.get("max") is not None
+            )
+        ]
+        if not defined_ranges:
+            return None
+
+        for solution_range in defined_ranges:
+            min_value = solution_range.get("min")
+            max_value = solution_range.get("max")
+            try:
+                above_min = (
+                    min_value is None or response_value >= float(min_value) - _EPSILON
+                )
+                below_max = (
+                    max_value is None or response_value <= float(max_value) + _EPSILON
+                )
+            except (TypeError, ValueError):
+                continue
+            if above_min and below_max:
+                return "CORRECT"
+        return "INCORRECT"
+
+    for solution in exact_solutions:
+        try:
+            numerical_solution = float(solution)
+        except (TypeError, ValueError):
+            continue
+        if (
+            numerical_solution - _EPSILON
+            <= response_value
+            <= numerical_solution + _EPSILON
+        ):
+            return "CORRECT"
+    return "INCORRECT"
+
+
 def compute_correctness_columns(df_element_instances, row):
     element_instance = df_element_instances[
         df_element_instances["elementInstanceId"] == row["elementInstanceId"]
@@ -218,40 +275,7 @@ def compute_correctness_columns(df_element_instances, row):
             )
 
     elif element_instance["type"] == "NUMERICAL":
-        response_value = float(response["value"])
-
-        if "solutionRanges" in options:
-            within_range = list(
-                map(
-                    lambda range: (
-                        float(range["min"]) <= response_value <= float(range["max"])
-                    ),
-                    options["solutionRanges"],
-                )
-            )
-            if any(within_range):
-                return "CORRECT"
-            else:
-                return "INCORRECT"
-
-        elif "exactSolutions" in options:
-            response_correct = list(
-                map(
-                    lambda solution: (
-                        float(solution) - 1e-10
-                        <= response_value
-                        <= float(solution) + 1e-10
-                    ),
-                    options["exactSolutions"],
-                )
-            )
-
-            if any(response_correct):
-                return "CORRECT"
-            else:
-                return "INCORRECT"
-
-        return "INCORRECT"
+        return _numerical_correctness(response, options)
 
     elif element_instance["type"] == "FREE_TEXT":
         # if no sample solution is specified, automatically grade as correct
@@ -338,8 +362,7 @@ def compute_correctness(session: Session, df_details, verbose: bool = False):
 
     if verbose:
         print(
-            "Number of question response details with correctness computed "
-            "(no flashcards / content elements):",
+            "Number of question response details with correctness computed (no flashcards / content elements):",
             len(df_details),
         )
 

@@ -132,6 +132,90 @@ def _case_study_instance_df(options):
     )
 
 
+def _numerical_instance_df(options):
+    return pd.DataFrame(
+        [
+            {
+                "elementInstanceId": "instance-1",
+                "type": "NUMERICAL",
+                "options": options,
+            }
+        ]
+    )
+
+
+@pytest.mark.parametrize(
+    ("response_value", "expected"),
+    [
+        (5, "CORRECT"),
+        (10, "CORRECT"),
+        (16, "CORRECT"),
+        (50, "INCORRECT"),
+        (70, "CORRECT"),
+        (70.11, "INCORRECT"),
+        (95, "CORRECT"),
+    ],
+)
+def test_numerical_ranges_match_product_grading(response_value, expected):
+    module = importlib.import_module(
+        "src.modules.participant_analytics.compute_correctness"
+    )
+
+    result = module.compute_correctness_columns(
+        _numerical_instance_df(
+            {
+                "solutionRanges": [
+                    {"max": 10},
+                    {"min": 13, "max": 30},
+                    {"min": 70, "max": 70},
+                    {"min": 90},
+                ]
+            }
+        ),
+        {
+            "elementInstanceId": "instance-1",
+            "response": {"value": response_value},
+        },
+    )
+
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    ("options", "response_value", "expected"),
+    [
+        ({"solutionRanges": []}, 0, None),
+        ({"solutionRanges": [{}]}, 0, None),
+        ({"solutionRanges": [{"max": 0}]}, 0, "CORRECT"),
+        ({"solutionRanges": [{"max": 0}]}, 1, "INCORRECT"),
+        ({"solutionRanges": [{"min": 0}]}, -1, "INCORRECT"),
+        ({"exactSolutions": []}, 0.1, None),
+        ({"solutionRanges": [], "exactSolutions": [0]}, 0, "CORRECT"),
+        ({"exactSolutions": [0]}, 1e-30, "CORRECT"),
+        ({"exactSolutions": [0]}, 1e-12, "INCORRECT"),
+        ({"exactSolutions": [0, 100]}, 100, "CORRECT"),
+        ({"exactSolutions": [0, 100]}, 50, "INCORRECT"),
+        ({"exactSolutions": [0.1]}, 0.1, "CORRECT"),
+    ],
+)
+def test_numerical_exact_and_empty_solutions_match_product_grading(
+    options, response_value, expected
+):
+    module = importlib.import_module(
+        "src.modules.participant_analytics.compute_correctness"
+    )
+
+    result = module.compute_correctness_columns(
+        _numerical_instance_df(options),
+        {
+            "elementInstanceId": "instance-1",
+            "response": {"value": response_value},
+        },
+    )
+
+    assert result == expected
+
+
 def test_selection_correctness_without_sample_solution_is_treated_as_correct():
     module = importlib.import_module(
         "src.modules.participant_analytics.compute_correctness"

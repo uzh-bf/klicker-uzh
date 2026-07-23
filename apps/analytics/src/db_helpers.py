@@ -46,7 +46,9 @@ def bulk_upsert(
     expected_columns = set(rows[0])
     for index, row in enumerate(rows[1:], start=1):
         if set(row) != expected_columns:
-            raise ValueError(f"bulk_upsert row {index} must have the same columns as row 0")
+            raise ValueError(
+                f"bulk_upsert row {index} must have the same columns as row 0"
+            )
 
     stmt = postgres_insert(Model).values(list(rows))
     effective_update_cols = (

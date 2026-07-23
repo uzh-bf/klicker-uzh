@@ -17,10 +17,14 @@ type CourseActivity = {
 
 type Outcome = 'CORRECT' | 'PARTIAL' | 'WRONG'
 
-// Element types the analytics compute_correctness handles. NUMERICAL is
-// technically supported but the existing Testkurs seed uses one-sided
-// solutionRanges like {max: 5}, which the pipeline can't score.
-const SCORABLE_ELEMENT_TYPES = new Set(['SC', 'MC', 'KPRIM', 'FREE_TEXT'])
+// Element types for which this seeder emits payloads analytics can score.
+const SCORABLE_ELEMENT_TYPES = new Set([
+  'SC',
+  'MC',
+  'KPRIM',
+  'NUMERICAL',
+  'FREE_TEXT',
+])
 
 const OUTCOME_VALUES: Record<
   Outcome,
