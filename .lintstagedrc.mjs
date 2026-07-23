@@ -1,5 +1,17 @@
+import { lstatSync } from 'fs'
+
 export default {
-  '*.{js,mjs,cjs,ts,tsx,jsx,json,md,mdx,graphql,yml,yaml,css,scss,html}': [
-    'prettier --config .prettierrc.mjs --check',
-  ],
+  '*': (stagedFiles) => {
+    const nonSymlinks = stagedFiles.filter((f) => {
+      try {
+        return !lstatSync(f).isSymbolicLink()
+      } catch {
+        return false
+      }
+    })
+    if (nonSymlinks.length === 0) return []
+    return [
+      `prettier --config .prettierrc.mjs --ignore-unknown --check ${nonSymlinks.join(' ')}`,
+    ]
+  },
 }

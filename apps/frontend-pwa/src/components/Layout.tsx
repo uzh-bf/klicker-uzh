@@ -12,6 +12,8 @@ import Header from './common/Header'
 
 import MobileMenuBar from './common/MobileMenuBar'
 
+export const LAYOUT_SCROLL_CONTAINER_ID = 'layout-scroll-container'
+
 interface LayoutProps {
   children?: React.ReactNode
   displayName?: string
@@ -90,6 +92,7 @@ function Layout({
       )}
 
       <div
+        id={LAYOUT_SCROLL_CONTAINER_ID}
         className={twMerge(
           'flex min-h-0 flex-1 flex-col overflow-y-auto',
           embedded ? 'p-0' : 'p-4',

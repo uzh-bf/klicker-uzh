@@ -25,10 +25,12 @@ hatchet:
     general:
       replicaCount: 1
       priorityClassName: staging-workload
+      podAnnotations:
+        rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: Always
-        tag: v3-embedded-pq
+        tag: v3
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -45,10 +47,12 @@ hatchet:
     responseProcessor:
       replicaCount: 1
       priorityClassName: staging-workload
+      podAnnotations:
+        rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
-        tag: v3-embedded-pq
+        tag: v3
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -65,10 +69,12 @@ hatchet:
     responseProcessorAssessment:
       replicaCount: 1
       priorityClassName: staging-workload
+      podAnnotations:
+        rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
-        tag: v3-embedded-pq
+        tag: v3
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -97,6 +103,8 @@ hatchet:
 
 auth:
   priorityClassName: staging-workload
+  podAnnotations:
+    rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
 
   replicaCount: 1
 
@@ -119,7 +127,7 @@ auth:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm
     pullPolicy: Always
-    tag: v3-embedded-pq
+    tag: v3
 
   ingress:
     annotations:
@@ -150,35 +158,100 @@ auth:
 chat:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
+  podAnnotations:
+    rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
 
   openai:
-    baseUrl: 'http://litellm:4000/v1'
+    baseUrl: 'http://litellm.stg-litellm.svc.cluster.local:4000/v1'
+    storeResponses: true
+
+  telemetry:
+    enabled: false
 
   automaticModels:
-    primaryId: gpt-4.1
+    primaryId: gpt-5.5
     fallbackId: gpt-4.1-mini
 
   modelRegistry:
+    # "Auto" routes through the LiteLLM complexity-router, which self-selects the
+    # tier per request (SIMPLE=gpt-4.1, MEDIUM=gpt-5.4-low, COMPLEX=gpt-5.4-medium,
+    # REASONING=gpt-5.5-low). It is a normal selectable model (fallback: false), so
+    # it does NOT change automatic selection for existing chatbots — they still
+    # default to gpt-5.5. A chatbot can be pinned to Auto-only via its DB columns
+    # (modelSelection=false + allowedModelIds=["auto"]); see the vorkurs chatbot.
+    # cost mirrors the gpt-5.4 tier (the typical COMPLEX route); REASONING (gpt-5.5)
+    # is rare. Tune if the routed mix shifts.
+    - id: auto
+      deploymentId: klickeruzh/azure/complexity-router
+      name: Auto
+      description: Automatic model selection (routes to the best model per request)
+      supportsImageAttachments: true
+      fallback: false
+      cost:
+        input: 1.25
+        output: 10.0
     - id: gpt-4.1
-      deploymentId: gpt-4.1
+      deploymentId: klickeruzh/azure/gpt-4.1
       name: GPT-4.1
       description: OpenAI model
+      supportsImageAttachments: true
       fallback: false
       cost:
         input: 2.0
         output: 8.0
     - id: gpt-5.1
-      deploymentId: gpt-5.1
+      deploymentId: klickeruzh/azure/gpt-5.1
       name: GPT-5.1
       description: OpenAI reasoning model
+      supportsImageAttachments: true
+      supportsReasoning: true
+      supportedReasoningEfforts:
+        - none
+        - minimal
+        - low
+        - medium
+        - high
       fallback: false
       cost:
         input: 1.25
         output: 10.0
+    - id: gpt-5.4
+      deploymentId: klickeruzh/azure/gpt-5.4
+      name: GPT-5.4
+      description: OpenAI reasoning model
+      supportsImageAttachments: true
+      supportsReasoning: true
+      supportedReasoningEfforts:
+        - minimal
+        - low
+        - medium
+        - high
+        - xhigh
+      fallback: false
+      cost:
+        input: 1.25
+        output: 10.0
+    - id: gpt-5.5
+      deploymentId: klickeruzh/azure/gpt-5.5
+      name: GPT-5.5
+      description: OpenAI reasoning model
+      supportsImageAttachments: true
+      supportsReasoning: true
+      supportedReasoningEfforts:
+        - minimal
+        - low
+        - medium
+        - high
+        - xhigh
+      fallback: false
+      cost:
+        input: 5.0
+        output: 30.0
     - id: gpt-4.1-mini
-      deploymentId: gpt-4.1-mini
+      deploymentId: klickeruzh/azure/gpt-4.1-mini
       name: GPT-4.1 Mini
       description: Small OpenAI model
+      supportsImageAttachments: true
       fallback: true
       cost:
         input: 0.4
@@ -205,7 +278,7 @@ chat:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
     pullPolicy: Always
-    tag: v3-embedded-pq
+    tag: v3
 
   ingress:
     annotations:
@@ -236,6 +309,8 @@ chat:
 frontendPWA:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
+  podAnnotations:
+    rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
 
   replicaCount: 1
 
@@ -258,7 +333,7 @@ frontendPWA:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
     pullPolicy: Always
-    tag: v3-embedded-pq
+    tag: v3
 
   ingress:
     className: haproxy
@@ -287,6 +362,8 @@ frontendPWA:
 
 frontendManage:
   priorityClassName: staging-workload
+  podAnnotations:
+    rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
 
   replicaCount: 1
 
@@ -309,7 +386,7 @@ frontendManage:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm
     pullPolicy: Always
-    tag: v3-embedded-pq
+    tag: v3
 
   ingress:
     className: haproxy
@@ -339,13 +416,15 @@ frontendManage:
 frontendControl:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
+  podAnnotations:
+    rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
 
   replicaCount: 1
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm
     pullPolicy: Always
-    tag: v3-embedded-pq
+    tag: v3
 
   autoscaling:
     enabled: false
@@ -390,6 +469,8 @@ frontendControl:
 
 backendGraphql:
   priorityClassName: staging-workload
+  podAnnotations:
+    rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
 
   replicaCount: 1
 
@@ -412,7 +493,7 @@ backendGraphql:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
     pullPolicy: Always
-    tag: v3-embedded-pq
+    tag: v3
 
   appManageSubdomain: manage
   appStudentSubdomain: pwa
@@ -457,13 +538,15 @@ backendGraphql:
 
 olatApi:
   priorityClassName: staging-workload
+  podAnnotations:
+    rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
 
   replicaCount: 1
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
     pullPolicy: Always
-    tag: v3-embedded-pq
+    tag: v3
 
   autoscaling:
     enabled: false
@@ -508,6 +591,8 @@ olatApi:
 
 lti:
   priorityClassName: staging-workload
+  podAnnotations:
+    rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
   replicaCount: 1
 
   affinity:
@@ -534,7 +619,7 @@ lti:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
     pullPolicy: Always
-    tag: v3-embedded-pq
+    tag: v3
 
   ingress:
     className: haproxy
@@ -555,11 +640,14 @@ responseApi:
 
   priorityClassName: staging-workload
 
+  podAnnotations:
+    rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
+
   replicaCount: 1
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
-    tag: v3-embedded-pq
+    tag: v3
     pullPolicy: Always
 
   autoscaling:
@@ -606,6 +694,8 @@ responseApi:
 assessment:
   frontendPWA:
     priorityClassName: staging-workload
+    podAnnotations:
+      rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
     replicaCount: 1
     autoscaling:
       enabled: false
@@ -639,7 +729,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
       pullPolicy: Always
-      tag: v3-embedded-pq
+      tag: v3
 
     ingress:
       className: haproxy
@@ -668,6 +758,8 @@ assessment:
 
   backendGraphql:
     priorityClassName: staging-workload
+    podAnnotations:
+      rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
     replicaCount: 1
     autoscaling:
       enabled: false
@@ -701,7 +793,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
       pullPolicy: Always
-      tag: v3-embedded-pq
+      tag: v3
 
     appManageSubdomain: manage
     appStudentSubdomain: assessment
@@ -744,6 +836,8 @@ assessment:
 
     priorityClassName: staging-workload
 
+    podAnnotations:
+      rollout.klicker.uzh.ch/release: v3.4.0-alpha.64
     replicaCount: 1
 
     autoscaling:
@@ -778,7 +872,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
       pullPolicy: Always
-      tag: v3-embedded-pq
+      tag: v3
 
     ingress:
       className: haproxy

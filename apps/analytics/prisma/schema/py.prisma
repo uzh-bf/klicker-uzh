@@ -1,6 +1,7 @@
 generator client {
-  provider             = "prisma-client-py"
-  interface            = "sync"
-  recursive_type_depth = 5
-  previewFeatures      = ["fullTextSearch", "fullTextIndex", "postgresqlExtensions", "prismaSchemaFolder", "views"]
+  provider                    = "prisma-client-py"
+  interface                   = "sync"
+  enable_experimental_decimal = true
+  recursive_type_depth        = 5
+  previewFeatures             = ["fullTextSearch", "fullTextIndex", "postgresqlExtensions", "prismaSchemaFolder", "views"]
 }

@@ -401,6 +401,8 @@ export default {
       unknownUser: 'Unbekannter Nutzer',
       deletedUser: 'Gelöschter Nutzer',
       correction: 'Korrektur',
+      filter: 'Filter',
+      listExamples: 'z.B.',
     },
     types: {
       ACTIVITIES: 'Aktivitäten',
@@ -1145,6 +1147,90 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noPointsCorrection: '+ 0 Punkte (keine Änderung): {reason}',
       nonZeroPointCorrection:
         '{points} Punkte ({basePoints} Basispunkte, {correctnessPoints} Korrektheitspunkte, {bonusPoints} Bonuspunkte): {reason}',
+      reportTitle: 'Assessment-Leistungsbericht',
+      issuedAt: 'Ausgestellt am',
+      reportTimeZone: 'Europe/Zurich',
+      courseReferenceLabel: 'Interne Kursreferenz',
+      identitySourceLabel: 'Verifizierte Identitätsquelle',
+      identitySourceCourseInvitation:
+        'E-Mail-Adresse aus der angenommenen Assessment-Kurseinladung',
+      achievedPointsLabel: 'Erreicht',
+      availablePointsLabel: 'Verfügbar',
+      performanceInsightsTitle: 'Peer-Vergleich',
+      percentileText: 'Perzentilrang: {percentile}.',
+      percentileExplanation:
+        'Das Perzentil gibt an, wie viel Prozent der Teilnehmenden eine tiefere oder gleiche Punktzahl als du erreicht haben. Ein Perzentil von 75% bedeutet beispielsweise, dass deine Leistung gleich gut oder besser als 75% der Peer-Gruppe war.',
+      histogramTitle: 'Punkteverteilung im Kurs',
+      histogramDescription:
+        'Das Diagramm zeigt die aggregierte Verteilung der Gesamtpunktzahlen aktiver Teilnehmender. Dein Punktebereich ist hervorgehoben.',
+      histogramUserRange: 'Dein Punktebereich: {range}.',
+      notEnoughDataForComparison:
+        'Es ist kein Peer-Vergleich verfügbar. Er wird nur bei mindestens 10 aktiven Teilnehmenden und einem verfügbaren Punktebereich grösser als null ausgegeben.',
+      exportReportButton: 'Performance-Bericht exportieren (HTML)',
+      exportReportExplanation:
+        'Stelle einen HTML-Bericht aus dem aktuellen Assessment-Datensatz aus. Sobald er bereit ist, kannst du ihn öffnen oder herunterladen. Der Bericht enthält einen Link zur Prüfung seines aktuellen Status und seiner Angaben.',
+      exportReportReady:
+        'Dein Assessment-Bericht ist bereit. Öffne ihn in einem neuen Tab oder lade die HTML-Datei herunter.',
+      viewReportButton: 'Bericht öffnen',
+      downloadReportButton: 'Bericht herunterladen',
+      refreshReportButton: 'Bericht aktualisieren',
+      exportReportNotEligibleError:
+        'Für diesen Kurs kann kein Assessment-Bericht ausgestellt werden. Prüfe, ob du eingeschrieben bist und die bewerteten Aktivitäten beendet wurden, oder kontaktiere deine Dozierenden.',
+      exportReportIdentityUnverifiedError:
+        'Es konnte keine E-Mail aus einer angenommenen Assessment-Kurseinladung bestätigt werden. Bitte kontaktiere die Kursadministration oder den Support.',
+      exportReportRevokedError:
+        'Dieser unveränderte Assessment-Bericht wurde widerrufen und kann nicht erneut ausgestellt werden. Kontaktiere deine Dozierenden, falls die verlässlichen Berichtsdaten korrigiert werden müssen.',
+      exportReportInvalidDataError:
+        'Die Assessment-Daten konnten für den Bericht nicht validiert werden. Bitte versuche es später erneut oder kontaktiere deine Dozierenden.',
+      exportReportIssuanceError:
+        'Der Assessment-Bericht konnte nicht ausgestellt werden. Prüfe deine Verbindung und versuche es erneut.',
+      exportReportDownloadError:
+        'Der Bericht wurde ausgestellt, aber die HTML-Datei konnte nicht erstellt werden. Bitte versuche es erneut.',
+      exportReportViewError:
+        'Der Bericht konnte nicht in einem neuen Tab geöffnet werden. Erlaube Pop-ups für diese Seite oder lade stattdessen die HTML-Datei herunter.',
+      privacyAndTransparencyNotice:
+        'Ein Peer-Vergleich wird erst ab 10 aktiven Teilnehmenden ausgegeben. Zehn initiale Punktebereiche werden zusammengeführt, bis jeder angezeigte Bereich mindestens 3 Teilnehmende repräsentiert. Der Bericht enthält keine einzelnen Peer-Punktzahlen oder Identifikatoren.',
+      courseNameLabel: 'Kurs',
+      studentEmailLabel: 'Studierende/r',
+      pointsSummaryLabel: 'Punkteübersicht',
+      yourScoreLabel: 'Du',
+      countLabel: 'Anzahl',
+      binLabel: 'Punktebereich',
+      privacyNoticeTitle: 'Datenschutz & Transparenz',
+      verificationTitle: 'Assessment-Datensatz prüfen',
+      verificationText:
+        'KlickerUZH speichert den Assessment-Snapshot, der in diesem Bericht dargestellt wird. Öffne die Verifizierungsseite, um den Status des Datensatzes zu prüfen und seine aktuellen Angaben mit dieser Datei zu vergleichen.',
+      verificationLink: 'Verifizierungsseite öffnen',
+      verificationQrAlt: 'QR-Code zur KlickerUZH-Verifizierungsseite',
+      verificationPageTitle: 'Assessment-Bericht prüfen | KlickerUZH',
+      verificationHeading: 'Assessment-Bericht verifizieren',
+      verificationIntro:
+        'Prüfe den aktuellen Status und die serverseitig gespeicherten Angaben eines KlickerUZH-Assessment-Berichts.',
+      verificationLoading: 'Assessment-Datensatz wird geladen',
+      verificationInvalidLinkTitle: 'Ungültiger Verifizierungslink',
+      verificationMissingToken:
+        'Dieser Link enthält keinen Verifizierungsschlüssel.',
+      verificationInvalidToken:
+        'Der Verifizierungsschlüssel in diesem Link hat ein ungültiges Format.',
+      verificationLoadError:
+        'Der Assessment-Datensatz konnte nicht geladen werden. Bitte versuche es später erneut.',
+      verificationNotFoundTitle: 'Assessment-Datensatz nicht gefunden',
+      verificationNotFoundText:
+        'Für diesen Verifizierungslink existiert kein Assessment-Bericht.',
+      verificationActiveTitle: 'Aktiver Assessment-Datensatz',
+      verificationActiveText:
+        'Die folgenden Angaben entsprechen dem aktiven Snapshot in KlickerUZH. Vergleiche sie mit dem heruntergeladenen Bericht.',
+      verificationRevokedTitle: 'Widerrufener Assessment-Datensatz',
+      verificationRevokedText:
+        'Dieser am {date} ausgestellte Bericht wurde widerrufen und darf nicht mehr als aktiv behandelt werden. Seine Angaben werden nicht offengelegt.',
+      verificationSupersededTitle: 'Ersetzter Assessment-Datensatz',
+      verificationSupersededText:
+        'Später wurde ein geänderter Assessment-Snapshot ausgestellt. Dieser ältere Bericht ist nicht mehr aktiv; seine Angaben werden nicht offengelegt.',
+      verificationDataUnavailableTitle: 'Assessment-Daten nicht verfügbar',
+      verificationDataUnavailableText:
+        'Der Datensatz existiert, aber seine gespeicherten Angaben können nicht sicher validiert werden. Es werden keine Angaben offengelegt.',
+      verificationIdentityTitle: 'Berichtsidentität',
+      cohortSizeLabel: 'Vergleichsgruppe: {count} aktive Teilnehmende',
     },
   },
   manage: {
@@ -1359,6 +1445,42 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       responseBy: 'Antwort von {email}',
       noSampleSolution: 'Keine Musterlösung',
       detailedResultsLiveQuiz: 'Detailierte Resultate für dieses Live Quiz',
+      reportRecordsButton: 'Assessment-Berichte ({count})',
+      reportRecordsTitle: 'Ausgestellte Assessment-Berichte',
+      reportRecordsLoadError:
+        'Die Assessment-Berichte konnten nicht geladen werden. Bitte prüfen Sie Ihre Berechtigungen und versuchen Sie es erneut.',
+      reportRecordsEmpty:
+        'Es wurden keine passenden Assessment-Berichte gefunden.',
+      reportSearchPlaceholder: 'Empfänger-E-Mail suchen',
+      reportStatusAll: 'Alle Status',
+      reportStatusActive: 'Aktiv',
+      reportStatusRevoked: 'Widerrufen',
+      reportStatusSuperseded: 'Ersetzt',
+      reportRecipient: 'Empfänger:in',
+      reportToken: 'Verifizierungsschlüssel',
+      reportIssuedAt: 'Ausgestellt',
+      reportStatus: 'Status',
+      reportStatusChangedAt: 'Status geändert',
+      reportActions: 'Aktionen',
+      reportCopyLinkTooltip: 'Verifizierungslink kopieren',
+      reportLinkCopied: 'Der Verifizierungslink wurde kopiert.',
+      reportLinkCopyError:
+        'Der Verifizierungslink konnte nicht kopiert werden.',
+      reportRevoke: 'Widerrufen',
+      reportRevokeTitle: 'Assessment-Bericht widerrufen',
+      reportRevokeConfirm: 'Bericht widerrufen',
+      reportRevokeMessage:
+        'Den aktiven Assessment-Bericht für {email} widerrufen? Der bestehende Verifizierungslink zeigt den Datensatz sofort als widerrufen an.',
+      reportRevokePolicy:
+        'Derselbe unveränderte Assessment-Snapshot kann nicht erneut ausgestellt werden. Wenn sich verlässliche Angaben zu Identität, Kurs oder Punkten später ändern, kann die studierende Person einen neuen aktiven Bericht ausstellen.',
+      reportRevocationSuccess: 'Der Assessment-Bericht wurde widerrufen.',
+      reportAlreadyInactive:
+        'Der Assessment-Bericht wurde inaktiv, bevor er widerrufen werden konnte. Sein aktueller Status wird in der Liste angezeigt.',
+      reportRevocationError:
+        'Der Assessment-Bericht konnte nicht widerrufen werden. Der lokale Status wurde nicht geändert.',
+      reportRecordsRefreshError:
+        'Der Berichtsstatus hat sich geändert, aber die sichtbare Liste konnte nicht aktualisiert werden. Schliessen und öffnen Sie den Dialog erneut, um den aktuellen Status zu laden.',
+      reportTimeZone: 'Europe/Zurich',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
@@ -2617,6 +2739,26 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       displayedWindow: 'Displayed running window: {window} times interval',
       table: 'Tabelle',
       wordCloud: 'Word Cloud',
+      wordCloudFilterMode: 'Filtermodus',
+      wordCloudLanguageFilter: 'Sprachfilter',
+      wordCloudLanguageFilterTooltip:
+        'Wenn eine Sprache ausgewählt ist, werden Stoppwörter dieser Sprache (z. B. "und", "der") herausgefiltert. Deaktivieren, um alle Wörter anzuzeigen.',
+      wordCloudLanguageNone: 'Deaktiviert',
+      wordCloudDisplayLimit: 'Anzeigelimit',
+      wordCloudDisplayLimitAll: 'Alle',
+      wordCloudModeWords: 'Einzelne Wörter',
+      wordCloudOmittedWords:
+        '{count} {count, plural, one {Wort} other {Wörter}} konnten aufgrund des Anzeigelimits oder aufgrund von Platzmangel nicht angezeigt werden.',
+      wordCloudOmittedSentences:
+        '{count} {count, plural, one {Antwort} other {Antworten}} konnten aufgrund des Anzeigelimits oder aufgrund von Platzmangel nicht angezeigt werden.',
+      wordCloudModeSentences: 'Vollständige Antworten',
+      wordCloudNoResponses:
+        'Für diese Frage wurden noch keine Antworten von Teilnehmenden gespeichert 😔.',
+      wordCloudNoResponsesFiltered:
+        'Keine Antworten entsprechen den aktuellen Filtereinstellungen 🧐.',
+      wordCloudNoResponsesDisplayed:
+        'Keine Antworten werden aufgrund der aktuellen Filtereinstellungen oder der angegebenen Schriftgrößen angezeigt 😰.',
+      numberOfVotes: 'Häufigkeit: {number}',
       histogram: 'Histogramm',
       barChart: 'Balkendiagramm',
       scatterPlot: 'Streudiagramm',

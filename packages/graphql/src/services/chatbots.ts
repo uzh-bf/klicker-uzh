@@ -2,31 +2,35 @@ import { Prisma } from '@klicker-uzh/prisma/client'
 import { z } from 'zod'
 import type { ContextWithUser } from '../lib/context.js'
 
-const REASONING_EFFORT_OPTIONS = [
-  'none',
-  'minimal',
-  'low',
-  'medium',
-  'high',
-] as const
-type ReasoningEffort = (typeof REASONING_EFFORT_OPTIONS)[number]
-
-const reasoningEffortSchema = z.enum(REASONING_EFFORT_OPTIONS)
-const chatModelSchema = z.object({
-  id: z.string().min(1),
-  deploymentId: z.string().min(1),
-  name: z.string().min(1),
-  description: z.string().default(''),
-  fallback: z.boolean().default(false),
-  supportsReasoning: z.boolean().default(false),
-  supportedReasoningEfforts: z.array(reasoningEffortSchema).optional(),
-  maxOutputTokens: z.number().positive().optional(),
-  apiVersion: z.string().min(1),
-  cost: z.object({
-    input: z.number().nonnegative(),
-    output: z.number().nonnegative(),
-  }),
-})
+const chatModelSchema = z
+  .object({
+    id: z.string().min(1),
+    deploymentId: z.string().min(1),
+    name: z.string().min(1),
+    description: z.string().default(''),
+    fallback: z.boolean().default(false),
+    supportsReasoning: z.boolean().default(false),
+    supportedReasoningEfforts: z.array(z.string().min(1)).optional(),
+    maxOutputTokens: z.number().positive().optional(),
+    apiVersion: z.string().min(1).optional(),
+    cost: z.object({
+      input: z.number().nonnegative(),
+      output: z.number().nonnegative(),
+    }),
+  })
+  .superRefine((model, ctx) => {
+    if (
+      model.supportsReasoning &&
+      (!model.supportedReasoningEfforts ||
+        model.supportedReasoningEfforts.length === 0)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['supportedReasoningEfforts'],
+        message: `Model "${model.id}" has supportsReasoning=true but no supportedReasoningEfforts configured.`,
+      })
+    }
+  })
 const chatModelRegistrySchema = z.array(chatModelSchema).min(1)
 
 type RawChatModelConfig = z.infer<typeof chatModelSchema>
@@ -34,26 +38,12 @@ type ChatModelCapability = Omit<
   RawChatModelConfig,
   'supportedReasoningEfforts'
 > & {
-  supportedReasoningEfforts: ReasoningEffort[]
+  supportedReasoningEfforts: string[]
 }
 type ChatbotReasoningConfigEntry = {
   modelId: string
-  efforts: ReasoningEffort[]
+  efforts: string[]
 }
-
-const ALL_REASONING_EFFORTS: ReasoningEffort[] = [
-  'none',
-  'minimal',
-  'low',
-  'medium',
-  'high',
-]
-const GPT5_REASONING_EFFORTS: ReasoningEffort[] = [
-  'minimal',
-  'low',
-  'medium',
-  'high',
-]
 
 const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
   {
@@ -66,18 +56,6 @@ const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
     supportedReasoningEfforts: [],
     apiVersion: 'preview',
     cost: { input: 2.0, output: 8.0 },
-  },
-  {
-    id: 'gpt-5.1',
-    deploymentId: 'gpt-5.1',
-    name: 'GPT-5.1',
-    description: 'OpenAI reasoning model',
-    fallback: false,
-    supportsReasoning: true,
-    supportedReasoningEfforts: [...ALL_REASONING_EFFORTS],
-    maxOutputTokens: 2048,
-    apiVersion: 'preview',
-    cost: { input: 1.25, output: 10.0 },
   },
   {
     id: 'gpt-4.1-mini',
@@ -94,49 +72,17 @@ const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
 
 let cachedChatModelRegistry: ChatModelCapability[] | null = null
 
-const dedupeReasoningEfforts = (efforts: readonly ReasoningEffort[]) => {
-  const seen = new Set<ReasoningEffort>()
-  const deduped: ReasoningEffort[] = []
-  for (const effort of efforts) {
-    if (seen.has(effort)) continue
-    seen.add(effort)
-    deduped.push(effort)
-  }
-  return deduped
-}
-
-const normalizeReasoningEffortOrder = (efforts: readonly ReasoningEffort[]) => {
-  const effortSet = new Set(efforts)
-  return REASONING_EFFORT_OPTIONS.filter((effort) => effortSet.has(effort))
-}
-
-function getDefaultReasoningEffortsForModel(
-  modelId: string
-): ReasoningEffort[] {
-  const normalizedId = modelId.toLowerCase()
-  if (normalizedId.startsWith('gpt-5.1')) {
-    return [...ALL_REASONING_EFFORTS]
-  }
-  if (normalizedId.startsWith('gpt-5')) {
-    return [...GPT5_REASONING_EFFORTS]
-  }
-  return [...ALL_REASONING_EFFORTS]
-}
+const dedupeStrings = (values: readonly string[]) => Array.from(new Set(values))
 
 function normalizeChatModel(model: RawChatModelConfig): ChatModelCapability {
   if (!model.supportsReasoning) {
     return { ...model, supportedReasoningEfforts: [] }
   }
-
-  const providedEfforts = model.supportedReasoningEfforts ?? []
-  const normalizedEfforts =
-    providedEfforts.length > 0
-      ? dedupeReasoningEfforts(providedEfforts)
-      : getDefaultReasoningEffortsForModel(model.id)
-
   return {
     ...model,
-    supportedReasoningEfforts: normalizeReasoningEffortOrder(normalizedEfforts),
+    supportedReasoningEfforts: dedupeStrings(
+      model.supportedReasoningEfforts ?? []
+    ),
   }
 }
 
@@ -177,11 +123,10 @@ function parseAllowedReasoningEffortsByModel(
   )) {
     if (!Array.isArray(rawEfforts)) continue
     const validEfforts = rawEfforts.filter(
-      (effort): effort is ReasoningEffort =>
-        typeof effort === 'string' &&
-        REASONING_EFFORT_OPTIONS.includes(effort as ReasoningEffort)
+      (effort): effort is string =>
+        typeof effort === 'string' && effort.length > 0
     )
-    const dedupedEfforts = normalizeReasoningEffortOrder(validEfforts)
+    const dedupedEfforts = dedupeStrings(validEfforts)
     if (dedupedEfforts.length === 0) continue
 
     entries.push({
@@ -385,7 +330,7 @@ type UpdateChatbotModelSettingsArgs = {
   allowedModelIds: string[]
   allowedReasoningEffortsByModel?: Array<{
     modelId: string
-    efforts: ReasoningEffort[]
+    efforts: string[]
   }> | null
 }
 
@@ -423,7 +368,7 @@ export async function updateChatbotModelSettings(
   const modelRegistry = getChatModelRegistry()
   const modelById = new Map(modelRegistry.map((model) => [model.id, model]))
 
-  const normalizedAllowedModelIds = [...new Set(args.allowedModelIds)]
+  const normalizedAllowedModelIds = dedupeStrings(args.allowedModelIds)
   const unknownAllowedModelIds = normalizedAllowedModelIds.filter(
     (modelId) => !modelById.has(modelId)
   )
@@ -431,12 +376,10 @@ export async function updateChatbotModelSettings(
     throw new Error(`Unknown model id(s): ${unknownAllowedModelIds.join(', ')}`)
   }
 
-  const normalizedReasoningConfigEntries =
-    args.allowedReasoningEffortsByModel ?? []
   const seenReasoningModelIds = new Set<string>()
-  const normalizedReasoningMap: Record<string, ReasoningEffort[]> = {}
+  const normalizedReasoningMap: Record<string, string[]> = {}
 
-  for (const entry of normalizedReasoningConfigEntries) {
+  for (const entry of args.allowedReasoningEffortsByModel ?? []) {
     const model = modelById.get(entry.modelId)
     if (!model) {
       throw new Error(`Unknown model id in reasoning config: ${entry.modelId}`)
@@ -453,28 +396,32 @@ export async function updateChatbotModelSettings(
     }
     seenReasoningModelIds.add(entry.modelId)
 
-    const dedupedEfforts = normalizeReasoningEffortOrder(
-      dedupeReasoningEfforts(entry.efforts)
-    )
-    if (dedupedEfforts.length === 0) {
-      throw new Error(
-        `At least one reasoning effort must be configured for model: ${entry.modelId}`
-      )
-    }
-
     const supportedSet = new Set(model.supportedReasoningEfforts)
-    const unsupportedEfforts = dedupedEfforts.filter(
-      (effort) => !supportedSet.has(effort)
-    )
+    const requestedSet = new Set<string>()
+    const unsupportedEfforts: string[] = []
+    for (const effort of entry.efforts) {
+      if (supportedSet.has(effort)) {
+        requestedSet.add(effort)
+      } else if (!unsupportedEfforts.includes(effort)) {
+        unsupportedEfforts.push(effort)
+      }
+    }
     if (unsupportedEfforts.length > 0) {
       throw new Error(
         `Unsupported reasoning effort(s) for ${entry.modelId}: ${unsupportedEfforts.join(', ')}`
       )
     }
+    if (requestedSet.size === 0) {
+      throw new Error(
+        `At least one reasoning effort must be configured for model: ${entry.modelId}`
+      )
+    }
 
+    const dedupedEfforts = model.supportedReasoningEfforts.filter((effort) =>
+      requestedSet.has(effort)
+    )
     const isFullModelDefault =
-      dedupedEfforts.length === model.supportedReasoningEfforts.length &&
-      dedupedEfforts.every((effort) => supportedSet.has(effort))
+      dedupedEfforts.length === model.supportedReasoningEfforts.length
 
     if (!isFullModelDefault) {
       normalizedReasoningMap[entry.modelId] = dedupedEfforts

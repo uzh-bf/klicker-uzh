@@ -1,26 +1,36 @@
 import { z } from 'zod'
-import {
-  REASONING_EFFORT_OPTIONS,
-  type ReasoningEffort,
-} from '../config/reasoning'
+import { type ReasoningEffort } from '../config/reasoning'
 
-const reasoningEffortSchema = z.enum(REASONING_EFFORT_OPTIONS)
-
-const chatModelSchema = z.object({
-  id: z.string().min(1),
-  deploymentId: z.string().min(1),
-  name: z.string().min(1),
-  description: z.string().default(''),
-  fallback: z.boolean().default(false),
-  supportsReasoning: z.boolean().default(false),
-  supportedReasoningEfforts: z.array(reasoningEffortSchema).optional(),
-  maxOutputTokens: z.number().positive().optional(),
-  apiVersion: z.string().min(1).optional(),
-  cost: z.object({
-    input: z.number().nonnegative(),
-    output: z.number().nonnegative(),
-  }),
-})
+const chatModelSchema = z
+  .object({
+    id: z.string().min(1),
+    deploymentId: z.string().min(1),
+    name: z.string().min(1),
+    description: z.string().default(''),
+    fallback: z.boolean().default(false),
+    supportsReasoning: z.boolean().default(false),
+    supportsImageAttachments: z.boolean().default(false),
+    supportedReasoningEfforts: z.array(z.string().min(1)).optional(),
+    maxOutputTokens: z.number().positive().optional(),
+    apiVersion: z.string().min(1).optional(),
+    cost: z.object({
+      input: z.number().nonnegative(),
+      output: z.number().nonnegative(),
+    }),
+  })
+  .superRefine((model, ctx) => {
+    if (
+      model.supportsReasoning &&
+      (!model.supportedReasoningEfforts ||
+        model.supportedReasoningEfforts.length === 0)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['supportedReasoningEfforts'],
+        message: `Model "${model.id}" has supportsReasoning=true but no supportedReasoningEfforts configured.`,
+      })
+    }
+  })
 
 const chatModelRegistrySchema = z
   .array(chatModelSchema)
@@ -62,42 +72,8 @@ export type ChatModelConfig = Omit<
   supportedReasoningEfforts: ReasoningEffort[]
 }
 
-const ALL_REASONING_EFFORTS: ReasoningEffort[] = [
-  'none',
-  'minimal',
-  'low',
-  'medium',
-  'high',
-]
-const GPT5_REASONING_EFFORTS: ReasoningEffort[] = [
-  'minimal',
-  'low',
-  'medium',
-  'high',
-]
-
-function dedupeReasoningEfforts(efforts: readonly ReasoningEffort[]) {
-  const seen = new Set<ReasoningEffort>()
-  const deduped: ReasoningEffort[] = []
-  for (const effort of efforts) {
-    if (seen.has(effort)) continue
-    seen.add(effort)
-    deduped.push(effort)
-  }
-  return deduped
-}
-
-function getDefaultReasoningEffortsForModel(
-  modelId: string
-): ReasoningEffort[] {
-  const normalizedId = modelId.toLowerCase()
-  if (normalizedId.startsWith('gpt-5.1')) {
-    return [...ALL_REASONING_EFFORTS]
-  }
-  if (normalizedId.startsWith('gpt-5')) {
-    return [...GPT5_REASONING_EFFORTS]
-  }
-  return [...ALL_REASONING_EFFORTS]
+function dedupeStrings(values: readonly string[]) {
+  return Array.from(new Set(values))
 }
 
 function normalizeChatModelConfig(model: RawChatModelConfig): ChatModelConfig {
@@ -108,15 +84,11 @@ function normalizeChatModelConfig(model: RawChatModelConfig): ChatModelConfig {
     }
   }
 
-  const providedEfforts = model.supportedReasoningEfforts ?? []
-  const normalizedEfforts =
-    providedEfforts.length > 0
-      ? dedupeReasoningEfforts(providedEfforts)
-      : getDefaultReasoningEffortsForModel(model.id)
-
   return {
     ...model,
-    supportedReasoningEfforts: normalizedEfforts,
+    supportedReasoningEfforts: dedupeStrings(
+      model.supportedReasoningEfforts ?? []
+    ),
   }
 }
 
@@ -134,19 +106,9 @@ const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
     description: 'OpenAI model',
     fallback: false,
     supportsReasoning: false,
+    supportsImageAttachments: true,
     supportedReasoningEfforts: [],
     cost: { input: 2.0, output: 8.0 },
-  },
-  {
-    id: 'gpt-5.1',
-    deploymentId: 'gpt-5.1',
-    name: 'GPT-5.1',
-    description: 'OpenAI reasoning model',
-    fallback: false,
-    supportsReasoning: true,
-    supportedReasoningEfforts: [...ALL_REASONING_EFFORTS],
-    maxOutputTokens: 2048,
-    cost: { input: 1.25, output: 10.0 },
   },
   {
     id: 'gpt-4.1-mini',
@@ -155,6 +117,7 @@ const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
     description: 'Small OpenAI model',
     fallback: true,
     supportsReasoning: false,
+    supportsImageAttachments: true,
     supportedReasoningEfforts: [],
     cost: { input: 0.4, output: 1.6 },
   },
@@ -198,11 +161,10 @@ export function parseReasoningEffortByModel(
     if (!Array.isArray(rawEfforts)) continue
     const validEfforts: ReasoningEffort[] = rawEfforts.filter(
       (effort): effort is ReasoningEffort =>
-        typeof effort === 'string' &&
-        REASONING_EFFORT_OPTIONS.includes(effort as ReasoningEffort)
+        typeof effort === 'string' && effort.length > 0
     )
 
-    const dedupedEfforts = dedupeReasoningEfforts(validEfforts)
+    const dedupedEfforts = dedupeStrings(validEfforts)
     if (dedupedEfforts.length === 0) continue
 
     result[modelId] = dedupedEfforts
@@ -220,9 +182,7 @@ export function getAllowedReasoningEffortsForModel(
 ): ReasoningEffort[] {
   if (!model.supportsReasoning) return []
 
-  const supportedEfforts = dedupeReasoningEfforts(
-    model.supportedReasoningEfforts
-  )
+  const supportedEfforts = dedupeStrings(model.supportedReasoningEfforts)
   if (supportedEfforts.length === 0) return []
 
   const configuredByModel = parseReasoningEffortByModel(rawConfig)

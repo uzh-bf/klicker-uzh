@@ -1,0 +1,188 @@
+enum DiscussionSpaceType {
+  COURSE
+}
+
+enum DiscussionScopeType {
+  COURSE
+  PRACTICE_STACK
+  EXTERNAL_BLOCK
+}
+
+enum DiscussionEventType {
+  THREAD_CREATED
+  THREAD_DELETED
+  REPLY_CREATED
+  REPLY_DELETED
+  THREAD_UPVOTED
+  REPLY_UPVOTED
+  ANON_RATE_LIMITED
+}
+
+model DiscussionSpace {
+  id Int @id @default(autoincrement())
+
+  spaceType DiscussionSpaceType
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @unique @db.Uuid
+
+  scopes  DiscussionScope[]
+  threads DiscussionThread[]
+  replies DiscussionReply[]
+  events  DiscussionEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([spaceType])
+}
+
+model DiscussionScope {
+  id Int @id @default(autoincrement())
+
+  space   DiscussionSpace @relation(fields: [spaceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  spaceId Int
+
+  scopeType  DiscussionScopeType
+  scopeKey   String
+  scopeLabel String
+
+  stackId        Int?
+  externalSource String?
+  externalRef    String?
+
+  threads DiscussionThread[]
+  replies DiscussionReply[]
+  events  DiscussionEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([spaceId, scopeKey])
+  @@index([spaceId, scopeType])
+}
+
+model DiscussionThread {
+  id Int @id @default(autoincrement())
+
+  space   DiscussionSpace @relation(fields: [spaceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  spaceId Int
+  scope   DiscussionScope @relation(fields: [scopeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  scopeId Int
+
+  content String
+
+  isAnonymous           Boolean @default(false)
+  authorFingerprintHash String?
+
+  authorParticipant   Participant? @relation("DiscussionThreadAuthor", fields: [authorParticipantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  authorParticipantId String?      @db.Uuid
+
+  upvotes    Int @default(0)
+  replyCount Int @default(0)
+
+  lastActivityAt DateTime @default(now())
+
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+
+  replies DiscussionReply[]
+  votes   DiscussionThreadVote[]
+  events  DiscussionEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([spaceId, scopeId, lastActivityAt])
+  @@index([scopeId, lastActivityAt])
+  @@index([authorParticipantId])
+}
+
+model DiscussionReply {
+  id Int @id @default(autoincrement())
+
+  thread   DiscussionThread @relation(fields: [threadId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  threadId Int
+
+  space   DiscussionSpace @relation(fields: [spaceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  spaceId Int
+  scope   DiscussionScope @relation(fields: [scopeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  scopeId Int
+
+  content String
+
+  isAnonymous           Boolean @default(false)
+  authorFingerprintHash String?
+
+  authorParticipant   Participant? @relation("DiscussionReplyAuthor", fields: [authorParticipantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  authorParticipantId String?      @db.Uuid
+
+  upvotes Int @default(0)
+
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+
+  votes  DiscussionReplyVote[]
+  events DiscussionEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([threadId, createdAt])
+  @@index([spaceId, scopeId, createdAt])
+  @@index([authorParticipantId])
+}
+
+model DiscussionThreadVote {
+  thread   DiscussionThread @relation(fields: [threadId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  threadId Int
+
+  participant   Participant @relation("DiscussionThreadVoteParticipant", fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  createdAt DateTime @default(now())
+
+  @@id([threadId, participantId])
+  @@index([participantId, createdAt])
+}
+
+model DiscussionReplyVote {
+  reply   DiscussionReply @relation(fields: [replyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  replyId Int
+
+  participant   Participant @relation("DiscussionReplyVoteParticipant", fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  createdAt DateTime @default(now())
+
+  @@id([replyId, participantId])
+  @@index([participantId, createdAt])
+}
+
+model DiscussionEvent {
+  id Int @id @default(autoincrement())
+
+  space   DiscussionSpace @relation(fields: [spaceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  spaceId Int
+
+  scope   DiscussionScope? @relation(fields: [scopeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  scopeId Int?
+
+  thread   DiscussionThread? @relation(fields: [threadId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  threadId Int?
+  reply    DiscussionReply?  @relation(fields: [replyId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  replyId  Int?
+
+  participant   Participant? @relation("DiscussionEventParticipant", fields: [participantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  participantId String?      @db.Uuid
+
+  eventType DiscussionEventType
+  metadata  Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([spaceId, createdAt])
+  @@index([scopeId, createdAt])
+  @@index([eventType, createdAt])
+  @@index([participantId, createdAt])
+}

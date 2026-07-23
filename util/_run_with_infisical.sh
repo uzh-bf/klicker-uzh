@@ -9,7 +9,7 @@ Description:
   Runs Infisical with the specified environment and command.
 
 Options:
-  --env ENVIRONMENT     Target environment: dev, dev-assessment, dev-cypress, dev-cleverreach, stg, prd (required)
+  --env ENVIRONMENT     Target environment: dev, dev-assessment, dev-cypress, dev-playwright, dev-cleverreach, stg, prd (required)
   -h, --help            Show this help message and exit
 
 Example:
@@ -41,7 +41,7 @@ done
 
 # --- Validate environment ---
 case "$ENV" in
-    "dev"|"dev-assessment"|"dev-cypress"|"dev-cleverreach"|"stg"|"prd")
+    "dev"|"dev-assessment"|"dev-cypress"|"dev-playwright"|"dev-cleverreach"|"stg"|"prd")
         echo "🎯 Target environment: $ENV"
         ;;
     "")

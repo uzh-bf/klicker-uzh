@@ -2,7 +2,7 @@
 
 ## Quick Reference
 
-- **Monorepo**: pnpm 10.x + Turborepo, Node.js 20 (Volta-pinned)
+- **Monorepo**: pnpm 11.x + Turborepo, Node.js 24 (Volta-pinned; see `volta` in root `package.json` for exact versions)
 - **Main branch**: `v3`
 - **Package names**: `@klicker-uzh/<name>` (e.g., `@klicker-uzh/graphql`)
 
@@ -93,7 +93,7 @@ cypress/                   # E2E tests
 
 | Layer                  | Technology                                            |
 | ---------------------- | ----------------------------------------------------- |
-| Frontend framework     | Next.js 15, React, TypeScript                         |
+| Frontend framework     | Next.js 16, React, TypeScript                         |
 | Styling                | TailwindCSS, @uzh-bf/design-system                    |
 | GraphQL server         | GraphQL Yoga + Pothos schema builder                  |
 | GraphQL client         | Apollo Client                                         |
@@ -107,34 +107,11 @@ cypress/                   # E2E tests
 
 ## GraphQL Workflow
 
-Schema is defined code-first with **Pothos** in `packages/graphql/src/`.
-
-1. Define/modify types and resolvers in `packages/graphql/src/graphql/`
-2. Write `.graphql` operation files in `packages/graphql/src/graphql/ops/`
-3. Run codegen: `pnpm --filter @klicker-uzh/graphql generate`
-4. Codegen outputs:
-   - `src/ops.ts` - typed document nodes + fragment matchers
-   - `src/ops.schema.json` - introspection result
-   - `src/public/schema.graphql` - SDL schema
-   - `src/public/client.json` + `src/public/server.json` - persisted query IDs (SHA-256)
-
-### Operation naming
-
-- `Q` prefix = query (`QGetUserCourses`)
-- `M` prefix = mutation (`MCreateCourse`)
-- `S` prefix = subscription (`SFeedbackCreated`)
-- `F` prefix = fragment (`FElementData`)
+Code-first with **Pothos** in `packages/graphql/src/`. After changing types/resolvers (`src/graphql/`) or `.graphql` ops (`src/graphql/ops/`), regenerate with `pnpm --filter @klicker-uzh/graphql generate` (codegen is required — ops are stale otherwise). Op-name prefixes: `Q` query, `M` mutation, `S` subscription, `F` fragment. The public schema definition is generated at [packages/graphql/src/public/schema.graphql](packages/graphql/src/public/schema.graphql).
 
 ## Database Workflow
 
-Prisma schema is split across multiple files in `packages/prisma/src/prisma/schema/`:
-`analytics`, `chat`, `course`, `element`, `gamification`, `participant`, `quiz`, `resources`, `response`, `sharing`, `user`, `other`, `datasource`, `js`.
-
-1. Edit the relevant `.prisma` file
-2. `pnpm run prisma:migrate` - create + apply migration
-3. `pnpm run prisma:sync` - copy schema to `apps/analytics/prisma/schema/` (excludes `js.prisma`)
-4. `pnpm --filter @klicker-uzh/prisma generate` - regenerate Prisma client
-5. Update GraphQL types/resolvers if schema change affects the API
+Prisma split-schema under `packages/prisma/src/prisma/schema/`. After editing a `.prisma` file: `pnpm run prisma:migrate`, then `pnpm run prisma:sync` (mirrors the schema into `apps/analytics`, excluding `js.prisma`) and regenerate the client. Update GraphQL types/resolvers if the change affects the API.
 
 ## Auth Model
 
@@ -144,7 +121,38 @@ Prisma schema is split across multiple files in `packages/prisma/src/prisma/sche
 
 ## Local Dev Setup
 
-Local dev uses Traefik reverse proxy with `*.klicker.com` custom domains (requires `/etc/hosts` entries + mkcert certs). Docker Compose runs PostgreSQL, Redis, Traefik, and Hatchet-lite.
+### Self-contained devcontainer (recommended)
+
+Clone-and-run via a self-contained devcontainer — no Infisical/Doppler, no EduID, no `/etc/hosts` edits. The container owns the whole stack (Node 24 + pnpm toolchain, Postgres, 3× Redis, MailHog, Hatchet) and runs **all core apps in ONE container** via `turbo dev`. Run pnpm/prisma/tests **inside the container**, never on the host.
+
+```bash
+devrouter ensure .
+```
+
+The same command starts and proves primary and linked checkouts. Use `devrouter exec . -- <command...>` for one-shot commands or the exact DevPod ID printed by `ensure` for an interactive shell.
+
+The dev servers auto-start in the background (`devrouter exec . -- tail -f /tmp/dev.log`; first compile takes ~1min). Host-side `devrouter ensure` owns lifecycle reconciliation and delivers its matching process helper to the exact validated container. The stack runs every routed app plus the two Hatchet workers (no worker route); analytics, Office add-in, and docs remain outside it. See `.devcontainer/README.md`.
+
+**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.35 fronts the stack over the shared `devnet` network. One-time host setup must happen **before** the container starts:
+
+```bash
+devrouter setup --yes # Traefik + devnet + mkcert CA
+```
+
+One command owns DevPod identity, the Git metadata mount, aliases, runtime proof, and route reconciliation for either checkout kind. Do not use bare `devpod up`, manual `WORKSPACE`, or per-app `--workspace` route loops:
+
+```bash
+devrouter ensure .                    # existing primary or linked checkout
+devrouter workspace up <branch-name>  # create and start a new worktree
+```
+
+Primary-checkout apps use `https://{app}.klicker.localhost`; linked-worktree apps use `https://{app}.klicker.<workspace>.localhost`. Postgres for host tooling is at `db.klicker[.<workspace>].localhost:5432` (`sslmode=require sslnegotiation=direct`). The primary checkout also keeps the fixed localhost ports in [Repo Layout](#repo-layout). Login as `lecturer`/`abcd` (see test credentials below). Env in `.devcontainer/devcontainer.env` (committed, dev-only — no real secrets).
+
+**Media uploads and Blob CORS:** the manage media library uploads directly from the browser to Azure Blob Storage with a SAS URL. The storage account's Blob service CORS must allow the actual local origin (`https://manage.klicker.localhost` or `https://manage.klicker.<workspace>.localhost`), not only production origins such as `https://manage.klicker.com`. For a dedicated dev storage account, use dev-only localhost rules; keep production storage accounts exact.
+
+### Legacy host-based stack
+
+Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/hosts` entries + mkcert certs; Docker Compose runs Postgres, Redis, Traefik, Hatchet-lite). Without Traefik, hit `http://localhost:<port>` directly — per-app ports are in [Repo Layout](#repo-layout). The `*.klicker.com` domains better mirror production cookie/domain behavior.
 
 | URL                                         | App                          | Port |
 | ------------------------------------------- | ---------------------------- | ---: |
@@ -158,8 +166,6 @@ Local dev uses Traefik reverse proxy with `*.klicker.com` custom domains (requir
 | https://assessment-api.klicker.com          | Assessment API (same as API) | 3000 |
 | https://response-api.klicker.com            | Response API                 | 7078 |
 | https://response-api-assessment.klicker.com | Response API (assessment)    | 7078 |
-
-Without Traefik, use `http://localhost:<port>` directly. The `*.klicker.com` domains better mirror production cookie/domain behavior.
 
 ### Test credentials (local seeded DB only)
 
@@ -187,130 +193,47 @@ Without Traefik, use `http://localhost:<port>` directly. The `*.klicker.com` dom
 
 ## Important Notes
 
+- **Task tracking**: ClickUp is the source of truth; GitHub Issues are not actively used.
 - Dev scripts use `./util/_run_with_infisical.sh` for secret injection. Avoid starting dev servers unless explicitly asked.
 - If you add or rename an Infisical-managed env var/secret, also update `turbo.json` `globalEnv` so Turborepo sees it during task execution and cache invalidation.
-- Never commit secrets, `.env` files, or credentials.
+- Never commit secrets, `.env` files, or credentials. **This repo is public** — anything committed on any branch, once pushed, is permanent public history that deleting the file later does not remove.
+- **Data hygiene before every commit.** Review staged content (`git diff --cached`, and open any staged data file) for secrets _and_ real personal data — participant/student names, email addresses, matriculation/Studi-IDs, raw response exports, course rosters. Be especially wary of bulk data files (`.csv`, `.json`, `.sql` dumps): these are the highest-risk carriers and are easy to sweep in with `git add .`. Real course-data pulls belong outside the repo (add a `.gitignore` rule); if such data must be versioned, it goes in a private location with direct identifiers removed first. Pseudonymous ids (participant UUIDs) are lower-risk but still get the same scrutiny. When in doubt, do not commit — ask.
 - Keep changes small, follow existing patterns in the touched app/package.
 - Don't add/update dependencies unless required for the task.
 - Feature branches from `v3`. Conventional commits preferred.
-- **AGENTS.md is a living document.** When you discover a non-obvious pattern, gotcha, or architectural decision during work, add it to the Codebase Learnings section below before the task is marked complete. Keep entries concise (1-2 sentences) with the file path where the pattern applies. Remove entries that become outdated (e.g., if a pattern is refactored away).
+- **Keep this file high-level.** Facts, gotchas, and architectural decisions live in the engineering wiki at [docs/index.md](docs/index.md) — update the matching page as you work (per the `klicker-wiki-maintenance` skill), rather than growing this overview.
 
-## Codebase Learnings
+## Engineering Wiki
 
-- **Prisma Decimal nullish check**: `Decimal` fields are objects, not numbers. `Decimal(0)` is truthy, so never use truthy checks for Decimal-to-number conversions -- always use `!= null`. (`packages/graphql/src/`)
-- **Chat app auth guard pattern**: Route handlers in `apps/chat/src/app/api/chatbots/` use a 3-step auth pattern: `getParticipantId` -> `getChatbotOr404` -> `requireParticipation`. The composed helper `withChatbotAuth(req, chatbotId)` in `apps/chat/src/lib/server/apiGuards.ts` handles the standard `{ courseId: true }` case. Use it for new routes; only fall back to individual guards when you need a custom chatbot `select`.
-- **Feature flag guards**: Don't combine feature flags with data-dependent counts (e.g., `privatePreview && numChatbots > 0`). The flag alone should gate visibility; combining with counts creates chicken-and-egg problems.
-- **Zustand store error handling**: Async actions in zustand stores must set fallback state in `catch` blocks, not just log. Otherwise the UI stays in loading/broken state on network errors. (`apps/chat/src/stores/`)
-- **Test environment caveats**: `pnpm run test:run` triggers Cypress which needs a running DB + seeded data. `pnpm --filter @klicker-uzh/graphql test` needs `HATCHET_CLIENT_TOKEN`. For verifying non-DB changes locally, target specific packages (e.g., `pnpm --filter @klicker-uzh/grading test`, `pnpm --filter @klicker-uzh/util test`).
-- **PR review triage**: Copilot/CodeRabbit/SonarCloud flag many false positives. Always check if guards/fallbacks already exist before "fixing" reported issues. Confirm with the actual code, not the bot summary.
-- **agent-browser via npx**: Always use `npx agent-browser` instead of bare `agent-browser`. Global install conflicts with Volta's Node shim and fails with "Could not execute command".
-- **LTI launch target resolver contract**: Launch targets are resolved in strict precedence `custom claim (klicker_redirect_to)` -> `query redirectTo`; no env fallback is used in resolver logic. Validation fails closed on the first present invalid source and enforces URL hostname exact/subdomain checks against `COOKIE_DOMAIN` and `DF_DOMAIN` (never substring matching). (`apps/lti/src/launchTarget.ts`)
-- **CSP frame-ancestors via ingress, not middleware**: Pages Router apps (manage, pwa, control) must NOT use Next.js middleware for CSP -- it breaks `_next/data` routes in production builds (known Next.js bug). CSP `frame-ancestors` is set at the reverse proxy layer: HAProxy ingress annotations in K8s (`haproxy.org/response-set-header`), Traefik `customResponseHeaders` middleware in local dev. (`deploy/charts/klicker-uzh-v3/templates/ingress-*.yaml`, `util/traefik/rules_docker.yaml`)
-- **Cypress CI signal timing**: `cypress: default-group (merge)` can report an increasing failed-test count while `cypress-run-cloud` is still in progress; wait for `cypress-run-cloud` completion before expecting downloadable GitHub job logs. (`.github/workflows/cypress-testing.yml`)
-- **Infisical + Turbo env sync**: Any Infisical-managed env var used by tasks must be listed in `turbo.json` `globalEnv`; otherwise task runs/cache behavior can become stale or inconsistent across environments.
-- **Participant email uniqueness across auth modes**: Prisma enforces `Participant @@unique([email, isSSOAccount])`, so the same normalized email can exist once as manual and once as SSO. To block new cross-mode duplicates, account creation must explicitly check normalized email collisions in service logic. (`packages/graphql/src/services/accounts.ts`)
-- **Helm v3 secrets are external**: `deploy/charts/klicker-uzh-v3/` deployments reference `envFrom.secretRef` names, but the chart currently defines no `Secret` manifests; secrets must be provisioned out-of-band with matching names. (`deploy/charts/klicker-uzh-v3/templates/`)
-- **Course Q&A seed opt-in**: `Course.isCourseQAEnabled` and `Course.isCourseQAAnonymousEnabled` default to `false`, so seeded validation courses like `Testkurs` must set both flags explicitly in `packages/prisma-data/src/data/seedTEST.ts` (and `prepareCourse` must accept them) or real-domain Q&A validation will silently stay disabled.
-- **Course Q&A alpha scope vs platform capacity**: Keep the discussion-platform model broader than the shipped alpha surface. The active alpha contract is `COURSE` plus evaluated-surface `PRACTICE_STACK`; broader scope types stay dormant until a later follow-up with explicit plan and validation updates. (`project/DISCUSSIONS_PLAN.md`, `project/DISCUSSIONS_TESTING_PLAN.md`)
-- **Discussion embed tests need derived course permissions**: Service-level embed-info tests must call `recomputeDerivedPermissions({ courseId })` after `seedCourse(...)` before using lecturer/user contexts. `getCourseAccessActor` checks `derivedPermission` rows directly; course ownership alone is not enough in tests. (`packages/graphql/test/discussions.test.ts`, `packages/graphql/src/services/discussions.ts`)
-- **Course Q&A default listing must stay explicit-course**: `courseDiscussionThreads` should treat an omitted `scopeKey` as `course:${courseId}` so `/course/:courseId/qa` cannot widen into stack or external threads by default; stack/external views must arrive via explicit `scopeKey` deep links. (`packages/graphql/src/services/discussions.ts`, `apps/frontend-pwa/src/pages/course/[courseId]/qa.tsx`)
-- **Prisma migration path is schema-local**: This repo stores Prisma migrations under `packages/prisma/src/prisma/schema/migrations/`, configured in `packages/prisma/prisma.config.ts`, not in a package-root `prisma/migrations` folder. Use that path when adding manual migrations or checking migration history.
+Ground truth for working on this codebase is the agent-facing wiki at **[docs/index.md](docs/index.md)** (not to be confused with `apps/docs`, the user-facing site). Read the relevant page before working in an unfamiliar area, and keep it current — **any PR that changes behavior must update the affected wiki pages in `docs/` and relevant skills in `.agents/skills/` within the same PR.** The former `project/CODEBASE_NOTES.md` is a retired pointer stub.
 
-## Factory Skills (AI Assistance)
+Retrospective fixes and durable lessons live in `docs/solutions/`; check them before re-deriving a solved problem.
 
-Skills are defined in `.factory/skills/` (also mirrored in `.github/skills/`). `.claude/skills` is a symlink to `.factory/skills/`, so Claude Code skills stay in sync automatically.
+## AI Assistance (Skills)
 
-- `agent-browser` -- **primary verification tool for all frontend work**. Any change that could affect what users see in the browser must be verified with `agent-browser` before the task is considered complete. See `.factory/skills/agent-browser/SKILL.md` for full reference.
-- `web-design-guidelines` -- UI/UX/accessibility review (see `.factory/skills/web-design-guidelines/SKILL.md`).
-- `vercel-react-best-practices` -- React/Next performance guidance (see `.factory/skills/vercel-react-best-practices/SKILL.md`).
+Skills live in `.agents/skills/` (the canonical location); `.claude/skills` and `.github/skills` symlink to it, so Claude Code and GitHub stay in sync. Task-shaped `klicker-*` skills cover the feature lifecycle — environment diagnosis (`klicker-environment-doctor`), design (`klicker-feature-design`), API (`klicker-graphql-api`), schema/data (`klicker-data-model`), UI (`klicker-frontend-ui`), testing/verification (`klicker-testing-verification`), e2e (`klicker-cypress-e2e`, `klicker-playwright-e2e`), and wiki upkeep (`klicker-wiki-maintenance`); the routing table lives in [docs/index.md](docs/index.md).
 
-### Using agent-browser to verify changes
+- **`agent-browser`** — **mandatory** verification for any change touching frontend apps, shared components, styling, i18n text, frontend-facing GraphQL ops, or auth/redirect/cookie flows. Open the page and confirm with before/after screenshots; don't rely on "the logic looks correct". Run via `npx agent-browser`, and log in with **delegated** access, not Edu-ID (credentials under [Test credentials](#test-credentials-local-seeded-db-only)). Full workflow + Traefik troubleshooting: [.agents/skills/agent-browser/SKILL.md](.agents/skills/agent-browser/SKILL.md).
+- **`web-design-guidelines`** — UI/UX/accessibility review ([SKILL.md](.agents/skills/web-design-guidelines/SKILL.md)).
+- **`vercel-react-best-practices`** — React/Next performance guidance ([SKILL.md](.agents/skills/vercel-react-best-practices/SKILL.md)).
 
-**MANDATORY**: Any PR or change touching frontend apps, shared components, styling, layout, or user-facing text MUST be verified with `agent-browser` before the task is marked complete. Do not rely on "the logic looks correct" -- open the page and confirm visually.
+<!-- devrouter -->
 
-#### When to verify
+## devrouter
 
-Verify with `agent-browser` whenever your change touches any of:
+This repository uses [devrouter](https://github.com/rschlaefli/devrouter) for local dev routing.
+All apps and dependencies are declared in `.devrouter.yml`.
 
-- **Frontend apps** (`apps/frontend-pwa`, `apps/frontend-manage`, `apps/frontend-control`, `apps/chat`, `apps/auth`, `apps/office-addin`)
-- **Shared components** (`packages/shared-components`, `packages/markdown`)
-- **Styling / TailwindCSS** classes, design-system tokens, or layout changes
-- **i18n text** (`packages/i18n`) -- confirm the rendered string is correct
-- **GraphQL ops consumed by the frontend** -- verify the page still loads and displays data correctly after schema/op changes
-- **Auth/login/redirect/cookie-domain** changes
-- **Cross-app flows** (e.g. manage <-> auth, pwa <-> auth)
-- **Browser-only behavior** (localStorage, service worker/PWA, media queries)
+Full reference (config schema, docker requirements, env injection, commands):
+`.agents/skills/devrouter/SKILL.md`
 
-#### Verification workflow
+Quick validation sequence:
 
-1. Open the relevant page: `agent-browser open <url>`
-2. **Screenshot before** the action: `agent-browser screenshot /tmp/before.png --full`
-3. Perform the interaction (click, fill, navigate)
-4. **Screenshot after**: `agent-browser screenshot /tmp/after.png --full`
-5. Review both screenshots with the `Read` tool and compare
-6. If the result does not match expectations, fix and re-verify
-
-**Screenshots are required** -- snapshots alone miss visual regressions. Always take before/after screenshots and review them.
-
-#### Prerequisites
-
-The app must be running locally in **dev mode** and the database must be **seeded**.
-
-### Troubleshooting agent-browser + Traefik
-
-If `https://*.klicker.com` shows **502 Bad Gateway**, Traefik or the target app is not reachable.
-Before running UI flows:
-
-- Confirm Traefik is up and routing to the expected ports.
-- Confirm each app is listening on its local port (3001/3002/3003/3004/3000/3010).
-- If Traefik is blocked, temporarily use the documented `http://localhost:<port>` URLs.
-
-For flaky interactions, always `agent-browser wait --load networkidle` before `find/click/fill`.
-If you see `Resource temporarily unavailable (os error 35)` or `(no interactive elements)`, take a screenshot,
-then retry after a short wait or reload. If the screenshot shows 502, fix the environment first.
-
-**Always run `agent-browser` via `npx`** (avoids Volta/global-install issues):
-
-```bash
-npx agent-browser <command>
-```
-
-If the browser executable is missing on a new machine, run once:
-
-```bash
-npx agent-browser install
-```
-
-For automated runs, **do not use Edu-ID** (it will not work with `agent-browser`). Always use **Delegated login**:
-
-- Username: `lecturer`
-- Password: `abcd`
-
-For Student PWA testing in local seeded dev environments, you can log in with the seeded participants (see `packages/prisma-data/src/data/seedTEST.ts`):
-
-- Usernames: `testuser1`-`testuser50` (enrolled in course **Testkurs**)
-- Password: `abcdabcd`
-
-Additional seeded participants exist (`testuser51`-`testuser52`), but they are not enrolled in any course by default.
-
-### Example: delegated login (Manage)
-
-Note: on the first screen, **"Delegated Access" is disabled until the Terms checkbox is checked**.
-
-```bash
-agent-browser open https://manage.klicker.com
-agent-browser screenshot /tmp/klicker-manage-01.png --full
-agent-browser snapshot -i -c
-
-# 1) Check the Terms checkbox (if needed)
-# 2) Click "Delegated Access"
-# 3) Fill username/password and submit
-# (Use the @e* refs from the latest snapshot output)
-
-agent-browser wait --load domcontentloaded
-agent-browser screenshot /tmp/klicker-manage-02.png --full
-agent-browser get url
-agent-browser close
-```
-
-These credentials are intended for local seeded dev environments only.
+- Managed devcontainer consumer images contain no devrouter package or helper; `devrouter ensure` delivers the matching helper at runtime.
+- `devrouter up`
+- `devrouter tls install` (required when repo defines tcp/postgres apps)
+- `devrouter app ls --repo .`
+- Primary or linked devcontainer checkout: `devrouter ensure . --json`
+- Host/docker runtime app only: `devrouter app run <host-app> --repo . --yes`
+- `devrouter ls`
+<!-- /devrouter -->

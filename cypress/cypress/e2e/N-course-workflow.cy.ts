@@ -817,6 +817,7 @@ describe('Test course creation and editing functionalities', function () {
 
     // create a question with sample solution
     cy.get('[data-cy="library"]').click()
+    cy.location('pathname', { timeout: 15_000 }).should('eq', '/')
     cy.createQuestionSC({
       name: this.data.deletion.qTitle,
       content: this.data.deletion.qContent,
@@ -868,6 +869,7 @@ describe('Test course creation and editing functionalities', function () {
 
     // delete the course and check that it is not visible anymore after a reload
     cy.get('[data-cy="courses"]').click()
+    cy.location('pathname', { timeout: 15_000 }).should('eq', '/courses')
     cy.get(
       `[data-cy="course-list-button-${this.data.deletion.courseName}"]`
     ).should('exist')
@@ -917,6 +919,7 @@ describe('Test course creation and editing functionalities', function () {
 
     // check that the live quiz has been removed from the course
     cy.get('[data-cy="activities"]').click()
+    cy.location('pathname', { timeout: 15_000 }).should('eq', '/activities')
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.deletion.lqName}"]`
     ).should('exist')
@@ -932,6 +935,7 @@ describe('Test course creation and editing functionalities', function () {
   it('Cleanup: Delete the live quiz that is not assigned to the course anymore', function () {
     cy.loginLecturer()
     cy.get(`[data-cy="activities"]`).click()
+    cy.location('pathname', { timeout: 15_000 }).should('eq', '/activities')
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.deletion.lqName}"]`
     ).should('exist')
@@ -1831,6 +1835,12 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${this.data.sharing.course}"]`).click()
     cy.get('[data-cy="course-share-button"]').click()
+    cy.get(`[data-cy="owner-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsOWNER)
+    cy.get(
+      `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).should('exist')
 
     cy.get(
       `[data-cy="revoke-permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
@@ -2199,6 +2209,10 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${this.data.sharing.course}"]`).click()
     cy.get('[data-cy="course-share-button"]').click()
+    cy.get(`[data-cy="owner-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsOWNER)
+    cy.get(`[data-cy="permission-${this.data.sharing.group1}"]`).should('exist')
 
     cy.get(`[data-cy="revoke-permission-${this.data.sharing.group1}"]`).click()
     cy.get('[data-cy="confirm-revocation"]').click()

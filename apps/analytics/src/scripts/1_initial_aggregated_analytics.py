@@ -1,8 +1,6 @@
 # This script computes the aggregated analytics on course level for a given date range
 # ! This script is a copy of the corresponding notebook content and needs to be kept in sync with it
 
-import os
-import json
 from datetime import datetime
 from prisma import Prisma
 import pandas as pd
@@ -45,9 +43,7 @@ if compute_daily:
 
         # compute aggregated analytics for a specific day
         timestamp = day_start
-        compute_aggregated_analytics(
-            db, day_start, day_end, timestamp, "DAILY", verbose
-        )
+        compute_aggregated_analytics(db, day_start, day_end, timestamp, "DAILY", verbose)
 
 
 if compute_weekly:
@@ -55,18 +51,12 @@ if compute_weekly:
     for curr_date in date_range_weekly:
         # determine week start and end dates required for aggregation
         week_end = curr_date.strftime("%Y-%m-%d") + "T23:59:59.999Z"
-        week_start = (curr_date - pd.DateOffset(days=6)).strftime(
-            "%Y-%m-%d"
-        ) + "T00:00:00.000Z"
-        print(
-            f"Computing weekly aggregated analytics (course) for {week_start } to {week_end }"
-        )
+        week_start = (curr_date - pd.DateOffset(days=6)).strftime("%Y-%m-%d") + "T00:00:00.000Z"
+        print(f"Computing weekly aggregated analytics (course) for {week_start} to {week_end}")
 
         # compute aggregated analytics for a specific week
         timestamp = week_end
-        compute_aggregated_analytics(
-            db, week_start, week_end, timestamp, "WEEKLY", verbose
-        )
+        compute_aggregated_analytics(db, week_start, week_end, timestamp, "WEEKLY", verbose)
 
 
 if compute_monthly:
@@ -74,22 +64,16 @@ if compute_monthly:
     for curr_date in date_range_monthly:
         # determine month start and end dates required for aggregation
         month_end = curr_date.strftime("%Y-%m-%d") + "T23:59:59.999Z"
-        month_start = (curr_date - pd.offsets.MonthBegin(1)).strftime(
-            "%Y-%m-%d"
-        ) + "T00:00:00.000Z"
-        print(
-            f"Computing monthly aggregated analytics (course) for {month_start } to {month_end }"
-        )
+        month_start = (curr_date - pd.offsets.MonthBegin(1)).strftime("%Y-%m-%d") + "T00:00:00.000Z"
+        print(f"Computing monthly aggregated analytics (course) for {month_start} to {month_end}")
 
         # compute aggregated analytics for a specific month
         timestamp = month_end
-        compute_aggregated_analytics(
-            db, month_start, month_end, timestamp, "MONTHLY", verbose
-        )
+        compute_aggregated_analytics(db, month_start, month_end, timestamp, "MONTHLY", verbose)
 
 
 if compute_course:
-    print(f"Computing course-wide aggregated analytics")
+    print("Computing course-wide aggregated analytics")
 
     # compute aggregated analytics over entire course based on corresponding participant analytics
     # (a constant timestamp is used here, since the data combination has to be unique

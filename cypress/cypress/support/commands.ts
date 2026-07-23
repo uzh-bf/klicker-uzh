@@ -117,6 +117,18 @@ Cypress.Commands.add('cleanup', () => {
   cy.reload()
 })
 
+const clearPersistedClientState = () => {
+  return cy.wrap(null, { log: false }).then(async () => {
+    await localforage.clear()
+  })
+}
+
+const assertManageSession = () => {
+  cy.location('origin').should('eq', Cypress.env('URL_MANAGE'))
+  cy.location('pathname').should('not.eq', '/login')
+  cy.location('search').should('not.contain', 'expired=true')
+}
+
 const loginFactory = (
   tokenData: {
     email: string
@@ -158,6 +170,10 @@ const loginFactory = (
     })
 
     cy.visit(redirectUrl ?? Cypress.env('URL_MANAGE'))
+
+    if (!redirectUrl) {
+      assertManageSession()
+    }
   }
 }
 
@@ -277,19 +293,50 @@ Cypress.Commands.add(
 )
 
 Cypress.Commands.add('logoutUser', () => {
+  cy.clearAllLocalStorage()
+  cy.clearAllSessionStorage()
+  clearPersistedClientState()
   cy.clearCookie('next-auth.session-token')
 })
 
-Cypress.Commands.add('loginStudent', () => {
-  cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME') })
+interface StudentLoginOptions {
+  preserveClientState?: boolean
+}
+
+Cypress.Commands.add('loginStudent', (options: StudentLoginOptions = {}) => {
+  cy.loginStudentPassword({
+    username: Cypress.env('STUDENT_USERNAME'),
+    preserveClientState: options.preserveClientState,
+  })
 })
 
 Cypress.Commands.add(
   'loginStudentPassword',
-  ({ username }: { username: string }) => {
+  ({
+    username,
+    preserveClientState = false,
+  }: { username: string } & StudentLoginOptions) => {
     cy.clearAllCookies()
     cy.clearAllLocalStorage()
-    cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
+    cy.visit(
+      Cypress.env('URL_STUDENT_LOGIN'),
+      preserveClientState
+        ? undefined
+        : {
+            onBeforeLoad: (win) => {
+              win.localStorage.clear()
+              win.sessionStorage.clear()
+              try {
+                win.indexedDB?.deleteDatabase('localforage')
+              } catch {
+                // Fall back to the regular localforage clear after load.
+              }
+            },
+          }
+    )
+    if (!preserveClientState) {
+      clearPersistedClientState()
+    }
     cy.get('[data-cy="username-field"]').click().type(username)
     cy.get('[data-cy="password-field"]')
       .click()
@@ -1814,9 +1861,12 @@ declare global {
       loginInstitutionalCatalyst3(): Chainable<void>
       loginInstitutionalCatalyst4(): Chainable<void>
       logoutUser(): Chainable<void>
-      loginStudent(): Chainable<void>
+      loginStudent(options?: StudentLoginOptions): Chainable<void>
       loginAssessmentStudent(): Chainable<void>
-      loginStudentPassword({ username }: { username: string }): Chainable<void>
+      loginStudentPassword({
+        username,
+        preserveClientState,
+      }: { username: string } & StudentLoginOptions): Chainable<void>
       createAnswerCollection({
         name,
         description,

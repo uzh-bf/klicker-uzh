@@ -3,10 +3,6 @@ name: Test OLAT-API functionalities
 on:
   push:
     branches: ['v3', 'v3*']
-    paths:
-      - 'packages/prisma/**'
-      - 'apps/olat-api/**'
-      - '.github/workflows/test-olat-api.yml'
   pull_request:
     branches: ['v3', 'v3*']
     types: [opened, synchronize, reopened, ready_for_review]
@@ -16,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  test-olat-api:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     permissions:
@@ -27,15 +23,30 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Check for changes
+        id: filter
+        uses: ./.github/actions/changed-paths
+        with:
+          pattern: '^(apps/olat-api/|packages/prisma/|packages/grading/|packages/util/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-olat-api\.yml|\.github/actions/changed-paths/)'
+
       - name: Set up Docker Buildx
+        if: steps.filter.outputs.should_run == 'true'
         uses: docker/setup-buildx-action@v3
 
-      - uses: pnpm/action-setup@v2
+      - name: Define node version
+        if: steps.filter.outputs.should_run == 'true'
+        uses: actions/setup-node@v4
         with:
-          version: 10.15.0
+          node-version-file: package.json
+
+      - uses: pnpm/action-setup@v4
+        if: steps.filter.outputs.should_run == 'true'
+        with:
+          version: 11.5.0
           run_install: true
 
       - name: Run tests using Docker
+        if: steps.filter.outputs.should_run == 'true'
         run: |
           cd packages/prisma
           pnpm run build

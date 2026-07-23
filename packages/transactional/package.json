@@ -6,14 +6,14 @@
   ],
   "devDependencies": {
     "@react-email/components": "~0.0.25",
-    "@types/node": "^20.19.11",
-    "@types/react": "^19.1.8",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.17",
     "@uzh-bf/design-system": "4.1.6",
     "lucide-react": "~0.522.0",
-    "react": "~19.1.2",
+    "react": "~19.2.7",
     "react-email": "~3.0.1",
     "tsx": "~4.19.4",
-    "typescript": "~5.6.3"
+    "typescript": "~6.0.3"
   },
   "scripts": {
     "build": "email export -d src/emails",
@@ -21,6 +21,9 @@
     "update-templates": "../../util/_run_with_infisical.sh --env dev tsx src/scripts/deploy.ts",
     "update-templates:prod": "../../util/_run_with_infisical.sh --env prd tsx src/scripts/deploy.ts",
     "update-templates:qa": "../../util/_run_with_infisical.sh --env stg tsx src/scripts/deploy.ts"
+  },
+  "engines": {
+    "node": "=24"
   },
   "volta": {
     "extends": "../../package.json"

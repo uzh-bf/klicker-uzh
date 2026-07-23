@@ -3,18 +3,20 @@
   "version": "3.3.0-alpha.12",
   "license": "AGPL-3.0",
   "devDependencies": {
-    "nodemon": "~3.1.10"
+    "nodemon": "~3.1.14"
   },
   "scripts": {
-    "analytics:dev": "../../util/_run_with_infisical.sh --env dev nodemon --exec 'poetry run poe main' --watch src,prisma --ext py,prisma",
-    "generate": "poetry run poe generate",
-    "main": "../../util/_run_with_infisical.sh --env dev poetry run poe main",
-    "script": "../../util/_run_with_infisical.sh --env dev poetry run python -m",
-    "script:prod": "../../util/_run_with_infisical.sh --env prd poetry run python -m",
-    "script:qa": "../../util/_run_with_infisical.sh --env stg poetry run python -m"
+    "analytics:dev": "../../util/_run_with_infisical.sh --env dev nodemon --exec 'uv run python -m src.main' --watch src,prisma --ext py,prisma",
+    "format": "uv run ruff format .",
+    "generate": "uv run prisma generate",
+    "lint": "uv run ruff check . && uv run ruff format --check .",
+    "main": "../../util/_run_with_infisical.sh --env dev uv run python -m src.main",
+    "script": "../../util/_run_with_infisical.sh --env dev uv run python -m",
+    "script:prod": "../../util/_run_with_infisical.sh --env prd uv run python -m",
+    "script:qa": "../../util/_run_with_infisical.sh --env stg uv run python -m"
   },
   "engines": {
-    "node": "=20"
+    "node": "=24"
   },
   "volta": {
     "extends": "../../package.json"

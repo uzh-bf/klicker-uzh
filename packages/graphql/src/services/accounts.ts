@@ -99,32 +99,51 @@ export async function loginParticipant(
   const participantWithUsername = await ctx.prisma.participant.findUnique({
     where: { username: usernameOrEmail.trim() },
   })
-  const participantWithEmail = await ctx.prisma.participant.findUnique({
-    where: {
-      email_isSSOAccount: {
-        email: usernameOrEmail.trim().toLowerCase(),
-        isSSOAccount: false,
+
+  if (participantWithUsername) {
+    const isLoginValid = await bcrypt.compare(
+      password,
+      participantWithUsername.password
+    )
+    if (!isLoginValid) return null
+
+    await doParticipantLogin(
+      {
+        participantId: participantWithUsername.id,
+        participantLocale: participantWithUsername.locale,
       },
+      ctx
+    )
+
+    return participantWithUsername.id
+  }
+
+  // The schema permits one manual (isSSOAccount=false) and one SSO row per
+  // email. Try bcrypt against every candidate so a user with both rows can
+  // sign in with whichever password actually matches; SSO-only accounts have
+  // an unguessable random hash and so cannot accidentally authenticate here.
+  const candidates = await ctx.prisma.participant.findMany({
+    where: {
+      email: usernameOrEmail.trim().toLowerCase(),
     },
   })
 
-  const participant = participantWithUsername || participantWithEmail
-  if (!participant) return null
+  for (const candidate of candidates) {
+    const isLoginValid = await bcrypt.compare(password, candidate.password)
+    if (!isLoginValid) continue
 
-  const isLoginValid = await bcrypt.compare(password, participant.password)
+    await doParticipantLogin(
+      {
+        participantId: candidate.id,
+        participantLocale: candidate.locale,
+      },
+      ctx
+    )
 
-  if (!isLoginValid) return null
+    return candidate.id
+  }
 
-  await doParticipantLogin(
-    {
-      participantId: participant.id,
-      participantLocale: participant.locale,
-    },
-    ctx
-  )
-
-  // TODO: return more data (e.g. Avatar etc.)
-  return participant.id
+  return null
 }
 
 export async function loginTemporaryParticipant(

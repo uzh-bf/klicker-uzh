@@ -1,5 +1,12 @@
 'use client'
 
+import { useChatResponse } from '@/src/hooks/useChatResponse'
+import { useThreadManagement } from '@/src/hooks/useThreadManagement'
+import {
+  useChatStore,
+  type ExtendedThreadMessageLike,
+} from '@/src/stores/chatStore'
+import { useSettingsStore } from '@/src/stores/settingsStore'
 import {
   AssistantRuntimeProvider,
   useExternalStoreRuntime,
@@ -7,14 +14,8 @@ import {
 } from '@assistant-ui/react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useChatResponse } from 'src/hooks/useChatResponse'
-import { useThreadManagement } from 'src/hooks/useThreadManagement'
-import {
-  useChatStore,
-  type ExtendedThreadMessageLike,
-} from 'src/stores/chatStore'
-import { useSettingsStore } from 'src/stores/settingsStore'
 import { useChatUi } from '../components/chat-ui-context'
+import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
 
 export function RuntimeProvider({
   chatbotId,
@@ -36,6 +37,7 @@ export function RuntimeProvider({
     selectedModel,
     selectedMode,
     selectedReasoningEffort,
+    modelOptions,
     loadCredits,
     loadModeOptions,
   } = useSettingsStore()
@@ -210,6 +212,7 @@ export function RuntimeProvider({
         modelId,
         reasoningEffort,
         creditsUsed,
+        imageAttachments,
         metadata,
         ...rest
       } = message
@@ -219,6 +222,7 @@ export function RuntimeProvider({
         modelId: modelId ?? null,
         reasoningEffort: reasoningEffort ?? null,
         creditsUsed: creditsUsed ?? null,
+        imageAttachments: imageAttachments ?? [],
       }
 
       return {
@@ -250,6 +254,12 @@ export function RuntimeProvider({
     onReload,
     onCancel,
     convertMessage,
+    adapters: {
+      ...(modelOptions.find((m) => m.id === selectedModel)
+        ?.supportsImageAttachments !== false && {
+        attachments: imageAttachmentAdapter,
+      }),
+    },
   })
 
   return (

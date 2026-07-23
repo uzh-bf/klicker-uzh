@@ -187,6 +187,13 @@ services:
       POSTGRES_USER: klicker-prod
       POSTGRES_PASSWORD: klicker
       POSTGRES_DB: klicker-prod
+    command:
+      - 'postgres'
+      # Auto-kill sessions stuck "idle in transaction" after 5 minutes.
+      # Prevents cascading cypress failures when a run is interrupted mid-seed
+      # and leaves a BEGIN transaction holding locks on klicker-prod.
+      - '-c'
+      - 'idle_in_transaction_session_timeout=300000'
     ports:
       - 5432:5432
     networks:
@@ -264,7 +271,11 @@ services:
       - './util/litellm/config.yaml:/app/config.yaml'
     command: ['--config', '/app/config.yaml', '--port', '4000']
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:4000/health/liveliness']
+      test:
+        - 'CMD'
+        - 'python'
+        - '-c'
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:4000/health/liveliness').status == 200 else 1)"
       interval: 15s
       timeout: 5s
       retries: 5

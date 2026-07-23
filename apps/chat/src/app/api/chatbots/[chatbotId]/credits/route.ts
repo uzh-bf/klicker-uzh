@@ -45,6 +45,7 @@ export async function GET(
         description,
         fallback,
         supportsReasoning,
+        supportsImageAttachments,
         supportedReasoningEfforts,
       }) => ({
         id,
@@ -52,6 +53,7 @@ export async function GET(
         description,
         fallback,
         supportsReasoning,
+        supportsImageAttachments,
         allowedReasoningEfforts: supportedReasoningEfforts,
       })
     )

@@ -3,9 +3,6 @@ name: Test util package functionalities
 on:
   push:
     branches: ['v3', 'v3*']
-    paths:
-      - 'packages/util/**'
-      - '.github/workflows/test-util.yml'
   pull_request:
     branches: ['v3', 'v3*']
     types: [opened, synchronize, reopened, ready_for_review]
@@ -15,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  test-util:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     permissions:
@@ -23,19 +20,37 @@ jobs:
       packages: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
-      - uses: pnpm/action-setup@v2
+        uses: actions/checkout@v4
+
+      - name: Check for changes
+        id: filter
+        uses: ./.github/actions/changed-paths
         with:
-          version: 9.15.4
+          pattern: '^(packages/util/|packages/prisma/|packages/types/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-util\.yml|\.github/actions/changed-paths/)'
+
+      - name: Define node version
+        if: steps.filter.outputs.should_run == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+
+      - uses: pnpm/action-setup@v4
+        if: steps.filter.outputs.should_run == 'true'
+        with:
+          version: 11.5.0
           run_install: true
+
       - name: Build dependencies
+        if: steps.filter.outputs.should_run == 'true'
         shell: bash
         run: |
           cd packages/prisma
           pnpm run build
           cd ../types
           pnpm run build
+
       - name: Test util package
+        if: steps.filter.outputs.should_run == 'true'
         shell: bash
         run: |
           cd packages/util

@@ -1,12 +1,12 @@
 {
   "name": "@klicker-uzh/office-addin",
-  "version": "3.4.0-alpha.57",
+  "version": "3.4.0-alpha.64",
   "license": "AGPL-3.0",
   "dependencies": {
     "@uzh-bf/design-system": "4.1.6",
     "core-js": "3.30.2",
     "es6-promise": "4.2.8",
-    "formik": "2.4.6",
+    "formik": "2.4.9",
     "react": "19.1.2",
     "react-dom": "19.1.2",
     "yup": "1.6.1"
@@ -14,16 +14,16 @@
   "devDependencies": {
     "@rollup/plugin-commonjs": "~28.0.2",
     "@rollup/plugin-node-resolve": "~15.3.1",
-    "@rollup/plugin-replace": "~6.0.2",
+    "@rollup/plugin-replace": "~6.0.3",
     "@rollup/plugin-terser": "~0.4.4",
     "@rollup/plugin-typescript": "~12.1.4",
     "@tailwindcss/aspect-ratio": "~0.4.2",
-    "@tailwindcss/forms": "~0.5.10",
+    "@tailwindcss/forms": "~0.5.11",
     "@tailwindcss/postcss": "~4.1.11",
-    "@tailwindcss/typography": "~0.5.16",
-    "@types/node": "^20.19.11",
-    "@types/office-js": "^1.0.256",
-    "@types/office-runtime": "^1.0.23",
+    "@tailwindcss/typography": "~0.5.19",
+    "@types/node": "^24.10.1",
+    "@types/office-js": "^1.0.591",
+    "@types/office-runtime": "^1.0.37",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@typescript-eslint/eslint-plugin": "~8.35.1",
@@ -71,9 +71,12 @@
     "validate:content": "office-addin-manifest validate src/manifest-content.xml",
     "validate:taskpane": "office-addin-manifest validate src/manifest-taskpane.xml"
   },
+  "engines": {
+    "node": "=24"
+  },
   "volta": {
-    "node": "20.18.2",
-    "pnpm": "10.2.0"
+    "node": "24.16.0",
+    "pnpm": "11.5.0"
   },
   "config": {
     "app_to_debug": "powerpoint",

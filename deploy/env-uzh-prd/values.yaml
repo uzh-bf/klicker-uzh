@@ -28,7 +28,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: Always
-        tag: v3.4.0-alpha.57
+        tag: v3.4.0-alpha.62
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -61,7 +61,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
-        tag: v3.4.0-alpha.57
+        tag: v3.4.0-alpha.62
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -94,7 +94,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
-        tag: v3.4.0-alpha.57
+        tag: v3.4.0-alpha.62
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -158,7 +158,7 @@ auth:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm
     pullPolicy: Always
-    tag: v3.4.0-alpha.57
+    tag: v3.4.0-alpha.62
 
   ingress:
     annotations:
@@ -176,7 +176,9 @@ auth:
 
   strategy:
     type: RollingUpdate
-    # type: Recreate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
 
   resources:
     requests:
@@ -190,7 +192,8 @@ chat:
   priorityClassName: production-workload
 
   openai:
-    baseUrl: 'http://litellm:4000/v1'
+    baseUrl: 'http://litellm.prd-litellm.svc.cluster.local:4000/v1'
+    storeResponses: true
 
   replicaCount: 1
 
@@ -198,30 +201,90 @@ chat:
     enabled: false
 
   automaticModels:
-    primaryId: gpt-4.1
+    primaryId: gpt-5.5
     fallbackId: gpt-4.1-mini
 
   modelRegistry:
+    # "Auto" routes through the LiteLLM complexity-router, which self-selects the
+    # tier per request (SIMPLE=gpt-4.1, MEDIUM=gpt-5.4-low, COMPLEX=gpt-5.4-medium,
+    # REASONING=gpt-5.5-low). It is a normal selectable model (fallback: false), so
+    # it does NOT change automatic selection for existing chatbots — they still
+    # default to gpt-5.5. A chatbot can be pinned to Auto-only via its DB columns
+    # (modelSelection=false + allowedModelIds=["auto"]).
+    # cost mirrors the gpt-5.4 tier (the typical COMPLEX route); REASONING (gpt-5.5)
+    # is rare. Tune if the routed mix shifts.
+    - id: auto
+      deploymentId: klickeruzh/azure/complexity-router
+      name: Auto
+      description: Automatic model selection (routes to the best model per request)
+      supportsImageAttachments: true
+      fallback: false
+      cost:
+        input: 1.25
+        output: 10.0
     - id: gpt-4.1
-      deploymentId: gpt-4.1
+      deploymentId: klickeruzh/azure/gpt-4.1
       name: GPT-4.1
       description: OpenAI model
+      supportsImageAttachments: true
       fallback: false
       cost:
         input: 2.0
         output: 8.0
     - id: gpt-5.1
-      deploymentId: gpt-5.1
+      deploymentId: klickeruzh/azure/gpt-5.1
       name: GPT-5.1
       description: OpenAI reasoning model
+      supportsImageAttachments: true
+      supportsReasoning: true
+      supportedReasoningEfforts:
+        - none
+        - minimal
+        - low
+        - medium
+        - high
       fallback: false
       cost:
         input: 1.25
         output: 10.0
+    - id: gpt-5.4
+      deploymentId: klickeruzh/azure/gpt-5.4
+      name: GPT-5.4
+      description: OpenAI reasoning model
+      supportsImageAttachments: true
+      supportsReasoning: true
+      supportedReasoningEfforts:
+        - minimal
+        - low
+        - medium
+        - high
+        - xhigh
+      fallback: false
+      cost:
+        input: 1.25
+        output: 10.0
+    - id: gpt-5.5
+      deploymentId: klickeruzh/azure/gpt-5.5
+      name: GPT-5.5
+      description: OpenAI reasoning model
+      supportsImageAttachments: true
+      supportsReasoning: true
+      supportedReasoningEfforts:
+        - none
+        - minimal
+        - low
+        - medium
+        - high
+        - xhigh
+      fallback: false
+      cost:
+        input: 5.0
+        output: 30.0
     - id: gpt-4.1-mini
-      deploymentId: gpt-4.1-mini
+      deploymentId: klickeruzh/azure/gpt-4.1-mini
       name: GPT-4.1 Mini
       description: Small OpenAI model
+      supportsImageAttachments: true
       fallback: true
       cost:
         input: 0.4
@@ -242,7 +305,7 @@ chat:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
     pullPolicy: Always
-    tag: v3.4.0-alpha.57
+    tag: v3.4.0-alpha.64
 
   ingress:
     annotations:
@@ -260,7 +323,9 @@ chat:
 
   strategy:
     type: RollingUpdate
-    # type: Recreate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
 
   resources:
     requests:
@@ -294,7 +359,7 @@ frontendPWA:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
     pullPolicy: Always
-    tag: v3.4.0-alpha.57
+    tag: v3.4.0-alpha.62
 
   ingress:
     className: haproxy
@@ -311,7 +376,10 @@ frontendPWA:
           - pwa.klicker.uzh.ch
 
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
 
   resources:
     requests:
@@ -344,7 +412,7 @@ frontendManage:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm
     pullPolicy: Always
-    tag: v3.4.0-alpha.57
+    tag: v3.4.0-alpha.62
 
   ingress:
     className: haproxy
@@ -361,7 +429,10 @@ frontendManage:
           - manage.klicker.uzh.ch
 
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
 
   resources:
     requests:
@@ -379,7 +450,7 @@ frontendControl:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm
     pullPolicy: Always
-    tag: v3.4.0-alpha.57
+    tag: v3.4.0-alpha.62
 
   autoscaling:
     enabled: false
@@ -412,7 +483,10 @@ frontendControl:
           - control.klicker.uzh.ch
 
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
 
   resources:
     requests:
@@ -445,7 +519,7 @@ backendGraphql:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
     pullPolicy: Always
-    tag: v3.4.0-alpha.57
+    tag: v3.4.0-alpha.62
 
   appManageSubdomain: manage
   appStudentSubdomain: pwa
@@ -478,7 +552,10 @@ backendGraphql:
           # - backend-sls.klicker.uzh.ch
 
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
 
   resources:
     requests:
@@ -495,7 +572,7 @@ olatApi:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
     pullPolicy: Always
-    tag: v3.4.0-alpha.57
+    tag: v3.4.0-alpha.62
 
   autoscaling:
     enabled: false
@@ -528,7 +605,10 @@ olatApi:
           - olat-api.klicker.uzh.ch
 
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
 
   resources:
     requests:
@@ -565,7 +645,7 @@ lti:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
     pullPolicy: Always
-    tag: v3.4.0-alpha.57
+    tag: v3.4.0-alpha.62
 
   ingress:
     className: haproxy
@@ -590,7 +670,7 @@ responseApi:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
-    tag: v3.4.0-alpha.57
+    tag: v3.4.0-alpha.62
     pullPolicy: Always
 
   autoscaling:
@@ -624,7 +704,10 @@ responseApi:
           - response-api.klicker.uzh.ch
 
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
 
   resources:
     requests:
@@ -682,7 +765,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
       pullPolicy: Always
-      tag: v3.4.0-alpha.57
+      tag: v3.4.0-alpha.62
 
     ingress:
       className: haproxy
@@ -699,7 +782,10 @@ assessment:
             - assessment.klicker.uzh.ch
 
     strategy:
-      type: Recreate
+      type: RollingUpdate
+      rollingUpdate:
+        maxUnavailable: 1
+        maxSurge: 1
 
     resources:
       requests:
@@ -756,7 +842,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
       pullPolicy: Always
-      tag: v3.4.0-alpha.57
+      tag: v3.4.0-alpha.62
 
     appManageSubdomain: manage
     appStudentSubdomain: assessment
@@ -784,7 +870,10 @@ assessment:
             - assessment-api.klicker.uzh.ch
 
     strategy:
-      type: Recreate
+      type: RollingUpdate
+      rollingUpdate:
+        maxUnavailable: 1
+        maxSurge: 1
 
     resources:
       requests:
@@ -832,7 +921,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
       pullPolicy: Always
-      tag: v3.4.0-alpha.57
+      tag: v3.4.0-alpha.62
 
     ingress:
       className: haproxy
@@ -849,7 +938,10 @@ assessment:
             - assessment-response-api.klicker.uzh.ch
 
     strategy:
-      type: Recreate
+      type: RollingUpdate
+      rollingUpdate:
+        maxUnavailable: 1
+        maxSurge: 1
 
     resources:
       requests:

@@ -1,9 +1,7 @@
 import { useParams } from 'next/navigation'
 import { useCallback, useRef } from 'react'
-import {
-  REASONING_EFFORT_OPTIONS,
-  type ReasoningEffort,
-} from '../lib/config/reasoning'
+import { hasAllImageAttachmentsHydrated } from '../lib/attachments/attachmentState'
+import { type ReasoningEffort } from '../lib/config/reasoning'
 import { generateId } from '../lib/utils/chatUtils'
 import {
   useChatStore,
@@ -79,6 +77,8 @@ export function useChatResponse(
 
       const triggerMessage = messagesToSend[messagesToSend.length - 1]
       const parentId = triggerMessage?.parentId
+      let resolvedTriggerMessage = triggerMessage
+      let resolvedMessagesToSend = messagesToSend
 
       // generate assistant message ID; also sent to backend for consistency
       const assistantMessageId = generateId()
@@ -110,13 +110,62 @@ export function useChatResponse(
             .join('')
         }
 
+        if (
+          resolvedTriggerMessage?.role === 'user' &&
+          resolvedTriggerMessage.imageAttachments?.length &&
+          !hasAllImageAttachmentsHydrated(
+            resolvedTriggerMessage.imageAttachments
+          )
+        ) {
+          const attachmentSourceMessageId =
+            resolvedTriggerMessage.attachmentSourceMessageId ??
+            resolvedTriggerMessage.id
+          const hydratedTriggerMessage =
+            chatbotId && resolvedTriggerMessage.id
+              ? attachmentSourceMessageId === resolvedTriggerMessage.id
+                ? await useChatStore
+                    .getState()
+                    .ensureFullImageAttachments(
+                      chatbotId,
+                      threadId,
+                      resolvedTriggerMessage.id
+                    )
+                : await useChatStore
+                    .getState()
+                    .ensureFullImageAttachments(
+                      chatbotId,
+                      threadId,
+                      resolvedTriggerMessage.id,
+                      attachmentSourceMessageId
+                    )
+              : undefined
+
+          if (
+            !hydratedTriggerMessage?.imageAttachments?.length ||
+            !hasAllImageAttachmentsHydrated(
+              hydratedTriggerMessage.imageAttachments
+            )
+          ) {
+            console.error(
+              'Image attachments for this message could not be loaded.'
+            )
+            return
+          }
+
+          resolvedTriggerMessage = hydratedTriggerMessage
+          resolvedMessagesToSend = [
+            ...messagesToSend.slice(0, -1),
+            hydratedTriggerMessage,
+          ]
+        }
+
         // send request to API with streaming enabled
         const response = await fetch(`/api/chatbots/${chatbotId}/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           signal: abortController.signal,
           body: JSON.stringify({
-            messages: messagesToSend.map((m) => ({
+            messages: resolvedMessagesToSend.map((m) => ({
               id: m.id,
               role: m.role,
               content: serializeMessageContent(m),
@@ -127,6 +176,16 @@ export function useChatResponse(
             reasoningEffort: selectedReasoningEffort,
             parentId: parentId || undefined,
             assistantMessageId,
+            images: (resolvedTriggerMessage?.imageAttachments ?? [])
+              .filter(
+                (
+                  attachment
+                ): attachment is {
+                  type: 'image'
+                  imageBase64: string
+                } => typeof attachment.imageBase64 === 'string'
+              )
+              .map((attachment) => attachment.imageBase64),
           }),
         })
 
@@ -162,7 +221,7 @@ export function useChatResponse(
             createdAt: new Date(),
             parentId: triggerMessage?.id || null,
           }
-          updateThreadMessages([...messagesToSend, assistantMessage])
+          updateThreadMessages([...resolvedMessagesToSend, assistantMessage])
           return
         }
 
@@ -281,7 +340,7 @@ export function useChatResponse(
                   }
 
                   updateThreadMessages([
-                    ...messagesToSend,
+                    ...resolvedMessagesToSend,
                     buildAssistantMessage(),
                   ])
                 } else if (jsonData.type === 'reasoning-delta') {
@@ -307,7 +366,7 @@ export function useChatResponse(
                     }
 
                     updateThreadMessages([
-                      ...messagesToSend,
+                      ...resolvedMessagesToSend,
                       buildAssistantMessage(),
                     ])
                   }
@@ -340,7 +399,7 @@ export function useChatResponse(
                   orderedContentParts.push(toolCall)
 
                   updateThreadMessages([
-                    ...messagesToSend,
+                    ...resolvedMessagesToSend,
                     buildAssistantMessage(),
                   ])
                 } else if (jsonData.type === 'tool-input-available') {
@@ -351,7 +410,7 @@ export function useChatResponse(
                     existingToolCall.result = 'Executing...'
 
                     updateThreadMessages([
-                      ...messagesToSend,
+                      ...resolvedMessagesToSend,
                       buildAssistantMessage(),
                     ])
                   }
@@ -362,7 +421,7 @@ export function useChatResponse(
                     existingToolCall.result = jsonData.output
 
                     updateThreadMessages([
-                      ...messagesToSend,
+                      ...resolvedMessagesToSend,
                       buildAssistantMessage(),
                     ])
                   }
@@ -373,7 +432,7 @@ export function useChatResponse(
                     existingToolCall.result = `Error: ${jsonData.errorText || 'Tool execution failed'}`
 
                     updateThreadMessages([
-                      ...messagesToSend,
+                      ...resolvedMessagesToSend,
                       buildAssistantMessage(),
                     ])
                   }
@@ -393,7 +452,7 @@ export function useChatResponse(
                   orderedContentParts.push(errorContent)
 
                   updateThreadMessages([
-                    ...messagesToSend,
+                    ...resolvedMessagesToSend,
                     buildAssistantMessage(),
                   ])
 
@@ -411,10 +470,8 @@ export function useChatResponse(
                     >
                     const reasoningEffort =
                       typeof metadata.reasoningEffort === 'string' &&
-                      REASONING_EFFORT_OPTIONS.includes(
-                        metadata.reasoningEffort as ReasoningEffort
-                      )
-                        ? (metadata.reasoningEffort as ReasoningEffort)
+                      metadata.reasoningEffort.length > 0
+                        ? metadata.reasoningEffort
                         : null
 
                     messageMetadata = {
@@ -518,25 +575,27 @@ export function useChatResponse(
               creditsUsed: messageMetadata?.creditsUsed ?? null,
             }
 
-            const updatedUserMessage = triggerMessage
+            const updatedUserMessage = resolvedTriggerMessage
               ? {
-                  ...triggerMessage,
+                  ...resolvedTriggerMessage,
                   chatMode:
-                    messageMetadata?.chatMode ?? triggerMessage.chatMode,
-                  modelId: messageMetadata?.modelId ?? triggerMessage.modelId,
+                    messageMetadata?.chatMode ??
+                    resolvedTriggerMessage.chatMode,
+                  modelId:
+                    messageMetadata?.modelId ?? resolvedTriggerMessage.modelId,
                   reasoningEffort:
                     messageMetadata?.reasoningEffort ??
-                    triggerMessage.reasoningEffort,
+                    resolvedTriggerMessage.reasoningEffort,
                 }
               : null
 
             const newCurrentPath = updatedUserMessage
               ? [
-                  ...messagesToSend.slice(0, -1),
+                  ...resolvedMessagesToSend.slice(0, -1),
                   updatedUserMessage,
                   finalAssistantMessage,
                 ]
-              : [...messagesToSend, finalAssistantMessage]
+              : [...resolvedMessagesToSend, finalAssistantMessage]
 
             // update both current message path and complete message history
             const { threads } = useChatStore.getState()

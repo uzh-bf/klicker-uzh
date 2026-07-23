@@ -1,6 +1,7 @@
 import { useMutation } from '@apollo/client'
 import { faThumbsDown, faThumbsUp } from '@fortawesome/free-regular-svg-icons'
 import {
+  faChartBar,
   faCheck,
   faCheckDouble,
   faThumbsDown as faThumbsDownSolid,
@@ -31,6 +32,8 @@ interface InstanceHeaderProps {
   stackInstanceIds: number[]
   showSeparator?: boolean
   className?: string
+  evaluationOpen?: boolean
+  onToggleEvaluation?: () => void
 }
 
 function InstanceHeader({
@@ -44,6 +47,8 @@ function InstanceHeader({
   stackInstanceIds,
   showSeparator = false,
   className,
+  evaluationOpen,
+  onToggleEvaluation,
 }: InstanceHeaderProps) {
   const t = useTranslations()
   const [rateElement, { loading: ratingLoading }] =
@@ -162,6 +167,21 @@ function InstanceHeader({
         )}
         {withParticipant && (
           <div className="flex flex-row items-center gap-1">
+            {onToggleEvaluation && (
+              <Button
+                basic
+                onClick={onToggleEvaluation}
+                className={{
+                  root: twMerge(
+                    'text-uzh-grey-100 hover:text-primary-80 px-1',
+                    evaluationOpen && 'text-primary-100'
+                  ),
+                }}
+                data={{ cy: `toggle-evaluation-${index}-button` }}
+              >
+                <Button.Icon withoutLabel icon={faChartBar} />
+              </Button>
+            )}
             <Button
               basic
               disabled={ratingLoading}

@@ -19,6 +19,7 @@ services:
       dockerfile: test/docker/Dockerfile.test
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/klicker_test
+      CI: ${CI:-false}
       NODE_ENV: test
       PNPM_HOME: '/tmp/.pnpm'
       OLAT_API_KEY: 'test-key'

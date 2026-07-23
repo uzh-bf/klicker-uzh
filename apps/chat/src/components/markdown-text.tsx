@@ -141,6 +141,8 @@ const defaultComponents = memoizeMarkdownComponents({
         'text-primary font-medium underline underline-offset-4',
         className
       )}
+      target="_blank"
+      rel="noopener noreferrer"
       {...props}
     />
   ),
@@ -231,7 +233,7 @@ const defaultComponents = memoizeMarkdownComponents({
   CodeHeader,
 })
 
-function normalizeCustomMathTags(input: string): string {
+export function normalizeCustomMathTags(input: string): string {
   return (
     input
       // Convert [/math]...[/math] to $$...$$

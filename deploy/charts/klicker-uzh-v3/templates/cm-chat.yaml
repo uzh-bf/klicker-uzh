@@ -1,4 +1,8 @@
 {{- $fullName := include "chart.fullname" . -}}
+{{- $chatTelemetryEnabled := true -}}
+{{- if and .Values.chat.telemetry (hasKey .Values.chat.telemetry "enabled") -}}
+{{- $chatTelemetryEnabled = .Values.chat.telemetry.enabled -}}
+{{- end -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -7,6 +11,8 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
 data:
   OPENAI_BASE_URL: {{ .Values.chat.openai.baseUrl | quote }}
+  CHAT_OPENAI_STORE_RESPONSES: {{ .Values.chat.openai.storeResponses | default false | quote }}
+  CHAT_ENABLE_AI_TELEMETRY: {{ $chatTelemetryEnabled | quote }}
   {{- if .Values.chat.modelRegistry }}
   CHAT_MODEL_REGISTRY_JSON: {{ .Values.chat.modelRegistry | toJson | quote }}
   {{- end }}

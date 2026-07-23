@@ -185,7 +185,7 @@ describe('Test creation and editing functionalities, validation, etc. for Single
       cy.get('[data-cy="save-new-question"]').should('be.disabled')
       cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
         .realClick()
-        .type(feedback)
+        .realType(feedback)
       cy.get(`[data-cy="insert-answer-feedback-${ix}"]`).contains(feedback)
     })
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')

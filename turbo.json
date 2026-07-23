@@ -12,11 +12,14 @@
     "APP_STUDENT_SUBDOMAIN",
     "APP_SECRET",
     "ASSESSMENT_MODE",
+    "AUTH_LECTURER_ALLOWED_HOSTS",
+    "AUTH_STUDENT_ALLOWED_HOSTS",
     "AZUREWEBJOBSFEATUREFLAGS",
     "AZUREWEBJOBSSTORAGE",
     "BLOB_STORAGE_ACCESS_KEY",
     "BLOB_STORAGE_ACCOUNT_NAME",
     "COOKIE_DOMAIN",
+    "CORS_ALLOWED_ORIGINS",
     "CRON_TOKEN",
     "DATABASE_IMPORT_USER",
     "DATABASE_URL",
@@ -32,7 +35,11 @@
     "FUNCTIONS_WORKER_PROCESS_COUNT",
     "FUNCTIONS_WORKER_RUNTIME",
     "HATCHET_CLIENT_TLS_STRATEGY",
+    "HATCHET_CLIENT_HOST_PORT",
     "HATCHET_CLIENT_TOKEN",
+    "HATCHET_HOST_PORT",
+    "HATCHET_API_URL",
+    "HATCHET_TENANT_ID",
     "HATCHET_LOG_LEVEL",
     "LTI_DB_TYPE",
     "LTI_DB_HOST",
@@ -58,10 +65,20 @@
     "NOTIFICATION_URL",
     "OLAT_API_KEY",
     "PRISMA_OPTIMIZE",
+    "REDIS_ASSESSMENT_HOST",
+    "REDIS_ASSESSMENT_PORT",
     "REDIS_CACHE_HOST",
+    "REDIS_CACHE_PASS",
     "REDIS_CACHE_PORT",
+    "REDIS_CACHE_TLS",
     "REDIS_HOST",
+    "REDIS_PASS",
     "REDIS_PORT",
+    "REDIS_TLS",
+    "REDIS_ASSESSMENT_HOST",
+    "REDIS_ASSESSMENT_PASS",
+    "REDIS_ASSESSMENT_PORT",
+    "REDIS_ASSESSMENT_TLS",
     "SERVICE_BUS_CONNECTION_STRING",
     "SERVICE_BUS_QUEUE_NAME",
     "SHADOW_DATABASE_URL",
@@ -79,6 +96,8 @@
     "APP_ORIGIN_ASSESSMENT_PWA",
     "OPENAI_API_KEY",
     "OPENAI_BASE_URL",
+    "CHAT_OPENAI_STORE_RESPONSES",
+    "CHAT_ENABLE_AI_TELEMETRY",
     "UPSTREAM_OPENAI_API_KEY",
     "UPSTREAM_OPENAI_BASE_URL",
     "LANGFUSE_PUBLIC_KEY",
@@ -109,6 +128,7 @@
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
         "@klicker-uzh/markdown#build",
+        "@klicker-uzh/word-cloud#build",
         "@klicker-uzh/transactional#build"
       ],
       "persistent": true
@@ -120,6 +140,7 @@
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
         "@klicker-uzh/markdown#build",
+        "@klicker-uzh/word-cloud#build",
         "@klicker-uzh/transactional#build"
       ],
       "persistent": true
@@ -131,6 +152,7 @@
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
         "@klicker-uzh/markdown#build",
+        "@klicker-uzh/word-cloud#build",
         "@klicker-uzh/transactional#build"
       ],
       "persistent": true
@@ -142,6 +164,7 @@
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
         "@klicker-uzh/markdown#build",
+        "@klicker-uzh/word-cloud#build",
         "@klicker-uzh/transactional#build"
       ],
       "persistent": true
@@ -151,6 +174,7 @@
       "persistent": true
     },
     "dev:test": {
+      "cache": false,
       "outputs": ["dist/**", ".next/**", "build/**", "out/**"],
       "persistent": true
     },
@@ -163,7 +187,8 @@
       "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
     },
     "start:test": {
-      "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
+      "cache": false,
+      "persistent": true
     },
     "test": {
       "cache": false

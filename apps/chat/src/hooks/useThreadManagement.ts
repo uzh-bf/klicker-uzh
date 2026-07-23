@@ -1,12 +1,21 @@
+import {
+  extractLocalImageAttachments,
+  getEditedMessageSource,
+  getImageAttachmentKey,
+} from '@/src/lib/attachments/attachmentState'
+import { generateId } from '@/src/lib/utils/chatUtils'
+import {
+  type ExtendedThreadMessageLike,
+  useChatStore,
+} from '@/src/stores/chatStore'
+import {
+  MAX_IMAGE_ATTACHMENTS,
+  useComposerStore,
+} from '@/src/stores/composerStore'
+import { useSettingsStore } from '@/src/stores/settingsStore'
 import { type AppendMessage } from '@assistant-ui/react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
-import { generateId } from '../lib/utils/chatUtils'
-import {
-  useChatStore,
-  type ExtendedThreadMessageLike,
-} from '../stores/chatStore'
-import { useSettingsStore } from '../stores/settingsStore'
 
 /**
  * Hook for managing chat thread operations.
@@ -62,6 +71,10 @@ export function useThreadManagement(
         }
       }
 
+      const imageAttachments = extractLocalImageAttachments(
+        message.attachments
+      ).slice(0, MAX_IMAGE_ATTACHMENTS)
+
       // create user message with unique ID and metadata
       const userMessage: ExtendedThreadMessageLike = {
         id: generateId(),
@@ -72,6 +85,7 @@ export function useThreadManagement(
         chatMode: selectedMode,
         modelId: selectedModel,
         reasoningEffort: selectedReasoningEffort,
+        imageAttachments,
       }
 
       if (shouldReplaceUrl) {
@@ -124,6 +138,21 @@ export function useThreadManagement(
 
       const activeThread = threads.find((t) => t.id === threadId)
       const parentId = message.parentId
+      const sourceId =
+        typeof message === 'object' &&
+        message !== null &&
+        'sourceId' in message &&
+        typeof message.sourceId === 'string'
+          ? message.sourceId
+          : null
+      const editedMessageId =
+        typeof message === 'object' &&
+        message !== null &&
+        'id' in message &&
+        typeof message.id === 'string'
+          ? message.id
+          : null
+      const sourceMessageId = sourceId ?? editedMessageId
 
       // create edited message with new ID
       const editedMessage: ExtendedThreadMessageLike = {
@@ -143,6 +172,56 @@ export function useThreadManagement(
           ? activeThread.messages.findIndex((m) => m.id === parentId)
           : -1
 
+      // carry over the attachments from the original message being edited
+      const originalMessage = activeThread
+        ? getEditedMessageSource({
+            editedMessageId: sourceMessageId,
+            messages: activeThread.messages,
+          })
+        : undefined
+      const removedAttachmentKeysByMessageId =
+        useComposerStore.getState().editRemovedAttachmentKeysByMessageId
+      const removedAttachmentKeys = new Set(
+        sourceMessageId
+          ? (removedAttachmentKeysByMessageId[sourceMessageId] ?? [])
+          : []
+      )
+      const keptAttachments =
+        originalMessage?.imageAttachments &&
+        originalMessage.imageAttachments.length > 0
+          ? originalMessage.imageAttachments
+              .filter(
+                (attachment, index) =>
+                  !removedAttachmentKeys.has(
+                    getImageAttachmentKey(attachment, index)
+                  )
+              )
+              .map((attachment) => ({ ...attachment }))
+          : []
+
+      const newImageAttachments = extractLocalImageAttachments(
+        message.attachments
+      )
+
+      const mergedAttachments = [
+        ...keptAttachments,
+        ...newImageAttachments,
+      ].slice(0, MAX_IMAGE_ATTACHMENTS)
+
+      if (mergedAttachments.length > 0) {
+        editedMessage.imageAttachments = mergedAttachments
+      }
+      editedMessage.attachmentSourceMessageId =
+        originalMessage?.attachmentSourceMessageId ??
+        originalMessage?.id ??
+        null
+
+      if (sourceMessageId) {
+        useComposerStore
+          .getState()
+          .clearEditRemovedAttachmentKeys(sourceMessageId)
+      }
+
       const newCurrentPath =
         parentIndex >= 0 && activeThread
           ? [...activeThread.messages.slice(0, parentIndex + 1), editedMessage]
@@ -161,6 +240,7 @@ export function useThreadManagement(
                 ...thread,
                 messages: newCurrentPath,
                 allMessages: updatedAllMessages,
+                updatedAt: new Date(),
               }
             : thread
         ),
@@ -212,6 +292,7 @@ export function useThreadManagement(
             ? {
                 ...thread,
                 messages: truncatedPath,
+                updatedAt: new Date(),
               }
             : thread
         ),

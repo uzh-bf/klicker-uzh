@@ -6,7 +6,6 @@ import {
   Chatbot,
   CreditResetPeriod,
   GetChatbotsInfoDocument,
-  ReasoningEffort,
   UpdateChatbotModelSettingsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -24,21 +23,14 @@ import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-type ReasoningConfigState = Record<string, ReasoningEffort[]>
+type ReasoningConfigState = Record<string, string[]>
 
-const REASONING_EFFORT_ORDER: ReasoningEffort[] = [
-  ReasoningEffort.None,
-  ReasoningEffort.Minimal,
-  ReasoningEffort.Low,
-  ReasoningEffort.Medium,
-  ReasoningEffort.High,
-]
-
-const normalizeReasoningEfforts = (
-  efforts: readonly ReasoningEffort[]
-): ReasoningEffort[] => {
+const orderEffortsBy = (
+  efforts: readonly string[],
+  order: readonly string[]
+): string[] => {
   const effortSet = new Set(efforts)
-  return REASONING_EFFORT_ORDER.filter((effort) => effortSet.has(effort))
+  return order.filter((effort) => effortSet.has(effort))
 }
 
 const buildReasoningConfigState = (
@@ -48,7 +40,7 @@ const buildReasoningConfigState = (
   const existingConfig = new Map(
     (chatbot.allowedReasoningEffortsByModel ?? []).map((entry) => [
       entry.modelId,
-      normalizeReasoningEfforts(entry.efforts as ReasoningEffort[]),
+      entry.efforts,
     ])
   )
 
@@ -56,19 +48,14 @@ const buildReasoningConfigState = (
   for (const model of modelRegistry) {
     if (!model.supportsReasoning) continue
 
-    const supportedEfforts = normalizeReasoningEfforts(
-      model.supportedReasoningEfforts as ReasoningEffort[]
-    )
+    const supportedEfforts = model.supportedReasoningEfforts
     const configuredEfforts = existingConfig.get(model.id)
     if (configuredEfforts && configuredEfforts.length > 0) {
-      const supportedSet = new Set(supportedEfforts)
-      const intersected = configuredEfforts.filter((effort) =>
-        supportedSet.has(effort)
-      )
+      const intersected = orderEffortsBy(configuredEfforts, supportedEfforts)
       nextState[model.id] =
-        intersected.length > 0 ? intersected : supportedEfforts
+        intersected.length > 0 ? intersected : [...supportedEfforts]
     } else {
-      nextState[model.id] = supportedEfforts
+      nextState[model.id] = [...supportedEfforts]
     }
   }
 
@@ -100,6 +87,17 @@ function ChatbotDetails({
 
   const reasoningModels = useMemo(
     () => modelRegistry.filter((model) => model.supportsReasoning),
+    [modelRegistry]
+  )
+
+  const supportedEffortsByModelId = useMemo(
+    () =>
+      new Map(
+        modelRegistry.map((model) => [
+          model.id,
+          model.supportedReasoningEfforts,
+        ])
+      ),
     [modelRegistry]
   )
 
@@ -191,7 +189,7 @@ function ChatbotDetails({
 
   const handleReasoningEffortToggle = (
     modelId: string,
-    effort: ReasoningEffort,
+    effort: string,
     checked: boolean
   ) => {
     setReasoningConfig((currentConfig) => {
@@ -203,9 +201,8 @@ function ChatbotDetails({
         effortSet.delete(effort)
       }
 
-      const nextEfforts = normalizeReasoningEfforts(
-        Array.from(effortSet) as ReasoningEffort[]
-      )
+      const supportedOrder = supportedEffortsByModelId.get(modelId) ?? []
+      const nextEfforts = orderEffortsBy(Array.from(effortSet), supportedOrder)
 
       return {
         ...currentConfig,
@@ -222,9 +219,9 @@ function ChatbotDetails({
       ? []
       : Array.from(new Set(allowedModelIds)).sort()
     const normalizedReasoningConfig = reasoningModels.map((model) => {
-      const configuredEfforts = normalizeReasoningEfforts(
-        (reasoningConfig[model.id] ??
-          (model.supportedReasoningEfforts as ReasoningEffort[])) as ReasoningEffort[]
+      const configuredEfforts = orderEffortsBy(
+        reasoningConfig[model.id] ?? model.supportedReasoningEfforts,
+        model.supportedReasoningEfforts
       )
 
       return {
@@ -619,12 +616,10 @@ function ChatbotDetails({
 
                 <div className="space-y-3">
                   {reasoningModels.map((model) => {
-                    const supportedEfforts = normalizeReasoningEfforts(
-                      model.supportedReasoningEfforts as ReasoningEffort[]
-                    )
-                    const configuredEfforts = normalizeReasoningEfforts(
-                      (reasoningConfig[model.id] ??
-                        supportedEfforts) as ReasoningEffort[]
+                    const supportedEfforts = model.supportedReasoningEfforts
+                    const configuredEfforts = orderEffortsBy(
+                      reasoningConfig[model.id] ?? supportedEfforts,
+                      supportedEfforts
                     )
                     const isFixedReasoning = supportedEfforts.length <= 1
 

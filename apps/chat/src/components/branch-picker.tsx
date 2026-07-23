@@ -1,9 +1,15 @@
 'use client'
 
+import { getBranches } from '@/src/lib/api/utils'
+import {
+  type ExtendedThreadMessageLike,
+  useChatStore,
+} from '@/src/stores/chatStore'
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
-import { useChatStore } from '../stores/chatStore'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
+
+const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []
 
 interface BranchPickerProps {
   messageId: string
@@ -11,12 +17,20 @@ interface BranchPickerProps {
 }
 
 export function BranchPicker({ messageId, className }: BranchPickerProps) {
-  const { getMessageBranches, switchToBranch } = useChatStore()
+  const switchToBranch = useChatStore((state) => state.switchToBranch)
 
-  // get branches for current message
-  const branches = useMemo(() => {
-    return getMessageBranches(messageId)
-  }, [getMessageBranches, messageId])
+  // get all messages from the active thread to compute branches
+  const allMessages = useChatStore((state) => {
+    const activeThread = state.threads.find(
+      (t) => t.id === state.activeThreadId
+    )
+    return activeThread?.allMessages ?? EMPTY_MESSAGES
+  })
+
+  const branches = useMemo(
+    () => getBranches(allMessages, messageId),
+    [allMessages, messageId]
+  )
 
   const currentIndex = useMemo(() => {
     const directIndex = branches.findIndex((branch) => branch.id === messageId)
@@ -25,22 +39,15 @@ export function BranchPicker({ messageId, className }: BranchPickerProps) {
     }
 
     // if no direct match, might be an assistant message, find corresponding user message
-    const currentThread = useChatStore
-      .getState()
-      .threads.find((t) => t.id === useChatStore.getState().activeThreadId)
-    if (currentThread) {
-      const currentMessage = currentThread.allMessages.find(
-        (m) => m.id === messageId
+    const currentMessage = allMessages.find((m) => m.id === messageId)
+    if (currentMessage?.role === 'assistant' && currentMessage.parentId) {
+      return branches.findIndex(
+        (branch) => branch.id === currentMessage.parentId
       )
-      if (currentMessage?.role === 'assistant' && currentMessage.parentId) {
-        return branches.findIndex(
-          (branch) => branch.id === currentMessage.parentId
-        )
-      }
     }
 
     return -1
-  }, [branches, messageId])
+  }, [branches, messageId, allMessages])
 
   const switchToBranchHandler = useCallback(
     (branchIndex: number) => {
@@ -71,10 +78,14 @@ export function BranchPicker({ messageId, className }: BranchPickerProps) {
   const hasNext = currentIndex < branches.length - 1
 
   return (
-    <div className={`flex items-center gap-1 ${className}`}>
+    <div
+      data-cy="chat-branch-picker"
+      className={`flex items-center gap-1 ${className}`}
+    >
       <Tooltip>
         <TooltipTrigger asChild>
           <button
+            data-cy="chat-branch-previous"
             disabled={!hasPrevious}
             onClick={goToPrevious}
             className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
@@ -86,13 +97,17 @@ export function BranchPicker({ messageId, className }: BranchPickerProps) {
         <TooltipContent>Previous branch</TooltipContent>
       </Tooltip>
 
-      <span className="flex items-center whitespace-nowrap px-1 text-xs">
+      <span
+        data-cy="chat-branch-indicator"
+        className="flex items-center whitespace-nowrap px-1 text-xs"
+      >
         {currentIndex + 1} / {branches.length}
       </span>
 
       <Tooltip>
         <TooltipTrigger asChild>
           <button
+            data-cy="chat-branch-next"
             disabled={!hasNext}
             onClick={goToNext}
             className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"

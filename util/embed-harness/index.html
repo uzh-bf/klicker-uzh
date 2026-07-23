@@ -1,0 +1,829 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Klicker Embed Harness</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #0f172a;
+        --panel: #111827;
+        --panel-soft: #1f2937;
+        --border: #334155;
+        --text: #e5e7eb;
+        --text-soft: #cbd5e1;
+        --accent: #38bdf8;
+        --accent-soft: rgba(56, 189, 248, 0.14);
+        --success: #22c55e;
+        --warning: #f59e0b;
+        --danger: #f87171;
+        --shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: radial-gradient(
+            circle at top,
+            rgba(56, 189, 248, 0.16),
+            transparent 30%
+          ),
+          linear-gradient(180deg, #020617 0%, var(--bg) 100%);
+        color: var(--text);
+      }
+
+      main {
+        width: min(1500px, calc(100vw - 32px));
+        margin: 0 auto;
+        padding: 24px 0 40px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      .hero {
+        display: grid;
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+
+      .hero p {
+        max-width: 900px;
+        color: var(--text-soft);
+        line-height: 1.5;
+      }
+
+      .layout {
+        display: grid;
+        gap: 20px;
+        grid-template-columns: minmax(340px, 420px) minmax(0, 1fr);
+      }
+
+      .panel {
+        background: rgba(15, 23, 42, 0.85);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 20px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .panel-header {
+        padding: 18px 20px 14px;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+      }
+
+      .panel-header p {
+        margin-top: 6px;
+        color: var(--text-soft);
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .panel-content {
+        padding: 20px;
+        display: grid;
+        gap: 18px;
+      }
+
+      .stack {
+        display: grid;
+        gap: 12px;
+      }
+
+      label,
+      legend {
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        color: var(--text-soft);
+      }
+
+      input[type='url'],
+      input[type='number'] {
+        width: 100%;
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px solid rgba(148, 163, 184, 0.28);
+        background: rgba(15, 23, 42, 0.9);
+        color: var(--text);
+        font: inherit;
+      }
+
+      input:focus {
+        outline: 2px solid rgba(56, 189, 248, 0.45);
+        outline-offset: 1px;
+        border-color: rgba(56, 189, 248, 0.75);
+      }
+
+      .button-row,
+      .preset-row,
+      .status-grid,
+      .meta-grid {
+        display: grid;
+        gap: 10px;
+      }
+
+      .button-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .preset-row {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      button {
+        padding: 12px 14px;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        border-radius: 12px;
+        background: rgba(30, 41, 59, 0.95);
+        color: var(--text);
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+        transition:
+          transform 120ms ease,
+          background 120ms ease,
+          border-color 120ms ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+        border-color: rgba(56, 189, 248, 0.45);
+        background: rgba(51, 65, 85, 0.95);
+      }
+
+      button.primary {
+        background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%);
+        border-color: transparent;
+        color: white;
+      }
+
+      button.secondary {
+        background: rgba(14, 165, 233, 0.14);
+        border-color: rgba(56, 189, 248, 0.35);
+      }
+
+      button.ghost {
+        background: transparent;
+      }
+
+      .inline-control {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .inline-control input[type='checkbox'] {
+        inline-size: 18px;
+        block-size: 18px;
+        margin: 0;
+      }
+
+      .status-grid,
+      .meta-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .status-card {
+        padding: 14px;
+        border-radius: 14px;
+        background: rgba(15, 23, 42, 0.85);
+        border: 1px solid rgba(148, 163, 184, 0.14);
+      }
+
+      .status-card strong,
+      .status-card span {
+        display: block;
+      }
+
+      .status-card strong {
+        margin-bottom: 6px;
+        font-size: 12px;
+        color: var(--text-soft);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .status-card span {
+        font-size: 14px;
+        word-break: break-word;
+      }
+
+      .status-ok {
+        color: var(--success);
+      }
+
+      .status-warn {
+        color: var(--warning);
+      }
+
+      .status-error {
+        color: var(--danger);
+      }
+
+      pre {
+        margin: 0;
+        padding: 16px;
+        border-radius: 16px;
+        background: rgba(2, 6, 23, 0.9);
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        color: #c4f1ff;
+        font-family: 'SFMono-Regular', SFMono-Regular, Consolas,
+          'Liberation Mono', Menlo, monospace;
+        font-size: 12px;
+        line-height: 1.5;
+        overflow: auto;
+      }
+
+      .viewer {
+        display: grid;
+        gap: 18px;
+      }
+
+      .iframe-shell {
+        padding: 18px;
+        background: linear-gradient(
+          180deg,
+          rgba(15, 23, 42, 0.88),
+          rgba(15, 23, 42, 0.96)
+        );
+      }
+
+      .iframe-frame {
+        width: 100%;
+        height: 720px;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        border-radius: 18px;
+        background: white;
+      }
+
+      .log-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 10px;
+        max-height: 420px;
+        overflow: auto;
+      }
+
+      .log-entry {
+        padding: 12px 14px;
+        border-radius: 14px;
+        background: rgba(15, 23, 42, 0.72);
+        border: 1px solid rgba(148, 163, 184, 0.14);
+      }
+
+      .log-entry header {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 8px;
+        font-size: 12px;
+        color: var(--text-soft);
+      }
+
+      .log-entry p {
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      .log-entry pre {
+        margin-top: 10px;
+        padding: 12px;
+      }
+
+      .note {
+        padding: 14px 16px;
+        border-radius: 16px;
+        background: var(--accent-soft);
+        border: 1px solid rgba(56, 189, 248, 0.22);
+        color: #d7f5ff;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      .empty {
+        color: var(--text-soft);
+        font-size: 14px;
+      }
+
+      @media (max-width: 1120px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 720px) {
+        main {
+          width: min(100vw - 20px, 100%);
+          padding-top: 16px;
+        }
+
+        .button-row,
+        .preset-row,
+        .status-grid,
+        .meta-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <h1>Klicker Practice Quiz Embed Harness</h1>
+        <p>
+          Static parent page for verifying the embedded practice-quiz handshake.
+          Load a quiz URL, send <code>klicker:embed-init</code>, inspect the
+          latest payload, and keep a timestamped log of accepted and rejected
+          messages.
+        </p>
+        <p>
+          The prefilled URL targets the local branch PWA on
+          <code>127.0.0.1:3101</code>. Production
+          <code>pwa.klicker.com</code> rejects this localhost harness via CSP,
+          so use the local stack for verification.
+        </p>
+      </section>
+
+      <section class="layout">
+        <aside class="panel">
+          <div class="panel-header">
+            <h2>Controls</h2>
+            <p>
+              The harness auto-adds <code>embed=true</code> when missing so the
+              iframe always runs in embedded mode. The URL is prefilled for the
+              local verification stack, but the iframe only loads when you click
+              <code>Load iframe</code>.
+            </p>
+          </div>
+          <div class="panel-content">
+            <div class="stack">
+              <label for="quiz-url">Practice quiz URL</label>
+              <input
+                id="quiz-url"
+                type="url"
+                spellcheck="false"
+                value="http://127.0.0.1:3101/en/course/test-course/practiceQuizzes/test-quiz?embed=true"
+              />
+            </div>
+
+            <div class="button-row">
+              <button class="primary" id="load-frame" type="button">
+                Load iframe
+              </button>
+              <button class="secondary" id="send-init" type="button">
+                Send init
+              </button>
+              <button id="reload-frame" type="button">Reload iframe</button>
+              <button class="ghost" id="clear-log" type="button">
+                Clear log
+              </button>
+            </div>
+
+            <label class="inline-control" for="auto-init">
+              <input id="auto-init" type="checkbox" checked />
+              <span>Send init automatically after iframe load</span>
+            </label>
+
+            <div class="stack">
+              <legend>Viewport presets</legend>
+              <div class="preset-row">
+                <button class="ghost" data-height="480" type="button">
+                  Small
+                </button>
+                <button class="ghost" data-height="720" type="button">
+                  Default
+                </button>
+                <button class="ghost" data-height="960" type="button">
+                  Tall
+                </button>
+                <button class="ghost" data-height="1200" type="button">
+                  XL
+                </button>
+              </div>
+              <div class="inline-control">
+                <input
+                  id="custom-height"
+                  type="number"
+                  min="240"
+                  step="10"
+                  value="720"
+                />
+                <button id="apply-height" type="button">Apply height</button>
+              </div>
+            </div>
+
+            <div class="stack">
+              <h3>Status</h3>
+              <div class="status-grid">
+                <div class="status-card">
+                  <strong>Parent origin</strong>
+                  <span id="parent-origin">-</span>
+                </div>
+                <div class="status-card">
+                  <strong>Iframe origin</strong>
+                  <span id="iframe-origin">-</span>
+                </div>
+                <div class="status-card">
+                  <strong>Init state</strong>
+                  <span id="init-state" class="status-warn">Not sent</span>
+                </div>
+                <div class="status-card">
+                  <strong>Last accepted type</strong>
+                  <span id="last-type">-</span>
+                </div>
+                <div class="status-card">
+                  <strong>Iframe URL</strong>
+                  <span id="resolved-url">-</span>
+                </div>
+                <div class="status-card">
+                  <strong>Viewport height</strong>
+                  <span id="viewport-height">720px</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="stack">
+              <h3>Latest payload</h3>
+              <pre id="latest-payload">No accepted payload yet.</pre>
+            </div>
+
+            <div class="note">
+              Manual checks: no handshake means no accepted state; valid
+              handshake should surface
+              <code>overview</code>, then <code>in-progress</code>, then
+              <code>completed</code> with
+              <code>currentStep === totalSteps</code>.
+            </div>
+          </div>
+        </aside>
+
+        <section class="viewer">
+          <section class="panel iframe-shell">
+            <iframe
+              class="iframe-frame"
+              id="quiz-frame"
+              title="Embedded practice quiz harness"
+            ></iframe>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h2>Event log</h2>
+              <p>
+                Every outbound init message, inbound quiz-state message, and
+                ignored event is kept here with a timestamp so the protocol is
+                easy to inspect.
+              </p>
+            </div>
+            <div class="panel-content">
+              <div class="meta-grid">
+                <div class="status-card">
+                  <strong>Total entries</strong>
+                  <span id="log-count">0</span>
+                </div>
+                <div class="status-card">
+                  <strong>Last event</strong>
+                  <span id="last-event">-</span>
+                </div>
+              </div>
+
+              <ul class="log-list" id="log-list">
+                <li class="empty" id="log-empty">No events yet.</li>
+              </ul>
+            </div>
+          </section>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      const EMBED_INIT_MESSAGE_TYPE = 'klicker:embed-init'
+      const QUIZ_STATE_MESSAGE_TYPE = 'klicker:quiz-state'
+      const DEFAULT_HEIGHT = 720
+
+      const elements = {
+        quizUrl: document.getElementById('quiz-url'),
+        loadFrame: document.getElementById('load-frame'),
+        sendInit: document.getElementById('send-init'),
+        reloadFrame: document.getElementById('reload-frame'),
+        clearLog: document.getElementById('clear-log'),
+        autoInit: document.getElementById('auto-init'),
+        customHeight: document.getElementById('custom-height'),
+        applyHeight: document.getElementById('apply-height'),
+        quizFrame: document.getElementById('quiz-frame'),
+        parentOrigin: document.getElementById('parent-origin'),
+        iframeOrigin: document.getElementById('iframe-origin'),
+        initState: document.getElementById('init-state'),
+        lastType: document.getElementById('last-type'),
+        resolvedUrl: document.getElementById('resolved-url'),
+        viewportHeight: document.getElementById('viewport-height'),
+        latestPayload: document.getElementById('latest-payload'),
+        logList: document.getElementById('log-list'),
+        logEmpty: document.getElementById('log-empty'),
+        logCount: document.getElementById('log-count'),
+        lastEvent: document.getElementById('last-event'),
+      }
+
+      const state = {
+        iframeOrigin: null,
+        iframeUrl: null,
+        initSent: false,
+        lastAcceptedType: null,
+        latestPayload: null,
+        logEntries: 0,
+      }
+
+      function safeStringify(value) {
+        try {
+          return JSON.stringify(value, null, 2)
+        } catch (error) {
+          return JSON.stringify({ error: String(error) }, null, 2)
+        }
+      }
+
+      function nowLabel() {
+        return new Date().toLocaleTimeString()
+      }
+
+      function normalizeIframeUrl(rawValue) {
+        try {
+          const url = new URL(rawValue.trim())
+
+          if (url.searchParams.get('embed') !== 'true') {
+            url.searchParams.set('embed', 'true')
+          }
+
+          return url
+        } catch {
+          return null
+        }
+      }
+
+      function setInitState(sent) {
+        state.initSent = sent
+        elements.initState.textContent = sent ? 'Sent' : 'Not sent'
+        elements.initState.className = sent ? 'status-ok' : 'status-warn'
+      }
+
+      function updateStatus() {
+        elements.parentOrigin.textContent = window.location.origin || 'file://'
+        elements.iframeOrigin.textContent = state.iframeOrigin || '-'
+        elements.lastType.textContent = state.lastAcceptedType || '-'
+        elements.resolvedUrl.textContent = state.iframeUrl || '-'
+        elements.latestPayload.textContent = state.latestPayload
+          ? safeStringify(state.latestPayload)
+          : 'No accepted payload yet.'
+        elements.logCount.textContent = String(state.logEntries)
+      }
+
+      function setViewportHeight(height) {
+        const normalizedHeight = Number(height)
+
+        if (!Number.isFinite(normalizedHeight) || normalizedHeight < 240) {
+          appendLog('warning', 'Ignored invalid viewport height.', { height })
+          return
+        }
+
+        elements.quizFrame.style.height = normalizedHeight + 'px'
+        elements.customHeight.value = String(normalizedHeight)
+        elements.viewportHeight.textContent = normalizedHeight + 'px'
+      }
+
+      function appendLog(kind, message, detail) {
+        state.logEntries += 1
+        elements.logEmpty.hidden = true
+
+        const item = document.createElement('li')
+        item.className = 'log-entry'
+
+        const header = document.createElement('header')
+        const kindLabel = document.createElement('strong')
+        kindLabel.textContent = kind.toUpperCase()
+        const timeLabel = document.createElement('span')
+        timeLabel.textContent = nowLabel()
+        header.append(kindLabel, timeLabel)
+
+        const body = document.createElement('p')
+        body.textContent = message
+        item.append(header, body)
+
+        if (detail !== undefined) {
+          const payload = document.createElement('pre')
+          payload.textContent = safeStringify(detail)
+          item.append(payload)
+        }
+
+        elements.logList.prepend(item)
+        elements.lastEvent.textContent = message
+        updateStatus()
+      }
+
+      function loadIframe() {
+        const normalizedUrl = normalizeIframeUrl(elements.quizUrl.value)
+
+        if (!normalizedUrl) {
+          state.iframeOrigin = null
+          state.iframeUrl = null
+          setInitState(false)
+          appendLog(
+            'error',
+            'Failed to load iframe because the URL is invalid.',
+            {
+              input: elements.quizUrl.value,
+            }
+          )
+          updateStatus()
+          return
+        }
+
+        state.iframeOrigin = normalizedUrl.origin
+        state.iframeUrl = normalizedUrl.toString()
+        state.lastAcceptedType = null
+        state.latestPayload = null
+        setInitState(false)
+
+        elements.quizUrl.value = state.iframeUrl
+        elements.quizFrame.src = state.iframeUrl
+
+        appendLog('outbound', 'Loaded iframe URL.', {
+          iframeOrigin: state.iframeOrigin,
+          iframeUrl: state.iframeUrl,
+        })
+        updateStatus()
+      }
+
+      function sendInit(reason) {
+        if (!state.iframeOrigin) {
+          appendLog(
+            'warning',
+            'Init not sent because no iframe origin is available yet.'
+          )
+          return
+        }
+
+        const frameWindow = elements.quizFrame.contentWindow
+
+        if (!frameWindow) {
+          appendLog(
+            'warning',
+            'Init not sent because the iframe contentWindow is missing.'
+          )
+          return
+        }
+
+        const message = { type: EMBED_INIT_MESSAGE_TYPE }
+        frameWindow.postMessage(message, state.iframeOrigin)
+        setInitState(true)
+        appendLog('outbound', 'Sent embed init message.', {
+          reason,
+          targetOrigin: state.iframeOrigin,
+          message,
+        })
+        updateStatus()
+      }
+
+      function clearLog() {
+        state.logEntries = 0
+        elements.logList.innerHTML = ''
+        elements.logEmpty.hidden = false
+        elements.logList.append(elements.logEmpty)
+        elements.lastEvent.textContent = '-'
+        appendLog('info', 'Cleared event log.')
+      }
+
+      elements.loadFrame.addEventListener('click', loadIframe)
+      elements.sendInit.addEventListener('click', function () {
+        sendInit('manual')
+      })
+      elements.reloadFrame.addEventListener('click', function () {
+        if (!elements.quizFrame.src) {
+          appendLog(
+            'warning',
+            'Reload ignored because the iframe has not been loaded yet.'
+          )
+          return
+        }
+
+        setInitState(false)
+        elements.quizFrame.src = elements.quizFrame.src
+        appendLog('outbound', 'Reloaded iframe.', {
+          iframeUrl: elements.quizFrame.src,
+        })
+      })
+      elements.clearLog.addEventListener('click', clearLog)
+      elements.applyHeight.addEventListener('click', function () {
+        setViewportHeight(elements.customHeight.value)
+      })
+
+      document.querySelectorAll('[data-height]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          setViewportHeight(button.dataset.height)
+        })
+      })
+
+      elements.quizFrame.addEventListener('load', function () {
+        appendLog('info', 'Iframe load event fired.', {
+          iframeUrl: elements.quizFrame.src || null,
+          autoInit: elements.autoInit.checked,
+        })
+
+        if (elements.autoInit.checked) {
+          sendInit('auto-init')
+        }
+      })
+
+      window.addEventListener('message', function (event) {
+        const frameWindow = elements.quizFrame.contentWindow
+
+        if (!frameWindow || event.source !== frameWindow) {
+          appendLog('ignored', 'Ignored message from a non-iframe source.', {
+            origin: event.origin,
+            data: event.data,
+          })
+          return
+        }
+
+        if (!state.iframeOrigin) {
+          appendLog(
+            'ignored',
+            'Ignored message because no iframe origin is currently set.',
+            {
+              origin: event.origin,
+              data: event.data,
+            }
+          )
+          return
+        }
+
+        if (event.origin !== state.iframeOrigin) {
+          appendLog(
+            'ignored',
+            'Ignored message because the origin did not match the iframe.',
+            {
+              expectedOrigin: state.iframeOrigin,
+              receivedOrigin: event.origin,
+              data: event.data,
+            }
+          )
+          return
+        }
+
+        if (!event.data || typeof event.data !== 'object') {
+          appendLog(
+            'ignored',
+            'Ignored message because the payload was not an object.',
+            {
+              origin: event.origin,
+              data: event.data,
+            }
+          )
+          return
+        }
+
+        if (event.data.type !== QUIZ_STATE_MESSAGE_TYPE) {
+          appendLog(
+            'ignored',
+            'Ignored message because the type was unexpected.',
+            {
+              origin: event.origin,
+              data: event.data,
+            }
+          )
+          return
+        }
+
+        state.lastAcceptedType = event.data.type
+        state.latestPayload = event.data.payload || null
+        appendLog('inbound', 'Accepted quiz-state message.', {
+          origin: event.origin,
+          data: event.data,
+        })
+        updateStatus()
+      })
+
+      setViewportHeight(DEFAULT_HEIGHT)
+      setInitState(false)
+      updateStatus()
+    </script>
+  </body>
+</html>

@@ -282,6 +282,13 @@
     "options": {},
     "answer": "50"
   },
+  "NR4": {
+    "title": "NR Title Test 1 (Version 4)",
+    "content": "NR Question Content 1 (Version 4)",
+    "explanation": "NR Question Explanation 1 (Version 4)",
+    "options": {},
+    "answer": "50"
+  },
   "NRML": {
     "title": "NR Title Test 2 (Version 1)",
     "content": "NR Question Content 2",
@@ -350,6 +357,52 @@
     "explanation": "FT Question Explanation 1 (Version 3)",
     "options": {},
     "answer": "Solution 1"
+  },
+  "FT4": {
+    "title": "FT Title Test 1 (Version 4)",
+    "content": "FT Question Content 1 (Version 4)",
+    "explanation": "FT Question Explanation 1 (Version 4)",
+    "options": {},
+    "answer": "hello 1st 42 of https://example.com @user #fun user@example.com :-) 😊 ! $5.00 @",
+    "filteredResponses": {
+      "word": ["hello"],
+      "ordinal": ["1st"],
+      "number": ["42", "5.00"],
+      "stopword": ["of"],
+      "url": ["https://example.com"],
+      "mention": ["@user"],
+      "hashtag": ["#fun"],
+      "email": ["user@example.com"],
+      "emoticon": [":-)"],
+      "emoji": ["😊"],
+      "punctuation": ["!"],
+      "currency": ["$"],
+      "symbol": ["@"]
+    },
+    "language": "en"
+  },
+  "FT5": {
+    "title": "FT Title Test 1 (Version 5)",
+    "content": "FT Question Content 1 (Version 5)",
+    "explanation": "FT Question Explanation 1 (Version 5)",
+    "options": {},
+    "answer": "hallo 1. 42 von https://example.com @nutzer #lustig nutzer@beispiel.com :-) 😊 ! $5.00 @",
+    "filteredResponses": {
+      "word": ["hallo"],
+      "ordinal": [],
+      "number": ["1", "42", "5.00"],
+      "stopword": ["von"],
+      "url": ["https://example.com"],
+      "mention": ["@nutzer"],
+      "hashtag": ["#lustig"],
+      "email": ["nutzer@beispiel.com"],
+      "emoticon": [":-)"],
+      "emoji": ["😊"],
+      "punctuation": ["!", "."],
+      "currency": ["$"],
+      "symbol": ["@"]
+    },
+    "language": "de"
   },
   "FTML": {
     "title": "FT Title Test 2 (Version 1)",

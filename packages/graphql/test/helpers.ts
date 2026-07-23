@@ -1,3 +1,17 @@
+import {
+  handleEndExpiredGroupActivity,
+  handlePublishScheduledGroupActivity,
+} from '@/services/groups.js'
+import {
+  handleAssessmentLiveQuizBlockClosureAggregation,
+  handlePublishScheduledLiveQuiz,
+  handleStandardLiveQuizBlockClosureAggregation,
+} from '@/services/liveQuizzes.js'
+import {
+  handleEndExpiredMicroLearning,
+  handlePublishScheduledMicroLearning,
+} from '@/services/microLearning.js'
+import { handlePublishScheduledPracticeQuiz } from '@/services/practiceQuizzes.js'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import { prisma } from '@klicker-uzh/prisma'
@@ -33,20 +47,6 @@ import { EventEmitter } from 'events'
 import generatePassword from 'generate-password'
 import { createPubSub, Repeater } from 'graphql-yoga'
 import { Redis } from 'ioredis'
-import {
-  handleEndExpiredGroupActivity,
-  handlePublishScheduledGroupActivity,
-} from 'src/services/groups.js'
-import {
-  handleAssessmentLiveQuizBlockClosureAggregation,
-  handlePublishScheduledLiveQuiz,
-  handleStandardLiveQuizBlockClosureAggregation,
-} from 'src/services/liveQuizzes.js'
-import {
-  handleEndExpiredMicroLearning,
-  handlePublishScheduledMicroLearning,
-} from 'src/services/microLearning.js'
-import { handlePublishScheduledPracticeQuiz } from 'src/services/practiceQuizzes.js'
 import { v4 as uuidv4 } from 'uuid'
 import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
@@ -67,13 +67,22 @@ import {
   userTwo,
 } from './userData.js'
 
+type TestInitializationResult = {
+  userOneCtx: ContextWithUser
+  userTwoCtx: ContextWithUser
+  userThreeCtx: ContextWithUser
+  userFourCtx: ContextWithUser
+  userFiveCtx: ContextWithUser
+  userSixCtx: ContextWithUser
+}
+
 // ! General Test Suite Helpers (general setup, user seeding, database connections, cleanup, etc.)
 // #region
 export async function testInitialization(
   prisma: PrismaClient,
   hatchet: Hatchet,
   emitter: EventEmitter
-) {
+): Promise<TestInitializationResult> {
   // upsert all users in the database
   await Promise.all(
     [userOne, userTwo, userThree, userFour, userFive, userSix].map(
@@ -272,7 +281,7 @@ export async function testInitialization(
   }
 
   // mock context with user including all required properties
-  const userOneCtx = {
+  const userOneCtx: ContextWithUser = {
     user: {
       sub: userOne.sub,
       role: UserRole.USER,
@@ -295,23 +304,23 @@ export async function testInitialization(
   }
 
   // mock remaining contexts
-  const userTwoCtx = {
+  const userTwoCtx: ContextWithUser = {
     ...userOneCtx,
     user: { ...userOneCtx.user, sub: userTwo.sub },
   }
-  const userThreeCtx = {
+  const userThreeCtx: ContextWithUser = {
     ...userOneCtx,
     user: { ...userOneCtx.user, sub: userThree.sub },
   }
-  const userFourCtx = {
+  const userFourCtx: ContextWithUser = {
     ...userOneCtx,
     user: { ...userOneCtx.user, sub: userFour.sub },
   }
-  const userFiveCtx = {
+  const userFiveCtx: ContextWithUser = {
     ...userOneCtx,
     user: { ...userOneCtx.user, sub: userFive.sub },
   }
-  const userSixCtx = {
+  const userSixCtx: ContextWithUser = {
     ...userOneCtx,
     user: { ...userOneCtx.user, sub: userSix.sub },
   }

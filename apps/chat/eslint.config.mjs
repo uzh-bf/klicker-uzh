@@ -1,26 +1,24 @@
-import { FlatCompat } from '@eslint/eslintrc'
-import { dirname } from 'path'
-import { fileURLToPath } from 'url'
+import coreWebVitals from 'eslint-config-next/core-web-vitals'
+import nextTs from 'eslint-config-next/typescript'
+import { defineConfig } from 'eslint/config'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-})
-
-const eslintConfig = [
-  ...compat.config({
-    extends: ['next/core-web-vitals', 'next/typescript'],
-    overrides: [
-      {
-        files: ['**/*.ts', '**/*.tsx'],
-        rules: {
-          '@typescript-eslint/no-explicit-any': 'off',
-        },
-      },
-    ],
-  }),
-]
+const eslintConfig = defineConfig([
+  ...coreWebVitals,
+  ...nextTs,
+  {
+    files: ['**/*.ts', '**/*.tsx'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+  {
+    rules: {
+      // Owner: frontend maintainers. Remove each override when this app reports
+      // zero violations for that rule under the pinned Next config.
+      'react-hooks/error-boundaries': 'off',
+      'react-hooks/set-state-in-effect': 'off',
+    },
+  },
+])
 
 export default eslintConfig

@@ -30,6 +30,7 @@ function CourseDiscussionOverview({
     embedUrl: string
     expiresAt: string
   } | null>(null)
+  const [currentTime, setCurrentTime] = useState<number | null>(null)
 
   const {
     data: overviewData,
@@ -66,7 +67,7 @@ function CourseDiscussionOverview({
     if (!generatedEmbedInfo) return
 
     const intervalId = window.setInterval(() => {
-      setGeneratedEmbedInfo((current) => (current ? { ...current } : current))
+      setCurrentTime(Date.now())
     }, 1000)
 
     return () => window.clearInterval(intervalId)
@@ -107,8 +108,9 @@ function CourseDiscussionOverview({
     : null
   const embedExpired =
     embedExpiryTimestamp !== null &&
+    currentTime !== null &&
     Number.isFinite(embedExpiryTimestamp) &&
-    embedExpiryTimestamp < Date.now()
+    embedExpiryTimestamp < currentTime
 
   return (
     <div className="flex flex-col gap-4 px-1 py-2">
@@ -328,6 +330,7 @@ function CourseDiscussionOverview({
                   return
                 }
 
+                setCurrentTime(Date.now())
                 setGeneratedEmbedInfo({
                   embedUrl:
                     result.data.getCourseDiscussionEmbeddingInfo.embedUrl,
