@@ -10,6 +10,7 @@ import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useEmbeddedManageContext } from '../hooks/useEmbeddedManageContext'
 import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
+import { getManageSuggestions } from '../lib/config/manageSuggestions'
 import {
   getManageContextLabel,
   type ManageAssistantContext,
@@ -33,6 +34,7 @@ function ManageAssistantInner() {
   const { embedded } = useChatUi()
   const context = useEmbeddedManageContext()
   const contextLabel = getManageContextLabel(context)
+  const suggestions = getManageSuggestions(context)
 
   return (
     <ManageAssistantRuntimeProvider context={context}>
@@ -61,7 +63,7 @@ function ManageAssistantInner() {
           chatbotFallbackIcon={WandSparkles}
           chatbotName={MANAGE_ASSISTANT_NAME}
           contextLabel={contextLabel}
-          suggestionMode="manage"
+          suggestions={suggestions}
           welcomeMessage={MANAGE_ASSISTANT_WELCOME}
         />
       </div>

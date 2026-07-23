@@ -48,6 +48,7 @@ import {
   hasAnyImageAttachmentData,
 } from '@/src/lib/attachments/attachmentState'
 import { getAttachmentPreviewSrc } from '@/src/lib/attachments/attachmentUi'
+import type { ThreadSuggestion } from '@/src/lib/config/manageSuggestions'
 import {
   MAX_IMAGE_ATTACHMENTS,
   useComposerStore,
@@ -70,7 +71,9 @@ type ThreadProps = {
   chatbotName: string
   contextLabel?: string | null
   contextualSuggestions?: boolean
-  suggestionMode?: 'student' | 'manage'
+  // Fully resolved suggestion list (e.g. from `getManageSuggestions`). When
+  // provided, this takes precedence over the default student suggestions.
+  suggestions?: ThreadSuggestion[]
   // Friendly greeting shown above the suggestions (e.g. the manage assistant).
   // When unset, the welcome falls back to `Ask {chatbotName}`.
   welcomeMessage?: string
@@ -236,10 +239,13 @@ export const Thread: FC<ThreadProps> = ({
   chatbotName,
   contextLabel,
   contextualSuggestions,
-  suggestionMode = 'student',
+  suggestions,
   welcomeMessage,
 }) => {
   const { embedded } = useChatUi()
+  const resolvedSuggestions =
+    suggestions ??
+    getStudentThreadSuggestions(contextualSuggestions ?? Boolean(contextLabel))
 
   return (
     <ThreadPrimitive.Root
@@ -262,8 +268,7 @@ export const Thread: FC<ThreadProps> = ({
           chatbotFallbackIcon={chatbotFallbackIcon}
           chatbotName={chatbotName}
           contextLabel={contextLabel}
-          contextualSuggestions={contextualSuggestions ?? Boolean(contextLabel)}
-          suggestionMode={suggestionMode}
+          suggestions={resolvedSuggestions}
           welcomeMessage={welcomeMessage}
         />
 
@@ -316,16 +321,14 @@ const ThreadWelcome: FC<{
   chatbotFallbackIcon?: ComponentType<{ className?: string }>
   chatbotName: string
   contextLabel?: string | null
-  contextualSuggestions: boolean
-  suggestionMode: 'student' | 'manage'
+  suggestions: ThreadSuggestion[]
   welcomeMessage?: string
 }> = ({
   chatbotAvatar,
   chatbotFallbackIcon,
   chatbotName,
   contextLabel,
-  contextualSuggestions,
-  suggestionMode,
+  suggestions,
   welcomeMessage,
 }) => {
   const { embedded } = useChatUi()
@@ -364,10 +367,7 @@ const ThreadWelcome: FC<{
               {contextLabel}
             </p>
           )}
-          <ThreadWelcomeSuggestions
-            contextual={contextualSuggestions}
-            mode={suggestionMode}
-          />
+          <ThreadWelcomeSuggestions suggestions={suggestions} />
         </div>
       </div>
     </ThreadPrimitive.Empty>
@@ -375,11 +375,9 @@ const ThreadWelcome: FC<{
 }
 
 const ThreadWelcomeSuggestions: FC<{
-  contextual: boolean
-  mode: 'student' | 'manage'
-}> = ({ contextual, mode }) => {
+  suggestions: ThreadSuggestion[]
+}> = ({ suggestions }) => {
   const { embedded } = useChatUi()
-  const suggestions = getThreadSuggestions(contextual, mode)
 
   return (
     <div
@@ -403,53 +401,10 @@ const ThreadWelcomeSuggestions: FC<{
   )
 }
 
-function getThreadSuggestions(contextual: boolean, mode: 'student' | 'manage') {
-  if (mode === 'manage') {
-    if (contextual) {
-      return [
-        {
-          id: 'draft-from-page',
-          text: 'Draft from this page',
-          prompt:
-            'Draft a question idea based on the current Manage page context.',
-        },
-        {
-          id: 'find-related',
-          text: 'Find related questions',
-          prompt:
-            'Search my question pool for related or reusable questions for this context. Include all statuses and question types unless I explicitly ask for a filter.',
-        },
-        {
-          id: 'improve-feedback',
-          text: 'Improve feedback',
-          prompt:
-            'Suggest concise feedback that would help students learn from this question.',
-        },
-      ]
-    }
-
-    return [
-      {
-        id: 'draft-question',
-        text: 'Draft question',
-        prompt:
-          'Draft a question for my course. Ask me for the topic and question type if needed.',
-      },
-      {
-        id: 'find-questions',
-        text: 'Find questions',
-        prompt:
-          'Search my question pool for reusable questions. Ask for a topic if needed, and include all statuses and question types unless I explicitly ask for a filter.',
-      },
-      {
-        id: 'improve-feedback',
-        text: 'Improve feedback',
-        prompt:
-          'Create concise answer-specific feedback for a question. Ask me for the question details if needed.',
-      },
-    ]
-  }
-
+// Suggestions for the student/pwa assistant. The manage assistant derives its
+// suggestions from the active manage surface instead (see
+// `getManageSuggestions` in `@/src/lib/config/manageSuggestions`).
+function getStudentThreadSuggestions(contextual: boolean): ThreadSuggestion[] {
   if (contextual) {
     return [
       {
