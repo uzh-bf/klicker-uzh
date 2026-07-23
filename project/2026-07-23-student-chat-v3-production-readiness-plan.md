@@ -38,19 +38,19 @@ own commit and its own verification. Do not batch slices.
   assistant turn; a raw SQL/Prisma insert without `parentId` linkage renders as a
   separate branch and hides the user message.
 
-## Decisions (D) — defaults chosen, user can veto
+## Decisions (D) — approved by user 2026-07-23
 
-- D1 **Dark mode: remove the latent `.dark` block.** Nothing ever applies `.dark`; forced-on
+- D1 **Dark mode: remove the latent `.dark` block.** (approved) Nothing ever applies `.dark`; forced-on
   it is half broken (sidebar/composer/footer stay light, `--primary` dark value is shadcn
   gray `oklch(0.92 0.004 286.32)` at `globals.css:131`, not UZH blue). Removing
   `globals.css:124-156` + the `@custom-variant dark` line is zero-behavior-change today.
   Wiring dark properly = separate feature with its own plan. → Slice S6.
-- D2 **Mobile mode switcher: horizontally scrollable pill row.** With 3+ modes or long
+- D2 **Mobile mode switcher: horizontally scrollable pill row.** (approved) With 3+ modes or long
   German labels the header overflows 375px (no `min-w-0`, no wrap — evidence in S7).
   Scrollable pill (`overflow-x-auto` + `scrollbar-none`) is the smallest change and keeps
   one component; the native-`<select>` fallback used by `embedded-settings.tsx:15-27` is
   the alternative if scrolling feels bad in testing. → Slice S7.
-- D3 **Model descriptions in DE: hide them when no localized text exists.** Descriptions
+- D3 **Model descriptions in DE: hide them when no localized text exists.** (approved) Descriptions
   come from the deployment model registry and are English-only ("OpenAI model" shows raw
   in the DE UI). Cheap fix: render description only for `en` until the registry schema
   gets per-locale descriptions (do NOT change the registry schema in this plan). → Slice S10.
@@ -278,7 +278,185 @@ own commit and its own verification. Do not batch slices.
 - Commit: `enhance(chat): empty-state hint, locale-aware model descriptions and rating toast`
   (adjust to what was actually done).
 
-### S11 — Finish gate
+## Design polish review — visual, motion, assistant-ui (added 2026-07-23)
+
+Second review pass, requested after the production-readiness review: visual design
+language on desktop + mobile, fluidity/animation vs state-of-the-art chatbots
+(ChatGPT/Claude/Gemini), and whether `@assistant-ui/react` is used to its potential.
+Evidence: fresh browser screenshots (session scratchpad `visreview/`) + three parallel
+code-grounded review lenses (visual, motion, assistant-ui capability; the
+assistant-ui lens verified claims against the installed package types and the
+current upstream docs). Confidence >= 75 findings only. Slices S12–S16 below.
+
+Execution order stays: S1–S10 (bugs and gaps) first, then S12–S16 (polish), then the
+S17 finish gate once, at the end.
+
+**Verified-good — do NOT "fix" these:**
+
+- Streaming text cursor works: `markdown-text.tsx:3` imports
+  `@assistant-ui/react-markdown/styles/dot.css`, whose `aui-pulse` keyframe renders a
+  pulsing cursor on the last line via `[data-status="running"]::after`.
+- Auto-scroll during streaming is deliberately `behavior:'instant'` per token (avoids
+  stacking smooth-scrolls) with a smooth jump only on run start (`thread.tsx:261`
+  `scroll-smooth`). Do not switch per-token scrolling to smooth.
+- Desktop sidebar open/collapse already animates (200ms, from the design system).
+- The "stuck tooltip" in the mobile-sheet screenshot is an artifact of a programmatic
+  click; Radix tooltip 1.2.8 explicitly ignores touch pointers. Not a real bug.
+- Composer pill styling, mode-switcher semantics, credits block, and assistant message
+  typography were rated at or near state-of-the-art — leave their structure alone.
+- The attachment adapter and branch picker correctly implement the assistant-ui
+  interfaces; per-tool `makeAssistantToolUI` components are deliberately NOT wanted
+  (tool names come from per-chatbot MCP servers, unknown at build time).
+
+**Findings (V=visual, M=motion, A=assistant-ui):**
+
+- V1 P1 Brand color is timid — UZH blue appears only on the active pill, progress fill,
+  and filled send button; everything else is white/gray shadcn defaults. A screenshot is
+  not recognizable as KlickerUZH. → S13/S14.
+- M1 P1 All message/welcome entrances are hard cuts. `thread.tsx:320,323` reference
+  `aui-thread-welcome-message-motion-1/-2` but NO rule anywhere targets them (checked
+  source + compiled CSS); `globals.css` has zero `@keyframes`. `tw-animate-css` is
+  already imported (`globals.css:2`) and proven working in `ui/tooltip.tsx:49`. → S12.
+- M2 P1 Dead air between send and first token: no assistant placeholder exists until the
+  first SSE delta (`useThreadManagement.ts:79-108`, `useChatResponse.ts:318-404`); the
+  only feedback is the send→stop icon swap. 1–5s+ of nothing on reasoning modes. → S12.
+- V2/A6 P2 Welcome screen is a dead canvas: `ThreadWelcomeSuggestions` fully implemented
+  but commented out (`thread.tsx:328`, body `:334-354`; data in
+  `lib/config/suggestions.ts`, currently hardcoded English). → S13.
+- V3 P2 Desktop header renders ONLY the centered pills when the sidebar is open — name
+  block and new-chat button both carry `open && 'md:hidden'`
+  (`assistant.tsx:326-331,342-357`). → S14.
+- V4 P2 Permanent copyright footer band (`assistant.tsx:368`, shared `Footer`) eats
+  bottom viewport space on every screen incl. 375px. → S14 (decision D6).
+- V6 P2 Raw metadata caption ("Erklärer — o4-verify — Hoch") renders under EVERY message
+  including the student's own (`thread.tsx:825` user, `:1197` assistant); raw model ids
+  are meaningless to students. → S14.
+- A1 P2 Thumbs feedback is hand-rolled (`thread.tsx:1264-1330` + zustand) while the
+  installed 0.12.10 runtime has a first-class `FeedbackAdapter` slot on
+  `useExternalStoreRuntime` (`RuntimeProvider.tsx:248-263`) and tracks
+  `message.metadata.submittedFeedback` per message. Duplicate state that can drift. → S15.
+- A2 P2 `AssistantReasoningPart` (`thread.tsx:198-246`) ignores the part `status` it
+  already receives — never auto-expands while reasoning streams, unlike every
+  competitor's live "thinking" panel. Status API exists in 0.12.10. → S15.
+- A4 P2 Tool failures render identically to successes: `useChatResponse.ts:428-438`
+  stuffs "Error: ..." into `result` but never sets the `isError` field the
+  `ToolCallMessagePart` type provides; `tool-fallback.tsx:71-86` has no error branch. → S15.
+- M3 P2 Reasoning panel, part group, and tool detail expand/collapse are instant
+  mount/unmount (`thread.tsx:236-243`, `:1112-1129`, `tool-fallback.tsx:117-129`). → S16.
+- M4 P2 Loading = opaque spinner overlay (`assistant.tsx:361-365`) and a blank thread
+  list (no skeleton state in `thread-list.tsx`). → S16.
+- M5 P2 ScrollToBottom button snaps in/out: `thread.tsx:300` uses `transition-colors`,
+  which does not animate the opacity/visibility that `disabled:` actually toggles. → S12.
+- V5 P3 Illustrated per-chatbot avatar clashes with the flat lucide icon language
+  (decision D5). → S13.
+- V7 P3 Welcome title and subtitle are both `text-2xl` (`thread.tsx:320-325`) — no
+  hero hierarchy. → S13.
+- M6 P3 Send↔stop is an abrupt two-button swap (`thread.tsx:752-786`). → S16.
+- M7 P3 Mode pill switches by color fade only — no sliding indicator. → S16.
+- A3 P3→follow-up: `@assistant-ui/react-ai-sdk@1.3.26` is a declared dependency but
+  never imported; `useChatResponse.ts` hand-parses the exact AI SDK UI-message stream
+  the backend emits (`chat/route.ts` `toUIMessageStreamResponse`). Migration is an
+  L-effort refactor (custom metadata plumbing) — defer to its own branch (D7).
+- A5 note: the whole assistant-message layout sits on `Unstable_PartsGrouped`, which is
+  absent from the v0.14 migration guide; 0.14's replacement is `GroupedParts` + a new
+  `Reasoning`/`ToolGroup` family. Any future 0.12→0.14 upgrade must budget a rewrite of
+  `thread.tsx` grouping — record this in `docs/chat-platform.md`, do not upgrade in this
+  branch.
+
+### Additional decisions (defaults; user can veto)
+
+- D4 **Thinking placeholder style**: pulsing-dot placeholder row styled like an
+  assistant message (reuse `aui-pulse` from the already-imported dot.css, or 3
+  staggered `animate-bounce` dots). No new dependency.
+- D5 **Avatar treatment**: keep the illustrated per-chatbot mascot (it is lecturer
+  content), but contain it — consistent size, subtle `bg-primary/10` ring — instead of
+  redrawing art. Redesigning chatbot avatars is out of scope.
+- D6 **Copyright footer**: remove the permanent band from the chat view; move the legal
+  line into the sidebar bottom (small muted text under the logo) so it stays visible
+  without costing viewport height. Veto if legal requires the banner on every screen.
+- D7 **react-ai-sdk migration (A3)**: defer to a dedicated follow-up branch with a
+  timeboxed spike; record as PR follow-up. Do NOT attempt inside this branch.
+- No framer-motion or other animation dependency: every motion slice below must use
+  `tw-animate-css` (already installed) or plain Tailwind/CSS.
+
+### S12 — Motion foundation: entrances, thinking indicator, scroll-button fade (P1)
+
+- Do: (1) M1 — replace the dead `aui-*-motion-*` classnames with real `animate-in
+  fade-in slide-in-from-bottom-2 duration-300`-style utilities on the welcome divs
+  (`thread.tsx:320,323`) and on `MessagePrimitive.Root` in `UserMessage` (`:806`) and
+  `AssistantMessage` (`:1140`); (2) M2 — when the thread is running and no assistant
+  message exists yet for the turn, render a placeholder assistant row with the D4
+  pulsing-dot treatment; remove it when the first part arrives; (3) M5 — fix the
+  ScrollToBottom transition (`transition-[opacity,color,background-color] duration-200`,
+  drop `disabled:invisible`).
+- Check: browser — send a message (or replay a seeded thread), see user bubble slide in,
+  dots appear until first token, scroll button fades; no layout jump when the
+  placeholder is replaced. Verify streaming still auto-scrolls correctly.
+- Commit: `enhance(chat): message entrance animations, thinking indicator and scroll-button fade`
+
+### S13 — Welcome experience: starter prompts, hierarchy, brand presence
+
+- Do: (1) V2/A6 — re-enable `ThreadWelcomeSuggestions` (uncomment, restyle as 2–4
+  tappable cards under the greeting); move the strings from
+  `lib/config/suggestions.ts` into i18n keys (en + informal de) — keep the config for
+  ids/prompts; (2) V7 — step the greeting (`text-3xl`/`text-4xl` title, `text-lg`
+  muted subtitle); (3) V1 (welcome part) — give the empty state a subtle branded
+  treatment (e.g. faint `bg-primary/5` radial or accent shape behind the greeting) and
+  D5 avatar containment ring where the avatar appears; keep it restrained.
+- Check: 1440 + 375, en + de — suggestions tappable (each sends its prompt),
+  localized, entrance animation from S12 applies, no overflow at 375px.
+- Commit: `enhance(chat): welcome starter prompts, type hierarchy and branded empty state`
+
+### S14 — Chrome decluttering: header, footer, message captions
+
+- Do: (1) V3 — keep the chatbot name (+ small avatar) always visible in the header
+  (drop only the redundant toggle from the `md:hidden` block in
+  `assistant.tsx:326-331`); (2) V4/D6 — remove the `Footer` band from the chat view
+  (`assistant.tsx:368`) and move the legal line into the sidebar bottom as small muted
+  text; delete `showFooter` plumbing if now unused; (3) V6 — drop `MessageMetadata`
+  from `UserMessage` (`thread.tsx:825`); on assistant messages keep mode + effort but
+  drop the raw model id from the always-visible caption (full detail can live in a
+  `title` attr / tooltip on the caption).
+- Check: browser both viewports/locales — header shows name with sidebar open and
+  closed, no footer band, captions only under assistant messages without raw ids;
+  Playwright suite still green (captions are asserted in Y-chat tests — update
+  selectors if needed).
+- Commit: `enhance(chat): persistent header context, sidebar legal note and cleaner message captions`
+
+### S15 — assistant-ui native adoption: feedback adapter, live reasoning, tool errors
+
+- Do: (1) A1 — add `adapters.feedback = { submit: ({ message, type }) =>
+  rateMessage(...) }` to the `useExternalStoreRuntime` call (`RuntimeProvider.tsx:248-263`),
+  swap `MessageRatingButtons` internals to `ActionBarPrimitive.FeedbackPositive`/
+  `FeedbackNegative` reading `message.metadata.submittedFeedback` (keep the optimistic
+  rollback semantics of `chatStore.rateMessage`; keep the API route unchanged);
+  (2) A2 — in `AssistantReasoningPart`, read `status` and auto-open while
+  `status.type === 'running'`, collapse on completion unless manually toggled;
+  (3) A4 — set `existingToolCall.isError = true` in the `tool-output-error` branch
+  (`useChatResponse.ts:428-438`), stop prefixing `result` with "Error:", and add an
+  error branch to `tool-fallback.tsx` (destructive-toned chip + localized "failed"
+  label, en + informal de).
+- Check: thumbs persist → switch → clear against the DB exactly as before (existing
+  Playwright rating test must stay green unmodified or with minimal selector updates);
+  reasoning panel auto-opens during a live reasoning stream and collapses after; a
+  forced tool error (kill mcp server / block URL) shows the failed chip.
+- Commit: `enhance(chat): adopt assistant-ui feedback adapter, live reasoning panel and tool error states`
+
+### S16 — Micro-interaction polish batch (P2/P3, timeboxed ~1 day)
+
+- Do: (1) M3 — CSS grid-rows accordion (`grid transition-[grid-template-rows]
+  duration-200` + inner `overflow-hidden`) for the three expand/collapse sites
+  (`thread.tsx:236-243`, `:1112-1129`, `tool-fallback.tsx:117-129`); (2) M4 — replace
+  the thread-pane spinner overlay (`assistant.tsx:361-365`) with 2–3 `animate-pulse`
+  message-shaped skeletons and add 4–5 skeleton rows to `thread-list.tsx` for the
+  initial-load window; (3) M6 — single persistent send/stop button shell with a
+  150ms icon crossfade; (4) M7 — sliding active indicator in the mode pill
+  (`transition-transform` thumb) if it fits the timebox; otherwise defer with a note.
+- Check: browser pass — accordions animate, skeletons replace spinners, send↔stop
+  morphs during a real stream, pill slides; no console errors; `check` clean.
+- Commit: `enhance(chat): accordion transitions, loading skeletons and control morphs`
+
+### S17 — Finish gate
 
 - Re-run the full browser matrix: en+de x 1440/768/375, all states (empty, thread,
   settings, error, streaming), fresh screenshots for the PR.
@@ -296,3 +474,7 @@ own commit and its own verification. Do not batch slices.
 
 - 2026-07-23: Plan created from production-readiness review (browser matrix + 4 code
   lenses, findings all quoted with file:line above). No slices started.
+- 2026-07-23: D1–D3 approved by user. Second review pass added (visual design, motion/
+  fluidity, assistant-ui capability — fresh screenshots + 3 code-grounded lenses) as
+  the "Design polish review" section with slices S12–S16 and decisions D4–D7; finish
+  gate renumbered S11→S17. No slices started.
