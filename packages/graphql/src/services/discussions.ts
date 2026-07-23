@@ -1312,8 +1312,9 @@ export async function createCourseDiscussionThread(
   }
 
   const anonymous = !!isAnonymous
-  const actor = anonymous ? null : await getCourseAccessActor({ courseId }, ctx)
-  const authorizedParticipantId = actor?.participantId ?? null
+  const authorizedParticipantId = anonymous
+    ? null
+    : ((await getCourseAccessActor({ courseId }, ctx))?.participantId ?? null)
 
   if (!anonymous && !authorizedParticipantId) return null
 
