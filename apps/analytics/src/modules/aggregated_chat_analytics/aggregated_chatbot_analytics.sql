@@ -42,8 +42,8 @@ assistant_rollup AS (
 hour_of_day_raw AS (
   SELECT
     "chatbotId",
-    EXTRACT(ISODOW FROM "createdAt" AT TIME ZONE 'UTC')::int AS iso_dow,
-    EXTRACT(HOUR   FROM "createdAt" AT TIME ZONE 'UTC')::int AS hr,
+    EXTRACT(ISODOW FROM "createdAt")::int AS iso_dow,
+    EXTRACT(HOUR   FROM "createdAt")::int AS hr,
     COUNT(*) AS cnt
   FROM user_msgs GROUP BY 1, 2, 3
 ),

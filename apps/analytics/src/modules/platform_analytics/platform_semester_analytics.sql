@@ -22,14 +22,14 @@ years AS (
 semesters AS (
   SELECT
     ('FS' || LPAD((yr % 100)::text, 2, '0')) AS semester_label,
-    make_timestamptz(yr,     2, 15, 0, 0, 0)         AS semester_start,
-    make_timestamptz(yr,     8, 31, 23, 59, 59)      AS semester_end
+    make_timestamp(yr,     2, 15, 0, 0, 0)         AS semester_start,
+    make_timestamp(yr,     8, 31, 23, 59, 59)      AS semester_end
   FROM years
   UNION ALL
   SELECT
     ('HS' || LPAD((yr % 100)::text, 2, '0')),
-    make_timestamptz(yr,     9,  1, 0, 0, 0),
-    make_timestamptz(yr + 1, 2, 14, 23, 59, 59)
+    make_timestamp(yr,     9,  1, 0, 0, 0),
+    make_timestamp(yr + 1, 2, 14, 23, 59, 59)
   FROM years
 ),
 relevant_semesters AS (
