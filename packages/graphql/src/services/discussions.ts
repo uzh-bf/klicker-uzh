@@ -1980,9 +1980,12 @@ export async function deleteCourseDiscussionReply(
 
   const now = new Date()
 
-  await ctx.prisma.$transaction(async (tx) => {
-    await tx.discussionReply.update({
-      where: { id: replyId },
+  const deleted = await ctx.prisma.$transaction(async (tx) => {
+    const deletedReply = await tx.discussionReply.updateMany({
+      where: {
+        id: replyId,
+        isDeleted: false,
+      },
       data: {
         isDeleted: true,
         deletedAt: now,
@@ -1990,22 +1993,21 @@ export async function deleteCourseDiscussionReply(
       },
     })
 
-    const nonDeletedRepliesCount = await tx.discussionReply.count({
-      where: {
-        threadId: reply.thread.id,
-        isDeleted: false,
-      },
-    })
+    if (deletedReply.count === 0) return false
 
-    await tx.discussionThread.update({
+    const updatedThread = await tx.discussionThread.updateMany({
       where: {
         id: reply.thread.id,
+        isDeleted: false,
+        replyCount: { gt: 0 },
       },
       data: {
-        replyCount: nonDeletedRepliesCount,
+        replyCount: { decrement: 1 },
         lastActivityAt: now,
       },
     })
+
+    if (updatedThread.count === 0) return false
 
     await tx.discussionEvent.create({
       data: {
@@ -2017,7 +2019,9 @@ export async function deleteCourseDiscussionReply(
         eventType: DB.DiscussionEventType.REPLY_DELETED,
       },
     })
+
+    return true
   })
 
-  return true
+  return deleted
 }

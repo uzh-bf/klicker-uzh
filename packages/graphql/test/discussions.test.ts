@@ -327,6 +327,11 @@ describe('Integration tests for the course discussion platform', () => {
         authorParticipantId: participantOneId,
       })),
     })
+    const seededReplies = await prisma.discussionReply.findMany({
+      where: { threadId: thread!.id },
+      orderBy: { id: 'asc' },
+      select: { id: true },
+    })
     await prisma.discussionThread.update({
       where: { id: thread!.id },
       data: { replyCount: 49 },
@@ -373,6 +378,59 @@ describe('Integration tests for the course discussion platform', () => {
       participantOneCtx
     )
     expect(overflowReply).toBeNull()
+
+    expect(
+      await deleteCourseDiscussionReply(
+        { replyId: seededReplies[0]!.id },
+        participantOneCtx
+      )
+    ).toBe(true)
+
+    const [replyCreatedDuringDelete, replyDeletedDuringCreate] =
+      await Promise.all([
+        createCourseDiscussionReply(
+          {
+            courseId: course.id,
+            threadId: thread!.id,
+            content: 'Created while another reply is deleted.',
+          },
+          participantOneCtx
+        ),
+        deleteCourseDiscussionReply(
+          { replyId: seededReplies[1]!.id },
+          participantOneCtx
+        ),
+      ])
+
+    expect(replyCreatedDuringDelete).toBeTruthy()
+    expect(replyDeletedDuringCreate).toBe(true)
+    expect(
+      await prisma.discussionReply.count({
+        where: { threadId: thread!.id, isDeleted: false },
+      })
+    ).toBe(49)
+    expect(
+      await prisma.discussionThread.findUnique({
+        where: { id: thread!.id },
+        select: { replyCount: true },
+      })
+    ).toEqual({ replyCount: 49 })
+    expect(
+      await prisma.discussionEvent.count({
+        where: {
+          threadId: thread!.id,
+          eventType: DiscussionEventType.REPLY_CREATED,
+        },
+      })
+    ).toBe(2)
+    expect(
+      await prisma.discussionEvent.count({
+        where: {
+          threadId: thread!.id,
+          eventType: DiscussionEventType.REPLY_DELETED,
+        },
+      })
+    ).toBe(2)
   })
 
   it('rejects anonymous posting when embed token scope does not match', async () => {
