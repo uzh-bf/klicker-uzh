@@ -10,7 +10,11 @@ import {
   ToggleCourseDiscussionThreadUpvoteDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { parseScopeKeyToInput } from '@klicker-uzh/shared-components/src/discussionUtils'
+import {
+  getDiscussionScopeDisplayLabel,
+  getDiscussionSourceDisplayLabel,
+  parseScopeKeyToInput,
+} from '@klicker-uzh/shared-components/src/discussionUtils'
 import { Button, H2, UserNotification, toast } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -113,6 +117,22 @@ function CourseDiscussionPanel({
   }, [activeScopeKey, courseId, embedded, embedToken, parsedScopeInput])
 
   const threads = threadsData?.courseDiscussionThreads?.threads ?? []
+  const localizedThreads = threads.map((thread) => {
+    const scopeDisplayLabel = getDiscussionScopeDisplayLabel(thread.scope, {
+      course: t('shared.generic.course'),
+      stack: (number) => t('shared.generic.stackN', { number }),
+    })
+
+    return {
+      ...thread,
+      scopeDisplayLabel,
+      sourceDisplayLabel: getDiscussionSourceDisplayLabel({
+        sourceKey: thread.sourceKey,
+        sourceLabel: thread.sourceLabel,
+        courseLabel: t('shared.generic.course'),
+      }),
+    }
+  })
   const hasMore = threadsData?.courseDiscussionThreads?.hasMore ?? false
   const nextCursor = threadsData?.courseDiscussionThreads?.nextCursor ?? null
   const canPostAnonymously =
@@ -456,7 +476,7 @@ function CourseDiscussionPanel({
             data={{ cy: 'course-qa-empty' }}
           />
         ) : (
-          threads.map((thread) => (
+          localizedThreads.map((thread) => (
             <div
               key={thread.id}
               className={twMerge(
@@ -466,15 +486,14 @@ function CourseDiscussionPanel({
               data-cy={`course-qa-thread-${thread.id}`}
             >
               <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-gray-600">
-                {thread.sourceLabel &&
-                  thread.sourceLabel !==
-                    (thread.scope?.scopeLabel ?? thread.scope?.scopeKey) && (
+                {thread.sourceDisplayLabel &&
+                  thread.sourceDisplayLabel !== thread.scopeDisplayLabel && (
                     <span className="max-w-full break-words rounded-full bg-gray-100 px-2 py-0.5">
-                      {thread.sourceLabel}
+                      {thread.sourceDisplayLabel}
                     </span>
                   )}
                 <span className="max-w-full break-words rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">
-                  {thread.scope?.scopeLabel ?? thread.scope?.scopeKey}
+                  {thread.scopeDisplayLabel}
                 </span>
                 <span>{formatDateTime(thread.createdAt)}</span>
               </div>

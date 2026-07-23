@@ -10,6 +10,10 @@ import {
   type GetCourseDiscussionOverviewQuery,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import {
+  getDiscussionScopeDisplayLabel,
+  getDiscussionSourceDisplayLabel,
+} from '@klicker-uzh/shared-components/src/discussionUtils'
 import { Button, H3, UserNotification, toast } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -272,7 +276,11 @@ function CourseDiscussionOverview({
                 data-cy={`course-qa-overview-group-${group.sourceKey}`}
               >
                 <div className="border-b border-gray-200 bg-gray-50 px-3 py-2 text-sm font-semibold">
-                  {group.sourceLabel}
+                  {getDiscussionSourceDisplayLabel({
+                    sourceKey: group.sourceKey,
+                    sourceLabel: group.sourceLabel,
+                    courseLabel: t('shared.generic.course'),
+                  })}
                 </div>
                 <div className="flex flex-col gap-2 p-3">
                   {group.threads.map((thread) => (
@@ -283,7 +291,11 @@ function CourseDiscussionOverview({
                     >
                       <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-gray-600">
                         <span className="max-w-full break-words rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">
-                          {thread.scope?.scopeLabel ?? thread.scope?.scopeKey}
+                          {getDiscussionScopeDisplayLabel(thread.scope, {
+                            course: t('shared.generic.course'),
+                            stack: (number) =>
+                              t('shared.generic.stackN', { number }),
+                          })}
                         </span>
                         <span>{formatDateTime(thread.lastActivityAt)}</span>
                         <span className="flex items-center gap-1">

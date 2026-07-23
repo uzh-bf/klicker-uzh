@@ -1,7 +1,13 @@
 import {
   DiscussionScopeType,
+  type DiscussionScope,
   type DiscussionScopeInput,
 } from '@klicker-uzh/graphql/dist/ops'
+
+type DiscussionScopeLabels = {
+  course: string
+  stack: (number: number) => string
+}
 
 export function parseScopeKeyToInput(
   courseId: string,
@@ -28,4 +34,38 @@ export function parseScopeKeyToInput(
     }
   }
   return null
+}
+
+export function getDiscussionScopeDisplayLabel(
+  scope:
+    | Pick<DiscussionScope, 'scopeKey' | 'scopeLabel' | 'scopeType'>
+    | null
+    | undefined,
+  labels: DiscussionScopeLabels
+) {
+  if (!scope) return ''
+  if (scope.scopeType === DiscussionScopeType.Course) return labels.course
+
+  if (scope.scopeType === DiscussionScopeType.PracticeStack) {
+    const fallbackMatch = scope.scopeLabel.match(
+      /^(?:Practice|Microlearning) Stack (\d+)$/
+    )
+    if (fallbackMatch) {
+      return labels.stack(Number.parseInt(fallbackMatch[1] ?? '', 10))
+    }
+  }
+
+  return scope.scopeLabel || scope.scopeKey
+}
+
+export function getDiscussionSourceDisplayLabel({
+  sourceKey,
+  sourceLabel,
+  courseLabel,
+}: {
+  sourceKey?: string | null
+  sourceLabel?: string | null
+  courseLabel: string
+}) {
+  return sourceKey?.startsWith('course:') ? courseLabel : sourceLabel
 }
