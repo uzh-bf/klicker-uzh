@@ -217,41 +217,82 @@ describe('Integration tests for the course discussion platform', () => {
     expect(threadPage.threads).toHaveLength(1)
     expect(threadPage.threads[0]?.replies).toHaveLength(1)
 
-    const upvotedThread = await toggleCourseDiscussionThreadUpvote(
-      { threadId: thread!.id, upvote: true },
-      participantTwoCtx
-    )
-    expect(upvotedThread?.upvotes).toBe(1)
+    const upvotedThreads = await Promise.all([
+      toggleCourseDiscussionThreadUpvote(
+        { threadId: thread!.id, upvote: true },
+        participantTwoCtx
+      ),
+      toggleCourseDiscussionThreadUpvote(
+        { threadId: thread!.id, upvote: true },
+        participantTwoCtx
+      ),
+    ])
+    expect(upvotedThreads.map((result) => result?.upvotes)).toEqual([1, 1])
 
-    const upvotedThreadAgain = await toggleCourseDiscussionThreadUpvote(
-      { threadId: thread!.id, upvote: true },
-      participantTwoCtx
-    )
-    expect(upvotedThreadAgain?.upvotes).toBe(1)
+    const removedThreadUpvotes = await Promise.all([
+      toggleCourseDiscussionThreadUpvote(
+        { threadId: thread!.id, upvote: false },
+        participantTwoCtx
+      ),
+      toggleCourseDiscussionThreadUpvote(
+        { threadId: thread!.id, upvote: false },
+        participantTwoCtx
+      ),
+    ])
+    expect(removedThreadUpvotes.map((result) => result?.upvotes)).toEqual([
+      0, 0,
+    ])
 
-    const removedThreadUpvote = await toggleCourseDiscussionThreadUpvote(
-      { threadId: thread!.id, upvote: false },
-      participantTwoCtx
-    )
-    expect(removedThreadUpvote?.upvotes).toBe(0)
+    const upvotedReplies = await Promise.all([
+      toggleCourseDiscussionReplyUpvote(
+        { replyId: reply!.id, upvote: true },
+        participantOneCtx
+      ),
+      toggleCourseDiscussionReplyUpvote(
+        { replyId: reply!.id, upvote: true },
+        participantOneCtx
+      ),
+    ])
+    expect(upvotedReplies.map((result) => result?.upvotes)).toEqual([1, 1])
 
-    const upvotedReply = await toggleCourseDiscussionReplyUpvote(
-      { replyId: reply!.id, upvote: true },
-      participantOneCtx
-    )
-    expect(upvotedReply?.upvotes).toBe(1)
+    const removedReplyUpvotes = await Promise.all([
+      toggleCourseDiscussionReplyUpvote(
+        { replyId: reply!.id, upvote: false },
+        participantOneCtx
+      ),
+      toggleCourseDiscussionReplyUpvote(
+        { replyId: reply!.id, upvote: false },
+        participantOneCtx
+      ),
+    ])
+    expect(removedReplyUpvotes.map((result) => result?.upvotes)).toEqual([0, 0])
 
-    const upvotedReplyAgain = await toggleCourseDiscussionReplyUpvote(
-      { replyId: reply!.id, upvote: true },
-      participantOneCtx
-    )
-    expect(upvotedReplyAgain?.upvotes).toBe(1)
-
-    const removedReplyUpvote = await toggleCourseDiscussionReplyUpvote(
-      { replyId: reply!.id, upvote: false },
-      participantOneCtx
-    )
-    expect(removedReplyUpvote?.upvotes).toBe(0)
+    expect(
+      await prisma.discussionThreadVote.count({
+        where: { threadId: thread!.id },
+      })
+    ).toBe(0)
+    expect(
+      await prisma.discussionReplyVote.count({
+        where: { replyId: reply!.id },
+      })
+    ).toBe(0)
+    expect(
+      await prisma.discussionEvent.count({
+        where: {
+          threadId: thread!.id,
+          eventType: DiscussionEventType.THREAD_UPVOTED,
+        },
+      })
+    ).toBe(1)
+    expect(
+      await prisma.discussionEvent.count({
+        where: {
+          replyId: reply!.id,
+          eventType: DiscussionEventType.REPLY_UPVOTED,
+        },
+      })
+    ).toBe(1)
   })
 
   it('preserves comparison text and rejects oversized content', async () => {

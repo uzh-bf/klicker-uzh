@@ -1750,31 +1750,40 @@ export async function toggleCourseDiscussionThreadUpvote(
   const participantId = resolved.actor.participantId
 
   await ctx.prisma.$transaction(async (tx) => {
-    const existingVote = await tx.discussionThreadVote.findUnique({
-      where: {
-        threadId_participantId: {
-          threadId,
-          participantId,
-        },
-      },
-    })
-
-    if (upvote && !existingVote) {
-      await tx.discussionThreadVote.create({
-        data: {
-          threadId,
-          participantId,
-        },
+    if (upvote) {
+      const createdVote = await tx.discussionThreadVote.createMany({
+        data: [
+          {
+            threadId,
+            participantId,
+          },
+        ],
+        skipDuplicates: true,
       })
 
-      await tx.discussionThread.update({
-        where: { id: threadId },
+      if (createdVote.count === 0) return
+
+      const updatedThread = await tx.discussionThread.updateMany({
+        where: {
+          id: threadId,
+          isDeleted: false,
+        },
         data: {
           upvotes: {
             increment: 1,
           },
         },
       })
+
+      if (updatedThread.count === 0) {
+        await tx.discussionThreadVote.deleteMany({
+          where: {
+            threadId,
+            participantId,
+          },
+        })
+        return
+      }
 
       await tx.discussionEvent.create({
         data: {
@@ -1785,28 +1794,32 @@ export async function toggleCourseDiscussionThreadUpvote(
           eventType: DB.DiscussionEventType.THREAD_UPVOTED,
         },
       })
-    } else if (!upvote && existingVote) {
-      await tx.discussionThreadVote.delete({
-        where: {
-          threadId_participantId: {
-            threadId,
-            participantId,
-          },
-        },
-      })
-
-      const currentThread = await tx.discussionThread.findUnique({
-        where: { id: threadId },
-        select: { upvotes: true },
-      })
-
-      await tx.discussionThread.update({
-        where: { id: threadId },
-        data: {
-          upvotes: Math.max(0, (currentThread?.upvotes ?? 1) - 1),
-        },
-      })
+      return
     }
+
+    const deletedVote = await tx.discussionThreadVote.deleteMany({
+      where: {
+        threadId,
+        participantId,
+      },
+    })
+
+    if (deletedVote.count === 0) return
+
+    await tx.discussionThread.updateMany({
+      where: {
+        id: threadId,
+        isDeleted: false,
+        upvotes: {
+          gt: 0,
+        },
+      },
+      data: {
+        upvotes: {
+          decrement: 1,
+        },
+      },
+    })
   })
 
   return getDiscussionThreadById({ threadId, participantId }, ctx)
@@ -1831,31 +1844,40 @@ export async function toggleCourseDiscussionReplyUpvote(
   const participantId = resolved.actor.participantId
 
   await ctx.prisma.$transaction(async (tx) => {
-    const existingVote = await tx.discussionReplyVote.findUnique({
-      where: {
-        replyId_participantId: {
-          replyId,
-          participantId,
-        },
-      },
-    })
-
-    if (upvote && !existingVote) {
-      await tx.discussionReplyVote.create({
-        data: {
-          replyId,
-          participantId,
-        },
+    if (upvote) {
+      const createdVote = await tx.discussionReplyVote.createMany({
+        data: [
+          {
+            replyId,
+            participantId,
+          },
+        ],
+        skipDuplicates: true,
       })
 
-      await tx.discussionReply.update({
-        where: { id: replyId },
+      if (createdVote.count === 0) return
+
+      const updatedReply = await tx.discussionReply.updateMany({
+        where: {
+          id: replyId,
+          isDeleted: false,
+        },
         data: {
           upvotes: {
             increment: 1,
           },
         },
       })
+
+      if (updatedReply.count === 0) {
+        await tx.discussionReplyVote.deleteMany({
+          where: {
+            replyId,
+            participantId,
+          },
+        })
+        return
+      }
 
       await tx.discussionEvent.create({
         data: {
@@ -1867,28 +1889,32 @@ export async function toggleCourseDiscussionReplyUpvote(
           eventType: DB.DiscussionEventType.REPLY_UPVOTED,
         },
       })
-    } else if (!upvote && existingVote) {
-      await tx.discussionReplyVote.delete({
-        where: {
-          replyId_participantId: {
-            replyId,
-            participantId,
-          },
-        },
-      })
-
-      const currentReply = await tx.discussionReply.findUnique({
-        where: { id: replyId },
-        select: { upvotes: true },
-      })
-
-      await tx.discussionReply.update({
-        where: { id: replyId },
-        data: {
-          upvotes: Math.max(0, (currentReply?.upvotes ?? 1) - 1),
-        },
-      })
+      return
     }
+
+    const deletedVote = await tx.discussionReplyVote.deleteMany({
+      where: {
+        replyId,
+        participantId,
+      },
+    })
+
+    if (deletedVote.count === 0) return
+
+    await tx.discussionReply.updateMany({
+      where: {
+        id: replyId,
+        isDeleted: false,
+        upvotes: {
+          gt: 0,
+        },
+      },
+      data: {
+        upvotes: {
+          decrement: 1,
+        },
+      },
+    })
   })
 
   const includeVotes = {
