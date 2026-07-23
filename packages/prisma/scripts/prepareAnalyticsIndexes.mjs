@@ -11,43 +11,43 @@ export const ANALYTICS_INDEXES = [
     name: 'QuestionResponse_courseId_createdAt_idx',
     table: 'QuestionResponse',
     method: 'btree',
-    columns: ['"courseId"', '"createdAt"'],
+    columns: ['courseId', 'createdAt'],
   },
   {
     name: 'ChatMessage_threadId_createdAt_idx',
     table: 'ChatMessage',
     method: 'btree',
-    columns: ['"threadId"', '"createdAt"'],
+    columns: ['threadId', 'createdAt'],
   },
   {
     name: 'ParticipantAnalytics_courseId_type_timestamp_idx',
     table: 'ParticipantAnalytics',
     method: 'btree',
-    columns: ['"courseId"', 'type', '"timestamp"'],
+    columns: ['courseId', 'type', 'timestamp'],
   },
   {
     name: 'AggregatedAnalytics_courseId_type_timestamp_idx',
     table: 'AggregatedAnalytics',
     method: 'btree',
-    columns: ['"courseId"', 'type', '"timestamp"'],
+    columns: ['courseId', 'type', 'timestamp'],
   },
   {
     name: 'QuestionResponseDetail_createdAt_brin_idx',
     table: 'QuestionResponseDetail',
     method: 'brin',
-    columns: ['"createdAt"'],
+    columns: ['createdAt'],
   },
   {
     name: 'LiveQuizResponse_createdAt_brin_idx',
     table: 'LiveQuizResponse',
     method: 'brin',
-    columns: ['"createdAt"'],
+    columns: ['createdAt'],
   },
   {
     name: 'LiveQuizResponse_instanceId_participantId_submittedAt_idx',
     table: 'LiveQuizResponse',
     method: 'btree',
-    columns: ['"instanceId"', '"participantId"', '"submittedAt"'],
+    columns: ['instanceId', 'participantId', 'submittedAt'],
   },
 ]
 
@@ -119,7 +119,6 @@ async function inspectDatabase(client) {
 
   return {
     migrationCount,
-    migrationTablePresent,
     missingTables,
     presentTableCount,
   }
@@ -193,7 +192,6 @@ async function validateIndexes(client, { requireAll }) {
   const result = await client.query(
     `SELECT
        c.relname AS name,
-       n.nspname AS schema_name,
        t.relname AS table_name,
        am.amname AS access_method,
        i.indisvalid,
@@ -217,12 +215,17 @@ async function validateIndexes(client, { requireAll }) {
     const actual = actualByName.get(expected.name)
     if (!actual) return false
     return (
-      actual.schema_name !== 'public' ||
       actual.table_name !== expected.table ||
       actual.access_method !== expected.method ||
       !actual.indisvalid ||
       !actual.indisready ||
-      JSON.stringify(actual.key_columns) !== JSON.stringify(expected.columns)
+      JSON.stringify(
+        actual.key_columns.map((column) =>
+          column.startsWith('"') && column.endsWith('"')
+            ? column.slice(1, -1)
+            : column
+        )
+      ) !== JSON.stringify(expected.columns)
     )
   }).map(({ name }) => name)
   if (mismatched.length > 0) {

@@ -77,13 +77,12 @@ class FakeClient {
       return {
         rows: ANALYTICS_INDEXES.map((index) => ({
           name: index.name,
-          schema_name: 'public',
           table_name:
             index.name === this.wrongIndexName ? 'WrongTable' : index.table,
           access_method: index.method,
           indisvalid: true,
           indisready: true,
-          key_columns: index.columns,
+          key_columns: index.columns.map((column) => `"${column}"`),
         })),
       }
     }
@@ -117,13 +116,30 @@ test('parses every concurrent index statement and drops the old index after its 
   assert.ok(replacement >= 0)
   assert.ok(oldIndexDrop > replacement)
 
-  const createNames = parsed
-    .map((sql) =>
-      sql.match(/CREATE INDEX CONCURRENTLY IF NOT EXISTS "([^"]+)"/)
-    )
-    .filter(Boolean)
-    .map((match) => match[1])
-  assert.deepEqual(createNames, ANALYTICS_INDEX_NAMES)
+  const createIndexes = parsed
+    .filter((sql) => sql.startsWith('CREATE INDEX'))
+    .map((sql) => {
+      const normalized = sql.replace(/\s+/g, ' ').trim()
+      const match = normalized.match(
+        /^CREATE INDEX CONCURRENTLY IF NOT EXISTS "([^"]+)" ON "public"\."([^"]+)"(?: USING (BRIN|BTREE))? ?\(([^)]+)\)$/i
+      )
+      assert.ok(match, `unexpected analytics index statement: ${normalized}`)
+      return {
+        name: match[1],
+        table: match[2],
+        method: (match[3] ?? 'btree').toLowerCase(),
+        columns: match[4].split(',').map((column) => {
+          const identifier = column.trim().match(/^"([^"]+)"$/)
+          assert.ok(identifier, `unexpected index column: ${column}`)
+          return identifier[1]
+        }),
+      }
+    })
+  assert.deepEqual(createIndexes, ANALYTICS_INDEXES)
+  assert.deepEqual(
+    createIndexes.map(({ name }) => name),
+    ANALYTICS_INDEX_NAMES
+  )
 })
 
 test('skips the prebuild on a fresh database', async () => {
