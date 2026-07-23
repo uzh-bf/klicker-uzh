@@ -75,6 +75,10 @@ function createAnonymousContext(
   }
 }
 
+function runTwiceConcurrently<T>(operation: () => Promise<T>) {
+  return Promise.all([operation(), operation()])
+}
+
 async function enableCourseDiscussion(
   prisma: PrismaClient,
   {
@@ -217,54 +221,38 @@ describe('Integration tests for the course discussion platform', () => {
     expect(threadPage.threads).toHaveLength(1)
     expect(threadPage.threads[0]?.replies).toHaveLength(1)
 
-    const upvotedThreads = await Promise.all([
+    const upvotedThreads = await runTwiceConcurrently(() =>
       toggleCourseDiscussionThreadUpvote(
         { threadId: thread!.id, upvote: true },
         participantTwoCtx
-      ),
-      toggleCourseDiscussionThreadUpvote(
-        { threadId: thread!.id, upvote: true },
-        participantTwoCtx
-      ),
-    ])
+      )
+    )
     expect(upvotedThreads.map((result) => result?.upvotes)).toEqual([1, 1])
 
-    const removedThreadUpvotes = await Promise.all([
+    const removedThreadUpvotes = await runTwiceConcurrently(() =>
       toggleCourseDiscussionThreadUpvote(
         { threadId: thread!.id, upvote: false },
         participantTwoCtx
-      ),
-      toggleCourseDiscussionThreadUpvote(
-        { threadId: thread!.id, upvote: false },
-        participantTwoCtx
-      ),
-    ])
+      )
+    )
     expect(removedThreadUpvotes.map((result) => result?.upvotes)).toEqual([
       0, 0,
     ])
 
-    const upvotedReplies = await Promise.all([
+    const upvotedReplies = await runTwiceConcurrently(() =>
       toggleCourseDiscussionReplyUpvote(
         { replyId: reply!.id, upvote: true },
         participantOneCtx
-      ),
-      toggleCourseDiscussionReplyUpvote(
-        { replyId: reply!.id, upvote: true },
-        participantOneCtx
-      ),
-    ])
+      )
+    )
     expect(upvotedReplies.map((result) => result?.upvotes)).toEqual([1, 1])
 
-    const removedReplyUpvotes = await Promise.all([
+    const removedReplyUpvotes = await runTwiceConcurrently(() =>
       toggleCourseDiscussionReplyUpvote(
         { replyId: reply!.id, upvote: false },
         participantOneCtx
-      ),
-      toggleCourseDiscussionReplyUpvote(
-        { replyId: reply!.id, upvote: false },
-        participantOneCtx
-      ),
-    ])
+      )
+    )
     expect(removedReplyUpvotes.map((result) => result?.upvotes)).toEqual([0, 0])
 
     expect(
