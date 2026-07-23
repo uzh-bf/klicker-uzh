@@ -3,7 +3,7 @@
 Goal: remove participant email as a global identifier, keep non-assessment participation pseudonymous, and store assessment identity only where it is legally/functionally required.
 
 Date: 2026-06-16
-Branch/MR: not started
+Branch/PR: `codex/participant-privacy-auth-plan` / GitHub PR #5128
 Target branch: `v3`
 
 ## Recommendation
