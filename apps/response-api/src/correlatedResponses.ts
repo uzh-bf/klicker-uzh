@@ -1,21 +1,26 @@
 import {
   LiveQuizResponseCollectionMode,
+  PublicationStatus,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
 import {
   buildCorrelatedVoteKey,
+  buildLiveQuizResponseIdentityKey,
   claimCorrelatedResponse,
   CORRELATED_RESPONSE_WORKER_CAPABILITY_KEY,
   getLiveQuizRespondentCookieName,
   LIVE_QUIZ_RESPONDENT_TOKEN_MAX_AGE_SECONDS,
+  markCorrelatedResponseAccepted,
   parseCookiesHeader,
   releaseCorrelatedResponse,
+  type CorrelatedResponseClaim,
   type LiveQuizResponseIdentity,
 } from '@klicker-uzh/util'
 
 export {
   buildCorrelatedVoteKey,
   claimCorrelatedResponse,
+  markCorrelatedResponseAccepted,
   releaseCorrelatedResponse,
 }
 
@@ -44,6 +49,53 @@ export async function isCorrelatedResponseWorkerReady({
   redis: { get(key: string): Promise<string | null> }
 }) {
   return (await redis.get(CORRELATED_RESPONSE_WORKER_CAPABILITY_KEY)) !== null
+}
+
+export async function getCorrelatedResponseAdmission({
+  database,
+  redis,
+  liveQuizId,
+  cookieHeader,
+}: {
+  database: Pick<PrismaClient, 'liveQuiz'>
+  redis: { get(key: string): Promise<string | null> }
+  liveQuizId: string
+  cookieHeader: string | undefined
+}) {
+  const liveQuiz = await database.liveQuiz.findUnique({
+    where: { id: liveQuizId },
+    select: {
+      isAssessmentEnabled: true,
+      pinCode: true,
+      responseCollectionMode: true,
+      status: true,
+    },
+  })
+
+  if (!liveQuiz || liveQuiz.status !== PublicationStatus.PUBLISHED) {
+    return 'not_found' as const
+  }
+  if (
+    liveQuiz.isAssessmentEnabled ||
+    liveQuiz.responseCollectionMode !==
+      LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+  ) {
+    return 'not_required' as const
+  }
+  if (
+    !hasValidLiveQuizPin({
+      cookieHeader,
+      liveQuizId,
+      pinCode: liveQuiz.pinCode,
+    })
+  ) {
+    return 'pin_required' as const
+  }
+  if (!(await isCorrelatedResponseWorkerReady({ redis }))) {
+    return 'worker_unavailable' as const
+  }
+
+  return 'ready' as const
 }
 
 export async function hasPersistedCorrelatedResponse({
@@ -81,6 +133,84 @@ export async function hasPersistedCorrelatedResponse({
         })
 
   return response !== null
+}
+
+export async function prepareCorrelatedResponseSubmission({
+  database,
+  redis,
+  identity,
+  liveQuizId,
+  instanceId,
+  blockExecution,
+  messageId,
+}: {
+  database: Pick<PrismaClient, 'liveQuizResponse'>
+  redis: Parameters<typeof claimCorrelatedResponse>[0]['redis']
+  identity: LiveQuizResponseIdentity
+  liveQuizId: string
+  instanceId: string
+  blockExecution: string | undefined
+  messageId: string
+}): Promise<
+  | { status: 'invalid_metadata' }
+  | { status: 'duplicate' }
+  | {
+      status: 'ready'
+      cookie: string
+      claim: CorrelatedResponseClaim
+    }
+> {
+  if (!blockExecution) {
+    throw new Error(
+      `Missing block execution in correlated response metadata for lq:${liveQuizId}:i:${instanceId}:info`
+    )
+  }
+
+  const parsedInstanceId = Number(instanceId)
+  const parsedBlockExecution = Number(blockExecution)
+  if (
+    !Number.isInteger(parsedInstanceId) ||
+    !Number.isInteger(parsedBlockExecution)
+  ) {
+    return { status: 'invalid_metadata' }
+  }
+
+  if (
+    await hasPersistedCorrelatedResponse({
+      database,
+      identity,
+      instanceId: parsedInstanceId,
+      blockExecution: parsedBlockExecution,
+    })
+  ) {
+    return { status: 'duplicate' }
+  }
+
+  const identityKey = buildLiveQuizResponseIdentityKey(identity)
+  const claim = {
+    key: buildCorrelatedVoteKey({
+      liveQuizId,
+      instanceId,
+      blockExecution,
+      identityKey,
+    }),
+    identityKey,
+  }
+  if (
+    !(await claimCorrelatedResponse({
+      redis,
+      ...claim,
+      messageId,
+    }))
+  ) {
+    return { status: 'duplicate' }
+  }
+
+  return {
+    status: 'ready',
+    cookie: `${identity.cookieName}=${identity.token}`,
+    claim,
+  }
 }
 
 export function serializeLiveQuizRespondentCookie({

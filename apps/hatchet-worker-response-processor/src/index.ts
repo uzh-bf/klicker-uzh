@@ -5,6 +5,7 @@ import {
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import type { LiveQuizResponseInput } from '@klicker-uzh/types'
 import {
+  CORRELATED_RESPONSE_EVENT,
   CORRELATED_RESPONSE_WORKER_CAPABILITY_KEY,
   CORRELATED_RESPONSE_WORKER_CAPABILITY_TTL_SECONDS,
 } from '@klicker-uzh/util'
@@ -14,6 +15,42 @@ import {
 } from './processors/assessmentProcessor.js'
 import { processResponseMessage } from './processors/processor.js'
 import { getRedis } from './redis.js'
+
+const WORKER_READINESS_POLL_MS = 50
+
+async function waitForWorkerListeners({
+  worker,
+  workerStart,
+}: {
+  worker: Awaited<ReturnType<typeof hatchetClient.worker>>
+  workerStart: Promise<void[]>
+}) {
+  let workerStopped = false
+  let workerError: unknown
+  void workerStart.then(
+    () => {
+      workerStopped = true
+    },
+    (error: unknown) => {
+      workerError = error
+    }
+  )
+
+  while (
+    !worker.nonDurable.listener ||
+    (worker.durable && !worker.durable.listener)
+  ) {
+    await new Promise((resolve) =>
+      setTimeout(resolve, WORKER_READINESS_POLL_MS)
+    )
+    if (workerError) throw workerError
+    if (workerStopped) {
+      throw new Error('Response processor worker stopped before becoming ready')
+    }
+  }
+
+  if (workerError) throw workerError
+}
 
 export const processAnonymousResponseTask = hatchetClient.task({
   name: 'process-anonymous-response',
@@ -35,6 +72,14 @@ export const processAuthenticatedResponseTask = hatchetClient.durableTask({
   retries: 3,
   defaultPriority: Priority.HIGH,
   onEvents: ['response-received:authenticated'],
+  fn: processResponseMessage,
+})
+
+export const processCorrelatedResponseTask = hatchetClient.durableTask({
+  name: 'process-correlated-response-v1',
+  retries: 3,
+  defaultPriority: Priority.HIGH,
+  onEvents: [CORRELATED_RESPONSE_EVENT],
   fn: processResponseMessage,
 })
 
@@ -94,10 +139,26 @@ async function main() {
   const workflows =
     process.env.ASSESSMENT_MODE === 'true'
       ? [processAssessmentResponseWorkflow, aggregateAssessmentResponsesTask]
-      : [processAuthenticatedResponseTask, processAnonymousResponseTask]
+      : [
+          processCorrelatedResponseTask,
+          processAuthenticatedResponseTask,
+          processAnonymousResponseTask,
+        ]
 
   console.log(`Mode: ${mode}`)
   console.log(`Workflows: ${workflows.length}`)
+
+  console.log('Creating worker...')
+  const worker = await hatchetClient.worker(
+    'hatchet-worker-response-processor',
+    {
+      workflows,
+    }
+  )
+
+  console.log('▶Starting worker to process responses...')
+  const workerStart = worker.start()
+  await waitForWorkerListeners({ worker, workerStart })
 
   if (mode === 'live-quiz') {
     const redis = getRedis()
@@ -123,18 +184,8 @@ async function main() {
     capabilityHeartbeat.unref()
   }
 
-  console.log('Creating worker...')
-  const worker = await hatchetClient.worker(
-    'hatchet-worker-response-processor',
-    {
-      workflows,
-    }
-  )
-
-  console.log('▶Starting worker to process responses...')
-  await worker.start()
-
   console.log('Response processor worker started successfully!')
+  await workerStart
 }
 
 await main()

@@ -3,11 +3,13 @@ import { describe, it } from 'node:test'
 import {
   buildCorrelatedVoteKey,
   claimCorrelatedResponse,
+  getCorrelatedResponseAdmission,
   hasJsonContentType,
   hasPersistedCorrelatedResponse,
   hasValidLiveQuizPin,
   isAllowedCorsOrigin,
   isCorrelatedResponseWorkerReady,
+  markCorrelatedResponseAccepted,
   releaseCorrelatedResponse,
   resolveResponseCollectionMode,
   serializeLiveQuizRespondentCookie,
@@ -35,12 +37,17 @@ class MemoryRedis {
   }
 
   async eval(
-    _script: string,
+    script: string,
     _numberOfKeys: number,
     key: string,
-    expectedValue: string
+    expectedValue: string,
+    ttlMs?: string
   ) {
     if (this.strings.get(key) !== expectedValue) return 0
+    if (script.includes('PEXPIRE')) {
+      this.lastTtlMs = Number(ttlMs)
+      return 1
+    }
     return this.strings.delete(key) ? 1 : 0
   }
 }
@@ -59,7 +66,6 @@ describe('correlated response claim', () => {
       await claimCorrelatedResponse({
         redis,
         key,
-        identityKey: 'respondent:abc',
         messageId: 'message-1',
       }),
       true
@@ -69,7 +75,6 @@ describe('correlated response claim', () => {
       await claimCorrelatedResponse({
         redis,
         key,
-        identityKey: 'respondent:abc',
         messageId: 'message-2',
       }),
       false
@@ -82,7 +87,6 @@ describe('correlated response claim', () => {
     await claimCorrelatedResponse({
       redis,
       key,
-      identityKey: 'participant:abc',
       messageId: 'message-1',
     })
 
@@ -90,7 +94,6 @@ describe('correlated response claim', () => {
       await releaseCorrelatedResponse({
         redis,
         key,
-        identityKey: 'participant:abc',
         messageId: 'message-2',
       }),
       false
@@ -99,11 +102,30 @@ describe('correlated response claim', () => {
       await releaseCorrelatedResponse({
         redis,
         key,
-        identityKey: 'participant:abc',
         messageId: 'message-1',
       }),
       true
     )
+  })
+
+  it('retains an accepted claim for the respondent token lifetime', async () => {
+    const redis = new MemoryRedis()
+    const key = 'claim-key'
+    await claimCorrelatedResponse({
+      redis,
+      key,
+      messageId: 'message-1',
+    })
+
+    assert.equal(
+      await markCorrelatedResponseAccepted({
+        redis,
+        key,
+        messageId: 'message-1',
+      }),
+      true
+    )
+    assert.equal(redis.lastTtlMs, 14 * 24 * 60 * 60 * 1000)
   })
 })
 
@@ -144,6 +166,40 @@ describe('correlated response request safeguards', () => {
     assert.equal(await isCorrelatedResponseWorkerReady({ redis }), false)
     await redis.set('lq:correlatedResponses:workerProtocol:v1', 'v1')
     assert.equal(await isCorrelatedResponseWorkerReady({ redis }), true)
+  })
+
+  it('centralizes correlated quiz, PIN, and worker admission', async () => {
+    const redis = new MemoryRedis()
+    await redis.set('lq:correlatedResponses:workerProtocol:v1', 'v1')
+    const database = {
+      liveQuiz: {
+        findUnique: async () => ({
+          isAssessmentEnabled: false,
+          pinCode: 'ABC123',
+          responseCollectionMode: 'CORRELATED_EXPORT',
+          status: 'PUBLISHED',
+        }),
+      },
+    } as any
+
+    assert.equal(
+      await getCorrelatedResponseAdmission({
+        database,
+        redis,
+        liveQuizId: 'quiz-1',
+        cookieHeader: 'live-quiz-pin-quiz-1=ABC123',
+      }),
+      'ready'
+    )
+    assert.equal(
+      await getCorrelatedResponseAdmission({
+        database,
+        redis,
+        liveQuizId: 'quiz-1',
+        cookieHeader: undefined,
+      }),
+      'pin_required'
+    )
   })
 
   it('detects an existing response for either owner type', async () => {

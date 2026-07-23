@@ -23,29 +23,23 @@ import {
   type JWTPayload,
 } from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
-import { createHash } from 'crypto'
 import { getRedis } from '../redis.js'
 import {
   applyCorrelatedRedisMutations,
   buildCorrelatedResponseCreateData,
   CorrelatedRedisMutationBuffer,
   CorrelatedResponseIdentityError,
-  getCorrelatedResponsePoints,
   prepareCorrelatedMessageProcessing,
   releaseCorrelatedProcessingLock,
   validateCorrelatedRedisHashKeys,
   type CorrelatedProcessingState,
   type RedisHashMutationQueue,
 } from './correlatedResponse.js'
+import { validateStudentResponse } from './helpers.js'
 import {
-  getCaseStudyQuestionPoints,
-  getChoicesQuestionPoints,
-  getFreeTextQuestionPoints,
-  getNumericalQuestionPoints,
-  getSelectionQuestionPoints,
-  updateLeaderboards,
-  validateStudentResponse,
-} from './helpers.js'
+  isLiveQuizQuestionType,
+  queueQuestionResponseEffects,
+} from './responseEffects.js'
 
 // TODO: what if the participant is not part of the course? when starting a session, prepopulate the leaderboard with all participations? what if a participant joins the course during a session? filter out all 0 point participants before rendering the LB
 // TODO: ensure that the response meets the restrictions specified in the element options
@@ -331,8 +325,14 @@ export async function processResponseMessage(
       )
     }
 
+    if (!isLiveQuizQuestionType(type)) {
+      ctx.logger.error(`Unsupported response element type ${type}`)
+      await releaseInvalidCorrelatedResponse()
+      return { status: 400 }
+    }
+
     const { valid, message: validationError } = validateStudentResponse({
-      type: type as any,
+      type,
       response,
       restrictions: parsedRestrictions,
     })
@@ -351,475 +351,26 @@ export async function processResponseMessage(
       return { status: 400 }
     }
 
-    const correlatedGrading = isCorrelated
-      ? getCorrelatedResponsePoints({
-          type,
-          choiceCount,
-          response,
-          instanceInfo,
-          firstResponseReceivedAt,
-          responseTimestamp,
-          basePoints,
-          defaultPoints,
-          pointsMultiplier,
-          parsedSolutions,
-        })
-      : undefined
+    const grading = queueQuestionResponseEffects({
+      type,
+      choiceCount,
+      response,
+      instanceInfo,
+      instanceKey,
+      liveQuizKey,
+      sessionBlockId: sessionBlockId!,
+      firstResponseReceivedAt,
+      responseTimestamp,
+      basePoints,
+      defaultPoints,
+      pointsMultiplier,
+      parsedSolutions,
+      participantData,
+      isCorrelated,
+      redisMulti,
+    })
 
-    let pointsAwarded: number | string = 0
-    let xpAwarded: number = 0
-
-    switch (type) {
-      case 'SC':
-      case 'MC':
-      case 'KPRIM': {
-        // if response choices are not defined, return early
-        if (!response.choices) {
-          ctx.logger.error(
-            'Missing response choices ' +
-              JSON.stringify({
-                messageId: message.messageId,
-                sessionId: message.sessionId,
-                instanceId: message.instanceId,
-              })
-          )
-          await releaseInvalidCorrelatedResponse()
-          return { status: 400 }
-        }
-
-        // add the vote to the aggregated results
-        response.choices
-          .filter((choice) => choice.selected)
-          .forEach((choice) => {
-            redisMulti.hincrby(`${instanceKey}:results`, String(choice.ix), 1)
-          })
-        redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
-
-        // if the participant was logged in, award points (and xp if regular student acount was used)
-        if (participantData) {
-          // add the participant's response to the corresponding redis hash
-          redisMulti.hset(
-            `${instanceKey}:responses`,
-            participantData.role === 'TEMPORARY_PARTICIPANT'
-              ? `temporary-${participantData.sub}`
-              : participantData.sub,
-            JSON.stringify(response.choices)
-          )
-
-          const {
-            pointsAwarded: computedPoints,
-            xpAwarded: computedXp,
-            pointsPercentage,
-          } = correlatedGrading ??
-          getChoicesQuestionPoints({
-            type,
-            choiceCount,
-            response,
-            instanceInfo,
-            firstResponseReceivedAt,
-            responseTimestamp,
-            basePoints,
-            pointsMultiplier,
-            parsedSolutions,
-          })
-          pointsAwarded = computedPoints
-          xpAwarded = computedXp
-
-          if (
-            pointsPercentage !== null &&
-            pointsPercentage === 1 &&
-            !firstResponseReceivedAt
-          ) {
-            // if we are processing a first response, set the timestamp on the instance
-            // this will allow us to award points for response timing
-            redisMulti.hsetnx(
-              `${instanceKey}:info`,
-              'firstResponseReceivedAt',
-              responseTimestamp
-            )
-          }
-
-          // update both the regular and temporary live quiz leaderboards
-          updateLeaderboards({
-            redisMulti,
-            participantId: participantData.sub,
-            participantRole: participantData.role!,
-            liveQuizKey,
-            sessionBlockId: sessionBlockId!,
-            pointsAwarded,
-            xpAwarded,
-          })
-        }
-        break
-      }
-      // TODO: points based on distance to correct range?
-      case 'NUMERICAL': {
-        // if response value is not defined, return early
-        if (typeof response.value === 'undefined' || response.value === null) {
-          ctx.logger.error(
-            'Missing response value ' +
-              JSON.stringify({
-                messageId: message.messageId,
-                sessionId: message.sessionId,
-                instanceId: message.instanceId,
-              })
-          )
-          await releaseInvalidCorrelatedResponse()
-          return { status: 400 }
-        }
-
-        // add the response to the aggregated results
-        const MD5 = createHash('md5')
-        MD5.update(response.value)
-        const responseHash = MD5.digest('hex')
-        redisMulti.hincrby(`${instanceKey}:results`, responseHash, 1)
-        redisMulti.hset(
-          `${instanceKey}:responseHashes`,
-          responseHash,
-          response.value
-        )
-        redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
-
-        // if the participant was logged in, award points (and xp if regular student acount was used)
-        if (participantData) {
-          // add the participant's response to the corresponding redis hash
-          redisMulti.hset(
-            `${instanceKey}:responses`,
-            participantData.role === 'TEMPORARY_PARTICIPANT'
-              ? `temporary-${participantData.sub}`
-              : participantData.sub,
-            String(response.value)
-          )
-
-          const {
-            pointsAwarded: computedPoints,
-            xpAwarded: computedXp,
-            pointsPercentage,
-          } = correlatedGrading ??
-          getNumericalQuestionPoints({
-            response,
-            instanceInfo,
-            firstResponseReceivedAt,
-            responseTimestamp,
-            basePoints,
-            pointsMultiplier,
-            parsedSolutions,
-          })
-          pointsAwarded = computedPoints
-          xpAwarded = computedXp
-
-          if (parsedSolutions && pointsPercentage && !firstResponseReceivedAt) {
-            // if we are processing a first response, set the timestamp on the instance
-            // this will allow us to award points for response timing
-            redisMulti.hsetnx(
-              `${instanceKey}:info`,
-              'firstResponseReceivedAt',
-              responseTimestamp
-            )
-          }
-
-          // update both the regular and temporary live quiz leaderboards
-          updateLeaderboards({
-            redisMulti,
-            participantId: participantData.sub,
-            participantRole: participantData.role!,
-            liveQuizKey,
-            sessionBlockId: sessionBlockId!,
-            pointsAwarded,
-            xpAwarded,
-          })
-        }
-        break
-      }
-      // TODO: future -> distance in embedding space?
-      case 'FREE_TEXT': {
-        // if response value is not defined, return early
-        if (typeof response.value !== 'string') {
-          ctx.logger.error(
-            'Missing response value ' +
-              JSON.stringify({
-                messageId: message.messageId,
-                sessionId: message.sessionId,
-                instanceId: message.instanceId,
-              })
-          )
-          await releaseInvalidCorrelatedResponse()
-          return { status: 400 }
-        }
-
-        // add the response to the aggregated results
-        const cleanResponseValue = response.value.trim()
-        const MD5 = createHash('md5')
-        MD5.update(cleanResponseValue)
-        const responseHash = MD5.digest('hex')
-        redisMulti.hincrby(`${instanceKey}:results`, responseHash, 1)
-        redisMulti.hset(
-          `${instanceKey}:responseHashes`,
-          responseHash,
-          cleanResponseValue
-        )
-        redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
-
-        // if the participant was logged in, award points (and xp if regular student acount was used)
-        if (participantData) {
-          // add the participant's response to the corresponding redis hash
-          redisMulti.hset(
-            `${instanceKey}:responses`,
-            participantData.role === 'TEMPORARY_PARTICIPANT'
-              ? `temporary-${participantData.sub}`
-              : participantData.sub,
-            cleanResponseValue
-          )
-
-          const {
-            pointsAwarded: computedPoints,
-            xpAwarded: computedXp,
-            pointsPercentage,
-          } = correlatedGrading ??
-          getFreeTextQuestionPoints({
-            response,
-            instanceInfo,
-            firstResponseReceivedAt,
-            responseTimestamp,
-            basePoints,
-            pointsMultiplier,
-            parsedSolutions,
-          })
-          pointsAwarded = computedPoints
-          xpAwarded = computedXp
-
-          if (pointsPercentage && !firstResponseReceivedAt) {
-            // if we are processing a first response, set the timestamp on the instance
-            // this will allow us to award points for response timing
-            redisMulti.hsetnx(
-              `${instanceKey}:info`,
-              'firstResponseReceivedAt',
-              responseTimestamp
-            )
-          }
-
-          // update both the regular and temporary live quiz leaderboards
-          updateLeaderboards({
-            redisMulti,
-            participantId: participantData.sub,
-            participantRole: participantData.role!,
-            liveQuizKey,
-            sessionBlockId: sessionBlockId!,
-            pointsAwarded,
-            xpAwarded,
-          })
-        }
-        break
-      }
-      case 'SELECTION': {
-        // if response selection is not defined, return early
-        if (!response.selection) {
-          ctx.logger.error(
-            'Missing response selection ' +
-              JSON.stringify({
-                messageId: message.messageId,
-                sessionId: message.sessionId,
-                instanceId: message.instanceId,
-              })
-          )
-          await releaseInvalidCorrelatedResponse()
-          return { status: 400 }
-        }
-
-        // add the response to the aggregated results
-        response.selection.forEach((answerId: number) => {
-          // skipped input fields should not be considered
-          if (
-            answerId === -1 ||
-            typeof answerId === 'undefined' ||
-            answerId === null
-          ) {
-            return
-          }
-
-          redisMulti.hincrby(`${instanceKey}:results`, String(answerId), 1)
-        })
-        redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
-
-        // if the participant was logged in, award points (and xp if regular student acount was used)
-        if (participantData) {
-          // add the participant's response to the corresponding redis hash
-          redisMulti.hset(
-            `${instanceKey}:responses`,
-            participantData.role === 'TEMPORARY_PARTICIPANT'
-              ? `temporary-${participantData.sub}`
-              : participantData.sub,
-            `[${String(response.selection.filter((r: number) => r !== -1 && typeof r !== 'undefined' && r !== null))}]` // filter out skipped response fields
-          )
-
-          const {
-            pointsAwarded: computedPoints,
-            xpAwarded: computedXp,
-            pointsPercentage,
-          } = correlatedGrading ??
-          getSelectionQuestionPoints({
-            response,
-            instanceInfo,
-            firstResponseReceivedAt,
-            responseTimestamp,
-            basePoints,
-            pointsMultiplier,
-            parsedSolutions,
-          })
-          pointsAwarded = computedPoints
-          xpAwarded = computedXp
-
-          if (
-            pointsPercentage !== null &&
-            pointsPercentage === 1 &&
-            !firstResponseReceivedAt
-          ) {
-            // if we are processing a first response, set the timestamp on the instance
-            // this will allow us to award points for response timing
-            redisMulti.hsetnx(
-              `${instanceKey}:info`,
-              'firstResponseReceivedAt',
-              responseTimestamp
-            )
-          }
-
-          // update both the regular and temporary live quiz leaderboards
-          updateLeaderboards({
-            redisMulti,
-            participantId: participantData.sub,
-            participantRole: participantData.role!,
-            liveQuizKey,
-            sessionBlockId: sessionBlockId!,
-            pointsAwarded,
-            xpAwarded,
-          })
-        }
-        break
-      }
-      case 'CASE_STUDY': {
-        // if response assessment is not defined, return early
-        if (!response.assessment) {
-          ctx.logger.error(
-            'Missing response assessment ' +
-              JSON.stringify({
-                messageId: message.messageId,
-                sessionId: message.sessionId,
-                instanceId: message.instanceId,
-              })
-          )
-          await releaseInvalidCorrelatedResponse()
-          return { status: 400 }
-        }
-
-        // add the response to the aggregated results
-        Object.entries(response.assessment).forEach(([caseId, caseData]) => {
-          Object.entries(caseData).forEach(([itemId, itemData]) => {
-            Object.entries(itemData).forEach(
-              ([criterionId, criterionResponse]) => {
-                if (
-                  criterionResponse === null ||
-                  typeof criterionResponse !== 'number'
-                ) {
-                  return
-                }
-
-                // compute the hash of the response
-                const MD5 = createHash('md5')
-                MD5.update(String(criterionResponse))
-                const responseHash = MD5.digest('hex')
-                const combinedHash = `${caseId}:${itemId}:${criterionId}:${responseHash}`
-
-                // add the response hash / valid combination and/or increment the corresponding count
-                redisMulti.hincrby(`${instanceKey}:results`, combinedHash, 1)
-                redisMulti.hset(
-                  `${instanceKey}:responseHashes`,
-                  combinedHash,
-                  String(criterionResponse)
-                )
-              }
-            )
-          })
-        })
-
-        // increment participant count
-        redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
-
-        // if the participant was logged in, award points (and xp if regular student acount was used)
-        if (participantData) {
-          // add the participant's response to the corresponding redis hash
-          redisMulti.hset(
-            `${instanceKey}:responses`,
-            participantData.role === 'TEMPORARY_PARTICIPANT'
-              ? `temporary-${participantData.sub}`
-              : participantData.sub,
-            JSON.stringify(response.assessment)
-          )
-
-          const {
-            pointsAwarded: computedPoints,
-            xpAwarded: computedXp,
-            pointsPercentage,
-          } = correlatedGrading ??
-          getCaseStudyQuestionPoints({
-            response,
-            instanceInfo,
-            firstResponseReceivedAt,
-            responseTimestamp,
-            basePoints,
-            pointsMultiplier,
-            parsedSolutions,
-          })
-          pointsAwarded = computedPoints
-          xpAwarded = computedXp
-
-          if (
-            pointsPercentage !== null &&
-            pointsPercentage === 1 &&
-            !firstResponseReceivedAt
-          ) {
-            // if we are processing a first response, set the timestamp on the instance
-            // this will allow us to award points for response timing
-            redisMulti.hsetnx(
-              `${instanceKey}:info`,
-              'firstResponseReceivedAt',
-              responseTimestamp
-            )
-          }
-
-          // update both the regular and temporary live quiz leaderboards
-          updateLeaderboards({
-            redisMulti,
-            participantId: participantData.sub,
-            participantRole: participantData.role!,
-            liveQuizKey,
-            sessionBlockId: sessionBlockId!,
-            pointsAwarded,
-            xpAwarded,
-          })
-        }
-
-        break
-      }
-      case 'CONTENT': {
-        // increase number of participants on element (do not award points / ... for content elements)
-        redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
-        break
-      }
-    }
-
-    if (correlatedState && correlatedGrading) {
-      if (
-        !participantData &&
-        correlatedGrading.correctnessPercentage === 1 &&
-        !firstResponseReceivedAt
-      ) {
-        redisMulti.hsetnx(
-          `${instanceKey}:info`,
-          'firstResponseReceivedAt',
-          responseTimestamp
-        )
-      }
-
+    if (correlatedState && grading) {
       await validateCorrelatedRedisHashKeys({
         redis: redisExec,
         keys: [
@@ -845,10 +396,10 @@ export async function processResponseMessage(
               blockExecution: correlatedState.blockExecution,
               response,
               submittedAt: responseTimestamp,
-              correctnessPercentage: correlatedGrading.correctnessPercentage,
-              basePoints: correlatedGrading.basePoints,
-              correctnessPoints: correlatedGrading.correctnessPoints,
-              bonusPoints: correlatedGrading.bonusPoints,
+              correctnessPercentage: grading.correctnessPercentage,
+              basePoints: grading.basePoints,
+              correctnessPoints: grading.correctnessPoints,
+              bonusPoints: grading.bonusPoints,
             }),
           })
           correlatedState.responsePersisted = true

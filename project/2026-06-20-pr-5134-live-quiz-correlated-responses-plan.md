@@ -499,6 +499,9 @@ Later research:
 - 2026-07-23: Engineering wiki pages, the testing skill, and lecturer/student Live Quiz guides now cover the mode distinction, pseudonymous identity, free-text caveat, stable row export, retry/deployment contract, and verification path. Focused utility, response API, worker, export, and GraphQL tests pass; package typechecks for util, response API, response worker, PWA, GraphQL, and Prisma pass in the existing dev container.
 - 2026-07-23: Existing browser evidence covers the settings control, EN/DE participant notices at desktop/mobile sizes, aggregate behavior, and real CSV download with stable late-response labels. A committed seed fixture and new monolithic Playwright scenario were not added: the existing live-quiz suite remains the aggregate regression path, while the correlated flow is covered by focused service tests plus the verified real-browser tracer. This avoids coupling the feature to the already-large serial live-quiz workflow.
 - 2026-07-23: Remediation commit `81d0eb20e` passed a real-Redis atomicity and retry smoke, focused utility/response API/worker/export/GraphQL tests, a fresh PostgreSQL migration through all 178 migrations, and the final full repository `check:all` gate. A fresh-database temporary-pseudonym test also confirmed that `LiveQuizRespondent` stays identity-only while leaderboard profile data remains in `TemporaryLeaderboardEntry`.
+- 2026-07-23: The fresh final review found two additional delivery blockers. Correlated events still shared the legacy authenticated event name during rolling deployment, and the five-minute admission claim could expire before a queued worker ran. Correlated submissions now use the versioned `response-received:correlated-v1` event and dedicated durable task. After Hatchet accepts the event, an owner-checked Lua operation extends the claim to the two-week identity lifetime; the worker removes it after terminal processing. A real Redis smoke confirmed the five-minute claim, two-week promotion, and owner-only cleanup.
+- 2026-07-23: The strict maintainability review rejected the remaining duplicate question-type grading dispatch. Live Quiz response effects now pass through one typed exhaustive planner that produces aggregate mutations, stored participant response values, grading details, and first-response timing. `processor.ts` retains identity, persistence, and transaction orchestration; the five obsolete scoring wrappers were removed. Focused worker tests increased from 17 to 21, response API tests pass 13/13, both package typechecks pass, and the full repository `check:all` gate passes.
+- 2026-07-23: The security review also found that a gamified correlated export can be reidentified by matching response-derived scores to the visible named or pseudonymous leaderboard. The recommended resolution is to make `CORRELATED_EXPORT` incompatible with gamification. This is a product behavior change beyond the approved implementation details and awaits explicit confirmation before enforcement.
 
 ## Goal Prompt Requirements
 
@@ -514,6 +517,7 @@ If handed to another agent:
 
 ## Next Steps
 
-1. Run fresh security, maintainability, and independent branch reviews against the remediation commit; resolve or explicitly document every remaining finding.
-2. Recheck the PWA identity initialization and token-header path in the real browser.
-3. Push the branch and update draft PR 5134 with whole-branch evidence, screenshots, rollout ordering, and the remaining CI-only e2e gate.
+1. Resolve the gamification/export reidentification decision and implement the selected product rule.
+2. Commit the versioned delivery and unified response-effect remediation, then rerun fresh security, maintainability, and independent branch reviews against the exact commit.
+3. Recheck the PWA identity initialization and token-header path in the real browser.
+4. Push the branch and update draft PR 5134 with whole-branch evidence, screenshots, rollout ordering, and the remaining CI-only e2e gate.

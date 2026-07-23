@@ -2,11 +2,10 @@ import { hatchetClient } from '@klicker-uzh/hatchet'
 import { prisma } from '@klicker-uzh/prisma'
 import {
   LiveQuizResponseCollectionMode,
-  PublicationStatus,
   UserLoginScope,
 } from '@klicker-uzh/prisma/client'
 import {
-  buildLiveQuizResponseIdentityKey,
+  CORRELATED_RESPONSE_EVENT,
   createLiveQuizRespondentToken,
   getLiveQuizRespondentCookieName,
   LIVE_QUIZ_RESPONDENT_TOKEN_HEADER,
@@ -21,13 +20,11 @@ import { createServer, IncomingMessage, ServerResponse } from 'http'
 import { Redis } from 'ioredis'
 import { createHash } from 'node:crypto'
 import {
-  buildCorrelatedVoteKey,
-  claimCorrelatedResponse,
+  getCorrelatedResponseAdmission,
   hasJsonContentType,
-  hasPersistedCorrelatedResponse,
-  hasValidLiveQuizPin,
   isAllowedCorsOrigin,
-  isCorrelatedResponseWorkerReady,
+  markCorrelatedResponseAccepted,
+  prepareCorrelatedResponseSubmission,
   releaseCorrelatedResponse,
   resolveResponseCollectionMode,
   serializeLiveQuizRespondentCookie,
@@ -221,37 +218,23 @@ async function handleInitializeLiveQuizResponseIdentity(
     return badRequest(req, res, 'Missing required field: liveQuizId')
   }
 
-  const liveQuiz = await prisma.liveQuiz.findUnique({
-    where: { id: payload.liveQuizId },
-    select: {
-      isAssessmentEnabled: true,
-      pinCode: true,
-      responseCollectionMode: true,
-      status: true,
-    },
+  const admission = await getCorrelatedResponseAdmission({
+    database: prisma,
+    redis,
+    liveQuizId: payload.liveQuizId,
+    cookieHeader:
+      typeof req.headers.cookie === 'string' ? req.headers.cookie : undefined,
   })
-  if (!liveQuiz || liveQuiz.status !== PublicationStatus.PUBLISHED) {
+  if (admission === 'not_found') {
     return sendJson(req, res, 404, { error: 'Live quiz not found' })
   }
-  if (
-    liveQuiz.isAssessmentEnabled ||
-    liveQuiz.responseCollectionMode !==
-      LiveQuizResponseCollectionMode.CORRELATED_EXPORT
-  ) {
+  if (admission === 'not_required') {
     return sendJson(req, res, 200, { status: 'not_required' })
   }
-  if (
-    !hasValidLiveQuizPin({
-      cookieHeader:
-        typeof req.headers.cookie === 'string' ? req.headers.cookie : undefined,
-      liveQuizId: payload.liveQuizId,
-      pinCode: liveQuiz.pinCode,
-    })
-  ) {
+  if (admission === 'pin_required') {
     return sendJson(req, res, 403, { error: 'Live quiz PIN required' })
   }
-
-  if (!(await isCorrelatedResponseWorkerReady({ redis }))) {
+  if (admission === 'worker_unavailable') {
     return sendJson(req, res, 503, {
       error: 'Correlated response processing is not available',
     })
@@ -319,44 +302,22 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
   let claim: CorrelatedResponseClaim | undefined
 
   if (isCorrelated) {
-    const liveQuiz = await prisma.liveQuiz.findUnique({
-      where: { id: liveQuizIdString },
-      select: {
-        isAssessmentEnabled: true,
-        pinCode: true,
-        responseCollectionMode: true,
-        status: true,
-      },
+    const admission = await getCorrelatedResponseAdmission({
+      database: prisma,
+      redis,
+      liveQuizId: liveQuizIdString,
+      cookieHeader: rawCookie,
     })
-    if (
-      !liveQuiz ||
-      liveQuiz.status !== PublicationStatus.PUBLISHED ||
-      liveQuiz.isAssessmentEnabled ||
-      liveQuiz.responseCollectionMode !==
-        LiveQuizResponseCollectionMode.CORRELATED_EXPORT
-    ) {
+    if (admission === 'not_found' || admission === 'not_required') {
       return sendJson(req, res, 404, { error: 'Live quiz not found' })
     }
-    if (
-      !hasValidLiveQuizPin({
-        cookieHeader: rawCookie,
-        liveQuizId: liveQuizIdString,
-        pinCode: liveQuiz.pinCode,
-      })
-    ) {
+    if (admission === 'pin_required') {
       return sendJson(req, res, 403, { error: 'Live quiz PIN required' })
     }
-
-    if (!(await isCorrelatedResponseWorkerReady({ redis }))) {
+    if (admission === 'worker_unavailable') {
       return sendJson(req, res, 503, {
         error: 'Correlated response processing is not available',
       })
-    }
-
-    if (!instanceInfo.blockExecution) {
-      throw new Error(
-        `Missing block execution in correlated response metadata for ${instanceInfoKey}`
-      )
     }
 
     const identity = await resolveCorrelatedResponseIdentity({
@@ -369,54 +330,28 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
       })
     }
 
-    const correlatedInstanceId = Number(instanceIdString)
-    const correlatedBlockExecution = Number(instanceInfo.blockExecution)
-    if (
-      !Number.isInteger(correlatedInstanceId) ||
-      !Number.isInteger(correlatedBlockExecution)
-    ) {
-      return badRequest(req, res, 'Invalid correlated response metadata')
-    }
-
-    if (
-      await hasPersistedCorrelatedResponse({
-        database: prisma,
-        identity,
-        instanceId: correlatedInstanceId,
-        blockExecution: correlatedBlockExecution,
-      })
-    ) {
-      return sendJson(req, res, 208, {
-        status: 'response_recorded_before',
-        responseTimestamp,
-      })
-    }
-
-    cookie = `${identity.cookieName}=${identity.token}`
-    const identityKey = buildLiveQuizResponseIdentityKey(identity)
-    claim = {
-      key: buildCorrelatedVoteKey({
-        liveQuizId: liveQuizIdString,
-        instanceId: instanceIdString,
-        blockExecution: instanceInfo.blockExecution,
-        identityKey,
-      }),
-      identityKey,
-    }
-
-    const claimed = await claimCorrelatedResponse({
+    const preparation = await prepareCorrelatedResponseSubmission({
+      database: prisma,
       redis,
-      ...claim,
+      identity,
+      liveQuizId: liveQuizIdString,
+      instanceId: instanceIdString,
+      blockExecution: instanceInfo.blockExecution,
       messageId,
     })
-    if (!claimed) {
+    if (preparation.status === 'invalid_metadata') {
+      return badRequest(req, res, 'Invalid correlated response metadata')
+    }
+    if (preparation.status === 'duplicate') {
       return sendJson(req, res, 208, {
         status: 'response_recorded_before',
         responseTimestamp,
       })
     }
 
-    eventName = 'response-received:authenticated'
+    cookie = preparation.cookie
+    claim = preparation.claim
+    eventName = CORRELATED_RESPONSE_EVENT
   } else {
     // Preserve aggregate-mode behavior: forward participant cookies based on
     // their presence and let the worker validate them.
@@ -471,6 +406,19 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
       })
     }
     throw error
+  }
+
+  if (
+    claim &&
+    !(await markCorrelatedResponseAccepted({
+      redis,
+      ...claim,
+      messageId,
+    }))
+  ) {
+    throw new Error(
+      `Failed to retain accepted correlated response claim ${claim.key}`
+    )
   }
 
   return sendJson(req, res, 200, { status: 'ok', responseTimestamp })

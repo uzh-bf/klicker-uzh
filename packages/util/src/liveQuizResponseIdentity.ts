@@ -10,6 +10,9 @@ export const LIVE_QUIZ_RESPONDENT_TOKEN_HEADER = 'x-live-quiz-respondent-token'
 export const LIVE_QUIZ_RESPONDENT_ROLE = 'LIVE_QUIZ_RESPONDENT'
 export const LIVE_QUIZ_RESPONDENT_TOKEN_MAX_AGE_SECONDS = 14 * 24 * 60 * 60
 export const CORRELATED_RESPONSE_CLAIM_TTL_MS = 5 * 60 * 1000
+export const CORRELATED_RESPONSE_ACCEPTED_TTL_MS =
+  LIVE_QUIZ_RESPONDENT_TOKEN_MAX_AGE_SECONDS * 1000
+export const CORRELATED_RESPONSE_EVENT = 'response-received:correlated-v1'
 export const CORRELATED_RESPONSE_WORKER_CAPABILITY_KEY =
   'lq:correlatedResponses:workerProtocol:v1'
 export const CORRELATED_RESPONSE_WORKER_CAPABILITY_TTL_SECONDS = 90
@@ -209,6 +212,13 @@ end
 return 0
 `
 
+const MARK_ACCEPTED_CLAIM_SCRIPT = `
+if redis.call('GET', KEYS[1]) == ARGV[1] then
+  return redis.call('PEXPIRE', KEYS[1], ARGV[2])
+end
+return 0
+`
+
 export type CorrelatedResponseClaim = {
   key: string
   identityKey: LiveQuizResponseIdentityKey
@@ -236,7 +246,6 @@ export async function claimCorrelatedResponse({
 }: {
   redis: CorrelatedResponseRedis
   key: string
-  identityKey: LiveQuizResponseIdentityKey
   messageId: string
 }) {
   return (
@@ -262,6 +271,25 @@ export async function isCorrelatedResponseClaimOwned({
   return (await redis.get(key)) === messageId
 }
 
+export async function markCorrelatedResponseAccepted({
+  redis,
+  key,
+  messageId,
+}: {
+  redis: CorrelatedResponseRedis
+  key: string
+  messageId: string
+}) {
+  const marked = await redis.eval(
+    MARK_ACCEPTED_CLAIM_SCRIPT,
+    1,
+    key,
+    messageId,
+    String(CORRELATED_RESPONSE_ACCEPTED_TTL_MS)
+  )
+  return Number(marked) === 1
+}
+
 export async function releaseCorrelatedResponse({
   redis,
   key,
@@ -269,7 +297,6 @@ export async function releaseCorrelatedResponse({
 }: {
   redis: CorrelatedResponseRedis
   key: string
-  identityKey: LiveQuizResponseIdentityKey
   messageId: string
 }) {
   const released = await redis.eval(

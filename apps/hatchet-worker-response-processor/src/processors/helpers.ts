@@ -1,6 +1,5 @@
 import {
   computeAwardedCorrectnessPoints,
-  computeAwardedPoints,
   computeAwardedXp,
   gradeQuestionCaseStudy,
   gradeQuestionFreeText,
@@ -295,56 +294,6 @@ interface SharedQuestionPointsParams {
   parsedSolutions: any
 }
 
-export function getChoicesQuestionPoints({
-  type,
-  choiceCount,
-  response,
-  instanceInfo,
-  firstResponseReceivedAt,
-  responseTimestamp,
-  basePoints,
-  pointsMultiplier,
-  parsedSolutions,
-}: SharedQuestionPointsParams & {
-  type: 'SC' | 'MC' | 'KPRIM'
-  choiceCount?: string
-}) {
-  let pointsPercentage: number | null
-  if (type === 'SC') {
-    pointsPercentage = gradeQuestionSC({
-      responseCount: Number(choiceCount),
-      response: response.choices!,
-      solution: parsedSolutions,
-    })
-  } else if (type === 'MC') {
-    pointsPercentage = gradeQuestionMC({
-      responseCount: Number(choiceCount),
-      response: response.choices!,
-      solution: parsedSolutions,
-    })
-  } else {
-    pointsPercentage = gradeQuestionKPRIM({
-      responseCount: Number(choiceCount),
-      response: response.choices!,
-      solution: parsedSolutions,
-    })
-  }
-
-  const pointsWithDefaults = getPointsWithDefaults(instanceInfo)
-  const pointsAwarded = computeAwardedPoints({
-    ...pointsWithDefaults,
-    firstResponseReceivedAt,
-    responseTimestamp,
-    pointsPercentage,
-    basePoints: basePoints === 'true' ? true : false,
-    pointsMultiplier,
-    roundedResult: true,
-  })
-  const xpAwarded = computeAwardedXp({ pointsPercentage })
-
-  return { pointsAwarded, xpAwarded, pointsPercentage }
-}
-
 export function getChoicesQuestionPointsDetails({
   type,
   choiceCount,
@@ -392,44 +341,6 @@ export function getChoicesQuestionPointsDetails({
   return { correctnessPoints, bonusPoints, xpAwarded, pointsPercentage }
 }
 
-export function getNumericalQuestionPoints({
-  response,
-  instanceInfo,
-  firstResponseReceivedAt,
-  responseTimestamp,
-  basePoints,
-  pointsMultiplier,
-  parsedSolutions,
-}: SharedQuestionPointsParams) {
-  const exactSolutionsDefined =
-    typeof parsedSolutions !== 'undefined' &&
-    parsedSolutions.length > 0 &&
-    (typeof parsedSolutions[0] === 'number' ||
-      typeof parsedSolutions[0] === 'string')
-
-  const pointsPercentage = gradeQuestionNumerical({
-    response: Number(response.value),
-    solutionRanges: exactSolutionsDefined ? undefined : parsedSolutions,
-    exactSolutions: exactSolutionsDefined ? parsedSolutions : undefined,
-  })
-
-  const pointsWithDefaults = getPointsWithDefaults(instanceInfo)
-  const pointsAwarded = computeAwardedPoints({
-    ...pointsWithDefaults,
-    firstResponseReceivedAt,
-    responseTimestamp,
-    getsMaxPoints: parsedSolutions && pointsPercentage === 1,
-    basePoints: basePoints === 'true' ? true : false,
-    pointsMultiplier,
-    roundedResult: true,
-  })
-  const xpAwarded = computeAwardedXp({
-    pointsPercentage: pointsPercentage ?? 0,
-  })
-
-  return { pointsAwarded, xpAwarded, pointsPercentage }
-}
-
 export function getNumericalQuestionPointsDetails({
   response,
   instanceInfo,
@@ -465,37 +376,6 @@ export function getNumericalQuestionPointsDetails({
   return { correctnessPoints, bonusPoints, xpAwarded, pointsPercentage }
 }
 
-export function getFreeTextQuestionPoints({
-  response,
-  instanceInfo,
-  firstResponseReceivedAt,
-  responseTimestamp,
-  basePoints,
-  pointsMultiplier,
-  parsedSolutions,
-}: SharedQuestionPointsParams) {
-  const pointsPercentage = gradeQuestionFreeText({
-    response: response.value!.trim(),
-    solutions: parsedSolutions,
-  })
-
-  const pointsWithDefaults = getPointsWithDefaults(instanceInfo)
-  const pointsAwarded = computeAwardedPoints({
-    ...pointsWithDefaults,
-    firstResponseReceivedAt,
-    responseTimestamp,
-    getsMaxPoints: Boolean(pointsPercentage),
-    basePoints: basePoints === 'true' ? true : false,
-    pointsMultiplier,
-    roundedResult: true,
-  })
-  const xpAwarded = computeAwardedXp({
-    pointsPercentage: pointsPercentage ?? 0,
-  })
-
-  return { pointsAwarded, xpAwarded, pointsPercentage }
-}
-
 export function getFreeTextQuestionPointsDetails({
   response,
   instanceInfo,
@@ -522,40 +402,6 @@ export function getFreeTextQuestionPointsDetails({
   })
 
   return { correctnessPoints, bonusPoints, xpAwarded, pointsPercentage }
-}
-
-export function getSelectionQuestionPoints({
-  response,
-  instanceInfo,
-  firstResponseReceivedAt,
-  responseTimestamp,
-  basePoints,
-  pointsMultiplier,
-  parsedSolutions,
-}: SharedQuestionPointsParams) {
-  const pointsPercentage = gradeQuestionSelection({
-    numberOfInputs: parseInt(instanceInfo.numberOfInputs!, 10),
-    response: response.selection!.filter(
-      (r: number) => r !== -1 && typeof r !== 'undefined' && r !== null
-    ), // filter out skipped response fields
-    correctAnswers: parsedSolutions,
-  })
-
-  const pointsWithDefaults = getPointsWithDefaults(instanceInfo)
-  const pointsAwarded = computeAwardedPoints({
-    ...pointsWithDefaults,
-    firstResponseReceivedAt,
-    responseTimestamp,
-    pointsPercentage,
-    basePoints: basePoints === 'true' ? true : false,
-    pointsMultiplier,
-    roundedResult: true,
-  })
-  const xpAwarded = computeAwardedXp({
-    pointsPercentage,
-  })
-
-  return { pointsAwarded, xpAwarded, pointsPercentage }
 }
 
 export function getSelectionQuestionPointsDetails({
@@ -587,37 +433,6 @@ export function getSelectionQuestionPointsDetails({
   })
 
   return { correctnessPoints, bonusPoints, xpAwarded, pointsPercentage }
-}
-
-export function getCaseStudyQuestionPoints({
-  response,
-  instanceInfo,
-  firstResponseReceivedAt,
-  responseTimestamp,
-  basePoints,
-  pointsMultiplier,
-  parsedSolutions,
-}: SharedQuestionPointsParams) {
-  const pointsPercentage = gradeQuestionCaseStudy({
-    response: response.assessment!,
-    solutions: parsedSolutions,
-  })
-
-  const pointsWithDefaults = getPointsWithDefaults(instanceInfo)
-  const pointsAwarded = computeAwardedPoints({
-    ...pointsWithDefaults,
-    firstResponseReceivedAt,
-    responseTimestamp,
-    pointsPercentage,
-    basePoints: basePoints === 'true' ? true : false,
-    pointsMultiplier,
-    roundedResult: true,
-  })
-  const xpAwarded = computeAwardedXp({
-    pointsPercentage,
-  })
-
-  return { pointsAwarded, xpAwarded, pointsPercentage }
 }
 
 export function getCaseStudyQuestionPointsDetails({
