@@ -2145,6 +2145,19 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       pinProtected: 'PIN-Schutz',
       pinProtectedTooltip:
         'Bei aktiviertem Schutz durch einen PIN-Code generiert das System automatisch eine PIN, welche durch die Studierenden beim Beitritt zum Quiz eingegeben werden muss.',
+      responseCollectionMode: 'Antwortspeicherung',
+      responseCollectionModeTooltip:
+        'Wählen Sie, ob Antworten nur aggregiert bleiben oder für einen Export pro Person gespeichert werden.',
+      responseCollectionAggregated: 'Nur aggregiert',
+      responseCollectionCorrelated: 'Korrelierter Export',
+      responseCollectionAggregatedSummary:
+        'Antworten werden nur aggregiert ausgewertet und nicht über Fragen hinweg verknüpft.',
+      responseCollectionCorrelatedSummary:
+        'Antworten werden pro Person gespeichert und können mit zufälligen Bezeichnungen statt Namen exportiert werden.',
+      responseCollectionAssessment:
+        'Diese Einstellung gilt nicht: Assessments speichern Antworten immer identifizierbar.',
+      responseCollectionLocked:
+        'Diese Einstellung kann nach der Veröffentlichung des Live Quiz nicht mehr geändert werden.',
       displayNameTooltip:
         'Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt.',
       stackDescriptionTitle: 'Stack {stackIx}: Beschreibung (optional)',

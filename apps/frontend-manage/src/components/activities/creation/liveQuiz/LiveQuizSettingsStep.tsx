@@ -8,7 +8,10 @@ import {
   faX,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  LiveQuizResponseCollectionMode,
+  UserProfileDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import {
   LQ_DEFAULT_CORRECT_POINTS,
   LQ_DEFAULT_POINTS,
@@ -20,6 +23,8 @@ import {
   Checkbox,
   FormikSwitchField,
   SelectField,
+  ToggleGroup,
+  ToggleGroupItem,
   Tooltip,
   UserNotification,
 } from '@uzh-bf/design-system'
@@ -36,6 +41,7 @@ import { LiveQuizWizardStepProps } from './LiveQuizWizard'
 function LiveQuizSettingsStep({
   editMode,
   duplicationMode,
+  responseCollectionModeLocked,
   formRef,
   formData,
   continueDisabled,
@@ -90,6 +96,8 @@ function LiveQuizSettingsStep({
           !duplicationMode &&
           values.isAssessmentEnabled &&
           !selectedCourse?.isManager
+        const responseCollectionModeDisabled =
+          values.isAssessmentEnabled || responseCollectionModeLocked
 
         return (
           <Form className="h-full w-full">
@@ -163,6 +171,10 @@ function LiveQuizSettingsStep({
                             if (selectedCourse?.isAssessmentEnabled) {
                               setFieldValue('isAssessmentEnabled', true)
                               setFieldValue('isPinProtected', true)
+                              setFieldValue(
+                                'responseCollectionMode',
+                                LiveQuizResponseCollectionMode.AggregatedAnonymous
+                              )
                             } else {
                               setFieldValue('isAssessmentEnabled', false)
                             }
@@ -302,6 +314,79 @@ function LiveQuizSettingsStep({
                             className="text-primary-60"
                           />
                         </Tooltip>
+                      </div>
+                      <div className="border-border mt-3 border-t pt-3">
+                        <div className="mb-1 flex items-center gap-2">
+                          <span
+                            id="response-collection-mode-label"
+                            className="text-sm font-bold"
+                          >
+                            {t('manage.activityWizard.responseCollectionMode')}
+                          </span>
+                          <Tooltip
+                            tooltip={t(
+                              'manage.activityWizard.responseCollectionModeTooltip'
+                            )}
+                          >
+                            <FontAwesomeIcon
+                              icon={faQuestionCircle}
+                              className="text-primary-60"
+                            />
+                          </Tooltip>
+                        </div>
+                        <ToggleGroup
+                          type="single"
+                          variant="outline"
+                          value={values.responseCollectionMode}
+                          disabled={responseCollectionModeDisabled}
+                          onValueChange={(value) => {
+                            if (value) {
+                              setFieldValue('responseCollectionMode', value)
+                            }
+                          }}
+                          aria-labelledby="response-collection-mode-label"
+                          data-cy="set-quiz-response-collection-mode"
+                          className="w-full"
+                        >
+                          <ToggleGroupItem
+                            value={
+                              LiveQuizResponseCollectionMode.AggregatedAnonymous
+                            }
+                            className="min-h-10 whitespace-normal px-2 text-xs"
+                          >
+                            {t(
+                              'manage.activityWizard.responseCollectionAggregated'
+                            )}
+                          </ToggleGroupItem>
+                          <ToggleGroupItem
+                            value={
+                              LiveQuizResponseCollectionMode.CorrelatedExport
+                            }
+                            className="min-h-10 whitespace-normal px-2 text-xs"
+                          >
+                            {t(
+                              'manage.activityWizard.responseCollectionCorrelated'
+                            )}
+                          </ToggleGroupItem>
+                        </ToggleGroup>
+                        <p className="text-primary-80 mt-1 text-xs leading-4">
+                          {values.isAssessmentEnabled
+                            ? t(
+                                'manage.activityWizard.responseCollectionAssessment'
+                              )
+                            : responseCollectionModeLocked
+                              ? t(
+                                  'manage.activityWizard.responseCollectionLocked'
+                                )
+                              : values.responseCollectionMode ===
+                                  LiveQuizResponseCollectionMode.CorrelatedExport
+                                ? t(
+                                    'manage.activityWizard.responseCollectionCorrelatedSummary'
+                                  )
+                                : t(
+                                    'manage.activityWizard.responseCollectionAggregatedSummary'
+                                  )}
+                        </p>
                       </div>
                     </div>
                   </div>

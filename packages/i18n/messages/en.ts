@@ -2131,6 +2131,19 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       pinProtected: 'PIN protection',
       pinProtectedTooltip:
         'When enabled, the system automatically generates a PIN that students must enter when joining the quiz.',
+      responseCollectionMode: 'Response storage',
+      responseCollectionModeTooltip:
+        'Choose whether answers stay aggregate-only or are stored per participant for export.',
+      responseCollectionAggregated: 'Aggregate only',
+      responseCollectionCorrelated: 'Correlated export',
+      responseCollectionAggregatedSummary:
+        'Responses are counted only in aggregate and are not linked across questions.',
+      responseCollectionCorrelatedSummary:
+        'Responses are stored per participant and can be exported with random labels instead of names.',
+      responseCollectionAssessment:
+        'This setting does not apply: assessment quizzes always store identifiable responses.',
+      responseCollectionLocked:
+        'This setting cannot be changed after the quiz is published.',
       displayNameTooltip: 'The display name is shown to participants.',
       stackDescriptionTitle: 'Stack {stackIx}: Description (optional)',
       stackDisplayName: 'Stack title',
