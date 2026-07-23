@@ -144,6 +144,8 @@ model LiveQuizResponse {
 
   @@unique([instanceId, elementBlockExecution, participantId])
   @@index([instanceId, elementBlockExecution])
+  // Supports script 14's first-submission lookup without sorting every response for an instance.
+  @@index([instanceId, submittedAt])
 }
 
 enum PointCorrectionType {

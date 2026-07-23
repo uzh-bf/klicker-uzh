@@ -108,6 +108,39 @@ def test_window_bounds_accept_aware_strings_and_compare_with_naive_datetimes():
     assert start_ts <= detail_ts <= end_ts
 
 
+def test_participant_response_query_filters_the_window_in_postgres():
+    module = importlib.import_module(
+        "src.modules.participant_analytics.get_participant_responses"
+    )
+
+    captured = {}
+
+    class _FakeScalars:
+        def all(self):
+            return []
+
+    class _FakeResult:
+        def scalars(self):
+            return _FakeScalars()
+
+    class _FakeSession:
+        def execute(self, stmt):
+            captured["stmt"] = stmt
+            return _FakeResult()
+
+    result = module.get_participant_responses(
+        _FakeSession(),
+        "2026-02-15T00:00:00.000Z",
+        "2026-02-15T23:59:59.999Z",
+    )
+
+    statement = str(captured["stmt"])
+    assert 'FROM "QuestionResponseDetail"' in statement
+    assert '"QuestionResponseDetail"."createdAt" >= ' in statement
+    assert '"QuestionResponseDetail"."createdAt" <= ' in statement
+    assert result.empty
+
+
 def _selection_instance_df(options):
     return pd.DataFrame(
         [

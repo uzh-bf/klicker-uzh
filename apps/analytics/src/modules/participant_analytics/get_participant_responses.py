@@ -7,9 +7,6 @@ from sqlalchemy.orm import Session, selectinload
 from src.db_helpers import coerce_timestamp, row_to_dict
 from src.models import (
     Course,
-    MicroLearning,
-    Participant,
-    PracticeQuiz,
     QuestionResponseDetail,
 )
 
@@ -97,48 +94,43 @@ def get_participant_responses(
 ):
     """Return a dataframe of per-response detail rows for the window.
 
-    ``selectinload`` chains replace the Prisma ``include`` tree with one
-    ``IN (...)`` query per relation level — same round-trip count as before.
+    The time predicate stays in Postgres so the ``createdAt`` BRIN index can
+    prune the append-mostly detail table before relationships are loaded.
     """
-    participants = (
+    start_ts, end_ts = _coerce_window_bounds(start_date, end_date)
+    details = (
         session.execute(
-            select(Participant).options(
-                selectinload(Participant.detailQuestionResponses).options(
-                    selectinload(QuestionResponseDetail.practiceQuiz),
-                    selectinload(QuestionResponseDetail.microLearning),
-                )
+            select(QuestionResponseDetail)
+            .where(
+                QuestionResponseDetail.createdAt >= start_ts,
+                QuestionResponseDetail.createdAt <= end_ts,
+            )
+            .options(
+                selectinload(QuestionResponseDetail.practiceQuiz),
+                selectinload(QuestionResponseDetail.microLearning),
             )
         )
         .scalars()
         .all()
     )
 
-    start_ts, end_ts = _coerce_window_bounds(start_date, end_date)
-
     course_ids = {
         str(detail.practiceQuiz.courseId)
-        for participant in participants
-        for detail in participant.detailQuestionResponses
+        for detail in details
         if detail.practiceQuiz is not None and detail.practiceQuiz.courseId is not None
     } | {
         str(detail.microLearning.courseId)
-        for participant in participants
-        for detail in participant.detailQuestionResponses
+        for detail in details
         if detail.microLearning is not None
         and detail.microLearning.courseId is not None
     }
     course_windows = _load_course_windows(session, course_ids)
 
     rows = []
-    for participant in participants:
-        pid = participant.id
-        for detail in participant.detailQuestionResponses:
-            if detail.createdAt is None:
-                continue
-            detail_created_at = coerce_timestamp(detail.createdAt)
-            if not (start_ts <= detail_created_at <= end_ts):
-                continue
-            rows.append(_detail_to_dict(detail, pid, course_windows))
+    for detail in details:
+        if detail.createdAt is None:
+            continue
+        rows.append(_detail_to_dict(detail, str(detail.participantId), course_windows))
 
     if verbose:
         print(
