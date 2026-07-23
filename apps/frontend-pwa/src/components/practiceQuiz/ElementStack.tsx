@@ -1,4 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
+import { faChevronDown } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CaseStudyCaseResponse,
   ElementStack as ElementStackType,
@@ -78,8 +80,6 @@ function ElementStack({
   const t = useTranslations()
   const router = useRouter()
   const timeRef = useRef(0)
-  const [isDesktopDiscussionViewport, setIsDesktopDiscussionViewport] =
-    useState(false)
   const [mobileDiscussionOpen, setMobileDiscussionOpen] = useState(false)
   useComponentVisibleCounter({ timeRef })
 
@@ -326,18 +326,10 @@ function ElementStack({
     isCourseQAEnabled
   const stackDiscussionScopeKey = `stack:${stack.id}`
   const showInlineDiscussion =
-    !previewOnly && !isEmbeddedFlow && supportsStackDiscussion
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(min-width: 1024px)')
-    const handleChange = () =>
-      setIsDesktopDiscussionViewport(mediaQuery.matches)
-
-    handleChange()
-    mediaQuery.addEventListener('change', handleChange)
-
-    return () => mediaQuery.removeEventListener('change', handleChange)
-  }, [])
+    !previewOnly &&
+    !isEmbeddedFlow &&
+    supportsStackDiscussion &&
+    typeof stackStorage !== 'undefined'
 
   return (
     <div className="pb-12">
@@ -707,34 +699,46 @@ function ElementStack({
         </div>
 
         {showInlineDiscussion && (
-          <details
-            open={isDesktopDiscussionViewport || mobileDiscussionOpen}
-            onToggle={(event) => {
-              if (!isDesktopDiscussionViewport) {
-                setMobileDiscussionOpen(event.currentTarget.open)
-              }
-            }}
+          <aside
             aria-label={t('pwa.courseQA.title')}
             className="mt-8 min-w-0 border-t border-gray-200 pt-4 lg:mt-0 lg:border-0 lg:pt-0"
             data-cy="student-stack-discussion-rail"
           >
-            <summary
-              className="cursor-pointer text-sm font-semibold text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 lg:hidden"
+            <button
+              type="button"
+              onClick={() => setMobileDiscussionOpen((open) => !open)}
+              aria-expanded={mobileDiscussionOpen}
+              aria-controls={`course-qa-stack-panel-${stack.id}`}
+              className="flex w-full items-center justify-between gap-2 rounded-sm text-left text-sm font-semibold text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 lg:hidden"
               data-cy="student-stack-discussion-toggle"
             >
-              {t('pwa.courseQA.openStackDiscussion')}
-            </summary>
-            <div className="mt-4 lg:sticky lg:top-4 lg:mt-0 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+              <span>{t('pwa.courseQA.openStackDiscussion')}</span>
+              <FontAwesomeIcon
+                icon={faChevronDown}
+                className={twMerge(
+                  'shrink-0 text-gray-500 motion-safe:transition-transform',
+                  mobileDiscussionOpen && 'rotate-180'
+                )}
+                aria-hidden="true"
+              />
+            </button>
+            <div
+              id={`course-qa-stack-panel-${stack.id}`}
+              className={twMerge(
+                'mt-4 hidden',
+                mobileDiscussionOpen && 'block',
+                'lg:sticky lg:top-4 lg:mt-0 lg:block lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto'
+              )}
+            >
               <CourseDiscussionPanel
                 courseId={courseId}
                 scopeKey={stackDiscussionScopeKey}
                 compact
-                showTitle={isDesktopDiscussionViewport}
                 className="mx-0 max-w-none"
                 idPrefix={`course-qa-stack-${stack.id}`}
               />
             </div>
-          </details>
+          </aside>
         )}
       </div>
     </div>

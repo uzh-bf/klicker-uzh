@@ -164,23 +164,25 @@ describe('Course Q&A workflows (course-level + stack-level discussions, embed, r
 
   // ! Part 3: Stack-level Q&A via practice quiz evaluation
   // #region
-  it('Student completes practice quiz stack and uses the stack discussion link to post a stack-scoped thread', function () {
+  it('Student completes a practice quiz stack and posts in its in-page discussion', function () {
     cy.loginStudent()
     cy.get('[data-cy="quizzes"]').click()
     cy.get(`[data-cy="practice-quiz-${this.data.PQ.displayName}"]`).click()
     cy.get('[data-cy="start-practice-quiz"]').click()
 
+    cy.get('[data-cy="student-stack-discussion-rail"]').should('not.exist')
     cy.get('[data-cy="sc-0-answer-option-0"]').click()
     cy.get('[data-cy="student-stack-submit"]').click()
     cy.wait(500)
 
-    cy.get('[data-cy="student-stack-discussion-link"]')
-      .should('exist')
-      .then(($link) => {
-        const href = $link.attr('href')
-        expect(href).to.match(/\/qa\?scopeKey=stack%3A\d+/)
-        cy.visit(`${Cypress.env('URL_STUDENT')}${href}`)
-      })
+    cy.get('[data-cy="student-stack-discussion-rail"]').should('exist')
+    cy.get('[data-cy="student-stack-discussion-toggle"]').click()
+    cy.get('[data-cy="student-stack-discussion-toggle"]').should(
+      'have.attr',
+      'aria-expanded',
+      'true'
+    )
+    cy.location('pathname').should('not.include', '/qa')
 
     cy.get('[data-cy="course-qa-thread-input"]').type(this.data.threads.stack1)
     cy.get('[data-cy="course-qa-create-thread"]').click()
