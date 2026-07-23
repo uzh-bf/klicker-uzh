@@ -821,9 +821,14 @@ the repository script that replaces it before continuing.
 - 2026-07-23: The final full Python rerun exposed an order-dependent
   table-existence test. Unbound sessions no longer use an object-ID cache key
   that Python can recycle; production sessions keep the stable database-bind
-  cache. The full suite now passes 165 tests with 4 integration skips.
-- Active: Commit and independently review the final production/security
-  adjustments, then run the final branch gates and publish both stacked draft
+  cache, and a two-session regression proves uncached binds are queried
+  independently. The full suite now passes 165 tests with 4 integration skips.
+- 2026-07-23: Final simplification shares the immutable Debian snapshot setup
+  between image stages. Fresh ARM64 and AMD64 builds retain their separate
+  runtime packages and both pass the non-root, no-network, read-only model,
+  license, snapshot, and CPU-only smoke.
+- Active: Commit and review the final simplification, reconcile independent
+  branch findings, then run the finish gates and publish both stacked draft
   PRs.
 
 ## Finish evidence

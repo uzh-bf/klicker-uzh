@@ -96,6 +96,23 @@ def test_participant_chat_analytics_uses_zero_attachment_fallback_when_table_mis
     assert "attachment_rollup" in session.statements[1]
 
 
+def test_attachment_support_is_not_cached_without_a_stable_bind_url():
+    from src.modules.chat_analytics.compute_participant_chat_analytics import (
+        _ATTACHMENT_SUPPORT_CACHE,
+        _table_exists,
+    )
+
+    _ATTACHMENT_SUPPORT_CACHE.clear()
+    first_session = _CaptureSession(scalars=[0])
+    second_session = _CaptureSession(scalars=[1])
+
+    assert _table_exists(first_session, "ChatAttachment") is False
+    assert _table_exists(second_session, "ChatAttachment") is True
+    assert len(first_session.statements) == 1
+    assert len(second_session.statements) == 1
+    assert _ATTACHMENT_SUPPORT_CACHE == {}
+
+
 def test_aggregated_chatbot_analytics_renders_course_filter_for_weekly():
     from src.modules.aggregated_chat_analytics.compute_aggregated_chatbot_analytics import (
         compute_aggregated_chatbot_analytics,
