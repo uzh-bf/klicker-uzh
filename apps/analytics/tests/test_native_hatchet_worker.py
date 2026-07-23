@@ -135,6 +135,7 @@ def test_analytics_dag_matches_existing_task_contract() -> None:
         "admin-recompute-analytics",
     ]
     assert workflow.options["input_validator"] is hatchet_worker.AnalyticsRunInput
+    assert workflow.options["task_defaults"].schedule_timeout == (hatchet_worker.TASK_SCHEDULE_TIMEOUT)
     assert workflow.options["concurrency"].expression == ("has(input.courseId) ? input.courseId : 'global'")
     assert workflow.options["concurrency"].max_runs == 1
 

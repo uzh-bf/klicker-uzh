@@ -38,7 +38,7 @@ def main() -> None:
             assert_preconditions(session, course_ids=scope, verbose=True)
         except AnalyticsNotReadyError as exc:
             print(f"ERROR: {exc}")
-            sys.exit(1)
+            raise
 
         print("Building ParticipantChatOutcome rows")
         compute_participant_chat_outcomes(session, course_ids=scope, verbose=True)
