@@ -424,6 +424,44 @@ async function getCourseAccessActor(
   return null
 }
 
+async function canParticipantAccessDiscussionScope(
+  {
+    participantId,
+    courseId,
+    scope,
+  }: {
+    participantId: string | null | undefined
+    courseId: string
+    scope: {
+      scopeType: DB.DiscussionScopeType
+      stackId?: number | null
+    }
+  },
+  ctx: Context
+) {
+  if (
+    !participantId ||
+    scope.scopeType !== DB.DiscussionScopeType.PRACTICE_STACK
+  ) {
+    return true
+  }
+
+  if (!scope.stackId) return false
+
+  const response = await ctx.prisma.questionResponse.findFirst({
+    where: {
+      participantId,
+      courseId,
+      elementInstance: {
+        elementStackId: scope.stackId,
+      },
+    },
+    select: { id: true },
+  })
+
+  return Boolean(response)
+}
+
 function extractCourseIdFromSpace(space: DB.DiscussionSpace | null) {
   if (!space) return null
 
@@ -947,8 +985,10 @@ export async function courseDiscussionThreads(
 
   const embedClaims = await verifyEmbedToken(embedToken)
 
+  let actor: ResolvedActor | null = null
+
   if (!embedClaims) {
-    const actor = await getCourseAccessActor({ courseId }, ctx)
+    actor = await getCourseAccessActor({ courseId }, ctx)
     if (!actor) {
       return {
         threads: [],
@@ -1036,7 +1076,19 @@ export async function courseDiscussionThreads(
       select: { id: true },
     })
 
-    if (!stack) {
+    const participantCanAccess = await canParticipantAccessDiscussionScope(
+      {
+        participantId: actor?.participantId,
+        courseId,
+        scope: {
+          scopeType: DB.DiscussionScopeType.PRACTICE_STACK,
+          stackId,
+        },
+      },
+      ctx
+    )
+
+    if (!stack || !participantCanAccess) {
       return {
         threads: [],
         nextCursor: null,
@@ -1317,6 +1369,18 @@ export async function createCourseDiscussionThread(
     : ((await getCourseAccessActor({ courseId }, ctx))?.participantId ?? null)
 
   if (!anonymous && !authorizedParticipantId) return null
+  if (
+    !(await canParticipantAccessDiscussionScope(
+      {
+        participantId: authorizedParticipantId,
+        courseId,
+        scope,
+      },
+      ctx
+    ))
+  ) {
+    return null
+  }
 
   const space = anonymous
     ? await ctx.prisma.discussionSpace.findUnique({
@@ -1531,6 +1595,19 @@ export async function createCourseDiscussionReply(
     participantId = actor.participantId ?? null
     if (!participantId) return null
 
+    if (
+      !(await canParticipantAccessDiscussionScope(
+        {
+          participantId,
+          courseId,
+          scope: thread.scope,
+        },
+        ctx
+      ))
+    ) {
+      return null
+    }
+
     if (embedClaims) {
       const validBinding = await verifyEmbedScopeBinding(
         {
@@ -1632,7 +1709,7 @@ async function resolveThreadCourseAndActor(
   ctx: Context
 ): Promise<{
   thread: DB.DiscussionThread & {
-    scope: Pick<DB.DiscussionScope, 'scopeType'>
+    scope: Pick<DB.DiscussionScope, 'scopeType' | 'stackId'>
     space: DB.DiscussionSpace
   }
   courseId: string
@@ -1662,6 +1739,19 @@ async function resolveThreadCourseAndActor(
 
   if (!actor) return null
 
+  if (
+    !(await canParticipantAccessDiscussionScope(
+      {
+        participantId: actor.participantId,
+        courseId,
+        scope: thread.scope,
+      },
+      ctx
+    ))
+  ) {
+    return null
+  }
+
   return {
     thread,
     courseId,
@@ -1681,7 +1771,7 @@ async function resolveReplyCourseAndActor(
 ): Promise<{
   reply: DB.DiscussionReply & {
     thread: Pick<DB.DiscussionThread, 'id' | 'spaceId' | 'scopeId'> & {
-      scope: Pick<DB.DiscussionScope, 'scopeType'>
+      scope: Pick<DB.DiscussionScope, 'scopeType' | 'stackId'>
     }
     space: DB.DiscussionSpace
   }
@@ -1726,6 +1816,19 @@ async function resolveReplyCourseAndActor(
   )
 
   if (!actor) return null
+
+  if (
+    !(await canParticipantAccessDiscussionScope(
+      {
+        participantId: actor.participantId,
+        courseId,
+        scope: reply.thread.scope,
+      },
+      ctx
+    ))
+  ) {
+    return null
+  }
 
   return {
     reply,
@@ -1999,6 +2102,18 @@ export async function deleteCourseDiscussionThread(
     ctx
   )
   if (!allowed) return false
+  if (
+    !(await canParticipantAccessDiscussionScope(
+      {
+        participantId: actor?.participantId,
+        courseId,
+        scope: thread.scope,
+      },
+      ctx
+    ))
+  ) {
+    return false
+  }
 
   const now = new Date()
 
@@ -2079,6 +2194,18 @@ export async function deleteCourseDiscussionReply(
     ctx
   )
   if (!allowed) return false
+  if (
+    !(await canParticipantAccessDiscussionScope(
+      {
+        participantId: actor?.participantId,
+        courseId,
+        scope: reply.thread.scope,
+      },
+      ctx
+    ))
+  ) {
+    return false
+  }
 
   const now = new Date()
 
