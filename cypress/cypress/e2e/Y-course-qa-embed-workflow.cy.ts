@@ -20,7 +20,7 @@ describe('Course Q&A embed workflow', function () {
     })
   })
 
-  it('Lecturer generates anonymous embed links for two external blocks', function () {
+  it('Lecturer generates course and external-block embed links', function () {
     cy.loginLecturer()
     cy.visit(`${Cypress.env('URL_MANAGE')}/courses/${this.data.courseId}`)
     cy.get('[data-cy="tab-discussions"]').click()

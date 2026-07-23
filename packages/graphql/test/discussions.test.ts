@@ -1684,7 +1684,7 @@ describe('Integration tests for the course discussion platform', () => {
     )
   })
 
-  it('supports evaluated practice, microlearning, and external block scopes', async () => {
+  it('supports evaluated practice, microlearning, external, and course embed scopes', async () => {
     const course = await seedCourse({}, userOneCtx)
     await enableCourseDiscussion(prisma, {
       courseId: course.id,

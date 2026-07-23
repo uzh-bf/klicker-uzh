@@ -1,12 +1,10 @@
-query GetCourseDiscussionEmbeddingInfo(
+query GetCourseDiscussionCourseEmbeddingInfo(
   $courseId: String!
-  $externalBlock: DiscussionExternalBlockInput!
   $allowAnonymous: Boolean
   $expiresInHours: Int
 ) {
   getCourseDiscussionEmbeddingInfo(
     courseId: $courseId
-    externalBlock: $externalBlock
     allowAnonymous: $allowAnonymous
     expiresInHours: $expiresInHours
   ) {

@@ -4,6 +4,7 @@ import { faChevronDown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   DiscussionSort,
+  GetCourseDiscussionCourseEmbeddingInfoDocument,
   GetCourseDiscussionEmbeddingInfoDocument,
   GetCourseDiscussionOverviewDocument,
   type GetCourseDiscussionOverviewQuery,
@@ -104,6 +105,12 @@ function CourseDiscussionOverview({
       fetchPolicy: 'no-cache',
     }
   )
+  const [generateCourseEmbedInfo, { loading: loadingCourseEmbed }] =
+    useLazyQuery(GetCourseDiscussionCourseEmbeddingInfoDocument, {
+      fetchPolicy: 'no-cache',
+    })
+  const isExternalEmbed = embedScope === 'external'
+  const isGeneratingEmbed = loadingEmbed || loadingCourseEmbed
   const effectiveAllowAnonymous = isCourseQAAnonymousEnabled && allowAnonymous
   const hasValidExternalBlock =
     externalSource.trim().length > 0 && externalRef.trim().length > 0
@@ -334,9 +341,9 @@ function CourseDiscussionOverview({
               {t('manage.course.embedLinkGenerator')}
             </H3>
             <div className="mt-2 text-sm text-gray-600">
-              {embedScope === 'course'
-                ? t('manage.course.embedCourseHelp')
-                : t('manage.course.embedExternalBlockHelp')}
+              {isExternalEmbed
+                ? t('manage.course.embedExternalBlockHelp')
+                : t('manage.course.embedCourseHelp')}
             </div>
           </div>
           <FontAwesomeIcon
@@ -378,48 +385,50 @@ function CourseDiscussionOverview({
         </fieldset>
 
         <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-          {embedScope === 'external' && (
-            <div>
-              <label
-                className="mb-1 block text-xs font-semibold text-gray-700"
-                htmlFor="embed-external-source"
-              >
-                {t('manage.course.embedExternalSource')}
-              </label>
-              <input
-                id="embed-external-source"
-                name="embed-external-source"
-                type="text"
-                value={externalSource}
-                onChange={(event) => setExternalSource(event.target.value)}
-                autoComplete="off"
-                className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
-                placeholder={t('manage.course.embedExternalSourcePlaceholder')}
-                data-cy="course-qa-external-source"
-              />
-            </div>
-          )}
+          {isExternalEmbed && (
+            <>
+              <div>
+                <label
+                  className="mb-1 block text-xs font-semibold text-gray-700"
+                  htmlFor="embed-external-source"
+                >
+                  {t('manage.course.embedExternalSource')}
+                </label>
+                <input
+                  id="embed-external-source"
+                  name="embed-external-source"
+                  type="text"
+                  value={externalSource}
+                  onChange={(event) => setExternalSource(event.target.value)}
+                  autoComplete="off"
+                  className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+                  placeholder={t(
+                    'manage.course.embedExternalSourcePlaceholder'
+                  )}
+                  data-cy="course-qa-external-source"
+                />
+              </div>
 
-          {embedScope === 'external' && (
-            <div>
-              <label
-                className="mb-1 block text-xs font-semibold text-gray-700"
-                htmlFor="embed-external-ref"
-              >
-                {t('manage.course.embedExternalRef')}
-              </label>
-              <input
-                id="embed-external-ref"
-                name="embed-external-ref"
-                type="text"
-                value={externalRef}
-                onChange={(event) => setExternalRef(event.target.value)}
-                autoComplete="off"
-                className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
-                placeholder={t('manage.course.embedExternalRefPlaceholder')}
-                data-cy="course-qa-external-ref"
-              />
-            </div>
+              <div>
+                <label
+                  className="mb-1 block text-xs font-semibold text-gray-700"
+                  htmlFor="embed-external-ref"
+                >
+                  {t('manage.course.embedExternalRef')}
+                </label>
+                <input
+                  id="embed-external-ref"
+                  name="embed-external-ref"
+                  type="text"
+                  value={externalRef}
+                  onChange={(event) => setExternalRef(event.target.value)}
+                  autoComplete="off"
+                  className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+                  placeholder={t('manage.course.embedExternalRefPlaceholder')}
+                  data-cy="course-qa-external-ref"
+                />
+              </div>
+            </>
           )}
 
           <div>
@@ -482,27 +491,28 @@ function CourseDiscussionOverview({
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Button
             primary
-            loading={loadingEmbed}
+            loading={isGeneratingEmbed}
             disabled={
-              (embedScope === 'external' && !hasValidExternalBlock) ||
-              loadingEmbed
+              (isExternalEmbed && !hasValidExternalBlock) || isGeneratingEmbed
             }
             onClick={async () => {
               try {
-                const result = await generateEmbedInfo({
-                  variables: {
-                    courseId,
-                    externalBlock:
-                      embedScope === 'external'
-                        ? {
-                            externalSource: externalSource.trim(),
-                            externalRef: externalRef.trim(),
-                          }
-                        : null,
-                    allowAnonymous: effectiveAllowAnonymous,
-                    expiresInHours,
-                  },
-                })
+                const variables = {
+                  courseId,
+                  allowAnonymous: effectiveAllowAnonymous,
+                  expiresInHours,
+                }
+                const result = isExternalEmbed
+                  ? await generateEmbedInfo({
+                      variables: {
+                        ...variables,
+                        externalBlock: {
+                          externalSource: externalSource.trim(),
+                          externalRef: externalRef.trim(),
+                        },
+                      },
+                    })
+                  : await generateCourseEmbedInfo({ variables })
 
                 if (!result.data?.getCourseDiscussionEmbeddingInfo?.embedUrl) {
                   toast({
