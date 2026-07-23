@@ -1,22 +1,20 @@
-export type ParsedDiscussionScopeInput = {
-  scopeType: 'COURSE' | 'PRACTICE_STACK' | 'EXTERNAL_BLOCK'
-  stackId?: number
-  externalSource?: string
-  externalRef?: string
-}
+import {
+  DiscussionScopeType,
+  type DiscussionScopeInput,
+} from '@klicker-uzh/graphql/dist/ops'
 
 export function parseScopeKeyToInput(
   courseId: string,
   scopeKey?: string | null
-): ParsedDiscussionScopeInput | null {
+): DiscussionScopeInput | null {
   if (!scopeKey || scopeKey === `course:${courseId}`) {
-    return { scopeType: 'COURSE' }
+    return { scopeType: DiscussionScopeType.Course }
   }
 
   const practiceStackMatch = scopeKey.match(/^stack:(\d+)$/)
   if (practiceStackMatch) {
     return {
-      scopeType: 'PRACTICE_STACK',
+      scopeType: DiscussionScopeType.PracticeStack,
       stackId: Number.parseInt(practiceStackMatch[1] ?? '', 10),
     }
   }
@@ -24,7 +22,7 @@ export function parseScopeKeyToInput(
   const externalMatch = scopeKey.match(/^ext:([^:]+):(.+)$/)
   if (externalMatch) {
     return {
-      scopeType: 'EXTERNAL_BLOCK',
+      scopeType: DiscussionScopeType.ExternalBlock,
       externalSource: decodeURIComponent(externalMatch[1] ?? ''),
       externalRef: decodeURIComponent(externalMatch[2] ?? ''),
     }

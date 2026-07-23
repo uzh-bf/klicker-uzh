@@ -148,7 +148,7 @@ function CourseDiscussionPanel({
           input: {
             courseId,
             content: threadDraft,
-            scope: parsedScopeInput as any,
+            scope: parsedScopeInput,
             isAnonymous: postThreadAnonymous,
             embedToken,
           },
