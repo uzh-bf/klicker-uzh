@@ -85,7 +85,11 @@ export function inferManageSurface(pathname: string): ManageAssistantSurface {
     return 'element-editor'
   }
 
-  if (normalizedPathname.startsWith('/resources')) {
+  // The manage index page is the question library itself.
+  if (
+    normalizedPathname === '/' ||
+    normalizedPathname.startsWith('/resources')
+  ) {
     return 'question-pool'
   }
 

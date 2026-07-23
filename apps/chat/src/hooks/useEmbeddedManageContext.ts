@@ -9,6 +9,7 @@ import { useEmbedded } from './useEmbedded'
 
 const MANAGE_CONTEXT_MESSAGE_TYPE = 'klicker:manage-context'
 const MANAGE_CONTEXT_ACK_MESSAGE_TYPE = 'klicker:manage-context-ack'
+const MANAGE_CONTEXT_READY_MESSAGE_TYPE = 'klicker:manage-context-ready'
 
 export function useEmbeddedManageContext() {
   const embedded = useEmbedded()
@@ -55,6 +56,17 @@ export function useEmbeddedManageContext() {
     }
 
     window.addEventListener('message', handleMessage)
+
+    // Announce readiness so the parent (re)sends the current context exactly
+    // when this listener exists. Without this, the parent's timed retry burst
+    // can fully elapse before hydration finishes and the context is lost. The
+    // '*' target is safe: the message is a content-free ping and the parent
+    // origin is unknown until its first context message arrives.
+    window.parent.postMessage(
+      { type: MANAGE_CONTEXT_READY_MESSAGE_TYPE, payload: { version: 1 } },
+      '*'
+    )
+
     return () => window.removeEventListener('message', handleMessage)
   }, [embedded])
 

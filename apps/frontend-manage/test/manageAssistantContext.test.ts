@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict'
-import { buildManageAssistantContext } from '../src/components/assistant/manageAssistantContext'
+import {
+  buildManageAssistantContext,
+  inferManageSurface,
+} from '../src/components/assistant/manageAssistantContext'
+
+// The manage index page is the question library.
+assert.equal(inferManageSurface('/'), 'question-pool')
 
 assert.deepEqual(
   buildManageAssistantContext({

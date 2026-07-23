@@ -20,6 +20,7 @@ import {
 
 const MANAGE_CONTEXT_MESSAGE_TYPE = 'klicker:manage-context'
 const MANAGE_CONTEXT_ACK_MESSAGE_TYPE = 'klicker:manage-context-ack'
+const MANAGE_CONTEXT_READY_MESSAGE_TYPE = 'klicker:manage-context-ready'
 
 export function ManageAssistantWidget() {
   const t = useTranslations()
@@ -60,6 +61,10 @@ export function ManageAssistantWidget() {
       }),
     [router.asPath, router.locale, router.pathname, router.query]
   )
+  const assistantContextRef = useRef(assistantContext)
+  useEffect(() => {
+    assistantContextRef.current = assistantContext
+  }, [assistantContext])
 
   const closeWidget = useCallback(() => {
     shouldRestoreFocusRef.current = true
@@ -104,6 +109,21 @@ export function ManageAssistantWidget() {
             messageId
           )
         }
+        return
+      }
+
+      // The iframe announces readiness once its listener exists. Re-send the
+      // current context then: the timed retry burst below can fully elapse
+      // before a slow-hydrating iframe is able to receive anything.
+      if (isManageContextReadyMessage(event.data)) {
+        const messageId = nextMessageIdRef.current + 1
+        nextMessageIdRef.current = messageId
+        postManageContext(
+          iframeRef.current,
+          assistantContextRef.current,
+          assistantOrigin,
+          messageId
+        )
       }
     }
 
@@ -248,6 +268,16 @@ function isManageContextAckMessage(data: unknown): data is {
     (data as { type?: unknown }).type === MANAGE_CONTEXT_ACK_MESSAGE_TYPE &&
     typeof (data as { payload?: unknown }).payload === 'object' &&
     (data as { payload?: unknown }).payload !== null
+  )
+}
+
+function isManageContextReadyMessage(data: unknown): data is {
+  type: typeof MANAGE_CONTEXT_READY_MESSAGE_TYPE
+} {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    (data as { type?: unknown }).type === MANAGE_CONTEXT_READY_MESSAGE_TYPE
   )
 }
 
