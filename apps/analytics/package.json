@@ -6,18 +6,20 @@
     "nodemon": "~3.1.14"
   },
   "scripts": {
-    "analytics:dev": "../../util/_run_with_infisical.sh --env dev nodemon --exec 'uv run poe main' --watch src,prisma --ext py,prisma",
+    "analytics:dev": "../../util/_run_with_infisical.sh --env dev nodemon --exec 'uv run python -m src.main' --watch src,prisma --ext py,prisma",
     "dryrun:dev": "../../util/_run_with_infisical.sh --env dev uv run python -m src.scripts.export_dryrun",
     "dryrun:prod": "../../util/_run_with_infisical.sh --env prd uv run python -m src.scripts.export_dryrun",
     "dryrun:qa": "../../util/_run_with_infisical.sh --env stg uv run python -m src.scripts.export_dryrun",
+    "format": "uv run ruff format .",
     "generate": "../../util/_run_with_infisical.sh --env dev uv run poe generate",
-    "main": "../../util/_run_with_infisical.sh --env dev uv run poe main",
+    "lint": "uv run ruff check . && uv run ruff format --check .",
+    "main": "../../util/_run_with_infisical.sh --env dev uv run python -m src.main",
     "script": "../../util/_run_with_infisical.sh --env dev uv run python -m",
     "script:prod": "../../util/_run_with_infisical.sh --env prd uv run python -m",
     "script:qa": "../../util/_run_with_infisical.sh --env stg uv run python -m"
   },
   "engines": {
-    "node": "=20"
+    "node": "=24"
   },
   "volta": {
     "extends": "../../package.json"

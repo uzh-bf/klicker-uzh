@@ -12,8 +12,7 @@ the existing Hatchet control plane.
 - Plan: `project/2026-07-23-learning-analytics-production-plan.md`
 - Phase 1 branch: `chat-analytics`
 - Phase 1 target: `v3`
-- Phase 1 PR:
-  [#5199](https://github.com/uzh-bf/klicker-uzh/pull/5199)
+- Phase 1 PR: none yet
 - Phase 1 worktree:
   `trees/chat-analytics-integration`
 - Phase 2 branch: `analytics-phase-a`
@@ -362,7 +361,7 @@ Focused slices run the relevant subset. Slice 6 reruns the complete matrix:
 | Dependency policy | `volta run --node 24.16.0 pnpm run check:syncpack` | Exit 0 |
 | Analytics format | `cd apps/analytics && uv run ruff format --check . && uv run ruff check .` | Exit 0 |
 | Analytics types | `cd apps/analytics && uv run pyright` | Exit 0 |
-| Analytics tests | `cd apps/analytics && uv run python -m unittest discover -s tests` | All tests pass |
+| Analytics tests | `cd apps/analytics && uv run pytest` | All tests pass |
 | Hatchet packages | `volta run --node 24.16.0 pnpm exec turbo run check --filter=@klicker-uzh/hatchet --filter=@klicker-uzh/hatchet-worker-analytics --filter=@klicker-uzh/hatchet-worker-general` | Exit 0 |
 | GraphQL package | `volta run --node 24.16.0 pnpm exec turbo run check --filter=@klicker-uzh/graphql` | Exit 0 |
 | GraphQL tests | `volta run --node 24.16.0 pnpm --filter @klicker-uzh/graphql test` | All tests pass |
@@ -422,29 +421,46 @@ the repository script that replaces it before continuing.
   immediately. Dependency pruning and small SQL-loading/query-shape cleanups
   were rejected for Slice 1 because they are unrelated to the merge and lack
   runtime value or build evidence.
-- 2026-07-24: Final base review found that aggregate chat metrics did not
-  apply the current-consent gate to message rows, participant and aggregate
-  chat windows retained stale rows after consent changes, below-threshold
-  clustering retained old topics, script 0 did not apply course scope to
-  daily/weekly/monthly reads, and incremental completion timestamps were
-  global. These are accepted privacy/correctness blockers.
-- 2026-07-24: The base fix joins current eligible participant/chatbot pairs
-  into both aggregate message CTEs; atomically replaces participant and
-  aggregate chat windows; clears old clusters when eligible messages fall
-  below the threshold; pushes course scope into both the parent and nested
-  response queries; and scopes completion watermarks for every scoped run.
-- 2026-07-24: Current base verification passes Ruff formatting/lint across 92
-  files and 35 focused unit/contract tests. The pre-push repository build
-  completed all 22 runnable build tasks.
-- 2026-07-24: Exact-commit review found that a valid empty COURSE chat result
-  still aborted correlation and retained old outcome/activity state. The
-  correction now treats dependency-complete empty sources as valid and
-  atomically rebuilds outcomes plus activity flags from current source rows.
-- 2026-07-24: Opened draft PR
-  [#5199](https://github.com/uzh-bf/klicker-uzh/pull/5199) from
-  `chat-analytics` to `v3`.
-- Active: Commit and independently review the accepted final base corrections,
-  then merge them through the Phase A stack.
+- 2026-07-23: Slice 1 review adjustments committed as `35a9f97`.
+- 2026-07-23: Created the Phase A integration worktree at
+  `trees/analytics-phase-a-integration`, fast-forwarded `analytics-phase-a` to
+  remote tip `18d0bb8c03`, and merged the refreshed `chat-analytics` history.
+  All 33 conflicts are resolved without discarding Phase A behavior. The
+  resolution keeps Phase A SQLAlchemy models, dry-run support, tests, and
+  scripts while adopting the refreshed Node 24, uv/Ruff, generated GraphQL,
+  and canonical Prisma-schema tooling.
+- 2026-07-23: Slice 2 analytics verification passes Ruff format/lint and
+  `pytest` with 103 passed and 3 skipped. The Phase A Pyright baseline reports
+  2,078 errors across generated SQLAlchemy models, missing third-party stubs,
+  and broadly untyped existing code; making this gate actionable remains
+  production-readiness work rather than a merge-only rewrite.
+- 2026-07-23: Slice 2 TypeScript and schema verification passes GraphQL
+  generation/build/typecheck, Prisma generation/typecheck/namespace tests,
+  Syncpack, all three Hatchet package checks, and the canonical-to-analytics
+  schema-mirror check.
+- 2026-07-23: The GraphQL test suite cannot currently complete against the
+  local test database. A sandboxed run was denied with `EPERM`; an allowed run
+  reached PostgreSQL but the connection terminated and successive tests timed
+  out. No assertion failure was observed before the run was stopped.
+- 2026-07-23: Independent Slice 2 review found no source-level feature loss.
+  It identified one merge-created image regression: the resolved analytics
+  image still invoked the removed Prisma-Python generator. The review
+  adjustment removes that obsolete build step. Verified cleanup also removes
+  nested Infisical execution and a double-import in the dry-run runner. Dormant
+  Phase A helpers were preserved because they are not a production blocker and
+  this integration must not discard intended follow-up surfaces.
+- 2026-07-23: A local analytics-image build passed the removed Prisma-generation
+  stage but was stopped when Linux dependency resolution began downloading
+  several gigabytes of CUDA/Torch artifacts. CPU-only/minimal ML dependency
+  resolution and the 918 MB root build context remain explicit Slice 5A image
+  work; the interrupted build is not recorded as a passing image gate.
+- 2026-07-23: Confirmed correctness findings remain assigned to Slice 3A:
+  partial script-10 clustering failures can still resolve successfully, and
+  script 13 races the script-2 rows it updates. Cooperative cancellation of
+  the transitional subprocess remains assigned to the native-worker cutover
+  slices.
+- Active: Slice 2, verify and commit the independent-review adjustment.
+- Next: Reproduce the focused correctness and CI gaps in Slice 3A.
 
 ## Finish evidence
 
@@ -458,7 +474,6 @@ the repository script that replaces it before continuing.
 
 ## Next Steps
 
-1. Commit and review the final base privacy/scope correction.
-2. Merge the corrected base into `analytics-phase-a`.
-3. Port database-backed regressions through the SQLAlchemy/native-worker path
-   and continue to the final draft-PR CI readback.
+1. Commit and independently review the refreshed Phase A merge.
+2. Reproduce and close the focused correctness and CI gaps in Slice 3A.
+3. Continue one verified slice at a time until both draft PRs are current.

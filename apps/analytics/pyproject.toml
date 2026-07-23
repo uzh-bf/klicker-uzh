@@ -36,7 +36,6 @@ dev = [
 [tool.poe.tasks]
 # Regenerate models.py from the live dev DB. Run after a Prisma migration lands.
 generate = "sqlacodegen --generator declarative $DATABASE_URL -o src/models.py"
-main = "../../util/_run_with_infisical.sh --env dev python -m src.main"
 
 [tool.pyright]
 typeCheckingMode = "strict"
