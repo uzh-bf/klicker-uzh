@@ -482,6 +482,8 @@ Later research:
 - 2026-07-23: Independent simplification review found duplicate correlated cookie parsing and two token-lifetime literals. Correlated requests now use only the shared resolver, aggregate parsing stays in the legacy branch, and JWT plus cookie expiry derive from the same numeric constant with an explicit duration assertion.
 - 2026-07-23: Slice 4A review-fix verification passed: 53 utility tests, 5 response API tests, focused utility/response API/worker/GraphQL/PWA checks and builds, and the full repository `check:all` gate. Mandatory browser verification was retried after recreating the DevPod: devrouter and all routes reported healthy, but the PWA process did not bind port 3001, its in-container probe failed, and the routed page returned HTTP 502 `Bad Gateway`. No browser behavior is claimed; the runtime gap remains a final PR-readiness requirement.
 - 2026-07-23: Slice 4A is finalized. Slice 4B starts with worker-side identity validation, rolling temporary-row bridging, authoritative database duplicate handling, retry-safe aggregate updates, and durable response persistence for every correlated respondent type.
+- 2026-07-23: Slice 4B implementation completed locally. The standard response worker now resolves correlated mode from active metadata with a database fallback, requires the response API's owned execution-scoped claim, validates signed account/temporary/anonymous identities, lazily bridges valid legacy temporary leaderboard rows, and rejects logged-out, wrong-quiz, wrong-type, or token-hash-mismatched respondents. It writes one `LiveQuizResponse` before aggregation and uses a Redis transaction with an execution-scoped processed marker so a retry after the database write aggregates once and a retry after Redis commit exits without changing counts.
+- 2026-07-23: Slice 4B verification passed: 10 focused worker tests cover all respondent types, token scope/hash rejection, legacy temporary logout, identity-safe persistence data, retry ownership, and execution scoping; the worker build passed; and the full repository `check:all` gate passed. The previously passing schema-backed collection-mode test was also retried, but the current DevPod command environment does not expose `HATCHET_CLIENT_TOKEN`, so that database suite could not initialize; Slice 4B does not change the schema.
 
 ## Goal Prompt Requirements
 
@@ -497,6 +499,6 @@ If handed to another agent:
 
 ## Next Steps
 
-1. Implement Slice 4B worker verification, rolling temporary-row bridging, authoritative duplicate handling, and durable response persistence.
+1. Complete independent correctness and simplification review for Slice 4B.
 2. Deliver the self-service CSV and evaluation-page action together in Slice 6.
 3. Close the blocked browser matrix before marking the draft PR ready.

@@ -6,12 +6,18 @@ import type {
   DurableContext,
   JsonObject,
 } from '@hatchet-dev/typescript-sdk/index.js'
+import { prisma } from '@klicker-uzh/prisma'
+import {
+  LiveQuizResponseCollectionMode,
+  UserRole,
+} from '@klicker-uzh/prisma/client'
 import type {
   FreeTextRestrictions,
   LiveQuizResponseInput,
   NumericalRestrictions,
 } from '@klicker-uzh/types'
 import {
+  buildCorrelatedVoteKey,
   releaseCorrelatedResponse,
   verifyJWT,
   type CorrelatedResponseClaim,
@@ -20,13 +26,27 @@ import {
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
 import type { ChainableCommander } from 'ioredis'
+import { DEFAULT_POINTS } from '../constants.js'
 import { getRedis } from '../redis.js'
 import {
+  buildCorrelatedResponseCreateData,
+  CorrelatedResponseIdentityError,
+  getCorrelatedProcessedKey,
+  isPersistedResponseRetry,
+  resolveCorrelatedResponseOwner,
+  type CorrelatedResponseOwner,
+} from './correlatedResponse.js'
+import {
   getCaseStudyQuestionPoints,
+  getCaseStudyQuestionPointsDetails,
   getChoicesQuestionPoints,
+  getChoicesQuestionPointsDetails,
   getFreeTextQuestionPoints,
+  getFreeTextQuestionPointsDetails,
   getNumericalQuestionPoints,
+  getNumericalQuestionPointsDetails,
   getSelectionQuestionPoints,
+  getSelectionQuestionPointsDetails,
   updateLeaderboards,
   validateStudentResponse,
 } from './helpers.js'
@@ -35,6 +55,118 @@ import {
 // TODO: ensure that the response meets the restrictions specified in the element options
 
 const redisExec = getRedis() // use standard redis instance for regular response processor
+
+function getCorrelatedResponsePoints({
+  type,
+  choiceCount,
+  response,
+  instanceInfo,
+  firstResponseReceivedAt,
+  responseTimestamp,
+  basePoints,
+  defaultPoints,
+  pointsMultiplier,
+  parsedSolutions,
+}: {
+  type: string
+  choiceCount?: string
+  response: LiveQuizResponseInput
+  instanceInfo: Record<string, string>
+  firstResponseReceivedAt?: string
+  responseTimestamp: number
+  basePoints?: string
+  defaultPoints?: string
+  pointsMultiplier?: string
+  parsedSolutions: any
+}) {
+  const awardedBasePoints =
+    basePoints === 'true'
+      ? parseInt(defaultPoints ?? String(DEFAULT_POINTS), 10)
+      : 0
+
+  let details: {
+    correctnessPoints: number
+    bonusPoints: number
+    pointsPercentage: number | null
+  }
+  switch (type) {
+    case 'SC':
+    case 'MC':
+    case 'KPRIM':
+      details = getChoicesQuestionPointsDetails({
+        type,
+        choiceCount,
+        response,
+        instanceInfo,
+        firstResponseReceivedAt,
+        responseTimestamp,
+        basePoints,
+        pointsMultiplier,
+        parsedSolutions,
+      })
+      break
+    case 'NUMERICAL':
+      details = getNumericalQuestionPointsDetails({
+        response,
+        instanceInfo,
+        firstResponseReceivedAt,
+        responseTimestamp,
+        basePoints,
+        pointsMultiplier,
+        parsedSolutions,
+      })
+      break
+    case 'FREE_TEXT':
+      details = getFreeTextQuestionPointsDetails({
+        response,
+        instanceInfo,
+        firstResponseReceivedAt,
+        responseTimestamp,
+        basePoints,
+        pointsMultiplier,
+        parsedSolutions,
+      })
+      break
+    case 'SELECTION':
+      details = getSelectionQuestionPointsDetails({
+        response,
+        instanceInfo,
+        firstResponseReceivedAt,
+        responseTimestamp,
+        basePoints,
+        pointsMultiplier,
+        parsedSolutions,
+      })
+      break
+    case 'CASE_STUDY':
+      details = getCaseStudyQuestionPointsDetails({
+        response,
+        instanceInfo,
+        firstResponseReceivedAt,
+        responseTimestamp,
+        basePoints,
+        pointsMultiplier,
+        parsedSolutions,
+      })
+      break
+    case 'CONTENT':
+      details = {
+        correctnessPoints: 0,
+        bonusPoints: 0,
+        pointsPercentage: null,
+      }
+      break
+    default:
+      throw new Error(`Unsupported correlated response element type ${type}`)
+  }
+
+  return {
+    basePoints: awardedBasePoints,
+    correctnessPoints: details.correctnessPoints,
+    bonusPoints: details.bonusPoints,
+    correctnessPercentage: details.pointsPercentage,
+  }
+}
 
 export async function processResponseMessage(
   message: {
@@ -78,9 +210,13 @@ export async function processResponseMessage(
     })
   }
 
-  let redisMulti: ChainableCommander
-  // redisMulti = redisExec.multi() -> transaction
-  redisMulti = redisExec.pipeline() // -> pipeline (not atomic)
+  let redisMulti: ChainableCommander = redisExec.pipeline()
+  let isCorrelated = false
+  let correlatedOwner: CorrelatedResponseOwner | undefined
+  let correlatedProcessedKey: string | undefined
+  let correlatedInstanceId: number | undefined
+  let correlatedBlockExecution: number | undefined
+  let responsePersisted = false
 
   try {
     const liveQuizKey = `lq:${message.sessionId}`
@@ -100,8 +236,178 @@ export async function processResponseMessage(
       return { status: 400 }
     }
 
+    const instanceInfo = await redisExec.hgetall(`${instanceKey}:info`)
+    // if the instance metadata is not available, it has been closed and purged already
+    if (!instanceInfo || Object.keys(instanceInfo).length === 0) {
+      ctx.logger.info('Element instance metadata not found', {
+        messageId: message.messageId,
+        sessionId: message.sessionId,
+        instanceId: message.instanceId,
+      })
+      await releaseClaim()
+      return { status: 400 }
+    }
+    ctx.logger.info('Instance info loaded', {
+      sessionId: message.sessionId,
+      instanceId: message.instanceId,
+    })
+
+    const {
+      type,
+      solutions,
+      restrictions,
+      firstResponseReceivedAt,
+      sessionBlockId,
+      choiceCount,
+      basePoints,
+      pointsMultiplier,
+      defaultPoints,
+      blockExecution,
+      blockClosedAt,
+    } = instanceInfo
+
+    const cachedResponseCollectionMode = instanceInfo.responseCollectionMode
+    const responseCollectionMode =
+      cachedResponseCollectionMode ===
+        LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS ||
+      cachedResponseCollectionMode ===
+        LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+        ? cachedResponseCollectionMode
+        : (
+            await prisma.liveQuiz.findUnique({
+              where: { id: message.sessionId },
+              select: { responseCollectionMode: true },
+            })
+          )?.responseCollectionMode
+    if (!responseCollectionMode) {
+      await releaseClaim()
+      return { status: 400 }
+    }
+
+    isCorrelated =
+      responseCollectionMode ===
+      LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+    redisMulti = isCorrelated ? redisExec.multi() : redisExec.pipeline()
+
     let participantData: JWTPayload | null = null
-    if (typeof message.cookie === 'string') {
+    if (isCorrelated) {
+      if (
+        !message.correlatedClaim ||
+        !blockExecution ||
+        !type ||
+        !sessionBlockId
+      ) {
+        await releaseClaim()
+        return { status: 400 }
+      }
+
+      correlatedInstanceId = Number(message.instanceId)
+      correlatedBlockExecution = Number(blockExecution)
+      if (
+        !Number.isInteger(correlatedInstanceId) ||
+        !Number.isInteger(correlatedBlockExecution)
+      ) {
+        await releaseClaim()
+        return { status: 400 }
+      }
+
+      const secret = process.env.APP_SECRET
+      const issuer = process.env.APP_ORIGIN_API
+      if (!secret || !issuer) {
+        throw new Error(
+          'APP_SECRET and APP_ORIGIN_API are required for correlated live quiz responses'
+        )
+      }
+
+      correlatedOwner = await resolveCorrelatedResponseOwner({
+        cookieHeader: message.cookie,
+        liveQuizId: message.sessionId,
+        secret,
+        issuer,
+        database: prisma,
+      })
+
+      const expectedClaimKey = buildCorrelatedVoteKey({
+        liveQuizId: message.sessionId,
+        instanceId: message.instanceId,
+        blockExecution,
+      })
+      if (
+        message.correlatedClaim.key !== expectedClaimKey ||
+        message.correlatedClaim.identityKey !== correlatedOwner.identityKey
+      ) {
+        await releaseClaim()
+        return { status: 400 }
+      }
+
+      const claimOwnerMessageId = await redisExec.hget(
+        message.correlatedClaim.key,
+        message.correlatedClaim.identityKey
+      )
+      if (claimOwnerMessageId !== message.messageId) {
+        await releaseClaim()
+        return { status: 400 }
+      }
+
+      correlatedProcessedKey = getCorrelatedProcessedKey({
+        liveQuizId: message.sessionId,
+        instanceId: message.instanceId,
+        blockExecution: correlatedBlockExecution,
+      })
+      const processedMessageId = await redisExec.hget(
+        correlatedProcessedKey,
+        correlatedOwner.identityKey
+      )
+      if (processedMessageId === message.messageId) {
+        return { status: 200 }
+      }
+      if (processedMessageId) {
+        await releaseClaim()
+        return { status: 208 }
+      }
+
+      const existingResponse =
+        correlatedOwner.kind === 'participant'
+          ? await prisma.liveQuizResponse.findUnique({
+              where: {
+                instanceId_elementBlockExecution_participantId: {
+                  instanceId: correlatedInstanceId,
+                  elementBlockExecution: correlatedBlockExecution,
+                  participantId: correlatedOwner.id,
+                },
+              },
+            })
+          : await prisma.liveQuizResponse.findUnique({
+              where: {
+                instanceId_elementBlockExecution_respondentId: {
+                  instanceId: correlatedInstanceId,
+                  elementBlockExecution: correlatedBlockExecution,
+                  respondentId: correlatedOwner.id,
+                },
+              },
+            })
+      if (existingResponse) {
+        if (
+          !isPersistedResponseRetry({
+            existingSubmittedAt: existingResponse.submittedAt,
+            responseTimestamp,
+            claimOwnerMessageId,
+            messageId: message.messageId,
+          })
+        ) {
+          await releaseClaim()
+          return { status: 208 }
+        }
+        responsePersisted = true
+      }
+
+      participantData =
+        correlatedOwner.kind === 'participant'
+          ? { sub: correlatedOwner.id, role: UserRole.PARTICIPANT }
+          : correlatedOwner.kind === 'temporary'
+            ? { sub: correlatedOwner.id, role: UserRole.TEMPORARY_PARTICIPANT }
+            : null
+    } else if (typeof message.cookie === 'string') {
       try {
         const parsedCookies = message.cookie
           .split(';')
@@ -140,7 +446,6 @@ export async function processResponseMessage(
         ctx.logger.error(`JWT verification failed: ${String(e)}`)
       }
 
-      // if the participant has already responded to the question instance, return instantly
       if (
         participantData &&
         (await redisExec.hexists(
@@ -153,38 +458,9 @@ export async function processResponseMessage(
         ctx.logger.info(
           'Participant has already responded to this question instance'
         )
-        await releaseClaim()
         return { status: 200 }
       }
     }
-
-    const instanceInfo = await redisExec.hgetall(`${instanceKey}:info`)
-    // if the instance metadata is not available, it has been closed and purged already
-    if (!instanceInfo || Object.keys(instanceInfo).length === 0) {
-      ctx.logger.info('Element instance metadata not found', {
-        messageId: message.messageId,
-        sessionId: message.sessionId,
-        instanceId: message.instanceId,
-      })
-      await releaseClaim()
-      return { status: 400 }
-    }
-    ctx.logger.info('Instance info loaded', {
-      sessionId: message.sessionId,
-      instanceId: message.instanceId,
-    })
-
-    const {
-      type,
-      solutions,
-      restrictions,
-      firstResponseReceivedAt,
-      sessionBlockId,
-      choiceCount,
-      basePoints,
-      pointsMultiplier,
-      blockClosedAt,
-    } = instanceInfo
 
     if (blockClosedAt && Number(responseTimestamp) > Number(blockClosedAt)) {
       ctx.logger.error(
@@ -308,7 +584,7 @@ export async function processResponseMessage(
           ) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            redisMulti.hsetnx(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp
@@ -386,7 +662,7 @@ export async function processResponseMessage(
           if (parsedSolutions && pointsPercentage && !firstResponseReceivedAt) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            redisMulti.hsetnx(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp
@@ -465,7 +741,7 @@ export async function processResponseMessage(
           if (pointsPercentage && !firstResponseReceivedAt) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            redisMulti.hsetnx(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp
@@ -549,7 +825,7 @@ export async function processResponseMessage(
           ) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            redisMulti.hsetnx(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp
@@ -651,7 +927,7 @@ export async function processResponseMessage(
           ) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            redisMulti.hsetnx(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp
@@ -678,6 +954,69 @@ export async function processResponseMessage(
         break
       }
     }
+
+    if (
+      isCorrelated &&
+      correlatedOwner &&
+      correlatedProcessedKey &&
+      correlatedInstanceId !== undefined &&
+      correlatedBlockExecution !== undefined &&
+      type
+    ) {
+      const grading = getCorrelatedResponsePoints({
+        type,
+        choiceCount,
+        response,
+        instanceInfo,
+        firstResponseReceivedAt,
+        responseTimestamp,
+        basePoints,
+        defaultPoints,
+        pointsMultiplier,
+        parsedSolutions,
+      })
+      if (grading.correctnessPercentage === 1 && !firstResponseReceivedAt) {
+        redisMulti.hsetnx(
+          `${instanceKey}:info`,
+          'firstResponseReceivedAt',
+          responseTimestamp
+        )
+      }
+
+      if (!responsePersisted) {
+        try {
+          await prisma.liveQuizResponse.create({
+            data: buildCorrelatedResponseCreateData({
+              owner: correlatedOwner,
+              instanceId: correlatedInstanceId,
+              blockExecution: correlatedBlockExecution,
+              response,
+              submittedAt: responseTimestamp,
+              ...grading,
+            }),
+          })
+          responsePersisted = true
+        } catch (error) {
+          if (
+            typeof error === 'object' &&
+            error !== null &&
+            'code' in error &&
+            error.code === 'P2002'
+          ) {
+            redisMulti.discard()
+            await releaseClaim()
+            return { status: 208 }
+          }
+          throw error
+        }
+      }
+
+      redisMulti.hset(
+        correlatedProcessedKey,
+        correlatedOwner.identityKey,
+        message.messageId
+      )
+    }
   } catch (e) {
     ctx.logger.error(
       `Error processing response: ${String(e)} ` +
@@ -687,9 +1026,17 @@ export async function processResponseMessage(
           instanceId: message.instanceId,
         })
     )
-    redisMulti?.discard()
+    redisMulti.discard()
+    if (responsePersisted) {
+      throw new Error(
+        `Response persisted but aggregation failed for message ${message.messageId}: ${String(e)}`
+      )
+    }
+
     await releaseClaim()
-    return { status: 500 }
+    return {
+      status: e instanceof CorrelatedResponseIdentityError ? 400 : 500,
+    }
   }
 
   try {
@@ -709,7 +1056,7 @@ export async function processResponseMessage(
           instanceId: message.instanceId,
         })
     )
-    redisMulti?.discard()
+    redisMulti.discard()
     throw new Error(`Redis transaction failed ${String(e)}`)
   }
 }
