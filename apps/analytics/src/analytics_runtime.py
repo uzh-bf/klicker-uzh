@@ -29,5 +29,10 @@ def run_analytics_module(
         main = getattr(module, "main", None)
         if not callable(main):
             raise TypeError(f"{script_module} does not expose a callable main()")
-        main()
+        try:
+            main()
+        except SystemExit as exc:
+            raise RuntimeError(
+                f"{script_module} exited with status {exc.code}"
+            ) from exc
         check_cancellation()

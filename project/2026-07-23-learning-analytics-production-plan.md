@@ -631,8 +631,26 @@ the repository script that replaces it before continuing.
   24 focused runtime/configuration tests, the full analytics suite with 150
   passed and 4 integration skips, and the exact isolated CI command with 86
   passed and 1 database skip.
-- Active: Review and close the direct Python DAG tracer, then implement
-  cooperative cancellation and split full-run concurrency in Slice 4B.2.
+- 2026-07-23: Independent correctness review found two native-boundary
+  blockers: script 11's `SystemExit` could bypass the pinned SDK's ordinary
+  task-failure handler, and the SDK's implicit five-minute schedule timeout
+  was unsafe with the conservative one-slot rollout. The accepted adjustment
+  raises an ordinary analytics precondition error, normalizes any remaining
+  script `SystemExit` at the direct-runner boundary, and applies an explicit
+  168-hour schedule timeout to every DAG task. The control plane accepts hours
+  but rejected the initial day-suffix spelling, which the runtime smoke caught
+  before commit.
+- 2026-07-23: A fresh deliberately delayed one-slot run completed all 15 nodes
+  on the real disposable control plane in 17.8 seconds. Simplification review
+  found no blocker; its only low-impact concern about an inert execution
+  default is resolved because the workflow default now carries only the
+  required schedule timeout.
+- 2026-07-23: Post-review verification passes 26 focused tests, strict Pyright,
+  the full analytics suite with 152 passed and 4 integration skips, and the
+  exact isolated CI command with 88 passed and 1 database skip.
+- Completed: Slice 4B.1 direct Python DAG registration and review.
+- Active: Add cooperative cancellation and split protected full-run
+  concurrency from freshness-first runs in Slice 4B.2.
 
 ## Finish evidence
 

@@ -18,6 +18,7 @@ WORKER_NAME = "hatchet-worker-analytics-python"
 PROOF_TASK_NAME = "learning-analytics-native-proof"
 ANALYTICS_WORKFLOW_NAME = "recompute-learning-analytics"
 INCREMENTAL_LOOKBACK_DAYS = 14
+TASK_SCHEDULE_TIMEOUT = "168h"
 ANALYTICS_EVENTS = ["course-ended", "admin-recompute-analytics"]
 ANALYTICS_SCRIPTS = {
     "s0": "src.scripts.0_initial_participant_analytics",
@@ -117,7 +118,10 @@ def register_native_workflows(
             max_runs=1,
             limit_strategy=ConcurrencyLimitStrategy.CANCEL_IN_PROGRESS,
         ),
-        task_defaults=TaskDefaults(execution_timeout="30m"),
+        # One slot is the conservative rollout starting point. Override
+        # Hatchet's five-minute default so queued DAG roots do not expire
+        # behind long-running siblings, retries, or a burst of course runs.
+        task_defaults=TaskDefaults(schedule_timeout=TASK_SCHEDULE_TIMEOUT),
     )
     tasks: dict[str, Any] = {}
 
