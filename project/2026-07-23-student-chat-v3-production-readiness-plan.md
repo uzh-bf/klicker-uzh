@@ -357,11 +357,65 @@ S17 finish gate once, at the end.
   never imported; `useChatResponse.ts` hand-parses the exact AI SDK UI-message stream
   the backend emits (`chat/route.ts` `toUIMessageStreamResponse`). Migration is an
   L-effort refactor (custom metadata plumbing) — defer to its own branch (D7).
-- A5 note: the whole assistant-message layout sits on `Unstable_PartsGrouped`, which is
-  absent from the v0.14 migration guide; 0.14's replacement is `GroupedParts` + a new
-  `Reasoning`/`ToolGroup` family. Any future 0.12→0.14 upgrade must budget a rewrite of
-  `thread.tsx` grouping — record this in `docs/chat-platform.md`, do not upgrade in this
-  branch.
+- A5 note (revised by the version audit below): `Unstable_PartsGrouped` is STILL
+  exported in 0.14.27 next to the new `GroupedParts`, so a 0.14 upgrade does not force
+  an immediate `thread.tsx` grouping rewrite — the migration can be staged. Record the
+  upgrade path in `docs/chat-platform.md`; do not upgrade in this branch.
+
+### assistant-ui version audit (2026-07-23)
+
+Verified against npm and the published 0.14.27 tarball (`.d.ts` exports inspected),
+plus the official v0-14 migration guide and chain-of-thought guide.
+
+| Package | Ours | Latest | Note |
+| --- | --- | --- | --- |
+| `@assistant-ui/react` | 0.12.10 | 0.14.27 | no 0.13 line exists; 0.12 line is EOL (last 0.12.28, 2026-04-30); 0.14 active since 2026-05-07 |
+| `@assistant-ui/react-markdown` | 0.12.3 | 0.14.6 | 0.14 requires `@assistant-ui/react ^0.14.18` — coupled |
+| `@assistant-ui/react-ai-sdk` | 1.3.26 (unused) | 1.3.41 | 1.3.41 depends on **AI SDK v7** (`ai ^7.0.28`, `@ai-sdk/react ^4`) |
+| `ai` (backend) | 6.0.184 | 7.0.36 | major behind; only matters for D7 |
+
+**0.12 → 0.14 breaking changes are mostly mechanical** (official codemod:
+`npx assistant-ui@latest upgrade`): hook renames (`useAssistantApi`→`useAui`,
+`useAssistantState`→`useAuiState`, ...), runtime method moves
+(`runtime.switchToThread`→`runtime.threads.switchToThread`),
+`getExternalStoreMessage`→plural, `components={{...}}` props deprecated in favor of
+children render functions (old form still works). Our load-bearing APIs survive:
+`Unstable_PartsGrouped`, `MessagePrimitive.Parts`, the external-store runtime, and
+`message.metadata.submittedFeedback` (already the 0.14 location — S15's feedback
+adapter work is forward-compatible). Peer deps: React 18/19 (we are on 19).
+
+**What 0.14 unlocks that is relevant to our goals:**
+
+- `MessagePrimitive.GroupedParts` + `ReasoningRoot/Trigger/Content/Text` and
+  `ToolGroupRoot/Trigger/Content` component families: streaming-aware auto-expanding
+  reasoning with shimmer, nested tool grouping — the polished replacement for our
+  custom `AssistantReasoningPart`/`PartGroup` (S15 item 2 is the cheap 0.12-compatible
+  version of this).
+- **`mcp-apps` module** (`McpAppRenderer`, `McpAppsRemoteHost`, sandboxed via
+  `safe-content-frame` with CSP config): MCP servers can ship interactive app/UI
+  resources rendered inline in the chat — the "interactive artifacts" capability, and
+  a direct fit for the per-chatbot MCP tool strategy (KB retrieval etc.).
+- `GenerativeUI` primitive + per-part `toolUI`/`dataRendererUI` registries; tool-call
+  parts gain `addResult`/`resume` (human-in-the-loop tool flows).
+- New unstable composer hooks: `useMessageStallDetection` (native stall detection —
+  complements S12's thinking indicator), `useSlashCommandAdapter`,
+  `useMentionAdapter`, `useComposerInputHistory`, `useLiveCompletionAdapter`.
+
+**Staged upgrade path (do NOT do in this branch):**
+
+1. This branch: stay on 0.12.10; all S12–S16 slices are 0.12-compatible by design.
+2. First follow-up branch after merge: bump `@assistant-ui/react` to 0.14.x +
+   `react-markdown` to 0.14.x together; run the codemod; keep `Unstable_PartsGrouped`
+   initially; then adopt `GroupedParts` + `Reasoning`/`ToolGroup` to replace the custom
+   reasoning/grouping components (supersedes the S15 interim reasoning tweak). S–M
+   effort, frontend-only.
+3. Separate later branch (D7): AI SDK v6→v7 on the backend + adopt
+   `@assistant-ui/react-ai-sdk` (`useAISDKRuntime` with a `history` adapter) to retire
+   the hand-rolled SSE parser. The v7 coupling means these two must land together;
+   until then the unused `react-ai-sdk` dependency should be REMOVED from
+   `apps/chat/package.json` in this branch (S16 can carry that one-line cleanup).
+4. Evaluate `mcp-apps` interactive artifacts once on 0.14, as its own feature with a
+   product decision (lecturer-authored interactive tool UIs).
 
 ### Additional decisions (defaults; user can veto)
 
@@ -375,7 +429,14 @@ S17 finish gate once, at the end.
   line into the sidebar bottom (small muted text under the logo) so it stays visible
   without costing viewport height. Veto if legal requires the banner on every screen.
 - D7 **react-ai-sdk migration (A3)**: defer to a dedicated follow-up branch with a
-  timeboxed spike; record as PR follow-up. Do NOT attempt inside this branch.
+  timeboxed spike; record as PR follow-up. Do NOT attempt inside this branch. The
+  version audit hardens this: current `react-ai-sdk` requires AI SDK v7 while the
+  backend is on v6, so adoption now also implies a backend `ai` major bump. Until that
+  branch, the unused dependency gets removed (S16).
+- D8 **assistant-ui 0.14 upgrade timing**: schedule the staged upgrade (step 2 of the
+  version-audit path) as the FIRST follow-up branch after this PR merges, before new
+  chat features build further on 0.12 — the 0.12 line stopped receiving releases on
+  2026-04-30.
 - No framer-motion or other animation dependency: every motion slice below must use
   `tw-animate-css` (already installed) or plain Tailwind/CSS.
 
@@ -451,9 +512,12 @@ S17 finish gate once, at the end.
   message-shaped skeletons and add 4–5 skeleton rows to `thread-list.tsx` for the
   initial-load window; (3) M6 — single persistent send/stop button shell with a
   150ms icon crossfade; (4) M7 — sliding active indicator in the mode pill
-  (`transition-transform` thumb) if it fits the timebox; otherwise defer with a note.
+  (`transition-transform` thumb) if it fits the timebox; otherwise defer with a note;
+  (5) remove the unused `@assistant-ui/react-ai-sdk` entry from
+  `apps/chat/package.json` (+ lockfile, same commit) per D7.
 - Check: browser pass — accordions animate, skeletons replace spinners, send↔stop
-  morphs during a real stream, pill slides; no console errors; `check` clean.
+  morphs during a real stream, pill slides; no console errors; `check` clean;
+  in-container `pnpm install` after the dependency removal keeps the lockfile in sync.
 - Commit: `enhance(chat): accordion transitions, loading skeletons and control morphs`
 
 ### S17 — Finish gate
@@ -478,3 +542,7 @@ S17 finish gate once, at the end.
   fluidity, assistant-ui capability — fresh screenshots + 3 code-grounded lenses) as
   the "Design polish review" section with slices S12–S16 and decisions D4–D7; finish
   gate renumbered S11→S17. No slices started.
+- 2026-07-23: assistant-ui version audit added (0.12 line EOL, 0.14.27 current,
+  `Unstable_PartsGrouped` survives, `mcp-apps` interactive artifacts, react-ai-sdk↔AI
+  SDK v7 coupling); decisions D7 revised, D8 added; S16 gains the unused-dependency
+  removal. No slices started.
