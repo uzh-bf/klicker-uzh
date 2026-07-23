@@ -1732,8 +1732,16 @@ describe('Integration tests for the course discussion platform', () => {
         participantCtx
       )
 
-      expect(thread?.scope.scopeType).toBe(DiscussionScopeType.PRACTICE_STACK)
-      expect(thread?.scope.scopeKey).toBe(`stack:${seeded.stack.id}`)
+      const expectedScopePresentation = {
+        stackType,
+        stackOrder: seeded.stack.order,
+        stackDisplayName: customDisplayName,
+      }
+      expect(thread?.scope).toMatchObject({
+        scopeType: DiscussionScopeType.PRACTICE_STACK,
+        scopeKey: `stack:${seeded.stack.id}`,
+        ...expectedScopePresentation,
+      })
 
       const listedThreads = await courseDiscussionThreads(
         {
@@ -1743,9 +1751,16 @@ describe('Integration tests for the course discussion platform', () => {
         participantCtx
       )
       const listedScope = listedThreads.threads[0]?.scope
-      expect(listedScope?.stackType).toBe(stackType)
-      expect(listedScope?.stackOrder).toBe(seeded.stack.order)
-      expect(listedScope?.stackDisplayName).toBe(customDisplayName)
+      expect(listedScope).toMatchObject(expectedScopePresentation)
+
+      const upvotedThread = await toggleCourseDiscussionThreadUpvote(
+        {
+          threadId: thread!.id,
+          upvote: true,
+        },
+        participantCtx
+      )
+      expect(upvotedThread?.scope).toMatchObject(expectedScopePresentation)
     }
 
     const embedInfo = await getCourseDiscussionEmbeddingInfo(

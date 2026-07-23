@@ -962,7 +962,11 @@ async function getDiscussionThreadById(
     return null
   }
 
-  return mapThread(thread as unknown as DiscussionThreadWithRelations)
+  const [mappedThread] = await mapThreads(
+    [thread as unknown as DiscussionThreadWithRelations],
+    ctx
+  )
+  return mappedThread ?? null
 }
 
 async function verifyEmbedScopeBinding(
