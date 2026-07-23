@@ -56,10 +56,13 @@ Ship `ElementType.CODE` for Python programming questions in practice quizzes and
 - Add `ElementType.CODE`, `CodeSubmissionStatus`, `CodeSubmission`, relations, activity check constraint, and active-submission partial unique index.
 - Add shared CODE option, element-data, result, response, evaluation, status, and receipt types.
 - Add declarative option validation: Python only, valid entrypoint, 1–20 unique tests, JSON inputs/outputs, positive weights, and a fixed 5-second timeout.
-- Add GraphQL CODE option/input/object types and `manipulateCodeQuestion`, following existing auth and service seams.
-- Add CODE element-data processing, sanitization, and initial instance results.
+- Add complete lecturer-only CODE option/input/object types and `manipulateCodeQuestion`, following existing auth and service seams.
+- Add a separate participant instance projection containing public tests only. Hidden tests, expectations, names, and inputs must be absent rather than nullable.
+- Add `CodeElement` and `CodeElementData` to every relevant GraphQL union list and `resolveType` switch.
+- Add CODE element-data processing, sanitization, initial instance results, and both `asynchronousActivityValid` service arms.
+- Reject CODE explicitly in activity-template creation and instantiation for v1.
 - Add one GraphQL operation and regenerate tracked API artifacts.
-- Check: Prisma format/generate/sync, focused validator tests, GraphQL package check/test, types/util checks, hidden-test payload assertions.
+- Check: Prisma format/generate/sync, focused validator tests, GraphQL package check/test, types/util checks, lecturer/full versus participant/public payload assertions, union-resolution tests, async activity-copy coverage, and template rejection.
 - Commit: `feat(code): add CODE authoring contracts`
 
 ### Slice 2: Author CODE questions in Manage
@@ -122,12 +125,14 @@ Ship `ElementType.CODE` for Python programming questions in practice quizzes and
 ## Independent plan review
 
 - Earlier architecture reviewer: Gemini 3.5 Flash High. Findings integrated into commits `d58b6defb` and `834c88208`.
-- Active-plan reviewer: pending after this plan commit.
+- Active-plan reviewer: Gemini 3.5 Flash High reviewed commit `325957615`.
+- Accepted: require distinct lecturer and participant GraphQL projections; enumerate both CODE union resolvers; cover both `asynchronousActivityValid` service arms; reject CODE templates explicitly in v1.
+- Result: Slice 1 remains bounded and reviewable with those gates.
 
 ## Progress
 
-- Active: plan activation and independent review.
-- Done: user approval; current `v3` merge; ADR acceptance; current code and repository guidance rechecked.
-- Evidence: pre-implementation documentation CI passed on head `6456f7d4339d`; merge and ADR commits are local and clean.
-- Next: commit this plan, review it, integrate accepted findings, retitle the draft PR, then start Slice 1.
+- Active: Slice 1 research and baseline verification.
+- Done: user approval; current `v3` merge; ADR acceptance; active-plan commit and independent review.
+- Evidence: pre-implementation documentation CI passed on head `6456f7d4339d`; the active-plan reviewer reported four 100-confidence omissions, all integrated above.
+- Next: commit this review update, retitle the draft PR, establish the focused baseline, then implement Slice 1.
 - Blockers: none for Slice 1. Context7 is unavailable; live codeapi integration remains gated before Slice 3.
