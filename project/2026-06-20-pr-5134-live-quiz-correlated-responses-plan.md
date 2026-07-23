@@ -460,6 +460,7 @@ Later research:
 - 2026-07-23: Slice 1 verification passed: fresh Prisma migration reset; 6 focused GraphQL integration tests; 23 export tests; Prisma schema sync; GraphQL code generation; all 24 monorepo typecheck tasks; and touched-file Prettier checks.
 - 2026-07-23: Independent Slice 1 review found a publish/edit race, an assessment export ordering regression, and avoidable migration lock duration. All three findings were accepted and fixed with a transaction row lock and recheck, legacy email-first ordering plus respondent fallback, and `NOT VALID` followed by explicit constraint validation.
 - 2026-07-23: Review-fix verification passed: fresh migration reset; 7 focused GraphQL integration tests including the race; 24 export tests; GraphQL typecheck; Prisma schema sync; and touched-file Prettier checks. Simplification review remains before Slice 1 is finalized.
+- 2026-07-23: Separate Slice 1 simplification review found no worthwhile simplifications at confidence 75 or higher. Slice 1 is finalized. Slice 2 started with the manage wizard setting, assessment/lock states, bilingual copy, mutation wiring, and browser verification.
 
 ## Goal Prompt Requirements
 
@@ -475,7 +476,6 @@ If handed to another agent:
 
 ## Next Steps
 
-1. Commit the accepted Slice 1 review fixes, run the separate simplification review, and finalize Slice 1.
-2. Start Slice 2 with the manage UI setting and assessment-specific disabled state.
-3. Keep temporary-pseudonym response persistence out of Slice 4 until Slice 5 completes the unified respondent path.
-4. Deliver the self-service CSV and evaluation-page action together in Slice 6.
+1. Complete Slice 2 with the manage UI setting and assessment-specific disabled state.
+2. Keep temporary-pseudonym response persistence out of Slice 4 until Slice 5 completes the unified respondent path.
+3. Deliver the self-service CSV and evaluation-page action together in Slice 6.
