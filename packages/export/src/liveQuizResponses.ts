@@ -128,9 +128,9 @@ export async function fetchLiveQuizResponses(
       _count: { select: { appliedCorrections: true } },
     },
     orderBy: [
-      { instance: { elementBlock: { liveQuiz: { name: 'asc' } } } },
-      { participantId: 'asc' },
+      { participant: { email: 'asc' } },
       { respondentId: 'asc' },
+      { instance: { elementBlock: { liveQuiz: { name: 'asc' } } } },
       { instance: { elementBlock: { order: 'asc' } } },
       { elementBlockExecution: 'asc' },
       { instance: { order: 'asc' } },

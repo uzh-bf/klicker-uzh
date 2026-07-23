@@ -29,7 +29,10 @@ CREATE TABLE "public"."LiveQuizRespondent" (
 ALTER TABLE "public"."LiveQuizResponse"
 ADD COLUMN "respondentId" UUID,
 ALTER COLUMN "participantId" DROP NOT NULL,
-ADD CONSTRAINT "LiveQuizResponse_identity_check" CHECK (num_nonnulls("participantId", "respondentId") = 1);
+ADD CONSTRAINT "LiveQuizResponse_identity_check" CHECK (num_nonnulls("participantId", "respondentId") = 1) NOT VALID;
+
+-- ValidateConstraint
+ALTER TABLE "public"."LiveQuizResponse" VALIDATE CONSTRAINT "LiveQuizResponse_identity_check";
 
 -- CreateIndex
 CREATE INDEX "LiveQuizRespondent_liveQuizId_idx" ON "public"."LiveQuizRespondent"("liveQuizId");

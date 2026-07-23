@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import ExcelJS from 'exceljs'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { CliUsageError, parseExportCourseArgs } from '../src/cli.js'
 import { transformCorrection } from '../src/corrections.js'
@@ -19,6 +19,7 @@ import {
 } from '../src/exportCourse.js'
 import { transformInvitation } from '../src/invitations.js'
 import {
+  fetchLiveQuizResponses,
   LIVE_QUIZ_RESPONSE_HEADERS,
   transformLiveQuizResponse,
 } from '../src/liveQuizResponses.js'
@@ -317,6 +318,23 @@ describe('@klicker-uzh/export', () => {
 
     expect(out[5]).toBe('')
     expect(out[6]).toBe('')
+  })
+
+  it('preserves email ordering with respondent id as the fallback', async () => {
+    const findMany = vi.fn().mockResolvedValue([])
+
+    await fetchLiveQuizResponses(
+      {
+        liveQuizResponse: { findMany },
+      } as unknown as Parameters<typeof fetchLiveQuizResponses>[0],
+      'course-1'
+    )
+
+    const query = findMany.mock.calls[0]![0]
+    expect(query.orderBy.slice(0, 2)).toEqual([
+      { participant: { email: 'asc' } },
+      { respondentId: 'asc' },
+    ])
   })
 
   it('emits liveQuizResponseId and elementBlockExecution join keys on corrections', () => {
