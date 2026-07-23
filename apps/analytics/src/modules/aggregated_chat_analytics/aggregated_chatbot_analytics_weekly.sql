@@ -10,8 +10,8 @@
 -- metric) can skip the expensive scan.
 
 WITH params AS (
-  SELECT $1::timestamptz AS win_start,
-         $2::timestamptz AS win_end
+  SELECT ($1::timestamptz AT TIME ZONE 'UTC') AS win_start,
+         ($2::timestamptz AT TIME ZONE 'UTC') AS win_end
 ),
 messages AS (
   SELECT

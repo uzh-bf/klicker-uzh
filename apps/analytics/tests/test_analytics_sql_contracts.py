@@ -16,7 +16,7 @@ class AnalyticsSqlContractTests(unittest.TestCase):
 
         self.assertIn('PARTITION BY lqr."participantId", lqr."instanceId"', statement)
         self.assertIn("attempt_asc = 1", statement)
-        self.assertIn("attempt_desc = 1", statement)
+        self.assertIn("attempt_asc = attempt_count", statement)
         self.assertNotIn("JOIN LATERAL", statement)
 
     def test_topic_clustering_requires_accepted_disclaimer(self):
@@ -25,7 +25,14 @@ class AnalyticsSqlContractTests(unittest.TestCase):
         self.assertIn('JOIN "ChatUsageCredits"', source)
         self.assertIn('cuc."participantId" = ct."participantId"', source)
         self.assertIn('cuc."chatbotId" = ct."chatbotId"', source)
-        self.assertIn('cuc."acceptedDisclaimerId" IS NOT NULL', source)
+        self.assertIn('cuc."acceptedDisclaimerId" = cb."disclaimerId"', source)
+        self.assertIn('cuc."disclaimerDeclined" = false', source)
+
+    def test_participant_chat_analytics_requires_current_disclaimer(self):
+        statement = _read_sql("chat_analytics", "participant_chat_analytics.sql")
+
+        self.assertIn('cuc."acceptedDisclaimerId" = cb."disclaimerId"', statement)
+        self.assertIn('cuc."disclaimerDeclined" = false', statement)
 
     def test_semester_boundaries_match_naive_utc_storage_without_session_timezone(self):
         statement = _read_sql("platform_analytics", "platform_semester_analytics.sql")
@@ -43,7 +50,7 @@ class AnalyticsSqlContractTests(unittest.TestCase):
             with self.subTest(statement=statement[:40]):
                 self.assertIn('EXTRACT(ISODOW FROM "createdAt")', statement)
                 self.assertIn('EXTRACT(HOUR   FROM "createdAt")', statement)
-                self.assertNotIn('"createdAt" AT TIME ZONE', statement)
+                self.assertIn("::timestamptz AT TIME ZONE 'UTC'", statement)
 
 
 if __name__ == "__main__":

@@ -16,14 +16,16 @@ SELECT
   COALESCE(m.content::jsonb->0->>'text', '') AS text
 FROM "ChatMessage" m
 JOIN "ChatThread" ct ON ct.id = m."threadId"
+JOIN "Chatbot" cb ON cb.id = ct."chatbotId"
 JOIN "ChatUsageCredits" cuc
   ON cuc."participantId" = ct."participantId"
   AND cuc."chatbotId" = ct."chatbotId"
-  AND cuc."acceptedDisclaimerId" IS NOT NULL
+  AND cuc."acceptedDisclaimerId" = cb."disclaimerId"
+  AND cuc."disclaimerDeclined" = false
 WHERE m.role = 'user'
   AND ct."chatbotId" = $1::uuid
-  AND m."createdAt" >= $2::timestamptz
-  AND m."createdAt" <  $3::timestamptz
+  AND m."createdAt" >= ($2::timestamptz AT TIME ZONE 'UTC')
+  AND m."createdAt" <  ($3::timestamptz AT TIME ZONE 'UTC')
 """
 
 
