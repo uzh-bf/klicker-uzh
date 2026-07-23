@@ -20,6 +20,7 @@ from src.modules.chat_quiz_correlation.compute_chat_quiz_correlation import (
 from src.modules.utils import (
     analytics_mode,
     analytics_window_since,
+    check_analytics_cancellation,
     scoped_course_ids,
 )
 
@@ -43,6 +44,7 @@ def main() -> None:
         print("Building ParticipantChatOutcome rows")
         compute_participant_chat_outcomes(session, course_ids=scope, verbose=True)
 
+        check_analytics_cancellation()
         print("Updating ParticipantCourseAnalytics.hasChatActivity")
         update_has_chat_activity(session, course_ids=scope, verbose=True)
 

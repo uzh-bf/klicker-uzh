@@ -15,6 +15,7 @@ from src.modules.platform_analytics.compute_platform_analytics import (
 from src.modules.utils import (
     analytics_mode,
     analytics_window_since,
+    check_analytics_cancellation,
     scoped_course_ids,
 )
 
@@ -33,6 +34,7 @@ def main() -> None:
         print("Computing platform semester analytics")
         compute_platform_semester_analytics(session, verbose)
 
+        check_analytics_cancellation()
         print("Updating per-course modality footprint on AggregatedCourseAnalytics")
         compute_course_modality_footprint(session, verbose)
 

@@ -8,7 +8,11 @@ from src.modules.live_quiz_analytics.compute_live_quiz_analytics import (
     compute_aggregated_live_quiz_analytics,
     compute_participant_live_quiz_analytics,
 )
-from src.modules.utils import AnalyticsRunConfig, scoped_course_ids
+from src.modules.utils import (
+    AnalyticsRunConfig,
+    check_analytics_cancellation,
+    scoped_course_ids,
+)
 
 SCRIPT_NAME = "src.scripts.14_live_quiz_assessment_analytics"
 SessionFactory = Callable[[], ContextManager[Session]]
@@ -42,6 +46,7 @@ def run_live_quiz_analytics(
         print("Computing ParticipantLiveQuizAnalytics (assessment-mode only)")
         compute_participant_live_quiz_analytics(session, course_ids=scope, verbose=True)
 
+        check_analytics_cancellation()
         print("Computing AggregatedLiveQuizAnalytics (assessment-mode only)")
         compute_aggregated_live_quiz_analytics(session, course_ids=scope, verbose=True)
 

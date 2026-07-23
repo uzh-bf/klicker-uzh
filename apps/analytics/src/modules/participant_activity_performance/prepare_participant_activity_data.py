@@ -9,6 +9,7 @@ from src.models import (
     Participation,
     PracticeQuiz,
 )
+from src.modules.utils import check_analytics_cancellation
 
 
 def prepare_participant_activity_data(session: Session, course_id: str):
@@ -57,6 +58,7 @@ def prepare_participant_activity_data(session: Session, course_id: str):
 
     responses = []
     for activity in list(practice_quizzes) + list(micro_learnings):
+        check_analytics_cancellation()
         for stack in activity.stacks:
             for element in stack.elements:
                 for response in element.responses:
