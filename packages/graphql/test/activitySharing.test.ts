@@ -408,6 +408,7 @@ describe('Integration tests for sharing functionalities of activities (e.g. live
         objectId: activityId2,
         sourceUserId: userFour.id,
       },
+      orderBy: { id: 'desc' },
     })
     expect(auditLogEntry3).toBeTruthy()
     expect(auditLogEntry3!.message).toBe(
@@ -597,6 +598,7 @@ describe('Integration tests for sharing functionalities of activities (e.g. live
         objectId: activityId1,
         sourceUserId: userOne.id,
       },
+      orderBy: { id: 'desc' },
     })
     expect(auditLogEntry3).toBeTruthy()
     expect(auditLogEntry3!.message).toBe(
@@ -641,6 +643,7 @@ describe('Integration tests for sharing functionalities of activities (e.g. live
         objectId: activityId2,
         sourceUserId: userFive.id,
       },
+      orderBy: { id: 'desc' },
     })
     expect(auditLogEntry4).toBeTruthy()
     expect(auditLogEntry4!.message).toBe(
