@@ -225,7 +225,7 @@ describe('Course Q&A workflows (course-level + stack-level discussions, embed, r
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-discussions"]').click()
-    cy.get('[data-cy="course-qa-embed-generator-toggle"]').click()
+    cy.get('details').find('summary').click()
 
     cy.get('[data-cy="course-qa-generate-embed"]').should('be.disabled')
     cy.get('[data-cy="course-qa-external-source"]').type(
@@ -234,7 +234,10 @@ describe('Course Q&A workflows (course-level + stack-level discussions, embed, r
     cy.get('[data-cy="course-qa-external-ref"]').type(
       this.data.embed.externalRef
     )
-    cy.get('[data-cy="course-qa-allow-anonymous-embed"]').check({ force: true })
+    cy.get('[data-cy="course-qa-allow-anonymous-embed"]')
+      .should('be.visible')
+      .and('be.enabled')
+      .check()
     cy.get('[data-cy="course-qa-generate-embed"]').should('not.be.disabled')
     cy.get('[data-cy="course-qa-generate-embed"]').click()
 
@@ -248,9 +251,6 @@ describe('Course Q&A workflows (course-level + stack-level discussions, embed, r
   })
 
   it('Embed URL (with anonymous allowed) renders embedded + allows anonymous posting', function () {
-    cy.clearAllCookies()
-    cy.clearAllLocalStorage()
-    cy.clearAllSessionStorage()
     cy.readFile('cypress/fixtures/_qa-embed-url.txt').then((embedUrl) => {
       if (!embedUrl) {
         throw new Error('embed url not set by previous test')
@@ -258,10 +258,13 @@ describe('Course Q&A workflows (course-level + stack-level discussions, embed, r
       cy.visit(embedUrl)
     })
 
+    cy.findByAltText('KlickerUZH Logo').should('not.exist')
+    cy.get('footer').should('not.exist')
     cy.get('[data-cy="course-qa-thread-input"]').should('exist')
     cy.get('[data-cy="course-qa-thread-anonymous"]')
-      .should('exist')
-      .check({ force: true })
+      .should('be.visible')
+      .and('be.enabled')
+      .check()
     cy.get('[data-cy="course-qa-thread-input"]').type(
       this.data.embed.anonymousThread
     )
@@ -270,48 +273,50 @@ describe('Course Q&A workflows (course-level + stack-level discussions, embed, r
     cy.get('[data-cy="course-qa-thread-input"]').should('have.value', '')
     cy.get('[data-cy="course-qa-thread-anonymous"]').should('not.be.checked')
 
-    cy.get('[data-cy^="course-qa-thread-"]')
-      .contains(this.data.embed.anonymousThread)
+    cy.contains(
+      '[data-cy^="course-qa-thread-content-"]',
+      this.data.embed.anonymousThread
+    )
       .parents('[data-cy^="course-qa-thread-"]')
       .first()
-      .invoke('attr', 'data-cy')
-      .then((attr) => {
-        const threadId = attr?.replace('course-qa-thread-', '')
-
-        cy.get(`[data-cy="course-qa-reply-input-${threadId}"]`).type(
+      .within(() => {
+        cy.get('[data-cy^="course-qa-reply-input-"]').type(
           this.data.embed.anonymousReply
         )
-        cy.get(`[data-cy="course-qa-reply-anonymous-${threadId}"]`).check({
-          force: true,
-        })
-        cy.get(`[data-cy="course-qa-create-reply-${threadId}"]`).click()
-
+        cy.get('[data-cy^="course-qa-reply-anonymous-"]').check()
+        cy.get('[data-cy^="course-qa-create-reply-"]').click()
         cy.findByText(this.data.embed.anonymousReply).should('exist')
-        cy.get(`[data-cy="course-qa-reply-input-${threadId}"]`).should(
-          'have.value',
-          ''
-        )
-        cy.get(`[data-cy="course-qa-reply-anonymous-${threadId}"]`).should(
+        cy.get('[data-cy^="course-qa-reply-input-"]').should('have.value', '')
+        cy.get('[data-cy^="course-qa-reply-anonymous-"]').should(
           'not.be.checked'
         )
       })
   })
 
   it('Tampered embed token is rejected with access-denied', function () {
-    cy.clearAllCookies()
-    cy.clearAllLocalStorage()
-    cy.clearAllSessionStorage()
     cy.readFile('cypress/fixtures/_qa-embed-url.txt').then((embedUrl) => {
       if (!embedUrl) {
         throw new Error('embed url not set by previous test')
       }
 
-      // flip the token's final char to produce an invalid JWT signature
       const url = new URL(embedUrl)
       const token = url.searchParams.get('embedToken') ?? ''
-      const tampered =
-        token.slice(0, -1) + (token.slice(-1) === 'a' ? 'b' : 'a')
-      url.searchParams.set('embedToken', tampered)
+      const [header, payload, signature] = token.split('.')
+
+      if (!header || !payload || !signature) {
+        throw new Error('Generated embed token is not a JWT')
+      }
+
+      const signatureIndex = Math.floor(signature.length / 2)
+      const replacement = signature[signatureIndex] === 'a' ? 'b' : 'a'
+      const tamperedSignature =
+        signature.slice(0, signatureIndex) +
+        replacement +
+        signature.slice(signatureIndex + 1)
+      url.searchParams.set(
+        'embedToken',
+        `${header}.${payload}.${tamperedSignature}`
+      )
 
       cy.visit(url.toString())
     })

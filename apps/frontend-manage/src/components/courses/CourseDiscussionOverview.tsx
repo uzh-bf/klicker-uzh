@@ -324,14 +324,8 @@ function CourseDiscussionOverview({
         )}
       </div>
 
-      <details
-        className="group rounded-lg border border-gray-200 bg-white p-4"
-        data-cy="course-qa-embed-generator"
-      >
-        <summary
-          className="focus-visible:outline-primary-100 flex cursor-pointer list-none items-start justify-between gap-4 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-          data-cy="course-qa-embed-generator-toggle"
-        >
+      <details className="group rounded-lg border border-gray-200 bg-white p-4">
+        <summary className="focus-visible:outline-primary-100 flex cursor-pointer list-none items-start justify-between gap-4 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
           <div className="min-w-0">
             <H3 className={{ root: 'm-0' }}>
               {t('manage.course.embedLinkGenerator')}
