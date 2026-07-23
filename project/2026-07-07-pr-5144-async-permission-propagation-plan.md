@@ -90,7 +90,7 @@ Codebase investigation via 4 subagents (3 explore + 1 PR review), 2026-07-07. A 
 
 ## Skill Routing
 
-- `$verification-before-completion` before each slice commit.
+- Run the slice's repository-native checks and inspect their fresh output before each commit; use the relevant KlickerUZH browser/E2E skill when a later change affects a user-facing path.
 - Review subagent + simplification subagent per slice (caveman basic form, severity-tagged).
 - `$security-review` as mandatory final gate before the draft PR is marked ready (branch scope: auth-critical).
 - `$rs-mr-description-writer` for PR body.
@@ -105,14 +105,14 @@ Phase A is unconditional: 1 → 2 → 3 → Gate A. Phase B is conditional: 4 �
 Gate A after Slice 3:
 
 - Re-run Slice-1 benchmarks and record mutation latency, transaction duration, rows changed, and the slowest fan-out.
-- Maintainer decides whether synchronous set-based recompute meets the accepted SLO.
+- Compare the result with the SLO approved after Slice 1. The maintainer decides whether synchronous set-based recompute meets it.
 - If yes: keep recompute synchronous, skip Slices 4-7, and finish Slice 8.
 - If no: run Slice 4. Do not move work out of transactions before its design is approved and Slices 5-6 have landed.
 
 ### Slice 1 — Perf baseline + instrumentation
 
-- Do: add benchmark-only timing, Prisma query count, rows changed, root object type, mode (user/object), and known descendant counts around `recomputeDerivedPermissions`. Avoid a production-wide mutable counter. Benchmark on a seeded DB: share/revoke/transfer on Testkurs-sized and synthetic-large (50 activities × 30 elements, 30 users) courses; group membership change on a group with 20 object grants. Create a synthetic `UserGroup` + N-object-grant fixture because `packages/prisma-data` has no reusable group fixture.
-- Check: record before-numbers and the proposed SLO in `Progress`. No behavior change; `pnpm --filter @klicker-uzh/util check` + focused GraphQL permission tests green.
+- Do: add benchmark-only timing around the full sharing-mutation transaction and its nested `recomputeDerivedPermissions` call, plus Prisma query count, rows changed, root object type, mode (user/object), and known descendant counts. Avoid a production-wide mutable counter. Benchmark on a seeded DB: share/revoke/transfer on Testkurs-sized and synthetic-large (50 activities × 30 elements, 30 users) courses; group membership change on a group with 20 object grants. Create a synthetic `UserGroup` + N-object-grant fixture because `packages/prisma-data` has no reusable group fixture.
+- Check: record before-numbers and the proposed mutation-latency and transaction-duration SLO in `Progress`. The maintainer approves the fixture and SLO before Slice 3 begins. No behavior change; `pnpm --filter @klicker-uzh/util check` + focused GraphQL permission tests green.
 - Commit: `perf(packages/util): instrument derived-permission recompute baseline`
 
 ### Slice 2 — Harden check path
@@ -143,7 +143,7 @@ Gate A after Slice 3:
 - Do: implement the approved durable dispatch record, generation/fence, `recompute-derived-permissions` task, persistent failure sink, and reconciliation task. Do not convert sharing call sites yet. Task identity must include object type and object ID; user/mode scope is included when the selected contract requires it. Reconciliation selects unresolved dirty records first, then unions recent `Permission`, `UserGroup`, ownership/audit, child creation, and reparent signals; it also samples the remaining graph and performs a bounded off-peak full sweep.
 - Check: source transaction rollback creates no work; crash after source commit but before enqueue is recovered; worker failure is persisted; synthetic drift heals; concurrent parent/child recomputes converge without stale writes. Hatchet-lite integration + focused DB tests green.
 - Commit: `enhance(packages/hatchet): add durable permission propagation foundation`
-- Deployment gate: worker and reconciliation support ship before any API call site enqueues work.
+- Deployment gate: ship the database migration first, then worker and reconciliation support, then the API call sites that create and enqueue work.
 
 ### Slice 6 — Keep revokes fail-closed (conditional)
 
@@ -195,12 +195,13 @@ Gate A after Slice 3:
   5. Reconciliation must cover group, ownership, creation, and reparent signals, not only recent `Permission` rows.
   6. `create-audit-log-entry` is application logging, not a persistent failure record.
 - Result: Phase A now optimizes the synchronous path first. Phase B is conditional and cannot convert production call sites until durable dispatch, a shared database fence, persistent failure reporting, and reconciliation are implemented and approved together.
+- Round 4: exact-commit native review after the external reviewer timed out, 2026-07-23. All six Round-3 findings were confirmed resolved and the plan was judged safe to begin Slice 1. Three later-gate corrections were accepted: include group/hierarchy state in ADR-0001, measure full transaction duration and approve the SLO before Slice 3, and deploy the Phase-B database migration before workers and API call sites. The unavailable `$verification-before-completion` reference was replaced with explicit repository-native verification.
 
 ## Progress
 
 - 2026-07-07: investigation done (4 subagents), [PR #4808](https://github.com/uzh-bf/klicker-uzh/pull/4808) reviewed, plan drafted, independent plan review integrated (12/12 findings accepted), plan committed to `permission-propagation-plan` and pushed.
 - 2026-07-07 (later): user decisions resolved (READ-gated status change intentional; #4808 stays open + cross-linked; agy approved). External agy review round 2 integrated (8 accepted, 1 rebutted). Execution order corrected to 3 → 6 → 4. Draft PR opened. Next: Slice 1.
-- 2026-07-23: branch synchronized with current `v3`. Fresh review found unsafe concurrency, durability, reconciliation, group-role, test-oracle, and audit assumptions. Plan revised around a synchronous-first Phase A and conditional, fenced Phase B; ADR-0001 added. Next: independent review of this revision, then Slice 1.
+- 2026-07-23: branch synchronized with current `v3`. Fresh review found unsafe concurrency, durability, reconciliation, group-role, test-oracle, and audit assumptions. Plan revised around a synchronous-first Phase A and conditional, fenced Phase B; ADR-0001 added. Exact-commit review confirmed all six findings resolved and no blocker to Slice 1; three later-gate corrections were integrated. Next: Slice 1.
 
 ## Goal Prompt Requirements (for handoff)
 
@@ -208,5 +209,5 @@ Gate A after Slice 3:
 
 ## Next Steps
 
-- Commit and independently review this revision, then execute Slice 1 on this branch.
+- Execute Slice 1 on this branch.
 - Separate task (not this branch): response-api standard-mode auth audit (R4.4).
