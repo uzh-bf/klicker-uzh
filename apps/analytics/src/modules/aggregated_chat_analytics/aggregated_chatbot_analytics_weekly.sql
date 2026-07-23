@@ -107,10 +107,15 @@ effort_counts AS (
 ),
 disclaimer_counts AS (
   SELECT
-    "chatbotId",
-    COUNT(*) FILTER (WHERE "acceptedDisclaimerId" IS NOT NULL) AS disclaimer_accepted,
-    COUNT(*) FILTER (WHERE "disclaimerDeclined" = true)        AS disclaimer_declined
-  FROM "ChatUsageCredits" GROUP BY 1
+    cuc."chatbotId",
+    COUNT(*) FILTER (
+      WHERE cuc."acceptedDisclaimerId" = cb."disclaimerId"
+        AND cuc."disclaimerDeclined" = false
+    ) AS disclaimer_accepted,
+    COUNT(*) FILTER (WHERE cuc."disclaimerDeclined" = true) AS disclaimer_declined
+  FROM "ChatUsageCredits" cuc
+  JOIN "Chatbot" cb ON cb.id = cuc."chatbotId"
+  GROUP BY 1
 ),
 credit_exhaustion AS (
   SELECT

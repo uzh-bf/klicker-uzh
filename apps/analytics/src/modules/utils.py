@@ -6,7 +6,7 @@ here instead of being copy-pasted into individual ``compute_*.py`` files.
 
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Callable
 
 import pandas as pd
@@ -26,6 +26,12 @@ def load_sql(path: str) -> str:
 COURSE_TIMESTAMP = "1970-01-01"
 
 ComputeFn = Callable[..., object]
+
+
+def exclusive_day_end(day: str) -> str:
+    """Return midnight after ``day`` for use with exclusive SQL window ends."""
+    next_day = datetime.strptime(day, "%Y-%m-%d") + timedelta(days=1)
+    return next_day.strftime("%Y-%m-%dT00:00:00.000Z")
 
 
 def _parse_window_since(windows_since: str | None) -> pd.Timestamp | None:
@@ -102,7 +108,7 @@ def iter_analytics_windows(
             compute_fn(
                 db,
                 day + "T00:00:00.000Z",
-                day + "T23:59:59.999Z",
+                exclusive_day_end(day),
                 day,
                 "DAILY",
                 verbose,
@@ -118,7 +124,7 @@ def iter_analytics_windows(
             compute_fn(
                 db,
                 win_start + "T00:00:00.000Z",
-                week_end + "T23:59:59.999Z",
+                exclusive_day_end(week_end),
                 week_end,
                 "WEEKLY",
                 verbose,
@@ -134,7 +140,7 @@ def iter_analytics_windows(
             compute_fn(
                 db,
                 win_start + "T00:00:00.000Z",
-                month_end + "T23:59:59.999Z",
+                exclusive_day_end(month_end),
                 month_end,
                 "MONTHLY",
                 verbose,
@@ -145,7 +151,7 @@ def iter_analytics_windows(
         compute_fn(
             db,
             start_date + "T00:00:00.000Z",
-            end_date + "T23:59:59.999Z",
+            exclusive_day_end(end_date),
             COURSE_TIMESTAMP,
             "COURSE",
             verbose,

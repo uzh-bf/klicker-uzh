@@ -10,7 +10,7 @@ from prisma import Prisma
 sys.path.append("../../")
 
 from src.modules.chat_topic_clustering.cluster_chatbot import cluster_chatbot
-from src.modules.utils import scoped_course_ids
+from src.modules.utils import exclusive_day_end, scoped_course_ids
 
 COURSE_TIMESTAMP = "1970-01-01"
 
@@ -32,7 +32,7 @@ scope_note = f" (scoped to {len(scope)} course ids)" if scope is not None else "
 print(f"Found {len(chatbots)} chatbots to cluster{scope_note}")
 
 win_start = "2022-10-23T00:00:00.000Z"
-win_end = datetime.now().strftime("%Y-%m-%d") + "T23:59:59.999Z"
+win_end = exclusive_day_end(datetime.now().strftime("%Y-%m-%d"))
 
 total_rows = 0
 for cb in chatbots:

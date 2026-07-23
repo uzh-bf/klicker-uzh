@@ -17,6 +17,8 @@ from src.modules.utils import (  # noqa: E402
     analytics_mode,
     analytics_window_since,
     apply_course_scope,
+    exclusive_day_end,
+    iter_analytics_windows,
     render_uuid_in_clause,
     scoped_course_ids,
     should_skip_window,
@@ -125,6 +127,31 @@ class ShouldSkipWindowTests(unittest.TestCase):
 
     def test_invalid_cutoff_keeps_window(self):
         self.assertFalse(should_skip_window("2026-04-01", "not-a-date"))
+
+
+class AnalyticsWindowBoundaryTests(unittest.TestCase):
+    def test_exclusive_end_is_next_midnight(self):
+        self.assertEqual(exclusive_day_end("2026-07-23"), "2026-07-24T00:00:00.000Z")
+
+    def test_daily_and_course_windows_use_exclusive_next_midnight(self):
+        calls: list[tuple[object, ...]] = []
+
+        def capture(*args: object) -> object:
+            calls.append(args)
+            return None
+
+        iter_analytics_windows(
+            object(),
+            capture,
+            start_date="2026-07-23",
+            end_date="2026-07-23",
+            compute_weekly=False,
+            compute_monthly=False,
+        )
+
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(calls[0][2], "2026-07-24T00:00:00.000Z")
+        self.assertEqual(calls[1][2], "2026-07-24T00:00:00.000Z")
 
 
 class RenderUuidInClauseTests(unittest.TestCase):
