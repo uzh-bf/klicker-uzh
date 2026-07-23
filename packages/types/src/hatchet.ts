@@ -145,6 +145,7 @@ export type RunAnalyticsScriptInput = RecomputeLearningAnalyticsInput & {
 export const HATCHET_EVENTS = {
   courseEnded: 'course-ended',
   adminRecomputeAnalytics: 'admin-recompute-analytics',
+  adminRecomputeAnalyticsFull: 'admin-recompute-analytics-full',
 } as const
 
 // Contract for the tasks that are passed into the GraphQL context.

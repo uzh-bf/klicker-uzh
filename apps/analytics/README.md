@@ -127,7 +127,8 @@ The pipeline is wired into Hatchet as the `recompute-learning-analytics` task (d
 
 - On cron: `0 2 * * 1` — Mondays at 02:00 UTC.
 - On event: `course-ended` — emitted by the `scan-ended-courses` task (daily at 01:00 UTC) for courses whose `endDate` is more than `ANALYTICS_FINALIZE_GRACE_DAYS` (default 7) in the past and haven't been finalised yet.
-- On event: `admin-recompute-analytics` — triggered by the `recomputeCourseAnalytics(courseId, mode)` GraphQL mutation (ADMIN on the course) from the manage UI, or dispatchable from the Hatchet dashboard for one-off runs.
+- On event: `admin-recompute-analytics` — triggered by the `recomputeCourseAnalytics(courseId, mode)` GraphQL mutation (ADMIN on the course) for incremental and finalize runs.
+- On event: `admin-recompute-analytics-full` — triggered by the same mutation for guarded full rebuilds.
 
 The handler lives in `packages/graphql/src/services/analyticsRecompute.ts` and shells out to this app's scripts one at a time via `child_process.spawn`. For it to work, the Hatchet worker running the handler must have access to:
 
@@ -146,11 +147,16 @@ Configure with these env vars (all registered in root `turbo.json`):
 
 Together they produce an invocation like `uv run python -m src.scripts.8_initial_chat_analytics` executed with cwd `ANALYTICS_CWD`.
 
-### Native Python worker compatibility tracer
+### Native Python worker
 
-The native worker entry point is `uv run python -m src.hatchet_worker` from this directory. It pins `hatchet-sdk[v0-sdk]==1.18.1`, uses the SDK-standard `HATCHET_CLIENT_*` environment variables, starts with one worker slot, and currently registers only `learning-analytics-native-proof`.
+The native worker entry point is `uv run python -m src.hatchet_worker` from this directory. It pins `hatchet-sdk[v0-sdk]==1.18.1`, uses the SDK-standard `HATCHET_CLIENT_*` environment variables, and starts with one worker slot.
 
-The proof task accepts the existing `mode`, `courseId`, `courseIds`, and `windowSince` producer contract, resolves it into immutable per-run configuration, and returns that resolution without touching the analytics database. It exists to prove registration and task execution against the repository's pinned `hatchet-lite:v0.73.1`. The TypeScript worker remains the owner of the production analytics DAG until the Python DAG reaches parity and the later cutover removes the subprocess bridge.
+It registers the non-mutating `learning-analytics-native-proof` task plus two copies of the 15-task analytics DAG:
+
+- `recompute-learning-analytics` handles cron, incremental, and finalize runs. A newer run in the same course/global scope cancels the older run.
+- `recompute-learning-analytics-full` handles only guarded full rebuilds. A running full rebuild is protected and a newer full request is canceled.
+
+Both DAGs call the existing Python script entry points in-process with immutable per-run configuration and cooperative cancellation. `ANALYTICS_ALLOW_FULL=1` is still required for the full DAG. The TypeScript subprocess worker remains available as the pre-cutover rollback path until the native worker becomes the sole DAG owner.
 
 ## Deploying analytics indexes
 
