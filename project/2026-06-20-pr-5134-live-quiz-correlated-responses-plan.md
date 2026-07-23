@@ -6,7 +6,7 @@ Plan path: `project/2026-06-20-pr-5134-live-quiz-correlated-responses-plan.md`
 Branch: `codex/live-quiz-correlated-responses`
 Target: `v3`
 PR: [#5134](https://github.com/uzh-bf/klicker-uzh/pull/5134)
-Status: reviewed; implementation pending
+Status: implementation in progress
 
 ## Non-Goals
 
@@ -455,6 +455,9 @@ Later research:
 - 2026-06-20: Greptile plan review integrated: export compatibility moved into Slice 1, raw SQL constraints called out, respondent token verification added, temporary-pseudonym persistence deferred to alignment slice, and temporary token wording corrected.
 - 2026-07-06: Independent plan review confirmed the approach and identified export delivery, simpler Prisma uniqueness, synchronous duplicate feedback, server-side mode locking, label ordering, token checks, retention, UI detail, and E2E gaps.
 - 2026-07-23: User selected self-service CSV delivery with clean headers. Review findings integrated. The existing draft PR now continues into implementation; it must not merge as a plan-only PR.
+- 2026-07-23: Branch rebased onto current `v3` and force-pushed with lease. Slice 1 started: schema constraints, GraphQL mode wiring, service lock/default behavior, and existing export compatibility.
+- 2026-07-23: Slice 1 implementation completed locally. Added the response mode, export salt, quiz-scoped respondent model, dual response identity constraints, GraphQL create/edit/query wiring, server-side mode locking, assessment-only response narrowing, and nullable-participant export compatibility.
+- 2026-07-23: Slice 1 verification passed: fresh Prisma migration reset; 6 focused GraphQL integration tests; 23 export tests; Prisma schema sync; GraphQL code generation; all 24 monorepo typecheck tasks; and touched-file Prettier checks. Independent review and simplification remain before the slice is finalized.
 
 ## Goal Prompt Requirements
 

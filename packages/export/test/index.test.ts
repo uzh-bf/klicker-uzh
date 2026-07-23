@@ -286,6 +286,39 @@ describe('@klicker-uzh/export', () => {
     expect(out.slice(0, 5)).toEqual([9002, '', '', 0, 78])
   })
 
+  it('leaves participant identity columns empty for quiz-scoped respondents', () => {
+    const row = {
+      id: 9003,
+      response: { type: 'SC', choices: [] },
+      correctness: 'CORRECT',
+      basePoints: 10,
+      correctnessPoints: 5,
+      bonusPoints: 0,
+      submittedAt: new Date('2026-01-02T03:04:05.000Z'),
+      correctionOnly: false,
+      elementBlockExecution: 0,
+      participant: null,
+      instance: {
+        id: 44,
+        order: 0,
+        elementId: 79,
+        elementType: 'SC',
+        elementData: { name: 'Question', content: 'Question' },
+        elementBlock: {
+          id: 6,
+          order: 1,
+          liveQuiz: { id: 'live-quiz-1', name: 'Quiz', displayName: null },
+        },
+      },
+      _count: { appliedCorrections: 0 },
+    } as unknown as Parameters<typeof transformLiveQuizResponse>[0]
+
+    const out = transformLiveQuizResponse(row)
+
+    expect(out[5]).toBe('')
+    expect(out[6]).toBe('')
+  })
+
   it('emits liveQuizResponseId and elementBlockExecution join keys on corrections', () => {
     const row = {
       id: 555,

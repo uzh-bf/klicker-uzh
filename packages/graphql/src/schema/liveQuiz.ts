@@ -8,6 +8,13 @@ export const LiveQuizAccessMode = builder.enumType('LiveQuizAccessMode', {
   values: Object.values(DB.AccessMode),
 })
 
+export const LiveQuizResponseCollectionMode = builder.enumType(
+  'LiveQuizResponseCollectionMode',
+  {
+    values: Object.values(DB.LiveQuizResponseCollectionMode),
+  }
+)
+
 export const ElementBlockStatus = builder.enumType('ElementBlockStatus', {
   values: Object.values(DB.ElementBlockStatus),
 })
@@ -124,6 +131,9 @@ export const LiveQuiz = LiveQuizRef.implement({
 
     status: t.expose('status', { type: PublicationStatus }),
     accessMode: t.expose('accessMode', { type: LiveQuizAccessMode }),
+    responseCollectionMode: t.expose('responseCollectionMode', {
+      type: LiveQuizResponseCollectionMode,
+    }),
 
     numOfBlocks: t.exposeInt('numOfBlocks', { nullable: true }),
     numOfInstances: t.exposeInt('numOfInstances', { nullable: true }),

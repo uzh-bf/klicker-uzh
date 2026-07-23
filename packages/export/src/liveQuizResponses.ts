@@ -66,7 +66,7 @@ type LiveQuizResponseRow = {
   submittedAt: Date
   correctionOnly: boolean
   elementBlockExecution: number
-  participant: { id: string; email: string | null }
+  participant: { id: string; email: string | null } | null
   instance: {
     id: number
     order: number
@@ -128,8 +128,9 @@ export async function fetchLiveQuizResponses(
       _count: { select: { appliedCorrections: true } },
     },
     orderBy: [
-      { participant: { email: 'asc' } },
       { instance: { elementBlock: { liveQuiz: { name: 'asc' } } } },
+      { participantId: 'asc' },
+      { respondentId: 'asc' },
       { instance: { elementBlock: { order: 'asc' } } },
       { elementBlockExecution: 'asc' },
       { instance: { order: 'asc' } },
@@ -197,8 +198,8 @@ export function transformLiveQuizResponse(
     block?.order ?? '',
     row.instance.order,
     row.instance.elementId,
-    row.participant.id,
-    applyPii(row.participant.email, ctx),
+    row.participant?.id ?? '',
+    applyPii(row.participant?.email ?? null, ctx),
     row.instance.id,
     row.instance.elementType,
     elementData.name,
