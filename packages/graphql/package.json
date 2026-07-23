@@ -81,6 +81,8 @@
     "web-push": "~3.6.7"
   },
   "scripts": {
+    "benchmark:permission-propagation": "cross-env PERMISSION_RECOMPUTE_BENCHMARK=1 tsx test/benchmarks/permissionPropagationBenchmark.ts",
+    "benchmark:permission-propagation:run": "cross-env DRY_RUN=false PERMISSION_RECOMPUTE_BENCHMARK=1 tsx test/benchmarks/permissionPropagationBenchmark.ts",
     "build": "cross-env NODE_ENV=production run-s --npm-path pnpm generate build:ts",
     "build:instrument": "nyc instrument --compact=false src instrumented",
     "build:test": "run-s --npm-path pnpm build:instrument build",

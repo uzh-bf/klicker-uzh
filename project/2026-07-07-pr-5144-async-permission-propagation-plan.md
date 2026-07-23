@@ -113,7 +113,7 @@ Gate A after Slice 3:
 
 - Do: add benchmark-only timing around the full sharing-mutation transaction and its nested `recomputeDerivedPermissions` call, plus Prisma query count, rows changed, root object type, mode (user/object), and known descendant counts. Avoid a production-wide mutable counter. Benchmark on a seeded DB: share/revoke/transfer on Testkurs-sized and synthetic-large (50 activities × 30 elements, 30 users) courses; group membership change on a group with 20 object grants. Create a synthetic `UserGroup` + N-object-grant fixture because `packages/prisma-data` has no reusable group fixture.
 - Check: record before-numbers and the proposed mutation-latency and transaction-duration SLO in `Progress`. The maintainer approves the fixture and SLO before Slice 3 begins. No behavior change; `pnpm --filter @klicker-uzh/util check` + focused GraphQL permission tests green.
-- Commit: `perf(packages/util): instrument derived-permission recompute baseline`
+- Commit: `test(packages/graphql): baseline permission propagation performance`
 
 ### Slice 2 — Harden check path
 
@@ -202,6 +202,23 @@ Gate A after Slice 3:
 - 2026-07-07: investigation done (4 subagents), [PR #4808](https://github.com/uzh-bf/klicker-uzh/pull/4808) reviewed, plan drafted, independent plan review integrated (12/12 findings accepted), plan committed to `permission-propagation-plan` and pushed.
 - 2026-07-07 (later): user decisions resolved (READ-gated status change intentional; #4808 stays open + cross-linked; agy approved). External agy review round 2 integrated (8 accepted, 1 rebutted). Execution order corrected to 3 → 6 → 4. Draft PR opened. Next: Slice 1.
 - 2026-07-23: branch synchronized with current `v3`. Fresh review found unsafe concurrency, durability, reconciliation, group-role, test-oracle, and audit assumptions. Plan revised around a synchronous-first Phase A and conditional, fenced Phase B; ADR-0001 added. Exact-commit review confirmed all six findings resolved and no blocker to Slice 1; three later-gate corrections were integrated. Next: Slice 1.
+- 2026-07-23 (implementation): Slice 1 benchmark and instrumentation implemented in an isolated linked-worktree devcontainer. Installed and repo-pinned devrouter are both 0.0.35; `devrouter upgrade` reports no newer target. Benchmark safeguards passed in dry-run and write mode: local-host guard, generated `@example.invalid` users, prefix-scoped writes, before/results snapshots under gitignored `project/_local/permission-propagation-benchmark/`, and cleanup verification (7 successes, 0 mismatches). The authoritative single-run report is `20260723170556-fe5ab117-results.json`.
+
+  | Scenario | Status | Total | Transaction | Queries | Rows changed | Nested recomputes |
+  |---|---:|---:|---:|---:|---:|---:|
+  | Testkurs-sized user share | success | 3.61 s | 3.61 s | 5,094 | 50 | 1 |
+  | Testkurs-sized user revoke | success | 30.67 s | 30.66 s | 4,178 | 50 | 1 |
+  | Testkurs-sized ownership transfer | success | 6.93 s | 6.92 s | 12,040 | 100 | 2 |
+  | Testkurs-sized group share | success | 2.94 s | 2.94 s | 10,418 | 50 | 1 |
+  | Testkurs-sized group revoke | success | 6.12 s | 6.12 s | 9,888 | 50 | 2 |
+  | Synthetic-large user share | success | 17.81 s | 17.81 s | 33,824 | 1,551 | 1 |
+  | Synthetic-large user revoke | success | 15.86 s | 15.86 s | 21,414 | 1,551 | 1 |
+  | Synthetic-large ownership transfer | success | 35.57 s | 35.57 s | 61,440 | 3,102 | 2 |
+  | Synthetic-large group share | timeout | 60.03 s | 60.03 s | 316,407 | 0 (rollback) | 1 |
+  | Synthetic-large group revoke | skipped | — | — | — | — | — |
+  | Add member to group with 20 object grants | success | 0.25 s | 0.24 s | 411 | 20 | 20 |
+
+  Testkurs-sized cloned the seeded Testkurs topology (20 activities, 29 unique elements, 286 element traversals). Synthetic-large used the approved 50 activities × 30 distinct elements and 30 permission users. Prisma query duration is retained in the report as a summed driver metric and may exceed wall time when queries run concurrently. Focused GraphQL verification passed: `coursePermissions.test.ts`, `courseSharing.test.ts`, and `userGroups.test.ts` (89/89 tests). Proposed SLO for maintainer approval before Slice 3: p95 mutation latency ≤ 2.0 s, p95 transaction duration ≤ 1.5 s, and a 5.0 s hard ceiling for any supported sharing mutation. This is an SLO proposal, not a claim derived from the single local run. Hatchet workers currently hit a pre-existing SDK logger crash during local startup; Slice 1 does not depend on workers, but conditional Phase B must resolve or isolate that environment failure before Hatchet verification.
 
 ## Goal Prompt Requirements (for handoff)
 
