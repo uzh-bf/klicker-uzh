@@ -20,14 +20,14 @@
     "eslint": "~9.30.1",
     "npm-run-all": "~4.1.5",
     "rollup": "~4.34.9",
-    "typescript": "~5.6.3",
+    "typescript": "~6.0.3",
     "vitest": "~3.2.4"
   },
   "scripts": {
     "build": "run-s build:ts",
     "build:test": "pnpm run build",
     "build:ts": "cross-env NODE_ENV=production rollup -c",
-    "check": "tsc --noEmit",
+    "check": "tsc --noEmit --tsBuildInfoFile dist/tsconfig.check.tsbuildinfo",
     "demo": "node ./demo/server.mjs",
     "dev": "cross-env NODE_ENV=development rollup -c --watch",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
@@ -35,7 +35,7 @@
     "test": "vitest run"
   },
   "engines": {
-    "node": "=20"
+    "node": "=24"
   },
   "volta": {
     "extends": "../../package.json"

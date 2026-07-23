@@ -1,0 +1,283 @@
+enum ResponseCorrectness {
+  CORRECT
+  PARTIAL
+  WRONG
+}
+
+model QuestionResponse {
+  id Int @id @default(autoincrement())
+
+  trialsCount Int @default(0)
+
+  totalScore         Float     @default(0)
+  totalPointsAwarded Float?    @default(0)
+  totalXpAwarded     Float     @default(0)
+  averageTimeSpent   Float     @db.Real
+  lastAwardedAt      DateTime?
+  lastXpAwardedAt    DateTime?
+  lastAnsweredAt     DateTime?
+
+  correctCount       Int       @default(0)
+  correctCountStreak Int       @default(0)
+  lastCorrectAt      DateTime?
+
+  partialCorrectCount  Int       @default(0)
+  lastPartialCorrectAt DateTime?
+
+  wrongCount  Int       @default(0)
+  lastWrongAt DateTime?
+
+  // spaced repetition parameters
+  eFactor   Float     @default(2.5)
+  interval  Int       @default(1)
+  nextDueAt DateTime?
+
+  /// [PrismaSingleQuestionResponse]
+  firstResponse            Json
+  firstResponseCorrectness ResponseCorrectness
+
+  /// [PrismaSingleQuestionResponse]
+  lastResponse            Json
+  lastResponseCorrectness ResponseCorrectness
+
+  /// [PrismaElementResults]
+  aggregatedResponses Json?
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participationId Int
+
+  elementInstance   ElementInstance @relation(fields: [elementInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementInstanceId Int
+
+  practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  practiceQuizId String?       @db.Uuid
+
+  microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  microLearningId String?        @db.Uuid
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  isMigrated Boolean @default(false)
+
+  @@unique([participantId, elementInstanceId])
+  @@index([practiceQuizId])
+  @@index([microLearningId])
+  @@index([practiceQuizId, participantId])
+  @@index([microLearningId, participantId])
+}
+
+model QuestionResponseDetail {
+  id Int @id @default(autoincrement())
+
+  score         Float  @default(0)
+  pointsAwarded Float? @default(0)
+  xpAwarded     Float  @default(0)
+  timeSpent     Float  @db.Real
+
+  /// [PrismaSingleQuestionResponse]
+  response Json
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participationId Int
+
+  elementInstance   ElementInstance @relation(fields: [elementInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementInstanceId Int
+
+  practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  practiceQuizId String?       @db.Uuid
+
+  microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  microLearningId String?        @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([practiceQuizId])
+  @@index([microLearningId])
+  @@index([practiceQuizId, participantId])
+  @@index([microLearningId, participantId])
+}
+
+model LiveQuizResponse {
+  id          Int      @id @default(autoincrement())
+  submittedAt DateTime
+
+  /// [PrismaSingleQuestionResponseLiveQuiz]
+  response Json?
+
+  // statistics
+  timeSpent Float @db.Real
+
+  // set correctness enum and awarded points
+  correctness       ResponseCorrectness
+  basePoints        Float               @db.Real // set to 0 if base points are disabled
+  correctnessPoints Float               @db.Real // set to 0 if no sample solution is defined
+  bonusPoints       Float               @db.Real // set to 0 if no bonus points are defined
+
+  // link to instance and live quiz execution index (to allow for abortion and restart)
+  instance              ElementInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  instanceId            Int
+  elementBlockExecution Int
+
+  // link to participant
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  // link to corrections -> database constraint: correctionOnly can only be set, if the response is set to null
+  appliedCorrections AppliedPointCorrection[]
+  correctionOnly     Boolean                  @default(false) // if true, response was created as part of point correction and not by participant
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([instanceId, elementBlockExecution, participantId])
+  @@index([instanceId, elementBlockExecution])
+}
+
+enum PointCorrectionType {
+  ALL_COURSE
+  PARTICIPATING
+  SINGLE
+  MULTIPLE
+}
+
+model PointCorrection {
+  id Int @id @default(autoincrement())
+
+  // decide if the maximum base, correctness and bonus points are adjusted
+  // -> true = award points, false = deduct points, null = no change
+  basePoints        Boolean?
+  correctnessPoints Boolean?
+  bonusPoints       Boolean?
+
+  // reasons for the correction (student reason will be displayed to students)
+  reason        String
+  studentReason String
+
+  // enum to determine if points are awarded to all users in assessment course, only participating users in activity or a single participant
+  // -> database constraint enforces that participantId is (only) set if type is SINGLE
+  type PointCorrectionType
+
+  // link to the participant that is affected by the correction (only set if type is SINGLE)
+  participant   Participant? @relation(fields: [participantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  participantId String?      @db.Uuid
+
+  // link to the participants that are affected by the correction (only set if type is MULTIPLE)
+  participants Participant[] @relation("PointCorrectionParticipants")
+
+  // link to the user that created the correction
+  correctedBy   User?   @relation(fields: [correctedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  correctedById String? @db.Uuid
+
+  // depending on the correction type, the course, live quiz or element instance are linked
+  // -> database constraint ensures that at exactly one of these relations is set
+  liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  liveQuizId String?   @db.Uuid
+
+  instance   ElementInstance? @relation(fields: [instanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  instanceId Int?
+
+  // actual point corrections that were applied for the individual participants
+  // if points on live quiz are awarded, corrections and responses will be upserted for all instances in quiz
+  appliedCorrections AppliedPointCorrection[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([liveQuizId])
+  @@index([instanceId])
+  @@index([participantId])
+}
+
+model AppliedPointCorrection {
+  id Int @id @default(autoincrement())
+
+  // base, correctness, and bonus points that are awarded to the participants (respecting existing points on live quiz responses)
+  // -> live quiz responses are updated with this information
+  awardedBasePoints        Float @db.Real
+  awardedCorrectnessPoints Float @db.Real
+  awardedBonusPoints       Float @db.Real
+
+  // base, correctness, and bonus points that were deducted from the participants (e.g. due to a changed sample solution)
+  // -> live quiz responses are updated with this information
+  deductedBasePoints        Float @db.Real
+  deductedCorrectnessPoints Float @db.Real
+  deductedBonusPoints       Float @db.Real
+
+  // link to the correction action - multiple applied corrections might link to the same point correction (e.g. when applied to live quiz)
+  // -> point corrections linked to applied corrections are deduplicated when being fetched for display
+  pointCorrection   PointCorrection @relation(fields: [pointCorrectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  pointCorrectionId Int
+
+  // depending on the correction type, the live quiz response is updated / upserted
+  // if response is upserted as part of correction, the live quiz response is marked accordingly
+  response   LiveQuizResponse @relation(fields: [responseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  responseId Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([responseId]) // to quickly find all corrections for a participant in a live quiz response
+}
+
+model ElementFeedback {
+  id Int @id @default(autoincrement())
+
+  upvote   Boolean @default(false)
+  downvote Boolean @default(false)
+  feedback String?
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  elementInstance   ElementInstance @relation(fields: [elementInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementInstanceId Int
+
+  element   Element @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementId Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([participantId, elementInstanceId])
+}
+
+enum TimelineEntryType {
+  DAILY
+  WEEKLY
+}
+
+model TimelineEntry {
+  id Int @id @default(autoincrement())
+
+  type       TimelineEntryType
+  timestamp  DateTime          @db.Date
+  computedAt DateTime          @default(now())
+
+  collectedPoints Float @default(0)
+  collectedXp     Float @default(0)
+
+  course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  courseId String? @db.Uuid
+
+  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participationId Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([participationId, courseId, timestamp, type])
+  @@index([courseId, type, timestamp])
+  @@index([participationId, type, timestamp])
+  @@index([type, timestamp])
+}

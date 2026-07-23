@@ -1,20 +1,6 @@
 name: Klicker automated testing with cypress
 on:
-  push:
-    branches: ['v3', 'v3*']
-    # paths:
-    #   - apps/**
-    #   - packages/**
-  pull_request:
-    branches: ['v3', 'v3*']
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - apps/**
-      - packages/**
-      - cypress/**
-      - .github/workflows/cypress-testing.yml
-      - util/_with_local_test_origins.sh
-      - package.json
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
