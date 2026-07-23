@@ -12,13 +12,9 @@ export interface CorrelatedLiveQuizExportQuestion {
   executions: number[]
 }
 
-export interface CorrelatedLiveQuizExportRespondent {
-  identityKey: string
-  label: number
-}
-
 export interface CorrelatedLiveQuizExportResponse {
   identityKey: string
+  respondentLabel: number
   instanceId: number
   blockExecution: number
   response: unknown
@@ -92,12 +88,10 @@ function sanitizeFilenamePart(value: string) {
 export function createCorrelatedLiveQuizResponseCsv({
   quizName,
   questions,
-  respondents,
   responses,
 }: {
   quizName: string
   questions: CorrelatedLiveQuizExportQuestion[]
-  respondents: CorrelatedLiveQuizExportRespondent[]
   responses: CorrelatedLiveQuizExportResponse[]
 }) {
   const columns = questions
@@ -116,7 +110,14 @@ export function createCorrelatedLiveQuizResponseCsv({
         left.execution - right.execution
     )
 
-  const orderedRespondents = [...respondents].sort(
+  const orderedRespondents = [
+    ...new Map(
+      responses.map(({ identityKey, respondentLabel }) => [
+        identityKey,
+        { identityKey, label: respondentLabel },
+      ])
+    ).values(),
+  ].sort(
     (left, right) =>
       left.label - right.label ||
       left.identityKey.localeCompare(right.identityKey)

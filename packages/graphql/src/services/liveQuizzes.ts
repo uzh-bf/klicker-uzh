@@ -2341,10 +2341,16 @@ export async function getLiveQuizEvaluation(
           select: { permissionLevel: true },
         })
       : null
-  const canExportCorrelatedResponses =
+  const hasWritePermission =
     permission?.permissionLevel === DB.PermissionLevel.OWNER ||
     permission?.permissionLevel === DB.PermissionLevel.ADMIN ||
     permission?.permissionLevel === DB.PermissionLevel.WRITE
+  const canExportCorrelatedResponses =
+    hasWritePermission &&
+    liveQuiz.status === DB.PublicationStatus.ENDED &&
+    !liveQuiz.isAssessmentEnabled &&
+    liveQuiz.responseCollectionMode ===
+      DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
 
   // depending on the quiz assessment setting, select the corresponding redis instance
   const redis = liveQuiz.isAssessmentEnabled
@@ -2538,6 +2544,12 @@ export async function getCorrelatedLiveQuizResponseExport(
             .update(identityKey)
             .digest('hex'),
         }))
+        const identityHashByIdentityKey = new Map(
+          identities.map(({ identityKey, identityHash }) => [
+            identityKey,
+            identityHash,
+          ])
+        )
 
         const existingLabels =
           await prisma.liveQuizResponseExportLabel.findMany({
@@ -2574,11 +2586,16 @@ export async function getCorrelatedLiveQuizResponseExport(
         return {
           blocks,
           displayName: liveQuiz.displayName,
-          responses: mappedResponses,
-          respondents: identities.map(({ identityKey, identityHash }) => ({
-            identityKey,
-            label: labelByIdentityHash.get(identityHash)!,
-          })),
+          responses: mappedResponses.map((response) => {
+            const identityHash = identityHashByIdentityKey.get(
+              response.identityKey
+            )!
+
+            return {
+              ...response,
+              respondentLabel: labelByIdentityHash.get(identityHash)!,
+            }
+          }),
         }
       },
       { timeout: 60000 }
@@ -2597,7 +2614,6 @@ export async function getCorrelatedLiveQuizResponseExport(
           ),
         }))
       ),
-      respondents: exportData.respondents,
       responses: exportData.responses,
     })
 

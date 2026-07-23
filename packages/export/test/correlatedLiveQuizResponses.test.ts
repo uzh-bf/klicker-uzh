@@ -24,6 +24,7 @@ const questions = [
 const responses = [
   {
     identityKey: 'participant:account-id',
+    respondentLabel: 2,
     instanceId: 10,
     blockExecution: 0,
     response: { value: '=identifying free text\nsecond line' },
@@ -34,6 +35,7 @@ const responses = [
   },
   {
     identityKey: 'respondent:anonymous-id',
+    respondentLabel: 1,
     instanceId: 11,
     blockExecution: 1,
     response: {
@@ -49,23 +51,16 @@ const responses = [
   },
 ]
 
-const respondents = [
-  { identityKey: 'respondent:anonymous-id', label: 1 },
-  { identityKey: 'participant:account-id', label: 2 },
-]
-
 describe('createCorrelatedLiveQuizResponseCsv', () => {
   it('creates one stable pseudonymous row per assigned respondent label', () => {
     const first = createCorrelatedLiveQuizResponseCsv({
       quizName: 'Research Quiz',
       questions,
-      respondents,
       responses,
     })
     const second = createCorrelatedLiveQuizResponseCsv({
       quizName: 'Research Quiz',
       questions,
-      respondents: [...respondents].reverse(),
       responses: [...responses].reverse(),
     })
 
@@ -79,7 +74,6 @@ describe('createCorrelatedLiveQuizResponseCsv', () => {
     const result = createCorrelatedLiveQuizResponseCsv({
       quizName: 'Quiz',
       questions,
-      respondents,
       responses,
     })
 
@@ -106,7 +100,6 @@ describe('createCorrelatedLiveQuizResponseCsv', () => {
     const result = createCorrelatedLiveQuizResponseCsv({
       quizName: 'Quiz',
       questions,
-      respondents,
       responses,
     })
 
@@ -120,7 +113,6 @@ describe('createCorrelatedLiveQuizResponseCsv', () => {
     const result = createCorrelatedLiveQuizResponseCsv({
       quizName: 'Quiz',
       questions,
-      respondents,
       responses,
     })
 
@@ -133,7 +125,6 @@ describe('createCorrelatedLiveQuizResponseCsv', () => {
     const result = createCorrelatedLiveQuizResponseCsv({
       quizName: 'Quiz',
       questions,
-      respondents,
       responses,
     })
 
@@ -149,7 +140,6 @@ describe('createCorrelatedLiveQuizResponseCsv', () => {
     const result = createCorrelatedLiveQuizResponseCsv({
       quizName: 'Quiz',
       questions,
-      respondents: [respondents[1]!],
       responses: [responses[0]!],
     })
     const dataRow = result.csv.split('\r\n')[1]!
@@ -162,7 +152,6 @@ describe('createCorrelatedLiveQuizResponseCsv', () => {
       createCorrelatedLiveQuizResponseCsv({
         quizName: 'Quiz',
         questions: [questions[0]!],
-        respondents: [respondents[1]!],
         responses: [
           {
             ...responses[0]!,

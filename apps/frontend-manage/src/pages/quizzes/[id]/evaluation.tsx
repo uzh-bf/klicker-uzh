@@ -1,9 +1,5 @@
 import { useQuery } from '@apollo/client'
-import {
-  GetLiveQuizEvaluationDocument,
-  LiveQuizResponseCollectionMode,
-  PublicationStatus,
-} from '@klicker-uzh/graphql/dist/ops'
+import { GetLiveQuizEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useRouter } from 'next/router'
 import ActivityEvaluation from '../../../components/evaluation/ActivityEvaluation'
@@ -57,12 +53,7 @@ function LiveQuizEvaluation() {
       pinCode={evaluation?.pinCode ?? null}
       leaderboard={leaderboard}
       toolbarContent={
-        !router.query.hmac &&
-        evaluation.canExportCorrelatedResponses &&
-        evaluation.status === PublicationStatus.Ended &&
-        evaluation.responseCollectionMode ===
-          LiveQuizResponseCollectionMode.CorrelatedExport &&
-        !evaluation.isAssessmentEnabled ? (
+        evaluation.canExportCorrelatedResponses ? (
           <CorrelatedResponseExport liveQuizId={router.query.id as string} />
         ) : null
       }

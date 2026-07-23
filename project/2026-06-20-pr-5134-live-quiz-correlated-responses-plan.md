@@ -493,6 +493,8 @@ Later research:
 - 2026-07-23: Review-fix verification passed on a recreated DevPod with all 178 migrations: Prisma validation, 7 focused CSV tests, 6 focused GraphQL export-service tests including delayed-response stability and active-block coverage, export and GraphQL builds/typechecks, and the manage typecheck. A clean migration run applied the new label table successfully.
 - 2026-07-23: Runtime export verification passed with a seeded ended correlated quiz containing 30 durable responses. The owner-only evaluation action downloaded a clean CSV named `live-quiz-correlated-response-export-demo-responses.csv` with one respondent per row, stable ordered headers, and no source identifiers. A delayed 31st response exposed Apollo's cached-query behavior; the download now uses `no-cache`, and a second real browser download returned respondents `001` through `031` without renaming the first 30.
 - 2026-07-23: Mandatory participant browser verification passed through a clean PWA Webpack runtime after the managed Turbopack process served a stale route manifest. Aggregate and correlated notices rendered with the approved distinct treatments in English and German at desktop and 390x844 mobile sizes without text overflow. The manage wizard rendered aggregate-only as the draft default, switched to correlated export with the concise consequence text, and fit at desktop and mobile sizes. The runtime workaround affects only local verification; no repository runtime configuration changed.
+- 2026-07-23: Follow-up correctness review of exact fix commit `3816135311` found no qualifying defect and independently passed the export tests/build, GraphQL export tests/check, manage check, Prisma validation, schema sync, and package root/subpath import probes. Follow-up simplification review removed unused label-table identity/timestamp/index fields in favor of the natural composite primary key, moved persisted labels directly onto export responses instead of parallel respondent/response arrays, and made the backend capability flag own the complete export-availability rule.
+- 2026-07-23: Simplification verification passed: 7 focused CSV tests, 6 focused GraphQL export tests, export build, Prisma generation/typecheck, analytics schema sync, and a fresh disposable PostgreSQL migration run through all 178 migrations. The disposable database was removed after the successful run.
 
 ## Goal Prompt Requirements
 
@@ -508,7 +510,6 @@ If handed to another agent:
 
 ## Next Steps
 
-1. Run the fresh focused and repository gates and commit the Slice 6 review fixes.
-2. Run follow-up correctness and simplification review on the exact fix commit.
-3. Run final branch security, maintainability, and independent review gates.
-4. Push the branch and update draft PR 5134 with whole-branch evidence.
+1. Commit the accepted Slice 6 simplifications and rerun the full repository gate.
+2. Run final branch security, maintainability, and independent review gates.
+3. Push the branch and update draft PR 5134 with whole-branch evidence.
