@@ -605,7 +605,13 @@ the repository script that replaces it before continuing.
   focused strict Pyright with zero findings, uv lock validation, and diff
   hygiene. The known sandbox-only `mirakuru` cleanup warning occurs after
   successful pytest exit.
-- Active: Commit and independently review the native-worker tracer.
+- 2026-07-23: Independent correctness and simplification reviews accepted the
+  tracer without implementation blockers. The only accepted follow-ups make
+  the new scope-isolation regression type-clean and advance this plan.
+- Completed: Slice 4A native Python worker registration and compatibility
+  tracer.
+- Active: Port the analytics DAG to direct Python tasks with parity in Slice
+  4B.
 
 ## Finish evidence
 
@@ -619,5 +625,5 @@ the repository script that replaces it before continuing.
 
 ## Next Steps
 
-1. Register the native Python worker and proof task in Slice 4A.
+1. Port the analytics DAG to direct Python tasks with parity in Slice 4B.
 2. Continue one verified slice at a time until both draft PRs are current.
