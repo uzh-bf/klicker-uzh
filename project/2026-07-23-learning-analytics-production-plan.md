@@ -705,8 +705,16 @@ the repository script that replaces it before continuing.
   CI subset with 97 passed and 1 database skip, the Hatchet DAG contract test,
   3 GraphQL event-routing tests, and TypeScript checks for types, Hatchet, and
   GraphQL.
-- Active: Review the split concurrency/event-routing tracer, then cut over the
-  native worker in Slice 4C.
+- 2026-07-23: Exact-commit correctness review found no actionable issue and
+  independently corroborated the persisted Hatchet concurrency/event states.
+  Simplification review confirmed the dual-workflow design is the smallest
+  safe control-plane implementation. Its deployment advisory is accepted:
+  cutover and rollback are cold, and Slice 5 will enforce old-down-before-new-up
+  so only one worker owns analytics events.
+- Completed: Slice 4B native DAG parity, cooperative cancellation, and
+  protected full-run concurrency.
+- Active: Cut over the native worker and remove the TypeScript subprocess
+  bridge in Slice 4C.
 
 ## Finish evidence
 
