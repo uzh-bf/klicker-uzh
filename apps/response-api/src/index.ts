@@ -1,10 +1,25 @@
 import { hatchetClient } from '@klicker-uzh/hatchet'
-import { UserLoginScope } from '@klicker-uzh/prisma/client'
-import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
+import {
+  LiveQuizResponseCollectionMode,
+  UserLoginScope,
+} from '@klicker-uzh/prisma/client'
+import {
+  createLiveQuizRespondentToken,
+  LIVE_QUIZ_RESPONDENT_COOKIE_NAME,
+  resolveLiveQuizResponseIdentity,
+  verifyJWT,
+  type JWTPayload,
+} from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import { createServer, IncomingMessage, ServerResponse } from 'http'
 import { Redis } from 'ioredis'
 import { createHash } from 'node:crypto'
+import {
+  buildCorrelatedVoteKey,
+  claimCorrelatedResponse,
+  releaseCorrelatedResponse,
+  serializeLiveQuizRespondentCookie,
+} from './correlatedResponses.js'
 
 const redis = new Redis({
   family: 4,
@@ -111,7 +126,15 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     )
   }
 
-  // Only forward participant-related cookies. If both exist, include both.
+  const liveQuizIdString = String(liveQuizId)
+  const instanceIdString = String(instanceId)
+  const rawCookie =
+    typeof req.headers['cookie'] === 'string'
+      ? req.headers['cookie']
+      : undefined
+
+  // Keep the existing aggregate-mode behavior: forward participant cookies
+  // based on their presence and let the worker validate them.
   let cookie: string | undefined
   if (typeof req.headers['cookie'] === 'string') {
     const raw = req.headers['cookie']
@@ -131,28 +154,135 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
   }
 
   const responseTimestamp = Date.now()
+  const messageId = randomUUID()
+  const instanceInfoKey = `lq:${liveQuizIdString}:i:${instanceIdString}:info`
+  const instanceInfo = await redis.hgetall(instanceInfoKey)
+  const isCorrelated =
+    instanceInfo.responseCollectionMode ===
+    LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+
+  let eventName: string
+  let claim:
+    | {
+        key: string
+        identityKey: string
+      }
+    | undefined
+
+  if (isCorrelated) {
+    if (!instanceInfo.blockExecution) {
+      throw new Error(
+        `Missing block execution in correlated response metadata for ${instanceInfoKey}`
+      )
+    }
+
+    const secret = process.env.APP_SECRET
+    const issuer = process.env.APP_ORIGIN_API
+    if (!secret || !issuer) {
+      throw new Error(
+        'APP_SECRET and APP_ORIGIN_API are required for correlated live quiz responses'
+      )
+    }
+
+    let identity = await resolveLiveQuizResponseIdentity({
+      cookieHeader: rawCookie,
+      liveQuizId: liveQuizIdString,
+      secret,
+      issuer,
+    })
+
+    if (!identity) {
+      const respondentId = randomUUID()
+      const token = await createLiveQuizRespondentToken({
+        respondentId,
+        liveQuizId: liveQuizIdString,
+        secret,
+        issuer,
+      })
+      identity = {
+        kind: 'anonymous',
+        id: respondentId,
+        liveQuizId: liveQuizIdString,
+        token,
+        cookieName: LIVE_QUIZ_RESPONDENT_COOKIE_NAME,
+      }
+      res.setHeader(
+        'Set-Cookie',
+        serializeLiveQuizRespondentCookie({
+          token,
+          domain: process.env.COOKIE_DOMAIN,
+          secure:
+            process.env.NODE_ENV === 'production' &&
+            process.env.COOKIE_DOMAIN !== '127.0.0.1',
+        })
+      )
+    }
+
+    cookie = `${identity.cookieName}=${identity.token}`
+    claim = {
+      key: buildCorrelatedVoteKey({
+        liveQuizId: liveQuizIdString,
+        instanceId: instanceIdString,
+        blockExecution: instanceInfo.blockExecution,
+      }),
+      identityKey:
+        identity.kind === 'participant'
+          ? `participant:${identity.id}`
+          : `respondent:${identity.id}`,
+    }
+
+    const claimed = await claimCorrelatedResponse({
+      redis,
+      ...claim,
+      messageId,
+    })
+    if (!claimed) {
+      return sendJson(req, res, 208, {
+        status: 'response_recorded_before',
+        responseTimestamp,
+      })
+    }
+
+    eventName = 'response-received:authenticated'
+  } else {
+    const isAuthenticatedParticipant =
+      cookie &&
+      (cookie.includes('participant_token=') ||
+        cookie.includes('temporary_participant_token='))
+    eventName = isAuthenticatedParticipant
+      ? 'response-received:authenticated'
+      : 'response-received:anonymous'
+  }
+
   const message = {
-    messageId: randomUUID(),
-    sessionId: String(liveQuizId),
-    instanceId: String(instanceId),
+    messageId,
+    sessionId: liveQuizIdString,
+    instanceId: instanceIdString,
     response, // pass through as-is; worker validates
     cookie,
     responseTimestamp,
   }
 
-  // determine if the participant is logged in with a valid student cookie (temporary or standard)
-  const isAuthenticatedParticipant =
-    cookie &&
-    (cookie.includes('participant_token=') ||
-      cookie.includes('temporary_participant_token='))
+  console.log(`Pushing event ${eventName}`, {
+    messageId,
+    sessionId: liveQuizIdString,
+    instanceId: instanceIdString,
+    responseTimestamp,
+  })
 
-  // depending on the authentication state, add the response to the correct hatchet event queue
-  const eventName = isAuthenticatedParticipant
-    ? 'response-received:authenticated'
-    : 'response-received:anonymous'
-  console.log(`Pushing event ${eventName} with payload`, message)
+  try {
+    await hatchetClient.events.push(eventName, message)
+  } catch (error) {
+    if (claim) {
+      await releaseCorrelatedResponse({
+        redis,
+        ...claim,
+        messageId,
+      })
+    }
+    throw error
+  }
 
-  await hatchetClient.events.push(eventName, message)
   return sendJson(req, res, 200, { status: 'ok', responseTimestamp })
 }
 

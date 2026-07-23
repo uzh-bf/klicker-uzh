@@ -1246,6 +1246,7 @@ export async function activateLiveQuizBlock(
       defaultCorrectPoints: updatedQuiz.defaultCorrectPoints,
       maxBonusPoints: updatedQuiz.maxBonusPoints,
       timeToZeroBonus: updatedQuiz.timeToZeroBonus,
+      responseCollectionMode: updatedQuiz.responseCollectionMode,
       blockExecution: updatedQuiz.activeBlock!.execution,
       blockStartedAt: Number(updatedQuiz.activeBlock!.startedAt),
     }

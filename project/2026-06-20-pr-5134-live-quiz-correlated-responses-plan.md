@@ -474,6 +474,9 @@ Later research:
 - 2026-07-23: Slice 5 implementation completed locally through the staged compatibility path. New temporary logins create the existing leaderboard row and a same-ID `LiveQuizRespondent` atomically, retain the existing leaderboard UX, add quiz scope to the existing JWT, and align its cookie lifetime with the two-week token expiry. Historical rows are not backfilled because correlated collection applies only to future quizzes and the legacy table also contains account-backed leaderboard rows.
 - 2026-07-23: Slice 5 verification passed: fresh Prisma migration reset, Prisma and GraphQL typechecks, and 8 focused database integration tests. The focused test helper emitted non-fatal Redis loopback warnings inside the DevPod; the tested code does not use those clients and all assertions passed.
 - 2026-07-23: Independent Slice 5 review found that a blanket historical backfill would misclassify logged-in account IDs also stored in `TemporaryLeaderboardEntry`; the backfill was removed under the approved future-quiz-only scope. The simplification review removed an unnecessary transaction result dependency. Focused typecheck and all 8 integration tests passed again. Slice 4 will validate the legacy temporary row and lazily create a missing same-ID respondent during rolling deployment.
+- 2026-07-23: Slice 5 is finalized. Slice 4 is split into two reviewable tracers without changing approved behavior: 4A adds the shared signed identity contract, quiz-scoped anonymous cookie, and synchronous correlated duplicate gate; 4B adds worker-side identity verification, rolling temporary-row bridging, authoritative duplicate lookup, and durable response persistence.
+- 2026-07-23: Slice 4A implementation completed locally. Active instance metadata now carries the response collection mode. Correlated requests resolve signed identities in account, temporary, then anonymous order; mint a two-week quiz-scoped anonymous cookie only when needed; claim the first response per identity, instance, and block execution with Redis `HSETNX`; and atomically release only the failed event's claim. Aggregate-mode routing and storage behavior remain unchanged.
+- 2026-07-23: Slice 4A verification passed: 52 utility tests, including quiz scope, signature rejection, legacy temporary-token compatibility, and identity priority; 3 response API tests covering first-response claims, atomic owner-only release, and cookie lifetime; utility, response API, and GraphQL package builds/typechecks; and the full repository pre-commit gate. Independent correctness and simplification review remain before Slice 4A is finalized.
 
 ## Goal Prompt Requirements
 
@@ -489,6 +492,6 @@ If handed to another agent:
 
 ## Next Steps
 
-1. Align temporary leaderboard identities with `LiveQuizRespondent` through the staged compatibility path while preserving the current pseudonym and leaderboard UX.
-2. Persist correlated responses for logged-in, temporary-pseudonym, and anonymous respondents in Slice 4.
+1. Finalize Slice 4A after package builds, the pre-commit gate, and independent correctness/simplification review.
+2. Implement Slice 4B worker verification, rolling temporary-row bridging, authoritative duplicate handling, and durable response persistence.
 3. Deliver the self-service CSV and evaluation-page action together in Slice 6.
