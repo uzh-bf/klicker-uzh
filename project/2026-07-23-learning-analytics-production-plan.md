@@ -476,9 +476,17 @@ the repository script that replaces it before continuing.
   build/typecheck/DAG test, Syncpack, Prisma schema sync, Prettier, and diff
   hygiene. A seeded database run and live Hatchet failed-task smoke still need
   a stable local runtime and are not represented by these unit-level gates.
-- Active: Slice 3A, commit and independently review the correctness changes.
-- Next: Integrate accepted Slice 3A review findings, then prove grading parity
-  in Slice 3B.
+- 2026-07-23: Slice 3A correctness committed as `6a8a81609`.
+  Independent correctness and simplification reviews found no source-level
+  regression. The accepted review findings remove a test-only Rollup entry and
+  make the new Python correctness and Hatchet DAG tests run in CI.
+- 2026-07-23: The Python CI gate uses an isolated, pinned 15-package test
+  environment and passes all 23 focused correctness tests. This protects the
+  reproduced Slice 3A fixes without downloading the multi-gigabyte ML/CUDA
+  dependency set; the full 116-test suite remains a local/final gate until
+  Slice 5A establishes the CPU-only worker dependency set.
+- Active: Slice 3A, commit the independently reviewed CI adjustment.
+- Next: Prove grading parity in Slice 3B.
 
 ## Finish evidence
 

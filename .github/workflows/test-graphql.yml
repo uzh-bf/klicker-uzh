@@ -155,6 +155,9 @@ jobs:
         env:
           DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
 
+      - name: Test Hatchet analytics DAG
+        run: pnpm --filter @klicker-uzh/hatchet test
+
       - name: Run tests
         run: |
           set -euo pipefail
