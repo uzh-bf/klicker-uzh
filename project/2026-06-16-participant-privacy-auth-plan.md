@@ -59,7 +59,6 @@ Recommended recovery hierarchy:
 Implementation notes:
 
 - `@simplewebauthn/browser` and `@simplewebauthn/server` are present in `pnpm-lock.yaml` as transitive dependencies but are not declared in package manifests. Add direct pinned dependencies in the app/package that owns passkeys before implementation. Official docs: https://simplewebauthn.dev/docs/packages/server and https://simplewebauthn.dev/docs/advanced/passkeys
-- Context7 lookup for SimpleWebAuthn failed due quota; official SimpleWebAuthn docs were used instead.
 
 ### Communication Surfaces in Current Code
 
@@ -186,6 +185,8 @@ model ParticipantExternalIdentity {
 }
 ```
 
+`subjectHash` must use `PARTICIPANT_EXTERNAL_IDENTITY_HMAC_KEYS_JSON`, not the assessment lookup-hash keyring. This keeps external login identifiers and assessment contact lookup hashes independently rotatable.
+
 Keep `ParticipantAccount` as a compatibility facade during migration, or migrate it directly if the blast radius is manageable.
 
 ### Non-Assessment Email Challenge
@@ -211,15 +212,33 @@ Do not store raw email. Do not store a long-lived email hash on non-assessment p
 ### Recovery Codes / Recovery File
 
 ```prisma
+model ParticipantRecoveryFile {
+  id String @id @default(uuid()) @db.Uuid
+  participantId String @db.Uuid
+  publicId String @unique
+  createdAt DateTime @default(now())
+  revokedAt DateTime?
+
+  participant Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  codes ParticipantRecoveryCode[]
+
+  @@index([participantId])
+}
+
 model ParticipantRecoveryCode {
   id String @id @default(uuid()) @db.Uuid
   participantId String @db.Uuid
-  codeHash String
+  recoveryFileId String @db.Uuid
+  codeHash String @unique
   label String?
   usedAt DateTime?
   createdAt DateTime @default(now())
 
   participant Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  recoveryFile ParticipantRecoveryFile @relation(fields: [recoveryFileId], references: [id], onDelete: Cascade)
+
+  @@index([participantId])
+  @@index([recoveryFileId])
 }
 ```
 
@@ -230,12 +249,12 @@ Recovery file contents:
   "type": "klicker-participant-recovery",
   "version": 1,
   "username": "chosen-name",
-  "participantRecoveryId": "public-random-id",
+  "recoveryFilePublicId": "public-random-id",
   "codes": ["single-use-code-1", "..."]
 }
 ```
 
-Store only hashes. Show/download once. Require recovery code or passkey to reset password if the user is outside LTI.
+Store only hashes. Show/download once. `ParticipantRecoveryFile.publicId` is a high-entropy public lookup id shared by all codes in one downloaded file, so a recovery attempt can find the right account without username or email. Recovery codes still need enough entropy that hash collisions are practically impossible. Require recovery code or passkey to reset password if the user is outside LTI.
 
 ### Passkeys
 
@@ -278,6 +297,7 @@ model AssessmentParticipantIdentity {
   matriculationNonce Bytes?
   matriculationTag Bytes?
   matriculationLookupHash String?
+  matriculationLookupHashKeyId String?
 
   source AssessmentIdentitySource // EDUID_PRIMARY, EDUID_AFFILIATION, LTI, INVITATION
   verifiedAt DateTime
@@ -294,7 +314,10 @@ Use Node `crypto` AES-256-GCM for app-layer encryption unless there is an existi
 
 - `PARTICIPANT_PII_ENCRYPTION_KEYS_JSON`: keyring with active key id.
 - `PARTICIPANT_PII_LOOKUP_HMAC_KEYS_JSON`: separate keyring for lookup hashes.
-- Add both to `turbo.json` `globalEnv`.
+- `PARTICIPANT_EXTERNAL_IDENTITY_HMAC_KEYS_JSON`: separate keyring for LTI/Edu-ID `subjectHash` values.
+- Add all three to `turbo.json` `globalEnv`.
+
+Implementation note: define all referenced Prisma enums in Slice 1, including `ParticipantIdentityProvider`, `ParticipantEmailChallengePurpose`, `AssessmentIdentitySource`, `ParticipantAccountLinkStatus`, and `ParticipantMergeStatus`.
 
 ### Assessment Invitations
 
@@ -317,6 +340,7 @@ model ParticipantInvitation {
   matriculationNonce Bytes?
   matriculationTag Bytes?
   matriculationLookupHash String?
+  matriculationLookupHashKeyId String?
 
   invitedAt DateTime @default(now())
   acceptedAt DateTime?
@@ -334,12 +358,14 @@ model ParticipantInvitation {
 2. Backend creates `ParticipantEmailChallenge` with token hash and short expiry, sends link, stores no raw email.
 3. Link opens account creation.
 4. User chooses username manually. Do not pre-fill random username.
-5. User registers at least one recovery method:
+5. User creates a password or passkey.
+6. Create `Participant` with no email.
+7. Let the participant join a running live activity immediately. Do not block a lecture-start signup on passkey dialogs or file downloads.
+8. Require a durable recovery method on the next non-live login, or after a short grace window:
    - Preferred: passkey.
    - Required fallback: downloadable recovery codes.
-   - Optional: password.
-6. Create `Participant` with no email.
-7. Delete/consume challenge.
+   - Shared-device warning: do not create passkeys on lab/shared computers; use recovery codes instead.
+9. Delete/consume challenge.
 
 Why no email reset: without storing at least an email hash linked to the participant, email cannot prove ownership of an existing account. Email can verify a mailbox for signup, but not recover an account later. The recovery contract must be passkey/recovery file/LTI.
 
@@ -685,6 +711,10 @@ Implementation details:
 
 ### Slice 0 - Inventory, Flags, and Policy
 
+- Add login-method telemetry before choosing cutover dates:
+  - record `password | magic_link | lti | eduid | passkey | recovery_code` for each participant login;
+  - expose aggregate counts by active-in-last 6/12/24 months;
+  - use at least four weeks of production data to size magic-link dependence.
 - Add metrics script:
   - participants with `email`;
   - participants with `isEmailValid=false`;
@@ -713,14 +743,18 @@ Implementation details:
 
 ### Slice 1 - Schema Foundations
 
-- Add `ParticipantEmailChallenge`, `ParticipantRecoveryCode`, `ParticipantPasskeyCredential`, `ParticipantExternalIdentity`.
+- Add `ParticipantEmailChallenge`, `ParticipantRecoveryFile`, `ParticipantRecoveryCode`, `ParticipantPasskeyCredential`, `ParticipantExternalIdentity`.
 - Add `AssessmentParticipantIdentity`.
 - Add encrypted/hash columns to `ParticipantInvitation`.
 - Add crypto helper with key id, AES-GCM encrypt/decrypt, HMAC lookup hash, and tests.
+- Define all referenced enums in Prisma and sync the schema mirror into `apps/analytics` with `pnpm run prisma:sync`.
+- Audit `apps/analytics` for participant-email reads before adding new identity models.
 - Do not remove old fields yet.
 
 ### Slice 2 - Stop New Non-Assessment Email Writes
 
+- Make `Participant.password` nullable only if passkey-only accounts are approved for v1.
+- Add null-safe password comparison in `loginParticipant`.
 - Change `createParticipantAccount` mutation:
   - replace required email argument with challenge token;
   - create participant with `email=null`;
@@ -769,7 +803,8 @@ Implementation details:
 Backfill:
 
 1. For each assessment participation:
-   - pick best source: `ParticipantAccount.ssoEmail` preferred, else `Participant.email`, else invitation email;
+   - pick best source: `ParticipantAccount.ssoEmail` preferred, else `Participant.email` only if `isEmailValid=true`, else invitation email;
+   - skip and flag participants where only an unverified `Participant.email` is available;
    - create `AssessmentParticipantIdentity`;
    - flag missing identity rows.
 2. For each `ParticipantInvitation`:
@@ -812,9 +847,10 @@ Clean migration runbook:
 7. **Require setup**: for active non-assessment manual accounts, require passkey or recovery-code setup before continuing after a grace period.
 8. **Stop new email login**: hide email login for new accounts, keep legacy claim link in a separate "Recover old account" path.
 9. **Purge eligible rows**: null legacy email fields for migrated accounts; preserve only encrypted assessment identity.
-10. **Final cutoff**: disable legacy email claim after the announced date, purge remaining non-assessment emails, and remove old code paths.
+10. **Backup/cache alignment**: document database backup retention, wait until backup rotation exceeds the retention window before declaring raw-email purge complete, and audit Redis/caches for participant payloads.
+11. **Final cutoff**: disable legacy email claim after the announced date, purge remaining non-assessment emails, and remove old code paths.
 
-Rollback rule: until step 10, old email fields remain available behind feature flags, but no rollback should re-enable new non-assessment email writes.
+Rollback rule: until step 11, old email fields remain available behind feature flags, but no rollback should re-enable new non-assessment email writes.
 
 ### Slice 6 - Remove Non-Assessment Email Outputs
 
@@ -825,6 +861,8 @@ Rollback rule: until step 10, old email fields remain available behind feature f
   - assessment uses decrypted assessment email.
 - Add prize claim code workflow.
 - Update i18n from "Username / E-mail" to "Username" or "Passkey".
+- Update privacy/consent copy in English and German, including the current statement that course owners can see email addresses.
+- Coordinate external privacy policy changes with the DPO and decide whether changed terms require re-consent on next login.
 
 ### Slice 7 - Cleanup and Hardening
 
@@ -861,6 +899,7 @@ Do not rely on push notifications until push delivery is implemented and verifie
 
 Use exact dates in production copy:
 
+- Pick **T day** at a semester boundary, preferably early February or early September. Do not cut over in the middle of an active teaching or assessment period.
 - **T-8 weeks**: first notice. Explain why email login is being removed, what actions are required, and cutoff date.
 - **T-4 weeks**: second notice to accounts not migrated.
 - **T-2 weeks**: in-app checklist becomes blocking for active manual accounts except "continue once" grace.
@@ -921,6 +960,47 @@ KlickerUZH is reducing participant personal data in regular courses. Participant
 For prizes or follow-up, use the new claim-code workflow: select winners in KlickerUZH, send them an in-app instruction, and ask them to contact you with their claim code. Assessment courses are unaffected where verified identity is required.
 ```
 
+### German Student Copy
+
+Subject: `KlickerUZH-Datenschutzupdate: Handlung erforderlich`
+
+Body:
+
+```text
+KlickerUZH passt Teilnehmendenkonten so an, dass bei regulären Konten keine E-Mail-Adressen mehr gespeichert werden.
+
+Was ändert sich:
+- Deine E-Mail-Adresse wird nicht mehr auf deinem regulären KlickerUZH-Teilnehmendenkonto gespeichert.
+- E-Mail-Login und Passwort-Zurücksetzen per E-Mail enden am <DATE>.
+- Damit du den Zugriff behältst, melde dich einmal vor dem <DATE> an und richte einen Passkey ein oder lade Wiederherstellungscodes herunter.
+- Wenn du KlickerUZH über OLAT/LTI verwendest, kannst du weiterhin über OLAT/LTI auf dein Konto zugreifen.
+
+Prüfungskurse sind anders: Wenn ein Kurs den Prüfungsmodus verwendet, benötigt KlickerUZH weiterhin deine verifizierte E-Mail-Adresse für die Kursadministration. Diese E-Mail-Adresse wird nur für diesen Prüfungskontext gespeichert und separat geschützt.
+
+KlickerUZH öffnen: <LINK>
+```
+
+In-app checklist:
+
+```text
+Wir entfernen gespeicherte E-Mail-Adressen aus regulären Teilnehmendenkonten.
+
+Schliesse diese Schritte ab:
+1. Bestätige deinen Benutzernamen.
+2. Richte einen Passkey ein oder lade Wiederherstellungscodes herunter.
+3. Speichere deine Änderungen.
+
+Nach dem <DATE> kannst du dieses reguläre Konto nicht mehr per E-Mail wiederherstellen. Prüfungskurse können deine verifizierte E-Mail-Adresse weiterhin für die Prüfungsadministration verwenden.
+```
+
+Legacy recovery page:
+
+```text
+Verwende diese Seite nur, wenn du vor dem <DATE> ein KlickerUZH-Konto erstellt hast und deinen Benutzernamen nicht mehr weisst.
+
+Falls ein Konto für diese E-Mail-Adresse existiert, senden wir dir einen einmaligen Link. Nach der Anmeldung musst du einen Passkey oder Wiederherstellungscodes einrichten. Danach entfernt KlickerUZH die E-Mail-Adresse aus deinem regulären Teilnehmendenkonto.
+```
+
 ## Verification Plan
 
 ### Unit / Service
@@ -949,6 +1029,8 @@ For prizes or follow-up, use the new claim-code workflow: select winners in Klic
 - Assessment login through auth app and assessment PWA.
 - Lecturer assessment roster/results export.
 - Lecturer non-assessment leaderboard and prize claim code flow.
+- Update Cypress and Playwright login/account specs in the same slice that changes login behavior.
+- Update `packages/prisma-data` seeds in the same slice that removes seeded participant emails or email-login assumptions.
 
 Use `npx agent-browser` for UI validation per repo rules.
 
@@ -964,6 +1046,19 @@ Use `npx agent-browser` for UI validation per repo rules.
   - raw email columns are unused or dropped.
 
 ## Risks and Decisions
+
+### Open Decision Table
+
+These decisions must be closed with product owner / DPO input before behavior-changing implementation starts:
+
+| Decision | Data Needed | Recommendation | Owner | Status |
+| --- | --- | --- | --- | --- |
+| LTI 1.1 verification vs retirement | Count active `ParticipantAccount.ssoType` values and last-login usage over 12 months | Retire LTI 1.1 if usage is negligible; otherwise implement signature validation before email removal | Product + Engineering | Open |
+| Recovery setup timing | Four weeks of login-method telemetry and signup funnel drop-off | Defer recovery setup during running live activities; require it on next non-live login or after grace period | Product | Open |
+| Cutover date and grace windows | Semester calendar, assessment windows, login-method telemetry | Use a semester boundary; avoid mid-semester and assessment windows | Product + Support | Open |
+| Privacy policy and re-consent | DPO review of changed data categories and retention | Update policy before first notice; re-consent if DPO requires it | DPO + Product | Open |
+| `ParticipantAccount` migration shape | Count references and code paths depending on `ParticipantAccount` | Keep facade during migration, remove in cleanup slice | Engineering | Open |
+| Retention durations | Legal/DPO input for assessment identity, challenges, claim contacts, backups | Replace placeholder ranges with concrete values before rollout | DPO + Product | Open |
 
 ### Decision: Email Reset Without Storing Email
 
@@ -993,9 +1088,10 @@ If an LTI platform sends stable subjects across contexts, Klicker can link a par
 
 Recommended first PR:
 
-1. Add schema/key helpers/challenge/recovery tables behind flags.
+1. Add login-method telemetry for password, magic link, LTI, Edu-ID, passkey, and recovery-code paths.
 2. Add inventory script and dry-run report.
-3. Add tests for crypto/challenge/recovery primitives.
-4. No UI behavior change yet.
+3. Add crypto helper with tests for AES-GCM, lookup HMACs, and key ids.
+4. Add schema foundations behind flags after telemetry is available.
+5. No user-facing behavior change yet.
 
 This gives a safe foundation and real data counts before touching user-facing login.
