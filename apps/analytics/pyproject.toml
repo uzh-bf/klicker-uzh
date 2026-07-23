@@ -1,12 +1,12 @@
 [project]
 name = "klicker-uzh-analytics"
 version = "0.0.1"
-description = "KlickerUZH analytics pipeline"
+description = "Learning analytics service for KlickerUZH."
 authors = [
     { name = "Roland Schlaefli", email = "roland.schlaefli@df.uzh.ch" },
     { name = "Julius Schlapbach", email = "julius.schlapbach@df.uzh.ch" },
 ]
-license = { text = "AGPL-3.0" }
+license = "AGPL-3.0"
 readme = "README.md"
 requires-python = ">=3.12,<3.14"
 dependencies = [
@@ -21,6 +21,7 @@ dependencies = [
     "hdbscan>=0.8.37,<0.9",
     "scikit-learn>=1.5,<2.0",
     "stopwordsiso>=0.6,<1.0",
+    "torch==2.11.0",
     "hatchet-sdk[v0-sdk]==1.18.1",
 ]
 
@@ -32,7 +33,20 @@ dev = [
     "sqlacodegen>=3.0,<4.0",
     "pytest>=8.0,<9.0",
     "pytest-postgresql>=6.0,<7.0",
+    "ruff>=0.15.18",
 ]
+
+[tool.uv]
+package = false
+exclude-newer = "14d"
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [tool.poe.tasks]
 # Regenerate models.py from the live dev DB. Run after a Prisma migration lands.
@@ -46,3 +60,10 @@ testpaths = ["tests"]
 markers = [
     "integration: integration tests that require a seeded DATABASE_URL",
 ]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401", "F403"]

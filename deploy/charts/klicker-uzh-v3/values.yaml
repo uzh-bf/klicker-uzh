@@ -130,6 +130,10 @@ hatchet:
     analytics:
       replicaCount: 1
       priorityClassName: production-workload
+      # A cold rollout prevents the retiring TypeScript bridge and the native
+      # Python worker from owning the same Hatchet event during cutover.
+      strategy:
+        type: Recreate
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-analytics
         pullPolicy: Always

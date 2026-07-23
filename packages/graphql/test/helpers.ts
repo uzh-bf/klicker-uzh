@@ -278,12 +278,6 @@ export async function testInitialization(
         return { success }
       },
     }),
-    // Empty workflow stub — the real DAG spawns uv subprocesses and isn't
-    // exercised by unit tests. The tasks inside the workflow are never run
-    // from here, so we leave it without any sub-task declarations.
-    recomputeLearningAnalytics: hatchet.workflow({
-      name: 'recompute-learning-analytics',
-    }),
   }
 
   // mock context with user including all required properties

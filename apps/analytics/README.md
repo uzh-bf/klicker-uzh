@@ -5,23 +5,23 @@ This service computes learning analytics for KlickerUZH, providing insights into
 ## Requirements
 
 - Python 3.12.x (e.g., installed through `asdf`)
-- Node.js 20.x.x
+- Node.js 24.x.x
 - [uv](https://docs.astral.sh/uv/) for Python dependency management
 
 ## Setup
 
 - The project uses uv for dependency management. Run `uv sync` in this folder to create the virtual environment and install deps.
 - The project uses PNPM to simplify the execution of scripts and to provide a watch mode for execution. Make sure that you have executed `pnpm install` in the repository before trying to run the commands below.
-- Make sure that all `.prisma` files are available in `prisma/`. If this is not the case, run the `util/sync-schema.sh` script first.
-- `prisma/schema/py.prisma` enables `enable_experimental_decimal = "true"` for the Prisma Python generator; this is required for the `ChatUsageCredits` / `ChatMessage` / chat-analytics Decimal columns.
+- Make sure that all `.prisma` files are available in `prisma/`. If this is not the case, run the `util/sync-schema.sh` script first. The mirror is for schema review; the analytics runtime uses SQLAlchemy models generated from a live development database.
+- Make sure that a valid Python environment is used (3.12). If needed, set the Python binary explicitly with `uv python pin 3.12` before running `uv sync`.
 
 ## Available Commands
 
 The following commands are available through PNPM:
 
-- `pnpm generate` - Generate the Prisma client for database access in Python
+- `pnpm generate` - Regenerate the SQLAlchemy models from the live development database
 - `pnpm main` - Run the analytics service
-- `pnpm dev` - Start the service in watch mode for development
+- `pnpm analytics:dev` - Start the service in watch mode for development
 
 ## Pipeline scripts
 
@@ -123,31 +123,12 @@ Sheet names are truncated to Excel's 31-character limit; collisions get `_1`, `_
 
 ## Running from Hatchet
 
-The pipeline is wired into Hatchet as the `recompute-learning-analytics` task (defined in `packages/hatchet/src/index.ts`). It fires:
+The pipeline is wired into Hatchet as native Python workflows defined in `src/hatchet_worker.py`. It fires:
 
 - On cron: `0 2 * * 1` — Mondays at 02:00 UTC.
 - On event: `course-ended` — emitted by the `scan-ended-courses` task (daily at 01:00 UTC) for courses whose `endDate` is more than `ANALYTICS_FINALIZE_GRACE_DAYS` (default 7) in the past and haven't been finalised yet.
 - On event: `admin-recompute-analytics` — triggered by the `recomputeCourseAnalytics(courseId, mode)` GraphQL mutation (ADMIN on the course) for incremental and finalize runs.
 - On event: `admin-recompute-analytics-full` — triggered by the same mutation for guarded full rebuilds.
-
-The handler lives in `packages/graphql/src/services/analyticsRecompute.ts` and shells out to this app's scripts one at a time via `child_process.spawn`. For it to work, the Hatchet worker running the handler must have access to:
-
-- The `apps/analytics/` directory (scripts, modules, `pyproject.toml`, `uv.lock`).
-- A `uv` binary in `PATH` (or a compatible runner configured via the env vars below).
-- The same `DATABASE_URL` the analytics app expects.
-
-Configure with these env vars (all registered in root `turbo.json`):
-
-| Env var                 | Purpose                                                                                                                  | Default                            |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------- |
-| `ANALYTICS_CWD`         | Absolute path to `apps/analytics` inside the worker container                                                            | required — handler aborts if unset |
-| `ANALYTICS_RUNNER_CMD`  | Command used to invoke Python modules                                                                                    | `uv`                               |
-| `ANALYTICS_RUNNER_ARGS` | Space-separated args prepended to `-m <module>`                                                                          | `run python`                       |
-| `ANALYTICS_ALLOW_FULL`  | Must be `1` for the handler to accept `mode=full`; otherwise `full` dispatches are rejected before any subprocess starts | unset (opt-in)                     |
-
-Together they produce an invocation like `uv run python -m src.scripts.8_initial_chat_analytics` executed with cwd `ANALYTICS_CWD`.
-
-### Native Python worker
 
 The native worker entry point is `uv run python -m src.hatchet_worker` from this directory. It pins `hatchet-sdk[v0-sdk]==1.18.1`, uses the SDK-standard `HATCHET_CLIENT_*` environment variables, and starts with one worker slot.
 
@@ -156,7 +137,9 @@ It registers the non-mutating `learning-analytics-native-proof` task plus two co
 - `recompute-learning-analytics` handles cron, incremental, and finalize runs. A newer run in the same course/global scope cancels the older run.
 - `recompute-learning-analytics-full` handles only guarded full rebuilds. A running full rebuild is protected and a newer full request is canceled.
 
-Both DAGs call the existing Python script entry points in-process with immutable per-run configuration and cooperative cancellation. `ANALYTICS_ALLOW_FULL=1` is still required for the full DAG. The TypeScript subprocess worker remains available as the pre-cutover rollback path until the native worker becomes the sole DAG owner. Cutover and rollback must be cold: stop the current owner before starting the other worker so exactly one analytics DAG consumes these events.
+Both DAGs call the existing Python script entry points in-process with immutable per-run configuration and cooperative cancellation. `ANALYTICS_ALLOW_FULL=1` is required for the full DAG and remains unset by default. TypeScript retains only the GraphQL/manual event producers and the `scan-ended-courses` task. It does not register an analytics DAG or spawn Python.
+
+Cutover and rollback are cold: stop the current owner before starting another worker image so exactly one analytics DAG consumes these events.
 
 ## Deploying analytics indexes
 
