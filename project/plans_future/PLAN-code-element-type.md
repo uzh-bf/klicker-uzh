@@ -10,7 +10,7 @@ Note 2026-07-12: the Mastra chat migration ([PR #5126](https://github.com/uzh-bf
 
 - 2026-07-23: implementation-readiness review integrated; code touchpoints rechecked against current `v3`.
 - Resolved in this future plan: separate `CodeSubmission`, active-resubmit blocking, claim/expiry + idempotent finalization, CODE-only stacks, and server-side grading assertions.
-- Ready next: approve the proposed v1 validation and retry defaults under Decisions below, then create a dated active plan on a fresh branch from current `v3`. Do not implement directly on this docs branch.
+- Ready next: approve the proposed v1 validation and retry defaults under Decisions below, sync the carrying branch with current `v3`, add a dated active execution plan, and implement slice 1 in the same PR. Recommended: continue on PR 5142 and retitle it for the CODE implementation. If a fresh branch is preferred, carry all architecture commits into its implementation PR and close PR 5142 unmerged.
 - External gates: resolve the four codeapi infrastructure questions in the research doc before slice 3 exercises the live service; identify the pilot course/package set before end-to-end sign-off.
 
 ## Goal

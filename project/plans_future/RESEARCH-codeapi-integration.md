@@ -2,7 +2,7 @@
 
 Shared research base for [PLAN-code-element-type.md](PLAN-code-element-type.md), [PLAN-chat-code-execution-tool.md](PLAN-chat-code-execution-tool.md), and [PLAN-codeapi-further-features.md](PLAN-codeapi-further-features.md). Facts verified against the codeapi source workspace (`uzh-bf/code-interpreter` fork, upstream submodule pinned `607e019f`) and this repo (`v3`, 2026-07-06). Line refs into codeapi are `upstream/service/src/...` in that workspace.
 
-These `plans_future` documents are reviewed architecture inputs, not an active execution plan. When implementation starts, create one dated active plan on the implementation branch, link these documents and the relevant ADRs, keep its `Progress` current, and ship that plan with the implementation PR.
+These `plans_future` documents are reviewed architecture inputs, not an active execution plan. Do not merge them as a plan-only PR. When implementation starts, sync the carrying branch with current `v3`, create one dated active plan on that branch, link these documents and the relevant ADRs, keep its `Progress` current, and ship the architecture, plan, and implementation together. If implementation moves to a new branch, carry these commits into its PR and close the architecture-only PR unmerged.
 
 ## What codeapi is
 
