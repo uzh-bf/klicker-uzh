@@ -2986,6 +2986,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       copyUrl: 'URL kopieren',
       refreshOverview: 'Übersicht aktualisieren',
       loadMoreThreads: 'Weitere Beiträge laden',
+      allThreadsLoaded: 'Alle Beiträge geladen',
+      loadedThreadCount:
+        '{count, plural, one {# Beitrag geladen} other {# Beiträge geladen}}',
       embedUrl: 'Embed URL',
       expiresAt: 'Gültig bis: {date}',
       embedGenFailed:

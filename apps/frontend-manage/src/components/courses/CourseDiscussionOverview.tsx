@@ -6,11 +6,53 @@ import {
   DiscussionSort,
   GetCourseDiscussionEmbeddingInfoDocument,
   GetCourseDiscussionOverviewDocument,
+  type GetCourseDiscussionOverviewQuery,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H3, UserNotification, toast } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef, useState } from 'react'
+
+type OverviewGroup =
+  GetCourseDiscussionOverviewQuery['courseDiscussionOverview']['groups'][number]
+
+interface OverviewPagination {
+  groups: OverviewGroup[]
+  nextCursor: string | null
+  hasMore: boolean
+}
+
+function mergeOverviewGroups(
+  ...groupSets: Array<OverviewGroup[]>
+): OverviewGroup[] {
+  const mergedGroups: OverviewGroup[] = []
+  const groupIndexes = new Map<string, number>()
+
+  for (const groups of groupSets) {
+    for (const group of groups) {
+      const existingIndex = groupIndexes.get(group.sourceKey)
+
+      if (existingIndex === undefined) {
+        groupIndexes.set(group.sourceKey, mergedGroups.length)
+        mergedGroups.push({
+          ...group,
+          threads: [...group.threads],
+        })
+        continue
+      }
+
+      const existingGroup = mergedGroups[existingIndex]!
+      const existingThreadIds = new Set(
+        existingGroup.threads.map((thread) => thread.id)
+      )
+      existingGroup.threads.push(
+        ...group.threads.filter((thread) => !existingThreadIds.has(thread.id))
+      )
+    }
+  }
+
+  return mergedGroups
+}
 
 function CourseDiscussionOverview({
   courseId,
@@ -33,15 +75,15 @@ function CourseDiscussionOverview({
   } | null>(null)
   const [currentTime, setCurrentTime] = useState(0)
   const [loadingMore, setLoadingMore] = useState(false)
+  const [pagination, setPagination] = useState<OverviewPagination | null>(null)
   const loadingMoreRef = useRef(false)
 
   const {
     data: overviewData,
     loading: loadingOverview,
+    error: overviewError,
     refetch: refetchOverview,
     fetchMore,
-    startPolling,
-    stopPolling,
   } = useQuery(GetCourseDiscussionOverviewDocument, {
     variables: {
       courseId,
@@ -83,64 +125,46 @@ function CourseDiscussionOverview({
     setGeneratedEmbedInfo(null)
   }, [externalSource, externalRef, allowAnonymous, expiresInHours])
 
+  useEffect(() => {
+    setPagination(null)
+    loadingMoreRef.current = false
+    setLoadingMore(false)
+  }, [courseId, isCourseQAEnabled])
+
   const overview = overviewData?.courseDiscussionOverview
-  const groups = overview?.groups ?? []
-  const hasMore = overview?.hasMore ?? false
-  const nextCursor = overview?.nextCursor ?? null
+  const groups = mergeOverviewGroups(
+    overview?.groups ?? [],
+    pagination?.groups ?? []
+  )
+  const hasMore = pagination?.hasMore ?? overview?.hasMore ?? false
+  const nextCursor = pagination
+    ? pagination.nextCursor
+    : (overview?.nextCursor ?? null)
+  const loadedThreadCount = groups.reduce(
+    (count, group) => count + group.threads.length,
+    0
+  )
 
   const handleLoadMore = useCallback(async () => {
-    if (!nextCursor || !hasMore || loadingMoreRef.current) return
+    if (!nextCursor || !hasMore || loadingOverview || loadingMoreRef.current) {
+      return
+    }
 
     loadingMoreRef.current = true
     setLoadingMore(true)
 
     try {
-      await fetchMore({
+      const result = await fetchMore({
         variables: { cursor: nextCursor },
-        updateQuery: (previous, { fetchMoreResult }) => {
-          if (!fetchMoreResult) return previous
-
-          const mergedGroups = previous.courseDiscussionOverview.groups.map(
-            (group) => ({
-              ...group,
-              threads: [...group.threads],
-            })
-          )
-          const groupIndexes = new Map(
-            mergedGroups.map((group, index) => [group.sourceKey, index])
-          )
-
-          for (const incomingGroup of fetchMoreResult.courseDiscussionOverview
-            .groups) {
-            const existingIndex = groupIndexes.get(incomingGroup.sourceKey)
-
-            if (existingIndex === undefined) {
-              groupIndexes.set(incomingGroup.sourceKey, mergedGroups.length)
-              mergedGroups.push(incomingGroup)
-              continue
-            }
-
-            const existingGroup = mergedGroups[existingIndex]!
-            const existingThreadIds = new Set(
-              existingGroup.threads.map((thread) => thread.id)
-            )
-            existingGroup.threads.push(
-              ...incomingGroup.threads.filter(
-                (thread) => !existingThreadIds.has(thread.id)
-              )
-            )
-          }
-
-          return {
-            ...previous,
-            courseDiscussionOverview: {
-              ...fetchMoreResult.courseDiscussionOverview,
-              groups: mergedGroups,
-            },
-          }
-        },
       })
-      stopPolling()
+      const nextPage = result.data?.courseDiscussionOverview
+      if (!nextPage) return
+
+      setPagination((previous) => ({
+        groups: mergeOverviewGroups(previous?.groups ?? [], nextPage.groups),
+        nextCursor: nextPage.nextCursor ?? null,
+        hasMore: nextPage.hasMore,
+      }))
     } catch {
       toast({
         type: 'error',
@@ -150,7 +174,20 @@ function CourseDiscussionOverview({
       loadingMoreRef.current = false
       setLoadingMore(false)
     }
-  }, [fetchMore, hasMore, nextCursor, stopPolling, t])
+  }, [fetchMore, hasMore, loadingOverview, nextCursor, t])
+
+  const handleRefresh = useCallback(async () => {
+    if (loadingMoreRef.current) return
+
+    try {
+      await refetchOverview()
+    } catch {
+      toast({
+        type: 'error',
+        message: t('shared.generic.systemError'),
+      })
+    }
+  }, [refetchOverview, t])
 
   if (!isCourseQAEnabled) {
     return (
@@ -193,17 +230,20 @@ function CourseDiscussionOverview({
             {t('manage.course.discussionOverview')}
           </H3>
           <Button
-            onClick={async () => {
-              await refetchOverview()
-              startPolling(20000)
-            }}
+            onClick={handleRefresh}
+            disabled={loadingMore}
             data={{ cy: 'course-qa-refresh-overview' }}
           >
             <Button.Label>{t('manage.course.refreshOverview')}</Button.Label>
           </Button>
         </div>
 
-        {groups.length === 0 ? (
+        {overviewError && !overview ? (
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        ) : groups.length === 0 ? (
           <UserNotification
             type="info"
             message={t('manage.course.noThreadsYet')}
@@ -213,6 +253,7 @@ function CourseDiscussionOverview({
           <div
             className="flex flex-col gap-3"
             data-cy="course-qa-overview-groups"
+            aria-busy={loadingMore}
           >
             {groups.map((group) => (
               <div
@@ -258,18 +299,25 @@ function CourseDiscussionOverview({
               </div>
             ))}
 
-            {hasMore && (
+            {(hasMore || pagination !== null) && (
               <div className="flex justify-center pt-1">
                 <Button
                   onClick={handleLoadMore}
                   loading={loadingMore}
-                  disabled={loadingMore}
+                  disabled={loadingMore || !hasMore}
                   data={{ cy: 'course-qa-load-more-overview' }}
                 >
                   <Button.Label>
-                    {t('manage.course.loadMoreThreads')}
+                    {hasMore
+                      ? t('manage.course.loadMoreThreads')
+                      : t('manage.course.allThreadsLoaded')}
                   </Button.Label>
                 </Button>
+                <span className="sr-only" aria-live="polite">
+                  {t('manage.course.loadedThreadCount', {
+                    count: loadedThreadCount,
+                  })}
+                </span>
               </div>
             )}
           </div>
