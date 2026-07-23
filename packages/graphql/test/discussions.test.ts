@@ -308,6 +308,80 @@ describe('Integration tests for the course discussion platform', () => {
     expect(acceptedThread?.isAnonymous).toBe(true)
   })
 
+  it('keeps upvotes behind both course discussion gates', async () => {
+    const course = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, { courseId: course.id })
+
+    const participantOneId = await seedParticipantInCourse(prisma, {
+      courseId: course.id,
+    })
+    const participantTwoId = await seedParticipantInCourse(prisma, {
+      courseId: course.id,
+    })
+    const participantOneCtx = createParticipantContext(
+      userOneCtx,
+      participantOneId
+    )
+    const participantTwoCtx = createParticipantContext(
+      userOneCtx,
+      participantTwoId
+    )
+
+    const thread = await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: 'Voting must fail closed with either gate disabled.',
+        scope: { scopeType: DiscussionScopeType.COURSE },
+      },
+      participantOneCtx
+    )
+    const reply = await createCourseDiscussionReply(
+      {
+        courseId: course.id,
+        threadId: thread!.id,
+        content: 'Reply voting must use the same gates.',
+      },
+      participantOneCtx
+    )
+
+    expect(thread).toBeTruthy()
+    expect(reply).toBeTruthy()
+
+    for (const settings of [
+      { enabled: false, rolloutEnabled: true },
+      { enabled: true, rolloutEnabled: false },
+    ]) {
+      await enableCourseDiscussion(prisma, {
+        courseId: course.id,
+        ...settings,
+      })
+
+      expect(
+        await toggleCourseDiscussionThreadUpvote(
+          { threadId: thread!.id, upvote: true },
+          participantTwoCtx
+        )
+      ).toBeNull()
+      expect(
+        await toggleCourseDiscussionReplyUpvote(
+          { replyId: reply!.id, upvote: true },
+          participantTwoCtx
+        )
+      ).toBeNull()
+    }
+
+    expect(
+      await prisma.discussionThreadVote.count({
+        where: { threadId: thread!.id },
+      })
+    ).toBe(0)
+    expect(
+      await prisma.discussionReplyVote.count({
+        where: { replyId: reply!.id },
+      })
+    ).toBe(0)
+  })
+
   it('keeps discussion functionality disabled when the course flag is off', async () => {
     const course = await seedCourse({}, userOneCtx)
     await enableCourseDiscussion(prisma, {
@@ -936,12 +1010,21 @@ describe('Integration tests for the course discussion platform', () => {
 
     expect(externalThread).toBeTruthy()
 
-    const overview = await courseDiscussionOverview(
+    const participantOverview = await courseDiscussionOverview(
       {
         courseId: course.id,
         limit: 50,
       },
       participantCtx
+    )
+    expect(participantOverview.groups).toHaveLength(0)
+
+    const overview = await courseDiscussionOverview(
+      {
+        courseId: course.id,
+        limit: 50,
+      },
+      userOneCtx
     )
 
     const overviewLabels = overview.groups.map((group) => group.sourceLabel)

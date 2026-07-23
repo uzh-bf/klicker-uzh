@@ -362,6 +362,10 @@ async function getCourseAccessActor(
   }
 
   if (ctx.user.role === DB.UserRole.PARTICIPANT) {
+    if (minimumPermissionLevel !== DB.PermissionLevel.READ) {
+      return null
+    }
+
     const participation = await ctx.prisma.participation.findUnique({
       where: {
         courseId_participantId: {
@@ -1049,7 +1053,13 @@ export async function courseDiscussionOverview(
     return { groups: [], nextCursor: null, hasMore: false, totalThreads: 0 }
   }
 
-  const actor = await getCourseAccessActor({ courseId }, ctx)
+  const actor = await getCourseAccessActor(
+    {
+      courseId,
+      minimumPermissionLevel: DB.PermissionLevel.WRITE,
+    },
+    ctx
+  )
   if (!actor) {
     return { groups: [], nextCursor: null, hasMore: false, totalThreads: 0 }
   }
@@ -1664,6 +1674,10 @@ export async function toggleCourseDiscussionThreadUpvote(
   const resolved = await resolveThreadCourseAndActor({ threadId }, ctx)
   if (!resolved || !resolved.actor.participantId) return null
 
+  const course = await getCourseSettings(resolved.courseId, ctx)
+  if (!course || !course.isCourseQARolloutEnabled || !course.isCourseQAEnabled)
+    return null
+
   const participantId = resolved.actor.participantId
 
   await ctx.prisma.$transaction(async (tx) => {
@@ -1741,6 +1755,10 @@ export async function toggleCourseDiscussionReplyUpvote(
 ): Promise<DiscussionReplyWithRelations | null> {
   const resolved = await resolveReplyCourseAndActor({ replyId }, ctx)
   if (!resolved || !resolved.actor.participantId) return null
+
+  const course = await getCourseSettings(resolved.courseId, ctx)
+  if (!course || !course.isCourseQARolloutEnabled || !course.isCourseQAEnabled)
+    return null
 
   const participantId = resolved.actor.participantId
 
