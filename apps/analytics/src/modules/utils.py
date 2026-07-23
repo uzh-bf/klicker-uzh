@@ -297,13 +297,7 @@ def scoped_course_ids(
 
     mode = config.mode if config is not None else analytics_mode()
     if mode == "incremental":
-        rows = (
-            session.execute(
-                select(Course.id).where(Course.analyticsFinalizedAt.is_(None))
-            )
-            .scalars()
-            .all()
-        )
+        rows = session.execute(select(Course.id).where(Course.analyticsFinalizedAt.is_(None))).scalars().all()
         return [str(cid) for cid in rows]
 
     return None

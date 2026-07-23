@@ -13,9 +13,7 @@ _PLACEHOLDER = "/*COURSE_FILTER*/"
 
 
 def _prepare_sql(template: str, course_ids: list[str] | None) -> str:
-    clause = (
-        "" if course_ids is None else render_uuid_in_clause('lq."courseId"', course_ids)
-    )
+    clause = "" if course_ids is None else render_uuid_in_clause('lq."courseId"', course_ids)
     return template.replace(_PLACEHOLDER, clause)
 
 

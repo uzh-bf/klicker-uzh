@@ -35,9 +35,7 @@ def _surface_forms(texts: Sequence[str]) -> Dict[str, str]:
     return {lower: c.most_common(1)[0][0] for lower, c in counts.items()}
 
 
-def _select_non_overlapping(
-    ranked_terms: Sequence[Tuple[str, float]], k: int
-) -> List[str]:
+def _select_non_overlapping(ranked_terms: Sequence[Tuple[str, float]], k: int) -> List[str]:
     """Greedy pick up to k terms that share no tokens with already-picked ones.
 
     TF-IDF over a pseudo-document will happily surface both a bigram and its
@@ -98,9 +96,7 @@ def _top_terms_per_cluster(
             labels[cid] = f"cluster-{cid}"
             continue
         top_indices = row_arr.argsort()[::-1][:candidate_pool]
-        ranked = [
-            (feature_names[i], float(row_arr[i])) for i in top_indices if row_arr[i] > 0
-        ]
+        ranked = [(feature_names[i], float(row_arr[i])) for i in top_indices if row_arr[i] > 0]
         picked = _select_non_overlapping(ranked, k=top_k)
         if not picked:
             labels[cid] = f"cluster-{cid}"

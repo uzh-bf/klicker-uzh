@@ -12,9 +12,7 @@ def _read_sql(*parts: str) -> str:
 
 class AnalyticsSqlContractTests(unittest.TestCase):
     def test_live_quiz_rollup_ranks_first_and_last_attempt_per_participant(self):
-        statement = _read_sql(
-            "live_quiz_analytics", "aggregated_live_quiz_analytics.sql"
-        )
+        statement = _read_sql("live_quiz_analytics", "aggregated_live_quiz_analytics.sql")
 
         self.assertIn('PARTITION BY lqr."participantId", lqr."instanceId"', statement)
         self.assertIn("attempt_asc = 1", statement)
@@ -22,9 +20,7 @@ class AnalyticsSqlContractTests(unittest.TestCase):
         self.assertNotIn("JOIN LATERAL", statement)
 
     def test_topic_clustering_requires_accepted_disclaimer(self):
-        source = (_MODULES / "chat_topic_clustering" / "load_user_text.py").read_text(
-            encoding="utf-8"
-        )
+        source = (_MODULES / "chat_topic_clustering" / "load_user_text.py").read_text(encoding="utf-8")
 
         self.assertIn('JOIN "ChatUsageCredits"', source)
         self.assertIn('cuc."participantId" = ct."participantId"', source)
@@ -47,9 +43,7 @@ class AnalyticsSqlContractTests(unittest.TestCase):
     def test_chat_distribution_extracts_naive_utc_timestamp_directly(self):
         statements = (
             _read_sql("aggregated_chat_analytics", "aggregated_chatbot_analytics.sql"),
-            _read_sql(
-                "aggregated_chat_analytics", "aggregated_chatbot_analytics_weekly.sql"
-            ),
+            _read_sql("aggregated_chat_analytics", "aggregated_chatbot_analytics_weekly.sql"),
         )
 
         for statement in statements:
@@ -57,15 +51,11 @@ class AnalyticsSqlContractTests(unittest.TestCase):
                 messages_cte = statement.index("messages AS")
                 disclaimer_cte = statement.index("disclaimer_counts AS")
                 self.assertIn("eligible_pairs AS", statement[:messages_cte])
-                self.assertIn(
-                    "JOIN eligible_pairs ep", statement[messages_cte:disclaimer_cte]
-                )
+                self.assertIn("JOIN eligible_pairs ep", statement[messages_cte:disclaimer_cte])
                 self.assertIn('EXTRACT(ISODOW FROM "createdAt")', statement)
                 self.assertIn('EXTRACT(HOUR   FROM "createdAt")', statement)
                 self.assertIn("::timestamptz AT TIME ZONE 'UTC'", statement)
-                self.assertIn(
-                    'cuc."acceptedDisclaimerId" = cb."disclaimerId"', statement
-                )
+                self.assertIn('cuc."acceptedDisclaimerId" = cb."disclaimerId"', statement)
                 self.assertIn('cuc."disclaimerDeclined" = false', statement)
 
 

@@ -40,19 +40,11 @@ def prepare_participant_activity_data(session: Session, course_id: str):
         .all()
     )
     participant_ids = (
-        session.execute(
-            select(Participation.participantId).where(
-                Participation.courseId == course_id
-            )
-        )
-        .scalars()
-        .all()
+        session.execute(select(Participation.participantId).where(Participation.courseId == course_id)).scalars().all()
     )
 
     published_statuses = {"PUBLISHED", "ENDED", "GRADED"}
-    practice_quizzes = [
-        pq for pq in practice_quizzes if pq.status in published_statuses
-    ]
+    practice_quizzes = [pq for pq in practice_quizzes if pq.status in published_statuses]
     micro_learnings = [ml for ml in micro_learnings if ml.status in published_statuses]
 
     def _activity_rows(activities, activity_type: str):
@@ -66,8 +58,7 @@ def prepare_participant_activity_data(session: Session, course_id: str):
         ]
 
     df_activities = pd.DataFrame(
-        _activity_rows(practice_quizzes, "practiceQuizzes")
-        + _activity_rows(micro_learnings, "microLearnings")
+        _activity_rows(practice_quizzes, "practiceQuizzes") + _activity_rows(micro_learnings, "microLearnings")
     )
 
     responses = []

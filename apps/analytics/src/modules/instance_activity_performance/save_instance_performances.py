@@ -6,9 +6,7 @@ from src.db_helpers import bulk_upsert
 from src.models import InstancePerformance
 
 
-def save_instance_performances(
-    session: Session, df_instance_performance, course_id: str, total_only: bool = False
-):
+def save_instance_performances(session: Session, df_instance_performance, course_id: str, total_only: bool = False):
     if df_instance_performance is None or df_instance_performance.empty:
         return
 

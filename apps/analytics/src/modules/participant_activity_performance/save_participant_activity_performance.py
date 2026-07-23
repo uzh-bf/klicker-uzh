@@ -5,9 +5,7 @@ from src.db_helpers import bulk_upsert
 from src.models import ParticipantActivityPerformance
 
 
-def save_participant_activity_performance(
-    session: Session, df_activity_performance, activity_type: str
-):
+def save_participant_activity_performance(session: Session, df_activity_performance, activity_type: str):
     if df_activity_performance is None or df_activity_performance.empty:
         return
 

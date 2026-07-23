@@ -26,9 +26,7 @@ def cluster_chatbot(
     """
     rows = load_user_text(session, chatbot_id, win_start, win_end)
     if verbose:
-        print(
-            f"[chat_topic_clustering] chatbot={chatbot_id} messages_loaded={len(rows)}"
-        )
+        print(f"[chat_topic_clustering] chatbot={chatbot_id} messages_loaded={len(rows)}")
 
     if len(rows) < MIN_MESSAGES:
         if verbose:

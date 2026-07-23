@@ -27,7 +27,5 @@ def run_analytics_module(
         try:
             main()
         except SystemExit as exc:
-            raise RuntimeError(
-                f"{script_module} exited with status {exc.code}"
-            ) from exc
+            raise RuntimeError(f"{script_module} exited with status {exc.code}") from exc
         check_cancellation()

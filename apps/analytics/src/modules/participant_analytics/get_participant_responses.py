@@ -14,24 +14,16 @@ _MISSING_COURSE_START = datetime(1900, 1, 1, 0, 0, 0)
 _MISSING_COURSE_END = datetime(2262, 4, 11, 23, 47, 16)
 
 
-def _coerce_window_bounds(
-    start_date: object, end_date: object
-) -> tuple[datetime, datetime]:
+def _coerce_window_bounds(start_date: object, end_date: object) -> tuple[datetime, datetime]:
     return coerce_timestamp(start_date), coerce_timestamp(end_date)
 
 
-def _load_course_windows(
-    session: Session, course_ids: set[str]
-) -> dict[str, dict[str, datetime]]:
+def _load_course_windows(session: Session, course_ids: set[str]) -> dict[str, dict[str, datetime]]:
     if not course_ids:
         return {}
 
     rows = (
-        session.execute(
-            select(Course.id, Course.startDate, Course.endDate).where(
-                Course.id.in_(course_ids)
-            )
-        )
+        session.execute(select(Course.id, Course.startDate, Course.endDate).where(Course.id.in_(course_ids)))
         .mappings()
         .all()
     )
@@ -58,29 +50,17 @@ def _detail_to_dict(
         course_window = course_windows.get(course_id)
         base["courseId"] = course_id
         base["course_start_date"] = (
-            coerce_timestamp(course_window["startDate"])
-            if course_window
-            else _MISSING_COURSE_START
+            coerce_timestamp(course_window["startDate"]) if course_window else _MISSING_COURSE_START
         )
-        base["course_end_date"] = (
-            coerce_timestamp(course_window["endDate"])
-            if course_window
-            else _MISSING_COURSE_END
-        )
+        base["course_end_date"] = coerce_timestamp(course_window["endDate"]) if course_window else _MISSING_COURSE_END
     elif detail.microLearning is not None:
         course_id = str(detail.microLearning.courseId)
         course_window = course_windows.get(course_id)
         base["courseId"] = course_id
         base["course_start_date"] = (
-            coerce_timestamp(course_window["startDate"])
-            if course_window
-            else _MISSING_COURSE_START
+            coerce_timestamp(course_window["startDate"]) if course_window else _MISSING_COURSE_START
         )
-        base["course_end_date"] = (
-            coerce_timestamp(course_window["endDate"])
-            if course_window
-            else _MISSING_COURSE_END
-        )
+        base["course_end_date"] = coerce_timestamp(course_window["endDate"]) if course_window else _MISSING_COURSE_END
     else:
         base["courseId"] = None
         base["course_start_date"] = _MISSING_COURSE_START
@@ -89,9 +69,7 @@ def _detail_to_dict(
     return base
 
 
-def get_participant_responses(
-    session: Session, start_date: str, end_date: str, verbose: bool = False
-):
+def get_participant_responses(session: Session, start_date: str, end_date: str, verbose: bool = False):
     """Return a dataframe of per-response detail rows for the window.
 
     The time predicate stays in Postgres so the ``createdAt`` BRIN index can
@@ -121,8 +99,7 @@ def get_participant_responses(
     } | {
         str(detail.microLearning.courseId)
         for detail in details
-        if detail.microLearning is not None
-        and detail.microLearning.courseId is not None
+        if detail.microLearning is not None and detail.microLearning.courseId is not None
     }
     course_windows = _load_course_windows(session, course_ids)
 
@@ -131,11 +108,7 @@ def get_participant_responses(
         rows.append(_detail_to_dict(detail, str(detail.participantId), course_windows))
 
     if verbose:
-        print(
-            "Found {} detail responses for timespan {}..{}".format(
-                len(rows), start_date, end_date
-            )
-        )
+        print("Found {} detail responses for timespan {}..{}".format(len(rows), start_date, end_date))
 
     df_details = pd.DataFrame(rows)
     if df_details.empty:

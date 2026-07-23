@@ -44,9 +44,7 @@ def _count_elements_for_course(session: Session, course_id: str) -> int:
     return total
 
 
-def save_aggregated_analytics(
-    session: Session, df_analytics, timestamp, analytics_type="DAILY"
-):
+def save_aggregated_analytics(session: Session, df_analytics, timestamp, analytics_type="DAILY"):
     if df_analytics is None or df_analytics.empty:
         return
 
@@ -102,10 +100,6 @@ def save_aggregated_analytics(
         AggregatedAnalytics,
         rows,
         conflict_cols=["type", "courseId", "timestamp"],
-        update_cols=[
-            c
-            for c in rows[0].keys()
-            if c not in ("type", "courseId", "timestamp", "createdAt")
-        ],
+        update_cols=[c for c in rows[0].keys() if c not in ("type", "courseId", "timestamp", "createdAt")],
     )
     session.commit()

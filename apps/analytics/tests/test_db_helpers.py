@@ -41,9 +41,7 @@ def test_row_to_dict_skips_unloaded_column_attributes():
         session.commit()
 
     with Session(engine) as session:
-        thing = session.execute(
-            select(_Thing).options(load_only(_Thing.id, _Thing.name))
-        ).scalar_one()
+        thing = session.execute(select(_Thing).options(load_only(_Thing.id, _Thing.name))).scalar_one()
 
         assert row_to_dict(thing) == {"id": 1, "name": "visible"}
 

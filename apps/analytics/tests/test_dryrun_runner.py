@@ -28,9 +28,7 @@ def _pick_course_id() -> str | None:
     from src.db import engine
 
     with engine.connect() as conn:
-        row = conn.execute(
-            text('SELECT id FROM "Course" ORDER BY "startDate" LIMIT 1')
-        ).first()
+        row = conn.execute(text('SELECT id FROM "Course" ORDER BY "startDate" LIMIT 1')).first()
     return str(row[0]) if row else None
 
 
@@ -81,10 +79,7 @@ def test_run_dryrun_end_to_end_writes_expected_sheets(seeded_course_id, tmp_path
     # Every script in the pipeline should have explicit status + row deltas.
     assert len(buffer.scripts) >= 15
     assert all(s["elapsed_s"] is not None for s in buffer.scripts)
-    assert all(
-        s["status"] in {"produced", "empty", "skipped", "failed"}
-        for s in buffer.scripts
-    )
+    assert all(s["status"] in {"produced", "empty", "skipped", "failed"} for s in buffer.scripts)
     assert all(s["rows_written"] is not None for s in buffer.scripts)
 
 
@@ -95,9 +90,7 @@ def test_run_dryrun_aborts_on_invalid_uuid(tmp_path):
         run_dryrun("not-a-uuid", tmp_path / "noop.xlsx", allow_rw_role=True)
 
 
-def test_run_dryrun_intentionally_skips_platform_and_validity_scripts(
-    tmp_path, monkeypatch
-):
+def test_run_dryrun_intentionally_skips_platform_and_validity_scripts(tmp_path, monkeypatch):
     from src.dryrun import runner
 
     fake_db = types.ModuleType("src.db")
@@ -127,15 +120,9 @@ def test_run_dryrun_intentionally_skips_platform_and_validity_scripts(
         "_assert_read_only_role",
         lambda connection, *, allow_rw: "dryrun_user",
     )
-    monkeypatch.setattr(
-        runner, "_auto_scope_window", lambda connection, course_id: None
-    )
-    monkeypatch.setattr(
-        runner, "_detect_missing_tables", lambda connection, names: set()
-    )
-    monkeypatch.setattr(
-        runner, "_collect_reference_lookups", lambda connection, buffer, course_id: {}
-    )
+    monkeypatch.setattr(runner, "_auto_scope_window", lambda connection, course_id: None)
+    monkeypatch.setattr(runner, "_detect_missing_tables", lambda connection, names: set())
+    monkeypatch.setattr(runner, "_collect_reference_lookups", lambda connection, buffer, course_id: {})
     monkeypatch.setattr(runner, "_git_sha", lambda: "deadbeef")
 
     def _fake_write_excel(buffer, output_path, metadata):
@@ -159,16 +146,11 @@ def test_run_dryrun_intentionally_skips_platform_and_validity_scripts(
     )
 
     script_status = {entry["script"]: entry for entry in buffer.scripts}
-    assert (
-        script_status["src.scripts.13_platform_semester_analytics"]["status"]
-        == "skipped"
-    )
+    assert script_status["src.scripts.13_platform_semester_analytics"]["status"] == "skipped"
     assert script_status["src.scripts.99_mark_analytics_valid"]["status"] == "skipped"
     assert "PlatformSemesterAnalytics" not in buffer.table_status
     assert "AggregatedCourseAnalytics" not in buffer.table_status
-    assert "analyticsLastComputedAt" not in "".join(
-        entry.get("error", "") or "" for entry in buffer.scripts
-    )
+    assert "analyticsLastComputedAt" not in "".join(entry.get("error", "") or "" for entry in buffer.scripts)
 
     metadata = captured["metadata"]
     assert metadata["scope_mode"] == "course"
@@ -183,10 +165,7 @@ def test_run_dryrun_does_not_persist_writes(seeded_course_id, tmp_path):
 
     with engine.connect() as conn:
         before = conn.execute(
-            text(
-                'SELECT MAX("computedAt") FROM "ParticipantAnalytics" '
-                'WHERE "courseId" = :cid'
-            ),
+            text('SELECT MAX("computedAt") FROM "ParticipantAnalytics" WHERE "courseId" = :cid'),
             {"cid": seeded_course_id},
         ).scalar()
 
@@ -194,10 +173,7 @@ def test_run_dryrun_does_not_persist_writes(seeded_course_id, tmp_path):
 
     with engine.connect() as conn:
         after = conn.execute(
-            text(
-                'SELECT MAX("computedAt") FROM "ParticipantAnalytics" '
-                'WHERE "courseId" = :cid'
-            ),
+            text('SELECT MAX("computedAt") FROM "ParticipantAnalytics" WHERE "courseId" = :cid'),
             {"cid": seeded_course_id},
         ).scalar()
 
@@ -206,9 +182,7 @@ def test_run_dryrun_does_not_persist_writes(seeded_course_id, tmp_path):
     assert before == after
 
 
-def test_run_dryrun_course_scope_keeps_chat_rows_to_selected_course(
-    seeded_course_id, tmp_path
-):
+def test_run_dryrun_course_scope_keeps_chat_rows_to_selected_course(seeded_course_id, tmp_path):
     from src.dryrun.runner import run_dryrun
 
     output = tmp_path / f"course-scope-{seeded_course_id}.xlsx"
@@ -261,8 +235,8 @@ def test_initial_aggregated_analytics_course_uses_date_sentinel(monkeypatch):
     monkeypatch.setattr(
         module,
         "compute_aggregated_analytics",
-        lambda session, start, end, timestamp, analytics_type, verbose, course_ids=None: (
-            captured.append((start, end, timestamp, analytics_type, course_ids))
+        lambda session, start, end, timestamp, analytics_type, verbose, course_ids=None: captured.append(
+            (start, end, timestamp, analytics_type, course_ids)
         ),
     )
 

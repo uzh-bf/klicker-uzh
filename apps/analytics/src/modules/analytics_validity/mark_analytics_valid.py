@@ -53,10 +53,7 @@ def mark_analytics_valid(session: Session, verbose: bool = False):
     finalize = mode == "finalize" and bool(course_ids)
 
     if verbose:
-        print(
-            f"[analytics_validity] mode={mode} finalize={finalize} "
-            f"course_ids={len(course_ids) if course_ids else 0}"
-        )
+        print(f"[analytics_validity] mode={mode} finalize={finalize} course_ids={len(course_ids) if course_ids else 0}")
     result = session.execute(text(_render_sql(finalize, course_ids)))
     session.commit()
     rows = result.rowcount or 0

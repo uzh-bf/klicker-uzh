@@ -13,14 +13,10 @@ from src.models import AggregatedCourseAnalytics, ParticipantAnalytics
 def compute_weekday_activity(session: Session, course):
     course_id = course["id"]
     course_start = (
-        course["startDate"].date()
-        if hasattr(course["startDate"], "date")
-        else pd.Timestamp(course["startDate"]).date()
+        course["startDate"].date() if hasattr(course["startDate"], "date") else pd.Timestamp(course["startDate"]).date()
     )
     course_end = (
-        course["endDate"].date()
-        if hasattr(course["endDate"], "date")
-        else pd.Timestamp(course["endDate"]).date()
+        course["endDate"].date() if hasattr(course["endDate"], "date") else pd.Timestamp(course["endDate"]).date()
     )
     total_course_participants = len(course["participations"])
 
@@ -71,9 +67,7 @@ def compute_weekday_activity(session: Session, course):
 def single_weekday_activity(weekdays, df_daily):
     collector = []
     for weekday in weekdays:
-        df_weekday = df_daily[
-            df_daily["timestamp"] == pd.Timestamp(weekday).tz_localize("UTC")
-        ]
+        df_weekday = df_daily[df_daily["timestamp"] == pd.Timestamp(weekday).tz_localize("UTC")]
         if df_weekday.empty:
             collector.append(0)
         collector.append(len(df_weekday))

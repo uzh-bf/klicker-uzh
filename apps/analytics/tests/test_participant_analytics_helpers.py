@@ -13,9 +13,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 
 def test_detail_to_dict_uses_course_lookup_without_course_relationship(monkeypatch):
-    module = importlib.import_module(
-        "src.modules.participant_analytics.get_participant_responses"
-    )
+    module = importlib.import_module("src.modules.participant_analytics.get_participant_responses")
 
     created_at = datetime(2026, 4, 20, tzinfo=timezone.utc)
     detail = types.SimpleNamespace(
@@ -41,9 +39,7 @@ def test_detail_to_dict_uses_course_lookup_without_course_relationship(monkeypat
 
 
 def test_detail_to_dict_normalizes_timestamps_to_naive_utc(monkeypatch):
-    module = importlib.import_module(
-        "src.modules.participant_analytics.get_participant_responses"
-    )
+    module = importlib.import_module("src.modules.participant_analytics.get_participant_responses")
 
     detail = types.SimpleNamespace(
         createdAt=datetime(2026, 4, 20, 10, 30, tzinfo=timezone.utc),
@@ -67,9 +63,7 @@ def test_detail_to_dict_normalizes_timestamps_to_naive_utc(monkeypatch):
 
 
 def test_load_course_windows_selects_only_required_course_columns():
-    module = importlib.import_module(
-        "src.modules.participant_analytics.get_participant_responses"
-    )
+    module = importlib.import_module("src.modules.participant_analytics.get_participant_responses")
 
     captured = {}
 
@@ -95,9 +89,7 @@ def test_load_course_windows_selects_only_required_course_columns():
 
 
 def test_window_bounds_accept_aware_strings_and_compare_with_naive_datetimes():
-    module = importlib.import_module(
-        "src.modules.participant_analytics.get_participant_responses"
-    )
+    module = importlib.import_module("src.modules.participant_analytics.get_participant_responses")
 
     start_ts, end_ts = module._coerce_window_bounds(
         "2026-02-15T00:00:00.000Z",
@@ -109,9 +101,7 @@ def test_window_bounds_accept_aware_strings_and_compare_with_naive_datetimes():
 
 
 def test_participant_response_query_filters_the_window_in_postgres():
-    module = importlib.import_module(
-        "src.modules.participant_analytics.get_participant_responses"
-    )
+    module = importlib.import_module("src.modules.participant_analytics.get_participant_responses")
 
     captured = {}
 
@@ -190,9 +180,7 @@ def _numerical_instance_df(options):
     ],
 )
 def test_numerical_ranges_match_product_grading(response_value, expected):
-    module = importlib.import_module(
-        "src.modules.participant_analytics.compute_correctness"
-    )
+    module = importlib.import_module("src.modules.participant_analytics.compute_correctness")
 
     result = module.compute_correctness_columns(
         _numerical_instance_df(
@@ -239,12 +227,8 @@ def test_numerical_ranges_match_product_grading(response_value, expected):
         ({"solutionRanges": [{"min": 0}]}, float("inf"), None),
     ],
 )
-def test_numerical_exact_and_empty_solutions_match_product_grading(
-    options, response_value, expected
-):
-    module = importlib.import_module(
-        "src.modules.participant_analytics.compute_correctness"
-    )
+def test_numerical_exact_and_empty_solutions_match_product_grading(options, response_value, expected):
+    module = importlib.import_module("src.modules.participant_analytics.compute_correctness")
 
     result = module.compute_correctness_columns(
         _numerical_instance_df(options),
@@ -258,9 +242,7 @@ def test_numerical_exact_and_empty_solutions_match_product_grading(
 
 
 def test_selection_correctness_without_sample_solution_is_treated_as_correct():
-    module = importlib.import_module(
-        "src.modules.participant_analytics.compute_correctness"
-    )
+    module = importlib.import_module("src.modules.participant_analytics.compute_correctness")
 
     result = module.compute_correctness_columns(
         _selection_instance_df({"hasSampleSolution": False, "numberOfInputs": 4}),
@@ -279,9 +261,7 @@ def test_selection_correctness_without_sample_solution_is_treated_as_correct():
     ],
 )
 def test_selection_correctness_matches_existing_product_grading(response, expected):
-    module = importlib.import_module(
-        "src.modules.participant_analytics.compute_correctness"
-    )
+    module = importlib.import_module("src.modules.participant_analytics.compute_correctness")
 
     result = module.compute_correctness_columns(
         _selection_instance_df(
@@ -298,9 +278,7 @@ def test_selection_correctness_matches_existing_product_grading(response, expect
 
 
 def test_selection_correctness_returns_none_when_solution_metadata_missing():
-    module = importlib.import_module(
-        "src.modules.participant_analytics.compute_correctness"
-    )
+    module = importlib.import_module("src.modules.participant_analytics.compute_correctness")
 
     result = module.compute_correctness_columns(
         _selection_instance_df({"hasSampleSolution": True, "numberOfInputs": 0}),
@@ -311,9 +289,7 @@ def test_selection_correctness_returns_none_when_solution_metadata_missing():
 
 
 def test_case_study_correctness_without_sample_solution_is_treated_as_correct():
-    module = importlib.import_module(
-        "src.modules.participant_analytics.compute_correctness"
-    )
+    module = importlib.import_module("src.modules.participant_analytics.compute_correctness")
 
     result = module.compute_correctness_columns(
         _case_study_instance_df({"hasSampleSolution": False, "cases": []}),
@@ -380,9 +356,7 @@ def test_case_study_correctness_without_sample_solution_is_treated_as_correct():
     ],
 )
 def test_case_study_correctness_matches_existing_product_grading(assessment, expected):
-    module = importlib.import_module(
-        "src.modules.participant_analytics.compute_correctness"
-    )
+    module = importlib.import_module("src.modules.participant_analytics.compute_correctness")
 
     result = module.compute_correctness_columns(
         _case_study_instance_df(
@@ -411,9 +385,7 @@ def test_case_study_correctness_matches_existing_product_grading(assessment, exp
 
 
 def test_case_study_correctness_returns_none_when_solution_metadata_missing():
-    module = importlib.import_module(
-        "src.modules.participant_analytics.compute_correctness"
-    )
+    module = importlib.import_module("src.modules.participant_analytics.compute_correctness")
 
     result = module.compute_correctness_columns(
         _case_study_instance_df(

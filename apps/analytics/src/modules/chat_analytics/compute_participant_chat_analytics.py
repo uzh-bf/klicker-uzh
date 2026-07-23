@@ -5,9 +5,7 @@ from sqlalchemy.orm import Session
 
 from src.modules.utils import COURSE_TIMESTAMP, load_sql, render_uuid_in_clause
 
-_SQL = load_sql(
-    os.path.join(os.path.dirname(__file__), "participant_chat_analytics.sql")
-)
+_SQL = load_sql(os.path.join(os.path.dirname(__file__), "participant_chat_analytics.sql"))
 _COURSE_FILTER_PLACEHOLDER = "/*COURSE_FILTER*/"
 _ATTACHMENT_ROLLUP_PLACEHOLDER = "/*ATTACHMENT_ROLLUP_CTE*/"
 _TABLE_EXISTS_SQL = text(
@@ -58,9 +56,7 @@ def _table_exists(session: Session, table_name: str) -> bool:
     cached = _ATTACHMENT_SUPPORT_CACHE.get(key)
     if cached is not None:
         return cached
-    exists = bool(
-        session.execute(_TABLE_EXISTS_SQL, {"table_name": table_name}).scalar_one()
-    )
+    exists = bool(session.execute(_TABLE_EXISTS_SQL, {"table_name": table_name}).scalar_one())
     _ATTACHMENT_SUPPORT_CACHE[key] = exists
     return exists
 
@@ -71,14 +67,8 @@ def _prepare_sql(
     *,
     include_attachments: bool,
 ) -> str:
-    clause = (
-        "" if course_ids is None else render_uuid_in_clause('cb."courseId"', course_ids)
-    )
-    attachment_rollup = (
-        _ATTACHMENT_ROLLUP_SQL
-        if include_attachments
-        else _ATTACHMENT_ROLLUP_FALLBACK_SQL
-    )
+    clause = "" if course_ids is None else render_uuid_in_clause('cb."courseId"', course_ids)
+    attachment_rollup = _ATTACHMENT_ROLLUP_SQL if include_attachments else _ATTACHMENT_ROLLUP_FALLBACK_SQL
     return template.replace(_COURSE_FILTER_PLACEHOLDER, clause).replace(
         _ATTACHMENT_ROLLUP_PLACEHOLDER, attachment_rollup
     )
@@ -98,15 +88,11 @@ def compute_participant_chat_analytics(
         raise ValueError(f"Unknown analytics type: {analytics_type}")
 
     if verbose:
-        print(
-            f"[chat_analytics] {analytics_type} {win_start}..{win_end} -> {timestamp}"
-        )
+        print(f"[chat_analytics] {analytics_type} {win_start}..{win_end} -> {timestamp}")
 
     include_attachments = _table_exists(session, "ChatAttachment")
     if verbose and not include_attachments:
-        print(
-            "[chat_analytics] ChatAttachment missing; defaulting attachmentCount to 0"
-        )
+        print("[chat_analytics] ChatAttachment missing; defaulting attachmentCount to 0")
 
     result = session.execute(
         text(

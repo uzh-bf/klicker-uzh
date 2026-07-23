@@ -28,12 +28,8 @@ from src.modules.chat_quiz_correlation.compute_chat_quiz_correlation import (
     report_source_counts,
 )
 
-cluster_module = importlib.import_module(
-    "src.modules.chat_topic_clustering.cluster_chatbot"
-)
-responses_module = importlib.import_module(
-    "src.modules.participant_analytics.get_participant_responses"
-)
+cluster_module = importlib.import_module("src.modules.chat_topic_clustering.cluster_chatbot")
+responses_module = importlib.import_module("src.modules.participant_analytics.get_participant_responses")
 
 COURSE_A = "aaaa0000-0000-0000-0000-000000000001"
 COURSE_B = "aaaa0000-0000-0000-0000-000000000002"
@@ -217,13 +213,9 @@ class ConsentReconciliationTests(unittest.TestCase):
         db = _CorrelationDb()
 
         report_source_counts(db)
-        correlation_module = importlib.import_module(
-            "src.modules.chat_quiz_correlation.compute_chat_quiz_correlation"
-        )
+        correlation_module = importlib.import_module("src.modules.chat_quiz_correlation.compute_chat_quiz_correlation")
         with (
-            mock.patch.object(
-                correlation_module, "_load", side_effect=["outcome SQL", "activity SQL"]
-            ),
+            mock.patch.object(correlation_module, "_load", side_effect=["outcome SQL", "activity SQL"]),
         ):
             result = reconcile_chat_quiz_correlation(db)
 

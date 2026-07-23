@@ -132,6 +132,13 @@ The pipeline is wired into Hatchet as native Python workflows defined in `src/ha
 
 The native worker entry point is `uv run python -m src.hatchet_worker` from this directory. It pins `hatchet-sdk[v0-sdk]==1.18.1`, uses the SDK-standard `HATCHET_CLIENT_*` environment variables, and starts with one worker slot.
 
+The deployment image pins its Python and uv bases by digest and bundles the
+pinned `intfloat/multilingual-e5-base` revision
+`d128750597153bb5987e10b1c3493a34e5a4502a` for offline script-10 execution.
+The bundle retains the upstream model card as `UPSTREAM_MODEL_CARD.md`; that
+card declares the model's MIT license and contains its citation. Local runs
+without the bundle download only the same immutable model revision.
+
 It registers the non-mutating `learning-analytics-native-proof` task plus two copies of the 15-task analytics DAG:
 
 - `recompute-learning-analytics` handles cron, incremental, and finalize runs. A newer run in the same course/global scope cancels the older run.
@@ -140,6 +147,9 @@ It registers the non-mutating `learning-analytics-native-proof` task plus two co
 Both DAGs call the existing Python script entry points in-process with immutable per-run configuration and cooperative cancellation. `ANALYTICS_ALLOW_FULL=1` is required for the full DAG and remains unset by default. TypeScript retains only the GraphQL/manual event producers and the `scan-ended-courses` task. It does not register an analytics DAG or spawn Python.
 
 Cutover and rollback are cold: stop the current owner before starting another worker image so exactly one analytics DAG consumes these events.
+
+See the [Learning Analytics Operations](../../docs/learning-analytics-operations.md)
+runbook for deployment prerequisites, triggers, status, retry, and rollback.
 
 ## Deploying analytics indexes
 

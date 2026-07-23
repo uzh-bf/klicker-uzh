@@ -68,12 +68,8 @@ def resolve_run_config(
     allow_full: bool,
     now: datetime | None = None,
 ) -> AnalyticsRunConfig:
-    mode: AnalyticsMode = input.mode or (
-        "finalize" if input.courseId else "incremental"
-    )
-    course_ids = tuple(
-        course_id for course_id in (input.courseId, *input.courseIds) if course_id
-    )
+    mode: AnalyticsMode = input.mode or ("finalize" if input.courseId else "incremental")
+    course_ids = tuple(course_id for course_id in (input.courseId, *input.courseIds) if course_id)
 
     if mode == "full" and not allow_full:
         raise ValueError("mode=full requires ANALYTICS_ALLOW_FULL=1")
@@ -83,9 +79,7 @@ def resolve_run_config(
     window_since = input.windowSince
     if mode == "incremental" and window_since is None:
         current = now or datetime.now(timezone.utc)
-        window_since = (
-            (current - timedelta(days=INCREMENTAL_LOOKBACK_DAYS)).date().isoformat()
-        )
+        window_since = (current - timedelta(days=INCREMENTAL_LOOKBACK_DAYS)).date().isoformat()
     if mode != "incremental":
         window_since = None
 
@@ -167,9 +161,7 @@ def register_native_workflows(
                     allow_full=allow_full if full_only else False,
                 )
                 if full_only and config.mode != "full":
-                    raise ValueError(
-                        f"{FULL_ANALYTICS_WORKFLOW_NAME} requires mode=full"
-                    )
+                    raise ValueError(f"{FULL_ANALYTICS_WORKFLOW_NAME} requires mode=full")
                 try:
                     script_runner(ANALYTICS_SCRIPTS[key], config, ctx.done)
                 except AnalyticsRunCancelled as exc:

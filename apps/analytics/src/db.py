@@ -31,6 +31,4 @@ def _database_url() -> str:
 
 
 engine: Engine = create_engine(_database_url(), future=True)
-SessionLocal: sessionmaker[Session] = sessionmaker(
-    bind=engine, autoflush=False, expire_on_commit=False
-)
+SessionLocal: sessionmaker[Session] = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)

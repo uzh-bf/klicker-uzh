@@ -105,10 +105,7 @@ def test_compute_outcomes_bucket_assignment_matches_percentile_semantics():
     with intercept_writes(buffer):
         compute_participant_chat_outcomes(session=None, course_ids=["c1"])
 
-    by_participant = {
-        row["participantId"]: row
-        for row in buffer.rows_by_table["ParticipantChatOutcome"]
-    }
+    by_participant = {row["participantId"]: row for row in buffer.rows_by_table["ParticipantChatOutcome"]}
     assert by_participant["p1"]["chatDoseBucket"] == "NONE"  # zero messages
     assert by_participant["p2"]["chatDoseBucket"] == "LOW"
     assert by_participant["p7"]["chatDoseBucket"] == "HIGH"
@@ -147,10 +144,7 @@ def test_compute_outcomes_sets_has_both_modalities_only_when_both_present():
     with intercept_writes(buffer):
         compute_participant_chat_outcomes(session=None, course_ids=["c1"])
 
-    captured = {
-        row["participantId"]: row
-        for row in buffer.rows_by_table["ParticipantChatOutcome"]
-    }
+    captured = {row["participantId"]: row for row in buffer.rows_by_table["ParticipantChatOutcome"]}
     assert captured["chat-only"]["hasBothModalities"] is False
     # Chat-only participant should still have chatMessagesInCourse > 0 and
     # a non-NONE bucket.
@@ -250,7 +244,5 @@ def test_compute_outcomes_scopes_by_course_id():
     with intercept_writes(buffer):
         compute_participant_chat_outcomes(session=None, course_ids=["c1"])
 
-    courses = {
-        row["courseId"] for row in buffer.rows_by_table["ParticipantChatOutcome"]
-    }
+    courses = {row["courseId"] for row in buffer.rows_by_table["ParticipantChatOutcome"]}
     assert courses == {"c1"}

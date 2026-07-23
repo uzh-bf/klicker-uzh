@@ -68,18 +68,12 @@ def main() -> None:
 
             for ml in mls:
                 check_analytics_cancellation()
-                df_instance_performance = compute_instance_performance(
-                    session, ml, total_only=True
-                )
+                df_instance_performance = compute_instance_performance(session, ml, total_only=True)
                 if df_instance_performance.empty:
                     continue
                 activity_performance = agg_activity_performance(df_instance_performance)
-                save_instance_performances(
-                    session, df_instance_performance, course_id, total_only=True
-                )
-                save_activity_performance(
-                    session, activity_performance, course_id, microlearning_id=ml["id"]
-                )
+                save_instance_performances(session, df_instance_performance, course_id, total_only=True)
+                save_activity_performance(session, activity_performance, course_id, microlearning_id=ml["id"])
 
         script_exit(script=__name__, started=started, rows_written=None)
 

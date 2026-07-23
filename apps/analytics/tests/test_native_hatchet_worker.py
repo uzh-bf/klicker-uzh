@@ -65,9 +65,7 @@ def test_run_input_is_immutable_and_rejects_unknown_fields() -> None:
     with pytest.raises(ValidationError):
         input.courseId = "course-2"
     with pytest.raises(ValidationError):
-        hatchet_worker.AnalyticsRunInput.model_validate(
-            {"courseId": "course-1", "unknown": True}
-        )
+        hatchet_worker.AnalyticsRunInput.model_validate({"courseId": "course-1", "unknown": True})
 
 
 def test_resolve_run_config_preserves_producer_contract() -> None:
@@ -151,31 +149,19 @@ def test_analytics_dags_split_concurrency_and_preserve_task_contract() -> None:
         "admin-recompute-analytics",
     ]
     assert freshness.options["input_validator"] is hatchet_worker.AnalyticsRunInput
-    assert freshness.options["task_defaults"].schedule_timeout == (
-        hatchet_worker.TASK_SCHEDULE_TIMEOUT
-    )
-    assert freshness.options["concurrency"].expression == (
-        "has(input.courseId) ? input.courseId : 'global'"
-    )
+    assert freshness.options["task_defaults"].schedule_timeout == (hatchet_worker.TASK_SCHEDULE_TIMEOUT)
+    assert freshness.options["concurrency"].expression == ("has(input.courseId) ? input.courseId : 'global'")
     assert freshness.options["concurrency"].max_runs == 1
-    assert (
-        freshness.options["concurrency"].limit_strategy
-        == hatchet_worker.ConcurrencyLimitStrategy.CANCEL_IN_PROGRESS
-    )
+    assert freshness.options["concurrency"].limit_strategy == hatchet_worker.ConcurrencyLimitStrategy.CANCEL_IN_PROGRESS
 
     assert full.options["name"] == "recompute-learning-analytics-full"
     assert full.options["on_events"] == ["admin-recompute-analytics-full"]
     assert "on_crons" not in full.options
     assert full.options["input_validator"] is hatchet_worker.AnalyticsRunInput
-    assert full.options["task_defaults"].schedule_timeout == (
-        hatchet_worker.TASK_SCHEDULE_TIMEOUT
-    )
+    assert full.options["task_defaults"].schedule_timeout == (hatchet_worker.TASK_SCHEDULE_TIMEOUT)
     assert full.options["concurrency"].expression == "'global'"
     assert full.options["concurrency"].max_runs == 1
-    assert (
-        full.options["concurrency"].limit_strategy
-        == hatchet_worker.ConcurrencyLimitStrategy.CANCEL_NEWEST
-    )
+    assert full.options["concurrency"].limit_strategy == hatchet_worker.ConcurrencyLimitStrategy.CANCEL_NEWEST
 
     expected_task_names = [
         "s0-participant-analytics",
@@ -198,18 +184,13 @@ def test_analytics_dags_split_concurrency_and_preserve_task_contract() -> None:
     for workflow in (freshness, full):
         tasks = {task.name: task for task in workflow.tasks}
         assert list(tasks) == expected_task_names
-        assert [
-            parent.name
-            for parent in tasks["s1-aggregated-analytics"].options["parents"]
-        ] == ["s0-participant-analytics"]
-        assert [
-            parent.name
-            for parent in tasks["s13-platform-semester-analytics"].options["parents"]
-        ] == ["s2-course-heatmap"]
-        assert [
-            parent.name
-            for parent in tasks["s11-chat-quiz-correlation"].options["parents"]
-        ] == [
+        assert [parent.name for parent in tasks["s1-aggregated-analytics"].options["parents"]] == [
+            "s0-participant-analytics"
+        ]
+        assert [parent.name for parent in tasks["s13-platform-semester-analytics"].options["parents"]] == [
+            "s2-course-heatmap"
+        ]
+        assert [parent.name for parent in tasks["s11-chat-quiz-correlation"].options["parents"]] == [
             "s4-participant-perf",
             "s8-chat-analytics",
         ]
@@ -261,15 +242,9 @@ def test_cancelled_script_is_non_retryable_at_hatchet_boundary() -> None:
         allow_full=False,
         script_runner=cancelled_runner,
     )
-    task = next(
-        task
-        for task in fake.workflows[0].tasks
-        if task.name == "s14-live-quiz-assessment-analytics"
-    )
+    task = next(task for task in fake.workflows[0].tasks if task.name == "s14-live-quiz-assessment-analytics")
 
-    with pytest.raises(
-        hatchet_worker.NonRetryableException, match="superseded"
-    ) as exc_info:
+    with pytest.raises(hatchet_worker.NonRetryableException, match="superseded") as exc_info:
         task.fn(
             hatchet_worker.AnalyticsRunInput(courseId="course-1"),
             FakeContext(done=True),

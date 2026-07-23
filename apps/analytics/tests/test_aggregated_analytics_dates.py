@@ -126,9 +126,7 @@ def test_load_participant_analytics_empty_scope_short_circuits_without_query():
 
 
 def test_save_aggregated_analytics_uses_date_objects_for_course_timestamp(monkeypatch):
-    module = importlib.import_module(
-        "src.modules.aggregated_analytics.save_aggregated_analytics"
-    )
+    module = importlib.import_module("src.modules.aggregated_analytics.save_aggregated_analytics")
 
     captured = {}
 
@@ -158,9 +156,7 @@ def test_save_aggregated_analytics_uses_date_objects_for_course_timestamp(monkey
         ]
     )
 
-    monkeypatch.setattr(
-        module, "_count_elements_for_course", lambda session, course_id: 7
-    )
+    monkeypatch.setattr(module, "_count_elements_for_course", lambda session, course_id: 7)
 
     module.save_aggregated_analytics(_FakeSession(), df, "1970-01-01", "COURSE")
 
@@ -172,9 +168,7 @@ def test_save_aggregated_analytics_uses_date_objects_for_course_timestamp(monkey
 def test_save_aggregated_analytics_uses_date_objects_for_daily_iso_timestamp(
     monkeypatch,
 ):
-    module = importlib.import_module(
-        "src.modules.aggregated_analytics.save_aggregated_analytics"
-    )
+    module = importlib.import_module("src.modules.aggregated_analytics.save_aggregated_analytics")
 
     captured = {}
 

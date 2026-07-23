@@ -42,25 +42,18 @@ def test_live_quiz_entrypoint_uses_immutable_config_without_environment_mutation
         entrypoint,
         "scoped_course_ids",
         lambda received_session, received_config: (
-            calls.append(
-                ("scope", received_session, list(received_config.course_ids or ()))
-            )
-            or ["course-1"]
+            calls.append(("scope", received_session, list(received_config.course_ids or ()))) or ["course-1"]
         ),
     )
     monkeypatch.setattr(
         entrypoint,
         "compute_participant_live_quiz_analytics",
-        lambda received_session, *, course_ids, verbose: calls.append(
-            ("participant", received_session, course_ids)
-        ),
+        lambda received_session, *, course_ids, verbose: calls.append(("participant", received_session, course_ids)),
     )
     monkeypatch.setattr(
         entrypoint,
         "compute_aggregated_live_quiz_analytics",
-        lambda received_session, *, course_ids, verbose: calls.append(
-            ("aggregated", received_session, course_ids)
-        ),
+        lambda received_session, *, course_ids, verbose: calls.append(("aggregated", received_session, course_ids)),
     )
 
     entrypoint.run_live_quiz_analytics(config, session_factory=lambda: session)

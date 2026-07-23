@@ -35,9 +35,7 @@ def main() -> None:
 
         for idx, course in df_courses.iterrows():
             check_analytics_cancellation()
-            print(
-                "Processing course", idx, "of", len(df_courses), "with id", course["id"]
-            )
+            print("Processing course", idx, "of", len(df_courses), "with id", course["id"])
             compute_weekday_activity(session, course)
 
         script_exit(script=__name__, started=started, rows_written=None)

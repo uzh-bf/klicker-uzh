@@ -44,9 +44,7 @@ def test_derive_labels_filters_additional_german_fillers_from_prod_run():
     label = labels[0]
     assert "sigma" in label
     for filler in ("uhr", "auf", "kann", "wird", "werden", "nicht", "wie", "ich"):
-        assert filler not in label.split(" · "), (
-            f"expected '{filler}' to be filtered, got label: {label}"
-        )
+        assert filler not in label.split(" · "), f"expected '{filler}' to be filtered, got label: {label}"
 
 
 def test_derive_labels_deduplicates_overlapping_ngrams():
@@ -78,10 +76,7 @@ def test_derive_labels_deduplicates_overlapping_ngrams():
         for j, b in enumerate(tokenised):
             if i == j:
                 continue
-            assert not a.issubset(b), (
-                f"'{parts[i]}' is redundantly contained in '{parts[j]}' "
-                f"within label: {labels[0]}"
-            )
+            assert not a.issubset(b), f"'{parts[i]}' is redundantly contained in '{parts[j]}' within label: {labels[0]}"
 
 
 def test_derive_labels_restores_original_surface_casing():

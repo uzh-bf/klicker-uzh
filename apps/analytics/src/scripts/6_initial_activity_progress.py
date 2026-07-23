@@ -52,9 +52,7 @@ def main() -> None:
 
             for quiz in pqs:
                 check_analytics_cancellation()
-                started_count, completed_count, repeated_count = (
-                    compute_progress_counts(quiz)
-                )
+                started_count, completed_count, repeated_count = compute_progress_counts(quiz)
                 save_practice_quiz_progress(
                     session,
                     course_participants,

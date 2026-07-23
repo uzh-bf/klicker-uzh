@@ -42,9 +42,7 @@ class _Session:
 
 
 def test_chat_topic_clustering_reports_partial_failures(monkeypatch):
-    cluster_module = types.ModuleType(
-        "src.modules.chat_topic_clustering.cluster_chatbot"
-    )
+    cluster_module = types.ModuleType("src.modules.chat_topic_clustering.cluster_chatbot")
     cluster_module.cluster_chatbot = lambda *_args, **_kwargs: 0
     monkeypatch.setitem(
         sys.modules,
@@ -57,9 +55,7 @@ def test_chat_topic_clustering_reports_partial_failures(monkeypatch):
         "postgresql+psycopg://localhost:5432/analytics",
     )
     module = importlib.import_module("src.scripts.10_chat_topic_clustering")
-    session = _Session(
-        [type("Chatbot", (), {"id": "ok"})(), type("Chatbot", (), {"id": "broken"})()]
-    )
+    session = _Session([type("Chatbot", (), {"id": "ok"})(), type("Chatbot", (), {"id": "broken"})()])
     clustered: list[str] = []
 
     monkeypatch.setattr(module, "SessionLocal", lambda: session)
@@ -75,9 +71,7 @@ def test_chat_topic_clustering_reports_partial_failures(monkeypatch):
 
     monkeypatch.setattr(module, "cluster_chatbot", cluster)
 
-    with pytest.raises(
-        RuntimeError, match=r"1 of 2 chatbot clustering jobs failed.*broken"
-    ):
+    with pytest.raises(RuntimeError, match=r"1 of 2 chatbot clustering jobs failed.*broken"):
         module.main()
 
     assert clustered == ["ok", "broken"]

@@ -57,9 +57,7 @@ def save_clusters(
     kept: List[tuple] = []
     other_msg = 0
     other_participants: set = set()
-    dropped_by_kanon: List[
-        tuple
-    ] = []  # (msg_count, participant_count) per collapsed cluster
+    dropped_by_kanon: List[tuple] = []  # (msg_count, participant_count) per collapsed cluster
 
     for cid, msg_count in message_counts.items():
         p_count = len(participant_sets[cid])
@@ -70,11 +68,7 @@ def save_clusters(
         else:
             kept.append((cluster_labels.get(cid, f"cluster-{cid}"), msg_count, p_count))
 
-    noise_messages = [
-        (cid, pid)
-        for cid, pid in zip(cluster_ids_per_message, participant_ids_per_message)
-        if cid < 0
-    ]
+    noise_messages = [(cid, pid) for cid, pid in zip(cluster_ids_per_message, participant_ids_per_message) if cid < 0]
     other_msg += len(noise_messages)
     for _, pid in noise_messages:
         other_participants.add(pid)

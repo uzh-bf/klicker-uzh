@@ -37,22 +37,14 @@ def main() -> None:
         )
         if scope is not None:
             if not scope:
-                print(
-                    "[10_chat_topic_clustering] empty course scope — nothing to cluster"
-                )
+                print("[10_chat_topic_clustering] empty course scope — nothing to cluster")
                 chatbots = []
             else:
-                chatbots = (
-                    session.execute(select(Chatbot).where(Chatbot.courseId.in_(scope)))
-                    .scalars()
-                    .all()
-                )
+                chatbots = session.execute(select(Chatbot).where(Chatbot.courseId.in_(scope))).scalars().all()
         else:
             chatbots = session.execute(select(Chatbot)).scalars().all()
 
-        scope_note = (
-            f" (scoped to {len(scope)} course ids)" if scope is not None else ""
-        )
+        scope_note = f" (scoped to {len(scope)} course ids)" if scope is not None else ""
         print(f"Found {len(chatbots)} chatbots to cluster{scope_note}")
 
         win_start = "2022-10-23T00:00:00.000Z"
@@ -82,9 +74,7 @@ def main() -> None:
 
         if failures:
             failed_ids = ", ".join(failures)
-            raise RuntimeError(
-                f"{len(failures)} of {len(chatbots)} chatbot clustering jobs failed: {failed_ids}"
-            )
+            raise RuntimeError(f"{len(failures)} of {len(chatbots)} chatbot clustering jobs failed: {failed_ids}")
 
         script_exit(script=__name__, started=started, rows_written=total_rows)
 

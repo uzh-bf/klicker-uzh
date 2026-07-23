@@ -198,9 +198,7 @@ def test_intercept_writes_rebinds_already_imported_consumers():
 
     import src.db_helpers as db_helpers
 
-    save_mod = importlib.import_module(
-        "src.modules.participant_analytics.save_participant_analytics"
-    )
+    save_mod = importlib.import_module("src.modules.participant_analytics.save_participant_analytics")
     buffer = CaptureBuffer()
     original = db_helpers.bulk_upsert
 
@@ -247,11 +245,7 @@ def test_intercept_writes_noops_commit_and_flush():
 @pytest.mark.parametrize("verb", ["UPDATE", "DELETE"])
 def test_skipped_writes_capture_verb_and_sql(verb):
     buffer = CaptureBuffer()
-    sql = (
-        f'{verb} FROM "Course" WHERE id = 1'
-        if verb == "DELETE"
-        else f'{verb} "Course" SET x = 1'
-    )
+    sql = f'{verb} FROM "Course" WHERE id = 1' if verb == "DELETE" else f'{verb} "Course" SET x = 1'
     buffer.skip(f"{verb}-TEXT", sql, {"x": 1})
     entry = buffer.skipped_writes[-1]
     assert entry["verb"] == f"{verb}-TEXT"
@@ -342,10 +336,7 @@ def test_write_excel_produces_xlsx_with_expected_sheets(tmp_path):
     assert table_parts.attrib.get("count") == "1"
 
     empty_sheet_values = _sheet_values(output, "90 Raw - AggregatedLiveQuizAnal")
-    assert (
-        "No rows captured for this table in the selected dry run."
-        in empty_sheet_values.values()
-    )
+    assert "No rows captured for this table in the selected dry run." in empty_sheet_values.values()
     assert "liveQuizId" in empty_sheet_values.values()
     assert "participantCount" in empty_sheet_values.values()
     assert _sheet_state(workbook, "13 Live Quiz") == "hidden"
@@ -576,13 +567,8 @@ def test_write_excel_formats_summary_and_raw_timestamp_cells_as_dates(tmp_path):
     write_excel(buffer, output, {"course_id": "test"})
 
     assert _cell_number_format(output, "12 Chat", "B7") == "yyyy-mm-dd"
-    assert (
-        _cell_number_format(output, "90 Raw - ChatTopicCluster", "B5") == "yyyy-mm-dd"
-    )
-    assert (
-        _cell_number_format(output, "90 Raw - ChatTopicCluster", "J5")
-        == "yyyy-mm-dd hh:mm:ss"
-    )
+    assert _cell_number_format(output, "90 Raw - ChatTopicCluster", "B5") == "yyyy-mm-dd"
+    assert _cell_number_format(output, "90 Raw - ChatTopicCluster", "J5") == "yyyy-mm-dd hh:mm:ss"
 
 
 def test_write_excel_degrades_activity_sheet_when_upstream_activity_data_is_partial(
@@ -645,9 +631,7 @@ def test_write_excel_degrades_activity_sheet_when_upstream_activity_data_is_part
 
     activity_values = _sheet_values(output, "10 Activity")
     assert "Activity Data Warning" in activity_values.values()
-    assert (
-        "Participant analytics script failed in this run." in activity_values.values()
-    )
+    assert "Participant analytics script failed in this run." in activity_values.values()
     assert "Participant Activity Table" not in activity_values.values()
     assert "Participant Activity Histogram" not in activity_values.values()
     assert _sheet_state(_workbook_xml(output), "11 Performance") is None
@@ -700,9 +684,7 @@ def test_write_excel_course_scope_omits_platform_sheet(tmp_path):
         {
             "course_id": "test",
             "scope_mode": "course",
-            "omitted_domains": {
-                "Platform": "Intentionally omitted for course-scoped dry run."
-            },
+            "omitted_domains": {"Platform": "Intentionally omitted for course-scoped dry run."},
         },
     )
 
@@ -738,10 +720,7 @@ def _workbook_xml(path):
 
 
 def _sheet_names(workbook):
-    return [
-        sheet.attrib["name"]
-        for sheet in workbook.findall("./main:sheets/main:sheet", _NS)
-    ]
+    return [sheet.attrib["name"] for sheet in workbook.findall("./main:sheets/main:sheet", _NS)]
 
 
 def _sheet_state(workbook, sheet_name):
@@ -759,9 +738,7 @@ def _sheet_xml(path, sheet_name):
         rid = None
         for sheet in workbook.findall("./main:sheets/main:sheet", _NS):
             if sheet.attrib["name"] == sheet_name:
-                rid = sheet.attrib[
-                    "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"
-                ]
+                rid = sheet.attrib["{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"]
                 break
         assert rid is not None, f"sheet {sheet_name} not found"
 

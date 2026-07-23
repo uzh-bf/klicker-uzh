@@ -10,11 +10,7 @@ _EPSILON = 2.220446049250313e-16
 
 
 def _finite_number(value):
-    return (
-        isinstance(value, (int, float))
-        and not isinstance(value, bool)
-        and isfinite(float(value))
-    )
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and isfinite(float(value))
 
 
 def map_element_instance_options(instance: ElementInstance) -> dict:
@@ -45,9 +41,7 @@ def _selection_correctness(response, options):
         return None
 
     deduped = list(dict.fromkeys(selected))
-    valid_responses = [
-        answer_id for answer_id in deduped if answer_id in correct_answers
-    ]
+    valid_responses = [answer_id for answer_id in deduped if answer_id in correct_answers]
     correctness = len(valid_responses) / number_of_inputs
 
     if correctness == 1:
@@ -62,8 +56,7 @@ def _case_study_response_map(assessment):
         return {
             str(case_id): {
                 str(item_id): {
-                    str(criterion_id): response_value
-                    for criterion_id, response_value in (criterion_map or {}).items()
+                    str(criterion_id): response_value for criterion_id, response_value in (criterion_map or {}).items()
                 }
                 for item_id, criterion_map in (case_map or {}).items()
             }
@@ -116,11 +109,7 @@ def _case_study_correctness(response, options):
     if not isinstance(cases, list) or not cases:
         return None
 
-    if any(
-        not case_item.get("solutions")
-        for case_item in cases
-        if isinstance(case_item, dict)
-    ):
+    if any(not case_item.get("solutions") for case_item in cases if isinstance(case_item, dict)):
         return None
 
     response_map = _case_study_response_map(assessment)
@@ -139,9 +128,7 @@ def _case_study_correctness(response, options):
                 if not isinstance(criterion_solution, dict):
                     continue
                 criterion_id = str(criterion_solution.get("criterionId"))
-                response_value = (
-                    response_map.get(case_id, {}).get(item_id, {}).get(criterion_id)
-                )
+                response_value = response_map.get(case_id, {}).get(item_id, {}).get(criterion_id)
                 total_assessment_cases += 1
 
                 if response_value is None:
@@ -154,17 +141,10 @@ def _case_study_correctness(response, options):
                 except (KeyError, TypeError, ValueError):
                     continue
 
-                if (
-                    submitted_value >= min_value - _EPSILON
-                    and submitted_value <= max_value + _EPSILON
-                ):
+                if submitted_value >= min_value - _EPSILON and submitted_value <= max_value + _EPSILON:
                     total_correct_cases += 1
 
-    correctness = (
-        0
-        if total_assessment_cases == 0
-        else total_correct_cases / total_assessment_cases
-    )
+    correctness = 0 if total_assessment_cases == 0 else total_correct_cases / total_assessment_cases
     if correctness == 1:
         return "CORRECT"
     if correctness == 0:
@@ -216,19 +196,15 @@ def _numerical_correctness(response, options):
             numerical_solution = float(solution)
         except (TypeError, ValueError):
             continue
-        if (
-            numerical_solution - _EPSILON
-            <= response_value
-            <= numerical_solution + _EPSILON
-        ):
+        if numerical_solution - _EPSILON <= response_value <= numerical_solution + _EPSILON:
             return "CORRECT"
     return "INCORRECT"
 
 
 def compute_correctness_columns(df_element_instances, row):
-    element_instance = df_element_instances[
-        df_element_instances["elementInstanceId"] == row["elementInstanceId"]
-    ].iloc[0]
+    element_instance = df_element_instances[df_element_instances["elementInstanceId"] == row["elementInstanceId"]].iloc[
+        0
+    ]
     response = row["response"]
     options = element_instance["options"]
 
@@ -237,30 +213,18 @@ def compute_correctness_columns(df_element_instances, row):
 
     elif element_instance["type"] == "SC":
         selected_choice = response["choices"][0]
-        correct_choice = next(
-            (choice["ix"] for choice in options["choices"] if choice["correct"]), None
-        )
+        correct_choice = next((choice["ix"] for choice in options["choices"] if choice["correct"]), None)
         return "CORRECT" if selected_choice == correct_choice else "INCORRECT"
 
     elif element_instance["type"] == "MC" or element_instance["type"] == "KPRIM":
         selected_choices = response["choices"]
-        correct_choices = [
-            choice["ix"] for choice in options["choices"] if choice["correct"]
-        ]
+        correct_choices = [choice["ix"] for choice in options["choices"] if choice["correct"]]
         available_choices = len(options["choices"])
 
-        selected_choices_array = [
-            1 if ix in selected_choices else 0 for ix in range(available_choices)
-        ]
-        correct_choices_array = [
-            1 if ix in correct_choices else 0 for ix in range(available_choices)
-        ]
+        selected_choices_array = [1 if ix in selected_choices else 0 for ix in range(available_choices)]
+        correct_choices_array = [1 if ix in correct_choices else 0 for ix in range(available_choices)]
         hamming_distance = sum(
-            [
-                1
-                for i in range(available_choices)
-                if selected_choices_array[i] != correct_choices_array[i]
-            ]
+            [1 for i in range(available_choices) if selected_choices_array[i] != correct_choices_array[i]]
         )
 
         if element_instance["type"] == "MC":
@@ -272,13 +236,7 @@ def compute_correctness_columns(df_element_instances, row):
             else:
                 return "PARTIAL"
         elif element_instance["type"] == "KPRIM":
-            return (
-                "CORRECT"
-                if hamming_distance == 0
-                else "PARTIAL"
-                if hamming_distance == 1
-                else "INCORRECT"
-            )
+            return "CORRECT" if hamming_distance == 0 else "PARTIAL" if hamming_distance == 1 else "INCORRECT"
 
     elif element_instance["type"] == "NUMERICAL":
         return _numerical_correctness(response, options)
@@ -291,9 +249,7 @@ def compute_correctness_columns(df_element_instances, row):
         # otherwise, check if the response (ignoring capitalization) is included
         # in the list of solutions
         response_value = response["value"]
-        solutions = list(
-            map(lambda solution: solution.strip().lower(), options["solutions"])
-        )
+        solutions = list(map(lambda solution: solution.strip().lower(), options["solutions"]))
         if response_value.strip().lower() in solutions:
             return "CORRECT"
 
@@ -346,24 +302,16 @@ def compute_correctness(session: Session, df_details, verbose: bool = False):
 
     element_instance_ids = df_details["elementInstanceId"].unique().tolist()
     element_instances = (
-        session.execute(
-            select(ElementInstance).where(ElementInstance.id.in_(element_instance_ids))
-        )
-        .scalars()
-        .all()
+        session.execute(select(ElementInstance).where(ElementInstance.id.in_(element_instance_ids))).scalars().all()
     )
 
-    df_element_instances = pd.DataFrame(
-        list(map(map_element_instance_options, element_instances))
-    )
+    df_element_instances = pd.DataFrame(list(map(map_element_instance_options, element_instances)))
 
     if len(df_element_instances) == 0:
         print("No element instances found for the given element instance ids.")
         return None, None
 
-    df_details["correctness"] = df_details.apply(
-        lambda x: compute_correctness_columns(df_element_instances, x), axis=1
-    )
+    df_details["correctness"] = df_details.apply(lambda x: compute_correctness_columns(df_element_instances, x), axis=1)
     df_details = df_details.dropna(subset=["correctness"])
 
     if verbose:

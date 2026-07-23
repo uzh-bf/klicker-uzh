@@ -39,9 +39,7 @@ def run_live_quiz_analytics(
         )
 
         if scope is not None and not scope:
-            print(
-                "[14_live_quiz_assessment_analytics] empty course scope — skipping live quiz analytics"
-            )
+            print("[14_live_quiz_assessment_analytics] empty course scope — skipping live quiz analytics")
             script_exit(script=SCRIPT_NAME, started=started, rows_written=0)
             return
 

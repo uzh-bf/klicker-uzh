@@ -39,9 +39,7 @@ def main() -> None:
 
         for idx, course in df_courses.iterrows():
             check_analytics_cancellation()
-            print(
-                "Processing course", idx, "of", len(df_courses), "with id", course["id"]
-            )
+            print("Processing course", idx, "of", len(df_courses), "with id", course["id"])
 
             df_activity = get_active_weeks(session, course)
 

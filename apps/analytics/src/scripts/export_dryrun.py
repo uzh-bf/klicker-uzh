@@ -47,10 +47,7 @@ def main() -> None:
     parser.add_argument(
         "--output",
         default=None,
-        help=(
-            "Path to the .xlsx file to produce. Defaults to "
-            "./analytics-dryrun-<courseId>-<YYYY-MM-DD>.xlsx"
-        ),
+        help=("Path to the .xlsx file to produce. Defaults to ./analytics-dryrun-<courseId>-<YYYY-MM-DD>.xlsx"),
     )
     parser.add_argument(
         "--scripts",
@@ -74,9 +71,7 @@ def main() -> None:
     output = (
         Path(args.output)
         if args.output
-        else Path(
-            f"./analytics-dryrun-{args.course_id}-{date.today().isoformat()}.xlsx"
-        )
+        else Path(f"./analytics-dryrun-{args.course_id}-{date.today().isoformat()}.xlsx")
     )
     script_whitelist: list[str] | None = None
     if args.scripts:

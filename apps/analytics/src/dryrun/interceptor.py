@@ -133,9 +133,7 @@ def rewrite_insert_to_select(sql: str) -> tuple[str, list[str], str] | None:
     return m.group("table"), columns, rewritten
 
 
-def remap_result_rows(
-    target_columns: Sequence[str], rows: Iterable[Any]
-) -> list[dict[str, Any]]:
+def remap_result_rows(target_columns: Sequence[str], rows: Iterable[Any]) -> list[dict[str, Any]]:
     """Map raw row tuples onto target INSERT columns by position."""
 
     mapped: list[dict[str, Any]] = []
@@ -147,10 +145,7 @@ def remap_result_rows(
         else:
             values = list(row)
         if len(values) != len(target_columns):
-            raise ValueError(
-                f"cannot map INSERT result row: expected {len(target_columns)} "
-                f"columns, got {len(values)}"
-            )
+            raise ValueError(f"cannot map INSERT result row: expected {len(target_columns)} columns, got {len(values)}")
         mapped.append(dict(zip(target_columns, values, strict=True)))
     return mapped
 
@@ -344,9 +339,7 @@ def intercept_writes(buffer: CaptureBuffer) -> Iterator[CaptureBuffer]:
             if rows_list
             else []
         )
-        buffer.mark_table(
-            Model.__tablename__, columns=model_columns, script=Model.__tablename__
-        )
+        buffer.mark_table(Model.__tablename__, columns=model_columns, script=Model.__tablename__)
         if not rows_list:
             buffer.mark_table(Model.__tablename__, status="empty")
             return 0
@@ -389,14 +382,10 @@ def intercept_writes(buffer: CaptureBuffer) -> Iterator[CaptureBuffer]:
                 rewritten = rewrite_insert_to_select(statement.text)
                 if rewritten is not None:
                     table_name, target_columns, select_sql = rewritten
-                    buffer.mark_table(
-                        table_name, columns=target_columns, status="empty"
-                    )
+                    buffer.mark_table(table_name, columns=target_columns, status="empty")
                     if select_sql:
                         try:
-                            result = original_execute(
-                                self, text(select_sql), params, **kwargs
-                            )
+                            result = original_execute(self, text(select_sql), params, **kwargs)
                             if target_columns:
                                 captured = remap_result_rows(target_columns, result)
                             else:
@@ -524,9 +513,7 @@ def _excel_safe_value(value: Any) -> Any:
     if value is None:
         return None
 
-    if hasattr(value, "item") and not isinstance(
-        value, (str, bytes, dt.datetime, dt.date, dt.time)
-    ):
+    if hasattr(value, "item") and not isinstance(value, (str, bytes, dt.datetime, dt.date, dt.time)):
         try:
             value = value.item()
         except Exception:
@@ -634,23 +621,13 @@ def _format_name_for_column(column: str) -> str:
         return "datetime"
     if "rate" in lowered or lowered.endswith("pct") or lowered.endswith("percent"):
         return "percent"
-    if (
-        lowered.endswith("count")
-        or lowered.startswith("total")
-        or lowered.startswith("num")
-    ):
+    if lowered.endswith("count") or lowered.startswith("total") or lowered.startswith("num"):
         return "int"
     return "default"
 
 
-def _domain_table_status(
-    buffer: CaptureBuffer, tables: Sequence[str]
-) -> tuple[str, str]:
-    statuses = [
-        buffer.table_status.get(table)
-        for table in tables
-        if table in buffer.table_status
-    ]
+def _domain_table_status(buffer: CaptureBuffer, tables: Sequence[str]) -> tuple[str, str]:
+    statuses = [buffer.table_status.get(table) for table in tables if table in buffer.table_status]
     if not statuses:
         return "skipped", "No captured or empty output tables for this domain."
     if any(status == "produced" for status in statuses):
@@ -727,9 +704,7 @@ def _visible_metadata_rows(metadata: Mapping[str, Any]) -> list[dict[str, str]]:
 
 def _participant_labels(values: Sequence[Any]) -> dict[Any, str]:
     labels: dict[Any, str] = {}
-    for idx, participant_id in enumerate(
-        sorted({value for value in values if value is not None}), start=1
-    ):
+    for idx, participant_id in enumerate(sorted({value for value in values if value is not None}), start=1):
         labels[participant_id] = f"Student {idx}"
     return labels
 
@@ -767,9 +742,7 @@ def _participant_activity_all_zero(participants) -> bool:
     return bool((numeric == 0).all().all())
 
 
-def _activity_degradation_reasons(
-    buffer: CaptureBuffer, aggregated, participants
-) -> list[str]:
+def _activity_degradation_reasons(buffer: CaptureBuffer, aggregated, participants) -> list[str]:
     reasons: list[str] = []
     script0 = _script_status(buffer, "src.scripts.0_initial_participant_analytics")
     script1 = _script_status(buffer, "src.scripts.1_initial_aggregated_analytics")
@@ -790,9 +763,7 @@ def _activity_degradation_reasons(
     if weekly_windows == 0:
         reasons.append("No WEEKLY aggregated activity windows were captured.")
     if _participant_activity_all_zero(participants):
-        reasons.append(
-            "Participant activity metrics are all zero in the captured course table."
-        )
+        reasons.append("Participant activity metrics are all zero in the captured course table.")
 
     return reasons
 
@@ -851,22 +822,16 @@ def _activity_sections(buffer: CaptureBuffer, metadata: Mapping[str, Any]):
         },
         {
             "metric": "Daily windows",
-            "value": int((aggregated.get("type") == "DAILY").sum())
-            if "type" in aggregated.columns
-            else 0,
+            "value": int((aggregated.get("type") == "DAILY").sum()) if "type" in aggregated.columns else 0,
         },
         {
             "metric": "Weekly windows",
-            "value": int((aggregated.get("type") == "WEEKLY").sum())
-            if "type" in aggregated.columns
-            else 0,
+            "value": int((aggregated.get("type") == "WEEKLY").sum()) if "type" in aggregated.columns else 0,
         },
     ]
     sections.append(("Key Metrics", "", kpis, {}))
 
-    degradation_reasons = _activity_degradation_reasons(
-        buffer, aggregated, participants
-    )
+    degradation_reasons = _activity_degradation_reasons(buffer, aggregated, participants)
     if degradation_reasons:
         sections.append(
             (
@@ -962,9 +927,7 @@ def _activity_sections(buffer: CaptureBuffer, metadata: Mapping[str, Any]):
         labels = _participant_labels(participants.get("participantId", []))
         participant_table = participants.copy()
         if "participantId" in participant_table.columns:
-            participant_table["student"] = participant_table["participantId"].map(
-                labels
-            )
+            participant_table["student"] = participant_table["participantId"].map(labels)
         keep = [
             column
             for column in (
@@ -1011,9 +974,7 @@ def _performance_sections(buffer: CaptureBuffer, metadata: Mapping[str, Any]):
     if not participants.empty:
         histogram = participants.copy()
         if "totalErrorRate" in histogram.columns:
-            histogram["errorRateBucket"] = (
-                (histogram["totalErrorRate"] * 100).round().clip(0, 100)
-            )
+            histogram["errorRateBucket"] = (histogram["totalErrorRate"] * 100).round().clip(0, 100)
             histogram = (
                 histogram.groupby("errorRateBucket", dropna=False)
                 .size()
@@ -1032,9 +993,7 @@ def _performance_sections(buffer: CaptureBuffer, metadata: Mapping[str, Any]):
         labels = _participant_labels(participants.get("participantId", []))
         participant_table = participants.copy()
         if "participantId" in participant_table.columns:
-            participant_table["student"] = participant_table["participantId"].map(
-                labels
-            )
+            participant_table["student"] = participant_table["participantId"].map(labels)
         keep = [
             column
             for column in (
@@ -1069,9 +1028,7 @@ def _performance_sections(buffer: CaptureBuffer, metadata: Mapping[str, Any]):
         else:
             progress["activityId"] = ""
         progress["activityName"] = (
-            progress["activityId"]
-            .map(activity_lookup)
-            .fillna(progress["activityId"].astype(str))
+            progress["activityId"].map(activity_lookup).fillna(progress["activityId"].astype(str))
         )
         sections.append(
             (
@@ -1102,9 +1059,7 @@ def _performance_sections(buffer: CaptureBuffer, metadata: Mapping[str, Any]):
         else:
             activities["activityId"] = ""
         activities["activityName"] = (
-            activities["activityId"]
-            .map(activity_lookup)
-            .fillna(activities["activityId"].astype(str))
+            activities["activityId"].map(activity_lookup).fillna(activities["activityId"].astype(str))
         )
         sections.append(
             (
@@ -1132,11 +1087,7 @@ def _performance_sections(buffer: CaptureBuffer, metadata: Mapping[str, Any]):
         instances["instanceName"] = (
             instances.get("instanceId", "")
             .map(lookups.get("element_instances", {}))
-            .fillna(
-                instances.get("instanceId", "").astype(str)
-                if "instanceId" in instances.columns
-                else ""
-            )
+            .fillna(instances.get("instanceId", "").astype(str) if "instanceId" in instances.columns else "")
         )
         sections.append(
             (
@@ -1186,9 +1137,7 @@ def _chat_sections(buffer: CaptureBuffer, metadata: Mapping[str, Any]):
 
     if not aggregated.empty:
         aggregated = aggregated.copy()
-        aggregated = _with_lookup(
-            aggregated, "chatbotId", chatbot_lookup, "chatbotName"
-        )
+        aggregated = _with_lookup(aggregated, "chatbotId", chatbot_lookup, "chatbotName")
         aggregated = _with_lookup(aggregated, "courseId", course_lookup, "courseName")
         keep = [
             column
@@ -1218,9 +1167,7 @@ def _chat_sections(buffer: CaptureBuffer, metadata: Mapping[str, Any]):
 
         if {"timestamp", "userMessages"}.issubset(aggregated.columns):
             daily = (
-                aggregated.loc[
-                    aggregated["type"] == "DAILY", ["timestamp", "userMessages"]
-                ]
+                aggregated.loc[aggregated["type"] == "DAILY", ["timestamp", "userMessages"]]
                 .groupby("timestamp", as_index=False)
                 .sum()
                 .rename(columns={"timestamp": "day"})
@@ -1259,11 +1206,7 @@ def _chat_sections(buffer: CaptureBuffer, metadata: Mapping[str, Any]):
             if column in topics.columns
         ]
         topic_options: dict[str, Any] = {}
-        if (
-            "messageCount" in topic_columns
-            and "clusterLabel" in topic_columns
-            and len(topics) > 1
-        ):
+        if "messageCount" in topic_columns and "clusterLabel" in topic_columns and len(topics) > 1:
             topic_options = {
                 "chart": "bar",
                 "x": "clusterLabel",
@@ -1364,9 +1307,7 @@ def _live_quiz_sections(buffer: CaptureBuffer, metadata: Mapping[str, Any]):
     if not participants.empty:
         labels = _participant_labels(participants.get("participantId", []))
         participants = participants.copy()
-        participants = _with_lookup(
-            participants, "liveQuizId", quiz_lookup, "liveQuizName"
-        )
+        participants = _with_lookup(participants, "liveQuizId", quiz_lookup, "liveQuizName")
         if "participantId" in participants.columns:
             participants["student"] = participants["participantId"].map(labels)
         sections.append(
@@ -1412,9 +1353,7 @@ def _platform_sections(buffer: CaptureBuffer, metadata: Mapping[str, Any]):
         return sections
 
     if "semesterStart" in platform.columns:
-        platform = platform.sort_values("semesterStart", ascending=False).reset_index(
-            drop=True
-        )
+        platform = platform.sort_values("semesterStart", ascending=False).reset_index(drop=True)
 
     sections.append(
         (
@@ -1565,9 +1504,7 @@ def _summary_sheet(
         if sort_by and data is not None:
             df_sort = data if isinstance(data, pd.DataFrame) else pd.DataFrame(data)
             if sort_by in df_sort.columns:
-                render_data = df_sort.sort_values(sort_by, ascending=False).reset_index(
-                    drop=True
-                )
+                render_data = df_sort.sort_values(sort_by, ascending=False).reset_index(drop=True)
 
         row = _write_table(
             workbook,
@@ -1580,11 +1517,7 @@ def _summary_sheet(
             table_name=f"tbl_{worksheet.name}_{before}".replace(" ", "_"),
         )
         if options.get("chart") and render_data is not None:
-            df = (
-                render_data
-                if isinstance(render_data, pd.DataFrame)
-                else pd.DataFrame(render_data)
-            )
+            df = render_data if isinstance(render_data, pd.DataFrame) else pd.DataFrame(render_data)
             if not df.empty:
                 chart_slots_idx = min(chart_idx, len(chart_slots) - 1)
                 top_n = options.get("top_n")
@@ -1615,26 +1548,16 @@ def write_excel(
     refs = _load_analytics_reference()
     used_names: set[str] = set()
     omitted_domains = _omitted_domain_notes(metadata)
-    omitted_tables = {
-        table for domain in omitted_domains for table in _DOMAIN_TABLES.get(domain, ())
-    }
+    omitted_tables = {table for domain in omitted_domains for table in _DOMAIN_TABLES.get(domain, ())}
     include_platform = "Platform" not in omitted_domains
 
     with pd.ExcelWriter(output_path, engine="xlsxwriter") as writer:
         workbook = writer.book
         formats = {
-            "title": workbook.add_format(
-                {"bold": True, "font_name": "Arial", "font_size": 16}
-            ),
-            "subtitle": workbook.add_format(
-                {"font_name": "Arial", "font_size": 10, "font_color": "#555555"}
-            ),
-            "section_title": workbook.add_format(
-                {"bold": True, "font_name": "Arial", "font_size": 12}
-            ),
-            "section_subtitle": workbook.add_format(
-                {"font_name": "Arial", "font_size": 9, "font_color": "#666666"}
-            ),
+            "title": workbook.add_format({"bold": True, "font_name": "Arial", "font_size": 16}),
+            "subtitle": workbook.add_format({"font_name": "Arial", "font_size": 10, "font_color": "#555555"}),
+            "section_title": workbook.add_format({"bold": True, "font_name": "Arial", "font_size": 12}),
+            "section_subtitle": workbook.add_format({"font_name": "Arial", "font_size": 9, "font_color": "#666666"}),
             "header": workbook.add_format(
                 {
                     "bold": True,
@@ -1643,20 +1566,12 @@ def write_excel(
                     "border": 1,
                 }
             ),
-            "note": workbook.add_format(
-                {"font_name": "Arial", "italic": True, "font_color": "#666666"}
-            ),
+            "note": workbook.add_format({"font_name": "Arial", "italic": True, "font_color": "#666666"}),
             "default": workbook.add_format({"font_name": "Arial"}),
-            "date": workbook.add_format(
-                {"font_name": "Arial", "num_format": "yyyy-mm-dd"}
-            ),
-            "datetime": workbook.add_format(
-                {"font_name": "Arial", "num_format": "yyyy-mm-dd hh:mm:ss"}
-            ),
+            "date": workbook.add_format({"font_name": "Arial", "num_format": "yyyy-mm-dd"}),
+            "datetime": workbook.add_format({"font_name": "Arial", "num_format": "yyyy-mm-dd hh:mm:ss"}),
             "int": workbook.add_format({"font_name": "Arial", "num_format": "#,##0"}),
-            "percent": workbook.add_format(
-                {"font_name": "Arial", "num_format": "0.0%"}
-            ),
+            "percent": workbook.add_format({"font_name": "Arial", "num_format": "0.0%"}),
         }
 
         # 00 Run Health
@@ -1691,10 +1606,7 @@ def write_excel(
                 tables_label = "intentionally omitted"
             else:
                 status, note = _domain_table_status(buffer, tables)
-                tables_label = (
-                    ", ".join(table for table in tables if table in buffer.table_status)
-                    or "none"
-                )
+                tables_label = ", ".join(table for table in tables if table in buffer.table_status) or "none"
             domain_rows.append(
                 {
                     "domain": domain,
@@ -1839,9 +1751,7 @@ def write_excel(
             if reference.get("source"):
                 subtitle_parts.append(f"Source: {reference['source']}")
             if not subtitle_parts:
-                subtitle_parts.append(
-                    "Direct capture of rows the pipeline would have written."
-                )
+                subtitle_parts.append("Direct capture of rows the pipeline would have written.")
             worksheet.write(1, 0, " | ".join(subtitle_parts), formats["subtitle"])
             notes = " | ".join(_visible_table_notes(buffer.table_notes.get(table, [])))
             if notes:
@@ -1926,8 +1836,7 @@ def write_excel(
         writer.sheets[debug_sheet.name] = debug_sheet
         debug_sheet.hide()
         debug_df = pd.DataFrame(
-            buffer.skipped_writes
-            or [{"verb": "none", "sql": "", "params": "", "table": "", "note": ""}]
+            buffer.skipped_writes or [{"verb": "none", "sql": "", "params": "", "table": "", "note": ""}]
         )
         _write_table(
             workbook,

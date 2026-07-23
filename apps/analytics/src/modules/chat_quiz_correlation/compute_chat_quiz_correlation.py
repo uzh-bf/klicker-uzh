@@ -62,36 +62,20 @@ def assert_preconditions(
         chat_rows = len(_buffered_chat_course_rows(course_ids) or [])
         perf_rows = len(_buffered_performance_rows(course_ids) or [])
     else:
-        scope_clause = (
-            ""
-            if course_ids is None
-            else render_uuid_in_clause('"courseId"', course_ids)
-        )
+        scope_clause = "" if course_ids is None else render_uuid_in_clause('"courseId"', course_ids)
         chat_rows = session.execute(
-            text(
-                'SELECT COUNT(*) AS n FROM "ParticipantChatAnalytics" '
-                f"WHERE \"type\" = 'COURSE' {scope_clause}"
-            )
+            text(f'SELECT COUNT(*) AS n FROM "ParticipantChatAnalytics" WHERE "type" = \'COURSE\' {scope_clause}')
         ).scalar_one()
         perf_rows = session.execute(
-            text(
-                f'SELECT COUNT(*) AS n FROM "ParticipantPerformance" WHERE true {scope_clause}'
-            )
+            text(f'SELECT COUNT(*) AS n FROM "ParticipantPerformance" WHERE true {scope_clause}')
         ).scalar_one()
     if verbose:
         source = "buffer" if buffer_active else "db"
-        print(
-            f"[chat_quiz_correlation] preconditions ({source}): "
-            f"chat_course_rows={chat_rows} perf_rows={perf_rows}"
-        )
+        print(f"[chat_quiz_correlation] preconditions ({source}): chat_course_rows={chat_rows} perf_rows={perf_rows}")
     if chat_rows == 0:
-        raise AnalyticsNotReadyError(
-            "ParticipantChatAnalytics (type=COURSE) is empty — run script 8 first."
-        )
+        raise AnalyticsNotReadyError("ParticipantChatAnalytics (type=COURSE) is empty — run script 8 first.")
     if perf_rows == 0:
-        raise AnalyticsNotReadyError(
-            "ParticipantPerformance is empty — run script 4 first."
-        )
+        raise AnalyticsNotReadyError("ParticipantPerformance is empty — run script 4 first.")
 
 
 def compute_participant_chat_outcomes(
@@ -179,9 +163,7 @@ def _percentile(values: list[float], q: float) -> float:
     lower = int(pos)
     upper = min(lower + 1, len(sorted_values) - 1)
     frac = pos - lower
-    return float(
-        sorted_values[lower] + (sorted_values[upper] - sorted_values[lower]) * frac
-    )
+    return float(sorted_values[lower] + (sorted_values[upper] - sorted_values[lower]) * frac)
 
 
 def _compute_outcomes_from_buffer(
@@ -245,11 +227,7 @@ def _compute_outcomes_from_buffer(
         perf = perf_lookup.get((course_id, participant_id))
         first_error = perf.get("firstErrorRate") if perf else None
         last_error = perf.get("lastErrorRate") if perf else None
-        delta = (
-            float(last_error) - float(first_error)
-            if first_error is not None and last_error is not None
-            else None
-        )
+        delta = float(last_error) - float(first_error) if first_error is not None and last_error is not None else None
         outcome_rows.append(
             {
                 "participantId": participant_id,
@@ -287,9 +265,7 @@ def _compute_outcomes_from_buffer(
     )
 
 
-def _bucket_for(
-    messages: int, cuts: tuple[float, float] | None
-) -> ChatDoseBucketLiteral:
+def _bucket_for(messages: int, cuts: tuple[float, float] | None) -> ChatDoseBucketLiteral:
     if messages <= 0 or cuts is None:
         return "NONE"
     cut_low, cut_med = cuts
