@@ -202,7 +202,7 @@ export async function loginTemporaryParticipant(
 
   // Keep the temporary leaderboard row for the existing UX while assigning the
   // same quiz-scoped identity to the durable response model.
-  const [temporaryParticipant] = await ctx.prisma.$transaction([
+  await ctx.prisma.$transaction([
     ctx.prisma.temporaryLeaderboardEntry.create({
       data: {
         id: temporaryParticipantId,
@@ -230,7 +230,7 @@ export async function loginTemporaryParticipant(
 
   // create and return a new valid token for the temporary participant
   const jwt = await createTemporaryParticipantToken(
-    temporaryParticipant.id,
+    temporaryParticipantId,
     liveQuizId
   )
   ctx.res.cookie(
