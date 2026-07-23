@@ -21,7 +21,7 @@ The following commands are available through PNPM:
 
 - `pnpm generate` - Generate the Prisma client for database access in Python
 - `pnpm main` - Run the analytics service
-- `pnpm dev` - Start the service in watch mode for development
+- `pnpm analytics:dev` - Start the service in watch mode for development
 
 ## Pipeline scripts
 
@@ -49,10 +49,10 @@ Script 12 (`CompetencyAnalytics` gap fill) is intentionally not present — the 
 
 ## Running from Hatchet
 
-The pipeline is wired into Hatchet as the `recompute-learning-analytics` task (defined in `packages/hatchet/src/index.ts`). It fires:
+The pipeline is wired into Hatchet as the `recompute-learning-analytics` task (defined in `packages/hatchet/src/tasks.ts`). It fires:
 
 - On cron: `0 2 * * 1` — Mondays at 02:00 UTC.
-- On event: `course-ended` — meant to fire 7 days after `Course.endDate`; the emission-side scanner is not yet implemented.
+- On event: `course-ended` — emitted by the daily `scan-ended-courses` task after a course passes its configurable post-end grace period.
 - On event: `admin-recompute-analytics` — dispatchable from the Hatchet dashboard today; an admin UI button is pending.
 
 The handler lives in `packages/graphql/src/services/analyticsRecompute.ts` and shells out to this app's scripts one at a time via `child_process.spawn`. For it to work, the Hatchet worker running the handler must have access to:

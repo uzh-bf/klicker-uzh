@@ -164,14 +164,21 @@ the existing Hatchet control plane.
 **Do**
 
 - Make the existing PR checks green.
-- Verify late-data upserts, `s13` ordering, full fan-in before `s99`,
-  homogeneous bulk-upsert rows, and UTC timestamps.
+- Reproduce and fix late-arriving chat data handling for participant and
+  aggregate course, daily, weekly, and monthly upserts.
+- Verify `s13` ordering, full fan-in before `s99`, homogeneous bulk-upsert
+  rows, and UTC timestamps.
+- Reproduce failure propagation through the current Hatchet bridge. A failed
+  handler must fail the task, and partial `s10` failures must not allow `s99`
+  to mark the run valid.
 - Fix only findings reproduced against the integrated branch.
 
 **Check**
 
 - Focused unit/integration tests for each accepted fix.
 - Seeded analytics run and row-level assertions where feasible.
+- Failed-script smoke tests report a failed Hatchet task and leave analytics
+  invalid.
 
 **Commit**
 
@@ -284,8 +291,10 @@ the existing Hatchet control plane.
 
 - Convert the dedicated image to a Python worker image while preserving all
   analytics dependencies.
-- Align Node/uv/Python versions with current repository pins where still
-  applicable.
+- Remove the transitional Node 20/pnpm 10 image assumptions. Align uv/Python
+  and any remaining build tooling with current repository pins, and use a
+  base that demonstrably provides Python 3.12 rather than assuming the Debian
+  Node image contains `python3.12`.
 - Fix architecture-specific image repository/tag wiring.
 - Use the Hatchet SDK health/metrics server; do not add a custom health service.
 
@@ -349,14 +358,14 @@ Focused slices run the relevant subset. Slice 6 reruns the complete matrix:
 | Area | Command | Pass criterion |
 |---|---|---|
 | Diff hygiene | `git diff --check` | No errors |
-| Dependency policy | `volta run pnpm run check:syncpack` | Exit 0 |
-| Analytics format | `cd apps/analytics && uv run ruff check .` | Exit 0 |
+| Dependency policy | `volta run --node 24.16.0 pnpm run check:syncpack` | Exit 0 |
+| Analytics format | `cd apps/analytics && uv run ruff format --check . && uv run ruff check .` | Exit 0 |
 | Analytics types | `cd apps/analytics && uv run pyright` | Exit 0 |
-| Analytics tests | `cd apps/analytics && uv run pytest` | All tests pass |
-| Hatchet package | `volta run pnpm --filter @klicker-uzh/hatchet check` | Exit 0 |
-| GraphQL package | `volta run pnpm --filter @klicker-uzh/graphql check` | Exit 0 |
-| GraphQL tests | `volta run pnpm --filter @klicker-uzh/graphql test` | All tests pass |
-| Schema mirror | `volta run pnpm run prisma:sync` then `git diff --exit-code -- apps/analytics/prisma` | Mirror is current |
+| Analytics tests | `cd apps/analytics && uv run python -m unittest discover -s tests` | All tests pass |
+| Hatchet packages | `volta run --node 24.16.0 pnpm exec turbo run check --filter=@klicker-uzh/hatchet --filter=@klicker-uzh/hatchet-worker-analytics --filter=@klicker-uzh/hatchet-worker-general` | Exit 0 |
+| GraphQL package | `volta run --node 24.16.0 pnpm exec turbo run check --filter=@klicker-uzh/graphql` | Exit 0 |
+| GraphQL tests | `volta run --node 24.16.0 pnpm --filter @klicker-uzh/graphql test` | All tests pass |
+| Schema mirror | `volta run --node 24.16.0 pnpm run prisma:sync` then `git diff --exit-code -- apps/analytics/prisma` | Mirror is current |
 | Worker image | `docker build -f apps/hatchet-worker-analytics/Dockerfile .` | Image builds |
 | Helm staging | `helm template klicker-uzh deploy/charts/klicker-uzh-v3 -f deploy/env-uzh-stg/values.yaml` | Render succeeds |
 | Helm production | `helm template klicker-uzh deploy/charts/klicker-uzh-v3 -f deploy/env-uzh-prd/values.yaml` | Render succeeds |
@@ -378,9 +387,43 @@ the repository script that replaces it before continuing.
   findings split oversized slices, made cutover rollback explicit, added a
   command matrix, and tightened configuration/parity/retargeting requirements.
 - 2026-07-23: Slice 0 complete at `f150b33f2`.
-- Active: Slice 1, merge `origin/v3` into `chat-analytics`.
-- Next: Resolve the 11 known conflicts, regenerate derived files, and run the
-  Phase 1 verification subset.
+- 2026-07-23: Merged `origin/v3` at `c8de9c8978` into `chat-analytics` and
+  resolved all 11 conflicts. The resolution keeps the `v3` Node 24,
+  TypeScript 6, uv/Ruff, split-schema, and export additions while preserving
+  every analytics model, script, scoped run mode, deterministic interaction
+  fixture, and the 15-step analytics workflow.
+- 2026-07-23: Regenerated the uv and pnpm locks from resolved manifests,
+  aligned the dedicated analytics worker with the Node 24/TypeScript 6
+  toolchain, and regenerated the Python Prisma schema mirror from the canonical
+  schema.
+- 2026-07-23: Slice 1 checks pass for Ruff format/lint, Pyright, 22 Python unit
+  tests, syncpack, the Hatchet package and both workers through the Turbo
+  dependency graph, GraphQL typecheck, schema sync, and a focused strict
+  TypeScript check of the analytics interaction seeder.
+- 2026-07-23: The full repository typecheck passes 25/25 runnable workspace
+  checks under Node 24 and pnpm 11.5 after building the `v3` Markdown and
+  word-cloud artifacts required by the repository's parallel check.
+- 2026-07-23: The whole `prisma-data` TypeScript surface remains
+  non-typecheckable because legacy migration scripts reference removed schema
+  fields; the new analytics seeder passes a focused strict check. Wiki
+  validation reaches the imported `v3` baseline and fails only on the
+  pre-existing missing frontmatter type in
+  `docs/solutions/best-practice/repeat-production-seeds-use-prior-state.md`;
+  the analytics wiki changes introduce no validator error.
+- 2026-07-23: Slice 1 merge committed as `02e0f16c`. The commit hook passed
+  repository checks, staged formatting, lint, syncpack, AGENTS validation, and
+  Prisma schema sync.
+- 2026-07-23: Independent review and simplification of
+  `origin/v3...02e0f16c` found no lost analytics capability. Accepted
+  production-readiness findings were assigned to Slice 3A (late-data upserts
+  and failure propagation) and Slice 5A (replace the transitional mixed
+  Node/Python image); stale README commands and scanner status were corrected
+  immediately. Dependency pruning and small SQL-loading/query-shape cleanups
+  were rejected for Slice 1 because they are unrelated to the merge and lack
+  runtime value or build evidence.
+- Active: Slice 1, commit the review-driven documentation corrections.
+- Next: Create the Phase A integration worktree and merge refreshed
+  `chat-analytics`.
 
 ## Finish evidence
 
@@ -394,6 +437,6 @@ the repository script that replaces it before continuing.
 
 ## Next Steps
 
-1. Merge current `v3` into `chat-analytics`.
-2. Resolve and verify Phase 1.
+1. Finish the Slice 1 review adjustment.
+2. Merge refreshed `chat-analytics` into `analytics-phase-a`.
 3. Continue one verified slice at a time until both draft PRs are current.
