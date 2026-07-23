@@ -1,4 +1,5 @@
 import {
+  CodeTestVisibility,
   ElementData,
   ElementInstance,
   ElementInstanceType,
@@ -6,6 +7,14 @@ import {
 import { nanoid } from 'nanoid'
 import { useMemo } from 'react'
 import { ElementFormTypes } from './types'
+
+function parseJson(value: string, fallback: unknown) {
+  try {
+    return JSON.parse(value)
+  } catch {
+    return fallback
+  }
+}
 
 function useArtificialElementInstance({
   values,
@@ -42,6 +51,41 @@ function useArtificialElementInstance({
                 hasSampleSolution:
                   'hasSampleSolution' in values.options
                     ? values.options.hasSampleSolution
+                    : undefined,
+                language:
+                  'language' in values.options
+                    ? values.options.language
+                    : undefined,
+                starterCode:
+                  'starterCode' in values.options
+                    ? values.options.starterCode || undefined
+                    : undefined,
+                entrypoint:
+                  'entrypoint' in values.options
+                    ? values.options.entrypoint
+                    : undefined,
+                executionLimits:
+                  'executionLimits' in values.options
+                    ? {
+                        perTestTimeoutSeconds: 5,
+                      }
+                    : undefined,
+                testCases:
+                  'testCases' in values.options
+                    ? values.options.testCases
+                        .filter(
+                          (testCase) =>
+                            testCase.visibility === CodeTestVisibility.Public
+                        )
+                        .map((testCase) => ({
+                          id: testCase.id,
+                          name: testCase.name,
+                          args: parseJson(testCase.args, []),
+                          expectedOutput: parseJson(
+                            testCase.expectedOutput,
+                            null
+                          ),
+                        }))
                     : undefined,
                 hasAnswerFeedbacks:
                   'hasAnswerFeedbacks' in values.options

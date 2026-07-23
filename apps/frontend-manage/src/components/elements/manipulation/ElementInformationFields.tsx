@@ -39,7 +39,9 @@ function ElementInformationFields({
 }: ElementInformationFieldsProps) {
   const t = useTranslations()
   const statusOptions = useStatusOptions()
-  const questionTypeOptions = useElementTypeOptions()
+  const questionTypeOptions = useElementTypeOptions({
+    includeCode: !isTemplate,
+  })
   const { setFieldValue } = useFormikContext()
 
   const [statusSaving, setStatusSaving] = useState(false)

@@ -1,4 +1,6 @@
 import {
+  CodeLanguage,
+  CodeTestVisibility,
   ElementDisplayMode,
   ElementStatus,
   ElementType,
@@ -63,6 +65,29 @@ export interface ElementFormTypesFreeText extends SharedQuestionFormProps {
       maxLength?: number | string | null
     } | null
     solutions?: string[] | null
+  }
+}
+
+export interface ElementFormTypesCode extends SharedQuestionFormProps {
+  type: ElementType.Code
+  explanation?: string | null
+  options: {
+    language: CodeLanguage
+    starterCode: string
+    sampleSolution: string
+    entrypoint: string
+    hasSampleSolution: boolean
+    executionLimits: {
+      perTestTimeoutSeconds: '5'
+    }
+    testCases: {
+      id: string
+      name: string
+      args: string
+      expectedOutput: string
+      visibility: CodeTestVisibility
+      weight: string
+    }[]
   }
 }
 
@@ -156,6 +181,7 @@ export type ElementFormTypes =
   | ElementFormTypesChoices
   | ElementFormTypesNumerical
   | ElementFormTypesFreeText
+  | ElementFormTypesCode
   | ElementFormTypesFlashcard
   | ElementFormTypesContent
   | ElementFormTypesSelection

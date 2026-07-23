@@ -15,6 +15,7 @@ import {
   ElementFormTypesCaseStudy,
   ElementFormTypesCaseStudySolutions,
   ElementFormTypesChoices,
+  ElementFormTypesCode,
   ElementFormTypesContent,
   ElementFormTypesFlashcard,
   ElementFormTypesFreeText,
@@ -214,6 +215,51 @@ export function prepareFreeTextArgs({
       solutions: values.options.solutions,
     },
 
+    tags: values.tags,
+  }
+}
+
+interface PrepareCodeArgsProps {
+  elementId?: number
+  isDuplication: boolean
+  values: ElementFormTypesCode & { status: ElementStatus }
+}
+export function prepareCodeArgs({
+  elementId,
+  isDuplication,
+  values,
+}: PrepareCodeArgsProps) {
+  return {
+    id: isDuplication ? undefined : elementId,
+    name: values.name,
+    status: values.status,
+    content: values.content,
+    explanation:
+      !values.explanation?.match(/^(<br>(\n)*)$/g) && values.explanation !== ''
+        ? values.explanation
+        : null,
+    basePoints: values.basePoints,
+    pointsMultiplier: parseInt(values.pointsMultiplier),
+    options: {
+      language: values.options.language,
+      starterCode: values.options.starterCode || undefined,
+      sampleSolution: values.options.hasSampleSolution
+        ? values.options.sampleSolution
+        : undefined,
+      entrypoint: values.options.entrypoint.trim(),
+      hasSampleSolution: values.options.hasSampleSolution,
+      executionLimits: {
+        perTestTimeoutSeconds: 5,
+      },
+      testCases: values.options.testCases.map((testCase) => ({
+        id: testCase.id.trim(),
+        name: testCase.name.trim(),
+        args: JSON.parse(testCase.args),
+        expectedOutput: JSON.parse(testCase.expectedOutput),
+        visibility: testCase.visibility,
+        weight: Number(testCase.weight),
+      })),
+    },
     tags: values.tags,
   }
 }

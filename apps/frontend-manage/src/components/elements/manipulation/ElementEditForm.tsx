@@ -35,6 +35,7 @@ import StudentElementPreview from './StudentElementPreview'
 import AnswerFeedbackSetting from './options/AnswerFeedbackSetting'
 import CaseStudyOptions from './options/CaseStudyOptions'
 import ChoicesOptions from './options/ChoicesOptions'
+import CodeOptions from './options/CodeOptions'
 import DisplayModeSetting from './options/DisplayModeSetting'
 import FreeTextOptions from './options/FreeTextOptions'
 import NumericalOptions from './options/NumericalOptions'
@@ -239,6 +240,13 @@ function ElementEditForm({
 
                     {values.type === ElementType.FreeText && (
                       <FreeTextOptions
+                        inputsDisabled={inputsDisabled}
+                        values={values}
+                      />
+                    )}
+
+                    {values.type === ElementType.Code && (
+                      <CodeOptions
                         inputsDisabled={inputsDisabled}
                         values={values}
                       />

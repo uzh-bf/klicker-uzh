@@ -101,6 +101,12 @@ export default {
       typeLabel: 'Programming Question (CODE)',
       text: 'Please enter your program.',
       richtext: 'Please enter your <b>program</b>.',
+      entrypoint: 'Entrypoint',
+      responseEditor: 'Program response',
+      responsePlaceholder: 'Enter your Python program…',
+      publicTests: 'Public tests',
+      arguments: 'Arguments',
+      expectedOutput: 'Expected output',
     },
     login: {
       installButton: 'Install Now',
@@ -1861,6 +1867,23 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       possibleSolutionN: 'Possible solution {number}',
       possibleSolutions: 'Possible solutions',
       addSolution: 'Add new solution',
+      codeConfiguration: 'Programming settings',
+      codeEntrypoint: 'Entrypoint function',
+      codeEntrypointTooltip:
+        'Name of the Python function that will be called for every test.',
+      codeStarterCode: 'Starter code',
+      codeSampleSolution: 'Sample solution',
+      codeTests: 'Tests',
+      codeDefaultTestName: 'Example {number}',
+      codeTestName: 'Test name',
+      codeVisibility: 'Visibility',
+      codeVisibilityPublic: 'Public',
+      codeVisibilityHidden: 'Hidden',
+      codeWeight: 'Weight',
+      codeArguments: 'Arguments (JSON array)',
+      codeExpectedOutput: 'Expected output (JSON)',
+      addCodeTest: 'Add test',
+      removeCodeTest: 'Remove test',
       noFeedbackDefined: 'No feedback defined',
       createElement: 'Create {element}',
       editElement: 'Edit {element}',
@@ -2349,6 +2372,22 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       enterSolution: 'Please enter a solution.',
       FTMaxLength:
         'The maximum length of a free text question response has to be at least 1.',
+      COLanguageRequired: 'Please select a programming language.',
+      COEntrypointRequired: 'Please enter an entrypoint function.',
+      COEntrypointInvalid:
+        'The entrypoint must be a valid Python function name.',
+      COEntrypointKeyword:
+        'The entrypoint cannot be a reserved Python keyword.',
+      COSampleSolutionRequired:
+        'Please enter a sample solution or deactivate the sample solution.',
+      COTestsRequired: 'Please define at least one code test.',
+      COTestsMax: 'A programming question can contain at most 20 tests.',
+      COTestNameRequired: 'Please enter a name for every code test.',
+      COTestArgsInvalid:
+        'Test arguments must be a valid JSON array, for example [1, 2].',
+      COTestExpectedOutputInvalid: 'The expected output must be valid JSON.',
+      COTestWeightPositive: 'The test weight must be greater than 0.',
+      COTestIdsUnique: 'Every code test must have a unique identifier.',
       solutionRequired:
         'Please enter at least one solution or deactivate the sample solution.',
       NRMinLessThanMaxSol:

@@ -3,6 +3,7 @@ import {
   ElementInstance,
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
+import CodeQuestion from '@klicker-uzh/shared-components/src/CodeQuestion'
 import useSingleStudentResponse from '@klicker-uzh/shared-components/src/hooks/useSingleStudentResponse'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import StudentElement, {
@@ -144,6 +145,15 @@ function StudentElementPreviewWrapper({
     return <Loader />
   }
 
+  const codeData =
+    instance.elementData.__typename === 'CodeElementData'
+      ? instance.elementData
+      : undefined
+  const codeHasSampleSolution =
+    'options' in values &&
+    'hasSampleSolution' in values.options &&
+    values.options.hasSampleSolution
+
   return (
     <div className="max-w-full" data-cy="student-element-preview">
       <div className="rounded border p-4">
@@ -181,14 +191,36 @@ function StudentElementPreviewWrapper({
             />
           </div>
         )}
-        <StudentElement
-          preview
-          element={instance}
-          elementIx={0}
-          singleStudentResponse={studentResponse}
-          setSingleStudentResponse={setStudentResponse}
-          stackStorage={stackStorage}
-        />
+        {codeData ? (
+          <CodeQuestion
+            content={codeData.content}
+            options={codeData.options}
+            response={
+              studentResponse.type === ElementType.Code
+                ? (studentResponse.response ??
+                  codeData.options.starterCode ??
+                  '')
+                : (codeData.options.starterCode ?? '')
+            }
+            setResponse={(response) =>
+              setStudentResponse({
+                type: ElementType.Code,
+                response,
+                valid: response.trim().length > 0,
+              })
+            }
+            noPoints={codeData.basePoints === false && !codeHasSampleSolution}
+          />
+        ) : (
+          <StudentElement
+            preview
+            element={instance}
+            elementIx={0}
+            singleStudentResponse={studentResponse}
+            setSingleStudentResponse={setStudentResponse}
+            stackStorage={stackStorage}
+          />
+        )}
       </div>
     </div>
   )

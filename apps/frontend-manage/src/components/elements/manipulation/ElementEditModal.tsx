@@ -7,6 +7,7 @@ import {
   GetUserTagsDocument,
   ManipulateCaseStudyQuestionDocument,
   ManipulateChoicesQuestionDocument,
+  ManipulateCodeQuestionDocument,
   ManipulateContentElementDocument,
   ManipulateFlashcardElementDocument,
   ManipulateFreeTextQuestionDocument,
@@ -23,6 +24,7 @@ import {
   createInlineSelectionCollection,
   prepareCaseStudyArgs,
   prepareChoicesArgs,
+  prepareCodeArgs,
   prepareContentArgs,
   prepareFlashcardArgs,
   prepareFreeTextArgs,
@@ -94,6 +96,7 @@ function ElementEditModal({
   const [manipulateFreeTextQuestion] = useMutation(
     ManipulateFreeTextQuestionDocument
   )
+  const [manipulateCodeQuestion] = useMutation(ManipulateCodeQuestionDocument)
   const [manipulateSelectionQuestion] = useMutation(
     ManipulateSelectionQuestionDocument
   )
@@ -257,6 +260,27 @@ function ElementEditModal({
 
               const data = result.data?.manipulateFreeTextQuestion
               if (data?.__typename !== 'FreeTextElement' || !data.id) {
+                return false
+              }
+
+              break
+            }
+
+            case ElementType.Code: {
+              const args = prepareCodeArgs({
+                elementId,
+                isDuplication,
+                values,
+              })
+
+              const result = await manipulateCodeQuestion({
+                variables: args,
+                refetchQueries: [{ query: GetUserTagsDocument }],
+              })
+              await refetchElements()
+
+              const data = result.data?.manipulateCodeQuestion
+              if (data?.__typename !== 'CodeElement' || !data.id) {
                 return false
               }
 

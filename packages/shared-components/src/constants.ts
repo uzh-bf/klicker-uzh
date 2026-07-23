@@ -48,6 +48,7 @@ export const QUESTION_GROUPS: Record<string, ElementType[]> = {
     ElementType.Kprim,
     ElementType.FreeText,
     ElementType.Numerical,
+    ElementType.Code,
     ElementType.Selection,
     ElementType.CaseStudy,
   ],

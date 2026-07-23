@@ -131,6 +131,31 @@ function useElementFormInitialValues({
           solutions: options.solutions,
         },
       }
+    } else if (question.__typename === 'CodeElement') {
+      const options = question.options
+
+      return {
+        ...sharedAttributes,
+        type: ElementType.Code,
+        options: {
+          language: options.language,
+          starterCode: options.starterCode ?? '',
+          sampleSolution: options.sampleSolution ?? '',
+          entrypoint: options.entrypoint,
+          hasSampleSolution: options.hasSampleSolution ?? false,
+          executionLimits: {
+            perTestTimeoutSeconds: '5',
+          },
+          testCases: options.testCases.map((testCase) => ({
+            id: testCase.id,
+            name: testCase.name,
+            args: JSON.stringify(testCase.args),
+            expectedOutput: JSON.stringify(testCase.expectedOutput ?? null),
+            visibility: testCase.visibility,
+            weight: String(testCase.weight),
+          })),
+        },
+      }
     } else if (question.__typename === 'SelectionElement') {
       const options = question.options
 

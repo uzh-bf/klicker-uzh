@@ -1,4 +1,6 @@
 import {
+  CodeLanguage,
+  CodeTestVisibility,
   ElementDisplayMode,
   ElementStatus,
   ElementType,
@@ -6,6 +8,61 @@ import {
 import { useTranslations } from 'next-intl'
 import * as yup from 'yup'
 import { ElementFormTypesCaseStudy } from './types'
+
+const PYTHON_IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/
+const PYTHON_KEYWORDS = new Set([
+  'False',
+  'None',
+  'True',
+  'and',
+  'as',
+  'assert',
+  'async',
+  'await',
+  'break',
+  'class',
+  'continue',
+  'def',
+  'del',
+  'elif',
+  'else',
+  'except',
+  'finally',
+  'for',
+  'from',
+  'global',
+  'if',
+  'import',
+  'in',
+  'is',
+  'lambda',
+  'nonlocal',
+  'not',
+  'or',
+  'pass',
+  'raise',
+  'return',
+  'try',
+  'while',
+  'with',
+  'yield',
+])
+
+function isValidJson(value?: string) {
+  if (typeof value !== 'string') return false
+
+  try {
+    JSON.parse(value)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function isJsonArray(value?: string) {
+  if (!isValidJson(value)) return false
+  return Array.isArray(JSON.parse(value!))
+}
 
 function useSharedValidationSchema() {
   const t = useTranslations()
@@ -403,6 +460,79 @@ function useOptionsSchemaFreeText() {
   }
 }
 
+function useOptionsSchemaCode() {
+  const t = useTranslations()
+
+  return {
+    language: yup
+      .string()
+      .oneOf([CodeLanguage.Python])
+      .required(t('manage.formErrors.COLanguageRequired')),
+    starterCode: yup.string(),
+    entrypoint: yup
+      .string()
+      .trim()
+      .required(t('manage.formErrors.COEntrypointRequired'))
+      .matches(PYTHON_IDENTIFIER, t('manage.formErrors.COEntrypointInvalid'))
+      .test({
+        message: t('manage.formErrors.COEntrypointKeyword'),
+        test: (value) => !value || !PYTHON_KEYWORDS.has(value),
+      }),
+    hasSampleSolution: yup.boolean(),
+    sampleSolution: yup.string().when('hasSampleSolution', {
+      is: true,
+      then: (schema) =>
+        schema.required(t('manage.formErrors.COSampleSolutionRequired')),
+    }),
+    executionLimits: yup.object().shape({
+      perTestTimeoutSeconds: yup.string().oneOf(['5']).required(),
+    }),
+    testCases: yup
+      .array()
+      .of(
+        yup.object().shape({
+          id: yup.string().required(),
+          name: yup
+            .string()
+            .trim()
+            .required(t('manage.formErrors.COTestNameRequired')),
+          args: yup
+            .string()
+            .required(t('manage.formErrors.COTestArgsInvalid'))
+            .test({
+              message: t('manage.formErrors.COTestArgsInvalid'),
+              test: isJsonArray,
+            }),
+          expectedOutput: yup
+            .string()
+            .required(t('manage.formErrors.COTestExpectedOutputInvalid'))
+            .test({
+              message: t('manage.formErrors.COTestExpectedOutputInvalid'),
+              test: isValidJson,
+            }),
+          visibility: yup
+            .string()
+            .oneOf(Object.values(CodeTestVisibility))
+            .required(),
+          weight: yup
+            .number()
+            .required(t('manage.formErrors.COTestWeightPositive'))
+            .moreThan(0, t('manage.formErrors.COTestWeightPositive')),
+        })
+      )
+      .required(t('manage.formErrors.COTestsRequired'))
+      .min(1, t('manage.formErrors.COTestsRequired'))
+      .max(20, t('manage.formErrors.COTestsMax'))
+      .test({
+        message: t('manage.formErrors.COTestIdsUnique'),
+        test: (testCases) =>
+          !testCases ||
+          new Set(testCases.map((testCase) => testCase.id)).size ===
+            testCases.length,
+      }),
+  }
+}
+
 function useOptionsSchemaSelection({
   numberOfAnswerOptions,
 }: {
@@ -783,6 +913,7 @@ function useValidationSchema({
   const optionsSchemaKPRIM = useOptionsSchemaKPRIM()
   const optionsSchemaNumerical = useOptionsSchemaNumerical()
   const optionsSchemaFreeText = useOptionsSchemaFreeText()
+  const optionsSchemaCode = useOptionsSchemaCode()
   const optionsSchemaSelection = useOptionsSchemaSelection({
     numberOfAnswerOptions,
   })
@@ -810,6 +941,10 @@ function useValidationSchema({
 
         case ElementType.FreeText: {
           return schema.shape(optionsSchemaFreeText)
+        }
+
+        case ElementType.Code: {
+          return schema.shape(optionsSchemaCode)
         }
 
         case ElementType.Selection: {
