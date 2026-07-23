@@ -20,6 +20,11 @@ from sqlalchemy.sql import Select
 from sqlalchemy.sql.elements import ColumnElement
 
 
+def utcnow() -> datetime:
+    """Return the current UTC time using the database's naive timestamp convention."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
 def bulk_upsert(
     session: Session,
     Model: type[DeclarativeBase],
@@ -37,6 +42,11 @@ def bulk_upsert(
     """
     if not rows:
         return 0
+
+    expected_columns = set(rows[0])
+    for index, row in enumerate(rows[1:], start=1):
+        if set(row) != expected_columns:
+            raise ValueError(f"bulk_upsert row {index} must have the same columns as row 0")
 
     stmt = postgres_insert(Model).values(list(rows))
     effective_update_cols = (

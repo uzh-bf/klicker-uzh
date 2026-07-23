@@ -4,6 +4,8 @@ import os
 import sys
 import uuid
 
+import pytest
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 
@@ -112,6 +114,50 @@ def test_aggregated_chatbot_analytics_renders_course_filter_for_weekly():
     )
 
     assert f"""AND cb."courseId" IN ('{course_id}')""" in session.statements[0]
+
+
+@pytest.mark.parametrize("analytics_type", ["DAILY", "WEEKLY", "MONTHLY", "COURSE"])
+def test_participant_chat_analytics_refreshes_existing_rollups(analytics_type):
+    from src.modules.chat_analytics.compute_participant_chat_analytics import (
+        compute_participant_chat_analytics,
+    )
+
+    session = _CaptureSession(scalars=[0])
+
+    compute_participant_chat_analytics(
+        session,
+        "2026-01-01T00:00:00.000Z",
+        "2026-01-31T23:59:59.999Z",
+        "2026-01-31",
+        analytics_type,
+    )
+
+    statement = session.statements[-1]
+    assert "ON CONFLICT" in statement
+    assert "DO UPDATE SET" in statement
+    assert """WHERE "ParticipantChatAnalytics"."type" = 'COURSE'""" not in statement
+
+
+@pytest.mark.parametrize("analytics_type", ["DAILY", "WEEKLY", "MONTHLY", "COURSE"])
+def test_aggregated_chatbot_analytics_refreshes_existing_rollups(analytics_type):
+    from src.modules.aggregated_chat_analytics.compute_aggregated_chatbot_analytics import (
+        compute_aggregated_chatbot_analytics,
+    )
+
+    session = _CaptureSession()
+
+    compute_aggregated_chatbot_analytics(
+        session,
+        "2026-01-01T00:00:00.000Z",
+        "2026-01-31T23:59:59.999Z",
+        "2026-01-31",
+        analytics_type,
+    )
+
+    statement = session.statements[-1]
+    assert "ON CONFLICT" in statement
+    assert "DO UPDATE SET" in statement
+    assert """WHERE "AggregatedChatbotAnalytics"."type" = 'COURSE'""" not in statement
 
 
 def test_chat_quiz_correlation_renders_course_filters():

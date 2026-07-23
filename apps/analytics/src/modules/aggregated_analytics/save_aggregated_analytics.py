@@ -1,9 +1,7 @@
-from datetime import date, datetime
-
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from src.db_helpers import bulk_upsert, coerce_date
+from src.db_helpers import bulk_upsert, coerce_date, utcnow
 from src.models import (
     AggregatedAnalytics,
     ElementStack,
@@ -52,7 +50,8 @@ def save_aggregated_analytics(
     if df_analytics is None or df_analytics.empty:
         return
 
-    computedAt = date.today()
+    now = utcnow()
+    computedAt = now.date()
     timestamp_value = coerce_date(timestamp)
 
     if analytics_type in ("DAILY", "WEEKLY", "MONTHLY"):
@@ -70,8 +69,8 @@ def save_aggregated_analytics(
                 # kept from the pre-migration implementation.
                 "totalElementsAvailable": -1,
                 "courseId": row["courseId"],
-                "createdAt": datetime.now(),
-                "updatedAt": datetime.now(),
+                "createdAt": now,
+                "updatedAt": now,
             }
             for _, row in df_analytics.iterrows()
         ]
@@ -91,8 +90,8 @@ def save_aggregated_analytics(
                     "totalXp": int(row["totalXp"]),
                     "totalElementsAvailable": total_elements,
                     "courseId": row["courseId"],
-                    "createdAt": datetime.now(),
-                    "updatedAt": datetime.now(),
+                    "createdAt": now,
+                    "updatedAt": now,
                 }
             )
     else:
