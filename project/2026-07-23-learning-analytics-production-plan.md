@@ -600,6 +600,5 @@ the repository script that replaces it before continuing.
 
 ## Next Steps
 
-1. Close Slice 3C review findings.
-2. Register the native Python worker and proof task in Slice 4A.
-3. Continue one verified slice at a time until both draft PRs are current.
+1. Register the native Python worker and proof task in Slice 4A.
+2. Continue one verified slice at a time until both draft PRs are current.
