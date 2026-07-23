@@ -373,6 +373,7 @@ function Index({ id }: { id: string }) {
     isConfusionFeedbackEnabled,
     isGamificationEnabled,
     isAssessmentEnabled,
+    responseCollectionMode,
     isPartOfGamifiedCourse,
     course,
   } = data.studentLiveQuiz
@@ -439,6 +440,8 @@ function Index({ id }: { id: string }) {
         selectedBlock={selectedBlock}
         onSelectBlock={setSelectedBlock}
         isGamificationEnabled={isGamificationEnabled}
+        isAssessmentEnabled={isAssessmentEnabled}
+        responseCollectionMode={responseCollectionMode}
         handleNewResponse={handleNewResponse}
         className={extraClassName}
       />

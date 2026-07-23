@@ -1087,6 +1087,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       previousCase: 'Previous case',
       nextCase: 'Next case',
       thisLiveQuizGamified: 'This live quiz is gamified!',
+      responseCollectionAggregatedNotice:
+        'Responses are counted only in aggregate. Answers are not linked across questions.',
+      responseCollectionCorrelatedNotice:
+        'Answers in this quiz are stored per participant and can be exported with random labels (e.g. respondent_001) instead of names.',
       loginSelectionHint:
         'You are about to join a gamified live quiz. Please choose between the following options: <ul><li>Login with <b>KlickerUZH-Account</b>: Collect points and XP</li><li>Create a <b>temporary pseudonym</b>: Collect points in this live quiz only (points not available in course)</li><li>Particiate <b>anonymously</b>: Do not participate in the gamification elements</li></ul>',
       loginWithAccount: 'Login with Klicker-Account',

@@ -1093,6 +1093,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       previousCase: 'Vorheriger Fall',
       nextCase: 'Nächster Fall',
       thisLiveQuizGamified: 'Diese Live-Quiz ist gamifiziert!',
+      responseCollectionAggregatedNotice:
+        'Antworten werden nur aggregiert ausgewertet und nicht über Fragen hinweg verknüpft.',
+      responseCollectionCorrelatedNotice:
+        'Antworten in diesem Quiz werden pro Person gespeichert und können mit zufälligen Bezeichnungen (z. B. respondent_001) statt Namen exportiert werden.',
       loginSelectionHint:
         'Sie sind dabei, an einem gamifizierten Live-Quiz teilzunehmen. Bitte wählen Sie zwischen den folgenden Optionen: <ul><li>Login mit <b>KlickerUZH-Konto</b>: Punkte und XP sammeln</li><li>Erstellen Sie ein <b>temporäres Pseudonym</b>: Sammeln Sie Punkte nur in diesem Live-Quiz (Punkte nicht im Kurs verfügbar)</li><li><b>Anonyme</b> Teilnahme: Nicht an den Gamifizierungselementen teilnehmen</li></ul>',
       loginWithAccount: 'Login mit KlickerUZH-Konto',
