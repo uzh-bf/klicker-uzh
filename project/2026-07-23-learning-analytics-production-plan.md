@@ -485,8 +485,25 @@ the repository script that replaces it before continuing.
   reproduced Slice 3A fixes without downloading the multi-gigabyte ML/CUDA
   dependency set; the full 116-test suite remains a local/final gate until
   Slice 5A establishes the CPU-only worker dependency set.
-- Active: Slice 3A, commit the independently reviewed CI adjustment.
-- Next: Prove grading parity in Slice 3B.
+- 2026-07-23: Slice 3A's independently reviewed CI adjustment committed as
+  `80c9ae5cf`.
+- 2026-07-23: Slice 3B reproduces and fixes numerical analytics differences
+  from `packages/grading`: bounded and one-sided ranges, empty or undefined
+  solutions, exact-solution precedence, and `Number.EPSILON` tolerance.
+  Parity work also exposed and fixed the product grader's zero-bound truthiness
+  defect, so a bound of exactly zero is no longer treated as absent.
+- 2026-07-23: The deterministic interaction seeder now includes numerical
+  element instances. The full analytics suite passes with 135 tests and 3
+  integration skips; the isolated analytics CI subset passes 56 tests; all 10
+  grading tests and the focused strict TypeScript check of the interaction
+  response seeder pass.
+- 2026-07-23: A seeded script-0 row diff could not run without borrowing
+  another active worktree's database. Container labels confirmed that none of
+  the running seeded environments belongs to this worktree, so no other
+  agent's database was reused or reset. This remains a final runtime evidence
+  item rather than being represented by unit parity tests.
+- Active: Slice 3B, commit and independently review grading parity.
+- Next: Prove index needs and refresh operational documentation in Slice 3C.
 
 ## Finish evidence
 
