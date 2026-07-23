@@ -62,10 +62,7 @@ export function useEmbeddedManageContext() {
     // can fully elapse before hydration finishes and the context is lost. The
     // '*' target is safe: the message is a content-free ping and the parent
     // origin is unknown until its first context message arrives.
-    window.parent.postMessage(
-      { type: MANAGE_CONTEXT_READY_MESSAGE_TYPE, payload: { version: 1 } },
-      '*'
-    )
+    window.parent.postMessage({ type: MANAGE_CONTEXT_READY_MESSAGE_TYPE }, '*')
 
     return () => window.removeEventListener('message', handleMessage)
   }, [embedded])

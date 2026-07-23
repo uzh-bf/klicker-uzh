@@ -66,6 +66,22 @@ export function ManageAssistantWidget() {
     assistantContextRef.current = assistantContext
   }, [assistantContext])
 
+  // Post the current context under a fresh message id and return that id so
+  // callers can match it against later acks. Both call sites already sit
+  // behind an assistantOrigin guard; the check here is for type safety only.
+  const sendCurrentContext = useCallback(() => {
+    if (!assistantOrigin) return 0
+    const messageId = nextMessageIdRef.current + 1
+    nextMessageIdRef.current = messageId
+    postManageContext(
+      iframeRef.current,
+      assistantContextRef.current,
+      assistantOrigin,
+      messageId
+    )
+    return messageId
+  }, [assistantOrigin])
+
   const closeWidget = useCallback(() => {
     shouldRestoreFocusRef.current = true
     setOpen(false)
@@ -116,32 +132,18 @@ export function ManageAssistantWidget() {
       // current context then: the timed retry burst below can fully elapse
       // before a slow-hydrating iframe is able to receive anything.
       if (isManageContextReadyMessage(event.data)) {
-        const messageId = nextMessageIdRef.current + 1
-        nextMessageIdRef.current = messageId
-        postManageContext(
-          iframeRef.current,
-          assistantContextRef.current,
-          assistantOrigin,
-          messageId
-        )
+        sendCurrentContext()
       }
     }
 
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [assistantOrigin, open])
+  }, [assistantOrigin, open, sendCurrentContext])
 
   useEffect(() => {
     if (!open || !frameLoaded || !assistantOrigin || !iframeRef.current) return
 
-    const messageId = nextMessageIdRef.current + 1
-    nextMessageIdRef.current = messageId
-    postManageContext(
-      iframeRef.current,
-      assistantContext,
-      assistantOrigin,
-      messageId
-    )
+    const messageId = sendCurrentContext()
 
     const timeouts = [300, 1000, 2500].map((delay) =>
       window.setTimeout(() => {
@@ -158,7 +160,7 @@ export function ManageAssistantWidget() {
     return () => {
       timeouts.forEach((timeout) => window.clearTimeout(timeout))
     }
-  }, [assistantContext, assistantOrigin, frameLoaded, open])
+  }, [assistantContext, assistantOrigin, frameLoaded, open, sendCurrentContext])
 
   if (!enabled || !assistantUrl) {
     return null

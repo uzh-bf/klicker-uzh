@@ -41,8 +41,8 @@ describe('getManageSuggestions', () => {
       getManageSuggestions(buildContext(surface))
     )
 
-    // question-pool and general are allowed to differ from each other, but
-    // every surface-specific set should have unique ids across surfaces.
+    // Guard against copy-pasted suggestion ids: no id may appear in more than
+    // one surface's set.
     const idSets = bySurface.map(
       (suggestions) => new Set(suggestions.map((s) => s.id))
     )
