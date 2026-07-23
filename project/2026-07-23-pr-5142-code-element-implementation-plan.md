@@ -131,8 +131,8 @@ Ship `ElementType.CODE` for Python programming questions in practice quizzes and
 
 ## Progress
 
-- Active: Slice 1 research and baseline verification.
-- Done: user approval; current `v3` merge; ADR acceptance; active-plan commit and independent review.
-- Evidence: pre-implementation documentation CI passed on head `6456f7d4339d`; the active-plan reviewer reported four 100-confidence omissions, all integrated above.
-- Next: commit this review update, retitle the draft PR, establish the focused baseline, then implement Slice 1.
-- Blockers: none for Slice 1. Context7 is unavailable; live codeapi integration remains gated before Slice 3.
+- Active: Slice 1 final verification, commit, and independent correctness/simplification review.
+- Done: user approval; current `v3` merge; ADR acceptance; active-plan commit and independent review; CODE Prisma enum/model/migration and analytics-schema sync; shared authoring/participant/evaluation/receipt contracts; strict option validation and public-test projection; GraphQL authoring mutation, unions, operations, and generated artifacts; instance copying/results initialization; asynchronous-activity policy; explicit activity-template rejection.
+- Evidence: `prisma validate`, `@klicker-uzh/prisma check`, `@klicker-uzh/types check`, `@klicker-uzh/util check`, and `@klicker-uzh/graphql check` pass; focused CODE suites pass with 2 util and 16 GraphQL tests; `pnpm run check` passes after building the existing `markdown` and `word-cloud` workspace dependencies; GraphQL codegen and `git diff --check` pass.
+- Next: commit Slice 1, review that exact commit with separate correctness and simplification agents, integrate accepted findings, and rerun the relevant gates before Slice 2.
+- Blockers: no Slice 1 implementation blocker. A local database was unavailable for applying the migration and DB-backed GraphQL service tests; schema validation, Prisma generation/type checks, and focused public-seam tests are green. Context7 is unavailable; live codeapi integration remains gated before Slice 3.

@@ -192,6 +192,47 @@ query GetSingleElement($id: Int!) {
       }
     }
 
+    ... on CodeElement {
+      id
+      version
+      name
+      status
+      type
+      content
+      explanation
+      basePoints
+      pointsMultiplier
+
+      isOwner
+      isManager
+      isEditor
+
+      options {
+        language
+        starterCode
+        sampleSolution
+        entrypoint
+        hasSampleSolution
+        executionLimits {
+          perTestTimeoutSeconds
+        }
+        testCases {
+          id
+          name
+          args
+          expectedOutput
+          visibility
+          weight
+        }
+      }
+
+      tags {
+        id
+        name
+        order
+      }
+    }
+
     ... on FlashcardElement {
       id
       version

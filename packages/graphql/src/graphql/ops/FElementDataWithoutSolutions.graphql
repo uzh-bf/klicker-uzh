@@ -121,6 +121,32 @@ fragment ElementDataWithoutSolutions on ElementInstance {
       }
     }
 
+    ... on CodeElementData {
+      __typename
+      id
+      elementId
+      name
+      type
+      content
+      explanation
+      basePoints
+      pointsMultiplier
+      options {
+        language
+        starterCode
+        entrypoint
+        executionLimits {
+          perTestTimeoutSeconds
+        }
+        testCases {
+          id
+          name
+          args
+          expectedOutput
+        }
+      }
+    }
+
     ... on FlashcardElementData {
       id
       elementId

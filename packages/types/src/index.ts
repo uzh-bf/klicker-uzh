@@ -9,6 +9,7 @@ import type {
   ParameterType,
   PerformanceLevel,
   PointCorrection,
+  CodeSubmissionStatus as PrismaCodeSubmissionStatus,
   ResponseCorrectness as PrismaResponseCorrectness,
 } from '@klicker-uzh/prisma/client'
 
@@ -209,12 +210,76 @@ export type OptionsSelectionInput = {
   correctAnswers?: number[] | null
 }
 
+export type JsonValue =
+  | boolean
+  | number
+  | string
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue }
+
+export type CodeLanguage = 'python'
+export type CodeTestVisibility = 'public' | 'hidden'
+
+export type CodeTestCaseInput = {
+  id: string
+  name: string
+  args?: unknown[] | null
+  expectedOutput?: unknown
+  visibility: CodeTestVisibility
+  weight: number
+}
+
+export type CodeExecutionLimitsInput = {
+  perTestTimeoutSeconds?: number | null
+}
+
+export type OptionsCodeInput = {
+  language?: CodeLanguage | null
+  starterCode?: string | null
+  sampleSolution?: string | null
+  entrypoint?: string | null
+  testCases?: CodeTestCaseInput[] | null
+  executionLimits?: CodeExecutionLimitsInput | null
+  hasSampleSolution?: boolean | null
+}
+
+export type CodeTestResult = {
+  id: string
+  passed: boolean
+}
+
+export type CodePublicTestResult = CodeTestResult & {
+  name: string
+  actualOutput?: JsonValue
+  stdout?: string
+  stderr?: string
+}
+
+export type CodeSubmissionFeedback = {
+  pointsPercentage: number
+  publicTestResults: CodePublicTestResult[]
+}
+
+export type CodeSubmissionResult = CodeSubmissionFeedback & {
+  hiddenTestResults: CodeTestResult[]
+}
+
+export type CodeSubmissionStatus = PrismaCodeSubmissionStatus
+
+export type CodeSubmissionReceipt = {
+  id: string
+  gradingStatus: CodeSubmissionStatus
+  feedback?: CodeSubmissionFeedback | null
+}
+
 export type ResponseInput = {
   choices?: ChoicesResponse[] | null // SC / MC / KPRIM
   value?: string | null // FREE_TEXT / NUMERICAL
   selection?: number[] | null // SELECTION
   assessment?: CaseStudyCaseResponse[] | null // CASE_STUDY
   viewed?: boolean | null // CONTENT
+  code?: string | null // CODE
 }
 
 export type LiveQuizResponseInput = {
@@ -229,7 +294,8 @@ export type ElementOptionsInput = OptionsChoicesInput &
   OptionsNumericalInput &
   OptionsFreeTextInput &
   OptionsSelectionInput &
-  OptionsCaseStudyInput
+  OptionsCaseStudyInput &
+  OptionsCodeInput
 
 export type ElementManipulationInput = {
   id?: number | null
@@ -280,6 +346,7 @@ export type StackResponseInput = {
   freeTextResponse?: string | null
   selectionResponse?: number[] | null
   caseStudyResponse?: CaseStudyCaseResponse[] | null
+  codeResponse?: string | null
 }
 
 export type GroupActivityClueInput = {
@@ -469,6 +536,10 @@ export type SingleQuestionResponseContent = {
   viewed: boolean
 }
 
+export type SingleQuestionResponseCode = {
+  code: string
+}
+
 export type SingleQuestionResponse =
   | SingleQuestionResponseChoices
   | SingleQuestionResponseValue
@@ -476,6 +547,7 @@ export type SingleQuestionResponse =
   | SingleQuestionResponseContent
   | SingleQuestionResponseSelection
   | SingleQuestionResponseCaseStudy
+  | SingleQuestionResponseCode
 
 export type SingleQuestionResponseLiveQuizCaseStudy = {
   assessment: CaseStudyResponseObject
@@ -594,6 +666,41 @@ export interface ElementOptionsCaseStudy extends BaseElementOptions {
   cases: CaseStudyCase[]
 }
 
+export type CodeTestCase = {
+  id: string
+  name: string
+  args: JsonValue[]
+  expectedOutput: JsonValue
+  visibility: CodeTestVisibility
+  weight: number
+}
+
+export interface ElementOptionsCode extends BaseElementOptions {
+  language: CodeLanguage
+  starterCode?: string
+  sampleSolution?: string
+  entrypoint: string
+  testCases: CodeTestCase[]
+  executionLimits: {
+    perTestTimeoutSeconds: 5
+  }
+}
+
+export type PublicCodeTestCase = Pick<
+  CodeTestCase,
+  'id' | 'name' | 'args' | 'expectedOutput'
+>
+
+export interface PublicElementOptionsCode {
+  language: CodeLanguage
+  starterCode?: string
+  entrypoint: string
+  testCases: PublicCodeTestCase[]
+  executionLimits: {
+    perTestTimeoutSeconds: 5
+  }
+}
+
 export interface ElementOptionsFlashcard {}
 export interface ElementOptionsContent {}
 
@@ -605,6 +712,7 @@ export type ElementOptions =
   | ElementOptionsContent
   | ElementOptionsSelection
   | ElementOptionsCaseStudy
+  | ElementOptionsCode
 
 export interface BaseElementData {
   id: string
@@ -650,6 +758,11 @@ export type CaseStudyElementData = IElementData<
   'CASE_STUDY',
   ElementOptionsCaseStudy
 >
+export type CodeElementData = IElementData<'CODE', ElementOptionsCode>
+
+export type PublicCodeElementData = Omit<CodeElementData, 'options'> & {
+  options: PublicElementOptionsCode
+}
 
 export type ElementData =
   | ChoicesElementData
@@ -659,6 +772,11 @@ export type ElementData =
   | ContentElementData
   | SelectionElementData
   | CaseStudyElementData
+  | CodeElementData
+
+export type ParticipantElementData =
+  | Exclude<ElementData, CodeElementData>
+  | PublicCodeElementData
 
 export type ElementInstanceOptions = {
   basePoints?: boolean
@@ -716,6 +834,12 @@ export type ElementResultsCaseStudy = {
   total: number
 }
 
+export type ElementResultsCode = {
+  tests: Record<string, { passed: number; total: number }>
+  submissions: Record<string, true>
+  total: number
+}
+
 export type ElementInstanceResults =
   | ElementResultsChoices
   | ElementResultsOpen
@@ -723,6 +847,7 @@ export type ElementInstanceResults =
   | ElementResultsContent
   | ElementResultsSelection
   | ElementResultsCaseStudy
+  | ElementResultsCode
 
 export type GroupActivityDecision = {
   instanceId: number
@@ -733,6 +858,7 @@ export type GroupActivityDecision = {
   contentResponse?: SingleQuestionResponseContent['viewed'] | null
   selectionResponse?: SingleQuestionResponseSelection['selection'] | null
   caseStudyResponse?: SingleQuestionResponseCaseStudy['assessment'] | null
+  codeResponse?: string | null
 }
 export type GroupActivityDecisions = GroupActivityDecision[]
 
@@ -852,6 +978,19 @@ export interface IInstanceEvaluationContent extends IBaseInstanceEvaluation {
 }
 export type InstanceEvaluationContent = IInstanceEvaluationContent
 
+export type CodeTestEvaluation = {
+  id: string
+  name: string
+  passedCount: number
+  totalCount: number
+}
+
+export interface IInstanceEvaluationCode extends IBaseInstanceEvaluation {
+  testResults?: CodeTestEvaluation[]
+  lastResponse?: SingleQuestionResponseCode | null
+}
+export type InstanceEvaluationCode = IInstanceEvaluationCode
+
 export type InstanceEvaluation =
   | IInstanceEvaluationChoices
   | IInstanceEvaluationNumerical
@@ -860,6 +999,7 @@ export type InstanceEvaluation =
   | IInstanceEvaluationContent
   | IInstanceEvaluationSelection
   | IInstanceEvaluationCaseStudy
+  | IInstanceEvaluationCode
 // #endregion
 
 // ----- LEARNING ANALYTICS -----

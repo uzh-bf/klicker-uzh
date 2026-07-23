@@ -8,16 +8,20 @@ import {
 } from '@klicker-uzh/prisma/client'
 import {
   type Choice,
+  type CodeElementData,
   type ElementData,
   type ElementInstanceInput,
   type ElementInstanceResults,
   type ElementKeys,
   type ElementOptionsCaseStudy,
   type ElementOptionsChoices,
+  type ElementOptionsCode,
   type ElementOptionsFreeText,
   type ElementOptionsNumerical,
   type ElementOptionsSelection,
   type ElementResultsCaseStudy,
+  type ElementResultsCode,
+  type ParticipantElementData,
 } from '@klicker-uzh/types'
 import { pick } from 'remeda'
 
@@ -50,6 +54,39 @@ export type ElementWithAnswerCollection = Element & {
   answerCollectionItems?: AnswerCollectionEntry[] | null
 }
 
+export function sanitizeElementDataForParticipant(
+  elementData: CodeElementData
+): Extract<ParticipantElementData, { type: 'CODE' }>
+export function sanitizeElementDataForParticipant(
+  elementData: ElementData
+): ParticipantElementData
+export function sanitizeElementDataForParticipant(
+  elementData: ElementData
+): ParticipantElementData {
+  if (elementData.type !== PrismaElementType.CODE) {
+    return elementData
+  }
+
+  const codeElementData = elementData as CodeElementData
+  return {
+    ...codeElementData,
+    options: {
+      language: codeElementData.options.language,
+      starterCode: codeElementData.options.starterCode,
+      entrypoint: codeElementData.options.entrypoint,
+      executionLimits: codeElementData.options.executionLimits,
+      testCases: codeElementData.options.testCases
+        .filter((testCase) => testCase.visibility === 'public')
+        .map(({ id, name, args, expectedOutput }) => ({
+          id,
+          name,
+          args,
+          expectedOutput,
+        })),
+    },
+  }
+}
+
 export function processElementData(
   element: ElementWithAnswerCollection
 ): ElementData {
@@ -77,6 +114,14 @@ export function processElementData(
       ...pick(element, QUESTION_KEYS),
       type: element.type,
       options: element.options as ElementOptionsNumerical,
+      id: `${element.id}-v${element.version}`,
+      elementId: element.id,
+    }
+  } else if (element.type === PrismaElementType.CODE) {
+    return {
+      ...pick(element, QUESTION_KEYS),
+      type: element.type,
+      options: element.options as ElementOptionsCode,
       id: `${element.id}-v${element.version}`,
       elementId: element.id,
     }
@@ -212,6 +257,17 @@ export function getInitialInstanceResults(
   ) {
     return {
       responses: {},
+      total: 0,
+    }
+  } else if (elementData.type === PrismaElementType.CODE) {
+    const tests: ElementResultsCode['tests'] = {}
+    elementData.options.testCases.forEach((testCase) => {
+      tests[testCase.id] = { passed: 0, total: 0 }
+    })
+
+    return {
+      tests,
+      submissions: {},
       total: 0,
     }
   } else if (elementData.type === PrismaElementType.CONTENT) {

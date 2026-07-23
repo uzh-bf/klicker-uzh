@@ -1,6 +1,7 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   CaseStudyCriterionLabelsInput,
+  CodeTestEvaluation as CodeTestEvaluationType,
   FlashcardCorrectness as FlashcardCorrectnessType,
   InstanceEvaluation as IInstanceEvaluation,
   StackFeedbackStatus as StackFeedbackStatusType,
@@ -48,7 +49,7 @@ export interface IStackEvaluation {
   timeLimit?: number | null
 }
 
-export interface IElementInstanceEvaluation {
+export interface IBaseElementInstanceEvaluation<Results> {
   id: number
   type: DB.ElementType
   name: string
@@ -56,7 +57,7 @@ export interface IElementInstanceEvaluation {
   explanation?: string | null
   hasSampleSolution: boolean
   hasAnswerFeedbacks: boolean
-  results: InstanceEvaluationResults
+  results: Results
 }
 
 export type InstanceEvaluationResults =
@@ -66,6 +67,7 @@ export type InstanceEvaluationResults =
   | ISelectionElementEvaluationResults
   | IFlashcardElementEvaluationResults
   | IContentElementEvaluationResults
+  | ICodeElementEvaluationResults
 
 export interface IChoicesElementEvaluationResults {
   totalAnswers: number
@@ -79,7 +81,7 @@ export interface IChoicesElementEvaluationResults {
 }
 
 export interface IChoicesActivityEvaluationData
-  extends IElementInstanceEvaluation {
+  extends IBaseElementInstanceEvaluation<IChoicesElementEvaluationResults> {
   results: IChoicesElementEvaluationResults
 }
 
@@ -113,9 +115,19 @@ export interface IStatistics {
 }
 
 export interface INumericalActivityEvaluationData
-  extends IElementInstanceEvaluation {
+  extends IBaseElementInstanceEvaluation<INumericalElementEvaluationResults> {
   results: INumericalElementEvaluationResults
   statistics?: IStatistics
+}
+
+export interface ICodeElementEvaluationResults {
+  totalAnswers: number
+  testResults: CodeTestEvaluationType[]
+}
+
+export interface ICodeActivityEvaluationData
+  extends IBaseElementInstanceEvaluation<ICodeElementEvaluationResults> {
+  results: ICodeElementEvaluationResults
 }
 
 export interface IFreeElementEvaluationResults {
@@ -131,7 +143,7 @@ export interface IFreeElementEvaluationResults {
 }
 
 export interface IFreeTextActivityEvaluationData
-  extends IElementInstanceEvaluation {
+  extends IBaseElementInstanceEvaluation<IFreeElementEvaluationResults> {
   results: IFreeElementEvaluationResults
 }
 
@@ -148,7 +160,7 @@ export interface ISelectionElementEvaluationResults {
 }
 
 export interface ISelectionActivityEvaluationData
-  extends IElementInstanceEvaluation {
+  extends IBaseElementInstanceEvaluation<ISelectionElementEvaluationResults> {
   results: ISelectionElementEvaluationResults
 }
 
@@ -185,7 +197,7 @@ export interface ICaseStudyElementEvaluationResults {
 }
 
 export interface ICaseStudyActivityEvaluationData
-  extends IElementInstanceEvaluation {
+  extends IBaseElementInstanceEvaluation<ICaseStudyElementEvaluationResults> {
   cases: {
     id: string
     name: string
@@ -212,7 +224,7 @@ export interface IFlashcardElementEvaluationResults {
 }
 
 export interface IFlashcardActivityEvaluationData
-  extends IElementInstanceEvaluation {
+  extends IBaseElementInstanceEvaluation<IFlashcardElementEvaluationResults> {
   results: IFlashcardElementEvaluationResults
 }
 
@@ -222,9 +234,19 @@ export interface IContentElementEvaluationResults {
 }
 
 export interface IContentActivityEvaluationData
-  extends IElementInstanceEvaluation {
+  extends IBaseElementInstanceEvaluation<IContentElementEvaluationResults> {
   results: IContentElementEvaluationResults
 }
+
+export type IElementInstanceEvaluation =
+  | IChoicesActivityEvaluationData
+  | INumericalActivityEvaluationData
+  | ICodeActivityEvaluationData
+  | IFreeTextActivityEvaluationData
+  | ISelectionActivityEvaluationData
+  | ICaseStudyActivityEvaluationData
+  | IFlashcardActivityEvaluationData
+  | IContentActivityEvaluationData
 
 export const FlashcardCorrectness = builder.enumType('FlashcardCorrectness', {
   values: Object.values(FlashcardCorrectnessType),
@@ -706,6 +728,43 @@ export const ContentElementResults = ContentElementResultsRef.implement({
 })
 // #endregion
 
+// ----- CODE ELEMENT EVALUATION INTERFACE -----
+// #region
+export const CodeActivityEvaluationDataRef =
+  builder.objectRef<ICodeActivityEvaluationData>('CodeActivityEvaluationData')
+export const CodeActivityEvaluationData =
+  CodeActivityEvaluationDataRef.implement({
+    fields: (t) => ({
+      ...sharedElementEvaluation(t),
+      results: t.expose('results', {
+        type: CodeElementResults,
+      }),
+    }),
+  })
+
+export const CodeElementResultsRef =
+  builder.objectRef<ICodeElementEvaluationResults>('CodeElementResults')
+export const CodeElementResults = CodeElementResultsRef.implement({
+  fields: (t) => ({
+    totalAnswers: t.exposeInt('totalAnswers'),
+    testResults: t.expose('testResults', {
+      type: [CodeTestEvaluationResult],
+    }),
+  }),
+})
+
+export const CodeTestEvaluationResultRef =
+  builder.objectRef<CodeTestEvaluationType>('CodeTestEvaluationResult')
+export const CodeTestEvaluationResult = CodeTestEvaluationResultRef.implement({
+  fields: (t) => ({
+    id: t.exposeString('id'),
+    name: t.exposeString('name'),
+    passedCount: t.exposeInt('passedCount'),
+    totalCount: t.exposeInt('totalCount'),
+  }),
+})
+// #endregion
+
 // ----- ELEMENT EVALUATION INTERFACE -----
 // #region
 export const ElementInstanceEvaluation = builder.unionType(
@@ -719,6 +778,7 @@ export const ElementInstanceEvaluation = builder.unionType(
       ContentActivityEvaluationData,
       SelectionActivityEvaluationData,
       CaseStudyActivityEvaluationData,
+      CodeActivityEvaluationData,
     ],
     resolveType: (element) => {
       switch (element.type) {
@@ -738,6 +798,8 @@ export const ElementInstanceEvaluation = builder.unionType(
           return SelectionActivityEvaluationData
         case DB.ElementType.CASE_STUDY:
           return CaseStudyActivityEvaluationData
+        case DB.ElementType.CODE:
+          return CodeActivityEvaluationData
       }
     },
   }

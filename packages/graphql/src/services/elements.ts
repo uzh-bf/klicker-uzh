@@ -23,6 +23,7 @@ import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import EventEmitter from 'events'
 import { prop, sortBy, swapIndices, uniqueBy } from 'remeda'
+import { isAsynchronousActivityElementValid } from '../lib/codeElementPolicy.js'
 import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
@@ -1262,11 +1263,10 @@ export async function getInstanceUpdateActivities(
 
   // element instances in practice quizzes and microlearnings are only updated
   // with sample solution defined (except for CT, FC and FT elements)
-  const asynchronousActivityValid =
-    element.type === DB.ElementType.FLASHCARD ||
-    element.type === DB.ElementType.CONTENT ||
-    element.type === DB.ElementType.FREE_TEXT ||
+  const asynchronousActivityValid = isAsynchronousActivityElementValid(
+    element.type,
     hasSampleSolution
+  )
 
   // combine instances that are to be updated
   const instancesToBeUpdated = element.elementInstances.reduce<
@@ -1612,12 +1612,12 @@ export async function updateElementInstances(
 
   // check if a sample solution is defined or if the element type does not require sample solutions
   // in asynchronous activities to avoid updating and invalidating corresponding instances
-  const asynchronousActivityValid =
-    element.type === DB.ElementType.FLASHCARD ||
-    element.type === DB.ElementType.CONTENT ||
-    element.type === DB.ElementType.FREE_TEXT ||
-    ('hasSampleSolution' in element.options &&
-      element.options.hasSampleSolution)
+  const asynchronousActivityValid = isAsynchronousActivityElementValid(
+    element.type,
+    'hasSampleSolution' in element.options
+      ? element.options.hasSampleSolution
+      : false
+  )
 
   // get all instances and the corresponding element multipliers
   const instanceData = element.elementInstances.reduce<

@@ -10,15 +10,20 @@ import {
   type CaseStudySolution as CaseStudySolutionType,
   type ChoiceInput as ChoiceInputType,
   type ChoicesResponse as ChoicesResponseType,
+  type CodeExecutionLimitsInput as CodeExecutionLimitsInputType,
+  type CodeTestCaseInput as CodeTestCaseInputType,
+  type CodeTestEvaluation as CodeTestEvaluationType,
   type ElementManipulationInput as ElementManipulationInputType,
   type ElementOptionsCaseStudy as ElementOptionsCaseStudyType,
   type ElementOptionsChoices as ElementOptionsChoicesType,
+  type ElementOptionsCode as ElementOptionsCodeType,
   type ElementOptionsFreeText as ElementOptionsFreeTextType,
   type ElementOptionsNumerical as ElementOptionsNumericalType,
   type ElementOptionsSelection as ElementOptionsSelectionType,
   type FreeTextRestrictionsInput as FreeTextRestrictionsInputType,
   type IInstanceEvaluationCaseStudy,
   type IInstanceEvaluationChoices,
+  type IInstanceEvaluationCode,
   type IInstanceEvaluationContent,
   type IInstanceEvaluationFlashcard,
   type IInstanceEvaluationFreeText,
@@ -28,6 +33,7 @@ import {
   type NumericalRestrictionsInput as NumericalRestrictionsInputType,
   type OptionsCaseStudyInput as OptionsCaseStudyInputType,
   type OptionsChoicesInput as OptionsChoicesInputType,
+  type OptionsCodeInput as OptionsCodeInputType,
   type OptionsFreeTextInput as OptionsFreeTextInputType,
   type OptionsNumericalInput as OptionsNumericalInputType,
   type OptionsSelectionInput as OptionsSelectionInputType,
@@ -38,6 +44,7 @@ import {
   type SingleNumericalResponse as SingleNumericalRepsonseType,
   type SingleQuestionResponseCaseStudy as SingleQuestionResponseCaseStudyType,
   type SingleQuestionResponseChoices as SingleQuestionResponseChoicesType,
+  type SingleQuestionResponseCode as SingleQuestionResponseCodeType,
   type SingleQuestionResponseContent as SingleQuestionResponseContentType,
   type SingleQuestionResponseFlashcard as SingleQuestionResponseFlashcardType,
   type SingleQuestionResponseSelection as SingleQuestionResponseSelectionType,
@@ -53,6 +60,9 @@ import {
   CaseStudyCaseSolution,
   CaseStudyElementOptions,
   ChoiceElementOptions,
+  CodeElementOptions,
+  CodeLanguage,
+  CodeTestVisibility,
   ElementData,
   ElementDisplayMode,
   ElementInstanceOptions,
@@ -143,6 +153,44 @@ export const OptionsNumericalInput = OptionsNumericalInputRef.implement({
   }),
 })
 
+export const CodeExecutionLimitsInputRef =
+  builder.inputRef<CodeExecutionLimitsInputType>('CodeExecutionLimitsInput')
+export const CodeExecutionLimitsInput = CodeExecutionLimitsInputRef.implement({
+  fields: (t) => ({
+    perTestTimeoutSeconds: t.int({ required: false }),
+  }),
+})
+
+export const CodeTestCaseInputRef =
+  builder.inputRef<CodeTestCaseInputType>('CodeTestCaseInput')
+export const CodeTestCaseInput = CodeTestCaseInputRef.implement({
+  fields: (t) => ({
+    id: t.string({ required: true }),
+    name: t.string({ required: true }),
+    args: t.field({ type: ['Json'], required: true }),
+    expectedOutput: t.field({ type: 'Json', required: true }),
+    visibility: t.field({ type: CodeTestVisibility, required: true }),
+    weight: t.float({ required: true }),
+  }),
+})
+
+export const OptionsCodeInputRef =
+  builder.inputRef<OptionsCodeInputType>('OptionsCodeInput')
+export const OptionsCodeInput = OptionsCodeInputRef.implement({
+  fields: (t) => ({
+    language: t.field({ type: CodeLanguage, required: true }),
+    starterCode: t.string({ required: false }),
+    sampleSolution: t.string({ required: false }),
+    entrypoint: t.string({ required: true }),
+    testCases: t.field({ type: [CodeTestCaseInput], required: true }),
+    executionLimits: t.field({
+      type: CodeExecutionLimitsInput,
+      required: false,
+    }),
+    hasSampleSolution: t.boolean({ required: true }),
+  }),
+})
+
 export const FreeTextRestrictionsInputRef =
   builder.inputRef<FreeTextRestrictionsInputType>('FreeTextRestrictionsInput')
 export const FreeTextRestrictionsInput = FreeTextRestrictionsInputRef.implement(
@@ -185,6 +233,7 @@ export const ResponseInput = ResponseInputRef.implement({
       type: [CaseStudyCaseResponse],
       required: false,
     }),
+    code: t.string({ required: false }),
   }),
 })
 
@@ -410,6 +459,14 @@ export const SingleQuestionResponseContent = builder
   .implement({
     fields: (t) => ({
       viewed: t.exposeBoolean('viewed'),
+    }),
+  })
+
+export const SingleQuestionResponseCode = builder
+  .objectRef<SingleQuestionResponseCodeType>('SingleQuestionResponseCode')
+  .implement({
+    fields: (t) => ({
+      code: t.exposeString('code'),
     }),
   })
 
@@ -685,6 +742,33 @@ export const ContentInstanceEvaluation = builder
     }),
   })
 
+export const CodeTestEvaluation = builder
+  .objectRef<CodeTestEvaluationType>('CodeTestEvaluation')
+  .implement({
+    fields: (t) => ({
+      id: t.exposeString('id'),
+      name: t.exposeString('name'),
+      passedCount: t.exposeInt('passedCount'),
+      totalCount: t.exposeInt('totalCount'),
+    }),
+  })
+
+export const CodeInstanceEvaluation = builder
+  .objectRef<IInstanceEvaluationCode>('CodeInstanceEvaluation')
+  .implement({
+    fields: (t) => ({
+      ...sharedEvaluationProps(t),
+      testResults: t.expose('testResults', {
+        type: [CodeTestEvaluation],
+        nullable: true,
+      }),
+      lastResponse: t.expose('lastResponse', {
+        type: SingleQuestionResponseCode,
+        nullable: true,
+      }),
+    }),
+  })
+
 export const InstanceEvaluation = builder.unionType('InstanceEvaluation', {
   types: [
     ChoicesInstanceEvaluation,
@@ -694,6 +778,7 @@ export const InstanceEvaluation = builder.unionType('InstanceEvaluation', {
     CaseStudyInstanceEvaluation,
     FlashcardInstanceEvaluation,
     ContentInstanceEvaluation,
+    CodeInstanceEvaluation,
   ],
   resolveType: (element) => {
     switch (element.elementType) {
@@ -713,6 +798,8 @@ export const InstanceEvaluation = builder.unionType('InstanceEvaluation', {
         return FlashcardInstanceEvaluation
       case DB.ElementType.CONTENT:
         return ContentInstanceEvaluation
+      case DB.ElementType.CODE:
+        return CodeInstanceEvaluation
     }
   },
 })
@@ -831,6 +918,18 @@ export const CaseStudyElement = builder
     }),
   })
 
+export interface ICodeElement extends IBaseElementProps {
+  options: ElementOptionsCodeType
+}
+export const CodeElement = builder
+  .objectRef<ICodeElement>('CodeElement')
+  .implement({
+    fields: (t) => ({
+      ...sharedElementProps(t),
+      options: t.expose('options', { type: CodeElementOptions }),
+    }),
+  })
+
 export interface IFlashcardElement extends IBaseElementProps {}
 export const FlashcardElement = builder
   .objectRef<IFlashcardElement>('FlashcardElement')
@@ -858,6 +957,7 @@ export const Element = builder.unionType('Element', {
     ContentElement,
     SelectionElement,
     CaseStudyElement,
+    CodeElement,
   ],
   resolveType: (element) => {
     switch (element.type) {
@@ -877,6 +977,8 @@ export const Element = builder.unionType('Element', {
         return SelectionElement
       case DB.ElementType.CASE_STUDY:
         return CaseStudyElement
+      case DB.ElementType.CODE:
+        return CodeElement
     }
   },
 })
@@ -891,6 +993,7 @@ export interface IUserElementList {
     | IContentElement
     | ISelectionElement
     | ICaseStudyElement
+    | ICodeElement
   )[]
 }
 
