@@ -1,22 +1,29 @@
-import { afterEach, describe, expect, test } from 'vitest'
-import {
-  buildManageElementCreatedMessage,
-  notifyManageParent,
-} from '../src/services/manageParentNotify'
+import { afterEach, describe, expect, test, vi } from 'vitest'
+import { notifyManageParent } from '../src/services/manageParentNotify'
 import { useManageParentStore } from '../src/stores/manageParentStore'
 
 afterEach(() => {
   useManageParentStore.setState({ manageParentOrigin: null })
+  vi.unstubAllGlobals()
 })
 
 describe('Manage parent notify', () => {
-  test('builds a typed element-created message envelope', () => {
-    expect(
-      buildManageElementCreatedMessage({ id: 42, name: 'Draft question' })
-    ).toEqual({
-      type: 'klicker:manage-element-created',
-      payload: { id: 42, name: 'Draft question' },
+  test('posts the element-created message to the cached parent origin', () => {
+    const postMessage = vi.fn()
+    vi.stubGlobal('window', { parent: { postMessage } })
+    useManageParentStore.setState({
+      manageParentOrigin: 'https://manage.example.com',
     })
+
+    notifyManageParent({ id: 42, name: 'Draft question' })
+
+    expect(postMessage).toHaveBeenCalledExactlyOnceWith(
+      {
+        type: 'klicker:manage-element-created',
+        payload: { id: 42, name: 'Draft question' },
+      },
+      'https://manage.example.com'
+    )
   })
 
   test('does nothing when no manage parent origin is cached', () => {

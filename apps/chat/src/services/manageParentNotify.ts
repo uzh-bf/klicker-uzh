@@ -8,15 +8,6 @@ export type ManageElementCreatedPayload = {
   name: string
 }
 
-export function buildManageElementCreatedMessage(
-  payload: ManageElementCreatedPayload
-) {
-  return {
-    type: MANAGE_ELEMENT_CREATED_MESSAGE_TYPE,
-    payload,
-  } as const
-}
-
 // Tells the embedding Manage parent that a proposal was confirmed into a new
 // question-pool element, so it can refresh its own data without a reload.
 // Silently does nothing when there is no cached parent origin: that means
@@ -29,7 +20,7 @@ export function notifyManageParent(payload: ManageElementCreatedPayload) {
   if (!manageParentOrigin) return
 
   window.parent.postMessage(
-    buildManageElementCreatedMessage(payload),
+    { type: MANAGE_ELEMENT_CREATED_MESSAGE_TYPE, payload },
     manageParentOrigin
   )
 }
