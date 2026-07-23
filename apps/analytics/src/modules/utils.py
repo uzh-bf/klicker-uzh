@@ -6,9 +6,11 @@ here instead of being copy-pasted into individual ``compute_*.py`` files.
 
 import os
 import uuid
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Callable, Literal, cast
+from typing import Callable, Iterator, Literal, cast
 
 import pandas as pd
 from sqlalchemy import select
@@ -49,8 +51,41 @@ class AnalyticsRunConfig:
     window_since: str | None = None
 
 
+_ACTIVE_RUN_CONFIG: ContextVar[AnalyticsRunConfig | None] = ContextVar(
+    "analytics_run_config",
+    default=None,
+)
+_CANCELLATION_CHECK: ContextVar[Callable[[], bool] | None] = ContextVar(
+    "analytics_cancellation_check",
+    default=None,
+)
+
+
+@contextmanager
+def analytics_run_context(
+    config: AnalyticsRunConfig,
+    cancellation_check: Callable[[], bool] | None = None,
+) -> Iterator[None]:
+    """Bind task-local config without mutating process-global environment."""
+    config_token = _ACTIVE_RUN_CONFIG.set(config)
+    cancellation_token = _CANCELLATION_CHECK.set(cancellation_check)
+    try:
+        yield
+    finally:
+        _CANCELLATION_CHECK.reset(cancellation_token)
+        _ACTIVE_RUN_CONFIG.reset(config_token)
+
+
+def analytics_run_cancelled() -> bool:
+    check = _CANCELLATION_CHECK.get()
+    return check() if check is not None else False
+
+
 def analytics_run_config_from_env() -> AnalyticsRunConfig:
     """Adapt the existing CLI environment contract to immutable run input."""
+    active = _ACTIVE_RUN_CONFIG.get()
+    if active is not None:
+        return active
     course_ids = _parse_course_ids_env()
     return AnalyticsRunConfig(
         mode=analytics_mode(),
@@ -196,6 +231,10 @@ def analytics_mode() -> AnalyticsMode:
     values default to ``full`` so existing behaviour is preserved when the env
     var is absent.
     """
+    active = _ACTIVE_RUN_CONFIG.get()
+    if active is not None:
+        return active.mode
+
     raw = (os.environ.get("ANALYTICS_MODE") or "").strip().lower()
     if raw in {"incremental", "finalize", "full"}:
         return cast(AnalyticsMode, raw)
@@ -204,6 +243,10 @@ def analytics_mode() -> AnalyticsMode:
 
 def analytics_window_since() -> str | None:
     """ISO date floor for DAILY/WEEKLY/MONTHLY windows, or None for no floor."""
+    active = _ACTIVE_RUN_CONFIG.get()
+    if active is not None:
+        return active.window_since
+
     value = (os.environ.get("ANALYTICS_WINDOW_SINCE") or "").strip()
     return value or None
 
@@ -231,6 +274,7 @@ def scoped_course_ids(
       peels off FINALIZING separately).
     - Full or finalize mode without explicit ids returns ``None`` (no filter).
     """
+    config = config or _ACTIVE_RUN_CONFIG.get()
     if config is not None:
         explicit = list(config.course_ids) if config.course_ids is not None else None
     else:
