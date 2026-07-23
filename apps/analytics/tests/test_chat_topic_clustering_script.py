@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import importlib
+import sys
+import types
 
 import pytest
 
@@ -40,6 +42,14 @@ class _Session:
 
 
 def test_chat_topic_clustering_reports_partial_failures(monkeypatch):
+    cluster_module = types.ModuleType("src.modules.chat_topic_clustering.cluster_chatbot")
+    cluster_module.cluster_chatbot = lambda *_args, **_kwargs: 0
+    monkeypatch.setitem(
+        sys.modules,
+        "src.modules.chat_topic_clustering.cluster_chatbot",
+        cluster_module,
+    )
+    sys.modules.pop("src.scripts.10_chat_topic_clustering", None)
     monkeypatch.setenv(
         "DATABASE_URL",
         "postgresql+psycopg://localhost:5432/analytics",

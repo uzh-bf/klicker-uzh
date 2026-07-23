@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { prepareHatchetTasks } from '../dist/tasks.js'
+import { prepareHatchetTasks } from '../src/tasks.ts'
 
 function makeHatchet() {
   return {

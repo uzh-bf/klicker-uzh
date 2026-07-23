@@ -5,7 +5,7 @@ import { defineConfig } from 'rollup'
 const config = defineConfig([
   {
     // Main build configuration
-    input: ['src/index.ts', 'src/tasks.ts'],
+    input: ['src/index.ts'],
     output: {
       dir: 'dist',
       format: 'esm',
