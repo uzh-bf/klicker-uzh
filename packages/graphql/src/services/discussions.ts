@@ -1312,6 +1312,11 @@ export async function createCourseDiscussionThread(
   }
 
   const anonymous = !!isAnonymous
+  const actor = anonymous ? null : await getCourseAccessActor({ courseId }, ctx)
+  const authorizedParticipantId = actor?.participantId ?? null
+
+  if (!anonymous && !authorizedParticipantId) return null
+
   const space = anonymous
     ? await ctx.prisma.discussionSpace.findUnique({
         where: { courseId },
@@ -1379,10 +1384,7 @@ export async function createCourseDiscussionThread(
 
     if (!allowedByRateLimit) return null
   } else {
-    const actor = await getCourseAccessActor({ courseId }, ctx)
-    if (!actor) return null
-
-    participantId = actor.participantId ?? null
+    participantId = authorizedParticipantId
     if (!participantId) return null
 
     if (embedClaims) {
@@ -1988,6 +1990,9 @@ export async function deleteCourseDiscussionThread(
   const courseId = extractCourseIdFromSpace(thread.space)
   if (!courseId) return false
 
+  const course = await getCourseSettings(courseId, ctx)
+  if (!isCourseDiscussionEnabled(course)) return false
+
   const { allowed, actor } = await canDeleteDiscussionContent(
     { courseId, authorParticipantId: thread.authorParticipantId },
     ctx
@@ -1996,9 +2001,12 @@ export async function deleteCourseDiscussionThread(
 
   const now = new Date()
 
-  await ctx.prisma.$transaction(async (tx) => {
-    await tx.discussionThread.update({
-      where: { id: threadId },
+  const deleted = await ctx.prisma.$transaction(async (tx) => {
+    const deletedThread = await tx.discussionThread.updateMany({
+      where: {
+        id: threadId,
+        isDeleted: false,
+      },
       data: {
         isDeleted: true,
         deletedAt: now,
@@ -2006,6 +2014,8 @@ export async function deleteCourseDiscussionThread(
         replyCount: 0,
       },
     })
+
+    if (deletedThread.count === 0) return false
 
     await tx.discussionReply.updateMany({
       where: {
@@ -2028,9 +2038,11 @@ export async function deleteCourseDiscussionThread(
         eventType: DB.DiscussionEventType.THREAD_DELETED,
       },
     })
+
+    return true
   })
 
-  return true
+  return deleted
 }
 
 export async function deleteCourseDiscussionReply(
@@ -2057,6 +2069,9 @@ export async function deleteCourseDiscussionReply(
 
   const courseId = extractCourseIdFromSpace(reply.space)
   if (!courseId) return false
+
+  const course = await getCourseSettings(courseId, ctx)
+  if (!isCourseDiscussionEnabled(course)) return false
 
   const { allowed, actor } = await canDeleteDiscussionContent(
     { courseId, authorParticipantId: reply.authorParticipantId },

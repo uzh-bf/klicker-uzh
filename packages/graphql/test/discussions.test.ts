@@ -1173,6 +1173,102 @@ describe('Integration tests for the course discussion platform', () => {
     ).toBeNull()
   })
 
+  it('does not create a discussion space before participant access is authorized', async () => {
+    const course = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, { courseId: course.id })
+
+    const participantId = uuidv4()
+    await prisma.participant.create({
+      data: {
+        id: participantId,
+        username: `participant-${participantId.slice(0, 8)}`,
+        password: 'test-password',
+      },
+    })
+
+    const deniedThread = await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: 'This participant is not enrolled.',
+        scope: { scopeType: DiscussionScopeType.COURSE },
+      },
+      createParticipantContext(userOneCtx, participantId)
+    )
+
+    expect(deniedThread).toBeNull()
+    expect(
+      await prisma.discussionSpace.findUnique({
+        where: { courseId: course.id },
+      })
+    ).toBeNull()
+  })
+
+  it('keeps delete operations behind both course discussion gates', async () => {
+    const course = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, { courseId: course.id })
+
+    const participantId = await seedParticipantInCourse(prisma, {
+      courseId: course.id,
+    })
+    const participantCtx = createParticipantContext(userOneCtx, participantId)
+
+    const thread = await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: 'Deletion must fail closed.',
+        scope: { scopeType: DiscussionScopeType.COURSE },
+      },
+      participantCtx
+    )
+    const reply = await createCourseDiscussionReply(
+      {
+        courseId: course.id,
+        threadId: thread!.id,
+        content: 'Reply deletion must fail closed too.',
+      },
+      participantCtx
+    )
+
+    expect(thread).toBeTruthy()
+    expect(reply).toBeTruthy()
+
+    for (const settings of [
+      { enabled: false, rolloutEnabled: true },
+      { enabled: true, rolloutEnabled: false },
+    ]) {
+      await enableCourseDiscussion(prisma, {
+        courseId: course.id,
+        ...settings,
+      })
+
+      expect(
+        await deleteCourseDiscussionReply(
+          { replyId: reply!.id },
+          participantCtx
+        )
+      ).toBe(false)
+      expect(
+        await deleteCourseDiscussionThread(
+          { threadId: thread!.id },
+          participantCtx
+        )
+      ).toBe(false)
+    }
+
+    expect(
+      await prisma.discussionThread.findUnique({
+        where: { id: thread!.id },
+        select: { isDeleted: true },
+      })
+    ).toEqual({ isDeleted: false })
+    expect(
+      await prisma.discussionReply.findUnique({
+        where: { id: reply!.id },
+        select: { isDeleted: true },
+      })
+    ).toEqual({ isDeleted: false })
+  })
+
   it('uses explicit delete events and enforces delete authorization', async () => {
     const course = await seedCourse({}, userOneCtx)
     await enableCourseDiscussion(prisma, { courseId: course.id })
@@ -1222,11 +1318,10 @@ describe('Integration tests for the course discussion platform', () => {
     )
     expect(replyDeleted).toBe(true)
 
-    const threadDeleted = await deleteCourseDiscussionThread(
-      { threadId: thread!.id },
-      authorCtx
+    const threadDeleteResults = await runTwiceConcurrently(() =>
+      deleteCourseDiscussionThread({ threadId: thread!.id }, authorCtx)
     )
-    expect(threadDeleted).toBe(true)
+    expect(threadDeleteResults.filter(Boolean)).toHaveLength(1)
 
     const deleteEvents = await prisma.discussionEvent.findMany({
       where: {
@@ -1241,6 +1336,11 @@ describe('Integration tests for the course discussion platform', () => {
         DiscussionEventType.THREAD_DELETED,
       ])
     )
+    expect(
+      deleteEvents.filter(
+        (event) => event.eventType === DiscussionEventType.THREAD_DELETED
+      )
+    ).toHaveLength(1)
   })
 
   it('creates course discussion threads for activity-agnostic stacks and external blocks', async () => {
