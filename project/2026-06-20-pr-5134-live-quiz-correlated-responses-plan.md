@@ -6,7 +6,7 @@ Plan path: `project/2026-06-20-pr-5134-live-quiz-correlated-responses-plan.md`
 Branch: `codex/live-quiz-correlated-responses`
 Target: `v3`
 PR: [#5134](https://github.com/uzh-bf/klicker-uzh/pull/5134)
-Status: implementation in progress
+Status: final reviews and browser verification in progress
 
 ## Non-Goals
 
@@ -98,16 +98,13 @@ Fields:
 - `id`
 - `liveQuizId`
 - `type`: `TEMPORARY_PSEUDONYM` or `ANONYMOUS_CORRELATED`
-- `username?`
-- `avatar?`
-- `score`
 - `verificationSecretHash?` or signed-token equivalent for anonymous correlated respondents
 - `createdAt`
 - `updatedAt`
 
 Purpose:
 
-- Replace or align `TemporaryLeaderboardEntry`.
+- Represent correlated identity only; leaderboard profile and score remain owned by `TemporaryLeaderboardEntry`.
 - Represent anonymous correlated browser identity without `Participant` row.
 - Keep account users as `Participant`, not duplicated.
 
@@ -115,7 +112,7 @@ Migration strategy:
 
 - Prefer staged path.
 - First add `LiveQuizRespondent`.
-- Either migrate `TemporaryLeaderboardEntry` usage immediately or add compatibility layer and migrate in follow-up if blast radius too high.
+- Keep `TemporaryLeaderboardEntry` as the leaderboard source and create a same-id respondent for new temporary logins; lazily bridge valid historical temporary entries during correlated response processing.
 - Avoid adding new `UserRole` if possible; use quiz respondent token only in response-api / worker. GraphQL self/leaderboard may need compatibility for temporary pseudonym flow.
 - Do not trust a browser-stored respondent id by itself. Anonymous correlated identity needs an opaque token or `id + random secret`; the server stores/verifies the secret, preferably hashed.
 - Add a type-conditional database check: `ANONYMOUS_CORRELATED` rows require `verificationSecretHash`.
@@ -149,8 +146,9 @@ In `CORRELATED_EXPORT`:
 
 - standard response worker persists `LiveQuizResponse` for all respondents.
 - still updates Redis aggregate path for live/evaluation UI.
-- response-api uses a correlated-mode Redis vote-hash gate so duplicate submissions synchronously return recorded-before.
+- response-api checks durable duplicates and uses a five-minute, per-identity Redis lease so duplicate submissions synchronously return recorded-before without permanently blocking a retry after an abandoned enqueue.
 - worker-side lookup remains the authoritative first-response-wins gate before insert.
+- worker applies preflighted Redis aggregate mutations and the processed marker in one Lua operation, so ambiguous delivery retries cannot double-count a committed response.
 
 In `AGGREGATED_ANONYMOUS`:
 
@@ -399,10 +397,9 @@ Do:
 
 - Full local flow: create correlated LQ, submit as logged-in, temporary pseudonym, anonymous correlated, export.
 - Browser screenshots: manage setting; PWA notices in both modes.
-- Add seed data for a correlated quiz and all respondent types.
 - Add lecturer-facing docs for both modes, export contents, and free-text responsibility.
-- Add mandatory E2E cases: enable correlated mode; anonymous reload continuity; correlated notice; aggregate quiz unchanged; successful CSV download.
-- Manually test blocked cookies/storage. Expected degradation: quiz remains usable, but anonymous responses may split into multiple export rows.
+- Exercise the mandatory flows in the real browser: enable correlated mode; anonymous continuity; correlated notice; aggregate quiz unchanged; successful CSV download.
+- Manually test the no-cookie fallback. Expected degradation: the in-memory token keeps one page session stable, but a reload can create a new pseudonymous row when the browser rejects the quiz cookie.
 - Security review: token scope, cookie expiry, identifier leakage, export PII warnings.
 - Final branch review.
 - PR/MR body with screenshots and manual verification list.
@@ -422,7 +419,7 @@ Commit:
 
 - Schema change to `LiveQuizResponse` can disturb assessment corrections. Keep assessment tests focused.
 - Replacing `TemporaryLeaderboardEntry` in one slice may be too large. If risky, keep compatibility bridge and migrate later.
-- Token stored in browser can split respondents when cookies/storage blocked. Notice/export should tolerate multiple rows.
+- A browser that rejects the quiz cookie keeps continuity only for the current page through the in-memory token header; a reload can create a new pseudonymous row. Notice/export tolerate multiple rows.
 - Browser-stored respondent ids are bearer identifiers. Use a signed token or separate secret and verify it server-side before writing correlated responses.
 - Free text can identify participants despite export pseudonyms. Warning required.
 - Row export can be mistaken for anonymity/DP. Avoid DP language.
@@ -495,6 +492,13 @@ Later research:
 - 2026-07-23: Mandatory participant browser verification passed through a clean PWA Webpack runtime after the managed Turbopack process served a stale route manifest. Aggregate and correlated notices rendered with the approved distinct treatments in English and German at desktop and 390x844 mobile sizes without text overflow. The manage wizard rendered aggregate-only as the draft default, switched to correlated export with the concise consequence text, and fit at desktop and mobile sizes. The runtime workaround affects only local verification; no repository runtime configuration changed.
 - 2026-07-23: Follow-up correctness review of exact fix commit `3816135311` found no qualifying defect and independently passed the export tests/build, GraphQL export tests/check, manage check, Prisma validation, schema sync, and package root/subpath import probes. Follow-up simplification review removed unused label-table identity/timestamp/index fields in favor of the natural composite primary key, moved persisted labels directly onto export responses instead of parallel respondent/response arrays, and made the backend capability flag own the complete export-availability rule.
 - 2026-07-23: Simplification verification passed: 7 focused CSV tests, 6 focused GraphQL export tests, export build, Prisma generation/typecheck, analytics schema sync, and a fresh disposable PostgreSQL migration run through all 178 migrations. The disposable database was removed after the successful run.
+- 2026-07-23: Final security, maintainability, branch, and independent crosscheck reviews agreed on four release blockers: non-expiring pre-enqueue claims, submission-time identity rotation, silent response loss during mixed-version rollout, and Redis `MULTI` runtime errors that could leave partial aggregates marked for retry. They also identified skipped worker tests, redundant respondent profile fields, an oversized mixed processor, inline export orchestration, and missing wiki updates.
+- 2026-07-23: The accepted remediation replaces the vote hash with a five-minute per-identity lease and a database duplicate check; only the initialization route may mint anonymous identities. The PWA keeps the returned quiz token in memory as a cookie fallback, correlated submissions require JSON and an allowlisted browser origin, and the response API fails closed unless the worker refreshes the v1 protocol heartbeat.
+- 2026-07-23: Correlated worker processing now buffers typed Redis hash mutations and runs one preflight/apply Lua operation that writes the processed marker only after every target type and integer is validated. Claim and processing leases are released on success, and abandoned pre-persistence claims recover automatically. Feature-specific identity, grading, persistence, retry, and atomic-commit logic is isolated in `correlatedResponse.ts`; the legacy processor is below 1,000 lines.
+- 2026-07-23: `LiveQuizRespondent` is identity-only; temporary username/avatar/score remain in `TemporaryLeaderboardEntry`. All response paths and export use one typed identity-key builder. Correlated CSV orchestration moved to `services/correlatedLiveQuizResponseExport.ts`, and the worker now exposes the standard `test:run` script used by the root test task.
+- 2026-07-23: Engineering wiki pages, the testing skill, and lecturer/student Live Quiz guides now cover the mode distinction, pseudonymous identity, free-text caveat, stable row export, retry/deployment contract, and verification path. Focused utility, response API, worker, export, and GraphQL tests pass; package typechecks for util, response API, response worker, PWA, GraphQL, and Prisma pass in the existing dev container.
+- 2026-07-23: Existing browser evidence covers the settings control, EN/DE participant notices at desktop/mobile sizes, aggregate behavior, and real CSV download with stable late-response labels. A committed seed fixture and new monolithic Playwright scenario were not added: the existing live-quiz suite remains the aggregate regression path, while the correlated flow is covered by focused service tests plus the verified real-browser tracer. This avoids coupling the feature to the already-large serial live-quiz workflow.
+- 2026-07-23: Remediation commit `81d0eb20e` passed a real-Redis atomicity and retry smoke, focused utility/response API/worker/export/GraphQL tests, a fresh PostgreSQL migration through all 178 migrations, and the final full repository `check:all` gate. A fresh-database temporary-pseudonym test also confirmed that `LiveQuizRespondent` stays identity-only while leaderboard profile data remains in `TemporaryLeaderboardEntry`.
 
 ## Goal Prompt Requirements
 
@@ -510,6 +514,6 @@ If handed to another agent:
 
 ## Next Steps
 
-1. Commit the accepted Slice 6 simplifications and rerun the full repository gate.
-2. Run final branch security, maintainability, and independent review gates.
-3. Push the branch and update draft PR 5134 with whole-branch evidence.
+1. Run fresh security, maintainability, and independent branch reviews against the remediation commit; resolve or explicitly document every remaining finding.
+2. Recheck the PWA identity initialization and token-header path in the real browser.
+3. Push the branch and update draft PR 5134 with whole-branch evidence, screenshots, rollout ordering, and the remaining CI-only e2e gate.

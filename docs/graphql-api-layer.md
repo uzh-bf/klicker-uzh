@@ -2,7 +2,7 @@
 type: API Layer
 title: GraphQL API Layer
 description: Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
-timestamp: '2026-07-07'
+timestamp: '2026-07-23'
 tags:
   - backend
   - graphql
@@ -52,3 +52,5 @@ Field filters over the shared pubSub: `schema/subscription.ts:feedbackCreated` p
 ## Worked feature traces
 
 Read-only feature end-to-end: commit `ff61d9bc7` (#4951) — new object type, two query fields, service function, ops + committed codegen, manage page, i18n. Schema-change + mutation + heavy vitest variant: `38c92d035` (#4958). Step-by-step walkthrough: [Developing a Feature](./developing-a-feature.md).
+
+The correlated live-quiz CSV is a current example of a heavier query boundary: `schema/query.ts:correlatedLiveQuizResponseExport` requires `WRITE` permission and delegates to the dedicated `services/correlatedLiveQuizResponseExport.ts:getCorrelatedLiveQuizResponseExport`. The service locks the quiz while assigning stable pseudonymous row labels and returns CSV content only after the quiz has ended.

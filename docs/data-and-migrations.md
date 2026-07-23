@@ -129,6 +129,8 @@ Json columns are typed via `prisma-json-types-generator`: a `/// [TypeName]` doc
 
 - **Prisma `Decimal` is an object, never truthy-check it** — `Decimal(0)` is truthy. Convert with a `toNumber()` helper and compare with `!= null` (pattern in `packages/graphql/src/services/chatbots.ts`).
 - **`Participant` email is unique per auth mode**: `@@unique([email, isSSOAccount])` means the same normalized email can exist once as manual and once as SSO. Queries by email alone can return the wrong account; blocking new cross-mode duplicates must happen in service logic (`packages/graphql/src/services/accounts.ts`).
+- **Correlated live-quiz responses have exclusive owners**: the migration adds a validated `num_nonnulls("participantId", "respondentId") = 1` check and separate unique indexes for each nullable owner. Keep the check, both indexes, and the two Prisma compound-unique lookups aligned when changing response identity.
+- **Export labels are append-only within a quiz**: `LiveQuizResponseExportLabel` uses `(liveQuizId, identityHash)` as its primary key and `(liveQuizId, label)` as its uniqueness boundary. Export code locks the `LiveQuiz` row before assigning later labels so repeated downloads keep existing row numbers.
 
 ## Adjacent: export package (`packages/export`)
 

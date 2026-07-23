@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-07-07'
+timestamp: '2026-07-23'
 tags:
   - backend
   - prisma
@@ -48,6 +48,12 @@ Lifecycle enums:
 | `AccessMode`         | PUBLIC, RESTRICTED                                   | LiveQuiz             |
 
 Scheduled publication/ending is executed by the Hatchet general worker — without it, SCHEDULED activities never go live (see [Async & Workers](./async-and-workers.md)).
+
+## Live-quiz response collection
+
+`LiveQuiz.responseCollectionMode` is configured per quiz and defaults to `AGGREGATED_ANONYMOUS`. That mode keeps the existing anonymous aggregate behavior and does not create durable `LiveQuizResponse` rows. `CORRELATED_EXPORT` persists first responses from logged-in, temporary, and anonymous respondents so answers can be correlated across the quiz.
+
+Anonymous and temporary users are represented by the identity-only `LiveQuizRespondent`; this is not a `Participant` account and stores no username, avatar, or score. `LiveQuizResponse` has exactly one owner (`participantId` or `respondentId`) and unique first-response constraints per instance, block execution, and owner. `LiveQuizResponseExportLabel` stores only an HMAC-derived identity hash and stable positive row number for each quiz. Assessment remains a separate, always-identifiable response workflow.
 
 ## Gamification details
 

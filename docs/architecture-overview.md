@@ -56,11 +56,13 @@ Frontends import generated documents from `@klicker-uzh/graphql/dist/ops` — ne
 
 Student answers do not hit the GraphQL API. The path is:
 
-1. `apps/response-api` (`handleAddResponse` / `handleAddAssessmentResponse`) accepts `POST /AddResponse`, verifies/dedupes (assessment path: JWT correlation key + Redis `hget`), and emits Hatchet events `response-received:{authenticated|anonymous|assessment}`.
-2. `apps/hatchet-worker-response-processor` consumes them (`processAnonymousResponseTask`, `processAuthenticatedResponseTask`, `processAssessmentResponseWorkflow`) and re-emits aggregation events.
+1. `apps/response-api` (`handleAddResponse` / `handleAddAssessmentResponse`) accepts `POST /AddResponse`, verifies/dedupes, and emits Hatchet events `response-received:{authenticated|anonymous|assessment}`. Standard live quizzes use one of two explicit modes: `AGGREGATED_ANONYMOUS` keeps only Redis aggregates, while `CORRELATED_EXPORT` first initializes a quiz-scoped pseudonymous identity and rejects submissions unless the compatible response worker heartbeat is present.
+2. `apps/hatchet-worker-response-processor` consumes the events (`processAnonymousResponseTask`, `processAuthenticatedResponseTask`, `processAssessmentResponseWorkflow`). Correlated live-quiz responses are persisted as `LiveQuizResponse` rows before a preflighted atomic Redis aggregation commit; aggregate mode retains the legacy Redis-only path.
 3. `apps/hatchet-worker-general` runs aggregation plus scheduled work (publish/end scheduled activities, daily crons for group scores and random group assignments) — task definitions in `packages/hatchet/src/index.ts:prepareHatchetTasks`, handlers from `@klicker-uzh/graphql`.
 
 Consequence: **publication, scheduling, and live-response features silently do nothing without a running Hatchet + workers** — mutations may even fail with `workflow not found`. The general worker selects its workflows via the `HATCHET_WORKFLOWS` env var (default: all).
+
+After a correlated quiz ends, a WRITE-authorized lecturer can download a CSV through `packages/graphql/src/services/correlatedLiveQuizResponseExport.ts:getCorrelatedLiveQuizResponseExport`. It has one pseudonymous respondent per row and one question execution per response column; source account, respondent, cookie, and timestamp identifiers are never exported.
 
 The backend also runs a homegrown boot-time data-migration runner (`apps/backend-docker/src/migration.ts:migrate`, currently an empty list) tracked in its own `Migration` table — distinct from Prisma migrations.
 

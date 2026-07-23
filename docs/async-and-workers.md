@@ -2,7 +2,7 @@
 type: Async Architecture
 title: Async & Workers
 description: The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
-timestamp: '2026-07-07'
+timestamp: '2026-07-23'
 tags:
   - backend
   - hatchet
@@ -26,7 +26,11 @@ Task definitions are centralized in `packages/hatchet/src/index.ts:prepareHatche
 
 ## Response ingest (`apps/response-api`)
 
-Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. Non-assessment responses (`handleAddResponse`) emit `response-received:authenticated|anonymous`. The assessment path (`handleAddAssessmentResponse`) verifies a JWT correlation key, dedupes via `hget` on the assessment Redis, then emits `response-received:assessment`; audit-log events (`create-audit-log-entry`) are emitted throughout. Live-quiz vs assessment behavior switches on the `ASSESSMENT_MODE` env var.
+Bare `http.createServer`, with `GET /healthz`, `POST /InitializeLiveQuizResponseIdentity`, and `POST /AddResponse`. POST requests require JSON; browser origins must be explicitly allowed. Non-assessment responses (`handleAddResponse`) emit `response-received:authenticated|anonymous`. The assessment path (`handleAddAssessmentResponse`) verifies a JWT correlation key, dedupes via `hget` on the assessment Redis, then emits `response-received:assessment`; audit-log events (`create-audit-log-entry`) are emitted throughout. Live-quiz vs assessment behavior switches on the `ASSESSMENT_MODE` env var.
+
+For `CORRELATED_EXPORT`, initialization is the only route that may mint an anonymous quiz-scoped token. Submission resolves that token from its HttpOnly cookie or the PWA's in-memory fallback header, checks for an existing durable response, and acquires a five-minute per-identity Redis lease before enqueueing. The response API also requires the response worker's 90-second protocol heartbeat, so a rolling deployment fails closed instead of acknowledging responses that an incompatible worker would discard (`packages/util/src/liveQuizResponseIdentity.ts`).
+
+The worker's correlated path is isolated in `processors/correlatedResponse.ts`. It validates the claim and owner, serializes duplicate processing with a lease, writes the `LiveQuizResponse`, then applies all Redis hash mutations plus the processed marker in one Lua operation. The script validates every key type and integer before its first write. Network-ambiguous retries read the processed marker; a lease abandoned before persistence expires and can be retried.
 
 ## Worker task catalog
 
