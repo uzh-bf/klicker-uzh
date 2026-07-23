@@ -945,6 +945,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Antwort konnte nicht gesendet werden. Bitte versuchen Sie es erneut.',
       upvoteFailed:
         'Upvote konnte nicht aktualisiert werden. Melden Sie sich als Teilnehmer an, um abzustimmen.',
+      threadUpvoteAriaLabel:
+        'Frage positiv bewerten, {count, plural, =1 {aktuell 1 Upvote} other {aktuell # Upvotes}}',
+      replyUpvoteAriaLabel:
+        'Antwort positiv bewerten, {count, plural, =1 {aktuell 1 Upvote} other {aktuell # Upvotes}}',
       disabled: 'Kurs Q&A ist für diesen Kurs nicht aktiviert.',
       accessDenied:
         'Sie haben keinen Zugriff auf diese Kurs-Q&A-Ansicht oder der Link ist ungültig.',
@@ -2986,6 +2990,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       embedGenFailed:
         'Die Generierung der Embed-Informationen ist fehlgeschlagen.',
       embedCopied: 'Embed-URL in die Zwischenablage kopiert.',
+      embedExpiredRegenerate:
+        'Generieren Sie vor dem Kopieren einen neuen Link.',
       scopeLabel: 'Bereich',
       tokenLifetime: 'Token-Gültigkeitsdauer (Stunden)',
       allowAnonymousPosting: 'Anonymes Posten erlauben',

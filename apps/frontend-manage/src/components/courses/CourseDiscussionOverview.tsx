@@ -393,7 +393,7 @@ function CourseDiscussionOverview({
             </div>
             {embedExpired && (
               <div className="mt-1 text-amber-700">
-                Generate a new link before copying.
+                {t('manage.course.embedExpiredRegenerate')}
               </div>
             )}
           </div>

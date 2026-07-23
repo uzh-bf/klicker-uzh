@@ -941,6 +941,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       replyPostError: 'Unable to post reply. Please try again.',
       upvoteFailed:
         'Unable to update upvote. Sign in as a participant to vote.',
+      threadUpvoteAriaLabel:
+        'Upvote question, {count, plural, =1 {1 current upvote} other {# current upvotes}}',
+      replyUpvoteAriaLabel:
+        'Upvote reply, {count, plural, =1 {1 current upvote} other {# current upvotes}}',
       disabled: 'Course Q&A is not enabled for this course.',
       accessDenied:
         'You do not have access to this Course Q&A view or the link is invalid.',
@@ -2931,6 +2935,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       expiresAt: 'Expires: {date}',
       embedGenFailed: 'Failed to generate embedding information.',
       embedCopied: 'Embed URL copied to clipboard.',
+      embedExpiredRegenerate: 'Generate a new link before copying.',
       scopeLabel: 'Scope',
       tokenLifetime: 'Token Lifetime (hours)',
       allowAnonymousPosting: 'Allow anonymous posting',

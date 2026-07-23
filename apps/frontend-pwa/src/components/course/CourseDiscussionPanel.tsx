@@ -270,6 +270,20 @@ function CourseDiscussionPanel({
     if (!nextCursor || !hasMore) return
     await fetchMore({
       variables: { cursor: nextCursor },
+      updateQuery: (previous, { fetchMoreResult }) => {
+        if (!fetchMoreResult) return previous
+
+        return {
+          ...previous,
+          courseDiscussionThreads: {
+            ...fetchMoreResult.courseDiscussionThreads,
+            threads: [
+              ...previous.courseDiscussionThreads.threads,
+              ...fetchMoreResult.courseDiscussionThreads.threads,
+            ],
+          },
+        }
+      },
     })
   }, [nextCursor, hasMore, fetchMore])
 
@@ -446,7 +460,9 @@ function CourseDiscussionPanel({
                     root: 'h-8 motion-safe:transition-transform motion-safe:hover:scale-105',
                   }}
                   data={{ cy: `course-qa-thread-upvote-${thread.id}` }}
-                  aria-label={`Upvote, ${thread.upvotes} current upvotes`}
+                  aria-label={t('pwa.courseQA.threadUpvoteAriaLabel', {
+                    count: thread.upvotes,
+                  })}
                 >
                   <Button.Icon icon={faThumbsUp} />
                   <Button.Label>{String(thread.upvotes)}</Button.Label>
@@ -482,7 +498,9 @@ function CourseDiscussionPanel({
                           root: 'h-7 motion-safe:transition-transform motion-safe:hover:scale-105',
                         }}
                         data={{ cy: `course-qa-reply-upvote-${reply.id}` }}
-                        aria-label={`Upvote reply, ${reply.upvotes} current upvotes`}
+                        aria-label={t('pwa.courseQA.replyUpvoteAriaLabel', {
+                          count: reply.upvotes,
+                        })}
                       >
                         <Button.Icon
                           icon={faThumbsUp}
