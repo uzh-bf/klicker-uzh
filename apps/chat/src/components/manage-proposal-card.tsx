@@ -2,6 +2,7 @@
 
 import { CheckIcon, LoaderCircleIcon } from 'lucide-react'
 import { useState, type FC } from 'react'
+import { notifyManageParent } from '../services/manageParentNotify'
 import { parseManageProposalPayload } from '../services/proposalToElementInstance'
 import { ManageProposalPreview } from './manage-proposal-preview'
 import { formatToolName } from './tool-labels'
@@ -115,6 +116,7 @@ export const ManageProposalCard: FC<ManageProposalCardProps> = ({
       }
 
       setConfirmation({ type: 'success', element: data.element })
+      notifyManageParent({ id: data.element.id, name: data.element.name })
     } catch (error) {
       setConfirmation({
         message:

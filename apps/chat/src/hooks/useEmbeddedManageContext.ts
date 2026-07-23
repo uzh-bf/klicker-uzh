@@ -5,6 +5,7 @@ import {
   sanitizeManageAssistantContext,
   type ManageAssistantContext,
 } from '../services/manageContext'
+import { useManageParentStore } from '../stores/manageParentStore'
 import { useEmbedded } from './useEmbedded'
 
 const MANAGE_CONTEXT_MESSAGE_TYPE = 'klicker:manage-context'
@@ -15,11 +16,15 @@ export function useEmbeddedManageContext() {
   const embedded = useEmbedded()
   const [context, setContext] = useState<ManageAssistantContext | null>(null)
   const contextKeyRef = useRef<string | null>(null)
+  const setManageParentOrigin = useManageParentStore(
+    (state) => state.setManageParentOrigin
+  )
 
   useEffect(() => {
     if (!embedded) {
       contextKeyRef.current = null
       setContext(null)
+      setManageParentOrigin(null)
       return
     }
 
@@ -29,6 +34,11 @@ export function useEmbeddedManageContext() {
 
       const nextContext = sanitizeManageAssistantContext(event.data.payload)
       if (!nextContext) return
+
+      // The message passed every validation check above, so event.origin is
+      // the verified Manage parent origin. Cache it for components outside
+      // this hook (e.g. the proposal card) that need to postMessage back.
+      setManageParentOrigin(event.origin)
 
       const messageId =
         typeof event.data.messageId === 'number' ? event.data.messageId : null
@@ -65,7 +75,7 @@ export function useEmbeddedManageContext() {
     window.parent.postMessage({ type: MANAGE_CONTEXT_READY_MESSAGE_TYPE }, '*')
 
     return () => window.removeEventListener('message', handleMessage)
-  }, [embedded])
+  }, [embedded, setManageParentOrigin])
 
   return context
 }

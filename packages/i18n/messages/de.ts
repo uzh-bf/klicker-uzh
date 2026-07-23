@@ -1219,6 +1219,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       title: 'KlickerUZH Assistant',
       subtitle: 'Manage',
       openInNewTab: 'Assistent in einem neuen Tab öffnen',
+      elementCreatedToast: 'Entwurf "{name}" zum Fragepool hinzugefügt',
     },
     general: {
       qrCode: 'QR Code',

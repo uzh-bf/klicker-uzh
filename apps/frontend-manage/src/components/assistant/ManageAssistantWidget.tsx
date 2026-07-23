@@ -1,9 +1,12 @@
+import { useApolloClient } from '@apollo/client'
 import {
   faArrowUpRightFromSquare,
   faWandMagicSparkles,
   faXmark,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { GetUserElementsDocument } from '@klicker-uzh/graphql/dist/ops'
+import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -17,6 +20,10 @@ import {
   buildManageAssistantContext,
   type ManageAssistantContext,
 } from './manageAssistantContext'
+import {
+  isManageElementCreatedMessage,
+  sanitizeManageElementCreatedPayload,
+} from './manageElementCreatedMessage'
 
 const MANAGE_CONTEXT_MESSAGE_TYPE = 'klicker:manage-context'
 const MANAGE_CONTEXT_ACK_MESSAGE_TYPE = 'klicker:manage-context-ack'
@@ -25,6 +32,7 @@ const MANAGE_CONTEXT_READY_MESSAGE_TYPE = 'klicker:manage-context-ready'
 export function ManageAssistantWidget() {
   const t = useTranslations()
   const router = useRouter()
+  const apolloClient = useApolloClient()
   const iframeRef = useRef<HTMLIFrameElement | null>(null)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
   const shouldRestoreFocusRef = useRef(false)
@@ -133,12 +141,30 @@ export function ManageAssistantWidget() {
       // before a slow-hydrating iframe is able to receive anything.
       if (isManageContextReadyMessage(event.data)) {
         sendCurrentContext()
+        return
+      }
+
+      // A confirmed proposal created a new question-pool element. The
+      // payload crossed a postMessage boundary from the iframe, so treat it
+      // as untrusted data rather than an instruction: validate its shape
+      // before using it for anything, and never render it as HTML.
+      if (isManageElementCreatedMessage(event.data)) {
+        const element = sanitizeManageElementCreatedPayload(event.data.payload)
+        if (!element) return
+
+        apolloClient.refetchQueries({ include: [GetUserElementsDocument] })
+        toast({
+          type: 'success',
+          message: t('manage.assistant.elementCreatedToast', {
+            name: element.name,
+          }),
+        })
       }
     }
 
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [assistantOrigin, open, sendCurrentContext])
+  }, [apolloClient, assistantOrigin, open, sendCurrentContext, t])
 
   useEffect(() => {
     if (!open || !frameLoaded || !assistantOrigin || !iframeRef.current) return
