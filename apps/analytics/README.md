@@ -160,15 +160,15 @@ pnpm --filter @klicker-uzh/prisma prisma:deploy:qa
 pnpm --filter @klicker-uzh/prisma prisma:deploy:prod
 ```
 
-`prisma:deploy:raw`, which those commands wrap, first runs `scripts/prepareAnalyticsIndexes.mjs`. On an initialized database the wrapper:
+`prisma:deploy:raw`, which those commands wrap, runs `scripts/prepareAnalyticsIndexes.mjs`. The wrapper acquires the repository migration advisory lock and holds it across the index prebuild, any migration baseline, and the normal Prisma deploy. On an initialized database it:
 
-1. refuses unfinished migrations or named invalid indexes;
+1. refuses partial analytics schemas, unfinished migrations, named invalid indexes, or a same-name index with the wrong table, access method, or ordered columns;
 2. executes `create-analytics-indexes-concurrently.sql` one statement at a time outside a transaction;
-3. validates that every index is ready and valid;
+3. validates that every index has the expected definition and is ready and valid;
 4. baselines the unchanged historical `20260420_analytics_covering_indexes` migration if it is still pending; and
 5. runs the remaining normal Prisma migration chain.
 
-On a fresh empty database the required tables are absent, so the wrapper skips the prebuild and the normal migration chain creates the indexes while the tables are empty. Do not run bare `prisma migrate deploy` against an initialized shared environment because it bypasses this guard.
+Only a database with none of the required analytics tables and no recorded migrations is treated as fresh. In that case the wrapper skips the prebuild and the normal migration chain creates the indexes while the tables are empty. An initialized or partially initialized database fails closed instead. Do not run bare `prisma migrate deploy` against an initialized shared environment because it bypasses this guard.
 
 This follows [Prisma's PostgreSQL migration-safety guidance](https://www.prisma.io/docs/guides/integrations/pgfence), which recommends manually adding `CONCURRENTLY` and running that work outside a transaction.
 
