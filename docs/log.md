@@ -4,6 +4,10 @@
 
 - **Update**: [async-and-workers](./async-and-workers.md) documents the dedicated native Python learning-analytics worker, triggers, health endpoints, and SQL safety boundary. [testing](./testing.md) documents the deterministic development-only analytics interaction fixture.
 
+- **Creation**: [ADR 0001](./adr/0001-separate-course-and-participant-learning-analytics-controls.md) records independent course and participant controls for optional learning analytics.
+
+- **Creation**: [ADR 0002](./adr/0002-deidentified-learning-analytics-output.md) records lecturer-output de-identification, effective-sample-size suppression, and export coverage rules.
+
 ## 2026-07-20
 
 - **Update**: [getting-started](./getting-started.md) now records that the vanilla Office Add-in follows the TypeScript 6 workspace baseline with explicit Office global types. [testing](./testing.md) and the `klicker-testing-verification` procedure cover its URL tests, build, deployment parity, manifest, browser, and PowerPoint host checks.
