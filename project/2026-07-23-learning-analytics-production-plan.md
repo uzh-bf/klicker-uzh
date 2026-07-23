@@ -377,8 +377,10 @@ the repository script that replaces it before continuing.
 - 2026-07-23: Independent review and simplification completed; accepted
   findings split oversized slices, made cutover rollback explicit, added a
   command matrix, and tightened configuration/parity/retargeting requirements.
-- Active: Slice 0 review adjustments.
-- Next: Merge `origin/v3` into `chat-analytics`.
+- 2026-07-23: Slice 0 complete at `f150b33f2`.
+- Active: Slice 1, merge `origin/v3` into `chat-analytics`.
+- Next: Resolve the 11 known conflicts, regenerate derived files, and run the
+  Phase 1 verification subset.
 
 ## Finish evidence
 
@@ -392,6 +394,6 @@ the repository script that replaces it before continuing.
 
 ## Next Steps
 
-1. Finish independent review of this plan.
-2. Merge current `v3` into `chat-analytics`.
+1. Merge current `v3` into `chat-analytics`.
+2. Resolve and verify Phase 1.
 3. Continue one verified slice at a time until both draft PRs are current.
