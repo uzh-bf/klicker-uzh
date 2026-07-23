@@ -671,6 +671,8 @@ async function enforceAnonymousRateLimits(
   )
 
   if (scopeWindowCount > ANON_SCOPE_LIMIT) {
+    if (scopeWindowCount > ANON_SCOPE_LIMIT + 1) return false
+
     await createDiscussionEvent(
       {
         spaceId,
@@ -695,6 +697,8 @@ async function enforceAnonymousRateLimits(
   )
 
   if (courseWindowCount > ANON_COURSE_LIMIT) {
+    if (courseWindowCount > ANON_COURSE_LIMIT + 1) return false
+
     await createDiscussionEvent(
       {
         spaceId,
@@ -719,6 +723,8 @@ async function enforceAnonymousRateLimits(
   )
 
   if (ipWindowCount > ANON_IP_COURSE_LIMIT) {
+    if (ipWindowCount > ANON_IP_COURSE_LIMIT + 1) return false
+
     await createDiscussionEvent(
       {
         spaceId,

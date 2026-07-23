@@ -493,6 +493,64 @@ describe('Integration tests for the course discussion platform', () => {
     expect(acceptedThread?.isAnonymous).toBe(true)
   })
 
+  it('records only the first anonymous rejection in a rate-limit window', async () => {
+    const course = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, {
+      courseId: course.id,
+      allowAnonymous: true,
+    })
+    await recomputeDerivedPermissions({ courseId: course.id }, prisma)
+
+    const embedInfo = await getCourseDiscussionEmbeddingInfo(
+      {
+        courseId: course.id,
+        externalBlock: {
+          externalSource: 'lms',
+          externalRef: 'rate-limited-block',
+        },
+        allowAnonymous: true,
+      },
+      userOneCtx
+    )
+    expect(embedInfo).toBeTruthy()
+
+    const anonymousCtx = createAnonymousContext(userOneCtx)
+    const createAnonymousThread = () =>
+      createCourseDiscussionThread(
+        {
+          courseId: course.id,
+          content: 'Anonymous question',
+          scope: {
+            scopeType: DiscussionScopeType.EXTERNAL_BLOCK,
+            externalSource: 'lms',
+            externalRef: 'rate-limited-block',
+          },
+          isAnonymous: true,
+          embedToken: embedInfo!.embedToken,
+        },
+        anonymousCtx
+      )
+
+    expect(await createAnonymousThread()).toBeTruthy()
+    expect(await createAnonymousThread()).toBeNull()
+    expect(await createAnonymousThread()).toBeNull()
+
+    const rateLimitEvents = await prisma.discussionEvent.findMany({
+      where: {
+        eventType: DiscussionEventType.ANON_RATE_LIMITED,
+        space: { courseId: course.id },
+      },
+      select: { metadata: true },
+    })
+
+    expect(rateLimitEvents).toHaveLength(1)
+    expect(rateLimitEvents[0]?.metadata).toMatchObject({
+      reason: 'scope_window',
+      limit: 1,
+      ttlSec: 90,
+    })
+  })
+
   it('keeps upvotes behind both course discussion gates', async () => {
     const course = await seedCourse({}, userOneCtx)
     await enableCourseDiscussion(prisma, { courseId: course.id })
