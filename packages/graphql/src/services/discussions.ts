@@ -10,6 +10,7 @@ const EMBED_VERSION = 1
 const LIMIT_DEFAULT = 20
 const LIMIT_MAX = 50
 const REPLIES_PER_THREAD_MAX = 50
+const DISCUSSION_CONTENT_MAX_LENGTH = 4000
 
 const EXTERNAL_SOURCE_MAX_LENGTH = 100
 const EXTERNAL_REF_MAX_LENGTH = 200
@@ -160,10 +161,15 @@ interface CanonicalScope {
 }
 
 function normalizeContent(content: string) {
-  const normalized = content.trim().replace(/<[^>]*>/g, '')
-  if (normalized.length === 0) return null
+  const normalized = content.trim()
+  if (
+    normalized.length === 0 ||
+    normalized.length > DISCUSSION_CONTENT_MAX_LENGTH
+  ) {
+    return null
+  }
 
-  return normalized.slice(0, 4000)
+  return normalized
 }
 
 function parseLimit(limit?: number | null) {
@@ -1421,6 +1427,7 @@ export async function createCourseDiscussionReply(
 
   const threadCourseId = extractCourseIdFromSpace(thread.space)
   if (!threadCourseId || threadCourseId !== courseId) return null
+  if (thread.replyCount >= REPLIES_PER_THREAD_MAX) return null
 
   const anonymous = !!isAnonymous
 
@@ -1483,6 +1490,20 @@ export async function createCourseDiscussionReply(
   }
 
   const reply = await ctx.prisma.$transaction(async (tx) => {
+    const reservedReplySlot = await tx.discussionThread.updateMany({
+      where: {
+        id: threadId,
+        isDeleted: false,
+        replyCount: { lt: REPLIES_PER_THREAD_MAX },
+      },
+      data: {
+        replyCount: { increment: 1 },
+        lastActivityAt: new Date(),
+      },
+    })
+
+    if (reservedReplySlot.count === 0) return null
+
     const createdReply = await tx.discussionReply.create({
       data: {
         threadId,
@@ -1492,14 +1513,6 @@ export async function createCourseDiscussionReply(
         isAnonymous: anonymous,
         authorFingerprintHash: fingerprintHash,
         authorParticipantId: participantId,
-      },
-    })
-
-    await tx.discussionThread.update({
-      where: { id: threadId },
-      data: {
-        replyCount: { increment: 1 },
-        lastActivityAt: new Date(),
       },
     })
 
@@ -1516,6 +1529,8 @@ export async function createCourseDiscussionReply(
 
     return createdReply
   })
+
+  if (!reply) return null
 
   const includeVotes =
     ctx.user?.role === DB.UserRole.PARTICIPANT && ctx.user.sub

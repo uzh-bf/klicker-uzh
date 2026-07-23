@@ -248,6 +248,133 @@ describe('Integration tests for the course discussion platform', () => {
     expect(removedReplyUpvote?.upvotes).toBe(0)
   })
 
+  it('preserves comparison text and rejects oversized content', async () => {
+    const course = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, { courseId: course.id })
+
+    const participantId = await seedParticipantInCourse(prisma, {
+      courseId: course.id,
+    })
+    const participantCtx = createParticipantContext(userOneCtx, participantId)
+
+    const thread = await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: '  Let x < 10 and y > 2.  ',
+        scope: { scopeType: DiscussionScopeType.COURSE },
+      },
+      participantCtx
+    )
+
+    expect(thread?.content).toBe('Let x < 10 and y > 2.')
+
+    const oversizedThread = await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: 'x'.repeat(4001),
+        scope: { scopeType: DiscussionScopeType.COURSE },
+      },
+      participantCtx
+    )
+    expect(oversizedThread).toBeNull()
+
+    const oversizedReply = await createCourseDiscussionReply(
+      {
+        courseId: course.id,
+        threadId: thread!.id,
+        content: 'x'.repeat(4001),
+      },
+      participantCtx
+    )
+    expect(oversizedReply).toBeNull()
+  })
+
+  it('atomically caps visible replies at fifty per thread', async () => {
+    const course = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, { courseId: course.id })
+
+    const participantOneId = await seedParticipantInCourse(prisma, {
+      courseId: course.id,
+    })
+    const participantTwoId = await seedParticipantInCourse(prisma, {
+      courseId: course.id,
+    })
+    const participantOneCtx = createParticipantContext(
+      userOneCtx,
+      participantOneId
+    )
+    const participantTwoCtx = createParticipantContext(
+      userOneCtx,
+      participantTwoId
+    )
+
+    const thread = await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: 'A thread approaching its reply cap.',
+        scope: { scopeType: DiscussionScopeType.COURSE },
+      },
+      participantOneCtx
+    )
+    expect(thread).toBeTruthy()
+
+    await prisma.discussionReply.createMany({
+      data: Array.from({ length: 49 }, (_, index) => ({
+        threadId: thread!.id,
+        spaceId: thread!.spaceId,
+        scopeId: thread!.scopeId,
+        content: `Existing reply ${index + 1}`,
+        authorParticipantId: participantOneId,
+      })),
+    })
+    await prisma.discussionThread.update({
+      where: { id: thread!.id },
+      data: { replyCount: 49 },
+    })
+
+    const concurrentReplies = await Promise.all([
+      createCourseDiscussionReply(
+        {
+          courseId: course.id,
+          threadId: thread!.id,
+          content: 'Concurrent reply one',
+        },
+        participantOneCtx
+      ),
+      createCourseDiscussionReply(
+        {
+          courseId: course.id,
+          threadId: thread!.id,
+          content: 'Concurrent reply two',
+        },
+        participantTwoCtx
+      ),
+    ])
+
+    expect(concurrentReplies.filter(Boolean)).toHaveLength(1)
+    expect(
+      await prisma.discussionReply.count({
+        where: { threadId: thread!.id, isDeleted: false },
+      })
+    ).toBe(50)
+    expect(
+      await prisma.discussionThread.findUnique({
+        where: { id: thread!.id },
+        select: { replyCount: true },
+      })
+    ).toEqual({ replyCount: 50 })
+
+    const overflowReply = await createCourseDiscussionReply(
+      {
+        courseId: course.id,
+        threadId: thread!.id,
+        content: 'This reply must not be stored.',
+      },
+      participantOneCtx
+    )
+    expect(overflowReply).toBeNull()
+  })
+
   it('rejects anonymous posting when embed token scope does not match', async () => {
     const course = await seedCourse({}, userOneCtx)
     await enableCourseDiscussion(prisma, {
