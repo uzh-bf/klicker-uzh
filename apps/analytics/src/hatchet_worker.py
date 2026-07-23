@@ -3,7 +3,7 @@ from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from hatchet_sdk import Context, Hatchet
+from hatchet_sdk import Context, Hatchet, NonRetryableException
 from hatchet_sdk.runnables.types import (
     ConcurrencyExpression,
     ConcurrencyLimitStrategy,
@@ -12,7 +12,11 @@ from hatchet_sdk.runnables.types import (
 from pydantic import BaseModel, ConfigDict
 
 from src.analytics_runtime import run_analytics_module
-from src.modules.utils import AnalyticsMode, AnalyticsRunConfig
+from src.modules.utils import (
+    AnalyticsMode,
+    AnalyticsRunCancelled,
+    AnalyticsRunConfig,
+)
 
 WORKER_NAME = "hatchet-worker-analytics-python"
 PROOF_TASK_NAME = "learning-analytics-native-proof"
@@ -141,7 +145,10 @@ def register_native_workflows(
         )
         def run_script(input: AnalyticsRunInput, ctx: Context) -> None:
             config = resolve_run_config(input, allow_full=allow_full)
-            script_runner(ANALYTICS_SCRIPTS[key], config, ctx.done)
+            try:
+                script_runner(ANALYTICS_SCRIPTS[key], config, ctx.done)
+            except AnalyticsRunCancelled as exc:
+                raise NonRetryableException(str(exc)) from exc
 
         tasks[key] = run_script
 

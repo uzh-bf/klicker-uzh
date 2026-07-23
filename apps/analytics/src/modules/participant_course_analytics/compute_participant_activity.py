@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from src.db_helpers import row_to_dict
 from src.dryrun import buffer_registry
 from src.models import ParticipantAnalytics
+from src.modules.utils import check_analytics_cancellation
 
 
 def compute_participant_activity(
@@ -16,6 +17,7 @@ def compute_participant_activity(
     daily_by_participant = _buffered_daily_by_participant(course_id)
 
     for idx, row in df_activity.iterrows():
+        check_analytics_cancellation()
         participant_id = row["participantId"]
 
         if daily_by_participant is not None:
@@ -44,6 +46,7 @@ def compute_participant_activity(
             active_days_week.append(len(week_analytics))
         else:
             for week_end in week_end_dates:
+                check_analytics_cancellation()
                 week_analytics = sum_active_days_per_week(week_end, daily_analytics)
                 active_days_week.append(len(week_analytics))
 

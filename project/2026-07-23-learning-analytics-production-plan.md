@@ -663,8 +663,20 @@ the repository script that replaces it before continuing.
   script-level Pyright selection still reports ten pre-existing Pandas
   `Series`-to-string findings in scripts 3, 4, 6, and 7; no cancellation line
   introduces a new finding.
-- Active: Review the cooperative-cancellation tracer, then split protected
-  full-run concurrency from freshness-first runs in Slice 4B.2b.
+- 2026-07-23: Independent cancellation review found that one large course
+  could still occupy the single worker slot while participant, week, or
+  activity expansions ran, and simplification review found three separately
+  committed phases without an intervening check. The accepted adjustment adds
+  checks only at those safe compute/query and commit boundaries, never inside
+  a database write. It also maps `AnalyticsRunCancelled` to Hatchet's
+  non-retryable task exception so a superseded run cannot race a retry.
+- 2026-07-23: Post-review cancellation verification passes 18 focused tests,
+  strict Pyright on the typed worker/runtime/test boundary, the full analytics
+  suite with 161 passed and 4 integration skips, and the exact isolated
+  analytics CI subset with 97 passed and 1 database skip.
+- Completed: Slice 4B.2a bounded cooperative cancellation.
+- Active: Split protected full-run concurrency from freshness-first
+  incremental/finalize runs in Slice 4B.2b.
 
 ## Finish evidence
 

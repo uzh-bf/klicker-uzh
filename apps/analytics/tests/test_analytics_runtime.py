@@ -12,6 +12,7 @@ from src.modules.utils import (
     AnalyticsRunCancelled,
     AnalyticsRunConfig,
     analytics_mode,
+    analytics_run_context,
     analytics_run_config_from_env,
     analytics_window_since,
 )
@@ -113,3 +114,63 @@ def test_chat_quiz_precondition_raises_ordinary_task_error(monkeypatch) -> None:
 
     assert exc_info.value is expected
     assert not isinstance(exc_info.value, SystemExit)
+
+
+@pytest.mark.parametrize(
+    ("module_name", "first_phase", "second_phase"),
+    [
+        (
+            "src.scripts.11_chat_quiz_correlation",
+            "compute_participant_chat_outcomes",
+            "update_has_chat_activity",
+        ),
+        (
+            "src.scripts.13_platform_semester_analytics",
+            "compute_platform_semester_analytics",
+            "compute_course_modality_footprint",
+        ),
+    ],
+)
+def test_script_stops_between_committed_phases(
+    monkeypatch,
+    module_name: str,
+    first_phase: str,
+    second_phase: str,
+) -> None:
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        "postgresql://postgres@127.0.0.1/analytics-entrypoint-test",
+    )
+    entrypoint = cast(Any, importlib.import_module(module_name))
+    session = object()
+    calls: list[str] = []
+    config = AnalyticsRunConfig(mode="incremental")
+
+    monkeypatch.setattr(entrypoint, "SessionLocal", lambda: nullcontext(session))
+    monkeypatch.setattr(entrypoint, "scoped_course_ids", lambda _session: None)
+    monkeypatch.setattr(entrypoint, "script_entry", lambda **_kwargs: 0.0)
+    monkeypatch.setattr(entrypoint, "script_exit", lambda **_kwargs: None)
+    monkeypatch.setattr(
+        entrypoint,
+        first_phase,
+        lambda *_args, **_kwargs: calls.append("first"),
+    )
+    monkeypatch.setattr(
+        entrypoint,
+        second_phase,
+        lambda *_args, **_kwargs: calls.append("second"),
+    )
+    if hasattr(entrypoint, "assert_preconditions"):
+        monkeypatch.setattr(
+            entrypoint,
+            "assert_preconditions",
+            lambda *_args, **_kwargs: None,
+        )
+
+    with (
+        analytics_run_context(config, lambda: calls == ["first"]),
+        pytest.raises(AnalyticsRunCancelled),
+    ):
+        entrypoint.main()
+
+    assert calls == ["first"]

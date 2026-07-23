@@ -196,3 +196,25 @@ def test_analytics_dag_matches_existing_task_contract() -> None:
             ),
         )
     ]
+
+
+def test_cancelled_script_is_non_retryable_at_hatchet_boundary() -> None:
+    fake = FakeHatchet()
+
+    def cancelled_runner(*_args: object) -> None:
+        raise hatchet_worker.AnalyticsRunCancelled("superseded")
+
+    hatchet_worker.register_native_workflows(
+        cast(Any, fake),
+        allow_full=False,
+        script_runner=cancelled_runner,
+    )
+    task = next(task for task in fake.workflows[0].tasks if task.name == "s14-live-quiz-assessment-analytics")
+
+    with pytest.raises(hatchet_worker.NonRetryableException, match="superseded") as exc_info:
+        task.fn(
+            hatchet_worker.AnalyticsRunInput(courseId="course-1"),
+            type("Context", (), {"done": lambda self: True})(),
+        )
+
+    assert isinstance(exc_info.value.__cause__, hatchet_worker.AnalyticsRunCancelled)

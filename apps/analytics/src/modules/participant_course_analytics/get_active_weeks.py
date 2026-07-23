@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from src.dryrun import buffer_registry
 from src.models import ParticipantAnalytics
+from src.modules.utils import check_analytics_cancellation
 
 
 def get_active_weeks(session: Session, course):
@@ -15,6 +16,7 @@ def get_active_weeks(session: Session, course):
     weekly_counts_by_participant = _buffered_weekly_counts(course_id)
 
     for participation in participations:
+        check_analytics_cancellation()
         participant_id = participation["participantId"]
         if weekly_counts_by_participant is not None:
             active_weeks = weekly_counts_by_participant.get(str(participant_id), 0)
