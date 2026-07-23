@@ -9,10 +9,17 @@ import {
   proposalPayloadToElementInstance,
 } from '../src/services/proposalToElementInstance'
 
+const baseFields = {
+  basePoints: true,
+  pointsMultiplier: 1,
+  status: 'DRAFT' as const,
+  tags: [] as string[],
+}
+
 describe('proposalPayloadToElementInstance', () => {
   test('backfills missing choice ix values for SC payloads', () => {
     const payload = {
-      basePoints: true,
+      ...baseFields,
       content: 'What does standard deviation measure?',
       name: 'Standard deviation interpretation',
       options: {
@@ -24,9 +31,6 @@ describe('proposalPayloadToElementInstance', () => {
         hasAnswerFeedbacks: false,
         hasSampleSolution: true,
       },
-      pointsMultiplier: 1,
-      status: 'DRAFT',
-      tags: [],
       type: 'SC',
     } satisfies ManageElementCreateProposal['payload']
 
@@ -48,7 +52,7 @@ describe('proposalPayloadToElementInstance', () => {
 
   test('preserves explicit choice ix values for MC payloads', () => {
     const payload = {
-      basePoints: true,
+      ...baseFields,
       content: 'Which of the following are prime numbers?',
       name: 'Prime numbers',
       options: {
@@ -60,9 +64,6 @@ describe('proposalPayloadToElementInstance', () => {
         hasAnswerFeedbacks: false,
         hasSampleSolution: true,
       },
-      pointsMultiplier: 1,
-      status: 'DRAFT',
-      tags: [],
       type: 'MC',
     } satisfies ManageElementCreateProposal['payload']
 
@@ -77,16 +78,13 @@ describe('proposalPayloadToElementInstance', () => {
 
   test('maps FREE_TEXT payloads with minimal options', () => {
     const payload = {
-      basePoints: true,
+      ...baseFields,
       content: 'Explain the central limit theorem.',
       name: 'CLT explanation',
       options: {
         hasSampleSolution: false,
         restrictions: {},
       },
-      pointsMultiplier: 1,
-      status: 'DRAFT',
-      tags: [],
       type: 'FREE_TEXT',
     } satisfies ManageElementCreateProposal['payload']
 
@@ -104,16 +102,13 @@ describe('proposalPayloadToElementInstance', () => {
 describe('parseManageProposalPayload', () => {
   test('returns the validated payload for a well-formed proposal envelope', () => {
     const payload = {
-      basePoints: true,
+      ...baseFields,
       content: 'Explain the central limit theorem.',
       name: 'CLT explanation',
       options: {
         hasSampleSolution: false,
         restrictions: {},
       },
-      pointsMultiplier: 1,
-      status: 'DRAFT',
-      tags: [],
       type: 'FREE_TEXT',
     } satisfies ManageElementCreateProposal['payload']
 
