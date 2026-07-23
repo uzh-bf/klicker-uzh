@@ -10,7 +10,7 @@ import { useTranslations } from 'next-intl'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import nookies from 'nookies'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Layout from '../../../components/Layout'
 import Footer from '../../../components/common/Footer'
 import CourseDiscussionPanel from '../../../components/course/CourseDiscussionPanel'
@@ -32,6 +32,7 @@ function CourseDiscussionPage({
   const router = useRouter()
   const [embedToken, setEmbedToken] = useState<string>()
   const [embedTokenResolved, setEmbedTokenResolved] = useState(!embedded)
+  const embedTokenCaptured = useRef(!embedded)
 
   const scopeKey =
     typeof router.query.scopeKey === 'string'
@@ -39,7 +40,8 @@ function CourseDiscussionPage({
       : undefined
 
   useEffect(() => {
-    if (!embedded || !router.isReady) return
+    if (!embedded || !router.isReady || embedTokenCaptured.current) return
+    embedTokenCaptured.current = true
 
     const legacyToken =
       typeof router.query.embedToken === 'string'
@@ -54,13 +56,12 @@ function CourseDiscussionPage({
     const cleanUrl = new URL(window.location.href)
     cleanUrl.searchParams.delete('embedToken')
     cleanUrl.hash = ''
-    window.history.replaceState(
-      window.history.state,
-      '',
-      `${cleanUrl.pathname}${cleanUrl.search}`
-    )
-    setEmbedTokenResolved(true)
-  }, [embedded, router.isReady, router.query.embedToken])
+    void router
+      .replace(`${cleanUrl.pathname}${cleanUrl.search}`, undefined, {
+        shallow: true,
+      })
+      .finally(() => setEmbedTokenResolved(true))
+  }, [embedded, router, router.isReady, router.query.embedToken])
 
   useParticipantToken({ participantToken, cookiesAvailable })
 

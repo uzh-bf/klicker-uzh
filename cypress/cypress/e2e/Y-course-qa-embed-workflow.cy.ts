@@ -81,6 +81,11 @@ describe('Course Q&A embed workflow', function () {
 
     cy.location('search').should('not.contain', 'embedToken')
     cy.location('hash').should('equal', '')
+    cy.window()
+      .its('history.state')
+      .should((historyState) => {
+        expect(JSON.stringify(historyState)).not.to.contain('embedToken')
+      })
     cy.findByAltText('KlickerUZH Logo').should('not.exist')
     cy.get('footer').should('not.exist')
     cy.get('[data-cy="course-qa-thread-anonymous"]')
