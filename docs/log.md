@@ -1,12 +1,10 @@
 # Log
 
-## 2026-07-20
+## 2026-07-23
 
-- **Update**: [getting-started](./getting-started.md) now records that the vanilla Office Add-in follows the TypeScript 6 workspace baseline with explicit Office global types. [testing](./testing.md) and the `klicker-testing-verification` procedure cover its URL tests, build, deployment parity, manifest, browser, and PowerPoint host checks.
+- **Update**: [async-and-workers](./async-and-workers.md) documents the dedicated native Python learning-analytics worker, triggers, health endpoints, and SQL safety boundary. [testing](./testing.md) documents the deterministic development-only analytics interaction fixture.
 
 ## 2026-07-19
-
-- **Update**: [data-and-migrations](./data-and-migrations.md) and [testing](./testing.md) document Prisma 7 adapter ownership, split JavaScript/Analytics datasource ownership, explicit generation and seeding, removal of the TypeScript namespace patch, and the guarded Auth adapter compatibility check. Matching data-model, environment-doctor, and verification procedures were updated in the same change.
 
 - **Update**: [getting-started](./getting-started.md), [frontend-conventions](./frontend-conventions.md), and [testing](./testing.md) document the runtime-owned TypeScript compiler matrix, explicit Next.js build-validation config, isolated incremental-cache ownership, and check-only declaration trap. The matching verification procedure and solution notes preserve the required checks.
 

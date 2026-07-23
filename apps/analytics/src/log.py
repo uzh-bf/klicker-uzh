@@ -1,9 +1,8 @@
 """Structured telemetry for analytics pipeline scripts.
 
 Each script emits a single-line JSON dict at ``entry`` and ``exit`` to stdout.
-The Hatchet worker captures stdout verbatim (see
-``handleRunAnalyticsScript`` in ``packages/graphql/src/services/``), so the
-lines show up in the Hatchet dashboard logs without needing a new SDK.
+The native Hatchet Python worker forwards those lines through its process
+logs, so they remain available without a separate telemetry dependency.
 
 Shape::
 

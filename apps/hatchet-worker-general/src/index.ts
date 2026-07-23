@@ -8,11 +8,6 @@ import {
 
 const WORKER_NAME = 'hatchet-worker-general'
 
-// Workflows owned by dedicated worker apps that ship runtime environments this
-// image doesn't have (e.g. Python + uv for the analytics pipeline). Keep them
-// off the general worker's default pickup set so Hatchet never routes them here.
-const EXCLUDED_WORKFLOWS = ['recomputeLearningAnalytics'] as const
-
 const logger = createWorkerLogger(WORKER_NAME)
 installWorkerCrashHandlers(logger)
 
@@ -22,6 +17,5 @@ await bootstrapHatchetWorker({
   handlers,
   selectWorkflows: buildSelectWorkflows({
     logger,
-    excludeKeys: EXCLUDED_WORKFLOWS,
   }),
 })

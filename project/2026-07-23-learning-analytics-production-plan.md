@@ -368,7 +368,7 @@ Focused slices run the relevant subset. Slice 6 reruns the complete matrix:
 | Analytics format | `cd apps/analytics && uv run ruff format --check . && uv run ruff check .` | Exit 0 |
 | Analytics types | `cd apps/analytics && uv run pyright` | Exit 0 |
 | Analytics tests | `cd apps/analytics && uv run pytest` | All tests pass |
-| Hatchet packages | `volta run --node 24.16.0 pnpm exec turbo run check --filter=@klicker-uzh/hatchet --filter=@klicker-uzh/hatchet-worker-analytics --filter=@klicker-uzh/hatchet-worker-general` | Exit 0 |
+| Hatchet packages | `volta run --node 24.16.0 pnpm exec turbo run check --filter=@klicker-uzh/hatchet --filter=@klicker-uzh/hatchet-worker-general` | Exit 0 |
 | GraphQL package | `volta run --node 24.16.0 pnpm exec turbo run check --filter=@klicker-uzh/graphql` | Exit 0 |
 | GraphQL tests | `volta run --node 24.16.0 pnpm --filter @klicker-uzh/graphql test` | All tests pass |
 | Schema mirror | `volta run --node 24.16.0 pnpm run prisma:sync` then `git diff --exit-code -- apps/analytics/prisma` | Mirror is current |
@@ -713,8 +713,32 @@ the repository script that replaces it before continuing.
   so only one worker owns analytics events.
 - Completed: Slice 4B native DAG parity, cooperative cancellation, and
   protected full-run concurrency.
-- Active: Cut over the native worker and remove the TypeScript subprocess
-  bridge in Slice 4C.
+- 2026-07-23: Slice 4C removes the TypeScript analytics workflow, injected
+  script handler, subprocess implementation/tests, shared script map, and
+  dedicated Node worker package. TypeScript still owns the unchanged
+  `scan-ended-courses` cron and all GraphQL/manual event producers. A focused
+  contract test proves `prepareHatchetTasks` registers no workflow while still
+  returning the 01:00 UTC scanner.
+- 2026-07-23: The image entrypoint moved in the same cutover slice so no commit
+  leaves the dedicated deployable broken. Its multi-stage Python 3.12.11 image
+  runs `src.hatchet_worker` directly as UID/GID 10001. The official uv
+  CPU-only PyTorch index removes all CUDA/NVIDIA packages; ARM64 compiles
+  `hdbscan` in the discarded builder and AMD64 uses its wheel. The resulting
+  local images are 1.72 GB ARM64 and 1.80 GB AMD64.
+- 2026-07-23: Native image builds pass for `linux/arm64` and `linux/amd64`.
+  The AMD64 image imports `hdbscan` and reports `torch==2.11.0+cpu` with CUDA
+  unavailable. The ARM64 image registers both 15-task workflows and the proof
+  task against Hatchet v0.73.1, reports `HEALTHY` with one slot on SDK
+  `/health`, exposes a healthy worker gauge on `/metrics`, executes the
+  non-mutating proof task, and exits 0 after graceful SIGTERM shutdown.
+- 2026-07-23: Staging and production Helm renders pass with the architecture
+  repository corrected to `hatchet-worker-analytics-arm` and `Recreate`
+  strategy. The scanner grace-period setting moved to the general-worker
+  ConfigMap; obsolete subprocess settings were removed. `ANALYTICS_ALLOW_FULL`
+  remains opt-in and is not enabled by chart defaults.
+- Completed: Slice 4C cutover and Slice 5A minimal native image/render.
+- Active: Harden probes, immutable image inputs, CI, secrets verification, and
+  operator runbook in Slice 5B.
 
 ## Finish evidence
 
