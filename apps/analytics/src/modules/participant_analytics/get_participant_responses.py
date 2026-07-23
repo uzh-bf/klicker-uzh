@@ -105,8 +105,6 @@ def get_participant_responses(session: Session, start_date: str, end_date: str, 
 
     rows = []
     for detail in details:
-        if detail.createdAt is None:
-            continue
         rows.append(_detail_to_dict(detail, str(detail.participantId), course_windows))
 
     if verbose:

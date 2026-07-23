@@ -82,7 +82,7 @@ Scope (`ANALYTICS_COURSE_IDS`) and window floor (`ANALYTICS_WINDOW_SINCE`, auto-
 
 ### Known limitations
 
-- The in-memory buffer feeds captured writes into the downstream readers used by scripts 1, 2, 5, and 11. Scripts 13 and 99 still read the target database and therefore do not see same-run buffered rows.
+- The in-memory buffer feeds captured writes into the downstream readers used by scripts 1, 2, 5, and 11. Course-scoped dry runs omit platform-wide script 13 and validity-marker script 99.
 - A buffered table replaces that reader's database result; it is not unioned with rows already present in the database. Incremental-window dry runs can therefore under-report downstream aggregates that need both historical rows and rows captured in the current run.
 
 The workbook is a read-only inspection aid, not proof of exact downstream parity for those cases. Use a seeded writable database for end-to-end row comparisons.
@@ -153,11 +153,22 @@ The analytics index migrations cover hot response/event tables:
 - `20260420_analytics_covering_indexes`
 - `20260723180000_analytics_live_quiz_submitted_at_index`
 
-Prisma 6.16 applies these migrations inside a transaction, while PostgreSQL requires `CREATE INDEX CONCURRENTLY` to run outside one. Therefore shared environments use a two-step rollout:
+Prisma 6.16 applies migrations inside a transaction, while PostgreSQL requires `CREATE INDEX CONCURRENTLY` to run outside one. The repository deploy commands enforce the safe ordering:
 
-1. Check whether either migration already ran from an older branch version.
-2. Run `packages/prisma/scripts/create-analytics-indexes-concurrently.sql` with `psql`, without `BEGIN` / `COMMIT`.
-3. Run the normal `prisma migrate deploy`. Its `IF NOT EXISTS` statements see the prebuilt indexes and become no-ops.
+```bash
+pnpm --filter @klicker-uzh/prisma prisma:deploy:qa
+pnpm --filter @klicker-uzh/prisma prisma:deploy:prod
+```
+
+`prisma:deploy:raw`, which those commands wrap, first runs `scripts/prepareAnalyticsIndexes.mjs`. On an initialized database the wrapper:
+
+1. refuses unfinished migrations or named invalid indexes;
+2. executes `create-analytics-indexes-concurrently.sql` one statement at a time outside a transaction;
+3. validates that every index is ready and valid;
+4. baselines the unchanged historical `20260420_analytics_covering_indexes` migration if it is still pending; and
+5. runs the remaining normal Prisma migration chain.
+
+On a fresh empty database the required tables are absent, so the wrapper skips the prebuild and the normal migration chain creates the indexes while the tables are empty. Do not run bare `prisma migrate deploy` against an initialized shared environment because it bypasses this guard.
 
 This follows [Prisma's PostgreSQL migration-safety guidance](https://www.prisma.io/docs/guides/integrations/pgfence), which recommends manually adding `CONCURRENTLY` and running that work outside a transaction.
 
@@ -170,7 +181,7 @@ WHERE migration_name IN (
 );
 ```
 
-Run the prebuild during a lower-traffic window. Concurrent builds preserve writes but still consume database I/O and CPU. Monitor active builds with:
+Run the deploy during a lower-traffic window. Concurrent builds preserve writes but still consume database I/O and CPU. Monitor active builds with:
 
 ```sql
 SELECT relid::regclass AS table_name, index_relid::regclass AS index_name, phase,
@@ -178,4 +189,4 @@ SELECT relid::regclass AS table_name, index_relid::regclass AS index_name, phase
 FROM pg_stat_progress_create_index;
 ```
 
-If a prebuild is interrupted, inspect `pg_index.indisvalid`, drop only the invalid index with `DROP INDEX CONCURRENTLY`, and rerun the prebuild. If Prisma itself later records a failed migration, mark that migration rolled back with `prisma migrate resolve --rolled-back <migration>` before rerunning deploy. The `IF NOT EXISTS` clauses make already-valid indexes safe on retry.
+If a prebuild is interrupted, the next deploy names the invalid index and stops. Inspect `pg_index.indisvalid`, drop only that exact index with `DROP INDEX CONCURRENTLY`, and rerun the repository deploy command. If Prisma itself records a failed migration, resolve that state explicitly before retrying; the wrapper refuses to guess.
