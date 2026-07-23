@@ -9,9 +9,11 @@ from __future__ import annotations
 
 import os
 import sys
+from typing import cast
 from unittest import mock
 
 import pytest
+from sqlalchemy.orm import Session
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -136,6 +138,7 @@ def test_apply_scope_non_empty_list_appends_in_filter():
     stmt = _FakeStmt()
     col = _FakeColumn("Course.id")
     result = apply_course_scope(["a", "b"], stmt, col)
+    assert result is not None
     assert result.filters == [("in", "Course.id", ["a", "b"])]
 
 
@@ -143,7 +146,7 @@ def test_immutable_run_config_does_not_fall_back_to_process_scope():
     with mock.patch.dict(os.environ, {"ANALYTICS_COURSE_IDS": VALID_A}):
         assert (
             scoped_course_ids(
-                object(),
+                cast(Session, object()),
                 AnalyticsRunConfig(mode="full"),
             )
             is None
