@@ -16,7 +16,8 @@ the existing Hatchet control plane.
 - Phase 1 worktree:
   `trees/chat-analytics-integration`
 - Phase 2 branch: `analytics-phase-a`
-- Phase 2 target: `chat-analytics`
+- Phase 2 current target: `chat-analytics`
+- Phase 2 eventual target: `v3` after the Phase 1 PR merges
 - Phase 2 PR:
   [#5073](https://github.com/uzh-bf/klicker-uzh/pull/5073)
 - History:
@@ -76,13 +77,25 @@ the existing Hatchet control plane.
 
 ### Open research gates
 
-- Select and pin the newest Python SDK version proven compatible with local
+- Select and pin a Python SDK version proven compatible with local
   `hatchet-lite:v0.73.1` and the deployed control-plane version.
 - Measure a representative incremental run before choosing worker slots and
-  Kubernetes resources. Start with one pod and two slots unless evidence
-  requires less.
+  Kubernetes resources. Start correctness tests with one pod and one slot;
+  increase slots only from measured evidence.
 - Verify the existing analytics image repositories and secret mappings before
   changing Helm values.
+
+### Independent plan review
+
+- Review commit: `3af49c843`
+- Review agents: native plan reviewer and separate simplification reviewer.
+- Accepted:
+  split correctness, native-worker, and deployment work into smaller tracer
+  bullets; use one verification matrix; pin a compatible SDK rather than the
+  newest SDK; start at one worker slot; make eventual PR retargeting explicit;
+  pass immutable per-run configuration instead of mutating `os.environ`; and
+  preserve retry, timeout, special `s10`, and producer-contract behavior.
+- Rejected: none.
 
 ## Slices
 
@@ -146,55 +159,126 @@ the existing Hatchet control plane.
 
 - Merge commit retaining both histories.
 
-### Slice 3 — Close known correctness and CI gaps
+### Slice 3A — Close reproduced correctness and CI gaps
 
 **Do**
 
 - Make the existing PR checks green.
-- Verify late-data upserts, `s13` ordering, full fan-in before `s99`, index
-  coverage, homogeneous bulk-upsert rows, UTC timestamps, and numerical grading
-  parity against `packages/grading`.
+- Verify late-data upserts, `s13` ordering, full fan-in before `s99`,
+  homogeneous bulk-upsert rows, and UTC timestamps.
 - Fix only findings reproduced against the integrated branch.
-- Update stale comments and dry-run limitations.
 
 **Check**
 
 - Focused unit/integration tests for each accepted fix.
 - Seeded analytics run and row-level assertions where feasible.
-- Migration and `EXPLAIN ANALYZE` evidence on representative data.
 
 **Commit**
 
-- Split correctness, schema/index, and test changes when one commit would hide
-  independent behavior.
+- One focused commit per independent behavior when needed.
 
-### Slice 4 — Replace the Node subprocess bridge with native Python Hatchet
+### Slice 3B — Prove grading parity
+
+**Do**
+
+- Compare numerical correctness behavior with `packages/grading`.
+- Add representative seeded numerical responses.
+- Fix only verified semantic differences.
+
+**Check**
+
+- Focused Python tests for bounded, one-sided, and exact numerical solutions.
+- Seeded script-0 row assertions.
+
+**Commit**
+
+- `fix(analytics): align numerical correctness with grading`
+
+### Slice 3C — Prove index needs and refresh operational docs
+
+**Do**
+
+- Run representative query plans for the designed analytics access paths.
+- Add or change indexes only for demonstrated gaps.
+- Update stale comments and dry-run limitations with the owning change.
+
+**Check**
+
+- Migration validation.
+- Recorded `EXPLAIN ANALYZE` evidence on representative seeded data.
+
+**Commit**
+
+- Keep schema/index work separate from documentation-only corrections.
+
+### Slice 4A — Register a native Python worker and one proof task
 
 **Do**
 
 - Add a pinned, compatibility-tested `hatchet-sdk` dependency.
+- Register one non-mutating proof task against local Hatchet.
+- Call one Python analytics entry point directly in a focused test path; do not
+  spawn `uv`.
+- Pass mode, course scope, and window as immutable task/run input. Do not mutate
+  process-global `os.environ` per task.
+- Keep the TypeScript worker intact as rollback.
+
+**Check**
+
+- SDK import and worker-registration tests.
+- Register the worker against local `hatchet-lite:v0.73.1`.
+- Run the proof task and observe its result.
+
+**Commit**
+
+- `feat(analytics): add native Python Hatchet worker`
+
+### Slice 4B — Port the full analytics DAG with parity
+
+**Do**
+
 - Define the existing 15-task DAG in Python with the same names, triggers,
-  dependencies, modes, and full-run guard.
-- Call Python analytics entry points directly; do not spawn `uv` subprocesses.
+  dependencies, modes, per-task retries/timeouts, special `s10` retry behavior,
+  and full-run guard.
 - Keep the TypeScript course scanner and event producers.
 - Add cooperative cancellation checks at bounded course/window steps.
 - Separate protected full rebuild concurrency from freshness-first incremental
   and finalize runs.
-- Remove only bridge code and image layers made obsolete by the Python worker.
+- Keep the TypeScript worker available until parity passes.
 
 **Check**
 
 - Unit tests for input/mode resolution, DAG dependencies, guard rails, and
   cancellation.
-- Register the worker against local `hatchet-lite:v0.73.1`.
 - Trigger a small workflow and confirm parent/fan-in behavior.
 - Trigger a superseding run and confirm cancellation stops Python work.
+- Compare outputs with the TypeScript-orchestrated path.
+- Verify GraphQL/manual and scanner events reach the Python workflow with the
+  expected input contract.
 
 **Commit**
 
-- `refactor(analytics): run pipeline on native Python Hatchet worker`
+- `feat(analytics): port analytics DAG to Python Hatchet`
 
-### Slice 5 — Make the worker deployable and observable
+### Slice 4C — Cut over and remove the subprocess bridge
+
+**Do**
+
+- Make the Python worker the sole owner of the analytics DAG.
+- Remove only the TypeScript bridge, worker entrypoint, and configuration made
+  obsolete by the cutover.
+- Preserve TypeScript event producers and the course scanner.
+
+**Check**
+
+- No remaining analytics subprocess path.
+- Registration, trigger, DAG, guard, and cancellation tests pass.
+
+**Commit**
+
+- `refactor(analytics): cut over to native Python Hatchet`
+
+### Slice 5A — Build and render the minimal Python worker
 
 **Do**
 
@@ -203,24 +287,39 @@ the existing Hatchet control plane.
 - Align Node/uv/Python versions with current repository pins where still
   applicable.
 - Fix architecture-specific image repository/tag wiring.
-- Add non-root runtime, health/metrics probes, graceful termination, low initial
-  slots, explicit resources, and immutable image behavior.
-- Verify Infisical/ExternalSecret mappings without reading or exposing secret
-  values.
-- Add an operator runbook for trigger, status, logs, failure, retry, and
-  rollback.
+- Use the Hatchet SDK health/metrics server; do not add a custom health service.
 
 **Check**
 
 - Build the image locally.
 - Render Helm for staging and production values.
-- Validate probes, command, environment names, image references, and secret
-  references.
 - Run container health and worker-registration smoke checks.
 
 **Commit**
 
-- Separate build and deployment commits if each is independently valid.
+- Separate image and Helm changes if each is independently valid.
+
+### Slice 5B — Harden runtime and document operations
+
+**Do**
+
+- Add non-root runtime, health/metrics probes, graceful termination, one initial
+  slot, explicit resources, and immutable image behavior.
+- Verify Infisical/ExternalSecret mappings without reading or exposing secret
+  values.
+- Tune slots and resources only from measured evidence.
+- Add an operator runbook for trigger, status, logs, failure, retry, and
+  rollback.
+
+**Check**
+
+- Validate probes, command, environment names, image references, resource
+  values, and secret references.
+- Rebuild and rerun container registration/health smoke checks.
+
+**Commit**
+
+- Keep deployment hardening and runbook evidence together.
 
 ### Slice 6 — Finish verification and draft PRs
 
@@ -233,6 +332,8 @@ the existing Hatchet control plane.
 - Create the missing draft PR from `chat-analytics` to `v3`.
 - Refresh [#5073](https://github.com/uzh-bf/klicker-uzh/pull/5073)
   from the complete branch diff and current plan.
+- Keep #5073 stacked on `chat-analytics` until the Phase 1 PR merges; then
+  retarget it to `v3` and recheck its complete diff.
 - Read back CI. Do not mark ready or merge.
 
 **Check**
@@ -240,6 +341,29 @@ the existing Hatchet control plane.
 - Both draft PRs describe the whole branch, evidence, remaining manual checks,
   rollout order, and rollback.
 - Required CI is green or has an exact external blocker.
+
+## Verification matrix
+
+Focused slices run the relevant subset. Slice 6 reruns the complete matrix:
+
+| Area | Command | Pass criterion |
+|---|---|---|
+| Diff hygiene | `git diff --check` | No errors |
+| Dependency policy | `volta run pnpm run check:syncpack` | Exit 0 |
+| Analytics format | `cd apps/analytics && uv run ruff check .` | Exit 0 |
+| Analytics types | `cd apps/analytics && uv run pyright` | Exit 0 |
+| Analytics tests | `cd apps/analytics && uv run pytest` | All tests pass |
+| Hatchet package | `volta run pnpm --filter @klicker-uzh/hatchet check` | Exit 0 |
+| GraphQL package | `volta run pnpm --filter @klicker-uzh/graphql check` | Exit 0 |
+| GraphQL tests | `volta run pnpm --filter @klicker-uzh/graphql test` | All tests pass |
+| Schema mirror | `volta run pnpm run prisma:sync` then `git diff --exit-code -- apps/analytics/prisma` | Mirror is current |
+| Worker image | `docker build -f apps/hatchet-worker-analytics/Dockerfile .` | Image builds |
+| Helm staging | `helm template klicker-uzh deploy/charts/klicker-uzh-v3 -f deploy/env-uzh-stg/values.yaml` | Render succeeds |
+| Helm production | `helm template klicker-uzh deploy/charts/klicker-uzh-v3 -f deploy/env-uzh-prd/values.yaml` | Render succeeds |
+| Hatchet runtime | Local worker registration, proof run, DAG run, and cancellation smoke | Expected task states and no surviving work |
+
+If an integrated command differs after the `v3` merge, update this table from
+the repository script that replaces it before continuing.
 
 ## Progress
 
@@ -249,7 +373,11 @@ the existing Hatchet control plane.
   review completed.
 - 2026-07-23: Phase 1 worktree created at
   `trees/chat-analytics-integration`; branch is clean at `99c77b1480`.
-- Active: Slice 0, plan commit and independent review.
+- 2026-07-23: Slice 0 plan committed as `3af49c843`.
+- 2026-07-23: Independent review and simplification completed; accepted
+  findings split oversized slices, made cutover rollback explicit, added a
+  command matrix, and tightened configuration/parity/retargeting requirements.
+- Active: Slice 0 review adjustments.
 - Next: Merge `origin/v3` into `chat-analytics`.
 
 ## Finish evidence
@@ -264,6 +392,6 @@ the existing Hatchet control plane.
 
 ## Next Steps
 
-1. Review and commit this plan.
+1. Finish independent review of this plan.
 2. Merge current `v3` into `chat-analytics`.
 3. Continue one verified slice at a time until both draft PRs are current.
