@@ -78,19 +78,25 @@ describe('Course Q&A workflows (course-level + stack-level discussions, embed, r
 
   // ! Part 2: Student course-level Q&A (post thread, upvote, reply)
   // #region
-  it('Student sees Q&A link on course overview and can navigate to the empty Q&A page', function () {
+  it('Student sees integrated Q&A on the course overview and can open the fallback page', function () {
     cy.loginStudent()
     cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
 
-    cy.get('[data-cy="course-qa-link"]').should('exist').click()
-    cy.url().should('include', `/course/${this.data.courseId}/qa`)
+    cy.get('[data-cy="course-overview-qa-panel"]').should('exist')
+    cy.location('pathname').should('not.include', '/qa')
+    cy.get('[data-cy="course-qa-empty"]').should('exist')
+
+    cy.visit(`${Cypress.env('URL_STUDENT')}/course/${this.data.courseId}/qa`)
+    cy.location('pathname').should(
+      'include',
+      `/course/${this.data.courseId}/qa`
+    )
     cy.get('[data-cy="course-qa-empty"]').should('exist')
   })
 
   it('Student creates a course-level thread and sees it appear', function () {
     cy.loginStudent()
     cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
-    cy.get('[data-cy="course-qa-link"]').click()
 
     cy.get('[data-cy="course-qa-create-thread"]').should('be.disabled')
     cy.get('[data-cy="course-qa-thread-input"]').type(this.data.threads.course1)
@@ -104,7 +110,6 @@ describe('Course Q&A workflows (course-level + stack-level discussions, embed, r
   it('Student upvotes their newly created thread and toggles it back off', function () {
     cy.loginStudent()
     cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
-    cy.get('[data-cy="course-qa-link"]').click()
     cy.findByText(this.data.threads.course1).should('exist')
 
     // thread ids are DB auto-increment and not known up front — scope by prefix + .first()
@@ -123,7 +128,6 @@ describe('Course Q&A workflows (course-level + stack-level discussions, embed, r
   it('Student replies to the thread and upvotes the reply', function () {
     cy.loginStudent()
     cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
-    cy.get('[data-cy="course-qa-link"]').click()
 
     cy.findByText(this.data.threads.course1).should('exist')
 
@@ -153,7 +157,6 @@ describe('Course Q&A workflows (course-level + stack-level discussions, embed, r
   it('A second student can see the first thread + post their own', function () {
     cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME2') })
     cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
-    cy.get('[data-cy="course-qa-link"]').click()
 
     cy.findByText(this.data.threads.course1).should('exist')
     cy.get('[data-cy="course-qa-thread-input"]').type(this.data.threads.course2)
@@ -192,7 +195,7 @@ describe('Course Q&A workflows (course-level + stack-level discussions, embed, r
   it('Course-level feed does NOT aggregate stack-scoped threads (alpha surface boundary)', function () {
     cy.loginStudent()
     cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
-    cy.get('[data-cy="course-qa-link"]').click()
+    cy.get('[data-cy="course-overview-qa-panel"]').should('exist')
     cy.findByText(this.data.threads.course1).should('exist')
     cy.findByText(this.data.threads.stack1).should('not.exist')
   })
@@ -222,6 +225,7 @@ describe('Course Q&A workflows (course-level + stack-level discussions, embed, r
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-discussions"]').click()
+    cy.get('[data-cy="course-qa-embed-generator-toggle"]').click()
 
     cy.get('[data-cy="course-qa-generate-embed"]').should('be.disabled')
     cy.get('[data-cy="course-qa-external-source"]').type(
@@ -244,7 +248,9 @@ describe('Course Q&A workflows (course-level + stack-level discussions, embed, r
   })
 
   it('Embed URL (with anonymous allowed) renders embedded + allows anonymous posting', function () {
-    cy.loginStudent()
+    cy.clearAllCookies()
+    cy.clearAllLocalStorage()
+    cy.clearAllSessionStorage()
     cy.readFile('cypress/fixtures/_qa-embed-url.txt').then((embedUrl) => {
       if (!embedUrl) {
         throw new Error('embed url not set by previous test')
@@ -261,10 +267,40 @@ describe('Course Q&A workflows (course-level + stack-level discussions, embed, r
     )
     cy.get('[data-cy="course-qa-create-thread"]').click()
     cy.findByText(this.data.embed.anonymousThread).should('exist')
+    cy.get('[data-cy="course-qa-thread-input"]').should('have.value', '')
+    cy.get('[data-cy="course-qa-thread-anonymous"]').should('not.be.checked')
+
+    cy.get('[data-cy^="course-qa-thread-"]')
+      .contains(this.data.embed.anonymousThread)
+      .parents('[data-cy^="course-qa-thread-"]')
+      .first()
+      .invoke('attr', 'data-cy')
+      .then((attr) => {
+        const threadId = attr?.replace('course-qa-thread-', '')
+
+        cy.get(`[data-cy="course-qa-reply-input-${threadId}"]`).type(
+          this.data.embed.anonymousReply
+        )
+        cy.get(`[data-cy="course-qa-reply-anonymous-${threadId}"]`).check({
+          force: true,
+        })
+        cy.get(`[data-cy="course-qa-create-reply-${threadId}"]`).click()
+
+        cy.findByText(this.data.embed.anonymousReply).should('exist')
+        cy.get(`[data-cy="course-qa-reply-input-${threadId}"]`).should(
+          'have.value',
+          ''
+        )
+        cy.get(`[data-cy="course-qa-reply-anonymous-${threadId}"]`).should(
+          'not.be.checked'
+        )
+      })
   })
 
   it('Tampered embed token is rejected with access-denied', function () {
-    cy.loginStudent()
+    cy.clearAllCookies()
+    cy.clearAllLocalStorage()
+    cy.clearAllSessionStorage()
     cy.readFile('cypress/fixtures/_qa-embed-url.txt').then((embedUrl) => {
       if (!embedUrl) {
         throw new Error('embed url not set by previous test')
@@ -286,7 +322,7 @@ describe('Course Q&A workflows (course-level + stack-level discussions, embed, r
 
   // ! Part 6: Runtime toggle (rollout on, runtime off/on)
   // #region
-  it('Disabling isCourseQAEnabled at the runtime flag hides the student link + shows disabled notice', function () {
+  it('Disabling isCourseQAEnabled hides the integrated panel and shows the fallback notice', function () {
     cy.task('setCourseQAFlags', {
       courseName: this.data.course,
       isCourseQAEnabled: false,
@@ -298,7 +334,7 @@ describe('Course Q&A workflows (course-level + stack-level discussions, embed, r
 
     cy.loginStudent()
     cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
-    cy.get('[data-cy="course-qa-link"]').should('not.exist')
+    cy.get('[data-cy="course-overview-qa-panel"]').should('not.exist')
 
     cy.visit(`${Cypress.env('URL_STUDENT')}/course/${this.data.courseId}/qa`)
     cy.get('[data-cy="course-qa-disabled-notice"]').should('exist')
@@ -324,7 +360,7 @@ describe('Course Q&A workflows (course-level + stack-level discussions, embed, r
 
     cy.loginStudent()
     cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
-    cy.get('[data-cy="course-qa-link"]').click()
+    cy.get('[data-cy="course-overview-qa-panel"]').should('exist')
     cy.get('[data-cy="course-qa-disabled-notice"]').should('not.exist')
     cy.findByText(this.data.threads.course1).should('exist')
   })
@@ -352,10 +388,10 @@ describe('Course Q&A workflows (course-level + stack-level discussions, embed, r
     cy.get('[data-cy="tab-discussions"]').should('not.exist')
   })
 
-  it('Rollout gate off: student direct /qa visit fails closed and course link is hidden', function () {
+  it('Rollout gate off: student direct /qa visit fails closed and integrated panel is hidden', function () {
     cy.loginStudent()
     cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
-    cy.get('[data-cy="course-qa-link"]').should('not.exist')
+    cy.get('[data-cy="course-overview-qa-panel"]').should('not.exist')
     cy.visit(`${Cypress.env('URL_STUDENT')}/course/${this.data.courseId}/qa`)
     cy.get('[data-cy="course-qa-access-denied"]').should('exist')
 

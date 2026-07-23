@@ -24,6 +24,7 @@
     "externalSource": "lms-moodle",
     "externalRef": "week-01-block-a",
     "anonymousThread": "This is an anonymous question posted from an embedded context.",
+    "anonymousReply": "This is an anonymous reply posted from an embedded context.",
     "identifiedThread": "This is an identified question posted from an embedded context."
   }
 }
