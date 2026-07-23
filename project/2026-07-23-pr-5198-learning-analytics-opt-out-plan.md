@@ -3,10 +3,10 @@
 ## Identity
 
 - Status: approved plan; implementation not started
-- Plan: `project/2026-07-23-learning-analytics-opt-out-plan.md`
+- Plan: `project/2026-07-23-pr-5198-learning-analytics-opt-out-plan.md`
 - Branch: `codex/learning-analytics-opt-out-plan`
 - Target: `v3`
-- Pull request: pending
+- Pull request: [#5198](https://github.com/uzh-bf/klicker-uzh/pull/5198)
 - Change type: `feat`
 - ADRs:
   - [ADR 0001](../docs/adr/0001-separate-course-and-participant-learning-analytics-controls.md)
@@ -454,6 +454,7 @@ Commit:
   engineering wiki pages inspected.
 - 2026-07-23: Product decisions locked in `CONTEXT.md` and ADRs 0001-0002.
 - 2026-07-23: Implementation plan approved by the user.
-- Current: publish the approved plan and ADRs to a draft PR.
+- 2026-07-23: Approved plan and ADRs published in draft PR #5198.
+- Current: draft PR published; implementation not started.
 - Next: wait for explicit implementation authority, then start Research and
   Slice 1 on this same branch and draft PR.
