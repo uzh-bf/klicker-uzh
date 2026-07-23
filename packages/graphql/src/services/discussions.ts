@@ -91,8 +91,14 @@ interface DiscussionReplyWithRelations extends DB.DiscussionReply {
   hasUpvoted?: boolean
 }
 
+interface DiscussionScopeWithPresentation extends DB.DiscussionScope {
+  stackType?: DB.ElementStackType | null
+  stackOrder?: number | null
+  stackDisplayName?: string | null
+}
+
 interface DiscussionThreadWithRelations extends DB.DiscussionThread {
-  scope: DB.DiscussionScope
+  scope: DiscussionScopeWithPresentation
   space: DB.DiscussionSpace
   replies: DiscussionReplyWithRelations[]
   votes?: Pick<DB.DiscussionThreadVote, 'participantId'>[]
@@ -253,6 +259,48 @@ function mapThread(
     hasUpvoted: (thread.votes?.length ?? 0) > 0,
     replies: thread.replies.map(mapReply),
   }
+}
+
+async function mapThreads(
+  threads: DiscussionThreadWithRelations[],
+  ctx: Context
+) {
+  const stackIds = [
+    ...new Set(
+      threads
+        .map((thread) => thread.scope.stackId)
+        .filter((stackId): stackId is number => stackId !== null)
+    ),
+  ]
+  const stacks =
+    stackIds.length === 0
+      ? []
+      : await ctx.prisma.elementStack.findMany({
+          where: { id: { in: stackIds } },
+          select: {
+            id: true,
+            type: true,
+            order: true,
+            displayName: true,
+          },
+        })
+  const stacksById = new Map(stacks.map((stack) => [stack.id, stack]))
+
+  return threads.map((thread) => {
+    const stack = thread.scope.stackId
+      ? stacksById.get(thread.scope.stackId)
+      : undefined
+
+    return mapThread({
+      ...thread,
+      scope: {
+        ...thread.scope,
+        stackType: stack?.type ?? null,
+        stackOrder: stack?.order ?? null,
+        stackDisplayName: stack?.displayName ?? null,
+      },
+    })
+  })
 }
 
 function getRequestIP(ctx: Context) {
@@ -1151,8 +1199,9 @@ export async function courseDiscussionThreads(
   const hasMore = threads.length > pageSize
   const pageThreads = hasMore ? threads.slice(0, pageSize) : threads
 
-  const mappedThreads = pageThreads.map((thread) =>
-    mapThread(thread as unknown as DiscussionThreadWithRelations)
+  const mappedThreads = await mapThreads(
+    pageThreads as unknown as DiscussionThreadWithRelations[],
+    ctx
   )
 
   const nextCursor = hasMore
@@ -1228,26 +1277,27 @@ export async function courseDiscussionOverview(
 
   const grouped = new Map<string, CourseDiscussionOverviewGroup>()
 
-  pageThreads
-    .map((thread) =>
-      mapThread(thread as unknown as DiscussionThreadWithRelations)
-    )
-    .forEach((thread) => {
-      if (!thread.sourceKey || !thread.sourceLabel) return
+  const mappedThreads = await mapThreads(
+    pageThreads as unknown as DiscussionThreadWithRelations[],
+    ctx
+  )
 
-      const existing = grouped.get(thread.sourceKey)
-      if (existing) {
-        existing.threads.push(thread)
-        return
-      }
+  mappedThreads.forEach((thread) => {
+    if (!thread.sourceKey || !thread.sourceLabel) return
 
-      grouped.set(thread.sourceKey, {
-        sourceKey: thread.sourceKey,
-        sourceLabel: thread.sourceLabel,
-        spaceType: thread.space.spaceType,
-        threads: [thread],
-      })
+    const existing = grouped.get(thread.sourceKey)
+    if (existing) {
+      existing.threads.push(thread)
+      return
+    }
+
+    grouped.set(thread.sourceKey, {
+      sourceKey: thread.sourceKey,
+      sourceLabel: thread.sourceLabel,
+      spaceType: thread.space.spaceType,
+      threads: [thread],
     })
+  })
 
   const nextCursor = hasMore
     ? String(pageThreads[pageThreads.length - 1]!.id)

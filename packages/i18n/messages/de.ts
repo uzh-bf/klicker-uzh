@@ -301,6 +301,8 @@ export default {
       elementN: 'Element {number}',
       Nelements: '{number} Element(e)',
       stackN: 'Stack {number}',
+      practiceStackN: 'Übungs-Stack {number}',
+      microlearningStackN: 'Microlearning-Stack {number}',
       questionN: 'Frage {number}',
       clueN: 'Hinweis {number}',
       availability: 'Verfügbarkeit',

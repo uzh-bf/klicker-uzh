@@ -1706,6 +1706,14 @@ describe('Integration tests for the course discussion platform', () => {
         { courseId: course.id, stackType },
         userOneCtx
       )
+      const customDisplayName =
+        stackType === ElementStackType.PRACTICE_QUIZ ? 'Practice Stack 7' : null
+      if (customDisplayName) {
+        await prisma.elementStack.update({
+          where: { id: seeded.stack.id },
+          data: { displayName: customDisplayName },
+        })
+      }
       await seedStackEvaluation(prisma, {
         courseId: course.id,
         participantId,
@@ -1726,6 +1734,18 @@ describe('Integration tests for the course discussion platform', () => {
 
       expect(thread?.scope.scopeType).toBe(DiscussionScopeType.PRACTICE_STACK)
       expect(thread?.scope.scopeKey).toBe(`stack:${seeded.stack.id}`)
+
+      const listedThreads = await courseDiscussionThreads(
+        {
+          courseId: course.id,
+          scopeKey: `stack:${seeded.stack.id}`,
+        },
+        participantCtx
+      )
+      const listedScope = listedThreads.threads[0]?.scope
+      expect(listedScope?.stackType).toBe(stackType)
+      expect(listedScope?.stackOrder).toBe(seeded.stack.order)
+      expect(listedScope?.stackDisplayName).toBe(customDisplayName)
     }
 
     const embedInfo = await getCourseDiscussionEmbeddingInfo(

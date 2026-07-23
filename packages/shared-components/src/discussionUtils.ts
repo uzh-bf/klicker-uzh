@@ -1,12 +1,14 @@
 import {
   DiscussionScopeType,
+  ElementStackType,
   type DiscussionScope,
   type DiscussionScopeInput,
 } from '@klicker-uzh/graphql/dist/ops'
 
 type DiscussionScopeLabels = {
   course: string
-  stack: (number: number) => string
+  practiceStack: (number: number) => string
+  microlearningStack: (number: number) => string
 }
 
 export function parseScopeKeyToInput(
@@ -38,7 +40,15 @@ export function parseScopeKeyToInput(
 
 export function getDiscussionScopeDisplayLabel(
   scope:
-    | Pick<DiscussionScope, 'scopeKey' | 'scopeLabel' | 'scopeType'>
+    | Pick<
+        DiscussionScope,
+        | 'scopeKey'
+        | 'scopeLabel'
+        | 'scopeType'
+        | 'stackDisplayName'
+        | 'stackOrder'
+        | 'stackType'
+      >
     | null
     | undefined,
   labels: DiscussionScopeLabels
@@ -47,11 +57,12 @@ export function getDiscussionScopeDisplayLabel(
   if (scope.scopeType === DiscussionScopeType.Course) return labels.course
 
   if (scope.scopeType === DiscussionScopeType.PracticeStack) {
-    const fallbackMatch = scope.scopeLabel.match(
-      /^(?:Practice|Microlearning) Stack (\d+)$/
-    )
-    if (fallbackMatch) {
-      return labels.stack(Number.parseInt(fallbackMatch[1] ?? '', 10))
+    if (scope.stackDisplayName) return scope.stackDisplayName
+
+    if (scope.stackOrder !== null && scope.stackOrder !== undefined) {
+      return scope.stackType === ElementStackType.Microlearning
+        ? labels.microlearningStack(scope.stackOrder)
+        : labels.practiceStack(scope.stackOrder)
     }
   }
 

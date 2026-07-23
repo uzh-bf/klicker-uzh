@@ -6,6 +6,7 @@ import type {
   CourseDiscussionOverviewGroup,
   DiscussionThreadPage,
 } from '../services/discussions.js'
+import { ElementStackType } from './practiceQuiz.js'
 
 export const DiscussionSpaceType = builder.enumType('DiscussionSpaceType', {
   values: {
@@ -74,7 +75,11 @@ export const CreateCourseDiscussionReplyInput = builder.inputType(
   }
 )
 
-export interface IDiscussionScope extends DB.DiscussionScope {}
+export interface IDiscussionScope extends DB.DiscussionScope {
+  stackType?: DB.ElementStackType | null
+  stackOrder?: number | null
+  stackDisplayName?: string | null
+}
 export const DiscussionScopeRef =
   builder.objectRef<IDiscussionScope>('DiscussionScope')
 export const DiscussionScope = DiscussionScopeRef.implement({
@@ -89,6 +94,13 @@ export const DiscussionScope = DiscussionScopeRef.implement({
     scopeLabel: t.exposeString('scopeLabel'),
 
     stackId: t.exposeInt('stackId', { nullable: true }),
+    stackType: t.field({
+      type: ElementStackType,
+      nullable: true,
+      resolve: (scope) => scope.stackType ?? null,
+    }),
+    stackOrder: t.exposeInt('stackOrder', { nullable: true }),
+    stackDisplayName: t.exposeString('stackDisplayName', { nullable: true }),
     externalSource: t.exposeString('externalSource', { nullable: true }),
     externalRef: t.exposeString('externalRef', { nullable: true }),
 

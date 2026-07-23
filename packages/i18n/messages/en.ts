@@ -300,6 +300,8 @@ export default {
       elementN: 'Element {number}',
       Nelements: '{number} element(s)',
       stackN: 'Stack {number}',
+      practiceStackN: 'Practice stack {number}',
+      microlearningStackN: 'Microlearning stack {number}',
       questionN: 'Question {number}',
       clueN: 'Clue {number}',
       availability: 'Availability',

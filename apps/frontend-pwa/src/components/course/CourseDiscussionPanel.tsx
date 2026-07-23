@@ -117,11 +117,19 @@ function CourseDiscussionPanel({
   }, [activeScopeKey, courseId, embedded, embedToken, parsedScopeInput])
 
   const threads = threadsData?.courseDiscussionThreads?.threads ?? []
+  const courseDisplayLabel = t('shared.generic.course')
+  const scopeDisplayLabels = {
+    course: courseDisplayLabel,
+    practiceStack: (number: number) =>
+      t('shared.generic.practiceStackN', { number }),
+    microlearningStack: (number: number) =>
+      t('shared.generic.microlearningStackN', { number }),
+  }
   const localizedThreads = threads.map((thread) => {
-    const scopeDisplayLabel = getDiscussionScopeDisplayLabel(thread.scope, {
-      course: t('shared.generic.course'),
-      stack: (number) => t('shared.generic.stackN', { number }),
-    })
+    const scopeDisplayLabel = getDiscussionScopeDisplayLabel(
+      thread.scope,
+      scopeDisplayLabels
+    )
 
     return {
       ...thread,
@@ -129,7 +137,7 @@ function CourseDiscussionPanel({
       sourceDisplayLabel: getDiscussionSourceDisplayLabel({
         sourceKey: thread.sourceKey,
         sourceLabel: thread.sourceLabel,
-        courseLabel: t('shared.generic.course'),
+        courseLabel: courseDisplayLabel,
       }),
     }
   })

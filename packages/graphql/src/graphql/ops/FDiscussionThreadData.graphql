@@ -21,6 +21,9 @@ fragment DiscussionThreadData on DiscussionThread {
     scopeKey
     scopeLabel
     stackId
+    stackType
+    stackOrder
+    stackDisplayName
     externalSource
     externalRef
     createdAt

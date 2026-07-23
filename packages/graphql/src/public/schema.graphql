@@ -1186,7 +1186,10 @@ type DiscussionScope {
   scopeLabel: String!
   scopeType: DiscussionScopeType!
   spaceId: Int!
+  stackDisplayName: String
   stackId: Int
+  stackOrder: Int
+  stackType: ElementStackType
   updatedAt: Date!
 }
 

@@ -150,6 +150,14 @@ function CourseDiscussionOverview({
     overview?.groups ?? [],
     pagination?.groups ?? []
   )
+  const courseDisplayLabel = t('shared.generic.course')
+  const scopeDisplayLabels = {
+    course: courseDisplayLabel,
+    practiceStack: (number: number) =>
+      t('shared.generic.practiceStackN', { number }),
+    microlearningStack: (number: number) =>
+      t('shared.generic.microlearningStackN', { number }),
+  }
   const hasMore = pagination?.hasMore ?? overview?.hasMore ?? false
   const nextCursor = pagination
     ? pagination.nextCursor
@@ -279,7 +287,7 @@ function CourseDiscussionOverview({
                   {getDiscussionSourceDisplayLabel({
                     sourceKey: group.sourceKey,
                     sourceLabel: group.sourceLabel,
-                    courseLabel: t('shared.generic.course'),
+                    courseLabel: courseDisplayLabel,
                   })}
                 </div>
                 <div className="flex flex-col gap-2 p-3">
@@ -291,11 +299,10 @@ function CourseDiscussionOverview({
                     >
                       <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-gray-600">
                         <span className="max-w-full break-words rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">
-                          {getDiscussionScopeDisplayLabel(thread.scope, {
-                            course: t('shared.generic.course'),
-                            stack: (number) =>
-                              t('shared.generic.stackN', { number }),
-                          })}
+                          {getDiscussionScopeDisplayLabel(
+                            thread.scope,
+                            scopeDisplayLabels
+                          )}
                         </span>
                         <span>{formatDateTime(thread.lastActivityAt)}</span>
                         <span className="flex items-center gap-1">
