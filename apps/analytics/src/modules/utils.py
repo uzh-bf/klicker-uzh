@@ -6,8 +6,9 @@ here instead of being copy-pasted into individual ``compute_*.py`` files.
 
 import os
 import uuid
+from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Callable
+from typing import Callable, Literal, cast
 
 import pandas as pd
 from sqlalchemy import select
@@ -30,6 +31,7 @@ def load_sql(path: str) -> str:
 COURSE_TIMESTAMP = "1970-01-01"
 
 ComputeFn = Callable[..., object]
+AnalyticsMode = Literal["full", "incremental", "finalize"]
 
 
 def exclusive_day_end(day: str) -> str:
@@ -38,11 +40,31 @@ def exclusive_day_end(day: str) -> str:
     return next_day.strftime("%Y-%m-%dT00:00:00.000Z")
 
 
+@dataclass(frozen=True, slots=True)
+class AnalyticsRunConfig:
+    """Immutable configuration for one analytics task execution."""
+
+    mode: AnalyticsMode
+    course_ids: tuple[str, ...] | None = None
+    window_since: str | None = None
+
+
+def analytics_run_config_from_env() -> AnalyticsRunConfig:
+    """Adapt the existing CLI environment contract to immutable run input."""
+    course_ids = _parse_course_ids_env()
+    return AnalyticsRunConfig(
+        mode=analytics_mode(),
+        course_ids=tuple(course_ids) if course_ids is not None else None,
+        window_since=analytics_window_since(),
+    )
+
+
 def _parse_window_since(windows_since: str | None) -> pd.Timestamp | None:
     if not windows_since:
         return None
     try:
-        return pd.Timestamp(windows_since)
+        parsed = pd.Timestamp(windows_since)
+        return parsed if isinstance(parsed, pd.Timestamp) else None
     except (ValueError, TypeError):
         print(f"[utils] ignoring invalid windows_since={windows_since!r}")
         return None
@@ -113,7 +135,7 @@ def iter_analytics_windows(
             compute_fn(
                 session,
                 day + "T00:00:00.000Z",
-                exclusive_day_end(day),
+                day + "T23:59:59.999Z",
                 day,
                 "DAILY",
                 verbose=verbose,
@@ -130,7 +152,7 @@ def iter_analytics_windows(
             compute_fn(
                 session,
                 win_start + "T00:00:00.000Z",
-                exclusive_day_end(week_end),
+                week_end + "T23:59:59.999Z",
                 week_end,
                 "WEEKLY",
                 verbose=verbose,
@@ -147,7 +169,7 @@ def iter_analytics_windows(
             compute_fn(
                 session,
                 win_start + "T00:00:00.000Z",
-                exclusive_day_end(month_end),
+                month_end + "T23:59:59.999Z",
                 month_end,
                 "MONTHLY",
                 verbose=verbose,
@@ -159,7 +181,7 @@ def iter_analytics_windows(
         compute_fn(
             session,
             start_date + "T00:00:00.000Z",
-            exclusive_day_end(end_date),
+            end_date + "T23:59:59.999Z",
             COURSE_TIMESTAMP,
             "COURSE",
             verbose=verbose,
@@ -167,7 +189,7 @@ def iter_analytics_windows(
         )
 
 
-def analytics_mode() -> str:
+def analytics_mode() -> AnalyticsMode:
     """Normalised value of ``ANALYTICS_MODE`` env var.
 
     Returns one of ``full`` / ``incremental`` / ``finalize``. Unknown / unset
@@ -176,7 +198,7 @@ def analytics_mode() -> str:
     """
     raw = (os.environ.get("ANALYTICS_MODE") or "").strip().lower()
     if raw in {"incremental", "finalize", "full"}:
-        return raw
+        return cast(AnalyticsMode, raw)
     return "full"
 
 
@@ -194,22 +216,30 @@ def _parse_course_ids_env() -> list[str] | None:
     return ids or None
 
 
-def scoped_course_ids(session: Session) -> list[str] | None:
-    """Return course ids in scope per env, or ``None`` to mean 'all courses'.
+def scoped_course_ids(
+    session: Session,
+    config: AnalyticsRunConfig | None = None,
+) -> list[str] | None:
+    """Return course ids in scope, or ``None`` to mean "all courses".
 
     Precedence:
-    - ``ANALYTICS_COURSE_IDS=<csv>`` wins — explicit override for finalize /
-      manual runs.
-    - ``ANALYTICS_MODE=incremental`` restricts to courses where
+    - An explicit immutable ``config`` wins and never consults task-time env.
+    - Without ``config``, ``ANALYTICS_COURSE_IDS=<csv>`` supplies explicit
+      scope for CLI compatibility.
+    - Incremental mode restricts to courses where
       ``analyticsFinalizedAt IS NULL`` (ACTIVE + FINALIZING, but the scanner
       peels off FINALIZING separately).
-    - ``ANALYTICS_MODE=full`` or unset returns ``None`` (no filter).
+    - Full or finalize mode without explicit ids returns ``None`` (no filter).
     """
-    explicit = _parse_course_ids_env()
+    if config is not None:
+        explicit = list(config.course_ids) if config.course_ids is not None else None
+    else:
+        explicit = _parse_course_ids_env()
     if explicit is not None:
         return explicit
 
-    if analytics_mode() == "incremental":
+    mode = config.mode if config is not None else analytics_mode()
+    if mode == "incremental":
         rows = (
             session.execute(
                 select(Course.id).where(Course.analyticsFinalizedAt.is_(None))

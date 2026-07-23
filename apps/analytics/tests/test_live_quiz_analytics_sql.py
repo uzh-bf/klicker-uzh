@@ -7,7 +7,9 @@ from sqlalchemy import text
 
 
 def test_aggregated_query_ranks_attempts_per_participant_and_instance():
-    from src.modules.live_quiz_analytics.compute_live_quiz_analytics import _AGGREGATED_SQL
+    from src.modules.live_quiz_analytics.compute_live_quiz_analytics import (
+        _AGGREGATED_SQL,
+    )
 
     assert 'PARTITION BY lqr."participantId", lqr."instanceId"' in _AGGREGATED_SQL
     assert "attempt_asc = 1" in _AGGREGATED_SQL
