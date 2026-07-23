@@ -933,6 +933,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       replyPlaceholder: 'Antwort schreiben...',
       reply: 'Antworten',
       openStackDiscussion: 'Diesen Stack diskutieren',
+      discussionContext: 'Frageset für die Diskussion',
       nReply: '{count, plural, =1 {1 Antwort} other {# Antworten}}',
       noThreads: 'Noch keine Diskussionsbeiträge für diesen Bereich.',
       threadPostFailed:

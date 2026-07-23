@@ -931,6 +931,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       replyPlaceholder: 'Write a reply...',
       reply: 'Reply',
       openStackDiscussion: 'Discuss this stack',
+      discussionContext: 'Question set for discussion',
       nReply: '{count, plural, =1 {1 reply} other {# replies}}',
       noThreads: 'No discussion threads yet for this scope.',
       threadPostFailed:
