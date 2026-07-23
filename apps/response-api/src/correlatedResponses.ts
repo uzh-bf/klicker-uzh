@@ -4,6 +4,7 @@ import {
   claimCorrelatedResponse,
   getLiveQuizRespondentCookieName,
   LIVE_QUIZ_RESPONDENT_TOKEN_MAX_AGE_SECONDS,
+  parseCookiesHeader,
   releaseCorrelatedResponse,
 } from '@klicker-uzh/util'
 
@@ -34,6 +35,21 @@ export function serializeLiveQuizRespondentCookie({
   attributes.push('SameSite=Lax')
 
   return attributes.join('; ')
+}
+
+export function hasValidLiveQuizPin({
+  cookieHeader,
+  liveQuizId,
+  pinCode,
+}: {
+  cookieHeader: string | undefined
+  liveQuizId: string
+  pinCode: string | null
+}) {
+  if (!pinCode) return true
+
+  const cookies = parseCookiesHeader(cookieHeader)
+  return cookies[`live-quiz-pin-${liveQuizId}`] === pinCode
 }
 
 export async function resolveResponseCollectionMode({

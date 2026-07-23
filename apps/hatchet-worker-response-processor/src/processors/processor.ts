@@ -32,8 +32,10 @@ import {
   buildCorrelatedResponseCreateData,
   CorrelatedResponseIdentityError,
   getCorrelatedProcessedKey,
-  isPersistedResponseRetry,
+  prepareCorrelatedResponseProcessing,
+  releaseCorrelatedProcessingLock,
   resolveCorrelatedResponseOwner,
+  validateCorrelatedRedisHashKeys,
   type CorrelatedResponseOwner,
 } from './correlatedResponse.js'
 import {
@@ -88,6 +90,7 @@ function getCorrelatedResponsePoints({
     correctnessPoints: number
     bonusPoints: number
     pointsPercentage: number | null
+    xpAwarded: number
   }
   switch (type) {
     case 'SC':
@@ -154,6 +157,7 @@ function getCorrelatedResponsePoints({
         correctnessPoints: 0,
         bonusPoints: 0,
         pointsPercentage: null,
+        xpAwarded: 0,
       }
       break
     default:
@@ -161,11 +165,27 @@ function getCorrelatedResponsePoints({
   }
 
   return {
-    basePoints: awardedBasePoints,
+    basePoints: type === 'CONTENT' ? 0 : awardedBasePoints,
     correctnessPoints: details.correctnessPoints,
     bonusPoints: details.bonusPoints,
     correctnessPercentage: details.pointsPercentage,
+    pointsAwarded: Math.round(
+      (type === 'CONTENT' ? 0 : awardedBasePoints) +
+        details.correctnessPoints +
+        details.bonusPoints
+    ),
+    pointsPercentage: details.pointsPercentage,
+    xpAwarded: details.xpAwarded,
   }
+}
+
+type CorrelatedProcessingState = {
+  owner: CorrelatedResponseOwner
+  processedKey: string
+  processingLockKey: string
+  instanceId: number
+  blockExecution: number
+  responsePersisted: boolean
 }
 
 export async function processResponseMessage(
@@ -212,11 +232,22 @@ export async function processResponseMessage(
 
   let redisMulti: ChainableCommander = redisExec.pipeline()
   let isCorrelated = false
-  let correlatedOwner: CorrelatedResponseOwner | undefined
-  let correlatedProcessedKey: string | undefined
-  let correlatedInstanceId: number | undefined
-  let correlatedBlockExecution: number | undefined
-  let responsePersisted = false
+  let correlatedState: CorrelatedProcessingState | undefined
+
+  const releaseProcessingLock = async () => {
+    if (!correlatedState) return
+
+    await releaseCorrelatedProcessingLock({
+      redis: redisExec,
+      lockKey: correlatedState.processingLockKey,
+      messageId: message.messageId,
+    })
+  }
+
+  const releaseInvalidCorrelatedResponse = async () => {
+    await releaseProcessingLock()
+    await releaseClaim()
+  }
 
   try {
     const liveQuizKey = `lq:${message.sessionId}`
@@ -265,6 +296,10 @@ export async function processResponseMessage(
       blockExecution,
       blockClosedAt,
     } = instanceInfo
+    if (!type) {
+      await releaseClaim()
+      return { status: 400 }
+    }
 
     const cachedResponseCollectionMode = instanceInfo.responseCollectionMode
     const responseCollectionMode =
@@ -291,18 +326,13 @@ export async function processResponseMessage(
 
     let participantData: JWTPayload | null = null
     if (isCorrelated) {
-      if (
-        !message.correlatedClaim ||
-        !blockExecution ||
-        !type ||
-        !sessionBlockId
-      ) {
+      if (!message.correlatedClaim || !blockExecution || !sessionBlockId) {
         await releaseClaim()
         return { status: 400 }
       }
 
-      correlatedInstanceId = Number(message.instanceId)
-      correlatedBlockExecution = Number(blockExecution)
+      const correlatedInstanceId = Number(message.instanceId)
+      const correlatedBlockExecution = Number(blockExecution)
       if (
         !Number.isInteger(correlatedInstanceId) ||
         !Number.isInteger(correlatedBlockExecution)
@@ -319,7 +349,7 @@ export async function processResponseMessage(
         )
       }
 
-      correlatedOwner = await resolveCorrelatedResponseOwner({
+      const correlatedOwner = await resolveCorrelatedResponseOwner({
         cookieHeader: message.cookie,
         liveQuizId: message.sessionId,
         secret,
@@ -349,56 +379,37 @@ export async function processResponseMessage(
         return { status: 400 }
       }
 
-      correlatedProcessedKey = getCorrelatedProcessedKey({
+      const correlatedProcessedKey = getCorrelatedProcessedKey({
         liveQuizId: message.sessionId,
         instanceId: message.instanceId,
         blockExecution: correlatedBlockExecution,
       })
-      const processedMessageId = await redisExec.hget(
-        correlatedProcessedKey,
-        correlatedOwner.identityKey
-      )
-      if (processedMessageId === message.messageId) {
+      const processing = await prepareCorrelatedResponseProcessing({
+        redis: redisExec,
+        database: prisma,
+        processedKey: correlatedProcessedKey,
+        owner: correlatedOwner,
+        instanceId: correlatedInstanceId,
+        blockExecution: correlatedBlockExecution,
+        responseTimestamp,
+        claimOwnerMessageId,
+        messageId: message.messageId,
+      })
+      if (processing.status === 'processed') {
         return { status: 200 }
       }
-      if (processedMessageId) {
+      if (processing.status === 'duplicate') {
         await releaseClaim()
         return { status: 208 }
       }
 
-      const existingResponse =
-        correlatedOwner.kind === 'participant'
-          ? await prisma.liveQuizResponse.findUnique({
-              where: {
-                instanceId_elementBlockExecution_participantId: {
-                  instanceId: correlatedInstanceId,
-                  elementBlockExecution: correlatedBlockExecution,
-                  participantId: correlatedOwner.id,
-                },
-              },
-            })
-          : await prisma.liveQuizResponse.findUnique({
-              where: {
-                instanceId_elementBlockExecution_respondentId: {
-                  instanceId: correlatedInstanceId,
-                  elementBlockExecution: correlatedBlockExecution,
-                  respondentId: correlatedOwner.id,
-                },
-              },
-            })
-      if (existingResponse) {
-        if (
-          !isPersistedResponseRetry({
-            existingSubmittedAt: existingResponse.submittedAt,
-            responseTimestamp,
-            claimOwnerMessageId,
-            messageId: message.messageId,
-          })
-        ) {
-          await releaseClaim()
-          return { status: 208 }
-        }
-        responsePersisted = true
+      correlatedState = {
+        owner: correlatedOwner,
+        processedKey: correlatedProcessedKey,
+        processingLockKey: processing.lockKey,
+        instanceId: correlatedInstanceId,
+        blockExecution: correlatedBlockExecution,
+        responsePersisted: processing.responsePersisted,
       }
 
       participantData =
@@ -467,7 +478,7 @@ export async function processResponseMessage(
         `[CANCEL] [AddResponse Assessment] Response received at ${new Date(Number(responseTimestamp))} after block of element instance ${message.instanceId} was closed at ${new Date(Number(blockClosedAt))}.`
       )
       ctx.cancel()
-      await releaseClaim()
+      await releaseInvalidCorrelatedResponse()
       return { status: 200 }
     }
 
@@ -515,9 +526,24 @@ export async function processResponseMessage(
             instanceId: message.instanceId,
           })
       )
-      await releaseClaim()
+      await releaseInvalidCorrelatedResponse()
       return { status: 400 }
     }
+
+    const correlatedGrading = isCorrelated
+      ? getCorrelatedResponsePoints({
+          type,
+          choiceCount,
+          response,
+          instanceInfo,
+          firstResponseReceivedAt,
+          responseTimestamp,
+          basePoints,
+          defaultPoints,
+          pointsMultiplier,
+          parsedSolutions,
+        })
+      : undefined
 
     let pointsAwarded: number | string = 0
     let xpAwarded: number = 0
@@ -536,7 +562,7 @@ export async function processResponseMessage(
                 instanceId: message.instanceId,
               })
           )
-          await releaseClaim()
+          await releaseInvalidCorrelatedResponse()
           return { status: 400 }
         }
 
@@ -563,7 +589,8 @@ export async function processResponseMessage(
             pointsAwarded: computedPoints,
             xpAwarded: computedXp,
             pointsPercentage,
-          } = getChoicesQuestionPoints({
+          } = correlatedGrading ??
+          getChoicesQuestionPoints({
             type,
             choiceCount,
             response,
@@ -616,7 +643,7 @@ export async function processResponseMessage(
                 instanceId: message.instanceId,
               })
           )
-          await releaseClaim()
+          await releaseInvalidCorrelatedResponse()
           return { status: 400 }
         }
 
@@ -647,7 +674,8 @@ export async function processResponseMessage(
             pointsAwarded: computedPoints,
             xpAwarded: computedXp,
             pointsPercentage,
-          } = getNumericalQuestionPoints({
+          } = correlatedGrading ??
+          getNumericalQuestionPoints({
             response,
             instanceInfo,
             firstResponseReceivedAt,
@@ -694,7 +722,7 @@ export async function processResponseMessage(
                 instanceId: message.instanceId,
               })
           )
-          await releaseClaim()
+          await releaseInvalidCorrelatedResponse()
           return { status: 400 }
         }
 
@@ -726,7 +754,8 @@ export async function processResponseMessage(
             pointsAwarded: computedPoints,
             xpAwarded: computedXp,
             pointsPercentage,
-          } = getFreeTextQuestionPoints({
+          } = correlatedGrading ??
+          getFreeTextQuestionPoints({
             response,
             instanceInfo,
             firstResponseReceivedAt,
@@ -772,7 +801,7 @@ export async function processResponseMessage(
                 instanceId: message.instanceId,
               })
           )
-          await releaseClaim()
+          await releaseInvalidCorrelatedResponse()
           return { status: 400 }
         }
 
@@ -806,7 +835,8 @@ export async function processResponseMessage(
             pointsAwarded: computedPoints,
             xpAwarded: computedXp,
             pointsPercentage,
-          } = getSelectionQuestionPoints({
+          } = correlatedGrading ??
+          getSelectionQuestionPoints({
             response,
             instanceInfo,
             firstResponseReceivedAt,
@@ -856,7 +886,7 @@ export async function processResponseMessage(
                 instanceId: message.instanceId,
               })
           )
-          await releaseClaim()
+          await releaseInvalidCorrelatedResponse()
           return { status: 400 }
         }
 
@@ -908,7 +938,8 @@ export async function processResponseMessage(
             pointsAwarded: computedPoints,
             xpAwarded: computedXp,
             pointsPercentage,
-          } = getCaseStudyQuestionPoints({
+          } = correlatedGrading ??
+          getCaseStudyQuestionPoints({
             response,
             instanceInfo,
             firstResponseReceivedAt,
@@ -955,27 +986,12 @@ export async function processResponseMessage(
       }
     }
 
-    if (
-      isCorrelated &&
-      correlatedOwner &&
-      correlatedProcessedKey &&
-      correlatedInstanceId !== undefined &&
-      correlatedBlockExecution !== undefined &&
-      type
-    ) {
-      const grading = getCorrelatedResponsePoints({
-        type,
-        choiceCount,
-        response,
-        instanceInfo,
-        firstResponseReceivedAt,
-        responseTimestamp,
-        basePoints,
-        defaultPoints,
-        pointsMultiplier,
-        parsedSolutions,
-      })
-      if (grading.correctnessPercentage === 1 && !firstResponseReceivedAt) {
+    if (correlatedState && correlatedGrading) {
+      if (
+        !participantData &&
+        correlatedGrading.correctnessPercentage === 1 &&
+        !firstResponseReceivedAt
+      ) {
         redisMulti.hsetnx(
           `${instanceKey}:info`,
           'firstResponseReceivedAt',
@@ -983,19 +999,38 @@ export async function processResponseMessage(
         )
       }
 
-      if (!responsePersisted) {
+      await validateCorrelatedRedisHashKeys({
+        redis: redisExec,
+        keys: [
+          `${instanceKey}:info`,
+          `${instanceKey}:results`,
+          `${instanceKey}:responseHashes`,
+          `${instanceKey}:responses`,
+          `${liveQuizKey}:b:${sessionBlockId}:lb`,
+          `${liveQuizKey}:b:${sessionBlockId}:lbTemporary`,
+          `${liveQuizKey}:lb`,
+          `${liveQuizKey}:lbTemporary`,
+          `${liveQuizKey}:xp`,
+          correlatedState.processedKey,
+        ],
+      })
+
+      if (!correlatedState.responsePersisted) {
         try {
           await prisma.liveQuizResponse.create({
             data: buildCorrelatedResponseCreateData({
-              owner: correlatedOwner,
-              instanceId: correlatedInstanceId,
-              blockExecution: correlatedBlockExecution,
+              owner: correlatedState.owner,
+              instanceId: correlatedState.instanceId,
+              blockExecution: correlatedState.blockExecution,
               response,
               submittedAt: responseTimestamp,
-              ...grading,
+              correctnessPercentage: correlatedGrading.correctnessPercentage,
+              basePoints: correlatedGrading.basePoints,
+              correctnessPoints: correlatedGrading.correctnessPoints,
+              bonusPoints: correlatedGrading.bonusPoints,
             }),
           })
-          responsePersisted = true
+          correlatedState.responsePersisted = true
         } catch (error) {
           if (
             typeof error === 'object' &&
@@ -1004,7 +1039,7 @@ export async function processResponseMessage(
             error.code === 'P2002'
           ) {
             redisMulti.discard()
-            await releaseClaim()
+            await releaseProcessingLock()
             return { status: 208 }
           }
           throw error
@@ -1012,8 +1047,8 @@ export async function processResponseMessage(
       }
 
       redisMulti.hset(
-        correlatedProcessedKey,
-        correlatedOwner.identityKey,
+        correlatedState.processedKey,
+        correlatedState.owner.identityKey,
         message.messageId
       )
     }
@@ -1027,20 +1062,34 @@ export async function processResponseMessage(
         })
     )
     redisMulti.discard()
-    if (responsePersisted) {
+    if (e instanceof CorrelatedResponseIdentityError) {
+      await releaseInvalidCorrelatedResponse()
+      return { status: 400 }
+    }
+    if (isCorrelated) {
+      await releaseProcessingLock()
       throw new Error(
-        `Response persisted but aggregation failed for message ${message.messageId}: ${String(e)}`
+        `Correlated response processing failed for message ${message.messageId}: ${String(e)}`
       )
     }
 
-    await releaseClaim()
-    return {
-      status: e instanceof CorrelatedResponseIdentityError ? 400 : 500,
-    }
+    return { status: 500 }
   }
 
   try {
-    await redisMulti.exec()
+    const results = await redisMulti.exec()
+    if (
+      isCorrelated &&
+      (!results || results.some(([commandError]) => commandError))
+    ) {
+      const commandError = results?.find(([error]) => error)?.[0]
+      throw new Error(
+        commandError
+          ? `Redis command failed: ${commandError.message}`
+          : 'Redis transaction was aborted'
+      )
+    }
+    await releaseProcessingLock()
     ctx.logger.info("Successfully processed participant's response", {
       messageId: message.messageId,
       sessionId: message.sessionId,
@@ -1057,6 +1106,7 @@ export async function processResponseMessage(
         })
     )
     redisMulti.discard()
+    await releaseProcessingLock()
     throw new Error(`Redis transaction failed ${String(e)}`)
   }
 }

@@ -484,6 +484,8 @@ Later research:
 - 2026-07-23: Slice 4A is finalized. Slice 4B starts with worker-side identity validation, rolling temporary-row bridging, authoritative database duplicate handling, retry-safe aggregate updates, and durable response persistence for every correlated respondent type.
 - 2026-07-23: Slice 4B implementation completed locally. The standard response worker now resolves correlated mode from active metadata with a database fallback, requires the response API's owned execution-scoped claim, validates signed account/temporary/anonymous identities, lazily bridges valid legacy temporary leaderboard rows, and rejects logged-out, wrong-quiz, wrong-type, or token-hash-mismatched respondents. It writes one `LiveQuizResponse` before aggregation and uses a Redis transaction with an execution-scoped processed marker so a retry after the database write aggregates once and a retry after Redis commit exits without changing counts.
 - 2026-07-23: Slice 4B verification passed: 10 focused worker tests cover all respondent types, token scope/hash rejection, legacy temporary logout, identity-safe persistence data, retry ownership, and execution scoping; the worker build passed; and the full repository `check:all` gate passed. The previously passing schema-backed collection-mode test was also retried, but the current DevPod command environment does not expose `HATCHET_CLIENT_TOKEN`, so that database suite could not initialize; Slice 4B does not change the schema.
+- 2026-07-23: Independent Slice 4B correctness and simplification reviews found that operational failures before persistence were acknowledged instead of retried, overlapping delivery of the same event could increment Redis aggregates twice, Redis command errors were not inspected, identified respondents were graded twice, and the response API's identity endpoint did not enforce the live quiz PIN. The findings were accepted. A five-minute owner-token processing lock now serializes one identity and execution, operational correlated failures rethrow for Hatchet retry without releasing the first-response claim, aggregate key types and transaction results are checked, one grading result feeds persistence and leaderboards, and both correlated identity initialization and submission enforce the quiz-scoped PIN cookie.
+- 2026-07-23: Slice 4B review-fix verification passed: 15 focused worker tests now include lock contention, post-persistence retry, different-event duplicate handling, processed-marker completion, and Redis key-type rejection; response API PIN tests passed; both applications built; and the full repository `check:all` gate passed. Slice 4B is finalized. Slice 6 starts with the deterministic respondent-row CSV generator, authorized GraphQL download, and ended-quiz evaluation action.
 
 ## Goal Prompt Requirements
 
@@ -499,6 +501,6 @@ If handed to another agent:
 
 ## Next Steps
 
-1. Complete independent correctness and simplification review for Slice 4B.
-2. Deliver the self-service CSV and evaluation-page action together in Slice 6.
+1. Deliver the self-service CSV and evaluation-page action together in Slice 6.
+2. Run independent correctness and simplification review for Slice 6.
 3. Close the blocked browser matrix before marking the draft PR ready.

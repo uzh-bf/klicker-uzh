@@ -11,27 +11,45 @@ import {
 
 type CorrelatedResponseDatabase = Pick<
   PrismaClient,
-  'liveQuizRespondent' | 'participant' | 'temporaryLeaderboardEntry'
+  | 'liveQuizRespondent'
+  | 'liveQuizResponse'
+  | 'participant'
+  | 'temporaryLeaderboardEntry'
 >
 
-export type CorrelatedResponseOwner =
-  | {
-      kind: 'participant'
-      id: string
-      identityKey: string
-    }
-  | {
-      kind: 'temporary'
-      id: string
-      identityKey: string
-    }
-  | {
-      kind: 'anonymous'
-      id: string
-      identityKey: string
-    }
+interface CorrelatedProcessingRedis {
+  eval(
+    script: string,
+    numberOfKeys: number,
+    ...args: (number | string)[]
+  ): Promise<unknown>
+  hget(key: string, field: string): Promise<string | null>
+  set(
+    key: string,
+    value: string,
+    expiryMode: 'PX',
+    time: number,
+    setMode: 'NX'
+  ): Promise<'OK' | null>
+  type(key: string): Promise<string>
+}
+
+export type CorrelatedResponseOwner = {
+  kind: 'participant' | 'temporary' | 'anonymous'
+  id: string
+  identityKey: string
+}
 
 export class CorrelatedResponseIdentityError extends Error {}
+export class CorrelatedResponseProcessingBusyError extends Error {}
+
+const CORRELATED_PROCESSING_LOCK_TTL_MS = 5 * 60 * 1000
+const RELEASE_PROCESSING_LOCK_SCRIPT = `
+if redis.call('GET', KEYS[1]) == ARGV[1] then
+  return redis.call('DEL', KEYS[1])
+end
+return 0
+`
 
 export async function resolveCorrelatedResponseOwner({
   cookieHeader,
@@ -193,6 +211,151 @@ export function getCorrelatedProcessedKey({
   blockExecution: number
 }) {
   return `lq:${liveQuizId}:i:${instanceId}:correlatedProcessed:${blockExecution}`
+}
+
+export function getCorrelatedProcessingLockKey({
+  processedKey,
+  identityKey,
+}: {
+  processedKey: string
+  identityKey: string
+}) {
+  return `${processedKey}:processing:${identityKey}`
+}
+
+export async function releaseCorrelatedProcessingLock({
+  redis,
+  lockKey,
+  messageId,
+}: {
+  redis: Pick<CorrelatedProcessingRedis, 'eval'>
+  lockKey: string
+  messageId: string
+}) {
+  const released = await redis.eval(
+    RELEASE_PROCESSING_LOCK_SCRIPT,
+    1,
+    lockKey,
+    messageId
+  )
+  return Number(released) === 1
+}
+
+export async function validateCorrelatedRedisHashKeys({
+  redis,
+  keys,
+}: {
+  redis: Pick<CorrelatedProcessingRedis, 'type'>
+  keys: string[]
+}) {
+  const uniqueKeys = [...new Set(keys)]
+  const keyTypes = await Promise.all(
+    uniqueKeys.map(async (key) => ({ key, type: await redis.type(key) }))
+  )
+  const invalidKey = keyTypes.find(
+    ({ type }) => type !== 'none' && type !== 'hash'
+  )
+  if (invalidKey) {
+    throw new Error(
+      `Expected Redis hash at ${invalidKey.key}, found ${invalidKey.type}`
+    )
+  }
+}
+
+export async function prepareCorrelatedResponseProcessing({
+  redis,
+  database,
+  processedKey,
+  owner,
+  instanceId,
+  blockExecution,
+  responseTimestamp,
+  claimOwnerMessageId,
+  messageId,
+}: {
+  redis: Pick<CorrelatedProcessingRedis, 'eval' | 'hget' | 'set'>
+  database: Pick<CorrelatedResponseDatabase, 'liveQuizResponse'>
+  processedKey: string
+  owner: CorrelatedResponseOwner
+  instanceId: number
+  blockExecution: number
+  responseTimestamp: number
+  claimOwnerMessageId: string
+  messageId: string
+}): Promise<
+  | { status: 'duplicate' }
+  | { status: 'processed' }
+  | { status: 'process'; lockKey: string; responsePersisted: boolean }
+> {
+  const processedMessageId = await redis.hget(processedKey, owner.identityKey)
+  if (processedMessageId === messageId) return { status: 'processed' }
+  if (processedMessageId) return { status: 'duplicate' }
+
+  const lockKey = getCorrelatedProcessingLockKey({
+    processedKey,
+    identityKey: owner.identityKey,
+  })
+  const lockAcquired =
+    (await redis.set(
+      lockKey,
+      messageId,
+      'PX',
+      CORRELATED_PROCESSING_LOCK_TTL_MS,
+      'NX'
+    )) === 'OK'
+  if (!lockAcquired) {
+    throw new CorrelatedResponseProcessingBusyError(
+      'Correlated response is already being processed'
+    )
+  }
+
+  const processedAfterLock = await redis.hget(processedKey, owner.identityKey)
+  if (processedAfterLock) {
+    await releaseCorrelatedProcessingLock({ redis, lockKey, messageId })
+    return {
+      status: processedAfterLock === messageId ? 'processed' : 'duplicate',
+    }
+  }
+
+  const existingResponse =
+    owner.kind === 'participant'
+      ? await database.liveQuizResponse.findUnique({
+          where: {
+            instanceId_elementBlockExecution_participantId: {
+              instanceId,
+              elementBlockExecution: blockExecution,
+              participantId: owner.id,
+            },
+          },
+        })
+      : await database.liveQuizResponse.findUnique({
+          where: {
+            instanceId_elementBlockExecution_respondentId: {
+              instanceId,
+              elementBlockExecution: blockExecution,
+              respondentId: owner.id,
+            },
+          },
+        })
+
+  if (
+    existingResponse &&
+    !isPersistedResponseRetry({
+      existingSubmittedAt: existingResponse.submittedAt,
+      responseTimestamp,
+      claimOwnerMessageId,
+      messageId,
+    })
+  ) {
+    await releaseCorrelatedProcessingLock({ redis, lockKey, messageId })
+    return { status: 'duplicate' }
+  }
+
+  return {
+    status: 'process',
+    lockKey,
+    responsePersisted: Boolean(existingResponse),
+  }
 }
 
 export function isPersistedResponseRetry({

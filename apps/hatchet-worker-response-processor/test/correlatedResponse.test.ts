@@ -15,9 +15,13 @@ import { describe, it } from 'node:test'
 import {
   buildCorrelatedResponseCreateData,
   CorrelatedResponseIdentityError,
+  CorrelatedResponseProcessingBusyError,
   getCorrelatedProcessedKey,
   isPersistedResponseRetry,
+  prepareCorrelatedResponseProcessing,
+  releaseCorrelatedProcessingLock,
   resolveCorrelatedResponseOwner,
+  validateCorrelatedRedisHashKeys,
 } from '../src/processors/correlatedResponse.js'
 
 const secret = 'test-secret'
@@ -28,6 +32,59 @@ type RespondentRow = {
   liveQuizId: string
   type: LiveQuizRespondentType
   verificationSecretHash: string | null
+}
+
+class MemoryProcessingRedis {
+  private readonly hashes = new Map<string, Map<string, string>>()
+  private readonly strings = new Map<string, string>()
+  private readonly forcedTypes = new Map<string, string>()
+
+  async hget(key: string, field: string) {
+    return this.hashes.get(key)?.get(field) ?? null
+  }
+
+  async set(
+    key: string,
+    value: string,
+    _expiryMode: 'PX',
+    _time: number,
+    _setMode: 'NX'
+  ) {
+    if (this.strings.has(key)) return null
+    this.strings.set(key, value)
+    return 'OK' as const
+  }
+
+  async eval(
+    _script: string,
+    _numberOfKeys: number,
+    key: string,
+    expectedValue: string
+  ) {
+    if (this.strings.get(key) !== expectedValue) return 0
+    return this.strings.delete(key) ? 1 : 0
+  }
+
+  async type(key: string) {
+    return (
+      this.forcedTypes.get(key) ??
+      (this.hashes.has(key)
+        ? 'hash'
+        : this.strings.has(key)
+          ? 'string'
+          : 'none')
+    )
+  }
+
+  setHashValue(key: string, field: string, value: string) {
+    const hash = this.hashes.get(key) ?? new Map<string, string>()
+    hash.set(field, value)
+    this.hashes.set(key, hash)
+  }
+
+  forceType(key: string, type: string) {
+    this.forcedTypes.set(key, type)
+  }
 }
 
 function createDatabase({
@@ -338,6 +395,136 @@ describe('correlated response persistence helpers', () => {
         blockExecution: 2,
       }),
       'lq:quiz:i:7:correlatedProcessed:2'
+    )
+  })
+
+  it('serializes overlapping processing of the same response', async () => {
+    const redis = new MemoryProcessingRedis()
+    const database = {
+      liveQuizResponse: { findUnique: async () => null },
+    } as any
+    const params = {
+      redis,
+      database,
+      processedKey: 'processed-key',
+      owner: {
+        kind: 'anonymous' as const,
+        id: 'respondent-id',
+        identityKey: 'respondent:respondent-id',
+      },
+      instanceId: 42,
+      blockExecution: 3,
+      responseTimestamp: 123,
+      claimOwnerMessageId: 'message-1',
+      messageId: 'message-1',
+    }
+
+    const first = await prepareCorrelatedResponseProcessing(params)
+    assert.equal(first.status, 'process')
+    await assert.rejects(
+      prepareCorrelatedResponseProcessing(params),
+      CorrelatedResponseProcessingBusyError
+    )
+
+    if (first.status === 'process') {
+      assert.equal(
+        await releaseCorrelatedProcessingLock({
+          redis,
+          lockKey: first.lockKey,
+          messageId: params.messageId,
+        }),
+        true
+      )
+    }
+  })
+
+  it('resumes aggregation after the response row was persisted', async () => {
+    const timestamp = Date.now()
+    const result = await prepareCorrelatedResponseProcessing({
+      redis: new MemoryProcessingRedis(),
+      database: {
+        liveQuizResponse: {
+          findUnique: async () => ({ submittedAt: new Date(timestamp) }),
+        },
+      } as any,
+      processedKey: 'processed-key',
+      owner: {
+        kind: 'participant',
+        id: 'participant-id',
+        identityKey: 'participant:participant-id',
+      },
+      instanceId: 42,
+      blockExecution: 3,
+      responseTimestamp: timestamp,
+      claimOwnerMessageId: 'message-1',
+      messageId: 'message-1',
+    })
+
+    assert.equal(result.status, 'process')
+    if (result.status === 'process') {
+      assert.equal(result.responsePersisted, true)
+    }
+  })
+
+  it('rejects a different event when a response row already exists', async () => {
+    const result = await prepareCorrelatedResponseProcessing({
+      redis: new MemoryProcessingRedis(),
+      database: {
+        liveQuizResponse: {
+          findUnique: async () => ({ submittedAt: new Date(123) }),
+        },
+      } as any,
+      processedKey: 'processed-key',
+      owner: {
+        kind: 'anonymous',
+        id: 'respondent-id',
+        identityKey: 'respondent:respondent-id',
+      },
+      instanceId: 42,
+      blockExecution: 3,
+      responseTimestamp: 456,
+      claimOwnerMessageId: 'message-2',
+      messageId: 'message-2',
+    })
+
+    assert.deepEqual(result, { status: 'duplicate' })
+  })
+
+  it('returns a completed response without acquiring a processing lock', async () => {
+    const redis = new MemoryProcessingRedis()
+    redis.setHashValue('processed-key', 'respondent:respondent-id', 'message-1')
+
+    const result = await prepareCorrelatedResponseProcessing({
+      redis,
+      database: {
+        liveQuizResponse: { findUnique: async () => null },
+      } as any,
+      processedKey: 'processed-key',
+      owner: {
+        kind: 'anonymous',
+        id: 'respondent-id',
+        identityKey: 'respondent:respondent-id',
+      },
+      instanceId: 42,
+      blockExecution: 3,
+      responseTimestamp: 123,
+      claimOwnerMessageId: 'message-1',
+      messageId: 'message-1',
+    })
+
+    assert.deepEqual(result, { status: 'processed' })
+  })
+
+  it('rejects non-hash aggregate keys before writes are executed', async () => {
+    const redis = new MemoryProcessingRedis()
+    redis.forceType('invalid-key', 'string')
+
+    await assert.rejects(
+      validateCorrelatedRedisHashKeys({
+        redis,
+        keys: ['valid-key', 'invalid-key'],
+      }),
+      /Expected Redis hash/
     )
   })
 })

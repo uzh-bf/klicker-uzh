@@ -3,6 +3,7 @@ import { describe, it } from 'node:test'
 import {
   buildCorrelatedVoteKey,
   claimCorrelatedResponse,
+  hasValidLiveQuizPin,
   releaseCorrelatedResponse,
   resolveResponseCollectionMode,
   serializeLiveQuizRespondentCookie,
@@ -102,6 +103,38 @@ describe('live quiz respondent cookie', () => {
         secure: true,
       }),
       'live_quiz_respondent_token_11111111-1111-4111-8111-111111111111=signed-token; Max-Age=1209600; Domain=klicker.test; Path=/; HttpOnly; Secure; SameSite=Lax'
+    )
+  })
+})
+
+describe('live quiz PIN access', () => {
+  it('allows quizzes without PIN protection', () => {
+    assert.equal(
+      hasValidLiveQuizPin({
+        cookieHeader: undefined,
+        liveQuizId: 'quiz-1',
+        pinCode: null,
+      }),
+      true
+    )
+  })
+
+  it('requires the quiz-scoped PIN cookie', () => {
+    assert.equal(
+      hasValidLiveQuizPin({
+        cookieHeader: 'live-quiz-pin-other=ABC123; live-quiz-pin-quiz-1=DEF456',
+        liveQuizId: 'quiz-1',
+        pinCode: 'DEF456',
+      }),
+      true
+    )
+    assert.equal(
+      hasValidLiveQuizPin({
+        cookieHeader: 'live-quiz-pin-quiz-1=WRONG1',
+        liveQuizId: 'quiz-1',
+        pinCode: 'DEF456',
+      }),
+      false
     )
   })
 })

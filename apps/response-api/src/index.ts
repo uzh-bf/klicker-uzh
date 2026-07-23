@@ -20,6 +20,7 @@ import { createHash } from 'node:crypto'
 import {
   buildCorrelatedVoteKey,
   claimCorrelatedResponse,
+  hasValidLiveQuizPin,
   releaseCorrelatedResponse,
   resolveResponseCollectionMode,
   serializeLiveQuizRespondentCookie,
@@ -189,6 +190,7 @@ async function handleInitializeLiveQuizResponseIdentity(
     where: { id: payload.liveQuizId },
     select: {
       isAssessmentEnabled: true,
+      pinCode: true,
       responseCollectionMode: true,
       status: true,
     },
@@ -202,6 +204,16 @@ async function handleInitializeLiveQuizResponseIdentity(
       LiveQuizResponseCollectionMode.CORRELATED_EXPORT
   ) {
     return sendJson(req, res, 200, { status: 'not_required' })
+  }
+  if (
+    !hasValidLiveQuizPin({
+      cookieHeader:
+        typeof req.headers.cookie === 'string' ? req.headers.cookie : undefined,
+      liveQuizId: payload.liveQuizId,
+      pinCode: liveQuiz.pinCode,
+    })
+  ) {
+    return sendJson(req, res, 403, { error: 'Live quiz PIN required' })
   }
 
   await ensureCorrelatedResponseIdentity({
@@ -268,6 +280,34 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     | undefined
 
   if (isCorrelated) {
+    const liveQuiz = await prisma.liveQuiz.findUnique({
+      where: { id: liveQuizIdString },
+      select: {
+        isAssessmentEnabled: true,
+        pinCode: true,
+        responseCollectionMode: true,
+        status: true,
+      },
+    })
+    if (
+      !liveQuiz ||
+      liveQuiz.status !== PublicationStatus.PUBLISHED ||
+      liveQuiz.isAssessmentEnabled ||
+      liveQuiz.responseCollectionMode !==
+        LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+    ) {
+      return sendJson(req, res, 404, { error: 'Live quiz not found' })
+    }
+    if (
+      !hasValidLiveQuizPin({
+        cookieHeader: rawCookie,
+        liveQuizId: liveQuizIdString,
+        pinCode: liveQuiz.pinCode,
+      })
+    ) {
+      return sendJson(req, res, 403, { error: 'Live quiz PIN required' })
+    }
+
     if (!instanceInfo.blockExecution) {
       throw new Error(
         `Missing block execution in correlated response metadata for ${instanceInfoKey}`
