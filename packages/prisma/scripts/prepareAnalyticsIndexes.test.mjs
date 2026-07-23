@@ -3,31 +3,54 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 import {
+  ANALYTICS_INDEXES,
   ANALYTICS_INDEX_NAMES,
+  acquireMigrationLock,
   parseSqlStatements,
   prepareAnalyticsIndexes,
 } from './prepareAnalyticsIndexes.mjs'
 
 class FakeClient {
   constructor({
-    tablesReady = true,
+    missingTables = [],
     migrationState = 'pending',
     invalidIndexes = [],
     appliedMigrations = ['20260419_before_analytics'],
+    migrationCount = 1,
+    wrongIndexName,
+    lockAcquired = true,
   } = {}) {
-    this.tablesReady = tablesReady
+    this.missingTables = missingTables
     this.migrationState = migrationState
     this.invalidIndexes = invalidIndexes
     this.appliedMigrations = appliedMigrations
+    this.migrationCount = migrationCount
+    this.wrongIndexName = wrongIndexName
+    this.lockAcquired = lockAcquired
     this.executed = []
   }
 
   async query(sql) {
-    if (sql.includes('AS ready')) {
-      return { rows: [{ ready: this.tablesReady }] }
+    if (sql.includes('FROM unnest')) {
+      return {
+        rows: [
+          'QuestionResponse',
+          'ChatMessage',
+          'ParticipantAnalytics',
+          'AggregatedAnalytics',
+          'QuestionResponseDetail',
+          'LiveQuizResponse',
+        ].map((name) => ({
+          name,
+          present: !this.missingTables.includes(name),
+        })),
+      }
     }
     if (sql.includes('AS present')) {
       return { rows: [{ present: this.migrationState !== 'missing-table' }] }
+    }
+    if (sql.includes('COUNT(*)::int')) {
+      return { rows: [{ count: this.migrationCount }] }
     }
     if (sql.includes('finished_at, rolled_back_at')) {
       if (this.migrationState === 'pending') return { rows: [] }
@@ -50,14 +73,22 @@ class FakeClient {
     if (sql.includes('NOT i.indisvalid')) {
       return { rows: this.invalidIndexes.map((name) => ({ name })) }
     }
-    if (sql.includes('i.indisvalid, i.indisready')) {
+    if (sql.includes('pg_get_indexdef')) {
       return {
-        rows: ANALYTICS_INDEX_NAMES.map((name) => ({
-          name,
+        rows: ANALYTICS_INDEXES.map((index) => ({
+          name: index.name,
+          schema_name: 'public',
+          table_name:
+            index.name === this.wrongIndexName ? 'WrongTable' : index.table,
+          access_method: index.method,
           indisvalid: true,
           indisready: true,
+          key_columns: index.columns,
         })),
       }
+    }
+    if (sql.includes('pg_try_advisory_lock')) {
+      return { rows: [{ acquired: this.lockAcquired }] }
     }
 
     this.executed.push(sql)
@@ -85,15 +116,46 @@ test('parses every concurrent index statement and drops the old index after its 
   )
   assert.ok(replacement >= 0)
   assert.ok(oldIndexDrop > replacement)
+
+  const createNames = parsed
+    .map((sql) =>
+      sql.match(/CREATE INDEX CONCURRENTLY IF NOT EXISTS "([^"]+)"/)
+    )
+    .filter(Boolean)
+    .map((match) => match[1])
+  assert.deepEqual(createNames, ANALYTICS_INDEX_NAMES)
 })
 
 test('skips the prebuild on a fresh database', async () => {
-  const client = new FakeClient({ tablesReady: false })
+  const client = new FakeClient({
+    missingTables: [
+      'QuestionResponse',
+      'ChatMessage',
+      'ParticipantAnalytics',
+      'AggregatedAnalytics',
+      'QuestionResponseDetail',
+      'LiveQuizResponse',
+    ],
+    migrationState: 'missing-table',
+    migrationCount: 0,
+  })
 
   assert.deepEqual(await prepareAnalyticsIndexes(client, await statements()), {
     prepared: false,
     resolveLegacyMigration: false,
   })
+  assert.deepEqual(client.executed, [])
+})
+
+test('fails closed on an initialized database with a partial analytics schema', async () => {
+  const client = new FakeClient({
+    missingTables: ['ParticipantAnalytics'],
+  })
+
+  await assert.rejects(
+    prepareAnalyticsIndexes(client, await statements()),
+    /missing required analytics tables: ParticipantAnalytics/
+  )
   assert.deepEqual(client.executed, [])
 })
 
@@ -134,6 +196,18 @@ test('fails before building when a named invalid index exists', async () => {
   assert.deepEqual(client.executed, [])
 })
 
+test('fails before building when a named index has the wrong definition', async () => {
+  const client = new FakeClient({
+    wrongIndexName: 'QuestionResponse_courseId_createdAt_idx',
+  })
+
+  await assert.rejects(
+    prepareAnalyticsIndexes(client, await statements()),
+    /index definition validation failed/
+  )
+  assert.deepEqual(client.executed, [])
+})
+
 test('fails on an unfinished legacy migration record', async () => {
   const client = new FakeClient({ migrationState: 'failed' })
 
@@ -163,4 +237,13 @@ test('does not baseline an initialized database without a migration table', asyn
     /has no Prisma migration table/
   )
   assert.deepEqual(client.executed, [])
+})
+
+test('fails when another repository migration command holds the advisory lock', async () => {
+  const client = new FakeClient({ lockAcquired: false })
+
+  await assert.rejects(
+    acquireMigrationLock(client),
+    /Another repository Prisma deployment/
+  )
 })

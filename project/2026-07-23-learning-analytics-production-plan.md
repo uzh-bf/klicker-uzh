@@ -532,7 +532,14 @@ the repository script that replaces it before continuing.
   `(instanceId, participantId, submittedAt)`. On the 2.0M-row fixture, the
   corrected full aggregation selects the 2,530 assessment responses for 30
   participants through that index and completes a warm run in about 4.1 ms
-  with JIT disabled.
+  with JIT disabled. The exact query-plan command prepended
+  `EXPLAIN (ANALYZE, BUFFERS)` to
+  `aggregated_live_quiz_analytics.sql` and executed it twice after
+  `SET jit=off`; the warm run used
+  `LiveQuizResponse_instanceId_participantId_submittedAt_idx` and completed in
+  4.112 ms. The additional fixture expansion was local and ad hoc rather than
+  committed, so this timing is directional; a staging-like representative
+  rerun remains a production gate.
 - 2026-07-23: A fresh migration-chain test reproduced PostgreSQL error `25001`
   when `CREATE INDEX CONCURRENTLY` was placed directly in Prisma 6.16's
   migration transaction. Review then found that a manual runbook could still
@@ -562,7 +569,19 @@ the repository script that replaces it before continuing.
   completed in 98.7 seconds against the enlarged fixture and wrote 94 DAILY,
   16 WEEKLY, 6 MONTHLY, and 34 COURSE rows. Both evidence-backed indexes report
   `indisvalid=true` and `indisready=true`.
-- Active: Verify and commit the accepted Slice 3C review fixes.
+- 2026-07-23: Follow-up Slice 3C review found that the guarded deploy could
+  misclassify a partial schema as fresh and validated only index readiness.
+  The accepted hardening now treats only zero required tables plus zero
+  migration records as fresh; otherwise it fails closed with the missing table
+  names. It also verifies the public-schema table, access method, ordered key
+  columns, validity, and readiness of every same-name index; checks the SQL
+  create-index inventory against the definitions; and holds one advisory lock
+  across prebuild, optional historical baseline, and Prisma deploy.
+- 2026-07-23: The hardened deploy passes 11 focused wrapper tests, a real run
+  against an initialized disposable database, and a fresh locked 181-migration
+  chain in `deploy_fresh_lock_review_20260723`.
+- Active: Commit and independently re-review the final Slice 3C deploy
+  hardening.
 - Next: Register the native Python Hatchet worker and proof task in Slice 4A.
 
 ## Finish evidence
