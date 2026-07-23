@@ -4,6 +4,7 @@ import type { GetBasicCourseInformationQuery } from '@klicker-uzh/graphql/dist/o
 import {
   CreateCourseDiscussionReplyDocument,
   CreateCourseDiscussionThreadDocument,
+  DiscussionSort,
   GetCourseDiscussionThreadsDocument,
   ToggleCourseDiscussionReplyUpvoteDocument,
   ToggleCourseDiscussionThreadUpvoteDocument,
@@ -80,7 +81,7 @@ function CourseDiscussionPanel({
     variables: {
       courseId,
       scopeKey: activeScopeKey,
-      sort: 'ACTIVITY_DESC' as any,
+      sort: DiscussionSort.ActivityDesc,
       limit: 20,
       embedToken,
     },
@@ -163,6 +164,7 @@ function CourseDiscussionPanel({
       }
 
       setThreadDraft('')
+      setPostThreadAnonymous(false)
       await refetchThreads()
     } catch {
       toast({
@@ -213,6 +215,10 @@ function CourseDiscussionPanel({
         setReplyDrafts((prev) => ({
           ...prev,
           [threadId]: '',
+        }))
+        setPostReplyAnonymous((prev) => ({
+          ...prev,
+          [threadId]: false,
         }))
         await refetchThreads()
       } catch {
@@ -460,11 +466,13 @@ function CourseDiscussionPanel({
               data-cy={`course-qa-thread-${thread.id}`}
             >
               <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-gray-600">
-                {thread.sourceLabel && (
-                  <span className="max-w-full break-words rounded-full bg-gray-100 px-2 py-0.5">
-                    {thread.sourceLabel}
-                  </span>
-                )}
+                {thread.sourceLabel &&
+                  thread.sourceLabel !==
+                    (thread.scope?.scopeLabel ?? thread.scope?.scopeKey) && (
+                    <span className="max-w-full break-words rounded-full bg-gray-100 px-2 py-0.5">
+                      {thread.sourceLabel}
+                    </span>
+                  )}
                 <span className="max-w-full break-words rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">
                   {thread.scope?.scopeLabel ?? thread.scope?.scopeKey}
                 </span>

@@ -19,7 +19,6 @@ import { ChoicesResponse } from '@klicker-uzh/types'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -79,6 +78,9 @@ function ElementStack({
   const t = useTranslations()
   const router = useRouter()
   const timeRef = useRef(0)
+  const [isDesktopDiscussionViewport, setIsDesktopDiscussionViewport] =
+    useState(false)
+  const [mobileDiscussionOpen, setMobileDiscussionOpen] = useState(false)
   useComponentVisibleCounter({ timeRef })
 
   const embeddedButtonClass = embedded ? 'shadow-lg' : 'float-right mt-4'
@@ -325,9 +327,17 @@ function ElementStack({
   const stackDiscussionScopeKey = `stack:${stack.id}`
   const showInlineDiscussion =
     !previewOnly && !isEmbeddedFlow && supportsStackDiscussion
-  const discussionHref = `/course/${courseId}/qa?scopeKey=${encodeURIComponent(
-    stackDiscussionScopeKey
-  )}`
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(min-width: 1024px)')
+    const handleChange = () =>
+      setIsDesktopDiscussionViewport(mediaQuery.matches)
+
+    handleChange()
+    mediaQuery.addEventListener('change', handleChange)
+
+    return () => mediaQuery.removeEventListener('change', handleChange)
+  }, [])
 
   return (
     <div className="pb-12">
@@ -428,17 +438,7 @@ function ElementStack({
           {/* display continue button if question was already answered */}
           {typeof stackStorage !== 'undefined' && !showMarkAsRead
             ? wrapEmbedded(
-                <div className="mt-4 flex items-center justify-between gap-3">
-                  {showInlineDiscussion && (
-                    <Link
-                      href={discussionHref}
-                      className="text-sm font-medium text-blue-700 hover:underline lg:hidden"
-                      data-cy="student-stack-discussion-link"
-                    >
-                      {t('pwa.courseQA.openStackDiscussion')}
-                    </Link>
-                  )}
-
+                <div className="mt-4 flex items-center justify-end">
                   <Button
                     onClick={() => {
                       setStudentResponse({})
@@ -707,21 +707,34 @@ function ElementStack({
         </div>
 
         {showInlineDiscussion && (
-          <aside
+          <details
+            open={isDesktopDiscussionViewport || mobileDiscussionOpen}
+            onToggle={(event) => {
+              if (!isDesktopDiscussionViewport) {
+                setMobileDiscussionOpen(event.currentTarget.open)
+              }
+            }}
             aria-label={t('pwa.courseQA.title')}
-            className="hidden min-w-0 lg:block"
+            className="mt-8 min-w-0 border-t border-gray-200 pt-4 lg:mt-0 lg:border-0 lg:pt-0"
             data-cy="student-stack-discussion-rail"
           >
-            <div className="sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
+            <summary
+              className="cursor-pointer text-sm font-semibold text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 lg:hidden"
+              data-cy="student-stack-discussion-toggle"
+            >
+              {t('pwa.courseQA.openStackDiscussion')}
+            </summary>
+            <div className="mt-4 lg:sticky lg:top-4 lg:mt-0 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
               <CourseDiscussionPanel
                 courseId={courseId}
                 scopeKey={stackDiscussionScopeKey}
                 compact
+                showTitle={isDesktopDiscussionViewport}
                 className="mx-0 max-w-none"
                 idPrefix={`course-qa-stack-${stack.id}`}
               />
             </div>
-          </aside>
+          </details>
         )}
       </div>
     </div>
