@@ -25,31 +25,25 @@ env:
 
 jobs:
   build:
-    name: Build ${{ matrix.platform }}
+    name: Build ${{ matrix.architecture }}
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - architecture: arm
-            platform: linux/arm64
-            runner: ubuntu-24.04-arm
-          - architecture: amd
-            platform: linux/amd64
-            runner: ubuntu-latest
-    runs-on: ${{ matrix.runner }}
+        architecture: ${{ fromJSON(github.event_name == 'pull_request' && '["arm"]' || '["arm", "amd"]') }}
+    runs-on: ${{ matrix.architecture == 'arm' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
     permissions:
       contents: read
       packages: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4.2.0
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
 
       - name: Log into registry ${{ env.REGISTRY }}
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v4.4.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -57,18 +51,18 @@ jobs:
 
       - name: Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@v6.2.0
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.architecture }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v7.3.0
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: .
           file: apps/hatchet-worker-analytics/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
-          platforms: ${{ matrix.platform }}
+          platforms: ${{ matrix.architecture == 'arm' && 'linux/arm64' || 'linux/amd64' }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=hatchet-worker-analytics-${{ matrix.architecture }}
           cache-to: type=gha,mode=min,scope=hatchet-worker-analytics-${{ matrix.architecture }}

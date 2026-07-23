@@ -43,6 +43,6 @@ data:
   HATCHET_CLIENT_SERVER_URL: {{ .Values.hatchet.client.apiUrl | quote }}
   HATCHET_CLIENT_WORKER_HEALTHCHECK_ENABLED: 'true'
   HATCHET_CLIENT_WORKER_HEALTHCHECK_PORT: '8001'
-  {{- if .Values.hatchet.workers.analytics.allowFull }}
+  {{- if eq .Values.hatchet.workers.analytics.allowFull true }}
   ANALYTICS_ALLOW_FULL: '1'
   {{- end }}

@@ -41,25 +41,26 @@ attachment_rollup AS (
 __all__ = ["compute_participant_chat_analytics", "COURSE_TIMESTAMP"]
 
 
-def _session_cache_key(session: Session) -> str:
+def _session_cache_key(session: Session) -> str | None:
     bind = getattr(session, "get_bind", lambda: None)()
     if bind is not None:
         url = getattr(bind, "url", None)
         if url is not None:
             return str(url)
         return f"bind:{id(bind)}"
-    return f"session:{id(session)}"
+    return None
 
 
 def _table_exists(session: Session, table_name: str) -> bool:
-    key = (_session_cache_key(session), table_name)
-    cached = _ATTACHMENT_SUPPORT_CACHE.get(key)
-    if cached is not None:
-        return cached
-    exists = bool(
-        session.execute(_TABLE_EXISTS_SQL, {"table_name": table_name}).scalar_one()
-    )
-    _ATTACHMENT_SUPPORT_CACHE[key] = exists
+    cache_scope = _session_cache_key(session)
+    if cache_scope is not None:
+        key = (cache_scope, table_name)
+        cached = _ATTACHMENT_SUPPORT_CACHE.get(key)
+        if cached is not None:
+            return cached
+    exists = bool(session.execute(_TABLE_EXISTS_SQL, {"table_name": table_name}).scalar_one())
+    if cache_scope is not None:
+        _ATTACHMENT_SUPPORT_CACHE[(cache_scope, table_name)] = exists
     return exists
 
 
@@ -69,19 +70,10 @@ def _prepare_sql(
     *,
     include_attachments: bool,
 ) -> str:
-    clause = (
-        ""
-        if course_ids is None
-        else render_uuid_in_clause('cb."courseId"', course_ids)
-    )
-    attachment_rollup = (
-        _ATTACHMENT_ROLLUP_SQL
-        if include_attachments
-        else _ATTACHMENT_ROLLUP_FALLBACK_SQL
-    )
-    return (
-        template.replace(_COURSE_FILTER_PLACEHOLDER, clause)
-        .replace(_ATTACHMENT_ROLLUP_PLACEHOLDER, attachment_rollup)
+    clause = "" if course_ids is None else render_uuid_in_clause('cb."courseId"', course_ids)
+    attachment_rollup = _ATTACHMENT_ROLLUP_SQL if include_attachments else _ATTACHMENT_ROLLUP_FALLBACK_SQL
+    return template.replace(_COURSE_FILTER_PLACEHOLDER, clause).replace(
+        _ATTACHMENT_ROLLUP_PLACEHOLDER, attachment_rollup
     )
 
 
@@ -99,9 +91,7 @@ def compute_participant_chat_analytics(
         raise ValueError(f"Unknown analytics type: {analytics_type}")
 
     if verbose:
-        print(
-            f"[chat_analytics] {analytics_type} {win_start}..{win_end} -> {timestamp}"
-        )
+        print(f"[chat_analytics] {analytics_type} {win_start}..{win_end} -> {timestamp}")
 
     include_attachments = _table_exists(session, "ChatAttachment")
     if verbose and not include_attachments:

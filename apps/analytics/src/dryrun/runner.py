@@ -426,6 +426,16 @@ def run_dryrun(
     """
     _validate_uuid(course_id)
     scope_mode = "course"
+    available_modules = _discover_scripts()
+    if scripts is None:
+        modules = available_modules
+    else:
+        unknown_modules = sorted(set(scripts) - set(available_modules))
+        if unknown_modules:
+            raise DryRunAbort(f"unknown analytics script modules: {', '.join(unknown_modules)}")
+        modules = scripts
+    if not modules:
+        raise DryRunAbort("no analytics scripts discovered in src/scripts/")
 
     # Env vars must be set BEFORE any script / save module imports — the
     # scripts read them through ``scoped_course_ids`` / ``analytics_mode``.
@@ -457,9 +467,6 @@ def run_dryrun(
 
     lookups: dict[str, Any] = {}
     buffer = CaptureBuffer()
-    modules = scripts if scripts is not None else _discover_scripts()
-    if not modules:
-        raise DryRunAbort("no analytics scripts discovered in src/scripts/")
 
     print(
         f"[dryrun] course_id={course_id} scripts={len(modules)} "

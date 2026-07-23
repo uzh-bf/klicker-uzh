@@ -4,7 +4,12 @@ FROM docker.io/library/python:3.12.11-slim-bookworm@sha256:519591d6871b7bc437060
 
 COPY --from=uv /uv /bin/uv
 
-RUN apt-get update && \
+RUN sed -i \
+      -e 's|URIs: http://deb.debian.org/debian$|URIs: http://snapshot.debian.org/archive/debian/20250929T000000Z|' \
+      -e 's|URIs: http://deb.debian.org/debian-security$|URIs: http://snapshot.debian.org/archive/debian-security/20250929T000000Z|' \
+      /etc/apt/sources.list.d/debian.sources && \
+    printf 'Acquire::Check-Valid-Until "false";\n' > /etc/apt/apt.conf.d/99snapshot && \
+    apt-get update && \
     apt-get install -y --no-install-recommends build-essential && \
     rm -rf /var/lib/apt/lists/*
 
@@ -19,11 +24,17 @@ RUN uv sync --frozen --no-dev --no-install-project
 COPY apps/analytics/src/modules/chat_topic_clustering/model.py /tmp/embedding_model.py
 RUN --mount=type=cache,target=/root/.cache/huggingface \
     .venv/bin/python -c "import runpy, shutil; from huggingface_hub import hf_hub_download; from sentence_transformers import SentenceTransformer; config = runpy.run_path('/tmp/embedding_model.py'); model_path = config['BUNDLED_MODEL_PATH']; SentenceTransformer(config['MODEL_ID'], revision=config['MODEL_REVISION'], tokenizer_kwargs=config['TOKENIZER_KWARGS']).save(str(model_path), create_model_card=False); shutil.copyfile(hf_hub_download(repo_id=config['MODEL_ID'], filename='README.md', revision=config['MODEL_REVISION']), model_path / 'UPSTREAM_MODEL_CARD.md')"
+COPY apps/analytics/third_party/multilingual-e5-base.LICENSE /opt/models/multilingual-e5-base/LICENSE
 
 
 FROM docker.io/library/python:3.12.11-slim-bookworm@sha256:519591d6871b7bc437060736b9f7456b8731f1499a57e22e6c285135ae657bf7 AS runtime
 
-RUN apt-get update && \
+RUN sed -i \
+      -e 's|URIs: http://deb.debian.org/debian$|URIs: http://snapshot.debian.org/archive/debian/20250929T000000Z|' \
+      -e 's|URIs: http://deb.debian.org/debian-security$|URIs: http://snapshot.debian.org/archive/debian-security/20250929T000000Z|' \
+      /etc/apt/sources.list.d/debian.sources && \
+    printf 'Acquire::Check-Valid-Until "false";\n' > /etc/apt/apt.conf.d/99snapshot && \
+    apt-get update && \
     apt-get install -y --no-install-recommends ca-certificates libgomp1 && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd --system --gid 10001 analytics && \

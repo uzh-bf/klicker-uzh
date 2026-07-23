@@ -792,8 +792,39 @@ the repository script that replaces it before continuing.
   (2,300 findings across 112 files). The broad GraphQL suite again reaches the
   sandbox database boundary and fails with Prisma `EPERM` before database
   assertions; its database-free analytics routing tests pass 3/3.
-- Active: Commit and independently review Slice 5B, then run the final branch
-  gates and publish both stacked draft PRs.
+- 2026-07-23: Exact-commit Slice 5B review found seven production issues. The
+  full-run value is now schema-validated as a boolean and compared strictly;
+  `--set-string ...allowFull=false` fails rendering instead of enabling the
+  worker. The pod no longer mounts a service-account token.
+- 2026-07-23: The model bundle now carries the complete Microsoft MIT notice,
+  source, and pinned model revision alongside the exact model card. Debian
+  package resolution uses the base image's dated 2025-09-29 Debian and
+  security snapshots instead of live mirrors. Fresh ARM64 and AMD64 images
+  build and pass the no-network, read-only model, license, snapshot, UID, and
+  CPU-only runtime smoke.
+- 2026-07-23: New analytics workflows pin every third-party action to an
+  immutable commit. Pull requests build only the deployed ARM64 architecture;
+  `v3` pushes and production tags build both ARM64 and AMD64. This keeps the
+  full architecture gate off routine PR compute.
+- 2026-07-23: The operations gate now requires the owning ExternalSecret or
+  Infisical sync object to exist and report ready before checking generated
+  Secret keys. Rollback restores one compatible image/chart/config generation,
+  uses generation-specific verification, and allows 70 minutes for a draining
+  worker.
+- 2026-07-23: Focused Opengrep has no remaining mutable-action finding. Its
+  five findings were reviewed: the configured 14-day uv cooldown is stricter
+  than the suggested 7 days; the native worker imports only its fixed internal
+  task map; the dry-run CLI now rejects modules outside discovered scripts;
+  and both raw SQL warnings interpolate only UUID-validated values into static
+  column templates. No installed image vulnerability scanner is available, so
+  registry/image CVE scanning remains an explicit CI or pre-deployment gate.
+- 2026-07-23: The final full Python rerun exposed an order-dependent
+  table-existence test. Unbound sessions no longer use an object-ID cache key
+  that Python can recycle; production sessions keep the stable database-bind
+  cache. The full suite now passes 165 tests with 4 integration skips.
+- Active: Commit and independently review the final production/security
+  adjustments, then run the final branch gates and publish both stacked draft
+  PRs.
 
 ## Finish evidence
 
@@ -807,7 +838,7 @@ the repository script that replaces it before continuing.
 
 ## Next Steps
 
-1. Commit and independently review the verified Slice 5B deployment hardening.
-2. Run the final security, maintainability, simplification, and branch reviews.
+1. Commit and independently review the final security adjustments.
+2. Run the final maintainability, simplification, and branch reviews.
 3. Publish `chat-analytics` against `v3`, refresh the stacked
    `analytics-phase-a` draft, and read back CI without merging or deploying.
