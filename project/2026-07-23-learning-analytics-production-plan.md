@@ -77,8 +77,9 @@ the existing Hatchet control plane.
 
 ### Open research gates
 
-- Select and pin a Python SDK version proven compatible with local
-  `hatchet-lite:v0.73.1` and the deployed control-plane version.
+- Confirm `hatchet-sdk[v0-sdk]==1.18.1`, now proven against local
+  `hatchet-lite:v0.73.1`, against the deployed control-plane version before
+  staging rollout.
 - Measure a representative incremental run before choosing worker slots and
   Kubernetes resources. Start correctness tests with one pod and one slot;
   increase slots only from measured evidence.
@@ -586,7 +587,25 @@ the repository script that replaces it before continuing.
   removes redundant validator state.
 - Completed: Slice 3C query/index evidence, operational documentation, and
   guarded repository deploy path.
-- Active: Register the native Python Hatchet worker and proof task in Slice 4A.
+- 2026-07-23: Slice 4A pins `hatchet-sdk[v0-sdk]==1.18.1`, validates the
+  existing camel-case producer contract into frozen per-run configuration,
+  registers one one-slot non-mutating Python proof task, and preserves the
+  TypeScript analytics worker as rollback. Script 14 now exposes an in-process
+  entry point that receives the same immutable configuration; its CLI remains
+  an environment adapter for existing callers.
+- 2026-07-23: A dedicated disposable `hatchet-lite:v0.73.1` control plane
+  accepted the Python worker over insecure local gRPC and completed
+  `learning-analytics-native-proof` with
+  `{native: true, mode: finalize, courseIds: [proof-course], windowSince: null}`.
+  Focused configuration, registration, and direct-entry-point tests pass
+  21/21 without analytics writes.
+- 2026-07-23: Slice 4A verification passes Ruff format/lint across all 118
+  analytics files, the full analytics suite with 147 passed and 4 integration
+  skips, the exact isolated CI command with 83 passed and 1 database skip,
+  focused strict Pyright with zero findings, uv lock validation, and diff
+  hygiene. The known sandbox-only `mirakuru` cleanup warning occurs after
+  successful pytest exit.
+- Active: Commit and independently review the native-worker tracer.
 
 ## Finish evidence
 

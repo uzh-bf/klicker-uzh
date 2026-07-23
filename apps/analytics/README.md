@@ -146,6 +146,12 @@ Configure with these env vars (all registered in root `turbo.json`):
 
 Together they produce an invocation like `uv run python -m src.scripts.8_initial_chat_analytics` executed with cwd `ANALYTICS_CWD`.
 
+### Native Python worker compatibility tracer
+
+The native worker entry point is `uv run python -m src.hatchet_worker` from this directory. It pins `hatchet-sdk[v0-sdk]==1.18.1`, uses the SDK-standard `HATCHET_CLIENT_*` environment variables, starts with one worker slot, and currently registers only `learning-analytics-native-proof`.
+
+The proof task accepts the existing `mode`, `courseId`, `courseIds`, and `windowSince` producer contract, resolves it into immutable per-run configuration, and returns that resolution without touching the analytics database. It exists to prove registration and task execution against the repository's pinned `hatchet-lite:v0.73.1`. The TypeScript worker remains the owner of the production analytics DAG until the Python DAG reaches parity and the later cutover removes the subprocess bridge.
+
 ## Deploying analytics indexes
 
 The analytics index migrations cover hot response/event tables:

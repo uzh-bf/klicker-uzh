@@ -38,6 +38,7 @@ jobs:
         working-directory: apps/analytics
         run: |
           uv run --isolated --no-project \
+            --with 'hatchet-sdk[v0-sdk]==1.18.1' \
             --with pandas==2.2.2 \
             --with 'psycopg[binary]==3.3.3' \
             --with pytest==8.4.2 \
@@ -47,5 +48,8 @@ jobs:
               tests/test_chat_topic_clustering_script.py \
               tests/test_course_scope_sql.py \
               tests/test_db_helpers.py \
+              tests/test_live_quiz_entrypoint.py \
               tests/test_participant_analytics_helpers.py \
-              tests/test_live_quiz_analytics_sql.py
+              tests/test_live_quiz_analytics_sql.py \
+              tests/test_native_hatchet_worker.py \
+              tests/test_utils.py

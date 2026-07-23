@@ -21,6 +21,7 @@ dependencies = [
     "hdbscan>=0.8.37,<0.9",
     "scikit-learn>=1.5,<2.0",
     "stopwordsiso>=0.6,<1.0",
+    "hatchet-sdk[v0-sdk]==1.18.1",
 ]
 
 [dependency-groups]
