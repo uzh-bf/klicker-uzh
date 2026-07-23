@@ -55,6 +55,8 @@ describe('Course Q&A course-level workflows', function () {
       `${Cypress.env('URL_MANAGE')}/courses/${this.data.courseId}?tab=discussions`
     )
     cy.get('[data-cy="tab-discussions"]').should('not.exist')
+    cy.get('[data-cy="course-qa-overview-empty"]').should('not.exist')
+    cy.get('[data-cy="course-qa-generate-embed"]').should('not.exist')
   })
 
   it('Student sees integrated Q&A on the course overview and can open the fallback page', function () {
@@ -73,28 +75,53 @@ describe('Course Q&A course-level workflows', function () {
     cy.get('[data-cy="course-qa-empty"]').should('exist')
   })
 
-  it('Student sees integrated Q&A when the course has no other overview content', function () {
-    cy.task('setCourseQAFlags', {
-      courseName: this.data.course,
-      isGamificationEnabled: false,
-      isAssessmentEnabled: false,
-      description: null,
-    }).then((result: boolean) => {
-      if (result === false) {
-        throw new Error('Could not configure a Q&A-only course')
-      }
+  context('Q&A-only course overview', function () {
+    let originalSettings: {
+      isGamificationEnabled: boolean
+      isAssessmentEnabled: boolean
+      description: string | null
+    } | null = null
+
+    beforeEach(function () {
+      cy.task('getCourseOverviewSettings', {
+        courseName: this.data.course,
+      }).then((result) => {
+        if (!result) {
+          throw new Error('Could not read the course overview settings')
+        }
+        originalSettings = result as typeof originalSettings
+      })
     })
 
-    cy.loginStudent()
-    cy.visit(`${Cypress.env('URL_STUDENT')}/course/${this.data.courseId}`)
-    cy.get('[data-cy="course-overview-qa-panel"]').should('exist')
-    cy.get('[data-cy="course-qa-empty"]').should('exist')
+    afterEach(function () {
+      if (!originalSettings) return
 
-    cy.task('setCourseQAFlags', {
-      courseName: this.data.course,
-      isGamificationEnabled: true,
-      isAssessmentEnabled: false,
-      description: 'Das ist ein Testkurs. Hier wird getestet. Viel Spass!',
+      cy.task('setCourseQAFlags', {
+        courseName: this.data.course,
+        ...originalSettings,
+      }).then((result: boolean) => {
+        if (result === false) {
+          throw new Error('Could not restore the course overview settings')
+        }
+      })
+    })
+
+    it('Student sees integrated Q&A when the course has no other overview content', function () {
+      cy.task('setCourseQAFlags', {
+        courseName: this.data.course,
+        isGamificationEnabled: false,
+        isAssessmentEnabled: false,
+        description: null,
+      }).then((result: boolean) => {
+        if (result === false) {
+          throw new Error('Could not configure a Q&A-only course')
+        }
+      })
+
+      cy.loginStudent()
+      cy.visit(`${Cypress.env('URL_STUDENT')}/course/${this.data.courseId}`)
+      cy.get('[data-cy="course-overview-qa-panel"]').should('exist')
+      cy.get('[data-cy="course-qa-empty"]').should('exist')
     })
   })
 

@@ -2155,6 +2155,20 @@ export default defineConfig({
             throw error
           }
         },
+        async getCourseOverviewSettings({
+          courseName,
+        }: {
+          courseName: string
+        }) {
+          return prisma.course.findFirst({
+            where: { name: courseName },
+            select: {
+              isGamificationEnabled: true,
+              isAssessmentEnabled: true,
+              description: true,
+            },
+          })
+        },
         async grantCourseReadAccess({
           courseName,
           userEmail,

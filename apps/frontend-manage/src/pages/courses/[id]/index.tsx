@@ -126,6 +126,9 @@ function CourseOverviewPage() {
     )
 
   const { course } = data
+  const courseQAAvailable = course.isCourseQARolloutEnabled && course.isEditor
+  const activeTabValue =
+    tabValue === 'discussions' && !courseQAAvailable ? 'liveQuizzes' : tabValue
 
   return (
     <Layout>
@@ -289,7 +292,7 @@ function CourseOverviewPage() {
         ) : (
           <Tabs
             defaultValue="liveQuizzes"
-            value={tabValue}
+            value={activeTabValue}
             onValueChange={(newValue: string) => setTabValue(newValue)}
             tabs={[
               {
@@ -361,7 +364,7 @@ function CourseOverviewPage() {
                 tooltipDelay: 0,
                 data: { cy: 'tab-groupActivities' },
               },
-              ...(course.isCourseQARolloutEnabled && course.isEditor
+              ...(courseQAAvailable
                 ? [
                     {
                       id: 'tab-discussions',
@@ -424,7 +427,7 @@ function CourseOverviewPage() {
                 highlightedActivity={highlightedActivity}
               />
             </TabContent>
-            {course.isCourseQARolloutEnabled && (
+            {courseQAAvailable && (
               <TabContent
                 key="content-discussions"
                 value="discussions"
