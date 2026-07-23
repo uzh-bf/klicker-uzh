@@ -13,9 +13,9 @@
 4. Writes the buffer to ``.xlsx``.
 
 Scripts are discovered by globbing ``src/scripts/[0-9]*.py`` and sorting
-numerically. Doing it this way avoids duplicating the
-``packages/types/src/hatchet.ts`` ``ANALYTICS_SCRIPTS`` map; script ordering
-in the dry-run follows the numeric prefix, which matches that map.
+numerically. Doing it this way avoids maintaining a second orchestration list;
+script ordering in the dry-run follows the numeric prefix used by the native
+Hatchet workflow.
 """
 
 from __future__ import annotations
