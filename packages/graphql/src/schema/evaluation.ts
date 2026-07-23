@@ -7,6 +7,7 @@ import {
   StackFeedbackStatus as StackFeedbackStatusType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
+import { CodeTestEvaluation } from './code.js'
 import { CaseStudyCriterionLabels, ElementType } from './elementData.js'
 import {
   ConfusionTimestepRef,
@@ -748,19 +749,8 @@ export const CodeElementResults = CodeElementResultsRef.implement({
   fields: (t) => ({
     totalAnswers: t.exposeInt('totalAnswers'),
     testResults: t.expose('testResults', {
-      type: [CodeTestEvaluationResult],
+      type: [CodeTestEvaluation],
     }),
-  }),
-})
-
-export const CodeTestEvaluationResultRef =
-  builder.objectRef<CodeTestEvaluationType>('CodeTestEvaluationResult')
-export const CodeTestEvaluationResult = CodeTestEvaluationResultRef.implement({
-  fields: (t) => ({
-    id: t.exposeString('id'),
-    name: t.exposeString('name'),
-    passedCount: t.exposeInt('passedCount'),
-    totalCount: t.exposeInt('totalCount'),
   }),
 })
 // #endregion

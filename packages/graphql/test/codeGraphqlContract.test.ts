@@ -34,6 +34,21 @@ describe('CODE GraphQL contracts', () => {
       'id',
       'name',
     ])
+
+    const instance = schema.getType('ElementInstance') as GraphQLObjectType
+    expect(instance.getFields().codeAuthoringData!.type.toString()).toBe(
+      'AuthoringCodeElementData'
+    )
+    expect(
+      (schema.getType('AuthoringCodeElementData') as GraphQLObjectType)
+        .getFields()
+        .options!.type.toString()
+    ).toBe('CodeElementOptions!')
+    expect(
+      (schema.getType('CodeElementData') as GraphQLObjectType)
+        .getFields()
+        .options!.type.toString()
+    ).toBe('PublicCodeElementOptions!')
   })
 
   it('registers CODE in every contract union and exposes authoring input', () => {
@@ -68,5 +83,21 @@ describe('CODE GraphQL contracts', () => {
     expect(schema.getType('CodeSubmissionReceipt')?.constructor.name).toBe(
       'GraphQLObjectType'
     )
+  })
+
+  it('accepts JSON null test values without making the containers optional', () => {
+    const codeTestCaseInput = schema.getType(
+      'CodeTestCaseInput'
+    ) as GraphQLInputObjectType
+    expect(codeTestCaseInput.getFields().args!.type.toString()).toBe('[Json]!')
+    expect(codeTestCaseInput.getFields().expectedOutput!.type.toString()).toBe(
+      'Json'
+    )
+
+    for (const typeName of ['CodeTestCase', 'PublicCodeTestCase']) {
+      const fields = (schema.getType(typeName) as GraphQLObjectType).getFields()
+      expect(fields.args!.type.toString()).toBe('[Json]!')
+      expect(fields.expectedOutput!.type.toString()).toBe('Json')
+    }
   })
 })

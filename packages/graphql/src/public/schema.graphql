@@ -370,6 +370,18 @@ type AssessmentResultsLiveQuiz {
   studentResults: [StudentAssessmentResultsItem!]!
 }
 
+type AuthoringCodeElementData {
+  basePoints: Boolean!
+  content: String!
+  elementId: Int!
+  explanation: String
+  id: ID!
+  name: String!
+  options: CodeElementOptions!
+  pointsMultiplier: Int!
+  type: ElementType!
+}
+
 type AvatarSettings {
   accessory: String!
   clothing: String!
@@ -913,7 +925,7 @@ type CodeElementOptions {
 }
 
 type CodeElementResults {
-  testResults: [CodeTestEvaluationResult!]!
+  testResults: [CodeTestEvaluation!]!
   totalAnswers: Int!
 }
 
@@ -976,8 +988,8 @@ enum CodeSubmissionStatus {
 }
 
 type CodeTestCase {
-  args: [Json!]!
-  expectedOutput: Json!
+  args: [Json]!
+  expectedOutput: Json
   id: String!
   name: String!
   visibility: CodeTestVisibility!
@@ -985,8 +997,8 @@ type CodeTestCase {
 }
 
 input CodeTestCaseInput {
-  args: [Json!]!
-  expectedOutput: Json!
+  args: [Json]!
+  expectedOutput: Json
   id: String!
   name: String!
   visibility: CodeTestVisibility!
@@ -994,13 +1006,6 @@ input CodeTestCaseInput {
 }
 
 type CodeTestEvaluation {
-  id: String!
-  name: String!
-  passedCount: Int!
-  totalCount: Int!
-}
-
-type CodeTestEvaluationResult {
   id: String!
   name: String!
   passedCount: Int!
@@ -1317,6 +1322,7 @@ type ElementFeedback {
 }
 
 type ElementInstance {
+  codeAuthoringData: AuthoringCodeElementData
   correlationKey: String
   elementData: ElementData!
   elementType: ElementType!
@@ -2584,8 +2590,8 @@ type PublicCodeElementOptions {
 }
 
 type PublicCodeTestCase {
-  args: [Json!]!
-  expectedOutput: Json!
+  args: [Json]!
+  expectedOutput: Json
   id: String!
   name: String!
 }

@@ -166,8 +166,14 @@ export const CodeTestCase = builder
     fields: (t) => ({
       id: t.exposeString('id'),
       name: t.exposeString('name'),
-      args: t.expose('args', { type: ['Json'] }),
-      expectedOutput: t.expose('expectedOutput', { type: 'Json' }),
+      args: t.expose('args', {
+        type: ['Json'],
+        nullable: { list: false, items: true },
+      }),
+      expectedOutput: t.expose('expectedOutput', {
+        type: 'Json',
+        nullable: true,
+      }),
       visibility: t.expose('visibility', { type: CodeTestVisibility }),
       weight: t.exposeFloat('weight'),
     }),
@@ -197,8 +203,14 @@ export const PublicCodeTestCase = builder
     fields: (t) => ({
       id: t.exposeString('id'),
       name: t.exposeString('name'),
-      args: t.expose('args', { type: ['Json'] }),
-      expectedOutput: t.expose('expectedOutput', { type: 'Json' }),
+      args: t.expose('args', {
+        type: ['Json'],
+        nullable: { list: false, items: true },
+      }),
+      expectedOutput: t.expose('expectedOutput', {
+        type: 'Json',
+        nullable: true,
+      }),
     }),
   })
 
@@ -437,11 +449,8 @@ export const CaseStudyElementData = builder
     }),
   })
 
-export interface ICodeElementData extends BaseElementData {
-  options: ElementOptionsCodeType
-}
 export const CodeElementData = builder
-  .objectRef<ICodeElementData>('CodeElementData')
+  .objectRef<CodeElementDataType>('CodeElementData')
   .implement({
     fields: (t) => ({
       ...sharedElementData(t),
@@ -451,6 +460,15 @@ export const CodeElementData = builder
           sanitizeElementDataForParticipant(elementData as CodeElementDataType)
             .options,
       }),
+    }),
+  })
+
+export const AuthoringCodeElementData = builder
+  .objectRef<CodeElementDataType>('AuthoringCodeElementData')
+  .implement({
+    fields: (t) => ({
+      ...sharedElementData(t),
+      options: t.expose('options', { type: CodeElementOptions }),
     }),
   })
 

@@ -470,9 +470,6 @@ export async function createActivityTemplate(
 
   if (copyBeforeConversion) {
     if (activityType === ActivityType.LIVE_QUIZ) {
-      if (!activity) {
-        return false
-      }
       const liveQuiz = activity as DB.LiveQuiz & {
         blocks: (DB.ElementBlock & { elements: DB.ElementInstance[] })[]
       }
@@ -563,9 +560,6 @@ export async function createActivityTemplate(
 
       return true
     } else if (activityType === ActivityType.PRACTICE_QUIZ) {
-      if (!activity) {
-        return false
-      }
       const practiceQuiz = activity as DB.PracticeQuiz & {
         stacks: (DB.ElementStack & { elements: DB.ElementInstance[] })[]
       }
@@ -654,9 +648,6 @@ export async function createActivityTemplate(
 
       return true
     } else if (activityType === ActivityType.MICRO_LEARNING) {
-      if (!activity) {
-        return false
-      }
       const microLearning = activity as DB.MicroLearning & {
         stacks: (DB.ElementStack & { elements: DB.ElementInstance[] })[]
       }
@@ -745,9 +736,6 @@ export async function createActivityTemplate(
 
       return true
     } else if (activityType === ActivityType.GROUP_ACTIVITY) {
-      if (!activity) {
-        return false
-      }
       const groupActivity = activity as DB.GroupActivity & {
         stacks: (DB.ElementStack & { elements: DB.ElementInstance[] })[]
         parameters: DB.GroupActivityParameter[]

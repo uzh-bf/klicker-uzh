@@ -4,5 +4,34 @@ query GetSingleElementInstance($id: Int!) {
     type
     elementType
     ...ElementData
+
+    codeAuthoringData {
+      id
+      elementId
+      name
+      type
+      content
+      explanation
+      basePoints
+      pointsMultiplier
+      options {
+        language
+        starterCode
+        sampleSolution
+        entrypoint
+        hasSampleSolution
+        executionLimits {
+          perTestTimeoutSeconds
+        }
+        testCases {
+          id
+          name
+          args
+          expectedOutput
+          visibility
+          weight
+        }
+      }
+    }
   }
 }

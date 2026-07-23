@@ -3,12 +3,24 @@ import type {
   CodePublicTestResult as CodePublicTestResultType,
   CodeSubmissionFeedback as CodeSubmissionFeedbackType,
   CodeSubmissionReceipt as CodeSubmissionReceiptType,
+  CodeTestEvaluation as CodeTestEvaluationType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
 
 export const CodeSubmissionStatus = builder.enumType('CodeSubmissionStatus', {
   values: Object.values(DB.CodeSubmissionStatus),
 })
+
+export const CodeTestEvaluation = builder
+  .objectRef<CodeTestEvaluationType>('CodeTestEvaluation')
+  .implement({
+    fields: (t) => ({
+      id: t.exposeString('id'),
+      name: t.exposeString('name'),
+      passedCount: t.exposeInt('passedCount'),
+      totalCount: t.exposeInt('totalCount'),
+    }),
+  })
 
 export const CodePublicTestResult = builder
   .objectRef<CodePublicTestResultType>('CodePublicTestResult')

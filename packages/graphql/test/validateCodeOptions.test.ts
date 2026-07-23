@@ -36,6 +36,24 @@ describe('CODE element option validation', () => {
     })
   })
 
+  it('accepts JSON null arguments and expected output', () => {
+    expect(
+      validateAndProcessElementOptions(
+        'CODE' as DB.ElementType,
+        {
+          ...validOptions,
+          testCases: [
+            {
+              ...validOptions.testCases[0],
+              args: [null],
+              expectedOutput: null,
+            },
+          ],
+        } as never
+      )
+    ).not.toBeNull()
+  })
+
   it.each([
     ['a non-Python language', { ...validOptions, language: 'javascript' }],
     ['an invalid entrypoint', { ...validOptions, entrypoint: 'add-values' }],

@@ -12,7 +12,6 @@ import {
   type ChoicesResponse as ChoicesResponseType,
   type CodeExecutionLimitsInput as CodeExecutionLimitsInputType,
   type CodeTestCaseInput as CodeTestCaseInputType,
-  type CodeTestEvaluation as CodeTestEvaluationType,
   type ElementManipulationInput as ElementManipulationInputType,
   type ElementOptionsCaseStudy as ElementOptionsCaseStudyType,
   type ElementOptionsChoices as ElementOptionsChoicesType,
@@ -56,7 +55,9 @@ import {
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { ActivityType, ElementFeedbackRef } from './analytics.js'
+import { CodeTestEvaluation } from './code.js'
 import {
+  AuthoringCodeElementData,
   CaseStudyCaseSolution,
   CaseStudyElementOptions,
   ChoiceElementOptions,
@@ -167,8 +168,11 @@ export const CodeTestCaseInput = CodeTestCaseInputRef.implement({
   fields: (t) => ({
     id: t.string({ required: true }),
     name: t.string({ required: true }),
-    args: t.field({ type: ['Json'], required: true }),
-    expectedOutput: t.field({ type: 'Json', required: true }),
+    args: t.field({
+      type: ['Json'],
+      required: { list: true, items: false },
+    }),
+    expectedOutput: t.field({ type: 'Json', required: false }),
     visibility: t.field({ type: CodeTestVisibility, required: true }),
     weight: t.float({ required: true }),
   }),
@@ -742,17 +746,6 @@ export const ContentInstanceEvaluation = builder
     }),
   })
 
-export const CodeTestEvaluation = builder
-  .objectRef<CodeTestEvaluationType>('CodeTestEvaluation')
-  .implement({
-    fields: (t) => ({
-      id: t.exposeString('id'),
-      name: t.exposeString('name'),
-      passedCount: t.exposeInt('passedCount'),
-      totalCount: t.exposeInt('totalCount'),
-    }),
-  })
-
 export const CodeInstanceEvaluation = builder
   .objectRef<IInstanceEvaluationCode>('CodeInstanceEvaluation')
   .implement({
@@ -1042,6 +1035,17 @@ export const ElementInstance = ElementInstanceRef.implement({
       type: ElementData,
       resolve: (q) => q.elementData,
     }),
+
+    codeAuthoringData: t
+      .withAuth({ authenticated: true, role: DB.UserRole.USER })
+      .field({
+        nullable: true,
+        type: AuthoringCodeElementData,
+        resolve: (instance) =>
+          instance.elementData.type === DB.ElementType.CODE
+            ? instance.elementData
+            : null,
+      }),
 
     options: t.expose('options', {
       type: ElementInstanceOptions,
