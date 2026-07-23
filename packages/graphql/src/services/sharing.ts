@@ -5631,21 +5631,19 @@ const acceptedPermissionLevels: {
   ],
 }
 
-export type PermissionCheck =
-  | {
-      catalogCollectionId: string
-      minimumPermissionLevel: DB.PermissionLevel
-    }
-  | {
-      answerCollectionId: number
-      minimumPermissionLevel: DB.PermissionLevel
-    }
-  | { elementId: number; minimumPermissionLevel: DB.PermissionLevel }
-  | { liveQuizId: string; minimumPermissionLevel: DB.PermissionLevel }
-  | { practiceQuizId: string; minimumPermissionLevel: DB.PermissionLevel }
-  | { microLearningId: string; minimumPermissionLevel: DB.PermissionLevel }
-  | { groupActivityId: string; minimumPermissionLevel: DB.PermissionLevel }
-  | { courseId: string; minimumPermissionLevel: DB.PermissionLevel }
+export type ObjectSelector =
+  | { catalogCollectionId: string }
+  | { answerCollectionId: number }
+  | { elementId: number }
+  | { courseId: string }
+  | { liveQuizId: string }
+  | { practiceQuizId: string }
+  | { microLearningId: string }
+  | { groupActivityId: string }
+
+export type PermissionCheck = ObjectSelector & {
+  minimumPermissionLevel: DB.PermissionLevel
+}
 
 export async function checkAccess(
   checks: PermissionCheck[],
@@ -5951,16 +5949,6 @@ export async function checkCatalogAssignment(
 
   return assignment !== null
 }
-
-export type ObjectSelector =
-  | { catalogCollectionId: string }
-  | { answerCollectionId: number }
-  | { elementId: number }
-  | { courseId: string }
-  | { liveQuizId: string }
-  | { practiceQuizId: string }
-  | { microLearningId: string }
-  | { groupActivityId: string }
 
 export type ObjectSelectorFunction = (args: any) => ObjectSelector
 

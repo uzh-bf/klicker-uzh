@@ -17,7 +17,12 @@ import { v4 as uuid } from 'uuid'
 import { schema } from '../src/index.js'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { applyElementBatchOperations } from '../src/services/elements.js'
-import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
+import {
+  initializePrisma,
+  seedLiveQuiz,
+  testCleanup,
+  testInitialization,
+} from './helpers.js'
 
 describe('Unit tests batch operations on elements', () => {
   // shared resources used across tests
@@ -574,36 +579,13 @@ describe('Unit tests batch operations on elements', () => {
         },
       },
     })
-    await prisma.liveQuiz.create({
-      data: {
-        name: uuid(),
-        displayName: uuid(),
-        ownerId: userOneCtx.user.sub,
+    await seedLiveQuiz(
+      {
+        elements: [{ id: element.id, type: element.type }],
         courseId: course.id,
-        blocks: {
-          create: {
-            order: 0,
-            elements: {
-              create: {
-                type: ElementInstanceType.LIVE_QUIZ,
-                elementId: element.id,
-                elementType: element.type,
-                order: 0,
-                options: {
-                  pointsMultiplier: 1,
-                } as ElementInstanceOptions,
-                elementData: processElementData(element),
-                results: getInitialInstanceResults(processElementData(element)),
-                anonymousResults: getInitialInstanceResults(
-                  processElementData(element)
-                ),
-                ownerId: userOneCtx.user.sub,
-              },
-            },
-          },
-        },
       },
-    })
+      userOneCtx
+    )
     await recomputeDerivedPermissions({ courseId: course.id }, prisma)
 
     const inheritedPermission = await prisma.derivedPermission.findUnique({
