@@ -5,10 +5,15 @@ import {
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import type { LiveQuizResponseInput } from '@klicker-uzh/types'
 import {
+  CORRELATED_RESPONSE_WORKER_CAPABILITY_KEY,
+  CORRELATED_RESPONSE_WORKER_CAPABILITY_TTL_SECONDS,
+} from '@klicker-uzh/util'
+import {
   aggregateAssessmentResponses,
   processAssessmentResponse,
 } from './processors/assessmentProcessor.js'
 import { processResponseMessage } from './processors/processor.js'
+import { getRedis } from './redis.js'
 
 export const processAnonymousResponseTask = hatchetClient.task({
   name: 'process-anonymous-response',
@@ -93,6 +98,30 @@ async function main() {
 
   console.log(`Mode: ${mode}`)
   console.log(`Workflows: ${workflows.length}`)
+
+  if (mode === 'live-quiz') {
+    const redis = getRedis()
+    const refreshCapability = () =>
+      redis.set(
+        CORRELATED_RESPONSE_WORKER_CAPABILITY_KEY,
+        'v1',
+        'EX',
+        CORRELATED_RESPONSE_WORKER_CAPABILITY_TTL_SECONDS
+      )
+
+    await refreshCapability()
+    const capabilityHeartbeat = setInterval(
+      () =>
+        void refreshCapability().catch((error) =>
+          console.error(
+            'Failed to refresh correlated response worker capability',
+            error
+          )
+        ),
+      (CORRELATED_RESPONSE_WORKER_CAPABILITY_TTL_SECONDS * 1000) / 3
+    )
+    capabilityHeartbeat.unref()
+  }
 
   console.log('Creating worker...')
   const worker = await hatchetClient.worker(

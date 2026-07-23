@@ -12,6 +12,7 @@ import {
   ElementType,
   GetFeedbacksDocument,
   GetRunningLiveQuizDocument,
+  LiveQuizResponseCollectionMode,
   SelfDocument,
   SetLiveQuizPinDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -44,7 +45,10 @@ const DynamicAccountSelector = dynamic(
   { ssr: false }
 )
 
-const responseIdentityInitializations = new Map<string, Promise<void>>()
+const responseIdentityInitializations = new Map<
+  string,
+  Promise<string | undefined>
+>()
 
 function getResponseApiEndpoint(endpoint: string) {
   const url = new URL(process.env.NEXT_PUBLIC_ADD_RESPONSE_URL as string)
@@ -55,7 +59,10 @@ function getResponseApiEndpoint(endpoint: string) {
   return url.toString()
 }
 
-function ensureLiveQuizResponseIdentity(liveQuizId: string) {
+function ensureLiveQuizResponseIdentity(
+  liveQuizId: string,
+  correlatedIdentityRequired: boolean
+) {
   const existing = responseIdentityInitializations.get(liveQuizId)
   if (existing) return existing
 
@@ -69,10 +76,17 @@ function ensureLiveQuizResponseIdentity(liveQuizId: string) {
         body: JSON.stringify({ liveQuizId }),
       }
     )
-    // Older response-api versions do not expose the initialization endpoint.
-    if (!response.ok && response.status !== 404) {
+    if (
+      !response.ok &&
+      !(response.status === 404 && !correlatedIdentityRequired)
+    ) {
       throw new Error('Live quiz response identity initialization failed')
     }
+
+    const payload = await response.json().catch(() => null)
+    return typeof payload?.respondentToken === 'string'
+      ? payload.respondentToken
+      : undefined
   })().catch((error) => {
     responseIdentityInitializations.delete(liveQuizId)
     throw error
@@ -88,16 +102,22 @@ async function handleNewResponse({
   type,
   answer,
   correlationKey,
+  responseCollectionMode,
 }: {
   liveQuizId: string
   instanceId: number
   type: ElementType
   answer: any
   correlationKey?: string | null
+  responseCollectionMode: LiveQuizResponseCollectionMode
 }): // statusCode: 0 = client-side invalid input / general error; otherwise HTTP status codes 200, 208, 400, 401, 404, 500
 Promise<{ statusCode: number; responseTimestamp?: number }> {
+  let respondentToken: string | undefined
   try {
-    await ensureLiveQuizResponseIdentity(liveQuizId)
+    respondentToken = await ensureLiveQuizResponseIdentity(
+      liveQuizId,
+      responseCollectionMode === LiveQuizResponseCollectionMode.CorrelatedExport
+    )
   } catch {
     return { statusCode: 1 }
   }
@@ -105,6 +125,12 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
   let requestOptions: RequestInit = {
     method: 'POST',
     credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(respondentToken
+        ? { 'X-Live-Quiz-Respondent-Token': respondentToken }
+        : {}),
+    },
   }
 
   if (QUESTION_GROUPS.CHOICES.includes(type)) {
@@ -207,9 +233,17 @@ function Index({ id }: { id: string }) {
     variables: { liveQuizId: id },
   })
 
+  const currentResponseCollectionMode =
+    data?.studentLiveQuiz?.responseCollectionMode
   useEffect(() => {
-    void ensureLiveQuizResponseIdentity(id).catch(() => undefined)
-  }, [id])
+    if (!currentResponseCollectionMode) return
+
+    void ensureLiveQuizResponseIdentity(
+      id,
+      currentResponseCollectionMode ===
+        LiveQuizResponseCollectionMode.CorrelatedExport
+    ).catch(() => undefined)
+  }, [currentResponseCollectionMode, id])
 
   // if a block is active when the page is loaded or a new block is activated, switch to the corresponding block
   useEffect(() => {
@@ -490,7 +524,9 @@ function Index({ id }: { id: string }) {
         isGamificationEnabled={isGamificationEnabled}
         isAssessmentEnabled={isAssessmentEnabled}
         responseCollectionMode={responseCollectionMode}
-        handleNewResponse={handleNewResponse}
+        handleNewResponse={(params) =>
+          handleNewResponse({ ...params, responseCollectionMode })
+        }
         className={extraClassName}
       />
     )

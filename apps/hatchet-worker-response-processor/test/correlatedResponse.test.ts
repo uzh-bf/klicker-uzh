@@ -4,6 +4,7 @@ import {
   UserRole,
 } from '@klicker-uzh/prisma/client'
 import {
+  buildCorrelatedVoteKey,
   createLiveQuizRespondentToken,
   getLiveQuizRespondentCookieName,
   hashLiveQuizRespondentToken,
@@ -13,11 +14,14 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { describe, it } from 'node:test'
 import {
+  applyCorrelatedRedisMutations,
   buildCorrelatedResponseCreateData,
+  CorrelatedRedisMutationBuffer,
   CorrelatedResponseIdentityError,
   CorrelatedResponseProcessingBusyError,
   getCorrelatedProcessedKey,
   isPersistedResponseRetry,
+  prepareCorrelatedMessageProcessing,
   prepareCorrelatedResponseProcessing,
   releaseCorrelatedProcessingLock,
   resolveCorrelatedResponseOwner,
@@ -41,6 +45,10 @@ class MemoryProcessingRedis {
 
   async hget(key: string, field: string) {
     return this.hashes.get(key)?.get(field) ?? null
+  }
+
+  async get(key: string) {
+    return this.strings.get(key) ?? null
   }
 
   async set(
@@ -526,5 +534,82 @@ describe('correlated response persistence helpers', () => {
       }),
       /Expected Redis hash/
     )
+  })
+
+  it('prepares the complete anonymous response lifecycle from claim to lock', async () => {
+    const liveQuizId = randomUUID()
+    const respondentId = randomUUID()
+    const messageId = randomUUID()
+    const token = await createLiveQuizRespondentToken({
+      respondentId,
+      liveQuizId,
+      secret,
+      issuer,
+    })
+    const identityKey = `respondent:${respondentId}` as const
+    const claimKey = buildCorrelatedVoteKey({
+      liveQuizId,
+      instanceId: '42',
+      blockExecution: '3',
+      identityKey,
+    })
+    const redis = new MemoryProcessingRedis()
+    await redis.set(claimKey, messageId, 'PX', 300_000, 'NX')
+    const { database } = createDatabase()
+    ;(database as any).liveQuizResponse = {
+      findUnique: async () => null,
+    }
+
+    const result = await prepareCorrelatedMessageProcessing({
+      redis,
+      database,
+      message: {
+        messageId,
+        sessionId: liveQuizId,
+        instanceId: '42',
+        responseTimestamp: 123,
+        cookie: `${getLiveQuizRespondentCookieName(liveQuizId)}=${token}`,
+        correlatedClaim: { key: claimKey, identityKey },
+      },
+      blockExecution: '3',
+      sessionBlockId: randomUUID(),
+      secret,
+      issuer,
+    })
+
+    assert.equal(result.status, 'process')
+    if (result.status === 'process') {
+      assert.equal(result.state.owner.id, respondentId)
+      assert.equal(result.state.blockExecution, 3)
+    }
+  })
+
+  it('buffers typed Redis mutations for one atomic apply operation', async () => {
+    const buffer = new CorrelatedRedisMutationBuffer()
+    buffer.hincrby('results', 'participants', 1)
+    buffer.hset('responses', 'respondent', 'answer')
+    buffer.hsetnx('info', 'firstResponseReceivedAt', 123)
+
+    let args: Array<number | string> = []
+    const result = await applyCorrelatedRedisMutations({
+      redis: {
+        eval: async (
+          _script: string,
+          _numberOfKeys: number,
+          ...received: Array<number | string>
+        ) => {
+          args = received
+          return 1
+        },
+      },
+      mutations: buffer.mutations,
+      processedKey: 'processed',
+      identityKey: 'respondent:abc',
+      messageId: 'message-1',
+    })
+
+    assert.equal(result, 'applied')
+    assert.deepEqual(JSON.parse(String(args[1])), buffer.mutations)
+    assert.deepEqual(args.slice(2), ['respondent:abc', 'message-1'])
   })
 })

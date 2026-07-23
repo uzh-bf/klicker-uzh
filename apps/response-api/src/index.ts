@@ -6,10 +6,13 @@ import {
   UserLoginScope,
 } from '@klicker-uzh/prisma/client'
 import {
+  buildLiveQuizResponseIdentityKey,
   createLiveQuizRespondentToken,
   getLiveQuizRespondentCookieName,
+  LIVE_QUIZ_RESPONDENT_TOKEN_HEADER,
   resolveLiveQuizResponseIdentity,
   verifyJWT,
+  type CorrelatedResponseClaim,
   type JWTPayload,
   type LiveQuizResponseIdentity,
 } from '@klicker-uzh/util'
@@ -20,7 +23,11 @@ import { createHash } from 'node:crypto'
 import {
   buildCorrelatedVoteKey,
   claimCorrelatedResponse,
+  hasJsonContentType,
+  hasPersistedCorrelatedResponse,
   hasValidLiveQuizPin,
+  isAllowedCorsOrigin,
+  isCorrelatedResponseWorkerReady,
   releaseCorrelatedResponse,
   resolveResponseCollectionMode,
   serializeLiveQuizRespondentCookie,
@@ -50,14 +57,19 @@ const CORS_ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || '')
 
 function setCorsHeaders(req: IncomingMessage, res: ServerResponse) {
   const origin = req.headers.origin
-  // Only allow explicitly whitelisted origins, and never allow "null"
-  if (origin && origin !== 'null' && CORS_ALLOWED_ORIGINS.includes(origin)) {
+  if (
+    origin &&
+    isAllowedCorsOrigin({ origin, allowedOrigins: CORS_ALLOWED_ORIGINS })
+  ) {
     res.setHeader('Access-Control-Allow-Origin', origin)
     res.setHeader('Vary', 'Origin')
     res.setHeader('Access-Control-Allow-Credentials', 'true')
   }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Cookie')
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Cookie, X-Live-Quiz-Respondent-Token'
+  )
 }
 
 function sendJson(
@@ -173,6 +185,29 @@ async function ensureCorrelatedResponseIdentity({
   return identity
 }
 
+async function resolveCorrelatedResponseIdentity({
+  req,
+  liveQuizId,
+}: {
+  req: IncomingMessage
+  liveQuizId: string
+}) {
+  const { secret, issuer } = getResponseIdentityConfig()
+  const respondentTokenHeader = req.headers[LIVE_QUIZ_RESPONDENT_TOKEN_HEADER]
+
+  return resolveLiveQuizResponseIdentity({
+    cookieHeader:
+      typeof req.headers.cookie === 'string' ? req.headers.cookie : undefined,
+    respondentToken:
+      typeof respondentTokenHeader === 'string'
+        ? respondentTokenHeader
+        : undefined,
+    liveQuizId,
+    secret,
+    issuer,
+  })
+}
+
 async function handleInitializeLiveQuizResponseIdentity(
   req: IncomingMessage,
   res: ServerResponse
@@ -216,12 +251,21 @@ async function handleInitializeLiveQuizResponseIdentity(
     return sendJson(req, res, 403, { error: 'Live quiz PIN required' })
   }
 
-  await ensureCorrelatedResponseIdentity({
+  if (!(await isCorrelatedResponseWorkerReady({ redis }))) {
+    return sendJson(req, res, 503, {
+      error: 'Correlated response processing is not available',
+    })
+  }
+
+  const identity = await ensureCorrelatedResponseIdentity({
     req,
     res,
     liveQuizId: payload.liveQuizId,
   })
-  return sendJson(req, res, 200, { status: 'ready' })
+  return sendJson(req, res, 200, {
+    status: 'ready',
+    respondentToken: identity.kind === 'anonymous' ? identity.token : undefined,
+  })
 }
 
 async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
@@ -272,12 +316,7 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
 
   let cookie: string | undefined
   let eventName: string
-  let claim:
-    | {
-        key: string
-        identityKey: string
-      }
-    | undefined
+  let claim: CorrelatedResponseClaim | undefined
 
   if (isCorrelated) {
     const liveQuiz = await prisma.liveQuiz.findUnique({
@@ -308,29 +347,61 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
       return sendJson(req, res, 403, { error: 'Live quiz PIN required' })
     }
 
+    if (!(await isCorrelatedResponseWorkerReady({ redis }))) {
+      return sendJson(req, res, 503, {
+        error: 'Correlated response processing is not available',
+      })
+    }
+
     if (!instanceInfo.blockExecution) {
       throw new Error(
         `Missing block execution in correlated response metadata for ${instanceInfoKey}`
       )
     }
 
-    const identity = await ensureCorrelatedResponseIdentity({
+    const identity = await resolveCorrelatedResponseIdentity({
       req,
-      res,
       liveQuizId: liveQuizIdString,
     })
+    if (!identity) {
+      return sendJson(req, res, 401, {
+        error: 'Live quiz response identity required',
+      })
+    }
+
+    const correlatedInstanceId = Number(instanceIdString)
+    const correlatedBlockExecution = Number(instanceInfo.blockExecution)
+    if (
+      !Number.isInteger(correlatedInstanceId) ||
+      !Number.isInteger(correlatedBlockExecution)
+    ) {
+      return badRequest(req, res, 'Invalid correlated response metadata')
+    }
+
+    if (
+      await hasPersistedCorrelatedResponse({
+        database: prisma,
+        identity,
+        instanceId: correlatedInstanceId,
+        blockExecution: correlatedBlockExecution,
+      })
+    ) {
+      return sendJson(req, res, 208, {
+        status: 'response_recorded_before',
+        responseTimestamp,
+      })
+    }
 
     cookie = `${identity.cookieName}=${identity.token}`
+    const identityKey = buildLiveQuizResponseIdentityKey(identity)
     claim = {
       key: buildCorrelatedVoteKey({
         liveQuizId: liveQuizIdString,
         instanceId: instanceIdString,
         blockExecution: instanceInfo.blockExecution,
+        identityKey,
       }),
-      identityKey:
-        identity.kind === 'participant'
-          ? `participant:${identity.id}`
-          : `respondent:${identity.id}`,
+      identityKey,
     }
 
     const claimed = await claimCorrelatedResponse({
@@ -592,6 +663,15 @@ async function handleAddAssessmentResponse(
 
 const server = createServer(async (req, res) => {
   try {
+    if (
+      !isAllowedCorsOrigin({
+        origin: req.headers.origin,
+        allowedOrigins: CORS_ALLOWED_ORIGINS,
+      })
+    ) {
+      return sendJson(req, res, 403, { error: 'Origin not allowed' })
+    }
+
     // handle CORS preflight requests
     if (req.method === 'OPTIONS') {
       setCorsHeaders(req, res)
@@ -607,6 +687,19 @@ const server = createServer(async (req, res) => {
       (url.pathname === '/healthz' || url.pathname === '/')
     ) {
       return sendJson(req, res, 200, { status: 'ok' })
+    }
+
+    if (
+      req.method === 'POST' &&
+      !hasJsonContentType(
+        typeof req.headers['content-type'] === 'string'
+          ? req.headers['content-type']
+          : undefined
+      )
+    ) {
+      return sendJson(req, res, 415, {
+        error: 'Content-Type must be application/json',
+      })
     }
 
     // add response endpoint

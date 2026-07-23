@@ -218,9 +218,6 @@ export async function loginTemporaryParticipant(
       data: {
         id: temporaryParticipantId,
         type: DB.LiveQuizRespondentType.TEMPORARY_PSEUDONYM,
-        username: pseudonym.trim(),
-        avatar: avatar ?? undefined,
-        score: 0,
         liveQuiz: {
           connect: { id: liveQuizId },
         },

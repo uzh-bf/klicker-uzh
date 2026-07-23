@@ -17,7 +17,6 @@ import type {
   NumericalRestrictions,
 } from '@klicker-uzh/types'
 import {
-  buildCorrelatedVoteKey,
   releaseCorrelatedResponse,
   verifyJWT,
   type CorrelatedResponseClaim,
@@ -25,30 +24,25 @@ import {
 } from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
-import type { ChainableCommander } from 'ioredis'
-import { DEFAULT_POINTS } from '../constants.js'
 import { getRedis } from '../redis.js'
 import {
+  applyCorrelatedRedisMutations,
   buildCorrelatedResponseCreateData,
+  CorrelatedRedisMutationBuffer,
   CorrelatedResponseIdentityError,
-  getCorrelatedProcessedKey,
-  prepareCorrelatedResponseProcessing,
+  getCorrelatedResponsePoints,
+  prepareCorrelatedMessageProcessing,
   releaseCorrelatedProcessingLock,
-  resolveCorrelatedResponseOwner,
   validateCorrelatedRedisHashKeys,
-  type CorrelatedResponseOwner,
+  type CorrelatedProcessingState,
+  type RedisHashMutationQueue,
 } from './correlatedResponse.js'
 import {
   getCaseStudyQuestionPoints,
-  getCaseStudyQuestionPointsDetails,
   getChoicesQuestionPoints,
-  getChoicesQuestionPointsDetails,
   getFreeTextQuestionPoints,
-  getFreeTextQuestionPointsDetails,
   getNumericalQuestionPoints,
-  getNumericalQuestionPointsDetails,
   getSelectionQuestionPoints,
-  getSelectionQuestionPointsDetails,
   updateLeaderboards,
   validateStudentResponse,
 } from './helpers.js'
@@ -57,136 +51,6 @@ import {
 // TODO: ensure that the response meets the restrictions specified in the element options
 
 const redisExec = getRedis() // use standard redis instance for regular response processor
-
-function getCorrelatedResponsePoints({
-  type,
-  choiceCount,
-  response,
-  instanceInfo,
-  firstResponseReceivedAt,
-  responseTimestamp,
-  basePoints,
-  defaultPoints,
-  pointsMultiplier,
-  parsedSolutions,
-}: {
-  type: string
-  choiceCount?: string
-  response: LiveQuizResponseInput
-  instanceInfo: Record<string, string>
-  firstResponseReceivedAt?: string
-  responseTimestamp: number
-  basePoints?: string
-  defaultPoints?: string
-  pointsMultiplier?: string
-  parsedSolutions: any
-}) {
-  const awardedBasePoints =
-    basePoints === 'true'
-      ? parseInt(defaultPoints ?? String(DEFAULT_POINTS), 10)
-      : 0
-
-  let details: {
-    correctnessPoints: number
-    bonusPoints: number
-    pointsPercentage: number | null
-    xpAwarded: number
-  }
-  switch (type) {
-    case 'SC':
-    case 'MC':
-    case 'KPRIM':
-      details = getChoicesQuestionPointsDetails({
-        type,
-        choiceCount,
-        response,
-        instanceInfo,
-        firstResponseReceivedAt,
-        responseTimestamp,
-        basePoints,
-        pointsMultiplier,
-        parsedSolutions,
-      })
-      break
-    case 'NUMERICAL':
-      details = getNumericalQuestionPointsDetails({
-        response,
-        instanceInfo,
-        firstResponseReceivedAt,
-        responseTimestamp,
-        basePoints,
-        pointsMultiplier,
-        parsedSolutions,
-      })
-      break
-    case 'FREE_TEXT':
-      details = getFreeTextQuestionPointsDetails({
-        response,
-        instanceInfo,
-        firstResponseReceivedAt,
-        responseTimestamp,
-        basePoints,
-        pointsMultiplier,
-        parsedSolutions,
-      })
-      break
-    case 'SELECTION':
-      details = getSelectionQuestionPointsDetails({
-        response,
-        instanceInfo,
-        firstResponseReceivedAt,
-        responseTimestamp,
-        basePoints,
-        pointsMultiplier,
-        parsedSolutions,
-      })
-      break
-    case 'CASE_STUDY':
-      details = getCaseStudyQuestionPointsDetails({
-        response,
-        instanceInfo,
-        firstResponseReceivedAt,
-        responseTimestamp,
-        basePoints,
-        pointsMultiplier,
-        parsedSolutions,
-      })
-      break
-    case 'CONTENT':
-      details = {
-        correctnessPoints: 0,
-        bonusPoints: 0,
-        pointsPercentage: null,
-        xpAwarded: 0,
-      }
-      break
-    default:
-      throw new Error(`Unsupported correlated response element type ${type}`)
-  }
-
-  return {
-    basePoints: type === 'CONTENT' ? 0 : awardedBasePoints,
-    correctnessPoints: details.correctnessPoints,
-    bonusPoints: details.bonusPoints,
-    correctnessPercentage: details.pointsPercentage,
-    pointsAwarded: Math.round(
-      (type === 'CONTENT' ? 0 : awardedBasePoints) +
-        details.correctnessPoints +
-        details.bonusPoints
-    ),
-    pointsPercentage: details.pointsPercentage,
-    xpAwarded: details.xpAwarded,
-  }
-}
-
-type CorrelatedProcessingState = {
-  owner: CorrelatedResponseOwner
-  processedKey: string
-  processingLockKey: string
-  instanceId: number
-  blockExecution: number
-  responsePersisted: boolean
-}
 
 export async function processResponseMessage(
   message: {
@@ -230,7 +94,9 @@ export async function processResponseMessage(
     })
   }
 
-  let redisMulti: ChainableCommander = redisExec.pipeline()
+  let aggregatePipeline = redisExec.pipeline()
+  let redisMulti: RedisHashMutationQueue = aggregatePipeline
+  let correlatedMutationBuffer: CorrelatedRedisMutationBuffer | undefined
   let isCorrelated = false
   let correlatedState: CorrelatedProcessingState | undefined
 
@@ -322,25 +188,16 @@ export async function processResponseMessage(
     isCorrelated =
       responseCollectionMode ===
       LiveQuizResponseCollectionMode.CORRELATED_EXPORT
-    redisMulti = isCorrelated ? redisExec.multi() : redisExec.pipeline()
+    if (isCorrelated) {
+      correlatedMutationBuffer = new CorrelatedRedisMutationBuffer()
+      redisMulti = correlatedMutationBuffer
+    } else {
+      aggregatePipeline = redisExec.pipeline()
+      redisMulti = aggregatePipeline
+    }
 
     let participantData: JWTPayload | null = null
     if (isCorrelated) {
-      if (!message.correlatedClaim || !blockExecution || !sessionBlockId) {
-        await releaseClaim()
-        return { status: 400 }
-      }
-
-      const correlatedInstanceId = Number(message.instanceId)
-      const correlatedBlockExecution = Number(blockExecution)
-      if (
-        !Number.isInteger(correlatedInstanceId) ||
-        !Number.isInteger(correlatedBlockExecution)
-      ) {
-        await releaseClaim()
-        return { status: 400 }
-      }
-
       const secret = process.env.APP_SECRET
       const issuer = process.env.APP_ORIGIN_API
       if (!secret || !issuer) {
@@ -349,74 +206,38 @@ export async function processResponseMessage(
         )
       }
 
-      const correlatedOwner = await resolveCorrelatedResponseOwner({
-        cookieHeader: message.cookie,
-        liveQuizId: message.sessionId,
-        secret,
-        issuer,
-        database: prisma,
-      })
-
-      const expectedClaimKey = buildCorrelatedVoteKey({
-        liveQuizId: message.sessionId,
-        instanceId: message.instanceId,
-        blockExecution,
-      })
-      if (
-        message.correlatedClaim.key !== expectedClaimKey ||
-        message.correlatedClaim.identityKey !== correlatedOwner.identityKey
-      ) {
-        await releaseClaim()
-        return { status: 400 }
-      }
-
-      const claimOwnerMessageId = await redisExec.hget(
-        message.correlatedClaim.key,
-        message.correlatedClaim.identityKey
-      )
-      if (claimOwnerMessageId !== message.messageId) {
-        await releaseClaim()
-        return { status: 400 }
-      }
-
-      const correlatedProcessedKey = getCorrelatedProcessedKey({
-        liveQuizId: message.sessionId,
-        instanceId: message.instanceId,
-        blockExecution: correlatedBlockExecution,
-      })
-      const processing = await prepareCorrelatedResponseProcessing({
+      const preparation = await prepareCorrelatedMessageProcessing({
         redis: redisExec,
         database: prisma,
-        processedKey: correlatedProcessedKey,
-        owner: correlatedOwner,
-        instanceId: correlatedInstanceId,
-        blockExecution: correlatedBlockExecution,
-        responseTimestamp,
-        claimOwnerMessageId,
-        messageId: message.messageId,
+        message,
+        blockExecution,
+        sessionBlockId,
+        secret,
+        issuer,
       })
-      if (processing.status === 'processed') {
+      if (preparation.status === 'invalid') {
+        await releaseClaim()
+        return { status: 400 }
+      }
+      if (preparation.status === 'processed') {
+        await releaseClaim()
         return { status: 200 }
       }
-      if (processing.status === 'duplicate') {
+      if (preparation.status === 'duplicate') {
         await releaseClaim()
         return { status: 208 }
       }
 
-      correlatedState = {
-        owner: correlatedOwner,
-        processedKey: correlatedProcessedKey,
-        processingLockKey: processing.lockKey,
-        instanceId: correlatedInstanceId,
-        blockExecution: correlatedBlockExecution,
-        responsePersisted: processing.responsePersisted,
-      }
+      correlatedState = preparation.state
 
       participantData =
-        correlatedOwner.kind === 'participant'
-          ? { sub: correlatedOwner.id, role: UserRole.PARTICIPANT }
-          : correlatedOwner.kind === 'temporary'
-            ? { sub: correlatedOwner.id, role: UserRole.TEMPORARY_PARTICIPANT }
+        correlatedState.owner.kind === 'participant'
+          ? { sub: correlatedState.owner.id, role: UserRole.PARTICIPANT }
+          : correlatedState.owner.kind === 'temporary'
+            ? {
+                sub: correlatedState.owner.id,
+                role: UserRole.TEMPORARY_PARTICIPANT,
+              }
             : null
     } else if (typeof message.cookie === 'string') {
       try {
@@ -1038,19 +859,13 @@ export async function processResponseMessage(
             'code' in error &&
             error.code === 'P2002'
           ) {
-            redisMulti.discard()
             await releaseProcessingLock()
+            await releaseClaim()
             return { status: 208 }
           }
           throw error
         }
       }
-
-      redisMulti.hset(
-        correlatedState.processedKey,
-        correlatedState.owner.identityKey,
-        message.messageId
-      )
     }
   } catch (e) {
     ctx.logger.error(
@@ -1061,7 +876,9 @@ export async function processResponseMessage(
           instanceId: message.instanceId,
         })
     )
-    redisMulti.discard()
+    if (!isCorrelated) {
+      aggregatePipeline.discard()
+    }
     if (e instanceof CorrelatedResponseIdentityError) {
       await releaseInvalidCorrelatedResponse()
       return { status: 400 }
@@ -1077,19 +894,27 @@ export async function processResponseMessage(
   }
 
   try {
-    const results = await redisMulti.exec()
-    if (
-      isCorrelated &&
-      (!results || results.some(([commandError]) => commandError))
-    ) {
-      const commandError = results?.find(([error]) => error)?.[0]
-      throw new Error(
-        commandError
-          ? `Redis command failed: ${commandError.message}`
-          : 'Redis transaction was aborted'
-      )
+    if (isCorrelated) {
+      if (!correlatedState || !correlatedMutationBuffer) {
+        throw new Error('Missing correlated response processing state')
+      }
+      const result = await applyCorrelatedRedisMutations({
+        redis: redisExec,
+        mutations: correlatedMutationBuffer.mutations,
+        processedKey: correlatedState.processedKey,
+        identityKey: correlatedState.owner.identityKey,
+        messageId: message.messageId,
+      })
+      if (result === 'duplicate') {
+        await releaseProcessingLock()
+        await releaseClaim()
+        return { status: 208 }
+      }
+    } else {
+      await aggregatePipeline.exec()
     }
     await releaseProcessingLock()
+    await releaseClaim()
     ctx.logger.info("Successfully processed participant's response", {
       messageId: message.messageId,
       sessionId: message.sessionId,
@@ -1105,7 +930,9 @@ export async function processResponseMessage(
           instanceId: message.instanceId,
         })
     )
-    redisMulti.discard()
+    if (!isCorrelated) {
+      aggregatePipeline.discard()
+    }
     await releaseProcessingLock()
     throw new Error(`Redis transaction failed ${String(e)}`)
   }

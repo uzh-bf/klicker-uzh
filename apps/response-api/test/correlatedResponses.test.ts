@@ -3,33 +3,45 @@ import { describe, it } from 'node:test'
 import {
   buildCorrelatedVoteKey,
   claimCorrelatedResponse,
+  hasJsonContentType,
+  hasPersistedCorrelatedResponse,
   hasValidLiveQuizPin,
+  isAllowedCorsOrigin,
+  isCorrelatedResponseWorkerReady,
   releaseCorrelatedResponse,
   resolveResponseCollectionMode,
   serializeLiveQuizRespondentCookie,
 } from '../src/correlatedResponses.js'
 
 class MemoryRedis {
-  private readonly hashes = new Map<string, Map<string, string>>()
+  private readonly strings = new Map<string, string>()
+  lastTtlMs: number | undefined
 
-  async hsetnx(key: string, field: string, value: string) {
-    const hash = this.hashes.get(key) ?? new Map<string, string>()
-    this.hashes.set(key, hash)
-    if (hash.has(field)) return 0
-    hash.set(field, value)
-    return 1
+  async get(key: string) {
+    return this.strings.get(key) ?? null
+  }
+
+  async set(
+    key: string,
+    value: string,
+    _expiryMode?: 'PX',
+    time?: number,
+    _setMode?: 'NX'
+  ) {
+    if (_setMode === 'NX' && this.strings.has(key)) return null
+    this.strings.set(key, value)
+    this.lastTtlMs = time
+    return 'OK' as const
   }
 
   async eval(
     _script: string,
     _numberOfKeys: number,
     key: string,
-    field: string,
     expectedValue: string
   ) {
-    const hash = this.hashes.get(key)
-    if (hash?.get(field) !== expectedValue) return 0
-    return hash.delete(field) ? 1 : 0
+    if (this.strings.get(key) !== expectedValue) return 0
+    return this.strings.delete(key) ? 1 : 0
   }
 }
 
@@ -40,6 +52,7 @@ describe('correlated response claim', () => {
       liveQuizId: 'quiz-1',
       instanceId: '42',
       blockExecution: '3',
+      identityKey: 'respondent:abc',
     })
 
     assert.equal(
@@ -51,6 +64,7 @@ describe('correlated response claim', () => {
       }),
       true
     )
+    assert.equal(redis.lastTtlMs, 5 * 60 * 1000)
     assert.equal(
       await claimCorrelatedResponse({
         redis,
@@ -90,6 +104,89 @@ describe('correlated response claim', () => {
       }),
       true
     )
+  })
+})
+
+describe('correlated response request safeguards', () => {
+  it('requires allowlisted browser origins while permitting non-browser clients', () => {
+    assert.equal(
+      isAllowedCorsOrigin({
+        origin: undefined,
+        allowedOrigins: ['https://pwa.klicker.test'],
+      }),
+      true
+    )
+    assert.equal(
+      isAllowedCorsOrigin({
+        origin: 'https://pwa.klicker.test',
+        allowedOrigins: ['https://pwa.klicker.test'],
+      }),
+      true
+    )
+    assert.equal(
+      isAllowedCorsOrigin({
+        origin: 'https://attacker.test',
+        allowedOrigins: ['https://pwa.klicker.test'],
+      }),
+      false
+    )
+  })
+
+  it('accepts only JSON request content types', () => {
+    assert.equal(hasJsonContentType('application/json'), true)
+    assert.equal(hasJsonContentType('application/json; charset=utf-8'), true)
+    assert.equal(hasJsonContentType('text/plain'), false)
+    assert.equal(hasJsonContentType(undefined), false)
+  })
+
+  it('checks worker compatibility through the protocol heartbeat', async () => {
+    const redis = new MemoryRedis()
+    assert.equal(await isCorrelatedResponseWorkerReady({ redis }), false)
+    await redis.set('lq:correlatedResponses:workerProtocol:v1', 'v1')
+    assert.equal(await isCorrelatedResponseWorkerReady({ redis }), true)
+  })
+
+  it('detects an existing response for either owner type', async () => {
+    const calls: any[] = []
+    const database = {
+      liveQuizResponse: {
+        findUnique: async (args: any) => {
+          calls.push(args)
+          return { id: 'response-id' }
+        },
+      },
+    } as any
+
+    assert.equal(
+      await hasPersistedCorrelatedResponse({
+        database,
+        identity: {
+          kind: 'participant',
+          id: 'participant-id',
+          token: 'token',
+          cookieName: 'participant_token',
+        },
+        instanceId: 42,
+        blockExecution: 3,
+      }),
+      true
+    )
+    assert.equal(
+      await hasPersistedCorrelatedResponse({
+        database,
+        identity: {
+          kind: 'anonymous',
+          id: 'respondent-id',
+          liveQuizId: 'quiz-id',
+          token: 'token',
+          cookieName: 'cookie',
+        },
+        instanceId: 42,
+        blockExecution: 3,
+      }),
+      true
+    )
+    assert.equal(calls.length, 2)
   })
 })
 

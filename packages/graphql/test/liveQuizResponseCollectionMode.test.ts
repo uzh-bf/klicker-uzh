@@ -201,8 +201,9 @@ describe('Live quiz response collection mode', () => {
       id: payload.sub,
       liveQuizId: liveQuiz.id,
       type: LiveQuizRespondentType.TEMPORARY_PSEUDONYM,
-      username: leaderboardEntry!.username,
-      avatar: leaderboardEntry!.avatar,
+    })
+    expect(leaderboardEntry).toMatchObject({
+      username: expect.stringMatching(/^temporary-/),
     })
     expect(setCookie).toHaveBeenCalledWith(
       'temporary_participant_token',

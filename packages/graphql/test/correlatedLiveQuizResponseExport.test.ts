@@ -7,7 +7,7 @@ import {
 import { createHmac } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
-import { getCorrelatedLiveQuizResponseExport } from '../src/services/liveQuizzes.js'
+import { getCorrelatedLiveQuizResponseExport } from '../src/services/correlatedLiveQuizResponseExport.js'
 
 interface LiveQuizFixture {
   displayName: string

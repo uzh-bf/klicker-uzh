@@ -245,9 +245,6 @@ model LiveQuizRespondent {
   id String @id @default(uuid()) @db.Uuid
 
   type                   LiveQuizRespondentType
-  username               String?
-  score                  Int                    @default(0)
-  avatar                 String?
   verificationSecretHash String?
 
   liveQuiz   LiveQuiz @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)

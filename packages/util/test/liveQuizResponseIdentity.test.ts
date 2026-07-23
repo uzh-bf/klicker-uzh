@@ -2,6 +2,7 @@ import { UserRole } from '@klicker-uzh/prisma/client'
 import { describe, expect, it } from 'vitest'
 import { decodeJWT, signJWT } from '../src/jwt.js'
 import {
+  buildLiveQuizResponseIdentityKey,
   createLiveQuizRespondentToken,
   getLiveQuizRespondentCookieName,
   LIVE_QUIZ_RESPONDENT_TOKEN_MAX_AGE_SECONDS,
@@ -60,6 +61,32 @@ describe('live quiz response identity', () => {
         issuer,
       })
     ).resolves.toBeNull()
+  })
+
+  it('resolves a signed respondent token when cookies are unavailable', async () => {
+    const respondentToken = await createLiveQuizRespondentToken({
+      respondentId,
+      liveQuizId,
+      secret,
+      issuer,
+    })
+
+    const identity = await resolveLiveQuizResponseIdentity({
+      cookieHeader: `${getLiveQuizRespondentCookieName(liveQuizId)}=expired`,
+      respondentToken,
+      liveQuizId,
+      secret,
+      issuer,
+    })
+
+    expect(identity).toMatchObject({
+      kind: 'anonymous',
+      id: respondentId,
+      token: respondentToken,
+    })
+    expect(buildLiveQuizResponseIdentityKey(identity!)).toBe(
+      `respondent:${respondentId}`
+    )
   })
 
   it('accepts quiz-scoped and legacy temporary participant tokens', async () => {

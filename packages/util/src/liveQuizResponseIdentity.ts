@@ -6,8 +6,13 @@ import { signJWT, verifyJWT, type JWTPayload } from './jwt.js'
 export const PARTICIPANT_COOKIE_NAME = 'participant_token'
 export const TEMPORARY_PARTICIPANT_COOKIE_NAME = 'temporary_participant_token'
 export const LIVE_QUIZ_RESPONDENT_COOKIE_PREFIX = 'live_quiz_respondent_token_'
+export const LIVE_QUIZ_RESPONDENT_TOKEN_HEADER = 'x-live-quiz-respondent-token'
 export const LIVE_QUIZ_RESPONDENT_ROLE = 'LIVE_QUIZ_RESPONDENT'
 export const LIVE_QUIZ_RESPONDENT_TOKEN_MAX_AGE_SECONDS = 14 * 24 * 60 * 60
+export const CORRELATED_RESPONSE_CLAIM_TTL_MS = 5 * 60 * 1000
+export const CORRELATED_RESPONSE_WORKER_CAPABILITY_KEY =
+  'lq:correlatedResponses:workerProtocol:v1'
+export const CORRELATED_RESPONSE_WORKER_CAPABILITY_TTL_SECONDS = 90
 
 export function getLiveQuizRespondentCookieName(liveQuizId: string) {
   return `${LIVE_QUIZ_RESPONDENT_COOKIE_PREFIX}${liveQuizId}`
@@ -34,6 +39,17 @@ export type LiveQuizResponseIdentity =
       token: string
       cookieName: string
     }
+
+export type LiveQuizResponseIdentityKey =
+  | `participant:${string}`
+  | `respondent:${string}`
+
+export function buildLiveQuizResponseIdentityKey({
+  kind,
+  id,
+}: Pick<LiveQuizResponseIdentity, 'kind' | 'id'>): LiveQuizResponseIdentityKey {
+  return kind === 'participant' ? `participant:${id}` : `respondent:${id}`
+}
 
 export async function createLiveQuizRespondentToken({
   respondentId,
@@ -81,11 +97,13 @@ async function verifyIdentityToken({
 
 export async function resolveLiveQuizResponseIdentity({
   cookieHeader,
+  respondentToken,
   liveQuizId,
   secret,
   issuer,
 }: {
   cookieHeader: string | undefined
+  respondentToken?: string
   liveQuizId: string
   secret: string
   issuer: string
@@ -134,24 +152,30 @@ export async function resolveLiveQuizResponseIdentity({
   }
 
   const respondentCookieName = getLiveQuizRespondentCookieName(liveQuizId)
-  const respondentToken = cookies[respondentCookieName]
-  const respondentPayload = await verifyIdentityToken({
-    token: respondentToken,
-    secret,
-    issuer,
+  const respondentTokens = [
+    cookies[respondentCookieName],
+    respondentToken,
+  ].filter((token, index, tokens): token is string => {
+    return Boolean(token) && tokens.indexOf(token) === index
   })
-  if (
-    respondentToken &&
-    respondentPayload?.role === LIVE_QUIZ_RESPONDENT_ROLE &&
-    respondentPayload.liveQuizId === liveQuizId &&
-    typeof respondentPayload.sub === 'string'
-  ) {
-    return {
-      kind: 'anonymous',
-      id: respondentPayload.sub,
-      liveQuizId,
-      token: respondentToken,
-      cookieName: respondentCookieName,
+  for (const resolvedRespondentToken of respondentTokens) {
+    const respondentPayload = await verifyIdentityToken({
+      token: resolvedRespondentToken,
+      secret,
+      issuer,
+    })
+    if (
+      respondentPayload?.role === LIVE_QUIZ_RESPONDENT_ROLE &&
+      respondentPayload.liveQuizId === liveQuizId &&
+      typeof respondentPayload.sub === 'string'
+    ) {
+      return {
+        kind: 'anonymous',
+        id: respondentPayload.sub,
+        liveQuizId,
+        token: resolvedRespondentToken,
+        cookieName: respondentCookieName,
+      }
     }
   }
 
@@ -163,7 +187,14 @@ export function hashLiveQuizRespondentToken(token: string) {
 }
 
 interface CorrelatedResponseRedis {
-  hsetnx(key: string, field: string, value: string): Promise<number>
+  get(key: string): Promise<string | null>
+  set(
+    key: string,
+    value: string,
+    expiryMode: 'PX',
+    time: number,
+    setMode: 'NX'
+  ): Promise<'OK' | null>
   eval(
     script: string,
     numberOfKeys: number,
@@ -172,59 +203,79 @@ interface CorrelatedResponseRedis {
 }
 
 const RELEASE_OWNED_CLAIM_SCRIPT = `
-if redis.call('HGET', KEYS[1], ARGV[1]) == ARGV[2] then
-  return redis.call('HDEL', KEYS[1], ARGV[1])
+if redis.call('GET', KEYS[1]) == ARGV[1] then
+  return redis.call('DEL', KEYS[1])
 end
 return 0
 `
 
 export type CorrelatedResponseClaim = {
   key: string
-  identityKey: string
+  identityKey: LiveQuizResponseIdentityKey
 }
 
 export function buildCorrelatedVoteKey({
   liveQuizId,
   instanceId,
   blockExecution,
+  identityKey,
 }: {
   liveQuizId: string
   instanceId: string
   blockExecution: string
+  identityKey: LiveQuizResponseIdentityKey
 }) {
-  return `lq:${liveQuizId}:i:${instanceId}:correlatedVotes:${blockExecution}`
+  const identityHash = createHash('sha256').update(identityKey).digest('hex')
+  return `lq:${liveQuizId}:i:${instanceId}:correlatedVotes:${blockExecution}:${identityHash}`
 }
 
 export async function claimCorrelatedResponse({
   redis,
   key,
-  identityKey,
   messageId,
 }: {
   redis: CorrelatedResponseRedis
   key: string
-  identityKey: string
+  identityKey: LiveQuizResponseIdentityKey
   messageId: string
 }) {
-  return (await redis.hsetnx(key, identityKey, messageId)) === 1
+  return (
+    (await redis.set(
+      key,
+      messageId,
+      'PX',
+      CORRELATED_RESPONSE_CLAIM_TTL_MS,
+      'NX'
+    )) === 'OK'
+  )
+}
+
+export async function isCorrelatedResponseClaimOwned({
+  redis,
+  key,
+  messageId,
+}: {
+  redis: Pick<CorrelatedResponseRedis, 'get'>
+  key: string
+  messageId: string
+}) {
+  return (await redis.get(key)) === messageId
 }
 
 export async function releaseCorrelatedResponse({
   redis,
   key,
-  identityKey,
   messageId,
 }: {
   redis: CorrelatedResponseRedis
   key: string
-  identityKey: string
+  identityKey: LiveQuizResponseIdentityKey
   messageId: string
 }) {
   const released = await redis.eval(
     RELEASE_OWNED_CLAIM_SCRIPT,
     1,
     key,
-    identityKey,
     messageId
   )
   return Number(released) === 1

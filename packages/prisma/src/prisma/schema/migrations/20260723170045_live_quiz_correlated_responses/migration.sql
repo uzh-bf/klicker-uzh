@@ -13,9 +13,6 @@ ADD COLUMN "responseCollectionMode" "public"."LiveQuizResponseCollectionMode" NO
 CREATE TABLE "public"."LiveQuizRespondent" (
     "id" UUID NOT NULL,
     "type" "public"."LiveQuizRespondentType" NOT NULL,
-    "username" TEXT,
-    "score" INTEGER NOT NULL DEFAULT 0,
-    "avatar" TEXT,
     "verificationSecretHash" TEXT,
     "liveQuizId" UUID NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

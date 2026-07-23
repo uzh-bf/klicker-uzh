@@ -6,6 +6,7 @@ import * as AccountService from '../services/accounts.js'
 import * as ActivityService from '../services/activities.js'
 import * as AnalyticsService from '../services/analytics.js'
 import * as ChatbotsService from '../services/chatbots.js'
+import { getCorrelatedLiveQuizResponseExport } from '../services/correlatedLiveQuizResponseExport.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
@@ -706,10 +707,7 @@ export const Query = builder.queryType({
           (args) => ({ liveQuizId: args.id }),
           DB.PermissionLevel.WRITE,
           async (_, args, ctx) => {
-            return await LiveQuizService.getCorrelatedLiveQuizResponseExport(
-              args,
-              ctx
-            )
+            return await getCorrelatedLiveQuizResponseExport(args, ctx)
           }
         ),
       }),

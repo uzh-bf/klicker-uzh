@@ -5,9 +5,22 @@ import {
 } from '@klicker-uzh/prisma/client'
 import type { LiveQuizResponseInput } from '@klicker-uzh/types'
 import {
+  buildCorrelatedVoteKey,
+  buildLiveQuizResponseIdentityKey,
   hashLiveQuizRespondentToken,
+  isCorrelatedResponseClaimOwned,
   resolveLiveQuizResponseIdentity,
+  type CorrelatedResponseClaim,
+  type LiveQuizResponseIdentityKey,
 } from '@klicker-uzh/util'
+import { DEFAULT_POINTS } from '../constants.js'
+import {
+  getCaseStudyQuestionPointsDetails,
+  getChoicesQuestionPointsDetails,
+  getFreeTextQuestionPointsDetails,
+  getNumericalQuestionPointsDetails,
+  getSelectionQuestionPointsDetails,
+} from './helpers.js'
 
 type CorrelatedResponseDatabase = Pick<
   PrismaClient,
@@ -23,6 +36,7 @@ interface CorrelatedProcessingRedis {
     numberOfKeys: number,
     ...args: (number | string)[]
   ): Promise<unknown>
+  get(key: string): Promise<string | null>
   hget(key: string, field: string): Promise<string | null>
   set(
     key: string,
@@ -34,10 +48,66 @@ interface CorrelatedProcessingRedis {
   type(key: string): Promise<string>
 }
 
+export type CorrelatedRedisHashMutation = {
+  command: 'hincrby' | 'hset' | 'hsetnx'
+  key: string
+  field: string
+  value: string
+}
+
+export interface RedisHashMutationQueue {
+  hincrby(key: string, field: string, increment: number): unknown
+  hset(key: string, field: string, value: string | number): unknown
+  hsetnx(key: string, field: string, value: string | number): unknown
+}
+
+export class CorrelatedRedisMutationBuffer implements RedisHashMutationQueue {
+  readonly mutations: CorrelatedRedisHashMutation[] = []
+
+  hincrby(key: string, field: string, increment: number) {
+    this.mutations.push({
+      command: 'hincrby',
+      key,
+      field,
+      value: String(increment),
+    })
+    return this
+  }
+
+  hset(key: string, field: string, value: string | number) {
+    this.mutations.push({
+      command: 'hset',
+      key,
+      field,
+      value: String(value),
+    })
+    return this
+  }
+
+  hsetnx(key: string, field: string, value: string | number) {
+    this.mutations.push({
+      command: 'hsetnx',
+      key,
+      field,
+      value: String(value),
+    })
+    return this
+  }
+}
+
 export type CorrelatedResponseOwner = {
   kind: 'participant' | 'temporary' | 'anonymous'
   id: string
-  identityKey: string
+  identityKey: LiveQuizResponseIdentityKey
+}
+
+export type CorrelatedProcessingState = {
+  owner: CorrelatedResponseOwner
+  processedKey: string
+  processingLockKey: string
+  instanceId: number
+  blockExecution: number
+  responsePersisted: boolean
 }
 
 export class CorrelatedResponseIdentityError extends Error {}
@@ -50,6 +120,237 @@ if redis.call('GET', KEYS[1]) == ARGV[1] then
 end
 return 0
 `
+const APPLY_CORRELATED_MUTATIONS_SCRIPT = `
+local markerType = redis.call('TYPE', KEYS[1])
+if type(markerType) == 'table' then
+  markerType = markerType['ok']
+end
+if markerType ~= 'none' and markerType ~= 'hash' then
+  return redis.error_reply(
+    'Expected Redis hash at ' .. KEYS[1] .. ', found ' .. markerType
+  )
+end
+
+local existingMarker = redis.call('HGET', KEYS[1], ARGV[2])
+if existingMarker then
+  if existingMarker == ARGV[3] then
+    return 2
+  end
+  return 3
+end
+
+local mutations = cjson.decode(ARGV[1])
+local checkedKeys = {}
+for _, mutation in ipairs(mutations) do
+  if mutation.command ~= 'hincrby' and
+    mutation.command ~= 'hset' and
+    mutation.command ~= 'hsetnx' then
+    return redis.error_reply('Unsupported correlated Redis mutation')
+  end
+
+  if not checkedKeys[mutation.key] then
+    local keyType = redis.call('TYPE', mutation.key)
+    if type(keyType) == 'table' then
+      keyType = keyType['ok']
+    end
+    if keyType ~= 'none' and keyType ~= 'hash' then
+      return redis.error_reply(
+        'Expected Redis hash at ' .. mutation.key .. ', found ' .. keyType
+      )
+    end
+    checkedKeys[mutation.key] = true
+  end
+
+  if mutation.command == 'hincrby' then
+    local current = redis.call('HGET', mutation.key, mutation.field)
+    if current and not string.match(current, '^-?%d+$') then
+      return redis.error_reply(
+        'Expected integer hash value at ' .. mutation.key .. ':' .. mutation.field
+      )
+    end
+
+    local currentNumber = tonumber(current or '0')
+    local incrementNumber = tonumber(mutation.value)
+    if not currentNumber or not incrementNumber or
+      math.abs(currentNumber) > 9007199254740991 or
+      math.abs(incrementNumber) > 9007199254740991 or
+      math.abs(currentNumber + incrementNumber) > 9007199254740991 then
+      return redis.error_reply(
+        'Unsafe integer increment at ' .. mutation.key .. ':' .. mutation.field
+      )
+    end
+  end
+end
+
+for _, mutation in ipairs(mutations) do
+  if mutation.command == 'hincrby' then
+    redis.call(
+      'HINCRBY',
+      mutation.key,
+      mutation.field,
+      mutation.value
+    )
+  elseif mutation.command == 'hset' then
+    redis.call('HSET', mutation.key, mutation.field, mutation.value)
+  elseif mutation.command == 'hsetnx' then
+    redis.call('HSETNX', mutation.key, mutation.field, mutation.value)
+  end
+end
+
+redis.call('HSET', KEYS[1], ARGV[2], ARGV[3])
+return 1
+`
+
+export async function applyCorrelatedRedisMutations({
+  redis,
+  mutations,
+  processedKey,
+  identityKey,
+  messageId,
+}: {
+  redis: Pick<CorrelatedProcessingRedis, 'eval'>
+  mutations: CorrelatedRedisHashMutation[]
+  processedKey: string
+  identityKey: LiveQuizResponseIdentityKey
+  messageId: string
+}) {
+  const result = Number(
+    await redis.eval(
+      APPLY_CORRELATED_MUTATIONS_SCRIPT,
+      1,
+      processedKey,
+      JSON.stringify(mutations),
+      identityKey,
+      messageId
+    )
+  )
+
+  if (result === 1) return 'applied' as const
+  if (result === 2) return 'processed' as const
+  if (result === 3) return 'duplicate' as const
+  throw new Error(`Unexpected correlated Redis mutation result: ${result}`)
+}
+
+export function getCorrelatedResponsePoints({
+  type,
+  choiceCount,
+  response,
+  instanceInfo,
+  firstResponseReceivedAt,
+  responseTimestamp,
+  basePoints,
+  defaultPoints,
+  pointsMultiplier,
+  parsedSolutions,
+}: {
+  type: string
+  choiceCount?: string
+  response: LiveQuizResponseInput
+  instanceInfo: Record<string, string>
+  firstResponseReceivedAt?: string
+  responseTimestamp: number
+  basePoints?: string
+  defaultPoints?: string
+  pointsMultiplier?: string
+  parsedSolutions: any
+}) {
+  const awardedBasePoints =
+    basePoints === 'true'
+      ? parseInt(defaultPoints ?? String(DEFAULT_POINTS), 10)
+      : 0
+
+  let details: {
+    correctnessPoints: number
+    bonusPoints: number
+    pointsPercentage: number | null
+    xpAwarded: number
+  }
+  switch (type) {
+    case 'SC':
+    case 'MC':
+    case 'KPRIM':
+      details = getChoicesQuestionPointsDetails({
+        type,
+        choiceCount,
+        response,
+        instanceInfo,
+        firstResponseReceivedAt,
+        responseTimestamp,
+        basePoints,
+        pointsMultiplier,
+        parsedSolutions,
+      })
+      break
+    case 'NUMERICAL':
+      details = getNumericalQuestionPointsDetails({
+        response,
+        instanceInfo,
+        firstResponseReceivedAt,
+        responseTimestamp,
+        basePoints,
+        pointsMultiplier,
+        parsedSolutions,
+      })
+      break
+    case 'FREE_TEXT':
+      details = getFreeTextQuestionPointsDetails({
+        response,
+        instanceInfo,
+        firstResponseReceivedAt,
+        responseTimestamp,
+        basePoints,
+        pointsMultiplier,
+        parsedSolutions,
+      })
+      break
+    case 'SELECTION':
+      details = getSelectionQuestionPointsDetails({
+        response,
+        instanceInfo,
+        firstResponseReceivedAt,
+        responseTimestamp,
+        basePoints,
+        pointsMultiplier,
+        parsedSolutions,
+      })
+      break
+    case 'CASE_STUDY':
+      details = getCaseStudyQuestionPointsDetails({
+        response,
+        instanceInfo,
+        firstResponseReceivedAt,
+        responseTimestamp,
+        basePoints,
+        pointsMultiplier,
+        parsedSolutions,
+      })
+      break
+    case 'CONTENT':
+      details = {
+        correctnessPoints: 0,
+        bonusPoints: 0,
+        pointsPercentage: null,
+        xpAwarded: 0,
+      }
+      break
+    default:
+      throw new Error(`Unsupported correlated response element type ${type}`)
+  }
+
+  return {
+    basePoints: type === 'CONTENT' ? 0 : awardedBasePoints,
+    correctnessPoints: details.correctnessPoints,
+    bonusPoints: details.bonusPoints,
+    correctnessPercentage: details.pointsPercentage,
+    pointsAwarded: Math.round(
+      (type === 'CONTENT' ? 0 : awardedBasePoints) +
+        details.correctnessPoints +
+        details.bonusPoints
+    ),
+    pointsPercentage: details.pointsPercentage,
+    xpAwarded: details.xpAwarded,
+  }
+}
 
 export async function resolveCorrelatedResponseOwner({
   cookieHeader,
@@ -90,7 +391,7 @@ export async function resolveCorrelatedResponseOwner({
     return {
       kind: 'participant',
       id: identity.id,
-      identityKey: `participant:${identity.id}`,
+      identityKey: buildLiveQuizResponseIdentityKey(identity),
     }
   }
 
@@ -115,9 +416,6 @@ export async function resolveCorrelatedResponseOwner({
       create: {
         id: identity.id,
         type: LiveQuizRespondentType.TEMPORARY_PSEUDONYM,
-        username: legacyEntry.username,
-        avatar: legacyEntry.avatar,
-        score: legacyEntry.score,
         liveQuiz: { connect: { id: liveQuizId } },
       },
     })
@@ -155,7 +453,7 @@ export async function resolveCorrelatedResponseOwner({
   return {
     kind: identity.kind,
     id: identity.id,
-    identityKey: `respondent:${identity.id}`,
+    identityKey: buildLiveQuizResponseIdentityKey(identity),
   }
 }
 
@@ -355,6 +653,103 @@ export async function prepareCorrelatedResponseProcessing({
     status: 'process',
     lockKey,
     responsePersisted: Boolean(existingResponse),
+  }
+}
+
+export async function prepareCorrelatedMessageProcessing({
+  redis,
+  database,
+  message,
+  blockExecution,
+  sessionBlockId,
+  secret,
+  issuer,
+}: {
+  redis: Pick<CorrelatedProcessingRedis, 'eval' | 'get' | 'hget' | 'set'>
+  database: CorrelatedResponseDatabase
+  message: {
+    messageId: string
+    sessionId: string
+    instanceId: string
+    cookie?: string
+    responseTimestamp: number
+    correlatedClaim?: CorrelatedResponseClaim
+  }
+  blockExecution: string | undefined
+  sessionBlockId: string | undefined
+  secret: string
+  issuer: string
+}): Promise<
+  | { status: 'invalid' }
+  | { status: 'processed' }
+  | { status: 'duplicate' }
+  | { status: 'process'; state: CorrelatedProcessingState }
+> {
+  if (!message.correlatedClaim || !blockExecution || !sessionBlockId) {
+    return { status: 'invalid' }
+  }
+
+  const instanceId = Number(message.instanceId)
+  const execution = Number(blockExecution)
+  if (!Number.isInteger(instanceId) || !Number.isInteger(execution)) {
+    return { status: 'invalid' }
+  }
+
+  const owner = await resolveCorrelatedResponseOwner({
+    cookieHeader: message.cookie,
+    liveQuizId: message.sessionId,
+    secret,
+    issuer,
+    database,
+  })
+  const expectedClaimKey = buildCorrelatedVoteKey({
+    liveQuizId: message.sessionId,
+    instanceId: message.instanceId,
+    blockExecution,
+    identityKey: owner.identityKey,
+  })
+  if (
+    message.correlatedClaim.key !== expectedClaimKey ||
+    message.correlatedClaim.identityKey !== owner.identityKey ||
+    !(await isCorrelatedResponseClaimOwned({
+      redis,
+      key: message.correlatedClaim.key,
+      messageId: message.messageId,
+    }))
+  ) {
+    return { status: 'invalid' }
+  }
+
+  const processedKey = getCorrelatedProcessedKey({
+    liveQuizId: message.sessionId,
+    instanceId: message.instanceId,
+    blockExecution: execution,
+  })
+  const processing = await prepareCorrelatedResponseProcessing({
+    redis,
+    database,
+    processedKey,
+    owner,
+    instanceId,
+    blockExecution: execution,
+    responseTimestamp: message.responseTimestamp,
+    claimOwnerMessageId: message.messageId,
+    messageId: message.messageId,
+  })
+  if (processing.status !== 'process') {
+    return processing
+  }
+
+  return {
+    status: 'process',
+    state: {
+      owner,
+      processedKey,
+      processingLockKey: processing.lockKey,
+      instanceId,
+      blockExecution: execution,
+      responsePersisted: processing.responsePersisted,
+    },
   }
 }
 

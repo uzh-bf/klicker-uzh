@@ -1,17 +1,86 @@
-import { LiveQuizResponseCollectionMode } from '@klicker-uzh/prisma/client'
+import {
+  LiveQuizResponseCollectionMode,
+  type PrismaClient,
+} from '@klicker-uzh/prisma/client'
 import {
   buildCorrelatedVoteKey,
   claimCorrelatedResponse,
+  CORRELATED_RESPONSE_WORKER_CAPABILITY_KEY,
   getLiveQuizRespondentCookieName,
   LIVE_QUIZ_RESPONDENT_TOKEN_MAX_AGE_SECONDS,
   parseCookiesHeader,
   releaseCorrelatedResponse,
+  type LiveQuizResponseIdentity,
 } from '@klicker-uzh/util'
 
 export {
   buildCorrelatedVoteKey,
   claimCorrelatedResponse,
   releaseCorrelatedResponse,
+}
+
+export function isAllowedCorsOrigin({
+  origin,
+  allowedOrigins,
+}: {
+  origin: string | undefined
+  allowedOrigins: string[]
+}) {
+  return (
+    origin === undefined ||
+    (origin !== 'null' && allowedOrigins.includes(origin))
+  )
+}
+
+export function hasJsonContentType(contentType: string | undefined) {
+  return (
+    contentType?.split(';', 1)[0]?.trim().toLowerCase() === 'application/json'
+  )
+}
+
+export async function isCorrelatedResponseWorkerReady({
+  redis,
+}: {
+  redis: { get(key: string): Promise<string | null> }
+}) {
+  return (await redis.get(CORRELATED_RESPONSE_WORKER_CAPABILITY_KEY)) !== null
+}
+
+export async function hasPersistedCorrelatedResponse({
+  database,
+  identity,
+  instanceId,
+  blockExecution,
+}: {
+  database: Pick<PrismaClient, 'liveQuizResponse'>
+  identity: LiveQuizResponseIdentity
+  instanceId: number
+  blockExecution: number
+}) {
+  const response =
+    identity.kind === 'participant'
+      ? await database.liveQuizResponse.findUnique({
+          where: {
+            instanceId_elementBlockExecution_participantId: {
+              instanceId,
+              elementBlockExecution: blockExecution,
+              participantId: identity.id,
+            },
+          },
+          select: { id: true },
+        })
+      : await database.liveQuizResponse.findUnique({
+          where: {
+            instanceId_elementBlockExecution_respondentId: {
+              instanceId,
+              elementBlockExecution: blockExecution,
+              respondentId: identity.id,
+            },
+          },
+          select: { id: true },
+        })
+
+  return response !== null
 }
 
 export function serializeLiveQuizRespondentCookie({
