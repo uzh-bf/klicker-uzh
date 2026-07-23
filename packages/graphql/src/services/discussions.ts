@@ -448,18 +448,30 @@ async function canParticipantAccessDiscussionScope(
 
   if (!scope.stackId) return false
 
-  const response = await ctx.prisma.questionResponse.findFirst({
+  const evaluatedStack = await ctx.prisma.elementStack.findFirst({
     where: {
-      participantId,
-      courseId,
-      elementInstance: {
-        elementStackId: scope.stackId,
+      id: scope.stackId,
+      OR: [
+        { courseId },
+        { practiceQuiz: { courseId } },
+        { microLearning: { courseId } },
+      ],
+      elements: {
+        some: {},
+        every: {
+          responses: {
+            some: {
+              participantId,
+              courseId,
+            },
+          },
+        },
       },
     },
     select: { id: true },
   })
 
-  return Boolean(response)
+  return Boolean(evaluatedStack)
 }
 
 function extractCourseIdFromSpace(space: DB.DiscussionSpace | null) {
@@ -2050,30 +2062,46 @@ async function canDeleteDiscussionContent(
   {
     courseId,
     authorParticipantId,
+    scope,
   }: {
     courseId: string
     authorParticipantId: string | null
+    scope: {
+      scopeType: DB.DiscussionScopeType
+      stackId?: number | null
+    }
   },
   ctx: Context
 ): Promise<{ allowed: boolean; actor: ResolvedActor | null }> {
   const actor = await getCourseAccessActor({ courseId }, ctx)
   if (!actor) return { allowed: false, actor: null }
 
-  if (actor.participantId && actor.participantId === authorParticipantId) {
-    return { allowed: true, actor }
-  }
+  let allowed =
+    !!actor.participantId && actor.participantId === authorParticipantId
 
-  if (actor.userId) {
+  if (!allowed && actor.userId) {
     const writeAccess = await getCourseAccessActor(
       { courseId, minimumPermissionLevel: DB.PermissionLevel.WRITE },
       ctx
     )
-    if (writeAccess?.userId) {
-      return { allowed: true, actor }
-    }
+    allowed = !!writeAccess?.userId
   }
 
-  return { allowed: false, actor }
+  if (
+    !allowed ||
+    !(await canParticipantAccessDiscussionScope(
+      {
+        participantId: actor.participantId,
+        courseId,
+        scope,
+      },
+      ctx
+    ))
+  ) {
+    return { allowed: false, actor }
+  }
+
+  return { allowed: true, actor }
 }
 
 export async function deleteCourseDiscussionThread(
@@ -2098,22 +2126,14 @@ export async function deleteCourseDiscussionThread(
   if (!isCourseDiscussionEnabled(course)) return false
 
   const { allowed, actor } = await canDeleteDiscussionContent(
-    { courseId, authorParticipantId: thread.authorParticipantId },
+    {
+      courseId,
+      authorParticipantId: thread.authorParticipantId,
+      scope: thread.scope,
+    },
     ctx
   )
   if (!allowed) return false
-  if (
-    !(await canParticipantAccessDiscussionScope(
-      {
-        participantId: actor?.participantId,
-        courseId,
-        scope: thread.scope,
-      },
-      ctx
-    ))
-  ) {
-    return false
-  }
 
   const now = new Date()
 
@@ -2190,22 +2210,14 @@ export async function deleteCourseDiscussionReply(
   if (!isCourseDiscussionEnabled(course)) return false
 
   const { allowed, actor } = await canDeleteDiscussionContent(
-    { courseId, authorParticipantId: reply.authorParticipantId },
+    {
+      courseId,
+      authorParticipantId: reply.authorParticipantId,
+      scope: reply.thread.scope,
+    },
     ctx
   )
   if (!allowed) return false
-  if (
-    !(await canParticipantAccessDiscussionScope(
-      {
-        participantId: actor?.participantId,
-        courseId,
-        scope: reply.thread.scope,
-      },
-      ctx
-    ))
-  ) {
-    return false
-  }
 
   const now = new Date()
 

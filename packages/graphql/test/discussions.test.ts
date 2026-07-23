@@ -2,6 +2,7 @@ import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   DiscussionEventType,
   DiscussionScopeType,
+  ElementInstanceType,
   ElementStackType,
   ElementType,
   PrismaClient,
@@ -9,6 +10,7 @@ import {
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma/client'
+import type { ElementData, ElementInstanceResults } from '@klicker-uzh/types'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import { v4 as uuidv4 } from 'uuid'
@@ -141,39 +143,70 @@ async function seedDiscussionStack(
   },
   ctx: ContextWithUser
 ) {
-  const element = await prisma.element.create({
-    data: {
-      name: `Discussion content ${uuidv4()}`,
-      content: 'Discussion evaluation marker',
-      options: {},
-      type: ElementType.CONTENT,
-      ownerId: ctx.user.sub,
-    },
-  })
+  const elements = await Promise.all(
+    [0, 1].map((index) =>
+      prisma.element.create({
+        data: {
+          name: `Discussion content ${index} ${uuidv4()}`,
+          content: `Discussion evaluation marker ${index}`,
+          options: {},
+          type: ElementType.CONTENT,
+          ownerId: ctx.user.sub,
+        },
+      })
+    )
+  )
 
   const activity =
     stackType === ElementStackType.PRACTICE_QUIZ
       ? await seedPracticeQuiz(
           {
             courseId,
-            elements: [{ id: element.id, type: ElementType.CONTENT }],
+            elements: [{ id: elements[0]!.id, type: ElementType.CONTENT }],
           },
           ctx
         )
       : await seedMicroLearning(
           {
             courseId,
-            elements: [{ id: element.id, type: ElementType.CONTENT }],
+            elements: [{ id: elements[0]!.id, type: ElementType.CONTENT }],
           },
           ctx
         )
 
-  const stack = await prisma.elementStack.findFirstOrThrow({
+  const seededStack = await prisma.elementStack.findFirstOrThrow({
     where:
       stackType === ElementStackType.PRACTICE_QUIZ
         ? { practiceQuizId: activity.id }
         : { microLearningId: activity.id },
-    include: { elements: { select: { id: true } } },
+  })
+
+  await prisma.elementInstance.create({
+    data: {
+      order: 1,
+      type:
+        stackType === ElementStackType.PRACTICE_QUIZ
+          ? ElementInstanceType.PRACTICE_QUIZ
+          : ElementInstanceType.MICROLEARNING,
+      elementType: ElementType.CONTENT,
+      options: {},
+      elementData: {} as ElementData,
+      results: {} as ElementInstanceResults,
+      anonymousResults: {} as ElementInstanceResults,
+      elementId: elements[1]!.id,
+      elementStackId: seededStack.id,
+      ownerId: ctx.user.sub,
+    },
+  })
+
+  const stack = await prisma.elementStack.findUniqueOrThrow({
+    where: { id: seededStack.id },
+    include: {
+      elements: {
+        orderBy: { order: 'asc' },
+        select: { id: true },
+      },
+    },
   })
 
   return {
@@ -193,12 +226,14 @@ async function seedStackEvaluation(
     stack,
     practiceQuizId,
     microLearningId,
+    elementIndexes,
   }: {
     courseId: string
     participantId: string
     stack: { elements: Array<{ id: number }> }
     practiceQuizId?: string
     microLearningId?: string
+    elementIndexes?: number[]
   }
 ) {
   const participation = await prisma.participation.findUniqueOrThrow({
@@ -210,24 +245,101 @@ async function seedStackEvaluation(
     },
     select: { id: true },
   })
-  const instance = stack.elements[0]
-  if (!instance) throw new Error('Discussion stack requires one element')
+  const instances = (elementIndexes ?? stack.elements.map((_, index) => index))
+    .map((index) => stack.elements[index])
+    .filter((instance): instance is { id: number } => Boolean(instance))
 
-  await prisma.questionResponse.create({
-    data: {
-      averageTimeSpent: 1,
-      firstResponse: { viewed: true },
-      firstResponseCorrectness: ResponseCorrectness.CORRECT,
-      lastResponse: { viewed: true },
-      lastResponseCorrectness: ResponseCorrectness.CORRECT,
-      participantId,
-      participationId: participation.id,
-      elementInstanceId: instance.id,
-      practiceQuizId,
-      microLearningId,
+  if (instances.length === 0) {
+    throw new Error('Discussion stack requires at least one selected element')
+  }
+
+  await Promise.all(
+    instances.map((instance) =>
+      prisma.questionResponse.create({
+        data: {
+          averageTimeSpent: 1,
+          firstResponse: { viewed: true },
+          firstResponseCorrectness: ResponseCorrectness.CORRECT,
+          lastResponse: { viewed: true },
+          lastResponseCorrectness: ResponseCorrectness.CORRECT,
+          participantId,
+          participationId: participation.id,
+          elementInstanceId: instance.id,
+          practiceQuizId,
+          microLearningId,
+          courseId,
+        },
+      })
+    )
+  )
+}
+
+async function expectStackOperationsDenied(
+  {
+    courseId,
+    stackId,
+    threadId,
+    replyId,
+  }: {
+    courseId: string
+    stackId: number
+    threadId?: number
+    replyId?: number
+  },
+  participantCtx: Context
+) {
+  const page = await courseDiscussionThreads(
+    {
       courseId,
+      scopeKey: `stack:${stackId}`,
     },
-  })
+    participantCtx
+  )
+  const thread = await createCourseDiscussionThread(
+    {
+      courseId,
+      content: 'Blocked stack thread',
+      scope: {
+        scopeType: DiscussionScopeType.PRACTICE_STACK,
+        stackId,
+      },
+    },
+    participantCtx
+  )
+
+  expect(page.isAccessible).toBe(false)
+  expect(thread).toBeNull()
+
+  if (!threadId || !replyId) return
+
+  expect(
+    await createCourseDiscussionReply(
+      {
+        courseId,
+        threadId,
+        content: 'Blocked stack reply',
+      },
+      participantCtx
+    )
+  ).toBeNull()
+  expect(
+    await toggleCourseDiscussionThreadUpvote(
+      { threadId, upvote: true },
+      participantCtx
+    )
+  ).toBeNull()
+  expect(
+    await toggleCourseDiscussionReplyUpvote(
+      { replyId, upvote: true },
+      participantCtx
+    )
+  ).toBeNull()
+  expect(await deleteCourseDiscussionThread({ threadId }, participantCtx)).toBe(
+    false
+  )
+  expect(await deleteCourseDiscussionReply({ replyId }, participantCtx)).toBe(
+    false
+  )
 }
 
 describe('Integration tests for the course discussion platform', () => {
@@ -1473,27 +1585,14 @@ describe('Integration tests for the course discussion platform', () => {
     )
     const practiceStack = practice.stack
 
-    const deniedStackThread = await createCourseDiscussionThread(
+    await expectStackOperationsDenied(
       {
         courseId: course.id,
-        content: 'Premature practice stack thread',
-        scope: {
-          scopeType: DiscussionScopeType.PRACTICE_STACK,
-          stackId: practiceStack.id,
-        },
-      },
-      participantCtx
-    )
-    const deniedStackPage = await courseDiscussionThreads(
-      {
-        courseId: course.id,
-        scopeKey: `stack:${practiceStack.id}`,
+        stackId: practiceStack.id,
       },
       participantCtx
     )
 
-    expect(deniedStackThread).toBeNull()
-    expect(deniedStackPage.isAccessible).toBe(false)
     expect(
       await prisma.discussionSpace.count({
         where: { courseId: course.id },
@@ -1504,6 +1603,27 @@ describe('Integration tests for the course discussion platform', () => {
       courseId: course.id,
       participantId,
       ...practice,
+      elementIndexes: [0],
+    })
+
+    await expectStackOperationsDenied(
+      {
+        courseId: course.id,
+        stackId: practiceStack.id,
+      },
+      participantCtx
+    )
+    expect(
+      await prisma.discussionSpace.count({
+        where: { courseId: course.id },
+      })
+    ).toBe(0)
+
+    await seedStackEvaluation(prisma, {
+      courseId: course.id,
+      participantId,
+      ...practice,
+      elementIndexes: [1],
     })
 
     const stackThread = await createCourseDiscussionThread(
@@ -1524,41 +1644,6 @@ describe('Integration tests for the course discussion platform', () => {
     )
     expect(stackThread?.scope.scopeKey).toBe(`stack:${practiceStack.id}`)
 
-    const embedInfo = await getCourseDiscussionEmbeddingInfo(
-      {
-        courseId: course.id,
-        externalBlock: {
-          externalSource: 'moodle',
-          externalRef: 'block-7',
-        },
-        allowAnonymous: true,
-      },
-      userOneCtx
-    )
-
-    expect(embedInfo).toBeTruthy()
-
-    const externalThread = await createCourseDiscussionThread(
-      {
-        courseId: course.id,
-        content: 'External block thread',
-        scope: {
-          scopeType: DiscussionScopeType.EXTERNAL_BLOCK,
-          externalSource: 'moodle',
-          externalRef: 'block-7',
-        },
-        isAnonymous: true,
-        embedToken: embedInfo!.embedToken,
-      },
-      createAnonymousContext(userOneCtx)
-    )
-
-    expect(externalThread).toBeTruthy()
-    expect(externalThread?.scope.scopeType).toBe(
-      DiscussionScopeType.EXTERNAL_BLOCK
-    )
-    expect(externalThread?.scope.scopeKey).toBe('ext:moodle:block-7')
-
     const stackPage = await courseDiscussionThreads(
       {
         courseId: course.id,
@@ -1570,41 +1655,6 @@ describe('Integration tests for the course discussion platform', () => {
 
     expect(stackPage.threads).toHaveLength(1)
     expect(stackPage.threads[0]?.content).toBe('Practice stack thread')
-
-    const microLearning = await seedDiscussionStack(
-      prisma,
-      {
-        courseId: course.id,
-        stackType: ElementStackType.MICROLEARNING,
-      },
-      userOneCtx
-    )
-    await seedStackEvaluation(prisma, {
-      courseId: course.id,
-      participantId,
-      ...microLearning,
-    })
-    const microLearningStack = microLearning.stack
-
-    const microLearningThread = await createCourseDiscussionThread(
-      {
-        courseId: course.id,
-        content: 'Microlearning stack thread',
-        scope: {
-          scopeType: DiscussionScopeType.PRACTICE_STACK,
-          stackId: microLearningStack.id,
-        },
-      },
-      participantCtx
-    )
-
-    expect(microLearningThread).toBeTruthy()
-    expect(microLearningThread?.scope.scopeType).toBe(
-      DiscussionScopeType.PRACTICE_STACK
-    )
-    expect(microLearningThread?.scope.scopeKey).toBe(
-      `stack:${microLearningStack.id}`
-    )
 
     const stackReply = await createCourseDiscussionReply(
       {
@@ -1623,60 +1673,93 @@ describe('Integration tests for the course discussion platform', () => {
       },
     })
 
-    const inaccessibleStackPage = await courseDiscussionThreads(
+    await expectStackOperationsDenied(
       {
         courseId: course.id,
-        scopeKey: `stack:${practiceStack.id}`,
-      },
-      participantCtx
-    )
-    const blockedThread = await createCourseDiscussionThread(
-      {
-        courseId: course.id,
-        content: 'Blocked after evaluation state is removed',
-        scope: {
-          scopeType: DiscussionScopeType.PRACTICE_STACK,
-          stackId: practiceStack.id,
-        },
-      },
-      participantCtx
-    )
-    const blockedReply = await createCourseDiscussionReply(
-      {
-        courseId: course.id,
+        stackId: practiceStack.id,
         threadId: stackThread!.id,
-        content: 'Blocked reply',
+        replyId: stackReply!.id,
       },
       participantCtx
+    )
+  })
+
+  it('supports evaluated practice, microlearning, and external block scopes', async () => {
+    const course = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, {
+      courseId: course.id,
+      allowAnonymous: true,
+    })
+    await recomputeDerivedPermissions({ courseId: course.id }, prisma)
+
+    const participantId = await seedParticipantInCourse(prisma, {
+      courseId: course.id,
+    })
+    const participantCtx = createParticipantContext(userOneCtx, participantId)
+
+    for (const stackType of [
+      ElementStackType.PRACTICE_QUIZ,
+      ElementStackType.MICROLEARNING,
+    ] as const) {
+      const seeded = await seedDiscussionStack(
+        prisma,
+        { courseId: course.id, stackType },
+        userOneCtx
+      )
+      await seedStackEvaluation(prisma, {
+        courseId: course.id,
+        participantId,
+        ...seeded,
+      })
+
+      const thread = await createCourseDiscussionThread(
+        {
+          courseId: course.id,
+          content: `${stackType} stack thread`,
+          scope: {
+            scopeType: DiscussionScopeType.PRACTICE_STACK,
+            stackId: seeded.stack.id,
+          },
+        },
+        participantCtx
+      )
+
+      expect(thread?.scope.scopeType).toBe(DiscussionScopeType.PRACTICE_STACK)
+      expect(thread?.scope.scopeKey).toBe(`stack:${seeded.stack.id}`)
+    }
+
+    const embedInfo = await getCourseDiscussionEmbeddingInfo(
+      {
+        courseId: course.id,
+        externalBlock: {
+          externalSource: 'moodle',
+          externalRef: 'block-7',
+        },
+        allowAnonymous: true,
+      },
+      userOneCtx
+    )
+    expect(embedInfo).toBeTruthy()
+
+    const externalThread = await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: 'External block thread',
+        scope: {
+          scopeType: DiscussionScopeType.EXTERNAL_BLOCK,
+          externalSource: 'moodle',
+          externalRef: 'block-7',
+        },
+        isAnonymous: true,
+        embedToken: embedInfo!.embedToken,
+      },
+      createAnonymousContext(userOneCtx)
     )
 
-    expect(inaccessibleStackPage.isAccessible).toBe(false)
-    expect(blockedThread).toBeNull()
-    expect(blockedReply).toBeNull()
-    expect(
-      await toggleCourseDiscussionThreadUpvote(
-        { threadId: stackThread!.id, upvote: true },
-        participantCtx
-      )
-    ).toBeNull()
-    expect(
-      await toggleCourseDiscussionReplyUpvote(
-        { replyId: stackReply!.id, upvote: true },
-        participantCtx
-      )
-    ).toBeNull()
-    expect(
-      await deleteCourseDiscussionThread(
-        { threadId: stackThread!.id },
-        participantCtx
-      )
-    ).toBe(false)
-    expect(
-      await deleteCourseDiscussionReply(
-        { replyId: stackReply!.id },
-        participantCtx
-      )
-    ).toBe(false)
+    expect(externalThread?.scope.scopeType).toBe(
+      DiscussionScopeType.EXTERNAL_BLOCK
+    )
+    expect(externalThread?.scope.scopeKey).toBe('ext:moodle:block-7')
   })
 
   it('keeps the discussion schema limited to the shipped alpha scope', async () => {
