@@ -546,10 +546,6 @@ def run_dryrun(
                 status = "produced"
                 try:
                     module = importlib.import_module(module_name)
-                    # If the script was imported earlier in this process (e.g.
-                    # by a previous run), force a reload so it picks up the
-                    # env vars we just set and the interceptor patches.
-                    module = importlib.reload(module)
                     module.main()
                 except Exception as exc:
                     error = f"{type(exc).__name__}: {exc}"
