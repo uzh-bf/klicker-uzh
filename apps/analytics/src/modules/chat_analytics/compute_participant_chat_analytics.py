@@ -47,7 +47,6 @@ def _session_cache_key(session: Session) -> str | None:
         url = getattr(bind, "url", None)
         if url is not None:
             return str(url)
-        return f"bind:{id(bind)}"
     return None
 
 
