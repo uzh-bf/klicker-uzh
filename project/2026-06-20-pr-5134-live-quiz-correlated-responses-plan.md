@@ -471,6 +471,8 @@ Later research:
 - 2026-07-23: Slice 3 browser verification remains blocked by the same DevPod runtime. The seeded participant URL was opened through the real namespaced PWA route but returned `Gateway Timeout` after more than a minute; therefore desktop/mobile layout and EN/DE rendering are not claimed.
 - 2026-07-23: Independent Slice 3 correctness review found no qualifying defect. Separate simplification review found no worthwhile reduction at confidence 75 or higher. Both reviews retain the blocked desktop/mobile EN/DE browser matrix as a final PR-readiness gap.
 - 2026-07-23: Slice 3 is finalized. Slice 5 now runs before Slice 4, as allowed by the approved plan, so the first durable worker path covers existing temporary-pseudonym respondents as well as logged-in and anonymous respondents.
+- 2026-07-23: Slice 5 implementation completed locally through the staged compatibility path. The migration backfills temporary leaderboard identities into same-ID `LiveQuizRespondent` rows; new temporary logins create both rows atomically, retain the existing leaderboard UX, add quiz scope to the existing JWT, and align its cookie lifetime with the two-week token expiry.
+- 2026-07-23: Slice 5 verification passed: fresh Prisma migration reset, Prisma and GraphQL typechecks, and 8 focused database integration tests. The focused test helper emitted non-fatal Redis loopback warnings inside the DevPod; the tested code does not use those clients and all assertions passed.
 
 ## Goal Prompt Requirements
 

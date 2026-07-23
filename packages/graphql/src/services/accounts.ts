@@ -32,6 +32,11 @@ const COOKIE_SETTINGS: CookieOptions = {
   sameSite: 'lax',
 }
 
+const TEMPORARY_PARTICIPANT_COOKIE_SETTINGS: CookieOptions = {
+  ...COOKIE_SETTINGS,
+  maxAge: 1000 * 60 * 60 * 24 * 14,
+}
+
 export async function logoutUser(_: any, ctx: ContextWithUser) {
   ctx.res.cookie('next-auth.session-token', 'logoutString', {
     ...COOKIE_SETTINGS,
@@ -57,11 +62,15 @@ export async function createParticipantToken(participantId: string) {
   )
 }
 
-export async function createTemporaryParticipantToken(participantId: string) {
+export async function createTemporaryParticipantToken(
+  participantId: string,
+  liveQuizId: string
+) {
   return signJWT(
     {
       sub: participantId,
       role: DB.UserRole.TEMPORARY_PARTICIPANT,
+      scopeQuizId: liveQuizId,
     },
     // TODO: use structured configuration approach
     process.env.APP_SECRET as string,
@@ -189,11 +198,14 @@ export async function loginTemporaryParticipant(
     return null // error: 'pseudonym already taken'
   }
 
-  // create a temporary leaderboard entry linked to the mentioned live quiz
-  const temporaryParticipant =
-    await ctx.prisma.temporaryLeaderboardEntry.create({
+  const temporaryParticipantId = uuidv4()
+
+  // Keep the temporary leaderboard row for the existing UX while assigning the
+  // same quiz-scoped identity to the durable response model.
+  const [temporaryParticipant] = await ctx.prisma.$transaction([
+    ctx.prisma.temporaryLeaderboardEntry.create({
       data: {
-        id: uuidv4(),
+        id: temporaryParticipantId,
         username: pseudonym.trim(),
         avatar: avatar ?? undefined,
         score: 0,
@@ -201,11 +213,31 @@ export async function loginTemporaryParticipant(
           connect: { id: liveQuizId },
         },
       },
-    })
+    }),
+    ctx.prisma.liveQuizRespondent.create({
+      data: {
+        id: temporaryParticipantId,
+        type: DB.LiveQuizRespondentType.TEMPORARY_PSEUDONYM,
+        username: pseudonym.trim(),
+        avatar: avatar ?? undefined,
+        score: 0,
+        liveQuiz: {
+          connect: { id: liveQuizId },
+        },
+      },
+    }),
+  ])
 
   // create and return a new valid token for the temporary participant
-  const jwt = await createTemporaryParticipantToken(temporaryParticipant.id)
-  ctx.res.cookie('temporary_participant_token', jwt, COOKIE_SETTINGS)
+  const jwt = await createTemporaryParticipantToken(
+    temporaryParticipant.id,
+    liveQuizId
+  )
+  ctx.res.cookie(
+    'temporary_participant_token',
+    jwt,
+    TEMPORARY_PARTICIPANT_COOKIE_SETTINGS
+  )
   return jwt
 }
 
@@ -424,7 +456,7 @@ export async function logoutTemporaryParticipant(
 
   // delete the cookie
   ctx.res.cookie('temporary_participant_token', 'logoutString', {
-    ...COOKIE_SETTINGS,
+    ...TEMPORARY_PARTICIPANT_COOKIE_SETTINGS,
     maxAge: 0,
   })
 

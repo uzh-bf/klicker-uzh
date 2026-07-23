@@ -25,6 +25,30 @@ CREATE TABLE "public"."LiveQuizRespondent" (
     CONSTRAINT "LiveQuizRespondent_secret_check" CHECK ("type" <> 'ANONYMOUS_CORRELATED' OR "verificationSecretHash" IS NOT NULL)
 );
 
+-- Backfill temporary pseudonym identities so existing browser tokens can use
+-- the unified respondent path without changing the leaderboard workflow.
+INSERT INTO "public"."LiveQuizRespondent" (
+    "id",
+    "type",
+    "username",
+    "score",
+    "avatar",
+    "liveQuizId",
+    "createdAt",
+    "updatedAt"
+)
+SELECT
+    "id",
+    'TEMPORARY_PSEUDONYM'::"public"."LiveQuizRespondentType",
+    "username",
+    "score",
+    "avatar",
+    "quizId",
+    "createdAt",
+    "updatedAt"
+FROM "public"."TemporaryLeaderboardEntry"
+ON CONFLICT ("id") DO NOTHING;
+
 -- AlterTable
 ALTER TABLE "public"."LiveQuizResponse"
 ADD COLUMN "respondentId" UUID,

@@ -1,13 +1,16 @@
 import type { Hatchet } from '@hatchet-dev/typescript-sdk/index.js'
 import {
+  LiveQuizRespondentType,
   LiveQuizResponseCollectionMode,
   PrismaClient,
   PublicationStatus,
 } from '@klicker-uzh/prisma/client'
+import { decodeJWT } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import { v4 as uuid } from 'uuid'
 import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
+import { loginTemporaryParticipant } from '../src/services/accounts.js'
 import { manipulateLiveQuiz } from '../src/services/liveQuizzes.js'
 import {
   initializePrisma,
@@ -24,6 +27,10 @@ describe('Live quiz response collection mode', () => {
   let userOneCtx: ContextWithUser
 
   beforeAll(async () => {
+    process.env.APP_SECRET = process.env.APP_SECRET ?? 'test-app-secret'
+    process.env.APP_ORIGIN_API =
+      process.env.APP_ORIGIN_API ?? 'https://api.klicker.test'
+
     const initialized = await initializePrisma()
     prisma = initialized.prisma
     emitter = initialized.emitter
@@ -144,6 +151,64 @@ describe('Live quiz response collection mode', () => {
       LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS
     )
     expect(aggregated.exportSalt).toBe(correlated.exportSalt)
+  })
+
+  it('assigns temporary pseudonyms the same quiz-scoped respondent identity', async () => {
+    const liveQuiz = await manipulateLiveQuiz(
+      {
+        ...liveQuizArgs(),
+        isGamificationEnabled: true,
+      },
+      userOneCtx
+    )
+    await prisma.liveQuiz.update({
+      where: { id: liveQuiz.id },
+      data: { status: PublicationStatus.PUBLISHED },
+    })
+
+    const setCookie = vi.fn()
+    const token = await loginTemporaryParticipant(
+      {
+        liveQuizId: liveQuiz.id,
+        pseudonym: `temporary-${uuid()}`,
+      },
+      {
+        ...userOneCtx,
+        res: { cookie: setCookie } as any,
+      }
+    )
+
+    expect(token).not.toBeNull()
+    const payload = decodeJWT(token!)
+    expect(payload.scopeQuizId).toBe(liveQuiz.id)
+
+    const [leaderboardEntry, respondent] = await Promise.all([
+      prisma.temporaryLeaderboardEntry.findUnique({
+        where: {
+          id_quizId: {
+            id: payload.sub,
+            quizId: liveQuiz.id,
+          },
+        },
+      }),
+      prisma.liveQuizRespondent.findUnique({
+        where: { id: payload.sub },
+      }),
+    ])
+
+    expect(leaderboardEntry).not.toBeNull()
+    expect(respondent).toMatchObject({
+      id: payload.sub,
+      liveQuizId: liveQuiz.id,
+      type: LiveQuizRespondentType.TEMPORARY_PSEUDONYM,
+      username: leaderboardEntry!.username,
+      avatar: leaderboardEntry!.avatar,
+    })
+    expect(setCookie).toHaveBeenCalledWith(
+      'temporary_participant_token',
+      token,
+      expect.objectContaining({ maxAge: 1000 * 60 * 60 * 24 * 14 })
+    )
   })
 
   it('keeps assessment live quizzes on identifiable assessment handling', async () => {
