@@ -243,6 +243,11 @@ the existing Hatchet control plane.
 
 ### Slice 4B — Port the full analytics DAG with parity
 
+This slice is executed as two tracer bullets: 4B.1 registers and verifies the
+direct in-process 15-task DAG; 4B.2 adds bounded cooperative cancellation,
+separates protected full runs from freshness-first incremental/finalize runs,
+and proves runtime parity before cutover.
+
 **Do**
 
 - Define the existing 15-task DAG in Python with the same names, triggers,
@@ -610,8 +615,24 @@ the repository script that replaces it before continuing.
   the new scope-isolation regression type-clean and advance this plan.
 - Completed: Slice 4A native Python worker registration and compatibility
   tracer.
-- Active: Port the analytics DAG to direct Python tasks with parity in Slice
-  4B.
+- 2026-07-23: Slice 4B.1 registers the existing 15-task analytics DAG in the
+  Python worker with the same names, cron/events, parent fan-in, timeouts,
+  retries, and guarded run-input contract. Every task imports its existing
+  script module and calls `main()` in-process under task-local immutable
+  configuration; no task mutates process-global environment state.
+- 2026-07-23: The real Python worker registered the DAG against the dedicated
+  disposable `hatchet-lite:v0.73.1` control plane. A finalize run against the
+  empty, fully migrated synthetic database exercised the real in-process
+  scripts and stopped at script 11's expected missing-data precondition rather
+  than an SDK or graph error. A separate no-op runner using the exact same
+  workflow definition then completed a fresh run through all 15 task nodes,
+  including the three joins and final 14-parent `s99` fan-in.
+- 2026-07-23: Slice 4B.1 verification passes focused Ruff and strict Pyright,
+  24 focused runtime/configuration tests, the full analytics suite with 150
+  passed and 4 integration skips, and the exact isolated CI command with 86
+  passed and 1 database skip.
+- Active: Review and close the direct Python DAG tracer, then implement
+  cooperative cancellation and split full-run concurrency in Slice 4B.2.
 
 ## Finish evidence
 
