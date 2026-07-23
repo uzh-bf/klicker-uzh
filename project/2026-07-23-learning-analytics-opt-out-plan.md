@@ -1,0 +1,459 @@
+# Learning analytics opt-out implementation plan
+
+## Identity
+
+- Status: approved plan; implementation not started
+- Plan: `project/2026-07-23-learning-analytics-opt-out-plan.md`
+- Branch: `codex/learning-analytics-opt-out-plan`
+- Target: `v3`
+- Pull request: pending
+- Change type: `feat`
+- ADRs:
+  - [ADR 0001](../docs/adr/0001-separate-course-and-participant-learning-analytics-controls.md)
+  - [ADR 0002](../docs/adr/0002-deidentified-learning-analytics-output.md)
+
+This plan and its implementation belong on the same draft pull request. Do not
+merge the plan without the implementation and finish gates.
+
+## Goal
+
+Add optional, dedicated learning analytics (LA) with independent lecturer and
+participant controls. A participant who is not LA-eligible must not contribute
+to new LA calculations or appear in lecturer LA output. Normal teaching,
+feedback, evaluation, grading, and gamification continue unchanged.
+
+## Non-goals
+
+- Research consent or research exports
+- AI-processing consent
+- New student-facing LA visualizations
+- Moving the analytics engine to Hatchet
+- Changing normal course exports, activity evaluation, or grading
+- Claiming that de-identified lecturer rows are guaranteed anonymous
+
+## Verified starting point
+
+- `Course` has `areAnalyticsValid` but no LA enabled flag.
+- `Participation` has no LA choice or disclosure state.
+- `apps/analytics` loads participant responses without LA eligibility checks.
+- `packages/graphql/src/services/analytics.ts` reads derived analytics and also
+  aggregates some response and feedback data directly.
+- Lecturer performance analytics exposes participant ID, username, and email.
+- The current lecturer UI has no dedicated LA export.
+- Current privacy and terms text describes participant data as anonymized or
+  aggregated, which does not match the identified performance table.
+- GraphQL remains the live API. The dual GraphQL-to-tRPC migration is still open
+  as [PR 5132](https://github.com/uzh-bf/klicker-uzh/pull/5132), so this branch
+  must keep eligibility logic reusable outside Pothos resolvers.
+- ClickUp is the backlog source of truth. The reviewed LA opt-out task,
+  incremental analytics task, and separate research-consent task agree that the
+  three controls must remain independent. Private ClickUp identifiers are not
+  copied into this public repository.
+
+## Product rules
+
+### Course control
+
+- New and existing courses start with LA disabled.
+- A lecturer deliberately enables LA after seeing its benefits, data use, and
+  responsibilities.
+- A lecturer may disable and re-enable LA later.
+- Disabling immediately hides LA, stops computation, and removes dedicated LA
+  results. Operational course data stays intact.
+- Course-level disabled periods do not exclude operational activity from later
+  LA. Re-enabling may recompute permitted data using saved participant choices.
+- Course toggles do not erase participant choices or disclosure versions.
+
+### Participant choice
+
+- Students see no LA choice while course LA is disabled.
+- Students joining an LA-enabled course receive a neutral choice with neither
+  option preselected.
+- The explanation covers student and lecturer benefits, data used, lecturer
+  visibility, and explicit exclusions.
+- Automatic join paths that cannot ask first leave the participation undecided.
+- When LA is enabled for an existing course, undecided students see the choice
+  on their next entry into that course.
+- Existing students may choose "decide later", continue using the course, and
+  remain excluded while a course-level reminder stays visible.
+- Students can change their choice at any time.
+- First or renewed inclusion applies only to activity created from that point.
+- Opt-out excludes all past and future activity from subsequent calculations
+  and removes participant-level LA output immediately.
+- A materially changed disclosure version suspends eligibility until the
+  participant makes a new choice. Normal course access remains available.
+
+### Lecturer output
+
+- Dedicated LA outputs never expose participant IDs, usernames, email addresses,
+  free text, stable pseudonyms, exact timestamps on student rows, item-level
+  sequences, rare attributes, or cross-report links.
+- Student rows use report-local labels such as "Student 1".
+- Row-level output and every filtered breakdown require an effective sample size
+  of at least five.
+- Each aggregate or data point shows its effective sample size after eligibility,
+  coverage, and metric-specific inclusion rules.
+- Lecturers do not see opt-out counts, undecided counts, choice status, or reasons.
+- Dashboards include eligible partial coverage by default.
+- LA exports default to complete coverage for the selected period and offer an
+  explicit option to include partial coverage.
+- Existing aggregates are not recalculated solely because one student opts out.
+  They are replaced on the next normal calculation.
+
+## Data contract
+
+Use names consistent with the existing `Course`, `Participant`, and
+`Participation` domain:
+
+- `Course.isLearningAnalyticsEnabled Boolean @default(false)`
+- `LearningAnalyticsParticipationStatus` with `UNDECIDED`, `INCLUDED`, and
+  `EXCLUDED`
+- Current status on `Participation`
+- `Participation.learningAnalyticsIncludedFrom DateTime?`
+- `Participation.learningAnalyticsChoiceAt DateTime?`
+- `Participation.learningAnalyticsDisclosureVersion String?`
+- An append-only choice event containing only the participation, choice,
+  effective time, and disclosure version
+
+The current fields serve frequent eligibility checks. The event record provides
+the minimal audit trail required to explain the active choice without copying
+activity or identity data.
+
+The shared eligibility rule is:
+
+1. Course LA is enabled.
+2. Participation status is `INCLUDED`.
+3. The stored disclosure version is current.
+4. The activity timestamp is on or after `learningAnalyticsIncludedFrom`.
+
+A course toggle never changes `learningAnalyticsIncludedFrom`. Participant
+opt-out clears current eligibility. Participant opt-in sets a new inclusion time.
+
+## Authorization
+
+- Course enable/disable: authenticated lecturer with course `ADMIN` permission.
+  Disabling deletes derived data and should not be available to ordinary editors.
+- Read course LA: existing lecturer `READ` permission plus enabled-course gate.
+- Read/change own LA choice: authenticated participant with a `Participation` for
+  that course.
+- Server-side computation and export: the same central eligibility contract;
+  client input can narrow coverage but cannot bypass eligibility or suppression.
+
+## Research
+
+Before implementation:
+
+- Inventory every derived analytics model and every direct response/feedback
+  aggregation. Treat a path as in scope if it contributes to dedicated LA.
+- Measure derived-row counts per model in staging or production using aggregate
+  counts only. Do not retrieve participant identifiers or response content.
+- Decide from those counts whether course deletion can fit a bounded synchronous
+  transaction. If not, use an idempotent Hatchet cleanup with a visible pending
+  state and retry support. Product behavior remains immediate hiding either way.
+- Confirm how analytics scripts are scheduled in each environment. The current
+  repository contains scripts and images but no documented runtime schedule.
+- Confirm the LA export file format with the product owner. Default plan: UTF-8
+  CSV with one metadata section and one de-identified row table.
+- Send the German privacy notice, German terms, participant disclosure, and
+  lecturer explanation to UZH data-protection/legal review. English remains an
+  informational translation.
+
+## Slice 1: Establish the eligibility state
+
+Problem:
+LA has no enforceable course or participant state.
+
+Do:
+
+- Add the course flag, participant status, effective time, disclosure version,
+  and minimal choice-event model in the appropriate Prisma schema files.
+- Create the migration. Existing courses remain disabled and participations
+  remain undecided.
+- Run the schema mirror and generated-client ritual.
+- Add a pure shared eligibility helper and table-driven tests covering course
+  toggles, late inclusion, opt-out, renewed inclusion, and disclosure mismatch.
+- Update dev and Playwright fixtures only where a stable LA-enabled course is
+  needed. Prefer setup through public mutations over more seed data.
+
+Likely files:
+
+- `packages/prisma/src/prisma/schema/course.prisma`
+- `packages/prisma/src/prisma/schema/participant.prisma`
+- `packages/prisma/src/prisma/schema/migrations/`
+- `apps/analytics/prisma/schema/` through `pnpm run prisma:sync`
+- `packages/graphql/src/services/analytics.ts` or a small LA policy module
+- focused GraphQL tests
+
+Check:
+
+- `pnpm run prisma:sync`
+- `pnpm --filter @klicker-uzh/prisma generate`
+- focused helper and migration tests
+- `pnpm --filter @klicker-uzh/prisma check`
+
+Commit:
+`feat(analytics): add course and participant eligibility state`
+
+## Slice 2: Add lecturer course control
+
+Problem:
+Lecturers cannot deliberately activate or stop LA.
+
+Do:
+
+- Extend course creation and settings operations with the default-off flag.
+- Add explicit enable/disable service methods with `ADMIN` permission.
+- Gate every LA query before reading derived or operational data.
+- On disable, make LA inaccessible first and physically delete all dedicated
+  course-level and participant-level analytics. Keep responses, feedback,
+  grades, points, XP, and other operational state.
+- Make cleanup idempotent. If research shows that synchronous deletion is not
+  bounded, add the smallest tracked Hatchet cleanup workflow and retry state.
+- Add the Manage creation/settings UI, explanation, confirmation, and disabled
+  analytics state in English and German.
+
+Likely files:
+
+- `packages/graphql/src/services/courses.ts`
+- `packages/graphql/src/services/analytics.ts`
+- `packages/graphql/src/schema/mutation.ts`
+- `packages/graphql/src/schema/query.ts`
+- `packages/graphql/src/graphql/ops/`
+- `packages/types/` where shared response types change
+- `apps/frontend-manage/src/components/courses/`
+- `apps/frontend-manage/src/pages/analytics/`
+- `packages/i18n/messages/en.ts`
+- `packages/i18n/messages/de.ts`
+- Hatchet packages only if bounded synchronous deletion is rejected
+
+Check:
+
+- GraphQL tests prove authorization, default-off creation, immediate read denial,
+  idempotent deletion, preserved operational data, and saved participant choices.
+- Generate and commit GraphQL artifacts.
+- Browser verification covers create disabled, create enabled, disable warning,
+  disabled analytics, and re-enable in both locales.
+
+Commit:
+`feat(analytics): add lecturer course control`
+
+## Slice 3: Add the participant choice lifecycle
+
+Problem:
+Students have no neutral course-specific LA choice.
+
+Do:
+
+- Add participant query/mutation fields for current choice and updates.
+- Keep the disclosure version in one server-owned constant.
+- Extend interactive PIN/account join flows to collect a required neutral choice
+  when the course already has LA enabled.
+- Leave LTI, invitation, and other automatic participation creation undecided
+  until the next course entry.
+- Add the non-blocking first-entry prompt, "decide later" reminder, and a
+  course-level setting for changing the choice.
+- On opt-out, hide and delete all participant-level derived LA records
+  immediately without recomputing aggregate records.
+- On renewed opt-in, set a new effective inclusion time. Never backfill activity
+  excluded by the participant's previous choice.
+
+Likely files:
+
+- `packages/graphql/src/services/accounts.ts`
+- `packages/graphql/src/services/courses.ts`
+- `packages/graphql/src/services/analytics.ts`
+- GraphQL schema and operations
+- `apps/auth/src/lib/helpers.ts`
+- `apps/frontend-pwa/src/pages/join.tsx`
+- `apps/frontend-pwa/src/pages/course/[courseId]/join.tsx`
+- `apps/frontend-pwa/src/pages/course/[courseId]/index.tsx`
+- new PWA LA choice components
+- English and German i18n
+- Playwright setup/specs
+
+Check:
+
+- GraphQL tests cover every participation creation path and state transition.
+- Playwright covers neutral choice, include, exclude, decide later, persistent
+  reminder, later opt-out, renewed opt-in, and course off/on.
+- Browser evidence includes desktop/mobile and both locales.
+
+Commit:
+`feat(analytics): add participant LA choice`
+
+## Slice 4: Enforce eligibility in computation
+
+Problem:
+The Python analytics scripts and direct GraphQL aggregations currently use data
+without LA eligibility filtering.
+
+Do:
+
+- Add one Python eligibility/coverage module mirrored from the shared contract.
+- Apply it before every participant, activity, instance, course, and aggregate
+  calculation.
+- Filter by the current inclusion time, not by course-enabled intervals.
+- Prevent save functions from writing results for disabled courses or ineligible
+  participants.
+- Update direct GraphQL feedback, response-count, and performance aggregation to
+  use the same rules.
+- Record effective sample size on derived aggregates where the current model
+  cannot provide it reliably.
+- Add Python unit tests with the standard library test runner. Do not add a new
+  testing dependency for this slice.
+
+Likely files:
+
+- `apps/analytics/src/modules/`
+- `apps/analytics/src/scripts/`
+- `apps/analytics/package.json`
+- `packages/prisma/src/prisma/schema/analytics.prisma` if effective N needs
+  persisted fields
+- `packages/graphql/src/services/analytics.ts`
+
+Check:
+
+- Python unit tests cover disabled courses, undecided/excluded participants,
+  effective times, partial coverage, and course disable/re-enable.
+- GraphQL integration tests prove excluded activity cannot enter direct
+  aggregations.
+- Analytics lint and format checks pass.
+
+Commit:
+`feat(analytics): enforce participant eligibility in computation`
+
+## Slice 5: De-identify lecturer LA and add export
+
+Problem:
+The lecturer performance table exposes participant identifiers, and no dedicated
+LA export enforces coverage or suppression.
+
+Do:
+
+- Remove participant ID, username, and email from LA GraphQL types and operations.
+- Generate report-local student labels server-side using fresh randomized order
+  per report/export.
+- Restrict row-level fields to approved coarse metrics.
+- Centralize effective-N calculation and suppression after all filters.
+- Show the effective N for each chart point, aggregate, and filtered table.
+- Do not expose excluded or undecided counts.
+- Add a dedicated LA export using the same query service and suppression policy.
+- Default export coverage to complete for the selected period; allow explicit
+  partial coverage. Mark included rows as complete or partial without revealing
+  exact choice times.
+- Exclude free text and any field that enables stable or item-level linking.
+
+Likely files:
+
+- `packages/types/src/index.ts`
+- `packages/graphql/src/schema/analytics.ts`
+- `packages/graphql/src/services/analytics.ts`
+- GraphQL operations and generated artifacts
+- an LA-specific export module
+- `apps/frontend-manage/src/components/analytics/`
+- `apps/frontend-manage/src/pages/analytics/`
+- English and German i18n
+
+Check:
+
+- Tests prove report labels change across requests, no identifier field survives,
+  N below five suppresses output, and post-filter N is enforced.
+- Export tests cover complete/partial filtering, suppression, metadata, encoding,
+  and absence of identifiers/free text.
+- Browser evidence covers N display, partial coverage, suppressed state, and
+  export controls.
+
+Commit:
+`feat(analytics): de-identify lecturer output and export`
+
+## Slice 6: Roll out old-data cleanup and legal text
+
+Problem:
+Existing courses and derived rows predate the controls, while public and in-app
+legal text does not describe the new behavior.
+
+Do:
+
+- Ship the default-off backend read gate before running physical cleanup.
+- Implement cleanup under the safe mutation protocol: aggregate-only inventory,
+  dry-run default, explicit write switch, before/after row counts, idempotency,
+  and no raw participant or response exports.
+- Remove all pre-feature dedicated LA rows and verify zero remaining by model.
+- Keep operational records untouched and verify representative counts.
+- Update the authoritative German privacy policy and terms.
+- Update the English translations and in-app disclosure/explanation.
+- State that LA participation is separate from research consent.
+- State purposes, data categories, benefits, lecturer visibility, explicit
+  exclusions, choice changes, derived-data deletion, aggregate refresh behavior,
+  partial coverage, variable sample size, retention, and contact/rights paths.
+- Prohibit re-identification and combining LA with other data to identify
+  students.
+- Obtain recorded UZH data-protection/legal approval before enabling LA.
+- Update the engineering wiki and `docs/log.md`. Add an LA-impact question to
+  `klicker-feature-design`; change other skills only if their procedure changes.
+
+Likely files:
+
+- safe cleanup script in the owning data package
+- `apps/docs/docs/datenschutz.mdx`
+- `apps/docs/docs/privacy_policy.mdx`
+- `apps/docs/docs/nutzungsbedingungen.mdx`
+- `apps/docs/docs/terms_of_service.mdx`
+- `packages/i18n/messages/en.ts`
+- `packages/i18n/messages/de.ts`
+- `docs/domain-model.md`
+- `docs/data-and-migrations.md`
+- `docs/async-and-workers.md` if cleanup uses Hatchet
+- `docs/testing.md`
+- `docs/log.md`
+- `.agents/skills/klicker-feature-design/SKILL.md`
+
+Check:
+
+- Cleanup dry run and write-mode tests use synthetic data only.
+- Before/after aggregate counts prove dedicated LA removal and operational-data
+  preservation.
+- Docs production build passes.
+- Wiki validation and formatting pass.
+- Legal approval is linked or recorded without committing private correspondence.
+
+Commit:
+`docs(analytics): update LA privacy and rollout guidance`
+
+## Finish gate
+
+- Run `pnpm run check:all`.
+- Run `pnpm run build`.
+- Run targeted GraphQL, analytics, export, and migration tests.
+- Run the new Playwright journey locally when the devcontainer is healthy; CI
+  remains the full e2e gate.
+- Use `npx agent-browser@0.32.2` against the branch-local devrouter routes.
+- Capture lecturer and student screenshots at desktop/mobile widths in German
+  and English.
+- Run an architecture-level privacy/security threat model.
+- Run an independent whole-branch review when collaboration policy permits.
+- Run the strict maintainability review.
+- Resolve or explicitly defer every finding.
+- Update this Progress section and the draft PR from whole-branch evidence.
+- Do not mark ready or merge without explicit user authority and passing CI.
+
+## Expected PR evidence
+
+- Migration and eligibility transition test output
+- Aggregate-only cleanup before/after counts
+- GraphQL and Python analytics test summaries
+- Export privacy test summary
+- Lecturer and student browser screenshots
+- German and English legal-document build result
+- UZH data-protection/legal approval status
+- Security/privacy and maintainability review summaries
+
+## Progress
+
+- 2026-07-23: ClickUp, current code, public/in-app legal text, and relevant
+  engineering wiki pages inspected.
+- 2026-07-23: Product decisions locked in `CONTEXT.md` and ADRs 0001-0002.
+- 2026-07-23: Implementation plan approved by the user.
+- Current: publish the approved plan and ADRs to a draft PR.
+- Next: wait for explicit implementation authority, then start Research and
+  Slice 1 on this same branch and draft PR.
