@@ -25,6 +25,7 @@ from src.modules.participant_course_analytics.get_running_past_courses import (
 from src.modules.utils import (
     analytics_mode,
     analytics_window_since,
+    check_analytics_cancellation,
     scoped_course_ids,
 )
 
@@ -42,18 +43,16 @@ def main() -> None:
         df_courses = get_running_past_courses(session)
 
         for idx, course in df_courses.iterrows():
+            check_analytics_cancellation()
             course_id = course["id"]
-            print(
-                f"Processing course", idx, "of", len(df_courses), "with id", course_id
-            )
+            print("Processing course", idx, "of", len(df_courses), "with id", course_id)
 
             course_participants = len(course["participations"])
             pqs, mls = get_course_progress_activities(session, course_id)
 
             for quiz in pqs:
-                started_count, completed_count, repeated_count = compute_progress_counts(
-                    quiz
-                )
+                check_analytics_cancellation()
+                started_count, completed_count, repeated_count = compute_progress_counts(quiz)
                 save_practice_quiz_progress(
                     session,
                     course_participants,
@@ -65,6 +64,7 @@ def main() -> None:
                 )
 
             for ml in mls:
+                check_analytics_cancellation()
                 started_count, completed_count, _ = compute_progress_counts(ml)
                 save_microlearning_progress(
                     session,

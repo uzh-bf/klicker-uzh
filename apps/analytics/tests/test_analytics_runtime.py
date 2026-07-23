@@ -7,8 +7,9 @@ from typing import Any, cast
 
 import pytest
 
-from src.analytics_runtime import AnalyticsRunCancelled, run_analytics_module
+from src.analytics_runtime import run_analytics_module
 from src.modules.utils import (
+    AnalyticsRunCancelled,
     AnalyticsRunConfig,
     analytics_mode,
     analytics_run_config_from_env,

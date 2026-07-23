@@ -20,6 +20,7 @@ from src.modules.participant_course_analytics.save_participant_course_analytics 
 from src.modules.utils import (
     analytics_mode,
     analytics_window_since,
+    check_analytics_cancellation,
     scoped_course_ids,
 )
 
@@ -37,9 +38,8 @@ def main() -> None:
         df_courses = get_running_past_courses(session)
 
         for idx, course in df_courses.iterrows():
-            print(
-                f"Processing course", idx, "of", len(df_courses), "with id", course["id"]
-            )
+            check_analytics_cancellation()
+            print("Processing course", idx, "of", len(df_courses), "with id", course["id"])
 
             df_activity = get_active_weeks(session, course)
 

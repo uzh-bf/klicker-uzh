@@ -28,6 +28,7 @@ from src.modules.participant_course_analytics.get_running_past_courses import (
 from src.modules.utils import (
     analytics_mode,
     analytics_window_since,
+    check_analytics_cancellation,
     scoped_course_ids,
 )
 
@@ -45,36 +46,29 @@ def main() -> None:
         df_courses = get_running_past_courses(session)
 
         for idx, course in df_courses.iterrows():
+            check_analytics_cancellation()
             course_id = course["id"]
-            print(
-                f"Processing course", idx, "of", len(df_courses), "with id", course_id
-            )
+            print("Processing course", idx, "of", len(df_courses), "with id", course_id)
 
             pqs, mls = get_course_activities(session, course_id)
 
             for quiz in pqs:
+                check_analytics_cancellation()
                 df_instance_performance = compute_instance_performance(session, quiz)
                 if df_instance_performance.empty:
                     continue
                 activity_performance = agg_activity_performance(df_instance_performance)
                 save_instance_performances(session, df_instance_performance, course_id)
-                save_activity_performance(
-                    session, activity_performance, course_id, practice_quiz_id=quiz["id"]
-                )
+                save_activity_performance(session, activity_performance, course_id, practice_quiz_id=quiz["id"])
 
             for ml in mls:
-                df_instance_performance = compute_instance_performance(
-                    session, ml, total_only=True
-                )
+                check_analytics_cancellation()
+                df_instance_performance = compute_instance_performance(session, ml, total_only=True)
                 if df_instance_performance.empty:
                     continue
                 activity_performance = agg_activity_performance(df_instance_performance)
-                save_instance_performances(
-                    session, df_instance_performance, course_id, total_only=True
-                )
-                save_activity_performance(
-                    session, activity_performance, course_id, microlearning_id=ml["id"]
-                )
+                save_instance_performances(session, df_instance_performance, course_id, total_only=True)
+                save_activity_performance(session, activity_performance, course_id, microlearning_id=ml["id"])
 
         script_exit(script=__name__, started=started, rows_written=None)
 

@@ -51,6 +51,10 @@ class AnalyticsRunConfig:
     window_since: str | None = None
 
 
+class AnalyticsRunCancelled(RuntimeError):
+    pass
+
+
 _ACTIVE_RUN_CONFIG: ContextVar[AnalyticsRunConfig | None] = ContextVar(
     "analytics_run_config",
     default=None,
@@ -79,6 +83,11 @@ def analytics_run_context(
 def analytics_run_cancelled() -> bool:
     check = _CANCELLATION_CHECK.get()
     return check() if check is not None else False
+
+
+def check_analytics_cancellation() -> None:
+    if analytics_run_cancelled():
+        raise AnalyticsRunCancelled("analytics task was cancelled")
 
 
 def analytics_run_config_from_env() -> AnalyticsRunConfig:
@@ -163,6 +172,7 @@ def iter_analytics_windows(
 
     if compute_daily:
         for curr in pd.date_range(start=start_date, end=end_date, freq="D"):
+            check_analytics_cancellation()
             day = curr.strftime("%Y-%m-%d")
             if _skip(day):
                 continue
@@ -179,6 +189,7 @@ def iter_analytics_windows(
 
     if compute_weekly:
         for curr in pd.date_range(start=start_date, end=end_date, freq="W"):
+            check_analytics_cancellation()
             week_end = curr.strftime("%Y-%m-%d")
             if _skip(week_end):
                 continue
@@ -196,6 +207,7 @@ def iter_analytics_windows(
 
     if compute_monthly:
         for curr in pd.date_range(start=start_date, end=end_date, freq="ME"):
+            check_analytics_cancellation()
             month_end = curr.strftime("%Y-%m-%d")
             if _skip(month_end):
                 continue
@@ -212,6 +224,7 @@ def iter_analytics_windows(
             )
 
     if compute_course:
+        check_analytics_cancellation()
         print(f"Computing course-wide {label} for {start_date} to {end_date}")
         compute_fn(
             session,
