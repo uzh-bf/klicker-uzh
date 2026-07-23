@@ -489,7 +489,8 @@ the repository script that replaces it before continuing.
   `80c9ae5cf`.
 - 2026-07-23: Slice 3B reproduces and fixes numerical analytics differences
   from `packages/grading`: bounded and one-sided ranges, empty or undefined
-  solutions, exact-solution precedence, and `Number.EPSILON` tolerance.
+  solutions, solution-range precedence with exact-solution fallback, and
+  `Number.EPSILON` tolerance.
   Parity work also exposed and fixed the product grader's zero-bound truthiness
   defect, so a bound of exactly zero is no longer treated as absent.
 - 2026-07-23: The deterministic interaction seeder now includes numerical
@@ -502,8 +503,23 @@ the repository script that replaces it before continuing.
   the running seeded environments belongs to this worktree, so no other
   agent's database was reused or reset. This remains a final runtime evidence
   item rather than being represented by unit parity tests.
-- Active: Slice 3B, commit and independently review grading parity.
-- Next: Prove index needs and refresh operational documentation in Slice 3C.
+- 2026-07-23: Slice 3B's independent review reproduced an ingestion and
+  defense-in-depth defect where a partially parsed numerical response could
+  become `NaN` and receive full range credit. The accepted adjustment requires
+  a complete finite numeric string at ingestion, rejects non-finite values in
+  the shared grader and Python analytics, and makes grading changes trigger the
+  analytics parity workflow. A production-data audit for historical zero-bound
+  responses remains a deployment gate because this worktree has no authorized
+  production-data access.
+- 2026-07-23: The accepted Slice 3B adjustments pass 139 analytics tests with
+  3 integration skips, the exact isolated 60-test analytics CI command, all 10
+  grading tests, 2 response-validation tests, both changed TypeScript package
+  checks, Ruff lint/format, Prettier, and diff hygiene. The analytics process
+  exits successfully despite the known sandbox-only `mirakuru` cleanup warning.
+- Completed: Slice 3B numerical grading parity and review adjustments.
+- Active: Prove index needs and refresh operational documentation in Slice 3C.
+- Next: Close the dormant-surface review findings, then build the native Python
+  Hatchet runtime in Slice 4.
 
 ## Finish evidence
 
@@ -517,6 +533,6 @@ the repository script that replaces it before continuing.
 
 ## Next Steps
 
-1. Commit and independently review Slice 3A.
-2. Prove numerical grading parity in Slice 3B.
+1. Prove index needs and refresh operational documentation in Slice 3C.
+2. Close the dormant-surface review findings and prepare the native worker.
 3. Continue one verified slice at a time until both draft PRs are current.

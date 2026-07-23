@@ -85,10 +85,7 @@ async function loadCourseActivities(
   return activities
 }
 
-// Build the JSON payloads QuestionResponse stores in firstResponse /
-// lastResponse. Shape matches what live code produces; the exact content
-// doesn't matter for the analytics pipeline, but well-formed JSON avoids
-// downstream surprises if we later expand what the pipeline reads.
+// Build valid response payloads consumed by analytics correctness computation.
 function responsePayload(elementType: string, rng: Rng): object {
   switch (elementType) {
     case 'SC':

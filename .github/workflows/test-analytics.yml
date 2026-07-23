@@ -23,7 +23,7 @@ jobs:
         id: filter
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(apps/analytics/|\.github/workflows/test-analytics\.yml|\.github/actions/changed-paths/)'
+          pattern: '^(apps/analytics/|packages/grading/|\.github/workflows/test-analytics\.yml|\.github/actions/changed-paths/)'
 
       - name: Set up uv
         if: steps.filter.outputs.should_run == 'true'

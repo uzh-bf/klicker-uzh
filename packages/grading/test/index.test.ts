@@ -323,6 +323,25 @@ describe('@klicker-uzh/grading', () => {
       response: -1,
     })
     expect(zeroLowerBound).toEqual(0)
+
+    const nonFiniteResponse = gradeQuestionNumerical({
+      solutionRanges: [{ min: 0, max: 10 }],
+      response: Number.NaN,
+    })
+    expect(nonFiniteResponse).toEqual(null)
+
+    const positiveInfinityResponse = gradeQuestionNumerical({
+      solutionRanges: [{ min: 0 }],
+      response: Number.POSITIVE_INFINITY,
+    })
+    expect(positiveInfinityResponse).toEqual(null)
+
+    const solutionRangePrecedence = gradeQuestionNumerical({
+      solutionRanges: [{ min: 10, max: 20 }],
+      exactSolutions: [5],
+      response: 5,
+    })
+    expect(solutionRangePrecedence).toEqual(0)
   })
 
   it('should grade FREE_TEXT questions correctly', () => {
