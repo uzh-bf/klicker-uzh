@@ -737,8 +737,63 @@ the repository script that replaces it before continuing.
   ConfigMap; obsolete subprocess settings were removed. `ANALYTICS_ALLOW_FULL`
   remains opt-in and is not enabled by chart defaults.
 - Completed: Slice 4C cutover and Slice 5A minimal native image/render.
-- Active: Harden probes, immutable image inputs, CI, secrets verification, and
-  operator runbook in Slice 5B.
+- 2026-07-23: Exact-commit review of the cutover found that the non-root image
+  could not populate its runtime model cache. The accepted Slice 5B fix pins
+  `intfloat/multilingual-e5-base` to revision
+  `d128750597153bb5987e10b1c3493a34e5a4502a`, downloads it during the image
+  build, and forces offline runtime loading. The exact upstream repository has
+  no standalone license file; its immutable model card declares MIT and
+  contains the citation, so the bundle retains that card as
+  `UPSTREAM_MODEL_CARD.md`.
+- 2026-07-23: The final digest-pinned images build natively for both target
+  architectures. ARM64 is 2,848,584,888 bytes and AMD64 is 2,929,792,658
+  bytes. Both load and encode German and English text with the bundled
+  768-dimensional model under a non-root user, read-only root filesystem,
+  dropped capabilities, and no network. AMD64 reports
+  `torch==2.11.0+cpu` with CUDA unavailable.
+- 2026-07-23: The analytics Deployment now has one pod and one worker slot,
+  `Recreate`, a 3,660-second termination grace period, SDK-native
+  `/health` probes and `/metrics` scraping, a writable `/tmp` `emptyDir`, a
+  non-root RuntimeDefault security context, 200m/512 MiB requests, and a 4 GiB
+  memory limit. Full rebuilds remain disabled unless a reviewed values
+  override sets `allowFull=true`.
+- 2026-07-23: Strict Helm lint and both environment renders pass. Fourteen
+  deployment contracts pass for staging and production, including the
+  architecture-specific image, secret reference, probes, resources, security
+  context, and SDK-standard server URL. The guarded values override is the
+  only render that emits `ANALYTICS_ALLOW_FULL=1`.
+- 2026-07-23: The analytics image workflows now build ARM64 on the native
+  GitHub ARM runner and AMD64 on `ubuntu-latest`, without QEMU. Draft PRs
+  build but do not push, release builds push, and architecture-scoped GitHub
+  Actions caches replace the previous forced no-cache builds. The public
+  repository's configured Actions cache cap is 10 GB. `mode=min` retains the
+  two final image chains (about 5.8 GB uncompressed total) without also caching
+  discarded builder layers; GHCR container storage is currently free and
+  standard GitHub-hosted runner usage is free for public repositories. Both
+  workflow files parse and their matrix/action/push contracts pass.
+- 2026-07-23: A final hardened ARM64 container registered the proof task and
+  both 15-task workflows against disposable `hatchet-lite:v0.73.1`, reported
+  `HEALTHY` with one slot, exposed a healthy Prometheus worker gauge,
+  completed the non-mutating proof task, and exited 0 without OOM after a
+  graceful SIGTERM.
+- 2026-07-23: The operations runbook now covers compatibility and external
+  secret prerequisites, cold deployment, proof and scoped staging checks,
+  trigger modes, status, logs, retries, resources, full-run maintenance
+  gating, and cold rollback. Live secret-key verification remains a
+  pre-deployment gate: the configured staging/production Kubernetes contexts
+  point to unavailable local endpoints, and no local Infisical profile for
+  those environments exists. No secret values were read or exposed.
+- 2026-07-23: Slice 5B local verification passes Ruff format/lint, 164 Python
+  tests with 4 integration skips, focused strict Pyright for the new model and
+  native-worker boundary, uv lock validation, Syncpack, nine TypeScript
+  Hatchet/GraphQL checks, the TypeScript cutover test, three focused GraphQL
+  routing tests, Prisma schema sync, Helm validation, and both image builds.
+  Full analytics Pyright still reports the existing untyped Phase A baseline
+  (2,300 findings across 112 files). The broad GraphQL suite again reaches the
+  sandbox database boundary and fails with Prisma `EPERM` before database
+  assertions; its database-free analytics routing tests pass 3/3.
+- Active: Commit and independently review Slice 5B, then run the final branch
+  gates and publish both stacked draft PRs.
 
 ## Finish evidence
 
@@ -752,5 +807,7 @@ the repository script that replaces it before continuing.
 
 ## Next Steps
 
-1. Port the analytics DAG to direct Python tasks with parity in Slice 4B.
-2. Continue one verified slice at a time until both draft PRs are current.
+1. Commit and independently review the verified Slice 5B deployment hardening.
+2. Run the final security, maintainability, simplification, and branch reviews.
+3. Publish `chat-analytics` against `v3`, refresh the stacked
+   `analytics-phase-a` draft, and read back CI without merging or deploying.

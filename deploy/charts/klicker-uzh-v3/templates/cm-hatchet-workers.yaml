@@ -40,6 +40,9 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
 data:
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
-  HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
+  HATCHET_CLIENT_SERVER_URL: {{ .Values.hatchet.client.apiUrl | quote }}
   HATCHET_CLIENT_WORKER_HEALTHCHECK_ENABLED: 'true'
   HATCHET_CLIENT_WORKER_HEALTHCHECK_PORT: '8001'
+  {{- if .Values.hatchet.workers.analytics.allowFull }}
+  ANALYTICS_ALLOW_FULL: '1'
+  {{- end }}

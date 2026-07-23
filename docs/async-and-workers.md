@@ -52,3 +52,6 @@ Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. No
 The Hatchet engine runs as the `hatchet` compose service (gRPC 7077, UI 8888); workers need a client token minted by `./util/_create_hatchet_token.sh` (Cypress/CI variant: `_create_hatchet_token_cypress.sh`, which has an HTTP-API fallback for containers without Docker). Workers must see the **same `DATABASE_URL`, `APP_SECRET`, and Redis settings** as the app stack — a worker pointed at the wrong database happily processes events into nowhere. The `packages/graphql` vitest suite also requires a live Hatchet + `HATCHET_CLIENT_TOKEN` (see [Testing](./testing.md)).
 
 The analytics worker uses the SDK-standard `HATCHET_CLIENT_*` settings, the analytics database connection settings, and optional `ANALYTICS_ALLOW_FULL=1` for guarded full rebuilds. Its SDK health and metrics endpoints are exposed on port 8001 at `/health` and `/metrics`.
+
+Deployment, triggering, recovery, and cold rollback are covered in the
+[Learning Analytics Operations](./learning-analytics-operations.md) runbook.
