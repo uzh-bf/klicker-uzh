@@ -598,7 +598,7 @@ describe('Integration tests for the course discussion platform', () => {
     expect(rateLimitEvents).toHaveLength(2)
   })
 
-  it('bounds anonymous course and IP rate-limit events', async () => {
+  it('bounds anonymous course rate-limit events', async () => {
     const courseWindowCourse = await seedCourse({}, userOneCtx)
     await enableCourseDiscussion(prisma, {
       courseId: courseWindowCourse.id,
@@ -662,7 +662,9 @@ describe('Integration tests for the course discussion platform', () => {
         },
       },
     ])
+  })
 
+  it('bounds anonymous IP rate-limit events', async () => {
     const ipWindowCourse = await seedCourse({}, userOneCtx)
     await enableCourseDiscussion(prisma, {
       courseId: ipWindowCourse.id,
@@ -1092,6 +1094,54 @@ describe('Integration tests for the course discussion platform', () => {
 
     expect(deniedThread).toBeNull()
     expect(await prisma.discussionScope.count()).toBe(initialScopeCount)
+  })
+
+  it('does not recreate a deleted scope for a stale anonymous embed token', async () => {
+    const course = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, {
+      courseId: course.id,
+      allowAnonymous: true,
+    })
+    await recomputeDerivedPermissions({ courseId: course.id }, prisma)
+
+    const embedInfo = await getCourseDiscussionEmbeddingInfo(
+      {
+        courseId: course.id,
+        externalBlock: {
+          externalSource: 'lms',
+          externalRef: 'deleted-block',
+        },
+        allowAnonymous: true,
+      },
+      userOneCtx
+    )
+    expect(embedInfo).toBeTruthy()
+
+    await prisma.discussionSpace.delete({
+      where: { courseId: course.id },
+    })
+
+    const deniedThread = await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: 'This stale embed request should be rejected',
+        scope: {
+          scopeType: DiscussionScopeType.EXTERNAL_BLOCK,
+          externalSource: 'lms',
+          externalRef: 'deleted-block',
+        },
+        isAnonymous: true,
+        embedToken: embedInfo!.embedToken,
+      },
+      createAnonymousContext(userOneCtx)
+    )
+
+    expect(deniedThread).toBeNull()
+    expect(
+      await prisma.discussionSpace.findUnique({
+        where: { courseId: course.id },
+      })
+    ).toBeNull()
   })
 
   it('uses explicit delete events and enforces delete authorization', async () => {

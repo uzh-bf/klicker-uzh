@@ -566,14 +566,14 @@ async function resolveOrCreateScope(
 
   if (!canonicalScope) return null
 
-  const scopeKey = {
+  const scopeWhere = {
     spaceId_scopeKey: {
       spaceId: space.id,
       scopeKey: canonicalScope.scopeKey,
     },
   }
   const existingScope = await ctx.prisma.discussionScope.findUnique({
-    where: scopeKey,
+    where: scopeWhere,
   })
 
   if (existingScope) {
@@ -582,7 +582,7 @@ async function resolveOrCreateScope(
     }
 
     return ctx.prisma.discussionScope.update({
-      where: scopeKey,
+      where: scopeWhere,
       data: { scopeLabel: canonicalScope.scopeLabel },
     })
   }
@@ -602,8 +602,20 @@ async function resolveOrCreateScope(
   } catch (error) {
     if (!isPrismaUniqueConstraintError(error)) throw error
 
-    return ctx.prisma.discussionScope.findUnique({
-      where: scopeKey,
+    const concurrentScope = await ctx.prisma.discussionScope.findUnique({
+      where: scopeWhere,
+    })
+
+    if (
+      !concurrentScope ||
+      concurrentScope.scopeLabel === canonicalScope.scopeLabel
+    ) {
+      return concurrentScope
+    }
+
+    return ctx.prisma.discussionScope.update({
+      where: scopeWhere,
+      data: { scopeLabel: canonicalScope.scopeLabel },
     })
   }
 }
@@ -1299,13 +1311,18 @@ export async function createCourseDiscussionThread(
     return null
   }
 
-  const space = await resolveOrCreateSpace(
-    {
-      spaceType: DB.DiscussionSpaceType.COURSE,
-      courseId,
-    },
-    ctx
-  )
+  const anonymous = !!isAnonymous
+  const space = anonymous
+    ? await ctx.prisma.discussionSpace.findUnique({
+        where: { courseId },
+      })
+    : await resolveOrCreateSpace(
+        {
+          spaceType: DB.DiscussionSpaceType.COURSE,
+          courseId,
+        },
+        ctx
+      )
 
   if (!space) return null
 
@@ -1318,8 +1335,6 @@ export async function createCourseDiscussionThread(
   )
 
   if (!canonicalScope) return null
-
-  const anonymous = !!isAnonymous
 
   let participantId: string | null = null
   let fingerprintHash: string | null = null
@@ -1338,13 +1353,14 @@ export async function createCourseDiscussionThread(
 
     if (!validBinding) return null
 
-    resolvedScope = await resolveOrCreateScope(
-      {
-        space,
-        scope,
+    resolvedScope = await ctx.prisma.discussionScope.findUnique({
+      where: {
+        spaceId_scopeKey: {
+          spaceId: space.id,
+          scopeKey: canonicalScope.scopeKey,
+        },
       },
-      ctx
-    )
+    })
 
     if (!resolvedScope) return null
 
