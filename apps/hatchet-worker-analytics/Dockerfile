@@ -29,7 +29,6 @@ WORKDIR /app/apps/analytics
 
 COPY --from=builder --chown=10001:10001 /app/apps/analytics/.venv .venv
 COPY --chown=10001:10001 apps/analytics/src src
-COPY --chown=10001:10001 apps/analytics/prisma prisma
 
 ENV HATCHET_CLIENT_WORKER_HEALTHCHECK_ENABLED=true \
     HATCHET_CLIENT_WORKER_HEALTHCHECK_PORT=8001 \
