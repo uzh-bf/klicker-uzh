@@ -71,7 +71,14 @@ Work one slice at a time. Per slice: implement → verify (fastest meaningful ch
 ### Slice 2 — Real question preview in the proposal card
 
 **Do:**
-1. New `apps/chat/src/components/manage-proposal-preview.tsx`: map proposal payload → `ElementInstance` (slim twin of `useArtificialElementInstance`, SC/MC/FREE_TEXT only; typename per `ElementTypeMonitor` table; synthetic `id: 0`; choices pass through unchanged) and render `StudentElement` with `preview` + `compact`, following `student-practice-quiz-card.tsx`'s import + response-props pattern. Deep import `@klicker-uzh/shared-components/src/StudentElement`.
+1. New `apps/chat/src/components/manage-proposal-preview.tsx` plus a mapper `proposalPayloadToElementInstance(payload)` (same file or `apps/chat/src/services/proposalToElementInstance.ts`). Mapper spec (verified against the codebase by a dedicated research pass):
+   - Instance shell: `{ id: 0, type: ElementInstanceType.LiveQuiz, elementType: payload.type }` (pattern: `useArtificialElementInstance.ts:26-27`); top-level `ElementInstance.options` is never read by `StudentElement` — omit it.
+   - `elementData`: `__typename` = `'FreeTextElementData'` for FREE_TEXT else `'ChoicesElementData'` (table: `ElementTypeMonitor.tsx:17-36`); `id: '0'`, `elementId: 0`; `content`, `explanation`, `name`, `basePoints`, `pointsMultiplier` (already a number — do NOT `parseInt`), `type` copied from the payload.
+   - SC/MC `options`: `choices` with ix backfill `payload.options.choices.map((c, ix) => ({ ...c, ix: c.ix ?? ix }))` (`Choice.ix` is required Int; chat-side zod has it optional), plus `displayMode` (always present, zod default `'LIST'` = `ElementDisplayMode.List`), `hasAnswerFeedbacks`, `hasSampleSolution`.
+   - FREE_TEXT `options`: pass `hasSampleSolution` + `restrictions` through; minimal `{hasSampleSolution:false, restrictions:{}}` is safe — `FreeTextQuestion.tsx:61` optional-chains `restrictions?.maxLength`.
+   - Close with `as ElementInstance` (the canonical fabricator does the same at `useArtificialElementInstance.ts:148`).
+   - Render `StudentElement` via the **Single variant** (`StudentElement.tsx:105-113`): `element`, `elementIx={0}`, `singleStudentResponse` + `setSingleStudentResponse` from local `useState`, `preview` (hides evaluation panel) + `compact`. Deep import `@klicker-uzh/shared-components/src/StudentElement` (package has no subpath exports; same as `student-practice-quiz-card.tsx:9-12`).
+   - Pre-verified non-issues: chat's `NextIntlClientProvider` already carries the `shared.*` keys (`apps/chat/src/app/layout.tsx:37-39`); Tailwind `@source` already covers shared-components (`apps/chat/src/app/globals.css:6`).
 2. In `manage-proposal-card.tsx`: render the preview **always** (remove `showPreview` gating for it); demote the JSON `<pre>` to a `<details>` "Show raw JSON" at the card bottom; repurpose/remove the Preview button. Constrain with `max-w-full overflow-x-auto`; verify at 28-rem drawer width AND mobile drawer (bottom sheet).
 3. Prompt: append to `BASE_MANAGE_ASSISTANT_PROMPT`: after the proposal tool returns, reply with at most one short sentence and never restate the question content, options, or JSON — the card already shows them.
 4. Zod-parse the payload with the existing `manageElementCreateProposalSchema` before mapping; on parse failure fall back to the raw JSON details block (never a crashed card).
@@ -82,8 +89,8 @@ Work one slice at a time. Per slice: implement → verify (fastest meaningful ch
 ### Slice 3 — Library refresh after draft creation
 
 **Do:**
-1. In `useEmbeddedManageContext.ts`: cache `event.origin` (the verified parent origin) in state/store when a context message is accepted — copy the `chatContextStore` pattern (`apps/chat/src/stores/chatContextStore.ts`). Expose it (e.g. via the same hook return or a small store).
-2. New helper `notifyManageParent(message)` used by `ManageProposalCard` after a successful confirm (`manage-proposal-card.tsx:111-115`): `window.parent.postMessage({ type: 'klicker:manage-element-created', payload: { id, name } }, cachedParentOrigin)`. Never post with `'*'`; skip silently when no cached origin (non-embedded /manage tab — nothing to refresh).
+1. In `useEmbeddedManageContext.ts`: cache `event.origin` (the verified parent origin) when a context message is accepted. Store it in a chat-wide zustand store — extend `chatContextStore` (`apps/chat/src/stores/chatContextStore.ts`) with a `manageParentOrigin` field, or add a tiny sibling store — because `ManageProposalCard` renders inside the thread message list, outside the hook's component scope, and must read the origin via a store hook.
+2. New helper `notifyManageParent(message)` used by `ManageProposalCard` after a successful confirm (`manage-proposal-card.tsx:111-115`): `window.parent.postMessage({ type: 'klicker:manage-element-created', payload: { id, name } }, cachedParentOrigin)`. Never post with `'*'`; skip silently when no cached origin (non-embedded /manage tab — nothing to refresh). Also ensure the confirm button is disabled while the confirm request is in flight (double-click guard — check the existing loading state actually gates the button, add `disabled` if not).
 3. In `ManageAssistantWidget.tsx` message handler (`:90-112`, same origin + source checks): on `klicker:manage-element-created`, call `apolloClient.refetchQueries({ include: [GetUserElementsDocument] })` (`useApolloClient()` — the widget is inside `ApolloProvider`). Optionally fire the design-system `Toast` "Draft «name» added to your question pool".
 4. Payload is data, not instructions: validate shape (id number, name string ≤ 200 chars) before using; render name only through React text (no HTML).
 
@@ -156,13 +163,24 @@ Work one slice at a time. Per slice: implement → verify (fastest meaningful ch
 
 1, 5, 6, 7 independent. 2 before 3 (confirm handler moves). 4 any time after 2 (prompt references the card contract). 8 last.
 
+**Execution order (updated after plan review): 7 → 1 → 2 → 3 → 4 → 5 → 6 → 8.** Slice 7 first so the dev stack always has MCP tools while verifying every other slice (its late position would force manual mcp-lecturer starts throughout).
+
+## Independent plan review
+
+agy (Gemini 3.6 Flash High, sandbox/plan mode) reviewed commit `b58112c23`. Verification against this worktree:
+
+- Rejected (3): its 100-confidence line-reference "corrections" for `package.json:57` (`dev:container`), `thread.tsx:406`, `service.ts:424/596` — the reviewer resolved the primary checkout, not this branch; all three plan references verified correct here.
+- Accepted (4): run Slice 7 first (ordering); spell out `StudentElement` props + mapper spec in Slice 2 (merged from a dedicated research pass); store the parent origin where `ManageProposalCard` can reach it (Slice 3); explicit double-submit guard on confirm (Slice 3) + token-replay note (Risks).
+
 ## Risks
 
 - OTel v2 bump cascade (Slice 6) — bounded by the explicit STOP rule.
 - Model behavior (Slice 4) is probabilistic; the eval matrix defines "good enough" so the junior does not chase 100%.
 - `StudentElement` renders interactively even with `preview` — confirm the proposal preview cannot submit anything (no response handlers wired = display-only; verify no console errors from missing handlers).
 - Suggestions i18n: chat app is EN-hardcoded today; if product wants DE suggestions, that is a separate decision — flag, do not build.
+- Proposal token replay: the 15-min proposal token is not single-use server-side; a captured token could re-create the same draft within its window. Client double-submit guard (Slice 3) covers the accidental case; server-side single-use needs shared state (Redis) and is deferred — record as accepted residual risk in the PR body.
 
 ## Progress
 
 - 2026-07-23: Plan drafted from full implementation review (two exploration passes over apps/chat, apps/mcp-lecturer, apps/frontend-manage preview/query stack). Decisions D1-D7 proposed to Roland. No slices started.
+- 2026-07-23: Independent agy plan review done; 3 line-ref findings rejected (wrong checkout), 4 structural findings accepted and integrated (execution order 7-first, Slice 2 mapper spec, Slice 3 origin store + double-submit guard, token-replay risk note). Next: Slice 7.
