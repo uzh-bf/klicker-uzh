@@ -129,9 +129,11 @@ model LiveQuizResponse {
   instanceId            Int
   elementBlockExecution Int
 
-  // link to participant
-  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  participantId String      @db.Uuid
+  // exactly one identity is linked: an account participant or a quiz-scoped respondent
+  participant   Participant?        @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String?             @db.Uuid
+  respondent    LiveQuizRespondent? @relation(fields: [respondentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  respondentId  String?             @db.Uuid
 
   // link to corrections -> database constraint: correctionOnly can only be set, if the response is set to null
   appliedCorrections AppliedPointCorrection[]
@@ -141,6 +143,7 @@ model LiveQuizResponse {
   updatedAt DateTime @updatedAt
 
   @@unique([instanceId, elementBlockExecution, participantId])
+  @@unique([instanceId, elementBlockExecution, respondentId])
   @@index([instanceId, elementBlockExecution])
 }
 

@@ -784,6 +784,15 @@ export async function getAssessmentResultsLiveQuiz(
             (response) => response.elementBlockExecution === block.execution
           )
           .forEach((response) => {
+            if (
+              response.participantId === null ||
+              response.participant === null
+            ) {
+              return
+            }
+
+            const participantId = response.participantId
+
             // get the student's affiliation email, if available
             const email =
               response.participant.accounts[0]?.ssoEmail ??
@@ -791,18 +800,17 @@ export async function getAssessmentResultsLiveQuiz(
               'Missing E-Mail'
 
             // check if the student already has an entry in the results object and set it otherwise
-            if (quizAcc.students[response.participantId]) {
+            if (quizAcc.students[participantId]) {
               // increment the results object with the student response content
-              quizAcc.students[response.participantId]!.basePoints +=
-                response.basePoints
-              quizAcc.students[response.participantId]!.correctnessPoints +=
+              quizAcc.students[participantId]!.basePoints += response.basePoints
+              quizAcc.students[participantId]!.correctnessPoints +=
                 response.correctnessPoints
-              quizAcc.students[response.participantId]!.bonusPoints +=
+              quizAcc.students[participantId]!.bonusPoints +=
                 response.bonusPoints
             } else {
               // set up a new student entry in the results object with the response content
-              quizAcc.students[response.participantId] = {
-                participantId: response.participantId,
+              quizAcc.students[participantId] = {
+                participantId,
                 participantEmail: email,
                 basePoints: response.basePoints,
                 correctnessPoints: response.correctnessPoints,
@@ -1316,6 +1324,7 @@ export async function correctAssessmentPointsInstance(
         instanceId,
         elementBlockExecution: instance.elementBlock.execution,
         correctionOnly: false,
+        participantId: { not: null },
       },
     })
 
@@ -1354,6 +1363,8 @@ export async function correctAssessmentPointsInstance(
         // loop over all responses and update them with the corrected points
         await Promise.all(
           responses.map(async (response) => {
+            if (response.participantId === null) return
+
             const logObject = await upsertResponseAppliedCorrection(
               {
                 correctionId: correction.id,
@@ -1759,6 +1770,8 @@ export async function correctAssessmentPointsLiveQuiz(
             (response) => response.elementBlockExecution === block.execution
           )
           .forEach((response) => {
+            if (response.participantId === null) return
+
             if (!blockAcc[response.participantId]) {
               blockAcc[response.participantId] = {}
             }

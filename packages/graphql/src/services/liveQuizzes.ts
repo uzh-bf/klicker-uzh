@@ -28,7 +28,7 @@ import { GraphQLError } from 'graphql'
 import type { Redis } from 'ioredis'
 import { min } from 'mathjs'
 import schedule from 'node-schedule'
-import { createHash, createHmac } from 'node:crypto'
+import { createHash, createHmac, randomBytes } from 'node:crypto'
 import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
@@ -193,6 +193,7 @@ interface ManipulateLiveQuizArgs {
   isConfusionFeedbackEnabled: boolean
   isLiveQAEnabled: boolean
   isModerationEnabled: boolean
+  responseCollectionMode?: DB.LiveQuizResponseCollectionMode | null
 }
 
 export async function manipulateLiveQuiz(
@@ -213,6 +214,7 @@ export async function manipulateLiveQuiz(
     isConfusionFeedbackEnabled,
     isLiveQAEnabled,
     isModerationEnabled,
+    responseCollectionMode,
   }: ManipulateLiveQuizArgs,
   ctx: ContextWithUser,
   transactionPrisma?: PrismaTransactionClient
@@ -248,9 +250,6 @@ export async function manipulateLiveQuiz(
 
     if (!existingActivity) {
       throw new GraphQLError('Live quiz not found')
-    }
-    if (existingActivity.status === DB.PublicationStatus.PUBLISHED) {
-      throw new GraphQLError('Cannot edit a published live quiz')
     }
   }
 
@@ -300,6 +299,28 @@ export async function manipulateLiveQuiz(
 
   // only activities in assessment courses will be marked as being part of assessment
   const assessmentSetting = course?.isAssessmentEnabled ?? false
+
+  const responseCollectionModeSetting = assessmentSetting
+    ? DB.LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS
+    : (responseCollectionMode ??
+      existingActivity?.responseCollectionMode ??
+      DB.LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS)
+
+  if (
+    existingActivity &&
+    responseCollectionModeSetting !== existingActivity.responseCollectionMode &&
+    existingActivity.status !== DB.PublicationStatus.DRAFT &&
+    existingActivity.status !== DB.PublicationStatus.SCHEDULED
+  ) {
+    throw new GraphQLError(
+      'Response collection mode cannot be changed after publication',
+      { extensions: { code: 'LIVE_QUIZ_RESPONSE_MODE_LOCKED' } }
+    )
+  }
+
+  if (existingActivity?.status === DB.PublicationStatus.PUBLISHED) {
+    throw new GraphQLError('Cannot edit a published live quiz')
+  }
 
   // pin protection applies when assessment is enabled or explicitly enabled via flag
   const pinProtection = assessmentSetting || isPinProtected
@@ -380,6 +401,13 @@ export async function manipulateLiveQuiz(
         : undefined,
     isGamificationEnabled: gamificationSetting,
     isAssessmentEnabled: assessmentSetting,
+    responseCollectionMode: responseCollectionModeSetting,
+    exportSalt:
+      existingActivity?.exportSalt ??
+      (responseCollectionModeSetting ===
+      DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+        ? randomBytes(32).toString('hex')
+        : undefined),
     pinCode: pinProtection ? newPinCode : null, // if pin protection applies (and the course changed), assign a pin
     isConfusionFeedbackEnabled,
     isLiveQAEnabled,
