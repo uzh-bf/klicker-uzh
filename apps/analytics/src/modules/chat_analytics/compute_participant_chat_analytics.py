@@ -41,23 +41,26 @@ attachment_rollup AS (
 __all__ = ["compute_participant_chat_analytics", "COURSE_TIMESTAMP"]
 
 
-def _session_cache_key(session: Session) -> str:
+def _session_cache_key(session: Session) -> str | None:
     bind = getattr(session, "get_bind", lambda: None)()
     if bind is not None:
         url = getattr(bind, "url", None)
         if url is not None:
             return str(url)
         return f"bind:{id(bind)}"
-    return f"session:{id(session)}"
+    return None
 
 
 def _table_exists(session: Session, table_name: str) -> bool:
-    key = (_session_cache_key(session), table_name)
-    cached = _ATTACHMENT_SUPPORT_CACHE.get(key)
-    if cached is not None:
-        return cached
+    cache_scope = _session_cache_key(session)
+    if cache_scope is not None:
+        key = (cache_scope, table_name)
+        cached = _ATTACHMENT_SUPPORT_CACHE.get(key)
+        if cached is not None:
+            return cached
     exists = bool(session.execute(_TABLE_EXISTS_SQL, {"table_name": table_name}).scalar_one())
-    _ATTACHMENT_SUPPORT_CACHE[key] = exists
+    if cache_scope is not None:
+        _ATTACHMENT_SUPPORT_CACHE[(cache_scope, table_name)] = exists
     return exists
 
 

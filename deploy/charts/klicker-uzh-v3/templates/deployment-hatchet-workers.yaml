@@ -267,6 +267,7 @@ spec:
         {{- include "chart.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: hatchet-worker-analytics
     spec:
+      automountServiceAccountToken: false
       terminationGracePeriodSeconds: {{ .Values.hatchet.workers.analytics.terminationGracePeriodSeconds }}
       priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.hatchet.workers.analytics.priorityClassName }}
       {{- with .Values.hatchet.workers.analytics.imagePullSecrets }}

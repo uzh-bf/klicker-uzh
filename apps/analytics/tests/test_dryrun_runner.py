@@ -12,7 +12,6 @@ import sys
 import types
 import uuid
 import zipfile
-from pathlib import Path
 
 import pytest
 
@@ -88,6 +87,18 @@ def test_run_dryrun_aborts_on_invalid_uuid(tmp_path):
 
     with pytest.raises(DryRunAbort):
         run_dryrun("not-a-uuid", tmp_path / "noop.xlsx", allow_rw_role=True)
+
+
+def test_run_dryrun_rejects_unknown_script_before_database_access(tmp_path):
+    from src.dryrun.runner import DryRunAbort, run_dryrun
+
+    with pytest.raises(DryRunAbort, match="unknown analytics script modules: os"):
+        run_dryrun(
+            str(uuid.uuid4()),
+            tmp_path / "noop.xlsx",
+            scripts=["os"],
+            allow_rw_role=True,
+        )
 
 
 def test_run_dryrun_intentionally_skips_platform_and_validity_scripts(tmp_path, monkeypatch):

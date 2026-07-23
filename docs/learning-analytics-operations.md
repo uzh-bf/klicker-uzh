@@ -23,16 +23,27 @@ the configured finalization grace period.
    `hatchet-sdk[v0-sdk]==1.18.1`. Local compatibility is proven against
    `hatchet-lite:v0.73.1`; staging remains the authoritative deployed-version
    gate.
-2. Confirm that the release namespace already contains
-   `<release>-secret-hatchet-worker-analytics` with these keys:
-   `HATCHET_CLIENT_TOKEN` and `DATABASE_URL`. List names without printing
-   values:
+2. Confirm that the owning GitOps repository declares the secret sync for
+   `<release>-secret-hatchet-worker-analytics`. In the target namespace, find
+   the sync object by its target Secret and require its `Ready=True` condition
+   before checking the generated Secret:
 
    ```bash
+   kubectl --context <context> -n <namespace> get externalsecret -o json |
+     jq -er --arg target '<release>-secret-hatchet-worker-analytics' \
+       '.items[] | select(.spec.target.name == $target) |
+       select(any(.status.conditions[]?;
+       .type == "Ready" and .status == "True")) | .metadata.name'
    kubectl --context <context> -n <namespace> get secret \
      <release>-secret-hatchet-worker-analytics -o json |
-     jq -r '.data | keys[]'
+     jq -er '.data |
+       has("HATCHET_CLIENT_TOKEN") and has("DATABASE_URL")'
    ```
+
+   If the environment uses an Infisical-native sync resource instead of
+   External Secrets Operator, apply the same gate to that resource: it must
+   exist, target this Secret, and report ready before deployment. Do not deploy
+   based on a stale generated Secret alone.
 
 3. Render the target values and inspect the analytics Deployment and
    ConfigMap:
@@ -53,7 +64,8 @@ the configured finalization grace period.
    command `python -m src.hatchet_worker`, CPU-only Torch, and the pinned
    `intfloat/multilingual-e5-base` model bundled under `/opt/models`. The
    bundle must contain `UPSTREAM_MODEL_CARD.md` from the exact pinned revision
-   for license and citation provenance. Runtime model downloads are disabled.
+   and the complete Microsoft MIT notice in `LICENSE`. Runtime model downloads
+   are disabled.
 5. Leave `hatchet.workers.analytics.allowFull=false` for routine deployment.
    Enable it only through a reviewed maintenance-window values override when a
    full rebuild is intended.
@@ -71,7 +83,7 @@ After the GitOps rollout:
 
 ```bash
 kubectl --context <context> -n <namespace> rollout status \
-  deployment/<release>-hatchet-worker-analytics --timeout=10m
+  deployment/<release>-hatchet-worker-analytics --timeout=70m
 kubectl --context <context> -n <namespace> get pod \
   -l app.kubernetes.io/component=hatchet-worker-analytics
 kubectl --context <context> -n <namespace> logs \
@@ -133,8 +145,8 @@ query CourseAnalyticsStatus($courseId: String!) {
 
 In Hatchet, inspect `recompute-learning-analytics` for incremental/finalize
 runs and `recompute-learning-analytics-full` for guarded full runs. Task names
-run from `s0-*` through `s14-*`; `s99-mark-valid` has every analytics task as a
-parent and must run only after all parents succeed.
+run from `s0-*` through `s14-*`; `s99-mark-analytics-valid` has every analytics
+task as a parent and must run only after all parents succeed.
 
 Use the pod logs for Python exceptions and per-script row counts:
 
@@ -145,7 +157,7 @@ kubectl --context <context> -n <namespace> logs \
 ```
 
 `areAnalyticsValid=false` after a failure is expected. Do not set it manually;
-only `s99-mark-valid` should mark a successful run valid.
+only `s99-mark-analytics-valid` should mark a successful run valid.
 
 ## Failure and retry
 
@@ -154,7 +166,7 @@ only `s99-mark-valid` should mark a successful run valid.
    Common categories are database connectivity, script 11 correlation
    prerequisites, and script 10 clustering/model memory pressure.
 3. Prefer retriggering the complete course workflow with the original mode.
-   Do not replay `s99-mark-valid` in isolation.
+   Do not replay `s99-mark-analytics-valid` in isolation.
 4. Ordinary tasks have two automatic retries. Script 10 has no automatic retry
    because its CPU/memory-heavy work should not repeat without operator review.
 5. A superseded freshness run is intentionally canceled and is not an incident
@@ -171,11 +183,20 @@ Rollback must preserve single ownership:
 
 1. Stop new manual triggers and wait for or deliberately cancel the active
    analytics run.
-2. Roll back the Helm/GitOps release to the last known-good worker image. The
-   `Recreate` strategy must remain in effect, so the current pod is gone before
-   the rollback pod starts.
-3. Confirm only one analytics worker registration is live.
-4. Trigger the non-mutating proof task, then one scoped incremental run.
+2. Roll back the complete Helm/GitOps revision, not only the image tag. The
+   image, command, ports, probes, ConfigMap, and Secret contract must come from
+   the same known-good worker generation. The historical TypeScript worker
+   listens on port 3000, has no native `/health` endpoint, and does not
+   register `learning-analytics-native-proof`.
+3. Keep `Recreate` during rollback so the current pod is gone before the
+   rollback pod starts.
+4. Confirm only one analytics worker registration is live.
+5. Verify the generation-specific contract:
+   - Native Python: `/health` succeeds and
+     `learning-analytics-native-proof` completes.
+   - Historical TypeScript: the worker logs show successful registration;
+     then run one scoped incremental recompute. Do not expect the native proof
+     task or probes.
 
 Never run the historical TypeScript analytics image and the native Python
 image together. Both can subscribe to the same event names and duplicate
