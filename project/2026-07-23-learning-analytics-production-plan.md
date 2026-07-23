@@ -459,8 +459,26 @@ the repository script that replaces it before continuing.
   script 13 races the script-2 rows it updates. Cooperative cancellation of
   the transitional subprocess remains assigned to the native-worker cutover
   slices.
-- Active: Slice 2, verify and commit the independent-review adjustment.
-- Next: Reproduce the focused correctness and CI gaps in Slice 3A.
+- 2026-07-23: Slice 2 integration committed as `cc69458b7`; its independently
+  reviewed runtime corrections committed as `97986835d`.
+- 2026-07-23: Slice 3A now refreshes late-arriving participant and aggregate
+  chat rows for daily, weekly, monthly, and course grains; validates
+  homogeneous bulk-upsert row shapes; and writes participant and aggregate
+  timestamps from one UTC clock value per save.
+- 2026-07-23: Script 10 now rolls back failed chatbot work and fails the
+  overall task after processing the remaining chatbots. The transitional
+  subprocess handler's non-zero exit propagation remains covered by six
+  focused GraphQL tests. Script 13 now waits for script 2, and an isolated
+  Hatchet task-registration test verifies that dependency plus the complete
+  script-99 fan-in.
+- 2026-07-23: Slice 3A verification passes Ruff format/lint, 116 Python tests
+  with 3 integration skips, 6 focused GraphQL handler tests, the Hatchet
+  build/typecheck/DAG test, Syncpack, Prisma schema sync, Prettier, and diff
+  hygiene. A seeded database run and live Hatchet failed-task smoke still need
+  a stable local runtime and are not represented by these unit-level gates.
+- Active: Slice 3A, commit and independently review the correctness changes.
+- Next: Integrate accepted Slice 3A review findings, then prove grading parity
+  in Slice 3B.
 
 ## Finish evidence
 
@@ -474,6 +492,6 @@ the repository script that replaces it before continuing.
 
 ## Next Steps
 
-1. Commit and independently review the refreshed Phase A merge.
-2. Reproduce and close the focused correctness and CI gaps in Slice 3A.
+1. Commit and independently review Slice 3A.
+2. Prove numerical grading parity in Slice 3B.
 3. Continue one verified slice at a time until both draft PRs are current.

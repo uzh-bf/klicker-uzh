@@ -154,5 +154,4 @@ ON CONFLICT ("type", "chatbotId", "timestamp") DO UPDATE SET
   "modelDistribution"           = EXCLUDED."modelDistribution",
   "modeDistribution"            = EXCLUDED."modeDistribution",
   "reasoningEffortDistribution" = EXCLUDED."reasoningEffortDistribution",
-  "updatedAt"                   = NOW()
-WHERE "AggregatedChatbotAnalytics"."type" = 'COURSE';
+  "updatedAt"                   = NOW();

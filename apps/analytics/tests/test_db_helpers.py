@@ -2,15 +2,16 @@ from __future__ import annotations
 
 import os
 import sys
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 
 import pandas as pd
+import pytest
 from sqlalchemy import Integer, String, create_engine, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, load_only, mapped_column
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from src.db_helpers import coerce_date, coerce_timestamp, row_to_dict
+from src.db_helpers import bulk_upsert, coerce_date, coerce_timestamp, row_to_dict, utcnow
 
 
 class _Base(DeclarativeBase):
@@ -67,3 +68,27 @@ def test_coerce_date_rejects_non_date_strings():
         pass
     else:
         raise AssertionError("expected invalid date string to raise ValueError")
+
+
+def test_bulk_upsert_rejects_rows_with_different_columns():
+    rows = [
+        {"id": 1, "name": "complete", "legacy": "present"},
+        {"id": 2, "name": "missing-legacy"},
+    ]
+
+    with pytest.raises(ValueError, match=r"row 1.*same columns"):
+        bulk_upsert(
+            session=None,  # type: ignore[arg-type]
+            Model=_Thing,
+            rows=rows,
+            conflict_cols=["id"],
+        )
+
+
+def test_utcnow_is_naive_utc():
+    before = datetime.now(timezone.utc).replace(tzinfo=None)
+    result = utcnow()
+    after = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    assert result.tzinfo is None
+    assert before - timedelta(seconds=1) <= result <= after + timedelta(seconds=1)

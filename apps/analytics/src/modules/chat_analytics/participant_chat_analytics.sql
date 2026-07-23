@@ -165,5 +165,4 @@ ON CONFLICT ("type", "participantId", "chatbotId", "timestamp") DO UPDATE SET
   "toolCallCount"        = EXCLUDED."toolCallCount",
   "totalCreditsUsed"     = EXCLUDED."totalCreditsUsed",
   "creditsExhausted"     = EXCLUDED."creditsExhausted",
-  "updatedAt"            = NOW()
-WHERE "ParticipantChatAnalytics"."type" = 'COURSE';
+  "updatedAt"            = NOW();

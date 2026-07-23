@@ -158,4 +158,20 @@ LEFT JOIN mode_counts mc       USING ("chatbotId")
 LEFT JOIN effort_counts ec     USING ("chatbotId")
 LEFT JOIN disclaimer_counts dc USING ("chatbotId")
 LEFT JOIN credit_exhaustion ce USING ("chatbotId")
-ON CONFLICT ("type", "chatbotId", "timestamp") DO NOTHING;
+ON CONFLICT ("type", "chatbotId", "timestamp") DO UPDATE SET
+  "courseId"                    = EXCLUDED."courseId",
+  "activeParticipants"          = EXCLUDED."activeParticipants",
+  "newParticipants"             = EXCLUDED."newParticipants",
+  "returningParticipants"       = EXCLUDED."returningParticipants",
+  "threads"                     = EXCLUDED."threads",
+  "userMessages"                = EXCLUDED."userMessages",
+  "assistantMessages"           = EXCLUDED."assistantMessages",
+  "totalCreditsUsed"            = EXCLUDED."totalCreditsUsed",
+  "creditExhaustionRate"        = EXCLUDED."creditExhaustionRate",
+  "disclaimerAcceptedCount"     = EXCLUDED."disclaimerAcceptedCount",
+  "disclaimerDeclinedCount"     = EXCLUDED."disclaimerDeclinedCount",
+  "hourOfDayDistribution"       = EXCLUDED."hourOfDayDistribution",
+  "modelDistribution"           = EXCLUDED."modelDistribution",
+  "modeDistribution"            = EXCLUDED."modeDistribution",
+  "reasoningEffortDistribution" = EXCLUDED."reasoningEffortDistribution",
+  "updatedAt"                   = NOW();

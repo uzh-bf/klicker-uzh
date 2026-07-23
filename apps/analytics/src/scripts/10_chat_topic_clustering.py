@@ -52,6 +52,7 @@ def main() -> None:
         win_end = datetime.now().strftime("%Y-%m-%d") + "T23:59:59.999Z"
 
         total_rows = 0
+        failures = []
         for cb in chatbots:
             try:
                 written = cluster_chatbot(
@@ -65,9 +66,15 @@ def main() -> None:
                 )
                 total_rows += written
             except Exception as exc:
+                session.rollback()
+                failures.append(str(cb.id))
                 print(f"[chat_topic_clustering] chatbot={cb.id} FAILED: {exc}")
 
         print(f"[chat_topic_clustering] total rows written: {total_rows}")
+
+        if failures:
+            failed_ids = ", ".join(failures)
+            raise RuntimeError(f"{len(failures)} of {len(chatbots)} chatbot clustering jobs failed: {failed_ids}")
 
         script_exit(script=__name__, started=started, rows_written=total_rows)
 

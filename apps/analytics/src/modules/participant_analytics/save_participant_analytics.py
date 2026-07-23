@@ -1,8 +1,6 @@
-from datetime import date, datetime
-
 from sqlalchemy.orm import Session
 
-from src.db_helpers import bulk_upsert, coerce_date
+from src.db_helpers import bulk_upsert, coerce_date, utcnow
 from src.models import ParticipantAnalytics
 
 
@@ -12,7 +10,8 @@ def save_participant_analytics(
     if df_analytics is None or df_analytics.empty:
         return
 
-    computedAt = date.today()
+    now = utcnow()
+    computedAt = now.date()
 
     if analytics_type in ("DAILY", "WEEKLY", "MONTHLY"):
         ts = coerce_date(timestamp)
@@ -31,8 +30,8 @@ def save_participant_analytics(
                 "meanWrongCount": float(row["meanWrongCount"]),
                 "participantId": row["participantId"],
                 "courseId": row["courseId"],
-                "createdAt": datetime.now(),
-                "updatedAt": datetime.now(),
+                "createdAt": now,
+                "updatedAt": now,
             }
             for _, row in df_analytics.iterrows()
         ]
@@ -57,8 +56,8 @@ def save_participant_analytics(
                 "lastWrongCount": float(row["lastWrongCount"]),
                 "participantId": row["participantId"],
                 "courseId": row["courseId"],
-                "createdAt": datetime.now(),
-                "updatedAt": datetime.now(),
+                "createdAt": now,
+                "updatedAt": now,
             }
             for _, row in df_analytics.iterrows()
         ]

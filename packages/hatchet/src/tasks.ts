@@ -394,10 +394,6 @@ export function prepareHatchetTasks({
     executionTimeout: '60m',
     fn: makeScriptTaskFn(ANALYTICS_SCRIPTS.s10_clustering),
   })
-  const taskS13 = recomputeLearningAnalytics.task({
-    name: 's13-platform-semester-analytics',
-    fn: makeScriptTaskFn(ANALYTICS_SCRIPTS.s13_platform),
-  })
   const taskS14 = recomputeLearningAnalytics.task({
     name: 's14-live-quiz-assessment-analytics',
     fn: makeScriptTaskFn(ANALYTICS_SCRIPTS.s14_live_quiz),
@@ -409,6 +405,11 @@ export function prepareHatchetTasks({
     executionTimeout: '60m', // window-iterating
     parents: [taskS0],
     fn: makeScriptTaskFn(ANALYTICS_SCRIPTS.s1_aggregated),
+  })
+  const taskS13 = recomputeLearningAnalytics.task({
+    name: 's13-platform-semester-analytics',
+    parents: [taskS2],
+    fn: makeScriptTaskFn(ANALYTICS_SCRIPTS.s13_platform),
   })
   const taskS11 = recomputeLearningAnalytics.task({
     name: 's11-chat-quiz-correlation',
