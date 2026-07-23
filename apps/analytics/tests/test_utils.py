@@ -18,10 +18,13 @@ from sqlalchemy.orm import Session
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from src.modules.utils import (  # noqa: E402
+    AnalyticsRunCancelled,
     AnalyticsRunConfig,
     analytics_mode,
+    analytics_run_context,
     analytics_window_since,
     apply_course_scope,
+    iter_analytics_windows,
     render_uuid_in_clause,
     scoped_course_ids,
     should_skip_window,
@@ -151,3 +154,36 @@ def test_immutable_run_config_does_not_fall_back_to_process_scope():
             )
             is None
         )
+
+
+def test_window_iteration_stops_at_next_bounded_cancellation_check():
+    computed: list[str] = []
+
+    def compute(
+        _session,
+        _win_start,
+        _win_end,
+        timestamp,
+        _analytics_type,
+        **_kwargs,
+    ):
+        computed.append(timestamp)
+
+    with (
+        analytics_run_context(
+            AnalyticsRunConfig(mode="incremental"),
+            lambda: len(computed) == 1,
+        ),
+        pytest.raises(AnalyticsRunCancelled),
+    ):
+        iter_analytics_windows(
+            cast(Session, object()),
+            compute,
+            start_date="2026-07-22",
+            end_date="2026-07-23",
+            compute_weekly=False,
+            compute_monthly=False,
+            compute_course=False,
+        )
+
+    assert computed == ["2026-07-22"]

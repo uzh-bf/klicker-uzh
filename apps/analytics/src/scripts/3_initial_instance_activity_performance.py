@@ -28,6 +28,7 @@ from src.modules.participant_course_analytics.get_running_past_courses import (
 from src.modules.utils import (
     analytics_mode,
     analytics_window_since,
+    check_analytics_cancellation,
     scoped_course_ids,
 )
 
@@ -45,14 +46,14 @@ def main() -> None:
         df_courses = get_running_past_courses(session)
 
         for idx, course in df_courses.iterrows():
+            check_analytics_cancellation()
             course_id = course["id"]
-            print(
-                f"Processing course", idx, "of", len(df_courses), "with id", course_id
-            )
+            print("Processing course", idx, "of", len(df_courses), "with id", course_id)
 
             pqs, mls = get_course_activities(session, course_id)
 
             for quiz in pqs:
+                check_analytics_cancellation()
                 df_instance_performance = compute_instance_performance(session, quiz)
                 if df_instance_performance.empty:
                     continue
@@ -66,6 +67,7 @@ def main() -> None:
                 )
 
             for ml in mls:
+                check_analytics_cancellation()
                 df_instance_performance = compute_instance_performance(
                     session, ml, total_only=True
                 )

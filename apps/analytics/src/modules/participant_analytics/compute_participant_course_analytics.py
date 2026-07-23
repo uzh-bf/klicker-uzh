@@ -4,7 +4,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from src.db_helpers import row_to_dict
-from src.models import Participation, QuestionResponse, QuestionResponseDetail
+from src.models import Participation
+from src.modules.utils import check_analytics_cancellation
 from .compute_correctness import compute_correctness
 from .aggregate_analytics import aggregate_analytics
 from .save_participant_analytics import save_participant_analytics
@@ -14,6 +15,7 @@ def compute_participant_course_analytics(session: Session, df_courses, verbose=F
     courses_without_responses = 0
 
     for idx, course in df_courses.iterrows():
+        check_analytics_cancellation()
         print(
             f"Computing participant analytics for course {idx} out of {len(df_courses)}"
         )
@@ -73,8 +75,7 @@ def compute_participant_course_analytics(session: Session, df_courses, verbose=F
 
         if df_details is None:
             print(
-                f"No participant responses found for {course_start_date} to "
-                f"{course_end_date}."
+                f"No participant responses found for {course_start_date} to {course_end_date}."
             )
             continue
 

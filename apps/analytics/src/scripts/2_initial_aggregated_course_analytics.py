@@ -16,6 +16,7 @@ from src.modules.participant_course_analytics.get_running_past_courses import (
 from src.modules.utils import (
     analytics_mode,
     analytics_window_since,
+    check_analytics_cancellation,
     scoped_course_ids,
 )
 
@@ -33,13 +34,9 @@ def main() -> None:
         df_courses = get_running_past_courses(session)
 
         for idx, course in df_courses.iterrows():
+            check_analytics_cancellation()
             print(
-                f"Processing course",
-                idx,
-                "of",
-                len(df_courses),
-                "with id",
-                course["id"],
+                "Processing course", idx, "of", len(df_courses), "with id", course["id"]
             )
             compute_weekday_activity(session, course)
 

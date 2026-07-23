@@ -24,6 +24,7 @@ from src.modules.utils import (
     analytics_mode,
     analytics_window_since,
     apply_course_scope,
+    check_analytics_cancellation,
     scoped_course_ids,
     should_skip_window,
 )
@@ -55,6 +56,7 @@ def main() -> None:
         )
         if compute_daily:
             for curr_date in date_range_daily:
+                check_analytics_cancellation()
                 specific_date = curr_date.strftime("%Y-%m-%d")
                 if should_skip_window(specific_date, windows_since):
                     continue
@@ -67,6 +69,7 @@ def main() -> None:
 
         if compute_weekly:
             for curr_date in date_range_weekly:
+                check_analytics_cancellation()
                 week_end_date = curr_date.strftime("%Y-%m-%d")
                 if should_skip_window(week_end_date, windows_since):
                     continue
@@ -83,6 +86,7 @@ def main() -> None:
 
         if compute_monthly:
             for curr_date in date_range_monthly:
+                check_analytics_cancellation()
                 month_end_date = curr_date.strftime("%Y-%m-%d")
                 if should_skip_window(month_end_date, windows_since):
                     continue
@@ -98,6 +102,7 @@ def main() -> None:
                 )
 
         if compute_course:
+            check_analytics_cancellation()
             curr_date = datetime.now()
 
             stmt = select(Course.id, Course.startDate, Course.endDate).where(

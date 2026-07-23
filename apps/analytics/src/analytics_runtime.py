@@ -3,18 +3,13 @@ from collections.abc import Callable
 
 from src.modules.utils import (
     AnalyticsRunConfig,
-    analytics_run_cancelled,
     analytics_run_context,
+    check_analytics_cancellation,
 )
 
 
-class AnalyticsRunCancelled(RuntimeError):
-    pass
-
-
 def check_cancellation() -> None:
-    if analytics_run_cancelled():
-        raise AnalyticsRunCancelled("analytics task was cancelled")
+    check_analytics_cancellation()
 
 
 def run_analytics_module(

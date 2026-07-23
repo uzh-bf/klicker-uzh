@@ -649,8 +649,22 @@ the repository script that replaces it before continuing.
   the full analytics suite with 152 passed and 4 integration skips, and the
   exact isolated CI command with 88 passed and 1 database skip.
 - Completed: Slice 4B.1 direct Python DAG registration and review.
-- Active: Add cooperative cancellation and split protected full-run
-  concurrency from freshness-first runs in Slice 4B.2.
+- 2026-07-23: Slice 4B.2a adds task-local cooperative cancellation at every
+  daily, weekly, monthly, course, activity, and chatbot outer work boundary in
+  the long-running scripts. Direct CLI runs remain unaffected because no
+  cancellation callback is bound outside the Hatchet task context.
+- 2026-07-23: A dedicated local workflow using the production DAG and direct
+  runner received a same-course superseding run. Hatchet delivered the cancel
+  action, the running Python loop raised `AnalyticsRunCancelled`, the first
+  workflow read back canceled, and the replacement completed. Verification
+  also passes 26 focused tests, strict Pyright on the new typed boundary, the
+  full analytics suite with 153 passed and 4 integration skips, and the exact
+  isolated CI subset with 89 passed and 1 database skip. The broader
+  script-level Pyright selection still reports ten pre-existing Pandas
+  `Series`-to-string findings in scripts 3, 4, 6, and 7; no cancellation line
+  introduces a new finding.
+- Active: Review the cooperative-cancellation tracer, then split protected
+  full-run concurrency from freshness-first runs in Slice 4B.2b.
 
 ## Finish evidence
 

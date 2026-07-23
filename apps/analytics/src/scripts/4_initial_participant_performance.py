@@ -27,6 +27,7 @@ from src.modules.participant_performance.save_participant_performance import (
 from src.modules.utils import (
     analytics_mode,
     analytics_window_since,
+    check_analytics_cancellation,
     scoped_course_ids,
 )
 
@@ -44,6 +45,7 @@ def main() -> None:
         df_courses = get_running_past_courses(session)
 
         for idx, course in df_courses.iterrows():
+            check_analytics_cancellation()
             course_id = course["id"]
             print(
                 f"Processing course", idx, "of", len(df_courses), "with id", course_id

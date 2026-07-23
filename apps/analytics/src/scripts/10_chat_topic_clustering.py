@@ -14,7 +14,12 @@ from src.db import SessionLocal
 from src.log import script_entry, script_exit
 from src.models import Chatbot
 from src.modules.chat_topic_clustering.cluster_chatbot import cluster_chatbot
-from src.modules.utils import analytics_mode, analytics_window_since, scoped_course_ids
+from src.modules.utils import (
+    analytics_mode,
+    analytics_window_since,
+    check_analytics_cancellation,
+    scoped_course_ids,
+)
 
 COURSE_TIMESTAMP = "1970-01-01"
 
@@ -56,6 +61,7 @@ def main() -> None:
         total_rows = 0
         failures = []
         for cb in chatbots:
+            check_analytics_cancellation()
             try:
                 written = cluster_chatbot(
                     session,
