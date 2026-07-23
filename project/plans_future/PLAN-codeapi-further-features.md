@@ -16,7 +16,7 @@ Sandbox execution earns its cost ONLY when the code's author is untrusted — an
 
 ### 2. Group-activity code tasks (extension of CODE element)
 
-- What: CODE elements inside group activities — a group collaborates on a coding task; submission graded by the same sandbox harness.
+- What: CODE elements inside group activities — a group collaborates on a coding task; submission graded by the same sandbox runner and server-side comparator.
 - Fit: same untrusted-author case; reuses the entire CODE grading path. `GroupActivityDecision` already needs the `codeResponse` stub field in v1 of the element plan (`packages/types/src/index.ts:726-736`).
 - When: v2 of the CODE element (after practice-quiz/microlearning prove the async grading seam). Group grading is instructor-assisted (`GroupActivityGradingStack.tsx`), which actually LOWERS latency pressure — grading can be lazy.
 - Effort on top of CODE v1: ~2–3 days (decision field plumbing + grading-stack UI arm).
@@ -30,13 +30,13 @@ Sandbox execution earns its cost ONLY when the code's author is untrusted — an
 ### 4. Tutor test-drives student code from chat context (chat + element bridge)
 
 - What: student pastes failing exercise code into the course chatbot; tutor runs it against the exercise's PUBLIC tests (never hidden ones) and coaches from real failures.
-- Fit: strong pedagogy (verify-and-guide with actual signal); needs chat tool + CODE element metadata access (public test cases fetched by elementId, injected into the harness).
+- Fit: strong pedagogy (verify-and-guide with actual signal); needs chat tool + CODE element metadata access (public test invocations fetched by elementId and sent through the runner).
 - Risk: careful scoping so hidden tests are unreachable from the chat path (server-side filter on visibility, same stripping discipline as the element plan).
 - When: after both v1s ship. Effort: ~2–4 days (tool variant + element lookup + guardrails).
 
 ### 5. Live-quiz CODE support — explicitly deferred
 
-- Whole-class simultaneous submissions vs `PYTHON_CONCURRENCY=1` per worker + cold-start = queueing risk at exactly the moment latency matters most (RESEARCH doc §load). Revisit only with load-test evidence + pre-warm strategy (scale codeapi min replicas ahead of scheduled sessions). Precedent caution: CASE_STUDY's live-quiz aggregation bug survived 7 months unnoticed (#4915) — live-quiz result paths are the least-observed code in the repo.
+- Whole-class simultaneous submissions vs `PYTHON_CONCURRENCY=1` per worker + cold-start = queueing risk at exactly the moment latency matters most (RESEARCH doc §load). Revisit only with load-test evidence + pre-warm strategy (scale codeapi min replicas ahead of scheduled sessions). Precedent caution: CASE_STUDY's live-quiz aggregation bug survived 7 months unnoticed ([PR #4915](https://github.com/uzh-bf/klicker-uzh/pull/4915)) — live-quiz result paths are the least-observed code in the repo.
 
 ### Ruled out
 
@@ -47,7 +47,7 @@ Sandbox execution earns its cost ONLY when the code's author is untrusted — an
 ## Sequencing recommendation
 
 1. rehypePrism (hours, standalone)
-2. Chat tool v1 (3–5 days; on the Mastra chat-api stack — after PR #5126 merges, see chat plan) → instructor-aid pilot (config only)
-3. CODE element v1 (10–15 days; infra prerequisites from RESEARCH doc first; unaffected by Mastra migration)
+2. Chat tool v1 (3–5 days; after [PR #5126](https://github.com/uzh-bf/klicker-uzh/pull/5126) merges with its security check resolved) → instructor-aid pilot (config only)
+3. CODE element v1 (12–18 days; infra prerequisites from RESEARCH doc first; unaffected by Mastra migration)
 4. Bridge feature (#4), group activities (#2)
 5. Live quiz: evidence-gated, maybe never

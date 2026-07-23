@@ -2,6 +2,8 @@
 
 Shared research base for [PLAN-code-element-type.md](PLAN-code-element-type.md), [PLAN-chat-code-execution-tool.md](PLAN-chat-code-execution-tool.md), and [PLAN-codeapi-further-features.md](PLAN-codeapi-further-features.md). Facts verified against the codeapi source workspace (`uzh-bf/code-interpreter` fork, upstream submodule pinned `607e019f`) and this repo (`v3`, 2026-07-06). Line refs into codeapi are `upstream/service/src/...` in that workspace.
 
+These `plans_future` documents are reviewed architecture inputs, not an active execution plan. When implementation starts, create one dated active plan on the implementation branch, link these documents and the relevant ADRs, keep its `Progress` current, and ship that plan with the implementation PR.
+
 ## What codeapi is
 
 - Self-hosted sandboxed code-execution service (fork of ClickHouse/code-interpreter, powers LibreChat Code Interpreter). Deployed on the DF AKS clusters (stg+prd), KVM/microVM sandbox pool, scale-to-zero via KEDA.
@@ -37,7 +39,13 @@ Shared research base for [PLAN-code-element-type.md](PLAN-code-element-type.md),
 
 - `tenant_id` = one Klicker-wide tenant (e.g. `klicker-prd`) — storage isolation from LibreChat. Course-level isolation NOT needed at codeapi layer (Klicker enforces course access itself).
 - `sub` = participantId → automatic per-student private sessions/outputs.
-- Shared per-exercise assets (starter files, test fixtures): upload once as `kind='agent'`, `resource_id = element:<elementId>` (or `kind='skill'` + version if versioned reuse wanted), `read_only=true`; every student exec references them.
+- Shared non-secret per-exercise assets (starter files, public fixtures): upload once as `kind='agent'`, `resource_id = element:<elementId>` (or `kind='skill'` + version if versioned reuse wanted), `read_only=true`; every student exec references them. Hidden expected outputs and instructor assertions must not be uploaded into the student's execution boundary.
+
+## Security boundary for grading
+
+- codeapi isolates untrusted code from Klicker infrastructure. It does not make one part of a sandbox execution confidential from another part running under the same sandbox identity.
+- The CODE element therefore sends student code and test invocations to codeapi, but keeps expected outputs, weights, hidden-test metadata, and pass/fail decisions in the Klicker worker. See [ADR 0002](../../docs/adr/0002-keep-grading-assertions-outside-the-sandbox.md).
+- Sandbox stdout, stderr, exit state, files, and structured result frames are untrusted input. The Klicker worker validates and caps them before comparison, persistence, logging, or display.
 
 ## Load + limits (classroom burst is the real risk)
 
@@ -57,9 +65,10 @@ Shared research base for [PLAN-code-element-type.md](PLAN-code-element-type.md),
 
 - Reviewers: 4-lens Claude workflow (file:line claims ×2, cross-doc consistency, adversarial architecture) + Codex CLI cross-model review over the worktree. (agy/Antigravity was first choice but its print mode returned empty output on every model — fell back to Codex per workflow rules.)
 - Outcome: chat-plan claims + cross-doc consistency verified clean; async-grading-seam architecture confirmed (sync txn genuinely cannot host the sandbox call). 1 Critical + 7 Important + ~8 Minor findings, ALL integrated: PENDING persistence model + resubmit policy as slice-1 gate, `finalizeQuestionResponse` must cover all txn side effects, microlearning dup-guard visibility, client reload state machine, missing touchpoints (getInitialInstanceResults, wizard allow-lists, templates.ts, ElementContentInput/TypeMonitor/ActivityOverviewTable, shared charts/hooks/validateResponse), corrected citations (respondToElement dispatch chain, worker-side pubSub precedent, rehype-prism-plus dep, rag-tool-ui path), softened execute_code collision claim, tenant_id question resolved to one tenant.
-- Addendum 2026-07-12: chat plan retargeted at the Mastra migration (PR #5126 `apps/chat-api` + `packages/chat-engine`, PR #5129). Targeted revision, all new file:line refs verified directly against `codex/mastra-chat-openrouter-smoke`; no second external review round (docs-only, no architecture change — the native-tool decision, cost pattern, and inline-not-Hatchet stance all carry over).
+- Addendum 2026-07-12: chat plan retargeted at the Mastra migration ([PR #5126](https://github.com/uzh-bf/klicker-uzh/pull/5126) `apps/chat-api` + `packages/chat-engine`, [PR #5129](https://github.com/uzh-bf/klicker-uzh/pull/5129)). Targeted revision, all new file:line refs verified directly against `codex/mastra-chat-openrouter-smoke`; no second external review round (docs-only, no architecture change — the native-tool decision, cost pattern, and inline-not-Hatchet stance all carry over).
+- Addendum 2026-07-23: implementation-readiness review against `v3` @ `c8de9c897` plus an independent Gemini cross-check confirmed five High findings: hidden assertions shared an execution boundary with hostile code; Hatchet retries lacked an idempotent finalization contract; mixed stacks had undefined pending/score semantics; submission persistence had three conflicting shapes; and the chat-tool target remained blocked on [PR #5126](https://github.com/uzh-bf/klicker-uzh/pull/5126). The CODE plan now keeps grading expectations outside codeapi, uses a separate `CodeSubmission` lifecycle with claim/expiry and idempotent completion, blocks active resubmission, and restricts v1 to one CODE element per stack. Proposed decisions are recorded in [ADR 0001](../../docs/adr/0001-separate-code-submission-lifecycle.md) and [ADR 0002](../../docs/adr/0002-keep-grading-assertions-outside-the-sandbox.md).
 
-## Open questions (infra, resolve before any build)
+## Open questions (infra, resolve before live-service integration)
 
 1. Live KEDA trigger values for prd codeapi (queue depth threshold, maxReplicas) — check helm-charts repo / cluster, not code defaults.
 2. `CODEAPI_TENANT_ISOLATION_STRICT` value in prd — decides whether Klicker tokens MUST carry `tenant_id` (they should anyway).

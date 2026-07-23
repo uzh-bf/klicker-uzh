@@ -1,8 +1,16 @@
 # PLAN: Native Code-Execution Tool for Course Chatbots
 
-Status: future / no branch started. Research base: [RESEARCH-codeapi-integration.md](RESEARCH-codeapi-integration.md). All `v3` file refs verified @ `d6c7772f8` (2026-07-06).
+Status: future / blocked on the Mastra chat-api dependency. Research base: [RESEARCH-codeapi-integration.md](RESEARCH-codeapi-integration.md). All `v3` file refs verified @ `d6c7772f8` (2026-07-06).
 
-**Updated 2026-07-12 for the Mastra migration** (PR #5126: standalone `apps/chat-api` service + `packages/chat-engine`; PR #5129 tutor layer stacked on it): the chat execution loop moves out of apps/chat into the Mastra-based chat-api service, so this plan now targets that stack. Mastra-branch refs verified against `codex/mastra-chat-openrouter-smoke` (2026-07-12). The pre-Mastra design (direct apps/chat route wiring) is preserved in git history (`832579e56`) in case the tool must ship before the migration merges.
+**Updated 2026-07-12 for the Mastra migration** ([PR #5126](https://github.com/uzh-bf/klicker-uzh/pull/5126): standalone `apps/chat-api` service + `packages/chat-engine`; [PR #5129](https://github.com/uzh-bf/klicker-uzh/pull/5129): tutor layer stacked on it): the chat execution loop moves out of apps/chat into the Mastra-based chat-api service, so this plan now targets that stack. Mastra-branch refs verified against `codex/mastra-chat-openrouter-smoke` (2026-07-12). The pre-Mastra design (direct apps/chat route wiring) is preserved in git history (`832579e56`) in case the tool must ship before the migration merges.
+
+Dependency check 2026-07-23: [PR #5126](https://github.com/uzh-bf/klicker-uzh/pull/5126) remains draft, has merge state `DIRTY`, and its current head has a failing GitGuardian check. `apps/chat-api` and `packages/chat-engine` are absent from `v3` @ `c8de9c897`; do not start slices 2–5 from `v3`. The shared codeapi client may be built by whichever implementing branch needs it first, but it must ship with that implementation rather than as a standalone plan/client PR.
+
+## Progress
+
+- 2026-07-23: dependency and `v3` presence rechecked; the Mastra target remains unavailable on `v3`.
+- Blocked: merge and secure [PR #5126](https://github.com/uzh-bf/klicker-uzh/pull/5126), then re-verify its tool, credits, streaming, and deployment seams.
+- Next: after the dependency lands, create a dated active implementation plan from current `v3` and carry it with the code.
 
 ## Goal
 
@@ -26,7 +34,7 @@ Two worlds; this plan targets the second (Mastra).
 
 **v3 today (apps/chat, pre-migration):** tools are 100% MCP-sourced, assembled per request at `apps/chat/src/app/api/chatbots/[chatbotId]/chat/route.ts:882`, passed to `streamText` (AI SDK v6, `ai@6.0.184`) at `route.ts:1285` with `stopWhen: stepCountIs(5)`; credits are token-cost-based with the `imageDescriptionCost` side-cost fold-in at `route.ts:1316` (onFinish `:1436-1450`, onAbort `:1467-1505`). Full detail + the matching tool design: git history of this plan (`832579e56`).
 
-**Mastra target (PR #5126, base v3; refs against `codex/mastra-chat-openrouter-smoke`):**
+**Mastra target ([PR #5126](https://github.com/uzh-bf/klicker-uzh/pull/5126), base v3; refs against `codex/mastra-chat-openrouter-smoke`):**
 
 - New standalone Hono service `apps/chat-api` owns the chat loop; apps/chat keeps auth/UI and proxies to it. `streamText` is replaced by engine `buildAgent` + `agent.stream` + `@mastra/ai-sdk` `toAISdkStream` (`apps/chat-api/src/index.ts:11,855-865`) — the response is still an AI-SDK-shaped UI message stream, so the frontend story is unchanged in kind.
 - Engine `packages/chat-engine` (`@mastra/core@1.41.0`, `@mastra/mcp@1.9.1`) is deliberately DB-free: `buildAgent(chatbot, mode, primaryModelId, extras)` builds a per-request Mastra `Agent`; **`AgentExtras.tools?: ToolsInput` is the designed seam for native tools** (`packages/chat-engine/src/agent.ts:17-21,141`). Nothing uses it yet — MCP toolsets are the only tools passed today.
@@ -131,7 +139,7 @@ Deliberate: the chat tool does NOT go through Hatchet, in contrast to the CODE e
 - Exec is stateless/idempotent → a thin client-side retry (capped attempts, honor 429 `Retry-After`) beats durable retries. The student is watching a spinner; a structured `{busy}`/`{timedOut}` result the model can narrate is better UX than minutes of silent queue retries.
 - Nothing to make durable: if the student closes the tab, the result has no consumer — the abort SHOULD kill the execution, and Mastra's `abortSignal` propagation into `execute` does exactly that.
 - chat-api is a long-running k8s Hono service — no serverless timeout pressure on holding the stream open.
-- Mastra does not change this: its retries are model-level (provider errors), and its in-process workflows (`chat-engine/src/tutor/workflow.ts` on PR #5129) are per-turn orchestration, not durable queue-backed execution. No native async/deferred server-tool mechanism applies here.
+- Mastra does not change this: its retries are model-level (provider errors), and its in-process workflows (`chat-engine/src/tutor/workflow.ts` on [PR #5129](https://github.com/uzh-bf/klicker-uzh/pull/5129)) are per-turn orchestration, not durable queue-backed execution. No native async/deferred server-tool mechanism applies here.
 
 The CODE element is the opposite case — grading outlives the request, must survive worker restarts, and finalizes persistent state → Hatchet durable task there (see element plan).
 
@@ -145,7 +153,7 @@ The CODE element is the opposite case — grading outlives the request, must sur
 
 ## Implementation slices (when a branch starts)
 
-Sequencing: **build after PR #5126 (Mastra chat-api) merges** — the tool seam (`AgentExtras.tools`), credits path, and deploy surface all live there, and implementing twice (route.ts now, chat-api later) is waste. If urgency flips the order, the pre-Mastra design in git history (`832579e56`) applies instead.
+Sequencing: **build after [PR #5126](https://github.com/uzh-bf/klicker-uzh/pull/5126) (Mastra chat-api) merges and its security check is resolved**. The tool seam (`AgentExtras.tools`), credits path, and deploy surface all live there, and implementing twice (route.ts now, chat-api later) is waste. Re-verify all Mastra file refs and pinned APIs after that merge. If urgency flips the order, explicitly approve the pre-Mastra design in git history (`832579e56`) and accept the later port.
 
 1. codeapi client lib + JWT minter as a small shared `packages/` module (consumed by apps/chat-api now and the CODE element's Hatchet grading worker later — build once, do NOT bury it in an app) + unit tests vs claim fixture. Check: live exec against stg codeapi from a script.
 2. Prisma flag + migration + `createTool` definition in chat-engine + chat-api wiring behind flag. Check: flagged bot calls tool end-to-end locally (LOCAL_MODE codeapi + local chat-api), unflagged bot unchanged.
@@ -158,7 +166,7 @@ Effort: **3–5 dev-days** for v1 (small, additive, no schema surgery beyond one
 ## Testing strategy
 
 - Unit: JWT claims shape, exec client (flat response parsing, 429/timeout paths), cost accumulation.
-- Integration: chat-api with flag on/off against LOCAL_MODE codeapi (the chat-api OpenRouter smoke on PR #5126 is the harness precedent).
+- Integration: chat-api with flag on/off against LOCAL_MODE codeapi (the chat-api OpenRouter smoke on [PR #5126](https://github.com/uzh-bf/klicker-uzh/pull/5126) is the harness precedent).
 - E2E: playwright chat flow with mocked model forcing a tool call.
 - Manual: pilot chatbot, real course questions (math verification + Python traceback scenarios).
 
