@@ -12,7 +12,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { parseScopeKeyToInput } from '@klicker-uzh/shared-components/src/discussionUtils'
 import { Button, H2, UserNotification, toast } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 type BasicCourseInformation = NonNullable<
@@ -60,6 +60,8 @@ function CourseDiscussionPanel({
     Record<number, boolean>
   >({})
   const [replyingThreadId, setReplyingThreadId] = useState<number | null>(null)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const loadingMoreRef = useRef(false)
 
   const activeScopeKey = useMemo(
     () => getCourseDiscussionScopeKey(courseId, scopeKey),
@@ -72,6 +74,8 @@ function CourseDiscussionPanel({
     error: threadsError,
     refetch: refetchThreads,
     fetchMore,
+    startPolling,
+    stopPolling,
   } = useQuery(GetCourseDiscussionThreadsDocument, {
     variables: {
       courseId,
@@ -82,7 +86,6 @@ function CourseDiscussionPanel({
     },
     skip: !courseId,
     fetchPolicy: 'cache-and-network',
-    pollInterval: 30000,
   })
 
   const [createThread, { loading: creatingThread }] = useMutation(
@@ -122,6 +125,12 @@ function CourseDiscussionPanel({
     setPostThreadAnonymous(false)
     setPostReplyAnonymous({})
   }, [canPostAnonymously])
+
+  useEffect(() => {
+    startPolling(30000)
+
+    return () => stopPolling()
+  }, [activeScopeKey, courseId, embedToken, startPolling, stopPolling])
 
   const handleCreateThread = useCallback(async () => {
     if (
@@ -235,7 +244,6 @@ function CourseDiscussionPanel({
             upvote: !hasUpvoted,
           },
         })
-        await refetchThreads()
       } catch {
         toast({
           type: 'error',
@@ -243,7 +251,7 @@ function CourseDiscussionPanel({
         })
       }
     },
-    [toggleThreadUpvote, refetchThreads, t]
+    [toggleThreadUpvote, t]
   )
 
   const handleToggleReplyUpvote = useCallback(
@@ -255,7 +263,6 @@ function CourseDiscussionPanel({
             upvote: !hasUpvoted,
           },
         })
-        await refetchThreads()
       } catch {
         toast({
           type: 'error',
@@ -263,29 +270,50 @@ function CourseDiscussionPanel({
         })
       }
     },
-    [toggleReplyUpvote, refetchThreads, t]
+    [toggleReplyUpvote, t]
   )
 
   const handleLoadMore = useCallback(async () => {
-    if (!nextCursor || !hasMore) return
-    await fetchMore({
-      variables: { cursor: nextCursor },
-      updateQuery: (previous, { fetchMoreResult }) => {
-        if (!fetchMoreResult) return previous
+    if (!nextCursor || !hasMore || loadingMoreRef.current) return
 
-        return {
-          ...previous,
-          courseDiscussionThreads: {
-            ...fetchMoreResult.courseDiscussionThreads,
-            threads: [
-              ...previous.courseDiscussionThreads.threads,
-              ...fetchMoreResult.courseDiscussionThreads.threads,
-            ],
-          },
-        }
-      },
-    })
-  }, [nextCursor, hasMore, fetchMore])
+    loadingMoreRef.current = true
+    setLoadingMore(true)
+
+    try {
+      await fetchMore({
+        variables: { cursor: nextCursor },
+        updateQuery: (previous, { fetchMoreResult }) => {
+          if (!fetchMoreResult) return previous
+
+          const existingIds = new Set(
+            previous.courseDiscussionThreads.threads.map((thread) => thread.id)
+          )
+
+          return {
+            ...previous,
+            courseDiscussionThreads: {
+              ...fetchMoreResult.courseDiscussionThreads,
+              threads: [
+                ...previous.courseDiscussionThreads.threads,
+                ...fetchMoreResult.courseDiscussionThreads.threads.filter(
+                  (thread) => !existingIds.has(thread.id)
+                ),
+              ],
+            },
+          }
+        },
+      })
+      stopPolling()
+    } catch {
+      toast({
+        type: 'error',
+        message: t('shared.generic.systemError'),
+      })
+    } finally {
+      loadingMoreRef.current = false
+      setLoadingMore(false)
+    }
+  }, [nextCursor, hasMore, fetchMore, stopPolling, t])
 
   if (loadingThreads) {
     return <Loader />
@@ -574,6 +602,8 @@ function CourseDiscussionPanel({
           <div className="flex justify-center">
             <Button
               onClick={handleLoadMore}
+              loading={loadingMore}
+              disabled={loadingMore}
               data={{ cy: 'course-qa-load-more' }}
             >
               <Button.Label>{t('pwa.courseQA.loadMore')}</Button.Label>
