@@ -198,7 +198,8 @@ function CourseOverview({
     >
       {course.isGamificationEnabled ||
       course.isAssessmentEnabled ||
-      course.description ? (
+      course.description ||
+      courseQAAvailable ? (
         <>
           <div
             className={twMerge(

@@ -361,7 +361,7 @@ function CourseOverviewPage() {
                 tooltipDelay: 0,
                 data: { cy: 'tab-groupActivities' },
               },
-              ...(course.isCourseQARolloutEnabled
+              ...(course.isCourseQARolloutEnabled && course.isEditor
                 ? [
                     {
                       id: 'tab-discussions',

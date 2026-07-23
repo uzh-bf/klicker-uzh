@@ -40,6 +40,23 @@ describe('Course Q&A course-level workflows', function () {
     cy.get('body').type('{esc}')
   })
 
+  it('Read-only course users do not see write-only Q&A tools', function () {
+    cy.task('grantCourseReadAccess', {
+      courseName: this.data.course,
+      userEmail: 'free@df.uzh.ch',
+    }).then((result: boolean) => {
+      if (result === false) {
+        throw new Error('Could not grant read access to the Q&A course')
+      }
+    })
+
+    cy.loginFreeUser()
+    cy.visit(
+      `${Cypress.env('URL_MANAGE')}/courses/${this.data.courseId}?tab=discussions`
+    )
+    cy.get('[data-cy="tab-discussions"]').should('not.exist')
+  })
+
   it('Student sees integrated Q&A on the course overview and can open the fallback page', function () {
     cy.loginStudent()
     cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
@@ -54,6 +71,31 @@ describe('Course Q&A course-level workflows', function () {
       `/course/${this.data.courseId}/qa`
     )
     cy.get('[data-cy="course-qa-empty"]').should('exist')
+  })
+
+  it('Student sees integrated Q&A when the course has no other overview content', function () {
+    cy.task('setCourseQAFlags', {
+      courseName: this.data.course,
+      isGamificationEnabled: false,
+      isAssessmentEnabled: false,
+      description: null,
+    }).then((result: boolean) => {
+      if (result === false) {
+        throw new Error('Could not configure a Q&A-only course')
+      }
+    })
+
+    cy.loginStudent()
+    cy.visit(`${Cypress.env('URL_STUDENT')}/course/${this.data.courseId}`)
+    cy.get('[data-cy="course-overview-qa-panel"]').should('exist')
+    cy.get('[data-cy="course-qa-empty"]').should('exist')
+
+    cy.task('setCourseQAFlags', {
+      courseName: this.data.course,
+      isGamificationEnabled: true,
+      isAssessmentEnabled: false,
+      description: 'Das ist ein Testkurs. Hier wird getestet. Viel Spass!',
+    })
   })
 
   it('Student creates a course-level thread and sees it appear', function () {
