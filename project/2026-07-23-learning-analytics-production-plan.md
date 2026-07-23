@@ -580,9 +580,13 @@ the repository script that replaces it before continuing.
 - 2026-07-23: The hardened deploy passes 11 focused wrapper tests, a real run
   against an initialized disposable database, and a fresh locked 181-migration
   chain in `deploy_fresh_lock_review_20260723`.
-- Active: Commit and independently re-review the final Slice 3C deploy
-  hardening.
-- Next: Register the native Python Hatchet worker and proof task in Slice 4A.
+- 2026-07-23: Final independent correctness review found no blocker. The
+  simplification review's accepted follow-up makes the SQL inventory test
+  compare table, access method, and ordered columns as well as names, and
+  removes redundant validator state.
+- Completed: Slice 3C query/index evidence, operational documentation, and
+  guarded repository deploy path.
+- Active: Register the native Python Hatchet worker and proof task in Slice 4A.
 
 ## Finish evidence
 
