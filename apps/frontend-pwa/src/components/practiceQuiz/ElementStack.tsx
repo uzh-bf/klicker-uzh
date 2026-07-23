@@ -322,14 +322,12 @@ function ElementStack({
     stack.type === 'PRACTICE_QUIZ' &&
     isCourseQARolloutEnabled &&
     isCourseQAEnabled
-  const stackDiscussionScopeKey = useMemo(() => `stack:${stack.id}`, [stack.id])
+  const stackDiscussionScopeKey = `stack:${stack.id}`
   const showInlineDiscussion =
     !previewOnly && !isEmbeddedFlow && supportsStackDiscussion
-  const discussionHref = useMemo(
-    () =>
-      `/course/${courseId}/qa?scopeKey=${encodeURIComponent(stackDiscussionScopeKey)}`,
-    [courseId, stackDiscussionScopeKey]
-  )
+  const discussionHref = `/course/${courseId}/qa?scopeKey=${encodeURIComponent(
+    stackDiscussionScopeKey
+  )}`
 
   return (
     <div className="pb-12">

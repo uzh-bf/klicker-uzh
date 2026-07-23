@@ -30,7 +30,7 @@ function CourseDiscussionOverview({
     embedUrl: string
     expiresAt: string
   } | null>(null)
-  const [currentTime, setCurrentTime] = useState<number | null>(null)
+  const [currentTime, setCurrentTime] = useState(0)
 
   const {
     data: overviewData,
@@ -108,7 +108,6 @@ function CourseDiscussionOverview({
     : null
   const embedExpired =
     embedExpiryTimestamp !== null &&
-    currentTime !== null &&
     Number.isFinite(embedExpiryTimestamp) &&
     embedExpiryTimestamp < currentTime
 
