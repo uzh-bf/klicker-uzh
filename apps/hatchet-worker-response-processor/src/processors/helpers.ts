@@ -166,11 +166,14 @@ export function validateStudentResponse({
     // if all cases are passed, choices response is considered to be valid
     return { valid: true }
   } else if (type === 'NUMERICAL') {
-    // response should be a string and be parseable as a number
+    // response should contain only a finite number
+    const trimmedResponse =
+      typeof response.value === 'string' ? response.value.trim() : ''
+    const parsedResponse = Number(trimmedResponse)
     if (
       typeof response.value !== 'string' ||
-      !response.value ||
-      isNaN(parseFloat(response.value))
+      !trimmedResponse ||
+      !Number.isFinite(parsedResponse)
     ) {
       return {
         valid: false,
@@ -179,7 +182,6 @@ export function validateStudentResponse({
     }
 
     // if restrictions are defined, check that the parsed number is within the defined bounds
-    const parsedResponse = parseFloat(response.value)
     if (
       restrictions &&
       (('min' in restrictions &&

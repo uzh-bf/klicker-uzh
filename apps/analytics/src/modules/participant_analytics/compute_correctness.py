@@ -1,3 +1,5 @@
+from math import isfinite
+
 import pandas as pd
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -5,6 +7,10 @@ from sqlalchemy.orm import Session
 from src.models import ElementInstance
 
 _EPSILON = 2.220446049250313e-16
+
+
+def _finite_number(value):
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and isfinite(float(value))
 
 
 def map_element_instance_options(instance: ElementInstance) -> dict:
@@ -154,6 +160,8 @@ def _numerical_correctness(response, options):
         response_value = float(response["value"])
     except (KeyError, TypeError, ValueError):
         return None
+    if not isfinite(response_value):
+        return None
 
     solution_ranges = options.get("solutionRanges") or []
     exact_solutions = options.get("exactSolutions") or []
@@ -161,23 +169,24 @@ def _numerical_correctness(response, options):
         return None
 
     if solution_ranges:
-        defined_ranges = [
-            solution_range
-            for solution_range in solution_ranges
-            if isinstance(solution_range, dict)
-            and (solution_range.get("min") is not None or solution_range.get("max") is not None)
-        ]
+        defined_ranges = []
+        for solution_range in solution_ranges:
+            if not isinstance(solution_range, dict):
+                continue
+
+            min_value = solution_range.get("min")
+            max_value = solution_range.get("max")
+            defined_min = min_value if _finite_number(min_value) else None
+            defined_max = max_value if _finite_number(max_value) else None
+            if defined_min is not None or defined_max is not None:
+                defined_ranges.append((defined_min, defined_max))
+
         if not defined_ranges:
             return None
 
-        for solution_range in defined_ranges:
-            min_value = solution_range.get("min")
-            max_value = solution_range.get("max")
-            try:
-                above_min = min_value is None or response_value >= float(min_value) - _EPSILON
-                below_max = max_value is None or response_value <= float(max_value) + _EPSILON
-            except (TypeError, ValueError):
-                continue
+        for min_value, max_value in defined_ranges:
+            above_min = min_value is None or response_value >= min_value - _EPSILON
+            below_max = max_value is None or response_value <= max_value + _EPSILON
             if above_min and below_max:
                 return "CORRECT"
         return "INCORRECT"

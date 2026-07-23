@@ -99,6 +99,7 @@ export function gradeQuestionNumerical({
   solutionRanges,
   exactSolutions,
 }: GradeQuestionNumericalArgs): number | null {
+  if (!Number.isFinite(response)) return null
   if (!solutionRanges?.length && !exactSolutions?.length) return null
 
   if (solutionRanges && solutionRanges.length > 0) {

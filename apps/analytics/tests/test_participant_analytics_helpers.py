@@ -184,16 +184,24 @@ def test_numerical_ranges_match_product_grading(response_value, expected):
     [
         ({"solutionRanges": []}, 0, None),
         ({"solutionRanges": [{}]}, 0, None),
+        ({"solutionRanges": [{"min": "bad"}]}, 0, None),
         ({"solutionRanges": [{"max": 0}]}, 0, "CORRECT"),
         ({"solutionRanges": [{"max": 0}]}, 1, "INCORRECT"),
         ({"solutionRanges": [{"min": 0}]}, -1, "INCORRECT"),
         ({"exactSolutions": []}, 0.1, None),
         ({"solutionRanges": [], "exactSolutions": [0]}, 0, "CORRECT"),
+        (
+            {"solutionRanges": [{"min": 10, "max": 20}], "exactSolutions": [5]},
+            5,
+            "INCORRECT",
+        ),
         ({"exactSolutions": [0]}, 1e-30, "CORRECT"),
         ({"exactSolutions": [0]}, 1e-12, "INCORRECT"),
         ({"exactSolutions": [0, 100]}, 100, "CORRECT"),
         ({"exactSolutions": [0, 100]}, 50, "INCORRECT"),
         ({"exactSolutions": [0.1]}, 0.1, "CORRECT"),
+        ({"solutionRanges": [{"min": 0}]}, float("nan"), None),
+        ({"solutionRanges": [{"min": 0}]}, float("inf"), None),
     ],
 )
 def test_numerical_exact_and_empty_solutions_match_product_grading(options, response_value, expected):
