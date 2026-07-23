@@ -1,8 +1,18 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import {
   getManageProposalResult,
   isManageProposalResult,
 } from '../src/components/manage-proposal-card'
+
+// manage-proposal-card.tsx renders the preview through shared-components,
+// which pulls in @uzh-bf/design-system's CSS entrypoint. That CSS import
+// cannot be resolved by Vitest's node-environment module graph (Vite's CSS
+// handling for externalized deps only works under the vmThreads pool), so
+// mock the preview module before it is ever evaluated. These tests only
+// exercise the pure envelope-parsing helpers below, not rendering.
+vi.mock('../src/components/manage-proposal-preview', () => ({
+  ManageProposalPreview: () => null,
+}))
 
 const proposalEnvelope = {
   kind: 'element.create.proposal',

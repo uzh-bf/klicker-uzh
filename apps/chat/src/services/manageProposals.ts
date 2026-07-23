@@ -1,56 +1,19 @@
 import hashes from '@klicker-uzh/graphql/dist/client.json'
 import { verifyJWT } from '@klicker-uzh/util'
 import { z } from 'zod'
+import {
+  choicesProposalPayloadSchema,
+  freeTextProposalPayloadSchema,
+  manageElementCreateProposalSchema,
+  type ManageElementCreateProposal,
+} from './manageProposalSchema'
+
+export {
+  manageElementCreateProposalSchema,
+  type ManageElementCreateProposal,
+} from './manageProposalSchema'
 
 const MANAGE_PROPOSAL_PURPOSE = 'manage-assistant-proposal'
-
-const proposalChoiceSchema = z.object({
-  correct: z.boolean(),
-  feedback: z.string().trim().min(1).max(500).optional(),
-  ix: z.number().int().min(0).optional(),
-  value: z.string().trim().min(1).max(240),
-})
-
-const baseProposalPayloadSchema = z.object({
-  basePoints: z.boolean().default(true),
-  content: z.string().trim().min(1).max(4000),
-  explanation: z.string().trim().min(1).max(2000).optional(),
-  name: z.string().trim().min(1).max(160),
-  pointsMultiplier: z.number().int().min(1).max(100).default(1),
-  status: z.literal('DRAFT'),
-  tags: z.array(z.string().trim().min(1).max(60)).max(8).default([]),
-})
-
-const choicesProposalPayloadSchema = baseProposalPayloadSchema.extend({
-  options: z.object({
-    choices: z.array(proposalChoiceSchema).min(2).max(8),
-    displayMode: z.literal('LIST').default('LIST'),
-    hasAnswerFeedbacks: z.boolean().default(false),
-    hasSampleSolution: z.boolean().default(true),
-  }),
-  type: z.enum(['SC', 'MC']),
-})
-
-const freeTextProposalPayloadSchema = baseProposalPayloadSchema.extend({
-  options: z.object({
-    hasSampleSolution: z.boolean().default(false),
-    restrictions: z.object({
-      maxLength: z.number().int().positive().optional(),
-    }),
-    solutions: z.array(z.string().trim().min(1).max(500)).optional(),
-  }),
-  type: z.literal('FREE_TEXT'),
-})
-
-const manageElementCreateProposalSchema = z.object({
-  kind: z.literal('element.create.proposal'),
-  payload: z.union([
-    choicesProposalPayloadSchema,
-    freeTextProposalPayloadSchema,
-  ]),
-  requiresConfirmation: z.literal(true),
-  summary: z.string().trim().min(1).max(240).optional(),
-})
 
 const manageProposalTokenSchema = z.object({
   kind: z.literal('element.create.proposal'),
@@ -69,10 +32,6 @@ const confirmedElementSchema = z.object({
   status: z.literal('DRAFT'),
   type: z.string(),
 })
-
-export type ManageElementCreateProposal = z.infer<
-  typeof manageElementCreateProposalSchema
->
 
 type OperationName = 'ManipulateChoicesQuestion' | 'ManipulateFreeTextQuestion'
 

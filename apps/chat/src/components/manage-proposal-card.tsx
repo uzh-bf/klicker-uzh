@@ -1,7 +1,9 @@
 'use client'
 
-import { CheckIcon, EyeIcon, LoaderCircleIcon } from 'lucide-react'
+import { CheckIcon, LoaderCircleIcon } from 'lucide-react'
 import { useState, type FC } from 'react'
+import { parseManageProposalPayload } from '../services/proposalToElementInstance'
+import { ManageProposalPreview } from './manage-proposal-preview'
 import { formatToolName } from './tool-labels'
 
 export type ManageProposalResult = {
@@ -80,7 +82,7 @@ export const ManageProposalCard: FC<ManageProposalCardProps> = ({
   const [confirmation, setConfirmation] = useState<ConfirmationState>({
     type: 'idle',
   })
-  const [showPreview, setShowPreview] = useState(false)
+  const previewPayload = parseManageProposalPayload(result)
   const payloadText = JSON.stringify(result.payload, null, 2)
   const waiting = status.type === 'running'
   const created = confirmation.type === 'success'
@@ -149,15 +151,9 @@ export const ManageProposalCard: FC<ManageProposalCardProps> = ({
       </div>
 
       <div className="space-y-2 px-3 py-3">
+        {previewPayload && <ManageProposalPreview payload={previewPayload} />}
+
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setShowPreview((value) => !value)}
-            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-          >
-            <EyeIcon className="size-3.5" aria-hidden />
-            Preview
-          </button>
           {!created && (
             <button
               type="button"
@@ -203,11 +199,14 @@ export const ManageProposalCard: FC<ManageProposalCardProps> = ({
           )}
         </div>
 
-        {showPreview && (
-          <pre className="max-h-72 overflow-auto rounded bg-slate-950 p-3 text-xs leading-5 text-slate-50">
+        <details>
+          <summary className="cursor-pointer text-xs font-medium text-slate-500 hover:text-slate-700">
+            Show raw JSON
+          </summary>
+          <pre className="mt-2 max-h-72 overflow-auto rounded bg-slate-950 p-3 text-xs leading-5 text-slate-50">
             {payloadText}
           </pre>
-        )}
+        </details>
       </div>
     </div>
   )
