@@ -3,13 +3,14 @@ import { faThumbsUp } from '@fortawesome/free-regular-svg-icons'
 import { faChevronDown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  DiscussionSort,
   GetCourseDiscussionEmbeddingInfoDocument,
   GetCourseDiscussionOverviewDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H3, UserNotification, toast } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 function CourseDiscussionOverview({
   courseId,
@@ -31,17 +32,22 @@ function CourseDiscussionOverview({
     expiresAt: string
   } | null>(null)
   const [currentTime, setCurrentTime] = useState(0)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const loadingMoreRef = useRef(false)
 
   const {
     data: overviewData,
     loading: loadingOverview,
     refetch: refetchOverview,
+    fetchMore,
+    startPolling,
+    stopPolling,
   } = useQuery(GetCourseDiscussionOverviewDocument, {
     variables: {
       courseId,
-      sort: 'ACTIVITY_DESC',
-      limit: 100,
-    } as any,
+      sort: DiscussionSort.ActivityDesc,
+      limit: 20,
+    },
     skip: !isCourseQAEnabled,
     pollInterval: 20000,
     fetchPolicy: 'cache-and-network',
@@ -77,6 +83,75 @@ function CourseDiscussionOverview({
     setGeneratedEmbedInfo(null)
   }, [externalSource, externalRef, allowAnonymous, expiresInHours])
 
+  const overview = overviewData?.courseDiscussionOverview
+  const groups = overview?.groups ?? []
+  const hasMore = overview?.hasMore ?? false
+  const nextCursor = overview?.nextCursor ?? null
+
+  const handleLoadMore = useCallback(async () => {
+    if (!nextCursor || !hasMore || loadingMoreRef.current) return
+
+    loadingMoreRef.current = true
+    setLoadingMore(true)
+
+    try {
+      await fetchMore({
+        variables: { cursor: nextCursor },
+        updateQuery: (previous, { fetchMoreResult }) => {
+          if (!fetchMoreResult) return previous
+
+          const mergedGroups = previous.courseDiscussionOverview.groups.map(
+            (group) => ({
+              ...group,
+              threads: [...group.threads],
+            })
+          )
+          const groupIndexes = new Map(
+            mergedGroups.map((group, index) => [group.sourceKey, index])
+          )
+
+          for (const incomingGroup of fetchMoreResult.courseDiscussionOverview
+            .groups) {
+            const existingIndex = groupIndexes.get(incomingGroup.sourceKey)
+
+            if (existingIndex === undefined) {
+              groupIndexes.set(incomingGroup.sourceKey, mergedGroups.length)
+              mergedGroups.push(incomingGroup)
+              continue
+            }
+
+            const existingGroup = mergedGroups[existingIndex]!
+            const existingThreadIds = new Set(
+              existingGroup.threads.map((thread) => thread.id)
+            )
+            existingGroup.threads.push(
+              ...incomingGroup.threads.filter(
+                (thread) => !existingThreadIds.has(thread.id)
+              )
+            )
+          }
+
+          return {
+            ...previous,
+            courseDiscussionOverview: {
+              ...fetchMoreResult.courseDiscussionOverview,
+              groups: mergedGroups,
+            },
+          }
+        },
+      })
+      stopPolling()
+    } catch {
+      toast({
+        type: 'error',
+        message: t('shared.generic.systemError'),
+      })
+    } finally {
+      loadingMoreRef.current = false
+      setLoadingMore(false)
+    }
+  }, [fetchMore, hasMore, nextCursor, stopPolling, t])
+
   if (!isCourseQAEnabled) {
     return (
       <div className="px-1 py-2">
@@ -97,7 +172,6 @@ function CourseDiscussionOverview({
     )
   }
 
-  const groups = overviewData?.courseDiscussionOverview?.groups ?? []
   const formatDateTime = (value: string) =>
     formatter.dateTime(new Date(value), {
       dateStyle: 'medium',
@@ -121,6 +195,7 @@ function CourseDiscussionOverview({
           <Button
             onClick={async () => {
               await refetchOverview()
+              startPolling(20000)
             }}
             data={{ cy: 'course-qa-refresh-overview' }}
           >
@@ -182,6 +257,21 @@ function CourseDiscussionOverview({
                 </div>
               </div>
             ))}
+
+            {hasMore && (
+              <div className="flex justify-center pt-1">
+                <Button
+                  onClick={handleLoadMore}
+                  loading={loadingMore}
+                  disabled={loadingMore}
+                  data={{ cy: 'course-qa-load-more-overview' }}
+                >
+                  <Button.Label>
+                    {t('manage.course.loadMoreThreads')}
+                  </Button.Label>
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>

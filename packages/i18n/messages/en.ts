@@ -2931,6 +2931,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       generateEmbedLink: 'Generate Embed Link',
       copyUrl: 'Copy URL',
       refreshOverview: 'Refresh Overview',
+      loadMoreThreads: 'Load more threads',
       embedUrl: 'Embed URL',
       expiresAt: 'Expires: {date}',
       embedGenFailed: 'Failed to generate embedding information.',

@@ -2985,6 +2985,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       generateEmbedLink: 'Embed-Link generieren',
       copyUrl: 'URL kopieren',
       refreshOverview: 'Übersicht aktualisieren',
+      loadMoreThreads: 'Weitere Beiträge laden',
       embedUrl: 'Embed URL',
       expiresAt: 'Gültig bis: {date}',
       embedGenFailed:
