@@ -14,6 +14,14 @@ class FakeTask:
         self.name = options["name"]
 
 
+class FakeContext:
+    def __init__(self, done: bool = False) -> None:
+        self._done = done
+
+    def done(self) -> bool:
+        return self._done
+
+
 class FakeWorkflow:
     def __init__(self, options: dict[str, Any]) -> None:
         self.options = options
@@ -107,7 +115,11 @@ def test_worker_registers_proof_and_analytics_dag(
 
     assert worker["name"] == hatchet_worker.WORKER_NAME
     assert worker["slots"] == 1
-    assert worker["workflows"] == [fake.tasks[0][1], fake.workflows[0]]
+    assert worker["workflows"] == [
+        fake.tasks[0][1],
+        fake.workflows[0],
+        fake.workflows[1],
+    ]
     options, proof = fake.tasks[0]
     assert options == {
         "name": hatchet_worker.PROOF_TASK_NAME,
@@ -122,33 +134,50 @@ def test_worker_registers_proof_and_analytics_dag(
     }
 
 
-def test_analytics_dag_matches_existing_task_contract() -> None:
+def test_analytics_dags_split_concurrency_and_preserve_task_contract() -> None:
     fake = FakeHatchet()
     calls: list[tuple[str, object]] = []
     hatchet_worker.register_native_workflows(
         cast(Any, fake),
-        allow_full=False,
+        allow_full=True,
         script_runner=lambda module, config, _cancelled: calls.append((module, config)),
     )
 
-    workflow = fake.workflows[0]
-    assert workflow.options["name"] == "recompute-learning-analytics"
-    assert workflow.options["on_crons"] == ["0 2 * * 1"]
-    assert workflow.options["on_events"] == [
+    freshness, full = fake.workflows
+    assert freshness.options["name"] == "recompute-learning-analytics"
+    assert freshness.options["on_crons"] == ["0 2 * * 1"]
+    assert freshness.options["on_events"] == [
         "course-ended",
         "admin-recompute-analytics",
     ]
-    assert workflow.options["input_validator"] is hatchet_worker.AnalyticsRunInput
-    assert workflow.options["task_defaults"].schedule_timeout == (
+    assert freshness.options["input_validator"] is hatchet_worker.AnalyticsRunInput
+    assert freshness.options["task_defaults"].schedule_timeout == (
         hatchet_worker.TASK_SCHEDULE_TIMEOUT
     )
-    assert workflow.options["concurrency"].expression == (
+    assert freshness.options["concurrency"].expression == (
         "has(input.courseId) ? input.courseId : 'global'"
     )
-    assert workflow.options["concurrency"].max_runs == 1
+    assert freshness.options["concurrency"].max_runs == 1
+    assert (
+        freshness.options["concurrency"].limit_strategy
+        == hatchet_worker.ConcurrencyLimitStrategy.CANCEL_IN_PROGRESS
+    )
 
-    tasks = {task.name: task for task in workflow.tasks}
-    assert list(tasks) == [
+    assert full.options["name"] == "recompute-learning-analytics-full"
+    assert full.options["on_events"] == ["admin-recompute-analytics-full"]
+    assert "on_crons" not in full.options
+    assert full.options["input_validator"] is hatchet_worker.AnalyticsRunInput
+    assert full.options["task_defaults"].schedule_timeout == (
+        hatchet_worker.TASK_SCHEDULE_TIMEOUT
+    )
+    assert full.options["concurrency"].expression == "'global'"
+    assert full.options["concurrency"].max_runs == 1
+    assert (
+        full.options["concurrency"].limit_strategy
+        == hatchet_worker.ConcurrencyLimitStrategy.CANCEL_NEWEST
+    )
+
+    expected_task_names = [
         "s0-participant-analytics",
         "s2-course-heatmap",
         "s3-instance-activity-perf",
@@ -165,37 +194,60 @@ def test_analytics_dag_matches_existing_task_contract() -> None:
         "s11-chat-quiz-correlation",
         "s99-mark-analytics-valid",
     ]
-    assert [
-        parent.name for parent in tasks["s1-aggregated-analytics"].options["parents"]
-    ] == ["s0-participant-analytics"]
-    assert [
-        parent.name
-        for parent in tasks["s13-platform-semester-analytics"].options["parents"]
-    ] == ["s2-course-heatmap"]
-    assert [
-        parent.name for parent in tasks["s11-chat-quiz-correlation"].options["parents"]
-    ] == [
-        "s4-participant-perf",
-        "s8-chat-analytics",
-    ]
-    assert len(tasks["s99-mark-analytics-valid"].options["parents"]) == 14
-    assert tasks["s10-chat-topic-clustering"].options["retries"] == 0
-    assert tasks["s0-participant-analytics"].options["execution_timeout"] == "60m"
 
-    tasks["s14-live-quiz-assessment-analytics"].fn(
+    for workflow in (freshness, full):
+        tasks = {task.name: task for task in workflow.tasks}
+        assert list(tasks) == expected_task_names
+        assert [
+            parent.name
+            for parent in tasks["s1-aggregated-analytics"].options["parents"]
+        ] == ["s0-participant-analytics"]
+        assert [
+            parent.name
+            for parent in tasks["s13-platform-semester-analytics"].options["parents"]
+        ] == ["s2-course-heatmap"]
+        assert [
+            parent.name
+            for parent in tasks["s11-chat-quiz-correlation"].options["parents"]
+        ] == [
+            "s4-participant-perf",
+            "s8-chat-analytics",
+        ]
+        assert len(tasks["s99-mark-analytics-valid"].options["parents"]) == 14
+        assert tasks["s10-chat-topic-clustering"].options["retries"] == 0
+        assert tasks["s0-participant-analytics"].options["execution_timeout"] == "60m"
+
+    freshness_tasks = {task.name: task for task in freshness.tasks}
+    freshness_tasks["s14-live-quiz-assessment-analytics"].fn(
         hatchet_worker.AnalyticsRunInput(courseId="course-1"),
-        type("Context", (), {"done": lambda self: False})(),
+        FakeContext(),
     )
-    assert calls == [
-        (
-            hatchet_worker.ANALYTICS_SCRIPTS["s14"],
-            hatchet_worker.AnalyticsRunConfig(
-                mode="finalize",
-                course_ids=("course-1",),
-                window_since=None,
-            ),
+    full_tasks = {task.name: task for task in full.tasks}
+    full_tasks["s14-live-quiz-assessment-analytics"].fn(
+        hatchet_worker.AnalyticsRunInput(mode="full", courseId="course-2"),
+        FakeContext(),
+    )
+    assert calls[0][1] == hatchet_worker.AnalyticsRunConfig(
+        mode="finalize",
+        course_ids=("course-1",),
+        window_since=None,
+    )
+    assert calls[1][1] == hatchet_worker.AnalyticsRunConfig(
+        mode="full",
+        course_ids=("course-2",),
+        window_since=None,
+    )
+
+    with pytest.raises(ValueError, match="ANALYTICS_ALLOW_FULL"):
+        freshness_tasks["s14-live-quiz-assessment-analytics"].fn(
+            hatchet_worker.AnalyticsRunInput(mode="full"),
+            FakeContext(),
         )
-    ]
+    with pytest.raises(ValueError, match="requires mode=full"):
+        full_tasks["s14-live-quiz-assessment-analytics"].fn(
+            hatchet_worker.AnalyticsRunInput(mode="incremental"),
+            FakeContext(),
+        )
 
 
 def test_cancelled_script_is_non_retryable_at_hatchet_boundary() -> None:
@@ -209,12 +261,18 @@ def test_cancelled_script_is_non_retryable_at_hatchet_boundary() -> None:
         allow_full=False,
         script_runner=cancelled_runner,
     )
-    task = next(task for task in fake.workflows[0].tasks if task.name == "s14-live-quiz-assessment-analytics")
+    task = next(
+        task
+        for task in fake.workflows[0].tasks
+        if task.name == "s14-live-quiz-assessment-analytics"
+    )
 
-    with pytest.raises(hatchet_worker.NonRetryableException, match="superseded") as exc_info:
+    with pytest.raises(
+        hatchet_worker.NonRetryableException, match="superseded"
+    ) as exc_info:
         task.fn(
             hatchet_worker.AnalyticsRunInput(courseId="course-1"),
-            type("Context", (), {"done": lambda self: True})(),
+            FakeContext(done=True),
         )
 
     assert isinstance(exc_info.value.__cause__, hatchet_worker.AnalyticsRunCancelled)

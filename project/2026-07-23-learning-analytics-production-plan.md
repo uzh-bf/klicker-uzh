@@ -675,8 +675,38 @@ the repository script that replaces it before continuing.
   suite with 161 passed and 4 integration skips, and the exact isolated
   analytics CI subset with 97 passed and 1 database skip.
 - Completed: Slice 4B.2a bounded cooperative cancellation.
-- Active: Split protected full-run concurrency from freshness-first
-  incremental/finalize runs in Slice 4B.2b.
+- 2026-07-23: Slice 4B.2b keeps routing on the Hatchet control plane rather
+  than adding a worker-side dispatcher. With one worker slot, a dispatcher
+  could wait behind a long analytics task and delay a superseding freshness
+  run. The existing `course-ended` and `admin-recompute-analytics` events now
+  target the original freshness DAG directly; guarded full requests use
+  `admin-recompute-analytics-full` and
+  `recompute-learning-analytics-full`. GraphQL selects only the event key and
+  preserves the existing payload contract. The transitional TypeScript worker
+  also recognizes the full event so rollback remains functional until cutover.
+- 2026-07-23: Both Python workflows register the same 15-task DAG. Freshness
+  retains per-course/global `CANCEL_IN_PROGRESS`; full rebuilds use one global
+  `CANCEL_NEWEST` group, reject non-full input, and continue to require
+  `ANALYTICS_ALLOW_FULL=1`. The workflows have independent concurrency groups;
+  this protects a running full rebuild from either a newer full request or a
+  freshness cancellation, while the initial one-slot worker prevents
+  simultaneous Python task execution.
+- 2026-07-23: The dedicated local Hatchet control plane completed the
+  concurrency matrix. Same-course freshness runs ended
+  `CANCELLED` then `COMPLETED`; two full rebuilds ended `COMPLETED` then
+  `CANCELLED`, proving that the running full rebuild wins. `course-ended`
+  reached `recompute-learning-analytics`, and
+  `admin-recompute-analytics-full` reached only
+  `recompute-learning-analytics-full`. A historical cancellation-probe
+  workflow still registered on the disposable control plane also observed
+  `course-ended`; the production-named route remained unique and completed.
+- 2026-07-23: Slice 4B.2b verification passes strict focused Pyright, Ruff,
+  161 analytics tests with 4 integration skips, the exact isolated analytics
+  CI subset with 97 passed and 1 database skip, the Hatchet DAG contract test,
+  3 GraphQL event-routing tests, and TypeScript checks for types, Hatchet, and
+  GraphQL.
+- Active: Review the split concurrency/event-routing tracer, then cut over the
+  native worker in Slice 4C.
 
 ## Finish evidence
 

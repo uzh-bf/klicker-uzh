@@ -40,6 +40,11 @@ test('platform analytics waits for course analytics and validity waits for every
     redisAssessmentExec: {},
     handlers,
   })
+  assert.deepEqual(prepared.recomputeLearningAnalytics.onEvents, [
+    'course-ended',
+    'admin-recompute-analytics',
+    'admin-recompute-analytics-full',
+  ])
   const definitions = new Map(
     prepared.recomputeLearningAnalytics.registeredTasks.map(
       (taskDefinition) => [taskDefinition.name, taskDefinition]

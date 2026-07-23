@@ -4168,7 +4168,11 @@ export async function recomputeCourseAnalytics(
   if (!course) return false
 
   const payload: RecomputeLearningAnalyticsInput = { mode, courseId }
-  await ctx.hatchet.events.push(HATCHET_EVENTS.adminRecomputeAnalytics, payload)
+  const event =
+    mode === 'full'
+      ? HATCHET_EVENTS.adminRecomputeAnalyticsFull
+      : HATCHET_EVENTS.adminRecomputeAnalytics
+  await ctx.hatchet.events.push(event, payload)
   return true
 }
 

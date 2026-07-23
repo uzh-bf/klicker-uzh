@@ -311,6 +311,9 @@ export function prepareHatchetTasks({
       onEvents: [
         HATCHET_EVENTS.courseEnded, // emitted by scan-ended-courses — triggers finalize for one course
         HATCHET_EVENTS.adminRecomputeAnalytics, // manual dispatch via Hatchet dashboard for now
+        // Transitional rollback path. The native Python worker owns this
+        // separate full-run event after cutover.
+        HATCHET_EVENTS.adminRecomputeAnalyticsFull,
       ],
       concurrency: {
         expression: "has(input.courseId) ? input.courseId : 'global'",

@@ -3,10 +3,12 @@ from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from hatchet_sdk import Context, Hatchet, NonRetryableException
-from hatchet_sdk.runnables.types import (
+from hatchet_sdk import (
+    Context,
     ConcurrencyExpression,
     ConcurrencyLimitStrategy,
+    Hatchet,
+    NonRetryableException,
     TaskDefaults,
 )
 from pydantic import BaseModel, ConfigDict
@@ -21,9 +23,11 @@ from src.modules.utils import (
 WORKER_NAME = "hatchet-worker-analytics-python"
 PROOF_TASK_NAME = "learning-analytics-native-proof"
 ANALYTICS_WORKFLOW_NAME = "recompute-learning-analytics"
+FULL_ANALYTICS_WORKFLOW_NAME = "recompute-learning-analytics-full"
 INCREMENTAL_LOOKBACK_DAYS = 14
 TASK_SCHEDULE_TIMEOUT = "168h"
-ANALYTICS_EVENTS = ["course-ended", "admin-recompute-analytics"]
+FRESHNESS_ANALYTICS_EVENTS = ["course-ended", "admin-recompute-analytics"]
+FULL_ANALYTICS_EVENTS = ["admin-recompute-analytics-full"]
 ANALYTICS_SCRIPTS = {
     "s0": "src.scripts.0_initial_participant_analytics",
     "s1": "src.scripts.1_initial_aggregated_analytics",
@@ -112,11 +116,11 @@ def register_native_workflows(
             "windowSince": config.window_since,
         }
 
-    analytics = hatchet.workflow(
+    freshness_analytics = hatchet.workflow(
         name=ANALYTICS_WORKFLOW_NAME,
         input_validator=AnalyticsRunInput,
         on_crons=["0 2 * * 1"],
-        on_events=ANALYTICS_EVENTS,
+        on_events=FRESHNESS_ANALYTICS_EVENTS,
         concurrency=ConcurrencyExpression(
             expression="has(input.courseId) ? input.courseId : 'global'",
             max_runs=1,
@@ -127,62 +131,86 @@ def register_native_workflows(
         # behind long-running siblings, retries, or a burst of course runs.
         task_defaults=TaskDefaults(schedule_timeout=TASK_SCHEDULE_TIMEOUT),
     )
-    tasks: dict[str, Any] = {}
 
-    def add_task(
-        key: str,
-        name: str,
-        *,
-        parents: tuple[str, ...] = (),
-        execution_timeout: str = "30m",
-        retries: int = 2,
-    ) -> None:
-        @analytics.task(
-            name=name,
-            parents=[tasks[parent] for parent in parents],
-            execution_timeout=execution_timeout,
-            retries=retries,
+    full_analytics = hatchet.workflow(
+        name=FULL_ANALYTICS_WORKFLOW_NAME,
+        input_validator=AnalyticsRunInput,
+        on_events=FULL_ANALYTICS_EVENTS,
+        concurrency=ConcurrencyExpression(
+            expression="'global'",
+            max_runs=1,
+            limit_strategy=ConcurrencyLimitStrategy.CANCEL_NEWEST,
+        ),
+        task_defaults=TaskDefaults(schedule_timeout=TASK_SCHEDULE_TIMEOUT),
+    )
+
+    def register_dag(workflow: Any, *, full_only: bool) -> None:
+        tasks: dict[str, Any] = {}
+
+        def add_task(
+            key: str,
+            name: str,
+            *,
+            parents: tuple[str, ...] = (),
+            execution_timeout: str = "30m",
+            retries: int = 2,
+        ) -> None:
+            @workflow.task(
+                name=name,
+                parents=[tasks[parent] for parent in parents],
+                execution_timeout=execution_timeout,
+                retries=retries,
+            )
+            def run_script(input: AnalyticsRunInput, ctx: Context) -> None:
+                config = resolve_run_config(
+                    input,
+                    allow_full=allow_full if full_only else False,
+                )
+                if full_only and config.mode != "full":
+                    raise ValueError(
+                        f"{FULL_ANALYTICS_WORKFLOW_NAME} requires mode=full"
+                    )
+                try:
+                    script_runner(ANALYTICS_SCRIPTS[key], config, ctx.done)
+                except AnalyticsRunCancelled as exc:
+                    raise NonRetryableException(str(exc)) from exc
+
+            tasks[key] = run_script
+
+        add_task("s0", "s0-participant-analytics", execution_timeout="60m")
+        add_task("s2", "s2-course-heatmap")
+        add_task("s3", "s3-instance-activity-perf")
+        add_task("s4", "s4-participant-perf")
+        add_task("s5", "s5-participant-course-analytics")
+        add_task("s6", "s6-activity-progress")
+        add_task("s7", "s7-participant-activity-perf")
+        add_task("s8", "s8-chat-analytics", execution_timeout="60m")
+        add_task("s9", "s9-aggregated-chatbot-analytics", execution_timeout="60m")
+        add_task(
+            "s10",
+            "s10-chat-topic-clustering",
+            execution_timeout="60m",
+            retries=0,
         )
-        def run_script(input: AnalyticsRunInput, ctx: Context) -> None:
-            config = resolve_run_config(input, allow_full=allow_full)
-            try:
-                script_runner(ANALYTICS_SCRIPTS[key], config, ctx.done)
-            except AnalyticsRunCancelled as exc:
-                raise NonRetryableException(str(exc)) from exc
+        add_task("s14", "s14-live-quiz-assessment-analytics")
+        add_task(
+            "s1",
+            "s1-aggregated-analytics",
+            parents=("s0",),
+            execution_timeout="60m",
+        )
+        add_task("s13", "s13-platform-semester-analytics", parents=("s2",))
+        add_task("s11", "s11-chat-quiz-correlation", parents=("s4", "s8"))
+        add_task(
+            "s99",
+            "s99-mark-analytics-valid",
+            parents=tuple(tasks),
+        )
 
-        tasks[key] = run_script
+    register_dag(freshness_analytics, full_only=False)
+    register_dag(full_analytics, full_only=True)
 
-    add_task("s0", "s0-participant-analytics", execution_timeout="60m")
-    add_task("s2", "s2-course-heatmap")
-    add_task("s3", "s3-instance-activity-perf")
-    add_task("s4", "s4-participant-perf")
-    add_task("s5", "s5-participant-course-analytics")
-    add_task("s6", "s6-activity-progress")
-    add_task("s7", "s7-participant-activity-perf")
-    add_task("s8", "s8-chat-analytics", execution_timeout="60m")
-    add_task("s9", "s9-aggregated-chatbot-analytics", execution_timeout="60m")
-    add_task(
-        "s10",
-        "s10-chat-topic-clustering",
-        execution_timeout="60m",
-        retries=0,
-    )
-    add_task("s14", "s14-live-quiz-assessment-analytics")
-    add_task(
-        "s1",
-        "s1-aggregated-analytics",
-        parents=("s0",),
-        execution_timeout="60m",
-    )
-    add_task("s13", "s13-platform-semester-analytics", parents=("s2",))
-    add_task("s11", "s11-chat-quiz-correlation", parents=("s4", "s8"))
-    add_task(
-        "s99",
-        "s99-mark-analytics-valid",
-        parents=tuple(tasks),
-    )
-
-    return [native_proof, analytics]
+    return [native_proof, freshness_analytics, full_analytics]
 
 
 def create_worker(hatchet: Hatchet) -> Any:
