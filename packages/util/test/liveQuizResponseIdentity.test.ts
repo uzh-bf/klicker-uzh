@@ -1,9 +1,10 @@
 import { UserRole } from '@klicker-uzh/prisma/client'
 import { describe, expect, it } from 'vitest'
-import { signJWT } from '../src/jwt.js'
+import { decodeJWT, signJWT } from '../src/jwt.js'
 import {
   createLiveQuizRespondentToken,
-  LIVE_QUIZ_RESPONDENT_COOKIE_NAME,
+  getLiveQuizRespondentCookieName,
+  LIVE_QUIZ_RESPONDENT_TOKEN_MAX_AGE_SECONDS,
   resolveLiveQuizResponseIdentity,
 } from '../src/liveQuizResponseIdentity.js'
 
@@ -20,8 +21,12 @@ describe('live quiz response identity', () => {
       secret,
       issuer,
     })
-    const cookieHeader = `${LIVE_QUIZ_RESPONDENT_COOKIE_NAME}=${token}`
+    const cookieHeader = `${getLiveQuizRespondentCookieName(liveQuizId)}=${token}`
+    const payload = decodeJWT(token)
 
+    expect(payload.exp! - payload.iat!).toBe(
+      LIVE_QUIZ_RESPONDENT_TOKEN_MAX_AGE_SECONDS
+    )
     await expect(
       resolveLiveQuizResponseIdentity({
         cookieHeader,
@@ -49,7 +54,7 @@ describe('live quiz response identity', () => {
   it('rejects an anonymous respondent id without a valid signature', async () => {
     await expect(
       resolveLiveQuizResponseIdentity({
-        cookieHeader: `${LIVE_QUIZ_RESPONDENT_COOKIE_NAME}=${respondentId}`,
+        cookieHeader: `${getLiveQuizRespondentCookieName(liveQuizId)}=${respondentId}`,
         liveQuizId,
         secret,
         issuer,
@@ -126,7 +131,7 @@ describe('live quiz response identity', () => {
       resolveLiveQuizResponseIdentity({
         cookieHeader: [
           'participant_token=invalid-token',
-          `${LIVE_QUIZ_RESPONDENT_COOKIE_NAME}=${respondentToken}`,
+          `${getLiveQuizRespondentCookieName(liveQuizId)}=${respondentToken}`,
         ].join('; '),
         liveQuizId,
         secret,
@@ -155,7 +160,7 @@ describe('live quiz response identity', () => {
     await expect(
       resolveLiveQuizResponseIdentity({
         cookieHeader: [
-          `${LIVE_QUIZ_RESPONDENT_COOKIE_NAME}=${respondentToken}`,
+          `${getLiveQuizRespondentCookieName(liveQuizId)}=${respondentToken}`,
           `participant_token=${participantToken}`,
         ].join('; '),
         liveQuizId,
@@ -167,5 +172,45 @@ describe('live quiz response identity', () => {
       id: participantId,
       token: participantToken,
     })
+  })
+
+  it('keeps anonymous respondent cookies separate across quizzes', async () => {
+    const otherQuizId = '33333333-3333-4333-8333-333333333333'
+    const otherRespondentId = '55555555-5555-4555-8555-555555555555'
+    const [token, otherToken] = await Promise.all([
+      createLiveQuizRespondentToken({
+        respondentId,
+        liveQuizId,
+        secret,
+        issuer,
+      }),
+      createLiveQuizRespondentToken({
+        respondentId: otherRespondentId,
+        liveQuizId: otherQuizId,
+        secret,
+        issuer,
+      }),
+    ])
+    const cookieHeader = [
+      `${getLiveQuizRespondentCookieName(liveQuizId)}=${token}`,
+      `${getLiveQuizRespondentCookieName(otherQuizId)}=${otherToken}`,
+    ].join('; ')
+
+    await expect(
+      resolveLiveQuizResponseIdentity({
+        cookieHeader,
+        liveQuizId,
+        secret,
+        issuer,
+      })
+    ).resolves.toMatchObject({ id: respondentId })
+    await expect(
+      resolveLiveQuizResponseIdentity({
+        cookieHeader,
+        liveQuizId: otherQuizId,
+        secret,
+        issuer,
+      })
+    ).resolves.toMatchObject({ id: otherRespondentId })
   })
 })

@@ -11,7 +11,12 @@ import type {
   LiveQuizResponseInput,
   NumericalRestrictions,
 } from '@klicker-uzh/types'
-import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
+import {
+  releaseCorrelatedResponse,
+  verifyJWT,
+  type CorrelatedResponseClaim,
+  type JWTPayload,
+} from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
 import type { ChainableCommander } from 'ioredis'
@@ -39,6 +44,7 @@ export async function processResponseMessage(
     response: LiveQuizResponseInput
     cookie?: string
     responseTimestamp: number
+    correlatedClaim?: CorrelatedResponseClaim
   },
   ctx: Context<JsonObject, {}> | DurableContext<JsonObject, {}>
 ) {
@@ -62,6 +68,16 @@ export async function processResponseMessage(
     return { status: 200 }
   }
 
+  const releaseClaim = async () => {
+    if (!message.correlatedClaim) return
+
+    await releaseCorrelatedResponse({
+      redis: redisExec,
+      ...message.correlatedClaim,
+      messageId: message.messageId,
+    })
+  }
+
   let redisMulti: ChainableCommander
   // redisMulti = redisExec.multi() -> transaction
   redisMulti = redisExec.pipeline() // -> pipeline (not atomic)
@@ -80,6 +96,7 @@ export async function processResponseMessage(
             instanceId: message.instanceId,
           })
       )
+      await releaseClaim()
       return { status: 400 }
     }
 
@@ -136,6 +153,7 @@ export async function processResponseMessage(
         ctx.logger.info(
           'Participant has already responded to this question instance'
         )
+        await releaseClaim()
         return { status: 200 }
       }
     }
@@ -148,6 +166,7 @@ export async function processResponseMessage(
         sessionId: message.sessionId,
         instanceId: message.instanceId,
       })
+      await releaseClaim()
       return { status: 400 }
     }
     ctx.logger.info('Instance info loaded', {
@@ -172,6 +191,7 @@ export async function processResponseMessage(
         `[CANCEL] [AddResponse Assessment] Response received at ${new Date(Number(responseTimestamp))} after block of element instance ${message.instanceId} was closed at ${new Date(Number(blockClosedAt))}.`
       )
       ctx.cancel()
+      await releaseClaim()
       return { status: 200 }
     }
 
@@ -219,6 +239,7 @@ export async function processResponseMessage(
             instanceId: message.instanceId,
           })
       )
+      await releaseClaim()
       return { status: 400 }
     }
 
@@ -239,6 +260,7 @@ export async function processResponseMessage(
                 instanceId: message.instanceId,
               })
           )
+          await releaseClaim()
           return { status: 400 }
         }
 
@@ -318,6 +340,7 @@ export async function processResponseMessage(
                 instanceId: message.instanceId,
               })
           )
+          await releaseClaim()
           return { status: 400 }
         }
 
@@ -395,6 +418,7 @@ export async function processResponseMessage(
                 instanceId: message.instanceId,
               })
           )
+          await releaseClaim()
           return { status: 400 }
         }
 
@@ -472,6 +496,7 @@ export async function processResponseMessage(
                 instanceId: message.instanceId,
               })
           )
+          await releaseClaim()
           return { status: 400 }
         }
 
@@ -555,6 +580,7 @@ export async function processResponseMessage(
                 instanceId: message.instanceId,
               })
           )
+          await releaseClaim()
           return { status: 400 }
         }
 
@@ -662,6 +688,7 @@ export async function processResponseMessage(
         })
     )
     redisMulti?.discard()
+    await releaseClaim()
     return { status: 500 }
   }
 

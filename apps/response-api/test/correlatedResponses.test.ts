@@ -4,6 +4,7 @@ import {
   buildCorrelatedVoteKey,
   claimCorrelatedResponse,
   releaseCorrelatedResponse,
+  resolveResponseCollectionMode,
   serializeLiveQuizRespondentCookie,
 } from '../src/correlatedResponses.js'
 
@@ -96,10 +97,41 @@ describe('live quiz respondent cookie', () => {
     assert.equal(
       serializeLiveQuizRespondentCookie({
         token: 'signed-token',
+        liveQuizId: '11111111-1111-4111-8111-111111111111',
         domain: 'klicker.test',
         secure: true,
       }),
-      'live_quiz_respondent_token=signed-token; Max-Age=1209600; Domain=klicker.test; Path=/; HttpOnly; Secure; SameSite=Lax'
+      'live_quiz_respondent_token_11111111-1111-4111-8111-111111111111=signed-token; Max-Age=1209600; Domain=klicker.test; Path=/; HttpOnly; Secure; SameSite=Lax'
+    )
+  })
+})
+
+describe('response collection mode', () => {
+  it('uses cached correlated mode without a database lookup', async () => {
+    let lookupCalled = false
+
+    assert.equal(
+      await resolveResponseCollectionMode({
+        cachedMode: 'CORRELATED_EXPORT',
+        liveQuizId: 'quiz-1',
+        lookupMode: async () => {
+          lookupCalled = true
+          return 'AGGREGATED_ANONYMOUS'
+        },
+      }),
+      'CORRELATED_EXPORT'
+    )
+    assert.equal(lookupCalled, false)
+  })
+
+  it('falls back to the stored mode for rolling deployments', async () => {
+    assert.equal(
+      await resolveResponseCollectionMode({
+        cachedMode: undefined,
+        liveQuizId: 'quiz-1',
+        lookupMode: async () => 'CORRELATED_EXPORT',
+      }),
+      'CORRELATED_EXPORT'
     )
   })
 })

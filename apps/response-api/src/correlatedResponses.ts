@@ -1,82 +1,31 @@
+import { LiveQuizResponseCollectionMode } from '@klicker-uzh/prisma/client'
 import {
-  LIVE_QUIZ_RESPONDENT_COOKIE_NAME,
+  buildCorrelatedVoteKey,
+  claimCorrelatedResponse,
+  getLiveQuizRespondentCookieName,
   LIVE_QUIZ_RESPONDENT_TOKEN_MAX_AGE_SECONDS,
+  releaseCorrelatedResponse,
 } from '@klicker-uzh/util'
 
-interface CorrelatedResponseRedis {
-  hsetnx(key: string, field: string, value: string): Promise<number>
-  eval(
-    script: string,
-    numberOfKeys: number,
-    ...args: string[]
-  ): Promise<unknown>
-}
-
-const RELEASE_OWNED_CLAIM_SCRIPT = `
-if redis.call('HGET', KEYS[1], ARGV[1]) == ARGV[2] then
-  return redis.call('HDEL', KEYS[1], ARGV[1])
-end
-return 0
-`
-
-export function buildCorrelatedVoteKey({
-  liveQuizId,
-  instanceId,
-  blockExecution,
-}: {
-  liveQuizId: string
-  instanceId: string
-  blockExecution: string
-}) {
-  return `lq:${liveQuizId}:i:${instanceId}:correlatedVotes:${blockExecution}`
-}
-
-export async function claimCorrelatedResponse({
-  redis,
-  key,
-  identityKey,
-  messageId,
-}: {
-  redis: CorrelatedResponseRedis
-  key: string
-  identityKey: string
-  messageId: string
-}) {
-  return (await redis.hsetnx(key, identityKey, messageId)) === 1
-}
-
-export async function releaseCorrelatedResponse({
-  redis,
-  key,
-  identityKey,
-  messageId,
-}: {
-  redis: CorrelatedResponseRedis
-  key: string
-  identityKey: string
-  messageId: string
-}) {
-  const released = await redis.eval(
-    RELEASE_OWNED_CLAIM_SCRIPT,
-    1,
-    key,
-    identityKey,
-    messageId
-  )
-  return Number(released) === 1
+export {
+  buildCorrelatedVoteKey,
+  claimCorrelatedResponse,
+  releaseCorrelatedResponse,
 }
 
 export function serializeLiveQuizRespondentCookie({
   token,
+  liveQuizId,
   domain,
   secure,
 }: {
   token: string
+  liveQuizId: string
   domain?: string
   secure: boolean
 }) {
   const attributes = [
-    `${LIVE_QUIZ_RESPONDENT_COOKIE_NAME}=${token}`,
+    `${getLiveQuizRespondentCookieName(liveQuizId)}=${token}`,
     `Max-Age=${LIVE_QUIZ_RESPONDENT_TOKEN_MAX_AGE_SECONDS}`,
   ]
   if (domain) attributes.push(`Domain=${domain}`)
@@ -85,4 +34,35 @@ export function serializeLiveQuizRespondentCookie({
   attributes.push('SameSite=Lax')
 
   return attributes.join('; ')
+}
+
+export async function resolveResponseCollectionMode({
+  cachedMode,
+  liveQuizId,
+  lookupMode,
+}: {
+  cachedMode: string | undefined
+  liveQuizId: string
+  lookupMode: (
+    liveQuizId: string
+  ) => Promise<LiveQuizResponseCollectionMode | string | null>
+}) {
+  if (
+    cachedMode === LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS ||
+    cachedMode === LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+  ) {
+    return cachedMode
+  }
+
+  const storedMode = await lookupMode(liveQuizId)
+  if (
+    storedMode === LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS ||
+    storedMode === LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+  ) {
+    return storedMode
+  }
+
+  throw new Error(
+    `Response collection mode for live quiz ${liveQuizId} is unavailable`
+  )
 }

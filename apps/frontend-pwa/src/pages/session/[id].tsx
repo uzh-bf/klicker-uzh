@@ -44,6 +44,44 @@ const DynamicAccountSelector = dynamic(
   { ssr: false }
 )
 
+const responseIdentityInitializations = new Map<string, Promise<void>>()
+
+function getResponseApiEndpoint(endpoint: string) {
+  const url = new URL(process.env.NEXT_PUBLIC_ADD_RESPONSE_URL as string)
+  const basePath = url.pathname
+    .replace(/\/AddResponse\/?$/, '')
+    .replace(/\/$/, '')
+  url.pathname = `${basePath}/${endpoint}`
+  return url.toString()
+}
+
+function ensureLiveQuizResponseIdentity(liveQuizId: string) {
+  const existing = responseIdentityInitializations.get(liveQuizId)
+  if (existing) return existing
+
+  const initialization = (async () => {
+    const response = await fetch(
+      getResponseApiEndpoint('InitializeLiveQuizResponseIdentity'),
+      {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ liveQuizId }),
+      }
+    )
+    // Older response-api versions do not expose the initialization endpoint.
+    if (!response.ok && response.status !== 404) {
+      throw new Error('Live quiz response identity initialization failed')
+    }
+  })().catch((error) => {
+    responseIdentityInitializations.delete(liveQuizId)
+    throw error
+  })
+
+  responseIdentityInitializations.set(liveQuizId, initialization)
+  return initialization
+}
+
 async function handleNewResponse({
   liveQuizId,
   instanceId,
@@ -58,6 +96,12 @@ async function handleNewResponse({
   correlationKey?: string | null
 }): // statusCode: 0 = client-side invalid input / general error; otherwise HTTP status codes 200, 208, 400, 401, 404, 500
 Promise<{ statusCode: number; responseTimestamp?: number }> {
+  try {
+    await ensureLiveQuizResponseIdentity(liveQuizId)
+  } catch {
+    return { statusCode: 1 }
+  }
+
   let requestOptions: RequestInit = {
     method: 'POST',
     credentials: 'include',
@@ -122,7 +166,7 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
 
   try {
     const response = await fetch(
-      process.env.NEXT_PUBLIC_ADD_RESPONSE_URL as string,
+      getResponseApiEndpoint('AddResponse'),
       requestOptions
     )
 
@@ -162,6 +206,10 @@ function Index({ id }: { id: string }) {
   const { data: selfData } = useQuery(SelfDocument, {
     variables: { liveQuizId: id },
   })
+
+  useEffect(() => {
+    void ensureLiveQuizResponseIdentity(id).catch(() => undefined)
+  }, [id])
 
   // if a block is active when the page is loaded or a new block is activated, switch to the corresponding block
   useEffect(() => {

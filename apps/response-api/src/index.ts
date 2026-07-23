@@ -1,14 +1,17 @@
 import { hatchetClient } from '@klicker-uzh/hatchet'
+import { prisma } from '@klicker-uzh/prisma'
 import {
   LiveQuizResponseCollectionMode,
+  PublicationStatus,
   UserLoginScope,
 } from '@klicker-uzh/prisma/client'
 import {
   createLiveQuizRespondentToken,
-  LIVE_QUIZ_RESPONDENT_COOKIE_NAME,
+  getLiveQuizRespondentCookieName,
   resolveLiveQuizResponseIdentity,
   verifyJWT,
   type JWTPayload,
+  type LiveQuizResponseIdentity,
 } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import { createServer, IncomingMessage, ServerResponse } from 'http'
@@ -18,6 +21,7 @@ import {
   buildCorrelatedVoteKey,
   claimCorrelatedResponse,
   releaseCorrelatedResponse,
+  resolveResponseCollectionMode,
   serializeLiveQuizRespondentCookie,
 } from './correlatedResponses.js'
 
@@ -105,6 +109,109 @@ async function readBody(req: IncomingMessage): Promise<any> {
   }
 }
 
+function getResponseIdentityConfig() {
+  const secret = process.env.APP_SECRET
+  const issuer = process.env.APP_ORIGIN_API
+  if (!secret || !issuer) {
+    throw new Error(
+      'APP_SECRET and APP_ORIGIN_API are required for correlated live quiz responses'
+    )
+  }
+
+  return { secret, issuer }
+}
+
+async function ensureCorrelatedResponseIdentity({
+  req,
+  res,
+  liveQuizId,
+}: {
+  req: IncomingMessage
+  res: ServerResponse
+  liveQuizId: string
+}): Promise<LiveQuizResponseIdentity> {
+  const { secret, issuer } = getResponseIdentityConfig()
+  const cookieHeader =
+    typeof req.headers.cookie === 'string' ? req.headers.cookie : undefined
+  const existingIdentity = await resolveLiveQuizResponseIdentity({
+    cookieHeader,
+    liveQuizId,
+    secret,
+    issuer,
+  })
+  if (existingIdentity) {
+    return existingIdentity
+  }
+
+  const respondentId = randomUUID()
+  const token = await createLiveQuizRespondentToken({
+    respondentId,
+    liveQuizId,
+    secret,
+    issuer,
+  })
+  const identity: LiveQuizResponseIdentity = {
+    kind: 'anonymous',
+    id: respondentId,
+    liveQuizId,
+    token,
+    cookieName: getLiveQuizRespondentCookieName(liveQuizId),
+  }
+
+  res.setHeader(
+    'Set-Cookie',
+    serializeLiveQuizRespondentCookie({
+      token,
+      liveQuizId,
+      domain: process.env.COOKIE_DOMAIN,
+      secure:
+        process.env.NODE_ENV === 'production' &&
+        process.env.COOKIE_DOMAIN !== '127.0.0.1',
+    })
+  )
+  return identity
+}
+
+async function handleInitializeLiveQuizResponseIdentity(
+  req: IncomingMessage,
+  res: ServerResponse
+) {
+  if (process.env.ASSESSMENT_MODE === 'true') {
+    return sendJson(req, res, 200, { status: 'not_required' })
+  }
+
+  const payload = await readBody(req)
+  if (!payload || typeof payload.liveQuizId !== 'string') {
+    return badRequest(req, res, 'Missing required field: liveQuizId')
+  }
+
+  const liveQuiz = await prisma.liveQuiz.findUnique({
+    where: { id: payload.liveQuizId },
+    select: {
+      isAssessmentEnabled: true,
+      responseCollectionMode: true,
+      status: true,
+    },
+  })
+  if (!liveQuiz || liveQuiz.status !== PublicationStatus.PUBLISHED) {
+    return sendJson(req, res, 404, { error: 'Live quiz not found' })
+  }
+  if (
+    liveQuiz.isAssessmentEnabled ||
+    liveQuiz.responseCollectionMode !==
+      LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+  ) {
+    return sendJson(req, res, 200, { status: 'not_required' })
+  }
+
+  await ensureCorrelatedResponseIdentity({
+    req,
+    res,
+    liveQuizId: payload.liveQuizId,
+  })
+  return sendJson(req, res, 200, { status: 'ready' })
+}
+
 async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
   let payload: any
   try {
@@ -133,34 +240,25 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
       ? req.headers['cookie']
       : undefined
 
-  // Keep the existing aggregate-mode behavior: forward participant cookies
-  // based on their presence and let the worker validate them.
-  let cookie: string | undefined
-  if (typeof req.headers['cookie'] === 'string') {
-    const raw = req.headers['cookie']
-    const parts = raw.split(';').map((s) => s.trim())
-    const participantPair = parts.find((p) =>
-      p.startsWith('participant_token=')
-    )
-    const temporaryPair = parts.find((p) =>
-      p.startsWith('temporary_participant_token=')
-    )
-    const forwarded: string[] = []
-    if (participantPair) forwarded.push(participantPair)
-    if (temporaryPair) forwarded.push(temporaryPair)
-    if (forwarded.length > 0) {
-      cookie = forwarded.join('; ')
-    }
-  }
-
   const responseTimestamp = Date.now()
   const messageId = randomUUID()
   const instanceInfoKey = `lq:${liveQuizIdString}:i:${instanceIdString}:info`
   const instanceInfo = await redis.hgetall(instanceInfoKey)
+  const responseCollectionMode = await resolveResponseCollectionMode({
+    cachedMode: instanceInfo.responseCollectionMode,
+    liveQuizId: liveQuizIdString,
+    lookupMode: async (id) =>
+      (
+        await prisma.liveQuiz.findUnique({
+          where: { id },
+          select: { responseCollectionMode: true },
+        })
+      )?.responseCollectionMode ?? null,
+  })
   const isCorrelated =
-    instanceInfo.responseCollectionMode ===
-    LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+    responseCollectionMode === LiveQuizResponseCollectionMode.CORRELATED_EXPORT
 
+  let cookie: string | undefined
   let eventName: string
   let claim:
     | {
@@ -176,47 +274,11 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
       )
     }
 
-    const secret = process.env.APP_SECRET
-    const issuer = process.env.APP_ORIGIN_API
-    if (!secret || !issuer) {
-      throw new Error(
-        'APP_SECRET and APP_ORIGIN_API are required for correlated live quiz responses'
-      )
-    }
-
-    let identity = await resolveLiveQuizResponseIdentity({
-      cookieHeader: rawCookie,
+    const identity = await ensureCorrelatedResponseIdentity({
+      req,
+      res,
       liveQuizId: liveQuizIdString,
-      secret,
-      issuer,
     })
-
-    if (!identity) {
-      const respondentId = randomUUID()
-      const token = await createLiveQuizRespondentToken({
-        respondentId,
-        liveQuizId: liveQuizIdString,
-        secret,
-        issuer,
-      })
-      identity = {
-        kind: 'anonymous',
-        id: respondentId,
-        liveQuizId: liveQuizIdString,
-        token,
-        cookieName: LIVE_QUIZ_RESPONDENT_COOKIE_NAME,
-      }
-      res.setHeader(
-        'Set-Cookie',
-        serializeLiveQuizRespondentCookie({
-          token,
-          domain: process.env.COOKIE_DOMAIN,
-          secure:
-            process.env.NODE_ENV === 'production' &&
-            process.env.COOKIE_DOMAIN !== '127.0.0.1',
-        })
-      )
-    }
 
     cookie = `${identity.cookieName}=${identity.token}`
     claim = {
@@ -245,6 +307,22 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
 
     eventName = 'response-received:authenticated'
   } else {
+    // Preserve aggregate-mode behavior: forward participant cookies based on
+    // their presence and let the worker validate them.
+    if (rawCookie) {
+      const parts = rawCookie.split(';').map((part) => part.trim())
+      const participantPair = parts.find((part) =>
+        part.startsWith('participant_token=')
+      )
+      const temporaryPair = parts.find((part) =>
+        part.startsWith('temporary_participant_token=')
+      )
+      const forwarded = [participantPair, temporaryPair].filter(
+        (pair): pair is string => Boolean(pair)
+      )
+      cookie = forwarded.length > 0 ? forwarded.join('; ') : undefined
+    }
+
     const isAuthenticatedParticipant =
       cookie &&
       (cookie.includes('participant_token=') ||
@@ -261,6 +339,7 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     response, // pass through as-is; worker validates
     cookie,
     responseTimestamp,
+    correlatedClaim: claim,
   }
 
   console.log(`Pushing event ${eventName}`, {
@@ -500,6 +579,13 @@ const server = createServer(async (req, res) => {
         // if a valid cookie exists is not relevant at this point -> otherwise answers are simply treated as anonymous
         return await handleAddResponse(req, res)
       }
+    }
+
+    if (
+      url.pathname === '/InitializeLiveQuizResponseIdentity' &&
+      req.method === 'POST'
+    ) {
+      return await handleInitializeLiveQuizResponseIdentity(req, res)
     }
 
     // fallback to 404 Not Found

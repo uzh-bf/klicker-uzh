@@ -1180,8 +1180,7 @@ export async function activateLiveQuizBlock(
     )
   }
 
-  // update the quiz with an updated version through the corresponding subscription
-  ctx.pubSub.publish('runningLiveQuizUpdated', {
+  const runningLiveQuizUpdate = {
     id: updatedQuiz.id,
     beforeFirstBlock: false,
     activeBlock: {
@@ -1223,7 +1222,7 @@ export async function activateLiveQuizBlock(
           ? removeSolutionFromInstances({ instances: block.elements })
           : [],
     })),
-  })
+  }
 
   // initialize the cache for the new active block
   const redisMulti = updatedQuiz.isAssessmentEnabled
@@ -1366,7 +1365,8 @@ export async function activateLiveQuizBlock(
     }
   })
 
-  redisMulti.exec()
+  await redisMulti.exec()
+  ctx.pubSub.publish('runningLiveQuizUpdated', runningLiveQuizUpdate)
   return updatedQuiz
 }
 

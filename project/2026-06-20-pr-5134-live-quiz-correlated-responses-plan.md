@@ -477,6 +477,11 @@ Later research:
 - 2026-07-23: Slice 5 is finalized. Slice 4 is split into two reviewable tracers without changing approved behavior: 4A adds the shared signed identity contract, quiz-scoped anonymous cookie, and synchronous correlated duplicate gate; 4B adds worker-side identity verification, rolling temporary-row bridging, authoritative duplicate lookup, and durable response persistence.
 - 2026-07-23: Slice 4A implementation completed locally. Active instance metadata now carries the response collection mode. Correlated requests resolve signed identities in account, temporary, then anonymous order; mint a two-week quiz-scoped anonymous cookie only when needed; claim the first response per identity, instance, and block execution with Redis `HSETNX`; and atomically release only the failed event's claim. Aggregate-mode routing and storage behavior remain unchanged.
 - 2026-07-23: Slice 4A verification passed: 52 utility tests, including quiz scope, signature rejection, legacy temporary-token compatibility, and identity priority; 3 response API tests covering first-response claims, atomic owner-only release, and cookie lifetime; utility, response API, and GraphQL package builds/typechecks; and the full repository pre-commit gate. Independent correctness and simplification review remain before Slice 4A is finalized.
+- 2026-07-23: Independent Slice 4A correctness review found four lifecycle gaps: active blocks were published before unawaited Redis metadata initialization, missing mode metadata silently fell back to aggregate during rolling deployment, one global anonymous cookie could split a returning respondent across quizzes, and concurrent first submissions could mint separate identities. It also found that terminal worker rejection retained the synchronous claim. All findings were accepted.
+- 2026-07-23: Slice 4A review fixes now await metadata before publishing, use a database mode fallback when old metadata lacks the field, initialize identity through the response API before browser submission, serialize initialization with one per-quiz client promise, use a separate HttpOnly cookie per quiz, pass the owned claim to the worker, and release it on terminal missing, late, invalid, duplicate, or pre-Redis processing paths. The PWA endpoint builder remains compatible with both configured base URLs and existing `/AddResponse` URLs.
+- 2026-07-23: Independent simplification review found duplicate correlated cookie parsing and two token-lifetime literals. Correlated requests now use only the shared resolver, aggregate parsing stays in the legacy branch, and JWT plus cookie expiry derive from the same numeric constant with an explicit duration assertion.
+- 2026-07-23: Slice 4A review-fix verification passed: 53 utility tests, 5 response API tests, focused utility/response API/worker/GraphQL/PWA checks and builds, and the full repository `check:all` gate. Mandatory browser verification was retried after recreating the DevPod: devrouter and all routes reported healthy, but the PWA process did not bind port 3001, its in-container probe failed, and the routed page returned HTTP 502 `Bad Gateway`. No browser behavior is claimed; the runtime gap remains a final PR-readiness requirement.
+- 2026-07-23: Slice 4A is finalized. Slice 4B starts with worker-side identity validation, rolling temporary-row bridging, authoritative database duplicate handling, retry-safe aggregate updates, and durable response persistence for every correlated respondent type.
 
 ## Goal Prompt Requirements
 
@@ -492,6 +497,6 @@ If handed to another agent:
 
 ## Next Steps
 
-1. Finalize Slice 4A after package builds, the pre-commit gate, and independent correctness/simplification review.
-2. Implement Slice 4B worker verification, rolling temporary-row bridging, authoritative duplicate handling, and durable response persistence.
-3. Deliver the self-service CSV and evaluation-page action together in Slice 6.
+1. Implement Slice 4B worker verification, rolling temporary-row bridging, authoritative duplicate handling, and durable response persistence.
+2. Deliver the self-service CSV and evaluation-page action together in Slice 6.
+3. Close the blocked browser matrix before marking the draft PR ready.
