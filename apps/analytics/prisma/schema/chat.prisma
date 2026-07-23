@@ -1,0 +1,208 @@
+enum CreditResetPeriod {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  NONE
+}
+
+enum ChatAttachmentType {
+  IMAGE
+}
+
+model ChatUsageCredits {
+  total   Decimal @default(0) @db.Decimal(18, 6)
+  current Decimal @default(0) @db.Decimal(18, 6)
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  chatbotId String  @db.Uuid
+
+  // Reset tracking fields
+  periodStartedAt DateTime? // When current credit period began
+  lastResetAt     DateTime? // Last time credits were reset
+  resetCount      Int       @default(0) // Number of resets performed
+
+  // Disclaimer tracking fields
+  acceptedDisclaimerId String?   @db.Uuid // ID of accepted disclaimer version
+  disclaimerAcceptedAt DateTime? // When disclaimer was accepted
+  disclaimerDeclined   Boolean   @default(false) // Whether disclaimer was declined
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([participantId, chatbotId])
+}
+
+model ChatThread {
+  id    String  @id @default(uuid()) @db.Uuid
+  title String?
+
+  messages ChatMessage[]
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  chatbotId String  @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ChatMessage {
+  id               String   @id @default(uuid()) @db.Uuid
+  threadId         String   @db.Uuid
+  parentId         String?  @db.Uuid
+  role             String // 'user' | 'assistant'
+  content          Json // Array<{ type: string; text: string }>
+  chatMode         String?
+  modelId          String?
+  reasoningEffort  String?
+  reasoningContent String?  @db.Text
+  creditsUsed      Decimal? @db.Decimal(18, 6)
+
+  attachments ChatAttachment[]
+
+  thread ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([threadId])
+  @@index([parentId])
+}
+
+model ChatAttachment {
+  id String @id @default(uuid()) @db.Uuid
+
+  type             ChatAttachmentType
+  position         Int
+  imageBase64      String?            @db.Text // base64 data URL for display 
+  imagePreviewBase64 String?          @db.Text // compact preview data URL for history rendering
+  imageDescription String?            @db.Text // AI-generated description for context injection
+
+  messageId String      @db.Uuid
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([messageId, position])
+}
+
+model Chatbot {
+  id String @id @default(uuid()) @db.Uuid
+
+  name        String
+  description String?
+  avatar      String? // URL to avatar image
+
+  // System prompts for different chat modes
+  // TODO: add JSON types
+  systemPrompts Json? // { tutor: {prompt: string; description: string}; explainer: {prompt: string; description: string}; ... }
+
+  // Credit configuration per chatbot
+  creditInitialCredits Int               @default(1)
+  creditResetPeriod    CreditResetPeriod @default(WEEKLY)
+  creditResetAmount    Int               @default(1)
+  creditMaxCredits     Int               @default(1)
+
+  // Model selection control
+  modelSelection                 Boolean  @default(false) // Whether users can select models (false = automatic selection)
+  allowedModelIds                String[] @default([]) // Restrict to these registry model IDs (empty = all models)
+  allowedReasoningEffortsByModel Json? // { [modelId: string]: ReasoningEffort[] } where missing key = all supported efforts
+
+  // OpenAI-compatible Configuration
+  openaiApiKey  String? @db.Text // Encrypted API key using APP_SECRET
+  openaiBaseUrl String? // Optional custom endpoint (defaults to model config)
+
+  // Disclaimer configuration
+  disclaimer   ChatbotDisclaimer? @relation(fields: [disclaimerId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  disclaimerId String?            @db.Uuid
+
+  // Relations
+  mcpConfigurations ChatbotMCPConfig[]
+  threads           ChatThread[]
+  usageCredits      ChatUsageCredits[]
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ChatbotMCPServer {
+  id String @id @default(uuid()) @db.Uuid
+
+  name        String  @unique // e.g., "RAG_MCP", "Python_Executor", "R_Executor"
+  description String?
+  url         String // MCP server URL
+  authType    String // 'bearer' | 'basic' | 'none' | 'custom'
+  authSecret  String? @db.Text // Encrypted using APP_SECRET
+
+  passChatbotId   Boolean @default(false) // Whether to include chatbot ID as header
+  chatbotIdHeader String? // Header name for chatbot ID (default: 'Chatbot-ID')
+
+  // Global parameters for this MCP server
+  parameters Json? // Additional configuration parameters
+  isActive   Boolean @default(true)
+
+  // Relations
+  configurations ChatbotMCPConfig[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ChatbotMCPConfig {
+  id String @id @default(uuid()) @db.Uuid
+
+  // Relations
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+  chatbotId String  @db.Uuid
+
+  mcpServer   ChatbotMCPServer @relation(fields: [mcpServerId], references: [id], onDelete: Cascade)
+  mcpServerId String           @db.Uuid
+
+  // Configuration per chatbot-mode-mcp combination
+  chatMode     String // 'tutor' | 'explainer' | 'default'
+  allowedTools Json? // Array of allowed tool names/patterns (supports wildcards)
+  priority     Int     @default(0) // Order of MCP servers (lower = higher priority)
+  isEnabled    Boolean @default(true)
+
+  // Chatbot-specific parameters that override server defaults
+  parameters Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([chatbotId, mcpServerId, chatMode])
+  @@index([chatbotId, chatMode])
+}
+
+model ChatbotDisclaimer {
+  id String @id @default(uuid()) @db.Uuid
+
+  name        String // Descriptive name for the disclaimer
+  description String? // Optional description for management purposes
+
+  title     String // Title shown in modal
+  introText String? @db.Text // Customizable introduction text (course-specific)
+  mediaUrl  String? // Optional video/image URL
+  mediaType String? // 'video' | 'image'
+
+  chatbots Chatbot[] // Chatbots using this disclaimer
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

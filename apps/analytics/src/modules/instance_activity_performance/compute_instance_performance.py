@@ -33,52 +33,26 @@ def compute_instance_performance(db, activity, total_only=False):
             if not total_only:
                 # compute correctness rates for first and last response
                 first_error_rate = (
-                    df_responses["firstResponseCorrectness"]
-                    .value_counts()
-                    .get("WRONG", 0)
-                    / num_responses
+                    df_responses["firstResponseCorrectness"].value_counts().get("WRONG", 0) / num_responses
                 )
                 first_partial_rate = (
-                    df_responses["firstResponseCorrectness"]
-                    .value_counts()
-                    .get("PARTIAL", 0)
-                    / num_responses
+                    df_responses["firstResponseCorrectness"].value_counts().get("PARTIAL", 0) / num_responses
                 )
                 first_correct_rate = (
-                    df_responses["firstResponseCorrectness"]
-                    .value_counts()
-                    .get("CORRECT", 0)
-                    / num_responses
+                    df_responses["firstResponseCorrectness"].value_counts().get("CORRECT", 0) / num_responses
                 )
-                last_error_rate = (
-                    df_responses["lastResponseCorrectness"]
-                    .value_counts()
-                    .get("WRONG", 0)
-                    / num_responses
-                )
+                last_error_rate = df_responses["lastResponseCorrectness"].value_counts().get("WRONG", 0) / num_responses
                 last_partial_rate = (
-                    df_responses["lastResponseCorrectness"]
-                    .value_counts()
-                    .get("PARTIAL", 0)
-                    / num_responses
+                    df_responses["lastResponseCorrectness"].value_counts().get("PARTIAL", 0) / num_responses
                 )
                 last_correct_rate = (
-                    df_responses["lastResponseCorrectness"]
-                    .value_counts()
-                    .get("CORRECT", 0)
-                    / num_responses
+                    df_responses["lastResponseCorrectness"].value_counts().get("CORRECT", 0) / num_responses
                 )
 
             # compute total correctness rates
-            df_responses["responseErrorRate"] = (
-                df_responses["wrongCount"] / df_responses["trialsCount"]
-            )
-            df_responses["responsePartialRate"] = (
-                df_responses["partialCorrectCount"] / df_responses["trialsCount"]
-            )
-            df_responses["responseCorrectRate"] = (
-                df_responses["correctCount"] / df_responses["trialsCount"]
-            )
+            df_responses["responseErrorRate"] = df_responses["wrongCount"] / df_responses["trialsCount"]
+            df_responses["responsePartialRate"] = df_responses["partialCorrectCount"] / df_responses["trialsCount"]
+            df_responses["responseCorrectRate"] = df_responses["correctCount"] / df_responses["trialsCount"]
             total_error_rate = df_responses["responseErrorRate"].mean()
             total_partial_rate = df_responses["responsePartialRate"].mean()
             total_correct_rate = df_responses["responseCorrectRate"].mean()
@@ -108,8 +82,6 @@ def compute_instance_performance(db, activity, total_only=False):
                     }
                 )
 
-            df_instance_performance.loc[len(df_instance_performance)] = (
-                instance_performance
-            )
+            df_instance_performance.loc[len(df_instance_performance)] = instance_performance
 
     return df_instance_performance

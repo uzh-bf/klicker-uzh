@@ -120,14 +120,27 @@ Cleanup dialogs:
 
 - Some delete confirmations show optional response/started-instance buttons. Click those only if visible; otherwise proceed when the main confirmation is enabled.
 
+## Authoring Gotchas
+
+- **Fixture wiring**: when exposing a helper as a fixture, do not reference the fixture name from inside its own `test.extend` initializer — import the helper under a different name and bind it there, otherwise fixture resolution can fail and the Testing UI stops discovering tests. (`playwright/util/fixtures.ts`)
+- **CLEANUP parity**: Cypress workflow specs expose `CLEANUP` as the first `it`; translations should add `test('CLEANUP', cleanupTest)` at module scope before the translated `describe` so filtered/spec-local runs still reset and seed the DB. (`playwright/util/cleanup.ts`)
+- **Rich-text blur before `add-new-answer`**: blur the editor first by clicking `insert-question-title`; without it the new answer slot may not appear and `scrollIntoViewIfNeeded` times out. (`playwright/util/fixtures/elements.ts`)
+- **Verify after reorder**: never click a `FastField`-wrapped `ContentInput` when verifying content after a `move()` — use `scrollIntoViewIfNeeded` + `toContainText` only; clicking can trigger a stale re-render showing the previous value. (`playwright/util/fixtures/elements.ts`)
+- **react-select**: target the inner `<input>` via `#container-id input` for `.fill()`/`.press()`/visibility assertions — Cypress `.type()` works on the wrapper, Playwright does not. (`playwright/tests/K-elements-selection.spec.ts`)
+- **localforage parity**: Playwright creates a fresh context per test (Cypress keeps IndexedDB across `it` blocks). Serial workflows depending on previous PWA answers must snapshot/restore localforage — and direct QR links may need restoration on the `https://pwa.klicker.com` origin, not `127.0.0.1`. (`playwright/util/workflow.ts`)
+- **PIN-cookie bridges**: clear test-side PIN cookie bridges whenever the Cypress source clears cookies, or later direct-link checks bypass the expected PIN form via a stale `live-quiz-pin-*` cookie. (`playwright/tests/O-live-quiz.spec.ts`)
+
 ## CI Notes
 
 - For Chromium-only CI, run with `--project=chromium`.
 - To avoid browser install hangs, prefer the Playwright Docker image matching the lockfile-resolved Playwright version, such as `mcr.microsoft.com/playwright:v<version>-noble`, and remove the separate browser install step.
 - In GitHub job containers, service dependencies are reached by service hostnames, not localhost: `postgres`, `redis_exec`, `redis_cache`, `redis_assessment_exec`, and `hatchet`.
 - App URLs can still be `127.0.0.1:<port>` when the apps run in the same job container as Playwright.
-- If Postgres logs `role "root" does not exist`, a startup/reset path is connecting without the intended `DATABASE_URL`. Ensure every DB-touching step gets the explicit CI database URL.
-- Make service wait scripts configurable by host/port env vars; keep localhost defaults for non-container local runs.
+- If Postgres logs `role "root" does not exist`, a startup/reset path is connecting without the intended `DATABASE_URL`. Ensure every DB-touching step gets the explicit CI database URL — and GitHub service `pg_isready` health checks must pass `-U` and `-d` for the same reason.
+- Make service wait scripts configurable by host/port env vars; keep localhost defaults for non-container local runs. The Playwright container may lack `nc` — use `.github/scripts/wait-for-services.sh`'s `check_tcp` helper instead of raw `nc -z`.
+- `util/_create_hatchet_token_cypress.sh` must keep its Hatchet HTTP API fallback: the Playwright container has no Docker, so the Docker token path only works for local compose runs.
+- `turbo run start:test` is a persistent server task — keep it uncached and persistent in `turbo.json`, or CI replays startup logs instead of starting real processes. Keep `start:test:ci` owned by `.github/scripts/wait-for-services.sh -- <test command>`; splitting startup and test execution into separate steps leaves tests navigating to dead ports.
+- Pass the same test `DATABASE_URL`, Redis hosts, and app origins to the **build** step as to runtime — Next.js public env is baked during `next build`. Service connection vars (e.g. `REDIS_ASSESSMENT_HOST`, `HATCHET_CLIENT_HOST_PORT`) must be listed in `turbo.json` `globalEnv` or `turbo run start:test` won't pass them through and apps fall back to checked-in localhost defaults.
 
 ## Validation
 

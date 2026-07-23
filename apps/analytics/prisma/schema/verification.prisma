@@ -1,0 +1,41 @@
+enum CredentialType {
+  COURSE_ASSESSMENT_INSIGHTS
+}
+
+enum CredentialStatus {
+  ACTIVE
+  REVOKED
+  SUPERSEDED
+}
+
+model VerifiableCredential {
+  id           String         @id @default(uuid()) @db.Uuid
+  token        String         @unique
+  type         CredentialType
+  subjectEmail String
+
+  participantId String      @db.Uuid
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  courseId String @db.Uuid
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  /// [PrismaAssessmentReportSnapshot]
+  snapshot        Json
+  snapshotVersion Int              @default(1)
+  snapshotHash    String
+  status          CredentialStatus @default(ACTIVE)
+
+  revokedAt   DateTime?
+  revokedById String?   @db.Uuid
+  revokedBy   User?     @relation("RevokedVerifiableCredentials", fields: [revokedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  supersededAt DateTime?
+
+  issuedAt  DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // A migration-level partial unique index permits only one ACTIVE row per tuple.
+  @@index([courseId, status, issuedAt])
+  @@index([participantId, courseId, type, snapshotHash], map: "VerifiableCredential_snapshot_lookup_idx")
+}

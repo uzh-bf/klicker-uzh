@@ -1937,8 +1937,7 @@ test.describe.serial('Create, edit and share answer collections', () => {
       page.getByTestId('delete-answer-collection'),
       'exist'
     )
-    await page.keyboard.press('Escape')
-    await clickAnswerCollectionAction(duplicateName, 'edit-answer-collection')
+    await page.getByTestId('edit-answer-collection').click()
     await expectByAssertion(
       page.getByTestId('answer-collection-name'),
       'have.value',

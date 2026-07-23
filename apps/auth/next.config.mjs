@@ -4,23 +4,9 @@ import createNextIntlPlugin from 'next-intl/plugin'
 const withNextIntl = createNextIntlPlugin('./src/types/i18n.ts')
 
 /** @type {import('next').NextConfig} */
-const nextConfig = {
-  ...getNextBaseConfig({
-    NODE_ENV: process.env.NODE_ENV,
-    NEXT_PUBLIC_ENV: process.env.NEXT_PUBLIC_ENV,
-  }),
-  webpack: (config, { isServer }) => {
-    // Call the base config webpack function if it exists
-    const baseConfig = getNextBaseConfig({
-      NODE_ENV: process.env.NODE_ENV,
-      NEXT_PUBLIC_ENV: process.env.NEXT_PUBLIC_ENV,
-    })
-    if (baseConfig.webpack) {
-      config = baseConfig.webpack(config, { isServer })
-    }
-
-    return config
-  },
-}
+const nextConfig = getNextBaseConfig({
+  NODE_ENV: process.env.NODE_ENV,
+  NEXT_PUBLIC_ENV: process.env.NEXT_PUBLIC_ENV,
+})
 
 export default withNextIntl(nextConfig)

@@ -1,3 +1,5 @@
+import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
+import { type ReasoningEffort } from '@/src/lib/config/reasoning'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
   getAllowedReasoningEffortsForModel,
@@ -7,10 +9,13 @@ import {
 } from '@/src/lib/server/chatModelRegistry'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
+import { CreditsService } from '@/src/services/credits'
+import { DisclaimersService } from '@/src/services/disclaimers'
 import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
 } from '@/src/services/mcpClients'
+import { ThreadService } from '@/src/services/threads'
 import { createOpenAI } from '@ai-sdk/openai'
 import { prisma } from '@klicker-uzh/prisma'
 import { Chatbot } from '@klicker-uzh/prisma/client'
@@ -24,11 +29,6 @@ import {
 } from 'ai'
 import { createHash, randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
-import { DEFAULT_PROMPT } from 'src/lib/config/prompts'
-import { type ReasoningEffort } from 'src/lib/config/reasoning'
-import { CreditsService } from 'src/services/credits'
-import { DisclaimersService } from 'src/services/disclaimers'
-import { ThreadService } from 'src/services/threads'
 import { z } from 'zod'
 
 export const runtime = 'nodejs'

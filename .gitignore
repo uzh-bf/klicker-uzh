@@ -60,5 +60,18 @@ output/
 
 .claude/worktrees
 
+# Devcontainer: runtime-minted Hatchet client token (post-create writes it)
+.devcontainer/.hatchet.env
 playwright/playwright-report/
 playwright/test-results/
+
+# One-off course data pulls (contain real participant data — never commit).
+# Course-award seed payloads, comparison sheets, and state dumps all live in
+# _local/, so a new round cannot leak data by picking an unignored filename.
+packages/prisma-data/src/data/_local/
+packages/prisma-data/summerschool_*
+packages/prisma-data/src/data/summerschool_*
+
+# Internal PM/business artifacts — public repo, keep local only (roadmap,
+# backlog/ClickUp dumps, triage records, product strategy/vision briefs)
+project/_local/
