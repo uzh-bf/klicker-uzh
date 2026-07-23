@@ -321,11 +321,35 @@ describe('Integration tests for batch operations on activities', () => {
   }
 
   it('Verify that the case of missing activity ids and a wrong courseId are handled correctly', async () => {
-    // seed a course
-    const course = await seedCourse({ ownerId: userTwoCtx.user.sub }, prisma)
+    // seed a course with propagated WRITE access for user two
+    const course = await seedCourse(
+      {
+        ownerId: userFiveCtx.user.sub,
+        directPermissions: {
+          create: {
+            userId: userTwoCtx.user.sub,
+            permissionLevel: PermissionLevel.WRITE,
+            propagation: true,
+          },
+        },
+      },
+      prisma
+    )
 
     // seed a live quiz assigned to the course
     const liveQuiz = await seedLiveQuiz({ courseId: course.id }, prisma)
+    const inheritedPermission = await prisma.derivedPermission.findUnique({
+      where: {
+        liveQuizId_userId: {
+          liveQuizId: liveQuiz.id,
+          userId: userTwoCtx.user.sub,
+        },
+      },
+    })
+    expect(inheritedPermission).toMatchObject({
+      permissionLevel: PermissionLevel.WRITE,
+      derived: true,
+    })
 
     // call the batch operation with no activity ids
     const updates = await applyActivityBatchOperations(

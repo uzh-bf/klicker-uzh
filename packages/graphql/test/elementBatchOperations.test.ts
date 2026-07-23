@@ -14,6 +14,7 @@ import {
 } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import { v4 as uuid } from 'uuid'
+import { schema } from '../src/index.js'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { applyElementBatchOperations } from '../src/services/elements.js'
 import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
@@ -542,6 +543,130 @@ describe('Unit tests batch operations on elements', () => {
       },
     })
     expect(updatedElementsDraft.length).toEqual(4)
+  })
+
+  it('Allows a course-inherited ADMIN user to update an element in a batch', async () => {
+    const element = await prisma.element.create({
+      data: {
+        name: uuid(),
+        content: uuid(),
+        type: ElementType.SC,
+        options: { hasSampleSolution: true, choices: [] },
+        ownerId: userOneCtx.user.sub,
+      },
+    })
+    const now = new Date()
+    const course = await prisma.course.create({
+      data: {
+        name: uuid(),
+        displayName: uuid(),
+        pinCode: Math.floor(100000 + Math.random() * 900000),
+        startDate: now,
+        endDate: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000),
+        groupDeadlineDate: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+        ownerId: userOneCtx.user.sub,
+        directPermissions: {
+          create: {
+            userId: userTwoCtx.user.sub,
+            permissionLevel: PermissionLevel.ADMIN,
+            propagation: true,
+          },
+        },
+      },
+    })
+    await prisma.liveQuiz.create({
+      data: {
+        name: uuid(),
+        displayName: uuid(),
+        ownerId: userOneCtx.user.sub,
+        courseId: course.id,
+        blocks: {
+          create: {
+            order: 0,
+            elements: {
+              create: {
+                type: ElementInstanceType.LIVE_QUIZ,
+                elementId: element.id,
+                elementType: element.type,
+                order: 0,
+                options: {
+                  pointsMultiplier: 1,
+                } as ElementInstanceOptions,
+                elementData: processElementData(element),
+                results: getInitialInstanceResults(processElementData(element)),
+                anonymousResults: getInitialInstanceResults(
+                  processElementData(element)
+                ),
+                ownerId: userOneCtx.user.sub,
+              },
+            },
+          },
+        },
+      },
+    })
+    await recomputeDerivedPermissions({ courseId: course.id }, prisma)
+
+    const inheritedPermission = await prisma.derivedPermission.findUnique({
+      where: {
+        elementId_userId: {
+          elementId: element.id,
+          userId: userTwoCtx.user.sub,
+        },
+      },
+    })
+    expect(inheritedPermission).toMatchObject({
+      permissionLevel: PermissionLevel.ADMIN,
+      derived: true,
+    })
+
+    const result = await applyElementBatchOperations(
+      {
+        elementIds: [element.id],
+        archive: false,
+        unarchive: false,
+        multiplier: 2,
+        updateInstances: false,
+        updateTemplateInstances: false,
+      },
+      userTwoCtx
+    )
+
+    expect(result).toBe(1)
+    await expect(
+      prisma.element.findUniqueOrThrow({ where: { id: element.id } })
+    ).resolves.toMatchObject({ pointsMultiplier: 2 })
+  })
+
+  it('Keeps the changeElementStatus mutation available with READ access', async () => {
+    const elementId = await seedElement(
+      {
+        ownerId: userTwoCtx.user.sub,
+        directPermissions: {
+          create: {
+            userId: userOneCtx.user.sub,
+            permissionLevel: PermissionLevel.READ,
+          },
+        },
+      },
+      prisma
+    )
+    await recomputeDerivedPermissions({ elementId }, prisma)
+
+    const resolver = schema.getMutationType()?.getFields()
+      .changeElementStatus?.resolve
+    expect(resolver).toBeDefined()
+
+    const result = await resolver!(
+      {},
+      { elementId, status: ElementStatus.REVIEW },
+      userOneCtx,
+      {} as never
+    )
+
+    expect(result).toBe(true)
+    await expect(
+      prisma.element.findUniqueOrThrow({ where: { id: elementId } })
+    ).resolves.toMatchObject({ status: ElementStatus.REVIEW })
   })
 
   it('Verify that multiplier changes can only be made on elements with a well-defined sample solution', async () => {

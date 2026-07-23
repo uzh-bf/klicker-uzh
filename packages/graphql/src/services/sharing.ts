@@ -5651,6 +5651,10 @@ export async function checkAccess(
   checks: PermissionCheck[],
   ctx: PrismaTransactionContextWithUser
 ) {
+  if (checks.length === 0) {
+    throw new Error('At least one permission check is required.')
+  }
+
   for (const check of checks) {
     if (
       'catalogCollectionId' in check &&
@@ -5948,9 +5952,7 @@ export async function checkCatalogAssignment(
   return assignment !== null
 }
 
-export type ObjectSelectorFunction = (
-  args: any
-) =>
+export type ObjectSelector =
   | { catalogCollectionId: string }
   | { answerCollectionId: number }
   | { elementId: number }
@@ -5959,6 +5961,8 @@ export type ObjectSelectorFunction = (
   | { practiceQuizId: string }
   | { microLearningId: string }
   | { groupActivityId: string }
+
+export type ObjectSelectorFunction = (args: any) => ObjectSelector
 
 // higher-level interface function that returns a wrapped resolver
 // (simplified notation for calls in mutation.ts and query.ts)
