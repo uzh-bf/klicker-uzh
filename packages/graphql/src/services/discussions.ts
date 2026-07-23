@@ -1271,7 +1271,7 @@ export async function getCourseDiscussionEmbeddingInfo(
   const baseUrl = process.env.APP_ORIGIN_PWA ?? ''
   const embedPath = `/course/${courseId}/qa?embed=1&scopeKey=${encodeURIComponent(
     resolvedScope.scopeKey
-  )}&embedToken=${encodeURIComponent(embedToken)}`
+  )}#embedToken=${encodeURIComponent(embedToken)}`
 
   return {
     courseId,

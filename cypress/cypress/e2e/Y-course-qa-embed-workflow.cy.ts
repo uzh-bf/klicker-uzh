@@ -44,6 +44,11 @@ describe('Course Q&A embed workflow', function () {
       .should('exist')
       .invoke('text')
       .then((embedUrl) => {
+        const parsedEmbedUrl = new URL(embedUrl.trim())
+        expect(parsedEmbedUrl.searchParams.has('embedToken')).to.equal(false)
+        expect(
+          new URLSearchParams(parsedEmbedUrl.hash.slice(1)).get('embedToken')
+        ).not.to.be.empty
         cy.writeFile(
           'cypress/fixtures/_qa-embed-thread-url.txt',
           embedUrl.trim()
@@ -74,6 +79,8 @@ describe('Course Q&A embed workflow', function () {
       }
     )
 
+    cy.location('search').should('not.contain', 'embedToken')
+    cy.location('hash').should('equal', '')
     cy.findByAltText('KlickerUZH Logo').should('not.exist')
     cy.get('footer').should('not.exist')
     cy.get('[data-cy="course-qa-thread-anonymous"]')
@@ -143,7 +150,8 @@ describe('Course Q&A embed workflow', function () {
         }
 
         const url = new URL(embedUrl)
-        const token = url.searchParams.get('embedToken') ?? ''
+        const fragmentParams = new URLSearchParams(url.hash.slice(1))
+        const token = fragmentParams.get('embedToken') ?? ''
         const [header, payload, signature] = token.split('.')
 
         if (!header || !payload || !signature) {
@@ -156,10 +164,11 @@ describe('Course Q&A embed workflow', function () {
           signature.slice(0, signatureIndex) +
           replacement +
           signature.slice(signatureIndex + 1)
-        url.searchParams.set(
+        fragmentParams.set(
           'embedToken',
           `${header}.${payload}.${tamperedSignature}`
         )
+        url.hash = fragmentParams.toString()
 
         cy.visit(url.toString())
       }

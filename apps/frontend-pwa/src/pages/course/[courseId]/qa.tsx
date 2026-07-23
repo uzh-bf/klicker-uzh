@@ -7,8 +7,10 @@ import useParticipantToken from '@lib/useParticipantToken'
 import { UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
+import Head from 'next/head'
 import { useRouter } from 'next/router'
 import nookies from 'nookies'
+import { useEffect, useState } from 'react'
 import Layout from '../../../components/Layout'
 import Footer from '../../../components/common/Footer'
 import CourseDiscussionPanel from '../../../components/course/CourseDiscussionPanel'
@@ -28,15 +30,37 @@ function CourseDiscussionPage({
 }: CourseDiscussionPageProps) {
   const t = useTranslations()
   const router = useRouter()
+  const [embedToken, setEmbedToken] = useState<string>()
+  const [embedTokenResolved, setEmbedTokenResolved] = useState(!embedded)
 
   const scopeKey =
     typeof router.query.scopeKey === 'string'
       ? router.query.scopeKey
       : undefined
-  const embedToken =
-    typeof router.query.embedToken === 'string'
-      ? router.query.embedToken
-      : undefined
+
+  useEffect(() => {
+    if (!embedded || !router.isReady) return
+
+    const legacyToken =
+      typeof router.query.embedToken === 'string'
+        ? router.query.embedToken
+        : undefined
+    const fragmentToken = new URLSearchParams(
+      window.location.hash.slice(1)
+    ).get('embedToken')
+
+    setEmbedToken(fragmentToken ?? legacyToken)
+
+    const cleanUrl = new URL(window.location.href)
+    cleanUrl.searchParams.delete('embedToken')
+    cleanUrl.hash = ''
+    window.history.replaceState(
+      window.history.state,
+      '',
+      `${cleanUrl.pathname}${cleanUrl.search}`
+    )
+    setEmbedTokenResolved(true)
+  }, [embedded, router.isReady, router.query.embedToken])
 
   useParticipantToken({ participantToken, cookiesAvailable })
 
@@ -49,48 +73,63 @@ function CourseDiscussionPage({
     skip: !courseId || embedded,
   })
 
-  if (loadingCourse) {
+  const embeddedHead = embedded ? (
+    <Head>
+      <meta name="referrer" content="no-referrer" />
+    </Head>
+  ) : null
+
+  if (loadingCourse || !embedTokenResolved) {
     return (
-      <Layout embedded={embedded} displayName={t('pwa.courseQA.title')}>
-        <Loader />
-      </Layout>
+      <>
+        {embeddedHead}
+        <Layout embedded={embedded} displayName={t('pwa.courseQA.title')}>
+          <Loader />
+        </Layout>
+      </>
     )
   }
 
   if (courseError) {
     return (
-      <Layout embedded={embedded} displayName={t('pwa.courseQA.title')}>
-        <UserNotification
-          type="error"
-          message={t('shared.generic.systemError')}
-        />
-      </Layout>
+      <>
+        {embeddedHead}
+        <Layout embedded={embedded} displayName={t('pwa.courseQA.title')}>
+          <UserNotification
+            type="error"
+            message={t('shared.generic.systemError')}
+          />
+        </Layout>
+      </>
     )
   }
 
   return (
-    <Layout
-      embedded={embedded}
-      course={courseData?.basicCourseInformation ?? undefined}
-      displayName={t('pwa.courseQA.title')}
-    >
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
-        <CourseDiscussionPanel
-          courseId={courseId}
-          scopeKey={scopeKey}
-          embedToken={embedToken}
-          embedded={embedded}
-          course={courseData?.basicCourseInformation}
-          className="mx-0 max-w-none"
-        />
-
-        {!embedded && (
-          <Footer
-            browserLink={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/qa`}
+    <>
+      {embeddedHead}
+      <Layout
+        embedded={embedded}
+        course={courseData?.basicCourseInformation ?? undefined}
+        displayName={t('pwa.courseQA.title')}
+      >
+        <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
+          <CourseDiscussionPanel
+            courseId={courseId}
+            scopeKey={scopeKey}
+            embedToken={embedToken}
+            embedded={embedded}
+            course={courseData?.basicCourseInformation}
+            className="mx-0 max-w-none"
           />
-        )}
-      </div>
-    </Layout>
+
+          {!embedded && (
+            <Footer
+              browserLink={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/qa`}
+            />
+          )}
+        </div>
+      </Layout>
+    </>
   )
 }
 

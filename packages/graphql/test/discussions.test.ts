@@ -489,6 +489,11 @@ describe('Integration tests for the course discussion platform', () => {
     )
 
     expect(embedInfo).toBeTruthy()
+    const embedUrl = new URL(embedInfo!.embedUrl, 'https://pwa.example.test')
+    expect(embedUrl.searchParams.has('embedToken')).toBe(false)
+    expect(new URLSearchParams(embedUrl.hash.slice(1)).get('embedToken')).toBe(
+      embedInfo!.embedToken
+    )
 
     const anonymousCtx = createAnonymousContext(userOneCtx)
 
