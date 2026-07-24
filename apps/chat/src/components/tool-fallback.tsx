@@ -127,19 +127,31 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
             : t('chat.toolFallback.done', { tool })}
       </button>
 
-      {!isCollapsed && (
-        <div className="bg-muted mt-1 rounded p-2 text-xs">
-          {/* Not `text-muted-foreground`: that token only reaches 4.39:1 on
-              `--muted`, under the 4.5:1 AA floor for 12px text. */}
-          <p className="mb-1 font-mono">{toolName}</p>
-          <pre className="whitespace-pre-wrap">{argsText}</pre>
-          {resultText !== undefined && (
-            <div className="border-border mt-2 border-t border-dashed pt-2">
-              <TruncatedOutput text={resultText} />
-            </div>
-          )}
+      <div
+        aria-hidden={isCollapsed}
+        // `inert` (not just aria-hidden): the collapsed panel stays mounted
+        // for the height animation, and TruncatedOutput's "Show more" button
+        // inside it must not remain tabbable while visually collapsed.
+        inert={isCollapsed}
+        className={twMerge(
+          'grid transition-[grid-template-rows] duration-200 motion-reduce:transition-none',
+          isCollapsed ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'
+        )}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div className="bg-muted mt-1 rounded p-2 text-xs">
+            {/* Not `text-muted-foreground`: that token only reaches 4.39:1 on
+                `--muted`, under the 4.5:1 AA floor for 12px text. */}
+            <p className="mb-1 font-mono">{toolName}</p>
+            <pre className="whitespace-pre-wrap">{argsText}</pre>
+            {resultText !== undefined && (
+              <div className="border-border mt-2 border-t border-dashed pt-2">
+                <TruncatedOutput text={resultText} />
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }

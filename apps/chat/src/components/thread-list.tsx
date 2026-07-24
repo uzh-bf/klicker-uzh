@@ -34,8 +34,28 @@ const ThreadListItems: FC = () => {
   if (groupedThreads.length === 0) {
     // While threads are still being fetched, an empty array means "unknown",
     // not "no history" — showing the first-conversation hint then would
-    // wrongly greet returning users during the loadThreads round-trip.
-    if (isLoading) return null
+    // wrongly greet returning users during the loadThreads round-trip. Show
+    // row skeletons instead of nothing (M4) — the S5b error state above
+    // still wins once threadsLoadError is set, even if isLoading lingers.
+    if (isLoading) {
+      return (
+        <div
+          data-cy="chat-thread-list-skeleton"
+          role="status"
+          className="flex flex-col gap-1.5 p-1"
+        >
+          <span className="sr-only">{t('chat.threadList.loading')}</span>
+          {[...Array(5)].map((_, index) => (
+            <div
+              key={index}
+              aria-hidden="true"
+              style={{ width: `${85 - index * 8}%` }}
+              className="bg-muted h-8 animate-pulse rounded motion-reduce:animate-none"
+            />
+          ))}
+        </div>
+      )
+    }
 
     if (threadsLoadError) {
       return (

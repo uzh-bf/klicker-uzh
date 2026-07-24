@@ -105,9 +105,11 @@ export default {
       emptyState: 'Starte Deine erste Konversation mit einer Nachricht.',
       loadError: 'Deine Chats konnten nicht geladen werden.',
       retry: 'Erneut versuchen',
+      loading: 'Deine Chats werden geladen...',
     },
     thread: {
       scrollToBottom: 'Nach unten scrollen',
+      loading: 'Die Konversation wird geladen...',
       thinking: 'Antwort wird vorbereitet …',
       welcomeTitle: 'Hallo!',
       welcomeSubtitle: 'Wie kann ich Dir helfen?',

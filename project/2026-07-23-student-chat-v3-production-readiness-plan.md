@@ -1033,3 +1033,30 @@ designing the question widget.
   open/closed, "Tutor — Medium" visible + full title attr, user bubbles
   caption-free, no footer band; screenshots s14-en-1440.png / s14-375.png.
   check + 45/45 + prettier green. Next: S16 micro-polish.
+- 2026-07-24: **S16 done** (micro-interaction polish). M4 skeletons: thread
+  pane gets `ThreadSkeleton` (3 pulse bubbles, `role="status"` + sr-only
+  `chat.thread.loading`) replacing both spinner overlays; thread list gets 5
+  skeleton rows (`role="status"` + `chat.threadList.loading`) instead of
+  rendering nothing while loading — S5b error state still wins (loadThreads
+  clears isLoading before setting threadsLoadError). M6 send/stop: single
+  circular shell, both buttons permanently mounted and stacked, 150ms
+  opacity/scale crossfade driven by `useThread isRunning`; assistant-ui's own
+  disabled logic (verified in createActionButton) blocks the hidden button,
+  aria-hidden added on the inactive one so AT linear traversal skips the
+  decoy. M7 mode pills: sliding `bg-primary` thumb (refs + useLayoutEffect +
+  per-button ResizeObserver, transform/width 200ms); no first-paint flash
+  (thumb renders only once measured), observer disconnect verified. M3
+  remainder: tool-fallback detail panel now grid-rows accordion with
+  aria-hidden + `inert` (review finding: TruncatedOutput's "Show more" button
+  inside the collapsed-but-mounted panel would otherwise stay tabbable).
+  **Deferred**: settings-panel accordion — Playwright Y-chat.spec.ts:930,943
+  assert `chat-settings-panel` has count 0 when collapsed; keeping unmount
+  semantics (no animation) rather than breaking E2E. Review: 3 CONFIRMED
+  a11y findings (inert, decoy-button aria-hidden, silent main-pane skeleton)
+  — all fixed. Verified live: thumb slides 2px→81px with aria-pressed;
+  accordion 0↔217px with class+aria flips; crossfade cycles
+  idle→running→settled with data-cy hooks intact; thread-list skeleton
+  observed during a delayed retry load (fetch-wrapper + retry button),
+  clears to 10 threads; thread-pane skeleton verified by substitution (same
+  `isLoading` gate as the old spinner; S17 matrix re-checks). check + 45/45
+  tests + prettier green. Next: S17 finish gate.

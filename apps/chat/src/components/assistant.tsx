@@ -6,7 +6,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@uzh-bf/design-system'
-import { Loader2, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -312,6 +312,34 @@ export const Assistant = ({
   )
 }
 
+/**
+ * M4: stand-in for the thread pane while the initial disclaimer/thread fetch
+ * is in flight. Shaped like a couple of message bubbles rather than a bare
+ * spinner so the layout the real thread will occupy is already legible.
+ */
+function ThreadSkeleton() {
+  const t = useTranslations()
+  return (
+    <div data-cy="chat-thread-skeleton" role="status" className="p-4">
+      <span className="sr-only">{t('chat.thread.loading')}</span>
+      <div
+        aria-hidden="true"
+        className="animate-pulse space-y-4 motion-reduce:animate-none"
+      >
+        <div className="flex justify-end">
+          <div className="bg-muted h-8 w-1/3 rounded-lg" />
+        </div>
+        <div className="flex justify-start">
+          <div className="bg-muted h-20 w-2/3 rounded-lg" />
+        </div>
+        <div className="flex justify-end">
+          <div className="bg-muted h-8 w-1/4 rounded-lg" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function SidebarMain({
   chatbot,
 }: {
@@ -382,8 +410,8 @@ function SidebarMain({
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="relative flex min-h-0 flex-1 flex-col">
           {isLoading && (
-            <div className="bg-background absolute inset-0 z-10 flex items-center justify-center">
-              <Loader2 className="text-muted-foreground size-6 animate-spin" />
+            <div className="bg-background absolute inset-0 z-10 overflow-y-auto">
+              <ThreadSkeleton />
             </div>
           )}
           <Thread chatbotAvatar={chatbot.avatar ?? ''} />
@@ -421,8 +449,8 @@ function AssistantLayout({
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="relative flex min-h-0 flex-1 flex-col">
           {isLoading && (
-            <div className="bg-background absolute inset-0 z-10 flex items-center justify-center">
-              <Loader2 className="text-muted-foreground size-6 animate-spin" />
+            <div className="bg-background absolute inset-0 z-10 overflow-y-auto">
+              <ThreadSkeleton />
             </div>
           )}
           <Thread chatbotAvatar={chatbot.avatar ?? ''} />

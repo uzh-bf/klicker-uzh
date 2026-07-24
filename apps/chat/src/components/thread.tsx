@@ -13,6 +13,7 @@ import {
   useEditComposerAttachment,
   useMessage,
   useMessageRuntime,
+  useThread,
   useThreadComposerAttachment,
   useThreadRuntime,
 } from '@assistant-ui/react'
@@ -927,55 +928,72 @@ const ComposerAttachButton: FC<{
 const ComposerAction: FC = () => {
   const t = useTranslations()
   const { embedded } = useChatUi()
+  // M6: a single persistent circular shell — both buttons always mount and
+  // stack in the same slot, so there is no layout jump between send and stop.
+  // `Send`/`Cancel` already self-disable via their own hooks (disabled when
+  // running/empty for Send, disabled when not running for Cancel — see
+  // `@assistant-ui/react`'s `createActionButton`), so `isRunning` here only
+  // drives which one is *visible*; it never duplicates that disabled logic.
+  const isRunning = useThread((state) => state.isRunning)
+
+  const iconSize = embedded ? 'size-4' : 'size-5'
   // Shared shape/focus for both action buttons; the design-system `Button`'s
   // focus ring is lost when swapping to a plain <button> (see Send note below),
   // so restore an equivalent `focus-visible` ring here.
   const baseAction = twMerge(
-    'focus-visible:ring-ring flex items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed',
-    embedded ? 'm-1' : 'm-2',
-    embedded ? 'size-7' : 'size-9'
+    'focus-visible:ring-ring absolute inset-0 flex items-center justify-center rounded-full transition-[opacity,transform,background-color] duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed motion-reduce:transition-none motion-reduce:transform-none'
   )
+  const crossfade = (visible: boolean) =>
+    visible ? 'scale-100 opacity-100' : 'pointer-events-none scale-90 opacity-0'
 
   return (
-    <>
-      <ThreadPrimitive.If running={false}>
-        <ComposerPrimitive.Send asChild>
-          {/*
-           * Plain button, not the design-system `Button`: the `Send asChild`
-           * Slot merges a className *string*, which clobbers `Button`'s object
-           * `className.root`. A raw <button> takes the class string cleanly, so
-           * the `bg-primary` fill and `disabled:` (empty-composer) states apply.
-           */}
-          <button
-            type="button"
-            data-cy="chat-send-button"
-            aria-label={t('chat.composer.send')}
-            className={twMerge(
-              baseAction,
-              'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm',
-              'disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none'
-            )}
-          >
-            <SendHorizontalIcon className={embedded ? 'size-4' : 'size-5'} />
-          </button>
-        </ComposerPrimitive.Send>
-      </ThreadPrimitive.If>
-      <ThreadPrimitive.If running>
-        <ComposerPrimitive.Cancel asChild>
-          <button
-            type="button"
-            data-cy="chat-cancel-button"
-            aria-label={t('chat.composer.stop')}
-            className={twMerge(
-              baseAction,
-              'text-foreground hover:bg-accent disabled:opacity-50'
-            )}
-          >
-            <SquareIcon className={embedded ? 'size-4' : 'size-5'} />
-          </button>
-        </ComposerPrimitive.Cancel>
-      </ThreadPrimitive.If>
-    </>
+    <div
+      className={twMerge(
+        'relative shrink-0',
+        embedded ? 'm-1 size-7' : 'm-2 size-9'
+      )}
+    >
+      <ComposerPrimitive.Send asChild>
+        {/*
+         * Plain button, not the design-system `Button`: the `Send asChild`
+         * Slot merges a className *string*, which clobbers `Button`'s object
+         * `className.root`. A raw <button> takes the class string cleanly, so
+         * the `bg-primary` fill and `disabled:` (empty-composer) states apply.
+         */}
+        <button
+          type="button"
+          data-cy="chat-send-button"
+          // Native `disabled` (from Send/Cancel) already blocks focus on the
+          // hidden button; aria-hidden also drops the invisible decoy from
+          // linear screen-reader traversal.
+          aria-hidden={isRunning}
+          aria-label={t('chat.composer.send')}
+          className={twMerge(
+            baseAction,
+            'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm',
+            'disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none',
+            crossfade(!isRunning)
+          )}
+        >
+          <SendHorizontalIcon className={iconSize} />
+        </button>
+      </ComposerPrimitive.Send>
+      <ComposerPrimitive.Cancel asChild>
+        <button
+          type="button"
+          data-cy="chat-cancel-button"
+          aria-hidden={!isRunning}
+          aria-label={t('chat.composer.stop')}
+          className={twMerge(
+            baseAction,
+            'text-foreground hover:bg-accent disabled:opacity-50',
+            crossfade(isRunning)
+          )}
+        >
+          <SquareIcon className={iconSize} />
+        </button>
+      </ComposerPrimitive.Cancel>
+    </div>
   )
 }
 
