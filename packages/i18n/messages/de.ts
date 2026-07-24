@@ -152,6 +152,15 @@ export default {
         'Kehre nach der Anmeldung zu <url>{redirectUrl}</url> zurück, um Deine Unterhaltung fortzusetzen.',
       loginButton: 'Zur KlickerUZH-Anmeldung',
     },
+    response: {
+      errorLabel: 'Fehler',
+      networkError:
+        'Der Server konnte leider nicht erreicht werden. Bitte überprüfe Deine Verbindung und versuche es erneut.',
+      genericError:
+        'Es ist leider ein Fehler beim Verarbeiten Deiner Anfrage aufgetreten. Bitte versuche es erneut.',
+      connectionInterrupted:
+        'Verbindung unterbrochen — die Antwort ist möglicherweise unvollständig.',
+    },
   },
   shared: {
     table: {
