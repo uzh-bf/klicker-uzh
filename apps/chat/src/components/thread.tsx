@@ -419,13 +419,46 @@ const ThreadScrollToBottom: FC = () => {
     <Tooltip>
       <TooltipTrigger asChild>
         <ThreadPrimitive.ScrollToBottom asChild>
-          <button className="border-border bg-background/80 hover:bg-accent absolute bottom-full mb-4 inline-flex h-9 w-9 items-center justify-center whitespace-nowrap rounded-full border text-sm font-medium shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-colors ease-in focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:invisible disabled:opacity-50">
+          <button className="border-border bg-background/80 hover:bg-accent absolute bottom-full mb-4 inline-flex h-9 w-9 items-center justify-center whitespace-nowrap rounded-full border text-sm font-medium shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-[opacity,color,background-color] duration-200 ease-in focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:invisible disabled:opacity-0 disabled:[transition:opacity_200ms,visibility_0s_200ms] motion-reduce:transition-none">
             <ArrowDownIcon />
             <span className="sr-only">{t('chat.thread.scrollToBottom')}</span>
           </button>
         </ThreadPrimitive.ScrollToBottom>
       </TooltipTrigger>
     </Tooltip>
+  )
+}
+
+// Pulsing-dot treatment for the pending assistant turn. The external-store
+// runtime injects a synthetic empty assistant message as soon as `isRunning`
+// flips true (before `useChatResponse` streams its first part), so the
+// indicator renders inside that message's content area — the row itself
+// already exists, meaning nothing jumps when real content replaces the dots.
+const THINKING_DOT_DELAYS = [
+  '[animation-delay:0ms]',
+  '[animation-delay:150ms]',
+  '[animation-delay:300ms]',
+]
+
+const ThinkingDots: FC = () => {
+  const t = useTranslations()
+  return (
+    <div
+      data-cy="chat-thinking-indicator"
+      role="status"
+      className="flex min-h-7 items-center gap-1 py-2"
+    >
+      {THINKING_DOT_DELAYS.map((delayClassName, index) => (
+        <span
+          key={index}
+          className={twMerge(
+            'bg-muted-foreground/40 size-1.5 animate-[pulse_1s_ease-in-out_infinite] rounded-full motion-reduce:animate-none',
+            delayClassName
+          )}
+        />
+      ))}
+      <span className="sr-only">{t('chat.thread.thinking')}</span>
+    </div>
   )
 }
 
@@ -439,10 +472,10 @@ const ThreadWelcome: FC = () => {
             data-cy="chat-welcome-message"
             className="aui-thread-welcome-message flex size-full flex-col items-center justify-center px-8 text-center"
           >
-            <div className="aui-thread-welcome-message-motion-1 text-2xl font-semibold">
+            <div className="animate-in fade-in slide-in-from-bottom-2 text-2xl font-semibold duration-300 motion-reduce:animate-none">
               {t('chat.thread.welcomeTitle')}
             </div>
-            <div className="aui-thread-welcome-message-motion-2 text-muted-foreground/65 text-2xl">
+            <div className="text-muted-foreground/65 animate-in fade-in slide-in-from-bottom-2 text-2xl delay-100 duration-300 motion-reduce:animate-none">
               {t('chat.thread.welcomeSubtitle')}
             </div>
           </div>
@@ -930,7 +963,7 @@ const UserMessage: FC = () => {
   return (
     <MessagePrimitive.Root
       data-cy="chat-user-message"
-      className="flex w-full max-w-[var(--thread-max-width)] flex-col items-end gap-y-1 py-2 sm:py-4"
+      className="animate-in fade-in slide-in-from-bottom-2 flex w-full max-w-[var(--thread-max-width)] flex-col items-end gap-y-1 py-2 duration-300 motion-reduce:animate-none sm:py-4"
     >
       <div
         data-cy="chat-user-message-content"
@@ -1199,12 +1232,20 @@ const AssistantMessage: FC<{
   chatbotAvatar: string
 }> = ({ chatbotAvatar }) => {
   const { embedded } = useChatUi()
+  // True only for the synthetic empty assistant message the runtime injects
+  // while a response is pending (before the first streamed part arrives).
+  const isPendingEmpty = useMessage(
+    (m) =>
+      m.role === 'assistant' &&
+      m.status?.type === 'running' &&
+      m.content.length === 0
+  )
 
   return (
     <MessagePrimitive.Root
       data-cy="chat-assistant-message"
       className={twMerge(
-        'relative grid w-full max-w-[var(--thread-max-width)] grid-rows-[auto_1fr] py-2 sm:py-4',
+        'animate-in fade-in slide-in-from-bottom-2 relative grid w-full max-w-[var(--thread-max-width)] grid-rows-[auto_1fr] py-2 duration-300 motion-reduce:animate-none sm:py-4',
         embedded ? 'grid-cols-[auto_1fr]' : 'grid-cols-[auto_auto_1fr]'
       )}
     >
@@ -1249,6 +1290,7 @@ const AssistantMessage: FC<{
             : 'col-start-2 max-w-[calc(var(--thread-max-width)*0.8)]'
         )}
       >
+        {isPendingEmpty && <ThinkingDots />}
         <MessagePrimitive.GroupedParts
           indicator="never"
           groupBy={groupPartByType({
