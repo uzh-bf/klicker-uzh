@@ -43,47 +43,50 @@ behavior has browser or backend runtime evidence appropriate to the assertion.
 
 Last reconciled: 2026-07-23.
 
-| ID | Status | Scenario | Evidence |
-|---|---|---|---|
-| `QA-001` | PASS | Rollout and runtime gates hide Q&A in Manage until enabled | Focused Chromium rollout workflow `7/7`; course workflow `8/8` |
-| `QA-002` | PASS | Course overview integrates Q&A only when both gates allow it | Focused Chromium course and rollout workflows; screenshots `01`, `03`, `04` |
-| `QA-003` | PASS | Participant creates a course thread and reply in place | Focused Chromium course workflow; screenshot `02` |
-| `QA-004` | PASS | Thread and reply upvotes toggle without counter drift | Focused Chromium course workflow; backend integration `23/23`; screenshot `02` |
-| `QA-005` | PASS | Evaluated practice and microlearning stacks expose contextual Q&A, while answering does not | Focused Chromium practice workflow `7/7`; authenticated screenshots `08` to `12` |
-| `QA-006` | PASS | Lecturer overview groups and paginates course and stack threads | Focused Chromium course/practice workflows; screenshots `06`, `07` |
-| `QA-007` | PASS | Lecturer generates external-block and course-wide embed links | Focused Chromium embed workflow `6/6`; screenshots `14`, `15` |
-| `QA-008` | PASS | Anonymous embed posting requires a valid token and enabled course policy | Focused Chromium embed workflow; backend integration; screenshots `15`, `16` |
-| `QA-009` | PASS | Tampered or stale embed scope/token fails closed without persistent side effects | Focused Chromium embed workflow; backend integration |
-| `QA-010` | PARTIAL | Anonymous rate limits reject repeated posting and bound audit writes | Backend integration passes scope, course, IP, and TTL cases; browser error-state screenshot pending |
-| `QA-011` | PASS | Non-participants and unevaluated stack participants cannot read/write protected scopes | Focused Chromium rollout workflow; backend integration |
-| `QA-012` | PENDING | Existing v1 live-feedback create/read/upvote flow remains unchanged | No fresh branch runtime run |
+| ID | Status | Scenario | Last Result | Remaining Delta |
+|---|---|---|---|---|
+| `QA-001` | PASS | Rollout and runtime gates hide Q&A in Manage until enabled | Rollout Chromium `7/7`; course baseline `8/8` | Re-run current course spec with later READ-only case |
+| `QA-002` | PASS | Course overview integrates Q&A only when both gates allow it | Course/rollout Chromium baseline; screenshots `01`, `03`, `04` | Re-run later Q&A-only-course case |
+| `QA-003` | PASS | Participant creates a course thread and reply in place | Course Chromium baseline; screenshot `02` | Current-spec rerun |
+| `QA-004` | PASS | Thread and reply upvotes toggle without counter drift | Course baseline; backend `23/23`; screenshot `02` | Current-spec rerun |
+| `QA-005` | PARTIAL | Evaluated practice and microlearning stacks expose contextual Q&A, while answering does not | Practice Chromium `7/7`; evaluated-state screenshots `08` to `12` | Fresh microlearning answering/evaluation run |
+| `QA-006` | PASS | Lecturer overview groups and paginates course and stack threads | Course/practice baseline; screenshots `06`, `07` | Current-spec rerun |
+| `QA-007` | PARTIAL | Lecturer generates external-block and course-wide embed links | External-only baseline; old screenshot `14`; current backend proof | Re-run after fragment transport and course-wide mode |
+| `QA-008` | PARTIAL | Anonymous embed posting requires a valid token and enabled course policy | Pre-fragment Chromium baseline; current backend proof; old screenshots `15`, `16` | Re-run current fragment-token flow |
+| `QA-009` | PARTIAL | Tampered or stale embed scope/token fails closed without persistent side effects | Pre-fragment Chromium baseline; current backend proof | Re-run current browser history/tamper assertions |
+| `QA-010` | PARTIAL | Anonymous rate limits reject repeated posting and bound audit writes | Backend scope/course/IP/TTL cases pass | Browser error-state proof |
+| `QA-011` | PASS | Non-participants and unevaluated stack participants cannot read/write protected scopes | Rollout Chromium baseline; current backend proof | Current-spec rerun |
+| `QA-012` | PENDING | Existing v1 live-feedback create/read/upvote flow remains unchanged | No fresh branch runtime run | Manual smoke |
 
-## Completed Runtime Suites
+## Runtime Commands
 
-### Focused Chromium
+The focused Course Q&A specs are independently seeded to avoid renderer memory
+exhaustion. Run each command from the repository root:
 
-The Course Q&A workflow was split into independently seeded specs to avoid
-renderer memory exhaustion:
+```bash
+docker exec -w /workspaces/klicker-uzh default-co-c3448-app-1 \
+  pnpm --filter @klicker-uzh/cypress test:run:raw -- \
+  --browser chromium --spec cypress/e2e/Y-course-qa-course-workflow.cy.ts
 
-| Workflow | Result | Coverage |
-|---|---:|---|
-| Course baseline | `8/8` | Manage visibility/settings, integrated course feed, fallback route, create/reply/vote, second participant |
-| Practice | `7/7` | Evaluation gating, mobile disclosure, stack posting, course isolation, lecturer grouping |
-| Embed | `6/6` | Link generation, chrome-free embed, identified/anonymous thread and reply, tampered token |
-| Rollout gates | `7/7` | Runtime-off and rollout-off behavior in PWA, fallback route, and Manage |
+docker exec -w /workspaces/klicker-uzh default-co-c3448-app-1 \
+  pnpm --filter @klicker-uzh/cypress test:run:raw -- \
+  --browser chromium --spec cypress/e2e/Y-course-qa-practice-workflow.cy.ts
 
-The large legacy microlearning workflow has compile-time coverage for the new
-selector, DOM order, disclosure state, and context switch. Its current Q&A
-states were also exercised directly with `agent-browser`.
+docker exec -w /workspaces/klicker-uzh default-co-c3448-app-1 \
+  pnpm --filter @klicker-uzh/cypress test:run:raw -- \
+  --browser chromium --spec cypress/e2e/Y-course-qa-embed-workflow.cy.ts
 
-The current course spec contains two later regression cases for READ-only
-lecturers and Q&A-only courses. Those cases compile but did not complete a fresh
-runtime run after the local Auth setup began redirecting before the first
-assertion; they remain explicit finish-gate work.
+docker exec -w /workspaces/klicker-uzh default-co-c3448-app-1 \
+  pnpm --filter @klicker-uzh/cypress test:run:raw -- \
+  --browser chromium --spec cypress/e2e/Y-course-qa-rollout-gates-workflow.cy.ts
+```
 
-### Backend Integration
+The last completed baseline was course `8/8`, practice `7/7`, embed `6/6`, and
+rollout `7/7`. The course spec gained two cases afterward. The embed baseline
+predates fragment-token transport and course-wide mode, so it is historical
+evidence rather than current-branch proof.
 
-Run:
+Run the current DB-backed service suite with:
 
 ```bash
 docker exec -w /workspaces/klicker-uzh default-co-c3448-app-1 \
@@ -92,21 +95,8 @@ docker exec -w /workspaces/klicker-uzh default-co-c3448-app-1 \
   pnpm --filter @klicker-uzh/graphql exec vitest run test/discussions.test.ts'
 ```
 
-Current result: `23/23` passing.
-
-The suite covers:
-
-- course, practice-stack, microlearning-stack, external-block, and course-embed
-  scope behavior
-- rollout/runtime gates for reads, writes, votes, and deletes
-- evaluated-stack authorization with zero side effects on rejection
-- participant, anonymous, and embed-token authorization
-- anonymous scope/course/IP rate limits and bounded audit events
-- content length and comparison-text preservation
-- reply caps and concurrent create/delete behavior
-- concurrent idempotent votes and deletes
-- source grouping, default course-only listing, and cursor pagination
-- stack presentation metadata on list and mutation responses
+Current result: `23/23` passing across authorization, gates, rate limits,
+concurrency, scope behavior, pagination, and presentation metadata.
 
 ## Screenshot Inventory
 
@@ -126,41 +116,45 @@ The suite covers:
 | `12-microlearning-evaluation-mobile-collapsed.png` | Microlearning Q&A before long results, collapsed |
 | `12-microlearning-evaluation-mobile-expanded.png` | Microlearning Q&A expanded in place |
 | `13-qa-fallback-deep-link.png` | Standalone fallback/deep-link route |
-| `14-manage-embed-generated-redacted.png` | Lecturer embed generator with bearer redacted |
-| `15-anonymous-embed-empty.png` | Chrome-free anonymous embed |
-| `16-anonymous-embed-thread-reply.png` | Anonymous embed thread and reply |
+| `14-manage-embed-generated-redacted.png` | Historical external-only embed generator with token redacted |
+| `15-anonymous-embed-empty.png` | Historical chrome-free anonymous embed baseline |
+| `16-anonymous-embed-thread-reply.png` | Historical anonymous thread/reply baseline |
 
-## Remaining Finish-Gate Runs
+## Targeted Pending Runs
 
-1. Capture the anonymous rate-limit error state in the browser (`QA-010`).
-2. Run the existing v1 live-feedback smoke (`QA-012`).
-3. Re-run the four independently seeded Course Q&A Chromium specs after the
-   final structural changes.
-4. Re-run all `23/23` backend integration scenarios.
-5. Capture fresh desktop/mobile screenshots only when the final branch changes
-   visible behavior; behavior-preserving refactors can retain the already
-   authenticated evidence when the current local Auth setup blocks a new
-   session, but the blocker must be stated.
+Use `agent-browser` against the devrouter URLs. Save evidence under
+`project/_local/course-qa-screenshots/`. If participant or delegated login
+fails, record the exact redirect/session behavior; do not substitute static
+proof.
 
-## Browser Procedure
+### QA-010: Anonymous rate-limit error
 
-Use `agent-browser` against the devrouter URLs. Verify both `1440x900` desktop
-and a mobile viewport around `390x844`.
+1. Generate a current external-block embed URL with anonymous posting enabled.
+2. Open it in a fresh unauthenticated browser session.
+3. Submit one thread and confirm it appears.
+4. Submit a second thread in the same scope and browser fingerprint within 90
+   seconds.
+5. Confirm the UI reports failure and no second thread appears.
+6. Capture the error state at `390x844`.
 
-For every changed visible state:
+### QA-012: Legacy live-feedback smoke
 
-1. Open the existing course/activity page.
-2. Confirm Q&A is integrated in that page rather than requiring navigation.
-3. Confirm the desktop rail remains beside the primary content.
-4. Confirm mobile Q&A follows the relevant content as a collapsed disclosure.
-5. Exercise thread, reply, vote, context switch, pagination, and embed controls
-   relevant to the surface.
-6. Check the fallback `/qa` route separately.
-7. Save a screenshot under `project/_local/course-qa-screenshots/`.
+1. Start a seeded live quiz with the existing feedback channel enabled.
+2. As a participant, post one feedback item.
+3. As the lecturer, publish it and add a response.
+4. As the participant, confirm both are visible and upvote the feedback and
+   response once.
+5. Confirm both counters increment once.
+6. Capture the participant result at `1440x900`.
 
-If local participant or delegated login fails, record the exact redirect or
-session behavior. Do not replace authenticated runtime proof with a static page
-or claim a screenshot that was not captured.
+### Final current-branch rerun
+
+1. Run all four focused Chromium commands above.
+2. Run all `23/23` backend scenarios.
+3. Capture fresh embed generator and anonymous embed screenshots for
+   fragment-token transport and both embed modes.
+4. Re-check desktop `1440x900` and mobile `390x844` for any visible behavior
+   changed after the existing screenshot set.
 
 ## Deferred Scope
 
