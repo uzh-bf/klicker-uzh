@@ -21,6 +21,13 @@ import { Thread } from './thread'
 
 const MANAGE_ASSISTANT_NAME = 'KlickerUZH Assistant'
 const MANAGE_ASSISTANT_WELCOME = 'Hello! How can I help you?'
+const MANAGE_ASSISTANT_CAPABILITIES = [
+  'Search your courses and question pool',
+  'Draft single-choice, multiple-choice, and free-text questions — saved to your pool only after you confirm',
+  'Suggest improvements to question feedback',
+]
+const MANAGE_ASSISTANT_LIMITS_NOTE =
+  'Read-only for everything else — it never publishes or edits existing content.'
 
 export function ManageAssistant() {
   return (
@@ -65,6 +72,8 @@ function ManageAssistantInner() {
           contextLabel={contextLabel}
           suggestions={suggestions}
           welcomeMessage={MANAGE_ASSISTANT_WELCOME}
+          capabilities={MANAGE_ASSISTANT_CAPABILITIES}
+          limitsNote={MANAGE_ASSISTANT_LIMITS_NOTE}
         />
       </div>
     </ManageAssistantRuntimeProvider>

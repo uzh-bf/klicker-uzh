@@ -21,10 +21,13 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
   CopyIcon,
+  FilePenLineIcon,
   ImagePlusIcon,
+  MessageSquareTextIcon,
   PencilIcon,
   PencilOffIcon,
   RefreshCwIcon,
+  SearchIcon,
   SendHorizontalIcon,
   SquareIcon,
   XIcon,
@@ -77,6 +80,13 @@ type ThreadProps = {
   // Friendly greeting shown above the suggestions (e.g. the manage assistant).
   // When unset, the welcome falls back to `Ask {chatbotName}`.
   welcomeMessage?: string
+  // Short capability bullets shown between the greeting and the suggestions
+  // (e.g. the manage assistant explaining what it can help with). When
+  // unset/empty, nothing extra is rendered.
+  capabilities?: string[]
+  // One-line note shown below the capability bullets (e.g. clarifying the
+  // assistant's limits). Ignored when `capabilities` is unset/empty.
+  limitsNote?: string
 }
 const EMPTY_REMOVED_ATTACHMENT_KEYS: string[] = []
 const attachmentLimitErrorMessage = () =>
@@ -241,6 +251,8 @@ export const Thread: FC<ThreadProps> = ({
   contextualSuggestions,
   suggestions,
   welcomeMessage,
+  capabilities,
+  limitsNote,
 }) => {
   const { embedded } = useChatUi()
   const resolvedSuggestions =
@@ -270,6 +282,8 @@ export const Thread: FC<ThreadProps> = ({
           contextLabel={contextLabel}
           suggestions={resolvedSuggestions}
           welcomeMessage={welcomeMessage}
+          capabilities={capabilities}
+          limitsNote={limitsNote}
         />
 
         <ThreadPrimitive.Messages
@@ -323,6 +337,8 @@ const ThreadWelcome: FC<{
   contextLabel?: string | null
   suggestions: ThreadSuggestion[]
   welcomeMessage?: string
+  capabilities?: string[]
+  limitsNote?: string
 }> = ({
   chatbotAvatar,
   chatbotFallbackIcon,
@@ -330,6 +346,8 @@ const ThreadWelcome: FC<{
   contextLabel,
   suggestions,
   welcomeMessage,
+  capabilities,
+  limitsNote,
 }) => {
   const { embedded } = useChatUi()
 
@@ -367,12 +385,48 @@ const ThreadWelcome: FC<{
               {contextLabel}
             </p>
           )}
+          {capabilities && capabilities.length > 0 && (
+            <ThreadWelcomeCapabilities
+              capabilities={capabilities}
+              limitsNote={limitsNote}
+            />
+          )}
           <ThreadWelcomeSuggestions suggestions={suggestions} />
         </div>
       </div>
     </ThreadPrimitive.Empty>
   )
 }
+
+// Icons for `ThreadWelcomeCapabilities`, matched to bullets by position.
+const CAPABILITY_ICONS = [SearchIcon, FilePenLineIcon, MessageSquareTextIcon]
+
+const ThreadWelcomeCapabilities: FC<{
+  capabilities: string[]
+  limitsNote?: string
+}> = ({ capabilities, limitsNote }) => (
+  <div className="mt-3 flex w-full max-w-sm flex-col gap-1.5 text-left">
+    <ul className="flex flex-col gap-1">
+      {capabilities.map((capability, index) => {
+        const Icon = CAPABILITY_ICONS[index % CAPABILITY_ICONS.length]!
+        return (
+          <li
+            key={capability}
+            className="text-muted-foreground flex items-start gap-1.5 text-xs leading-snug"
+          >
+            <Icon className="mt-0.5 size-3 shrink-0" />
+            <span>{capability}</span>
+          </li>
+        )
+      })}
+    </ul>
+    {limitsNote && (
+      <p className="text-muted-foreground/70 text-[11px] leading-snug">
+        {limitsNote}
+      </p>
+    )}
+  </div>
+)
 
 const ThreadWelcomeSuggestions: FC<{
   suggestions: ThreadSuggestion[]

@@ -1216,7 +1216,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     assistant: {
       open: 'Assistant',
       title: 'KlickerUZH Assistant',
-      subtitle: 'Manage',
+      subtitle: 'AI assistant for your courses and question pool',
       openInNewTab: 'Open assistant in a new tab',
       elementCreatedToast: 'Draft "{name}" added to your question pool',
     },
