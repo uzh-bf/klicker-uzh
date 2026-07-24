@@ -777,3 +777,20 @@ designing the question widget.
 - 2026-07-23: User confirmed U5 (spike-gated) and mcp-apps out of scope. Added the
   "MCP Apps interactive artifacts" future-feature sketch; a corresponding ClickUp backlog
   task was created for it. No slices started.
+- 2026-07-24: **S1 done** (`9f5f1b24d`). `unoptimized` on the sidebar logo Image; review
+  simplified the middleware change from a lookahead matcher to two literal public-file
+  bypasses in the existing in-function list (avoids extension-based auth-bypass class).
+  Evidence: unauthenticated curl `/KlickerLogo.png` 200, protected route 307, logo renders
+  desktop + mobile sheet, in-container check green.
+- 2026-07-24: **S3 done**. Dropped `autohide="not-last"` on both action bars (kept
+  `hideWhenRunning`); `setOpenMobile(false)` on thread select + sidebar new-chat.
+  assistant.tsx new-chat button intentionally unchanged (unreachable while the modal
+  sheet is open — verified in design-system Sheet source). Evidence: 375px non-last
+  message shows action bar without hover, sheet closes on select, desktop bars are thin
+  muted strips, typecheck green. Review: no findings.
+- 2026-07-24: Environment note: worktree stack has no upstream LLM key
+  (`UPSTREAM_OPENAI_API_KEY`), so live sends fail with the S5 error bubble (stacked
+  strings reproduced live). Phase 0 does not need live LLM; **Phase U verification does**
+  (credits). Key injection via infisical CLI + prototyping project 404s (domain pin);
+  rs-infisical-operator profiles lack OPENROUTER_API_KEY read permission — needs user
+  action before U2 verification.

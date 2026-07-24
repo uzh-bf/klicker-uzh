@@ -8,6 +8,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
   SidebarTrigger,
+  useSidebar,
 } from '@uzh-bf/design-system'
 import { Plus } from 'lucide-react'
 import { useTranslations } from 'next-intl'
@@ -29,12 +30,14 @@ export function AppSidebar({
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const router = useRouter()
   const { createThread, participationRequired } = useChatStore()
+  const { setOpenMobile } = useSidebar()
 
   const handleNewThread = async () => {
     if (participationRequired) return
     try {
       const threadId = await createThread(chatbotId)
       router.push(`/${chatbotId}/threads/${threadId}`)
+      setOpenMobile(false)
     } catch {
       /* handled centrally */
     }
