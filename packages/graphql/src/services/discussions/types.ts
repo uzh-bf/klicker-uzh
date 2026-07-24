@@ -89,7 +89,6 @@ export interface DiscussionThreadPage {
   hasMore: boolean
   canPostAnonymously: boolean
   canPostIdentified: boolean
-  canVote: boolean
   isAccessible: boolean
 }
 

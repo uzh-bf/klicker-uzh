@@ -132,7 +132,6 @@ export function registerGatesAndEmbedAccessSuite(
     expect(threadPage.threads).toHaveLength(0)
     expect(threadPage.canPostAnonymously).toBe(false)
     expect(threadPage.canPostIdentified).toBe(false)
-    expect(threadPage.canVote).toBe(false)
 
     const embedInfo = await getCourseDiscussionEmbeddingInfo(
       {
@@ -280,13 +279,10 @@ export function registerGatesAndEmbedAccessSuite(
 
     expect(anonymousPage.canPostAnonymously).toBe(true)
     expect(anonymousPage.canPostIdentified).toBe(false)
-    expect(anonymousPage.canVote).toBe(false)
     expect(identifiedOnlyPage.canPostAnonymously).toBe(false)
     expect(identifiedOnlyPage.canPostIdentified).toBe(false)
-    expect(identifiedOnlyPage.canVote).toBe(false)
     expect(participantEmbedPage.canPostAnonymously).toBe(true)
     expect(participantEmbedPage.canPostIdentified).toBe(true)
-    expect(participantEmbedPage.canVote).toBe(true)
   })
 
   it('hides anonymous posting when an embed scope key is tampered with', async () => {
@@ -439,6 +435,41 @@ export function registerGatesAndEmbedAccessSuite(
       where: { courseId: course.id },
     })
 
+    const stalePageWithoutSpace = await courseDiscussionThreads(
+      {
+        courseId: course.id,
+        scopeKey: embedInfo!.scopeKey,
+        embedToken: embedInfo!.embedToken,
+      },
+      createAnonymousContext(userOneCtx)
+    )
+    expect(stalePageWithoutSpace.isAccessible).toBe(false)
+    expect(stalePageWithoutSpace.canPostAnonymously).toBe(false)
+
+    const replacementEmbedInfo = await getCourseDiscussionEmbeddingInfo(
+      {
+        courseId: course.id,
+        externalBlock: {
+          externalSource: 'lms',
+          externalRef: 'deleted-block',
+        },
+        allowAnonymous: true,
+      },
+      userOneCtx
+    )
+    expect(replacementEmbedInfo).toBeTruthy()
+
+    const stalePageWithReplacementSpace = await courseDiscussionThreads(
+      {
+        courseId: course.id,
+        scopeKey: embedInfo!.scopeKey,
+        embedToken: embedInfo!.embedToken,
+      },
+      createAnonymousContext(userOneCtx)
+    )
+    expect(stalePageWithReplacementSpace.isAccessible).toBe(false)
+    expect(stalePageWithReplacementSpace.canPostAnonymously).toBe(false)
+
     const deniedThread = await createCourseDiscussionThread(
       {
         courseId: course.id,
@@ -459,7 +490,7 @@ export function registerGatesAndEmbedAccessSuite(
       await prisma.discussionSpace.findUnique({
         where: { courseId: course.id },
       })
-    ).toBeNull()
+    ).toBeTruthy()
   })
 
   it('does not create a discussion space before participant access is authorized', async () => {

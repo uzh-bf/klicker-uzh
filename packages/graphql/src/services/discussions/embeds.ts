@@ -303,6 +303,10 @@ export async function verifyEmbedScopeBinding(
 ) {
   if (!embedClaims) return false
 
+  if (embedClaims.sub !== `discussion-space:${expectedSpace.id}`) {
+    return false
+  }
+
   if (embedClaims.spaceType !== expectedSpace.spaceType) {
     return false
   }

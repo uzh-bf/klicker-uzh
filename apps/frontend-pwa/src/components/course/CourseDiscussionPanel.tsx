@@ -148,8 +148,10 @@ function CourseDiscussionPanel({
     threadsData?.courseDiscussionThreads?.canPostAnonymously ?? false
   const canPostIdentified =
     threadsData?.courseDiscussionThreads?.canPostIdentified ?? false
-  const canVote = threadsData?.courseDiscussionThreads?.canVote ?? false
   const canPost = canPostIdentified || canPostAnonymously
+  const canVote = canPostIdentified
+  const mustPostAnonymously = !canPostIdentified && canPostAnonymously
+  const canChooseAnonymity = canPostIdentified && canPostAnonymously
   const isAccessible =
     threadsData?.courseDiscussionThreads?.isAccessible ?? true
 
@@ -182,9 +184,9 @@ function CourseDiscussionPanel({
             courseId,
             content: threadDraft,
             scope: parsedScopeInput,
-            isAnonymous: canPostIdentified
-              ? postThreadAnonymous
-              : canPostAnonymously,
+            isAnonymous:
+              mustPostAnonymously ||
+              (canChooseAnonymity && postThreadAnonymous),
             embedToken,
           },
         },
@@ -213,8 +215,8 @@ function CourseDiscussionPanel({
     courseId,
     parsedScopeInput,
     postThreadAnonymous,
-    canPostAnonymously,
-    canPostIdentified,
+    canChooseAnonymity,
+    mustPostAnonymously,
     embedToken,
     canCreateThreadForActiveScope,
     refetchThreads,
@@ -235,9 +237,9 @@ function CourseDiscussionPanel({
               courseId,
               threadId,
               content,
-              isAnonymous: canPostIdentified
-                ? (postReplyAnonymous[threadId] ?? false)
-                : canPostAnonymously,
+              isAnonymous:
+                mustPostAnonymously ||
+                (canChooseAnonymity && (postReplyAnonymous[threadId] ?? false)),
               embedToken,
             },
           },
@@ -272,8 +274,8 @@ function CourseDiscussionPanel({
     [
       replyDrafts,
       postReplyAnonymous,
-      canPostAnonymously,
-      canPostIdentified,
+      canChooseAnonymity,
+      mustPostAnonymously,
       createReply,
       courseId,
       embedToken,
@@ -410,6 +412,8 @@ function CourseDiscussionPanel({
   }
 
   const threadInputId = `${idPrefix}-thread-content`
+  const showComposer =
+    canPost && canCreateThreadForActiveScope && Boolean(parsedScopeInput)
   const formatDateTime = (value: string) =>
     formatter.dateTime(new Date(value), {
       dateStyle: 'medium',
@@ -424,7 +428,11 @@ function CourseDiscussionPanel({
         className
       )}
     >
-      {canPost && canCreateThreadForActiveScope && parsedScopeInput ? (
+      {showTitle && !showComposer && (
+        <H2 className={{ root: 'mb-2' }}>{t('pwa.courseQA.title')}</H2>
+      )}
+
+      {showComposer ? (
         <div
           className={twMerge(
             'rounded-lg border border-gray-200 bg-white p-4 shadow-sm',
@@ -457,8 +465,7 @@ function CourseDiscussionPanel({
             />
 
             {embedToken &&
-              canPostAnonymously &&
-              (canPostIdentified ? (
+              (canChooseAnonymity ? (
                 <label className="inline-flex items-center gap-2 text-sm text-gray-700">
                   <input
                     name={`${idPrefix}-thread-anonymous`}
@@ -471,14 +478,14 @@ function CourseDiscussionPanel({
                   />
                   {t('pwa.courseQA.postAnonymously')}
                 </label>
-              ) : (
+              ) : mustPostAnonymously ? (
                 <p
                   className="text-sm text-gray-600"
                   data-cy="course-qa-thread-anonymous"
                 >
                   {t('pwa.courseQA.postingAnonymously')}
                 </p>
-              ))}
+              ) : null)}
 
             <div className="flex justify-end">
               <Button
@@ -499,8 +506,6 @@ function CourseDiscussionPanel({
           message={t('pwa.courseQA.readOnly')}
           data={{ cy: 'course-qa-read-only' }}
         />
-      ) : showTitle ? (
-        <H2 className={{ root: 'mb-2' }}>{t('pwa.courseQA.title')}</H2>
       ) : null}
 
       <div className="flex flex-col gap-3" data-cy="course-qa-threads-list">
@@ -658,8 +663,7 @@ function CourseDiscussionPanel({
                     />
 
                     {embedToken &&
-                      canPostAnonymously &&
-                      (canPostIdentified ? (
+                      (canChooseAnonymity ? (
                         <label className="mt-2 inline-flex items-center gap-2 text-xs text-gray-700">
                           <input
                             name={`${idPrefix}-reply-anonymous-${thread.id}`}
@@ -675,14 +679,14 @@ function CourseDiscussionPanel({
                           />
                           {t('pwa.courseQA.replyAnonymously')}
                         </label>
-                      ) : (
+                      ) : mustPostAnonymously ? (
                         <p
                           className="mt-2 text-xs text-gray-600"
                           data-cy={`course-qa-reply-anonymous-${thread.id}`}
                         >
                           {t('pwa.courseQA.replyingAnonymously')}
                         </p>
-                      ))}
+                      ) : null)}
 
                     <div className="mt-2 flex justify-end">
                       <Button

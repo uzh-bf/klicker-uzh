@@ -6,7 +6,11 @@ import {
   getCourseSettings,
   isCourseDiscussionEnabled,
 } from './access.js'
-import { rejectEmbedCourseMismatch, verifyEmbedToken } from './embeds.js'
+import {
+  rejectEmbedCourseMismatch,
+  verifyEmbedScopeBinding,
+  verifyEmbedToken,
+} from './embeds.js'
 import {
   ACTIVE_COURSE_SCOPE_TYPES,
   buildThreadInclude,
@@ -47,7 +51,6 @@ export async function courseDiscussionThreads(
       hasMore: false,
       canPostAnonymously: false,
       canPostIdentified: false,
-      canVote: false,
       isAccessible: false,
     }
   }
@@ -65,7 +68,6 @@ export async function courseDiscussionThreads(
         hasMore: false,
         canPostAnonymously: false,
         canPostIdentified: false,
-        canVote: false,
         isAccessible: false,
       }
     }
@@ -77,7 +79,6 @@ export async function courseDiscussionThreads(
         hasMore: false,
         canPostAnonymously: false,
         canPostIdentified: false,
-        canVote: false,
         isAccessible: false,
       }
     }
@@ -89,7 +90,6 @@ export async function courseDiscussionThreads(
         hasMore: false,
         canPostAnonymously: false,
         canPostIdentified: false,
-        canVote: false,
         isAccessible: false,
       }
     }
@@ -98,13 +98,11 @@ export async function courseDiscussionThreads(
   const canPostAnonymously =
     !!embedClaims?.allowAnonymous && !!course.isCourseQAAnonymousEnabled
 
-  const participantActor =
-    actor?.participantId || !embedClaims
-      ? actor
-      : await getCourseAccessActor({ courseId }, ctx)
+  const participantActor = embedClaims
+    ? await getCourseAccessActor({ courseId }, ctx)
+    : actor
   const participantId = participantActor?.participantId ?? null
   const canPostIdentified = Boolean(participantId)
-  const canVote = canPostIdentified
 
   const effectiveScopeKey =
     embedClaims?.scopeKey ?? scopeKey ?? `course:${courseId}`
@@ -116,7 +114,6 @@ export async function courseDiscussionThreads(
       hasMore: false,
       canPostAnonymously: false,
       canPostIdentified: false,
-      canVote: false,
       isAccessible: false,
     }
   }
@@ -128,7 +125,6 @@ export async function courseDiscussionThreads(
       hasMore: false,
       canPostAnonymously: false,
       canPostIdentified: false,
-      canVote: false,
       isAccessible: false,
     }
   }
@@ -140,7 +136,6 @@ export async function courseDiscussionThreads(
       hasMore: false,
       canPostAnonymously: false,
       canPostIdentified: false,
-      canVote: false,
       isAccessible: false,
     }
   }
@@ -179,7 +174,6 @@ export async function courseDiscussionThreads(
         hasMore: false,
         canPostAnonymously: false,
         canPostIdentified: false,
-        canVote: false,
         isAccessible: false,
       }
     }
@@ -192,6 +186,44 @@ export async function courseDiscussionThreads(
     },
   })
 
+  if (embedClaims) {
+    const expectedSpace = spaces[0]
+    const scopeExists = expectedSpace
+      ? await ctx.prisma.discussionScope.findUnique({
+          where: {
+            spaceId_scopeKey: {
+              spaceId: expectedSpace.id,
+              scopeKey: effectiveScopeKey,
+            },
+          },
+          select: { id: true },
+        })
+      : null
+    const bindingIsValid =
+      expectedSpace &&
+      scopeExists &&
+      (await verifyEmbedScopeBinding(
+        {
+          embedClaims,
+          expectedSpace,
+          expectedScopeKey: effectiveScopeKey,
+          requireAnonymous: false,
+        },
+        ctx
+      ))
+
+    if (!bindingIsValid) {
+      return {
+        threads: [],
+        nextCursor: null,
+        hasMore: false,
+        canPostAnonymously: false,
+        canPostIdentified: false,
+        isAccessible: false,
+      }
+    }
+  }
+
   if (spaces.length === 0) {
     return {
       threads: [],
@@ -199,7 +231,6 @@ export async function courseDiscussionThreads(
       hasMore: false,
       canPostAnonymously,
       canPostIdentified,
-      canVote,
       isAccessible: true,
     }
   }
@@ -239,7 +270,6 @@ export async function courseDiscussionThreads(
     hasMore,
     canPostAnonymously,
     canPostIdentified,
-    canVote,
     isAccessible: true,
   }
 }

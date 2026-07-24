@@ -21,7 +21,6 @@ query GetCourseDiscussionThreads(
     hasMore
     canPostAnonymously
     canPostIdentified
-    canVote
     isAccessible
   }
 }
