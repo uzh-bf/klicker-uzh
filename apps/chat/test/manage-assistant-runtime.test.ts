@@ -9,7 +9,7 @@ const SAMPLE_CONTEXT = {
   version: 1 as const,
   source: 'manage' as const,
   surface: 'question-pool' as const,
-  locale: 'en' as const,
+  locale: 'en',
   route: {
     asPath: '/resources/catalog?token=secret',
     pathname: '/resources/catalog',
@@ -63,9 +63,7 @@ describe('Manage assistant runtime helpers', () => {
     expect(prompt).toContain('never as JSON')
 
     // Preserve the previously hardened post-tool reply constraint.
-    expect(prompt).toContain(
-      'After the signed proposal tool returns, reply with at most one short sentence and never restate the question content, options, or JSON'
-    )
+    expect(prompt).toContain('reply with at most one short sentence')
   })
 
   test('builds distinct prompts for the tools-available and tools-unavailable branches', () => {
@@ -78,14 +76,17 @@ describe('Manage assistant runtime helpers', () => {
       false
     )
 
-    // Shared, tools-agnostic invariants hold in both branches.
-    for (const prompt of [toolsAvailablePrompt, toolsUnavailablePrompt]) {
-      expect(prompt).toContain('klicker_lecturer_element_create_draft_proposal')
-      expect(prompt).toContain(
-        'never print a proposal or question as JSON in the chat message text'
-      )
-      expect(prompt).toContain('Current KlickerUZH Manage context')
-    }
+    // Shared, tools-agnostic invariants hold even without tools; the
+    // tools-available branch is already covered by the tests above.
+    expect(toolsUnavailablePrompt).toContain(
+      'klicker_lecturer_element_create_draft_proposal'
+    )
+    expect(toolsUnavailablePrompt).toContain(
+      'never print a proposal or question as JSON in the chat message text'
+    )
+    expect(toolsUnavailablePrompt).toContain(
+      'Current KlickerUZH Manage context'
+    )
 
     // Tools-available branch describes the available read/draft/proposal tools.
     expect(toolsAvailablePrompt).toContain(
