@@ -19,7 +19,7 @@ import { useChatStore } from '../stores/chatStore'
 import { AppSidebar } from './app-sidebar'
 import { ChatUiProvider, useChatUi } from './chat-ui-context'
 import { DisclaimerModal } from './disclaimer-modal'
-import { EmbeddedSettings } from './embedded-settings'
+import { EmbeddedCreditsBar, EmbeddedSettings } from './embedded-settings'
 import { ModeSwitcher } from './mode-switcher'
 import { Thread } from './thread'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
@@ -379,6 +379,7 @@ function AssistantLayout({
   chatbot: { id: string; name: string; avatar?: string }
 }) {
   const { showSidebar, showFooter } = useChatUi()
+  const { isLoading } = useChatStore()
 
   if (showSidebar) {
     return (
@@ -398,7 +399,15 @@ function AssistantLayout({
         <EmbeddedSettings />
       </div>
       <div className="flex min-h-0 flex-1 flex-col">
-        <Thread chatbotAvatar={chatbot.avatar ?? ''} />
+        <div className="relative flex min-h-0 flex-1 flex-col">
+          {isLoading && (
+            <div className="bg-background absolute inset-0 z-10 flex items-center justify-center">
+              <Loader2 className="text-muted-foreground size-6 animate-spin" />
+            </div>
+          )}
+          <Thread chatbotAvatar={chatbot.avatar ?? ''} />
+        </div>
+        <EmbeddedCreditsBar />
         {showFooter && <Footer />}
       </div>
     </div>
