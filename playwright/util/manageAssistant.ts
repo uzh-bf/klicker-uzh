@@ -142,12 +142,96 @@ function toolCallStreamBody(envelope: ManageProposalEnvelope) {
   ])
 }
 
+export type ManageChatStreamErrorMode =
+  | 'http-500'
+  | 'stream-error'
+  | 'malformed'
+
+/**
+ * Build the fulfillment for a broken POST /api/manage/chat response.
+ *
+ * - 'http-500': the request fails outright before any stream starts (e.g. the
+ *   real route throwing before `toUIMessageStreamResponse`). HttpChatTransport
+ *   reads a non-ok response and throws `Error(await response.text())` (see
+ *   `ai`'s `src/ui/http-chat-transport.ts`), so `errorText` becomes the thrown
+ *   error's message.
+ * - 'stream-error': a normal 200 SSE response starts and streams one real
+ *   text-delta chunk (so the client has already received partial data), then
+ *   an in-band `{type: 'error'}` UI-message-stream chunk aborts the turn — the
+ *   documented mechanism for a provider failing mid-turn (see `ai`'s
+ *   `src/ui/process-ui-message-stream.ts`, `case 'error'`, which rethrows and
+ *   is caught by `Chat`'s send loop, setting `status: 'error'`).
+ * - 'malformed': the SSE body's first `data:` line is not valid JSON, so
+ *   DefaultChatTransport's `safeParseJSON` fails and its wrapping
+ *   TransformStream throws `chunk.error` (see `ai`'s
+ *   `src/ui/default-chat-transport.ts`) before any chunk is ever applied to
+ *   the message — the client-side "server sent garbage" path.
+ *
+ * All three end up in the same place from the UI's perspective: `Chat`'s send
+ * loop catches the thrown error and sets `status: 'error'`, which is not one
+ * of the "running" statuses (`submitted`/`streaming`) that
+ * `useAISDKRuntime` treats as busy — so the composer's send affordance
+ * returns to normal and the assistant can be asked again.
+ */
+function errorStreamFulfillment(
+  mode: ManageChatStreamErrorMode,
+  errorText: string
+): { body: string; headers: Record<string, string>; status: number } {
+  if (mode === 'http-500') {
+    return {
+      body: errorText,
+      headers: { 'content-type': 'text/plain' },
+      status: 500,
+    }
+  }
+
+  if (mode === 'malformed') {
+    return {
+      body: 'data: {this is not valid json\n\n',
+      headers: {
+        'content-type': 'text/event-stream',
+        'x-vercel-ai-ui-message-stream': 'v1',
+      },
+      status: 200,
+    }
+  }
+
+  // 'stream-error'
+  const id = 'e2e-stream-error-1'
+  const events = [
+    { type: 'start' },
+    { type: 'start-step' },
+    { id, type: 'text-start' },
+    {
+      delta: 'Partial answer before the connection dropped.',
+      id,
+      type: 'text-delta',
+    },
+    { errorText, type: 'error' },
+  ]
+  return {
+    // Deliberately no finish-step/finish/[DONE]: a real mid-stream failure
+    // ends the response without a clean close.
+    body: events.map((e) => `data: ${JSON.stringify(e)}`).join('\n\n') + '\n\n',
+    headers: {
+      'content-type': 'text/event-stream',
+      'x-vercel-ai-ui-message-stream': 'v1',
+    },
+    status: 200,
+  }
+}
+
 /**
  * Mock the manage assistant's LLM endpoint (POST /api/manage/chat).
  *
  * `mode: 'text'` (default) replies with a plain streamed text reply.
  * `mode: 'proposal'` replies with a signed create-draft-question tool call
  * shaped like the real lecturer MCP tool result.
+ *
+ * `errorMode` serves a broken response (see `errorStreamFulfillment` above)
+ * for the first matching request only; every later request on the same route
+ * falls back to the normal `mode` reply, so a test can assert the assistant
+ * recovers and accepts a new message after the failure.
  */
 export async function mockManageChatStream(
   page: Page,
@@ -155,17 +239,28 @@ export async function mockManageChatStream(
     mode = 'text',
     text = 'This is a mocked assistant reply.',
     envelope,
+    errorMode,
+    errorText = 'The assistant is temporarily unavailable. Please try again.',
   }: {
     mode?: 'text' | 'proposal'
     text?: string
     envelope?: ManageProposalEnvelope
+    errorMode?: ManageChatStreamErrorMode
+    errorText?: string
   } = {}
 ) {
+  let errorServed = false
+
   // Route at the browser-context level: the request originates inside the
   // cross-origin chat iframe (an out-of-process frame), which page.route on the
   // top-level manage page does not reliably intercept.
   await page.context().route('**/api/manage/chat', (route) => {
     if (route.request().method() !== 'POST') return route.fallback()
+
+    if (errorMode && !errorServed) {
+      errorServed = true
+      return route.fulfill(errorStreamFulfillment(errorMode, errorText))
+    }
 
     const body =
       mode === 'proposal'
@@ -193,17 +288,42 @@ export const DEFAULT_CONFIRMED_ELEMENT: ConfirmedManageElement = {
   name: 'Powerhouse of the cell',
 }
 
-/** Mock the proposal confirmation endpoint (POST /api/manage/proposals/confirm) */
+/** A rejected proposal confirmation, e.g. a tampered/expired token (403) or a
+ * lost session (401). `error` is returned verbatim in the JSON body's
+ * `error` field, which confirmProposal() in manage-proposal-card.tsx reads
+ * and renders as-is on a non-ok response. */
+export type ManageProposalConfirmError = {
+  status: number
+  error: string
+}
+
+/**
+ * Mock the proposal confirmation endpoint (POST /api/manage/proposals/confirm).
+ *
+ * Defaults to a 200 success response resolving `DEFAULT_CONFIRMED_ELEMENT`.
+ * Pass a `{status, error}` object instead to simulate a rejected
+ * confirmation.
+ */
 export async function mockManageProposalConfirm(
   page: Page,
-  element: ConfirmedManageElement = DEFAULT_CONFIRMED_ELEMENT
+  outcome:
+    | ConfirmedManageElement
+    | ManageProposalConfirmError = DEFAULT_CONFIRMED_ELEMENT
 ) {
   // Context-level route: same cross-origin iframe reason as mockManageChatStream.
   await page.context().route('**/api/manage/proposals/confirm', (route) => {
     if (route.request().method() !== 'POST') return route.fallback()
 
+    if ('status' in outcome) {
+      return route.fulfill({
+        body: JSON.stringify({ error: outcome.error }),
+        headers: { 'content-type': 'application/json' },
+        status: outcome.status,
+      })
+    }
+
     return route.fulfill({
-      body: JSON.stringify({ element }),
+      body: JSON.stringify({ element: outcome }),
       headers: { 'content-type': 'application/json' },
       status: 200,
     })

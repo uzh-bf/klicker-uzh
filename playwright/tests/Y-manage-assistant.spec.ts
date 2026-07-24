@@ -219,6 +219,148 @@ test.describe('Manage Assistant — Per-surface suggestions', () => {
   })
 })
 
+test.describe('Manage Assistant — Error paths', () => {
+  test.beforeEach(async ({ loginLecturer }) => {
+    await loginLecturer()
+  })
+
+  test('Proposal confirm rejected with 403 (tampered token) shows an error state and creates no draft', async ({
+    page,
+  }) => {
+    await mockManageChatStream(page, { mode: 'proposal' })
+    await mockManageProposalConfirm(page, {
+      error: 'This proposal is no longer valid. Please ask again.',
+      status: 403,
+    })
+    const assistant = await openManageAssistantWidget(page)
+
+    await sendManageAssistantMessage(
+      assistant,
+      'Draft a question about mitochondria'
+    )
+
+    const confirmButton = assistant.getByRole('button', {
+      name: 'Create draft',
+    })
+    await expect(confirmButton).toBeEnabled()
+    await confirmButton.click()
+
+    // Card renders confirmation.type === 'error' with the server's message
+    // verbatim (manage-proposal-card.tsx confirmProposal()).
+    await expect(
+      assistant.getByText('This proposal is no longer valid. Please ask again.')
+    ).toBeVisible()
+
+    // No success state: the draft was never created.
+    await expect(
+      assistant.getByText('Draft created in the question pool')
+    ).toHaveCount(0)
+    await expect(
+      assistant.getByText(
+        `${DEFAULT_CONFIRMED_ELEMENT.name} (#${DEFAULT_CONFIRMED_ELEMENT.id})`
+      )
+    ).toHaveCount(0)
+
+    // Widget stays interactive: an error (unlike success) does not remove the
+    // "Create draft" button, and it re-enables so the lecturer can retry
+    // instead of the card getting stuck.
+    await expect(confirmButton).toBeEnabled()
+  })
+
+  test('Proposal confirm rejected with 401 (lost session) shows an error state', async ({
+    page,
+  }) => {
+    await mockManageChatStream(page, { mode: 'proposal' })
+    await mockManageProposalConfirm(page, {
+      error: 'Your session has expired. Please sign in again.',
+      status: 401,
+    })
+    const assistant = await openManageAssistantWidget(page)
+
+    await sendManageAssistantMessage(
+      assistant,
+      'Draft a question about mitochondria'
+    )
+
+    const confirmButton = assistant.getByRole('button', {
+      name: 'Create draft',
+    })
+    await expect(confirmButton).toBeEnabled()
+    await confirmButton.click()
+
+    await expect(
+      assistant.getByText('Your session has expired. Please sign in again.')
+    ).toBeVisible()
+    await expect(
+      assistant.getByText('Draft created in the question pool')
+    ).toHaveCount(0)
+    await expect(confirmButton).toBeEnabled()
+  })
+
+  // Thread.tsx does not currently wire MessagePrimitive.Error /
+  // ErrorPrimitive.Message anywhere in the manage assistant's message list,
+  // so a failed chat stream renders no dedicated error text/toast today (see
+  // apps/chat/src/components/thread.tsx AssistantMessage /
+  // MessagePrimitive.Unstable_PartsGrouped — no Error component is passed).
+  // The AI SDK still reliably takes the thread out of its "running" state on
+  // any stream failure (Chat's send loop in the `ai` package catches the
+  // error and sets status: 'error', which useAISDKRuntime does not count as
+  // busy — see manageAssistant.ts errorStreamFulfillment for the source
+  // trace), so the strongest true, user-visible invariant here is: the
+  // widget does not get stuck, does not crash, and accepts another message.
+  test('Chat stream failing mid-stream does not crash the widget and a retry succeeds', async ({
+    page,
+  }) => {
+    await mockManageChatStream(page, {
+      errorMode: 'stream-error',
+      text: 'Second reply after recovery.',
+    })
+    const assistant = await openManageAssistantWidget(page)
+
+    await sendManageAssistantMessage(assistant, 'Summarize my course')
+
+    // Recovers: the composer returns to its normal "send" affordance instead
+    // of hanging in a permanently "running"/cancel state.
+    await expect(assistant.getByTestId('chat-send-button')).toBeVisible({
+      timeout: 15_000,
+    })
+    await expect(assistant.getByTestId('chat-composer-input')).toBeEditable()
+
+    // Widget is still usable: sending a new message gets a full, normal reply.
+    await sendManageAssistantMessage(assistant, 'Try again')
+    await expect(
+      assistant.getByTestId('chat-assistant-message-content').last()
+    ).toContainText('Second reply after recovery.', { timeout: 15_000 })
+  })
+
+  test('Malformed stream envelope does not crash the widget and a retry succeeds', async ({
+    page,
+  }) => {
+    await mockManageChatStream(page, {
+      errorMode: 'malformed',
+      text: 'Second reply after recovery.',
+    })
+    const assistant = await openManageAssistantWidget(page)
+
+    await sendManageAssistantMessage(assistant, 'Summarize my course')
+
+    await expect(assistant.getByTestId('chat-send-button')).toBeVisible({
+      timeout: 15_000,
+    })
+    await expect(assistant.getByTestId('chat-composer-input')).toBeEditable()
+
+    // The malformed chunk fails to parse before any content is ever applied
+    // to a message (DefaultChatTransport throws before processUIMessageStream
+    // sees a single valid chunk), so no assistant bubble should exist yet.
+    await expect(assistant.getByTestId('chat-assistant-message')).toHaveCount(0)
+
+    await sendManageAssistantMessage(assistant, 'Try again')
+    await expect(
+      assistant.getByTestId('chat-assistant-message-content').last()
+    ).toContainText('Second reply after recovery.', { timeout: 15_000 })
+  })
+})
+
 // Sanity check that makeProposalEnvelope produces the exact
 // {kind, proposalToken, summary, requiresConfirmation, payload} shape
 // documented in apps/chat/test/manage-proposal-card.test.ts.
