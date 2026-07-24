@@ -891,7 +891,7 @@ the repository script that replaces it before continuing.
   ineligible participant rows across retained history, splits consent-affected
   courses into targeted historical rebuilds from their earliest affected
   message or aggregate, and clears then refreshes the scoped chat watermark so
-  participant and aggregate Hatchet roots coordinate safely when concurrent.
+  participant and aggregate stages coordinate through a durable handoff.
   The new old-window PostgreSQL regression passes before and after the
   participant purge.
 - 2026-07-24: The refreshed complete suite passes 189 tests with 18 existing
@@ -902,7 +902,19 @@ the repository script that replaces it before continuing.
 - 2026-07-24: The environment publication gate rejected the updated Phase 1
   push despite the approved draft-PR workflow. Both branches will remain local
   until the user explicitly reconfirms publication.
-- Active: Commit and independently re-review the incremental consent fix,
+- 2026-07-24: Final sequencing review found that independent script-8 and
+  script-9 roots could let the validity marker swallow a consent change.
+  Script 9 now waits for script 8, preserving the watermark handoff. Dry runs
+  bypass consent-history queries and purges while the capture buffer is active.
+- 2026-07-24: The same review reproduced acceptance arriving after script 8
+  but before the final marker. The native worker now binds Hatchet's immutable
+  workflow-creation time into the final SQL instead of stamping completion
+  time, leaving mid-run consent changes visible for the next rebuild.
+- 2026-07-24: A disposable Hatchet v0.73.1 task using the pinned Python SDK
+  read the workflow creation timestamp from its live task context and matched
+  it exactly against REST readback. The six-case PostgreSQL privacy suite,
+  including the acceptance-interleaving convergence regression, passes.
+- Active: Verify, commit, and independently re-review the sequencing fix,
   complete final branch gates, then request publication confirmation for both
   stacked draft PRs.
 

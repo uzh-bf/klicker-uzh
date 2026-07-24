@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from src.dryrun import buffer_registry
 from src.modules.utils import render_uuid_in_clause
 
 _CURRENT_SCOPE_PLACEHOLDER = "/*CURRENT_COURSE_FILTER*/"
@@ -142,6 +143,8 @@ def plan_chat_analytics_runs(
         return []
     if window_since is None:
         return [ChatAnalyticsRun(course_ids=course_ids, window_since=None)]
+    if buffer_registry.is_active():
+        return [ChatAnalyticsRun(course_ids=course_ids, window_since=window_since)]
     if course_ids is None:
         return [ChatAnalyticsRun(course_ids=None, window_since=None)]
 
@@ -179,6 +182,8 @@ def purge_ineligible_participant_chat_analytics(
     course_ids: list[str] | None,
 ) -> int:
     """Remove all retained participant rows that current consent no longer permits."""
+    if buffer_registry.is_active():
+        return 0
     scope = "" if course_ids is None else render_uuid_in_clause('pca."courseId"', course_ids)
     result = session.execute(text(_PURGE_INELIGIBLE_SQL.replace(_PURGE_SCOPE_PLACEHOLDER, scope)))
     session.commit()

@@ -80,6 +80,29 @@ def test_registry_returns_empty_rows_for_known_table_with_no_rows():
         assert columns == ["type", "userMessages"]
 
 
+def test_chat_consent_reconciliation_bypasses_database_in_dryrun():
+    from src.modules.chat_analytics.consent_reconciliation import (
+        plan_chat_analytics_runs,
+        purge_ineligible_participant_chat_analytics,
+    )
+
+    buffer = CaptureBuffer()
+
+    with intercept_writes(buffer):
+        runs = plan_chat_analytics_runs(
+            session=None,
+            course_ids=["course-1"],
+            window_since="2026-07-09",
+        )
+        purged = purge_ineligible_participant_chat_analytics(
+            session=None,
+            course_ids=["course-1"],
+        )
+
+    assert [(run.course_ids, run.window_since) for run in runs] == [(["course-1"], "2026-07-09")]
+    assert purged == 0
+
+
 # ---------------------------------------------------------------------------
 # load_participant_analytics buffer-first path
 # ---------------------------------------------------------------------------

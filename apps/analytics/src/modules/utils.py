@@ -49,6 +49,7 @@ class AnalyticsRunConfig:
     mode: AnalyticsMode
     course_ids: tuple[str, ...] | None = None
     window_since: str | None = None
+    chat_analytics_cutoff: str | None = None
 
 
 class AnalyticsRunCancelled(RuntimeError):

@@ -5,6 +5,8 @@ from uuid import UUID
 import pytest
 from sqlalchemy import text
 
+from src.modules.utils import AnalyticsRunConfig, analytics_run_context
+
 COURSE_A = UUID("aaaa0000-0000-0000-0000-000000000001")
 COURSE_B = UUID("aaaa0000-0000-0000-0000-000000000002")
 CHATBOT_A = UUID("bbbb0000-0000-0000-0000-000000000001")
@@ -23,8 +25,12 @@ def _create_temp_tables(session) -> None:
             """
             CREATE TEMP TABLE "Course" (
               id uuid PRIMARY KEY,
+              "areAnalyticsValid" boolean NOT NULL DEFAULT false,
+              "analyticsLastComputedAt" timestamp,
+              "analyticsFinalizedAt" timestamp,
               "chatAnalyticsValidAt" timestamp
             );
+            CREATE TEMP TABLE "ParticipantAnalytics" ("courseId" uuid NOT NULL);
             CREATE TEMP TABLE "Chatbot" (
               id uuid PRIMARY KEY,
               "courseId" uuid NOT NULL,
@@ -825,8 +831,8 @@ def test_incremental_revocation_rebuilds_old_and_recent_chat_windows(session):
         is None
     )
 
-    # Script 9 can still discover the rebuild after script 8 purges stale rows:
-    # the cleared course watermark is the durable hand-off between parallel tasks.
+    # Script 9 discovers the rebuild after its script-8 parent purges stale rows:
+    # the cleared course watermark is the durable hand-off between DAG stages.
     aggregate_runs = plan_chat_analytics_runs(
         session,
         [str(COURSE_A)],
@@ -859,6 +865,117 @@ def test_incremental_revocation_rebuilds_old_and_recent_chat_windows(session):
         ).scalar_one()
         == 0
     )
+
+
+@pytest.mark.integration
+def test_acceptance_during_workflow_remains_visible_after_start_cutoff(session):
+    from src.modules.analytics_validity.mark_analytics_valid import (
+        mark_analytics_valid,
+    )
+    from src.modules.chat_analytics.compute_participant_chat_analytics import (
+        compute_participant_chat_analytics,
+    )
+    from src.modules.chat_analytics.consent_reconciliation import (
+        plan_chat_analytics_runs,
+    )
+
+    _create_temp_tables(session)
+    _seed_chat_sources(session)
+    session.execute(
+        text(
+            """
+            UPDATE "ChatUsageCredits"
+            SET "acceptedDisclaimerId" = NULL,
+                "disclaimerAcceptedAt" = NULL,
+                "disclaimerDeclined" = true,
+                "updatedAt" = TIMESTAMP '2026-01-01 00:00:00'
+            WHERE "participantId" = :participant
+              AND "chatbotId" = :chatbot
+            """
+        ),
+        {"participant": ACCEPTED, "chatbot": CHATBOT_A},
+    )
+
+    initial_runs = plan_chat_analytics_runs(
+        session,
+        [str(COURSE_A)],
+        "2026-07-09",
+    )
+    assert [(run.course_ids, run.window_since) for run in initial_runs] == [([str(COURSE_A)], "2026-07-09")]
+
+    session.execute(
+        text(
+            """
+            UPDATE "ChatUsageCredits"
+            SET "acceptedDisclaimerId" = :disclaimer,
+                "disclaimerAcceptedAt" = TIMESTAMP '2026-07-10 00:00:00',
+                "disclaimerDeclined" = false,
+                "updatedAt" = TIMESTAMP '2026-07-10 00:00:00'
+            WHERE "participantId" = :participant
+              AND "chatbotId" = :chatbot
+            """
+        ),
+        {
+            "disclaimer": DISCLAIMER,
+            "participant": ACCEPTED,
+            "chatbot": CHATBOT_A,
+        },
+    )
+
+    first_cutoff = AnalyticsRunConfig(
+        mode="incremental",
+        course_ids=(str(COURSE_A),),
+        window_since="2026-07-09",
+        chat_analytics_cutoff="2026-07-09T12:00:00+00:00",
+    )
+    with analytics_run_context(first_cutoff):
+        mark_analytics_valid(session)
+
+    history_runs = plan_chat_analytics_runs(
+        session,
+        [str(COURSE_A)],
+        "2026-07-09",
+    )
+    assert [(run.course_ids, run.window_since) for run in history_runs] == [([str(COURSE_A)], "2026-07-01")]
+
+    compute_participant_chat_analytics(
+        session,
+        "2026-07-01T00:00:00Z",
+        "2026-07-02T00:00:00Z",
+        "2026-07-01",
+        "DAILY",
+        course_ids=[str(COURSE_A)],
+    )
+    assert (
+        session.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM "ParticipantChatAnalytics"
+                WHERE "courseId" = :course
+                  AND "participantId" = :participant
+                """
+            ),
+            {"course": COURSE_A, "participant": ACCEPTED},
+        ).scalar_one()
+        == 1
+    )
+
+    second_cutoff = AnalyticsRunConfig(
+        mode="incremental",
+        course_ids=(str(COURSE_A),),
+        window_since="2026-07-09",
+        chat_analytics_cutoff="2026-07-11T00:00:00+00:00",
+    )
+    with analytics_run_context(second_cutoff):
+        mark_analytics_valid(session)
+
+    converged_runs = plan_chat_analytics_runs(
+        session,
+        [str(COURSE_A)],
+        "2026-07-09",
+    )
+    assert [(run.course_ids, run.window_since) for run in converged_runs] == [([str(COURSE_A)], "2026-07-09")]
 
 
 @pytest.mark.integration
