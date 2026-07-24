@@ -119,8 +119,8 @@ export default {
       refresh: 'Aktualisieren',
       rateUp: 'Hilfreiche Antwort',
       rateDown: 'Keine hilfreiche Antwort',
-      reasoningGroupLabel: 'Denkprozess ({count} Teile)',
-      toolCallsGroupLabel: '{count} Tool-Aufrufe',
+      toolCallsGroupLabel:
+        '{count, plural, one {1 Tool-Aufruf} other {{count} Tool-Aufrufe}}',
     },
     composer: {
       placeholder: 'Nachricht schreiben...',
@@ -139,6 +139,7 @@ export default {
     toolFallback: {
       running: '{tool} wird verwendet...',
       done: '{tool} verwendet',
+      failed: '{tool} fehlgeschlagen',
       showLess: 'Weniger anzeigen',
       showMore:
         '{count, plural, one {Mehr anzeigen (# weitere Zeile)} other {Mehr anzeigen (# weitere Zeilen)}}',

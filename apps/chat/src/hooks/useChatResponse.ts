@@ -430,6 +430,7 @@ export function useChatResponse(
                   const existingToolCall = toolCallsMap.get(jsonData.toolCallId)
                   if (existingToolCall) {
                     existingToolCall.result = `Error: ${jsonData.errorText || 'Tool execution failed'}`
+                    existingToolCall.isError = true
 
                     updateThreadMessages([
                       ...resolvedMessagesToSend,
