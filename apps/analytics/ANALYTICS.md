@@ -8,12 +8,12 @@ The pipeline is raw-SQL first: each module pairs a `compute_*.py` wrapper with a
 
 Every per-window table carries a `type` column with one of:
 
-| Value | Meaning | Timestamp convention |
-| --- | --- | --- |
-| `DAILY` | Closed 24h window ending at midnight UTC | `timestamp` = that day's date |
-| `WEEKLY` | Closed 7-day window ending Sunday UTC | `timestamp` = window end date |
-| `MONTHLY` | Calendar month, end-of-month UTC | `timestamp` = last day of month |
-| `COURSE` | Full course lifetime, one row per scope | `timestamp` = sentinel `1970-01-01` |
+| Value     | Meaning                                  | Timestamp convention                |
+| --------- | ---------------------------------------- | ----------------------------------- |
+| `DAILY`   | Closed 24h window ending at midnight UTC | `timestamp` = that day's date       |
+| `WEEKLY`  | Closed 7-day window ending Sunday UTC    | `timestamp` = window end date       |
+| `MONTHLY` | Calendar month, end-of-month UTC         | `timestamp` = last day of month     |
+| `COURSE`  | Full course lifetime, one row per scope  | `timestamp` = sentinel `1970-01-01` |
 
 The `COURSE` sentinel (`1970-01-01`) is the convention used by every per-window rollup; it keeps the `(type, …, timestamp)` uniqueness stable regardless of when the COURSE row was computed. `ParticipantCourseAnalytics`, `AggregatedCourseAnalytics`, `ParticipantPerformance`, `InstancePerformance`, `ActivityPerformance`, `ParticipantActivityPerformance`, `ActivityProgress`, `ParticipantChatOutcome`, `ParticipantLiveQuizAnalytics`, `AggregatedLiveQuizAnalytics`, and `PlatformSemesterAnalytics` have no `type` column — their grain is inherently per-course (or per-semester) and a single row per key represents the full lifetime.
 
@@ -111,7 +111,7 @@ Defined in the schema, **not computed by the current pipeline.** Would require a
 
 ## Chat analytics
 
-Added on the chat-analytics branch. Sourced from `ChatMessage`, `ChatThread`, `Chatbot`, `ChatUsageCredits`, `ChatAttachment`. Only participants with an accepted disclaimer (`ChatUsageCredits.acceptedDisclaimerId IS NOT NULL`) appear in these tables — the disclaimer gate is enforced in the SQL, not at read time.
+Added on the chat-analytics branch. Sourced from `ChatMessage`, `ChatThread`, `Chatbot`, `ChatUsageCredits`, `ChatAttachment`. Message-derived rows require the chatbot's current disclaimer to be accepted and not declined (`ChatUsageCredits.acceptedDisclaimerId = Chatbot.disclaimerId` and `disclaimerDeclined = false`). Incremental runs purge participant rows that no longer meet that rule across all retained history and rebuild affected aggregate windows from the earliest changed message or retained aggregate.
 
 ### `ParticipantChatAnalytics` — script 8
 
@@ -199,24 +199,24 @@ Scripts that short-circuit due to missing upstream data do not prevent script 99
 
 ## Source data summary
 
-| Analytics table | Source tables |
-| --- | --- |
-| `ParticipantAnalytics` | `QuestionResponse`, `QuestionResponseDetail`, `Participation` |
-| `AggregatedAnalytics` | `ParticipantAnalytics` (same window) |
-| `ParticipantCourseAnalytics` | `QuestionResponse`, `Participation` |
-| `AggregatedCourseAnalytics` | `ParticipantCourseAnalytics`, plus modality counts from `Chatbot` / `PracticeQuiz` / `MicroLearning` / `LiveQuiz` / `ChatUsageCredits` (script 13) |
-| `ParticipantPerformance` | `QuestionResponse`, `QuestionResponseDetail` |
-| `InstancePerformance` | `QuestionResponse`, `QuestionResponseDetail`, `ElementInstance` |
-| `ActivityPerformance` | `InstancePerformance`, `PracticeQuiz` / `MicroLearning` |
-| `ParticipantActivityPerformance` | `QuestionResponse`, `ElementInstance`, `PracticeQuiz` / `MicroLearning` |
-| `ActivityProgress` | `Participation`, `QuestionResponse`, `ElementInstance` |
-| `ParticipantChatAnalytics` | `ChatMessage`, `ChatThread`, `Chatbot`, `ChatUsageCredits`, `ChatAttachment` |
-| `AggregatedChatbotAnalytics` | `ChatMessage`, `ChatThread`, `Chatbot`, `ChatUsageCredits` |
-| `ChatTopicCluster` | `ChatMessage`, `ChatThread` |
-| `ParticipantChatOutcome` | `ParticipantChatAnalytics`, `ParticipantPerformance`, `Participation` |
-| `ParticipantLiveQuizAnalytics` | `LiveQuiz`, `ElementBlock`, `ElementInstance`, `LiveQuizResponse` |
-| `AggregatedLiveQuizAnalytics` | `ParticipantLiveQuizAnalytics` |
-| `PlatformSemesterAnalytics` | `QuestionResponse`, `LiveQuizResponse`, `ChatMessage`, `ChatThread`, `Chatbot`, `LiveQuiz`, `Participation`, `Course` |
+| Analytics table                  | Source tables                                                                                                                                      |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ParticipantAnalytics`           | `QuestionResponse`, `QuestionResponseDetail`, `Participation`                                                                                      |
+| `AggregatedAnalytics`            | `ParticipantAnalytics` (same window)                                                                                                               |
+| `ParticipantCourseAnalytics`     | `QuestionResponse`, `Participation`                                                                                                                |
+| `AggregatedCourseAnalytics`      | `ParticipantCourseAnalytics`, plus modality counts from `Chatbot` / `PracticeQuiz` / `MicroLearning` / `LiveQuiz` / `ChatUsageCredits` (script 13) |
+| `ParticipantPerformance`         | `QuestionResponse`, `QuestionResponseDetail`                                                                                                       |
+| `InstancePerformance`            | `QuestionResponse`, `QuestionResponseDetail`, `ElementInstance`                                                                                    |
+| `ActivityPerformance`            | `InstancePerformance`, `PracticeQuiz` / `MicroLearning`                                                                                            |
+| `ParticipantActivityPerformance` | `QuestionResponse`, `ElementInstance`, `PracticeQuiz` / `MicroLearning`                                                                            |
+| `ActivityProgress`               | `Participation`, `QuestionResponse`, `ElementInstance`                                                                                             |
+| `ParticipantChatAnalytics`       | `ChatMessage`, `ChatThread`, `Chatbot`, `ChatUsageCredits`, `ChatAttachment`                                                                       |
+| `AggregatedChatbotAnalytics`     | `ChatMessage`, `ChatThread`, `Chatbot`, `ChatUsageCredits`                                                                                         |
+| `ChatTopicCluster`               | `ChatMessage`, `ChatThread`                                                                                                                        |
+| `ParticipantChatOutcome`         | `ParticipantChatAnalytics`, `ParticipantPerformance`, `Participation`                                                                              |
+| `ParticipantLiveQuizAnalytics`   | `LiveQuiz`, `ElementBlock`, `ElementInstance`, `LiveQuizResponse`                                                                                  |
+| `AggregatedLiveQuizAnalytics`    | `ParticipantLiveQuizAnalytics`                                                                                                                     |
+| `PlatformSemesterAnalytics`      | `QuestionResponse`, `LiveQuizResponse`, `ChatMessage`, `ChatThread`, `Chatbot`, `LiveQuiz`, `Participation`, `Course`                              |
 
 ## Related references
 

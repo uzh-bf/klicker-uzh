@@ -21,7 +21,8 @@ UPDATE "Course" c SET
   "analyticsLastComputedAt" = NOW(),
   /*COURSE_FINALIZE_SET*/
   "chatAnalyticsValidAt"    = CASE
-    WHEN EXISTS (SELECT 1 FROM chat_courses cc WHERE cc."courseId" = c.id) THEN NOW()
+    WHEN /*CHAT_SCOPE_BYPASS*/
+      OR EXISTS (SELECT 1 FROM chat_courses cc WHERE cc."courseId" = c.id) THEN NOW()
     ELSE c."chatAnalyticsValidAt"
   END
 WHERE (EXISTS (SELECT 1 FROM quiz_courses qc WHERE qc."courseId" = c.id)

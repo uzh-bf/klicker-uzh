@@ -15,25 +15,25 @@ _SQL = load_sql(os.path.join(os.path.dirname(__file__), "mark_analytics_valid.sq
 _SET_PLACEHOLDER = "/*COURSE_FINALIZE_SET*/"
 _FILTER_PLACEHOLDER = "/*COURSE_FINALIZE_FILTER*/"
 _BYPASS_PLACEHOLDER = "/*COURSE_FINALIZE_BYPASS*/"
+_CHAT_BYPASS_PLACEHOLDER = "/*CHAT_SCOPE_BYPASS*/"
 
 
 def _render_sql(finalize: bool, course_ids: list[str] | None) -> str:
     set_clause = ""
     filter_clause = ""
-    # ``false`` keeps ``quiz OR chat OR false`` == ``quiz OR chat`` for normal
-    # runs; ``true`` in finalize mode lets the UPDATE touch courses with zero
-    # analytics rows (otherwise the scanner would re-emit courseEnded daily
-    # forever).
-    bypass_clause = "false"
+    # A scoped run covers every selected course even if current consent yields
+    # zero chat rows. Marking that empty result prevents a privacy rebuild on
+    # every later incremental run.
+    bypass_clause = "true" if course_ids is not None else "false"
     if course_ids is not None:
         filter_clause = render_uuid_in_clause("c.id", course_ids)
     if finalize:
         set_clause = '"analyticsFinalizedAt" = NOW(),'
         filter_clause += ' AND c."analyticsFinalizedAt" IS NULL'
-        bypass_clause = "true"
     return (
         _SQL.replace(_SET_PLACEHOLDER, set_clause)
         .replace(_BYPASS_PLACEHOLDER, bypass_clause)
+        .replace(_CHAT_BYPASS_PLACEHOLDER, bypass_clause)
         .replace(_FILTER_PLACEHOLDER, filter_clause)
     )
 

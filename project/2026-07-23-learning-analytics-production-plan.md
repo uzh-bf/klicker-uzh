@@ -885,12 +885,26 @@ the repository script that replaces it before continuing.
   and scoped validity marking.
 - 2026-07-24: The complete database-enabled analytics suite passes 188 tests
   with 18 existing dependency/dataframe warnings in 5 minutes 49 seconds.
+- 2026-07-24: Exact-merge review found one remaining release blocker:
+  incremental consent revocation only reconciled the 14-day lookback and
+  retained older participant and aggregate windows. Phase 2 now purges
+  ineligible participant rows across retained history, splits consent-affected
+  courses into targeted historical rebuilds from their earliest affected
+  message or aggregate, and clears then refreshes the scoped chat watermark so
+  participant and aggregate Hatchet roots coordinate safely when concurrent.
+  The new old-window PostgreSQL regression passes before and after the
+  participant purge.
+- 2026-07-24: The refreshed complete suite passes 189 tests with 18 existing
+  dependency/dataframe warnings in 5 minutes 47 seconds; Ruff formatting and
+  lint pass across 129 files. The accepted simplification avoids source-count
+  queries when logging is disabled, and the strict maintainability follow-up
+  centralizes test module restoration.
 - 2026-07-24: The environment publication gate rejected the updated Phase 1
   push despite the approved draft-PR workflow. Both branches will remain local
   until the user explicitly reconfirms publication.
-- Active: Finish the refreshed base merge, run the complete database suite and
-  final reviews, then request publication confirmation for both stacked draft
-  PRs.
+- Active: Commit and independently re-review the incremental consent fix,
+  complete final branch gates, then request publication confirmation for both
+  stacked draft PRs.
 
 ## Finish evidence
 
@@ -904,9 +918,8 @@ the repository script that replaces it before continuing.
 
 ## Next Steps
 
-1. Complete and commit the refreshed Phase 1 merge plus privacy/scope
-   regressions.
-2. Run the complete database-enabled suite and final review gates.
+1. Commit and independently review the incremental consent-history fix.
+2. Run the final branch security and maintainability gates.
 3. After explicit publication confirmation, update `chat-analytics` against
    `v3`, refresh the stacked `analytics-phase-a` draft, and read back CI
    without merging or deploying.

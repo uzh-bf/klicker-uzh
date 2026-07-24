@@ -45,7 +45,7 @@ def test_report_source_counts_accepts_empty_buffer():
 
     buffer = CaptureBuffer()
     with intercept_writes(buffer):
-        report_source_counts(session=None, course_ids=["c1"])
+        report_source_counts(session=None, course_ids=["c1"], verbose=True)
 
 
 def test_report_source_counts_accepts_populated_buffer():
@@ -57,7 +57,7 @@ def test_report_source_counts_accepts_populated_buffer():
     _populate(buffer)
     with intercept_writes(buffer):
         # No exception — DB is never touched because buffer_registry is active.
-        report_source_counts(session=None, course_ids=["c1"])
+        report_source_counts(session=None, course_ids=["c1"], verbose=True)
 
 
 def test_compute_outcomes_writes_rows_into_buffer_with_expected_columns():

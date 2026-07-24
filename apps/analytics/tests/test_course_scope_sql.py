@@ -204,7 +204,7 @@ def test_chat_quiz_correlation_source_counts_scope_to_selected_course():
     course_id = str(uuid.uuid4())
     session = _CaptureSession(scalars=[1, 1])
 
-    report_source_counts(session, course_ids=[course_id])
+    report_source_counts(session, course_ids=[course_id], verbose=True)
 
     assert len(session.statements) == 2
     assert f""""courseId" IN ('{course_id}')""" in session.statements[0]

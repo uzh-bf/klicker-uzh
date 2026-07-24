@@ -106,6 +106,13 @@ For the first staging rollout, run the non-mutating
 a known low-volume course. Confirm task completion, expected analytics rows,
 and the course status before increasing scope.
 
+Before enabling the production cron, run one guarded `FULL` rebuild in a
+reviewed maintenance window. This establishes a consent-correct baseline for
+analytics rows created before the native worker tracked consent changes. After
+that baseline, incremental runs retain the 14-day fast path for unaffected
+courses and automatically rebuild older chat windows only where current
+disclaimer consent changed.
+
 ## Trigger modes
 
 Course admins can trigger the existing GraphQL mutation:

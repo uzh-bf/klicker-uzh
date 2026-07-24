@@ -140,7 +140,7 @@ def test_empty_chat_source_reconciles_scoped_outcomes_and_activity(monkeypatch):
     monkeypatch.setattr(module.buffer_registry, "is_active", lambda: False)
     session = _CaptureSession(scalars=[0, 0])
 
-    module.report_source_counts(session, course_ids=[COURSE_A])
+    module.report_source_counts(session, course_ids=[COURSE_A], verbose=True)
     result = module.reconcile_chat_quiz_correlation(session, course_ids=[COURSE_A])
 
     statements = [str(statement) for statement in session.statements]

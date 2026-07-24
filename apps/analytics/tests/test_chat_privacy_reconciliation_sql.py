@@ -21,10 +21,15 @@ def _create_temp_tables(session) -> None:
     session.execute(
         text(
             """
+            CREATE TEMP TABLE "Course" (
+              id uuid PRIMARY KEY,
+              "chatAnalyticsValidAt" timestamp
+            );
             CREATE TEMP TABLE "Chatbot" (
               id uuid PRIMARY KEY,
               "courseId" uuid NOT NULL,
-              "disclaimerId" uuid
+              "disclaimerId" uuid,
+              "updatedAt" timestamp NOT NULL
             );
             CREATE TEMP TABLE "ChatThread" (
               id uuid PRIMARY KEY,
@@ -35,8 +40,10 @@ def _create_temp_tables(session) -> None:
               "participantId" uuid NOT NULL,
               "chatbotId" uuid NOT NULL,
               "acceptedDisclaimerId" uuid,
+              "disclaimerAcceptedAt" timestamp,
               "disclaimerDeclined" boolean NOT NULL,
-              "current" numeric NOT NULL
+              "current" numeric NOT NULL,
+              "updatedAt" timestamp NOT NULL
             );
             CREATE TEMP TABLE "ChatMessage" (
               id uuid PRIMARY KEY,
@@ -151,9 +158,19 @@ def _seed_chat_sources(session) -> None:
     session.execute(
         text(
             """
-            INSERT INTO "Chatbot" (id, "courseId", "disclaimerId") VALUES
-              (:chatbot_a, :course_a, :disclaimer),
-              (:chatbot_b, :course_b, :disclaimer)
+            INSERT INTO "Course" (id, "chatAnalyticsValidAt") VALUES
+              (:course_a, TIMESTAMP '2026-07-05 00:00:00'),
+              (:course_b, TIMESTAMP '2026-07-05 00:00:00')
+            """
+        ),
+        params,
+    )
+    session.execute(
+        text(
+            """
+            INSERT INTO "Chatbot" (id, "courseId", "disclaimerId", "updatedAt") VALUES
+              (:chatbot_a, :course_a, :disclaimer, TIMESTAMP '2026-01-01 00:00:00'),
+              (:chatbot_b, :course_b, :disclaimer, TIMESTAMP '2026-01-01 00:00:00')
             """
         ),
         params,
@@ -173,11 +190,23 @@ def _seed_chat_sources(session) -> None:
         text(
             """
             INSERT INTO "ChatUsageCredits"
-              ("participantId", "chatbotId", "acceptedDisclaimerId", "disclaimerDeclined", "current")
+              (
+                "participantId", "chatbotId", "acceptedDisclaimerId",
+                "disclaimerAcceptedAt", "disclaimerDeclined", "current", "updatedAt"
+              )
             VALUES
-              (:accepted, :chatbot_a, :disclaimer, false, 10),
-              (:stale, :chatbot_a, :stale_disclaimer, false, 10),
-              (:declined, :chatbot_a, :disclaimer, true, 10)
+              (
+                :accepted, :chatbot_a, :disclaimer,
+                TIMESTAMP '2026-01-01 00:00:00', false, 10, TIMESTAMP '2026-01-01 00:00:00'
+              ),
+              (
+                :stale, :chatbot_a, :stale_disclaimer,
+                TIMESTAMP '2026-01-01 00:00:00', false, 10, TIMESTAMP '2026-01-01 00:00:00'
+              ),
+              (
+                :declined, :chatbot_a, :disclaimer,
+                NULL, true, 10, TIMESTAMP '2026-01-01 00:00:00'
+              )
             """
         ),
         params,
@@ -407,15 +436,29 @@ def test_incremental_validity_marks_only_current_course_scope(session, monkeypat
     rows = session.execute(
         text(
             """
-            SELECT id, "areAnalyticsValid", "analyticsLastComputedAt" IS NOT NULL AS marked
+            SELECT
+              id,
+              "areAnalyticsValid",
+              "analyticsLastComputedAt" IS NOT NULL AS marked,
+              "chatAnalyticsValidAt" IS NOT NULL AS chat_marked
             FROM "Course"
             ORDER BY id
             """
         )
     ).mappings()
     assert [dict(row) for row in rows] == [
-        {"id": COURSE_A, "areAnalyticsValid": True, "marked": True},
-        {"id": COURSE_B, "areAnalyticsValid": False, "marked": False},
+        {
+            "id": COURSE_A,
+            "areAnalyticsValid": True,
+            "marked": True,
+            "chat_marked": True,
+        },
+        {
+            "id": COURSE_B,
+            "areAnalyticsValid": False,
+            "marked": False,
+            "chat_marked": False,
+        },
     ]
 
 
@@ -629,7 +672,7 @@ def test_consent_revocation_reconciles_scoped_chat_and_downstream_state(session)
         },
     )
 
-    report_source_counts(session, course_ids=[str(COURSE_A)])
+    report_source_counts(session, course_ids=[str(COURSE_A)], verbose=True)
     reconcile_chat_quiz_correlation(session, course_ids=[str(COURSE_A)])
 
     outcomes = session.execute(
@@ -680,6 +723,142 @@ def test_consent_revocation_reconciles_scoped_chat_and_downstream_state(session)
             "hasChatActivity": True,
         },
     ]
+
+
+@pytest.mark.integration
+def test_incremental_revocation_rebuilds_old_and_recent_chat_windows(session):
+    from src.modules.aggregated_chat_analytics.compute_aggregated_chatbot_analytics import (
+        compute_aggregated_chatbot_analytics,
+    )
+    from src.modules.chat_analytics.compute_participant_chat_analytics import (
+        compute_participant_chat_analytics,
+    )
+    from src.modules.chat_analytics.consent_reconciliation import (
+        plan_chat_analytics_runs,
+        purge_ineligible_participant_chat_analytics,
+    )
+    from src.modules.utils import iter_analytics_windows
+
+    _create_temp_tables(session)
+    _seed_chat_sources(session)
+    session.execute(
+        text(
+            """
+            INSERT INTO "ChatMessage" (
+              id, "threadId", role, content, "chatMode", "modelId",
+              "reasoningEffort", "creditsUsed", "createdAt"
+            ) VALUES (
+              'ffff0000-0000-0000-0000-000000000004',
+              'eeee0000-0000-0000-0000-000000000001',
+              'user', '[{"type":"text","text":"recent"}]', 'tutor', NULL, NULL, 0,
+              TIMESTAMP '2026-07-15 10:00:00'
+            )
+            """
+        )
+    )
+
+    for day in ("2026-07-01", "2026-07-15"):
+        compute_participant_chat_analytics(
+            session,
+            f"{day}T00:00:00Z",
+            f"{day}T23:59:59.999Z",
+            day,
+            "DAILY",
+            course_ids=[str(COURSE_A)],
+        )
+        compute_aggregated_chatbot_analytics(
+            session,
+            f"{day}T00:00:00Z",
+            f"{day}T23:59:59.999Z",
+            day,
+            "DAILY",
+            course_ids=[str(COURSE_A)],
+        )
+
+    session.execute(
+        text(
+            """
+            UPDATE "ChatUsageCredits"
+            SET "acceptedDisclaimerId" = NULL,
+                "disclaimerAcceptedAt" = NULL,
+                "disclaimerDeclined" = true,
+                "updatedAt" = TIMESTAMP '2026-07-10 00:00:00'
+            WHERE "participantId" = :participant
+              AND "chatbotId" = :chatbot
+            """
+        ),
+        {"participant": ACCEPTED, "chatbot": CHATBOT_A},
+    )
+
+    runs = plan_chat_analytics_runs(
+        session,
+        [str(COURSE_A)],
+        "2026-07-09",
+    )
+    assert [(run.course_ids, run.window_since) for run in runs] == [([str(COURSE_A)], "2026-07-01")]
+
+    purge_ineligible_participant_chat_analytics(session, [str(COURSE_A)])
+    assert (
+        session.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM "ParticipantChatAnalytics"
+                WHERE "courseId" = :course
+                """
+            ),
+            {"course": COURSE_A},
+        ).scalar_one()
+        == 0
+    )
+    assert (
+        session.execute(
+            text(
+                """
+                SELECT "chatAnalyticsValidAt"
+                FROM "Course"
+                WHERE id = :course
+                """
+            ),
+            {"course": COURSE_A},
+        ).scalar_one()
+        is None
+    )
+
+    # Script 9 can still discover the rebuild after script 8 purges stale rows:
+    # the cleared course watermark is the durable hand-off between parallel tasks.
+    aggregate_runs = plan_chat_analytics_runs(
+        session,
+        [str(COURSE_A)],
+        "2026-07-09",
+    )
+    assert [(run.course_ids, run.window_since) for run in aggregate_runs] == [([str(COURSE_A)], "2026-07-01")]
+    iter_analytics_windows(
+        session,
+        compute_aggregated_chatbot_analytics,
+        start_date="2026-07-01",
+        end_date="2026-07-15",
+        compute_weekly=False,
+        compute_monthly=False,
+        compute_course=False,
+        windows_since=aggregate_runs[0].window_since,
+        course_ids=aggregate_runs[0].course_ids,
+    )
+
+    assert (
+        session.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM "AggregatedChatbotAnalytics"
+                WHERE "courseId" = :course
+                  AND "timestamp" IN (DATE '2026-07-01', DATE '2026-07-15')
+                """
+            ),
+            {"course": COURSE_A},
+        ).scalar_one()
+        == 0
+    )
 
 
 @pytest.mark.integration
