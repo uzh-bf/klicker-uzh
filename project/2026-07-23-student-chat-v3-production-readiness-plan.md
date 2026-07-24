@@ -955,3 +955,23 @@ designing the question widget.
   and en 'Error: I'm sorry, something went wrong …'), no stacking, no
   hardcoded-English leak in de. Next: S5b (disclaimer + thread-list error
   states, items 4-5).
+- 2026-07-24: **S5b done** (disclaimer + thread-list error states; items 4-5 —
+  S5 complete). Disclaimer accept/decline failures (network catch and
+  !response.ok) now set a `disclaimerActionError` state in `assistant.tsx`,
+  rendered as a localized destructive inline error inside `DisclaimerModal`
+  (new `errorMessage` prop, `data-cy="chat-disclaimer-error"`); pressing
+  Accept/Decline again is the retry and clears the error. Thread-list:
+  `chatStore.threadsLoadError` set on non-403 `loadThreads` failures,
+  `thread-list.tsx` renders a localized error empty-state with retry button
+  (`data-cy` chat-thread-list-error/-retry) when the list is empty. New keys
+  `chat.disclaimer.actionError`, `chat.threadList.loadError`/`retry` (en+de,
+  informal Du, Swiss ss). Opus review integrated: loadThreads generation
+  guard (stale overlapping request can no longer stomp a newer result),
+  `handleApiError` now returns the participation-bool (403 check no longer
+  duplicated), race regression test added. 45/45 vitest, in-container check,
+  prettier green. Browser-verified via agent-browser route-abort: threads
+  endpoint aborted → error+retry shown, unroute+retry → list loads;
+  disclaimer POST aborted → inline modal error, unroute+Accept → clears and
+  closes (testuser24 acceptance reset via prisma then restored by the retry).
+  Deferred (informational, spec-compliant): background-refresh failure with a
+  cached list stays silent. Next: S12 motion.

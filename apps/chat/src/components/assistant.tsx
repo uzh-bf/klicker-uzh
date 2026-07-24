@@ -54,6 +54,7 @@ export const Assistant = ({
     useState<DisclaimerStatus | null>(null)
   const [showDisclaimerModal, setShowDisclaimerModal] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [disclaimerActionError, setDisclaimerActionError] = useState(false)
 
   // Fetch disclaimer information on component mount
   useEffect(() => {
@@ -98,6 +99,8 @@ export const Assistant = ({
   const handleAcceptDisclaimer = async () => {
     if (!disclaimer) return
 
+    setDisclaimerActionError(false)
+
     try {
       const response = await fetch(`/api/chatbots/${chatbot.id}/disclaimer`, {
         method: 'POST',
@@ -122,13 +125,17 @@ export const Assistant = ({
         setShowDisclaimerModal(false)
       } else {
         console.error('Failed to accept disclaimer')
+        setDisclaimerActionError(true)
       }
     } catch (error) {
       console.error('Error accepting disclaimer:', error)
+      setDisclaimerActionError(true)
     }
   }
 
   const handleDeclineDisclaimer = async () => {
+    setDisclaimerActionError(false)
+
     try {
       const response = await fetch(`/api/chatbots/${chatbot.id}/disclaimer`, {
         method: 'POST',
@@ -151,9 +158,11 @@ export const Assistant = ({
         setShowDisclaimerModal(false)
       } else {
         console.error('Failed to decline disclaimer')
+        setDisclaimerActionError(true)
       }
     } catch (error) {
       console.error('Error declining disclaimer:', error)
+      setDisclaimerActionError(true)
     }
   }
 
@@ -270,6 +279,9 @@ export const Assistant = ({
             isOpen={showDisclaimerModal}
             onAccept={handleAcceptDisclaimer}
             onDecline={handleDeclineDisclaimer}
+            errorMessage={
+              disclaimerActionError ? t('chat.disclaimer.actionError') : null
+            }
           />
         )}
       </>
@@ -291,6 +303,9 @@ export const Assistant = ({
           isOpen={showDisclaimerModal}
           onAccept={handleAcceptDisclaimer}
           onDecline={handleDeclineDisclaimer}
+          errorMessage={
+            disclaimerActionError ? t('chat.disclaimer.actionError') : null
+          }
         />
       )}
     </>

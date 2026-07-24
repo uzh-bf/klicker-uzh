@@ -75,6 +75,8 @@ export default {
         'Akzeptieren: Du kannst den Chatbot nutzen und auf alle Funktionen zugreifen.',
       consequenceDecline:
         'Ablehnen: Der Chatbot bleibt gesperrt und Du kannst keine Nachrichten senden.',
+      actionError:
+        'Es ist leider ein Fehler aufgetreten. Bitte versuche es erneut.',
     },
     markdown: {
       copyCode: 'Kopieren',
@@ -101,6 +103,8 @@ export default {
       editName: 'Namen bearbeiten',
       deleteChat: 'Chat löschen',
       emptyState: 'Starte Deine erste Konversation mit einer Nachricht.',
+      loadError: 'Deine Chats konnten nicht geladen werden.',
+      retry: 'Erneut versuchen',
     },
     thread: {
       scrollToBottom: 'Nach unten scrollen',
