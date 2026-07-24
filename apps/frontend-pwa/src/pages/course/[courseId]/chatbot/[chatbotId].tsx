@@ -104,7 +104,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
       return {
         redirect: {
-          destination: '/error',
+          destination: `${ctx.locale ? `/${ctx.locale}` : ''}/error`,
           permanent: false,
         },
       }
@@ -152,7 +152,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     return {
       redirect: {
-        destination: '/error',
+        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/error`,
         permanent: false,
       },
     }
