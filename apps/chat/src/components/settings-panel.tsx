@@ -10,7 +10,7 @@ import { useSettingsStore } from '../stores/settingsStore'
 
 import { Select } from '@uzh-bf/design-system'
 import { ChevronDown, ChevronUp, Settings2 } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 
 /**
  * Ids that tie each visible label to the control it names. The design system
@@ -23,6 +23,7 @@ const REASONING_EFFORT_SELECT_ID = 'chat-reasoning-effort-select'
 
 export function SettingsPanel() {
   const t = useTranslations()
+  const locale = useLocale()
   const {
     selectedModel,
     selectedReasoningEffort,
@@ -112,12 +113,21 @@ export function SettingsPanel() {
                     }}
                     value={selectedModel}
                   />
-                  <p className="text-muted-foreground text-sm">
-                    {
-                      modelOptions.find((option) => option.id === selectedModel)
-                        ?.description
-                    }
-                  </p>
+                  {/* D3: registry model descriptions are English-only text
+                      from the deployment model registry, not translated
+                      copy — showing them in a DE UI leaks raw English.
+                      Hide until the registry supports per-locale
+                      descriptions rather than mistranslate or drop them
+                      for `en` users. */}
+                  {locale === 'en' && (
+                    <p className="text-muted-foreground text-sm">
+                      {
+                        modelOptions.find(
+                          (option) => option.id === selectedModel
+                        )?.description
+                      }
+                    </p>
+                  )}
                 </>
               ) : (
                 <>

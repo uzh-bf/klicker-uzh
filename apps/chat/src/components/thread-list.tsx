@@ -25,10 +25,28 @@ const ThreadListItems: FC = () => {
     threadId?: string
   }>()
   const router = useRouter()
-  const { threads, deleteThread } = useChatStore()
+  const { threads, deleteThread, isLoading } = useChatStore()
   const { setOpenMobile } = useSidebar()
 
   const groupedThreads = useMemo(() => groupThreadsByDate(threads), [threads])
+
+  if (groupedThreads.length === 0) {
+    // While threads are still being fetched, an empty array means "unknown",
+    // not "no history" — showing the first-conversation hint then would
+    // wrongly greet returning users during the loadThreads round-trip.
+    if (isLoading) return null
+
+    return (
+      <div data-cy="chat-thread-list" className="flex flex-col gap-2 p-1">
+        <p
+          data-cy="chat-thread-list-empty"
+          className="text-muted-foreground px-2 text-sm"
+        >
+          {t('chat.threadList.emptyState')}
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div data-cy="chat-thread-list" className="flex flex-col gap-2 p-1">

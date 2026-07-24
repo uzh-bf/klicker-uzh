@@ -100,6 +100,7 @@ export default {
       cancel: 'Abbrechen',
       editName: 'Namen bearbeiten',
       deleteChat: 'Chat löschen',
+      emptyState: 'Starte Deine erste Konversation mit einer Nachricht.',
     },
     thread: {
       scrollToBottom: 'Nach unten scrollen',
