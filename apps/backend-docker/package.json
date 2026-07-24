@@ -85,7 +85,8 @@
     "script": "../../util/_run_with_infisical.sh --env dev tsx",
     "script:prod": "../../util/_run_with_infisical.sh --env prd tsx",
     "start": "node -r dotenv/config dist/index.js",
-    "start:test": "nyc --silent node -r dotenv/config dist/index.js"
+    "start:test": "nyc --silent node -r dotenv/config dist/index.js",
+    "test": "tsx --test test/*.test.ts"
   },
   "engines": {
     "node": "=24"

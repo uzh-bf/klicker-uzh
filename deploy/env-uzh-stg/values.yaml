@@ -510,6 +510,7 @@ backendGraphql:
     className: haproxy
     annotations:
       cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
+      haproxy.org/forwarded-for: 'true'
     hosts:
       - host: api.klicker.stg.df-app.ch
         paths:

@@ -7,9 +7,9 @@ import { enhanceContext, schema } from '@klicker-uzh/graphql'
 import { verifyJWT } from '@klicker-uzh/util'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
-import express from 'express'
 import { createYoga } from 'graphql-yoga'
 import { createRequire } from 'node:module'
+import { createRequestAwareExpressApp } from './requestAddress.js'
 
 const require = createRequire(import.meta.url)
 const persistedOperations = require('@klicker-uzh/graphql/dist/server.json')
@@ -37,10 +37,7 @@ function prepareApp({
   })
   const enhancements = armor.protect()
 
-  const app = express()
-
-  // Production and local routed traffic reach this service through one ingress.
-  app.set('trust proxy', 1)
+  const app = createRequestAwareExpressApp()
 
   /* istanbul ignore next */
   if (global.__coverage__) {
