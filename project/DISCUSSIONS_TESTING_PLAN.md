@@ -41,14 +41,14 @@ behavior has browser or backend runtime evidence appropriate to the assertion.
 
 ## Current Status
 
-Last reconciled: 2026-07-23.
+Last reconciled: 2026-07-24.
 
 | ID | Status | Scenario | Last Result | Remaining Delta |
 |---|---|---|---|---|
 | `QA-001` | PASS | Rollout and runtime gates hide Q&A in Manage until enabled | Rollout Chromium `7/7`; course baseline `8/8` | Re-run current course spec with later READ-only case |
 | `QA-002` | PASS | Course overview integrates Q&A only when both gates allow it | Course/rollout Chromium baseline; screenshots `01`, `03`, `04` | Re-run later Q&A-only-course case |
 | `QA-003` | PASS | Participant creates a course thread and reply in place | Course Chromium baseline; screenshot `02` | Current-spec rerun |
-| `QA-004` | PASS | Thread and reply upvotes toggle without counter drift | Course baseline; backend `23/23`; screenshot `02` | Current-spec rerun |
+| `QA-004` | PASS | Thread and reply upvotes toggle without counter drift | Course baseline; backend `30/30`; screenshot `02` | Current-spec rerun |
 | `QA-005` | PARTIAL | Evaluated practice and microlearning stacks expose contextual Q&A, while answering does not | Practice Chromium `7/7`; evaluated-state screenshots `08` to `12` | Fresh microlearning answering/evaluation run |
 | `QA-006` | PASS | Lecturer overview groups and paginates course and stack threads | Course/practice baseline; screenshots `06`, `07` | Current-spec rerun |
 | `QA-007` | PARTIAL | Lecturer generates external-block and course-wide embed links | External-only baseline; old screenshot `14`; current backend proof | Re-run after fragment transport and course-wide mode |
@@ -92,12 +92,13 @@ evidence rather than current-branch proof.
 
 The 2026-07-24 current-spec attempt confirmed Chromium 150 and one-spec
 selection after correcting the command above. Cleanup passed, but the first
-lecturer case returned to Auth before any Q&A assertion. A real delegated login
-also created an Auth session, reached Manage, then returned to Auth while the
-course list loaded. Restarting the isolated Auth, Manage, PWA, and API processes
-with one shared test secret did not change that result. Treat the focused
-browser rerun and new screenshots as blocked by local cross-app session
-validation, not as a Course Q&A assertion failure.
+lecturer case returned to Auth before any Q&A assertion. A later fresh
+agent-browser attempt found the local devrouter helper unavailable with
+`devrouter is not built yet`; manual process fallback then loaded the frontends
+with non-workspace API origins and reproduced the Auth redirect or an empty
+loading state. Treat the focused browser rerun and new screenshots as blocked
+by local cross-app routing/session validation, not as a Course Q&A assertion
+failure.
 
 Run the current DB-backed service suite with:
 
@@ -108,30 +109,30 @@ docker exec -w /workspaces/klicker-uzh default-co-c3448-app-1 \
   pnpm --filter @klicker-uzh/graphql exec vitest run test/discussions.test.ts'
 ```
 
-Current result: `23/23` passing across authorization, gates, rate limits,
+Current result: `30/30` passing across authorization, gates, rate limits,
 concurrency, scope behavior, pagination, and presentation metadata.
 
 ## Screenshot Inventory
 
-| File | Functionality |
-|---|---|
-| `01-course-overview-desktop.png` | Integrated course overview with desktop Q&A rail |
-| `02-course-thread-reply-upvotes.png` | Thread, reply, and upvote interaction |
-| `03-course-overview-mobile.png` | Course overview on mobile |
-| `04-course-qa-mobile-panel.png` | In-page course Q&A on mobile |
-| `05-practice-stack-desktop-rail.png` | Initial practice desktop rail proof |
-| `06-manage-overview-first-page.png` | Lecturer overview at 20-thread first page |
-| `07-manage-overview-all-threads.png` | Lecturer overview after loading all 27 threads |
-| `08-practice-mobile-collapsed.png` | Practice Q&A collapsed after evaluation |
-| `09-practice-mobile-expanded.png` | Practice Q&A expanded in place |
-| `10-practice-desktop-responsive-rail.png` | Practice Q&A beside evaluated content |
-| `11-microlearning-evaluation-desktop.png` | Microlearning results with contextual desktop rail |
-| `12-microlearning-evaluation-mobile-collapsed.png` | Microlearning Q&A before long results, collapsed |
-| `12-microlearning-evaluation-mobile-expanded.png` | Microlearning Q&A expanded in place |
-| `13-qa-fallback-deep-link.png` | Standalone fallback/deep-link route |
-| `14-manage-embed-generated-redacted.png` | Historical external-only embed generator with token redacted |
-| `15-anonymous-embed-empty.png` | Historical chrome-free anonymous embed baseline |
-| `16-anonymous-embed-thread-reply.png` | Historical anonymous thread/reply baseline |
+| File | Functionality | Evidence age |
+|---|---|---|
+| `01-course-overview-desktop.png` | Integrated course overview with desktop Q&A rail | Prior real runtime |
+| `02-course-thread-reply-upvotes.png` | Thread, reply, and upvote interaction | Prior real runtime |
+| `03-course-overview-mobile.png` | Course overview on mobile | Prior real runtime |
+| `04-course-qa-mobile-panel.png` | In-page course Q&A on mobile | Prior real runtime |
+| `05-practice-stack-desktop-rail.png` | Initial practice desktop rail proof | Prior real runtime |
+| `06-manage-overview-first-page.png` | Lecturer overview at 20-thread first page | Prior real runtime |
+| `07-manage-overview-all-threads.png` | Lecturer overview after loading all 27 threads | Prior real runtime |
+| `08-practice-mobile-collapsed.png` | Practice Q&A collapsed after evaluation | Prior real runtime |
+| `09-practice-mobile-expanded.png` | Practice Q&A expanded in place | Prior real runtime |
+| `10-practice-desktop-responsive-rail.png` | Practice Q&A beside evaluated content | Prior real runtime |
+| `11-microlearning-evaluation-desktop.png` | Microlearning results with contextual desktop rail | Prior real runtime |
+| `12-microlearning-evaluation-mobile-collapsed.png` | Microlearning Q&A before long results, collapsed | Prior real runtime |
+| `12-microlearning-evaluation-mobile-expanded.png` | Microlearning Q&A expanded in place | Prior real runtime |
+| `13-qa-fallback-deep-link.png` | Standalone fallback/deep-link route | Prior real runtime |
+| `14-manage-embed-generated-redacted.png` | External-only embed generator with token redacted | Historical, before course-wide mode |
+| `15-anonymous-embed-empty.png` | Chrome-free anonymous embed baseline | Historical, before fragment transport |
+| `16-anonymous-embed-thread-reply.png` | Anonymous thread/reply baseline | Historical, before fragment transport |
 
 ## Targeted Pending Runs
 
@@ -163,7 +164,7 @@ proof.
 ### Final current-branch rerun
 
 1. Run all four focused Chromium commands above.
-2. Run all `23/23` backend scenarios.
+2. Run all `30/30` backend scenarios.
 3. Capture fresh embed generator and anonymous embed screenshots for
    fragment-token transport and both embed modes.
 4. Re-check desktop `1440x900` and mobile `390x844` for any visible behavior

@@ -8,6 +8,46 @@
 
 ---
 
+## Follow-up status (2026-07-24)
+
+This document preserves the 2026-07-07 review snapshot below. The takeover
+branch has since resolved every original P0 and the decision-free P1 findings,
+and the DB-backed discussion suite now passes `30/30`. The remaining rollout
+gate is a product decision, not an unimplemented backend primitive.
+
+| Finding | Current status |
+|---|---|
+| P0-1 CI coverage | Resolved: GraphQL secret setup plus path-filtered backend and Helm regression workflows |
+| P0-2 student pagination | Resolved: accumulated cursor pages survive normal interaction |
+| P0-3 localization | Resolved: discussion labels, controls, and capability states are localized |
+| P1-1 delete/moderation UI | Open: choose minimum deletion or answered/pinned triage before implementation |
+| P1-2 mutation refetch/reorder | Resolved: upvotes update normalized cache without full-list refetch |
+| P1-3 content normalization | Resolved: valid plain text is preserved and over-length input is rejected |
+| P1-4 rate-limit event growth | Resolved: rejected attempts produce bounded audit events |
+| P1-5 Manage pagination | Resolved: 20-thread cursor pages merge and refresh coherently |
+| P1-6 concurrent votes | Resolved: account locks and atomic counters cover add, remove, and deletion races |
+| P1-7 embed revocation | Alpha limitation documented: disabling course Q&A remains the kill switch |
+| P1-8 hidden replies beyond cap | Resolved: creation is atomically rejected at the rendered reply limit |
+
+### Current UX assessment
+
+- Desktop course, practice, and microlearning views place Q&A beside the content
+  it discusses. Mobile uses an in-page disclosure, and `/qa` remains only a
+  fallback/deep-link and embed host. This is the right primary navigation model.
+- The lecturer surface is integrated as a course tab with pagination rather
+  than a separate moderation application.
+- Highest-value next improvement is the unresolved moderation choice. Minimum
+  deletion is the recommended pilot scope; answered/pinned state should only be
+  pulled forward if triage is required for the named pilot.
+- After moderation, prefer a context-specific rail heading, a collapsed reply
+  composer until the user chooses Reply, and denser lecturer filters. These are
+  polish, not merge blockers.
+- Screenshots `01` to `13` are prior real-runtime evidence. Screenshots `14` to
+  `16` are historical embed evidence. Fresh browser capture is blocked by the
+  local devrouter/auth runtime and must not be represented as current proof.
+
+---
+
 ## 1. Verdict
 
 The feature is **well-architected and close to alpha-ready, but not mergeable today**. The backend is the strongest part: access control is layered correctly (rollout gate → runtime flag → enrollment/embed-token), the embed JWT is HS256-pinned with strict claim validation, fingerprints are salted hashes, and the migration has good index coverage. The Cypress suite (21 scenarios) is unusually thorough for an alpha.
@@ -137,7 +177,7 @@ Every other string in these files goes through `useTranslations`. German-speakin
 
 ### Smaller P1 notes (bundle into one cleanup commit)
 
-- **XFF trust (resolved)**: Both production value sets route the ClusterIP backend through exactly one HAProxy ingress, and the backend Service now explicitly enables HAProxy's `forwarded-for` behavior. The Express app configures one trusted proxy hop and the anonymous fingerprint consumes only Express's normalized `req.ip`, which selects the nearest untrusted address from the right instead of trusting the client-controlled first `x-forwarded-for` value. A focused regression proves changing only the raw header cannot change the fingerprint.
+- **XFF trust (resolved)**: Both production value sets route the ClusterIP backend through exactly one HAProxy ingress, and the Ingress explicitly enables HAProxy's `forwarded-for` behavior. The Express app configures one trusted proxy hop and the anonymous fingerprint consumes only Express's normalized `req.ip`, which selects the nearest untrusted address from the right instead of trusting the client-controlled first `x-forwarded-for` value. Focused HTTP and rendered-manifest regressions cover the runtime topology and annotation placement.
 - **Query with side effects**: `getCourseDiscussionEmbeddingInfo` is a GraphQL *query* that upserts `DiscussionScope` rows (`discussions.ts:1165-1177`). Every lecturer typo in source/ref creates a permanent junk scope with no cleanup path. Acceptable for alpha; add a follow-up ticket for scope cleanup/list-existing-scopes UX, and consider making the embed generator suggest previously used source/ref pairs (also better UX).
 - **Anonymous reply checkbox persists after posting**: `handleCreateReply` resets the draft (`qa.tsx:218-221`) but not `postReplyAnonymous[threadId]` (`qa.tsx:62,204,540`). Privacy-sensitive toggle silently sticks across posts. Reset it alongside the draft.
 - **Poll cost**: PWA polls every 30s (`qa.tsx:99`), Manage every 20s (`CourseDiscussionOverview.tsx:44`), both `cache-and-network`, neither gated on `document.visibilityState`. Fine at alpha scale; gate on visibility before broad rollout.
