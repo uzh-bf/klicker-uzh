@@ -121,6 +121,8 @@ export default {
     },
     composer: {
       placeholder: 'Write a message...',
+      send: 'Send message',
+      stop: 'Stop response',
       attachmentLimitError: 'You can only attach up to {max} images.',
       dismissError: 'Dismiss error',
       dropImages: 'Drop images to attach',
