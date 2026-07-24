@@ -436,6 +436,10 @@ the repository script that replaces it before continuing.
 - 2026-07-24: Current base verification passes Ruff formatting/lint across 92
   files and 35 focused unit/contract tests. The pre-push repository build
   completed all 22 runnable build tasks.
+- 2026-07-24: Exact-commit review found that a valid empty COURSE chat result
+  still aborted correlation and retained old outcome/activity state. The
+  correction now treats dependency-complete empty sources as valid and
+  atomically rebuilds outcomes plus activity flags from current source rows.
 - 2026-07-24: Opened draft PR
   [#5199](https://github.com/uzh-bf/klicker-uzh/pull/5199) from
   `chat-analytics` to `v3`.

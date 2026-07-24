@@ -22,6 +22,11 @@ from src.modules.chat_analytics.compute_participant_chat_analytics import (
     _SQL,
     compute_participant_chat_analytics,
 )
+from src.modules.chat_quiz_correlation.compute_chat_quiz_correlation import (
+    _DELETE_OUTCOMES_SQL,
+    reconcile_chat_quiz_correlation,
+    report_source_counts,
+)
 
 cluster_module = importlib.import_module("src.modules.chat_topic_clustering.cluster_chatbot")
 responses_module = importlib.import_module("src.modules.participant_analytics.get_participant_responses")
@@ -79,6 +84,11 @@ class _ChatDb:
     def tx(self, *, timeout=None):
         self.timeout = timeout
         return _TransactionContext(self.transaction)
+
+
+class _CorrelationDb(_ChatDb):
+    def query_raw(self, *_args: object) -> list[dict[str, int]]:
+        return [{"n": 0}]
 
 
 class ParticipantScopeTests(unittest.TestCase):
@@ -197,6 +207,27 @@ class ConsentReconciliationTests(unittest.TestCase):
             [],
             [],
             verbose=False,
+        )
+
+    def test_empty_chat_source_reconciles_outcomes_and_activity(self):
+        db = _CorrelationDb()
+
+        report_source_counts(db)
+        correlation_module = importlib.import_module("src.modules.chat_quiz_correlation.compute_chat_quiz_correlation")
+        with (
+            mock.patch.object(correlation_module, "_load", side_effect=["outcome SQL", "activity SQL"]),
+        ):
+            result = reconcile_chat_quiz_correlation(db)
+
+        self.assertEqual(result, (7, 7))
+        self.assertEqual(db.timeout, timedelta(minutes=30))
+        self.assertEqual(
+            db.transaction.calls,
+            [
+                (_DELETE_OUTCOMES_SQL,),
+                ("outcome SQL",),
+                ("activity SQL",),
+            ],
         )
 
 

@@ -1,7 +1,7 @@
 -- ParticipantChatOutcome: per-participant-per-course join of chat volume + quiz performance.
 -- Source: ParticipantChatAnalytics (type=COURSE) ⨝ ParticipantPerformance on (participantId, courseId).
--- Hard precondition: target course must have areAnalyticsValid=true. The calling script
--- verifies that per-course and aborts before this SQL runs.
+-- Upstream pipeline dependencies guarantee that participant chat and performance
+-- computation completed. Either source may legitimately be empty.
 --
 -- chatDoseBucket (per §3.5 script 11):
 --   NONE : chatMessagesInCourse = 0 (these come from the LEFT JOIN where pca is NULL)
