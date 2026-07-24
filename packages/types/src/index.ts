@@ -16,6 +16,9 @@ import type {
 export * from './assessmentReport.js'
 export * from './hatchet.js'
 
+export const COURSE_QA_EXTERNAL_SOURCE_MAX_LENGTH = 100
+export const COURSE_QA_EXTERNAL_REF_MAX_LENGTH = 200
+
 // ----- ACTIVITY LOG TYPES -----
 // #region
 export enum ActivityLogModificationFieldType {

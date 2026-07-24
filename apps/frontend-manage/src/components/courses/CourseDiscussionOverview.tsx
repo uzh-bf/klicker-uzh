@@ -14,6 +14,10 @@ import {
   getDiscussionScopeDisplayLabel,
   getDiscussionSourceDisplayLabel,
 } from '@klicker-uzh/shared-components/src/discussionUtils'
+import {
+  COURSE_QA_EXTERNAL_REF_MAX_LENGTH,
+  COURSE_QA_EXTERNAL_SOURCE_MAX_LENGTH,
+} from '@klicker-uzh/types'
 import { Button, H3, UserNotification, toast } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -26,9 +30,6 @@ interface OverviewPagination {
   nextCursor: string | null
   hasMore: boolean
 }
-
-const EXTERNAL_SOURCE_MAX_LENGTH = 100
-const EXTERNAL_REF_MAX_LENGTH = 200
 
 function mergeOverviewGroups(
   ...groupSets: Array<OverviewGroup[]>
@@ -123,9 +124,9 @@ function CourseDiscussionOverview({
   const effectiveAllowAnonymous = isCourseQAAnonymousEnabled && allowAnonymous
   const hasValidExternalBlock =
     externalSource.trim().length > 0 &&
-    externalSource.trim().length <= EXTERNAL_SOURCE_MAX_LENGTH &&
+    externalSource.trim().length <= COURSE_QA_EXTERNAL_SOURCE_MAX_LENGTH &&
     externalRef.trim().length > 0 &&
-    externalRef.trim().length <= EXTERNAL_REF_MAX_LENGTH
+    externalRef.trim().length <= COURSE_QA_EXTERNAL_REF_MAX_LENGTH
 
   useEffect(() => {
     if (isCourseQAAnonymousEnabled) return
@@ -439,7 +440,7 @@ function CourseDiscussionOverview({
                   id="embed-external-source"
                   name="embed-external-source"
                   type="text"
-                  maxLength={EXTERNAL_SOURCE_MAX_LENGTH}
+                  maxLength={COURSE_QA_EXTERNAL_SOURCE_MAX_LENGTH}
                   value={externalSource}
                   onChange={(event) => setExternalSource(event.target.value)}
                   autoComplete="off"
@@ -462,7 +463,7 @@ function CourseDiscussionOverview({
                   id="embed-external-ref"
                   name="embed-external-ref"
                   type="text"
-                  maxLength={EXTERNAL_REF_MAX_LENGTH}
+                  maxLength={COURSE_QA_EXTERNAL_REF_MAX_LENGTH}
                   value={externalRef}
                   onChange={(event) => setExternalRef(event.target.value)}
                   autoComplete="off"
