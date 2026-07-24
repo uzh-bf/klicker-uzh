@@ -1,85 +1,18 @@
-"""Summary data and formatting helpers for analytics dry-run workbooks."""
+"""Domain summary builders for analytics dry-run workbooks."""
 
 from __future__ import annotations
 
-import datetime as dt
 import json
-import math
-import re
-from pathlib import Path
 from typing import Any, Mapping, Sequence
 
-from src.dryrun.interceptor import CaptureBuffer, _truncate
-
-_DOMAIN_TABLES: dict[str, tuple[str, ...]] = {
-    "Activity": (
-        "ParticipantAnalytics",
-        "AggregatedAnalytics",
-        "ParticipantCourseAnalytics",
-        "AggregatedCourseAnalytics",
-    ),
-    "Performance": (
-        "ParticipantPerformance",
-        "ActivityProgress",
-        "ActivityPerformance",
-        "InstancePerformance",
-        "ParticipantActivityPerformance",
-    ),
-    "Chat": (
-        "ParticipantChatAnalytics",
-        "AggregatedChatbotAnalytics",
-        "ChatTopicCluster",
-        "ParticipantChatOutcome",
-    ),
-    "Live Quiz": (
-        "ParticipantLiveQuizAnalytics",
-        "AggregatedLiveQuizAnalytics",
-    ),
-    "Platform": ("PlatformSemesterAnalytics",),
-}
+from src.dryrun.interceptor import CaptureBuffer
 
 
-_HIDDEN_METADATA_KEYS = {"lookups", "script_domains", "omitted_domain_notes"}
+def truncate_text(value: str, limit: int) -> str:
+    return value if len(value) <= limit else value[: limit - 3] + "..."
 
 
-def _safe_sheet(name: str, used_names: set[str]) -> str:
-    truncated = name[:31] or "sheet"
-    if truncated not in used_names:
-        used_names.add(truncated)
-        return truncated
-    stem = truncated[:28]
-    for i in range(1, 1000):
-        candidate = f"{stem}_{i}"
-        if candidate not in used_names:
-            used_names.add(candidate)
-            return candidate
-    raise RuntimeError(f"cannot build unique sheet name for {name!r}")
-
-
-def _load_analytics_reference() -> dict[str, dict[str, str]]:
-    path = Path(__file__).resolve().parents[1] / "ANALYTICS.md"
-    if not path.exists():
-        return {}
-
-    content = path.read_text(encoding="utf-8")
-    sections = re.split(r"^### `([^`]+)`", content, flags=re.MULTILINE)
-    if len(sections) <= 1:
-        return {}
-
-    refs: dict[str, dict[str, str]] = {}
-    for idx in range(1, len(sections), 2):
-        table = sections[idx]
-        body = sections[idx + 1]
-        grain_match = re.search(r"- \*\*Grain\*\*: (.+)", body)
-        source_match = re.search(r"- \*\*(Source|Reads from)\*\*: (.+)", body)
-        refs[table] = {
-            "grain": grain_match.group(1).strip() if grain_match else "",
-            "source": source_match.group(2).strip() if source_match else "",
-        }
-    return refs
-
-
-def _table_df(buffer: CaptureBuffer, table: str):
+def table_dataframe(buffer: CaptureBuffer, table: str):
     import pandas as pd
 
     rows = buffer.rows_by_table.get(table, [])
@@ -91,209 +24,6 @@ def _table_df(buffer: CaptureBuffer, table: str):
             df = df.reindex(columns=ordered)
         return df
     return pd.DataFrame(columns=columns)
-
-
-def _value_preview(value: Any) -> str:
-    value = _excel_safe_value(value)
-    if value is None:
-        return ""
-    if isinstance(value, dt.datetime):
-        return value.isoformat(sep=" ")
-    if isinstance(value, dt.date):
-        return value.isoformat()
-    if isinstance(value, float):
-        return f"{value:.2f}"
-    return str(value)
-
-
-def _excel_safe_value(value: Any) -> Any:
-    if value is None:
-        return None
-
-    if hasattr(value, "item") and not isinstance(value, (str, bytes, dt.datetime, dt.date, dt.time)):
-        try:
-            value = value.item()
-        except Exception:
-            pass
-
-    try:
-        import pandas as pd
-
-        if pd.isna(value):
-            return None
-    except Exception:
-        pass
-
-    try:
-        if isinstance(value, (int, float)) and not isinstance(value, bool):
-            if not math.isfinite(float(value)):
-                return None
-    except (TypeError, ValueError, OverflowError):
-        pass
-
-    return value
-
-
-def _column_width(series, header: str) -> int:
-    width = len(header)
-    sample = series.head(50) if hasattr(series, "head") else []
-    for value in sample:
-        width = max(width, len(_value_preview(value)))
-    return max(10, min(width + 2, 60))
-
-
-def _is_control_note(note: str) -> bool:
-    stripped = note.strip()
-    if not stripped:
-        return False
-    if re.match(r"^(INSERT|UPDATE|DELETE)-(TEXT|CORE)\b", stripped):
-        return True
-    if stripped.startswith("(psycopg.errors."):
-        return True
-    return False
-
-
-def _visible_table_notes(notes: Sequence[str]) -> list[str]:
-    return [note for note in notes if not _is_control_note(note)]
-
-
-def _normalized_diagnostic_verb(verb: str) -> str:
-    if verb.startswith("INSERT-TEXT (rewrite failed:"):
-        return "INSERT-TEXT (rewrite failed)"
-    return verb
-
-
-def _normalized_diagnostic_note(note: str) -> str:
-    if not note:
-        return ""
-    first_line = note.split("[SQL:", 1)[0].splitlines()[0].strip()
-    return _truncate(first_line, 200)
-
-
-def _diagnostics_rows(
-    skipped_writes: Sequence[Mapping[str, Any]],
-) -> list[dict[str, str | int]]:
-    grouped: dict[tuple[str, str, str, str], dict[str, str | int]] = {}
-    for entry in skipped_writes:
-        verb = _normalized_diagnostic_verb(str(entry.get("verb", "")))
-        table = str(entry.get("table", ""))
-        note = _normalized_diagnostic_note(str(entry.get("note", "")))
-        sql_excerpt = _truncate(str(entry.get("sql", "")), 240)
-        key = (verb, table, note, sql_excerpt)
-        if key not in grouped:
-            grouped[key] = {
-                "count": 1,
-                "verb": verb,
-                "table": table,
-                "note": note,
-                "sql_excerpt": sql_excerpt,
-            }
-        else:
-            grouped[key]["count"] = int(grouped[key]["count"]) + 1
-
-    if not grouped:
-        return [
-            {
-                "count": 0,
-                "verb": "none",
-                "table": "",
-                "note": "No skipped writes were captured.",
-                "sql_excerpt": "",
-            }
-        ]
-
-    return sorted(
-        grouped.values(),
-        key=lambda row: (-int(row["count"]), str(row["table"]), str(row["verb"])),
-    )
-
-
-def _format_name_for_column(column: str) -> str:
-    lowered = column.lower()
-    if lowered in {"timestamp", "day", "weekending", "semesterstart", "computedat"}:
-        return "date"
-    if "date" in lowered and "update" not in lowered:
-        return "date"
-    if lowered.endswith("at") or lowered.endswith("_at"):
-        return "datetime"
-    if "rate" in lowered or lowered.endswith("pct") or lowered.endswith("percent"):
-        return "percent"
-    if lowered.endswith("count") or lowered.startswith("total") or lowered.startswith("num"):
-        return "int"
-    return "default"
-
-
-def _domain_table_status(buffer: CaptureBuffer, tables: Sequence[str]) -> tuple[str, str]:
-    statuses = [buffer.table_status.get(table) for table in tables if table in buffer.table_status]
-    if not statuses:
-        return "skipped", "No captured or empty output tables for this domain."
-    if any(status == "produced" for status in statuses):
-        return "produced", "At least one table in this domain contains captured rows."
-    if any(status == "failed" for status in statuses):
-        return "failed", "One or more write captures in this domain failed."
-    if any(status == "empty" for status in statuses):
-        return "empty", "Scripts ran, but this domain produced zero rows for the selected scope."
-    return "skipped", "This domain was skipped on the target DB."
-
-
-def _omitted_domain_notes(metadata: Mapping[str, Any]) -> dict[str, str]:
-    raw = metadata.get("omitted_domain_notes")
-    if isinstance(raw, Mapping):
-        return {str(key): str(value) for key, value in raw.items()}
-    raw = metadata.get("omitted_domains")
-    if isinstance(raw, Mapping):
-        return {str(key): str(value) for key, value in raw.items()}
-    return {}
-
-
-def _table_domain(table: str) -> str | None:
-    for domain, tables in _DOMAIN_TABLES.items():
-        if table in tables:
-            return domain
-    return None
-
-
-def _table_row_positions(
-    *,
-    start_row: int,
-    title: str | None = None,
-    subtitle: str | None = None,
-) -> tuple[int, int]:
-    header_row = start_row + int(bool(title)) + int(bool(subtitle))
-    first_data_row = header_row + 1
-    return header_row, first_data_row
-
-
-def _write_data_cell(
-    worksheet,
-    row: int,
-    col: int,
-    value: Any,
-    column: str,
-    formats: Mapping[str, Any],
-) -> None:
-    safe_value = _excel_safe_value(value)
-    worksheet.write(
-        row,
-        col,
-        safe_value,
-        formats[_format_name_for_column(column)],
-    )
-
-
-def _visible_metadata_rows(metadata: Mapping[str, Any]) -> list[dict[str, str]]:
-    rows: list[dict[str, str]] = []
-    for key, value in metadata.items():
-        if key in _HIDDEN_METADATA_KEYS:
-            continue
-        if value is None:
-            display = ""
-        elif isinstance(value, Mapping):
-            display = ", ".join(f"{k}={v}" for k, v in value.items())
-        else:
-            display = str(value)
-        rows.append({"key": key, "value": display})
-    return rows
 
 
 def _participant_labels(values: Sequence[Any]) -> dict[Any, str]:
@@ -366,7 +96,7 @@ def _section_is_placeholder(section: tuple[str, str, Any, dict[str, Any]]) -> bo
     return bool(section[3].get("placeholder"))
 
 
-def _has_visible_summary_content(sections: Sequence[tuple[str, str, Any, dict[str, Any]]]) -> bool:
+def has_visible_summary_content(sections: Sequence[tuple[str, str, Any, dict[str, Any]]]) -> bool:
     return any(not _section_is_placeholder(section) for section in sections)
 
 
@@ -374,20 +104,20 @@ def _json_compact(value: Any) -> str:
     if value is None or value == "":
         return ""
     if isinstance(value, str):
-        return _truncate(value, 120)
+        return truncate_text(value, 120)
     try:
-        return _truncate(json.dumps(value, sort_keys=True), 120)
+        return truncate_text(json.dumps(value, sort_keys=True), 120)
     except Exception:
-        return _truncate(str(value), 120)
+        return truncate_text(str(value), 120)
 
 
-def _activity_sections(buffer: CaptureBuffer, metadata: Mapping[str, Any]):
+def build_activity_sections(buffer: CaptureBuffer, metadata: Mapping[str, Any]):
     sections: list[tuple[str, str, Any, dict[str, Any]]] = []
     lookups = metadata.get("lookups", {})
     course_name = lookups.get("course_name", metadata.get("course_id", "course"))
-    aggregated = _table_df(buffer, "AggregatedAnalytics")
-    course = _table_df(buffer, "AggregatedCourseAnalytics")
-    participants = _table_df(buffer, "ParticipantCourseAnalytics")
+    aggregated = table_dataframe(buffer, "AggregatedAnalytics")
+    course = table_dataframe(buffer, "AggregatedCourseAnalytics")
+    participants = table_dataframe(buffer, "ParticipantCourseAnalytics")
 
     if aggregated.empty and course.empty and participants.empty:
         sections.append(
@@ -541,13 +271,13 @@ def _activity_sections(buffer: CaptureBuffer, metadata: Mapping[str, Any]):
     return sections
 
 
-def _performance_sections(buffer: CaptureBuffer, metadata: Mapping[str, Any]):
+def build_performance_sections(buffer: CaptureBuffer, metadata: Mapping[str, Any]):
     sections: list[tuple[str, str, Any, dict[str, Any]]] = []
     lookups = metadata.get("lookups", {})
-    participants = _table_df(buffer, "ParticipantPerformance")
-    progress = _table_df(buffer, "ActivityProgress")
-    activities = _table_df(buffer, "ActivityPerformance")
-    instances = _table_df(buffer, "InstancePerformance")
+    participants = table_dataframe(buffer, "ParticipantPerformance")
+    progress = table_dataframe(buffer, "ActivityProgress")
+    activities = table_dataframe(buffer, "ActivityPerformance")
+    instances = table_dataframe(buffer, "InstancePerformance")
 
     if participants.empty and progress.empty and activities.empty and instances.empty:
         sections.append(
@@ -703,12 +433,12 @@ def _performance_sections(buffer: CaptureBuffer, metadata: Mapping[str, Any]):
     return sections
 
 
-def _chat_sections(buffer: CaptureBuffer, metadata: Mapping[str, Any]):
+def build_chat_sections(buffer: CaptureBuffer, metadata: Mapping[str, Any]):
     sections: list[tuple[str, str, Any, dict[str, Any]]] = []
     lookups = metadata.get("lookups", {})
-    aggregated = _table_df(buffer, "AggregatedChatbotAnalytics")
-    topics = _table_df(buffer, "ChatTopicCluster")
-    outcomes = _table_df(buffer, "ParticipantChatOutcome")
+    aggregated = table_dataframe(buffer, "AggregatedChatbotAnalytics")
+    topics = table_dataframe(buffer, "ChatTopicCluster")
+    outcomes = table_dataframe(buffer, "ParticipantChatOutcome")
 
     if aggregated.empty and topics.empty and outcomes.empty:
         sections.append(
@@ -843,11 +573,11 @@ def _chat_sections(buffer: CaptureBuffer, metadata: Mapping[str, Any]):
     return sections
 
 
-def _live_quiz_sections(buffer: CaptureBuffer, metadata: Mapping[str, Any]):
+def build_live_quiz_sections(buffer: CaptureBuffer, metadata: Mapping[str, Any]):
     sections: list[tuple[str, str, Any, dict[str, Any]]] = []
     lookups = metadata.get("lookups", {})
-    participants = _table_df(buffer, "ParticipantLiveQuizAnalytics")
-    aggregated = _table_df(buffer, "AggregatedLiveQuizAnalytics")
+    participants = table_dataframe(buffer, "ParticipantLiveQuizAnalytics")
+    aggregated = table_dataframe(buffer, "AggregatedLiveQuizAnalytics")
 
     if participants.empty and aggregated.empty:
         sections.append(
@@ -927,9 +657,9 @@ def _live_quiz_sections(buffer: CaptureBuffer, metadata: Mapping[str, Any]):
     return sections
 
 
-def _platform_sections(buffer: CaptureBuffer, metadata: Mapping[str, Any]):
+def build_platform_sections(buffer: CaptureBuffer, metadata: Mapping[str, Any]):
     sections: list[tuple[str, str, Any, dict[str, Any]]] = []
-    platform = _table_df(buffer, "PlatformSemesterAnalytics")
+    platform = table_dataframe(buffer, "PlatformSemesterAnalytics")
     if platform.empty:
         sections.append(
             (

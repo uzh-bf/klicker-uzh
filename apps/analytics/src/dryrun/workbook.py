@@ -1,32 +1,287 @@
-"""Excel writer for analytics dry-run captures."""
+"""Excel writer and rendering primitives for analytics dry-run captures."""
 
 from __future__ import annotations
 
+import datetime as dt
+import math
+import re
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from src.dryrun.interceptor import CaptureBuffer
 from src.dryrun.workbook_sections import (
-    _DOMAIN_TABLES,
-    _activity_sections,
-    _chat_sections,
-    _column_width,
-    _diagnostics_rows,
-    _domain_table_status,
-    _format_name_for_column,
-    _has_visible_summary_content,
-    _live_quiz_sections,
-    _load_analytics_reference,
-    _omitted_domain_notes,
-    _performance_sections,
-    _platform_sections,
-    _safe_sheet,
-    _table_df,
-    _table_row_positions,
-    _visible_metadata_rows,
-    _visible_table_notes,
-    _write_data_cell,
+    build_activity_sections,
+    build_chat_sections,
+    build_live_quiz_sections,
+    build_performance_sections,
+    build_platform_sections,
+    has_visible_summary_content,
+    table_dataframe,
+    truncate_text,
 )
+
+_DOMAIN_TABLES: dict[str, tuple[str, ...]] = {
+    "Activity": (
+        "ParticipantAnalytics",
+        "AggregatedAnalytics",
+        "ParticipantCourseAnalytics",
+        "AggregatedCourseAnalytics",
+    ),
+    "Performance": (
+        "ParticipantPerformance",
+        "ActivityProgress",
+        "ActivityPerformance",
+        "InstancePerformance",
+        "ParticipantActivityPerformance",
+    ),
+    "Chat": (
+        "ParticipantChatAnalytics",
+        "AggregatedChatbotAnalytics",
+        "ChatTopicCluster",
+        "ParticipantChatOutcome",
+    ),
+    "Live Quiz": (
+        "ParticipantLiveQuizAnalytics",
+        "AggregatedLiveQuizAnalytics",
+    ),
+    "Platform": ("PlatformSemesterAnalytics",),
+}
+
+
+_HIDDEN_METADATA_KEYS = {"lookups", "script_domains", "omitted_domain_notes"}
+
+
+def _safe_sheet(name: str, used_names: set[str]) -> str:
+    truncated = name[:31] or "sheet"
+    if truncated not in used_names:
+        used_names.add(truncated)
+        return truncated
+    stem = truncated[:28]
+    for i in range(1, 1000):
+        candidate = f"{stem}_{i}"
+        if candidate not in used_names:
+            used_names.add(candidate)
+            return candidate
+    raise RuntimeError(f"cannot build unique sheet name for {name!r}")
+
+
+def _load_analytics_reference() -> dict[str, dict[str, str]]:
+    path = Path(__file__).resolve().parents[1] / "ANALYTICS.md"
+    if not path.exists():
+        return {}
+
+    content = path.read_text(encoding="utf-8")
+    sections = re.split(r"^### `([^`]+)`", content, flags=re.MULTILINE)
+    if len(sections) <= 1:
+        return {}
+
+    refs: dict[str, dict[str, str]] = {}
+    for idx in range(1, len(sections), 2):
+        table = sections[idx]
+        body = sections[idx + 1]
+        grain_match = re.search(r"- \*\*Grain\*\*: (.+)", body)
+        source_match = re.search(r"- \*\*(Source|Reads from)\*\*: (.+)", body)
+        refs[table] = {
+            "grain": grain_match.group(1).strip() if grain_match else "",
+            "source": source_match.group(2).strip() if source_match else "",
+        }
+    return refs
+
+
+def value_preview(value: Any) -> str:
+    value = _excel_safe_value(value)
+    if value is None:
+        return ""
+    if isinstance(value, dt.datetime):
+        return value.isoformat(sep=" ")
+    if isinstance(value, dt.date):
+        return value.isoformat()
+    if isinstance(value, float):
+        return f"{value:.2f}"
+    return str(value)
+
+
+def _excel_safe_value(value: Any) -> Any:
+    if value is None:
+        return None
+
+    if hasattr(value, "item") and not isinstance(value, (str, bytes, dt.datetime, dt.date, dt.time)):
+        try:
+            value = value.item()
+        except Exception:
+            pass
+
+    try:
+        import pandas as pd
+
+        if pd.isna(value):
+            return None
+    except Exception:
+        pass
+
+    try:
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            if not math.isfinite(float(value)):
+                return None
+    except (TypeError, ValueError, OverflowError):
+        pass
+
+    return value
+
+
+def _column_width(series, header: str) -> int:
+    width = len(header)
+    sample = series.head(50) if hasattr(series, "head") else []
+    for value in sample:
+        width = max(width, len(value_preview(value)))
+    return max(10, min(width + 2, 60))
+
+
+def _is_control_note(note: str) -> bool:
+    stripped = note.strip()
+    if not stripped:
+        return False
+    if re.match(r"^(INSERT|UPDATE|DELETE)-(TEXT|CORE)\b", stripped):
+        return True
+    if stripped.startswith("(psycopg.errors."):
+        return True
+    return False
+
+
+def _visible_table_notes(notes: Sequence[str]) -> list[str]:
+    return [note for note in notes if not _is_control_note(note)]
+
+
+def _normalized_diagnostic_verb(verb: str) -> str:
+    if verb.startswith("INSERT-TEXT (rewrite failed:"):
+        return "INSERT-TEXT (rewrite failed)"
+    return verb
+
+
+def _normalized_diagnostic_note(note: str) -> str:
+    if not note:
+        return ""
+    first_line = note.split("[SQL:", 1)[0].splitlines()[0].strip()
+    return truncate_text(first_line, 200)
+
+
+def _diagnostics_rows(
+    skipped_writes: Sequence[Mapping[str, Any]],
+) -> list[dict[str, str | int]]:
+    grouped: dict[tuple[str, str, str, str], dict[str, str | int]] = {}
+    for entry in skipped_writes:
+        verb = _normalized_diagnostic_verb(str(entry.get("verb", "")))
+        table = str(entry.get("table", ""))
+        note = _normalized_diagnostic_note(str(entry.get("note", "")))
+        sql_excerpt = truncate_text(str(entry.get("sql", "")), 240)
+        key = (verb, table, note, sql_excerpt)
+        if key not in grouped:
+            grouped[key] = {
+                "count": 1,
+                "verb": verb,
+                "table": table,
+                "note": note,
+                "sql_excerpt": sql_excerpt,
+            }
+        else:
+            grouped[key]["count"] = int(grouped[key]["count"]) + 1
+
+    if not grouped:
+        return [
+            {
+                "count": 0,
+                "verb": "none",
+                "table": "",
+                "note": "No skipped writes were captured.",
+                "sql_excerpt": "",
+            }
+        ]
+
+    return sorted(
+        grouped.values(),
+        key=lambda row: (-int(row["count"]), str(row["table"]), str(row["verb"])),
+    )
+
+
+def _format_name_for_column(column: str) -> str:
+    lowered = column.lower()
+    if lowered in {"timestamp", "day", "weekending", "semesterstart", "computedat"}:
+        return "date"
+    if "date" in lowered and "update" not in lowered:
+        return "date"
+    if lowered.endswith("at") or lowered.endswith("_at"):
+        return "datetime"
+    if "rate" in lowered or lowered.endswith("pct") or lowered.endswith("percent"):
+        return "percent"
+    if lowered.endswith("count") or lowered.startswith("total") or lowered.startswith("num"):
+        return "int"
+    return "default"
+
+
+def _domain_table_status(buffer: CaptureBuffer, tables: Sequence[str]) -> tuple[str, str]:
+    statuses = [buffer.table_status.get(table) for table in tables if table in buffer.table_status]
+    if not statuses:
+        return "skipped", "No captured or empty output tables for this domain."
+    if any(status == "produced" for status in statuses):
+        return "produced", "At least one table in this domain contains captured rows."
+    if any(status == "failed" for status in statuses):
+        return "failed", "One or more write captures in this domain failed."
+    if any(status == "empty" for status in statuses):
+        return "empty", "Scripts ran, but this domain produced zero rows for the selected scope."
+    return "skipped", "This domain was skipped on the target DB."
+
+
+def _omitted_domain_notes(metadata: Mapping[str, Any]) -> dict[str, str]:
+    raw = metadata.get("omitted_domain_notes")
+    if isinstance(raw, Mapping):
+        return {str(key): str(value) for key, value in raw.items()}
+    raw = metadata.get("omitted_domains")
+    if isinstance(raw, Mapping):
+        return {str(key): str(value) for key, value in raw.items()}
+    return {}
+
+
+def _table_row_positions(
+    *,
+    start_row: int,
+    title: str | None = None,
+    subtitle: str | None = None,
+) -> tuple[int, int]:
+    header_row = start_row + int(bool(title)) + int(bool(subtitle))
+    first_data_row = header_row + 1
+    return header_row, first_data_row
+
+
+def _write_data_cell(
+    worksheet,
+    row: int,
+    col: int,
+    value: Any,
+    column: str,
+    formats: Mapping[str, Any],
+) -> None:
+    safe_value = _excel_safe_value(value)
+    worksheet.write(
+        row,
+        col,
+        safe_value,
+        formats[_format_name_for_column(column)],
+    )
+
+
+def _visible_metadata_rows(metadata: Mapping[str, Any]) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    for key, value in metadata.items():
+        if key in _HIDDEN_METADATA_KEYS:
+            continue
+        if value is None:
+            display = ""
+        elif isinstance(value, Mapping):
+            display = ", ".join(f"{k}={v}" for k, v in value.items())
+        else:
+            display = str(value)
+        rows.append({"key": key, "value": display})
+    return rows
 
 
 def _write_table(
@@ -328,25 +583,25 @@ def write_excel(
                 "10 Activity",
                 "Activity Summary",
                 "Course activity views modelled after the lecturer analytics dashboard.",
-                _activity_sections(buffer, metadata),
+                build_activity_sections(buffer, metadata),
             ),
             (
                 "11 Performance",
                 "Performance Summary",
                 "Course performance views modelled after the lecturer analytics dashboard.",
-                _performance_sections(buffer, metadata),
+                build_performance_sections(buffer, metadata),
             ),
             (
                 "12 Chat",
                 "Chat Summary",
                 "Readable chatbot and topic-cluster summaries, with raw tables preserved separately.",
-                _chat_sections(buffer, metadata),
+                build_chat_sections(buffer, metadata),
             ),
             (
                 "13 Live Quiz",
                 "Live Quiz Summary",
                 "Assessment-mode live quiz summaries for the captured course scope.",
-                _live_quiz_sections(buffer, metadata),
+                build_live_quiz_sections(buffer, metadata),
             ),
         ]
         if include_platform:
@@ -355,7 +610,7 @@ def write_excel(
                     "14 Platform",
                     "Platform Summary",
                     "Compact semester rollup for platform-level analytics written by the dry run.",
-                    _platform_sections(buffer, metadata),
+                    build_platform_sections(buffer, metadata),
                 )
             )
 
@@ -378,7 +633,7 @@ def write_excel(
                 sections=sections,
                 formats=formats,
             )
-            if not _has_visible_summary_content(sections):
+            if not has_visible_summary_content(sections):
                 worksheet.hide()
                 continue
             visible_summary_rows.append(
@@ -414,7 +669,7 @@ def write_excel(
             if notes:
                 worksheet.write(2, 0, notes, formats["section_subtitle"])
 
-            df = _table_df(buffer, table)
+            df = table_dataframe(buffer, table)
             data_start = 3
             for col_idx, column in enumerate(df.columns):
                 worksheet.write(data_start, col_idx, column, formats["header"])

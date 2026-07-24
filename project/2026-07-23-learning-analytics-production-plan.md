@@ -982,15 +982,21 @@ the repository script that replaces it before continuing.
   one server-controlled immutable cutoff. The full branch still requires image
   CVE scanning and live ExternalSecret/Infisical readiness verification before
   deployment because neither capability is available in this environment.
-- 2026-07-24: The strict maintainability finding is addressed locally. The
-  1,898-line mixed dry-run module is decomposed into a 414-line write
-  interceptor, 955-line summary-section builder, and 569-line workbook writer.
-  All 46 original top-level functions and classes have identical ASTs after
-  the move. The 1,295-line privacy regression is split into shared fixtures
-  plus scope, reconciliation, cutoff/finalization, and rollback modules; all
-  12 helper/test function ASTs and all test decorators are preserved. The
-  10 PostgreSQL privacy cases and 55 focused dry-run/interceptor tests pass,
-  with three expected no-database skips in the latter group.
+- 2026-07-24: The first maintainability decomposition preserved all 46
+  production definitions exactly, but strict review correctly rejected its
+  955-line mixed `workbook_sections.py` and 20-symbol private sibling import as
+  threshold-only splitting. The accepted refinement leaves a 414-line write
+  interceptor, 824-line workbook renderer, and 685-line domain-summary
+  builder. Their sibling interface is explicit and public, the two module
+  import orders pass, and focused Pyright reports no new cross-module private
+  usage.
+- 2026-07-24: The 807-line mixed interceptor/workbook test is also split into
+  315-line interceptor and 478-line workbook modules with one workbook import.
+  The 1,295-line privacy regression is split into shared fixtures plus scope,
+  reconciliation, cutoff/finalization, and rollback modules; all 12
+  helper/test function ASTs and decorators are preserved. The 10 PostgreSQL
+  privacy cases and 55 tests across six focused dry-run/interceptor files pass,
+  with three additional expected no-database skips in the latter group.
 - Active: Independently review and simplify the maintainability decomposition,
   rerun the complete analytics gates, then request explicit publication
   confirmation for both stacked draft PRs. After publication, read CI to a
