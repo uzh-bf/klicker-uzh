@@ -150,6 +150,15 @@ export default {
         'After logging in, return to <url>{redirectUrl}</url> to continue your conversation.',
       loginButton: 'Go to KlickerUZH Login',
     },
+    response: {
+      errorLabel: 'Error',
+      networkError:
+        "I'm sorry, I couldn't reach the server. Please check your connection and try again.",
+      genericError:
+        "I'm sorry, something went wrong while processing your request. Please try again.",
+      connectionInterrupted:
+        'Connection interrupted — response may be incomplete.',
+    },
   },
   shared: {
     table: {

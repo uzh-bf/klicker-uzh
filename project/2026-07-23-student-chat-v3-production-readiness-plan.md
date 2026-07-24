@@ -937,3 +937,21 @@ designing the question widget.
   (credits). Key injection via infisical CLI + prototyping project 404s (domain pin);
   rs-infisical-operator profiles lack OPENROUTER_API_KEY read permission — needs user
   action before U2 verification.
+- 2026-07-24: **S5a done** (send/stream error surfaces; items 1-3 of S5).
+  `chat.response.errorLabel` i18n key added (en 'Error' / de 'Fehler', informal
+  Du + Swiss ss for the message bodies); all three error-prefix sites in
+  `useChatResponse.ts` (!response.ok bubble, stream `error` event suffix, outer
+  network catch) now use it instead of hardcoded '**Error**'. Stream-error
+  stacking fixed: `hasStreamError` flag makes repeated `error` events append the
+  suffix once. Tool-output errors set `isError: true` (carried from U3 chip).
+  Outer catch hardened after Opus review (finding #1, high): the network-failure
+  bubble previously replaced the assistant message with only the error text,
+  wiping any partially streamed answer on a mid-stream drop —
+  `orderedContentParts` is now hoisted before the `try` and the catch spreads it
+  ahead of the error text. Finding #2: `t` added to the useCallback deps. 2 new
+  vitest regressions (network bubble, no stacking) → 42/42 green; in-container
+  check green; prettier green. Browser-verified on the keyless stack: single
+  localized bubble per failed send (de 'Fehler: Es ist leider ein Fehler …'
+  and en 'Error: I'm sorry, something went wrong …'), no stacking, no
+  hardcoded-English leak in de. Next: S5b (disclaimer + thread-list error
+  states, items 4-5).
