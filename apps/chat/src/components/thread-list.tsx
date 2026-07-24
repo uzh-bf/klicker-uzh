@@ -4,7 +4,7 @@ import { CheckIcon, EditIcon, Trash2, XIcon } from 'lucide-react'
 import type { FC } from 'react'
 import { createElement, useMemo, useState } from 'react'
 
-import { TextField } from '@uzh-bf/design-system'
+import { TextField, useSidebar } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useParams, useRouter } from 'next/navigation'
 import { getModeIcon } from '../lib/config/modes'
@@ -26,6 +26,7 @@ const ThreadListItems: FC = () => {
   }>()
   const router = useRouter()
   const { threads, deleteThread } = useChatStore()
+  const { setOpenMobile } = useSidebar()
 
   const groupedThreads = useMemo(() => groupThreadsByDate(threads), [threads])
 
@@ -41,7 +42,10 @@ const ThreadListItems: FC = () => {
               key={thread.id}
               thread={thread}
               isActive={thread.id === threadId}
-              onSelect={() => router.push(`/${chatbotId}/threads/${thread.id}`)}
+              onSelect={() => {
+                router.push(`/${chatbotId}/threads/${thread.id}`)
+                setOpenMobile(false)
+              }}
               onDelete={async () => {
                 const deleted = await deleteThread(chatbotId, thread.id)
                 if (deleted && thread.id === threadId) {

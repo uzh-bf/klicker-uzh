@@ -845,7 +845,6 @@ const UserActionBar: FC = () => {
   return (
     <ActionBarPrimitive.Root
       hideWhenRunning
-      autohide="not-last"
       className="text-muted-foreground flex items-center gap-1"
     >
       <Tooltip>
@@ -1216,7 +1215,6 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
     >
       <ActionBarPrimitive.Root
         hideWhenRunning
-        autohide="not-last"
         className="text-muted-foreground -ml-1 flex gap-1"
       >
         <Tooltip>
