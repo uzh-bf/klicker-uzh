@@ -1,4 +1,5 @@
 import { expect, type FrameLocator, type Page } from '@playwright/test'
+import { URL_CHAT } from './constants.js'
 
 /**
  * Manage assistant (apps/chat `/manage`, embedded in frontend-manage via
@@ -328,6 +329,56 @@ export async function mockManageProposalConfirm(
       status: 200,
     })
   })
+}
+
+/**
+ * Delay every script request the chat iframe's own document makes to its own
+ * origin, to simulate a slow-hydrating iframe.
+ *
+ * The browser's `load` event (which triggers ManageAssistantWidget's
+ * send-on-frameLoaded context post — see the `frameLoaded` effect in
+ * ManageAssistantWidget.tsx) only waits for the iframe's resource *fetches*
+ * to complete, not for those scripts to then execute, React to hydrate, and
+ * useEmbeddedManageContext's effect to run and register its `message`
+ * listener. Stretching out the script fetches themselves therefore reliably
+ * pushes real hydration (and with it the `klicker:manage-context-ready`
+ * ping) well past that first, easily-lost send — without needing to touch
+ * the `load` event or any fragile chunk-name matching.
+ *
+ * Used to prove the ready→resend handshake alone is sufficient to deliver
+ * context to a slow iframe, i.e. that the redundant [300, 1000, 2500]ms retry
+ * burst removed from ManageAssistantWidget.tsx / useEmbeddedManageContext.ts
+ * was safe to drop.
+ */
+export async function delayChatIframeScripts(page: Page, delayMs: number) {
+  const chatOrigin = process.env.URL_CHAT ?? URL_CHAT
+
+  await page.context().route(`${chatOrigin}/**`, async (route) => {
+    if (route.request().resourceType() !== 'script') return route.fallback()
+    await new Promise((resolve) => setTimeout(resolve, delayMs))
+    return route.fallback()
+  })
+}
+
+/**
+ * Spy on POST /api/manage/proposals/confirm without asserting an outcome, so
+ * a test can assert some interaction (e.g. dismissing a proposal) never
+ * triggers a confirm request. Returns a getter for the observed call count.
+ */
+export async function trackProposalConfirmRequests(page: Page) {
+  let count = 0
+
+  await page.context().route('**/api/manage/proposals/confirm', (route) => {
+    if (route.request().method() !== 'POST') return route.fallback()
+    count += 1
+    return route.fulfill({
+      body: JSON.stringify({ element: DEFAULT_CONFIRMED_ELEMENT }),
+      headers: { 'content-type': 'application/json' },
+      status: 200,
+    })
+  })
+
+  return () => count
 }
 
 /**

@@ -6,6 +6,10 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetUserElementsDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  MANAGE_CONTEXT_MESSAGE_TYPE,
+  MANAGE_CONTEXT_READY_MESSAGE_TYPE,
+} from '@klicker-uzh/types'
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -25,10 +29,6 @@ import {
   sanitizeManageElementCreatedPayload,
 } from './manageElementCreatedMessage'
 
-const MANAGE_CONTEXT_MESSAGE_TYPE = 'klicker:manage-context'
-const MANAGE_CONTEXT_ACK_MESSAGE_TYPE = 'klicker:manage-context-ack'
-const MANAGE_CONTEXT_READY_MESSAGE_TYPE = 'klicker:manage-context-ready'
-
 export function ManageAssistantWidget() {
   const t = useTranslations()
   const router = useRouter()
@@ -37,8 +37,6 @@ export function ManageAssistantWidget() {
   const triggerRef = useRef<HTMLButtonElement | null>(null)
   const panelRef = useRef<HTMLElement | null>(null)
   const shouldRestoreFocusRef = useRef(false)
-  const nextMessageIdRef = useRef(0)
-  const ackedMessageIdRef = useRef(0)
   const [open, setOpen] = useState(false)
   const [frameLoaded, setFrameLoaded] = useState(false)
 
@@ -89,27 +87,21 @@ export function ManageAssistantWidget() {
     assistantContextRef.current = assistantContext
   }, [assistantContext])
 
-  // Post the current context under a fresh message id and return that id so
-  // callers can match it against later acks. Both call sites already sit
+  // Post the current context to the iframe. The call site already sits
   // behind an assistantOrigin guard; the check here is for type safety only.
   const sendCurrentContext = useCallback(() => {
-    if (!assistantOrigin) return 0
-    const messageId = nextMessageIdRef.current + 1
-    nextMessageIdRef.current = messageId
+    if (!assistantOrigin) return
     postManageContext(
       iframeRef.current,
       assistantContextRef.current,
-      assistantOrigin,
-      messageId
+      assistantOrigin
     )
-    return messageId
   }, [assistantOrigin])
 
   const closeWidget = useCallback(() => {
     shouldRestoreFocusRef.current = true
     setOpen(false)
     setFrameLoaded(false)
-    ackedMessageIdRef.current = 0
   }, [])
 
   useEffect(() => {
@@ -183,20 +175,9 @@ export function ManageAssistantWidget() {
       const frameWindow = iframeRef.current?.contentWindow
       if (frameWindow && event.source !== frameWindow) return
 
-      if (isManageContextAckMessage(event.data)) {
-        const messageId = event.data.payload.messageId
-        if (typeof messageId === 'number') {
-          ackedMessageIdRef.current = Math.max(
-            ackedMessageIdRef.current,
-            messageId
-          )
-        }
-        return
-      }
-
       // The iframe announces readiness once its listener exists. Re-send the
-      // current context then: the timed retry burst below can fully elapse
-      // before a slow-hydrating iframe is able to receive anything.
+      // current context then: this handshake alone is enough to deliver the
+      // context to a slow-hydrating iframe, without a timed retry burst.
       if (isManageContextReadyMessage(event.data)) {
         sendCurrentContext()
         return
@@ -224,26 +205,13 @@ export function ManageAssistantWidget() {
     return () => window.removeEventListener('message', handleMessage)
   }, [apolloClient, assistantOrigin, open, sendCurrentContext, t])
 
+  // Sends the current context once the iframe has loaded, and again whenever
+  // the context itself changes (e.g. a route change while the widget stays
+  // open). The `klicker:manage-context-ready` handshake above covers the
+  // case where the iframe is still hydrating when this first send happens.
   useEffect(() => {
     if (!open || !frameLoaded || !assistantOrigin || !iframeRef.current) return
-
-    const messageId = sendCurrentContext()
-
-    const timeouts = [300, 1000, 2500].map((delay) =>
-      window.setTimeout(() => {
-        if (ackedMessageIdRef.current >= messageId) return
-        postManageContext(
-          iframeRef.current,
-          assistantContext,
-          assistantOrigin,
-          messageId
-        )
-      }, delay)
-    )
-
-    return () => {
-      timeouts.forEach((timeout) => window.clearTimeout(timeout))
-    }
+    sendCurrentContext()
   }, [assistantContext, assistantOrigin, frameLoaded, open, sendCurrentContext])
 
   if (!enabled || !assistantUrl) {
@@ -259,7 +227,6 @@ export function ManageAssistantWidget() {
           aria-label={t('manage.assistant.open')}
           onClick={() => {
             setFrameLoaded(false)
-            ackedMessageIdRef.current = 0
             setOpen(true)
           }}
           className="bg-uzh-blue hover:bg-uzh-blue-80 focus-visible:outline-uzh-blue-40 fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-4 z-30 inline-flex h-14 min-w-14 items-center justify-center gap-3 rounded-full px-3 text-white shadow-lg transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 md:bottom-6 md:right-6 md:px-4"
@@ -332,8 +299,7 @@ export function ManageAssistantWidget() {
 function postManageContext(
   iframe: HTMLIFrameElement | null,
   context: ManageAssistantContext,
-  assistantOrigin: string,
-  messageId: number
+  assistantOrigin: string
 ) {
   if (!iframe?.contentWindow) return
 
@@ -341,22 +307,8 @@ function postManageContext(
     {
       type: MANAGE_CONTEXT_MESSAGE_TYPE,
       payload: context,
-      messageId,
     },
     assistantOrigin
-  )
-}
-
-function isManageContextAckMessage(data: unknown): data is {
-  type: typeof MANAGE_CONTEXT_ACK_MESSAGE_TYPE
-  payload: { messageId?: unknown }
-} {
-  return (
-    typeof data === 'object' &&
-    data !== null &&
-    (data as { type?: unknown }).type === MANAGE_CONTEXT_ACK_MESSAGE_TYPE &&
-    typeof (data as { payload?: unknown }).payload === 'object' &&
-    (data as { payload?: unknown }).payload !== null
   )
 }
 

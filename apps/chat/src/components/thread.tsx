@@ -3,6 +3,7 @@ import {
   ActionBarPrimitive,
   AttachmentPrimitive,
   ComposerPrimitive,
+  ErrorPrimitive,
   MessagePrimitive,
   type ReasoningMessagePartProps,
   ThreadPrimitive,
@@ -1242,6 +1243,27 @@ const PartGroup: FC<
   )
 }
 
+// A failed assistant turn (mid-stream provider error, or a stream that never
+// produced any content at all) leaves the message in
+// status: {type: "incomplete", reason: "error"}. MessagePrimitive.Error only
+// renders its children for that exact state, so this note stays invisible
+// for every other message. Deliberately minimal: a muted inline note, no
+// retry button (the composer already accepts a new message) and no toast.
+// The raw SDK error text is not shown here — it can contain internal details
+// (e.g. a JSON parse error) that are not meant for end users.
+const AssistantMessageError: FC = () => (
+  <MessagePrimitive.Error>
+    <ErrorPrimitive.Root
+      data-cy="chat-assistant-message-error"
+      className="mt-1.5 inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs text-red-600"
+    >
+      <ErrorPrimitive.Message>
+        Something went wrong. Please try again.
+      </ErrorPrimitive.Message>
+    </ErrorPrimitive.Root>
+  </MessagePrimitive.Error>
+)
+
 const AssistantMessage: FC<{
   chatbotAvatar: string
   chatbotFallbackIcon?: ComponentType<{ className?: string }>
@@ -1291,6 +1313,7 @@ const AssistantMessage: FC<{
           }}
         />
         <MessageMetadata includeCredits />
+        <AssistantMessageError />
       </div>
 
       <AssistantActionBar embedded={embedded} />

@@ -1,7 +1,6 @@
-const MAX_NAME_LENGTH = 200
+import { MANAGE_ELEMENT_CREATED_MESSAGE_TYPE } from '@klicker-uzh/types'
 
-export const MANAGE_ELEMENT_CREATED_MESSAGE_TYPE =
-  'klicker:manage-element-created'
+const MAX_NAME_LENGTH = 200
 
 export type ManageElementCreatedPayload = {
   id: number

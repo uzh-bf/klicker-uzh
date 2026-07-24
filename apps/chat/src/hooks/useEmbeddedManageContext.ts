@@ -1,5 +1,9 @@
 'use client'
 
+import {
+  MANAGE_CONTEXT_MESSAGE_TYPE,
+  MANAGE_CONTEXT_READY_MESSAGE_TYPE,
+} from '@klicker-uzh/types'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import {
@@ -8,10 +12,6 @@ import {
 } from '../services/manageContext'
 import { useManageParentStore } from '../stores/manageParentStore'
 import { useEmbedded } from './useEmbedded'
-
-const MANAGE_CONTEXT_MESSAGE_TYPE = 'klicker:manage-context'
-const MANAGE_CONTEXT_ACK_MESSAGE_TYPE = 'klicker:manage-context-ack'
-const MANAGE_CONTEXT_READY_MESSAGE_TYPE = 'klicker:manage-context-ready'
 
 export function useEmbeddedManageContext() {
   const embedded = useEmbedded()
@@ -49,40 +49,28 @@ export function useEmbeddedManageContext() {
       // this hook (e.g. the proposal card) that need to postMessage back.
       setManageParentOrigin(event.origin)
 
-      const messageId =
-        typeof event.data.messageId === 'number' ? event.data.messageId : null
-
-      // Manage re-posts the same context on open and on every retry until it is
-      // acked, and its memo also recomputes whenever the router object changes
-      // identity. Publishing a fresh object each time would re-render the whole
-      // assistant for an unchanged payload, so only publish real changes.
+      // Manage re-posts the same context on open and whenever its own memo
+      // recomputes (e.g. the router object changing identity). Publishing a
+      // fresh object each time would re-render the whole assistant for an
+      // unchanged payload, so only publish real changes.
       const nextKey = JSON.stringify(nextContext)
       if (nextKey !== contextKeyRef.current) {
         contextKeyRef.current = nextKey
         setContext(nextContext)
       }
-
-      window.parent.postMessage(
-        {
-          type: MANAGE_CONTEXT_ACK_MESSAGE_TYPE,
-          payload: {
-            version: 1,
-            ...(messageId != null ? { messageId } : {}),
-          },
-        },
-        event.origin
-      )
     }
 
     window.addEventListener('message', handleMessage)
 
     // Announce readiness so the parent (re)sends the current context exactly
-    // when this listener exists. Without this, the parent's timed retry burst
-    // can fully elapse before hydration finishes and the context is lost. The
-    // parent hands us its own origin as a query param, so target the ping at
-    // that concrete origin; if it is absent, skip the proactive ping and let
-    // the parent's retry burst deliver the context rather than broadcasting to
-    // a '*' wildcard.
+    // when this listener exists. The parent also posts once on iframe load,
+    // but that first send can race a slow-hydrating iframe (this listener not
+    // registered yet) — this ping is what makes the parent resend once we are
+    // actually ready to receive it. The parent hands us its own origin as a
+    // query param, so target the ping at that concrete origin; if it is
+    // absent, skip the proactive ping rather than broadcasting to a '*'
+    // wildcard (the parent's load-time send is still delivered whenever it
+    // wins the race).
     if (parentOrigin) {
       window.parent.postMessage(
         { type: MANAGE_CONTEXT_READY_MESSAGE_TYPE },
@@ -99,7 +87,6 @@ export function useEmbeddedManageContext() {
 function isManageContextMessage(data: unknown): data is {
   type: typeof MANAGE_CONTEXT_MESSAGE_TYPE
   payload: unknown
-  messageId?: unknown
 } {
   return (
     typeof data === 'object' &&

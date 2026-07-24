@@ -1,7 +1,5 @@
+import { MANAGE_ELEMENT_CREATED_MESSAGE_TYPE } from '@klicker-uzh/types'
 import { useManageParentStore } from '../stores/manageParentStore'
-
-export const MANAGE_ELEMENT_CREATED_MESSAGE_TYPE =
-  'klicker:manage-element-created'
 
 export type ManageElementCreatedPayload = {
   id: number

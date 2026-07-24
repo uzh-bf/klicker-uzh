@@ -1051,4 +1051,5 @@ export enum PointCorrectionType {
 // #endregion
 
 export * from './chatContext.js'
+export * from './manageAssistant.js'
 export * from './studentMcp.js'

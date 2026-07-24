@@ -3,12 +3,14 @@ import { expect, test } from '../util/fixtures.js'
 import {
   collectWindowMessages,
   DEFAULT_CONFIRMED_ELEMENT,
+  delayChatIframeScripts,
   getWindowMessages,
   makeProposalEnvelope,
   mockManageChatStream,
   mockManageProposalConfirm,
   openManageAssistantWidget,
   sendManageAssistantMessage,
+  trackProposalConfirmRequests,
 } from '../util/manageAssistant.js'
 
 /**
@@ -141,6 +143,39 @@ test.describe('Manage Assistant — Messaging', () => {
     ).toBeVisible()
   })
 
+  test('Dismissing a proposal collapses the card into a muted note and fires no confirm request', async ({
+    page,
+  }) => {
+    await mockManageChatStream(page, { mode: 'proposal' })
+    const getConfirmRequestCount = await trackProposalConfirmRequests(page)
+    const assistant = await openManageAssistantWidget(page)
+
+    await sendManageAssistantMessage(
+      assistant,
+      'Draft a question about mitochondria'
+    )
+
+    const dismissButton = assistant.getByTestId(
+      'chat-manage-proposal-dismiss-button'
+    )
+    await expect(dismissButton).toBeEnabled()
+    await dismissButton.click()
+
+    // Dismissed is terminal: the full card (header, preview, actions) is
+    // replaced by the collapsed muted note (see applyDismiss /
+    // manage-proposal-card.tsx), and the confirm/dismiss actions are gone
+    // with it.
+    await expect(
+      assistant.getByTestId('chat-manage-proposal-dismissed')
+    ).toBeVisible()
+    await expect(assistant.getByText('Confirmation required')).toHaveCount(0)
+    await expect(dismissButton).toHaveCount(0)
+
+    // No draft was ever created: dismissing is local-only and never calls
+    // the confirm endpoint.
+    expect(getConfirmRequestCount()).toBe(0)
+  })
+
   test('Welcome message explains assistant capabilities and limits', async ({
     page,
   }) => {
@@ -213,6 +248,49 @@ test.describe('Manage Assistant — Per-surface suggestions', () => {
 
     // Question-pool-only suggestions must not leak into this surface (retries
     // until the handshake has swapped the default set out).
+    await expect(
+      welcome.getByText('Draft a question', { exact: true })
+    ).toHaveCount(0)
+  })
+})
+
+test.describe('Manage Assistant — Slow hydration', () => {
+  test.beforeEach(async ({ loginLecturer }) => {
+    await loginLecturer()
+  })
+
+  test('Manage context still arrives when the chat iframe hydrates slowly, via the ready→resend handshake alone', async ({
+    page,
+  }) => {
+    await mockManageChatStream(page)
+    await page.goto(
+      `${process.env.URL_MANAGE ?? URL_MANAGE}/courses/${COURSE_ID_TEST}`
+    )
+
+    // Stretch the iframe's own script fetches well past its `load` event, so
+    // ManageAssistantWidget's send-on-frameLoaded post races ahead of the
+    // not-yet-mounted useEmbeddedManageContext listener and is dropped. The
+    // course-dashboard suggestions below only ever replace the defaults once
+    // the manage context lands, so this proves the iframe's own
+    // `klicker:manage-context-ready` ping — and the parent's resend on that
+    // ping — is what delivers it, with no timed retry burst involved.
+    await delayChatIframeScripts(page, 1_000)
+
+    const assistant = await openManageAssistantWidget(page)
+    const welcome = assistant.getByTestId('chat-welcome-message')
+
+    for (const text of [
+      'Summarize this course',
+      'Draft course question',
+      'Find course material',
+    ]) {
+      await expect(welcome.getByText(text, { exact: true })).toBeVisible({
+        timeout: 20_000,
+      })
+    }
+
+    // Question-pool-only suggestions must not leak in: the default set was
+    // never the one actually shown, confirming the swap really happened.
     await expect(
       welcome.getByText('Draft a question', { exact: true })
     ).toHaveCount(0)
@@ -297,18 +375,16 @@ test.describe('Manage Assistant — Error paths', () => {
     await expect(confirmButton).toBeEnabled()
   })
 
-  // Thread.tsx does not currently wire MessagePrimitive.Error /
-  // ErrorPrimitive.Message anywhere in the manage assistant's message list,
-  // so a failed chat stream renders no dedicated error text/toast today (see
-  // apps/chat/src/components/thread.tsx AssistantMessage /
-  // MessagePrimitive.Unstable_PartsGrouped — no Error component is passed).
-  // The AI SDK still reliably takes the thread out of its "running" state on
-  // any stream failure (Chat's send loop in the `ai` package catches the
-  // error and sets status: 'error', which useAISDKRuntime does not count as
-  // busy — see manageAssistant.ts errorStreamFulfillment for the source
-  // trace), so the strongest true, user-visible invariant here is: the
+  // Thread.tsx wires MessagePrimitive.Error / ErrorPrimitive.Message as
+  // AssistantMessageError (see apps/chat/src/components/thread.tsx), so a
+  // failed chat stream now renders a dedicated inline error note instead of
+  // stopping silently. The AI SDK still reliably takes the thread out of its
+  // "running" state on any stream failure (Chat's send loop in the `ai`
+  // package catches the error and sets status: 'error', which
+  // useAISDKRuntime does not count as busy — see manageAssistant.ts
+  // errorStreamFulfillment for the source trace), so this also asserts the
   // widget does not get stuck, does not crash, and accepts another message.
-  test('Chat stream failing mid-stream does not crash the widget and a retry succeeds', async ({
+  test('Chat stream failing mid-stream shows a visible error note and a retry succeeds', async ({
     page,
   }) => {
     await mockManageChatStream(page, {
@@ -318,6 +394,17 @@ test.describe('Manage Assistant — Error paths', () => {
     const assistant = await openManageAssistantWidget(page)
 
     await sendManageAssistantMessage(assistant, 'Summarize my course')
+
+    // The partial reply already streamed keeps its content, but the message
+    // is left in status: {type: "incomplete", reason: "error"} (see `ai`'s
+    // getAutoStatus, applied to the last message when chat.error is set) —
+    // AssistantMessageError renders for that exact state.
+    await expect(
+      assistant.getByTestId('chat-assistant-message-error')
+    ).toBeVisible({ timeout: 15_000 })
+    await expect(
+      assistant.getByTestId('chat-assistant-message-content')
+    ).toContainText('Partial answer before the connection dropped.')
 
     // Recovers: the composer returns to its normal "send" affordance instead
     // of hanging in a permanently "running"/cancel state.
@@ -333,7 +420,7 @@ test.describe('Manage Assistant — Error paths', () => {
     ).toContainText('Second reply after recovery.', { timeout: 15_000 })
   })
 
-  test('Malformed stream envelope does not crash the widget and a retry succeeds', async ({
+  test('Malformed stream envelope shows a visible error note and a retry succeeds', async ({
     page,
   }) => {
     await mockManageChatStream(page, {
@@ -344,15 +431,27 @@ test.describe('Manage Assistant — Error paths', () => {
 
     await sendManageAssistantMessage(assistant, 'Summarize my course')
 
+    // The malformed chunk fails to parse before any real content is ever
+    // applied to a message (DefaultChatTransport throws before
+    // processUIMessageStream sees a single valid chunk) — but the pipeline
+    // still synthesizes an empty assistant message carrying the error status
+    // rather than leaving the turn with no assistant message at all: see
+    // createErrorAssistantMessage in @assistant-ui/core's
+    // external-message-converter.js, which pushes
+    // {role: "assistant", content: [], status: {type: "incomplete", reason:
+    // "error", error}} whenever chat.error is set and the last converted
+    // message is not already an assistant message. So exactly one
+    // chat-assistant-message renders here, with no text content of its own,
+    // and the same AssistantMessageError note as the mid-stream case.
+    await expect(assistant.getByTestId('chat-assistant-message')).toHaveCount(1)
+    await expect(
+      assistant.getByTestId('chat-assistant-message-error')
+    ).toBeVisible({ timeout: 15_000 })
+
     await expect(assistant.getByTestId('chat-send-button')).toBeVisible({
       timeout: 15_000,
     })
     await expect(assistant.getByTestId('chat-composer-input')).toBeEditable()
-
-    // The malformed chunk fails to parse before any content is ever applied
-    // to a message (DefaultChatTransport throws before processUIMessageStream
-    // sees a single valid chunk), so no assistant bubble should exist yet.
-    await expect(assistant.getByTestId('chat-assistant-message')).toHaveCount(0)
 
     await sendManageAssistantMessage(assistant, 'Try again')
     await expect(
