@@ -12,7 +12,8 @@ the existing Hatchet control plane.
 - Plan: `project/2026-07-23-learning-analytics-production-plan.md`
 - Phase 1 branch: `chat-analytics`
 - Phase 1 target: `v3`
-- Phase 1 PR: none yet
+- Phase 1 PR:
+  [#5199](https://github.com/uzh-bf/klicker-uzh/pull/5199)
 - Phase 1 worktree:
   `trees/chat-analytics-integration`
 - Phase 2 branch: `analytics-phase-a`
@@ -864,9 +865,32 @@ the repository script that replaces it before continuing.
   `ANALYTICS_ALLOW_FULL` gate. Image CVE scanning and live
   ExternalSecret/Infisical readiness remain explicit pre-deployment gates
   because no scanner or live environment access is available here.
-- Active: Commit and independently review the test-isolation adjustment, run
-  the final whole-branch maintainability review, then publish and read back
-  both stacked draft PRs without merging or deploying.
+- 2026-07-24: Final Phase 1 review found four related privacy/correctness gaps:
+  aggregate message metrics did not apply current consent, consent revocation
+  retained participant/aggregate rows and downstream outcomes, a
+  below-threshold recluster retained old topics, and scoped runs still read or
+  timestamped courses outside the current scope. Commits `3510240467` and
+  `f11b17c20` address those gaps while preserving the existing GraphQL and
+  analytics stack.
+- 2026-07-24: The corrections are translated into the Phase 2 SQLAlchemy path.
+  Scoped chat windows now delete and rebuild atomically; empty valid results
+  reconcile outcomes and activity flags; participant response reads and
+  validity watermarks stay inside the current course scope; and aggregate
+  messages require current, non-declined consent.
+- 2026-07-24: Focused native-worker verification passes Ruff and 79 tests.
+  Four new PostgreSQL regressions pass against the disposable migrated
+  database: declined/stale consent exclusion, revocation cleanup, preservation
+  of another course during scoped runs, empty downstream reconciliation,
+  rollback after a failed rebuild, database-level participant-read scoping,
+  and scoped validity marking.
+- 2026-07-24: The complete database-enabled analytics suite passes 188 tests
+  with 18 existing dependency/dataframe warnings in 5 minutes 49 seconds.
+- 2026-07-24: The environment publication gate rejected the updated Phase 1
+  push despite the approved draft-PR workflow. Both branches will remain local
+  until the user explicitly reconfirms publication.
+- Active: Finish the refreshed base merge, run the complete database suite and
+  final reviews, then request publication confirmation for both stacked draft
+  PRs.
 
 ## Finish evidence
 
@@ -880,7 +904,9 @@ the repository script that replaces it before continuing.
 
 ## Next Steps
 
-1. Commit the accepted test-isolation review adjustment.
-2. Run the final whole-branch maintainability and branch reviews.
-3. Publish `chat-analytics` against `v3`, refresh the stacked
-   `analytics-phase-a` draft, and read back CI without merging or deploying.
+1. Complete and commit the refreshed Phase 1 merge plus privacy/scope
+   regressions.
+2. Run the complete database-enabled suite and final review gates.
+3. After explicit publication confirmation, update `chat-analytics` against
+   `v3`, refresh the stacked `analytics-phase-a` draft, and read back CI
+   without merging or deploying.
