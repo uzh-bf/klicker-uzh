@@ -21,6 +21,16 @@ describe('Course Q&A embed workflow', function () {
   })
 
   it('Lecturer generates course and external-block embed links', function () {
+    cy.intercept('**/graphql', (request) => {
+      const operationName = request.body?.operationName
+      if (operationName === 'GetCourseDiscussionCourseEmbeddingInfo') {
+        request.alias = 'courseEmbedInfo'
+      }
+      if (operationName === 'GetCourseDiscussionEmbeddingInfo') {
+        request.alias = 'externalEmbedInfo'
+      }
+    })
+
     cy.loginLecturer()
     cy.visit(`${Cypress.env('URL_MANAGE')}/courses/${this.data.courseId}`)
     cy.get('[data-cy="tab-discussions"]').click()
@@ -29,6 +39,7 @@ describe('Course Q&A embed workflow', function () {
     cy.get('[data-cy="course-qa-embed-scope-course"]').click()
     cy.get('[data-cy="course-qa-generate-embed"]').should('not.be.disabled')
     cy.get('[data-cy="course-qa-generate-embed"]').click()
+    cy.wait('@courseEmbedInfo').its('request.method').should('equal', 'POST')
     cy.get('[data-cy="course-qa-embed-url"]')
       .invoke('text')
       .then((courseEmbedUrl) => {
@@ -52,6 +63,7 @@ describe('Course Q&A embed workflow', function () {
       .check()
     cy.get('[data-cy="course-qa-generate-embed"]').should('not.be.disabled')
     cy.get('[data-cy="course-qa-generate-embed"]').click()
+    cy.wait('@externalEmbedInfo').its('request.method').should('equal', 'POST')
 
     cy.get('[data-cy="course-qa-embed-url"]')
       .should('exist')
