@@ -21,7 +21,7 @@ describe('Course Q&A embed workflow', function () {
   })
 
   it('Lecturer generates course and external-block embed links', function () {
-    cy.intercept('**/graphql', (request) => {
+    cy.intercept('**/graphql*', (request) => {
       const operationName =
         request.body?.operationName ??
         new URL(request.url).searchParams.get('operationName')
