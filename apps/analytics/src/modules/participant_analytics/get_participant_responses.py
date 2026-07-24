@@ -39,17 +39,26 @@ def set_course_dates(detail):
     return detail
 
 
-def get_participant_responses(db, start_date, end_date, verbose=False):
+def get_participant_responses(db, start_date, end_date, verbose=False, course_ids=None):
+    detail_where = {"createdAt": {"gte": start_date, "lte": end_date}}
+    if course_ids is not None:
+        course_filter = {"courseId": {"in": course_ids}}
+        detail_where["OR"] = [
+            {"practiceQuiz": {"is": course_filter}},
+            {"microLearning": {"is": course_filter}},
+        ]
+
     participant_response_details = db.participant.find_many(
+        where={"detailQuestionResponses": {"some": detail_where}},
         include={
             "detailQuestionResponses": {
-                "where": {"createdAt": {"gte": start_date, "lte": end_date}},
+                "where": detail_where,
                 "include": {
                     "practiceQuiz": {"include": {"course": True}},
                     "microLearning": {"include": {"course": True}},
                 },
             },
-        }
+        },
     )
 
     if verbose:

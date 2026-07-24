@@ -12,7 +12,8 @@ the existing Hatchet control plane.
 - Plan: `project/2026-07-23-learning-analytics-production-plan.md`
 - Phase 1 branch: `chat-analytics`
 - Phase 1 target: `v3`
-- Phase 1 PR: none yet
+- Phase 1 PR:
+  [#5199](https://github.com/uzh-bf/klicker-uzh/pull/5199)
 - Phase 1 worktree:
   `trees/chat-analytics-integration`
 - Phase 2 branch: `analytics-phase-a`
@@ -421,9 +422,25 @@ the repository script that replaces it before continuing.
   immediately. Dependency pruning and small SQL-loading/query-shape cleanups
   were rejected for Slice 1 because they are unrelated to the merge and lack
   runtime value or build evidence.
-- Active: Slice 1, commit the review-driven documentation corrections.
-- Next: Create the Phase A integration worktree and merge refreshed
-  `chat-analytics`.
+- 2026-07-24: Final base review found that aggregate chat metrics did not
+  apply the current-consent gate to message rows, participant and aggregate
+  chat windows retained stale rows after consent changes, below-threshold
+  clustering retained old topics, script 0 did not apply course scope to
+  daily/weekly/monthly reads, and incremental completion timestamps were
+  global. These are accepted privacy/correctness blockers.
+- 2026-07-24: The base fix joins current eligible participant/chatbot pairs
+  into both aggregate message CTEs; atomically replaces participant and
+  aggregate chat windows; clears old clusters when eligible messages fall
+  below the threshold; pushes course scope into both the parent and nested
+  response queries; and scopes completion watermarks for every scoped run.
+- 2026-07-24: Current base verification passes Ruff formatting/lint across 92
+  files and 35 focused unit/contract tests. The pre-push repository build
+  completed all 22 runnable build tasks.
+- 2026-07-24: Opened draft PR
+  [#5199](https://github.com/uzh-bf/klicker-uzh/pull/5199) from
+  `chat-analytics` to `v3`.
+- Active: Commit and independently review the accepted final base corrections,
+  then merge them through the Phase A stack.
 
 ## Finish evidence
 
@@ -437,6 +454,7 @@ the repository script that replaces it before continuing.
 
 ## Next Steps
 
-1. Finish the Slice 1 review adjustment.
-2. Merge refreshed `chat-analytics` into `analytics-phase-a`.
-3. Continue one verified slice at a time until both draft PRs are current.
+1. Commit and review the final base privacy/scope correction.
+2. Merge the corrected base into `analytics-phase-a`.
+3. Port database-backed regressions through the SQLAlchemy/native-worker path
+   and continue to the final draft-PR CI readback.

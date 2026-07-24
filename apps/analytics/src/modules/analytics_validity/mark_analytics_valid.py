@@ -21,10 +21,11 @@ def _render_sql(finalize: bool, course_ids: list[str] | None) -> str:
     # `true` in finalize mode lets the UPDATE touch courses with zero analytics
     # rows (otherwise the scanner would re-emit courseEnded daily forever).
     bypass_clause = "false"
+    if course_ids is not None:
+        filter_clause = render_uuid_in_clause("c.id", course_ids)
     if finalize:
         set_clause = '"analyticsFinalizedAt" = NOW(),'
-        scoped = render_uuid_in_clause("c.id", course_ids or [])
-        filter_clause = f'{scoped} AND c."analyticsFinalizedAt" IS NULL'
+        filter_clause += ' AND c."analyticsFinalizedAt" IS NULL'
         bypass_clause = "true"
     return (
         _SQL.replace(_SET_PLACEHOLDER, set_clause)
@@ -44,7 +45,7 @@ def mark_analytics_valid(db, verbose: bool = False):
     scoped courses — the scanner's one-shot finalisation path.
     """
     mode = analytics_mode()
-    course_ids = scoped_course_ids(db) if mode == "finalize" else None
+    course_ids = scoped_course_ids(db)
     finalize = mode == "finalize" and bool(course_ids)
 
     if verbose:

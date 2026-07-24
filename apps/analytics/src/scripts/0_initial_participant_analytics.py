@@ -1,8 +1,6 @@
 # This script computes the participant analytics for a given time range
 # ! This script is a copy of the corresponding notebook content and needs to be kept in sync with it
 
-import os
-import json
 from datetime import datetime
 from prisma import Prisma
 import pandas as pd
@@ -37,6 +35,8 @@ compute_weekly = True
 compute_monthly = True
 compute_course = True
 
+scope = scoped_course_ids(db)
+
 # ! Compute daily / weekly / monthly analytics
 # Print all dates between the 2022-10-23 and today
 start_date = "2022-10-23"
@@ -62,7 +62,13 @@ if compute_daily:
         # Compute participant analytics for a specific day
         timestamp = start_date
         compute_participant_analytics(
-            db, start_date, end_date, timestamp, "DAILY", verbose
+            db,
+            start_date,
+            end_date,
+            timestamp,
+            "DAILY",
+            verbose,
+            course_ids=scope,
         )
 
 if compute_weekly:
@@ -73,15 +79,19 @@ if compute_weekly:
             continue
         # Fetch all question response detail entries for a specific week
         end_date = week_end_date + "T23:59:59.999Z"
-        start_date = (curr_date - pd.DateOffset(days=6)).strftime(
-            "%Y-%m-%d"
-        ) + "T00:00:00.000Z"
+        start_date = (curr_date - pd.DateOffset(days=6)).strftime("%Y-%m-%d") + "T00:00:00.000Z"
         print(f"Computing weekly participant analytics for {start_date} to {end_date}")
 
         # Compute participant analytics for a specific week
         timestamp = end_date
         compute_participant_analytics(
-            db, start_date, end_date, timestamp, "WEEKLY", verbose
+            db,
+            start_date,
+            end_date,
+            timestamp,
+            "WEEKLY",
+            verbose,
+            course_ids=scope,
         )
 
 if compute_monthly:
@@ -92,48 +102,43 @@ if compute_monthly:
             continue
         # Fetch all question response detail entries for a specific month
         end_date = month_end_date + "T23:59:59.999Z"
-        start_date = (curr_date - pd.offsets.MonthBegin(1)).strftime(
-            "%Y-%m-%d"
-        ) + "T00:00:00.000Z"
+        start_date = (curr_date - pd.offsets.MonthBegin(1)).strftime("%Y-%m-%d") + "T00:00:00.000Z"
         print(f"Computing monthly participant analytics for {start_date} to {end_date}")
 
         # Compute participant analytics for a specific month
         timestamp = end_date
         compute_participant_analytics(
-            db, start_date, end_date, timestamp, "MONTHLY", verbose
+            db,
+            start_date,
+            end_date,
+            timestamp,
+            "MONTHLY",
+            verbose,
+            course_ids=scope,
         )
 
 # ! Compute course analytics
 # Fetch all ongoing / past courses
 if compute_course:
     curr_date = datetime.now().strftime("%Y-%m-%d")
-    scope = scoped_course_ids(db)
     where = apply_course_scope(
         {"startDate": {"lte": curr_date + "T23:59:59.999Z"}},
         scope,
     )
 
     if where is None:
-        print(
-            "[0_initial_participant_analytics] empty course scope — skipping COURSE pass"
-        )
+        print("[0_initial_participant_analytics] empty course scope — skipping COURSE pass")
         df_courses = pd.DataFrame()
     else:
         courses = db.course.find_many(where=where)
         df_courses = pd.DataFrame(list(map(lambda x: x.dict(), courses)))
 
     scope_note = f" (scoped to {len(scope)} ids)" if scope is not None else ""
-    print(
-        f"Found {len(df_courses)} courses with a start date before {curr_date}{scope_note}"
-    )
+    print(f"Found {len(df_courses)} courses with a start date before {curr_date}{scope_note}")
 
     if not df_courses.empty:
-        courses_without_responses = compute_participant_course_analytics(
-            db, df_courses, verbose
-        )
-        print(
-            f"Found {courses_without_responses} courses without any responses"
-        )
+        courses_without_responses = compute_participant_course_analytics(db, df_courses, verbose)
+        print(f"Found {courses_without_responses} courses without any responses")
 
 # Disconnect from the database
 db.disconnect()

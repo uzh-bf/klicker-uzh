@@ -29,7 +29,16 @@ def cluster_chatbot(
                 f"[chat_topic_clustering] chatbot={chatbot_id} skipped — needs >= "
                 f"{MIN_MESSAGES} messages, got {len(rows)}"
             )
-        return 0
+        return save_clusters(
+            db,
+            chatbot_id,
+            analytics_type,
+            timestamp,
+            {},
+            [],
+            [],
+            verbose=verbose,
+        )
 
     texts = [r["text"] for r in rows]
     participant_ids = [str(r["participant_id"]) for r in rows]

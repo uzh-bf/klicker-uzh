@@ -1,8 +1,14 @@
 import os
+from datetime import timedelta
 
 from src.modules.utils import COURSE_TIMESTAMP, load_sql
 
 _SQL = load_sql(os.path.join(os.path.dirname(__file__), "participant_chat_analytics.sql"))
+_DELETE_SQL = """
+DELETE FROM "ParticipantChatAnalytics"
+WHERE "type" = $1::"AnalyticsType"
+  AND "timestamp" = $2::date
+"""
 
 __all__ = ["compute_participant_chat_analytics", "COURSE_TIMESTAMP"]
 
@@ -31,7 +37,15 @@ def compute_participant_chat_analytics(
     if verbose:
         print(f"[chat_analytics] {analytics_type} {win_start}..{win_end} -> {timestamp}")
 
-    rows_written = db.execute_raw(_SQL, win_start, win_end, analytics_type, timestamp)
+    with db.tx(timeout=timedelta(minutes=30)) as transaction:
+        transaction.execute_raw(_DELETE_SQL, analytics_type, timestamp)
+        rows_written = transaction.execute_raw(
+            _SQL,
+            win_start,
+            win_end,
+            analytics_type,
+            timestamp,
+        )
     if verbose:
         print(f"[chat_analytics] rows affected: {rows_written}")
     return rows_written

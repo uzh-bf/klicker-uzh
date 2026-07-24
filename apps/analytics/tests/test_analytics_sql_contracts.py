@@ -48,6 +48,10 @@ class AnalyticsSqlContractTests(unittest.TestCase):
 
         for statement in statements:
             with self.subTest(statement=statement[:40]):
+                messages_cte = statement.index("messages AS")
+                disclaimer_cte = statement.index("disclaimer_counts AS")
+                self.assertIn("eligible_pairs AS", statement[:messages_cte])
+                self.assertIn("JOIN eligible_pairs ep", statement[messages_cte:disclaimer_cte])
                 self.assertIn('EXTRACT(ISODOW FROM "createdAt")', statement)
                 self.assertIn('EXTRACT(HOUR   FROM "createdAt")', statement)
                 self.assertIn("::timestamptz AT TIME ZONE 'UTC'", statement)
