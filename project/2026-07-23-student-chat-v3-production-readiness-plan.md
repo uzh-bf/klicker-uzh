@@ -701,6 +701,59 @@ many files at once — review the codemod diff before committing; keep unrelated
   to reverse and the result of a real trade-off.
 - Update this plan's Progress section as you go; every slice gets its evidence line.
 
+## Future feature (OUT OF SCOPE here): MCP Apps interactive artifacts
+
+Unlocked by this branch's upgrade (assistant-ui 0.14 `mcp-apps` + AI SDK 7 MCP Apps),
+**not built here**. Sketched so the follow-up has a starting shape. Tracked separately in
+the backlog (ClickUp), not in this public plan beyond this engineering sketch.
+
+**What it is.** Today a chatbot's MCP tool returns text/JSON that renders as a static
+`ToolFallback` chip. With MCP Apps, an MCP tool can instead return an interactive UI
+*resource* that assistant-ui renders inline in the chat via `McpAppRenderer` /
+`McpAppsRemoteHost`, sandboxed in a `safe-content-frame` iframe under a strict CSP. The
+chat goes from read-only text to an interactive surface.
+
+**High-value artifacts for KlickerUZH students** (ranked by product fit):
+
+1. **In-chat practice question** — the tutor serves a real KlickerUZH-style MC / KPRIM /
+   numeric item as an interactive widget; the student answers inline and gets formative
+   feedback. Direct reuse of the platform's core item + grading model; the strongest
+   differentiator vs generic chatbots.
+2. **RAG source panel** — replace the plain KB-retrieval chip with an interactive
+   citations panel (retrieved chunks, expandable, links back to the source doc). Concrete
+   upgrade to the existing knowledge-base tool.
+3. **Worked-example explorer** — step-by-step reveal-on-demand solution (matches the Tutor
+   "Soll ich ein Beispiel rechnen?" flow).
+4. **Concept mini-map** — a small interactive view over the knowledge graph (ties to the
+   Falkor graph substrate).
+5. **Flashcard / quick-review widget** — spaced-repetition surface (ties to the FSRS
+   memory layer in the personalized-tutoring plan).
+6. **Formula sandbox / calculator** (e.g. compound interest) for quantitative courses.
+
+**Hard problems to design before building** (why it is its own project, not a slice):
+
+- **Trust + sandbox model.** Per-chatbot MCP servers are lecturer-configured and
+  effectively untrusted. Interactive UI must render only in the sandboxed frame, must
+  never see the participant JWT, parent DOM, or cookies, and needs an explicit CSP + host
+  allowlist. Security-concept item — run `security-threat-model` / the UZH ZI LLM
+  requirements (OWASP LLM Top 10) on it. Decide: allowlist first-party MCP apps only, or
+  sandbox all uniformly.
+- **Response capture + learner model.** If a student answers an in-chat question, is the
+  response persisted and scored? Feeding it into the mastery-lite learner model is the big
+  payoff and the big integration (grading package, response pipeline, formative-only
+  assessor).
+- **Protocol + capability negotiation.** Which MCP servers may emit app resources and how
+  the chat host negotiates capability; graceful fallback to the text chip when the client
+  cannot render.
+- **Mobile.** Artifacts must be responsive inside the chat bubble at 375px within the
+  iframe.
+- **Cost / perf.** Extra iframe per artifact; lazy-mount and tear down on scroll-away.
+
+**First step when picked up:** a throwaway spike — one trivial first-party MCP app (e.g. a
+static "hello" panel) rendered via `McpAppRenderer` end-to-end through the real
+per-chatbot MCP path, to prove the sandbox + CSP + capability negotiation *before*
+designing the question widget.
+
 ## Progress
 
 - 2026-07-23: Plan created from production-readiness review (browser matrix + 4 code
@@ -721,3 +774,6 @@ many files at once — review the codemod diff before committing; keep unrelated
   upgrade`. Old S15 dissolved into U3/U4; S16 react-ai-sdk removal reversed; S2/S5 got
   Phase-2 dependency notes; added "Execution phases and ordering"; S17 finish gate
   extended with upgrade-specific verification + ADR. No slices started.
+- 2026-07-23: User confirmed U5 (spike-gated) and mcp-apps out of scope. Added the
+  "MCP Apps interactive artifacts" future-feature sketch; a corresponding ClickUp backlog
+  task was created for it. No slices started.
