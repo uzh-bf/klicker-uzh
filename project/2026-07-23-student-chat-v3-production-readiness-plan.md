@@ -904,6 +904,17 @@ designing the question widget.
   click clears (aria-pressed + data-submitted tracked). Review: clean
   (WeakMap conversion caching intact, id stability, adapter wiring
   confirmed against 0.14.27 compiled source). check + vitest 40/40 green.
+- 2026-07-24: **U5 skipped — spike gate (D9) tripped before code.** The gate's
+  premise is that the runtime swap only lands if it maps cleanly AND passes the
+  full live matrix (send/stream/reasoning/tool/error + credits refresh). With no
+  LLM key in this stack, that matrix cannot be run even once — an unverifiable
+  rewrite of the whole chat transport is exactly what the gate exists to stop.
+  Additional friction noted for a future attempt: @assistant-ui/react-ai-sdk
+  1.3.26 pins old core 0.2.2 + ai@6, so U5 also implies bumping it (new
+  release-age excludes) on top of the runtime rewrite. Fallback branch is now
+  active per plan: useChatResponse.ts stays; S2/S5/M2 authored against it; U4's
+  feedback adapter stays on useExternalStoreRuntime. Revisit U5 in a follow-up
+  branch once a dev LLM key exists.
 - 2026-07-24: Environment note: worktree stack has no upstream LLM key
   (`UPSTREAM_OPENAI_API_KEY`), so live sends fail with the S5 error bubble (stacked
   strings reproduced live). Phase 0 does not need live LLM; **Phase U verification does**
