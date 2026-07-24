@@ -98,6 +98,7 @@ export default {
       cancel: 'Cancel',
       editName: 'Edit name',
       deleteChat: 'Delete chat',
+      emptyState: 'Start your first conversation with a message.',
     },
     thread: {
       scrollToBottom: 'Scroll to bottom',

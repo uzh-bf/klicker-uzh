@@ -820,6 +820,18 @@ designing the question widget.
   Verified in browser at 375/800: mode select (2 options) + "Verfügbare Credits
   100 / 100" bar render in the embed. Review: no findings (noted pre-existing
   threadId dep gap + Loader2 duplication as sub-threshold).
+- 2026-07-24: **S10 done — Phase 0 complete.** Zero-thread empty-state hint
+  (`chat.threadList.emptyState`, en+de informal Du; gated on `!isLoading` after
+  review caught a returning-user flash during the loadThreads round-trip). D3:
+  settings-panel registry model description locale-gated to `en`; embedded mode
+  select reuses the pills' `chat.modes.*` localized labels (was leaking English
+  registry descriptions in DE). No toast primitive in apps/chat (design-system
+  `toast` exists but is unmounted) — rating silent-revert documented in
+  docs/chat-platform.md instead, per plan fallback; thread-row touch friction
+  documented likewise. Perf item skipped (unmeasured, per plan). Verified in
+  browser: DE select "Tutor/Erklärer", DE panel hides description, EN shows it,
+  testuser25 (zero threads) sees the DE hint post-load. Review: 1 finding
+  (loading flash) — fixed + re-verified.
 - 2026-07-24: Environment note: worktree stack has no upstream LLM key
   (`UPSTREAM_OPENAI_API_KEY`), so live sends fail with the S5 error bubble (stacked
   strings reproduced live). Phase 0 does not need live LLM; **Phase U verification does**

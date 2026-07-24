@@ -62,6 +62,8 @@ Two recurring traps in this app's strings:
 
 Participants rate assistant answers through `ChatMessage.rating` (`ChatMessageRating` enum, nullable — null means no vote). `POST …/threads/[threadId]/messages/[messageId]/feedback` scopes its lookup by participant _and_ chatbot and reports someone else's message as 404, not 403, so the endpoint cannot be used to probe which message ids exist.
 
+A failed rating request (`chatStore.rateMessage`) reverts the optimistic vote **silently** — no toast, no inline error. This is deliberate: `@uzh-bf/design-system` exports a `toast`/`Toaster` primitive used by `frontend-pwa`/`frontend-manage`, but `apps/chat` neither mounts a `<Toaster/>` nor imports `toast` anywhere, so wiring one in just for this rare, low-stakes failure was judged out of scope for a P3 polish pass. Revisit if a `<Toaster/>` provider gets added for another reason.
+
 Each vote is mirrored to Langfuse as a score. **Langfuse v4 is OpenTelemetry-based**: a trace is addressed by its W3C trace id and the v3 `metadata.langfuseTraceId` convention is silently ignored. To reach a trace from a later, unrelated request, both sides derive the same id from the assistant message id with `createTraceId(messageId)` (`src/lib/server/langfuseTracing.ts`); the streaming route anchors the AI SDK's spans onto it via `startActiveObservation(..., { parentSpanContext })`. Scores go over `POST /api/public/scores` with HTTP Basic auth — no Langfuse client dependency — under a deterministic score id so a re-vote replaces rather than stacks, and a retracted vote issues the matching `DELETE`. Scoring honours the same `CHAT_ENABLE_AI_TELEMETRY` killswitch as the span processor; without it, a deployment with telemetry disabled writes scores against traces that were never emitted.
 
 > **Known gap:** `apps/chat` pins `@opentelemetry/sdk-trace-node@1.26.0` while `@langfuse/otel` needs 2.x, so span export throws and **no trace currently reaches Langfuse**. The scores are written correctly but are orphaned until the OTel major bump lands.
@@ -73,6 +75,7 @@ Each vote is mirrored to Langfuse as a score. **Langfuse v4 is OpenTelemetry-bas
 - **`ComposerPrimitive.AttachmentDropzone` must wrap both normal and edit composer roots** — it owns the drag/drop capture that prevents native browser file navigation (`src/components/thread.tsx`).
 - **Login redirects**: `src/app/noLogin/page.tsx` must pass an **absolute** chat URL as the PWA login `redirect_to`; a relative path makes the PWA redirect to its own domain and 404.
 - **Do not put user-facing English in the store.** `chatStore` maps the API's generic enrolment 403 to `null` so the notice component can render its localized default; substituting a readable English sentence in the store makes the translated fallback unreachable.
+- **Thread-row edit/delete need the row active first on touch** (`thread-list.tsx`): the buttons are `hidden` and only reveal via `group-hover`/`group-focus-within`, which touch has neither of, so a touch user must tap the row (making it active, which also sets `inline-flex`) before the edit/delete buttons appear. Accepted friction, not a bug — leave as is.
 
 ## Testing
 
