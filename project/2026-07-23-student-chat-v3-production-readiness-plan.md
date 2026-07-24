@@ -975,3 +975,26 @@ designing the question widget.
   closes (testuser24 acceptance reset via prisma then restored by the retry).
   Deferred (informational, spec-compliant): background-refresh failure with a
   cached list stays silent. Next: S12 motion.
+- 2026-07-24: **S12 done** (motion foundation). M1: dead `aui-*-motion-*`
+  classnames replaced with real `animate-in fade-in slide-in-from-bottom-2
+  duration-300 motion-reduce:animate-none` on the welcome title/subtitle
+  (subtitle `delay-100` cascade) and on User/Assistant `MessagePrimitive.Root`
+  (tw-animate-css already wired via globals.css — no new dep). M2: pulsing-dot
+  thinking indicator. The plan's premise ("last message is still the user
+  message during the gap") was wrong live: the external-store runtime injects a
+  synthetic EMPTY assistant message as soon as isRunning flips, so a sibling
+  row keyed on last-role=user never fires. Reworked: `ThinkingDots` renders
+  inside AssistantMessage's content area when `role==='assistant' &&
+  status.type==='running' && content.length===0` — the row already exists, so
+  content replacing the dots causes zero layout jump. `role="status"` +
+  sr-only `chat.thread.thinking` (en+de) after review. M5: ScrollToBottom now
+  fades — `transition-[opacity,...] duration-200 disabled:opacity-0` with
+  review-suggested `disabled:invisible
+  disabled:[transition:opacity_200ms,visibility_0s_200ms]` so it leaves the
+  a11y tree after the fade, plus `motion-reduce:transition-none`. Review:
+  branch-switch entrance replay accepted as-is (remount-keyed, matches
+  ChatGPT/Claude behavior). Verified live via delayed-fetch send: dots appear
+  mid-flight (MutationObserver), replaced by the error bubble; welcome +
+  message entrance classes computed; scroll button hidden(+invisible) at
+  bottom, visible/opacity-1 when scrolled (forced via small viewport). 45/45
+  tests, check, prettier green. Next: S13 welcome.

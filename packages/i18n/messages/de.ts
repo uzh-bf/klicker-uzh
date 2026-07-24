@@ -108,6 +108,7 @@ export default {
     },
     thread: {
       scrollToBottom: 'Nach unten scrollen',
+      thinking: 'Antwort wird vorbereitet …',
       welcomeTitle: 'Hallo!',
       welcomeSubtitle: 'Wie kann ich Dir helfen?',
     },

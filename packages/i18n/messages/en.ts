@@ -105,6 +105,7 @@ export default {
     },
     thread: {
       scrollToBottom: 'Scroll to bottom',
+      thinking: 'Preparing an answer …',
       welcomeTitle: 'Hello there!',
       welcomeSubtitle: 'How can I help you?',
     },
