@@ -38,6 +38,7 @@ type QuestionEffectPlan = {
   participantResponse?: string
   grading?: QuestionGrading
   setsFirstResponseTimestamp: boolean
+  updatesLeaderboard: boolean
 }
 
 type ParticipantData = {
@@ -192,6 +193,7 @@ function planQuestionResponseEffects({
         grading,
         setsFirstResponseTimestamp:
           grading?.correctnessPercentage === 1 && !firstResponseReceivedAt,
+        updatesLeaderboard: true,
       }
     }
     case 'NUMERICAL': {
@@ -237,6 +239,7 @@ function planQuestionResponseEffects({
         setsFirstResponseTimestamp:
           Boolean(parsedSolutions && grading?.correctnessPercentage) &&
           !firstResponseReceivedAt,
+        updatesLeaderboard: true,
       }
     }
     case 'FREE_TEXT': {
@@ -282,6 +285,7 @@ function planQuestionResponseEffects({
         grading,
         setsFirstResponseTimestamp:
           Boolean(grading?.correctnessPercentage) && !firstResponseReceivedAt,
+        updatesLeaderboard: true,
       }
     }
     case 'SELECTION': {
@@ -325,6 +329,7 @@ function planQuestionResponseEffects({
         grading,
         setsFirstResponseTimestamp:
           grading?.correctnessPercentage === 1 && !firstResponseReceivedAt,
+        updatesLeaderboard: true,
       }
     }
     case 'CASE_STUDY': {
@@ -385,6 +390,7 @@ function planQuestionResponseEffects({
         grading,
         setsFirstResponseTimestamp:
           grading?.correctnessPercentage === 1 && !firstResponseReceivedAt,
+        updatesLeaderboard: true,
       }
     }
     case 'CONTENT':
@@ -404,6 +410,7 @@ function planQuestionResponseEffects({
             })
           : undefined,
         setsFirstResponseTimestamp: false,
+        updatesLeaderboard: false,
       }
     default: {
       const exhaustiveType: never = type
@@ -481,7 +488,7 @@ export function queueQuestionResponseEffects({
     )
   }
 
-  if (participantData && plan.grading) {
+  if (participantData && plan.grading && plan.updatesLeaderboard) {
     if (plan.setsFirstResponseTimestamp) {
       redisMulti.hsetnx(
         `${instanceKey}:info`,

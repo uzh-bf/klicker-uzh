@@ -23,10 +23,10 @@ import {
   getCorrelatedResponseAdmission,
   hasJsonContentType,
   isAllowedCorsOrigin,
-  markCorrelatedResponseAccepted,
   prepareCorrelatedResponseSubmission,
   releaseCorrelatedResponse,
   resolveResponseCollectionMode,
+  responseEndpointMatchesCollectionMode,
   serializeLiveQuizRespondentCookie,
 } from './correlatedResponses.js'
 
@@ -220,7 +220,6 @@ async function handleInitializeLiveQuizResponseIdentity(
 
   const admission = await getCorrelatedResponseAdmission({
     database: prisma,
-    redis,
     liveQuizId: payload.liveQuizId,
     cookieHeader:
       typeof req.headers.cookie === 'string' ? req.headers.cookie : undefined,
@@ -234,12 +233,6 @@ async function handleInitializeLiveQuizResponseIdentity(
   if (admission === 'pin_required') {
     return sendJson(req, res, 403, { error: 'Live quiz PIN required' })
   }
-  if (admission === 'worker_unavailable') {
-    return sendJson(req, res, 503, {
-      error: 'Correlated response processing is not available',
-    })
-  }
-
   const identity = await ensureCorrelatedResponseIdentity({
     req,
     res,
@@ -251,7 +244,11 @@ async function handleInitializeLiveQuizResponseIdentity(
   })
 }
 
-async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
+async function handleAddResponse(
+  req: IncomingMessage,
+  res: ServerResponse,
+  endpointMode: 'aggregate' | 'correlated'
+) {
   let payload: any
   try {
     payload = await readBody(req)
@@ -296,6 +293,16 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
   })
   const isCorrelated =
     responseCollectionMode === LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+  if (
+    !responseEndpointMatchesCollectionMode({
+      endpointMode,
+      responseCollectionMode,
+    })
+  ) {
+    return sendJson(req, res, 409, {
+      error: 'Response endpoint does not match live quiz collection mode',
+    })
+  }
 
   let cookie: string | undefined
   let eventName: string
@@ -304,7 +311,6 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
   if (isCorrelated) {
     const admission = await getCorrelatedResponseAdmission({
       database: prisma,
-      redis,
       liveQuizId: liveQuizIdString,
       cookieHeader: rawCookie,
     })
@@ -314,12 +320,6 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     if (admission === 'pin_required') {
       return sendJson(req, res, 403, { error: 'Live quiz PIN required' })
     }
-    if (admission === 'worker_unavailable') {
-      return sendJson(req, res, 503, {
-        error: 'Correlated response processing is not available',
-      })
-    }
-
     const identity = await resolveCorrelatedResponseIdentity({
       req,
       liveQuizId: liveQuizIdString,
@@ -406,19 +406,6 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
       })
     }
     throw error
-  }
-
-  if (
-    claim &&
-    !(await markCorrelatedResponseAccepted({
-      redis,
-      ...claim,
-      messageId,
-    }))
-  ) {
-    throw new Error(
-      `Failed to retain accepted correlated response claim ${claim.key}`
-    )
   }
 
   return sendJson(req, res, 200, { status: 'ok', responseTimestamp })
@@ -658,8 +645,16 @@ const server = createServer(async (req, res) => {
       } else {
         // call the standard processing function, which will distinguish between authenticated and anonymous modes
         // if a valid cookie exists is not relevant at this point -> otherwise answers are simply treated as anonymous
-        return await handleAddResponse(req, res)
+        return await handleAddResponse(req, res, 'aggregate')
       }
+    }
+
+    if (
+      url.pathname === '/AddCorrelatedResponse' &&
+      req.method === 'POST' &&
+      process.env.ASSESSMENT_MODE !== 'true'
+    ) {
+      return await handleAddResponse(req, res, 'correlated')
     }
 
     if (

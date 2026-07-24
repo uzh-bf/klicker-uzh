@@ -1,3 +1,4 @@
+import { LiveQuizResponseCollectionMode } from '@klicker-uzh/prisma/client'
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
@@ -8,20 +9,15 @@ import {
   hasPersistedCorrelatedResponse,
   hasValidLiveQuizPin,
   isAllowedCorsOrigin,
-  isCorrelatedResponseWorkerReady,
-  markCorrelatedResponseAccepted,
   releaseCorrelatedResponse,
   resolveResponseCollectionMode,
+  responseEndpointMatchesCollectionMode,
   serializeLiveQuizRespondentCookie,
 } from '../src/correlatedResponses.js'
 
 class MemoryRedis {
   private readonly strings = new Map<string, string>()
   lastTtlMs: number | undefined
-
-  async get(key: string) {
-    return this.strings.get(key) ?? null
-  }
 
   async set(
     key: string,
@@ -37,17 +33,12 @@ class MemoryRedis {
   }
 
   async eval(
-    script: string,
+    _script: string,
     _numberOfKeys: number,
     key: string,
-    expectedValue: string,
-    ttlMs?: string
+    expectedValue: string
   ) {
     if (this.strings.get(key) !== expectedValue) return 0
-    if (script.includes('PEXPIRE')) {
-      this.lastTtlMs = Number(ttlMs)
-      return 1
-    }
     return this.strings.delete(key) ? 1 : 0
   }
 }
@@ -107,26 +98,6 @@ describe('correlated response claim', () => {
       true
     )
   })
-
-  it('retains an accepted claim for the respondent token lifetime', async () => {
-    const redis = new MemoryRedis()
-    const key = 'claim-key'
-    await claimCorrelatedResponse({
-      redis,
-      key,
-      messageId: 'message-1',
-    })
-
-    assert.equal(
-      await markCorrelatedResponseAccepted({
-        redis,
-        key,
-        messageId: 'message-1',
-      }),
-      true
-    )
-    assert.equal(redis.lastTtlMs, 14 * 24 * 60 * 60 * 1000)
-  })
 })
 
 describe('correlated response request safeguards', () => {
@@ -161,16 +132,34 @@ describe('correlated response request safeguards', () => {
     assert.equal(hasJsonContentType(undefined), false)
   })
 
-  it('checks worker compatibility through the protocol heartbeat', async () => {
-    const redis = new MemoryRedis()
-    assert.equal(await isCorrelatedResponseWorkerReady({ redis }), false)
-    await redis.set('lq:correlatedResponses:workerProtocol:v1', 'v1')
-    assert.equal(await isCorrelatedResponseWorkerReady({ redis }), true)
+  it('keeps correlated submissions off the legacy response endpoint', () => {
+    assert.equal(
+      responseEndpointMatchesCollectionMode({
+        endpointMode: 'correlated',
+        responseCollectionMode:
+          LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+      }),
+      true
+    )
+    assert.equal(
+      responseEndpointMatchesCollectionMode({
+        endpointMode: 'aggregate',
+        responseCollectionMode:
+          LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+      }),
+      false
+    )
+    assert.equal(
+      responseEndpointMatchesCollectionMode({
+        endpointMode: 'correlated',
+        responseCollectionMode:
+          LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS,
+      }),
+      false
+    )
   })
 
-  it('centralizes correlated quiz, PIN, and worker admission', async () => {
-    const redis = new MemoryRedis()
-    await redis.set('lq:correlatedResponses:workerProtocol:v1', 'v1')
+  it('centralizes correlated quiz and PIN admission', async () => {
     const database = {
       liveQuiz: {
         findUnique: async () => ({
@@ -185,7 +174,6 @@ describe('correlated response request safeguards', () => {
     assert.equal(
       await getCorrelatedResponseAdmission({
         database,
-        redis,
         liveQuizId: 'quiz-1',
         cookieHeader: 'live-quiz-pin-quiz-1=ABC123',
       }),
@@ -194,7 +182,6 @@ describe('correlated response request safeguards', () => {
     assert.equal(
       await getCorrelatedResponseAdmission({
         database,
-        redis,
         liveQuizId: 'quiz-1',
         cookieHeader: undefined,
       }),

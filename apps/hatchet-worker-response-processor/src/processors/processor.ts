@@ -91,7 +91,7 @@ export async function processResponseMessage(
   let aggregatePipeline = redisExec.pipeline()
   let redisMulti: RedisHashMutationQueue = aggregatePipeline
   let correlatedMutationBuffer: CorrelatedRedisMutationBuffer | undefined
-  let isCorrelated = false
+  const isCorrelated = message.correlatedClaim !== undefined
   let correlatedState: CorrelatedProcessingState | undefined
 
   const releaseProcessingLock = async () => {
@@ -179,9 +179,15 @@ export async function processResponseMessage(
       return { status: 400 }
     }
 
-    isCorrelated =
+    const storedModeIsCorrelated =
       responseCollectionMode ===
       LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+    if (isCorrelated !== storedModeIsCorrelated) {
+      ctx.logger.error('Response event does not match response collection mode')
+      await releaseClaim()
+      return { status: 400 }
+    }
+
     if (isCorrelated) {
       correlatedMutationBuffer = new CorrelatedRedisMutationBuffer()
       redisMulti = correlatedMutationBuffer

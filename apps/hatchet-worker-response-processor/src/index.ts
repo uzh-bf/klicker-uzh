@@ -4,53 +4,12 @@ import {
 } from '@hatchet-dev/typescript-sdk/index.js'
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import type { LiveQuizResponseInput } from '@klicker-uzh/types'
-import {
-  CORRELATED_RESPONSE_EVENT,
-  CORRELATED_RESPONSE_WORKER_CAPABILITY_KEY,
-  CORRELATED_RESPONSE_WORKER_CAPABILITY_TTL_SECONDS,
-} from '@klicker-uzh/util'
+import { CORRELATED_RESPONSE_EVENT } from '@klicker-uzh/util'
 import {
   aggregateAssessmentResponses,
   processAssessmentResponse,
 } from './processors/assessmentProcessor.js'
 import { processResponseMessage } from './processors/processor.js'
-import { getRedis } from './redis.js'
-
-const WORKER_READINESS_POLL_MS = 50
-
-async function waitForWorkerListeners({
-  worker,
-  workerStart,
-}: {
-  worker: Awaited<ReturnType<typeof hatchetClient.worker>>
-  workerStart: Promise<void[]>
-}) {
-  let workerStopped = false
-  let workerError: unknown
-  void workerStart.then(
-    () => {
-      workerStopped = true
-    },
-    (error: unknown) => {
-      workerError = error
-    }
-  )
-
-  while (
-    !worker.nonDurable.listener ||
-    (worker.durable && !worker.durable.listener)
-  ) {
-    await new Promise((resolve) =>
-      setTimeout(resolve, WORKER_READINESS_POLL_MS)
-    )
-    if (workerError) throw workerError
-    if (workerStopped) {
-      throw new Error('Response processor worker stopped before becoming ready')
-    }
-  }
-
-  if (workerError) throw workerError
-}
 
 export const processAnonymousResponseTask = hatchetClient.task({
   name: 'process-anonymous-response',
@@ -157,35 +116,7 @@ async function main() {
   )
 
   console.log('▶Starting worker to process responses...')
-  const workerStart = worker.start()
-  await waitForWorkerListeners({ worker, workerStart })
-
-  if (mode === 'live-quiz') {
-    const redis = getRedis()
-    const refreshCapability = () =>
-      redis.set(
-        CORRELATED_RESPONSE_WORKER_CAPABILITY_KEY,
-        'v1',
-        'EX',
-        CORRELATED_RESPONSE_WORKER_CAPABILITY_TTL_SECONDS
-      )
-
-    await refreshCapability()
-    const capabilityHeartbeat = setInterval(
-      () =>
-        void refreshCapability().catch((error) =>
-          console.error(
-            'Failed to refresh correlated response worker capability',
-            error
-          )
-        ),
-      (CORRELATED_RESPONSE_WORKER_CAPABILITY_TTL_SECONDS * 1000) / 3
-    )
-    capabilityHeartbeat.unref()
-  }
-
-  console.log('Response processor worker started successfully!')
-  await workerStart
+  await worker.start()
 }
 
 await main()

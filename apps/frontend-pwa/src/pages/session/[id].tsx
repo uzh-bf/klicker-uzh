@@ -192,7 +192,12 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
 
   try {
     const response = await fetch(
-      getResponseApiEndpoint('AddResponse'),
+      getResponseApiEndpoint(
+        responseCollectionMode ===
+          LiveQuizResponseCollectionMode.CorrelatedExport
+          ? 'AddCorrelatedResponse'
+          : 'AddResponse'
+      ),
       requestOptions
     )
 

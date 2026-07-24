@@ -10,12 +10,7 @@ export const LIVE_QUIZ_RESPONDENT_TOKEN_HEADER = 'x-live-quiz-respondent-token'
 export const LIVE_QUIZ_RESPONDENT_ROLE = 'LIVE_QUIZ_RESPONDENT'
 export const LIVE_QUIZ_RESPONDENT_TOKEN_MAX_AGE_SECONDS = 14 * 24 * 60 * 60
 export const CORRELATED_RESPONSE_CLAIM_TTL_MS = 5 * 60 * 1000
-export const CORRELATED_RESPONSE_ACCEPTED_TTL_MS =
-  LIVE_QUIZ_RESPONDENT_TOKEN_MAX_AGE_SECONDS * 1000
 export const CORRELATED_RESPONSE_EVENT = 'response-received:correlated-v1'
-export const CORRELATED_RESPONSE_WORKER_CAPABILITY_KEY =
-  'lq:correlatedResponses:workerProtocol:v1'
-export const CORRELATED_RESPONSE_WORKER_CAPABILITY_TTL_SECONDS = 90
 
 export function getLiveQuizRespondentCookieName(liveQuizId: string) {
   return `${LIVE_QUIZ_RESPONDENT_COOKIE_PREFIX}${liveQuizId}`
@@ -190,7 +185,6 @@ export function hashLiveQuizRespondentToken(token: string) {
 }
 
 interface CorrelatedResponseRedis {
-  get(key: string): Promise<string | null>
   set(
     key: string,
     value: string,
@@ -208,13 +202,6 @@ interface CorrelatedResponseRedis {
 const RELEASE_OWNED_CLAIM_SCRIPT = `
 if redis.call('GET', KEYS[1]) == ARGV[1] then
   return redis.call('DEL', KEYS[1])
-end
-return 0
-`
-
-const MARK_ACCEPTED_CLAIM_SCRIPT = `
-if redis.call('GET', KEYS[1]) == ARGV[1] then
-  return redis.call('PEXPIRE', KEYS[1], ARGV[2])
 end
 return 0
 `
@@ -257,37 +244,6 @@ export async function claimCorrelatedResponse({
       'NX'
     )) === 'OK'
   )
-}
-
-export async function isCorrelatedResponseClaimOwned({
-  redis,
-  key,
-  messageId,
-}: {
-  redis: Pick<CorrelatedResponseRedis, 'get'>
-  key: string
-  messageId: string
-}) {
-  return (await redis.get(key)) === messageId
-}
-
-export async function markCorrelatedResponseAccepted({
-  redis,
-  key,
-  messageId,
-}: {
-  redis: CorrelatedResponseRedis
-  key: string
-  messageId: string
-}) {
-  const marked = await redis.eval(
-    MARK_ACCEPTED_CLAIM_SCRIPT,
-    1,
-    key,
-    messageId,
-    String(CORRELATED_RESPONSE_ACCEPTED_TTL_MS)
-  )
-  return Number(marked) === 1
 }
 
 export async function releaseCorrelatedResponse({

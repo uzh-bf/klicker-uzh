@@ -8,7 +8,6 @@ import {
   buildCorrelatedVoteKey,
   buildLiveQuizResponseIdentityKey,
   hashLiveQuizRespondentToken,
-  isCorrelatedResponseClaimOwned,
   resolveLiveQuizResponseIdentity,
   type CorrelatedResponseClaim,
   type LiveQuizResponseIdentityKey,
@@ -28,7 +27,6 @@ interface CorrelatedProcessingRedis {
     numberOfKeys: number,
     ...args: (number | string)[]
   ): Promise<unknown>
-  get(key: string): Promise<string | null>
   hget(key: string, field: string): Promise<string | null>
   set(
     key: string,
@@ -536,7 +534,7 @@ export async function prepareCorrelatedMessageProcessing({
   secret,
   issuer,
 }: {
-  redis: Pick<CorrelatedProcessingRedis, 'eval' | 'get' | 'hget' | 'set'>
+  redis: Pick<CorrelatedProcessingRedis, 'eval' | 'hget' | 'set'>
   database: CorrelatedResponseDatabase
   message: {
     messageId: string
@@ -581,12 +579,7 @@ export async function prepareCorrelatedMessageProcessing({
   })
   if (
     message.correlatedClaim.key !== expectedClaimKey ||
-    message.correlatedClaim.identityKey !== owner.identityKey ||
-    !(await isCorrelatedResponseClaimOwned({
-      redis,
-      key: message.correlatedClaim.key,
-      messageId: message.messageId,
-    }))
+    message.correlatedClaim.identityKey !== owner.identityKey
   ) {
     return { status: 'invalid' }
   }

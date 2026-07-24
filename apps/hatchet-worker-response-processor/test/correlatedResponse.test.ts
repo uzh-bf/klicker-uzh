@@ -536,7 +536,7 @@ describe('correlated response persistence helpers', () => {
     )
   })
 
-  it('prepares the complete anonymous response lifecycle from claim to lock', async () => {
+  it('processes an accepted event after its ingress claim expires', async () => {
     const liveQuizId = randomUUID()
     const respondentId = randomUUID()
     const messageId = randomUUID()
@@ -554,7 +554,6 @@ describe('correlated response persistence helpers', () => {
       identityKey,
     })
     const redis = new MemoryProcessingRedis()
-    await redis.set(claimKey, messageId, 'PX', 300_000, 'NX')
     const { database } = createDatabase()
     ;(database as any).liveQuizResponse = {
       findUnique: async () => null,

@@ -152,5 +152,46 @@ describe('live quiz response effects', () => {
       pointsAwarded: 0,
       xpAwarded: 0,
     })
+    assert.deepEqual(redisMulti.mutations, [
+      {
+        command: 'hincrby',
+        key: 'lq:quiz:i:3:results',
+        field: 'participants',
+        value: '1',
+      },
+    ])
+  })
+
+  it('does not create leaderboard entries for participant content views', () => {
+    for (const participantData of [
+      { sub: 'participant', role: 'PARTICIPANT' },
+      { sub: 'temporary', role: 'TEMPORARY_PARTICIPANT' },
+    ]) {
+      const redisMulti = new CorrelatedRedisMutationBuffer()
+      queueQuestionResponseEffects({
+        type: 'CONTENT',
+        response: { viewed: true },
+        instanceInfo,
+        instanceKey: 'lq:quiz:i:4',
+        liveQuizKey: 'lq:quiz',
+        sessionBlockId: 'block',
+        responseTimestamp: 4_000,
+        basePoints: 'true',
+        defaultPoints: '10',
+        parsedSolutions: undefined,
+        participantData,
+        isCorrelated: true,
+        redisMulti,
+      })
+
+      assert.deepEqual(redisMulti.mutations, [
+        {
+          command: 'hincrby',
+          key: 'lq:quiz:i:4:results',
+          field: 'participants',
+          value: '1',
+        },
+      ])
+    }
   })
 })

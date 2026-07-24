@@ -7,10 +7,8 @@ import {
   buildCorrelatedVoteKey,
   buildLiveQuizResponseIdentityKey,
   claimCorrelatedResponse,
-  CORRELATED_RESPONSE_WORKER_CAPABILITY_KEY,
   getLiveQuizRespondentCookieName,
   LIVE_QUIZ_RESPONDENT_TOKEN_MAX_AGE_SECONDS,
-  markCorrelatedResponseAccepted,
   parseCookiesHeader,
   releaseCorrelatedResponse,
   type CorrelatedResponseClaim,
@@ -20,7 +18,6 @@ import {
 export {
   buildCorrelatedVoteKey,
   claimCorrelatedResponse,
-  markCorrelatedResponseAccepted,
   releaseCorrelatedResponse,
 }
 
@@ -43,22 +40,26 @@ export function hasJsonContentType(contentType: string | undefined) {
   )
 }
 
-export async function isCorrelatedResponseWorkerReady({
-  redis,
+export function responseEndpointMatchesCollectionMode({
+  endpointMode,
+  responseCollectionMode,
 }: {
-  redis: { get(key: string): Promise<string | null> }
+  endpointMode: 'aggregate' | 'correlated'
+  responseCollectionMode: LiveQuizResponseCollectionMode
 }) {
-  return (await redis.get(CORRELATED_RESPONSE_WORKER_CAPABILITY_KEY)) !== null
+  return (
+    (endpointMode === 'correlated') ===
+    (responseCollectionMode ===
+      LiveQuizResponseCollectionMode.CORRELATED_EXPORT)
+  )
 }
 
 export async function getCorrelatedResponseAdmission({
   database,
-  redis,
   liveQuizId,
   cookieHeader,
 }: {
   database: Pick<PrismaClient, 'liveQuiz'>
-  redis: { get(key: string): Promise<string | null> }
   liveQuizId: string
   cookieHeader: string | undefined
 }) {
@@ -91,10 +92,6 @@ export async function getCorrelatedResponseAdmission({
   ) {
     return 'pin_required' as const
   }
-  if (!(await isCorrelatedResponseWorkerReady({ redis }))) {
-    return 'worker_unavailable' as const
-  }
-
   return 'ready' as const
 }
 
