@@ -5,7 +5,12 @@ import {
   AssistantChatTransport,
   useChatRuntime,
 } from '@assistant-ui/react-ai-sdk'
-import { WandSparkles } from 'lucide-react'
+import {
+  FilePenLineIcon,
+  MessageSquareTextIcon,
+  SearchIcon,
+  WandSparkles,
+} from 'lucide-react'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useEmbeddedManageContext } from '../hooks/useEmbeddedManageContext'
@@ -17,14 +22,20 @@ import {
 } from '../services/manageContext'
 import { ChatUiProvider, useChatUi } from './chat-ui-context'
 import { EmbeddedSettings } from './embedded-settings'
-import { Thread } from './thread'
+import { Thread, type ThreadWelcomeCapability } from './thread'
 
 const MANAGE_ASSISTANT_NAME = 'KlickerUZH Assistant'
 const MANAGE_ASSISTANT_WELCOME = 'Hello! How can I help you?'
-const MANAGE_ASSISTANT_CAPABILITIES = [
-  'Search your courses and question pool',
-  'Draft single-choice, multiple-choice, and free-text questions — saved to your pool only after you confirm',
-  'Suggest improvements to question feedback',
+const MANAGE_ASSISTANT_CAPABILITIES: ThreadWelcomeCapability[] = [
+  { icon: SearchIcon, text: 'Search your courses and question pool' },
+  {
+    icon: FilePenLineIcon,
+    text: 'Draft single-choice, multiple-choice, and free-text questions — saved to your pool only after you confirm',
+  },
+  {
+    icon: MessageSquareTextIcon,
+    text: 'Suggest improvements to question feedback',
+  },
 ]
 const MANAGE_ASSISTANT_LIMITS_NOTE =
   'Read-only for everything else — it never publishes or edits existing content.'

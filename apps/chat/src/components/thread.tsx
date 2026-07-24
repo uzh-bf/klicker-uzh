@@ -21,13 +21,10 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
   CopyIcon,
-  FilePenLineIcon,
   ImagePlusIcon,
-  MessageSquareTextIcon,
   PencilIcon,
   PencilOffIcon,
   RefreshCwIcon,
-  SearchIcon,
   SendHorizontalIcon,
   SquareIcon,
   XIcon,
@@ -80,10 +77,10 @@ type ThreadProps = {
   // Friendly greeting shown above the suggestions (e.g. the manage assistant).
   // When unset, the welcome falls back to `Ask {chatbotName}`.
   welcomeMessage?: string
-  // Short capability bullets shown between the greeting and the suggestions
-  // (e.g. the manage assistant explaining what it can help with). When
-  // unset/empty, nothing extra is rendered.
-  capabilities?: string[]
+  // Short capability bullets (icon + text) shown between the greeting and the
+  // suggestions (e.g. the manage assistant explaining what it can help with).
+  // When unset/empty, nothing extra is rendered.
+  capabilities?: ThreadWelcomeCapability[]
   // One-line note shown below the capability bullets (e.g. clarifying the
   // assistant's limits). Ignored when `capabilities` is unset/empty.
   limitsNote?: string
@@ -337,7 +334,7 @@ const ThreadWelcome: FC<{
   contextLabel?: string | null
   suggestions: ThreadSuggestion[]
   welcomeMessage?: string
-  capabilities?: string[]
+  capabilities?: ThreadWelcomeCapability[]
   limitsNote?: string
 }> = ({
   chatbotAvatar,
@@ -398,27 +395,26 @@ const ThreadWelcome: FC<{
   )
 }
 
-// Icons for `ThreadWelcomeCapabilities`, matched to bullets by position.
-const CAPABILITY_ICONS = [SearchIcon, FilePenLineIcon, MessageSquareTextIcon]
+export type ThreadWelcomeCapability = {
+  icon: ComponentType<{ className?: string; 'aria-hidden'?: boolean }>
+  text: string
+}
 
 const ThreadWelcomeCapabilities: FC<{
-  capabilities: string[]
+  capabilities: ThreadWelcomeCapability[]
   limitsNote?: string
 }> = ({ capabilities, limitsNote }) => (
   <div className="mt-3 flex w-full max-w-sm flex-col gap-1.5 text-left">
     <ul className="flex flex-col gap-1">
-      {capabilities.map((capability, index) => {
-        const Icon = CAPABILITY_ICONS[index % CAPABILITY_ICONS.length]!
-        return (
-          <li
-            key={capability}
-            className="text-muted-foreground flex items-start gap-1.5 text-xs leading-snug"
-          >
-            <Icon className="mt-0.5 size-3 shrink-0" />
-            <span>{capability}</span>
-          </li>
-        )
-      })}
+      {capabilities.map(({ icon: Icon, text }, index) => (
+        <li
+          key={`${text}-${index}`}
+          className="text-muted-foreground flex items-start gap-1.5 text-xs leading-snug"
+        >
+          <Icon aria-hidden className="mt-0.5 size-3 shrink-0" />
+          <span>{text}</span>
+        </li>
+      ))}
     </ul>
     {limitsNote && (
       <p className="text-muted-foreground/70 text-[11px] leading-snug">
