@@ -58,7 +58,7 @@ export function AppSidebar({
                     data-cy="chat-new-thread-button"
                     onClick={handleNewThread}
                     disabled={participationRequired}
-                    className="text-muted-foreground hover:text-foreground ml-auto mr-1 inline-flex size-4 items-center justify-center rounded-sm transition-colors disabled:pointer-events-none disabled:opacity-50"
+                    className="text-muted-foreground hover:text-foreground ml-auto mr-1 inline-flex size-6 items-center justify-center rounded-sm transition-colors disabled:pointer-events-none disabled:opacity-50"
                   >
                     <Plus className="size-4" />
                     <span className="sr-only">{t('chat.sidebar.newChat')}</span>
@@ -72,7 +72,7 @@ export function AppSidebar({
                       "Toggle Sidebar" sr-only label; an explicit aria-label
                       wins over it so screen readers follow the UI locale. */}
                   <SidebarTrigger
-                    className="mr-2 size-4 shrink-0"
+                    className="mr-2 size-6 shrink-0"
                     aria-label={t('chat.sidebar.closeSidebar')}
                   />
                 </TooltipTrigger>

@@ -331,12 +331,12 @@ function SidebarMain({
         >
           {/* Overrides the design system's hardcoded English sr-only label. */}
           <SidebarTrigger
-            className="size-5"
+            className="size-6"
             aria-label={t('chat.sidebar.openSidebar')}
           />
           <span className="min-w-0 truncate text-sm">{chatbot.name}</span>
         </div>
-        <div className="flex flex-1 justify-center">
+        <div className="flex min-w-0 flex-1 justify-center">
           <ModeSwitcher />
         </div>
         <Tooltip>
@@ -345,7 +345,7 @@ function SidebarMain({
               onClick={handleNewThread}
               disabled={participationRequired}
               className={twMerge(
-                'text-muted-foreground hover:text-foreground inline-flex size-5 items-center justify-center rounded-sm transition-colors disabled:pointer-events-none disabled:opacity-50',
+                'text-muted-foreground hover:text-foreground inline-flex size-6 items-center justify-center rounded-sm transition-colors disabled:pointer-events-none disabled:opacity-50',
                 open && 'md:hidden'
               )}
             >

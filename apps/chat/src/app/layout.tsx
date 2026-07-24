@@ -4,7 +4,7 @@ import {
   sourceSansPro,
 } from '@klicker-uzh/shared-components/src/font'
 import 'katex/dist/katex.min.css'
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { hasLocale } from 'next-intl'
 import { setRequestLocale } from 'next-intl/server'
 import { cookies } from 'next/headers'
@@ -13,6 +13,13 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'KlickerUZH Chat',
+}
+
+// `viewportFit: 'cover'` (viewport-fit=cover) lets content extend under the
+// iOS notch/home-indicator so `env(safe-area-inset-*)` resolves to the real
+// inset instead of 0 — required for the composer's safe-area bottom padding.
+export const viewport: Viewport = {
+  viewportFit: 'cover',
 }
 
 export default async function RootLayout({

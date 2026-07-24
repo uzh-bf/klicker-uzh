@@ -280,7 +280,9 @@ export const Thread: FC<ThreadProps> = ({ chatbotAvatar }) => {
       <div
         className={twMerge(
           'absolute bottom-0 left-0 right-0 z-10 flex w-full flex-col items-center justify-end',
-          embedded ? 'px-2 pb-2' : 'px-2 pb-4 sm:px-4'
+          embedded
+            ? 'px-2 pb-2'
+            : 'px-2 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-4'
         )}
       >
         <div className="from-background pointer-events-none absolute inset-x-0 bottom-full h-12 to-transparent" />
@@ -625,7 +627,7 @@ const AttachmentRemoveButton: FC<{ onClick?: () => void }> = ({ onClick }) => {
       type="button"
       data-cy="chat-attachment-remove"
       onClick={onClick}
-      className="bg-background text-muted-foreground hover:text-foreground absolute right-1 top-1 inline-flex size-5 items-center justify-center rounded-full border"
+      className="bg-background text-muted-foreground hover:text-foreground absolute right-1 top-1 inline-flex size-6 items-center justify-center rounded-full border"
       aria-label={t('chat.composer.removeAttachment')}
     >
       ×
