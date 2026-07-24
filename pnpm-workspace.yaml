@@ -10,7 +10,17 @@ packages:
 minimumReleaseAge: 20160
 minimumReleaseAgeStrict: true
 minimumReleaseAgeIgnoreMissingTime: false
-minimumReleaseAgeExclude: []
+minimumReleaseAgeExclude:
+  # U1 (student-chat-v3-production-readiness-plan): reviewed assistant-ui 0.14
+  # bump, apps/chat/package.json. Transitive assistant-ui deps pulled in below.
+  - '@assistant-ui/react@0.14.27'
+  - '@assistant-ui/react-markdown@0.14.6'
+  - '@assistant-ui/core@0.2.21'
+  - '@assistant-ui/tap@0.9.4'
+  - 'assistant-cloud@0.1.35'
+  - 'assistant-stream@0.3.26'
+  - 'nanoid@6.0.0'
+  - 'safe-content-frame@0.0.23'
 
 overrides:
   'axios@<=0.31.1': 0.32.0
