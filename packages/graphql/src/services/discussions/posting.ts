@@ -22,6 +22,7 @@ import {
   isActiveCourseScopeType,
   mapReply,
   normalizeContent,
+  normalizeExternalScopeIdentifiers,
 } from './model.js'
 import {
   canonicalizeScope,
@@ -58,6 +59,15 @@ export async function createCourseDiscussionThread(
   if (
     scope.scopeType === DB.DiscussionScopeType.EXTERNAL_BLOCK &&
     !embedClaims
+  ) {
+    return null
+  }
+  if (
+    scope.scopeType === DB.DiscussionScopeType.EXTERNAL_BLOCK &&
+    !normalizeExternalScopeIdentifiers(
+      scope.externalSource ?? '',
+      scope.externalRef ?? ''
+    )
   ) {
     return null
   }

@@ -99,6 +99,34 @@ export function registerScopesSuite(getContext: () => DiscussionTestContext) {
         externalRef: maxRef,
       },
     ])
+
+    const participantId = await seedParticipantInCourse(prisma, {
+      courseId: course.id,
+    })
+    await prisma.discussionSpace.delete({
+      where: { courseId: course.id },
+    })
+
+    const malformedPost = await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: 'This malformed scope must not recreate its parent space.',
+        scope: {
+          scopeType: DiscussionScopeType.EXTERNAL_BLOCK,
+          externalSource: '\ud800',
+          externalRef: maxRef,
+        },
+        embedToken: validEmbed!.embedToken,
+      },
+      createParticipantContext(userOneCtx, participantId)
+    )
+
+    expect(malformedPost).toBeNull()
+    await expect(
+      prisma.discussionSpace.count({
+        where: { courseId: course.id },
+      })
+    ).resolves.toBe(0)
   })
 
   it('gates activity-agnostic stack discussions on participant evaluation', async () => {
