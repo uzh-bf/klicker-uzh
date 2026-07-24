@@ -92,6 +92,8 @@ function CourseDiscussionOverview({
     error: overviewError,
     refetch: refetchOverview,
     fetchMore,
+    startPolling,
+    stopPolling,
   } = useQuery(GetCourseDiscussionOverviewDocument, {
     variables: {
       courseId,
@@ -174,13 +176,17 @@ function CourseDiscussionOverview({
 
     loadingMoreRef.current = true
     setLoadingMore(true)
+    stopPolling()
 
     try {
       const result = await fetchMore({
         variables: { cursor: nextCursor },
       })
       const nextPage = result.data?.courseDiscussionOverview
-      if (!nextPage) return
+      if (!nextPage) {
+        startPolling(20000)
+        return
+      }
 
       setPagination((previous) => ({
         groups: mergeOverviewGroups(previous?.groups ?? [], nextPage.groups),
@@ -188,6 +194,7 @@ function CourseDiscussionOverview({
         hasMore: nextPage.hasMore,
       }))
     } catch {
+      startPolling(20000)
       toast({
         type: 'error',
         message: t('shared.generic.systemError'),
@@ -196,14 +203,22 @@ function CourseDiscussionOverview({
       loadingMoreRef.current = false
       setLoadingMore(false)
     }
-  }, [fetchMore, hasMore, loadingOverview, nextCursor, t])
+  }, [
+    fetchMore,
+    hasMore,
+    loadingOverview,
+    nextCursor,
+    startPolling,
+    stopPolling,
+    t,
+  ])
 
   const handleRefresh = useCallback(async () => {
     if (loadingMoreRef.current) return
 
     try {
-      setPagination(null)
       await refetchOverview()
+      setPagination(null)
     } catch {
       toast({
         type: 'error',
