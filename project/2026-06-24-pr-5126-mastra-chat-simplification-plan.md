@@ -1,212 +1,204 @@
-# PLAN - PR 5126 Mastra Chat Simplification
+# PLAN - PR 5126 Public Chat API And Engine Seam
 
 ## Identity
 
-- Date: 2026-06-24
+- Original date: 2026-06-24
+- Revised: 2026-07-24
 - Branch: `codex/mastra-chat-openrouter-smoke`
 - Target: `v3`
-- PR: #5126, draft, `feat(chat): add Mastra chat-api prototype and OpenRouter smoke`
-- Path: `project/2026-06-24-pr-5126-mastra-chat-simplification-plan.md`
-- Older context:
-  - `project/plans_wip/2026-06-15-mastra-chat-integration-plan.md`
-  - `project/plans_wip/PLAN-chat-mastra-next-steps.md`
-  - `project/plans_future/2026-06-11-mastra-evaluation-report.md`
-- Status: planning. No implementation in this commit.
+- Pull request: [#5126](https://github.com/uzh-bf/klicker-uzh/pull/5126)
+- Plan path: `project/2026-06-24-pr-5126-mastra-chat-simplification-plan.md`
+- Status: approved architecture, revised implementation plan, no revised implementation started
+
+Current branch warning:
+
+- The local branch is one commit ahead and 27 commits behind its remote.
+- The remote pull request contains unrelated history and currently conflicts with `v3`.
+- Implementation must start by reconstructing the branch from current `v3`; do not layer more implementation onto the existing branch history.
+- Preserve any private Catalyst/Mastra work through the Catalyst split before removing it from the public branch.
+
+## Higher-Level Dependency
+
+The Catalyst repository split is owned by the separate Catalyst planning session and its plan:
+
+- local handoff: `project/_local/2026-07-21-catalyst-repo-split-handoff.md`
+- local working plan: `project/plans_wip/PLAN-catalyst-repo-split.md`
+
+This plan applies the settled split to public chat only:
+
+- The public repository owns `apps/chat`, `apps/chat-api`, the chat engine contract, the default AI SDK engine, Prisma chat data, and deployment wiring.
+- The private Catalyst repository owns the Mastra tutoring engine, tutor policy, routing, guardrails, and other private tutoring intelligence.
+- The engine package boundary becomes an HTTP repository boundary. It is not inlined into `chat-api`.
+- Catalyst-wide questions remain in the owning session. This plan must not duplicate or overrule them.
+
+## Research
+
+### Live Repository Findings
+
+- `apps/chat` currently combines the Next.js frontend with server routes, Prisma access, participant-token verification, model execution, MCP execution, persistence, and credit charging.
+- The frontend uses assistant-ui's `useExternalStoreRuntime` over a Zustand-owned message and thread model.
+- Existing chat data already models stable message IDs, parent relationships, metadata, attachments, disclaimers, and thread ownership.
+- The prototype branch contains `apps/chat-api`, Mastra chat code, an OpenRouter smoke, and GitHub Actions plumbing, but its remote history is not a clean base for this implementation.
+- A real local smoke previously reached OpenRouter with `deepseek/deepseek-v4-flash`, streamed text, and verified persistence and credits.
+- The current workflow is not a merge gate because it tolerates failure and uses a placeholder API key.
+
+### Assistant-UI
+
+The official External Store Runtime supports externally owned messages, conversion, and handlers for new/edit/reload/cancel actions:
+
+- <https://www.assistant-ui.com/docs/runtimes/custom/external-store>
+
+Therefore assistant-ui does not require Mastra storage or a Next.js backend. The current external runtime can talk directly to `chat-api` while Prisma remains canonical.
+
+### Mastra Storage
+
+Mastra storage would provide useful engine-local capabilities such as automatic history, working memory, semantic recall, observational memory, and Studio integration:
+
+- <https://mastra.ai/docs/storage/overview>
+- <https://mastra.ai/docs/memory/overview>
+- <https://mastra.ai/docs/memory/working-memory>
+- <https://mastra.ai/docs/memory/semantic-recall>
+
+Those are not required for v1. `@mastra/memory` and `@mastra/pg` are not installed on the current branch. Making Mastra storage canonical now would duplicate or migrate ownership without proving a product benefit.
+
+Future Catalyst engines may store derived memory under opaque identifiers if they also implement explicit reset, export, deletion, retention, and ownership rules. Prisma remains the canonical conversation record.
 
 ## Goal
 
-Replace old `apps/chat` API approach completely.
+Deliver one production chat path:
 
-Final target:
+```text
+apps/chat frontend
+        |
+        v
+apps/chat-api
+  auth, policy, persistence, credits, attachments, MCP authorization
+        |
+        v
+deployment-selected engine
+  public default AI SDK engine OR private Catalyst Mastra engine
+```
 
-- `apps/chat` = frontend-only Next App Router app.
-- `apps/chat-api` = only chat backend.
-- `apps/chat-api` uses Mastra internally.
-- Browser talks directly to `chat-api`.
-- Assistant UI runtime and frontend state stay frontend-owned.
+The final public pull request must include a working default engine. A Catalyst deployment may select the private Mastra engine after it passes the same contract and browser flow.
 
 ## Non-Goals
 
-- No old `streamText` fallback path.
-- No Next API proxy as final architecture.
-- No Mastra-specific frontend runtime protocol.
-- No Mastra storage migration in this PR.
-- No full memory/semantic recall/working memory migration in this PR.
-- No broad UI redesign.
+- No Mastra implementation in public `chat-api`.
+- No engine inlining.
+- No Mastra storage migration.
+- No permanent old and new backend paths.
+- No Next.js API proxy in the final code.
+- No per-chatbot arbitrary engine URL.
+- No automatic engine fallback or generation retry.
+- No public engine SDK or package publication.
+- No grading, content generation, or async job placeholders.
+- No broad chat UI redesign.
+- No third-party extension promise beyond the internal operational seam.
 
-## Resolved Decisions
+## Ownership
 
-### Replace old backend
+| Component | Owns | Must not own |
+| --- | --- | --- |
+| `apps/chat` | assistant-ui runtime, Zustand state, local draft state, canonical request IDs, rendering, URL synchronization | Prisma, JWT verification, credits, engine credentials, server policy |
+| `apps/chat-api` | browser auth, CSRF/CORS, authorization, Prisma conversation record, attachments, disclaimers, model policy, credits, engine selection, MCP authorization, stream adaptation | generation strategy, tutor policy, hidden conversation memory |
+| engine | generation, approved tool execution, raw normalized usage, provider interaction | participant auth, database access, credits, public model pricing, canonical chat history |
 
-Decision:
+## Engine Contract
 
-- Delete `apps/chat/src/app/api/**` chat routes.
-- Remove `apps/chat` Prisma/JWT/server ownership.
-- Move all auth, bootstrap, threads, messages, attachments, disclaimer, credits, and chat streaming to `apps/chat-api`.
+The contract is a small internal HTTP seam shared as an un-published workspace package, for example `packages/chat-engine-contract`.
 
-Why:
+### Manifest
 
-- Two backends create shallow seams and duplicate policy.
-- User wants new `chat-api` to be Mastra path, not old approach plus flag.
-- Direct API surface makes backend ownership clear.
+`GET /v1/manifest`
 
-### Keep assistant-ui runtime
+Minimum response:
 
-Decision:
+- engine identity
+- supported contract version
+- chat feature flags: text, reasoning, images, tools, cancellation
 
-- Keep `useExternalStoreRuntime`.
-- Keep `ExtendedThreadMessageLike` as frontend internal type.
-- Keep Zustand thread store as assistant-ui state source.
+`chat-api` validates the manifest at startup and periodically. An unavailable or incompatible engine places generation in degraded mode while non-generation endpoints remain available.
 
-Why:
+### Chat
 
-- Current runtime owns branching, edit/reload/cancel, metadata, image attachments, hydration, and URL sync.
-- Switching runtime while moving backend mixes risks.
+`POST /v1/chat`
 
-### Wire protocol
+Transport:
 
-Decision:
+- service-to-service bearer authentication
+- versioned request validation
+- AI SDK UI-message stream response
+- abort propagation from browser through `chat-api`
+- no automatic retry
 
-- Keep AI SDK v6 UI stream parts on wire.
-- Mastra stays implementation detail inside `chat-api`.
-- `chat-api` emits stream shape current parser already understands.
+Request contains only:
 
-Required stream parts:
+- opaque participant, course, chatbot, thread, message, and run IDs
+- locale
+- resolved chatbot system prompt and model parameters
+- ordered message history
+- attachment descriptors or bounded engine-readable content
+- approved MCP server/tool descriptors
+- one short-lived scoped MCP execution token
+- trace context
 
-- `text-delta`
-- `reasoning-delta`
+Do not send names, email addresses, enrolment objects, roles, full database rows, `APP_SECRET`, database credentials, or provider credentials supplied by the browser.
+
+Response contains:
+
+- text deltas
+- reasoning deltas when enabled
 - tool lifecycle parts
-- early thread/message metadata before first generated token when a persisted thread is created
-- `finish` metadata
+- normalized raw input/output/reasoning/cache token usage
+- finish reason
+- structured contract errors
 
-Required finish metadata:
+The engine does not calculate credits or monetary cost. Missing or invalid usage is a contract failure: `chat-api` persists available output and records the failure without inventing a charge.
 
-- `threadId`
-- `finishReason`
-- `chatMode`
-- `modelId`
-- `reasoningEffort`
-- `reasoningContent`
-- `creditsUsed`
+### Platform Stream
 
-Required contract test:
+The browser continues to consume an AI SDK UI-message stream. `chat-api` validates the engine stream and adds platform metadata:
 
-- Feed a representative `chat-api` stream into current parser expectations.
-- Cover text, reasoning, tool call, truncation, finish metadata, early thread/message metadata, abort/no-finish, and unknown part behavior.
-- Run this before deleting old Next API routes.
+- persisted thread ID before engine text for a newly adopted thread
+- canonical user and assistant message IDs
+- chat mode and model ID
+- reasoning effort and persisted reasoning content
+- credits charged
+- final persistence status
 
-### Storage
+Unknown or invalid engine parts fail closed and are observable. They are not passed blindly to the browser.
 
-Decision:
+## Public Default Engine
 
-- Add internal `ConversationRepository` boundary in `apps/chat-api`.
-- First implementation: Prisma over existing `ChatThread`, `ChatMessage`, `ChatAttachment`.
-- Mastra storage = documented spike/follow-up, not this PR.
+The public default engine preserves today's generic chat capability:
 
-Why:
+- system prompts and resolved model parameters
+- text and reasoning streaming
+- image input for supported models
+- MCP tool calling through the supplied scoped capability
+- cancellation
+- normalized token usage
+- OpenRouter-compatible provider configuration
 
-- Existing schema matches assistant-ui invariants.
-- Mastra storage has real features, but migration needs proof.
-- Repository boundary lets Mastra storage win later without blocking simplification.
+It excludes:
 
-Mastra storage spike gate:
+- tutor policy
+- complexity routing
+- persistent or semantic memory
+- advanced guardrails
+- private retrieval/ranking strategy
+- multi-agent orchestration
 
-- Caller-set thread/message IDs work.
-- `resourceId = participantId` works.
-- metadata covers `chatbotId`, `courseId`, mode/model/reasoning/credits, parent links.
-- abort persistence and credit math stay correct.
-- attachment sidecar stays clean.
-- branch/edit/reload semantics survive, or product accepts linear mode.
-- thread listing, pagination, metadata filtering, and performance are acceptable for current chat UX.
-- backfill path clear.
+The engine receives provider configuration from deployment secrets. It does not read Klicker Prisma or participant cookies.
 
-### Collapse chat-engine
+## Chat API Design
 
-Decision:
-
-- Remove `packages/chat-engine` as separate workspace package.
-- Move modules into `apps/chat-api/src/mastra/*`.
-
-Why:
-
-- Only one consumer remains.
-- Package seam is shallow after old route removal.
-- Locality improves: Hono handler, agent, MCP, observability, persistence all live in one backend.
-
-## Assistant-UI Constraints
-
-These are hard constraints for implementation.
-
-Current frontend facts:
-
-- `RuntimeProvider` uses `useExternalStoreRuntime`.
-- Runtime handlers: `onNew`, `onEdit`, `onReload`, `onCancel`.
-- `convertMessage` maps custom metadata into assistant-ui `metadata.custom`.
-- `useChatResponse` parses AI SDK UI stream parts manually.
-- attachments use assistant-ui attachment adapter plus Klicker hydration.
-- edited image hydration depends on `attachmentSourceMessageId`.
-- `RAGToolUI` expects stable tool naming if re-enabled; fallback tool UI renders any tool name.
-
-Required changes:
-
-- Add `chatApiClient` with base URL config and `credentials: 'include'`.
-- Keep DTO mappers in frontend. Do not leak Prisma or Mastra DB shapes.
-- Preserve `ExtendedThreadMessageLike`.
-- Preserve `onEdit`, `onReload`, `onCancel` behavior.
-- Replace first-turn pre-create with draft-thread adoption.
-
-Draft-thread adoption:
-
-1. `New Chat` navigates to `/${chatbotId}` or resets local state. No empty thread API call.
-2. `onNew` with no active persisted thread creates local draft thread ID.
-3. frontend adds user message locally so `useExternalStoreRuntime` can render immediately.
-4. frontend calls `POST /api/chatbots/:chatbotId/chat` on `chat-api` with `threadId: null`.
-5. `chat-api` creates persisted thread and user message.
-6. stream sends persisted `threadId` before first generated token.
-7. frontend swaps draft ID to persisted ID immediately, updates URL to `/${chatbotId}/threads/${threadId}`, preserves messages/allMessages/isRunning.
-8. later edit/reload/cancel use persisted thread ID.
-
-Message ID rule:
-
-- frontend-generated user message ID and `assistantMessageId` are canonical request IDs whenever valid.
-- `chat-api` persists those IDs instead of minting replacements.
-- if backend must replace an ID, stream sends an early ID map before edit/reload/attachment hydration can depend on it.
-- no frontend/backend message-ID divergence is allowed because `attachmentSourceMessageId`, branch paths, edits, reloads, and hydration depend on stable IDs.
-
-Race rule:
-
-- While a draft thread is awaiting persisted ID, block a second `onNew` on that draft or queue it after adoption.
-- `onEdit` and `onReload` require persisted thread ID.
-
-## Target API Surface
-
-Base URL:
-
-- local: `https://chat-api.klicker.com` or configured dev URL
-- prod: configured public chat-api host
-
-Cross-origin requirements:
-
-- frontend fetch uses `credentials: 'include'`
-- Hono CORS uses explicit origin allowlist
-- `Access-Control-Allow-Credentials: true`
-- `Vary: Origin`
-- preflight supported
-- cookie flow relies on existing `participant_token` cookie domain/SameSite setup
-- verify cookie attributes per env:
-  - production/staging cross-origin: `SameSite=None`, `Secure`, correct domain
-  - local direct HTTPS: same production-like behavior through Traefik
-  - local HTTP fallback: document if unsupported for authenticated direct chat-api
-- reject unsafe content types for state-changing endpoints.
-- require a non-simple CSRF/client header on state-changing endpoints.
-- prefer bootstrap-minted CSRF token if existing auth helpers support it; otherwise use strict origin allowlist plus required custom header as minimum.
-
-Endpoints:
+### Public Surface
 
 - `GET /health`
+- `GET /ready`
 - `GET /api/chatbots/:chatbotId/bootstrap`
 - `GET /api/chatbots/:chatbotId/threads`
-- `POST /api/chatbots/:chatbotId/threads` only if explicit empty-thread creation remains needed after UX review
 - `GET /api/chatbots/:chatbotId/threads/:threadId/messages`
 - `PUT /api/chatbots/:chatbotId/threads/:threadId/title`
 - `DELETE /api/chatbots/:chatbotId/threads/:threadId`
@@ -215,427 +207,280 @@ Endpoints:
 - `POST /api/chatbots/:chatbotId/disclaimer`
 - `POST /api/chatbots/:chatbotId/chat`
 
-Bootstrap response owns:
+Do not retain an empty-thread creation endpoint unless browser testing proves it is needed.
 
-- chatbot shell: `id`, `name`, `avatar`
-- mode options
-- model options
-- selected/automatic model defaults
-- credits
-- disclaimer status
-- thread list
-- auth/participation state via `401`/`403`
+### Internal Modules
 
-## Internal Backend Modules
+Keep Hono handlers thin:
 
-Target `apps/chat-api/src` shape:
+```text
+apps/chat-api/src/
+  http/             route registration, request/response mapping
+  auth/             participant cookie, CORS, CSRF, ownership guards
+  conversation/     Prisma-backed use cases and DTO mapping
+  engine/           manifest client, chat client, stream validation
+  mcp/              tool authorization and scoped token minting
+  services/         credits, attachments, disclaimers
+```
 
-- `index.ts`: Hono app wiring only.
-- `http/cors.ts`: credentialed CORS policy.
-- `http/errors.ts`: consistent error JSON.
-- `auth/participant.ts`: cookie JWT verification.
-- `auth/chatbotAuth.ts`: chatbot + course participation guard.
-- `conversation/repository.ts`: interface.
-- `conversation/prismaConversationRepository.ts`: first implementation.
-- `conversation/dto.ts`: backend response DTOs.
-- `conversation/bootstrap.ts`: bootstrap use case.
-- `conversation/threads.ts`: thread/message/attachment use cases.
-- `conversation/stream.ts`: chat stream use case.
-- `mastra/agent.ts`: dynamic agent builder.
-- `mastra/mcp.ts`: DB-driven MCP toolset.
-- `mastra/guardrails.ts`: Mastra processors/guardrails.
-- `mastra/observability.ts`: Mastra-native tracing wrapper.
-- `services/credits.ts`: credit policy.
-- `services/disclaimers.ts`: disclaimer policy.
-- `services/images.ts`: preview/description pipeline.
-
-Rule:
-
-- Modules should be deep: own policy, hide framework details, keep handler thin.
-- Avoid new package unless second real consumer appears.
-- Every conversation repository method scopes by `participantId` and `chatbotId`.
-- Missing ownership returns 404/403 without leaking whether another participant's thread/message exists.
+Prisma stays inside `conversation/`. Do not add a generic `ConversationRepository` interface until a real second canonical adapter exists. Test conversation behavior through module and database integration tests.
 
-## Slices
+### Failure Behavior
 
-### Slice 0 - Plan Review Commit
+- No automatic generation retry.
+- No automatic switch to another engine.
+- Engine failure returns a structured `503` or terminates the stream with a structured error.
+- Existing persisted user input and partial assistant output remain recoverable.
+- Explicit user retry creates a new engine invocation.
+- Operators change the deployment-wide engine URL when changing engines.
 
-Do:
+## Assistant-UI Invariants
 
-- Write current plan.
-- Review with Claude.
-- Integrate accepted plan findings.
-- Commit plan only.
+Keep:
 
-Check:
-
-- `git diff --check -- project/2026-06-24-pr-5126-mastra-chat-simplification-plan.md`
-- plan file staged alone.
+- `useExternalStoreRuntime`
+- `ExtendedThreadMessageLike`
+- `onNew`, `onEdit`, `onReload`, and `onCancel`
+- stable parent IDs and branch paths
+- assistant-ui attachment adapter plus Klicker attachment hydration
+- `attachmentSourceMessageId` for edited image branches
+- URL synchronization and thread list behavior
 
-Commit:
+### Draft Thread Adoption
 
-- `docs(project): plan Mastra chat simplification`
+1. The frontend creates a local draft and canonical user and assistant message IDs.
+2. It sends the first message to `chat-api` with no persisted thread ID.
+3. `chat-api` validates IDs, creates the thread and user message idempotently, and emits the persisted thread ID before engine text.
+4. The frontend adopts that ID, updates the URL, and retains the same messages and running state.
+5. `chat-api` invokes the configured engine exactly once.
+6. `chat-api` persists final or partial assistant output and validated usage.
 
-### Slice 1 - Collapse Engine Into Chat API
-
-Do:
-
-- Move `packages/chat-engine/src/*` into `apps/chat-api/src/mastra/*`.
-- Update imports.
-- Remove `@klicker-uzh/chat-engine` dependency.
-- Remove workspace package if no references remain.
-- Keep exact Mastra versions pinned.
-
-Check:
-
-- `pnpm --filter @klicker-uzh/chat-api check`
-- `pnpm --filter @klicker-uzh/chat-api build`
-- `rg "@klicker-uzh/chat-engine|packages/chat-engine"`
-- verify Turbo/package graph no longer references `@klicker-uzh/chat-engine`.
-- verify Docker/build config does not reference deleted package paths.
-
-Commit:
+Block or queue further sends while adoption is unresolved. Editing and reloading require a persisted thread ID.
 
-- `refactor(chat-api): inline Mastra engine`
+Frontend IDs are canonical when valid. Any unavoidable ID replacement must be reported before attachments, branches, editing, or reload can depend on it.
 
-### Slice 2 - Deepen Chat API Architecture
+## Security
 
-Do:
+- Use the existing participant cookie directly from the browser with `credentials: 'include'`.
+- Configure explicit credentialed CORS origins and `Vary: Origin`; never use wildcard origin with credentials.
+- Require origin validation and a non-simple CSRF header or bootstrap-minted token for state-changing requests.
+- Scope every thread, message, and attachment lookup by participant and chatbot ownership.
+- Configure engine URLs only at deployment level from an allowlist.
+- Authenticate engines with service credentials held in memory and excluded from logs.
+- Authorize MCP servers and tools in `chat-api`.
+- Mint short-lived, audience-bound, asymmetrically signed MCP tokens; the engine receives no signing key.
+- Apply body, attachment, concurrency, and rate limits before provider invocation.
+- Validate manifest, engine stream parts, usage, tool calls, and finish data.
+- Redact prompts, credentials, tokens, and attachment contents from operational logs.
+- Propagate trace IDs without exposing user identity.
 
-- Split large Hono handler into modules listed above.
-- Add `ConversationRepository`.
-- Implement `PrismaConversationRepository`.
-- Keep endpoint behavior unchanged where possible.
-- Keep smoke script working.
-
-Check:
-
-- `pnpm --filter @klicker-uzh/chat-api check`
-- `pnpm --filter @klicker-uzh/chat-api build`
-- existing OpenRouter smoke locally when secrets available.
-
-Commit:
-
-- `refactor(chat-api): deepen conversation modules`
-
-### Slice 3 - Complete Chat API Surface
-
-Do:
-
-- Add bootstrap endpoint.
-- Move threads/messages/title/delete/disclaimer/attachments routes from Next app into Hono.
-- Add credentialed CORS.
-- Add state-changing endpoint CSRF/client-header guard.
-- Keep auth/participation/disclaimer semantics identical.
-- Ensure first-turn `POST /chat` can accept `threadId: null`.
-- Emit persisted `threadId` before first generated token.
-- Preserve frontend-supplied user/assistant message IDs or emit an early ID map.
-- Validate client-supplied message IDs for format, uniqueness, and thread ownership.
-- Make first-turn create idempotent by client user message ID to avoid duplicate threads on retry after early failure.
-- Scope every thread/message/title/delete/attachment query by `participantId` and `chatbotId`; ownership-or-404.
-- Add rate/abuse guard appropriate for authenticated participant chat endpoints.
-- Preserve abort persistence and credit decrement behavior for first Prisma repository implementation.
-- Add stream-protocol compatibility test against current parser expectations.
-
-Check:
-
-- route-level smoke with cookie/auth fixture where feasible.
-- CORS preflight from allowed and disallowed origins.
-- state-changing request without required CSRF/client header rejected.
-- same-course participant cannot read, update, delete, or hydrate another participant's thread/message/attachment.
-- invalid, duplicate, or cross-thread client message IDs rejected.
-- retry after thread-created-before-client-adoption does not create duplicate thread.
-- basic rate/abuse limit path returns controlled error.
-- abort before finish persists partial message and charges expected partial credits.
-- stream contract test covers early metadata, text, reasoning, tools, finish, and no-finish abort.
-- `pnpm --filter @klicker-uzh/chat-api check`
-- `pnpm --filter @klicker-uzh/chat-api build`
-
-Commit:
-
-- `feat(chat-api): own chat conversation endpoints`
-
-### Slice 4 - Make Apps Chat Frontend-Only
-
-Do:
-
-- Add `chatApiClient`.
-- Move relative `/api` calls to chat-api base URL.
-- Add `NEXT_PUBLIC_CHAT_API_URL` or existing equivalent frontend env.
-- Add DTO mappers for bootstrap/thread/message/attachments.
-- Remove Prisma/JWT/server deps from `apps/chat/package.json`.
-- Replace server layout Prisma fetch with client bootstrap/provider state.
-- Remove auth middleware or reduce to UI-only redirect behavior if still needed.
-- Point frontend to `chat-api` first.
-- Delete `apps/chat/src/app/api/**` only after direct `chat-api` calls pass typecheck, stream contract, and local browser validation.
-
-Assistant-ui required work:
-
-- Keep `useExternalStoreRuntime`.
-- Implement draft-thread adoption.
-- Update `useChatResponse` to handle early persisted `threadId`.
-- Keep finish metadata for credits/model/mode/reasoning/truncation.
-- Preserve frontend-supplied message IDs through request/response.
-- Keep `attachmentSourceMessageId` hydration behavior.
-- Keep edit/reload/cancel semantics.
-- Block or queue second send while draft thread is adopting persisted ID.
+## Deployment
 
-Check:
+Each deployment selects exactly one engine:
 
-- `pnpm --filter @klicker-uzh/chat check`
-- `pnpm --filter @klicker-uzh/chat build`
-- targeted chat tests.
-- first message from empty route creates persisted thread and updates URL before finish.
-- abort before finish does not orphan visible thread state.
-- edit/reload after first turn still targets persisted IDs.
-- image edit hydration still works with `attachmentSourceMessageId`.
-- second send during draft adoption is blocked or queued deterministically.
+- public default AI SDK engine, or
+- private Catalyst Mastra engine.
 
-Commit:
+Required configuration includes:
 
-- `feat(chat): use chat-api directly`
+- browser origin allowlist
+- public `chat-api` URL
+- engine base URL and service credential
+- engine manifest compatibility range
+- MCP signing key and verification configuration
+- provider key for the selected engine
 
-### Slice 5 - Deployment And CI
+Readiness distinguishes:
 
-Do:
+- `chat-api` can serve authenticated non-generation endpoints
+- configured engine is compatible and reachable
+- generation is degraded
 
-- Add or complete chat-api deployment wiring.
-- Add service/ingress/env/CORS values.
-- Ensure `turbo.json` includes new env vars.
-- Add per-env frontend chat-api base URL.
-- Add per-env CORS origin allowlist.
-- Confirm DNS/TLS/ingress host plan for `chat-api`.
-- Confirm cookie domain/SameSite/Secure behavior per env.
-- Update Docker/build graph after package removal.
-- Keep GitHub OpenRouter smoke action.
-- Avoid password-like placeholder secrets in workflow files.
+The browser never selects an engine URL. A future deployment-defined `engineProfileId` is allowed only after a concrete need appears.
 
-Check:
+## Implementation Slices
 
-- `pnpm -w format:check` for changed files if practical.
-- chart/template render check if repo has a standard command.
-- smoke action path still references real script.
-- `turbo.json`, Dockerfiles, deploy charts, and package graph reference existing packages only.
+Each slice is one tracer bullet: minimal implementation, fastest meaningful verification, plan progress update, conventional commit, separate review and simplification, accepted fixes, and verification rerun.
 
-Commit:
+### Slice 0 - Reconstruct The Public Branch
 
-- `feat(chat-api): add deployment wiring`
+Prerequisite:
 
-### Slice 6 - Verification, Review, MR Update
+- Confirm private Catalyst/Mastra source needed by the split is preserved in the Catalyst work before rewriting this public branch.
 
-Do:
+Work:
 
-- Run fastest meaningful checks first, broader checks after.
-- Run real OpenRouter smoke with Infisical/OpenRouter when available.
-- Run browser validation with `npx agent-browser` against local chat if dev env can run.
-- Capture screenshots for UI-facing PR evidence.
-- Run strict maintainability review.
-- Run security review focused on auth/CORS/cookies/secrets.
-- Update PR #5126 with whole-branch description.
-- Keep rollback path clear until direct `chat-api` browser validation passes: old Next API route deletion must be last action in Slice 4, not first.
+- Fetch current `v3`.
+- Reconstruct `codex/mastra-chat-openrouter-smoke` from current `v3`.
+- Make this revised plan the first branch commit.
+- Retain only public chat work in the reconstructed pull request.
+- Confirm the whole diff is narrow and contains no secrets or unrelated changes.
 
-Check:
+Verification:
 
-- `pnpm --filter @klicker-uzh/chat-api check`
-- `pnpm --filter @klicker-uzh/chat-api build`
-- `pnpm --filter @klicker-uzh/chat check`
-- `pnpm --filter @klicker-uzh/chat build`
-- `pnpm --filter @klicker-uzh/chat-api smoke:openrouter` with secrets
-- browser screenshots if local dev env available
-- CORS/cookie browser check through `https://chat.klicker.com` -> `https://chat-api.klicker.com`
+- `git log --oneline v3..HEAD`
+- `git diff --stat v3...HEAD`
+- `git diff --check v3...HEAD`
+- GitHub secret and mergeability checks after the later force-with-lease push
 
-Commit:
+### Slice 1 - Contract And Default Engine Tracer
 
-- final fixes only, conventional commit by scope.
+Work:
 
-## Review Requirements Per Slice
+- Add the minimal internal contract schemas and fixtures.
+- Implement default engine manifest and one streaming chat endpoint.
+- Preserve OpenRouter provider injection and DeepSeek V4 Flash smoke configuration.
+- Add cancellation and normalized usage.
+- Add one engine conformance smoke.
 
-Each implementation slice:
+Verification:
 
-- update Progress before work.
-- implement smallest vertical path.
-- verify.
-- review with independent agent.
-- simplify with separate pass.
-- integrate accepted findings.
-- verify again.
-- commit slice only.
+- contract schema tests
+- stream fixture tests
+- default-engine typecheck/build
+- real engine-direct OpenRouter smoke with `deepseek/deepseek-v4-flash`
 
-Final branch:
+### Slice 2 - Chat API To Engine Tracer
 
-- strict code quality review.
-- security review.
-- PR body via MR/PR description workflow.
+Work:
 
-## Risks
+- Add manifest validation and degraded readiness.
+- Call the default engine from one authenticated `chat-api` chat route.
+- Validate and adapt the engine stream.
+- Add platform finish metadata and raw-usage validation.
+- Prove no retry and no fallback behavior.
+- Keep the old Next route temporarily while this tracer is verified.
 
-### CORS and cookies
+Verification:
 
-Risk:
+- contract mismatch and engine-unavailable tests
+- abort propagation test
+- invalid stream and missing-usage tests
+- full `chat-api` to default-engine OpenRouter smoke
 
-- browser -> chat-api direct requests fail if credentials/CORS/cookie domain mismatched.
-- `SameSite=None` plus credentialed direct API requests can create CSRF exposure if state-changing endpoints accept simple cross-site requests.
+### Slice 3 - Conversation And Policy Surface
 
-Handling:
+Work:
 
-- explicit origin allowlist.
-- `credentials: 'include'`.
-- local Traefik host mirrors production cookie domain.
-- verify cookie attributes instead of assuming them.
-- require custom CSRF/client header and reject unsafe content types.
-- verify in browser.
+- Move bootstrap, threads, messages, title, delete, disclaimer, and attachments to `chat-api`.
+- Implement the deep Prisma conversation module without a generic repository interface.
+- Add participant/chatbot ownership guards, credentialed CORS, CSRF, rate limits, and request limits.
+- Add idempotent thread and message creation.
+- Persist complete and partial assistant output.
+- Validate usage and compute credits from the public model registry.
+- Mint scoped MCP tokens and authorize supplied tools.
 
-### Draft thread adoption
+Verification:
 
-Risk:
+- database integration tests for ownership, branches, attachments, abort persistence, and idempotency
+- CORS, CSRF, IDOR, rate-limit, and token-scope tests
+- credit calculation and missing-usage tests
 
-- assistant-ui runtime loses active messages when draft ID becomes persisted ID.
-- stream abort before finish creates persisted backend thread but frontend never learns ID.
+### Slice 4 - Frontend Direct Cutover
 
-Handling:
+Work:
 
-- implement ID swap as store action.
-- emit persisted ID early, before generated content.
-- update URL as soon as persisted ID is known.
-- keep active messages/allMessages/isRunning during swap.
-- block or queue second send during adoption.
+- Add a typed `chatApiClient` with configured base URL and credentials.
+- Move bootstrap and all conversation calls to direct `chat-api` requests.
+- Implement draft-thread adoption and canonical message IDs.
+- Preserve assistant-ui edit, reload, cancel, branching, reasoning, tools, and attachment behavior.
+- Verify the complete new route while the old route still exists.
+- Delete `apps/chat/src/app/api/**` and remove obsolete server-only chat dependencies and configuration.
+- Search for and remove all fallback references.
 
-### Stream metadata
+Verification:
 
-Risk:
+- frontend store and stream parser tests
+- direct browser authentication and thread adoption
+- new, edit, reload, cancel, branch, image attachment, tool, disclaimer, title, delete, and reload-after-persist flows
+- source search proving no old chat backend or runtime fallback remains
 
-- `threadId`/credits/model metadata missing or parsed too late.
+Browser verification:
 
-Handling:
+- run the real local frontend, `chat-api`, and default engine
+- use `npx agent-browser`
+- capture and inspect before/after screenshots at desktop and mobile widths
 
-- add typed early metadata and finish metadata parser.
-- update thread ID on early metadata.
-- test first-turn send from no thread.
-- add stream contract test before route deletion.
+### Slice 5 - Deployment And Real CI Smoke
 
-### Message ID divergence
+Work:
 
-Risk:
+- Add runtime/deployment resources for `chat-api` and the public default engine.
+- Configure engine URL, service auth, CORS, MCP keys, readiness, and observability.
+- Replace the placeholder workflow with a real secret-backed smoke.
+- If `OPENROUTER_API_KEY` is absent, skip the smoke explicitly.
+- If the secret is present, any contract, generation, persistence, or credit failure fails the job.
+- Exercise the full path through `chat-api`, not only the provider.
+- Use concurrency cancellation and path filters to control CI use.
 
-- backend replaces frontend message IDs, breaking branch paths, edit/reload, and image attachment hydration.
+Verification:
 
-Handling:
+- deployment manifest rendering
+- service health and degraded-mode checks
+- real GitHub Actions smoke with `deepseek/deepseek-v4-flash`
+- check that logs and artifacts contain no credential or prompt leakage
 
-- frontend-generated user ID and assistant ID are canonical where valid.
-- backend persists caller IDs or emits early ID map.
-- tests cover edit/reload and attachment hydration after first-turn adoption.
+### Slice 6 - Finish Gates
 
-### IDOR on conversation resources
+Verification:
 
-Risk:
+- relevant package typechecks, builds, lint, formatting, and tests
+- public default engine contract smoke
+- real OpenRouter full-chain smoke
+- assistant-ui browser journeys and screenshots
+- code-level `$security-review`
+- independent whole-branch review
+- `$thermo-nuclear-code-quality-review`
+- clean whole-branch diff against current `v3`
+- pull request title, body, plan progress, and evidence updated from the whole branch
 
-- Course participation proves access to chatbot, not ownership of a specific thread/message/attachment.
+Catalyst gate:
 
-Handling:
+- The private Mastra engine must pass the same contract smoke and browser flow before a Catalyst deployment selects it.
+- Catalyst engine readiness does not block merging a functional public/default path.
 
-- all conversation repository queries include `participantId` and `chatbotId`.
-- thread/message/attachment endpoints return ownership-or-404.
-- tests cover same-course participant isolation.
+## Cutover And Rollback
 
-### Abuse and replay
+Development may temporarily contain both paths only to verify the new path. The pull request must not merge with both.
 
-Risk:
+Cutover:
 
-- Authenticated participant can replay expensive chat requests or duplicate first-turn creates.
+1. Run all flows against `apps/chat -> apps/chat-api -> default engine`.
+2. Switch frontend configuration completely.
+3. Delete the Next backend and fallback code.
+4. Rerun browser, contract, security, and smoke gates.
 
-Handling:
+Rollback after deployment changes engine configuration or rolls back the release. It does not restore a second code path.
 
-- rate/abuse guard on chat endpoints.
-- first-turn create idempotent by client user message ID.
-- credits still enforced, but not treated as only abuse control.
+## Merge Criteria
 
-### Tool naming
-
-Risk:
-
-- Mastra MCP tool names diverge from current `RAGToolUI` assumptions.
-
-Handling:
-
-- define one naming policy in `mastra/mcp.ts`.
-- keep fallback tool UI working.
-- re-enable specialized UI only after name contract confirmed.
-
-### Storage migration pressure
-
-Risk:
-
-- repository seam becomes empty abstraction if Mastra storage never lands.
-
-Handling:
-
-- keep interface small and private to `apps/chat-api`.
-- only methods needed by Hono routes.
-- delete seam later if no second implementation emerges.
-
-### Privacy and memory
-
-Risk:
-
-- Mastra memory/recall creates unreviewed student data surface.
-
-Handling:
-
-- no memory storage migration in this PR.
-- storage spike requires privacy and data-deletion/export review.
+- `apps/chat` is frontend-only for chat behavior.
+- All browser chat traffic goes directly to `apps/chat-api`.
+- Prisma is the canonical conversation store.
+- The public default engine works through the versioned HTTP contract.
+- No automatic retry, fallback engine, or legacy Next backend remains.
+- Engine failure degrades generation without hiding non-generation endpoints.
+- Assistant-ui edit, reload, cancel, branching, attachment, and draft-adoption flows pass.
+- Real OpenRouter smoke is a truthful CI signal when its secret is configured.
+- No secrets or personal data are present in commits, logs, or workflow artifacts.
+- Required security, maintainability, branch, and browser reviews pass.
 
 ## Progress
 
-- 2026-06-24: Plan drafted from user decisions.
-- 2026-06-24: Claude review returned `DONE_WITH_CONCERNS`.
-- 2026-06-24: Accepted Claude findings into plan:
-  - stream protocol compatibility gate.
-  - cookie/CSRF/dev direct-origin section.
-  - early persisted `threadId`, not finish-only.
-  - message ID stability/reconcile rule.
-  - route deletion gate and rollback sequencing.
-  - deployment/CI graph details.
-- 2026-06-24: Full revised Claude review returned `DONE_WITH_CONCERNS`, no critical findings, commit-ready after security additions.
-- 2026-06-24: Accepted final Claude findings into plan:
-  - participant ownership scoping / IDOR checks.
-  - rate and abuse guard.
-  - client message ID validation and idempotent first-turn retry.
-  - draft adoption race check.
-  - abort persistence and partial credit check.
+- [x] Existing prototype and real OpenRouter smoke reviewed.
+- [x] Assistant-ui direct-to-API feasibility confirmed.
+- [x] Mastra storage benefits and migration cost reviewed.
+- [x] Catalyst repository seam and deployment-wide engine choice approved.
+- [x] Chat ownership, contract, failure, security, storage, and cutover rulings approved.
+- [x] Old plan superseded by the public chat API and engine seam.
+- [ ] Revised plan independently reviewed and accepted.
+- [ ] Revised plan committed.
+- [ ] Private Catalyst source preservation confirmed.
+- [ ] Public branch reconstructed from current `v3`.
+- [ ] Slices 1-6 implemented and verified.
 
-## Claude Review
+## Next Action
 
-First review:
+Review and commit this revised plan. Then coordinate the private-source preservation prerequisite and reconstruct the public branch before implementation.
 
-- Status: `DONE_WITH_CONCERNS`.
-- Critical:
-  - Missing stream-protocol compatibility gate.
-  - Cross-origin cookie and CSRF assumptions too weak.
-  - Finish-only `threadId` would orphan threads on abort.
-- Important:
-  - Message ID reconciliation unspecified.
-  - PR scope large; delete old routes only after direct path verified.
-  - Deployment/CI details under-specified.
-- Minor:
-  - Dev HTTPS/cookie story needed.
-  - `POST /threads` contract conditional.
-  - draft race on second send.
-  - Mastra storage gate should include list/pagination/perf.
-
-Accepted:
-
-- All above plan-level fixes accepted.
-
-Full revised review:
-
-- Status: `DONE_WITH_CONCERNS`.
-- Critical: none new.
-- Important:
-  - Add participant ownership scoping for all thread/message/attachment routes.
-  - Add rate/abuse guard for public authenticated chat endpoints.
-- Minor accepted:
-  - Define client message ID validation.
-  - Add first-turn retry idempotency.
-  - Add draft race check.
-  - Carry abort persistence/credit check into first Prisma implementation.
-- Claude verdict: commit-ready as plan doc after the above security additions.
+The durable repository-seam ADR belongs to the Catalyst split owner. Reference that ADR here when it exists; do not create a competing decision record in this pull request.
