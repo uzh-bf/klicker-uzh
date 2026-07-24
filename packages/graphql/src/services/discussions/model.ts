@@ -1,16 +1,21 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import type { Context } from '../../lib/context.js'
+import { buildThreadInclude } from './relations.js'
 import type {
   DiscussionReplyWithRelations,
   DiscussionSort,
   DiscussionThreadWithRelations,
 } from './types.js'
 
+export {
+  buildReplyInclude,
+  buildThreadInclude,
+  REPLIES_PER_THREAD_MAX,
+} from './relations.js'
+
 const LIMIT_DEFAULT = 20
 
 const LIMIT_MAX = 50
-
-export const REPLIES_PER_THREAD_MAX = 50
 
 const DISCUSSION_CONTENT_MAX_LENGTH = 4000
 
@@ -175,44 +180,6 @@ export function extractCourseIdFromSpace(space: DB.DiscussionSpace | null) {
   return space.spaceType === DB.DiscussionSpaceType.COURSE
     ? space.courseId
     : null
-}
-
-function replyVoteWhere(
-  participantId?: string | null
-): DB.Prisma.DiscussionReplyVoteWhereInput {
-  return participantId ? { participantId } : { participantId: { in: [] } }
-}
-
-function threadVoteWhere(
-  participantId?: string | null
-): DB.Prisma.DiscussionThreadVoteWhereInput {
-  return participantId ? { participantId } : { participantId: { in: [] } }
-}
-
-export function buildReplyInclude(participantId?: string | null) {
-  return {
-    votes: {
-      where: replyVoteWhere(participantId),
-      select: { participantId: true },
-    },
-  } satisfies DB.Prisma.DiscussionReplyInclude
-}
-
-export function buildThreadInclude(participantId?: string | null) {
-  return {
-    scope: true,
-    space: true,
-    replies: {
-      where: { isDeleted: false },
-      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
-      take: REPLIES_PER_THREAD_MAX,
-      include: buildReplyInclude(participantId),
-    },
-    votes: {
-      where: threadVoteWhere(participantId),
-      select: { participantId: true },
-    },
-  } satisfies DB.Prisma.DiscussionThreadInclude
 }
 
 export async function getDiscussionThreadById(

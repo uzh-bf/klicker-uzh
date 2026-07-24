@@ -1,4 +1,8 @@
 import * as DB from '@klicker-uzh/prisma/client'
+import type {
+  DiscussionReplyWithVotes,
+  DiscussionThreadWithRelationsBase,
+} from './relations.js'
 
 export type DiscussionSort = 'ACTIVITY_DESC' | 'NEWEST_DESC' | 'UPVOTES_DESC'
 
@@ -55,37 +59,6 @@ export interface GetCourseDiscussionEmbeddingInfoArgs {
   allowAnonymous?: boolean | null
   expiresInHours?: number | null
 }
-
-type DiscussionReplyWithVotes = DB.Prisma.DiscussionReplyGetPayload<{
-  include: {
-    votes: {
-      select: {
-        participantId: true
-      }
-    }
-  }
-}>
-
-type DiscussionThreadWithRelationsBase = DB.Prisma.DiscussionThreadGetPayload<{
-  include: {
-    scope: true
-    space: true
-    replies: {
-      include: {
-        votes: {
-          select: {
-            participantId: true
-          }
-        }
-      }
-    }
-    votes: {
-      select: {
-        participantId: true
-      }
-    }
-  }
-}>
 
 export interface DiscussionReplyWithRelations extends DiscussionReplyWithVotes {
   hasUpvoted?: boolean
