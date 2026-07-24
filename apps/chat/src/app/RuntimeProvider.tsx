@@ -32,6 +32,7 @@ export function RuntimeProvider({
     loadThreads,
     switchToThread,
     resetSession,
+    rateMessage,
   } = useChatStore()
   const {
     selectedModel,
@@ -219,6 +220,7 @@ export function RuntimeProvider({
         reasoningEffort,
         creditsUsed,
         imageAttachments,
+        rating,
         metadata,
         ...rest
       } = message
@@ -231,11 +233,28 @@ export function RuntimeProvider({
         imageAttachments: imageAttachments ?? [],
       }
 
+      // The feedback adapter's active state (`ActionBarPrimitive.FeedbackPositive`
+      // / `FeedbackNegative`) reads `metadata.submittedFeedback` on every
+      // render. The zustand store is the source of truth for the vote
+      // (persisted via the feedback route and loaded back from the API), so
+      // it has to be mapped in here rather than relying on the runtime's own
+      // optimistic patch: that patch lives in the runtime's internal message
+      // repository and would be clobbered the next time this converter runs
+      // from a fresh store snapshot (thread switch, reload, or the next
+      // store update), leaving a stale/missing vote after reload.
+      const submittedFeedback =
+        rating === 'UP'
+          ? ({ type: 'positive' } as const)
+          : rating === 'DOWN'
+            ? ({ type: 'negative' } as const)
+            : undefined
+
       return {
         ...rest,
         metadata: {
           ...metadata,
           custom,
+          submittedFeedback,
         },
       }
     },
@@ -265,6 +284,19 @@ export function RuntimeProvider({
         ?.supportsImageAttachments !== false && {
         attachments: imageAttachmentAdapter,
       }),
+      // Only the "submit a vote" path goes through this adapter — assistant-ui's
+      // FeedbackAdapter has no concept of retracting a vote, so clearing an
+      // existing one (clicking the active vote again) is handled directly in
+      // `MessageRatingButtons` via the same store action.
+      feedback: {
+        submit: ({ message, type }) => {
+          void rateMessage(
+            chatbotId,
+            message.id,
+            type === 'positive' ? 'UP' : 'DOWN'
+          )
+        },
+      },
     },
   })
 
