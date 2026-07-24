@@ -90,10 +90,11 @@ def test_participant_chat_analytics_uses_zero_attachment_fallback_when_table_mis
         course_ids=None,
     )
 
-    assert len(session.statements) == 2
+    assert len(session.statements) == 3
     assert "information_schema.tables" in session.statements[0]
-    assert '"ChatAttachment"' not in session.statements[1]
-    assert "attachment_rollup" in session.statements[1]
+    assert 'DELETE FROM "ParticipantChatAnalytics"' in session.statements[1]
+    assert '"ChatAttachment"' not in session.statements[2]
+    assert "attachment_rollup" in session.statements[2]
 
 
 def test_attachment_support_is_not_cached_without_a_stable_bind_url():
@@ -130,7 +131,7 @@ def test_aggregated_chatbot_analytics_renders_course_filter_for_weekly():
         course_ids=[course_id],
     )
 
-    assert f"""AND cb."courseId" IN ('{course_id}')""" in session.statements[0]
+    assert f"""AND cb."courseId" IN ('{course_id}')""" in session.statements[1]
 
 
 @pytest.mark.parametrize("analytics_type", ["DAILY", "WEEKLY", "MONTHLY", "COURSE"])
@@ -195,15 +196,15 @@ def test_chat_quiz_correlation_renders_course_filters():
     assert f"""AND pca."courseId" IN ('{course_id}')""" in update_session.statements[0]
 
 
-def test_chat_quiz_correlation_preconditions_scope_to_selected_course():
+def test_chat_quiz_correlation_source_counts_scope_to_selected_course():
     from src.modules.chat_quiz_correlation.compute_chat_quiz_correlation import (
-        assert_preconditions,
+        report_source_counts,
     )
 
     course_id = str(uuid.uuid4())
     session = _CaptureSession(scalars=[1, 1])
 
-    assert_preconditions(session, course_ids=[course_id])
+    report_source_counts(session, course_ids=[course_id])
 
     assert len(session.statements) == 2
     assert f""""courseId" IN ('{course_id}')""" in session.statements[0]

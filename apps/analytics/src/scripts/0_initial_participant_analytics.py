@@ -64,7 +64,13 @@ def main() -> None:
                 win_start = specific_date + "T00:00:00.000Z"
                 win_end = specific_date + "T23:59:59.999Z"
                 compute_participant_analytics(
-                    session, win_start, win_end, win_start, "DAILY", verbose
+                    session,
+                    win_start,
+                    win_end,
+                    win_start,
+                    "DAILY",
+                    verbose,
+                    course_ids=scope,
                 )
 
         if compute_weekly:
@@ -74,14 +80,16 @@ def main() -> None:
                 if should_skip_window(week_end_date, windows_since):
                     continue
                 week_end = week_end_date + "T23:59:59.999Z"
-                week_start = (curr_date - pd.DateOffset(days=6)).strftime(
-                    "%Y-%m-%d"
-                ) + "T00:00:00.000Z"
-                print(
-                    f"Computing weekly participant analytics for {week_start} to {week_end}"
-                )
+                week_start = (curr_date - pd.DateOffset(days=6)).strftime("%Y-%m-%d") + "T00:00:00.000Z"
+                print(f"Computing weekly participant analytics for {week_start} to {week_end}")
                 compute_participant_analytics(
-                    session, week_start, week_end, week_end, "WEEKLY", verbose
+                    session,
+                    week_start,
+                    week_end,
+                    week_end,
+                    "WEEKLY",
+                    verbose,
+                    course_ids=scope,
                 )
 
         if compute_monthly:
@@ -91,46 +99,36 @@ def main() -> None:
                 if should_skip_window(month_end_date, windows_since):
                     continue
                 month_end = month_end_date + "T23:59:59.999Z"
-                month_start = (curr_date - pd.offsets.MonthBegin(1)).strftime(
-                    "%Y-%m-%d"
-                ) + "T00:00:00.000Z"
-                print(
-                    f"Computing monthly participant analytics for {month_start} to {month_end}"
-                )
+                month_start = (curr_date - pd.offsets.MonthBegin(1)).strftime("%Y-%m-%d") + "T00:00:00.000Z"
+                print(f"Computing monthly participant analytics for {month_start} to {month_end}")
                 compute_participant_analytics(
-                    session, month_start, month_end, month_end, "MONTHLY", verbose
+                    session,
+                    month_start,
+                    month_end,
+                    month_end,
+                    "MONTHLY",
+                    verbose,
+                    course_ids=scope,
                 )
 
         if compute_course:
             check_analytics_cancellation()
             curr_date = datetime.now()
 
-            stmt = select(Course.id, Course.startDate, Course.endDate).where(
-                Course.startDate <= curr_date
-            )
+            stmt = select(Course.id, Course.startDate, Course.endDate).where(Course.startDate <= curr_date)
             stmt = apply_course_scope(scope, stmt, Course.id)
             if stmt is None:
-                print(
-                    "[0_initial_participant_analytics] empty course scope — skipping COURSE pass"
-                )
+                print("[0_initial_participant_analytics] empty course scope — skipping COURSE pass")
                 df_courses = pd.DataFrame()
             else:
-                df_courses = pd.DataFrame(
-                    [dict(row) for row in session.execute(stmt).mappings().all()]
-                )
+                df_courses = pd.DataFrame([dict(row) for row in session.execute(stmt).mappings().all()])
 
             scope_note = f" (scoped to {len(scope)} ids)" if scope is not None else ""
-            print(
-                f"Found {len(df_courses)} courses with a start date before {curr_date}{scope_note}"
-            )
+            print(f"Found {len(df_courses)} courses with a start date before {curr_date}{scope_note}")
 
             if not df_courses.empty:
-                courses_without_responses = compute_participant_course_analytics(
-                    session, df_courses, verbose
-                )
-                print(
-                    f"Found {courses_without_responses} courses without any responses"
-                )
+                courses_without_responses = compute_participant_course_analytics(session, df_courses, verbose)
+                print(f"Found {courses_without_responses} courses without any responses")
 
         script_exit(script=__name__, started=started, rows_written=None)
 

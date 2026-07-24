@@ -7,6 +7,12 @@ from src.modules.utils import COURSE_TIMESTAMP, load_sql, render_uuid_in_clause
 
 _SQL = load_sql(os.path.join(os.path.dirname(__file__), "participant_chat_analytics.sql"))
 _COURSE_FILTER_PLACEHOLDER = "/*COURSE_FILTER*/"
+_DELETE_SQL = """
+DELETE FROM "ParticipantChatAnalytics"
+WHERE "type" = CAST(:analytics_type AS "AnalyticsType")
+  AND "timestamp" = CAST(:ts AS date)
+  /*COURSE_FILTER*/
+"""
 _ATTACHMENT_ROLLUP_PLACEHOLDER = "/*ATTACHMENT_ROLLUP_CTE*/"
 _TABLE_EXISTS_SQL = text(
     """
@@ -76,6 +82,11 @@ def _prepare_sql(
     )
 
 
+def _prepare_delete_sql(course_ids: list[str] | None) -> str:
+    clause = "" if course_ids is None else render_uuid_in_clause('"courseId"', course_ids)
+    return _DELETE_SQL.replace(_COURSE_FILTER_PLACEHOLDER, clause)
+
+
 def compute_participant_chat_analytics(
     session: Session,
     win_start: str,
@@ -96,6 +107,11 @@ def compute_participant_chat_analytics(
     if verbose and not include_attachments:
         print("[chat_analytics] ChatAttachment missing; defaulting attachmentCount to 0")
 
+    params = {
+        "analytics_type": analytics_type,
+        "ts": timestamp,
+    }
+    session.execute(text(_prepare_delete_sql(course_ids)), params)
     result = session.execute(
         text(
             _prepare_sql(
@@ -104,11 +120,10 @@ def compute_participant_chat_analytics(
                 include_attachments=include_attachments,
             )
         ),
-        {
+        params
+        | {
             "win_start": win_start,
             "win_end": win_end,
-            "analytics_type": analytics_type,
-            "ts": timestamp,
         },
     )
     session.commit()
