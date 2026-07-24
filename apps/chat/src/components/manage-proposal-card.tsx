@@ -1,6 +1,6 @@
 'use client'
 
-import { CheckIcon, LoaderCircleIcon } from 'lucide-react'
+import { CheckIcon, LoaderCircleIcon, XIcon } from 'lucide-react'
 import { useState, type FC } from 'react'
 import { notifyManageParent } from '../services/manageParentNotify'
 import { parseManageProposalPayload } from '../services/proposalToElementInstance'
@@ -27,6 +27,30 @@ type ConfirmationState =
   | { type: 'loading' }
   | { type: 'success'; element: ConfirmedElement }
   | { type: 'error'; message: string }
+  | { type: 'dismissed' }
+
+// Dismissing is only allowed while the card is still awaiting user action —
+// it must not fire while a confirm request is in flight or after a draft
+// was already created, so it can never race a real confirmation.
+function isDismissible(confirmation: ConfirmationState, waiting: boolean) {
+  return (
+    !waiting &&
+    confirmation.type !== 'loading' &&
+    confirmation.type !== 'success'
+  )
+}
+
+// Pure state transition so the dismiss behavior (idle/error -> terminal
+// "dismissed"; no-op while loading/created) is unit-testable without
+// rendering the component. No server call — dismissal is local-only.
+export function applyDismiss(
+  confirmation: ConfirmationState,
+  waiting: boolean
+): ConfirmationState {
+  return isDismissible(confirmation, waiting)
+    ? { type: 'dismissed' }
+    : confirmation
+}
 
 type ManageProposalCardProps = {
   result: ManageProposalResult
@@ -83,17 +107,33 @@ export const ManageProposalCard: FC<ManageProposalCardProps> = ({
   const [confirmation, setConfirmation] = useState<ConfirmationState>({
     type: 'idle',
   })
+  const { tool } = formatToolName(toolName)
+
+  // Dismissed is terminal: collapse the whole card into a muted note instead
+  // of the full header/preview/actions layout.
+  if (confirmation.type === 'dismissed') {
+    return (
+      <div
+        data-cy="chat-manage-proposal-dismissed"
+        className="my-2 flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500"
+      >
+        <XIcon className="size-3.5 shrink-0" aria-hidden />
+        <span>Dismissed: {result.summary ?? tool}</span>
+      </div>
+    )
+  }
+
   const previewPayload = parseManageProposalPayload(result)
   const payloadText = JSON.stringify(result.payload, null, 2)
   const waiting = status.type === 'running'
   const created = confirmation.type === 'success'
-  const { tool } = formatToolName(toolName)
   const canConfirm =
     result.requiresConfirmation &&
     Boolean(result.proposalToken) &&
     !waiting &&
     confirmation.type !== 'loading' &&
     !created
+  const canDismiss = isDismissible(confirmation, waiting)
 
   const confirmProposal = async () => {
     if (!result.proposalToken || !canConfirm) return
@@ -176,6 +216,24 @@ export const ManageProposalCard: FC<ManageProposalCardProps> = ({
                 <CheckIcon className="size-3.5" aria-hidden />
               )}
               Create draft
+            </button>
+          )}
+          {!created && (
+            <button
+              type="button"
+              disabled={!canDismiss}
+              onClick={() =>
+                setConfirmation((current) => applyDismiss(current, waiting))
+              }
+              data-cy="chat-manage-proposal-dismiss-button"
+              className={
+                canDismiss
+                  ? 'inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2'
+                  : 'inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2.5 text-xs font-semibold text-slate-400'
+              }
+            >
+              <XIcon className="size-3.5" aria-hidden />
+              Dismiss
             </button>
           )}
         </div>

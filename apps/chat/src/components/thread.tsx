@@ -59,11 +59,20 @@ import { BranchPicker } from './branch-picker'
 import { useChatUi } from './chat-ui-context'
 import { ChatbotAvatar } from './chatbot-avatar'
 import { MessageAttachments } from './message-attachments'
+import {
+  ThreadWelcomeCapabilities,
+  type ThreadWelcomeCapability,
+} from './thread-welcome-capabilities'
 import { ToolFallback } from './tool-fallback'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 import { Markdown } from '@klicker-uzh/markdown'
 import { twMerge } from 'tailwind-merge'
+
+// Re-exported for backward compatibility: callers (e.g. manage-assistant.tsx)
+// import this type from './thread' — the type itself now lives in
+// './thread-welcome-capabilities' alongside the component that uses it.
+export type { ThreadWelcomeCapability }
 
 type ThreadProps = {
   chatbotAvatar: string
@@ -394,35 +403,6 @@ const ThreadWelcome: FC<{
     </ThreadPrimitive.Empty>
   )
 }
-
-export type ThreadWelcomeCapability = {
-  icon: ComponentType<{ className?: string; 'aria-hidden'?: boolean }>
-  text: string
-}
-
-const ThreadWelcomeCapabilities: FC<{
-  capabilities: ThreadWelcomeCapability[]
-  limitsNote?: string
-}> = ({ capabilities, limitsNote }) => (
-  <div className="mt-3 flex w-full max-w-sm flex-col gap-1.5 text-left">
-    <ul className="flex flex-col gap-1">
-      {capabilities.map(({ icon: Icon, text }, index) => (
-        <li
-          key={`${text}-${index}`}
-          className="text-muted-foreground flex items-start gap-1.5 text-xs leading-snug"
-        >
-          <Icon aria-hidden className="mt-0.5 size-3 shrink-0" />
-          <span>{text}</span>
-        </li>
-      ))}
-    </ul>
-    {limitsNote && (
-      <p className="text-muted-foreground/70 text-[11px] leading-snug">
-        {limitsNote}
-      </p>
-    )}
-  </div>
-)
 
 const ThreadWelcomeSuggestions: FC<{
   suggestions: ThreadSuggestion[]
@@ -880,7 +860,6 @@ const ComposerAction: FC = () => {
               minWidth: size,
               minHeight: size,
               padding: '0',
-              margin: '5px',
               color: isEmpty ? 'var(--muted-foreground)' : 'black',
             }}
             className={{
@@ -906,7 +885,6 @@ const ComposerAction: FC = () => {
               minWidth: size,
               minHeight: size,
               padding: '0',
-              margin: '5px',
               color: 'black',
             }}
             className={{

@@ -1,5 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
 import {
+  applyDismiss,
   getManageProposalResult,
   isManageProposalResult,
 } from '../src/components/manage-proposal-card'
@@ -55,5 +56,43 @@ describe('Manage proposal card', () => {
       })
     ).toBe(false)
     expect(isManageProposalResult(null)).toBe(false)
+  })
+})
+
+describe('Manage proposal card dismissal', () => {
+  test('dismisses an idle proposal into the terminal dismissed state', () => {
+    expect(applyDismiss({ type: 'idle' }, false)).toEqual({
+      type: 'dismissed',
+    })
+  })
+
+  test('dismisses a failed proposal into the terminal dismissed state', () => {
+    expect(
+      applyDismiss({ type: 'error', message: 'Draft creation failed' }, false)
+    ).toEqual({ type: 'dismissed' })
+  })
+
+  test('is a no-op while the tool call is still running', () => {
+    expect(applyDismiss({ type: 'idle' }, true)).toEqual({ type: 'idle' })
+  })
+
+  test('is a no-op while a confirm request is in flight', () => {
+    expect(applyDismiss({ type: 'loading' }, false)).toEqual({
+      type: 'loading',
+    })
+  })
+
+  test('is a no-op once the draft was already created', () => {
+    const success = {
+      type: 'success' as const,
+      element: { id: 1, name: 'Q1', status: 'DRAFT', type: 'SC' },
+    }
+    expect(applyDismiss(success, false)).toEqual(success)
+  })
+
+  test('dismissed is terminal — dismissing again stays dismissed', () => {
+    expect(applyDismiss({ type: 'dismissed' }, false)).toEqual({
+      type: 'dismissed',
+    })
   })
 })
