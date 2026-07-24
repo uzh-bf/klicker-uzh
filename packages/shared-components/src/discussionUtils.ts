@@ -29,10 +29,14 @@ export function parseScopeKeyToInput(
 
   const externalMatch = scopeKey.match(/^ext:([^:]+):(.+)$/)
   if (externalMatch) {
-    return {
-      scopeType: DiscussionScopeType.ExternalBlock,
-      externalSource: decodeURIComponent(externalMatch[1] ?? ''),
-      externalRef: decodeURIComponent(externalMatch[2] ?? ''),
+    try {
+      return {
+        scopeType: DiscussionScopeType.ExternalBlock,
+        externalSource: decodeURIComponent(externalMatch[1] ?? ''),
+        externalRef: decodeURIComponent(externalMatch[2] ?? ''),
+      }
+    } catch {
+      return null
     }
   }
   return null

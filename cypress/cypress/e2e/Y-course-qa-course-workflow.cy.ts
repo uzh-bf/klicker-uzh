@@ -75,6 +75,18 @@ describe('Course Q&A course-level workflows', function () {
     cy.get('[data-cy="course-qa-empty"]').should('exist')
   })
 
+  it('Malformed external scope links fail closed without crashing the fallback page', function () {
+    cy.loginStudent()
+    const malformedScope = encodeURIComponent('ext:%E0%A4%A:ref')
+
+    cy.visit(
+      `${Cypress.env('URL_STUDENT')}/course/${this.data.courseId}/qa?scopeKey=${malformedScope}`
+    )
+
+    cy.get('[data-cy="course-qa-access-denied"]').should('exist')
+    cy.get('[data-cy="course-qa-thread-input"]').should('not.exist')
+  })
+
   context('Q&A-only course overview', function () {
     let originalSettings: {
       isGamificationEnabled: boolean
