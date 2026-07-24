@@ -1,5 +1,9 @@
 import { prisma } from '@klicker-uzh/prisma'
-import { PermissionLevel } from '@klicker-uzh/prisma/client'
+import {
+  DiscussionScopeType,
+  DiscussionSpaceType,
+  PermissionLevel,
+} from '@klicker-uzh/prisma/client'
 
 export const courseQATasks = {
   async setCourseQAFlags({
@@ -87,6 +91,63 @@ export const courseQATasks = {
       update: {
         permissionLevel: PermissionLevel.READ,
       },
+    })
+    return true
+  },
+
+  async seedCourseDiscussionThreads({
+    courseName,
+    contents,
+    replaceExisting = false,
+  }: {
+    courseName: string
+    contents: string[]
+    replaceExisting?: boolean
+  }) {
+    const course = await prisma.course.findFirst({
+      where: { name: courseName },
+      select: { id: true },
+    })
+    if (!course) return false
+
+    const space = await prisma.discussionSpace.upsert({
+      where: { courseId: course.id },
+      create: {
+        courseId: course.id,
+        spaceType: DiscussionSpaceType.COURSE,
+      },
+      update: {},
+    })
+    const scope = await prisma.discussionScope.upsert({
+      where: {
+        spaceId_scopeKey: {
+          spaceId: space.id,
+          scopeKey: `course:${course.id}`,
+        },
+      },
+      create: {
+        spaceId: space.id,
+        scopeType: DiscussionScopeType.COURSE,
+        scopeKey: `course:${course.id}`,
+        scopeLabel: 'Course',
+      },
+      update: {},
+    })
+    if (replaceExisting) {
+      await prisma.discussionThread.deleteMany({
+        where: { spaceId: space.id },
+      })
+    }
+    const createdAt = Date.now()
+
+    await prisma.discussionThread.createMany({
+      data: contents.map((content, index) => ({
+        spaceId: space.id,
+        scopeId: scope.id,
+        content,
+        createdAt: new Date(createdAt - (contents.length - index) * 1000),
+        lastActivityAt: new Date(createdAt - (contents.length - index) * 1000),
+      })),
     })
     return true
   },

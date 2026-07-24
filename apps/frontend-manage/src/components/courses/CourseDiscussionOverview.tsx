@@ -99,7 +99,7 @@ function CourseDiscussionOverview({
       limit: 20,
     },
     skip: !isCourseQAEnabled,
-    pollInterval: 20000,
+    pollInterval: pagination ? 0 : 20000,
     fetchPolicy: 'cache-and-network',
   })
 
@@ -202,6 +202,7 @@ function CourseDiscussionOverview({
     if (loadingMoreRef.current) return
 
     try {
+      setPagination(null)
       await refetchOverview()
     } catch {
       toast({

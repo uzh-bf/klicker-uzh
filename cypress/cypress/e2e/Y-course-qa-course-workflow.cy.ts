@@ -188,4 +188,37 @@ describe('Course Q&A course-level workflows', function () {
     cy.get('[data-cy="course-qa-create-thread"]').click()
     cy.findByText(this.data.threads.course2).should('exist')
   })
+
+  it('Lecturer refreshes paginated discussions without losing a boundary thread', function () {
+    const initialThreads = Array.from(
+      { length: 21 },
+      (_, index) => `Pagination thread ${index + 1}`
+    )
+    const newestThread = 'Pagination thread added after page two'
+
+    cy.task('seedCourseDiscussionThreads', {
+      courseName: this.data.course,
+      contents: initialThreads,
+      replaceExisting: true,
+    }).should('equal', true)
+
+    cy.loginLecturer()
+    cy.visit(`${Cypress.env('URL_MANAGE')}/courses/${this.data.courseId}`)
+    cy.get('[data-cy="tab-discussions"]').click()
+    cy.get('[data-cy^="course-qa-overview-thread-"]').should('have.length', 20)
+    cy.get('[data-cy="course-qa-load-more-overview"]').click()
+    cy.get('[data-cy^="course-qa-overview-thread-"]').should('have.length', 21)
+
+    cy.task('seedCourseDiscussionThreads', {
+      courseName: this.data.course,
+      contents: [newestThread],
+    }).should('equal', true)
+    cy.get('[data-cy="course-qa-refresh-overview"]').click()
+    cy.findByText(newestThread).should('exist')
+    cy.get('[data-cy="course-qa-load-more-overview"]').should('not.be.disabled')
+    cy.get('[data-cy="course-qa-load-more-overview"]').click()
+
+    cy.get('[data-cy^="course-qa-overview-thread-"]').should('have.length', 22)
+    cy.findByText('Pagination thread 2').should('exist')
+  })
 })
