@@ -18,7 +18,7 @@ export function ModeSwitcher() {
       role="group"
       aria-label={t('chat.modes.switcherLabel')}
       data-cy="chat-mode-switcher"
-      className="bg-muted inline-flex items-center gap-0.5 rounded-full p-0.5"
+      className="bg-muted scrollbar-none flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full p-0.5"
     >
       {modeKeys.map((mode) => {
         const Icon = getModeIcon(mode)
@@ -36,7 +36,7 @@ export function ModeSwitcher() {
             title={modeOptions[mode] || label}
             onClick={() => setSelectedMode(mode)}
             className={twMerge(
-              'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors',
+              'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium transition-colors',
               isActive
                 ? 'bg-primary text-primary-foreground shadow-sm'
                 : // Full foreground rather than muted-foreground: the inactive

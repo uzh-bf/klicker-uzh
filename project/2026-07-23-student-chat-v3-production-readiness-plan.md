@@ -797,6 +797,15 @@ designing the question widget.
   equivalents; desktop screenshot no-change; typecheck green. Remaining
   `bg-white`/`red-*` hits (avatar backing, disclaimer-declined block, image-viewer
   error) deliberately out of scope with justification.
+- 2026-07-24: **S7 done**. Viewport export (`viewportFit: 'cover'`), composer
+  `pb-[max(1rem,env(safe-area-inset-bottom))]` (comma-in-arbitrary-value verified in
+  compiled CSS), markdown table wrapped in `overflow-x-auto` div, D2 scrollable pill
+  (`min-w-0` parent + `overflow-x-auto scrollbar-none` container + `shrink-0
+  whitespace-nowrap` pills; forced-overflow test at 240px: sw176/cw106, full scroll
+  range reachable), five touch targets bumped to `size-6` (24px), no button under
+  24px at 375px. Reviewer verified viewport merge semantics + flexbox center-clip
+  trap avoided. Deferred: live markdown-table scroll check needs a seeded assistant
+  message → covered at S17 with Playwright.
 - 2026-07-24: Environment note: worktree stack has no upstream LLM key
   (`UPSTREAM_OPENAI_API_KEY`), so live sends fail with the S5 error bubble (stacked
   strings reproduced live). Phase 0 does not need live LLM; **Phase U verification does**
