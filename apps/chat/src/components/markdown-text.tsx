@@ -80,8 +80,10 @@ const useCopyToClipboard = ({
 }
 
 const defaultComponents = memoizeMarkdownComponents({
+  // Rendered as h2: the chatbot name is the page's single h1, so message
+  // headings must not compete at the same rank (visual size unchanged).
   h1: ({ className, ...props }) => (
-    <h1
+    <h2
       className={cn(
         'mb-8 scroll-m-20 text-4xl font-extrabold tracking-tight last:mb-0',
         className

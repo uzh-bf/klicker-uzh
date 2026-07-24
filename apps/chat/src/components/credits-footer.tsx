@@ -42,6 +42,13 @@ export function CreditsFooter() {
       <Progress
         value={percentage}
         max={100}
+        // The visible title above isn't programmatically associated with the
+        // progress bar (it's a plain <span>, not a <label>/id pair), so
+        // assistive tech would otherwise announce this Progress with no name
+        // at all. BaseProgressProps spreads unknown props onto
+        // RadixProgress.Root, so aria-label reaches the actual progressbar
+        // element; reuse the same i18n key as the visible title.
+        aria-label={t('chat.credits.title')}
         className={{
           root: 'h-1.5',
           background: 'bg-muted',

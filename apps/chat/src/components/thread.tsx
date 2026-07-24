@@ -608,7 +608,7 @@ const AttachmentTile: FC<{
       ) : (
         <div
           className={twMerge(
-            'text-muted-foreground bg-muted flex items-center justify-center rounded-lg border px-2 text-[10px]',
+            'text-foreground bg-muted flex items-center justify-center rounded-lg border px-2 text-[10px]',
             sizeClasses
           )}
         >
