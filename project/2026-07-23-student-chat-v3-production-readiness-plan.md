@@ -889,6 +889,21 @@ designing the question widget.
   Checks: chat check + vitest 40/40 + prettier green in-container.
   **DEFERRED to S17 (needs LLM key): live streaming auto-expand/collapse of
   the reasoning panel + live tool-group running states.**
+- 2026-07-24: **U4 done.** `adapters.feedback.submit` →
+  `chatStore.rateMessage` (optimistic rollback + API route untouched);
+  MessageRatingButtons wrap `ActionBarPrimitive.FeedbackPositive/Negative`
+  (asChild) with identical markup/data-cy/aria-pressed. Two design notes:
+  the adapter has no clear/retract concept, so second-click-clears uses
+  `preventDefault()` (skips the composed internal submit — Radix
+  composeEventHandlers checks defaultPrevented) + direct
+  `rateMessage(..., null)`; and for external-store runtimes the runtime's
+  internal submittedFeedback patch is clobbered on every store sync, so
+  `convertMessage` injects `metadata.submittedFeedback` from the persisted
+  rating (load-bearing — makes ratings survive reload). Browser-verified
+  full cycle: click up → persisted after reload → switch to down → second
+  click clears (aria-pressed + data-submitted tracked). Review: clean
+  (WeakMap conversion caching intact, id stability, adapter wiring
+  confirmed against 0.14.27 compiled source). check + vitest 40/40 green.
 - 2026-07-24: Environment note: worktree stack has no upstream LLM key
   (`UPSTREAM_OPENAI_API_KEY`), so live sends fail with the S5 error bubble (stacked
   strings reproduced live). Phase 0 does not need live LLM; **Phase U verification does**

@@ -36,6 +36,7 @@ import {
 import {
   createContext,
   type FC,
+  type MouseEvent,
   type PropsWithChildren,
   type ReactNode,
   useContext,
@@ -1368,25 +1369,25 @@ const MessageRatingButtons: FC = () => {
   const message = useMessage()
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const rateMessage = useChatStore((state) => state.rateMessage)
-  // The runtime's message object does not carry our own fields, so the current
-  // vote is read back from the store the mutation writes to.
-  const rating = useChatStore(
-    (state) =>
-      state.threads
-        .find((thread) => thread.id === state.activeThreadId)
-        ?.messages.find((entry) => entry.id === message.id)?.rating ?? null
-  )
+  // The active vote comes from the feedback adapter's own metadata field
+  // (populated by `convertMessage` in RuntimeProvider from the store's
+  // persisted rating), not a separate zustand selector.
+  const submittedFeedbackType = message.metadata.submittedFeedback?.type ?? null
 
   if (!chatbotId) return null
 
   const options = [
     {
       value: 'UP' as const,
+      feedbackType: 'positive' as const,
+      FeedbackPrimitive: ActionBarPrimitive.FeedbackPositive,
       Icon: ThumbsUpIcon,
       label: t('chat.message.rateUp'),
     },
     {
       value: 'DOWN' as const,
+      feedbackType: 'negative' as const,
+      FeedbackPrimitive: ActionBarPrimitive.FeedbackNegative,
       Icon: ThumbsDownIcon,
       label: t('chat.message.rateDown'),
     },
@@ -1394,39 +1395,48 @@ const MessageRatingButtons: FC = () => {
 
   return (
     <>
-      {options.map(({ value, Icon, label }) => {
-        const isActive = rating === value
-        return (
-          <Tooltip key={value}>
-            <TooltipTrigger asChild>
-              <button
-                data-cy={`chat-rate-${value.toLowerCase()}-button`}
-                aria-pressed={isActive}
-                // Clicking the active vote clears it, so a misclick is undoable.
-                onClick={() =>
-                  void rateMessage(
-                    chatbotId,
-                    message.id,
-                    isActive ? null : value
-                  )
-                }
-                className={twMerge(
-                  actionBarButtonClassName,
-                  isActive && 'text-primary'
-                )}
-              >
-                {/* The cast icon is filled, not merely recoloured: primary
-                    against muted-foreground is only ~2.4:1 (~2.0:1 in dark
-                    mode), so colour alone would leave the active vote
-                    indistinguishable under WCAG 1.4.1/1.4.11. */}
-                <Icon className={isActive ? 'fill-current' : undefined} />
-                <span className="sr-only">{label}</span>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>{label}</TooltipContent>
-          </Tooltip>
-        )
-      })}
+      {options.map(
+        ({ value, feedbackType, FeedbackPrimitive, Icon, label }) => {
+          const isActive = submittedFeedbackType === feedbackType
+          return (
+            <Tooltip key={value}>
+              <TooltipTrigger asChild>
+                <FeedbackPrimitive
+                  asChild
+                  // The feedback adapter only models "submit a vote": clicking
+                  // the already-active vote here clears it instead, so a
+                  // misclick is undoable. That clear path bypasses the
+                  // adapter (there is no "retract" concept in assistant-ui)
+                  // and calls the same store action directly.
+                  onClick={(event: MouseEvent) => {
+                    if (isActive) {
+                      event.preventDefault()
+                      void rateMessage(chatbotId, message.id, null)
+                    }
+                  }}
+                >
+                  <button
+                    data-cy={`chat-rate-${value.toLowerCase()}-button`}
+                    aria-pressed={isActive}
+                    className={twMerge(
+                      actionBarButtonClassName,
+                      isActive && 'text-primary'
+                    )}
+                  >
+                    {/* The cast icon is filled, not merely recoloured: primary
+                      against muted-foreground is only ~2.4:1 (~2.0:1 in dark
+                      mode), so colour alone would leave the active vote
+                      indistinguishable under WCAG 1.4.1/1.4.11. */}
+                    <Icon className={isActive ? 'fill-current' : undefined} />
+                    <span className="sr-only">{label}</span>
+                  </button>
+                </FeedbackPrimitive>
+              </TooltipTrigger>
+              <TooltipContent>{label}</TooltipContent>
+            </Tooltip>
+          )
+        }
+      )}
     </>
   )
 }
