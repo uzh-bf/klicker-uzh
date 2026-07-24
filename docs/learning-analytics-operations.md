@@ -125,9 +125,10 @@ mutation RecomputeCourseAnalytics($courseId: String!, $mode: AnalyticsMode!) {
 
 - `INCREMENTAL` — scoped course recompute with the default 14-day window.
 - `FINALIZE` — scoped course recompute without the incremental window; the
-  nightly scanner uses this route for ended courses. If consent changes after
-  the workflow starts, the terminal marker stays unset and the scanner retries
-  the course on its next pass.
+  nightly scanner uses this route for ended courses. It also requeues an
+  already-finalized course when its chat privacy state changed after the last
+  successful cutoff, so a consent change racing with finalization is reconciled
+  on the next scan.
 - `FULL` — guarded rebuild through the protected full workflow. It fails
   closed unless the worker was explicitly deployed with `allowFull=true`.
 

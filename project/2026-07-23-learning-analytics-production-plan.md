@@ -929,7 +929,21 @@ the repository script that replaces it before continuing.
   hygiene, and a focused 293-rule Opengrep scan pass.
 - 2026-07-24: The refreshed complete database-backed analytics suite passes
   192 tests with 18 existing dependency/dataframe warnings in 6 minutes.
-- Active: Verify, commit, and independently re-review the sequencing fix,
+- 2026-07-24: Final race review found that a consent change committing after
+  the final-marker snapshot could leave an ended course finalized and outside
+  the nightly scanner. The scanner now also requeues finalized courses whose
+  chat cutoff is missing or older than current consent/disclaimer state, or
+  whose participant chat rows are no longer eligible. Requeued finalized
+  courses can pass through the final marker again and converge.
+- 2026-07-24: Hatchet workflow creation times are normalized to the
+  PostgreSQL `TIMESTAMP(3)` boundary and shifted back one millisecond before
+  use. The supported shell launcher calls the same helper. A PostgreSQL
+  regression proves a consent timestamp in the workflow's creation
+  millisecond remains visible, and a direct scanner query selects late
+  consent, never-finalized, and stale-row cases while excluding clean and
+  active courses. The focused privacy/finalization suite passes 26 tests;
+  Hatchet typecheck and both scanner tests pass.
+- Active: Commit and independently re-review the finalization-race fix,
   complete final branch gates, then request publication confirmation for both
   stacked draft PRs.
 
@@ -945,7 +959,7 @@ the repository script that replaces it before continuing.
 
 ## Next Steps
 
-1. Commit and independently review the incremental consent-history fix.
+1. Commit and independently review the finalization-race fix.
 2. Run the final branch security and maintainability gates.
 3. After explicit publication confirmation, update `chat-analytics` against
    `v3`, refresh the stacked `analytics-phase-a` draft, and read back CI

@@ -19,7 +19,10 @@ esac
 # All scripts in one launcher invocation share this immutable UTC cutoff. The
 # final validity marker uses it so consent changes committed while the pipeline
 # is running remain visible to the next reconciliation.
-export ANALYTICS_CHAT_CUTOFF="${ANALYTICS_CHAT_CUTOFF:-$(date -u +"%Y-%m-%dT%H:%M:%SZ")}"
+if [[ -z "${ANALYTICS_CHAT_CUTOFF:-}" ]]; then
+  ANALYTICS_CHAT_CUTOFF="$(uv run python -m src.analytics_cutoff)"
+  export ANALYTICS_CHAT_CUTOFF
+fi
 
 SCRIPTS=(
   src.scripts.0_initial_participant_analytics

@@ -167,7 +167,7 @@ def test_finalize_scope_defers_terminal_marker_for_pending_consent():
     assert '"analyticsFinalizedAt" = CASE' in statement
     assert "pending_chat_changes pending" in statement
     assert f"""cb."courseId" IN ('{COURSE_A}')""" in statement
-    assert 'AND c."analyticsFinalizedAt" IS NULL' in statement
+    assert 'AND c."analyticsFinalizedAt" IS NULL' not in statement
 
 
 def test_validity_marker_fails_closed_without_immutable_cutoff(monkeypatch):

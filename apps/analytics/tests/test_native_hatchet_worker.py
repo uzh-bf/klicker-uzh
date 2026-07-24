@@ -237,7 +237,7 @@ def test_analytics_dags_split_concurrency_and_preserve_task_contract() -> None:
         window_since=None,
     )
 
-    cutoff = datetime(2026, 7, 23, 9, 30, tzinfo=timezone.utc)
+    cutoff = datetime(2026, 7, 23, 9, 30, 0, 123456, tzinfo=timezone.utc)
     freshness_tasks["s99-mark-analytics-valid"].fn(
         hatchet_worker.AnalyticsRunInput(courseId="course-1"),
         FakeContext(workflow_created_at=cutoff),
@@ -246,7 +246,7 @@ def test_analytics_dags_split_concurrency_and_preserve_task_contract() -> None:
         mode="finalize",
         course_ids=("course-1",),
         window_since=None,
-        chat_analytics_cutoff="2026-07-23T09:30:00+00:00",
+        chat_analytics_cutoff="2026-07-23T09:30:00.122+00:00",
     )
 
     with pytest.raises(ValueError, match="ANALYTICS_ALLOW_FULL"):
