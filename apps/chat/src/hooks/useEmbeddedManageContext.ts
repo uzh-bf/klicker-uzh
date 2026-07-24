@@ -36,7 +36,13 @@ export function useEmbeddedManageContext() {
       if (!isManageContextMessage(event.data)) return
 
       const nextContext = sanitizeManageAssistantContext(event.data.payload)
-      if (!nextContext) return
+      if (!nextContext) {
+        // A later message failed sanitization: clear any previously stored
+        // context rather than keep acting on stale page state.
+        contextKeyRef.current = null
+        setContext(null)
+        return
+      }
 
       // The message passed every validation check above, so event.origin is
       // the verified Manage parent origin. Cache it for components outside

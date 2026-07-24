@@ -2,6 +2,10 @@ type BuildManageAssistantUrlArgs = {
   chatUrl?: string
   locale?: string
   parentOrigin?: string
+  // Defaults to true so existing (iframe) call sites are unaffected. The
+  // standalone "open in new tab" link must pass `embed: false` to get a
+  // clean, non-embedded URL that keeps the assistant's normal login CTA.
+  embed?: boolean
 }
 
 export function isManageAssistantEnabled(value: string | undefined): boolean {
@@ -12,12 +16,16 @@ export function buildManageAssistantUrl({
   chatUrl,
   locale,
   parentOrigin,
+  embed = true,
 }: BuildManageAssistantUrlArgs): string | null {
   if (!chatUrl) return null
 
   try {
     const url = new URL('/manage', chatUrl)
-    url.searchParams.set('embed', 'true')
+
+    if (embed) {
+      url.searchParams.set('embed', 'true')
+    }
 
     if (locale) {
       url.searchParams.set('locale', locale)
@@ -25,7 +33,8 @@ export function buildManageAssistantUrl({
 
     // Hand the embedder's own origin to the embedded assistant so its
     // readiness ping can target a concrete origin instead of a '*' wildcard.
-    if (parentOrigin) {
+    // Only relevant (and only sent) for the embedded iframe URL.
+    if (embed && parentOrigin) {
       url.searchParams.set('parentOrigin', parentOrigin)
     }
 

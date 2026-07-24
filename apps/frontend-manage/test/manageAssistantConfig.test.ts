@@ -36,3 +36,24 @@ assert.equal(
   }),
   null
 )
+
+// The "open in new tab" link must get a clean, non-embedded URL: no
+// `embed` flag and no `parentOrigin`, even if a parentOrigin is passed in,
+// so a full-tab visit keeps the assistant's normal login CTA.
+assert.equal(
+  buildManageAssistantUrl({
+    chatUrl: 'https://chat.klicker.com/',
+    locale: 'de',
+    parentOrigin: 'https://manage.klicker.com',
+    embed: false,
+  }),
+  'https://chat.klicker.com/manage?locale=de'
+)
+
+assert.equal(
+  buildManageAssistantUrl({
+    chatUrl: 'https://chat.klicker.com/',
+    embed: false,
+  }),
+  'https://chat.klicker.com/manage'
+)

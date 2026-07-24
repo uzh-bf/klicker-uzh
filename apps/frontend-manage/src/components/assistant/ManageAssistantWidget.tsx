@@ -35,6 +35,7 @@ export function ManageAssistantWidget() {
   const apolloClient = useApolloClient()
   const iframeRef = useRef<HTMLIFrameElement | null>(null)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
+  const panelRef = useRef<HTMLElement | null>(null)
   const shouldRestoreFocusRef = useRef(false)
   const nextMessageIdRef = useRef(0)
   const ackedMessageIdRef = useRef(0)
@@ -54,6 +55,18 @@ export function ManageAssistantWidget() {
         locale: router.locale,
         parentOrigin:
           typeof window !== 'undefined' ? window.location.origin : undefined,
+      }),
+    [router.locale]
+  )
+  // A clean, non-embedded URL for the "open in new tab" link: the embedded
+  // URL hides the assistant's login CTA and other affordances that only make
+  // sense when Manage itself provides the surrounding chrome.
+  const assistantNewTabUrl = useMemo(
+    () =>
+      buildManageAssistantUrl({
+        chatUrl: process.env.NEXT_PUBLIC_CHAT_URL,
+        locale: router.locale,
+        embed: false,
       }),
     [router.locale]
   )
@@ -105,12 +118,55 @@ export function ManageAssistantWidget() {
     triggerRef.current?.focus()
   }, [open])
 
+  // Move focus into the panel as soon as it opens, so keyboard/AT users land
+  // inside the dialog rather than on whatever was focused before it opened.
+  useEffect(() => {
+    if (!open) return
+    const panel = panelRef.current
+    if (!panel) return
+
+    const target = getFocusableElements(panel)[0] ?? panel
+    target.focus()
+  }, [open])
+
   useEffect(() => {
     if (!open) return
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         closeWidget()
+        return
+      }
+
+      if (event.key !== 'Tab') return
+
+      // Trap Tab/Shift+Tab within the panel's own focusable elements (close
+      // button, new-tab link, iframe). The iframe is cross-origin, so once
+      // focus moves inside its document, Tab handling is delegated to that
+      // document and this listener no longer sees the keydown — the browser
+      // takes over as usual until focus returns to the top-level document.
+      const panel = panelRef.current
+      if (!panel) return
+
+      const focusables = getFocusableElements(panel)
+      if (focusables.length === 0) {
+        event.preventDefault()
+        panel.focus()
+        return
+      }
+
+      const first = focusables[0]
+      const last = focusables[focusables.length - 1]
+      const active = document.activeElement
+
+      if (event.shiftKey) {
+        if (active === first || !panel.contains(active)) {
+          event.preventDefault()
+          last.focus()
+        }
+      } else if (active === last || !panel.contains(active)) {
+        event.preventDefault()
+        first.focus()
       }
     }
 
@@ -218,9 +274,12 @@ export function ManageAssistantWidget() {
 
       {open && (
         <aside
+          ref={panelRef}
           role="dialog"
+          aria-modal="true"
           aria-label={t('manage.assistant.title')}
-          className="fixed bottom-0 left-0 right-0 z-40 flex h-[min(85dvh,44rem)] min-h-[28rem] w-screen flex-col overflow-hidden border-t border-gray-200 bg-white shadow-2xl md:inset-x-auto md:bottom-6 md:left-auto md:right-6 md:h-[min(42rem,calc(100dvh-3rem))] md:w-[28rem] md:rounded-md md:border"
+          tabIndex={-1}
+          className="fixed bottom-0 left-0 right-0 z-40 flex h-[min(85dvh,44rem)] min-h-[28rem] w-screen flex-col overflow-hidden border-t border-gray-200 bg-white shadow-2xl focus:outline-none md:inset-x-auto md:bottom-6 md:left-auto md:right-6 md:h-[min(42rem,calc(100dvh-3rem))] md:w-[28rem] md:rounded-md md:border"
           data-cy="manage-assistant-drawer"
         >
           <div className="flex shrink-0 items-start gap-3 border-b bg-white px-3 py-3">
@@ -236,7 +295,7 @@ export function ManageAssistantWidget() {
               </div>
             </div>
             <a
-              href={assistantUrl}
+              href={assistantNewTabUrl ?? assistantUrl}
               target="_blank"
               rel="noreferrer"
               className="text-uzh-blue hover:text-uzh-blue-80 inline-flex size-11 shrink-0 items-center justify-center rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
@@ -309,6 +368,16 @@ function isManageContextReadyMessage(data: unknown): data is {
     data !== null &&
     (data as { type?: unknown }).type === MANAGE_CONTEXT_READY_MESSAGE_TYPE
   )
+}
+
+// Returns the panel's own focusable elements in DOM order (close button,
+// new-tab link, iframe, ...). Deliberately shallow: it only needs to cover
+// the widget's own chrome, not content inside the cross-origin iframe.
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), iframe, [tabindex]:not([tabindex="-1"])'
+
+function getFocusableElements(container: HTMLElement): HTMLElement[] {
+  return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
 }
 
 function getUrlOrigin(url: string | null) {
