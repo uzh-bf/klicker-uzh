@@ -1,5 +1,4 @@
 import { expect, type FrameLocator, type Page } from '@playwright/test'
-import { URL_CHAT } from './constants.js'
 
 /**
  * Manage assistant (apps/chat `/manage`, embedded in frontend-manage via
@@ -16,8 +15,6 @@ import { URL_CHAT } from './constants.js'
  * Only the LLM endpoint (POST /api/manage/chat) and the proposal confirmation
  * endpoint (POST /api/manage/proposals/confirm) are mocked.
  */
-
-export const chatUrl = () => process.env.URL_CHAT ?? URL_CHAT
 
 /**
  * Serialize UI-message-stream events as an AI SDK v5 SSE body.
@@ -38,17 +35,24 @@ function sseBody(events: Record<string, unknown>[]) {
   )
 }
 
-/** Plain assistant-text UI-message-stream body */
-function textStreamBody(text: string) {
-  const id = 'e2e-text-1'
+/** Wrap payload events in the shared start/step/finish envelope. */
+function stepStreamBody(events: Record<string, unknown>[]) {
   return sseBody([
     { type: 'start' },
     { type: 'start-step' },
+    ...events,
+    { type: 'finish-step' },
+    { type: 'finish' },
+  ])
+}
+
+/** Plain assistant-text UI-message-stream body */
+function textStreamBody(text: string) {
+  const id = 'e2e-text-1'
+  return stepStreamBody([
     { id, type: 'text-start' },
     { delta: text, id, type: 'text-delta' },
     { id, type: 'text-end' },
-    { type: 'finish-step' },
-    { type: 'finish' },
   ])
 }
 
@@ -118,9 +122,7 @@ function toolCallStreamBody(envelope: ManageProposalEnvelope) {
     isError: false,
   }
 
-  return sseBody([
-    { type: 'start' },
-    { type: 'start-step' },
+  return stepStreamBody([
     {
       toolCallId,
       toolName: MANAGE_PROPOSAL_TOOL_NAME,
@@ -137,8 +139,6 @@ function toolCallStreamBody(envelope: ManageProposalEnvelope) {
       toolCallId,
       type: 'tool-output-available',
     },
-    { type: 'finish-step' },
-    { type: 'finish' },
   ])
 }
 

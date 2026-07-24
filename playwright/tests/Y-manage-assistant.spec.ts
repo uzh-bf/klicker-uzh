@@ -198,15 +198,21 @@ test.describe('Manage Assistant — Per-surface suggestions', () => {
     const assistant = await openManageAssistantWidget(page)
     const welcome = assistant.getByTestId('chat-welcome-message')
 
+    // The course-dashboard set only replaces the default suggestions once the
+    // parent → iframe manage-context handshake completes, which races the
+    // widget opening — allow extra time for that async update to settle.
     for (const text of [
       'Summarize this course',
       'Draft course question',
       'Find course material',
     ]) {
-      await expect(welcome.getByText(text, { exact: true })).toBeVisible()
+      await expect(welcome.getByText(text, { exact: true })).toBeVisible({
+        timeout: 15_000,
+      })
     }
 
-    // Question-pool-only suggestions must not leak into this surface.
+    // Question-pool-only suggestions must not leak into this surface (retries
+    // until the handshake has swapped the default set out).
     await expect(
       welcome.getByText('Draft a question', { exact: true })
     ).toHaveCount(0)
