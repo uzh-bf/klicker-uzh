@@ -17,7 +17,6 @@ from src.dryrun.workbook_sections import (
     build_platform_sections,
     has_visible_summary_content,
     table_dataframe,
-    truncate_text,
 )
 
 _DOMAIN_TABLES: dict[str, tuple[str, ...]] = {
@@ -49,6 +48,10 @@ _DOMAIN_TABLES: dict[str, tuple[str, ...]] = {
 
 
 _HIDDEN_METADATA_KEYS = {"lookups", "script_domains", "omitted_domain_notes"}
+
+
+def _truncate_text(value: str, limit: int) -> str:
+    return value if len(value) <= limit else value[: limit - 3] + "..."
 
 
 def _safe_sheet(name: str, used_names: set[str]) -> str:
@@ -162,7 +165,7 @@ def _normalized_diagnostic_note(note: str) -> str:
     if not note:
         return ""
     first_line = note.split("[SQL:", 1)[0].splitlines()[0].strip()
-    return truncate_text(first_line, 200)
+    return _truncate_text(first_line, 200)
 
 
 def _diagnostics_rows(
@@ -173,7 +176,7 @@ def _diagnostics_rows(
         verb = _normalized_diagnostic_verb(str(entry.get("verb", "")))
         table = str(entry.get("table", ""))
         note = _normalized_diagnostic_note(str(entry.get("note", "")))
-        sql_excerpt = truncate_text(str(entry.get("sql", "")), 240)
+        sql_excerpt = _truncate_text(str(entry.get("sql", "")), 240)
         key = (verb, table, note, sql_excerpt)
         if key not in grouped:
             grouped[key] = {

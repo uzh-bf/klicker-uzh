@@ -2,14 +2,9 @@
 
 from __future__ import annotations
 
-import json
 from typing import Any, Mapping, Sequence
 
 from src.dryrun.interceptor import CaptureBuffer
-
-
-def truncate_text(value: str, limit: int) -> str:
-    return value if len(value) <= limit else value[: limit - 3] + "..."
 
 
 def table_dataframe(buffer: CaptureBuffer, table: str):
@@ -98,17 +93,6 @@ def _section_is_placeholder(section: tuple[str, str, Any, dict[str, Any]]) -> bo
 
 def has_visible_summary_content(sections: Sequence[tuple[str, str, Any, dict[str, Any]]]) -> bool:
     return any(not _section_is_placeholder(section) for section in sections)
-
-
-def _json_compact(value: Any) -> str:
-    if value is None or value == "":
-        return ""
-    if isinstance(value, str):
-        return truncate_text(value, 120)
-    try:
-        return truncate_text(json.dumps(value, sort_keys=True), 120)
-    except Exception:
-        return truncate_text(str(value), 120)
 
 
 def build_activity_sections(buffer: CaptureBuffer, metadata: Mapping[str, Any]):
