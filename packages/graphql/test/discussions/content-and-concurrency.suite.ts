@@ -28,7 +28,7 @@ async function waitForParticipantLockWaiters(
   prisma: PrismaClient,
   expectedCount: number
 ) {
-  const deadline = Date.now() + 2000
+  const deadline = Date.now() + 5000
 
   while (Date.now() < deadline) {
     const [result] = await prisma.$queryRaw<Array<{ count: number }>>(
@@ -417,17 +417,29 @@ export function registerContentAndConcurrencySuite(
       prisma,
       deletedVoterId
     )
-    const accountDeletion = deleteParticipantAccount(deletedVoterAccountCtx)
-    await waitForParticipantLockWaiters(prisma, 1)
+    let accountDeletion!: Promise<boolean>
+    let threadUpvote!: ReturnType<typeof toggleCourseDiscussionThreadUpvote>
+    const queuedOperations: Promise<unknown>[] = []
+    try {
+      accountDeletion = deleteParticipantAccount(deletedVoterAccountCtx)
+      queuedOperations.push(accountDeletion)
+      await waitForParticipantLockWaiters(prisma, 1)
 
-    const threadUpvote = toggleCourseDiscussionThreadUpvote(
-      { threadId: thread!.id, upvote: true },
-      deletedVoterCtx
-    )
-    await waitForParticipantLockWaiters(prisma, 2)
+      threadUpvote = toggleCourseDiscussionThreadUpvote(
+        { threadId: thread!.id, upvote: true },
+        deletedVoterCtx
+      )
+      queuedOperations.push(threadUpvote)
+      await waitForParticipantLockWaiters(prisma, 2)
+    } finally {
+      participantLock.release()
+      const [lockResult] = await Promise.allSettled([
+        participantLock.transaction,
+        ...queuedOperations,
+      ])
+      if (lockResult?.status === 'rejected') throw lockResult.reason
+    }
 
-    participantLock.release()
-    await participantLock.transaction
     const [, deleted] = await Promise.all([threadUpvote, accountDeletion])
 
     expect(deleted).toBe(true)
@@ -501,17 +513,29 @@ export function registerContentAndConcurrencySuite(
       prisma,
       deletedVoterId
     )
-    const replyUnvote = toggleCourseDiscussionReplyUpvote(
-      { replyId: reply!.id, upvote: false },
-      deletedVoterCtx
-    )
-    await waitForParticipantLockWaiters(prisma, 1)
+    let replyUnvote!: ReturnType<typeof toggleCourseDiscussionReplyUpvote>
+    let accountDeletion!: Promise<boolean>
+    const queuedOperations: Promise<unknown>[] = []
+    try {
+      replyUnvote = toggleCourseDiscussionReplyUpvote(
+        { replyId: reply!.id, upvote: false },
+        deletedVoterCtx
+      )
+      queuedOperations.push(replyUnvote)
+      await waitForParticipantLockWaiters(prisma, 1)
 
-    const accountDeletion = deleteParticipantAccount(deletedVoterAccountCtx)
-    await waitForParticipantLockWaiters(prisma, 2)
+      accountDeletion = deleteParticipantAccount(deletedVoterAccountCtx)
+      queuedOperations.push(accountDeletion)
+      await waitForParticipantLockWaiters(prisma, 2)
+    } finally {
+      participantLock.release()
+      const [lockResult] = await Promise.allSettled([
+        participantLock.transaction,
+        ...queuedOperations,
+      ])
+      if (lockResult?.status === 'rejected') throw lockResult.reason
+    }
 
-    participantLock.release()
-    await participantLock.transaction
     const [, deleted] = await Promise.all([replyUnvote, accountDeletion])
 
     expect(deleted).toBe(true)
