@@ -2,6 +2,8 @@ import {
   DiscussionEventType,
   DiscussionScopeType,
 } from '@klicker-uzh/prisma/client'
+import type { ContextWithUser } from '../../src/lib/context.js'
+import { deleteParticipantAccount } from '../../src/services/accounts.js'
 import {
   courseDiscussionThreads,
   createCourseDiscussionReply,
@@ -182,6 +184,94 @@ export function registerContentAndConcurrencySuite(
       participantCtx
     )
     expect(oversizedReply).toBeNull()
+  })
+
+  it('reconciles discussion vote totals when a participant deletes their account', async () => {
+    const { prisma, userOneCtx } = getContext()
+    const course = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, { courseId: course.id })
+
+    const authorId = await seedParticipantInCourse(prisma, {
+      courseId: course.id,
+    })
+    const survivingVoterId = await seedParticipantInCourse(prisma, {
+      courseId: course.id,
+    })
+    const deletedVoterId = await seedParticipantInCourse(prisma, {
+      courseId: course.id,
+    })
+    const authorCtx = createParticipantContext(userOneCtx, authorId)
+    const survivingVoterCtx = createParticipantContext(
+      userOneCtx,
+      survivingVoterId
+    )
+    const deletedVoterCtx = createParticipantContext(userOneCtx, deletedVoterId)
+    const deletedVoterAccountCtx = {
+      ...deletedVoterCtx,
+      res: {
+        ...deletedVoterCtx.res,
+        cookie: () => undefined,
+      },
+    } as unknown as ContextWithUser
+
+    const thread = await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: 'A thread with votes from two participants.',
+        scope: { scopeType: DiscussionScopeType.COURSE },
+      },
+      authorCtx
+    )
+    const reply = await createCourseDiscussionReply(
+      {
+        courseId: course.id,
+        threadId: thread!.id,
+        content: 'A reply with votes from two participants.',
+      },
+      authorCtx
+    )
+
+    await toggleCourseDiscussionThreadUpvote(
+      { threadId: thread!.id, upvote: true },
+      survivingVoterCtx
+    )
+    await toggleCourseDiscussionThreadUpvote(
+      { threadId: thread!.id, upvote: true },
+      deletedVoterCtx
+    )
+    await toggleCourseDiscussionReplyUpvote(
+      { replyId: reply!.id, upvote: true },
+      survivingVoterCtx
+    )
+    await toggleCourseDiscussionReplyUpvote(
+      { replyId: reply!.id, upvote: true },
+      deletedVoterCtx
+    )
+
+    expect(await deleteParticipantAccount(deletedVoterAccountCtx)).toBe(true)
+
+    expect(
+      await prisma.discussionThread.findUnique({
+        where: { id: thread!.id },
+        select: { upvotes: true },
+      })
+    ).toEqual({ upvotes: 1 })
+    expect(
+      await prisma.discussionReply.findUnique({
+        where: { id: reply!.id },
+        select: { upvotes: true },
+      })
+    ).toEqual({ upvotes: 1 })
+    expect(
+      await prisma.discussionThreadVote.count({
+        where: { threadId: thread!.id },
+      })
+    ).toBe(1)
+    expect(
+      await prisma.discussionReplyVote.count({
+        where: { replyId: reply!.id },
+      })
+    ).toBe(1)
   })
 
   it('atomically caps visible replies at fifty per thread', async () => {

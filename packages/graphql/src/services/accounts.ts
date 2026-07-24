@@ -520,43 +520,83 @@ export async function changeParticipantLocale(
 }
 
 export async function deleteParticipantAccount(ctx: ContextWithUser) {
-  const participant = await ctx.prisma.participant.findUnique({
-    where: { id: ctx.user.sub },
-    include: {
-      participantGroups: {
-        include: {
-          participants: true,
+  const deleted = await ctx.prisma.$transaction(async (prisma) => {
+    const participant = await prisma.participant.findUnique({
+      where: { id: ctx.user.sub },
+      include: {
+        participantGroups: {
+          include: {
+            participants: true,
+          },
+        },
+        discussionThreadVotes: {
+          select: {
+            threadId: true,
+          },
+        },
+        discussionReplyVotes: {
+          select: {
+            replyId: true,
+          },
         },
       },
-    },
+    })
+
+    if (!participant) return false
+
+    // if a participant group is empty after the participant leaves it, delete the group as well
+    for (const group of participant.participantGroups) {
+      if (group.participants.length === 1) {
+        await prisma.participantGroup.delete({
+          where: { id: group.id },
+        })
+      }
+    }
+
+    const threadIds = participant.discussionThreadVotes.map(
+      (vote) => vote.threadId
+    )
+    if (threadIds.length > 0) {
+      await prisma.discussionThread.updateMany({
+        where: {
+          id: { in: threadIds },
+          upvotes: { gt: 0 },
+        },
+        data: {
+          upvotes: { decrement: 1 },
+        },
+      })
+    }
+
+    const replyIds = participant.discussionReplyVotes.map(
+      (vote) => vote.replyId
+    )
+    if (replyIds.length > 0) {
+      await prisma.discussionReply.updateMany({
+        where: {
+          id: { in: replyIds },
+          upvotes: { gt: 0 },
+        },
+        data: {
+          upvotes: { decrement: 1 },
+        },
+      })
+    }
+
+    await prisma.participant.delete({
+      where: { id: ctx.user.sub },
+    })
+
+    return true
   })
 
-  if (!participant) return false
+  if (!deleted) return false
 
   ctx.res.cookie('participant_token', 'logoutString', {
     ...COOKIE_SETTINGS,
     maxAge: 0,
   })
 
-  // if a participant group is empty after the participant leaves it, delete the group as well
-  let deletionPromises: any[] = []
-  for (const group of participant.participantGroups) {
-    if (group.participants.length === 1) {
-      deletionPromises.push(
-        ctx.prisma.participantGroup.delete({
-          where: { id: group.id },
-        })
-      )
-    }
-  }
-
-  deletionPromises.push(
-    ctx.prisma.participant.delete({
-      where: { id: ctx.user.sub },
-    })
-  )
-
-  await ctx.prisma.$transaction(deletionPromises)
   return true
 }
 
