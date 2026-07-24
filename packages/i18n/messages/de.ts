@@ -123,6 +123,8 @@ export default {
     },
     composer: {
       placeholder: 'Nachricht schreiben...',
+      send: 'Nachricht senden',
+      stop: 'Antwort stoppen',
       attachmentLimitError: 'Du kannst höchstens {max} Bilder anhängen.',
       dismissError: 'Fehler schliessen',
       dropImages: 'Bilder zum Anhängen hier ablegen',

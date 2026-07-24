@@ -737,6 +737,7 @@ const ComposerAttachButton: FC<{
 }
 
 const ComposerAction: FC = () => {
+  const t = useTranslations()
   const { embedded } = useChatUi()
   // Shared shape/focus for both action buttons; the design-system `Button`'s
   // focus ring is lost when swapping to a plain <button> (see Send note below),
@@ -760,6 +761,7 @@ const ComposerAction: FC = () => {
           <button
             type="button"
             data-cy="chat-send-button"
+            aria-label={t('chat.composer.send')}
             className={twMerge(
               baseAction,
               'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm',
@@ -775,6 +777,7 @@ const ComposerAction: FC = () => {
           <button
             type="button"
             data-cy="chat-cancel-button"
+            aria-label={t('chat.composer.stop')}
             className={twMerge(
               baseAction,
               'text-foreground hover:bg-accent disabled:opacity-50'
