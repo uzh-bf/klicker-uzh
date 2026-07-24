@@ -34,6 +34,8 @@ jobs:
 
       - name: Set up Helm
         uses: azure/setup-helm@v4
+        with:
+          version: v4.2.3
 
       - name: Lint production values
         run: helm lint deploy/charts/klicker-uzh-v3 --values deploy/env-uzh-prd/values.yaml
