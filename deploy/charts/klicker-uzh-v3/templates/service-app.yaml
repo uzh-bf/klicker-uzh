@@ -106,6 +106,8 @@ metadata:
   name: {{ include "chart.fullname" . }}-backend-graphql
   labels:
     {{- include "chart.labels" . | nindent 4 }}
+  annotations:
+    haproxy.org/forwarded-for: "true"
 spec:
   type: {{ .Values.backendGraphql.service.type }}
   ports:

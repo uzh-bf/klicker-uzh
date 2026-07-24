@@ -7,6 +7,7 @@ import {
   createCourseDiscussionThread,
   getCourseDiscussionEmbeddingInfo,
 } from '../../src/services/discussions.js'
+import { hashAnonymousFingerprint } from '../../src/services/discussions/embeds.js'
 import { seedCourse } from '../helpers.js'
 import type { DiscussionTestContext } from './fixtures.js'
 import { createAnonymousContext, enableCourseDiscussion } from './fixtures.js'
@@ -14,6 +15,29 @@ import { createAnonymousContext, enableCourseDiscussion } from './fixtures.js'
 export function registerAnonymousRateLimitsSuite(
   getContext: () => DiscussionTestContext
 ) {
+  it('uses the proxy-normalized request IP instead of a raw forwarded header', () => {
+    const { userOneCtx } = getContext()
+    const normalizedContext = createAnonymousContext(userOneCtx, {
+      ip: '203.0.113.10',
+    })
+    const otherClientContext = createAnonymousContext(userOneCtx, {
+      ip: '203.0.113.11',
+    })
+    const normalizedFingerprint = hashAnonymousFingerprint(
+      normalizedContext,
+      'course-id'
+    )
+
+    normalizedContext.req.headers['x-forwarded-for'] = '198.51.100.20'
+
+    expect(hashAnonymousFingerprint(normalizedContext, 'course-id')).toBe(
+      normalizedFingerprint
+    )
+    expect(normalizedFingerprint).not.toBe(
+      hashAnonymousFingerprint(otherClientContext, 'course-id')
+    )
+  })
+
   it('rejects anonymous posting when embed token scope does not match', async () => {
     const { prisma, userOneCtx } = getContext()
     const course = await seedCourse({}, userOneCtx)

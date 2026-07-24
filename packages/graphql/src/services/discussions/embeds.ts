@@ -40,25 +40,7 @@ const PARTICIPANT_COURSE_WINDOW_SEC = 60 * 60
 const PARTICIPANT_COURSE_LIMIT = 60
 
 function getRequestIP(ctx: Context) {
-  const headers = ctx.req?.headers ?? {}
-  const forwardedFor = headers['x-forwarded-for']
-  if (typeof forwardedFor === 'string') {
-    const [first] = forwardedFor.split(',')
-    if (first) return first.trim()
-  }
-
-  if (Array.isArray(forwardedFor) && forwardedFor.length > 0) {
-    const [first] = forwardedFor
-    if (first) {
-      const [firstSplit] = first.split(',')
-      if (firstSplit) return firstSplit.trim()
-    }
-  }
-
-  const requestIp = ctx.req.ip
-  if (requestIp) return requestIp
-
-  return 'unknown-ip'
+  return ctx.req?.ip || 'unknown-ip'
 }
 
 function getRequestUserAgent(ctx: Context) {

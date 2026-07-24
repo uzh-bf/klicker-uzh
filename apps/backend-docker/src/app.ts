@@ -39,6 +39,9 @@ function prepareApp({
 
   const app = express()
 
+  // Production and local routed traffic reach this service through one ingress.
+  app.set('trust proxy', 1)
+
   /* istanbul ignore next */
   if (global.__coverage__) {
     try {
