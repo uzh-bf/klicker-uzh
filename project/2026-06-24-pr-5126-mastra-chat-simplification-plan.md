@@ -219,7 +219,7 @@ Do not retain an empty-thread creation endpoint unless browser testing proves it
 
 ### Frontend Configuration
 
-Read `CHAT_API_PUBLIC_URL` in the App Router root layout at request time, validate it as an HTTPS URL outside local development, and pass it as a serialized prop to a client runtime-config provider. Keep that config boundary dynamic so one image can receive different deployment values, fail clearly when it is unset, and add the variable to `turbo.json`. Do not add a Next API route or proxy for configuration, and do not use `NEXT_PUBLIC_*` build-time substitution for deployed images.
+Read `CHAT_API_PUBLIC_URL` in the App Router root layout at request time, validate it as an HTTPS URL outside local development, and pass it as a serialized prop to a client runtime-config provider. Set `export const dynamic = 'force-dynamic'` on the owning layout or route segment so Next.js cannot bake the value in during static optimization. One image must accept different deployment values. Fail clearly when the variable is unset and add it to `turbo.json`. Do not add a Next API route or proxy for configuration, and do not use `NEXT_PUBLIC_*` build-time substitution for deployed images.
 
 Authentication behavior:
 
@@ -272,17 +272,25 @@ Keep:
 2. It sends the first message to `chat-api` with no persisted thread ID.
 3. `chat-api` validates IDs, creates the thread and user message idempotently, opens the stream, and emits the persisted thread ID before engine text.
 4. `chat-api` invokes the configured engine exactly once after writing that metadata; it does not wait for a browser acknowledgement.
-5. When the frontend receives the metadata, it atomically replaces the draft in the thread array, switches `activeThreadId`, and marks adoption complete.
-6. Only after the persisted thread is visible to the route guard does the frontend call `router.replace`.
-7. The URL synchronization effect treats an active adoption as valid and never redirects it as a missing thread.
-8. The frontend retains the same messages and running state throughout adoption.
-9. `chat-api` persists final or partial assistant output and validated usage.
+5. Before changing `activeThreadId`, the frontend synchronously records an adoption marker containing the draft and persisted thread IDs.
+6. In one store update, it replaces the draft in the thread array and switches `activeThreadId` to the persisted ID.
+7. While that marker is active, the URL synchronization effect must return without clearing `activeThreadId` when the URL still has no `threadId`.
+8. It must also return without a missing-thread redirect if the URL changes before the persisted thread is visible in the current render.
+9. Only after the persisted thread is visible to the route guard does the frontend call `router.replace`.
+10. Clear the adoption marker only after the URL thread ID, active thread ID, and thread array all agree on the persisted ID.
+11. The frontend retains the same messages and running state throughout adoption.
+12. `chat-api` persists final or partial assistant output and validated usage.
 
 Block or queue further sends while adoption is unresolved. Editing and reloading require a persisted thread ID.
 
 Frontend IDs are canonical when valid. Any unavoidable ID replacement must be reported before attachments, branches, editing, or reload can depend on it.
 
-Add a regression test for the current `RuntimeProvider` route guard: adopting a persisted thread must not redirect to the chatbot root or abort the stream.
+Add regression tests for both sides of the current `RuntimeProvider` route guard:
+
+- the old URL has no `threadId` while the store already holds the adopted active thread
+- the new URL has the persisted `threadId` while the current render has not observed the updated thread array
+
+Neither state may clear the active thread, redirect to the chatbot root, or abort the stream.
 
 ## Security
 
@@ -411,7 +419,7 @@ Work:
 - Remove participant-token verification and `APP_SECRET` from Next middleware; handle bootstrap `401` in the client.
 - Move bootstrap and all conversation calls to direct `chat-api` requests.
 - Implement draft-thread adoption and canonical message IDs.
-- Update the thread store before URL replacement and guard route synchronization during adoption.
+- Add an adoption marker, update the thread store before URL replacement, guard both the no-thread and missing-thread route branches, and clear the marker only after URL/store convergence.
 - Preserve assistant-ui edit, reload, cancel, branching, reasoning, tools, and attachment behavior.
 - Verify the complete new route while the old route still exists.
 - Delete `apps/chat/src/app/api/**` and remove obsolete server-only chat dependencies and configuration.
