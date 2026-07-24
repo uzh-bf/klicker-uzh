@@ -178,25 +178,39 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
   const reasoningLabel = reasoningEffort
     ? formatReasoningEffort(t, reasoningEffort)
     : null
+  const creditsLabel =
+    includeCredits && typeof creditsUsed === 'number'
+      ? // `count` selects the plural form and must be read off the
+        // *displayed* value: a raw 1.2 renders as "1" but plural-selects as
+        // `other`, so passing it through unrounded prints "1 credits".
+        t('chat.message.creditsUsed', {
+          count: Number(formatCredits(creditsUsed)),
+          credits: formatCredits(creditsUsed),
+        })
+      : null
 
-  const parts = [modeLabel, modelLabel, reasoningLabel].filter(Boolean)
-  if (includeCredits && typeof creditsUsed === 'number') {
-    parts.push(
-      // `count` selects the plural form and must be read off the *displayed*
-      // value: a raw 1.2 renders as "1" but plural-selects as `other`, so
-      // passing it through unrounded prints "1 credits".
-      t('chat.message.creditsUsed', {
-        count: Number(formatCredits(creditsUsed)),
-        credits: formatCredits(creditsUsed),
-      })
-    )
-  }
+  // V6: the raw model id/name is dropped from the always-visible caption to
+  // keep it terse — it still lives in the `title` tooltip below (hover to
+  // reveal the full detail, including the model).
+  const visibleParts = [modeLabel, reasoningLabel, creditsLabel].filter(Boolean)
+  const fullParts = [
+    modeLabel,
+    modelLabel,
+    reasoningLabel,
+    creditsLabel,
+  ].filter(Boolean)
 
-  if (parts.length === 0) return null
+  if (fullParts.length === 0) return null
 
+  // The `title` tooltip is mouse-only; the sr-only copy keeps the full
+  // detail (incl. model) reachable for screen readers.
   return (
-    <div className="text-muted-foreground mt-1 text-xs">
-      {parts.join(' — ')}
+    <div
+      className="text-muted-foreground mt-1 text-xs"
+      title={fullParts.join(' — ')}
+    >
+      <span aria-hidden="true">{visibleParts.join(' — ')}</span>
+      <span className="sr-only">{fullParts.join(' — ')}</span>
     </div>
   )
 }
@@ -999,7 +1013,6 @@ const UserMessage: FC = () => {
         <MessagePrimitive.Content />
       </div>
 
-      <MessageMetadata />
       <div className="flex min-h-6 items-center">
         <UserActionBar />
       </div>

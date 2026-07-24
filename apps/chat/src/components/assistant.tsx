@@ -1,6 +1,5 @@
 'use client'
 
-import Footer from '@klicker-uzh/shared-components/src/Footer'
 import {
   SidebarInset,
   SidebarProvider,
@@ -9,6 +8,7 @@ import {
 } from '@uzh-bf/design-system'
 import { Loader2, Plus } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -314,10 +314,8 @@ export const Assistant = ({
 
 function SidebarMain({
   chatbot,
-  showFooter,
 }: {
   chatbot: { id: string; name: string; avatar?: string }
-  showFooter: boolean
 }) {
   const t = useTranslations()
   const { open } = useSidebar()
@@ -338,19 +336,27 @@ function SidebarMain({
   return (
     <SidebarInset>
       <div className="bg-muted/50 flex shrink-0 items-center gap-2 border-b px-2 py-1.5">
-        <div
-          className={twMerge(
-            'flex min-w-0 items-center gap-2',
-            open && 'md:hidden'
-          )}
-        >
-          {/* Overrides the design system's hardcoded English sr-only label. */}
+        <div className="flex min-w-0 items-center gap-2">
+          {/* Only visible when the sidebar is closed — once it's open, the
+              sidebar's own trigger closes it, so this stays the single
+              toggle on screen at any given time (Overrides the design
+              system's hardcoded English sr-only label). */}
           <SidebarTrigger
-            className="size-6"
+            className={twMerge('size-6', open && 'md:hidden')}
             aria-label={t('chat.sidebar.openSidebar')}
           />
-          {/* Primary label of the working chat view (Tailwind's preflight
-              reset keeps this visually identical to the previous span). */}
+          {/* Persistent header identity (V3): name (+ avatar) stays visible
+              here regardless of sidebar open/closed state, so the sidebar's
+              own header no longer repeats it (see app-sidebar.tsx). */}
+          {chatbot.avatar && (
+            <Image
+              src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${chatbot.avatar}.svg`}
+              alt=""
+              width={24}
+              height={24}
+              className="ring-border size-6 shrink-0 rounded-full bg-white ring-1"
+            />
+          )}
           <h1 className="min-w-0 truncate text-sm">{chatbot.name}</h1>
         </div>
         <div className="flex min-w-0 flex-1 justify-center">
@@ -382,7 +388,6 @@ function SidebarMain({
           )}
           <Thread chatbotAvatar={chatbot.avatar ?? ''} />
         </div>
-        {showFooter && <Footer />}
       </div>
     </SidebarInset>
   )
@@ -393,14 +398,14 @@ function AssistantLayout({
 }: {
   chatbot: { id: string; name: string; avatar?: string }
 }) {
-  const { showSidebar, showFooter } = useChatUi()
+  const { showSidebar } = useChatUi()
   const { isLoading } = useChatStore()
 
   if (showSidebar) {
     return (
       <SidebarProvider className="h-dvh overflow-hidden">
-        <AppSidebar chatbotName={chatbot.name} />
-        <SidebarMain chatbot={chatbot} showFooter={showFooter} />
+        <AppSidebar />
+        <SidebarMain chatbot={chatbot} />
       </SidebarProvider>
     )
   }
@@ -423,7 +428,6 @@ function AssistantLayout({
           <Thread chatbotAvatar={chatbot.avatar ?? ''} />
         </div>
         <EmbeddedCreditsBar />
-        {showFooter && <Footer />}
       </div>
     </div>
   )
