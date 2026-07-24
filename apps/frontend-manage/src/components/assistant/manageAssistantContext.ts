@@ -40,6 +40,10 @@ const SENSITIVE_QUERY_KEY_PATTERN =
 const MAX_QUERY_KEYS = 20
 const MAX_QUERY_VALUES_PER_KEY = 10
 const MAX_QUERY_VALUE_LENGTH = 200
+// Must match MAX_ROUTE_LENGTH in apps/chat/src/services/manageContext.ts —
+// the chat-side schema rejects (and drops the whole context for) any
+// route.asPath longer than this.
+const MAX_ASPATH_LENGTH = 512
 
 export function buildManageAssistantContext({
   asPath,
@@ -126,7 +130,11 @@ function sanitizeAsPath(asPath: string) {
   }
 
   const sanitizedQueryString = params.toString()
-  return sanitizedQueryString ? `${path}?${sanitizedQueryString}` : path
+  const sanitizedPath = sanitizedQueryString
+    ? `${path}?${sanitizedQueryString}`
+    : path
+
+  return sanitizedPath.slice(0, MAX_ASPATH_LENGTH)
 }
 
 function sanitizeQuery(

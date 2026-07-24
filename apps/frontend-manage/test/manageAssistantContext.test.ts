@@ -63,3 +63,24 @@ assert.deepEqual(
     },
   }
 )
+
+// Clamp asPath to the backend contract limit (MAX_ROUTE_LENGTH in
+// apps/chat/src/services/manageContext.ts) so a long filter/search URL
+// doesn't get the whole context silently dropped by the chat-side schema.
+{
+  const longQuery = Array.from(
+    { length: 20 },
+    (_, index) => `key${index}=${'v'.repeat(200)}`
+  ).join('&')
+  const longAsPath = `/resources/catalog?${longQuery}`
+  assert.ok(longAsPath.length > 512)
+
+  const context = buildManageAssistantContext({
+    asPath: longAsPath,
+    locale: 'en',
+    pathname: '/resources/catalog',
+    query: {},
+  })
+
+  assert.ok(context.route.asPath.length <= 512)
+}

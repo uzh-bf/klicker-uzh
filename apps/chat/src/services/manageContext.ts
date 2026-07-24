@@ -39,13 +39,37 @@ const querySchema = z.preprocess((value) => {
   return Object.fromEntries(entries)
 }, z.record(queryValueSchema))
 
+// Mirrors the query-key filtering above: route.asPath is a raw string (not
+// parsed query params), so a caller could otherwise smuggle sensitive values
+// through the path itself.
+function sanitizeAsPath(asPath: string) {
+  const [path = asPath, queryString] = asPath.split('?')
+  if (!queryString) return path
+
+  const params = new URLSearchParams()
+  let appendedKeys = 0
+  new URLSearchParams(queryString).forEach((value, key) => {
+    if (appendedKeys >= MAX_QUERY_KEYS) return
+    if (SENSITIVE_QUERY_KEY_PATTERN.test(key)) return
+    params.append(key, value.slice(0, MAX_QUERY_VALUE_LENGTH))
+    appendedKeys += 1
+  })
+
+  const sanitizedQueryString = params.toString()
+  return sanitizedQueryString ? `${path}?${sanitizedQueryString}` : path
+}
+
 const manageContextSchema = z.object({
   version: z.literal(1),
   source: z.literal('manage'),
   surface: manageSurfaceSchema,
   locale: z.string().min(2).max(16),
   route: z.object({
-    asPath: z.string().min(1).max(MAX_ROUTE_LENGTH),
+    asPath: z
+      .string()
+      .min(1)
+      .max(MAX_ROUTE_LENGTH)
+      .transform((asPath) => sanitizeAsPath(asPath)),
     pathname: z.string().min(1).max(MAX_ROUTE_LENGTH),
   }),
   ids: z
@@ -111,6 +135,15 @@ export function formatManageContextForPrompt(
   }
   if (context.ids?.elementId) {
     lines.push(`Question ID: ${context.ids.elementId}`)
+  }
+  if (context.ids?.templateId) {
+    lines.push(`Template ID: ${context.ids.templateId}`)
+  }
+  if (context.ids?.instanceId) {
+    lines.push(`Instance ID: ${context.ids.instanceId}`)
+  }
+  if (context.ids?.quizId) {
+    lines.push(`Quiz ID: ${context.ids.quizId}`)
   }
 
   return lines.join('\n')

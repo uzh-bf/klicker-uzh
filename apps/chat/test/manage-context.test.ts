@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import {
+  formatManageContextForPrompt,
   getManageContextLabel,
   sanitizeManageAssistantContext,
 } from '../src/services/manageContext'
@@ -87,5 +88,69 @@ describe('Manage assistant context', () => {
     expect(context?.query).toHaveProperty('key0', '0')
     expect(context?.query).toHaveProperty('key19', '19')
     expect(context?.query).not.toHaveProperty('key20')
+  })
+
+  test('sanitizes sensitive keys embedded directly in route.asPath', () => {
+    const context = sanitizeManageAssistantContext({
+      version: 1,
+      source: 'manage',
+      surface: 'question-pool',
+      locale: 'en',
+      route: {
+        asPath: '/resources/catalog?tagIds=abc&token=secret&sessionId=xyz',
+        pathname: '/resources/catalog',
+      },
+    })
+
+    expect(context?.route.asPath).toBe('/resources/catalog?tagIds=abc')
+    expect(JSON.stringify(context)).not.toContain('secret')
+    expect(JSON.stringify(context)).not.toContain('xyz')
+  })
+
+  test('caps the number of query keys kept from route.asPath', () => {
+    const query = Array.from(
+      { length: 30 },
+      (_, index) => `key${index}=${index}`
+    ).join('&')
+
+    const context = sanitizeManageAssistantContext({
+      version: 1,
+      source: 'manage',
+      surface: 'question-pool',
+      locale: 'en',
+      route: {
+        asPath: `/resources/catalog?${query}`,
+        pathname: '/resources/catalog',
+      },
+    })
+
+    const params = new URLSearchParams(context?.route.asPath.split('?')[1])
+    expect(Array.from(params.keys())).toHaveLength(20)
+    expect(params.has('key19')).toBe(true)
+    expect(params.has('key20')).toBe(false)
+  })
+
+  test('formats the prompt with template, instance and quiz IDs', () => {
+    const context = sanitizeManageAssistantContext({
+      version: 1,
+      source: 'manage',
+      surface: 'element-editor',
+      locale: 'en',
+      route: {
+        asPath: '/templates/12',
+        pathname: '/templates/[id]',
+      },
+      ids: {
+        templateId: '12',
+        instanceId: '34',
+        quizId: '56',
+      },
+    })
+
+    const prompt = formatManageContextForPrompt(context)
+
+    expect(prompt).toContain('Template ID: 12')
+    expect(prompt).toContain('Instance ID: 34')
+    expect(prompt).toContain('Quiz ID: 56')
   })
 })

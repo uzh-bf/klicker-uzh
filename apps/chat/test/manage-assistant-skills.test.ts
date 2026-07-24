@@ -1,10 +1,10 @@
-import { describe, expect, test } from 'vitest'
 import {
   buildManageAssistantSkillsPrompt,
   selectManageAssistantSkills,
   STATIC_MANAGE_ASSISTANT_SKILLS,
   type ManageAssistantSkill,
-} from '../src/services/manageAssistantSkills'
+} from '@/src/services/manageAssistantSkills'
+import { describe, expect, test } from 'vitest'
 
 const skills: ManageAssistantSkill[] = [
   {

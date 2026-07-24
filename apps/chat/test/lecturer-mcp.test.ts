@@ -1,5 +1,5 @@
+import { getLecturerMcpUrl } from '@/src/services/lecturerMcp'
 import { describe, expect, test } from 'vitest'
-import { getLecturerMcpUrl } from '../src/services/lecturerMcp'
 
 describe('lecturer MCP adapter', () => {
   test('prefers the explicit lecturer MCP URL', () => {
