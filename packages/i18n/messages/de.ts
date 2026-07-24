@@ -112,6 +112,14 @@ export default {
       welcomeTitle: 'Hallo!',
       welcomeSubtitle: 'Wie kann ich Dir helfen?',
     },
+    suggestions: {
+      explainConcept: 'Erkläre mir ein zufälliges Konzept aus dem Skript',
+      explainConceptPrompt:
+        'Nimm ein zufälliges Konzept aus dem Kursskript und erkläre es mir in einfachen Worten.',
+      examPrep: 'Hilf mir bei der Prüfungsvorbereitung',
+      examPrepPrompt:
+        'Erstelle einen Lernplan für die bevorstehende Prüfung, der alle wichtigen Themen aus den Vorlesungsunterlagen abdeckt.',
+    },
     message: {
       creditsUsed:
         '{count, plural, one {{credits} Credit} other {{credits} Credits}}',

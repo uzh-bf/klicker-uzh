@@ -1,27 +1,20 @@
+// Ids only — the user-visible label and the prompt text that actually gets
+// sent both live in i18n (`chat.suggestions.<id>` / `chat.suggestions.<id>Prompt`)
+// so a German student sees and sends German text. This config only fixes the
+// set of suggestions, their display order, and (via the literal union below)
+// lets the i18n template-literal keys type-check against the generated
+// `Messages` type.
+export type ThreadSuggestionId = 'explainConcept' | 'examPrep'
+
 export interface ThreadSuggestion {
-  id: string
-  text?: string // optional, use prompt if not provided
-  prompt: string
+  id: ThreadSuggestionId
 }
 
 export const THREAD_SUGGESTIONS: ThreadSuggestion[] = [
-  {
-    id: 'suggestion-1',
-    text: 'Explain a random concept from the script',
-    prompt:
-      'Take a random concept from the course script and explain it in simple terms.',
-  },
-  {
-    id: 'suggestion-2',
-    text: 'Help me prepare for the exam',
-    prompt:
-      'Create a study plan for the upcoming exam covering all key topics based on the lecture materials.',
-  },
+  { id: 'explainConcept' },
+  { id: 'examPrep' },
 ]
 
 export function getThreadSuggestions(): ThreadSuggestion[] {
-  return THREAD_SUGGESTIONS.map((suggestion) => ({
-    ...suggestion,
-    text: suggestion.text || suggestion.prompt,
-  }))
+  return THREAD_SUGGESTIONS
 }

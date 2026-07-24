@@ -109,6 +109,14 @@ export default {
       welcomeTitle: 'Hello there!',
       welcomeSubtitle: 'How can I help you?',
     },
+    suggestions: {
+      explainConcept: 'Explain a random concept from the script',
+      explainConceptPrompt:
+        'Take a random concept from the course script and explain it in simple terms.',
+      examPrep: 'Help me prepare for the exam',
+      examPrepPrompt:
+        'Create a study plan for the upcoming exam covering all key topics based on the lecture materials.',
+    },
     message: {
       creditsUsed:
         '{count, plural, one {{credits} credit} other {{credits} credits}}',

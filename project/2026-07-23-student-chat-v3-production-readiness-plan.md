@@ -998,3 +998,20 @@ designing the question widget.
   message entrance classes computed; scroll button hidden(+invisible) at
   bottom, visible/opacity-1 when scrolled (forced via small viewport). 45/45
   tests, check, prettier green. Next: S13 welcome.
+- 2026-07-24: **S13 done** (welcome experience). ThreadWelcomeSuggestions
+  re-enabled as two tappable cards (ThreadPrimitive.Suggestion + autoSend;
+  deprecated `method` prop dropped per review) with S12-style staggered
+  entrances and 44px targets. Suggestions config reduced to a literal-union id
+  list; label AND sent prompt both come from i18n (`chat.suggestions.<id>` /
+  `<id>Prompt`, en + informal de — a German student now sends a German
+  prompt). Greeting stepped to `text-3xl sm:text-4xl` + `text-lg
+  text-muted-foreground` subtitle. Branded empty state: faint blurred
+  `bg-primary/5` circle (aria-hidden, pointer-events-none) behind the
+  greeting + chatbot avatar with `ring-1 ring-border` containment above the
+  title (gated, no broken-src fallback). Review: clean — no findings; noted
+  the delay-classname fallback for a hypothetical 3rd card is cosmetic-only,
+  embedded variant relies on the shared responsive path (not separately
+  screenshotted; S17 matrix covers it). Verified live: cards render + tap
+  sends the localized prompt (en+de), Swiss ss, no 375px overflow;
+  screenshots s13-de-375.png / s13-en-1440.png in scratchpad. check + 45/45
+  tests + prettier green. Next: S14 chrome.

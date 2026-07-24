@@ -63,6 +63,7 @@ import { useSettingsStore } from '@/src/stores/settingsStore'
 import { Button } from '@uzh-bf/design-system'
 import { isKnownMode } from '../lib/config/modes'
 import { formatReasoningEffort } from '../lib/config/reasoning'
+import { getThreadSuggestions } from '../lib/config/suggestions'
 import { BranchPicker } from './branch-picker'
 import { useChatUi } from './chat-ui-context'
 import { MessageAttachments } from './message-attachments'
@@ -384,7 +385,7 @@ export const Thread: FC<ThreadProps> = ({ chatbotAvatar }) => {
             : 'overflow-y-scroll px-2 pb-28 pt-2 sm:px-4 sm:pt-8'
         )}
       >
-        <ThreadWelcome />
+        <ThreadWelcome chatbotAvatar={chatbotAvatar} />
 
         <ThreadPrimitive.Messages
           components={{
@@ -462,51 +463,69 @@ const ThinkingDots: FC = () => {
   )
 }
 
-const ThreadWelcome: FC = () => {
+const ThreadWelcome: FC<{ chatbotAvatar: string }> = ({ chatbotAvatar }) => {
   const t = useTranslations()
   return (
     <ThreadPrimitive.Empty>
       <div className="aui-thread-welcome-root mx-auto my-auto flex w-full max-w-[var(--thread-max-width)] flex-grow flex-col">
-        <div className="aui-thread-welcome-center flex w-full flex-grow flex-col items-center justify-center">
+        <div className="aui-thread-welcome-center relative flex w-full flex-grow flex-col items-center justify-center">
+          {/* Faint branded accent behind the greeting — restrained, no new assets. */}
+          <div
+            aria-hidden
+            className="bg-primary/5 pointer-events-none absolute left-1/2 top-1/2 size-64 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"
+          />
           <div
             data-cy="chat-welcome-message"
-            className="aui-thread-welcome-message flex size-full flex-col items-center justify-center px-8 text-center"
+            className="aui-thread-welcome-message relative flex size-full flex-col items-center justify-center px-8 text-center"
           >
-            <div className="animate-in fade-in slide-in-from-bottom-2 text-2xl font-semibold duration-300 motion-reduce:animate-none">
+            {chatbotAvatar && (
+              <Image
+                src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${chatbotAvatar}.svg`}
+                alt=""
+                width={56}
+                height={56}
+                className="ring-border animate-in fade-in slide-in-from-bottom-2 mb-4 rounded-full bg-white ring-1 duration-300 motion-reduce:animate-none"
+              />
+            )}
+            <div className="animate-in fade-in slide-in-from-bottom-2 text-3xl font-semibold duration-300 motion-reduce:animate-none sm:text-4xl">
               {t('chat.thread.welcomeTitle')}
             </div>
-            <div className="text-muted-foreground/65 animate-in fade-in slide-in-from-bottom-2 text-2xl delay-100 duration-300 motion-reduce:animate-none">
+            <div className="text-muted-foreground animate-in fade-in slide-in-from-bottom-2 text-lg delay-100 duration-300 motion-reduce:animate-none">
               {t('chat.thread.welcomeSubtitle')}
             </div>
           </div>
         </div>
-        {/* <ThreadWelcomeSuggestions />  */}
+        <ThreadWelcomeSuggestions />
       </div>
     </ThreadPrimitive.Empty>
   )
 }
 
-// const ThreadWelcomeSuggestions: FC = () => {
-//   const suggestions = getThreadSuggestions()
+const SUGGESTION_DELAY_CLASSNAMES = ['delay-150', 'delay-200']
 
-//   return (
-//     <div className="mt-3 flex w-full items-stretch justify-center gap-4">
-//       {suggestions.map((suggestion) => (
-//         <ThreadPrimitive.Suggestion
-//           key={suggestion.id}
-//           className="hover:bg-muted/80 flex max-w-sm grow basis-0 flex-col items-center justify-center rounded-lg border p-3 transition-colors ease-in"
-//           prompt={suggestion.prompt}
-//           method="replace"
-//           autoSend
-//         >
-//           <span className="line-clamp-2 text-ellipsis text-sm font-semibold">
-//             {suggestion.text}
-//           </span>
-//         </ThreadPrimitive.Suggestion>
-//       ))}
-//     </div>
-//   )
-// }
+const ThreadWelcomeSuggestions: FC = () => {
+  const t = useTranslations()
+  const suggestions = getThreadSuggestions()
+
+  return (
+    <div className="mt-4 grid w-full grid-cols-1 gap-3 px-8 sm:grid-cols-2">
+      {suggestions.map((suggestion, index) => (
+        <ThreadPrimitive.Suggestion
+          key={suggestion.id}
+          data-cy="chat-welcome-suggestion"
+          className={twMerge(
+            'border-border bg-background hover:bg-accent animate-in fade-in slide-in-from-bottom-2 min-h-11 rounded-lg border p-3 text-left text-sm transition-colors duration-300 motion-reduce:animate-none',
+            SUGGESTION_DELAY_CLASSNAMES[index] ?? 'delay-200'
+          )}
+          prompt={t(`chat.suggestions.${suggestion.id}Prompt`)}
+          autoSend
+        >
+          {t(`chat.suggestions.${suggestion.id}`)}
+        </ThreadPrimitive.Suggestion>
+      ))}
+    </div>
+  )
+}
 
 const AttachmentErrorBanner: FC<{
   error: string | null
