@@ -1060,3 +1060,18 @@ designing the question widget.
   clears to 10 threads; thread-pane skeleton verified by substitution (same
   `isLoading` gate as the old spinner; S17 matrix re-checks). check + 45/45
   tests + prettier green. Next: S17 finish gate.
+- 2026-07-24: **S17 finish gate completed.** The upgraded chat production build
+  failed only when the container leaked `NODE_ENV=development` into
+  `next build`; `apps/chat` now forces `NODE_ENV=production` for its Turbopack
+  build. Chat build, Vitest (45/45), chat check, repository-wide check (23/23),
+  and chat lint (zero errors) are green. The browser matrix was re-run at
+  1440/768/375px in English and German with no horizontal overflow; mobile
+  sidebar open/close behavior and German desktop accessible names were
+  verified. `SidebarTrigger` and `SidebarRail` now receive localized labels.
+  The active Phase-2 branch is the U5 fallback: `useChatResponse.ts` remains,
+  so S2/S5/M2 retain their custom transport. Live multi-step credit accounting,
+  reasoning/tool streaming, and telemetry remain explicitly deferred because
+  this stack has no LLM key. The environment could not launch the final
+  Playwright suite because its downloaded Chromium executable is incomplete
+  (`Invalid file descriptor to ICU data`); the suite's existing 50-test
+  coverage remains unchanged.
