@@ -12,6 +12,7 @@ import {
   toggleCourseDiscussionReplyUpvote,
   toggleCourseDiscussionThreadUpvote,
 } from '../../src/services/discussions.js'
+import { lockParticipantForDiscussionVoteChanges } from '../../src/services/discussions/participant-votes.js'
 import { seedCourse } from '../helpers.js'
 import type { DiscussionTestContext } from './fixtures.js'
 import {
@@ -213,6 +214,26 @@ export function registerContentAndConcurrencySuite(
         cookie: () => undefined,
       },
     } as unknown as ContextWithUser
+    const soloGroup = await prisma.participantGroup.create({
+      data: {
+        name: 'Deleted participant solo group',
+        code: 1,
+        courseId: course.id,
+        participants: {
+          connect: { id: deletedVoterId },
+        },
+      },
+    })
+    const sharedGroup = await prisma.participantGroup.create({
+      data: {
+        name: 'Shared participant group',
+        code: 2,
+        courseId: course.id,
+        participants: {
+          connect: [{ id: survivingVoterId }, { id: deletedVoterId }],
+        },
+      },
+    })
 
     const thread = await createCourseDiscussionThread(
       {
@@ -272,6 +293,168 @@ export function registerContentAndConcurrencySuite(
         where: { replyId: reply!.id },
       })
     ).toBe(1)
+    await expect(
+      prisma.participantGroup.findUnique({
+        where: { id: soloGroup.id },
+      })
+    ).resolves.toBeNull()
+    await expect(
+      prisma.participantGroup.findUnique({
+        where: { id: sharedGroup.id },
+        include: {
+          participants: {
+            select: { id: true },
+          },
+        },
+      })
+    ).resolves.toMatchObject({
+      participants: [{ id: survivingVoterId }],
+    })
+  })
+
+  it('serializes vote changes with participant account deletion', async () => {
+    const { prisma, userOneCtx } = getContext()
+    const course = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, { courseId: course.id })
+
+    const authorId = await seedParticipantInCourse(prisma, {
+      courseId: course.id,
+    })
+    const survivingVoterId = await seedParticipantInCourse(prisma, {
+      courseId: course.id,
+    })
+    const deletedVoterId = await seedParticipantInCourse(prisma, {
+      courseId: course.id,
+    })
+    const authorCtx = createParticipantContext(userOneCtx, authorId)
+    const survivingVoterCtx = createParticipantContext(
+      userOneCtx,
+      survivingVoterId
+    )
+    const deletedVoterCtx = createParticipantContext(userOneCtx, deletedVoterId)
+    const deletedVoterAccountCtx = {
+      ...deletedVoterCtx,
+      res: {
+        ...deletedVoterCtx.res,
+        cookie: () => undefined,
+      },
+    } as unknown as ContextWithUser
+
+    const thread = await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: 'A thread used to race a vote with account deletion.',
+        scope: { scopeType: DiscussionScopeType.COURSE },
+      },
+      authorCtx
+    )
+    const reply = await createCourseDiscussionReply(
+      {
+        courseId: course.id,
+        threadId: thread!.id,
+        content: 'A reply used to race an unvote with account deletion.',
+      },
+      authorCtx
+    )
+
+    await toggleCourseDiscussionThreadUpvote(
+      { threadId: thread!.id, upvote: true },
+      survivingVoterCtx
+    )
+    await toggleCourseDiscussionReplyUpvote(
+      { replyId: reply!.id, upvote: true },
+      survivingVoterCtx
+    )
+    await toggleCourseDiscussionReplyUpvote(
+      { replyId: reply!.id, upvote: true },
+      deletedVoterCtx
+    )
+
+    let signalLockAcquired!: () => void
+    const lockAcquired = new Promise<void>((resolve) => {
+      signalLockAcquired = resolve
+    })
+    let releaseParticipantLock!: () => void
+    const participantLockReleased = new Promise<void>((resolve) => {
+      releaseParticipantLock = resolve
+    })
+    const blockingTransaction = prisma.$transaction(async (transaction) => {
+      expect(
+        await lockParticipantForDiscussionVoteChanges(
+          transaction,
+          deletedVoterId
+        )
+      ).toBe(true)
+      signalLockAcquired()
+      await participantLockReleased
+    })
+
+    await lockAcquired
+
+    const settled = {
+      threadUpvote: false,
+      replyUnvote: false,
+      accountDeletion: false,
+    }
+    const threadUpvote = toggleCourseDiscussionThreadUpvote(
+      { threadId: thread!.id, upvote: true },
+      deletedVoterCtx
+    ).finally(() => {
+      settled.threadUpvote = true
+    })
+    const replyUnvote = toggleCourseDiscussionReplyUpvote(
+      { replyId: reply!.id, upvote: false },
+      deletedVoterCtx
+    ).finally(() => {
+      settled.replyUnvote = true
+    })
+
+    await new Promise((resolve) => setTimeout(resolve, 25))
+
+    const accountDeletion = deleteParticipantAccount(
+      deletedVoterAccountCtx
+    ).finally(() => {
+      settled.accountDeletion = true
+    })
+
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(settled).toEqual({
+      threadUpvote: false,
+      replyUnvote: false,
+      accountDeletion: false,
+    })
+
+    releaseParticipantLock()
+    await blockingTransaction
+    const [, , deleted] = await Promise.all([
+      threadUpvote,
+      replyUnvote,
+      accountDeletion,
+    ])
+
+    expect(deleted).toBe(true)
+    await expect(
+      prisma.discussionThread.findUnique({
+        where: { id: thread!.id },
+        select: { upvotes: true },
+      })
+    ).resolves.toEqual({ upvotes: 1 })
+    await expect(
+      prisma.discussionReply.findUnique({
+        where: { id: reply!.id },
+        select: { upvotes: true },
+      })
+    ).resolves.toEqual({ upvotes: 1 })
+    await expect(
+      prisma.discussionThreadVote.count({
+        where: { threadId: thread!.id },
+      })
+    ).resolves.toBe(1)
+    await expect(
+      prisma.discussionReplyVote.count({
+        where: { replyId: reply!.id },
+      })
+    ).resolves.toBe(1)
   })
 
   it('atomically caps visible replies at fifty per thread', async () => {

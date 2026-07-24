@@ -13,6 +13,7 @@ import {
   isActiveCourseScopeType,
   mapReply,
 } from './model.js'
+import { lockParticipantForDiscussionVoteChanges } from './participant-votes.js'
 import type {
   DiscussionReplyWithRelations,
   DiscussionThreadWithRelations,
@@ -177,6 +178,10 @@ export async function toggleCourseDiscussionThreadUpvote(
   const participantId = resolved.actor.participantId
 
   await ctx.prisma.$transaction(async (tx) => {
+    if (!(await lockParticipantForDiscussionVoteChanges(tx, participantId))) {
+      return
+    }
+
     if (upvote) {
       const createdVote = await tx.discussionThreadVote.createMany({
         data: [
@@ -271,6 +276,10 @@ export async function toggleCourseDiscussionReplyUpvote(
   const participantId = resolved.actor.participantId
 
   await ctx.prisma.$transaction(async (tx) => {
+    if (!(await lockParticipantForDiscussionVoteChanges(tx, participantId))) {
+      return
+    }
+
     if (upvote) {
       const createdVote = await tx.discussionReplyVote.createMany({
         data: [

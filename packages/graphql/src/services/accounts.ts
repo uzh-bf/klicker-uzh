@@ -14,6 +14,7 @@ import type { CookieOptions } from 'express'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import * as EmailService from '../services/email.js'
+import { reconcileParticipantDiscussionVotesBeforeDeletion } from './discussions/participant-votes.js'
 import { sendTeamsNotification } from './notifications.js'
 
 const COOKIE_SETTINGS: CookieOptions = {
@@ -521,22 +522,27 @@ export async function changeParticipantLocale(
 
 export async function deleteParticipantAccount(ctx: ContextWithUser) {
   const deleted = await ctx.prisma.$transaction(async (prisma) => {
+    if (
+      !(await reconcileParticipantDiscussionVotesBeforeDeletion(
+        prisma,
+        ctx.user.sub
+      ))
+    ) {
+      return false
+    }
+
     const participant = await prisma.participant.findUnique({
       where: { id: ctx.user.sub },
-      include: {
+      select: {
+        id: true,
         participantGroups: {
-          include: {
-            participants: true,
-          },
-        },
-        discussionThreadVotes: {
           select: {
-            threadId: true,
-          },
-        },
-        discussionReplyVotes: {
-          select: {
-            replyId: true,
+            id: true,
+            _count: {
+              select: {
+                participants: true,
+              },
+            },
           },
         },
       },
@@ -544,47 +550,17 @@ export async function deleteParticipantAccount(ctx: ContextWithUser) {
 
     if (!participant) return false
 
-    // if a participant group is empty after the participant leaves it, delete the group as well
-    for (const group of participant.participantGroups) {
-      if (group.participants.length === 1) {
-        await prisma.participantGroup.delete({
-          where: { id: group.id },
-        })
-      }
-    }
-
-    const threadIds = participant.discussionThreadVotes.map(
-      (vote) => vote.threadId
-    )
-    if (threadIds.length > 0) {
-      await prisma.discussionThread.updateMany({
-        where: {
-          id: { in: threadIds },
-          upvotes: { gt: 0 },
-        },
-        data: {
-          upvotes: { decrement: 1 },
-        },
-      })
-    }
-
-    const replyIds = participant.discussionReplyVotes.map(
-      (vote) => vote.replyId
-    )
-    if (replyIds.length > 0) {
-      await prisma.discussionReply.updateMany({
-        where: {
-          id: { in: replyIds },
-          upvotes: { gt: 0 },
-        },
-        data: {
-          upvotes: { decrement: 1 },
-        },
-      })
-    }
+    const emptyGroupIds = participant.participantGroups
+      .filter((group) => group._count.participants === 1)
+      .map((group) => group.id)
+    await prisma.participantGroup.deleteMany({
+      where: {
+        id: { in: emptyGroupIds },
+      },
+    })
 
     await prisma.participant.delete({
-      where: { id: ctx.user.sub },
+      where: { id: participant.id },
     })
 
     return true
