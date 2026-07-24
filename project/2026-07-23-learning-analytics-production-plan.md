@@ -951,9 +951,47 @@ the repository script that replaces it before continuing.
   A `ChatUsageCredits(chatbotId)` index reduced it further to about 46 ms, but
   that extra write/index cost is not justified for a once-daily 99 ms query
   without representative staging evidence, so no speculative index is added.
-- Active: Commit and independently re-review the finalization-race fix,
-  complete final branch gates, then request publication confirmation for both
-  stacked draft PRs.
+- 2026-07-24: The refreshed complete database-backed analytics suite passes
+  199 tests with 18 existing dependency/dataframe warnings in 5 minutes
+  57 seconds. The focused privacy/finalization suite passes 26 tests; Ruff
+  formatting and lint pass across 130 files; the uv lock, Hatchet typecheck,
+  scanner tests, direct PostgreSQL scanner semantics, launcher cutoff smoke,
+  and diff hygiene all pass. A focused 452-rule Opengrep scan reports no
+  findings.
+- 2026-07-24: Independent correctness review of commits `871e7b8ce4` and
+  `9e43cb9326` found no remaining correctness or performance finding at
+  confidence 75 or higher. Independent simplification review found no safe
+  smaller form for the cutoff helper, launcher, scanner query, or
+  same-millisecond regression. The repeated privacy predicate across Python
+  reconciliation and the TypeScript scanner remains a future data-model
+  concern; centralizing it safely would require a database view or synchronous
+  invalidation design rather than a local cleanup.
+- 2026-07-24: Exact code head `9e43cb9326` produced fresh ARM64 and AMD64
+  images with digests
+  `sha256:15ffa6c1bfbcf55c591900b2ba879e9326b7a6400d9825e15f30cf673a31e45e`
+  and
+  `sha256:ae1a98a888b4f12be149e048f611736fb9692cc4064ffc76115c57dfcdac176f`.
+  Both passed non-root UID 10001, no-network, read-only-root,
+  capability-dropped, CPU-only model/license/embedding smoke. The ARM64 worker
+  then registered the proof task and both complete 15-task DAGs against
+  disposable Hatchet v0.73.1, reported healthy with one slot, completed the
+  immutable-input proof workflow, and stopped cleanly.
+- 2026-07-24: The final security gate found no high-confidence vulnerability
+  in the cutoff or scanner change. The scanner uses static SQL identifiers and
+  a parameterized server-generated `Date`; the worker and shell launcher use
+  one server-controlled immutable cutoff. The full branch still requires image
+  CVE scanning and live ExternalSecret/Infisical readiness verification before
+  deployment because neither capability is available in this environment.
+- 2026-07-24: The strict maintainability gate does not approve the complete
+  Phase A branch without a conscious disposition. The branch adds the
+  1,898-line `dryrun/interceptor.py` and the 1,295-line privacy SQL regression
+  module. Neither is on the production worker path, and the final cutoff and
+  scanner changes add no comparable structural regression, but both files
+  should be decomposed before merge or explicitly waived with ownership and a
+  follow-up.
+- Active: Final evidence is complete locally. Request explicit publication
+  confirmation for both stacked draft PRs; after publication, read CI to a
+  terminal result without merging or deploying.
 
 ## Finish evidence
 
@@ -967,8 +1005,15 @@ the repository script that replaces it before continuing.
 
 ## Next Steps
 
-1. Commit and independently review the finalization-race fix.
-2. Run the final branch security and maintainability gates.
-3. After explicit publication confirmation, update `chat-analytics` against
-   `v3`, refresh the stacked `analytics-phase-a` draft, and read back CI
-   without merging or deploying.
+1. After explicit publication confirmation, push `chat-analytics` and
+   `analytics-phase-a`, update both stacked draft PR descriptions, and read CI
+   to a terminal result without merging or deploying.
+2. Before merge, decompose the two oversized Phase A files or record an
+   explicit maintainability waiver with an owner and follow-up.
+3. Before staging, scan the exact image digest for CVEs, confirm the deployed
+   Hatchet control-plane compatibility, and verify the owning
+   ExternalSecret/Infisical sync is ready.
+4. Cold-cut over in staging with one replica and one slot. Run the proof task
+   and one scoped incremental/finalize course, compare rows and privacy
+   convergence, and measure duration, query plans, memory, and CPU before
+   changing resources or enabling the schedule.
