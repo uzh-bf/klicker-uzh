@@ -105,6 +105,7 @@ export function AppSidebar({
                   alt={t('chat.sidebar.logoAlt')}
                   width={120}
                   height={60}
+                  unoptimized
                   className="h-6 w-auto object-contain md:h-8"
                 />
               </Link>
