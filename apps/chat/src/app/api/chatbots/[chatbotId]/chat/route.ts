@@ -579,6 +579,7 @@ type PersistedAssistantContentPart =
       toolName: string
       args?: unknown
       result?: unknown
+      isError?: boolean
     }
 
 const mapAssistantStepContent = (
@@ -600,6 +601,7 @@ const mapAssistantStepContent = (
         toolName?: unknown
         input?: unknown
         output?: unknown
+        error?: unknown
       }
 
       if (part.type === 'text' && typeof part.text === 'string') {
@@ -625,6 +627,43 @@ const mapAssistantStepContent = (
         }
         content.push(nextToolCall)
         toolCallIndexById.set(nextToolCall.toolCallId, content.length - 1)
+        continue
+      }
+
+      if (part.type === 'tool-error' && typeof part.toolCallId === 'string') {
+        // A thrown tool execution error: without this branch the failure is
+        // silently dropped from the persisted message and reloads show a
+        // forever-loading tool call instead of the failed chip.
+        const errorText =
+          part.error instanceof Error
+            ? part.error.message
+            : typeof part.error === 'string'
+              ? part.error
+              : 'Tool execution failed'
+
+        const toolCallIndex = toolCallIndexById.get(part.toolCallId)
+        if (toolCallIndex !== undefined) {
+          const existingToolCall = content[toolCallIndex]
+          if (existingToolCall?.type === 'tool-call') {
+            existingToolCall.result = errorText
+            existingToolCall.isError = true
+          }
+          continue
+        }
+
+        if (typeof part.toolName !== 'string') {
+          continue
+        }
+
+        content.push({
+          type: 'tool-call',
+          toolCallId: part.toolCallId,
+          toolName: part.toolName,
+          args: part.input ?? {},
+          result: errorText,
+          isError: true,
+        })
+        toolCallIndexById.set(part.toolCallId, content.length - 1)
         continue
       }
 

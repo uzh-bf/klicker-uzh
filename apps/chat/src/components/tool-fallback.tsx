@@ -1,10 +1,12 @@
 import {
+  AlertCircleIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   LoaderCircleIcon,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useState, type FC } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 const MAX_PREVIEW_LINES = 10
 
@@ -73,6 +75,7 @@ interface ToolFallbackProps {
   argsText: string
   result?: unknown
   status: { type: string }
+  isError?: boolean
 }
 
 export const ToolFallback: FC<ToolFallbackProps> = ({
@@ -80,10 +83,12 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
   argsText,
   result,
   status,
+  isError,
 }) => {
   const t = useTranslations()
   const [isCollapsed, setIsCollapsed] = useState(true)
   const isRunning = status.type === 'running'
+  const isFailed = isError === true && !isRunning
   const tool = formatToolName(toolName)
 
   const resultText =
@@ -99,7 +104,12 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
         type="button"
         onClick={() => setIsCollapsed(!isCollapsed)}
         aria-expanded={!isCollapsed}
-        className="text-muted-foreground hover:bg-accent hover:text-foreground inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs transition-colors"
+        className={twMerge(
+          'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs transition-colors',
+          isFailed
+            ? 'bg-destructive/10 text-destructive hover:bg-destructive/20'
+            : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+        )}
       >
         {isCollapsed ? (
           <ChevronRightIcon className="size-3" />
@@ -109,9 +119,12 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
         {isRunning && (
           <LoaderCircleIcon className="text-primary size-3 animate-spin" />
         )}
-        {isRunning
-          ? t('chat.toolFallback.running', { tool })
-          : t('chat.toolFallback.done', { tool })}
+        {isFailed && <AlertCircleIcon className="size-3" />}
+        {isFailed
+          ? t('chat.toolFallback.failed', { tool })
+          : isRunning
+            ? t('chat.toolFallback.running', { tool })
+            : t('chat.toolFallback.done', { tool })}
       </button>
 
       {!isCollapsed && (

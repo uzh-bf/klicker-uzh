@@ -866,6 +866,29 @@ designing the question widget.
   **DEFERRED to S17 (needs LLM key): live multi-step credits-vs-DB audit,
   reasoning stream, tool calls, telemetry non-throw under real spans.** Review:
   no blockers; totalUsage deprecation fixed in-slice.
+- 2026-07-24: **U3 done (streaming behavior deferred).** Plan deviation: the
+  named Reasoning*/ToolGroup* components are NOT npm exports of
+  @assistant-ui/react 0.14.27 — they are shadcn-registry copy-in patterns.
+  Reimplemented locally in thread.tsx (same names/prop contracts, plain
+  useState/context instead of Radix Collapsible, no new deps).
+  `MessagePrimitive.GroupedParts` + `groupPartByType` (real exports) replace
+  Unstable_PartsGrouped + custom groupConsecutiveByType/PartGroup (fully
+  removed, incl. dead `reasoningGroupLabel` key). ToolFallback gained an
+  isError branch (destructive chip, `chat.toolFallback.failed` en+de);
+  `chat.message.toolCallsGroupLabel` is now an ICU plural. isError
+  propagation fixed end-to-end after review: types.ts surfaces MCP
+  `result.isError` top-level; route.ts mapAssistantStepContent gained the
+  missing `tool-error` branch (thrown tool errors were silently dropped from
+  persistence); useChatResponse.ts `tool-output-error` now sets
+  `isError: true`. Review F1 fixed: single tool call bypasses the group
+  wrapper (old PartGroup size guard restored). Verified in browser via a
+  DB-seeded thread (47f1e302-55d0-4dd2-87ef-9abefc7def72, testuser24):
+  reasoning collapsible expands/collapses, "2 Tool-Aufrufe"/"2 tool calls"
+  group, success pill + destructive failed chip ("Rate MCP getRate
+  fehlgeschlagen"/"Failed to use ..."), markdown + thumbs unchanged.
+  Checks: chat check + vitest 40/40 + prettier green in-container.
+  **DEFERRED to S17 (needs LLM key): live streaming auto-expand/collapse of
+  the reasoning panel + live tool-group running states.**
 - 2026-07-24: Environment note: worktree stack has no upstream LLM key
   (`UPSTREAM_OPENAI_API_KEY`), so live sends fail with the S5 error bubble (stacked
   strings reproduced live). Phase 0 does not need live LLM; **Phase U verification does**

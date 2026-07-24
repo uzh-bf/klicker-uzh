@@ -117,8 +117,8 @@ export default {
       refresh: 'Refresh',
       rateUp: 'Helpful answer',
       rateDown: 'Not a helpful answer',
-      reasoningGroupLabel: 'Reasoning ({count} parts)',
-      toolCallsGroupLabel: '{count} tool calls',
+      toolCallsGroupLabel:
+        '{count, plural, one {1 tool call} other {{count} tool calls}}',
     },
     composer: {
       placeholder: 'Write a message...',
@@ -137,6 +137,7 @@ export default {
     toolFallback: {
       running: 'Using {tool}...',
       done: 'Used {tool}',
+      failed: 'Failed to use {tool}',
       showLess: 'Show less',
       showMore:
         '{count, plural, one {Show more (# more line)} other {Show more (# more lines)}}',

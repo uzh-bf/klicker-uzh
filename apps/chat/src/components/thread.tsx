@@ -3,6 +3,7 @@ import {
   ActionBarPrimitive,
   AttachmentPrimitive,
   ComposerPrimitive,
+  groupPartByType,
   MessagePrimitive,
   type ReasoningMessagePartProps,
   ThreadPrimitive,
@@ -22,6 +23,7 @@ import {
   ChevronRightIcon,
   CopyIcon,
   ImagePlusIcon,
+  LoaderCircleIcon,
   PencilIcon,
   PencilOffIcon,
   RefreshCwIcon,
@@ -32,9 +34,11 @@ import {
   XIcon,
 } from 'lucide-react'
 import {
+  createContext,
   type FC,
   type PropsWithChildren,
   type ReactNode,
+  useContext,
   useEffect,
   useRef,
   useState,
@@ -195,15 +199,96 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
   )
 }
 
-const AssistantReasoningPart: FC<ReasoningMessagePartProps> = ({ text }) => {
+// --- assistant-ui 0.14 stable stack: Reasoning + ToolGroup ---
+//
+// Local, simplified re-implementation of the assistant-ui registry
+// components (https://www.assistant-ui.com/docs/ui/reasoning,
+// https://www.assistant-ui.com/docs/ui/tool-group) — same component names
+// and `streaming`/`count` contracts, but plain toggle divs instead of Radix
+// Collapsible, matching this file's existing idiom (see the old
+// `PartGroup`/`ToolFallback` toggle buttons this replaces) and UZH design
+// tokens. Wired below via `MessagePrimitive.GroupedParts` + `groupPartByType`
+// in place of the deprecated `Unstable_PartsGrouped`.
+
+type ReasoningRootContextValue = {
+  isOpen: boolean
+  setOpen: (open: boolean) => void
+}
+const ReasoningRootContext = createContext<ReasoningRootContextValue | null>(
+  null
+)
+const useReasoningRootContext = () => {
+  const ctx = useContext(ReasoningRootContext)
+  if (!ctx) {
+    throw new Error('Reasoning.* must be used within ReasoningRoot')
+  }
+  return ctx
+}
+
+/**
+ * `streaming` supersedes the initial closed state: the panel auto-opens
+ * while reasoning streams and auto-collapses once it completes, until the
+ * participant manually toggles it — from then on the manual choice wins.
+ */
+const ReasoningRoot: FC<PropsWithChildren<{ streaming?: boolean }>> = ({
+  streaming,
+  children,
+}) => {
+  const [userOpen, setUserOpen] = useState<boolean | null>(null)
+  const isOpen = userOpen ?? streaming ?? false
+
+  return (
+    <ReasoningRootContext.Provider value={{ isOpen, setOpen: setUserOpen }}>
+      <div className="mt-1">{children}</div>
+    </ReasoningRootContext.Provider>
+  )
+}
+
+const ReasoningTrigger: FC<{ active?: boolean }> = ({ active }) => {
   const t = useTranslations()
   const message = useMessage() as MessageWithCustomMetadata
-  const [isOpen, setIsOpen] = useState(false)
+  const { isOpen, setOpen } = useReasoningRootContext()
 
   const custom = message.metadata?.custom ?? {}
   const reasoningEffort =
     typeof custom.reasoningEffort === 'string' ? custom.reasoningEffort : null
 
+  return (
+    <button
+      type="button"
+      aria-expanded={isOpen}
+      onClick={() => setOpen(!isOpen)}
+      className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs"
+    >
+      {isOpen ? (
+        <ChevronDownIcon className="size-3" />
+      ) : (
+        <ChevronRightIcon className="size-3" />
+      )}
+      {active ? (
+        <LoaderCircleIcon className="text-primary size-3 animate-spin" />
+      ) : null}
+      {t('chat.message.reasoningToggle')}
+      {reasoningEffort ? ` (${formatReasoningEffort(t, reasoningEffort)})` : ''}
+    </button>
+  )
+}
+
+const ReasoningContent: FC<PropsWithChildren> = ({ children }) => {
+  const { isOpen } = useReasoningRootContext()
+  if (!isOpen) return null
+  return (
+    <div className="text-muted-foreground border-border mb-2 border-l-2 pl-3 text-sm">
+      {children}
+    </div>
+  )
+}
+
+// Thin wrapper kept so the group tree (Root > Trigger > Content > Text)
+// mirrors the stable assistant-ui component names 1:1.
+const ReasoningText: FC<PropsWithChildren> = ({ children }) => <>{children}</>
+
+const ReasoningPart: FC<ReasoningMessagePartProps> = ({ text }) => {
   // insert a paragraph break before any title (**Title**\n)
   const normalizedText = text?.replace(
     /([^\n])(\*\*[^*\n]+\*\*\n)/g,
@@ -215,34 +300,68 @@ const AssistantReasoningPart: FC<ReasoningMessagePartProps> = ({ text }) => {
   }
 
   return (
-    <div className="mt-1">
-      <button
-        type="button"
-        aria-expanded={isOpen}
-        onClick={() => setIsOpen((state) => !state)}
-        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs"
-      >
-        {isOpen ? (
-          <ChevronDownIcon className="size-3" />
-        ) : (
-          <ChevronRightIcon className="size-3" />
-        )}
-        {t('chat.message.reasoningToggle')}
-        {reasoningEffort
-          ? ` (${formatReasoningEffort(t, reasoningEffort)})`
-          : ''}
-      </button>
-
-      {isOpen ? (
-        <div className="text-muted-foreground border-border mb-2 border-l-2 pl-3 text-sm">
-          <Markdown
-            content={normalizeCustomMathTags(normalizedText)}
-            singleDollarTextMath
-          />
-        </div>
-      ) : null}
-    </div>
+    <Markdown
+      content={normalizeCustomMathTags(normalizedText)}
+      singleDollarTextMath
+    />
   )
+}
+
+type ToolGroupRootContextValue = {
+  isOpen: boolean
+  setOpen: (open: boolean) => void
+}
+const ToolGroupRootContext = createContext<ToolGroupRootContextValue | null>(
+  null
+)
+const useToolGroupRootContext = () => {
+  const ctx = useContext(ToolGroupRootContext)
+  if (!ctx) {
+    throw new Error('ToolGroup.* must be used within ToolGroupRoot')
+  }
+  return ctx
+}
+
+const ToolGroupRoot: FC<PropsWithChildren> = ({ children }) => {
+  const [isOpen, setOpen] = useState(false)
+  return (
+    <ToolGroupRootContext.Provider value={{ isOpen, setOpen }}>
+      <div className="mt-1">{children}</div>
+    </ToolGroupRootContext.Provider>
+  )
+}
+
+const ToolGroupTrigger: FC<{ count: number; active?: boolean }> = ({
+  count,
+  active,
+}) => {
+  const t = useTranslations()
+  const { isOpen, setOpen } = useToolGroupRootContext()
+
+  return (
+    <button
+      type="button"
+      aria-expanded={isOpen}
+      onClick={() => setOpen(!isOpen)}
+      className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs"
+    >
+      {isOpen ? (
+        <ChevronDownIcon className="size-3" />
+      ) : (
+        <ChevronRightIcon className="size-3" />
+      )}
+      {active ? (
+        <LoaderCircleIcon className="text-primary size-3 animate-spin" />
+      ) : null}
+      {t('chat.message.toolCallsGroupLabel', { count })}
+    </button>
+  )
+}
+
+const ToolGroupContent: FC<PropsWithChildren> = ({ children }) => {
+  const { isOpen } = useToolGroupRootContext()
+  if (!isOpen) return null
+  return <div className="border-border mt-1 border-l-2 pl-3">{children}</div>
 }
 
 export const Thread: FC<ThreadProps> = ({ chatbotAvatar }) => {
@@ -413,7 +532,7 @@ const Composer: FC = () => {
             autoFocus
             placeholder={t('chat.composer.placeholder')}
             className={twMerge(
-              'placeholder:text-muted-foreground text-base flex-grow cursor-text resize-none border-none bg-transparent px-2 outline-none focus:ring-0 disabled:cursor-not-allowed',
+              'placeholder:text-muted-foreground flex-grow cursor-text resize-none border-none bg-transparent px-2 text-base outline-none focus:ring-0 disabled:cursor-not-allowed',
               embedded ? 'max-h-20 py-2' : 'max-h-40 py-4'
             )}
           />
@@ -499,7 +618,7 @@ const ComposerDropOverlay: FC<{ roundedClass: string }> = ({
   return (
     <div
       className={twMerge(
-        'border-primary/60 text-primary pointer-events-none absolute inset-0 z-10 hidden items-center justify-center border-2 border-dashed bg-background/85 px-4 text-center text-sm font-medium shadow-inner backdrop-blur-sm group-data-[dragging]:flex',
+        'border-primary/60 text-primary bg-background/85 pointer-events-none absolute inset-0 z-10 hidden items-center justify-center border-2 border-dashed px-4 text-center text-sm font-medium shadow-inner backdrop-blur-sm group-data-[dragging]:flex',
         roundedClass
       )}
     >
@@ -1075,66 +1194,6 @@ const EditComposer: FC = () => {
   )
 }
 
-const groupConsecutiveByType = (
-  parts: readonly { type: string }[]
-): { groupKey: string | undefined; indices: number[] }[] => {
-  const groups: { groupKey: string | undefined; indices: number[] }[] = []
-
-  for (let i = 0; i < parts.length; i++) {
-    const part = parts[i]!
-    const key =
-      part.type === 'reasoning' || part.type === 'tool-call'
-        ? part.type
-        : undefined
-
-    const prev = groups[groups.length - 1]
-    if (prev && key !== undefined && prev.groupKey === key) {
-      prev.indices.push(i)
-    } else {
-      groups.push({ groupKey: key, indices: [i] })
-    }
-  }
-
-  return groups
-}
-
-const PartGroup: FC<
-  PropsWithChildren<{ groupKey: string | undefined; indices: number[] }>
-> = ({ groupKey, indices, children }) => {
-  const t = useTranslations()
-  const [isOpen, setIsOpen] = useState(false)
-
-  if (!groupKey || indices.length <= 1) {
-    return <>{children}</>
-  }
-
-  const label =
-    groupKey === 'reasoning'
-      ? t('chat.message.reasoningGroupLabel', { count: indices.length })
-      : t('chat.message.toolCallsGroupLabel', { count: indices.length })
-
-  return (
-    <div className="mt-1">
-      <button
-        type="button"
-        aria-expanded={isOpen}
-        onClick={() => setIsOpen((s) => !s)}
-        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs"
-      >
-        {isOpen ? (
-          <ChevronDownIcon className="size-3" />
-        ) : (
-          <ChevronRightIcon className="size-3" />
-        )}
-        {label}
-      </button>
-      {isOpen ? (
-        <div className="border-border mt-1 border-l-2 pl-3">{children}</div>
-      ) : null}
-    </div>
-  )
-}
-
 const AssistantMessage: FC<{
   chatbotAvatar: string
 }> = ({ chatbotAvatar }) => {
@@ -1189,15 +1248,55 @@ const AssistantMessage: FC<{
             : 'col-start-2 max-w-[calc(var(--thread-max-width)*0.8)]'
         )}
       >
-        <MessagePrimitive.Unstable_PartsGrouped
-          groupingFunction={groupConsecutiveByType}
-          components={{
-            Text: MarkdownText,
-            Reasoning: AssistantReasoningPart,
-            tools: { Fallback: ToolFallback },
-            Group: PartGroup,
+        <MessagePrimitive.GroupedParts
+          indicator="never"
+          groupBy={groupPartByType({
+            reasoning: ['group-reasoning'],
+            'tool-call': ['group-tool'],
+          })}
+        >
+          {({ part, children }) => {
+            switch (part.type) {
+              case 'group-reasoning': {
+                const running = part.status.type === 'running'
+                return (
+                  <ReasoningRoot streaming={running}>
+                    <ReasoningTrigger active={running} />
+                    <ReasoningContent>
+                      <ReasoningText>{children}</ReasoningText>
+                    </ReasoningContent>
+                  </ReasoningRoot>
+                )
+              }
+              case 'group-tool': {
+                // A lone tool call gets its ToolFallback pill directly —
+                // wrapping it would stack two closed-by-default toggles in
+                // front of a single result (the old PartGroup had the same
+                // size guard).
+                if (part.indices.length <= 1) return <>{children}</>
+
+                const running = part.status.type === 'running'
+                return (
+                  <ToolGroupRoot>
+                    <ToolGroupTrigger
+                      count={part.indices.length}
+                      active={running}
+                    />
+                    <ToolGroupContent>{children}</ToolGroupContent>
+                  </ToolGroupRoot>
+                )
+              }
+              case 'text':
+                return <MarkdownText />
+              case 'reasoning':
+                return <ReasoningPart {...part} />
+              case 'tool-call':
+                return part.toolUI ?? <ToolFallback {...part} />
+              default:
+                return null
+            }
           }}
-        />
+        </MessagePrimitive.GroupedParts>
         <MessageMetadata includeCredits />
       </div>
 
