@@ -845,6 +845,27 @@ designing the question widget.
   bars, thumbs persist→clear (feedback API called), composer + attach button OK.
   Reasoning/tool-part rendering NOT live-verifiable (no LLM key) — deferred to
   the U2+ verification block below.
+- 2026-07-24: **U2 done (live verification deferred).** ai 6.0.184→7.0.37,
+  @ai-sdk/openai 3.0.64→4.0.20, @ai-sdk/mcp 0.0.13→2.0.16; route.ts changed by
+  exactly 5 renames (stepCountIs→isStepCount, experimental_telemetry→telemetry,
+  system→instructions, onFinish→onEnd, onStepFinish→onStepEnd) + deprecated
+  `result.totalUsage`→`result.usage` (verified identical aggregate semantics in
+  both v6 and v7 .d.ts — the plan's feared usage-semantics shift does NOT apply:
+  the code always read totalUsage, which was and is aggregate-across-steps;
+  onAbort's per-step sum over `step.usage` also unchanged). Codemod bug: `--dry`
+  not honored + double-run double-wrapped extractReasoningTokens and rewrote
+  attachment `type: 'image'` literals — all bogus hunks hand-reverted; final diff
+  is minimal (12 lines in route.ts). Telemetry stays on globally-registered OTel
+  (no @ai-sdk/otel needed); reasoning providerOptions.openai path unchanged in
+  openai@4; MCP experimental_createMCPClient still exported; onChunk + client SSE
+  parser tolerant of new part types (v7 adds custom/reasoning-file/
+  tool-approval-response — unreachable with our features). Wire format of
+  toUIMessageStreamResponse+messageMetadata unchanged — hand parser still works.
+  Checks: chat check + vitest 40/40 + repo-wide check 23/23 in-container; browser
+  send exercises the v7 route end-to-end with identical error-path behavior.
+  **DEFERRED to S17 (needs LLM key): live multi-step credits-vs-DB audit,
+  reasoning stream, tool calls, telemetry non-throw under real spans.** Review:
+  no blockers; totalUsage deprecation fixed in-slice.
 - 2026-07-24: Environment note: worktree stack has no upstream LLM key
   (`UPSTREAM_OPENAI_API_KEY`), so live sends fail with the S5 error bubble (stacked
   strings reproduced live). Phase 0 does not need live LLM; **Phase U verification does**
