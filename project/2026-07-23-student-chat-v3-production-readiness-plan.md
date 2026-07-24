@@ -832,6 +832,19 @@ designing the question widget.
   browser: DE select "Tutor/Erklärer", DE panel hides description, EN shows it,
   testuser25 (zero threads) sees the DE hint post-load. Review: 1 finding
   (loading flash) — fixed + re-verified.
+- 2026-07-24: **U1 done.** assistant-ui 0.12.10→0.14.27 + react-markdown
+  0.12.3→0.14.6; official codemod ran but was a genuine no-op (none of the renamed
+  APIs are used — `switchToThread` etc. in RuntimeProvider/chatStore are our own
+  zustand methods). `Unstable_PartsGrouped` + markdown `components` still typecheck
+  in 0.14 (kept for U3). New: `pnpm-workspace.yaml` minimumReleaseAgeExclude gained
+  8 exact selectors (assistant-ui transitives inside the 14-day window; reviewed,
+  policy not loosened). Review confirmed lockfile diff is only the expected
+  transitives + benign pnpm peer-dedup churn; duplicate `@assistant-ui/core`
+  (0.2.2 via unused react-ai-sdk@1.3.26) is dormant — U5 resolves it. Browser
+  smoke on 0.14: threads list/switch, user+assistant messages, markdown, action
+  bars, thumbs persist→clear (feedback API called), composer + attach button OK.
+  Reasoning/tool-part rendering NOT live-verifiable (no LLM key) — deferred to
+  the U2+ verification block below.
 - 2026-07-24: Environment note: worktree stack has no upstream LLM key
   (`UPSTREAM_OPENAI_API_KEY`), so live sends fail with the S5 error bubble (stacked
   strings reproduced live). Phase 0 does not need live LLM; **Phase U verification does**
