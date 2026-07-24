@@ -170,8 +170,26 @@ export function encodeScopePart(value: string) {
   return encodeURIComponent(value.trim()).replace(/:/g, '%3A')
 }
 
-export function truncateString(value: string, maxLength: number) {
-  return value.length > maxLength ? value.slice(0, maxLength) : value
+export function normalizeExternalScopeIdentifiers(
+  externalSource: string,
+  externalRef: string
+) {
+  const normalizedSource = externalSource.trim()
+  const normalizedRef = externalRef.trim()
+
+  if (
+    !normalizedSource ||
+    !normalizedRef ||
+    normalizedSource.length > EXTERNAL_SOURCE_MAX_LENGTH ||
+    normalizedRef.length > EXTERNAL_REF_MAX_LENGTH
+  ) {
+    return null
+  }
+
+  return {
+    externalSource: normalizedSource,
+    externalRef: normalizedRef,
+  }
 }
 
 export function extractCourseIdFromSpace(space: DB.DiscussionSpace | null) {

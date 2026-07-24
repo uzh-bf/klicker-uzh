@@ -1,11 +1,9 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import type { Context } from '../../lib/context.js'
 import {
-  EXTERNAL_REF_MAX_LENGTH,
-  EXTERNAL_SOURCE_MAX_LENGTH,
   encodeScopePart,
   isPrismaUniqueConstraintError,
-  truncateString,
+  normalizeExternalScopeIdentifiers,
 } from './model.js'
 import type {
   CanonicalScope,
@@ -99,16 +97,12 @@ export async function canonicalizeScope(
       case DB.DiscussionScopeType.EXTERNAL_BLOCK: {
         if (!scope.externalSource || !scope.externalRef) return null
 
-        const externalSource = truncateString(
-          scope.externalSource.trim(),
-          EXTERNAL_SOURCE_MAX_LENGTH
+        const externalIdentifiers = normalizeExternalScopeIdentifiers(
+          scope.externalSource,
+          scope.externalRef
         )
-        const externalRef = truncateString(
-          scope.externalRef.trim(),
-          EXTERNAL_REF_MAX_LENGTH
-        )
-
-        if (!externalSource || !externalRef) return null
+        if (!externalIdentifiers) return null
+        const { externalSource, externalRef } = externalIdentifiers
 
         return {
           scopeType: scope.scopeType,

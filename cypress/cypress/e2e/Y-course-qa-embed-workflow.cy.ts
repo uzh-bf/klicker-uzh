@@ -53,12 +53,12 @@ describe('Course Q&A embed workflow', function () {
 
     cy.get('[data-cy="course-qa-embed-scope-external"]').click()
     cy.get('[data-cy="course-qa-generate-embed"]').should('be.disabled')
-    cy.get('[data-cy="course-qa-external-source"]').type(
-      this.data.embed.externalSource
-    )
-    cy.get('[data-cy="course-qa-external-ref"]').type(
-      this.data.embed.externalRef
-    )
+    cy.get('[data-cy="course-qa-external-source"]')
+      .should('have.attr', 'maxlength', '100')
+      .type(this.data.embed.externalSource)
+    cy.get('[data-cy="course-qa-external-ref"]')
+      .should('have.attr', 'maxlength', '200')
+      .type(this.data.embed.externalRef)
     cy.get('[data-cy="course-qa-allow-anonymous-embed"]')
       .should('be.visible')
       .and('be.enabled')

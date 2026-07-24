@@ -24,6 +24,72 @@ import {
 } from './fixtures.js'
 
 export function registerScopesSuite(getContext: () => DiscussionTestContext) {
+  it('rejects oversized external identifiers instead of merging truncated scopes', async () => {
+    const { prisma, userOneCtx } = getContext()
+    const course = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, { courseId: course.id })
+    await recomputeDerivedPermissions({ courseId: course.id }, prisma)
+
+    const maxSource = 's'.repeat(100)
+    const maxRef = 'r'.repeat(200)
+    const collidingSource = await getCourseDiscussionEmbeddingInfo(
+      {
+        courseId: course.id,
+        externalBlock: {
+          externalSource: `${maxSource}x`,
+          externalRef: maxRef,
+        },
+      },
+      userOneCtx
+    )
+    const collidingRef = await getCourseDiscussionEmbeddingInfo(
+      {
+        courseId: course.id,
+        externalBlock: {
+          externalSource: maxSource,
+          externalRef: `${maxRef}x`,
+        },
+      },
+      userOneCtx
+    )
+
+    expect(collidingSource).toBeNull()
+    expect(collidingRef).toBeNull()
+    await expect(
+      prisma.discussionSpace.count({
+        where: { courseId: course.id },
+      })
+    ).resolves.toBe(0)
+
+    const validEmbed = await getCourseDiscussionEmbeddingInfo(
+      {
+        courseId: course.id,
+        externalBlock: {
+          externalSource: maxSource,
+          externalRef: maxRef,
+        },
+      },
+      userOneCtx
+    )
+    expect(validEmbed).toBeTruthy()
+    await expect(
+      prisma.discussionScope.findMany({
+        where: { space: { courseId: course.id } },
+        select: {
+          scopeKey: true,
+          externalSource: true,
+          externalRef: true,
+        },
+      })
+    ).resolves.toEqual([
+      {
+        scopeKey: `ext:${maxSource}:${maxRef}`,
+        externalSource: maxSource,
+        externalRef: maxRef,
+      },
+    ])
+  })
+
   it('gates activity-agnostic stack discussions on participant evaluation', async () => {
     const { prisma, userOneCtx } = getContext()
     const course = await seedCourse({}, userOneCtx)

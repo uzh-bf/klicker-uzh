@@ -7,6 +7,7 @@ import {
   getCourseSettings,
   isCourseDiscussionEnabled,
 } from './access.js'
+import { normalizeExternalScopeIdentifiers } from './model.js'
 import {
   createDiscussionEvent,
   resolveOrCreateScope,
@@ -363,6 +364,14 @@ export async function getCourseDiscussionEmbeddingInfo(
     return null
   }
 
+  const externalIdentifiers = externalBlock
+    ? normalizeExternalScopeIdentifiers(
+        externalBlock.externalSource,
+        externalBlock.externalRef
+      )
+    : null
+  if (externalBlock && !externalIdentifiers) return null
+
   const space = await resolveOrCreateSpace(
     {
       spaceType: DB.DiscussionSpaceType.COURSE,
@@ -376,11 +385,10 @@ export async function getCourseDiscussionEmbeddingInfo(
   const resolvedScope = await resolveOrCreateScope(
     {
       space,
-      scope: externalBlock
+      scope: externalIdentifiers
         ? {
             scopeType: DB.DiscussionScopeType.EXTERNAL_BLOCK,
-            externalSource: externalBlock.externalSource,
-            externalRef: externalBlock.externalRef,
+            ...externalIdentifiers,
           }
         : {
             scopeType: DB.DiscussionScopeType.COURSE,
