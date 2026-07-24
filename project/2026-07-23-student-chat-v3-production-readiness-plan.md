@@ -812,6 +812,14 @@ designing the question widget.
   `text-foreground`, chatbot name → h1 in both exclusive branches. Review finding
   integrated: markdown `#` in messages now renders as `<h2>` element (same visual
   classes) so the page keeps a single h1. Full axe pass deferred to S17.
+- 2026-07-24: **S9 done**. Embedded branch mirrors the sidebar Loader2 overlay; new
+  compact `EmbeddedCreditsBar` (reuses settingsStore selectors; `chat.credits.exhausted`
+  doubles as the fallback-model notice, no new i18n keys). Root-cause fix: the
+  `embedded && !threadId` early return in RuntimeProvider loaded nothing, so mode
+  select + credits never rendered pre-thread — chatbot-scoped loads now fire there.
+  Verified in browser at 375/800: mode select (2 options) + "Verfügbare Credits
+  100 / 100" bar render in the embed. Review: no findings (noted pre-existing
+  threadId dep gap + Loader2 duplication as sub-threshold).
 - 2026-07-24: Environment note: worktree stack has no upstream LLM key
   (`UPSTREAM_OPENAI_API_KEY`), so live sends fail with the S5 error bubble (stacked
   strings reproduced live). Phase 0 does not need live LLM; **Phase U verification does**
