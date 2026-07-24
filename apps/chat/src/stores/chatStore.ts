@@ -78,6 +78,13 @@ interface ChatState {
   createThread: (chatbotId: string) => Promise<string>
   loadThreads: (chatbotId: string) => Promise<void>
   switchToThread: (chatbotId: string, threadId: string) => Promise<boolean>
+  /**
+   * Resyncs the composer mode to a given thread's own `lastChatMode` (D6).
+   * Extracted from `switchToThread` so callers that activate a thread without
+   * going through `switchToThread` (e.g. a direct URL load that already has
+   * the thread's messages cached) can still trigger the resync.
+   */
+  resyncModeFromThread: (threadId: string) => void
   deleteThread: (chatbotId: string, threadId: string) => Promise<boolean>
   updateThreadTitle: (
     chatbotId: string,
@@ -318,6 +325,43 @@ export const useChatStore = create<ChatState>((set, get) => {
     },
 
     /**
+     * D6: resyncs the composer mode to the mode a thread was last used in,
+     * but only when that mode is offered by this chatbot and actually
+     * differs from the currently selected one.
+     *
+     * Extracted from `switchToThread` (D6) so a thread activation that
+     * bypasses `switchToThread` — e.g. the RuntimeProvider URL-sync effect's
+     * early-return when the persisted `activeThreadId` already matches the
+     * URL and the thread's messages are already cached — still resyncs the
+     * mode instead of leaving whatever mode was previously selected.
+     *
+     * @param threadId - The thread whose `lastChatMode` should be applied
+     */
+    resyncModeFromThread: (threadId: string) => {
+      const existingThread = get().threads.find((t) => t.id === threadId)
+      const lastMode = existingThread?.lastChatMode
+      if (!lastMode) return
+
+      const { modeOptions, selectedMode, setSelectedMode } =
+        useSettingsStore.getState()
+      // `in` (not truthiness): a mode may have an empty description string.
+      // An empty `modeOptions` means the chatbot's modes have simply not
+      // arrived yet — on a hard refresh into a thread URL, `loadThreads`
+      // and `loadModeOptions` race and the former often wins, which used to
+      // make this resync silently no-op for the rest of the page load.
+      // Trusting the thread's own mode in that window is safe because
+      // `loadModeOptions` re-validates `selectedMode` against the resolved
+      // options and falls back to the first one if it does not exist.
+      const optionsLoaded = Object.keys(modeOptions).length > 0
+      if (
+        (!optionsLoaded || lastMode in modeOptions) &&
+        lastMode !== selectedMode
+      ) {
+        setSelectedMode(lastMode)
+      }
+    },
+
+    /**
      * Switches to a different conversation thread
      * Loads all messages for the thread if not already loaded
      * Automatically sets the current conversation path to the most recent branch
@@ -334,28 +378,8 @@ export const useChatStore = create<ChatState>((set, get) => {
 
         set({ activeThreadId: threadId })
 
-        // D6: resync the composer mode to the mode the thread was last used in,
-        // but only when that mode is offered by this chatbot and actually differs.
-        const lastMode = existingThread?.lastChatMode
-        if (lastMode) {
-          const { modeOptions, selectedMode, setSelectedMode } =
-            useSettingsStore.getState()
-          // `in` (not truthiness): a mode may have an empty description string.
-          // An empty `modeOptions` means the chatbot's modes have simply not
-          // arrived yet — on a hard refresh into a thread URL, `loadThreads`
-          // and `loadModeOptions` race and the former often wins, which used to
-          // make this resync silently no-op for the rest of the page load.
-          // Trusting the thread's own mode in that window is safe because
-          // `loadModeOptions` re-validates `selectedMode` against the resolved
-          // options and falls back to the first one if it does not exist.
-          const optionsLoaded = Object.keys(modeOptions).length > 0
-          if (
-            (!optionsLoaded || lastMode in modeOptions) &&
-            lastMode !== selectedMode
-          ) {
-            setSelectedMode(lastMode)
-          }
-        }
+        // D6: resync the composer mode to the mode the thread was last used in.
+        get().resyncModeFromThread(threadId)
 
         if (existingThread && existingThread.allMessages.length > 0) {
           set({ isLoading: false })

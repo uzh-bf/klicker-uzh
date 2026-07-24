@@ -915,6 +915,22 @@ designing the question widget.
   active per plan: useChatResponse.ts stays; S2/S5/M2 authored against it; U4's
   feedback adapter stays on useExternalStoreRuntime. Revisit U5 in a follow-up
   branch once a dev LLM key exists.
+- 2026-07-24: **S2 done.** Mode-resync extracted to
+  `chatStore.resyncModeFromThread` (guards byte-identical; switchToThread
+  delegates). RuntimeProvider's cached-thread early-return branch now calls it,
+  gated by a `modeResyncedForThread` ref (once per thread activation) after
+  review caught that an ungated call re-fires on every `threads` update
+  (streaming/rating/rename) and would snap back a manually picked mode; the
+  switchToThread success path marks the ref too. Browser-verified: explainer
+  persisted → direct-load tutor thread → tutor pressed; tutor persisted →
+  direct-load explainer thread → explainer pressed; thread without chatMode →
+  no resync; manual mode choice survives a rating-induced store update; reload
+  re-resyncs. Playwright test added (Y-chat.spec.ts, seeds chatMode via a
+  minimal `SeedMessage.chatMode` passthrough in playwright/util/chat.ts) —
+  note: it guards the user-visible hard-load behavior end-to-end; reviewer
+  traced that the hard-load path resolves via switchToThread (store resets on
+  goto), so the gated early-return branch is belt-and-braces for soft-nav /
+  cached-activation passes. check green.
 - 2026-07-24: Environment note: worktree stack has no upstream LLM key
   (`UPSTREAM_OPENAI_API_KEY`), so live sends fail with the S5 error bubble (stacked
   strings reproduced live). Phase 0 does not need live LLM; **Phase U verification does**

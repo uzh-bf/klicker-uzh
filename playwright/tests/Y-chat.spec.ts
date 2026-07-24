@@ -1059,4 +1059,48 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(page.getByTestId('chat-settings-panel')).toBeVisible()
     await expect(page.getByTestId('chat-model-selection')).toBeVisible()
   })
+
+  // S2: opening a thread by direct URL (bookmark/reload) must resync the
+  // composer mode to that thread's own `lastChatMode`, not whatever mode was
+  // last selected in this browser session.
+  test('Direct URL load of a thread resyncs the composer mode to that thread', async ({
+    page,
+  }) => {
+    const tutorThread = await seedThread(participantId, {
+      title: 'Tutor thread',
+      messages: [
+        { role: 'user', content: [{ type: 'text', text: 'A tutor question' }] },
+        {
+          role: 'assistant',
+          content: [{ type: 'text', text: 'A tutor answer' }],
+          chatMode: 'tutor',
+        },
+      ],
+    })
+    // A second thread so switching the composer mode below is not a no-op
+    // against the tutor thread itself.
+    await seedThread(participantId, { title: 'Other thread' })
+
+    await visitChat(page)
+
+    // Persist "explainer" as the session's selected mode (e.g. picked while
+    // starting a new chat), independent of the tutor thread above.
+    const explainerOption = page.getByTestId('chat-mode-option-explainer')
+    await explainerOption.click()
+    await expect(explainerOption).toHaveAttribute('aria-pressed', 'true')
+
+    // Open the tutor thread via a direct URL load (bookmark/reload), not a
+    // sidebar click.
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${tutorThread.id}`, {
+      waitUntil: 'domcontentloaded',
+    })
+
+    await expect(page.getByTestId('chat-mode-option-tutor')).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
+    await expect(
+      page.getByTestId('chat-mode-option-explainer')
+    ).toHaveAttribute('aria-pressed', 'false')
+  })
 })
