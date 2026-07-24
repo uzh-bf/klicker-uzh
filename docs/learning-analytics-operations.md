@@ -125,7 +125,9 @@ mutation RecomputeCourseAnalytics($courseId: String!, $mode: AnalyticsMode!) {
 
 - `INCREMENTAL` — scoped course recompute with the default 14-day window.
 - `FINALIZE` — scoped course recompute without the incremental window; the
-  nightly scanner uses this route for ended courses.
+  nightly scanner uses this route for ended courses. If consent changes after
+  the workflow starts, the terminal marker stays unset and the scanner retries
+  the course on its next pass.
 - `FULL` — guarded rebuild through the protected full workflow. It fails
   closed unless the worker was explicitly deployed with `allowFull=true`.
 
@@ -174,6 +176,9 @@ only `s99-mark-analytics-valid` should mark a successful run valid.
    prerequisites, and script 10 clustering/model memory pressure.
 3. Prefer retriggering the complete course workflow with the original mode.
    Do not replay `s99-mark-analytics-valid` in isolation.
+   The final marker requires the immutable workflow cutoff; the legacy
+   `_initialize_analytics.sh` launcher supplies the same cutoff to every
+   script when that cold rollback path is used.
 4. Ordinary tasks have two automatic retries. Script 10 has no automatic retry
    because its CPU/memory-heavy work should not repeat without operator review.
 5. A superseded freshness run is intentionally canceled and is not an incident

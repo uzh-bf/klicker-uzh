@@ -101,6 +101,7 @@ def analytics_run_config_from_env() -> AnalyticsRunConfig:
         mode=analytics_mode(),
         course_ids=tuple(course_ids) if course_ids is not None else None,
         window_since=analytics_window_since(),
+        chat_analytics_cutoff=(os.environ.get("ANALYTICS_CHAT_CUTOFF") or "").strip() or None,
     )
 
 

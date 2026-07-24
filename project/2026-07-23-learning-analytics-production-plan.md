@@ -914,6 +914,21 @@ the repository script that replaces it before continuing.
   read the workflow creation timestamp from its live task context and matched
   it exactly against REST readback. The six-case PostgreSQL privacy suite,
   including the acceptance-interleaving convergence regression, passes.
+- 2026-07-24: Exact-commit review confirmed the incremental sequencing races
+  are closed, then reproduced three remaining production boundaries:
+  mid-run consent could be stranded by finalization, the supported shell
+  launcher had no shared cutoff, and non-UTC sessions shifted a UTC cursor.
+  Finalization now stays pending until a follow-up converges, the launcher
+  exports one fail-closed cutoff, and SQL stores it explicitly as UTC-naive.
+  Simplification review's accepted cleanup also makes the final marker read
+  mode, scope, and cutoff from one immutable run-config snapshot.
+- 2026-07-24: Nine PostgreSQL privacy cases now pass, including acceptance and
+  revocation during finalize plus a Europe/Zurich session-timezone regression.
+  A fake-pnpm launcher smoke observed one identical UTC cutoff across all 15
+  scripts. Bash syntax, 47 focused unit tests, full Ruff, Prettier, diff
+  hygiene, and a focused 293-rule Opengrep scan pass.
+- 2026-07-24: The refreshed complete database-backed analytics suite passes
+  192 tests with 18 existing dependency/dataframe warnings in 6 minutes.
 - Active: Verify, commit, and independently re-review the sequencing fix,
   complete final branch gates, then request publication confirmation for both
   stacked draft PRs.

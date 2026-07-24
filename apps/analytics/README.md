@@ -26,6 +26,8 @@ The following commands are available through PNPM:
 ## Pipeline scripts
 
 The `src/scripts/` directory contains numbered scripts that form the analytics pipeline. Run them in order via `./_initialize_analytics.sh <target>` (target = `dev` | `qa` | `prd`; defaults to `dev`).
+The launcher exports one immutable `ANALYTICS_CHAT_CUTOFF` for all scripts.
+Do not run script 99 by itself: it fails closed without that shared cutoff.
 
 For per-table column-level documentation (purpose, grain, source data, computed columns) see [`ANALYTICS.md`](./ANALYTICS.md).
 
@@ -154,6 +156,9 @@ is the durable handoff from the participant stage to its aggregate child,
 preventing a completed aggregate task from swallowing a later consent cleanup.
 The final marker uses Hatchet's immutable workflow-creation time, so consent
 changes during a run remain visible to the next reconciliation.
+Finalize runs leave `analyticsFinalizedAt` unset when such a change is pending;
+the ended-course scanner then schedules a follow-up run that can converge
+before the course becomes terminal.
 
 Cutover and rollback are cold: stop the current owner before starting another worker image so exactly one analytics DAG consumes these events.
 
