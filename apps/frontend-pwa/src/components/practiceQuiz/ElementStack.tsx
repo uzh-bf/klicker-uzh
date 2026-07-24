@@ -1,6 +1,4 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faChevronDown } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CaseStudyCaseResponse,
   ElementStack as ElementStackType,
@@ -25,6 +23,7 @@ import { useRouter } from 'next/router'
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import CourseDiscussionPanel from '../course/CourseDiscussionPanel'
+import ResponsiveDiscussionRail from '../course/ResponsiveDiscussionRail'
 import useComponentVisibleCounter from '../hooks/useComponentVisibleCounter'
 import useStackElementFeedbacks from '../hooks/useStackElementFeedbacks'
 import Bookmark from './Bookmark'
@@ -80,7 +79,6 @@ function ElementStack({
   const t = useTranslations()
   const router = useRouter()
   const timeRef = useRef(0)
-  const [mobileDiscussionOpen, setMobileDiscussionOpen] = useState(false)
   useComponentVisibleCounter({ timeRef })
 
   const embeddedButtonClass = embedded ? 'shadow-lg' : 'float-right mt-4'
@@ -699,46 +697,22 @@ function ElementStack({
         </div>
 
         {showInlineDiscussion && (
-          <aside
-            aria-label={t('pwa.courseQA.title')}
+          <ResponsiveDiscussionRail
+            ariaLabel={t('pwa.courseQA.title')}
+            mobileLabel={t('pwa.courseQA.openStackDiscussion')}
+            panelId={`course-qa-stack-panel-${stack.id}`}
             className="mt-8 min-w-0 border-t border-gray-200 pt-4 lg:mt-0 lg:border-0 lg:pt-0"
-            data-cy="student-stack-discussion-rail"
+            dataCy="student-stack-discussion-rail"
+            toggleDataCy="student-stack-discussion-toggle"
           >
-            <button
-              type="button"
-              onClick={() => setMobileDiscussionOpen((open) => !open)}
-              aria-expanded={mobileDiscussionOpen}
-              aria-controls={`course-qa-stack-panel-${stack.id}`}
-              className="flex w-full items-center justify-between gap-2 rounded-sm text-left text-sm font-semibold text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 lg:hidden"
-              data-cy="student-stack-discussion-toggle"
-            >
-              <span>{t('pwa.courseQA.openStackDiscussion')}</span>
-              <FontAwesomeIcon
-                icon={faChevronDown}
-                className={twMerge(
-                  'shrink-0 text-gray-500 motion-safe:transition-transform',
-                  mobileDiscussionOpen && 'rotate-180'
-                )}
-                aria-hidden="true"
-              />
-            </button>
-            <div
-              id={`course-qa-stack-panel-${stack.id}`}
-              className={twMerge(
-                'mt-4 hidden',
-                mobileDiscussionOpen && 'block',
-                'lg:sticky lg:top-4 lg:mt-0 lg:block lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto'
-              )}
-            >
-              <CourseDiscussionPanel
-                courseId={courseId}
-                scopeKey={stackDiscussionScopeKey}
-                compact
-                className="mx-0 max-w-none"
-                idPrefix={`course-qa-stack-${stack.id}`}
-              />
-            </div>
-          </aside>
+            <CourseDiscussionPanel
+              courseId={courseId}
+              scopeKey={stackDiscussionScopeKey}
+              compact
+              className="mx-0 max-w-none"
+              idPrefix={`course-qa-stack-${stack.id}`}
+            />
+          </ResponsiveDiscussionRail>
         )}
       </div>
     </div>
