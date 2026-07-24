@@ -18,7 +18,7 @@ import type {
   ResolvedActor,
 } from './types.js'
 
-export async function resolveThreadCourseAndActor(
+async function resolveThreadCourseAndActor(
   {
     threadId,
     minimumPermissionLevel = DB.PermissionLevel.READ,
@@ -79,7 +79,7 @@ export async function resolveThreadCourseAndActor(
   }
 }
 
-export async function resolveReplyCourseAndActor(
+async function resolveReplyCourseAndActor(
   {
     replyId,
     minimumPermissionLevel = DB.PermissionLevel.READ,
@@ -366,7 +366,7 @@ export async function toggleCourseDiscussionReplyUpvote(
   return mapReply(reply as DiscussionReplyWithRelations)
 }
 
-export async function canDeleteDiscussionContent(
+async function canDeleteDiscussionContent(
   {
     courseId,
     authorParticipantId,

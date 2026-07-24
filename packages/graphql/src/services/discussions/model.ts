@@ -6,13 +6,13 @@ import type {
   DiscussionThreadWithRelations,
 } from './types.js'
 
-export const LIMIT_DEFAULT = 20
+const LIMIT_DEFAULT = 20
 
-export const LIMIT_MAX = 50
+const LIMIT_MAX = 50
 
 export const REPLIES_PER_THREAD_MAX = 50
 
-export const DISCUSSION_CONTENT_MAX_LENGTH = 4000
+const DISCUSSION_CONTENT_MAX_LENGTH = 4000
 
 export const EXTERNAL_SOURCE_MAX_LENGTH = 100
 
@@ -64,11 +64,11 @@ export function getThreadOrderBy(
   return [{ lastActivityAt: 'desc' }, { id: 'desc' }]
 }
 
-export function sourceKeyForSpace(space: DB.DiscussionSpace) {
+function sourceKeyForSpace(space: DB.DiscussionSpace) {
   return `course:${space.courseId}`
 }
 
-export function sourceLabelForSpace() {
+function sourceLabelForSpace() {
   return 'Course'
 }
 
@@ -104,7 +104,7 @@ export function mapReply(
   }
 }
 
-export function mapThread(
+function mapThread(
   thread: DiscussionThreadWithRelations
 ): DiscussionThreadWithRelations {
   const sourceKey = sourceKeyForSpace(thread.space)

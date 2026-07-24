@@ -2,12 +2,9 @@ import * as DB from '@klicker-uzh/prisma/client'
 import type { Context } from '../../lib/context.js'
 import {
   canParticipantAccessDiscussionScope,
-  canonicalizeScope,
   getCourseAccessActor,
   getCourseSettings,
   isCourseDiscussionEnabled,
-  resolveOrCreateScope,
-  resolveOrCreateSpace,
 } from './access.js'
 import {
   enforceAnonymousRateLimits,
@@ -25,6 +22,11 @@ import {
   mapReply,
   normalizeContent,
 } from './model.js'
+import {
+  canonicalizeScope,
+  resolveOrCreateScope,
+  resolveOrCreateSpace,
+} from './scopes.js'
 import type {
   CreateCourseDiscussionReplyArgs,
   CreateCourseDiscussionThreadArgs,

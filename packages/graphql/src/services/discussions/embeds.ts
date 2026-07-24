@@ -3,40 +3,42 @@ import { signJWT, verifyJWT } from '@klicker-uzh/util'
 import { createHash } from 'node:crypto'
 import type { Context, ContextWithUser } from '../../lib/context.js'
 import {
-  createDiscussionEvent,
   getCourseAccessActor,
   getCourseSettings,
   isCourseDiscussionEnabled,
+} from './access.js'
+import {
+  createDiscussionEvent,
   resolveOrCreateScope,
   resolveOrCreateSpace,
-} from './access.js'
+} from './scopes.js'
 import type {
   CourseDiscussionEmbeddingInfo,
   CourseEmbedClaims,
   GetCourseDiscussionEmbeddingInfoArgs,
 } from './types.js'
 
-export const EMBED_SCOPE = 'COURSE_DISCUSSION_EMBED'
+const EMBED_SCOPE = 'COURSE_DISCUSSION_EMBED'
 
-export const EMBED_VERSION = 1
+const EMBED_VERSION = 1
 
-export const ANON_SCOPE_WINDOW_SEC = 90
+const ANON_SCOPE_WINDOW_SEC = 90
 
-export const ANON_SCOPE_LIMIT = 1
+const ANON_SCOPE_LIMIT = 1
 
-export const ANON_COURSE_WINDOW_SEC = 60 * 60
+const ANON_COURSE_WINDOW_SEC = 60 * 60
 
-export const ANON_COURSE_LIMIT = 6
+const ANON_COURSE_LIMIT = 6
 
-export const ANON_IP_COURSE_WINDOW_SEC = 60 * 60
+const ANON_IP_COURSE_WINDOW_SEC = 60 * 60
 
-export const ANON_IP_COURSE_LIMIT = 20
+const ANON_IP_COURSE_LIMIT = 20
 
-export const PARTICIPANT_COURSE_WINDOW_SEC = 60 * 60
+const PARTICIPANT_COURSE_WINDOW_SEC = 60 * 60
 
-export const PARTICIPANT_COURSE_LIMIT = 60
+const PARTICIPANT_COURSE_LIMIT = 60
 
-export function getRequestIP(ctx: Context) {
+function getRequestIP(ctx: Context) {
   const headers = ctx.req?.headers ?? {}
   const forwardedFor = headers['x-forwarded-for']
   if (typeof forwardedFor === 'string') {
@@ -58,7 +60,7 @@ export function getRequestIP(ctx: Context) {
   return 'unknown-ip'
 }
 
-export function getRequestUserAgent(ctx: Context) {
+function getRequestUserAgent(ctx: Context) {
   const headers = ctx.req?.headers ?? {}
   const userAgent = headers['user-agent'] as string | string[] | undefined
 
@@ -73,7 +75,7 @@ export function getRequestUserAgent(ctx: Context) {
   return 'unknown-user-agent'
 }
 
-export function getAppSecret(): string {
+function getAppSecret(): string {
   const secret = process.env.APP_SECRET
   if (!secret) {
     throw new Error(
@@ -109,7 +111,7 @@ export function rejectEmbedCourseMismatch(
   return false
 }
 
-export async function incrementCounter(
+async function incrementCounter(
   ctx: Context,
   key: string,
   ttlSec: number
