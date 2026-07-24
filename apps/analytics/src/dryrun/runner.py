@@ -34,7 +34,8 @@ from typing import Any, Mapping, Sequence
 from sqlalchemy import event, text
 from sqlalchemy.engine import Connection, Engine
 
-from src.dryrun.interceptor import CaptureBuffer, intercept_writes, write_excel
+from src.dryrun.interceptor import CaptureBuffer, intercept_writes
+from src.dryrun.workbook import write_excel
 
 
 class DryRunAbort(RuntimeError):

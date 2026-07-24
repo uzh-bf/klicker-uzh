@@ -982,15 +982,18 @@ the repository script that replaces it before continuing.
   one server-controlled immutable cutoff. The full branch still requires image
   CVE scanning and live ExternalSecret/Infisical readiness verification before
   deployment because neither capability is available in this environment.
-- 2026-07-24: The strict maintainability gate does not approve the complete
-  Phase A branch without a conscious disposition. The branch adds the
-  1,898-line `dryrun/interceptor.py` and the 1,295-line privacy SQL regression
-  module. Neither is on the production worker path, and the final cutoff and
-  scanner changes add no comparable structural regression, but both files
-  should be decomposed before merge or explicitly waived with ownership and a
-  follow-up.
-- Active: Final evidence is complete locally. Request explicit publication
-  confirmation for both stacked draft PRs; after publication, read CI to a
+- 2026-07-24: The strict maintainability finding is addressed locally. The
+  1,898-line mixed dry-run module is decomposed into a 414-line write
+  interceptor, 955-line summary-section builder, and 569-line workbook writer.
+  All 46 original top-level functions and classes have identical ASTs after
+  the move. The 1,295-line privacy regression is split into shared fixtures
+  plus scope, reconciliation, cutoff/finalization, and rollback modules; all
+  12 helper/test function ASTs and all test decorators are preserved. The
+  10 PostgreSQL privacy cases and 55 focused dry-run/interceptor tests pass,
+  with three expected no-database skips in the latter group.
+- Active: Independently review and simplify the maintainability decomposition,
+  rerun the complete analytics gates, then request explicit publication
+  confirmation for both stacked draft PRs. After publication, read CI to a
   terminal result without merging or deploying.
 
 ## Finish evidence
@@ -1005,11 +1008,11 @@ the repository script that replaces it before continuing.
 
 ## Next Steps
 
-1. After explicit publication confirmation, push `chat-analytics` and
+1. Independently review the maintainability decomposition and rerun the
+   complete analytics suite plus the final strict maintainability gate.
+2. After explicit publication confirmation, push `chat-analytics` and
    `analytics-phase-a`, update both stacked draft PR descriptions, and read CI
    to a terminal result without merging or deploying.
-2. Before merge, decompose the two oversized Phase A files or record an
-   explicit maintainability waiver with an owner and follow-up.
 3. Before staging, scan the exact image digest for CVEs, confirm the deployed
    Hatchet control-plane compatibility, and verify the owning
    ExternalSecret/Infisical sync is ready.

@@ -20,12 +20,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from src.dryrun.interceptor import (  # noqa: E402
     CaptureBuffer,
-    _value_preview,
     classify_text,
     intercept_writes,
     remap_result_rows,
     rewrite_insert_to_select,
 )
+from src.dryrun.workbook_sections import _value_preview  # noqa: E402
 
 
 class _FakeModel:
@@ -291,7 +291,7 @@ def test_capture_buffer_strips_tzinfo_from_datetimes():
 
 
 def test_write_excel_produces_xlsx_with_expected_sheets(tmp_path):
-    from src.dryrun.interceptor import write_excel
+    from src.dryrun.workbook import write_excel
 
     buffer = CaptureBuffer()
     buffer.record("ParticipantAnalytics", [{"id": 1}])
@@ -393,7 +393,7 @@ def test_intercept_writes_rolls_back_failed_rewrite_before_next_query(monkeypatc
 
 
 def test_write_excel_index_links_do_not_overwrite_table_header(tmp_path):
-    from src.dryrun.interceptor import write_excel
+    from src.dryrun.workbook import write_excel
 
     buffer = CaptureBuffer()
     buffer.record("ParticipantAnalytics", [{"id": 1}])
@@ -410,7 +410,7 @@ def test_write_excel_index_links_do_not_overwrite_table_header(tmp_path):
 
 
 def test_write_excel_deduplicates_diagnostics_and_keeps_raw_sheets_data_only(tmp_path):
-    from src.dryrun.interceptor import write_excel
+    from src.dryrun.workbook import write_excel
 
     buffer = CaptureBuffer()
     buffer.record(
@@ -444,7 +444,7 @@ def test_write_excel_deduplicates_diagnostics_and_keeps_raw_sheets_data_only(tmp
 
 
 def test_write_excel_sanitizes_nan_and_inf_values(tmp_path):
-    from src.dryrun.interceptor import write_excel
+    from src.dryrun.workbook import write_excel
 
     buffer = CaptureBuffer()
     buffer.record(
@@ -474,7 +474,7 @@ def test_write_excel_sanitizes_nan_and_inf_values(tmp_path):
 
 
 def test_write_excel_summary_sheets_do_not_add_sheet_level_autofilter(tmp_path):
-    from src.dryrun.interceptor import write_excel
+    from src.dryrun.workbook import write_excel
 
     buffer = CaptureBuffer()
     buffer.record(
@@ -526,7 +526,7 @@ def test_write_excel_summary_sheets_do_not_add_sheet_level_autofilter(tmp_path):
 def test_write_excel_formats_summary_and_raw_timestamp_cells_as_dates(tmp_path):
     from datetime import datetime
 
-    from src.dryrun.interceptor import write_excel
+    from src.dryrun.workbook import write_excel
 
     buffer = CaptureBuffer()
     buffer.record(
@@ -576,7 +576,7 @@ def test_write_excel_formats_summary_and_raw_timestamp_cells_as_dates(tmp_path):
 def test_write_excel_degrades_activity_sheet_when_upstream_activity_data_is_partial(
     tmp_path,
 ):
-    from src.dryrun.interceptor import write_excel
+    from src.dryrun.workbook import write_excel
 
     buffer = CaptureBuffer()
     buffer.record(
@@ -640,7 +640,7 @@ def test_write_excel_degrades_activity_sheet_when_upstream_activity_data_is_part
 
 
 def test_write_excel_marks_single_topic_cluster_as_low_signal(tmp_path):
-    from src.dryrun.interceptor import write_excel
+    from src.dryrun.workbook import write_excel
 
     buffer = CaptureBuffer()
     buffer.record(
@@ -670,7 +670,7 @@ def test_write_excel_marks_single_topic_cluster_as_low_signal(tmp_path):
 
 
 def test_write_excel_course_scope_omits_platform_sheet(tmp_path):
-    from src.dryrun.interceptor import write_excel
+    from src.dryrun.workbook import write_excel
 
     buffer = CaptureBuffer()
     buffer.record("ParticipantAnalytics", [{"id": 1}])
@@ -695,7 +695,7 @@ def test_write_excel_course_scope_omits_platform_sheet(tmp_path):
 
 
 def test_sheet_name_truncation_handles_long_table_names(tmp_path):
-    from src.dryrun.interceptor import write_excel
+    from src.dryrun.workbook import write_excel
 
     long_name = "AReallyLongTableNameThatExceedsExcelLimitByALot"  # > 31 chars
     buffer = CaptureBuffer()
