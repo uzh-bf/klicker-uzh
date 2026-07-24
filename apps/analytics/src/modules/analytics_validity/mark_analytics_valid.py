@@ -4,7 +4,6 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from src.modules.utils import (
-    analytics_mode,
     analytics_run_config_from_env,
     load_sql,
     render_uuid_in_clause,
@@ -16,23 +15,35 @@ _SQL = load_sql(os.path.join(os.path.dirname(__file__), "mark_analytics_valid.sq
 _SET_PLACEHOLDER = "/*COURSE_FINALIZE_SET*/"
 _FILTER_PLACEHOLDER = "/*COURSE_FINALIZE_FILTER*/"
 _SCOPE_BYPASS_PLACEHOLDER = "/*COURSE_SCOPE_BYPASS*/"
+_PENDING_SCOPE_PLACEHOLDER = "/*PENDING_CHAT_COURSE_FILTER*/"
 
 
 def _render_sql(finalize: bool, course_ids: list[str] | None) -> str:
     set_clause = ""
     filter_clause = ""
+    pending_scope = ""
     # A scoped run covers every selected course even if current consent yields
     # zero chat rows. Marking that empty result prevents a privacy rebuild on
     # every later incremental run.
     bypass_clause = "true" if course_ids is not None else "false"
     if course_ids is not None:
         filter_clause = render_uuid_in_clause("c.id", course_ids)
+        pending_scope = render_uuid_in_clause('cb."courseId"', course_ids)
     if finalize:
-        set_clause = '"analyticsFinalizedAt" = NOW(),'
+        set_clause = """
+  "analyticsFinalizedAt" = CASE
+    WHEN EXISTS (
+      SELECT 1
+      FROM pending_chat_changes pending
+      WHERE pending."courseId" = c.id
+    ) THEN c."analyticsFinalizedAt"
+    ELSE CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+  END,"""
         filter_clause += ' AND c."analyticsFinalizedAt" IS NULL'
     return (
         _SQL.replace(_SET_PLACEHOLDER, set_clause)
         .replace(_SCOPE_BYPASS_PLACEHOLDER, bypass_clause)
+        .replace(_PENDING_SCOPE_PLACEHOLDER, pending_scope)
         .replace(_FILTER_PLACEHOLDER, filter_clause)
     )
 
@@ -46,11 +57,15 @@ def mark_analytics_valid(session: Session, verbose: bool = False):
     safeguard).
 
     When ``ANALYTICS_MODE=finalize`` and ``ANALYTICS_COURSE_IDS`` is set, the
-    per-course terminal marker ``analyticsFinalizedAt`` is stamped NOW() for the
-    scoped courses — the scanner's one-shot finalisation path.
+    per-course terminal marker ``analyticsFinalizedAt`` is stamped for scoped
+    courses only when no chat-consent change arrived after the immutable run
+    cutoff. Otherwise the scanner can schedule a follow-up.
     """
-    mode = analytics_mode()
-    course_ids = scoped_course_ids(session)
+    config = analytics_run_config_from_env()
+    if config.chat_analytics_cutoff is None:
+        raise RuntimeError("chat analytics validity requires the immutable workflow cutoff")
+    mode = config.mode
+    course_ids = scoped_course_ids(session, config)
     finalize = mode == "finalize" and bool(course_ids)
 
     if verbose:
@@ -58,7 +73,7 @@ def mark_analytics_valid(session: Session, verbose: bool = False):
     result = session.execute(
         text(_render_sql(finalize, course_ids)),
         {
-            "chat_analytics_cutoff": analytics_run_config_from_env().chat_analytics_cutoff,
+            "chat_analytics_cutoff": config.chat_analytics_cutoff,
         },
     )
     session.commit()

@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import importlib
 import uuid
+from typing import Any, cast
 from unittest import mock
+
+import pytest
 
 from src.modules.analytics_validity.mark_analytics_valid import _render_sql
 
@@ -155,7 +158,27 @@ def test_incremental_scope_filters_completion_watermarks():
     statement = _render_sql(False, [COURSE_A])
 
     assert f"AND c.id IN ('{COURSE_A}')" in statement
-    assert '\n  "analyticsFinalizedAt" = NOW(),' not in statement
+    assert '"analyticsFinalizedAt" = CASE' not in statement
+
+
+def test_finalize_scope_defers_terminal_marker_for_pending_consent():
+    statement = _render_sql(True, [COURSE_A])
+
+    assert '"analyticsFinalizedAt" = CASE' in statement
+    assert "pending_chat_changes pending" in statement
+    assert f"""cb."courseId" IN ('{COURSE_A}')""" in statement
+    assert 'AND c."analyticsFinalizedAt" IS NULL' in statement
+
+
+def test_validity_marker_fails_closed_without_immutable_cutoff(monkeypatch):
+    from src.modules.analytics_validity.mark_analytics_valid import (
+        mark_analytics_valid,
+    )
+
+    monkeypatch.delenv("ANALYTICS_CHAT_CUTOFF", raising=False)
+
+    with pytest.raises(RuntimeError, match="immutable workflow cutoff"):
+        mark_analytics_valid(cast(Any, None))
 
 
 def test_empty_incremental_scope_updates_no_course():
