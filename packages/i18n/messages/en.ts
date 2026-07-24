@@ -102,9 +102,11 @@ export default {
       emptyState: 'Start your first conversation with a message.',
       loadError: 'Your chats could not be loaded.',
       retry: 'Retry',
+      loading: 'Loading conversations...',
     },
     thread: {
       scrollToBottom: 'Scroll to bottom',
+      loading: 'Loading the conversation...',
       thinking: 'Preparing an answer …',
       welcomeTitle: 'Hello there!',
       welcomeSubtitle: 'How can I help you?',
