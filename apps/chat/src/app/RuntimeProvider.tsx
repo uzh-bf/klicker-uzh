@@ -31,6 +31,7 @@ export function RuntimeProvider({
     setMessages: setMessagesInternal,
     loadThreads,
     switchToThread,
+    resyncModeFromThread,
     resetSession,
     rateMessage,
   } = useChatStore()
@@ -51,6 +52,7 @@ export function RuntimeProvider({
     : `/${chatbotId}`
   const [threadsLoaded, setThreadsLoaded] = useState(false)
   const lastSyncedThreadId = useRef<string | null>(null)
+  const modeResyncedForThread = useRef<string | null>(null)
   const syncInFlight = useRef<string | null>(null)
   const syncRetryCount = useRef(0)
   const loadGeneration = useRef(0)
@@ -132,6 +134,7 @@ export function RuntimeProvider({
         useChatStore.setState({ activeThreadId: null })
       }
       lastSyncedThreadId.current = null
+      modeResyncedForThread.current = null
       syncInFlight.current = null
       syncRetryCount.current = 0
       return
@@ -152,6 +155,18 @@ export function RuntimeProvider({
         existingThread.allMessages.length > 0 ||
         existingThread.messages.length > 0
       ) {
+        // A direct URL load (bookmark/reload) can restore a persisted
+        // `activeThreadId` that already matches the URL with messages
+        // already cached, so `switchToThread` below never runs for this
+        // thread and its mode-resync would otherwise be skipped entirely.
+        // Resync at most once per thread activation: this effect re-runs on
+        // every `threads` update (streaming, rating, rename), and repeating
+        // the resync then would snap back a mode the user picked manually
+        // while viewing the thread.
+        if (modeResyncedForThread.current !== threadId) {
+          modeResyncedForThread.current = threadId
+          resyncModeFromThread(threadId)
+        }
         lastSyncedThreadId.current = threadId
         return
       }
@@ -177,6 +192,8 @@ export function RuntimeProvider({
     void switchToThread(chatbotId, threadId).then((success) => {
       if (success) {
         lastSyncedThreadId.current = threadId
+        // switchToThread already resynced the mode for this activation.
+        modeResyncedForThread.current = threadId
         syncRetryCount.current = 0
       } else if (syncRetryCount.current < 2) {
         syncRetryCount.current++
@@ -191,6 +208,7 @@ export function RuntimeProvider({
     activeThreadId,
     chatbotId,
     missingThreadRedirectPath,
+    resyncModeFromThread,
     router,
     switchToThread,
     syncRetryTrigger,
