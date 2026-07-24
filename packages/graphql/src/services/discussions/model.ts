@@ -186,6 +186,13 @@ export function normalizeExternalScopeIdentifiers(
     return null
   }
 
+  try {
+    encodeScopePart(normalizedSource)
+    encodeScopePart(normalizedRef)
+  } catch {
+    return null
+  }
+
   return {
     externalSource: normalizedSource,
     externalRef: normalizedRef,

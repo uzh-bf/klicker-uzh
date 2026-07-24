@@ -52,9 +52,20 @@ export function registerScopesSuite(getContext: () => DiscussionTestContext) {
       },
       userOneCtx
     )
+    const malformedUnicode = await getCourseDiscussionEmbeddingInfo(
+      {
+        courseId: course.id,
+        externalBlock: {
+          externalSource: '\ud800',
+          externalRef: maxRef,
+        },
+      },
+      userOneCtx
+    )
 
     expect(collidingSource).toBeNull()
     expect(collidingRef).toBeNull()
+    expect(malformedUnicode).toBeNull()
     await expect(
       prisma.discussionSpace.count({
         where: { courseId: course.id },
