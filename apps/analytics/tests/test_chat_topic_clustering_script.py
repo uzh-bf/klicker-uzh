@@ -4,40 +4,19 @@ import importlib
 import sys
 import types
 from collections.abc import Iterator
-from typing import cast
 
 import pytest
 
+from tests.module_isolation import preserve_imported_modules
+
 _DATABASE_MODULES = ("src.db", "src.scripts.10_chat_topic_clustering")
-_MISSING = object()
 
 
 @pytest.fixture(autouse=True)
 def isolate_database_modules() -> Iterator[None]:
     """Do not retain modules imported under a test-only DATABASE_URL."""
-    previous = {name: sys.modules.get(name, _MISSING) for name in _DATABASE_MODULES}
-    previous_parent_attributes = {}
-    for name in _DATABASE_MODULES:
-        parent_name, attribute = name.rsplit(".", 1)
-        parent = sys.modules.get(parent_name)
-        previous_parent_attributes[(parent_name, attribute)] = (
-            getattr(parent, attribute, _MISSING) if parent is not None else _MISSING
-        )
-    yield
-    for name, module in previous.items():
-        if module is _MISSING:
-            sys.modules.pop(name, None)
-        else:
-            sys.modules[name] = cast(types.ModuleType, module)
-    for (parent_name, attribute), value in previous_parent_attributes.items():
-        parent = sys.modules.get(parent_name)
-        if parent is None:
-            continue
-        if value is _MISSING:
-            if hasattr(parent, attribute):
-                delattr(parent, attribute)
-        else:
-            setattr(parent, attribute, value)
+    with preserve_imported_modules(_DATABASE_MODULES):
+        yield
 
 
 class _Scalars:

@@ -11,6 +11,9 @@ from src.log import script_entry, script_exit
 from src.modules.aggregated_chat_analytics.compute_aggregated_chatbot_analytics import (
     compute_aggregated_chatbot_analytics,
 )
+from src.modules.chat_analytics.consent_reconciliation import (
+    plan_chat_analytics_runs,
+)
 from src.modules.utils import (
     analytics_mode,
     analytics_window_since,
@@ -30,14 +33,15 @@ def main() -> None:
             window_since=window_since,
         )
 
-        iter_analytics_windows(
-            session,
-            compute_aggregated_chatbot_analytics,
-            course_ids=scope,
-            label="aggregated chatbot analytics",
-            windows_since=window_since,
-            verbose=False,
-        )
+        for run in plan_chat_analytics_runs(session, scope, window_since):
+            iter_analytics_windows(
+                session,
+                compute_aggregated_chatbot_analytics,
+                course_ids=run.course_ids,
+                label="aggregated chatbot analytics",
+                windows_since=run.window_since,
+                verbose=False,
+            )
 
         script_exit(script=__name__, started=started, rows_written=None)
 

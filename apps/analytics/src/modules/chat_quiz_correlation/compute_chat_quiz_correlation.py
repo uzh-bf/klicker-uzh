@@ -53,6 +53,9 @@ def report_source_counts(
     verbose: bool = False,
 ) -> None:
     """Report current source counts without rejecting a valid empty result."""
+    if not verbose:
+        return
+
     buffer_active = buffer_registry.is_active()
 
     if buffer_active:
@@ -66,9 +69,8 @@ def report_source_counts(
         perf_rows = session.execute(
             text(f'SELECT COUNT(*) AS n FROM "ParticipantPerformance" WHERE true {scope_clause}')
         ).scalar_one()
-    if verbose:
-        source = "buffer" if buffer_active else "db"
-        print(f"[chat_quiz_correlation] preconditions ({source}): chat_course_rows={chat_rows} perf_rows={perf_rows}")
+    source = "buffer" if buffer_active else "db"
+    print(f"[chat_quiz_correlation] source counts ({source}): chat_course_rows={chat_rows} perf_rows={perf_rows}")
 
 
 def _execute_participant_chat_outcomes(

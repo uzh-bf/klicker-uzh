@@ -146,6 +146,13 @@ It registers the non-mutating `learning-analytics-native-proof` task plus two co
 
 Both DAGs call the existing Python script entry points in-process with immutable per-run configuration and cooperative cancellation. `ANALYTICS_ALLOW_FULL=1` is required for the full DAG and remains unset by default. TypeScript retains only the GraphQL/manual event producers and the `scan-ended-courses` task. It does not register an analytics DAG or spawn Python.
 
+Incremental chat stages keep the normal 14-day window for unaffected courses.
+If current disclaimer consent changed, they purge now-ineligible participant
+rows across retained history and rebuild only the affected courses from the
+earliest affected message or aggregate window. The course chat watermark
+coordinates participant and aggregate cleanup even when those Hatchet tasks
+run in parallel.
+
 Cutover and rollback are cold: stop the current owner before starting another worker image so exactly one analytics DAG consumes these events.
 
 See the [Learning Analytics Operations](../../docs/learning-analytics-operations.md)

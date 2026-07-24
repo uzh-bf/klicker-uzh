@@ -11,6 +11,10 @@ from src.log import script_entry, script_exit
 from src.modules.chat_analytics.compute_participant_chat_analytics import (
     compute_participant_chat_analytics,
 )
+from src.modules.chat_analytics.consent_reconciliation import (
+    plan_chat_analytics_runs,
+    purge_ineligible_participant_chat_analytics,
+)
 from src.modules.utils import (
     analytics_mode,
     analytics_window_since,
@@ -30,14 +34,17 @@ def main() -> None:
             window_since=window_since,
         )
 
-        iter_analytics_windows(
-            session,
-            compute_participant_chat_analytics,
-            course_ids=scope,
-            label="participant chat analytics",
-            windows_since=window_since,
-            verbose=False,
-        )
+        runs = plan_chat_analytics_runs(session, scope, window_since)
+        purge_ineligible_participant_chat_analytics(session, scope)
+        for run in runs:
+            iter_analytics_windows(
+                session,
+                compute_participant_chat_analytics,
+                course_ids=run.course_ids,
+                label="participant chat analytics",
+                windows_since=run.window_since,
+                verbose=False,
+            )
 
         script_exit(script=__name__, started=started, rows_written=None)
 
