@@ -112,7 +112,7 @@ function MicrolearningEvaluation() {
                 ariaLabel={t('pwa.courseQA.title')}
                 mobileLabel={t('pwa.courseQA.title')}
                 panelId="microlearning-evaluation-qa-content"
-                className="mt-3 min-w-0 border-b border-gray-200 pb-4 lg:col-start-2 lg:row-start-1 lg:mt-0 lg:border-0 lg:pb-0"
+                className="mt-3 border-b border-gray-200 pb-4 lg:col-start-2 lg:row-start-1 lg:mt-0 lg:border-0 lg:pb-0"
                 dataCy="microlearning-evaluation-qa-panel"
                 toggleDataCy="microlearning-evaluation-qa-toggle"
               >

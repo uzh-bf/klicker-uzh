@@ -701,7 +701,7 @@ function ElementStack({
             ariaLabel={t('pwa.courseQA.title')}
             mobileLabel={t('pwa.courseQA.openStackDiscussion')}
             panelId={`course-qa-stack-panel-${stack.id}`}
-            className="mt-8 min-w-0 border-t border-gray-200 pt-4 lg:mt-0 lg:border-0 lg:pt-0"
+            className="mt-8 border-t border-gray-200 pt-4 lg:mt-0 lg:border-0 lg:pt-0"
             dataCy="student-stack-discussion-rail"
             toggleDataCy="student-stack-discussion-toggle"
           >
