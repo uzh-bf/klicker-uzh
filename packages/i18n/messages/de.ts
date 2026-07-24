@@ -38,6 +38,7 @@ export default {
       newChat: 'Neuer Chat',
       closeSidebar: 'Seitenleiste schliessen',
       openSidebar: 'Seitenleiste öffnen',
+      toggleSidebar: 'Seitenleiste umschalten',
       conversationsLabel: 'Konversationen',
       logoAlt: 'Klicker-Logo',
     },

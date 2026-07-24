@@ -69,7 +69,7 @@
     "vitest": "~3.2.4"
   },
   "scripts": {
-    "build": "next build --turbopack",
+    "build": "cross-env NODE_ENV=production next build --turbopack",
     "build:test": "cross-env NODE_ENV=test next build --turbopack",
     "check": "next typegen && tsc --noEmit",
     "dev": "cross-env NODE_ENV=development next dev --turbopack --port 3004",

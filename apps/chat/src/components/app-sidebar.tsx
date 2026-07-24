@@ -88,7 +88,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <ThreadList />
       </SidebarContent>
 
-      <SidebarRail />
+      <SidebarRail aria-label={t('chat.sidebar.toggleSidebar')} />
       <SidebarFooter className="p-0">
         <SettingsPanel />
         <CreditsFooter />

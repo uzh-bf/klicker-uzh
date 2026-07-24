@@ -36,6 +36,7 @@ export default {
       newChat: 'New Chat',
       closeSidebar: 'Close sidebar',
       openSidebar: 'Open sidebar',
+      toggleSidebar: 'Toggle sidebar',
       conversationsLabel: 'Conversations',
       logoAlt: 'Klicker Logo',
     },
