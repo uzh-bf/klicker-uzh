@@ -215,4 +215,62 @@ export function registerDeletionPolicySuite(
     })
     expect(replyDeleteEvents).toBe(replyDeleted ? 1 : 0)
   })
+
+  it('rolls back reply deletion when the guarded thread update fails', async () => {
+    const { prisma, userOneCtx } = getContext()
+    const course = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, { courseId: course.id })
+
+    const participantId = await seedParticipantInCourse(prisma, {
+      courseId: course.id,
+    })
+    const participantCtx = createParticipantContext(userOneCtx, participantId)
+    const thread = await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: 'Simulate a thread deleted after reply preflight.',
+        scope: { scopeType: DiscussionScopeType.COURSE },
+      },
+      participantCtx
+    )
+    const reply = await createCourseDiscussionReply(
+      {
+        courseId: course.id,
+        threadId: thread!.id,
+        content: 'This reply deletion must roll back.',
+      },
+      participantCtx
+    )
+
+    await prisma.discussionThread.update({
+      where: { id: thread!.id },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
+        content: '',
+        replyCount: 0,
+      },
+    })
+
+    expect(
+      await deleteCourseDiscussionReply({ replyId: reply!.id }, participantCtx)
+    ).toBe(false)
+    expect(
+      await prisma.discussionReply.findUnique({
+        where: { id: reply!.id },
+        select: { isDeleted: true, content: true },
+      })
+    ).toEqual({
+      isDeleted: false,
+      content: 'This reply deletion must roll back.',
+    })
+    expect(
+      await prisma.discussionEvent.count({
+        where: {
+          replyId: reply!.id,
+          eventType: DiscussionEventType.REPLY_DELETED,
+        },
+      })
+    ).toBe(0)
+  })
 }
