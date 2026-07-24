@@ -9,7 +9,7 @@ export async function lockParticipantForDiscussionVoteChanges(
       SELECT "id"
       FROM "public"."Participant"
       WHERE "id" = ${participantId}::uuid
-      FOR UPDATE
+      FOR NO KEY UPDATE
     `
   )
 
@@ -24,16 +24,14 @@ export async function reconcileParticipantDiscussionVotesBeforeDeletion(
     return false
   }
 
-  const [threadVotes, replyVotes] = await Promise.all([
-    prisma.discussionThreadVote.findMany({
-      where: { participantId },
-      select: { threadId: true },
-    }),
-    prisma.discussionReplyVote.findMany({
-      where: { participantId },
-      select: { replyId: true },
-    }),
-  ])
+  const threadVotes = await prisma.discussionThreadVote.findMany({
+    where: { participantId },
+    select: { threadId: true },
+  })
+  const replyVotes = await prisma.discussionReplyVote.findMany({
+    where: { participantId },
+    select: { replyId: true },
+  })
 
   if (threadVotes.length > 0) {
     await prisma.discussionThread.updateMany({
