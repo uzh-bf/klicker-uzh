@@ -943,6 +943,14 @@ the repository script that replaces it before continuing.
   consent, never-finalized, and stale-row cases while excluding clean and
   active courses. The focused privacy/finalization suite passes 26 tests;
   Hatchet typecheck and both scanner tests pass.
+- 2026-07-24: Review found that the first scanner query materialized dirty
+  privacy state from all retained chat rows before applying the ended-course
+  filter. A disposable benchmark with 1,000 courses, 10,000 chatbots, one
+  million consent rows, and 500,000 participant-chat rows reduced the warm
+  plan from about 382 ms to 99 ms by materializing the 50 ended courses first.
+  A `ChatUsageCredits(chatbotId)` index reduced it further to about 46 ms, but
+  that extra write/index cost is not justified for a once-daily 99 ms query
+  without representative staging evidence, so no speculative index is added.
 - Active: Commit and independently re-review the finalization-race fix,
   complete final branch gates, then request publication confirmation for both
   stacked draft PRs.
