@@ -5,7 +5,6 @@ fragment DiscussionThreadData on DiscussionThread {
   content
   isAnonymous
   isDeleted
-  authorParticipantId
   upvotes
   hasUpvoted
   replyCount

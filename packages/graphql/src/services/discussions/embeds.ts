@@ -39,6 +39,14 @@ const PARTICIPANT_COURSE_WINDOW_SEC = 60 * 60
 
 const PARTICIPANT_COURSE_LIMIT = 60
 
+const INCREMENT_WITH_EXPIRY_SCRIPT = `
+local current = redis.call('INCR', KEYS[1])
+if current == 1 then
+  redis.call('EXPIRE', KEYS[1], ARGV[1])
+end
+return current
+`
+
 function getRequestIP(ctx: Context) {
   return ctx.req?.ip || 'unknown-ip'
 }
@@ -99,13 +107,14 @@ async function incrementCounter(
   key: string,
   ttlSec: number
 ): Promise<number> {
-  const currentValue = await ctx.redisExec.incr(key)
+  const currentValue = await ctx.redisExec.eval(
+    INCREMENT_WITH_EXPIRY_SCRIPT,
+    1,
+    key,
+    String(ttlSec)
+  )
 
-  if (currentValue === 1) {
-    await ctx.redisExec.expire(key, ttlSec)
-  }
-
-  return currentValue
+  return Number(currentValue)
 }
 
 export async function verifyEmbedToken(

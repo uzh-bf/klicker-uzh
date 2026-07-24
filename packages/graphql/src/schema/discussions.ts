@@ -127,10 +127,6 @@ export const DiscussionReply = DiscussionReplyRef.implement({
     upvotes: t.exposeInt('upvotes'),
     hasUpvoted: t.exposeBoolean('hasUpvoted', { nullable: true }),
 
-    authorParticipantId: t.exposeString('authorParticipantId', {
-      nullable: true,
-    }),
-
     createdAt: t.expose('createdAt', { type: 'Date' }),
     updatedAt: t.expose('updatedAt', { type: 'Date' }),
   }),
@@ -154,10 +150,6 @@ export const DiscussionThread = DiscussionThreadRef.implement({
     content: t.exposeString('content'),
     isAnonymous: t.exposeBoolean('isAnonymous'),
     isDeleted: t.exposeBoolean('isDeleted'),
-
-    authorParticipantId: t.exposeString('authorParticipantId', {
-      nullable: true,
-    }),
 
     upvotes: t.exposeInt('upvotes'),
     hasUpvoted: t.exposeBoolean('hasUpvoted', { nullable: true }),

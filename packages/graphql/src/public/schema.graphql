@@ -1163,7 +1163,6 @@ input DiscussionExternalBlockInput {
 }
 
 type DiscussionReply {
-  authorParticipantId: String
   content: String!
   createdAt: Date!
   hasUpvoted: Boolean
@@ -1217,7 +1216,6 @@ enum DiscussionSpaceType {
 }
 
 type DiscussionThread {
-  authorParticipantId: String
   content: String!
   createdAt: Date!
   hasUpvoted: Boolean

@@ -144,6 +144,15 @@ export function registerAnonymousRateLimitsSuite(
       )
 
     expect(await createAnonymousThread()).toBeTruthy()
+    const counterKeys = await anonymousCtx.redisExec.keys(
+      `discussion:anon:*:${course.id}:*`
+    )
+    expect(counterKeys).toHaveLength(3)
+    const counterTtls = await Promise.all(
+      counterKeys.map((key) => anonymousCtx.redisExec.ttl(key))
+    )
+    expect(counterTtls.every((ttl) => ttl > 0)).toBe(true)
+
     const persistedScope = await prisma.discussionScope.findFirstOrThrow({
       where: {
         space: { courseId: course.id },
