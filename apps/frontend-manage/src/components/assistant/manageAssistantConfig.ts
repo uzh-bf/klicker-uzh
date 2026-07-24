@@ -1,6 +1,7 @@
 type BuildManageAssistantUrlArgs = {
   chatUrl?: string
   locale?: string
+  parentOrigin?: string
 }
 
 export function isManageAssistantEnabled(value: string | undefined): boolean {
@@ -10,6 +11,7 @@ export function isManageAssistantEnabled(value: string | undefined): boolean {
 export function buildManageAssistantUrl({
   chatUrl,
   locale,
+  parentOrigin,
 }: BuildManageAssistantUrlArgs): string | null {
   if (!chatUrl) return null
 
@@ -19,6 +21,12 @@ export function buildManageAssistantUrl({
 
     if (locale) {
       url.searchParams.set('locale', locale)
+    }
+
+    // Hand the embedder's own origin to the embedded assistant so its
+    // readiness ping can target a concrete origin instead of a '*' wildcard.
+    if (parentOrigin) {
+      url.searchParams.set('parentOrigin', parentOrigin)
     }
 
     return url.toString()

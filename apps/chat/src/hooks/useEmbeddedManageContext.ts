@@ -1,5 +1,6 @@
 'use client'
 
+import { useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import {
   sanitizeManageAssistantContext,
@@ -14,6 +15,8 @@ const MANAGE_CONTEXT_READY_MESSAGE_TYPE = 'klicker:manage-context-ready'
 
 export function useEmbeddedManageContext() {
   const embedded = useEmbedded()
+  const searchParams = useSearchParams()
+  const parentOrigin = parseOrigin(searchParams.get('parentOrigin'))
   const [context, setContext] = useState<ManageAssistantContext | null>(null)
   const contextKeyRef = useRef<string | null>(null)
   const setManageParentOrigin = useManageParentStore(
@@ -70,12 +73,19 @@ export function useEmbeddedManageContext() {
     // Announce readiness so the parent (re)sends the current context exactly
     // when this listener exists. Without this, the parent's timed retry burst
     // can fully elapse before hydration finishes and the context is lost. The
-    // '*' target is safe: the message is a content-free ping and the parent
-    // origin is unknown until its first context message arrives.
-    window.parent.postMessage({ type: MANAGE_CONTEXT_READY_MESSAGE_TYPE }, '*')
+    // parent hands us its own origin as a query param, so target the ping at
+    // that concrete origin; if it is absent, skip the proactive ping and let
+    // the parent's retry burst deliver the context rather than broadcasting to
+    // a '*' wildcard.
+    if (parentOrigin) {
+      window.parent.postMessage(
+        { type: MANAGE_CONTEXT_READY_MESSAGE_TYPE },
+        parentOrigin
+      )
+    }
 
     return () => window.removeEventListener('message', handleMessage)
-  }, [embedded, setManageParentOrigin])
+  }, [embedded, parentOrigin, setManageParentOrigin])
 
   return context
 }
@@ -90,4 +100,15 @@ function isManageContextMessage(data: unknown): data is {
     data !== null &&
     (data as { type?: unknown }).type === MANAGE_CONTEXT_MESSAGE_TYPE
   )
+}
+
+// Accept the query param only when it is a bare, well-formed origin so it can
+// never be a '*' wildcard or a full URL when used as a postMessage target.
+function parseOrigin(value: string | null): string | null {
+  if (!value) return null
+  try {
+    return new URL(value).origin === value ? value : null
+  } catch {
+    return null
+  }
 }

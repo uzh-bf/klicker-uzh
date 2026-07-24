@@ -52,6 +52,8 @@ export function ManageAssistantWidget() {
       buildManageAssistantUrl({
         chatUrl: process.env.NEXT_PUBLIC_CHAT_URL,
         locale: router.locale,
+        parentOrigin:
+          typeof window !== 'undefined' ? window.location.origin : undefined,
       }),
     [router.locale]
   )

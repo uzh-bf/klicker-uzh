@@ -18,6 +18,17 @@ assert.equal(
   'https://chat.klicker.com/manage?embed=true&locale=de'
 )
 
+// The embedder origin is forwarded so the embedded assistant can target its
+// readiness ping at a concrete origin instead of a '*' wildcard.
+assert.equal(
+  buildManageAssistantUrl({
+    chatUrl: 'https://chat.klicker.com/',
+    locale: 'de',
+    parentOrigin: 'https://manage.klicker.com',
+  }),
+  'https://chat.klicker.com/manage?embed=true&locale=de&parentOrigin=https%3A%2F%2Fmanage.klicker.com'
+)
+
 assert.equal(
   buildManageAssistantUrl({
     chatUrl: undefined,
