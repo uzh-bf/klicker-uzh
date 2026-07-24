@@ -25,6 +25,7 @@ import bcrypt from 'bcryptjs'
 import { createHash } from 'crypto'
 import { defineConfig } from 'cypress'
 import cypressSplit from 'cypress-split'
+import { courseQATasks } from './cypress/tasks/courseQa'
 // import cypressCodeCoverage from '@cypress/code-coverage/task'
 
 // ! Copy of seeded user ids from prisma/seedUsers.ts
@@ -2104,103 +2105,7 @@ export default defineConfig({
         seedActivities,
         // #endregion
 
-        // ! Course Q&A helpers
-        // #region
-        async setCourseQAFlags({
-          courseName,
-          isCourseQARolloutEnabled,
-          isCourseQAEnabled,
-          isCourseQAAnonymousEnabled,
-          isGamificationEnabled,
-          isAssessmentEnabled,
-          description,
-        }: {
-          courseName: string
-          isCourseQARolloutEnabled?: boolean
-          isCourseQAEnabled?: boolean
-          isCourseQAAnonymousEnabled?: boolean
-          isGamificationEnabled?: boolean
-          isAssessmentEnabled?: boolean
-          description?: string | null
-        }) {
-          try {
-            const course = await prisma.course.findFirst({
-              where: { name: courseName },
-            })
-            if (!course) return false
-
-            await prisma.course.update({
-              where: { id: course.id },
-              data: {
-                ...(typeof isCourseQARolloutEnabled === 'boolean' && {
-                  isCourseQARolloutEnabled,
-                }),
-                ...(typeof isCourseQAEnabled === 'boolean' && {
-                  isCourseQAEnabled,
-                }),
-                ...(typeof isCourseQAAnonymousEnabled === 'boolean' && {
-                  isCourseQAAnonymousEnabled,
-                }),
-                ...(typeof isGamificationEnabled === 'boolean' && {
-                  isGamificationEnabled,
-                }),
-                ...(typeof isAssessmentEnabled === 'boolean' && {
-                  isAssessmentEnabled,
-                }),
-                ...(description !== undefined && { description }),
-              },
-            })
-            return true
-          } catch (error) {
-            throw error
-          }
-        },
-        async getCourseOverviewSettings({
-          courseName,
-        }: {
-          courseName: string
-        }) {
-          return prisma.course.findFirst({
-            where: { name: courseName },
-            select: {
-              isGamificationEnabled: true,
-              isAssessmentEnabled: true,
-              description: true,
-            },
-          })
-        },
-        async grantCourseReadAccess({
-          courseName,
-          userEmail,
-        }: {
-          courseName: string
-          userEmail: string
-        }) {
-          const [course, user] = await Promise.all([
-            prisma.course.findFirst({ where: { name: courseName } }),
-            prisma.user.findUnique({ where: { email: userEmail } }),
-          ])
-          if (!course || !user) return false
-
-          await prisma.derivedPermission.upsert({
-            where: {
-              courseId_userId: {
-                courseId: course.id,
-                userId: user.id,
-              },
-            },
-            create: {
-              courseId: course.id,
-              userId: user.id,
-              permissionLevel: PermissionLevel.READ,
-            },
-            update: {
-              permissionLevel: PermissionLevel.READ,
-            },
-          })
-          return true
-        },
-        // #endregion
+        ...courseQATasks,
       })
 
       return config
