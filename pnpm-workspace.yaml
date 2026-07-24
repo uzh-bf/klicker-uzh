@@ -21,6 +21,14 @@ minimumReleaseAgeExclude:
   - 'assistant-stream@0.3.26'
   - 'nanoid@6.0.0'
   - 'safe-content-frame@0.0.23'
+  # U2 (student-chat-v3-production-readiness-plan): reviewed Vercel AI SDK 7
+  # bump, apps/chat/package.json (ai, @ai-sdk/openai, @ai-sdk/mcp). Transitive
+  # @ai-sdk deps pulled in below.
+  - 'ai@7.0.37'
+  - '@ai-sdk/openai@4.0.20'
+  - '@ai-sdk/mcp@2.0.16'
+  - '@ai-sdk/gateway@4.0.28'
+  - '@ai-sdk/provider-utils@5.0.12'
 
 overrides:
   'axios@<=0.31.1': 0.32.0

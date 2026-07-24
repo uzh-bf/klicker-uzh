@@ -28,7 +28,7 @@ import { safeDecrypt } from '@klicker-uzh/util'
 import { startActiveObservation } from '@langfuse/tracing'
 import {
   generateText,
-  stepCountIs,
+  isStepCount,
   streamText,
   type ModelMessage,
   type StepResult,
@@ -1281,7 +1281,7 @@ export async function POST(
     streamText({
       model,
       maxOutputTokens,
-      experimental_telemetry: { isEnabled: isAiTelemetryEnabled },
+      telemetry: { isEnabled: isAiTelemetryEnabled },
       providerOptions: {
         openai: {
           ...(selectedModelConfig.supportsReasoning && {
@@ -1296,8 +1296,8 @@ export async function POST(
       messages: modelMessages as ModelMessage[],
       tools: mcpTools,
       toolChoice: 'auto',
-      stopWhen: stepCountIs(5),
-      system: systemPrompt,
+      stopWhen: isStepCount(5),
+      instructions: systemPrompt,
 
       abortSignal: req.signal,
 
@@ -1318,13 +1318,13 @@ export async function POST(
         }
       },
 
-      onFinish: async (result) => {
+      onEnd: async (result) => {
         sawFinish = true
-        const creditsUsed = result.totalUsage
+        const creditsUsed = result.usage
           ? calcCost(
               selectedModelConfig.cost,
-              result.totalUsage.inputTokens || 0,
-              result.totalUsage.outputTokens || 0
+              result.usage.inputTokens || 0,
+              result.usage.outputTokens || 0
             ) + imageDescriptionCost
           : null
         const finishedReasoningContent =
@@ -1341,15 +1341,15 @@ export async function POST(
         const providerReasoningTokens = extractReasoningTokens(
           asObject(result)?.providerMetadata
         )
-        const finishOutputTokens = result.totalUsage?.outputTokens || 0
+        const finishOutputTokens = result.usage?.outputTokens || 0
 
         logEvent('stream.finish', {
           elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
-          usage: result.totalUsage
+          usage: result.usage
             ? {
-                inputTokens: result.totalUsage.inputTokens || 0,
-                outputTokens: result.totalUsage.outputTokens || 0,
-                totalTokens: result.totalUsage.totalTokens || 0,
+                inputTokens: result.usage.inputTokens || 0,
+                outputTokens: result.usage.outputTokens || 0,
+                totalTokens: result.usage.totalTokens || 0,
               }
             : null,
           creditsUsed,
@@ -1464,11 +1464,11 @@ export async function POST(
         if (!firstError && !sawAbort) {
           emitFinalOnce('success', {
             elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
-            usage: result.totalUsage
+            usage: result.usage
               ? {
-                  inputTokens: result.totalUsage.inputTokens || 0,
-                  outputTokens: result.totalUsage.outputTokens || 0,
-                  totalTokens: result.totalUsage.totalTokens || 0,
+                  inputTokens: result.usage.inputTokens || 0,
+                  outputTokens: result.usage.outputTokens || 0,
+                  totalTokens: result.usage.totalTokens || 0,
                 }
               : null,
             stepsCount: result.steps?.length ?? 0,
@@ -1641,7 +1641,7 @@ export async function POST(
         })
       },
 
-      onStepFinish: async (step) => {
+      onStepEnd: async (step) => {
         const diagnostics = collectStepToolDiagnostics(step)
         const toolCallNames = Array.from(
           new Set(diagnostics.map((diagnostic) => diagnostic.toolName))
