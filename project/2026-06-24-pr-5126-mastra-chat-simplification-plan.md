@@ -12,7 +12,7 @@
 
 Current branch warning:
 
-- The local branch is one commit ahead and 27 commits behind its remote.
+- The local and remote branches have diverged.
 - The remote pull request contains unrelated history and currently conflicts with `v3`.
 - Implementation must start by reconstructing the branch from current `v3`; do not layer more implementation onto the existing branch history.
 - Preserve any private Catalyst/Mastra work through the Catalyst split before removing it from the public branch.
@@ -61,7 +61,7 @@ Mastra storage would provide useful engine-local capabilities such as automatic 
 
 Those are not required for v1. `@mastra/memory` and `@mastra/pg` are not installed on the current branch. Making Mastra storage canonical now would duplicate or migrate ownership without proving a product benefit.
 
-Future Catalyst engines may store derived memory under opaque identifiers if they also implement explicit reset, export, deletion, retention, and ownership rules. Prisma remains the canonical conversation record.
+Future Catalyst engines may store derived memory only through an explicit, versioned, opt-in capability under opaque identifiers. That capability must define reset, export, deletion, retention, and ownership rules. It must never be implicit or hidden from `chat-api`, and it is outside v1. Prisma remains the canonical conversation record.
 
 ## Goal
 
@@ -137,10 +137,18 @@ Request contains only:
 - locale
 - resolved chatbot system prompt and model parameters
 - ordered message history
-- attachment descriptors or bounded engine-readable content
+- bounded image attachments as `{ id, type: 'image', mediaType, dataUrl, description? }`
 - approved MCP server/tool descriptors
 - one short-lived scoped MCP execution token
 - trace context
+
+V1 attachment rules:
+
+- allow only JPEG, PNG, GIF, and WebP data URLs
+- preserve the current 7 MB per-image request limit
+- validate declared media type against the data URL
+- do not give engines arbitrary attachment URLs or callback access
+- do not let engines fetch browser-supplied remote URLs
 
 Do not send names, email addresses, enrolment objects, roles, full database rows, `APP_SECRET`, database credentials, or provider credentials supplied by the browser.
 
@@ -209,6 +217,18 @@ The engine receives provider configuration from deployment secrets. It does not 
 
 Do not retain an empty-thread creation endpoint unless browser testing proves it is needed.
 
+### Frontend Configuration
+
+Read `CHAT_API_PUBLIC_URL` in the App Router root layout at request time, validate it as an HTTPS URL outside local development, and pass it as a serialized prop to a client runtime-config provider. Keep that config boundary dynamic so one image can receive different deployment values, fail clearly when it is unset, and add the variable to `turbo.json`. Do not add a Next API route or proxy for configuration, and do not use `NEXT_PUBLIC_*` build-time substitution for deployed images.
+
+Authentication behavior:
+
+- remove participant JWT verification and `APP_SECRET` from Next middleware
+- let `chat-api` remain the only verifier and authorization boundary
+- have bootstrap handle `401` by navigating to `/noLogin` with the current path as `redirectTo`
+- serve frame-ancestor policy at ingress rather than coupling it to auth middleware
+- delete the middleware if no frontend-only routing duty remains
+
 ### Internal Modules
 
 Keep Hono handlers thin:
@@ -250,14 +270,19 @@ Keep:
 
 1. The frontend creates a local draft and canonical user and assistant message IDs.
 2. It sends the first message to `chat-api` with no persisted thread ID.
-3. `chat-api` validates IDs, creates the thread and user message idempotently, and emits the persisted thread ID before engine text.
-4. The frontend adopts that ID, updates the URL, and retains the same messages and running state.
-5. `chat-api` invokes the configured engine exactly once.
-6. `chat-api` persists final or partial assistant output and validated usage.
+3. `chat-api` validates IDs, creates the thread and user message idempotently, opens the stream, and emits the persisted thread ID before engine text.
+4. `chat-api` invokes the configured engine exactly once after writing that metadata; it does not wait for a browser acknowledgement.
+5. When the frontend receives the metadata, it atomically replaces the draft in the thread array, switches `activeThreadId`, and marks adoption complete.
+6. Only after the persisted thread is visible to the route guard does the frontend call `router.replace`.
+7. The URL synchronization effect treats an active adoption as valid and never redirects it as a missing thread.
+8. The frontend retains the same messages and running state throughout adoption.
+9. `chat-api` persists final or partial assistant output and validated usage.
 
 Block or queue further sends while adoption is unresolved. Editing and reloading require a persisted thread ID.
 
 Frontend IDs are canonical when valid. Any unavoidable ID replacement must be reported before attachments, branches, editing, or reload can depend on it.
+
+Add a regression test for the current `RuntimeProvider` route guard: adopting a persisted thread must not redirect to the chatbot root or abort the stream.
 
 ## Security
 
@@ -362,7 +387,8 @@ Verification:
 
 Work:
 
-- Move bootstrap, threads, messages, title, delete, disclaimer, and attachments to `chat-api`.
+- Add equivalent bootstrap, threads, messages, title, delete, disclaimer, and attachment endpoints to `chat-api`.
+- Leave the old Next routes and their service imports intact until Slice 4; do not move shared files in a way that breaks the temporary old path.
 - Implement the deep Prisma conversation module without a generic repository interface.
 - Add participant/chatbot ownership guards, credentialed CORS, CSRF, rate limits, and request limits.
 - Add idempotent thread and message creation.
@@ -381,8 +407,11 @@ Verification:
 Work:
 
 - Add a typed `chatApiClient` with configured base URL and credentials.
+- Inject the deployment-specific public API URL into the app shell without a Next API route.
+- Remove participant-token verification and `APP_SECRET` from Next middleware; handle bootstrap `401` in the client.
 - Move bootstrap and all conversation calls to direct `chat-api` requests.
 - Implement draft-thread adoption and canonical message IDs.
+- Update the thread store before URL replacement and guard route synchronization during adoption.
 - Preserve assistant-ui edit, reload, cancel, branching, reasoning, tools, and attachment behavior.
 - Verify the complete new route while the old route still exists.
 - Delete `apps/chat/src/app/api/**` and remove obsolete server-only chat dependencies and configuration.
@@ -407,7 +436,7 @@ Work:
 
 - Add runtime/deployment resources for `chat-api` and the public default engine.
 - Configure engine URL, service auth, CORS, MCP keys, readiness, and observability.
-- Replace the placeholder workflow with a real secret-backed smoke.
+- Remove `continue-on-error` and replace the placeholder workflow behavior with a real secret-backed smoke.
 - If `OPENROUTER_API_KEY` is absent, skip the smoke explicitly.
 - If the secret is present, any contract, generation, persistence, or credit failure fails the job.
 - Exercise the full path through `chat-api`, not only the provider.
@@ -473,8 +502,9 @@ Rollback after deployment changes engine configuration or rolls back the release
 - [x] Catalyst repository seam and deployment-wide engine choice approved.
 - [x] Chat ownership, contract, failure, security, storage, and cutover rulings approved.
 - [x] Old plan superseded by the public chat API and engine seam.
-- [ ] Revised plan independently reviewed and accepted.
-- [ ] Revised plan committed.
+- [x] Revised plan independently reviewed.
+- [x] Initial revised plan committed as `834159ae1`.
+- [x] Accepted review corrections integrated and committed.
 - [ ] Private Catalyst source preservation confirmed.
 - [ ] Public branch reconstructed from current `v3`.
 - [ ] Slices 1-6 implemented and verified.
