@@ -216,7 +216,7 @@ export function registerDeletionPolicySuite(
     expect(replyDeleteEvents).toBe(replyDeleted ? 1 : 0)
   })
 
-  it('rolls back reply deletion when the guarded thread update fails', async () => {
+  it('keeps the reply unchanged when the guarded thread update fails', async () => {
     const { prisma, userOneCtx } = getContext()
     const course = await seedCourse({}, userOneCtx)
     await enableCourseDiscussion(prisma, { courseId: course.id })
