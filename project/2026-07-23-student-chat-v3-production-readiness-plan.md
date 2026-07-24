@@ -806,6 +806,12 @@ designing the question widget.
   24px at 375px. Reviewer verified viewport merge semantics + flexbox center-clip
   trap avoided. Deferred: live markdown-table scroll check needs a seeded assistant
   message → covered at S17 with Playwright.
+- 2026-07-24: **S8 done**. focus-within row highlight (verified: focused select button
+  turns row bg-muted), `aria-current="page"` on active thread select, Progress
+  `aria-label` (lands on Radix role=progressbar, source-verified), attachment fallback
+  `text-foreground`, chatbot name → h1 in both exclusive branches. Review finding
+  integrated: markdown `#` in messages now renders as `<h2>` element (same visual
+  classes) so the page keeps a single h1. Full axe pass deferred to S17.
 - 2026-07-24: Environment note: worktree stack has no upstream LLM key
   (`UPSTREAM_OPENAI_API_KEY`), so live sends fail with the S5 error bubble (stacked
   strings reproduced live). Phase 0 does not need live LLM; **Phase U verification does**

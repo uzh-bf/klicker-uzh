@@ -334,7 +334,9 @@ function SidebarMain({
             className="size-6"
             aria-label={t('chat.sidebar.openSidebar')}
           />
-          <span className="min-w-0 truncate text-sm">{chatbot.name}</span>
+          {/* Primary label of the working chat view (Tailwind's preflight
+              reset keeps this visually identical to the previous span). */}
+          <h1 className="min-w-0 truncate text-sm">{chatbot.name}</h1>
         </div>
         <div className="flex min-w-0 flex-1 justify-center">
           <ModeSwitcher />
@@ -390,9 +392,9 @@ function AssistantLayout({
   return (
     <div className="flex h-dvh w-full flex-col overflow-hidden">
       <div className="bg-muted/50 flex shrink-0 items-center justify-between gap-2 border-b px-2 py-1.5 sm:gap-4 sm:px-4 sm:py-3">
-        <div className="min-w-0 truncate text-xs font-semibold sm:text-sm">
+        <h1 className="min-w-0 truncate text-xs font-semibold sm:text-sm">
           {chatbot.name}
-        </div>
+        </h1>
         <EmbeddedSettings />
       </div>
       <div className="flex min-h-0 flex-1 flex-col">

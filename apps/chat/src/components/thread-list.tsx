@@ -187,7 +187,10 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
   return (
     <div
       data-cy="chat-thread-item"
-      className={`group/thread focus-visible:bg-muted focus-visible:ring-ring flex items-center rounded-lg py-1 transition-all focus-visible:outline-none focus-visible:ring-2 ${isActive ? 'bg-primary/15' : 'hover:bg-accent'}`}
+      // The row itself is never focused (its buttons/input are), so
+      // focus-visible: here would be dead CSS. focus-within: highlights the
+      // row when a child (select/edit/delete button, title input) has focus.
+      className={`group/thread focus-within:bg-muted focus-within:ring-ring flex items-center rounded-lg py-1 transition-all focus-within:outline-none focus-within:ring-2 ${isActive ? 'bg-primary/15' : 'hover:bg-accent'}`}
     >
       {isEditing ? (
         <>
@@ -233,6 +236,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
             type="button"
             data-cy="chat-thread-select"
             onClick={onSelect}
+            aria-current={isActive ? 'page' : undefined}
             className="flex min-w-0 flex-grow items-center gap-2 px-3 py-1 text-start"
           >
             {/* Badge the row with the icon of the mode the thread was last
