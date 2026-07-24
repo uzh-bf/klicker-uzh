@@ -6,7 +6,6 @@ import { useEmbedded } from '../hooks/useEmbedded'
 interface ChatUiContextValue {
   embedded: boolean
   showSidebar: boolean
-  showFooter: boolean
   showMinimalSettings: boolean
   showMessageActions: boolean
 }
@@ -20,7 +19,6 @@ export function ChatUiProvider({ children }: { children: ReactNode }) {
     () => ({
       embedded,
       showSidebar: !embedded,
-      showFooter: !embedded,
       showMinimalSettings: embedded,
       showMessageActions: !embedded,
     }),

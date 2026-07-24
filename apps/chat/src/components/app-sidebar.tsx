@@ -22,10 +22,7 @@ import { SettingsPanel } from './settings-panel'
 import { ThreadList } from './thread-list'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
-export function AppSidebar({
-  chatbotName,
-  ...props
-}: React.ComponentProps<typeof Sidebar> & { chatbotName?: string }) {
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const t = useTranslations()
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const router = useRouter()
@@ -49,9 +46,9 @@ export function AppSidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <div className="flex items-center py-1.5 pl-3">
-              {chatbotName && (
-                <span className="min-w-0 truncate text-sm">{chatbotName}</span>
-              )}
+              {/* Name lives in the persistent top header now (assistant.tsx
+                  SidebarMain) — showing it again here while the sidebar is
+                  open would just duplicate it. */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
@@ -115,6 +112,16 @@ export function AppSidebar({
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
+        {/* V4/D6: the standalone chat view no longer renders the shared
+            <Footer> band; its legal line moves here instead (embedded mode
+            never showed the footer or this sidebar, so nothing changes for
+            it). Wording matches packages/shared-components/src/Footer.tsx,
+            which is hardcoded English there too — kept as-is rather than
+            introducing a new i18n key for reused copy. */}
+        <p className="text-muted-foreground px-3 pb-2 text-center text-xs">
+          &copy;{new Date().getFullYear()} DF Teaching Center, Department of
+          Finance, University of Zurich. All rights reserved.
+        </p>
       </SidebarFooter>
     </Sidebar>
   )

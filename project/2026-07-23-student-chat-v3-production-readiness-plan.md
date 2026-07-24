@@ -1015,3 +1015,21 @@ designing the question widget.
   sends the localized prompt (en+de), Swiss ss, no 375px overflow;
   screenshots s13-de-375.png / s13-en-1440.png in scratchpad. check + 45/45
   tests + prettier green. Next: S14 chrome.
+- 2026-07-24: **S14 done** (chrome decluttering). Header: chatbot avatar +
+  name always visible (dropped the `open && 'md:hidden'` wrapper in
+  assistant.tsx; sidebar's duplicate name removed; effectively one on-screen
+  toggle per state, long names truncate). Footer band removed from both
+  render paths and `showFooter` plumbing deleted (it was always ===
+  `!embedded` and embedded never showed it — dead code); legal line now sits
+  in the sidebar footer as muted text-xs (wording copied from the shared
+  Footer.tsx, hardcoded English there too, so no new i18n key). Captions:
+  `MessageMetadata` removed from UserMessage; assistant caption shows mode —
+  effort — credits with the full string incl. model in a `title` tooltip.
+  Review (1 CONFIRMED a11y finding): title-attr is mouse-only → added an
+  sr-only span with the full detail so AT users keep model access
+  (touch-only users rely on the tooltip-less terse caption — accepted, model
+  is the least load-bearing field). No Playwright caption assertions
+  existed. Verified live at 1440+375: header persists with sidebar
+  open/closed, "Tutor — Medium" visible + full title attr, user bubbles
+  caption-free, no footer band; screenshots s14-en-1440.png / s14-375.png.
+  check + 45/45 + prettier green. Next: S16 micro-polish.
