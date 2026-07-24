@@ -29,7 +29,10 @@ export function sanitizeManageElementCreatedPayload(
 
   const { id, name } = payload as Record<string, unknown>
 
-  if (typeof id !== 'number' || !Number.isFinite(id)) return null
+  // Mirror the server-side confirmedElementSchema bound
+  // (z.number().int().positive()): a created element id is always a positive
+  // integer, so reject fractional or non-positive values at this boundary too.
+  if (typeof id !== 'number' || !Number.isInteger(id) || id <= 0) return null
   if (
     typeof name !== 'string' ||
     name.length === 0 ||
