@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from src.modules.utils import (
     analytics_mode,
+    analytics_run_config_from_env,
     load_sql,
     render_uuid_in_clause,
     scoped_course_ids,
@@ -14,8 +15,7 @@ _SQL = load_sql(os.path.join(os.path.dirname(__file__), "mark_analytics_valid.sq
 
 _SET_PLACEHOLDER = "/*COURSE_FINALIZE_SET*/"
 _FILTER_PLACEHOLDER = "/*COURSE_FINALIZE_FILTER*/"
-_BYPASS_PLACEHOLDER = "/*COURSE_FINALIZE_BYPASS*/"
-_CHAT_BYPASS_PLACEHOLDER = "/*CHAT_SCOPE_BYPASS*/"
+_SCOPE_BYPASS_PLACEHOLDER = "/*COURSE_SCOPE_BYPASS*/"
 
 
 def _render_sql(finalize: bool, course_ids: list[str] | None) -> str:
@@ -32,8 +32,7 @@ def _render_sql(finalize: bool, course_ids: list[str] | None) -> str:
         filter_clause += ' AND c."analyticsFinalizedAt" IS NULL'
     return (
         _SQL.replace(_SET_PLACEHOLDER, set_clause)
-        .replace(_BYPASS_PLACEHOLDER, bypass_clause)
-        .replace(_CHAT_BYPASS_PLACEHOLDER, bypass_clause)
+        .replace(_SCOPE_BYPASS_PLACEHOLDER, bypass_clause)
         .replace(_FILTER_PLACEHOLDER, filter_clause)
     )
 
@@ -41,8 +40,9 @@ def _render_sql(finalize: bool, course_ids: list[str] | None) -> str:
 def mark_analytics_valid(session: Session, verbose: bool = False):
     """Flip Course.areAnalyticsValid for every course that received analytics rows.
 
-    Also sets Course.chatAnalyticsValidAt on courses with ParticipantChatAnalytics
-    rows. Only courses actually covered by the run are touched (per §3.8
+    Also sets Course.chatAnalyticsValidAt for scoped courses, including a valid
+    empty chat result. Unscoped runs set it only for courses with participant
+    chat rows. Only courses actually covered by the run are touched (per §3.8
     safeguard).
 
     When ``ANALYTICS_MODE=finalize`` and ``ANALYTICS_COURSE_IDS`` is set, the
@@ -54,11 +54,13 @@ def mark_analytics_valid(session: Session, verbose: bool = False):
     finalize = mode == "finalize" and bool(course_ids)
 
     if verbose:
-        print(
-            f"[analytics_validity] mode={mode} finalize={finalize} "
-            f"course_ids={len(course_ids) if course_ids else 0}"
-        )
-    result = session.execute(text(_render_sql(finalize, course_ids)))
+        print(f"[analytics_validity] mode={mode} finalize={finalize} course_ids={len(course_ids) if course_ids else 0}")
+    result = session.execute(
+        text(_render_sql(finalize, course_ids)),
+        {
+            "chat_analytics_cutoff": analytics_run_config_from_env().chat_analytics_cutoff,
+        },
+    )
     session.commit()
     rows = result.rowcount or 0
     if verbose:

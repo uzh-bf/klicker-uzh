@@ -1,6 +1,6 @@
--- Mark Course.areAnalyticsValid + analyticsLastComputedAt for courses that have any
--- freshly-populated quiz-analytics row, and Course.chatAnalyticsValidAt only for
--- courses that have at least one ParticipantChatAnalytics row.
+-- Mark Course.areAnalyticsValid + analyticsLastComputedAt for courses covered by
+-- fresh analytics. Scoped runs also stamp a valid empty chat result; unscoped
+-- runs stamp Course.chatAnalyticsValidAt only for courses with chat rows.
 --
 -- When the pipeline runs in finalize mode, the handler injects an
 -- ``AND c.id IN (<csv>)`` clause into /*COURSE_FINALIZE_FILTER*/ and turns
@@ -21,11 +21,12 @@ UPDATE "Course" c SET
   "analyticsLastComputedAt" = NOW(),
   /*COURSE_FINALIZE_SET*/
   "chatAnalyticsValidAt"    = CASE
-    WHEN /*CHAT_SCOPE_BYPASS*/
-      OR EXISTS (SELECT 1 FROM chat_courses cc WHERE cc."courseId" = c.id) THEN NOW()
+    WHEN /*COURSE_SCOPE_BYPASS*/
+      OR EXISTS (SELECT 1 FROM chat_courses cc WHERE cc."courseId" = c.id)
+      THEN COALESCE(CAST(:chat_analytics_cutoff AS timestamptz), NOW())
     ELSE c."chatAnalyticsValidAt"
   END
 WHERE (EXISTS (SELECT 1 FROM quiz_courses qc WHERE qc."courseId" = c.id)
    OR EXISTS (SELECT 1 FROM chat_courses cc WHERE cc."courseId" = c.id)
-   OR /*COURSE_FINALIZE_BYPASS*/)
+   OR /*COURSE_SCOPE_BYPASS*/)
   /*COURSE_FINALIZE_FILTER*/;

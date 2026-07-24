@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from types import SimpleNamespace
 from typing import Any, cast
 
 import pytest
@@ -14,9 +15,23 @@ class FakeTask:
         self.name = options["name"]
 
 
+class FakeRunsClient:
+    def __init__(self, workflow_created_at: datetime | None) -> None:
+        self.workflow_created_at = workflow_created_at
+
+    def get(self, _run_id: str) -> Any:
+        return SimpleNamespace(run=SimpleNamespace(created_at=self.workflow_created_at))
+
+
 class FakeContext:
-    def __init__(self, done: bool = False) -> None:
+    def __init__(
+        self,
+        done: bool = False,
+        workflow_created_at: datetime | None = None,
+    ) -> None:
         self._done = done
+        self.workflow_run_id = "workflow-run-1"
+        self.runs_client = FakeRunsClient(workflow_created_at)
 
     def done(self) -> bool:
         return self._done
@@ -188,6 +203,9 @@ def test_analytics_dags_split_concurrency_and_preserve_task_contract() -> None:
         assert [parent.name for parent in tasks["s13-platform-semester-analytics"].options["parents"]] == [
             "s2-course-heatmap"
         ]
+        assert [parent.name for parent in tasks["s9-aggregated-chatbot-analytics"].options["parents"]] == [
+            "s8-chat-analytics"
+        ]
         assert [parent.name for parent in tasks["s11-chat-quiz-correlation"].options["parents"]] == [
             "s4-participant-perf",
             "s8-chat-analytics",
@@ -215,6 +233,18 @@ def test_analytics_dags_split_concurrency_and_preserve_task_contract() -> None:
         mode="full",
         course_ids=("course-2",),
         window_since=None,
+    )
+
+    cutoff = datetime(2026, 7, 23, 9, 30, tzinfo=timezone.utc)
+    freshness_tasks["s99-mark-analytics-valid"].fn(
+        hatchet_worker.AnalyticsRunInput(courseId="course-1"),
+        FakeContext(workflow_created_at=cutoff),
+    )
+    assert calls[2][1] == hatchet_worker.AnalyticsRunConfig(
+        mode="finalize",
+        course_ids=("course-1",),
+        window_since=None,
+        chat_analytics_cutoff="2026-07-23T09:30:00+00:00",
     )
 
     with pytest.raises(ValueError, match="ANALYTICS_ALLOW_FULL"):
@@ -249,3 +279,8 @@ def test_cancelled_script_is_non_retryable_at_hatchet_boundary() -> None:
         )
 
     assert isinstance(exc_info.value.__cause__, hatchet_worker.AnalyticsRunCancelled)
+
+
+def test_workflow_run_cutoff_requires_hatchet_creation_timestamp() -> None:
+    with pytest.raises(RuntimeError, match="no creation timestamp"):
+        hatchet_worker.workflow_run_cutoff(cast(Any, FakeContext()))

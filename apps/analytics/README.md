@@ -150,8 +150,10 @@ Incremental chat stages keep the normal 14-day window for unaffected courses.
 If current disclaimer consent changed, they purge now-ineligible participant
 rows across retained history and rebuild only the affected courses from the
 earliest affected message or aggregate window. The course chat watermark
-coordinates participant and aggregate cleanup even when those Hatchet tasks
-run in parallel.
+is the durable handoff from the participant stage to its aggregate child,
+preventing a completed aggregate task from swallowing a later consent cleanup.
+The final marker uses Hatchet's immutable workflow-creation time, so consent
+changes during a run remain visible to the next reconciliation.
 
 Cutover and rollback are cold: stop the current owner before starting another worker image so exactly one analytics DAG consumes these events.
 
