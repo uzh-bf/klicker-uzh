@@ -61,6 +61,17 @@ export default {
       dependencies: ['remark-math'],
       isIgnored: true,
     },
+    {
+      // FIXME: drop once backend-docker migrates to the OpenTelemetry v2 SDK line;
+      // chat is on v2 (required by @langfuse/otel v4) while backend-docker stays on v1.
+      label: 'backend-docker stays on the OpenTelemetry v1 SDK line',
+      dependencies: [
+        '@opentelemetry/exporter-trace-otlp-http',
+        '@opentelemetry/sdk-trace-node',
+      ],
+      packages: ['@klicker-uzh/backend-docker'],
+      isIgnored: true,
+    },
   ],
   sortAz: [
     'dependencies',
