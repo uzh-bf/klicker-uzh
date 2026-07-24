@@ -73,6 +73,13 @@ interface ChatState {
   isLoading: boolean
   participationRequired: boolean
   participationMessage: string | null
+  /**
+   * Set when `loadThreads` fails for a reason other than the 403
+   * participation case (which `handleApiError` already surfaces via
+   * `participationRequired`). Lets the thread list distinguish "no threads
+   * yet" from "we don't actually know, the fetch failed" and offer a retry.
+   */
+  threadsLoadError: boolean
 
   // thread management actions
   createThread: (chatbotId: string) => Promise<string>
@@ -207,7 +214,16 @@ export const useChatStore = create<ChatState>((set, get) => {
     )
   }
 
-  const handleApiError = (error: unknown) => {
+  // Monotonic id for loadThreads invocations; see the guard in loadThreads.
+  let loadThreadsGeneration = 0
+
+  /**
+   * Handles the participation/403 case shared by thread actions. Returns
+   * true when the error was a participation error (already surfaced via
+   * `participationRequired`), so callers can decide whether a generic
+   * error state is still needed.
+   */
+  const handleApiError = (error: unknown): boolean => {
     if (isApiError(error) && error.status === 403) {
       const apiMessage =
         typeof error.body === 'object' &&
@@ -223,7 +239,9 @@ export const useChatStore = create<ChatState>((set, get) => {
       markParticipationRequired(
         apiMessage === GENERIC_PARTICIPATION_ERROR ? undefined : apiMessage
       )
+      return true
     }
+    return false
   }
 
   return {
@@ -232,6 +250,7 @@ export const useChatStore = create<ChatState>((set, get) => {
     isLoading: false,
     participationRequired: false,
     participationMessage: null,
+    threadsLoadError: false,
 
     /**
      * Creates a new conversation thread
@@ -277,11 +296,17 @@ export const useChatStore = create<ChatState>((set, get) => {
      * Fetches thread metadata (without messages) for sidebar display
      */
     loadThreads: async (chatbotId: string) => {
+      // Overlapping calls (fast chatbot switches, retry during a slow load)
+      // resolve in arbitrary order; only the latest invocation may write the
+      // result, otherwise a stale failure can overwrite a newer success (or
+      // vice versa) and leave `threadsLoadError`/`threads` wrong.
+      const generation = ++loadThreadsGeneration
       try {
-        set({ isLoading: true })
+        set({ isLoading: true, threadsLoadError: false })
         const apiThreads: ApiThread[] = await apiCall<ApiThread[]>(
           `/chatbots/${chatbotId}/threads`
         )
+        if (generation !== loadThreadsGeneration) return
 
         const freshThreads = apiThreads.map(convertApiThreadToThread)
 
@@ -315,12 +340,17 @@ export const useChatStore = create<ChatState>((set, get) => {
             isLoading: false,
             participationRequired: false,
             participationMessage: null,
+            threadsLoadError: false,
           }
         })
       } catch (error) {
         console.error('Failed to load threads:', error)
-        handleApiError(error)
-        set({ isLoading: false })
+        if (generation !== loadThreadsGeneration) return
+        // The 403/participation case is already surfaced via
+        // `participationRequired`; only flag the generic error state for
+        // failures that leave the student without any explanation.
+        const isParticipationError = handleApiError(error)
+        set({ isLoading: false, threadsLoadError: !isParticipationError })
       }
     },
 

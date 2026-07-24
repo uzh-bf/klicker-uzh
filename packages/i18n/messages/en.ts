@@ -73,6 +73,7 @@ export default {
         'Accept: You can use the chatbot and access all features.',
       consequenceDecline:
         'Decline: The chatbot remains blocked and you cannot send messages.',
+      actionError: 'Something went wrong. Please try again.',
     },
     markdown: {
       copyCode: 'Copy',
@@ -99,6 +100,8 @@ export default {
       editName: 'Edit name',
       deleteChat: 'Delete chat',
       emptyState: 'Start your first conversation with a message.',
+      loadError: 'Your chats could not be loaded.',
+      retry: 'Retry',
     },
     thread: {
       scrollToBottom: 'Scroll to bottom',
