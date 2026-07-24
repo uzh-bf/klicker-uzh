@@ -134,6 +134,10 @@
     "@klicker-uzh/prisma#check": {
       "dependsOn": ["build"]
     },
+    "@klicker-uzh/prisma#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "src/prisma/client/**"]
+    },
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
