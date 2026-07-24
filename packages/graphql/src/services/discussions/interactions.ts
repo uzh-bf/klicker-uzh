@@ -529,48 +529,57 @@ export async function deleteCourseDiscussionReply(
 
   const now = new Date()
 
-  const deleted = await ctx.prisma.$transaction(async (tx) => {
-    const deletedReply = await tx.discussionReply.updateMany({
-      where: {
-        id: replyId,
-        isDeleted: false,
-      },
-      data: {
-        isDeleted: true,
-        deletedAt: now,
-        content: '',
-      },
+  try {
+    return await ctx.prisma.$transaction(async (tx) => {
+      const updatedThread = await tx.discussionThread.updateMany({
+        where: {
+          id: reply.thread.id,
+          isDeleted: false,
+          replyCount: { gt: 0 },
+        },
+        data: {
+          replyCount: { decrement: 1 },
+          lastActivityAt: now,
+        },
+      })
+
+      if (updatedThread.count === 0) {
+        throw new DiscussionReplyDeleteConflictError()
+      }
+
+      const deletedReply = await tx.discussionReply.updateMany({
+        where: {
+          id: replyId,
+          isDeleted: false,
+        },
+        data: {
+          isDeleted: true,
+          deletedAt: now,
+          content: '',
+        },
+      })
+
+      if (deletedReply.count === 0) {
+        throw new DiscussionReplyDeleteConflictError()
+      }
+
+      await tx.discussionEvent.create({
+        data: {
+          spaceId: reply.thread.spaceId,
+          scopeId: reply.thread.scopeId,
+          threadId: reply.thread.id,
+          replyId,
+          participantId: actor?.participantId ?? null,
+          eventType: DB.DiscussionEventType.REPLY_DELETED,
+        },
+      })
+
+      return true
     })
-
-    if (deletedReply.count === 0) return false
-
-    const updatedThread = await tx.discussionThread.updateMany({
-      where: {
-        id: reply.thread.id,
-        isDeleted: false,
-        replyCount: { gt: 0 },
-      },
-      data: {
-        replyCount: { decrement: 1 },
-        lastActivityAt: now,
-      },
-    })
-
-    if (updatedThread.count === 0) return false
-
-    await tx.discussionEvent.create({
-      data: {
-        spaceId: reply.thread.spaceId,
-        scopeId: reply.thread.scopeId,
-        threadId: reply.thread.id,
-        replyId,
-        participantId: actor?.participantId ?? null,
-        eventType: DB.DiscussionEventType.REPLY_DELETED,
-      },
-    })
-
-    return true
-  })
-
-  return deleted
+  } catch (error) {
+    if (error instanceof DiscussionReplyDeleteConflictError) return false
+    throw error
+  }
 }
+
+class DiscussionReplyDeleteConflictError extends Error {}

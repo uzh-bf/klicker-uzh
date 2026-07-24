@@ -161,4 +161,58 @@ export function registerDeletionPolicySuite(
       )
     ).toHaveLength(1)
   })
+
+  it('keeps concurrent thread and reply deletion atomic', async () => {
+    const { prisma, userOneCtx } = getContext()
+    const course = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, { courseId: course.id })
+
+    const participantId = await seedParticipantInCourse(prisma, {
+      courseId: course.id,
+    })
+    const participantCtx = createParticipantContext(userOneCtx, participantId)
+    const thread = await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: 'Delete the thread and reply concurrently.',
+        scope: { scopeType: DiscussionScopeType.COURSE },
+      },
+      participantCtx
+    )
+    const reply = await createCourseDiscussionReply(
+      {
+        courseId: course.id,
+        threadId: thread!.id,
+        content: 'This reply must be deleted consistently.',
+      },
+      participantCtx
+    )
+
+    const [threadDeleted, replyDeleted] = await Promise.all([
+      deleteCourseDiscussionThread({ threadId: thread!.id }, participantCtx),
+      deleteCourseDiscussionReply({ replyId: reply!.id }, participantCtx),
+    ])
+
+    expect(threadDeleted).toBe(true)
+    expect(
+      await prisma.discussionThread.findUnique({
+        where: { id: thread!.id },
+        select: { isDeleted: true, replyCount: true },
+      })
+    ).toEqual({ isDeleted: true, replyCount: 0 })
+    expect(
+      await prisma.discussionReply.findUnique({
+        where: { id: reply!.id },
+        select: { isDeleted: true },
+      })
+    ).toEqual({ isDeleted: true })
+
+    const replyDeleteEvents = await prisma.discussionEvent.count({
+      where: {
+        replyId: reply!.id,
+        eventType: DiscussionEventType.REPLY_DELETED,
+      },
+    })
+    expect(replyDeleteEvents).toBe(replyDeleted ? 1 : 0)
+  })
 }
