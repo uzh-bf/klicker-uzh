@@ -73,17 +73,18 @@ test('ended-course scanner reactivates finalized courses with dirty chat privacy
   assert.deepEqual(result, { success: true, emitted: 1 })
   assert.equal(queries.length, 1)
   const queryText = queries[0].strings.join('')
-  assert.match(queryText, /c\."analyticsFinalizedAt" IS NULL/)
+  assert.match(queryText, /ended\."analyticsFinalizedAt" IS NULL/)
   assert.match(
     queryText,
-    /cuc\."disclaimerAcceptedAt" > dirty_course\."chatAnalyticsValidAt"/
+    /cuc\."disclaimerAcceptedAt" > ended\."chatAnalyticsValidAt"/
   )
   assert.match(
     queryText,
     /cuc\."acceptedDisclaimerId" IS DISTINCT FROM cb\."disclaimerId"/
   )
-  assert.match(queryText, /WITH dirty_chat_courses AS MATERIALIZED/)
-  assert.match(queryText, /FROM "ParticipantChatAnalytics" pca/)
+  assert.match(queryText, /WITH ended_courses AS MATERIALIZED/)
+  assert.match(queryText, /dirty_chat_courses AS MATERIALIZED/)
+  assert.match(queryText, /JOIN "ParticipantChatAnalytics" pca/)
   assert.equal(pushedEvents.length, 1)
   assert.equal(pushedEvents[0][0], 'course-ended')
   assert.deepEqual(pushedEvents[0][1], {

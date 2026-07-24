@@ -310,27 +310,39 @@ export function prepareHatchetTasks({
 
       const candidates = await database.$queryRaw<{ id: string }[]>(
         Prisma.sql`
-          WITH dirty_chat_courses AS MATERIALIZED (
-            SELECT cb."courseId"
-            FROM "ChatUsageCredits" cuc
-            JOIN "Chatbot" cb ON cb.id = cuc."chatbotId"
-            JOIN "Course" dirty_course ON dirty_course.id = cb."courseId"
+          WITH ended_courses AS MATERIALIZED (
+            SELECT
+              c.id,
+              c."analyticsFinalizedAt",
+              c."chatAnalyticsValidAt"
+            FROM "Course" c
             WHERE (
-              cuc."disclaimerAcceptedAt" > dirty_course."chatAnalyticsValidAt"
+              c."endDate" <= ${cutoff}
+              OR c."isArchived" = true
+            )
+          ),
+          dirty_chat_courses AS MATERIALIZED (
+            SELECT cb."courseId"
+            FROM ended_courses ended
+            JOIN "Chatbot" cb ON cb."courseId" = ended.id
+            JOIN "ChatUsageCredits" cuc ON cuc."chatbotId" = cb.id
+            WHERE (
+              cuc."disclaimerAcceptedAt" > ended."chatAnalyticsValidAt"
               OR (
                 cuc."disclaimerDeclined" = true
-                AND cuc."updatedAt" > dirty_course."chatAnalyticsValidAt"
+                AND cuc."updatedAt" > ended."chatAnalyticsValidAt"
               )
               OR (
                 cuc."acceptedDisclaimerId" IS DISTINCT FROM cb."disclaimerId"
-                AND cb."updatedAt" > dirty_course."chatAnalyticsValidAt"
+                AND cb."updatedAt" > ended."chatAnalyticsValidAt"
               )
             )
 
             UNION
 
             SELECT pca."courseId"
-            FROM "ParticipantChatAnalytics" pca
+            FROM ended_courses ended
+            JOIN "ParticipantChatAnalytics" pca ON pca."courseId" = ended.id
             JOIN "Chatbot" cb ON cb.id = pca."chatbotId"
             LEFT JOIN "ChatUsageCredits" cuc
               ON cuc."participantId" = pca."participantId"
@@ -341,19 +353,15 @@ export function prepareHatchetTasks({
               OR cuc."disclaimerDeclined" = true
             )
           )
-          SELECT c.id
-          FROM "Course" c
+          SELECT ended.id
+          FROM ended_courses ended
           WHERE (
-            c."endDate" <= ${cutoff}
-            OR c."isArchived" = true
-          )
-          AND (
-            c."analyticsFinalizedAt" IS NULL
-            OR c."chatAnalyticsValidAt" IS NULL
+            ended."analyticsFinalizedAt" IS NULL
+            OR ended."chatAnalyticsValidAt" IS NULL
             OR EXISTS (
               SELECT 1
               FROM dirty_chat_courses dirty
-              WHERE dirty."courseId" = c.id
+              WHERE dirty."courseId" = ended.id
             )
           )
         `
