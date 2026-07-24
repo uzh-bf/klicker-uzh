@@ -65,26 +65,39 @@ exhaustion. Run each command from the repository root:
 
 ```bash
 docker exec -w /workspaces/klicker-uzh default-co-c3448-app-1 \
-  pnpm --filter @klicker-uzh/cypress test:run:raw -- \
-  --browser chromium --spec cypress/e2e/Y-course-qa-course-workflow.cy.ts
+  sh -lc 'APP_ORIGIN_AUTH=http://127.0.0.1:3010 \
+  pnpm --filter @klicker-uzh/cypress exec cypress run \
+  --browser chromium --spec cypress/e2e/Y-course-qa-course-workflow.cy.ts'
 
 docker exec -w /workspaces/klicker-uzh default-co-c3448-app-1 \
-  pnpm --filter @klicker-uzh/cypress test:run:raw -- \
-  --browser chromium --spec cypress/e2e/Y-course-qa-practice-workflow.cy.ts
+  sh -lc 'APP_ORIGIN_AUTH=http://127.0.0.1:3010 \
+  pnpm --filter @klicker-uzh/cypress exec cypress run \
+  --browser chromium --spec cypress/e2e/Y-course-qa-practice-workflow.cy.ts'
 
 docker exec -w /workspaces/klicker-uzh default-co-c3448-app-1 \
-  pnpm --filter @klicker-uzh/cypress test:run:raw -- \
-  --browser chromium --spec cypress/e2e/Y-course-qa-embed-workflow.cy.ts
+  sh -lc 'APP_ORIGIN_AUTH=http://127.0.0.1:3010 \
+  pnpm --filter @klicker-uzh/cypress exec cypress run \
+  --browser chromium --spec cypress/e2e/Y-course-qa-embed-workflow.cy.ts'
 
 docker exec -w /workspaces/klicker-uzh default-co-c3448-app-1 \
-  pnpm --filter @klicker-uzh/cypress test:run:raw -- \
-  --browser chromium --spec cypress/e2e/Y-course-qa-rollout-gates-workflow.cy.ts
+  sh -lc 'APP_ORIGIN_AUTH=http://127.0.0.1:3010 \
+  pnpm --filter @klicker-uzh/cypress exec cypress run \
+  --browser chromium --spec cypress/e2e/Y-course-qa-rollout-gates-workflow.cy.ts'
 ```
 
 The last completed baseline was course `8/8`, practice `7/7`, embed `6/6`, and
 rollout `7/7`. The course spec gained two cases afterward. The embed baseline
 predates fragment-token transport and course-wide mode, so it is historical
 evidence rather than current-branch proof.
+
+The 2026-07-24 current-spec attempt confirmed Chromium 150 and one-spec
+selection after correcting the command above. Cleanup passed, but the first
+lecturer case returned to Auth before any Q&A assertion. A real delegated login
+also created an Auth session, reached Manage, then returned to Auth while the
+course list loaded. Restarting the isolated Auth, Manage, PWA, and API processes
+with one shared test secret did not change that result. Treat the focused
+browser rerun and new screenshots as blocked by local cross-app session
+validation, not as a Course Q&A assertion failure.
 
 Run the current DB-backed service suite with:
 
