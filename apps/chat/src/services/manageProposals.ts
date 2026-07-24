@@ -16,6 +16,7 @@ export {
 const MANAGE_PROPOSAL_PURPOSE = 'manage-assistant-proposal'
 
 const manageProposalTokenSchema = z.object({
+  jti: z.string().trim().min(1).optional(),
   kind: z.literal('element.create.proposal'),
   payload: z.union([
     choicesProposalPayloadSchema,
@@ -25,6 +26,39 @@ const manageProposalTokenSchema = z.object({
   sub: z.string().trim().min(1),
   summary: z.string().trim().min(1).max(240).optional(),
 })
+
+// Single-use guard for signed proposal tokens (jti replay protection).
+//
+// Best-effort, per-pod only: state lives in process memory, so a lecturer
+// could squeeze in one extra confirm per pod behind a load balancer, and a
+// restart/redeploy forgets used tokens. Good enough against accidental
+// double-submits (double-click, retried request) within the token's 15m
+// lifetime; not a substitute for a shared store if a hard guarantee is ever
+// needed.
+//
+// Tokens signed before this guard existed have no `jti` claim; those are
+// accepted without a replay check so in-flight tokens keep working across
+// the mcp-lecturer rollout (see signProposalToken in apps/mcp-lecturer).
+const PROPOSAL_JTI_TTL_MS = 15 * 60 * 1000 // matches signProposalToken's 15m expiresIn
+const usedProposalJtis = new Map<string, number>() // jti -> expiresAtMs
+
+function pruneUsedProposalJtis(now: number) {
+  for (const [jti, expiresAt] of usedProposalJtis) {
+    if (expiresAt <= now) {
+      usedProposalJtis.delete(jti)
+    }
+  }
+}
+
+function claimProposalJti(jti: string): boolean {
+  const now = Date.now()
+  pruneUsedProposalJtis(now)
+  if (usedProposalJtis.has(jti)) {
+    return false
+  }
+  usedProposalJtis.set(jti, now + PROPOSAL_JTI_TTL_MS)
+  return true
+}
 
 const confirmedElementSchema = z.object({
   id: z.number().int().positive(),
@@ -112,24 +146,31 @@ export async function verifyManageProposalToken(
   userId: string,
   settings: { issuer: string; secret: string }
 ): Promise<ManageElementCreateProposal> {
+  let parsed: z.infer<typeof manageProposalTokenSchema>
   try {
     const payload = await verifyJWT(token, settings.secret, {
       issuer: settings.issuer,
     })
-    const parsed = manageProposalTokenSchema.parse(payload)
+    parsed = manageProposalTokenSchema.parse(payload)
 
     if (parsed.sub !== userId) {
       throw new Error('Proposal token subject mismatch')
     }
-
-    return {
-      kind: parsed.kind,
-      payload: parsed.payload,
-      requiresConfirmation: true,
-      summary: parsed.summary,
-    }
   } catch {
     throw new Error('Invalid Manage proposal token')
+  }
+
+  // Outside the signature/shape try-catch above so this rejection is
+  // distinguishable from "invalid token" (see claimProposalJti comment).
+  if (parsed.jti && !claimProposalJti(parsed.jti)) {
+    throw new Error('Manage proposal token already used')
+  }
+
+  return {
+    kind: parsed.kind,
+    payload: parsed.payload,
+    requiresConfirmation: true,
+    summary: parsed.summary,
   }
 }
 

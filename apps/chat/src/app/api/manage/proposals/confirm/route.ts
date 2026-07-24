@@ -1,14 +1,20 @@
-import { cookies } from 'next/headers'
-import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-import { getAuthenticatedManageUserId } from '../../../../../lib/server/manageAuth'
+import { getAuthenticatedManageUserId } from '@/src/lib/server/manageAuth'
 import {
   confirmManageProposal,
   getRequiredManageOrigin,
   verifyManageProposalToken,
-} from '../../../../../services/manageProposals'
+} from '@/src/services/manageProposals'
+import { createRateLimiter } from '@/src/services/rateLimiter'
+import { cookies } from 'next/headers'
+import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 
 export const runtime = 'nodejs'
+
+// Best-effort, per-pod limiter (see rateLimiter.ts) — 10 requests / 5 minutes
+// per authenticated lecturer. Proposal confirmation is rarer and more
+// consequential than plain chat turns, hence the tighter budget.
+const confirmRateLimiter = createRateLimiter(10, 5 * 60 * 1000)
 
 const confirmProposalSchema = z.object({
   proposalToken: z.string().trim().min(1),
@@ -16,6 +22,14 @@ const confirmProposalSchema = z.object({
 
 function getGraphqlEndpoint() {
   const origin = process.env.APP_ORIGIN_API?.replace(/\/$/, '')
+  if (!origin) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('APP_ORIGIN_API is required')
+    }
+    console.warn(
+      'APP_ORIGIN_API is not set; falling back to http://localhost:3000 for local dev only'
+    )
+  }
   return `${origin ?? 'http://localhost:3000'}/api/graphql`
 }
 
@@ -23,6 +37,19 @@ export async function POST(req: NextRequest) {
   const userId = await getAuthenticatedManageUserId()
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const rateLimit = confirmRateLimiter.check(userId)
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': String(Math.ceil(rateLimit.retryAfterMs / 1000)),
+        },
+      }
+    )
   }
 
   const cookieStore = await cookies()
@@ -40,9 +67,12 @@ export async function POST(req: NextRequest) {
   const secret = process.env.MCP_LECTURER_JWT_SECRET ?? process.env.APP_SECRET
   const issuer = process.env.APP_ORIGIN_AUTH
   let manageOrigin: string
+  let graphqlEndpoint: string
   try {
     manageOrigin = getRequiredManageOrigin()
-  } catch {
+    graphqlEndpoint = getGraphqlEndpoint()
+  } catch (error) {
+    console.error('Manage proposal confirmation misconfigured:', error)
     return NextResponse.json(
       { error: 'Proposal confirmation is not configured' },
       { status: 500 }
@@ -50,6 +80,9 @@ export async function POST(req: NextRequest) {
   }
 
   if (!secret || !issuer) {
+    console.error(
+      'Manage proposal confirmation misconfigured: missing MCP_LECTURER_JWT_SECRET/APP_SECRET or APP_ORIGIN_AUTH'
+    )
     return NextResponse.json(
       { error: 'Proposal confirmation is not configured' },
       { status: 500 }
@@ -65,13 +98,23 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(
       await confirmManageProposal({
-        graphqlEndpoint: getGraphqlEndpoint(),
+        graphqlEndpoint,
         manageOrigin,
         proposal,
         sessionToken,
       })
     )
   } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message === 'Manage proposal token already used'
+    ) {
+      return NextResponse.json(
+        { error: 'Proposal already confirmed' },
+        { status: 409 }
+      )
+    }
+
     if (
       error instanceof Error &&
       error.message === 'Invalid Manage proposal token'

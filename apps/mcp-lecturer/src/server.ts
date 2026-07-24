@@ -1,4 +1,5 @@
 import { FastMCP, UserError } from 'fastmcp'
+import { randomUUID } from 'node:crypto'
 import type { IncomingMessage } from 'node:http'
 import { z } from 'zod'
 import {
@@ -48,6 +49,7 @@ async function signProposalToken(
 ) {
   return signLecturerJwt(
     {
+      jti: randomUUID(),
       kind: proposal.kind,
       payload: proposal.payload,
       purpose: 'manage-assistant-proposal',

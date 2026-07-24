@@ -1,9 +1,9 @@
-import { describe, expect, test } from 'vitest'
 import {
   buildManageAssistantSystemPrompt,
   getManageAssistantOpenAIProviderOptions,
   selectManageAssistantModel,
-} from '../src/services/manageAssistantRuntime'
+} from '@/src/services/manageAssistantRuntime'
+import { describe, expect, test } from 'vitest'
 
 const SAMPLE_CONTEXT = {
   version: 1 as const,
@@ -156,13 +156,30 @@ describe('Manage assistant runtime helpers', () => {
     ).toBe('fallback-deployment')
   })
 
-  test('keeps Manage assistant responses stateless for OpenRouter-compatible providers', () => {
+  test('defaults Manage assistant responses to stateless (OpenRouter-safe) when unset', () => {
+    const previousValue = process.env.CHAT_OPENAI_STORE_RESPONSES
+    delete process.env.CHAT_OPENAI_STORE_RESPONSES
+
+    try {
+      expect(getManageAssistantOpenAIProviderOptions()).toEqual({
+        store: false,
+      })
+    } finally {
+      if (previousValue === undefined) {
+        delete process.env.CHAT_OPENAI_STORE_RESPONSES
+      } else {
+        process.env.CHAT_OPENAI_STORE_RESPONSES = previousValue
+      }
+    }
+  })
+
+  test('reuses the sibling chatbot route env flag to enable response storage', () => {
     const previousValue = process.env.CHAT_OPENAI_STORE_RESPONSES
     process.env.CHAT_OPENAI_STORE_RESPONSES = 'true'
 
     try {
       expect(getManageAssistantOpenAIProviderOptions()).toEqual({
-        store: false,
+        store: true,
       })
     } finally {
       if (previousValue === undefined) {

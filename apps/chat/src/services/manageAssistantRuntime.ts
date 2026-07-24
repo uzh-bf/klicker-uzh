@@ -1,4 +1,5 @@
-import type { ChatModelConfig } from '../lib/server/chatModelRegistry'
+import type { ChatModelConfig } from '@/src/lib/server/chatModelRegistry'
+import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import { buildManageAssistantSkillsPrompt } from './manageAssistantSkills'
 import {
   formatManageContextForPrompt,
@@ -46,9 +47,13 @@ export function selectManageAssistantModel(
 }
 
 export function getManageAssistantOpenAIProviderOptions() {
+  // Manage shares the sibling chatbot route's OpenAI-compatible backend
+  // (same OPENAI_BASE_URL/OPENAI_API_KEY), so it reuses the same
+  // env-backed store flag: CHAT_OPENAI_STORE_RESPONSES already encodes
+  // whether that backend can persist response items across tool-call
+  // steps (stg/prd: true, required for LiteLLM/Azure; local dev default:
+  // false, safe for OpenRouter-style stateless backends).
   return {
-    // OpenRouter's Responses endpoint only accepts store=false and is stateless;
-    // keep Manage compatible with OpenAI-compatible, non-native providers.
-    store: false,
+    store: getOpenAIResponsesStore(),
   } as const
 }

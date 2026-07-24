@@ -1,7 +1,7 @@
+import { mintLecturerMcpJwt } from '@/src/lib/server/mcpAuthMint'
 import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import type { ToolSet } from 'ai'
-import { mintLecturerMcpJwt } from '../lib/server/mcpAuthMint'
 import { buildMcpServiceUrl } from './mcpUrl'
 
 type LecturerMcpClient = Awaited<ReturnType<typeof createSDKMCPClient>>

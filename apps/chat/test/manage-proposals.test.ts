@@ -131,6 +131,55 @@ describe('Manage proposal confirmation helpers', () => {
     ).rejects.toThrow('Invalid Manage proposal token')
   })
 
+  test('rejects a signed proposal token that was already confirmed once', async () => {
+    const token = await signJWT(
+      {
+        jti: crypto.randomUUID(),
+        kind: proposal.kind,
+        payload: proposal.payload,
+        purpose: 'manage-assistant-proposal',
+        summary: proposal.summary,
+        sub: 'lecturer-replay',
+      },
+      'proposal-secret',
+      { expiresIn: '15m', issuer: 'https://auth.test' }
+    )
+    const settings = { issuer: 'https://auth.test', secret: 'proposal-secret' }
+
+    await expect(
+      verifyManageProposalToken(token, 'lecturer-replay', settings)
+    ).resolves.toMatchObject(proposal)
+
+    await expect(
+      verifyManageProposalToken(token, 'lecturer-replay', settings)
+    ).rejects.toThrow('Manage proposal token already used')
+  })
+
+  test('accepts repeat confirmation of a token signed without a jti (pre-rollout)', async () => {
+    const token = await signJWT(
+      {
+        kind: proposal.kind,
+        payload: proposal.payload,
+        purpose: 'manage-assistant-proposal',
+        summary: proposal.summary,
+        sub: 'lecturer-no-jti',
+      },
+      'proposal-secret',
+      { expiresIn: '15m', issuer: 'https://auth.test' }
+    )
+    const settings = { issuer: 'https://auth.test', secret: 'proposal-secret' }
+
+    // No jti claim -> no replay guard available, so verification succeeds
+    // every time (matches the old, pre-rollout signer's behavior).
+    await expect(
+      verifyManageProposalToken(token, 'lecturer-no-jti', settings)
+    ).resolves.toMatchObject(proposal)
+
+    await expect(
+      verifyManageProposalToken(token, 'lecturer-no-jti', settings)
+    ).resolves.toMatchObject(proposal)
+  })
+
   test('confirms proposals through the Manage GraphQL endpoint', async () => {
     const fetchImpl = vi.fn().mockResolvedValue({
       json: async () => ({

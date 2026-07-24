@@ -20,7 +20,7 @@ export async function signLecturerJwt(
     .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
     .setIssuedAt()
 
-  if (options.expiresIn) {
+  if (options.expiresIn != null) {
     jwt = jwt.setExpirationTime(options.expiresIn)
   }
 

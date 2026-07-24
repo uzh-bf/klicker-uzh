@@ -1,3 +1,13 @@
+import { getChatModelRegistry } from '@/src/lib/server/chatModelRegistry'
+import { getAuthenticatedManageUserId } from '@/src/lib/server/manageAuth'
+import { loadLecturerMcpTools } from '@/src/services/lecturerMcp'
+import {
+  buildManageAssistantSystemPrompt,
+  getManageAssistantOpenAIProviderOptions,
+  selectManageAssistantModel,
+} from '@/src/services/manageAssistantRuntime'
+import { sanitizeManageAssistantContext } from '@/src/services/manageContext'
+import { createRateLimiter } from '@/src/services/rateLimiter'
 import { createOpenAI } from '@ai-sdk/openai'
 import {
   convertToModelMessages,
@@ -7,18 +17,15 @@ import {
 } from 'ai'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getChatModelRegistry } from '../../../../lib/server/chatModelRegistry'
-import { getAuthenticatedManageUserId } from '../../../../lib/server/manageAuth'
-import { loadLecturerMcpTools } from '../../../../services/lecturerMcp'
-import {
-  buildManageAssistantSystemPrompt,
-  getManageAssistantOpenAIProviderOptions,
-  selectManageAssistantModel,
-} from '../../../../services/manageAssistantRuntime'
-import { sanitizeManageAssistantContext } from '../../../../services/manageContext'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
+
+const isAiTelemetryEnabled = process.env.CHAT_ENABLE_AI_TELEMETRY !== 'false'
+
+// Best-effort, per-pod limiter (see rateLimiter.ts) — 30 requests / 5 minutes
+// per authenticated lecturer.
+const chatRateLimiter = createRateLimiter(30, 5 * 60 * 1000)
 
 const manageChatRequestSchema = z.object({
   manageContext: z.unknown().optional(),
@@ -58,9 +65,14 @@ const responsesApiFetch: typeof globalThis.fetch = async (input, init) => {
 }
 
 function createManageAssistantModel(deploymentId: string) {
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY is required for the Manage assistant')
+  }
+
   return createOpenAI({
     baseURL: process.env.OPENAI_BASE_URL,
-    apiKey: process.env.OPENAI_API_KEY || 'no-key',
+    apiKey,
     fetch: responsesApiFetch,
   })(deploymentId)
 }
@@ -69,6 +81,19 @@ export async function POST(req: NextRequest) {
   const userId = await getAuthenticatedManageUserId()
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const rateLimit = chatRateLimiter.check(userId)
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': String(Math.ceil(rateLimit.retryAfterMs / 1000)),
+        },
+      }
+    )
   }
 
   const body = await req.json().catch(() => null)
@@ -98,6 +123,7 @@ export async function POST(req: NextRequest) {
   try {
     const result = streamText({
       abortSignal: req.signal,
+      experimental_telemetry: { isEnabled: isAiTelemetryEnabled },
       maxOutputTokens: selectedModel.maxOutputTokens,
       messages: modelMessages,
       model: createManageAssistantModel(selectedModel.deploymentId),
