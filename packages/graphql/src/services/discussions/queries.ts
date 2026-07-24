@@ -46,6 +46,8 @@ export async function courseDiscussionThreads(
       nextCursor: null,
       hasMore: false,
       canPostAnonymously: false,
+      canPostIdentified: false,
+      canVote: false,
       isAccessible: false,
     }
   }
@@ -62,6 +64,8 @@ export async function courseDiscussionThreads(
         nextCursor: null,
         hasMore: false,
         canPostAnonymously: false,
+        canPostIdentified: false,
+        canVote: false,
         isAccessible: false,
       }
     }
@@ -72,6 +76,8 @@ export async function courseDiscussionThreads(
         nextCursor: null,
         hasMore: false,
         canPostAnonymously: false,
+        canPostIdentified: false,
+        canVote: false,
         isAccessible: false,
       }
     }
@@ -82,6 +88,8 @@ export async function courseDiscussionThreads(
         nextCursor: null,
         hasMore: false,
         canPostAnonymously: false,
+        canPostIdentified: false,
+        canVote: false,
         isAccessible: false,
       }
     }
@@ -90,10 +98,13 @@ export async function courseDiscussionThreads(
   const canPostAnonymously =
     !!embedClaims?.allowAnonymous && !!course.isCourseQAAnonymousEnabled
 
-  const participantId =
-    ctx.user?.role === DB.UserRole.PARTICIPANT && ctx.user.sub
-      ? ctx.user.sub
-      : null
+  const participantActor =
+    actor?.participantId || !embedClaims
+      ? actor
+      : await getCourseAccessActor({ courseId }, ctx)
+  const participantId = participantActor?.participantId ?? null
+  const canPostIdentified = Boolean(participantId)
+  const canVote = canPostIdentified
 
   const effectiveScopeKey =
     embedClaims?.scopeKey ?? scopeKey ?? `course:${courseId}`
@@ -104,6 +115,8 @@ export async function courseDiscussionThreads(
       nextCursor: null,
       hasMore: false,
       canPostAnonymously: false,
+      canPostIdentified: false,
+      canVote: false,
       isAccessible: false,
     }
   }
@@ -114,6 +127,8 @@ export async function courseDiscussionThreads(
       nextCursor: null,
       hasMore: false,
       canPostAnonymously: false,
+      canPostIdentified: false,
+      canVote: false,
       isAccessible: false,
     }
   }
@@ -124,6 +139,8 @@ export async function courseDiscussionThreads(
       nextCursor: null,
       hasMore: false,
       canPostAnonymously: false,
+      canPostIdentified: false,
+      canVote: false,
       isAccessible: false,
     }
   }
@@ -145,7 +162,7 @@ export async function courseDiscussionThreads(
 
     const participantCanAccess = await canParticipantAccessDiscussionScope(
       {
-        participantId: actor?.participantId,
+        participantId,
         courseId,
         scope: {
           scopeType: DB.DiscussionScopeType.PRACTICE_STACK,
@@ -161,6 +178,8 @@ export async function courseDiscussionThreads(
         nextCursor: null,
         hasMore: false,
         canPostAnonymously: false,
+        canPostIdentified: false,
+        canVote: false,
         isAccessible: false,
       }
     }
@@ -179,6 +198,8 @@ export async function courseDiscussionThreads(
       nextCursor: null,
       hasMore: false,
       canPostAnonymously,
+      canPostIdentified,
+      canVote,
       isAccessible: true,
     }
   }
@@ -217,6 +238,8 @@ export async function courseDiscussionThreads(
     nextCursor,
     hasMore,
     canPostAnonymously,
+    canPostIdentified,
+    canVote,
     isAccessible: true,
   }
 }

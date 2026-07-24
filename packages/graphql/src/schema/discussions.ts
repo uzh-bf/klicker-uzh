@@ -188,6 +188,8 @@ export const DiscussionThreadPageObject = DiscussionThreadPageRef.implement({
     nextCursor: t.exposeString('nextCursor', { nullable: true }),
     hasMore: t.exposeBoolean('hasMore'),
     canPostAnonymously: t.exposeBoolean('canPostAnonymously'),
+    canPostIdentified: t.exposeBoolean('canPostIdentified'),
+    canVote: t.exposeBoolean('canVote'),
     isAccessible: t.exposeBoolean('isAccessible'),
   }),
 })

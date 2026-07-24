@@ -20,6 +20,8 @@ query GetCourseDiscussionThreads(
     nextCursor
     hasMore
     canPostAnonymously
+    canPostIdentified
+    canVote
     isAccessible
   }
 }

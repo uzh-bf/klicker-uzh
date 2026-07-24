@@ -88,6 +88,8 @@ export interface DiscussionThreadPage {
   nextCursor: string | null
   hasMore: boolean
   canPostAnonymously: boolean
+  canPostIdentified: boolean
+  canVote: boolean
   isAccessible: boolean
 }
 

@@ -131,6 +131,8 @@ export function registerGatesAndEmbedAccessSuite(
 
     expect(threadPage.threads).toHaveLength(0)
     expect(threadPage.canPostAnonymously).toBe(false)
+    expect(threadPage.canPostIdentified).toBe(false)
+    expect(threadPage.canVote).toBe(false)
 
     const embedInfo = await getCourseDiscussionEmbeddingInfo(
       {
@@ -267,9 +269,24 @@ export function registerGatesAndEmbedAccessSuite(
       },
       createAnonymousContext(userOneCtx)
     )
+    const participantEmbedPage = await courseDiscussionThreads(
+      {
+        courseId: course.id,
+        scopeKey: 'ext:lms:anonymous-enabled',
+        embedToken: anonymousEmbedInfo!.embedToken,
+      },
+      participantCtx
+    )
 
     expect(anonymousPage.canPostAnonymously).toBe(true)
+    expect(anonymousPage.canPostIdentified).toBe(false)
+    expect(anonymousPage.canVote).toBe(false)
     expect(identifiedOnlyPage.canPostAnonymously).toBe(false)
+    expect(identifiedOnlyPage.canPostIdentified).toBe(false)
+    expect(identifiedOnlyPage.canVote).toBe(false)
+    expect(participantEmbedPage.canPostAnonymously).toBe(true)
+    expect(participantEmbedPage.canPostIdentified).toBe(true)
+    expect(participantEmbedPage.canVote).toBe(true)
   })
 
   it('hides anonymous posting when an embed scope key is tampered with', async () => {

@@ -1238,6 +1238,8 @@ type DiscussionThread {
 
 type DiscussionThreadPage {
   canPostAnonymously: Boolean!
+  canPostIdentified: Boolean!
+  canVote: Boolean!
   hasMore: Boolean!
   isAccessible: Boolean!
   nextCursor: String

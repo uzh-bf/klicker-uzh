@@ -94,6 +94,21 @@ describe('Course Q&A embed workflow', function () {
           embedUrl.trim()
         )
       })
+
+    cy.get('[data-cy="course-qa-allow-anonymous-embed"]').uncheck()
+    cy.get('[data-cy="course-qa-external-ref"]')
+      .clear()
+      .type(`${this.data.embed.externalRef}-read-only`)
+    cy.get('[data-cy="course-qa-generate-embed"]').click()
+    cy.wait('@externalEmbedInfo').its('request.method').should('equal', 'POST')
+    cy.get('[data-cy="course-qa-embed-url"]')
+      .invoke('text')
+      .then((embedUrl) => {
+        cy.writeFile(
+          'cypress/fixtures/_qa-embed-read-only-url.txt',
+          embedUrl.trim()
+        )
+      })
   })
 
   it('Anonymous embed renders without app chrome and accepts a thread', function () {
@@ -117,18 +132,17 @@ describe('Course Q&A embed workflow', function () {
     cy.get('footer').should('not.exist')
     cy.get('[data-cy="course-qa-thread-anonymous"]')
       .should('be.visible')
-      .and('be.enabled')
-      .check()
+      .and('contain.text', 'anonym')
     cy.get('[data-cy="course-qa-thread-input"]').type(
       this.data.embed.anonymousThread
     )
     cy.get('[data-cy="course-qa-create-thread"]').click()
     cy.findByText(this.data.embed.anonymousThread).should('exist')
     cy.get('[data-cy="course-qa-thread-input"]').should('have.value', '')
-    cy.get('[data-cy="course-qa-thread-anonymous"]').should('not.be.checked')
+    cy.get('[data-cy="course-qa-thread-anonymous"]').should('be.visible')
   })
 
-  it('Authenticated student creates the thread used for anonymous reply coverage', function () {
+  it('Authenticated student creates threads for anonymous and read-only coverage', function () {
     cy.loginStudent()
     cy.get(`[data-cy="course-button-${this.data.course}"]`).should('exist')
     cy.readFile('cypress/fixtures/_qa-embed-reply-url.txt').then((embedUrl) => {
@@ -144,6 +158,40 @@ describe('Course Q&A embed workflow', function () {
     cy.get('[data-cy="course-qa-create-thread"]').click()
     cy.findByText(this.data.embed.identifiedThread).should('exist')
     cy.get('[data-cy="course-qa-thread-input"]').should('have.value', '')
+
+    cy.readFile('cypress/fixtures/_qa-embed-read-only-url.txt').then(
+      (embedUrl) => {
+        if (!embedUrl) {
+          throw new Error('read-only embed url not set by previous test')
+        }
+        cy.visit(embedUrl)
+      }
+    )
+    cy.get('[data-cy="course-qa-thread-input"]').type(
+      this.data.embed.identifiedThread
+    )
+    cy.get('[data-cy="course-qa-create-thread"]').click()
+    cy.findByText(this.data.embed.identifiedThread).should('exist')
+  })
+
+  it('Anonymous visitor gets a read-only identified embed', function () {
+    cy.readFile('cypress/fixtures/_qa-embed-read-only-url.txt').then(
+      (embedUrl) => {
+        if (!embedUrl) {
+          throw new Error('read-only embed url not set by previous test')
+        }
+        cy.visit(embedUrl)
+      }
+    )
+
+    cy.get('[data-cy="course-qa-read-only"]').should('be.visible')
+    cy.findByText(this.data.embed.identifiedThread).should('exist')
+    cy.get('[data-cy="course-qa-thread-input"]').should('not.exist')
+    cy.get('[data-cy="course-qa-create-thread"]').should('not.exist')
+    cy.get('[data-cy^="course-qa-reply-input-"]').should('not.exist')
+    cy.get('[data-cy^="course-qa-create-reply-"]').should('not.exist')
+    cy.get('[data-cy^="course-qa-thread-upvote-"]').should('not.exist')
+    cy.get('[data-cy^="course-qa-reply-upvote-"]').should('not.exist')
   })
 
   it('Fresh anonymous visitor replies to the identified embed thread', function () {
@@ -164,13 +212,13 @@ describe('Course Q&A embed workflow', function () {
         cy.get('[data-cy^="course-qa-reply-input-"]').type(
           this.data.embed.anonymousReply
         )
-        cy.get('[data-cy^="course-qa-reply-anonymous-"]').check()
+        cy.get('[data-cy^="course-qa-reply-anonymous-"]')
+          .should('be.visible')
+          .and('contain.text', 'anonym')
         cy.get('[data-cy^="course-qa-create-reply-"]').click()
         cy.findByText(this.data.embed.anonymousReply).should('exist')
         cy.get('[data-cy^="course-qa-reply-input-"]').should('have.value', '')
-        cy.get('[data-cy^="course-qa-reply-anonymous-"]').should(
-          'not.be.checked'
-        )
+        cy.get('[data-cy^="course-qa-reply-anonymous-"]').should('be.visible')
       })
   })
 

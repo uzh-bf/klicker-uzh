@@ -929,7 +929,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       threadPlaceholder: 'Ask a question for this scope...',
       postThread: 'Post Thread',
       postAnonymously: 'Post anonymously',
+      postingAnonymously: 'This question will be posted anonymously.',
       replyAnonymously: 'Reply anonymously',
+      replyingAnonymously: 'This reply will be posted anonymously.',
       replyPlaceholder: 'Write a reply...',
       reply: 'Reply',
       openStackDiscussion: 'Discuss this stack',
@@ -948,6 +950,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Upvote question, {count, plural, =1 {1 current upvote} other {# current upvotes}}',
       replyUpvoteAriaLabel:
         'Upvote reply, {count, plural, =1 {1 current upvote} other {# current upvotes}}',
+      threadUpvoteCountAriaLabel:
+        '{count, plural, =1 {1 upvote} other {# upvotes}}',
+      replyUpvoteCountAriaLabel:
+        '{count, plural, =1 {1 upvote} other {# upvotes}}',
+      readOnly:
+        'This embedded discussion is read-only. Sign in as a course participant to contribute.',
       disabled: 'Course Q&A is not enabled for this course.',
       accessDenied:
         'You do not have access to this Course Q&A view or the link is invalid.',

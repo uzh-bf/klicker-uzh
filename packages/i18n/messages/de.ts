@@ -931,7 +931,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       threadPlaceholder: 'Stellen Sie eine Frage zu diesem Bereich...',
       postThread: 'Beitrag erstellen',
       postAnonymously: 'Anonym posten',
+      postingAnonymously: 'Diese Frage wird anonym veröffentlicht.',
       replyAnonymously: 'Anonym antworten',
+      replyingAnonymously: 'Diese Antwort wird anonym veröffentlicht.',
       replyPlaceholder: 'Antwort schreiben...',
       reply: 'Antworten',
       openStackDiscussion: 'Diesen Stack diskutieren',
@@ -952,6 +954,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Frage positiv bewerten, {count, plural, =1 {aktuell 1 Upvote} other {aktuell # Upvotes}}',
       replyUpvoteAriaLabel:
         'Antwort positiv bewerten, {count, plural, =1 {aktuell 1 Upvote} other {aktuell # Upvotes}}',
+      threadUpvoteCountAriaLabel:
+        '{count, plural, =1 {1 Upvote} other {# Upvotes}}',
+      replyUpvoteCountAriaLabel:
+        '{count, plural, =1 {1 Upvote} other {# Upvotes}}',
+      readOnly:
+        'Diese eingebettete Diskussion ist schreibgeschützt. Melden Sie sich als Kursteilnehmer an, um Beiträge zu verfassen.',
       disabled: 'Kurs Q&A ist für diesen Kurs nicht aktiviert.',
       accessDenied:
         'Sie haben keinen Zugriff auf diese Kurs-Q&A-Ansicht oder der Link ist ungültig.',

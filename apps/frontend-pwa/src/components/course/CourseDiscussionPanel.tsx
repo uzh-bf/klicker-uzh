@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
 import { faThumbsUp } from '@fortawesome/free-regular-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import type { GetBasicCourseInformationQuery } from '@klicker-uzh/graphql/dist/ops'
 import {
   CreateCourseDiscussionReplyDocument,
@@ -145,6 +146,10 @@ function CourseDiscussionPanel({
   const nextCursor = threadsData?.courseDiscussionThreads?.nextCursor ?? null
   const canPostAnonymously =
     threadsData?.courseDiscussionThreads?.canPostAnonymously ?? false
+  const canPostIdentified =
+    threadsData?.courseDiscussionThreads?.canPostIdentified ?? false
+  const canVote = threadsData?.courseDiscussionThreads?.canVote ?? false
+  const canPost = canPostIdentified || canPostAnonymously
   const isAccessible =
     threadsData?.courseDiscussionThreads?.isAccessible ?? true
 
@@ -177,7 +182,9 @@ function CourseDiscussionPanel({
             courseId,
             content: threadDraft,
             scope: parsedScopeInput,
-            isAnonymous: postThreadAnonymous,
+            isAnonymous: canPostIdentified
+              ? postThreadAnonymous
+              : canPostAnonymously,
             embedToken,
           },
         },
@@ -206,6 +213,8 @@ function CourseDiscussionPanel({
     courseId,
     parsedScopeInput,
     postThreadAnonymous,
+    canPostAnonymously,
+    canPostIdentified,
     embedToken,
     canCreateThreadForActiveScope,
     refetchThreads,
@@ -226,7 +235,9 @@ function CourseDiscussionPanel({
               courseId,
               threadId,
               content,
-              isAnonymous: postReplyAnonymous[threadId] ?? false,
+              isAnonymous: canPostIdentified
+                ? (postReplyAnonymous[threadId] ?? false)
+                : canPostAnonymously,
               embedToken,
             },
           },
@@ -261,6 +272,8 @@ function CourseDiscussionPanel({
     [
       replyDrafts,
       postReplyAnonymous,
+      canPostAnonymously,
+      canPostIdentified,
       createReply,
       courseId,
       embedToken,
@@ -411,70 +424,84 @@ function CourseDiscussionPanel({
         className
       )}
     >
-      <div
-        className={twMerge(
-          'rounded-lg border border-gray-200 bg-white p-4 shadow-sm',
-          compact && 'p-3'
-        )}
-      >
-        {showTitle && (
-          <H2 className={{ root: 'mb-2' }}>{t('pwa.courseQA.title')}</H2>
-        )}
-
-        <div className="flex flex-col gap-2">
-          <label
-            className="text-sm font-semibold text-gray-700"
-            htmlFor={threadInputId}
-          >
-            {t('pwa.courseQA.newThread')}
-          </label>
-          <textarea
-            id={threadInputId}
-            name={threadInputId}
-            rows={3}
-            maxLength={4000}
-            value={threadDraft}
-            onChange={(event) => setThreadDraft(event.target.value)}
-            autoComplete="off"
-            placeholder={t('pwa.courseQA.threadPlaceholder')}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-            aria-label={t('pwa.courseQA.newThread')}
-            data-cy="course-qa-thread-input"
-          />
-
-          {embedToken && canPostAnonymously && (
-            <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-              <input
-                name={`${idPrefix}-thread-anonymous`}
-                type="checkbox"
-                checked={postThreadAnonymous}
-                onChange={(event) =>
-                  setPostThreadAnonymous(event.target.checked)
-                }
-                data-cy="course-qa-thread-anonymous"
-              />
-              {t('pwa.courseQA.postAnonymously')}
-            </label>
+      {canPost && canCreateThreadForActiveScope && parsedScopeInput ? (
+        <div
+          className={twMerge(
+            'rounded-lg border border-gray-200 bg-white p-4 shadow-sm',
+            compact && 'p-3'
+          )}
+        >
+          {showTitle && (
+            <H2 className={{ root: 'mb-2' }}>{t('pwa.courseQA.title')}</H2>
           )}
 
-          <div className="flex justify-end">
-            <Button
-              primary
-              loading={creatingThread}
-              disabled={
-                creatingThread ||
-                threadDraft.trim().length === 0 ||
-                !canCreateThreadForActiveScope ||
-                !parsedScopeInput
-              }
-              onClick={handleCreateThread}
-              data={{ cy: 'course-qa-create-thread' }}
+          <div className="flex flex-col gap-2">
+            <label
+              className="text-sm font-semibold text-gray-700"
+              htmlFor={threadInputId}
             >
-              <Button.Label>{t('pwa.courseQA.postThread')}</Button.Label>
-            </Button>
+              {t('pwa.courseQA.newThread')}
+            </label>
+            <textarea
+              id={threadInputId}
+              name={threadInputId}
+              rows={3}
+              maxLength={4000}
+              value={threadDraft}
+              onChange={(event) => setThreadDraft(event.target.value)}
+              autoComplete="off"
+              placeholder={t('pwa.courseQA.threadPlaceholder')}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              aria-label={t('pwa.courseQA.newThread')}
+              data-cy="course-qa-thread-input"
+            />
+
+            {embedToken &&
+              canPostAnonymously &&
+              (canPostIdentified ? (
+                <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                  <input
+                    name={`${idPrefix}-thread-anonymous`}
+                    type="checkbox"
+                    checked={postThreadAnonymous}
+                    onChange={(event) =>
+                      setPostThreadAnonymous(event.target.checked)
+                    }
+                    data-cy="course-qa-thread-anonymous"
+                  />
+                  {t('pwa.courseQA.postAnonymously')}
+                </label>
+              ) : (
+                <p
+                  className="text-sm text-gray-600"
+                  data-cy="course-qa-thread-anonymous"
+                >
+                  {t('pwa.courseQA.postingAnonymously')}
+                </p>
+              ))}
+
+            <div className="flex justify-end">
+              <Button
+                primary
+                loading={creatingThread}
+                disabled={creatingThread || threadDraft.trim().length === 0}
+                onClick={handleCreateThread}
+                data={{ cy: 'course-qa-create-thread' }}
+              >
+                <Button.Label>{t('pwa.courseQA.postThread')}</Button.Label>
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      ) : embedded ? (
+        <UserNotification
+          type="info"
+          message={t('pwa.courseQA.readOnly')}
+          data={{ cy: 'course-qa-read-only' }}
+        />
+      ) : showTitle ? (
+        <H2 className={{ root: 'mb-2' }}>{t('pwa.courseQA.title')}</H2>
+      ) : null}
 
       <div className="flex flex-col gap-3" data-cy="course-qa-threads-list">
         {threads.length === 0 ? (
@@ -514,22 +541,38 @@ function CourseDiscussionPanel({
               </div>
 
               <div className="mt-3 flex flex-wrap items-center gap-2">
-                <Button
-                  onClick={() =>
-                    handleToggleThreadUpvote(thread.id, thread.hasUpvoted)
-                  }
-                  active={!!thread.hasUpvoted}
-                  className={{
-                    root: 'h-8 motion-safe:transition-transform motion-safe:hover:scale-105',
-                  }}
-                  data={{ cy: `course-qa-thread-upvote-${thread.id}` }}
-                  aria-label={t('pwa.courseQA.threadUpvoteAriaLabel', {
-                    count: thread.upvotes,
-                  })}
-                >
-                  <Button.Icon icon={faThumbsUp} />
-                  <Button.Label>{String(thread.upvotes)}</Button.Label>
-                </Button>
+                {canVote ? (
+                  <Button
+                    onClick={() =>
+                      handleToggleThreadUpvote(thread.id, thread.hasUpvoted)
+                    }
+                    active={!!thread.hasUpvoted}
+                    className={{
+                      root: 'h-8 motion-safe:transition-transform motion-safe:hover:scale-105',
+                    }}
+                    data={{ cy: `course-qa-thread-upvote-${thread.id}` }}
+                    aria-label={t('pwa.courseQA.threadUpvoteAriaLabel', {
+                      count: thread.upvotes,
+                    })}
+                  >
+                    <Button.Icon icon={faThumbsUp} />
+                    <Button.Label>{String(thread.upvotes)}</Button.Label>
+                  </Button>
+                ) : (
+                  <span
+                    className="inline-flex h-8 items-center gap-2 px-2 text-sm text-gray-600"
+                    aria-label={t('pwa.courseQA.threadUpvoteCountAriaLabel', {
+                      count: thread.upvotes,
+                    })}
+                  >
+                    <FontAwesomeIcon
+                      icon={faThumbsUp}
+                      className="h-4 w-4"
+                      aria-hidden
+                    />
+                    {thread.upvotes}
+                  </span>
+                )}
                 <span className="text-xs text-gray-500">
                   {t('pwa.courseQA.nReply', { count: thread.replyCount })}
                 </span>
@@ -552,82 +595,112 @@ function CourseDiscussionPanel({
                       <span className="text-xs text-gray-500">
                         {formatDateTime(reply.createdAt)}
                       </span>
-                      <Button
-                        onClick={() =>
-                          handleToggleReplyUpvote(reply.id, reply.hasUpvoted)
-                        }
-                        active={!!reply.hasUpvoted}
-                        className={{
-                          root: 'h-7 motion-safe:transition-transform motion-safe:hover:scale-105',
-                        }}
-                        data={{ cy: `course-qa-reply-upvote-${reply.id}` }}
-                        aria-label={t('pwa.courseQA.replyUpvoteAriaLabel', {
-                          count: reply.upvotes,
-                        })}
-                      >
-                        <Button.Icon
-                          icon={faThumbsUp}
-                          className={{ root: 'h-3 w-3' }}
-                        />
-                        <Button.Label>{String(reply.upvotes)}</Button.Label>
-                      </Button>
+                      {canVote ? (
+                        <Button
+                          onClick={() =>
+                            handleToggleReplyUpvote(reply.id, reply.hasUpvoted)
+                          }
+                          active={!!reply.hasUpvoted}
+                          className={{
+                            root: 'h-7 motion-safe:transition-transform motion-safe:hover:scale-105',
+                          }}
+                          data={{ cy: `course-qa-reply-upvote-${reply.id}` }}
+                          aria-label={t('pwa.courseQA.replyUpvoteAriaLabel', {
+                            count: reply.upvotes,
+                          })}
+                        >
+                          <Button.Icon
+                            icon={faThumbsUp}
+                            className={{ root: 'h-3 w-3' }}
+                          />
+                          <Button.Label>{String(reply.upvotes)}</Button.Label>
+                        </Button>
+                      ) : (
+                        <span
+                          className="inline-flex h-7 items-center gap-2 px-2 text-xs text-gray-600"
+                          aria-label={t(
+                            'pwa.courseQA.replyUpvoteCountAriaLabel',
+                            {
+                              count: reply.upvotes,
+                            }
+                          )}
+                        >
+                          <FontAwesomeIcon
+                            icon={faThumbsUp}
+                            className="h-3 w-3"
+                            aria-hidden
+                          />
+                          {reply.upvotes}
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))}
 
-                <div className="mt-1 rounded-md border border-gray-200 p-2">
-                  <textarea
-                    name={`${idPrefix}-reply-content-${thread.id}`}
-                    rows={2}
-                    maxLength={4000}
-                    value={replyDrafts[thread.id] ?? ''}
-                    onChange={(event) =>
-                      setReplyDrafts((prev) => ({
-                        ...prev,
-                        [thread.id]: event.target.value,
-                      }))
-                    }
-                    autoComplete="off"
-                    placeholder={t('pwa.courseQA.replyPlaceholder')}
-                    className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
-                    aria-label={t('pwa.courseQA.replyPlaceholder')}
-                    data-cy={`course-qa-reply-input-${thread.id}`}
-                  />
-
-                  {embedToken && canPostAnonymously && (
-                    <label className="mt-2 inline-flex items-center gap-2 text-xs text-gray-700">
-                      <input
-                        name={`${idPrefix}-reply-anonymous-${thread.id}`}
-                        type="checkbox"
-                        checked={postReplyAnonymous[thread.id] ?? false}
-                        onChange={(event) =>
-                          setPostReplyAnonymous((prev) => ({
-                            ...prev,
-                            [thread.id]: event.target.checked,
-                          }))
-                        }
-                        data-cy={`course-qa-reply-anonymous-${thread.id}`}
-                      />
-                      {t('pwa.courseQA.replyAnonymously')}
-                    </label>
-                  )}
-
-                  <div className="mt-2 flex justify-end">
-                    <Button
-                      primary
-                      loading={replyingThreadId === thread.id}
-                      disabled={
-                        replyingThreadId === thread.id ||
-                        (replyDrafts[thread.id]?.trim().length ?? 0) === 0
+                {canPost && (
+                  <div className="mt-1 rounded-md border border-gray-200 p-2">
+                    <textarea
+                      name={`${idPrefix}-reply-content-${thread.id}`}
+                      rows={2}
+                      maxLength={4000}
+                      value={replyDrafts[thread.id] ?? ''}
+                      onChange={(event) =>
+                        setReplyDrafts((prev) => ({
+                          ...prev,
+                          [thread.id]: event.target.value,
+                        }))
                       }
-                      onClick={() => handleCreateReply(thread.id)}
-                      className={{ root: 'h-8' }}
-                      data={{ cy: `course-qa-create-reply-${thread.id}` }}
-                    >
-                      <Button.Label>{t('pwa.courseQA.reply')}</Button.Label>
-                    </Button>
+                      autoComplete="off"
+                      placeholder={t('pwa.courseQA.replyPlaceholder')}
+                      className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
+                      aria-label={t('pwa.courseQA.replyPlaceholder')}
+                      data-cy={`course-qa-reply-input-${thread.id}`}
+                    />
+
+                    {embedToken &&
+                      canPostAnonymously &&
+                      (canPostIdentified ? (
+                        <label className="mt-2 inline-flex items-center gap-2 text-xs text-gray-700">
+                          <input
+                            name={`${idPrefix}-reply-anonymous-${thread.id}`}
+                            type="checkbox"
+                            checked={postReplyAnonymous[thread.id] ?? false}
+                            onChange={(event) =>
+                              setPostReplyAnonymous((prev) => ({
+                                ...prev,
+                                [thread.id]: event.target.checked,
+                              }))
+                            }
+                            data-cy={`course-qa-reply-anonymous-${thread.id}`}
+                          />
+                          {t('pwa.courseQA.replyAnonymously')}
+                        </label>
+                      ) : (
+                        <p
+                          className="mt-2 text-xs text-gray-600"
+                          data-cy={`course-qa-reply-anonymous-${thread.id}`}
+                        >
+                          {t('pwa.courseQA.replyingAnonymously')}
+                        </p>
+                      ))}
+
+                    <div className="mt-2 flex justify-end">
+                      <Button
+                        primary
+                        loading={replyingThreadId === thread.id}
+                        disabled={
+                          replyingThreadId === thread.id ||
+                          (replyDrafts[thread.id]?.trim().length ?? 0) === 0
+                        }
+                        onClick={() => handleCreateReply(thread.id)}
+                        className={{ root: 'h-8' }}
+                        data={{ cy: `course-qa-create-reply-${thread.id}` }}
+                      >
+                        <Button.Label>{t('pwa.courseQA.reply')}</Button.Label>
+                      </Button>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           ))
