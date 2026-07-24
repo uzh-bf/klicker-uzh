@@ -99,6 +99,10 @@ own commit and its own verification. Do not batch slices.
 
 ### S2 — Mode resync on direct thread-URL load (P1)
 
+- **Phase-2 slice: author against the post-upgrade runtime.** After U1 the caller is
+  `runtime.threads.switchToThread` (renamed by the codemod). After U5, thread switching
+  may run through `useAISDKRuntime` — apply the resync in whichever effect owns thread
+  activation on the final architecture. The root cause and fix shape below are unchanged.
 - Problem: opening a thread by URL (bookmark/share/reload) keeps the previously persisted
   mode; the thread's own mode is ignored. Verified live: Tutor thread (`lastChatMode:
   "tutor"`) direct-loaded with Erklärer pill pressed.
@@ -174,6 +178,11 @@ own commit and its own verification. Do not batch slices.
 - Commit: `fix(chat): surface localized error states for send, stream, disclaimer and thread list`
 - Note: this is the largest slice — if it grows past a day, split (5a send/stream,
   5b disclaimer + thread list) into two commits.
+- **Phase-2 dependency:** the send/stream error paths (items 1–3) live in
+  `useChatResponse.ts`. If **U5 adopted** `useAISDKRuntime`, that file is gone — author
+  items 1–3 against the runtime's error surface (`useChat` `onError` / `ErrorPrimitive`)
+  instead, and keep only items 4 (disclaimer) + 5 (thread list), which are
+  runtime-independent. If **U5 fell back**, run S5 exactly as written above.
 
 ### S6 — Theme-token cleanup + remove latent dark block (P2/P3 batch, mechanical)
 
@@ -356,23 +365,28 @@ S17 finish gate once, at the end.
 - A3 P3→follow-up: `@assistant-ui/react-ai-sdk@1.3.26` is a declared dependency but
   never imported; `useChatResponse.ts` hand-parses the exact AI SDK UI-message stream
   the backend emits (`chat/route.ts` `toUIMessageStreamResponse`). Migration is an
-  L-effort refactor (custom metadata plumbing) — defer to its own branch (D7).
+  L-effort refactor (custom metadata plumbing) — **adopted in this branch as U5**,
+  spike-gated (D7/D9).
 - A5 note (revised by the version audit below): `Unstable_PartsGrouped` is STILL
-  exported in 0.14.27 next to the new `GroupedParts`, so a 0.14 upgrade does not force
-  an immediate `thread.tsx` grouping rewrite — the migration can be staged. Record the
-  upgrade path in `docs/chat-platform.md`; do not upgrade in this branch.
+  exported in 0.14.27 next to the new `GroupedParts`, so U1's 0.14 bump does not force an
+  immediate `thread.tsx` grouping rewrite — U1 keeps `Unstable_PartsGrouped` and **U3**
+  then adopts `GroupedParts` deliberately. Upgrade happens in this branch (Phase U).
 
 ### assistant-ui version audit (2026-07-23)
 
 Verified against npm and the published 0.14.27 tarball (`.d.ts` exports inspected),
 plus the official v0-14 migration guide and chain-of-thought guide.
 
-| Package | Ours | Latest | Note |
+| Package | Ours | Target (this branch) | Note |
 | --- | --- | --- | --- |
 | `@assistant-ui/react` | 0.12.10 | 0.14.27 | no 0.13 line exists; 0.12 line is EOL (last 0.12.28, 2026-04-30); 0.14 active since 2026-05-07 |
-| `@assistant-ui/react-markdown` | 0.12.3 | 0.14.6 | 0.14 requires `@assistant-ui/react ^0.14.18` — coupled |
-| `@assistant-ui/react-ai-sdk` | 1.3.26 (unused) | 1.3.41 | 1.3.41 depends on **AI SDK v7** (`ai ^7.0.28`, `@ai-sdk/react ^4`) |
-| `ai` (backend) | 6.0.184 | 7.0.36 | major behind; only matters for D7 |
+| `@assistant-ui/react-markdown` | 0.12.3 | 0.14.6 | 0.14 requires `@assistant-ui/react ^0.14.18` — coupled, bump together |
+| `@assistant-ui/react-ai-sdk` | 1.3.26 (unused) | 1.3.41 | needs **AI SDK v7** (`ai ^7.0.28`, `@ai-sdk/react ^4`) — drives U5 |
+| `ai` (backend) | 6.0.184 | 7.0.37 | codemod `npx @ai-sdk/codemod v7` (U2) |
+| `@ai-sdk/openai` | 3.0.64 | 4.0.20 | v7-compatible provider |
+| `@ai-sdk/mcp` | 0.0.13 | 2.0.16 | still exports `experimental_createMCPClient` (+ stable `createMCPClient`) |
+| `@ai-sdk/react` | — (new) | 4.0.40 | new dep for U5 `useChat`/`useAISDKRuntime`; peer accepts React 19 |
+| `zod` | 3.25.76 | 3.25.76 | unchanged — satisfies all v7 provider peers (`^3.25.76 \|\| ^4.1.8`); graphql pins the same, no split |
 
 **0.12 → 0.14 breaking changes are mostly mechanical** (official codemod:
 `npx assistant-ui@latest upgrade`): hook renames (`useAssistantApi`→`useAui`,
@@ -401,21 +415,25 @@ adapter work is forward-compatible). Peer deps: React 18/19 (we are on 19).
   complements S12's thinking indicator), `useSlashCommandAdapter`,
   `useMentionAdapter`, `useComposerInputHistory`, `useLiveCompletionAdapter`.
 
-**Staged upgrade path (do NOT do in this branch):**
+**In-branch upgrade path (decided 2026-07-23 — the upgrade lands in THIS branch).**
+Executed as Phase U (slices U1–U5 below), in this order:
 
-1. This branch: stay on 0.12.10; all S12–S16 slices are 0.12-compatible by design.
-2. First follow-up branch after merge: bump `@assistant-ui/react` to 0.14.x +
-   `react-markdown` to 0.14.x together; run the codemod; keep `Unstable_PartsGrouped`
-   initially; then adopt `GroupedParts` + `Reasoning`/`ToolGroup` to replace the custom
-   reasoning/grouping components (supersedes the S15 interim reasoning tweak). S–M
-   effort, frontend-only.
-3. Separate later branch (D7): AI SDK v6→v7 on the backend + adopt
-   `@assistant-ui/react-ai-sdk` (`useAISDKRuntime` with a `history` adapter) to retire
-   the hand-rolled SSE parser. The v7 coupling means these two must land together;
-   until then the unused `react-ai-sdk` dependency should be REMOVED from
-   `apps/chat/package.json` in this branch (S16 can carry that one-line cleanup).
-4. Evaluate `mcp-apps` interactive artifacts once on 0.14, as its own feature with a
-   product decision (lecturer-authored interactive tool UIs).
+1. **U1** assistant-ui 0.12→0.14 bump + codemod (frontend green baseline).
+2. **U2** AI SDK 6→7 bump + codemod (backend green baseline; hand-verify credits,
+   reasoning, telemetry).
+3. **U3** adopt stable `GroupedParts` + `Reasoning*`/`ToolGroup*` components (replace the
+   legacy `Unstable_PartsGrouped` + custom `AssistantReasoningPart`/`PartGroup`).
+4. **U4** adopt `FeedbackAdapter` (replace the hand-rolled thumbs).
+5. **U5** adopt `useAISDKRuntime` to retire the hand-rolled SSE parser (spike-gated, D9).
+
+`mcp-apps` interactive artifacts stay OUT of this branch — a separate feature with its
+own product decision (lecturer-authored interactive tool UIs), noted for the roadmap.
+
+**Why in-branch:** the reskin PR already touches every one of these files; folding the
+framework upgrade in now avoids a second churn pass over `thread.tsx`, `RuntimeProvider`,
+and the chat route, and lets the design/polish slices (S12–S16) be authored once against
+the final API instead of being rewritten after a follow-up upgrade. Cost: the branch and
+its review grow, and the finish gate (S17) carries more verification.
 
 ### Additional decisions (defaults; user can veto)
 
@@ -428,17 +446,42 @@ adapter work is forward-compatible). Peer deps: React 18/19 (we are on 19).
 - D6 **Copyright footer**: remove the permanent band from the chat view; move the legal
   line into the sidebar bottom (small muted text under the logo) so it stays visible
   without costing viewport height. Veto if legal requires the banner on every screen.
-- D7 **react-ai-sdk migration (A3)**: defer to a dedicated follow-up branch with a
-  timeboxed spike; record as PR follow-up. Do NOT attempt inside this branch. The
-  version audit hardens this: current `react-ai-sdk` requires AI SDK v7 while the
-  backend is on v6, so adoption now also implies a backend `ai` major bump. Until that
-  branch, the unused dependency gets removed (S16).
-- D8 **assistant-ui 0.14 upgrade timing**: schedule the staged upgrade (step 2 of the
-  version-audit path) as the FIRST follow-up branch after this PR merges, before new
-  chat features build further on 0.12 — the 0.12 line stopped receiving releases on
-  2026-04-30.
+- D7 **(REVERSED 2026-07-23) react-ai-sdk migration (A3): adopt in THIS branch** as U5,
+  spike-gated. The earlier "defer + remove the unused dep" plan is dropped — the
+  dependency stays and gets used. See D9 for the spike gate.
+- D8 **(REVERSED 2026-07-23) assistant-ui 0.14 upgrade: do it in THIS branch** as U1
+  (was: first follow-up branch). AI SDK 7 comes with it (U2), since react-ai-sdk needs v7.
+- D9 **U5 commitment level (`useAISDKRuntime`)**: adopt it, but **spike-gate the runtime
+  swap** — timebox 1 day; if our custom finish-metadata (`chatMode`, `modelId`,
+  `reasoningEffort`, `creditsUsed`) and zustand thread persistence do not map cleanly
+  onto `useAISDKRuntime` + its history adapter within the timebox, STOP, keep
+  `useChatResponse.ts`, and record the blocker. Rationale: U1–U4 already deliver most of
+  the upgrade value (0.14 APIs, streaming reasoning, tool-group, feedback adapter);
+  the SSE-parser retirement is the highest-risk, hardest-to-verify piece and must not be
+  allowed to destabilize an otherwise review-ready branch. Recommended default =
+  spike-gated adopt. Veto options: (a) hard-commit U5 no-fallback, or (b) drop U5 to a
+  follow-up branch and keep `useChatResponse.ts` for now.
 - No framer-motion or other animation dependency: every motion slice below must use
   `tw-animate-css` (already installed) or plain Tailwind/CSS.
+
+### Execution phases and ordering (revised for the in-branch upgrade)
+
+Do the phases in order. Within a phase, slices are ordered but a junior may reorder
+independent ones.
+
+- **Phase 0 — upgrade-independent fixes** (safe on 0.12, survive the upgrade): S1 logo,
+  S3 touch + mobile sheet, S4 accessible names, S6 tokens + dark removal, S7 mobile
+  hardening, S8 a11y semantics, S9 embedded parity, S10 P3 polish. Land these first so
+  the branch has its P1 bugs closed before the bigger upgrade churn.
+- **Phase U — framework upgrade**: U1 → U2 → U3 → U4 → U5 (below). U3 **absorbs** design
+  finding M3 (reasoning/tool accordions) and the old S15 items A2 (live reasoning) + A4
+  (tool errors). U4 **absorbs** old S15 item A1 (feedback adapter). So the old S15 slice
+  is **dissolved** into U3/U4 — do not execute S15 separately.
+- **Phase 2 — fixes + polish on the upgraded baseline**: S2 mode resync (now via
+  `runtime.threads.switchToThread`; trivial if U5 landed), S5 error states (author
+  against whichever runtime won U5's spike — see S5 note), S12 motion, S13 welcome,
+  S14 chrome, S16 remaining micro-polish (minus what U3 absorbed; minus the reversed
+  react-ai-sdk removal). Then S17 finish gate once.
 
 ### S12 — Motion foundation: entrances, thinking indicator, scroll-button fade (P1)
 
@@ -484,54 +527,178 @@ adapter work is forward-compatible). Peer deps: React 18/19 (we are on 19).
   selectors if needed).
 - Commit: `enhance(chat): persistent header context, sidebar legal note and cleaner message captions`
 
-### S15 — assistant-ui native adoption: feedback adapter, live reasoning, tool errors
+### S15 — DISSOLVED into Phase U
 
-- Do: (1) A1 — add `adapters.feedback = { submit: ({ message, type }) =>
-  rateMessage(...) }` to the `useExternalStoreRuntime` call (`RuntimeProvider.tsx:248-263`),
-  swap `MessageRatingButtons` internals to `ActionBarPrimitive.FeedbackPositive`/
-  `FeedbackNegative` reading `message.metadata.submittedFeedback` (keep the optimistic
-  rollback semantics of `chatStore.rateMessage`; keep the API route unchanged);
-  (2) A2 — in `AssistantReasoningPart`, read `status` and auto-open while
-  `status.type === 'running'`, collapse on completion unless manually toggled;
-  (3) A4 — set `existingToolCall.isError = true` in the `tool-output-error` branch
-  (`useChatResponse.ts:428-438`), stop prefixing `result` with "Error:", and add an
-  error branch to `tool-fallback.tsx` (destructive-toned chip + localized "failed"
-  label, en + informal de).
-- Check: thumbs persist → switch → clear against the DB exactly as before (existing
-  Playwright rating test must stay green unmodified or with minimal selector updates);
-  reasoning panel auto-opens during a live reasoning stream and collapses after; a
-  forced tool error (kill mcp server / block URL) shows the failed chip.
-- Commit: `enhance(chat): adopt assistant-ui feedback adapter, live reasoning panel and tool error states`
+The former "assistant-ui native adoption" slice is superseded by the in-branch upgrade:
+A1 (feedback adapter) → **U4**; A2 (live reasoning) + A4 (tool errors) → **U3**. Do not
+execute S15 as a standalone slice. Kept here as a pointer so the finding numbering stays
+stable.
 
 ### S16 — Micro-interaction polish batch (P2/P3, timeboxed ~1 day)
 
-- Do: (1) M3 — CSS grid-rows accordion (`grid transition-[grid-template-rows]
-  duration-200` + inner `overflow-hidden`) for the three expand/collapse sites
-  (`thread.tsx:236-243`, `:1112-1129`, `tool-fallback.tsx:117-129`); (2) M4 — replace
-  the thread-pane spinner overlay (`assistant.tsx:361-365`) with 2–3 `animate-pulse`
-  message-shaped skeletons and add 4–5 skeleton rows to `thread-list.tsx` for the
-  initial-load window; (3) M6 — single persistent send/stop button shell with a
-  150ms icon crossfade; (4) M7 — sliding active indicator in the mode pill
-  (`transition-transform` thumb) if it fits the timebox; otherwise defer with a note;
-  (5) remove the unused `@assistant-ui/react-ai-sdk` entry from
-  `apps/chat/package.json` (+ lockfile, same commit) per D7.
-- Check: browser pass — accordions animate, skeletons replace spinners, send↔stop
-  morphs during a real stream, pill slides; no console errors; `check` clean;
-  in-container `pnpm install` after the dependency removal keeps the lockfile in sync.
-- Commit: `enhance(chat): accordion transitions, loading skeletons and control morphs`
+- Do: (1) M4 — replace the thread-pane spinner overlay (`assistant.tsx:361-365`) with
+  2–3 `animate-pulse` message-shaped skeletons and add 4–5 skeleton rows to
+  `thread-list.tsx` for the initial-load window; (2) M6 — single persistent send/stop
+  button shell with a 150ms icon crossfade; (3) M7 — sliding active indicator in the
+  mode pill (`transition-transform` thumb) if it fits the timebox; otherwise defer with
+  a note; (4) any remaining custom expand/collapse NOT replaced by U3's `Reasoning`/
+  `ToolGroup` components (e.g. a `ToolFallback` detail panel) gets the CSS grid-rows
+  accordion (`grid transition-[grid-template-rows] duration-200` + inner
+  `overflow-hidden`). Note: M3's reasoning/tool-group accordions are already handled by
+  U3; the react-ai-sdk dependency is now USED (U5), so the earlier "remove unused dep"
+  item is dropped.
+- Check: browser pass — skeletons replace spinners, send↔stop morphs during a real
+  stream, pill slides, any remaining accordion animates; no console errors; `check` clean.
+- Commit: `enhance(chat): loading skeletons, control morphs and remaining accordion transitions`
+
+## Framework upgrade — Phase U (assistant-ui 0.14 + AI SDK 7), in this branch
+
+Run after Phase 0, before Phase 2. Each U-slice ends green (typecheck + smoke) before the
+next. All verification is in-container / browser per the recipe at the top. Codemods edit
+many files at once — review the codemod diff before committing; keep unrelated churn out.
+
+### U1 — assistant-ui 0.12 → 0.14 bump + codemod (frontend green baseline)
+
+- Do: bump `@assistant-ui/react` → `0.14.27` and `@assistant-ui/react-markdown` →
+  `0.14.6` together (coupled peer). Run the official codemod in-container:
+  `npx assistant-ui@latest upgrade`. It renames hooks (`useAssistantApi`→`useAui`,
+  `useAssistantState`→`useAuiState`, `useAssistantEvent`→`useAuiEvent`, ...) and runtime
+  methods (`runtime.switchToThread`→`runtime.threads.switchToThread`,
+  `runtime.switchToNewThread`→`runtime.threads.switchToNewThread`),
+  `getExternalStoreMessage`→`getExternalStoreMessages` (now returns an array — destructure
+  `const [original] = ...`). KEEP `Unstable_PartsGrouped` and the `components={{...}}`
+  props for now (both still work in 0.14); U3 replaces them. Fix whatever the codemod
+  misses, driven by `pnpm --filter @klicker-uzh/chat check`.
+- Check: `check` clean; browser smoke (delegated `testuser24`) — threads list + load,
+  send a message, reasoning + tool parts still render, thumbs still work, attachments
+  still work; lockfile synced (in-container `pnpm install`).
+- Commit: `build(chat): upgrade @assistant-ui/react and react-markdown to 0.14`
+
+### U2 — Vercel AI SDK 6 → 7 bump + codemod (backend green baseline)
+
+- Do: bump `ai` → `7.0.37`, `@ai-sdk/openai` → `4.0.20`, `@ai-sdk/mcp` → `2.0.16`
+  (zod stays `3.25.76`). Run `npx @ai-sdk/codemod v7` over `apps/chat/src`. Mechanical
+  renames it applies (all present in our chat route): `stepCountIs`→`isStepCount`,
+  `onFinish`→`onEnd`, `onStepFinish`→`onStepEnd`, `experimental_telemetry`→`telemetry`,
+  `system`→`instructions`. `toUIMessageStreamResponse` + `messageMetadata` are verified
+  to survive v7 unchanged — our stream contract with the client holds.
+- **Hand-verify (the codemod does NOT catch these — this is the risky part):**
+  1. **Credits.** v7 makes `result.usage` the **total across all steps**; final-step
+     usage is now `finalStep.usage`. Our credit accounting reads usage in the
+     `onEnd`/`onStepEnd` callbacks (route.ts ~1321–1666). Audit every usage read against
+     a real **multi-step (tool-calling)** run and confirm the credits deducted still
+     match — a silent over/under-count here is the top risk of the whole upgrade.
+  2. **Telemetry.** `experimental_telemetry`→`telemetry`; OTel export moved to
+     `@ai-sdk/otel` (global registration). Only requirement here: telemetry must still
+     **not throw**. This is the same path as the known orphaned-Langfuse-span issue
+     (PR residual risk 1) — do NOT try to fix the orphan in this slice; just keep it
+     non-throwing (add `@ai-sdk/otel@1.0.37` + register if the codemod/build demands it,
+     otherwise leave telemetry disabled as today).
+  3. **Reasoning.** Confirm o-series reasoning still streams: our
+     `providerOptions.openai.reasoningEffort` / `reasoningSummary: 'auto'` (route.ts
+     ~1285–1296). If v7 requires the new top-level `reasoning` option, move it; verify a
+     reasoning summary still arrives and renders.
+  4. **MCP.** `@ai-sdk/mcp` v2 still exports `experimental_createMCPClient`; the current
+     import keeps working. Optionally switch to the stable `createMCPClient` alias.
+  5. **`onChunk`.** v7 calls it for every part; we already guard
+     `chunk.type === 'reasoning-delta'` — fine, but confirm no new part type breaks the
+     handler.
+- Check: `check` clean; live chat send in a plain mode + a reasoning mode + a
+  tool-calling mode; **credits decrement correctly (verify against the DB)**; reasoning
+  + tool parts render; existing Playwright rating test green.
+- Commit: `build(chat): upgrade Vercel AI SDK to v7 and verify credit, reasoning and telemetry paths`
+
+### U3 — Adopt GroupedParts + streaming Reasoning + ToolGroup (replace legacy + custom)
+
+- Do: replace `MessagePrimitive.Unstable_PartsGrouped` + the custom
+  `groupConsecutiveByType` / `PartGroup` / `AssistantReasoningPart`
+  (`thread.tsx:1074-1132`, `:198-246`, `:1188-1196`) with the 0.14 stable stack:
+  `MessagePrimitive.GroupedParts` + `groupPartByType()` + `ReasoningRoot`/`ReasoningTrigger`/
+  `ReasoningContent`/`ReasoningText` (pass the `streaming` prop so the panel auto-expands
+  while reasoning streams and collapses on completion, with the built-in shimmer) +
+  `ToolGroupRoot`/`ToolGroupTrigger`/`ToolGroupContent` (shows the grouped tool count).
+  Keep `ToolFallback` as the per-tool renderer inside the tool group and give it an
+  **error branch** (destructive-toned chip + localized "failed" label, en + informal de)
+  driven by the tool part's `isError` — which v7 now surfaces correctly. Style the new
+  components with UZH tokens (they ship structural markup, not final styling).
+  This slice **absorbs** design findings M3, and old S15 A2 (live reasoning) + A4 (tool
+  errors).
+- Check: browser — reasoning panel auto-expands during a live reasoning stream then
+  collapses; tool group shows a count and expands; a **forced tool error** (block the
+  MCP endpoint in devtools) renders the distinct failed chip; markdown/text parts
+  unchanged; en + de.
+- Commit: `enhance(chat): adopt assistant-ui GroupedParts, streaming reasoning and tool-group UI`
+
+### U4 — Adopt FeedbackAdapter (replace hand-rolled thumbs) [was S15 A1]
+
+- Do: add `adapters.feedback = { submit: ({ message, type }) => rateMessage(chatbotId,
+  message.id, type) }` to the runtime config in `RuntimeProvider.tsx` (the
+  `useExternalStoreRuntime` call, or `useAISDKRuntime` if U5 already landed). Swap
+  `MessageRatingButtons` (`thread.tsx:1264-1330`) internals to
+  `ActionBarPrimitive.FeedbackPositive` / `FeedbackNegative`, reading active state from
+  `message.metadata.submittedFeedback?.type` instead of the zustand selector. Keep the
+  API route unchanged and keep the optimistic-rollback behavior of `chatStore.rateMessage`.
+- Check: thumbs persist → switch → clear against the DB exactly as before; existing
+  Playwright rating test green (minimal selector updates only if markup changed).
+- Commit: `enhance(chat): adopt assistant-ui feedback adapter for message rating`
+
+### U5 — Adopt `useAISDKRuntime`, retire the hand-rolled SSE parser [SPIKE-GATED, D9]
+
+- Problem: `useChatResponse.ts` (~300 lines) hand-parses the exact AI SDK UI-message
+  stream our route emits; `@assistant-ui/react-ai-sdk` is a declared dependency that is
+  never imported. This is the "legacy → stable" replacement.
+- Do: add `@ai-sdk/react@4.0.40` as a dep. Replace the custom `fetch`/SSE send path with
+  `@ai-sdk/react` `useChat()` wired through `@assistant-ui/react-ai-sdk`
+  `useAISDKRuntime({ ... })` in `RuntimeProvider.tsx`, keeping thread-list persistence via
+  the runtime's history/thread adapter, and re-wiring our custom metadata (`chatMode`,
+  `modelId`, `reasoningEffort`, `creditsUsed`) through AI SDK `messageMetadata` (already
+  emitted by the route's `toUIMessageStreamResponse({ messageMetadata })`). Tool `isError`,
+  reasoning `status`, part streaming, and the error surface (`ErrorPrimitive` / `useChat`
+  `onError`) then come from the SDK instead of hand-rolled code.
+- **Spike gate (D9):** timebox **1 day**. If the custom metadata + zustand thread
+  persistence + credits refresh do NOT map cleanly within the timebox, **STOP, revert to
+  `useChatResponse.ts`, record the blocker in Progress**, and skip the rest of U5.
+- Downstream coupling (author Phase 2 accordingly):
+  - If **adopted**: S2 mode resync uses `runtime.threads.switchToThread`; S5 error states
+    are authored against the runtime's error surface (drop the `useChatResponse.ts`
+    console-only paths); M2 thinking indicator can use the runtime `isRunning` +
+    `useMessageStallDetection`.
+  - If **fallback (kept `useChatResponse.ts`)**: S2/S5/M2 proceed exactly as written in
+    their slices against `useChatResponse.ts`; U4's feedback adapter stays on
+    `useExternalStoreRuntime`.
+- Check: full send / stream / reasoning / tool / error matrix; credits refresh after a
+  turn; thread switch + direct-URL load (ties into S2); Playwright suite green; en + de.
+- Commit: `refactor(chat): drive chat via assistant-ui useAISDKRuntime and retire the custom SSE parser`
 
 ### S17 — Finish gate
 
 - Re-run the full browser matrix: en+de x 1440/768/375, all states (empty, thread,
   settings, error, streaming), fresh screenshots for the PR.
 - Full Playwright chat suite + axe pass; `pnpm --filter @klicker-uzh/chat check`;
-  repo-wide `check` in-container.
-- Update `docs/chat-platform.md` for every behavior change made above (error states,
-  dark removal, embedded parity).
+  repo-wide `check` in-container; **in-container `pnpm run build` for `apps/chat`** (the
+  framework upgrade changes the dependency tree — a green build matters more than usual).
+- **Upgrade-specific gate** (because Phase U bumped frameworks):
+  - Re-confirm **credit accounting** on a multi-step tool-calling run against the DB
+    (the U2 usage-semantics change is the highest regression risk).
+  - Confirm reasoning streaming + tool-group rendering + tool-error chip on the final
+    build; confirm feedback persist/switch/clear.
+  - Record U5's outcome (adopted vs fell back) and which Phase-2 branch S2/S5/M2 took.
+  - `pnpm dedupe`/lockfile sanity: no duplicate `ai` / `@ai-sdk/*` / `@assistant-ui/*`
+    majors left in the lockfile.
+- Update `docs/chat-platform.md` for every behavior change (error states, dark removal,
+  embedded parity, **the 0.14 + AI SDK 7 upgrade and the new reasoning/tool/feedback
+  APIs**; note that `mcp-apps` interactive artifacts remain a future feature).
 - Update PR #5197 body (rs-mr-description-writer; whole-branch, new slices, new
-  screenshots) — keep draft until told otherwise.
-- Security re-check only if any slice touched routes/auth (S1 middleware change: yes —
-  confirm the matcher exclusion cannot skip auth for real pages, only static assets).
+  screenshots, the framework upgrade) — keep draft until told otherwise. Retitle if the
+  upgrade makes the reskin-only title inaccurate.
+- Security re-check for route/auth-touching slices: S1 middleware change (confirm the
+  matcher exclusion cannot skip auth for real pages, only static assets) **and U2/U5**
+  (the chat route + runtime changed — re-run `$security-review` over the AI SDK 7 route
+  diff and the new client runtime; confirm no auth/IDOR regression on the feedback route
+  or metadata plumbing).
+- ADR: record the in-branch framework-upgrade decision (0.12→0.14 + AI SDK 6→7 folded
+  into the reskin branch, D7/D8 reversed) as a short ADR under `docs/adr/` — it is hard
+  to reverse and the result of a real trade-off.
 - Update this plan's Progress section as you go; every slice gets its evidence line.
 
 ## Progress
@@ -546,3 +713,11 @@ adapter work is forward-compatible). Peer deps: React 18/19 (we are on 19).
   `Unstable_PartsGrouped` survives, `mcp-apps` interactive artifacts, react-ai-sdk↔AI
   SDK v7 coupling); decisions D7 revised, D8 added; S16 gains the unused-dependency
   removal. No slices started.
+- 2026-07-23: **User decided to do the framework upgrade IN this branch.** D7/D8
+  reversed, D9 added (U5 spike gate). Added Phase U (U1 assistant-ui 0.14 bump+codemod,
+  U2 AI SDK 7 bump+codemod, U3 GroupedParts/Reasoning/ToolGroup, U4 FeedbackAdapter, U5
+  useAISDKRuntime spike-gated) with pinned target versions verified against npm/tarball;
+  AI SDK 7 codemod = `npx @ai-sdk/codemod v7`, assistant-ui = `npx assistant-ui@latest
+  upgrade`. Old S15 dissolved into U3/U4; S16 react-ai-sdk removal reversed; S2/S5 got
+  Phase-2 dependency notes; added "Execution phases and ordering"; S17 finish gate
+  extended with upgrade-specific verification + ADR. No slices started.
