@@ -39,7 +39,6 @@ def _render_sql(finalize: bool, course_ids: list[str] | None) -> str:
     ) THEN c."analyticsFinalizedAt"
     ELSE CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
   END,"""
-        filter_clause += ' AND c."analyticsFinalizedAt" IS NULL'
     return (
         _SQL.replace(_SET_PLACEHOLDER, set_clause)
         .replace(_SCOPE_BYPASS_PLACEHOLDER, bypass_clause)
@@ -57,9 +56,10 @@ def mark_analytics_valid(session: Session, verbose: bool = False):
     safeguard).
 
     When ``ANALYTICS_MODE=finalize`` and ``ANALYTICS_COURSE_IDS`` is set, the
-    per-course terminal marker ``analyticsFinalizedAt`` is stamped for scoped
-    courses only when no chat-consent change arrived after the immutable run
-    cutoff. Otherwise the scanner can schedule a follow-up.
+    per-course terminal marker ``analyticsFinalizedAt`` is stamped or refreshed
+    for scoped courses only when no chat-consent change arrived after the
+    immutable run cutoff. Already-finalized courses remain eligible so the
+    scanner can reconcile late privacy changes.
     """
     config = analytics_run_config_from_env()
     if config.chat_analytics_cutoff is None:

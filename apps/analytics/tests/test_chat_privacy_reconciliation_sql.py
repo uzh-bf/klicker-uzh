@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 
 import pytest
@@ -1141,6 +1141,103 @@ def test_chat_cutoff_is_stored_as_utc_naive_in_non_utc_session(session):
         {"course": COURSE_A},
     ).scalar_one()
     assert stored_cutoff == datetime(2026, 7, 9, 9, 30)
+
+
+@pytest.mark.integration
+def test_same_millisecond_consent_change_remains_visible(session):
+    from src.analytics_cutoff import database_safe_cutoff
+    from src.modules.analytics_validity.mark_analytics_valid import (
+        mark_analytics_valid,
+    )
+    from src.modules.chat_analytics.consent_reconciliation import (
+        plan_chat_analytics_runs,
+    )
+
+    _create_temp_tables(session)
+    _seed_chat_sources(session)
+    session.execute(
+        text(
+            """
+            UPDATE "Course"
+            SET "analyticsFinalizedAt" = TIMESTAMP '2026-07-01 00:00:00',
+                "chatAnalyticsValidAt" = TIMESTAMP '2026-07-01 00:00:00'
+            WHERE id = :course
+            """
+        ),
+        {"course": COURSE_A},
+    )
+    session.execute(
+        text(
+            """
+            UPDATE "ChatUsageCredits"
+            SET "disclaimerAcceptedAt" = TIMESTAMP '2026-07-09 09:30:00.123',
+                "updatedAt" = TIMESTAMP '2026-07-09 09:30:00.123'
+            WHERE "participantId" = :participant
+              AND "chatbotId" = :chatbot
+            """
+        ),
+        {
+            "participant": ACCEPTED,
+            "chatbot": CHATBOT_A,
+        },
+    )
+    cutoff = database_safe_cutoff(datetime(2026, 7, 9, 9, 30, 0, 123456, tzinfo=timezone.utc))
+
+    with analytics_run_context(
+        AnalyticsRunConfig(
+            mode="finalize",
+            course_ids=(str(COURSE_A),),
+            chat_analytics_cutoff=cutoff,
+        )
+    ):
+        mark_analytics_valid(session)
+
+    marker, finalized_at = session.execute(
+        text(
+            """
+            SELECT "chatAnalyticsValidAt", "analyticsFinalizedAt"
+            FROM "Course"
+            WHERE id = :course
+            """
+        ),
+        {"course": COURSE_A},
+    ).one()
+    assert marker == datetime(2026, 7, 9, 9, 30, 0, 122000)
+    assert finalized_at == datetime(2026, 7, 1)
+    history_runs = plan_chat_analytics_runs(
+        session,
+        [str(COURSE_A)],
+        "2026-07-09",
+    )
+    assert [(run.course_ids, run.window_since) for run in history_runs] == [([str(COURSE_A)], "2026-07-01")]
+
+    with analytics_run_context(
+        AnalyticsRunConfig(
+            mode="finalize",
+            course_ids=(str(COURSE_A),),
+            chat_analytics_cutoff=database_safe_cutoff(datetime(2026, 7, 9, 9, 30, 0, 125000, tzinfo=timezone.utc)),
+        )
+    ):
+        mark_analytics_valid(session)
+
+    marker, finalized_at = session.execute(
+        text(
+            """
+            SELECT "chatAnalyticsValidAt", "analyticsFinalizedAt"
+            FROM "Course"
+            WHERE id = :course
+            """
+        ),
+        {"course": COURSE_A},
+    ).one()
+    assert marker == datetime(2026, 7, 9, 9, 30, 0, 124000)
+    assert finalized_at > datetime(2026, 7, 1)
+    converged_runs = plan_chat_analytics_runs(
+        session,
+        [str(COURSE_A)],
+        "2026-07-09",
+    )
+    assert [(run.course_ids, run.window_since) for run in converged_runs] == [([str(COURSE_A)], "2026-07-09")]
 
 
 @pytest.mark.integration

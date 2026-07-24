@@ -14,6 +14,7 @@ from hatchet_sdk import (
 )
 from pydantic import BaseModel, ConfigDict
 
+from src.analytics_cutoff import database_safe_cutoff
 from src.analytics_runtime import run_analytics_module
 from src.modules.utils import (
     AnalyticsMode,
@@ -92,13 +93,11 @@ def resolve_run_config(
 
 
 def workflow_run_cutoff(ctx: Context) -> str:
-    """Return the immutable creation time shared by every task in this run."""
+    """Return one conservative, immutable cutoff shared by every task."""
     created_at = ctx.runs_client.get(ctx.workflow_run_id).run.created_at
     if created_at is None:
         raise RuntimeError("Hatchet workflow run has no creation timestamp")
-    if created_at.tzinfo is None:
-        created_at = created_at.replace(tzinfo=timezone.utc)
-    return created_at.astimezone(timezone.utc).isoformat()
+    return database_safe_cutoff(created_at)
 
 
 def register_native_workflows(
