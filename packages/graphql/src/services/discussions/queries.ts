@@ -22,7 +22,6 @@ import type {
   CourseDiscussionOverviewGroup,
   CourseDiscussionThreadsArgs,
   DiscussionThreadPage,
-  DiscussionThreadWithRelations,
   ResolvedActor,
 } from './types.js'
 
@@ -207,10 +206,7 @@ export async function courseDiscussionThreads(
   const hasMore = threads.length > pageSize
   const pageThreads = hasMore ? threads.slice(0, pageSize) : threads
 
-  const mappedThreads = await mapThreads(
-    pageThreads as unknown as DiscussionThreadWithRelations[],
-    ctx
-  )
+  const mappedThreads = await mapThreads(pageThreads, ctx)
 
   const nextCursor = hasMore
     ? String(pageThreads[pageThreads.length - 1]!.id)
@@ -285,10 +281,7 @@ export async function courseDiscussionOverview(
 
   const grouped = new Map<string, CourseDiscussionOverviewGroup>()
 
-  const mappedThreads = await mapThreads(
-    pageThreads as unknown as DiscussionThreadWithRelations[],
-    ctx
-  )
+  const mappedThreads = await mapThreads(pageThreads, ctx)
 
   mappedThreads.forEach((thread) => {
     if (!thread.sourceKey || !thread.sourceLabel) return

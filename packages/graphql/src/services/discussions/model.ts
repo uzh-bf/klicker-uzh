@@ -177,34 +177,42 @@ export function extractCourseIdFromSpace(space: DB.DiscussionSpace | null) {
     : null
 }
 
-export function buildThreadInclude(participantId?: string | null) {
-  const replyInclude: DB.Prisma.DiscussionReplyInclude = {}
-  if (participantId) {
-    replyInclude.votes = {
-      where: { participantId },
-      select: { participantId: true },
-    }
-  }
+function replyVoteWhere(
+  participantId?: string | null
+): DB.Prisma.DiscussionReplyVoteWhereInput {
+  return participantId ? { participantId } : { participantId: { in: [] } }
+}
 
-  const include: DB.Prisma.DiscussionThreadInclude = {
+function threadVoteWhere(
+  participantId?: string | null
+): DB.Prisma.DiscussionThreadVoteWhereInput {
+  return participantId ? { participantId } : { participantId: { in: [] } }
+}
+
+export function buildReplyInclude(participantId?: string | null) {
+  return {
+    votes: {
+      where: replyVoteWhere(participantId),
+      select: { participantId: true },
+    },
+  } satisfies DB.Prisma.DiscussionReplyInclude
+}
+
+export function buildThreadInclude(participantId?: string | null) {
+  return {
     scope: true,
     space: true,
     replies: {
       where: { isDeleted: false },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
       take: REPLIES_PER_THREAD_MAX,
-      include: replyInclude,
+      include: buildReplyInclude(participantId),
     },
-  }
-
-  if (participantId) {
-    include.votes = {
-      where: { participantId },
+    votes: {
+      where: threadVoteWhere(participantId),
       select: { participantId: true },
-    }
-  }
-
-  return include
+    },
+  } satisfies DB.Prisma.DiscussionThreadInclude
 }
 
 export async function getDiscussionThreadById(
@@ -227,9 +235,6 @@ export async function getDiscussionThreadById(
     return null
   }
 
-  const [mappedThread] = await mapThreads(
-    [thread as unknown as DiscussionThreadWithRelations],
-    ctx
-  )
+  const [mappedThread] = await mapThreads([thread], ctx)
   return mappedThread ?? null
 }

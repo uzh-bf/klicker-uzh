@@ -16,6 +16,7 @@ import {
 } from './embeds.js'
 import {
   REPLIES_PER_THREAD_MAX,
+  buildReplyInclude,
   extractCourseIdFromSpace,
   getDiscussionThreadById,
   isActiveCourseScopeType,
@@ -370,28 +371,14 @@ export async function createCourseDiscussionReply(
 
   if (!reply) return null
 
-  const includeVotes =
-    ctx.user?.role === DB.UserRole.PARTICIPANT && ctx.user.sub
-      ? {
-          where: {
-            participantId: ctx.user.sub,
-          },
-          select: {
-            participantId: true,
-          },
-        }
-      : undefined
-
   const response = await ctx.prisma.discussionReply.findUnique({
     where: {
       id: reply.id,
     },
-    include: {
-      votes: includeVotes,
-    },
+    include: buildReplyInclude(participantId),
   })
 
   if (!response || response.isDeleted) return null
 
-  return mapReply(response as DiscussionReplyWithRelations)
+  return mapReply(response)
 }

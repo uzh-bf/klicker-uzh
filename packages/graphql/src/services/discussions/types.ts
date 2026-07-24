@@ -56,22 +56,54 @@ export interface GetCourseDiscussionEmbeddingInfoArgs {
   expiresInHours?: number | null
 }
 
-export interface DiscussionReplyWithRelations extends DB.DiscussionReply {
-  votes?: Pick<DB.DiscussionReplyVote, 'participantId'>[]
+type DiscussionReplyWithVotes = DB.Prisma.DiscussionReplyGetPayload<{
+  include: {
+    votes: {
+      select: {
+        participantId: true
+      }
+    }
+  }
+}>
+
+type DiscussionThreadWithRelationsBase = DB.Prisma.DiscussionThreadGetPayload<{
+  include: {
+    scope: true
+    space: true
+    replies: {
+      include: {
+        votes: {
+          select: {
+            participantId: true
+          }
+        }
+      }
+    }
+    votes: {
+      select: {
+        participantId: true
+      }
+    }
+  }
+}>
+
+export interface DiscussionReplyWithRelations extends DiscussionReplyWithVotes {
   hasUpvoted?: boolean
 }
 
-export interface DiscussionScopeWithPresentation extends DB.DiscussionScope {
-  stackType?: DB.ElementStackType | null
-  stackOrder?: number | null
-  stackDisplayName?: string | null
-}
+export type DiscussionScopeWithPresentation =
+  DiscussionThreadWithRelationsBase['scope'] & {
+    stackType?: DB.ElementStackType | null
+    stackOrder?: number | null
+    stackDisplayName?: string | null
+  }
 
-export interface DiscussionThreadWithRelations extends DB.DiscussionThread {
+export type DiscussionThreadWithRelations = Omit<
+  DiscussionThreadWithRelationsBase,
+  'scope' | 'replies'
+> & {
   scope: DiscussionScopeWithPresentation
-  space: DB.DiscussionSpace
   replies: DiscussionReplyWithRelations[]
-  votes?: Pick<DB.DiscussionThreadVote, 'participantId'>[]
 
   sourceKey?: string
   sourceLabel?: string

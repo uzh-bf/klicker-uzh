@@ -7,6 +7,7 @@ import {
   isCourseDiscussionEnabled,
 } from './access.js'
 import {
+  buildReplyInclude,
   extractCourseIdFromSpace,
   getDiscussionThreadById,
   isActiveCourseScopeType,
@@ -343,27 +344,16 @@ export async function toggleCourseDiscussionReplyUpvote(
     })
   })
 
-  const includeVotes = {
-    where: {
-      participantId,
-    },
-    select: {
-      participantId: true,
-    },
-  }
-
   const reply = await ctx.prisma.discussionReply.findUnique({
     where: {
       id: replyId,
     },
-    include: {
-      votes: includeVotes,
-    },
+    include: buildReplyInclude(participantId),
   })
 
   if (!reply || reply.isDeleted) return null
 
-  return mapReply(reply as DiscussionReplyWithRelations)
+  return mapReply(reply)
 }
 
 async function canDeleteDiscussionContent(
