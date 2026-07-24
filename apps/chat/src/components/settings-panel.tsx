@@ -79,7 +79,7 @@ export function SettingsPanel() {
       {open && (
         <div
           data-cy="chat-settings-panel"
-          className="border-muted space-y-3 border-t px-3 pb-2 pt-2"
+          className="border-border space-y-3 border-t px-3 pb-2 pt-2"
         >
           <div>
             {/* model selection */}

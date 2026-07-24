@@ -359,7 +359,7 @@ function SidebarMain({
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="relative flex min-h-0 flex-1 flex-col">
           {isLoading && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white">
+            <div className="bg-background absolute inset-0 z-10 flex items-center justify-center">
               <Loader2 className="text-muted-foreground size-6 animate-spin" />
             </div>
           )}
