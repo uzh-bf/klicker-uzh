@@ -200,7 +200,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
             value={editTitle}
             onChange={setEditTitle}
             onKeyDown={handleKeyDown}
-            className={{ input: 'mx-2 h-8 flex-grow bg-white text-sm' }}
+            className={{ input: 'bg-background mx-2 h-8 flex-grow text-sm' }}
             autoFocus
           />
           <button
@@ -208,6 +208,9 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
             data-cy="chat-thread-title-save"
             onClick={handleEditSave}
             aria-label={t('chat.threadList.save')}
+            // TODO success token: no semantic "success" color exists in the
+            // token system yet; hover:text-green-600 stays hardcoded until one
+            // is added (D1/S6 — do not invent a token here).
             className="text-foreground focus-visible:ring-ring mr-1 inline-flex size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors hover:text-green-600 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
           >
             <CheckIcon />
@@ -218,7 +221,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
             data-cy="chat-thread-title-cancel"
             onClick={handleEditCancel}
             aria-label={t('chat.threadList.cancel')}
-            className="text-foreground focus-visible:ring-ring mr-2 inline-flex size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors hover:text-red-600 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
+            className="text-foreground focus-visible:ring-ring hover:text-destructive mr-2 inline-flex size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
           >
             <XIcon />
             <span className="sr-only">{t('chat.threadList.cancel')}</span>

@@ -44,6 +44,7 @@ export function CreditsFooter() {
         max={100}
         className={{
           root: 'h-1.5',
+          background: 'bg-muted',
           indicator: `h-1.5 ${indicatorColor}`,
         }}
         formatter={() => null}

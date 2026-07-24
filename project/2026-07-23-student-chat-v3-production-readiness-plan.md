@@ -788,6 +788,15 @@ designing the question widget.
   sheet is open — verified in design-system Sheet source). Evidence: 375px non-last
   message shows action bar without hover, sheet closes on select, desktop bars are thin
   muted strips, typecheck green. Review: no findings.
+- 2026-07-24: **S4 done** (`a5a26b40b`). aria-labels via `chat.composer.send`/`stop`,
+  en+de keys added; DOM-verified "Nachricht senden"/"Send message". Review folded into
+  the S6 pass: no findings, German informal register confirmed.
+- 2026-07-24: **S6 done**. 10 token swaps + `text-md`→`text-base`, Progress
+  `className.background` override, `.dark` block + `@custom-variant dark` removed
+  (D1), wiki theming note updated. Reviewer verified swaps are exact OKLCH
+  equivalents; desktop screenshot no-change; typecheck green. Remaining
+  `bg-white`/`red-*` hits (avatar backing, disclaimer-declined block, image-viewer
+  error) deliberately out of scope with justification.
 - 2026-07-24: Environment note: worktree stack has no upstream LLM key
   (`UPSTREAM_OPENAI_API_KEY`), so live sends fail with the S5 error bubble (stacked
   strings reproduced live). Phase 0 does not need live LLM; **Phase U verification does**

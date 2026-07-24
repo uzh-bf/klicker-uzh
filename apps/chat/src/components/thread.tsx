@@ -362,12 +362,12 @@ const AttachmentErrorBanner: FC<{
   if (!error) return null
   return (
     <div className={className}>
-      <div className="inline-flex items-center gap-1.5 rounded-md bg-red-50 px-2 py-1 text-xs text-red-600">
+      <div className="bg-destructive/10 text-destructive inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs">
         <span>{error}</span>
         <button
           type="button"
           onClick={onDismiss}
-          className="rounded hover:bg-red-100"
+          className="hover:bg-destructive/20 rounded"
           aria-label={t('chat.composer.dismissError')}
         >
           <XIcon className="size-3" />
@@ -390,7 +390,7 @@ const Composer: FC = () => {
     >
       <ComposerPrimitive.Root
         data-cy="chat-composer"
-        className="focus-within:border-primary/40 focus-within:ring-primary/10 flex w-full flex-col rounded-3xl border border-gray-200 bg-white px-2.5 shadow-[0_0_12px_rgba(0,0,0,0.06)] transition-colors ease-in focus-within:ring-2"
+        className="focus-within:border-primary/40 focus-within:ring-primary/10 bg-background border-border flex w-full flex-col rounded-3xl border px-2.5 shadow-[0_0_12px_rgba(0,0,0,0.06)] transition-colors ease-in focus-within:ring-2"
       >
         <ComposerAttachments />
 
@@ -411,7 +411,7 @@ const Composer: FC = () => {
             autoFocus
             placeholder={t('chat.composer.placeholder')}
             className={twMerge(
-              'placeholder:text-muted-foreground text-md flex-grow cursor-text resize-none border-none bg-transparent px-2 outline-none focus:ring-0 disabled:cursor-not-allowed',
+              'placeholder:text-muted-foreground text-base flex-grow cursor-text resize-none border-none bg-transparent px-2 outline-none focus:ring-0 disabled:cursor-not-allowed',
               embedded ? 'max-h-20 py-2' : 'max-h-40 py-4'
             )}
           />
@@ -497,7 +497,7 @@ const ComposerDropOverlay: FC<{ roundedClass: string }> = ({
   return (
     <div
       className={twMerge(
-        'border-primary/60 text-primary pointer-events-none absolute inset-0 z-10 hidden items-center justify-center border-2 border-dashed bg-white/85 px-4 text-center text-sm font-medium shadow-inner backdrop-blur-sm group-data-[dragging]:flex',
+        'border-primary/60 text-primary pointer-events-none absolute inset-0 z-10 hidden items-center justify-center border-2 border-dashed bg-background/85 px-4 text-center text-sm font-medium shadow-inner backdrop-blur-sm group-data-[dragging]:flex',
         roundedClass
       )}
     >
