@@ -1,8 +1,8 @@
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
-import { syncFeedbackScore } from '@/src/lib/server/langfuseTracing'
+import { recordFeedbackScore } from '@/src/lib/server/langfuseTracing'
 import { prisma } from '@klicker-uzh/prisma'
 import { ChatMessageRating } from '@klicker-uzh/prisma/client'
-import { after, NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
 // null clears a previous vote, so a participant can take their rating back.
@@ -63,10 +63,10 @@ export async function POST(
       data: { rating },
     })
 
-    // Mirror the latest persisted rating after the response so unavailable
-    // telemetry cannot hold a student's click open. The sync serializes by
-    // message across app instances and re-reads the database under that lock.
-    after(() => syncFeedbackScore(message.id))
+    // Keep the telemetry write in the same ordered client request as the
+    // database update. It is best effort and capped at one second, while the
+    // optimistic UI updates immediately.
+    await recordFeedbackScore(message.id, rating)
 
     return NextResponse.json({ rating })
   } catch (error) {
