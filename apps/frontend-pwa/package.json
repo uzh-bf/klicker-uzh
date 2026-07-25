@@ -47,7 +47,7 @@
     "react-select": "5.10.2",
     "recharts": "3.0.2",
     "remeda": "2.15.0",
-    "sharp": "0.33.5",
+    "sharp": "0.35.0",
     "tailwind-merge": "3.3.1",
     "yup": "1.6.1"
   },
