@@ -319,6 +319,7 @@ const ThreadWelcome: FC<{ chatbotAvatar: string }> = ({ chatbotAvatar }) => {
                 alt=""
                 width={56}
                 height={56}
+                unoptimized
                 className="ring-border animate-in fade-in slide-in-from-bottom-2 mb-4 rounded-full bg-white ring-1 duration-300 motion-reduce:animate-none"
               />
             )}
@@ -1131,6 +1132,7 @@ const AssistantMessage: FC<{
             alt=""
             width={chatbotAvatar ? '35' : '32'}
             height="35"
+            unoptimized={Boolean(chatbotAvatar)}
             className={twMerge(
               'hidden rounded-full bg-white sm:block',
               chatbotAvatar ? '' : 'p-1'
@@ -1145,6 +1147,7 @@ const AssistantMessage: FC<{
             alt=""
             width="24"
             height="24"
+            unoptimized={Boolean(chatbotAvatar)}
             className={twMerge(
               'rounded-full bg-white sm:hidden',
               chatbotAvatar ? '' : 'p-1'
