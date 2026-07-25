@@ -38,12 +38,18 @@ function assistantMessage(): ExtendedThreadMessageLike {
   }
 }
 
-function currentRating() {
-  return useChatStore.getState().threads[0]?.messages[0]?.rating ?? null
+function currentRating(messageId = 'message-1') {
+  return (
+    useChatStore
+      .getState()
+      .threads[0]?.messages.find((message) => message.id === messageId)
+      ?.rating ?? null
+  )
 }
 
 function resetStore() {
   const message = assistantMessage()
+  const secondMessage = { ...assistantMessage(), id: 'message-2' }
   useChatStore.setState({
     threads: [
       {
@@ -52,8 +58,8 @@ function resetStore() {
         createdAt: new Date('2026-07-25T00:00:00.000Z'),
         updatedAt: new Date('2026-07-25T00:00:00.000Z'),
         isRunning: false,
-        messages: [message],
-        allMessages: [message],
+        messages: [message, secondMessage],
+        allMessages: [message, secondMessage],
       },
     ],
     activeThreadId: 'thread-1',
@@ -133,5 +139,30 @@ describe('chatStore message ratings', () => {
     await Promise.all([firstRating, secondRating])
 
     expect(currentRating()).toBe('UP')
+  })
+
+  test('does not block ratings for different messages on one global queue', async () => {
+    const first = deferred<ReturnType<typeof successfulResponse>>()
+    const second = deferred<ReturnType<typeof successfulResponse>>()
+    const fetchSpy = vi
+      .fn()
+      .mockReturnValueOnce(first.promise)
+      .mockReturnValueOnce(second.promise)
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const firstRating = useChatStore
+      .getState()
+      .rateMessage('chatbot-1', 'message-1', 'UP')
+    const secondRating = useChatStore
+      .getState()
+      .rateMessage('chatbot-1', 'message-2', 'DOWN')
+
+    await vi.waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(2))
+    expect(currentRating('message-1')).toBe('UP')
+    expect(currentRating('message-2')).toBe('DOWN')
+
+    first.resolve(successfulResponse())
+    second.resolve(successfulResponse())
+    await Promise.all([firstRating, secondRating])
   })
 })
