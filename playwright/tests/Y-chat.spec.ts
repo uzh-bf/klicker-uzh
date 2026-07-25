@@ -479,7 +479,10 @@ test.describe('Chatbot Messaging Interface', () => {
               toolCallId: 'call-3',
               toolName: 'library_lookup',
               args: { id: 'gamma' },
-              result: { content: [{ type: 'text', text: 'Gamma result' }] },
+              result: {
+                isError: true,
+                content: [{ type: 'text', text: 'Tool execution failed' }],
+              },
             },
           ],
         },
@@ -499,7 +502,13 @@ test.describe('Chatbot Messaging Interface', () => {
     const toolGroupToggle = page.getByTestId('chat-tool-group-toggle')
     await expect(toolGroupToggle).toHaveCount(1)
     await expect(toolGroupToggle).toHaveAttribute('aria-expanded', 'false')
-    await expect(page.getByTestId('chat-tool-call-toggle')).toHaveCount(1)
+    const singleToolToggle = page.getByTestId('chat-tool-call-toggle')
+    await expect(singleToolToggle).toHaveCount(1)
+    await expect(singleToolToggle).toContainText(/failed/i)
+    await singleToolToggle.click()
+    await expect(
+      page.getByTestId('chat-assistant-message-content')
+    ).toContainText('Tool execution failed')
     await toolGroupToggle.click()
     await expect(toolGroupToggle).toHaveAttribute('aria-expanded', 'true')
     await expect(page.getByTestId('chat-tool-call-toggle')).toHaveCount(3)
