@@ -147,8 +147,6 @@ export const useChatStore = create<ChatState>((set, get) => {
     string,
     {
       confirmedRating: MessageRating | null
-      latestRequest: object
-      pendingCount: number
       tail: Promise<void>
     }
   >()
@@ -919,20 +917,15 @@ export const useChatStore = create<ChatState>((set, get) => {
           .threads.find((thread) => thread.id === threadId)
           ?.messages.find((message) => message.id === messageId)?.rating ?? null
 
-      const requestToken = {}
       let requestState = ratingRequests.get(requestKey)
       if (!requestState) {
         requestState = {
           confirmedRating: readRating(),
-          latestRequest: requestToken,
-          pendingCount: 0,
           tail: Promise.resolve(),
         }
         ratingRequests.set(requestKey, requestState)
       }
 
-      requestState.latestRequest = requestToken
-      requestState.pendingCount += 1
       applyRating(rating)
 
       const request = requestState.tail
@@ -950,15 +943,14 @@ export const useChatStore = create<ChatState>((set, get) => {
         await request
       } catch (error) {
         console.error('Failed to save message feedback:', error)
-        // Object identity avoids an ABA race such as UP -> DOWN -> UP: only
+        // Promise identity avoids an ABA race such as UP -> DOWN -> UP: only
         // the latest request may change the visible optimistic rating.
-        if (requestState.latestRequest === requestToken) {
+        if (requestState.tail === request) {
           applyRating(requestState.confirmedRating)
         }
       } finally {
-        requestState.pendingCount -= 1
         if (
-          requestState.pendingCount === 0 &&
+          requestState.tail === request &&
           ratingRequests.get(requestKey) === requestState
         ) {
           ratingRequests.delete(requestKey)
