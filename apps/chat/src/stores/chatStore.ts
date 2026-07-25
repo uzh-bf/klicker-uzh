@@ -143,6 +143,15 @@ export const useChatStore = create<ChatState>((set, get) => {
     string,
     Promise<ExtendedThreadMessageLike | undefined>
   >()
+  const ratingRequests = new Map<
+    string,
+    {
+      confirmedRating: MessageRating | null
+      latestRequest: object
+      pendingCount: number
+      tail: Promise<void>
+    }
+  >()
 
   const markParticipationRequired = (message?: string) => {
     set({
@@ -884,6 +893,7 @@ export const useChatStore = create<ChatState>((set, get) => {
     rateMessage: async (chatbotId, messageId, rating) => {
       const threadId = get().activeThreadId
       if (!threadId) return
+      const requestKey = `${threadId}:${messageId}`
 
       const applyRating = (next: MessageRating | null) => {
         const setRating = (messages: ExtendedThreadMessageLike[]) =>
@@ -909,22 +919,50 @@ export const useChatStore = create<ChatState>((set, get) => {
           .threads.find((thread) => thread.id === threadId)
           ?.messages.find((message) => message.id === messageId)?.rating ?? null
 
-      const previous = readRating()
+      const requestToken = {}
+      let requestState = ratingRequests.get(requestKey)
+      if (!requestState) {
+        requestState = {
+          confirmedRating: readRating(),
+          latestRequest: requestToken,
+          pendingCount: 0,
+          tail: Promise.resolve(),
+        }
+        ratingRequests.set(requestKey, requestState)
+      }
 
+      requestState.latestRequest = requestToken
+      requestState.pendingCount += 1
       applyRating(rating)
 
+      const request = requestState.tail
+        .catch(() => undefined)
+        .then(async () => {
+          await apiCall(
+            `/chatbots/${chatbotId}/threads/${threadId}/messages/${messageId}/feedback`,
+            { method: 'POST', body: JSON.stringify({ rating }) }
+          )
+          requestState.confirmedRating = rating
+        })
+      requestState.tail = request
+
       try {
-        await apiCall(
-          `/chatbots/${chatbotId}/threads/${threadId}/messages/${messageId}/feedback`,
-          { method: 'POST', body: JSON.stringify({ rating }) }
-        )
+        await request
       } catch (error) {
         console.error('Failed to save message feedback:', error)
-        // Only undo our own optimistic write. Changing one's mind mid-flight
-        // starts a second request, and if this (now superseded) one then fails,
-        // rolling back to its stale snapshot would contradict the vote that
-        // actually got persisted.
-        if (readRating() === rating) applyRating(previous)
+        // Object identity avoids an ABA race such as UP -> DOWN -> UP: only
+        // the latest request may change the visible optimistic rating.
+        if (requestState.latestRequest === requestToken) {
+          applyRating(requestState.confirmedRating)
+        }
+      } finally {
+        requestState.pendingCount -= 1
+        if (
+          requestState.pendingCount === 0 &&
+          ratingRequests.get(requestKey) === requestState
+        ) {
+          ratingRequests.delete(requestKey)
+        }
       }
     },
 
