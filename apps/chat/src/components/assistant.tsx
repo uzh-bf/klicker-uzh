@@ -382,6 +382,7 @@ function SidebarMain({
               alt=""
               width={24}
               height={24}
+              unoptimized
               className="ring-border size-6 shrink-0 rounded-full bg-white ring-1"
             />
           )}
