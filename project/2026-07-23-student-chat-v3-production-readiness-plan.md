@@ -1080,11 +1080,10 @@ designing the question widget.
   and the later Claude session. The unused `@assistant-ui/react-ai-sdk`
   adapter was removed, leaving one AI SDK 7 / assistant-ui 0.14 dependency
   line. Rapid feedback updates now serialize per message with immediate
-  optimistic UI and latest-request rollback; PostgreSQL stays authoritative,
-  while the Langfuse mirror is awaited for at most one second. The strict
-  review accepted the timeout-edge uncertain-write race as an explicit
-  best-effort telemetry limitation; exact delivery would require an
-  out-of-scope durable outbox/worker. The 234-line dual disclosure-context
+  optimistic UI and latest-request rollback. PostgreSQL stays authoritative;
+  the intermediate one-second Langfuse mirror was removed at the final gate
+  because the OTel mismatch makes every score orphaned. Analytical mirroring
+  is deferred until the tracing integration is operational. The 234-line dual disclosure-context
   stack moved from `thread.tsx` into one `GroupedDisclosure` composition in
   `message-parts.tsx`; hidden send/cancel controls are now inert and removed
   from tab order, and assistant metadata meets text contrast. Provider tool
@@ -1096,3 +1095,37 @@ designing the question widget.
   chip. Exact-commit review and simplification passed for both implementation
   slices. The final full-suite/build/browser/security/maintainability gate and
   PR evidence refresh remain next.
+- 2026-07-25: **S17 takeover finish gate passed.** Final security review
+  found one live MCP error leak and the browser accessibility pass found one
+  failed-tool-chip contrast defect; both are fixed, alongside the already
+  covered persisted-error sanitizer. The strict maintainability review also
+  rejected the nonfunctional Langfuse mirror, required stale credit requests
+  to be invalidated, and required the rating request coordinator to move out
+  of `chatStore.ts`; those corrections leave the store at 989 lines. Chat
+  Vitest passes 59/59 across 15 files, chat check passes, chat lint reports
+  zero errors and six pre-existing warnings, the production chat build passes,
+  and root `check:all` passes all 24 typecheck and six lint tasks plus format,
+  syncpack, instruction, and Prisma-schema checks. The final security gate
+  passes with no high-confidence findings. The exact final-code Playwright run
+  passes 50 tests with one known root-message-edit fixme and zero failures.
+  Axe reports no serious/critical or contrast violations at 1440×900 and no
+  violations at 375×812; the remaining desktop `region` result is a known
+  moderate landmark warning on mixed sidebar content. The browser gate also
+  exposed a real concurrent first-visit credit initialization failure:
+  `findUnique` + `create` raced the parallel credit request and raised Prisma
+  `P2002` on `(participantId, chatbotId)`. The initializer now uses an
+  explicitly database-native compound-key upsert that leaves existing balances
+  untouched. The disclaimer regression passes twice in isolation and in the
+  full suite; independent correctness, simplification, final security, and
+  strict maintainability reviews pass. All local gates are complete; refreshing
+  and pushing the draft PR is next.
+  - Hardest constraint: preserving rapid per-message rating ordering without
+    making the student request wait on unreliable telemetry. The final design
+    keeps ordered PostgreSQL writes and removes the unusable mirror.
+  - Simpler alternatives rejected: unbounded request waiting, a database
+    advisory lock held across HTTP, and a durable outbox in this branch. The
+    first two worsen the request path; the outbox is the right shape only after
+    tracing works and analytical delivery is approved as separate scope.
+  - Weakest verification: live model-backed reasoning/tool streaming,
+    multi-step credit accounting, and real telemetry remain unverified because
+    this environment has no model key and the OTel integration is broken.
