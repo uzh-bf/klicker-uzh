@@ -1075,3 +1075,24 @@ designing the question widget.
   Playwright suite because its downloaded Chromium executable is incomplete
   (`Invalid file descriptor to ICU data`); the suite's existing 50-test
   coverage remains unchanged.
+- 2026-07-25: **S17 takeover review reopened and corrected the finish gate.**
+  Live branch/worktree/PR state was reconciled against the 2026-07-24 handoff
+  and the later Claude session. The unused `@assistant-ui/react-ai-sdk`
+  adapter was removed, leaving one AI SDK 7 / assistant-ui 0.14 dependency
+  line. Rapid feedback updates now serialize per message with immediate
+  optimistic UI and latest-request rollback; PostgreSQL stays authoritative,
+  while the Langfuse mirror is awaited for at most one second. The strict
+  review accepted the timeout-edge uncertain-write race as an explicit
+  best-effort telemetry limitation; exact delivery would require an
+  out-of-scope durable outbox/worker. The 234-line dual disclosure-context
+  stack moved from `thread.tsx` into one `GroupedDisclosure` composition in
+  `message-parts.tsx`; hidden send/cancel controls are now inert and removed
+  from tab order, and assistant metadata meets text contrast. Provider tool
+  errors are sanitized before persistence for both thrown `tool-error` parts
+  and MCP `tool-result.output.isError` envelopes. Verification so far:
+  focused Vitest 5/5 for rating/disclosure state, persisted-content Vitest
+  4/4, chat and Playwright typechecks, focused real-app Playwright 1/1 for
+  persisted reasoning, adjacent/single tool grouping, and a sanitized failed
+  chip. Exact-commit review and simplification passed for both implementation
+  slices. The final full-suite/build/browser/security/maintainability gate and
+  PR evidence refresh remain next.

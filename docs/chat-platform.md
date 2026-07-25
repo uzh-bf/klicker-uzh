@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-07-24'
+timestamp: '2026-07-25'
 tags:
   - frontend
   - chat
@@ -20,9 +20,9 @@ The app runs Next.js 16 / React 19 and uses Turbopack for development, test, and
 ## Structure
 
 - `src/app/api/chatbots/[chatbotId]/…` — route handlers (chat streaming, attachments, threads).
-- `src/lib/server/` — server-only helpers: `apiGuards.ts`, `chatModelRegistry.ts`, `openaiResponsesOptions.ts`, `imagePreview.ts`.
+- `src/lib/server/` — server-only helpers: auth/model configuration, image handling, telemetry, and sanitized assistant-message persistence.
 - `src/stores/` — zustand: `chatStore`, `composerStore`, `settingsStore`.
-- `src/components/thread.tsx` and `src/hooks/` — assistant-ui composition.
+- `src/components/thread.tsx`, `src/components/message-parts.tsx`, and `src/hooks/` — assistant-ui composition and transport.
 - Local model proxy: the `litellm` compose service (port 4000).
 
 ## Auth guard pattern (route handlers)
@@ -53,13 +53,17 @@ Chat carries the UZH brand through the shadcn semantic tokens in `src/app/global
 
 ## Runtime and student-visible states
 
-The chat branch uses `@assistant-ui/react` 0.14's stable `GroupedParts` primitive and local
-`Reasoning*`/`ToolGroup*` composition in `src/components/thread.tsx`. The runtime's feedback
-adapter delegates votes to `src/stores/chatStore.ts:rateMessage`, while the adapter maps the
-persisted `ChatMessage.rating` back into `metadata.submittedFeedback` so votes survive store
-refreshes and reloads. AI SDK 7 powers the server route (`ai`, `@ai-sdk/openai`, and
-`@ai-sdk/mcp`); `src/hooks/useChatResponse.ts` remains the client transport because the
-spike-gated `useAISDKRuntime` replacement could not be live-verified without an LLM key.
+The chat branch uses `@assistant-ui/react` 0.14's stable `GroupedParts` primitive. Local
+composition lives in `src/components/message-parts.tsx:AssistantMessageParts`: adjacent
+reasoning parts share one disclosure, adjacent tool calls share one group when there is more
+than one, and a single tool call keeps its direct result disclosure. Reasoning auto-opens only
+while active until the participant manually chooses an open state; that manual choice then wins.
+The runtime's feedback adapter delegates votes to `src/stores/chatStore.ts:rateMessage`, while
+the adapter maps the persisted `ChatMessage.rating` back into `metadata.submittedFeedback` so
+votes survive store refreshes and reloads. AI SDK 7 powers the server route (`ai`,
+`@ai-sdk/openai`, and `@ai-sdk/mcp`); `src/hooks/useChatResponse.ts` remains the client transport
+because the spike-gated `useAISDKRuntime` replacement could not be live-verified without an LLM
+key.
 
 Initial thread and message loading uses skeleton rows and message-shaped placeholders, and an
 empty running assistant message shows a localized thinking indicator. Send/stream failures,
@@ -67,6 +71,13 @@ disclaimer action failures, and thread-list failures are localized with retry af
 the action can be retried. A cached thread list intentionally remains visible if only its
 background refresh fails. The welcome view contains localized starter suggestions, and
 message action bars remain mounted for touch users rather than relying on hover.
+
+Assistant message persistence passes completed AI SDK steps through
+`src/lib/server/persistedAssistantContent.ts:mapAssistantStepContent`. Successful text,
+reasoning, tool arguments, and tool results remain intact. Both thrown `tool-error` parts and
+MCP `tool-result` envelopes with `output.isError === true` persist only the generic
+`Tool execution failed` result plus `isError: true`; never copy provider error messages or MCP
+error bodies into `ChatMessage.content`.
 
 The mobile layout exports `viewportFit: 'cover'`, reserves the bottom safe area for the
 composer, wraps Markdown tables in horizontal scrolling, and makes the mode pills horizontally
@@ -87,9 +98,11 @@ Two recurring traps in this app's strings:
 
 Participants rate assistant answers through `ChatMessage.rating` (`ChatMessageRating` enum, nullable — null means no vote). `POST …/threads/[threadId]/messages/[messageId]/feedback` scopes its lookup by participant _and_ chatbot and reports someone else's message as 404, not 403, so the endpoint cannot be used to probe which message ids exist.
 
-A failed rating request (`chatStore.rateMessage`) reverts the optimistic vote **silently** — no toast, no inline error. This is deliberate: `@uzh-bf/design-system` exports a `toast`/`Toaster` primitive used by `frontend-pwa`/`frontend-manage`, but `apps/chat` neither mounts a `<Toaster/>` nor imports `toast` anywhere, so wiring one in just for this rare, low-stakes failure was judged out of scope for a P3 polish pass. Revisit if a `<Toaster/>` provider gets added for another reason.
+A failed rating request (`chatStore.rateMessage`) reverts the optimistic vote **silently** — no toast, no inline error. This is deliberate: `@uzh-bf/design-system` exports a `toast`/`Toaster` primitive used by `frontend-pwa`/`frontend-manage`, but `apps/chat` neither mounts a `<Toaster/>` nor imports `toast` anywhere, so wiring one in just for this rare, low-stakes failure was judged out of scope for a P3 polish pass. Revisit if a `<Toaster/>` provider gets added for another reason. Rapid votes are serialized per thread/message, not globally: the UI applies each choice optimistically, each request starts after the previous same-message request settles, and only the latest failed request may roll the visible value back to the last confirmed database rating.
 
-Each vote is mirrored to Langfuse as a score. **Langfuse v4 is OpenTelemetry-based**: a trace is addressed by its W3C trace id and the v3 `metadata.langfuseTraceId` convention is silently ignored. To reach a trace from a later, unrelated request, both sides derive the same id from the assistant message id with `createTraceId(messageId)` (`src/lib/server/langfuseTracing.ts`); the streaming route anchors the AI SDK's spans onto it via `startActiveObservation(..., { parentSpanContext })`. Scores go over `POST /api/public/scores` with HTTP Basic auth — no Langfuse client dependency — under a deterministic score id so a re-vote replaces rather than stacks, and a retracted vote issues the matching `DELETE`. Scoring honours the same `CHAT_ENABLE_AI_TELEMETRY` killswitch as the span processor; without it, a deployment with telemetry disabled writes scores against traces that were never emitted.
+Each vote is mirrored to Langfuse as a best-effort score after the authoritative PostgreSQL update. **Langfuse v4 is OpenTelemetry-based**: a trace is addressed by its W3C trace id and the v3 `metadata.langfuseTraceId` convention is silently ignored. To reach a trace from a later, unrelated request, both sides derive the same id from the assistant message id with `createTraceId(messageId)` (`src/lib/server/langfuseTracing.ts:getTraceIdForMessage`); the streaming route anchors the AI SDK's spans onto it via `startActiveObservation(..., { parentSpanContext })`. Scores go over `POST /api/public/scores` with HTTP Basic auth — no Langfuse client dependency — under a deterministic score id so a re-vote replaces rather than stacks, and a retracted vote issues the matching `DELETE`. The route awaits this mirror for at most one second so normal rapid re-votes retain order without letting telemetry hold a student request indefinitely. Scoring honours the same `CHAT_ENABLE_AI_TELEMETRY` killswitch as the span processor; without it, a deployment with telemetry disabled writes scores against traces that were never emitted.
+
+> **Best-effort boundary:** an HTTP timeout is an uncertain remote outcome. Langfuse exposes no conditional score update, so a timed-out older write could theoretically complete after a newer vote. PostgreSQL remains authoritative. Exact mirror consistency would require a durable outbox/worker with retries, monitoring, and cleanup; do not add that lifecycle to the request route.
 
 > **Known gap:** `apps/chat` pins `@opentelemetry/sdk-trace-node@1.26.0` while `@langfuse/otel` needs 2.x, so span export throws and **no trace currently reaches Langfuse**. The scores are written correctly but are orphaned until the OTel major bump lands.
 
@@ -104,7 +117,7 @@ Each vote is mirrored to Langfuse as a score. **Langfuse v4 is OpenTelemetry-bas
 
 ## Testing
 
-Pure-logic vitest lives in `apps/chat/test/` (safe without services); `apps/chat/vitest.config.ts` mirrors the `@/*` alias from the app tsconfig — keep them in sync. E2E coverage is Playwright-only (`playwright/tests/Y-chat.spec.ts` — no Cypress counterpart).
+Pure-logic vitest lives in `apps/chat/test/` (safe without services); `apps/chat/vitest.config.ts` mirrors the `@/*` alias from the app tsconfig — keep them in sync. `message-parts.test.ts` owns disclosure-state rules, while `persisted-assistant-content.test.ts` owns the provider-error redaction boundary. E2E coverage is Playwright-only (`playwright/tests/Y-chat.spec.ts` — no Cypress counterpart).
 
 The chat package uses Turbopack for development, test, and production builds
 (`apps/chat/package.json:scripts`). For a production-readiness gate, run the package check,
