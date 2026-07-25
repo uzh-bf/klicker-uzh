@@ -24,6 +24,7 @@ import {
   sortAttachmentsByPosition,
 } from '../lib/attachments/attachmentState'
 import { type ReasoningEffort } from '../lib/config/reasoning'
+import { createRatingRequestCoordinator } from './ratingRequestCoordinator'
 import { useSettingsStore } from './settingsStore'
 
 /**
@@ -32,6 +33,7 @@ import { useSettingsStore } from './settingsStore'
  * here; `import type` is erased at build time, so no server code is pulled in.
  */
 export type MessageRating = ChatMessageRating
+const runRatingRequest = createRatingRequestCoordinator<MessageRating | null>()
 
 /**
  * Extended thread message type that includes parentId for conversation branching
@@ -143,14 +145,6 @@ export const useChatStore = create<ChatState>((set, get) => {
     string,
     Promise<ExtendedThreadMessageLike | undefined>
   >()
-  const ratingRequests = new Map<
-    string,
-    {
-      confirmedRating: MessageRating | null
-      tail: Promise<void>
-    }
-  >()
-
   const markParticipationRequired = (message?: string) => {
     set({
       participationRequired: true,
@@ -917,45 +911,19 @@ export const useChatStore = create<ChatState>((set, get) => {
           .threads.find((thread) => thread.id === threadId)
           ?.messages.find((message) => message.id === messageId)?.rating ?? null
 
-      let requestState = ratingRequests.get(requestKey)
-      if (!requestState) {
-        requestState = {
-          confirmedRating: readRating(),
-          tail: Promise.resolve(),
-        }
-        ratingRequests.set(requestKey, requestState)
-      }
-
-      applyRating(rating)
-
-      const request = requestState.tail
-        .catch(() => undefined)
-        .then(async () => {
-          await apiCall(
+      await runRatingRequest({
+        key: requestKey,
+        rating,
+        readRating,
+        applyRating,
+        send: () =>
+          apiCall(
             `/chatbots/${chatbotId}/threads/${threadId}/messages/${messageId}/feedback`,
             { method: 'POST', body: JSON.stringify({ rating }) }
-          )
-          requestState.confirmedRating = rating
-        })
-      requestState.tail = request
-
-      try {
-        await request
-      } catch (error) {
-        console.error('Failed to save message feedback:', error)
-        // Promise identity avoids an ABA race such as UP -> DOWN -> UP: only
-        // the latest request may change the visible optimistic rating.
-        if (requestState.tail === request) {
-          applyRating(requestState.confirmedRating)
-        }
-      } finally {
-        if (
-          requestState.tail === request &&
-          ratingRequests.get(requestKey) === requestState
-        ) {
-          ratingRequests.delete(requestKey)
-        }
-      }
+          ).then(() => undefined),
+        onError: (error) =>
+          console.error('Failed to save message feedback:', error),
+      })
     },
 
     /**
