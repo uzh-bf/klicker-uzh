@@ -2,9 +2,9 @@
 
 ## 2026-07-25
 
-- **Update**: [chat-platform](./chat-platform.md) documents per-message feedback ordering and
-  its best-effort Langfuse boundary, the extracted grouped-parts disclosure composition, and
-  sanitized persistence for thrown and MCP-declared tool failures.
+- **Update**: [chat-platform](./chat-platform.md) documents per-message feedback ordering,
+  deferred Langfuse mirroring, stale-safe credit refreshes, the extracted grouped-parts
+  disclosure composition, and sanitized live/persisted tool failures.
 
 ## 2026-07-24
 
