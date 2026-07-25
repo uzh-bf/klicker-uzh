@@ -77,7 +77,7 @@ export function EmbeddedCreditsBar() {
         <span
           data-cy="chat-embedded-credits-display"
           className={twMerge(
-            'ml-auto shrink-0 tabular-nums font-medium',
+            'ml-auto shrink-0 font-medium tabular-nums',
             exhausted && 'text-destructive'
           )}
         >
