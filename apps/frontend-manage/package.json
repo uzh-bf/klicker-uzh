@@ -41,7 +41,7 @@
     "localforage": "1.10.0",
     "lodash": "4.17.21",
     "nanoid": "5.0.8",
-    "next": "16.2.10",
+    "next": "16.2.11",
     "next-intl": "4.13.0",
     "react": "19.2.7",
     "react-csv-downloader": "3.3.0",
