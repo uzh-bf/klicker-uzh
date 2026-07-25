@@ -108,7 +108,7 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
         className={twMerge(
           'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs transition-colors',
           isFailed
-            ? 'bg-destructive/10 text-destructive hover:bg-destructive/20'
+            ? 'bg-destructive/10 text-foreground hover:bg-destructive/20'
             : 'text-muted-foreground hover:bg-accent hover:text-foreground'
         )}
       >
@@ -120,7 +120,7 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
         {isRunning && (
           <LoaderCircleIcon className="text-primary size-3 animate-spin" />
         )}
-        {isFailed && <AlertCircleIcon className="size-3" />}
+        {isFailed && <AlertCircleIcon className="text-destructive size-3" />}
         {isFailed
           ? t('chat.toolFallback.failed', { tool })
           : isRunning
