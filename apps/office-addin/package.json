@@ -40,7 +40,7 @@
     "office-addin-dev-certs": "~1.13.5",
     "office-addin-lint": "~2.3.5",
     "office-addin-manifest": "~1.13.6",
-    "postcss": "~8.4.47",
+    "postcss": "~8.5.18",
     "postcss-import": "~16.1.0",
     "rollup": "~4.34.9",
     "rollup-plugin-copy": "~3.5.0",
