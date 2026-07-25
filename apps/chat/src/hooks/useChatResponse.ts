@@ -3,6 +3,7 @@ import { useParams } from 'next/navigation'
 import { useCallback, useRef } from 'react'
 import { hasAllImageAttachmentsHydrated } from '../lib/attachments/attachmentState'
 import { type ReasoningEffort } from '../lib/config/reasoning'
+import { normalizeLiveToolOutput } from '../lib/toolOutput'
 import { generateId } from '../lib/utils/chatUtils'
 import {
   useChatStore,
@@ -429,7 +430,9 @@ export function useChatResponse(
                   // TOOL-CALL RESULT READY
                   const existingToolCall = toolCallsMap.get(jsonData.toolCallId)
                   if (existingToolCall) {
-                    existingToolCall.result = jsonData.output
+                    const output = normalizeLiveToolOutput(jsonData.output)
+                    existingToolCall.result = output.result
+                    existingToolCall.isError = output.isError
 
                     updateThreadMessages([
                       ...resolvedMessagesToSend,
@@ -440,8 +443,9 @@ export function useChatResponse(
                   // TOOL-CALL FAILURE
                   const existingToolCall = toolCallsMap.get(jsonData.toolCallId)
                   if (existingToolCall) {
-                    existingToolCall.result = `Error: ${jsonData.errorText || 'Tool execution failed'}`
-                    existingToolCall.isError = true
+                    const output = normalizeLiveToolOutput(undefined, true)
+                    existingToolCall.result = output.result
+                    existingToolCall.isError = output.isError
 
                     updateThreadMessages([
                       ...resolvedMessagesToSend,
