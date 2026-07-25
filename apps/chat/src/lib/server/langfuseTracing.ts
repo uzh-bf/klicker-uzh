@@ -1,6 +1,4 @@
-import { prisma } from '@klicker-uzh/prisma'
 import { createTraceId } from '@langfuse/tracing'
-import { createHash } from 'node:crypto'
 
 /**
  * Killswitch shared with `instrumentation.ts`, which skips registering the
@@ -14,9 +12,8 @@ export const isAiTelemetryEnabled =
 /** Where the SDK itself points when no base url is configured. */
 const LANGFUSE_CLOUD_URL = 'https://cloud.langfuse.com'
 
-/** A slow or unreachable Langfuse must never hold a student's click open. */
-const SCORE_TIMEOUT_MS = 5000
-const SCORE_SYNC_TIMEOUT_MS = 55_000
+/** Bound telemetry latency while preserving the ordering of rapid re-votes. */
+const SCORE_TIMEOUT_MS = 1000
 
 /**
  * Langfuse v4 is OpenTelemetry-based: a trace is addressed by its W3C trace id,
@@ -124,49 +121,5 @@ export async function recordFeedbackScore(
     }
   } catch (error) {
     console.error('Failed to record Langfuse feedback score:', error)
-  }
-}
-
-/**
- * Synchronizes the latest persisted rating without delaying the API response.
- *
- * `after()` callbacks from rapid votes can overlap or run on different app
- * instances. A transaction-scoped PostgreSQL advisory lock orders those
- * callbacks by message, and the database read happens only after the lock is
- * held. This avoids a slow older Langfuse request overwriting a newer vote.
- *
- * The advisory lock is deliberately separate from the ChatMessage row lock:
- * participant-facing rating updates remain fast while telemetry catches up in
- * the background.
- */
-export async function syncFeedbackScore(messageId: string) {
-  if (!getLangfuseConfig()) return
-
-  const lockId = createHash('sha256')
-    .update(messageId)
-    .digest()
-    .readBigInt64BE()
-
-  try {
-    await prisma.$transaction(
-      async (tx) => {
-        await tx.$queryRaw`SELECT pg_advisory_xact_lock(${lockId})`
-        const message = await tx.chatMessage.findUnique({
-          where: { id: messageId },
-          select: { rating: true },
-        })
-        if (!message) return
-
-        await recordFeedbackScore(messageId, message.rating)
-      },
-      {
-        maxWait: SCORE_TIMEOUT_MS,
-        // Includes time waiting for an older score sync plus the bounded
-        // Langfuse request. Keep it below the route's 60-second max duration.
-        timeout: SCORE_SYNC_TIMEOUT_MS,
-      }
-    )
-  } catch (error) {
-    console.error('Failed to synchronize Langfuse feedback score:', error)
   }
 }
