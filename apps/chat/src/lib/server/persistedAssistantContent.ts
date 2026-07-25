@@ -59,13 +59,22 @@ export function mapAssistantStepContent(
         continue
       }
 
-      if (part.type === 'tool-error' && typeof part.toolCallId === 'string') {
+      if (
+        (part.type === 'tool-error' || part.type === 'tool-result') &&
+        typeof part.toolCallId === 'string'
+      ) {
+        const output =
+          part.output && typeof part.output === 'object'
+            ? (part.output as { isError?: unknown })
+            : null
+        const isError = part.type === 'tool-error' || output?.isError === true
+        const result = isError ? SAFE_TOOL_ERROR : part.output
         const toolCallIndex = toolCallIndexById.get(part.toolCallId)
         if (toolCallIndex !== undefined) {
           const existingToolCall = content[toolCallIndex]
           if (existingToolCall?.type === 'tool-call') {
-            existingToolCall.result = SAFE_TOOL_ERROR
-            existingToolCall.isError = true
+            existingToolCall.result = result
+            if (isError) existingToolCall.isError = true
           }
           continue
         }
@@ -74,38 +83,13 @@ export function mapAssistantStepContent(
           continue
         }
 
-        content.push({
-          type: 'tool-call',
-          toolCallId: part.toolCallId,
-          toolName: part.toolName,
-          args: part.input ?? {},
-          result: SAFE_TOOL_ERROR,
-          isError: true,
-        })
-        toolCallIndexById.set(part.toolCallId, content.length - 1)
-        continue
-      }
-
-      if (part.type === 'tool-result' && typeof part.toolCallId === 'string') {
-        const toolCallIndex = toolCallIndexById.get(part.toolCallId)
-        if (toolCallIndex !== undefined) {
-          const existingToolCall = content[toolCallIndex]
-          if (existingToolCall?.type === 'tool-call') {
-            existingToolCall.result = part.output
-          }
-          continue
-        }
-
-        if (typeof part.toolName !== 'string') {
-          continue
-        }
-
-        const toolCallWithResult = {
+        const toolCallWithResult: PersistedAssistantContentPart = {
           type: 'tool-call' as const,
           toolCallId: part.toolCallId,
           toolName: part.toolName,
-          args: {},
-          result: part.output,
+          args: part.type === 'tool-error' ? (part.input ?? {}) : {},
+          result,
+          ...(isError ? { isError: true } : {}),
         }
         content.push(toolCallWithResult)
         toolCallIndexById.set(part.toolCallId, content.length - 1)

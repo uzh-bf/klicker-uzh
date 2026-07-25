@@ -69,6 +69,44 @@ describe('persisted assistant content', () => {
     expect(JSON.stringify(content)).not.toContain(sensitiveError)
   })
 
+  test('sanitizes an MCP error result and its sensitive content', () => {
+    const sensitiveError = 'upstream body with private-token'
+
+    const content = mapAssistantStepContent([
+      {
+        content: [
+          {
+            type: 'tool-call',
+            toolCallId: 'call-mcp-error',
+            toolName: 'library_search',
+            input: { query: 'safe input' },
+          },
+          {
+            type: 'tool-result',
+            toolCallId: 'call-mcp-error',
+            toolName: 'library_search',
+            output: {
+              isError: true,
+              content: [{ type: 'text', text: sensitiveError }],
+            },
+          },
+        ],
+      },
+    ])
+
+    expect(content).toEqual([
+      {
+        type: 'tool-call',
+        toolCallId: 'call-mcp-error',
+        toolName: 'library_search',
+        args: { query: 'safe input' },
+        result: 'Tool execution failed',
+        isError: true,
+      },
+    ])
+    expect(JSON.stringify(content)).not.toContain(sensitiveError)
+  })
+
   test('preserves successful text, reasoning, and tool results', () => {
     expect(
       mapAssistantStepContent([
