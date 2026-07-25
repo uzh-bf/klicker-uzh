@@ -1,5 +1,11 @@
 # Log
 
+## 2026-07-25
+
+- **Update**: [frontend-conventions](./frontend-conventions.md) and [chat-platform](./chat-platform.md) document the Manage assistant's portalled modal boundary: the dialog stays outside the inert, assistive-technology-hidden page root.
+
+- **Update**: [auth-model](./auth-model.md) documents the lecturer MCP's current internal JWT trust chain, confirms that it is not OAuth-exposed, and records the boundaries that an external MCP authorization design must address.
+
 ## 2026-07-23
 
 - **Update**: [getting-started](./getting-started.md) documents that the devcontainer stack now also starts the lecturer MCP server (`apps/mcp-lecturer`, port 7081, no route) so the manage assistant always finds its tools without a manual step.

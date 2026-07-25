@@ -26,7 +26,7 @@ export const ThreadWelcomeCapabilities: FC<{
       ))}
     </ul>
     {limitsNote && (
-      <p className="text-muted-foreground/70 text-[11px] leading-snug">
+      <p className="text-muted-foreground text-[11px] leading-snug">
         {limitsNote}
       </p>
     )}

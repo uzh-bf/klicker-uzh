@@ -193,6 +193,48 @@ test.describe('Manage Assistant — Messaging', () => {
       'Suggest improvements to question feedback'
     )
     await expect(welcome).toContainText('Read-only for everything else')
+    await expect(
+      welcome.getByText(/Read-only for everything else/)
+    ).toHaveClass(/(^|\s)text-muted-foreground(\s|$)/)
+  })
+
+  test('Dialog exposes modal semantics and isolates the Manage page', async ({
+    page,
+  }) => {
+    await mockManageChatStream(page)
+
+    const trigger = page.getByTestId('manage-assistant-open')
+    await expect(trigger).toHaveAttribute(
+      'aria-controls',
+      'manage-assistant-dialog'
+    )
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false')
+    await expect(trigger).toHaveAttribute('aria-haspopup', 'dialog')
+
+    await openManageAssistantWidget(page)
+
+    const dialog = page.getByTestId('manage-assistant-drawer')
+    await expect(dialog).toHaveAttribute('id', 'manage-assistant-dialog')
+    await expect(dialog).toHaveAttribute('aria-modal', 'true')
+    expect(await dialog.evaluate((element) => element.tagName)).toBe('DIV')
+    expect(
+      await dialog.evaluate((element) => element.closest('#__app') === null)
+    ).toBe(true)
+
+    const appRoot = page.locator('#__app')
+    await expect(appRoot).toHaveAttribute('aria-hidden', 'true')
+    expect(
+      await appRoot.evaluate((element) => (element as HTMLElement).inert)
+    ).toBe(true)
+
+    await dialog.getByRole('button', { name: 'Close' }).click()
+
+    await expect(dialog).toHaveCount(0)
+    await expect(appRoot).not.toHaveAttribute('aria-hidden', 'true')
+    expect(
+      await appRoot.evaluate((element) => (element as HTMLElement).inert)
+    ).toBe(false)
+    await expect(trigger).toBeFocused()
   })
 })
 

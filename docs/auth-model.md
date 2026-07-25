@@ -2,7 +2,7 @@
 type: Auth Model
 title: Auth Model
 description: Login flows for lecturers and participants, origin-based cookie selection in the backend, JWT scopes, and LTI launch rules.
-timestamp: '2026-07-10'
+timestamp: '2026-07-25'
 tags:
   - backend
   - auth
@@ -39,6 +39,26 @@ The NextAuth cookie domain is derived by stripping the first subdomain label fro
 - **LTI** — `apps/lti` (ltijs). Launch targets resolve in strict precedence `custom claim (klicker_redirect_to)` → `query redirectTo`, with **no env fallback**; validation fails closed on the first present-but-invalid source and checks URL hostnames exact/subdomain against `COOKIE_DOMAIN` and `DF_DOMAIN` — never substring matching (`apps/lti/src/launchTarget.ts`).
 
 Note the account-duplication trap: participant emails are only unique per auth mode (`@@unique([email, isSSOAccount])` — details in [Data & Migrations](./data-and-migrations.md)).
+
+## Lecturer MCP and Manage assistant
+
+`apps/mcp-lecturer` is currently an internal backend service for the embedded Manage assistant, not an OAuth-exposed MCP server:
+
+1. `getAuthenticatedManageUserId` in `apps/chat/src/lib/server/manageAuth.ts` verifies the lecturer's `next-auth.session-token` with `APP_SECRET`.
+2. `mintLecturerMcpJwt` in `apps/chat/src/lib/server/mcpAuthMint.ts` creates a five-minute HS256 bearer token with `purpose: lecturer-mcp` and the fixed scopes `manage:read manage:draft`.
+3. `loadLecturerMcpTools` in `apps/chat/src/services/lecturerMcp.ts` sends that token to the internal Streamable HTTP endpoint.
+4. `apps/mcp-lecturer/src/auth.ts` verifies the signature, issuer, subject, role, purpose, and scopes. Tool queries then enforce the lecturer's derived object permissions; proposal tools only return a separately signed draft proposal, and the authenticated chat confirmation route performs persistence.
+
+There is no OAuth authorization-server configuration, protected-resource metadata, token endpoint, client registration, consent, PKCE, or external token acquisition flow. The service is deployed as Kubernetes `ClusterIP`; Helm points chat at its internal service name, and local development binds it to port 7081 without a devrouter route. Its `/mcp` endpoint still requires the custom bearer token, but network placement is not the authentication mechanism.
+
+Current hardening boundaries:
+
+- The MCP token has no `aud`/resource claim, so it is not resource-bound.
+- Chat always grants both read and draft scopes; it does not propagate delegated-login `UserLoginScope` into the MCP token.
+- Code supports a dedicated `MCP_LECTURER_JWT_SECRET`, but the current Helm deployment supplies the shared chat `APP_SECRET`.
+- The chart does not currently add a lecturer-MCP NetworkPolicy.
+
+An external MCP integration therefore needs a separately approved authentication design: OAuth discovery and protected-resource metadata, audience-bound access tokens, external client registration/consent, delegated scope mapping, dedicated signing keys, ingress and network policy, and audit/rate-limit decisions.
 
 ## Login return targets
 

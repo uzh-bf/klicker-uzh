@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-07-10'
+timestamp: '2026-07-25'
 tags:
   - frontend
   - chat
@@ -29,6 +29,8 @@ The app runs Next.js 16 / React 19 and uses Turbopack for development, test, and
 
 Three steps: `getParticipantId` → `getChatbotOr404` → `requireParticipation`. The composed helper `withChatbotAuth(req, chatbotId)` (`src/lib/server/apiGuards.ts`) covers the standard `{ courseId: true }` case — use it for new routes; fall back to the individual guards only for a custom chatbot `select`. Participant identity comes from the same participant JWT cookies as the PWA ([Auth Model](./auth-model.md)); local chat dev therefore needs the backend's `APP_SECRET` and `DATABASE_URL` visible to the chat app, or cookies won't verify and Prisma can't load chatbots.
 
+The embedded lecturer assistant is a separate route family under `src/app/api/manage/`. It verifies the lecturer's NextAuth cookie, mints a short-lived internal bearer token for `apps/mcp-lecturer`, and confirms signed draft proposals through the authenticated chat route. This is an internal service exchange, not an OAuth client flow; the complete trust boundary is documented in [Auth Model](./auth-model.md#lecturer-mcp-and-manage-assistant).
+
 ## Model registry and credits
 
 `chatModelRegistry.ts` loads `CHAT_MODEL_REGISTRY_JSON` (deployment override in `deploy/env-uzh-*/values.yaml`). Registry gotchas that have caused production incidents:
@@ -45,6 +47,7 @@ Credit fields are Prisma `Decimal` — never truthy-check them ([Data & Migratio
 - **Edited-message image hydration** needs the persisted source message id (`attachmentSourceMessageId`) distinct from the fresh local message id (`src/hooks/useThreadManagement.ts`, `src/stores/chatStore.ts`).
 - **`ComposerPrimitive.AttachmentDropzone` must wrap both normal and edit composer roots** — it owns the drag/drop capture that prevents native browser file navigation (`src/components/thread.tsx`).
 - **Login redirects**: `src/app/noLogin/page.tsx` must pass an **absolute** chat URL as the PWA login `redirect_to`; a relative path makes the PWA redirect to its own domain and 404.
+- **Embedded Manage modal**: the Manage launcher portals its dialog to `document.body` and makes `#__app` inert and hidden from assistive technology while open. Keep the portal outside `#__app`; otherwise the dialog would hide itself together with the background.
 
 ## Testing
 
