@@ -226,7 +226,19 @@ export type SeedAttachment = {
 export type SeedMessage = {
   id?: string
   role: 'user' | 'assistant'
-  content: { type: string; text: string }[]
+  content: Array<
+    | { type: 'text' | 'reasoning'; text: string }
+    | {
+        type: 'tool-call'
+        toolCallId: string
+        toolName: string
+        args?: Record<string, unknown>
+        result?: {
+          content?: Array<{ type: string; text: string }>
+          isError?: boolean
+        }
+      }
+  >
   parentId?: string | null
   attachments?: SeedAttachment[]
   // Mode the message was sent/answered in ('tutor' | 'explainer' | ...). The
