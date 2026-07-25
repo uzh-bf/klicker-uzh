@@ -442,6 +442,69 @@ test.describe('Chatbot Messaging Interface', () => {
     ).toContainText('Photosynthesis is the process')
   })
 
+  test('Reasoning and adjacent tool calls use predictable disclosures', async ({
+    page,
+  }) => {
+    await seedThread(participantId, {
+      title: 'Tool parts',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'Use the available tools' }],
+        },
+        {
+          role: 'assistant',
+          content: [
+            {
+              type: 'reasoning',
+              text: 'I should inspect both sources first.',
+            },
+            {
+              type: 'tool-call',
+              toolCallId: 'call-1',
+              toolName: 'library_search',
+              args: { query: 'alpha' },
+              result: { content: [{ type: 'text', text: 'Alpha result' }] },
+            },
+            {
+              type: 'tool-call',
+              toolCallId: 'call-2',
+              toolName: 'library_search',
+              args: { query: 'beta' },
+              result: { content: [{ type: 'text', text: 'Beta result' }] },
+            },
+            { type: 'text', text: 'I found both sources.' },
+            {
+              type: 'tool-call',
+              toolCallId: 'call-3',
+              toolName: 'library_lookup',
+              args: { id: 'gamma' },
+              result: { content: [{ type: 'text', text: 'Gamma result' }] },
+            },
+          ],
+        },
+      ],
+    })
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+
+    const reasoningToggle = page.getByTestId('chat-reasoning-toggle')
+    await expect(reasoningToggle).toHaveAttribute('aria-expanded', 'false')
+    await reasoningToggle.click()
+    await expect(reasoningToggle).toHaveAttribute('aria-expanded', 'true')
+    await expect(
+      page.getByTestId('chat-assistant-message-content')
+    ).toContainText('inspect both sources')
+
+    const toolGroupToggle = page.getByTestId('chat-tool-group-toggle')
+    await expect(toolGroupToggle).toHaveCount(1)
+    await expect(toolGroupToggle).toHaveAttribute('aria-expanded', 'false')
+    await expect(page.getByTestId('chat-tool-call-toggle')).toHaveCount(1)
+    await toolGroupToggle.click()
+    await expect(toolGroupToggle).toHaveAttribute('aria-expanded', 'true')
+    await expect(page.getByTestId('chat-tool-call-toggle')).toHaveCount(3)
+  })
+
   test('Sending a message via the Enter key works', async ({ page }) => {
     await visitChat(page)
 

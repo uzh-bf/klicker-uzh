@@ -102,6 +102,7 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
     <div className="mb-1">
       <button
         type="button"
+        data-cy="chat-tool-call-toggle"
         onClick={() => setIsCollapsed(!isCollapsed)}
         aria-expanded={!isCollapsed}
         className={twMerge(
