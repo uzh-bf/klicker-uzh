@@ -1,5 +1,4 @@
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
-import { recordFeedbackScore } from '@/src/lib/server/langfuseTracing'
 import { prisma } from '@klicker-uzh/prisma'
 import { ChatMessageRating } from '@klicker-uzh/prisma/client'
 import { NextRequest, NextResponse } from 'next/server'
@@ -62,11 +61,6 @@ export async function POST(
       where: { id: message.id },
       data: { rating },
     })
-
-    // Keep the telemetry write in the same ordered client request as the
-    // database update. It is best effort and capped at one second, while the
-    // optimistic UI updates immediately.
-    await recordFeedbackScore(message.id, rating)
 
     return NextResponse.json({ rating })
   } catch (error) {
