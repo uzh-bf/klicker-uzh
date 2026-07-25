@@ -11,6 +11,7 @@ export interface ModeOption {
 }
 
 const DEFAULT_REASONING_EFFORT: ReasoningEffort = 'none'
+let creditsRequestGeneration = 0
 
 const resolveAllowedReasoningEfforts = (
   model?: ModelOption
@@ -196,8 +197,13 @@ export const useSettingsStore = create<SettingsState>()(
       },
 
       loadCredits: async (chatbotId: string) => {
+        const requestGeneration = ++creditsRequestGeneration
+        set({ creditsLoaded: false })
+
         try {
           const response = await fetch(`/api/chatbots/${chatbotId}/credits`)
+          if (requestGeneration !== creditsRequestGeneration) return
+
           if (!response.ok) {
             console.error('Failed to load credits:', response.statusText)
             return
@@ -214,6 +220,8 @@ export const useSettingsStore = create<SettingsState>()(
           const automaticModelId: string | undefined = data.automaticModelId
 
           set((state) => {
+            if (requestGeneration !== creditsRequestGeneration) return state
+
             let selectedModel = state.selectedModel
 
             if (!state.modelSelectionEnabled) {
@@ -246,6 +254,9 @@ export const useSettingsStore = create<SettingsState>()(
           })
         } catch (error) {
           console.error('Error loading credits:', error)
+          if (requestGeneration === creditsRequestGeneration) {
+            set({ creditsLoaded: false })
+          }
         }
       },
 
