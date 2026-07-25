@@ -38,6 +38,9 @@ Three steps: `getParticipantId` → `getChatbotOr404` → `requireParticipation`
 - OpenAI Responses backends: keep `CHAT_OPENAI_STORE_RESPONSES=true` in shared/staged deployments — with `store: false`, LiteLLM/Azure can return "item not found" when a model references prior response items across tool-call steps. Local OpenRouter-style setups can leave it false.
 
 Credit fields are Prisma `Decimal` — never truthy-check them ([Data & Migrations](./data-and-migrations.md)).
+`src/stores/settingsStore.ts:loadCredits` clears `creditsLoaded` for every refresh and accepts
+only the latest request generation, so a failed refresh or a late response from another
+chatbot cannot expose stale credit/model state as current.
 
 ## Theming and design tokens
 
@@ -77,7 +80,8 @@ Assistant message persistence passes completed AI SDK steps through
 reasoning, tool arguments, and tool results remain intact. Both thrown `tool-error` parts and
 MCP `tool-result` envelopes with `output.isError === true` persist only the generic
 `Tool execution failed` result plus `isError: true`; never copy provider error messages or MCP
-error bodies into `ChatMessage.content`.
+error bodies into `ChatMessage.content`. The live SSE path applies the same boundary through
+`src/lib/toolOutput.ts:normalizeLiveToolOutput` before a result reaches `ToolFallback`.
 
 The mobile layout exports `viewportFit: 'cover'`, reserves the bottom safe area for the
 composer, wraps Markdown tables in horizontal scrolling, and makes the mode pills horizontally
@@ -98,13 +102,11 @@ Two recurring traps in this app's strings:
 
 Participants rate assistant answers through `ChatMessage.rating` (`ChatMessageRating` enum, nullable — null means no vote). `POST …/threads/[threadId]/messages/[messageId]/feedback` scopes its lookup by participant _and_ chatbot and reports someone else's message as 404, not 403, so the endpoint cannot be used to probe which message ids exist.
 
-A failed rating request (`chatStore.rateMessage`) reverts the optimistic vote **silently** — no toast, no inline error. This is deliberate: `@uzh-bf/design-system` exports a `toast`/`Toaster` primitive used by `frontend-pwa`/`frontend-manage`, but `apps/chat` neither mounts a `<Toaster/>` nor imports `toast` anywhere, so wiring one in just for this rare, low-stakes failure was judged out of scope for a P3 polish pass. Revisit if a `<Toaster/>` provider gets added for another reason. Rapid votes are serialized per thread/message, not globally: the UI applies each choice optimistically, each request starts after the previous same-message request settles, and only the latest failed request may roll the visible value back to the last confirmed database rating.
+A failed rating request (`chatStore.rateMessage`) reverts the optimistic vote **silently** — no toast, no inline error. This is deliberate: `@uzh-bf/design-system` exports a `toast`/`Toaster` primitive used by `frontend-pwa`/`frontend-manage`, but `apps/chat` neither mounts a `<Toaster/>` nor imports `toast` anywhere, so wiring one in just for this rare, low-stakes failure was judged out of scope for a P3 polish pass. Revisit if a `<Toaster/>` provider gets added for another reason. Rapid votes are serialized per thread/message, not globally: `src/stores/ratingRequestCoordinator.ts` applies each choice optimistically, starts each request after the previous same-message request settles, and lets only the latest failed request roll the visible value back to the last confirmed database rating.
 
-Each vote is mirrored to Langfuse as a best-effort score after the authoritative PostgreSQL update. **Langfuse v4 is OpenTelemetry-based**: a trace is addressed by its W3C trace id and the v3 `metadata.langfuseTraceId` convention is silently ignored. To reach a trace from a later, unrelated request, both sides derive the same id from the assistant message id with `createTraceId(messageId)` (`src/lib/server/langfuseTracing.ts:getTraceIdForMessage`); the streaming route anchors the AI SDK's spans onto it via `startActiveObservation(..., { parentSpanContext })`. Scores go over `POST /api/public/scores` with HTTP Basic auth — no Langfuse client dependency — under a deterministic score id so a re-vote replaces rather than stacks, and a retracted vote issues the matching `DELETE`. The route awaits this mirror for at most one second so normal rapid re-votes retain order without letting telemetry hold a student request indefinitely. Scoring honours the same `CHAT_ENABLE_AI_TELEMETRY` killswitch as the span processor; without it, a deployment with telemetry disabled writes scores against traces that were never emitted.
+PostgreSQL is the only rating store. Do not mirror votes to Langfuse while the trace exporter is nonfunctional: scores would be orphaned, and exact retry/order semantics would require a durable outbox rather than request-route network calls. Add analytical mirroring only after the OpenTelemetry integration below is operational and the delivery lifecycle is designed.
 
-> **Best-effort boundary:** an HTTP timeout is an uncertain remote outcome. Langfuse exposes no conditional score update, so a timed-out older write could theoretically complete after a newer vote. PostgreSQL remains authoritative. Exact mirror consistency would require a durable outbox/worker with retries, monitoring, and cleanup; do not add that lifecycle to the request route.
-
-> **Known gap:** `apps/chat` pins `@opentelemetry/sdk-trace-node@1.26.0` while `@langfuse/otel` needs 2.x, so span export throws and **no trace currently reaches Langfuse**. The scores are written correctly but are orphaned until the OTel major bump lands.
+> **Known gap:** `apps/chat` pins `@opentelemetry/sdk-trace-node@1.26.0` while `@langfuse/otel` needs 2.x, so span export throws and **no trace currently reaches Langfuse**. Rating-score mirroring is disabled until the OTel major bump lands.
 
 ## Client-state gotchas
 
