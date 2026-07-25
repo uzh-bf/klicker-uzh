@@ -200,7 +200,9 @@ export async function atomicInitializeCredits(
         lastResetAt: new Date(),
         resetCount: 0,
       },
-      update: {},
+      // Keep existing balances untouched while ensuring Prisma delegates this
+      // to PostgreSQL's native ON CONFLICT upsert under concurrent requests.
+      update: { participantId },
     })
 
     return {
