@@ -184,27 +184,14 @@ export async function atomicInitializeCredits(
   periodStart: Date
 ): Promise<{ current: number; total: number }> {
   return withTransaction(async (tx) => {
-    // Check if credits already exist (race condition protection)
-    const existing = await tx.chatUsageCredits.findUnique({
+    const credits = await tx.chatUsageCredits.upsert({
       where: {
         participantId_chatbotId: {
           participantId,
           chatbotId,
         },
       },
-    })
-
-    if (existing) {
-      // Credits already exist, return them
-      return {
-        current: existing.current.toNumber(),
-        total: existing.total.toNumber(),
-      }
-    }
-
-    // Create new credits record
-    const credits = await tx.chatUsageCredits.create({
-      data: {
+      create: {
         participantId,
         chatbotId,
         total: maxCredits,
@@ -213,6 +200,7 @@ export async function atomicInitializeCredits(
         lastResetAt: new Date(),
         resetCount: 0,
       },
+      update: {},
     })
 
     return {
