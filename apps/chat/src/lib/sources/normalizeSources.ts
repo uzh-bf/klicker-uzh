@@ -64,14 +64,10 @@ export function normalizeSourcesFromParts(
         index: sources.length + 1,
         type: candidate.type,
         title: candidate.title,
-        ...(candidate.page !== undefined ? { page: candidate.page } : {}),
-        ...(candidate.labeledPage !== undefined
-          ? { labeledPage: candidate.labeledPage }
-          : {}),
-        ...(candidate.url !== undefined ? { url: candidate.url } : {}),
-        ...(candidate.excerpt !== undefined
-          ? { excerpt: candidate.excerpt }
-          : {}),
+        page: candidate.page,
+        labeledPage: candidate.labeledPage,
+        url: candidate.url,
+        excerpt: candidate.excerpt,
       })
     }
   }
@@ -108,16 +104,13 @@ function parsePayload(raw: unknown): Record<string, unknown> | undefined {
         return envelope.structuredContent as Record<string, unknown>
       }
 
-      for (const item of envelope.content) {
-        if (
-          item &&
+      const textItem = envelope.content.find(
+        (item): item is Record<string, unknown> =>
+          !!item &&
           typeof item === 'object' &&
           (item as Record<string, unknown>).type === 'text'
-        ) {
-          return parseJsonObject((item as Record<string, unknown>).text)
-        }
-      }
-      return undefined
+      )
+      return textItem ? parseJsonObject(textItem.text) : undefined
     }
 
     return envelope
@@ -221,7 +214,7 @@ function buildDedupeKey(params: {
   const { url, title, page, labeledPage } = params
   return url
     ? `url:${url}|${page ?? ''}|${labeledPage ?? ''}`
-    : `title:${title}|${page ?? ''}`
+    : `title:${title}|${page ?? ''}|${labeledPage ?? ''}`
 }
 
 function normalizeAnswerModeSources(
