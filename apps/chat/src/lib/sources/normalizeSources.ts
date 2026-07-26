@@ -35,7 +35,7 @@ export function isDocQueryToolName(toolName: string): boolean {
 }
 
 export function normalizeSourcesFromParts(
-  parts: ChatSourcePart[]
+  parts: readonly ChatSourcePart[]
 ): ChatSource[] {
   if (!Array.isArray(parts)) return []
 

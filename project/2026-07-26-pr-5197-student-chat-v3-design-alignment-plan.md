@@ -195,3 +195,13 @@ simplify subagent on the exact commit → integrate accepted findings → re-ver
   no section, logo intact, no console errors (screenshots in session
   scratchpad s2/); chat check (typegen+tsc) clean; vitest 79/79; prettier
   clean; routes restored (health 200). Next: S2 review+simplify, then S3.
+- 2026-07-26 S2 adjustments: review found unmemoized normalize on every
+  streamed token → fingerprint-keyed useMemo (parts ref never stable);
+  simplify accepted: merged media label branches, rel noopener noreferrer,
+  readonly parts param (spread removed); declined isMedia prop plumbing.
+  A11y note deferred to S3: index badge aria-hidden, add AT-visible source
+  number when citation anchors land. Verified: tsc+typegen clean, 79/79,
+  lint clean on touched files, browser a11y snapshot shows SOURCES · 3 region
+  + 3 cards post-change (screenshot capture flaky in daemon; snapshot is the
+  evidence). Torn-write lesson: in-container prettier --write while dev
+  watcher reads → turbopack caches parse error; remedy touch the file.

@@ -8,7 +8,7 @@ import {
   PlayIcon,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import type { ComponentType, SVGProps } from 'react'
+import { useMemo, type ComponentType, type SVGProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import {
@@ -61,8 +61,11 @@ function SourceCard({
   // present, either one alone, a type label for video/image, or null when
   // none of these apply.
   const secondaryLineParts: string[] = []
-  if (source.type === 'video') secondaryLineParts.push(t('chat.sources.video'))
-  if (source.type === 'image') secondaryLineParts.push(t('chat.sources.image'))
+  if (isMedia) {
+    secondaryLineParts.push(
+      t(source.type === 'video' ? 'chat.sources.video' : 'chat.sources.image')
+    )
+  }
   if (typeof source.page === 'number') {
     secondaryLineParts.push(t('chat.sources.page', { page: source.page }))
   }
@@ -122,7 +125,12 @@ function SourceCard({
   // navigation skip straight past it.
   if (source.url) {
     return (
-      <a {...sharedProps} href={source.url} target="_blank" rel="noreferrer">
+      <a
+        {...sharedProps}
+        href={source.url}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
         {inner}
       </a>
     )
@@ -134,7 +142,33 @@ function SourceCard({
 export function SourcesSection() {
   const t = useTranslations()
   const message = useMessage() as MessageWithSourceParts
-  const sources = normalizeSourcesFromParts([...(message.content ?? [])])
+  const parts = message.content ?? []
+
+  // The message store re-renders this component on every streamed token and
+  // rebuilds `content` (so its reference is never stable). Tool results are
+  // set exactly once, so a cheap fingerprint of the tool-call parts is enough
+  // to skip re-parsing the tool JSON on unrelated re-renders.
+  let fingerprint = message.id
+  for (const part of parts) {
+    if (part.type !== 'tool-call') continue
+    const result = part.result
+    const resultMark =
+      result === undefined || result === null
+        ? '-'
+        : typeof result === 'string'
+          ? `s${result.length}`
+          : 'o'
+    fingerprint += `|${'toolCallId' in part ? String(part.toolCallId) : ''}:${part.isError ? 1 : 0}:${resultMark}`
+  }
+
+  const sources = useMemo(
+    () => normalizeSourcesFromParts(parts),
+    // Deliberately keyed on the fingerprint: `parts` is referentially
+    // unstable on every render, and the fingerprint captures the values that
+    // can actually change the normalization result.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [fingerprint]
+  )
 
   if (sources.length === 0) return null
 
