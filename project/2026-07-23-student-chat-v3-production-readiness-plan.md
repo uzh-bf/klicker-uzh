@@ -1137,3 +1137,13 @@ designing the question widget.
   - Weakest verification: live model-backed reasoning/tool streaming,
     multi-step credit accounting, and real telemetry remain unverified because
     this environment has no model key and the OTel integration is broken.
+- 2026-07-26: **S17 takeover publication gate completed.** The verified
+  implementation was pushed at `495ec8f2a`, draft PR #5197 was refreshed from
+  whole-branch evidence, and the obsolete Langfuse review thread was resolved.
+  Fresh CI passed formatting, lint, syncpack, typecheck, build/compile, GraphQL,
+  all eight Playwright shards plus their aggregate gate, all three CodeQL
+  analyses, GitGuardian, and Greptile. Greptile reviewed the exact
+  implementation head at 5/5 with no correctness defect, and no unresolved
+  review thread remains. The PR deliberately stays draft. Its remaining live
+  boundaries are the Docker/OrbStack-blocked post-fix avatar screenshot, the
+  missing local model key, and the separately deferred OTel/Langfuse repair.
