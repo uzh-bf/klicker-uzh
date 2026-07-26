@@ -391,4 +391,44 @@ describe('normalizeSourcesFromParts', () => {
 
     expect(result).toEqual([])
   })
+
+  // `source_url` is untrusted external input that the source card renders
+  // straight into an `href`, so only http(s) may become a link target. The
+  // card must still appear — dropping the source entirely would hide material
+  // the answer cites.
+  test.each([
+    ['javascript:', 'javascript:alert(1)'],
+    ['data:', 'data:text/html,<script>alert(1)</script>'],
+    ['relative path', '/files/lecture-01.pdf'],
+  ])(
+    'answer mode keeps the card but drops a %s source_url',
+    (_label, sourceUrl) => {
+      const result = normalizeSourcesFromParts([
+        toolCallPart('KB_doc_query', {
+          answer: 'text',
+          sources: [{ file_name: 'lecture-01.pdf', source_url: sourceUrl }],
+        }),
+      ])
+
+      expect(result).toHaveLength(1)
+      expect(result[0]?.title).toBe('lecture-01.pdf')
+      expect(result[0]?.url).toBeUndefined()
+    }
+  )
+
+  test('answer mode keeps an https source_url as the link target', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        answer: 'text',
+        sources: [
+          {
+            file_name: 'lecture-01.pdf',
+            source_url: 'https://example.com/lecture-01.pdf',
+          },
+        ],
+      }),
+    ])
+
+    expect(result[0]?.url).toBe('https://example.com/lecture-01.pdf')
+  })
 })

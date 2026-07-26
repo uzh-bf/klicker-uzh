@@ -264,17 +264,27 @@ function normalizeAnswerModeSources(
     if (!rawSource || typeof rawSource !== 'object') continue
     const source = rawSource as Record<string, unknown>
 
-    const url = cleanString(source.source_url)
+    const rawUrl = cleanString(source.source_url)
+    // Only an http(s) value becomes a link target, matching the `isUrlLike`
+    // gate documents mode already applies to `reference`. This payload comes
+    // from an external RAG service over uploaded course documents, so it is
+    // untrusted input that reaches an `href` directly. React 19 does neuter a
+    // `javascript:` href on its own, so this is a second line rather than the
+    // only one — it also keeps relative paths and other schemes from
+    // rendering as links that go nowhere useful from this origin. The raw
+    // value still feeds the title and type fallbacks.
+    const url = rawUrl && isUrlLike(rawUrl) ? rawUrl : undefined
     const fileName = cleanString(source.file_name)
     const expert = cleanString(source.expert)
     // Title fallback chain: file_name -> last URL path segment -> expert
     // name -> skip (no usable title/url means the entry is useless to show).
-    const title = fileName ?? (url ? lastPathSegment(url) : undefined) ?? expert
+    const title =
+      fileName ?? (rawUrl ? lastPathSegment(rawUrl) : undefined) ?? expert
     if (!title) continue
 
     const page = cleanPage(source.page_number)
     const labeledPage = cleanString(source.labeled_page_number)
-    const type = inferSourceType(cleanString(source.source_type), url)
+    const type = inferSourceType(cleanString(source.source_type), rawUrl)
 
     candidates.push({
       type,
