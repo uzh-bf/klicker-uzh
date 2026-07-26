@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { getPrisma } from '../global-setup.js'
 import {
   CHATBOT_ID,
   chatUrl,
@@ -1174,5 +1175,454 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(
       page.getByTestId('chat-mode-option-explainer')
     ).toHaveAttribute('aria-pressed', 'false')
+  })
+})
+
+// ===========================================================================
+// Source Citations
+// ===========================================================================
+test.describe('Chatbot Source Citations', () => {
+  let participantId: string
+
+  test.beforeEach(async ({ page }) => {
+    participantId = await getEnrolledParticipantId()
+    await clearChatCookies(page)
+    await setParticipantToken(page, participantId)
+    await resetChatState(participantId)
+    await setDisclaimerState(participantId, 'accepted')
+  })
+
+  type DocQuerySource = {
+    file_name?: string
+    source_url?: string
+    source_type?: string
+    page_number?: number
+    expert?: string
+  }
+
+  /** A persisted doc_query tool-call part carrying the raw MCP CallToolResult
+   * envelope (see `parseDocQueryPayload`): `result.content[0].text` is the
+   * doc_query answer-mode JSON payload as a string. */
+  function docQueryPart({
+    toolCallId,
+    toolName = 'KB_doc_query',
+    sources,
+  }: {
+    toolCallId: string
+    toolName?: string
+    sources: DocQuerySource[]
+  }) {
+    return {
+      type: 'tool-call' as const,
+      toolCallId,
+      toolName,
+      args: { query: 'test query' },
+      result: {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              answer: 'Course-material excerpt relevant to the question.',
+              sources_used: sources.length,
+              sources,
+            }),
+          },
+        ],
+      },
+    }
+  }
+
+  function failedDocQueryPart(toolCallId: string) {
+    return {
+      type: 'tool-call' as const,
+      toolCallId,
+      toolName: 'KB_doc_query',
+      args: { query: 'test query' },
+      result: {
+        content: [{ type: 'text', text: 'Tool execution failed' }],
+        isError: true,
+      },
+    }
+  }
+
+  function genericToolPart(toolCallId: string) {
+    return {
+      type: 'tool-call' as const,
+      toolCallId,
+      toolName: 'library_search',
+      args: { query: 'test query' },
+      result: {
+        content: [{ type: 'text', text: 'Some unrelated result' }],
+      },
+    }
+  }
+
+  /** Sets a message's `modelId` directly via Prisma. `seedThread`'s
+   * `SeedMessage` type has no `modelId` field, so this mirrors the DB-level
+   * write the app itself performs, the same way `chat.ts`'s own helpers
+   * (e.g. `setCredits`) reach into Prisma for state the seed helper can't
+   * express. */
+  async function setMessageModelId(messageId: string, modelId: string) {
+    const prisma = await getPrisma()
+    await prisma.chatMessage.update({
+      where: { id: messageId },
+      data: { modelId },
+    })
+  }
+
+  test('Sources section renders one card per unique source in first-appearance order with a count heading', async ({
+    page,
+  }) => {
+    const messageId = '4a1b2c3d-0001-4a91-8f6c-2b7d1e5a9c40'
+    await seedThread(participantId, {
+      title: 'Sources order',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'What are the key facts?' }],
+        },
+        {
+          id: messageId,
+          role: 'assistant',
+          content: [
+            docQueryPart({
+              toolCallId: 'call-1',
+              sources: [
+                {
+                  file_name: 'Alpha Notes.pdf',
+                  source_url: 'https://example.com/docs/alpha.pdf',
+                  source_type: 'document',
+                  page_number: 2,
+                },
+                {
+                  file_name: 'Beta Notes.pdf',
+                  source_url: 'https://example.com/docs/beta.pdf',
+                  source_type: 'document',
+                  page_number: 5,
+                },
+                {
+                  file_name: 'Gamma Notes.pdf',
+                  source_url: 'https://example.com/docs/gamma.pdf',
+                  source_type: 'document',
+                  page_number: 9,
+                },
+              ],
+            }),
+            { type: 'text', text: 'Here is a summary of the material.' },
+          ],
+        },
+      ],
+    })
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+
+    const section = page.getByTestId('chat-sources-section')
+    await expect(section).toBeVisible()
+    await expect(section).toContainText('Sources · 3')
+    await expect(page.getByTestId('chat-source-card')).toHaveCount(3)
+
+    await expect(page.locator(`#src-${messageId}-1`)).toContainText(
+      'Alpha Notes.pdf'
+    )
+    await expect(page.locator(`#src-${messageId}-2`)).toContainText(
+      'Beta Notes.pdf'
+    )
+    await expect(page.locator(`#src-${messageId}-3`)).toContainText(
+      'Gamma Notes.pdf'
+    )
+  })
+
+  test('Two doc_query calls with an overlapping source dedupe into contiguous 1..N numbering', async ({
+    page,
+  }) => {
+    const messageId = '4a1b2c3d-0002-4a91-8f6c-2b7d1e5a9c40'
+    const sourceA: DocQuerySource = {
+      file_name: 'Doc A.pdf',
+      source_url: 'https://example.com/a.pdf',
+      source_type: 'document',
+      page_number: 1,
+    }
+    const sourceB: DocQuerySource = {
+      file_name: 'Doc B.pdf',
+      source_url: 'https://example.com/b.pdf',
+      source_type: 'document',
+      page_number: 4,
+    }
+    const sourceC: DocQuerySource = {
+      file_name: 'Doc C.pdf',
+      source_url: 'https://example.com/c.pdf',
+      source_type: 'document',
+      page_number: 7,
+    }
+
+    await seedThread(participantId, {
+      title: 'Overlapping sources',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: 'Search twice for related material' },
+          ],
+        },
+        {
+          id: messageId,
+          role: 'assistant',
+          content: [
+            docQueryPart({ toolCallId: 'call-1', sources: [sourceA, sourceB] }),
+            docQueryPart({ toolCallId: 'call-2', sources: [sourceB, sourceC] }),
+            { type: 'text', text: 'Combined findings from both searches.' },
+          ],
+        },
+      ],
+    })
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+
+    const section = page.getByTestId('chat-sources-section')
+    await expect(section).toContainText('Sources · 3')
+    await expect(page.getByTestId('chat-source-card')).toHaveCount(3)
+
+    // Contiguous 1..3 numbering: B (seen in both calls) keeps its first
+    // index and is not re-added, so C lands at 3, not 4.
+    await expect(page.locator(`#src-${messageId}-1`)).toContainText('Doc A.pdf')
+    await expect(page.locator(`#src-${messageId}-2`)).toContainText('Doc B.pdf')
+    await expect(page.locator(`#src-${messageId}-3`)).toContainText('Doc C.pdf')
+    await expect(page.locator(`#src-${messageId}-4`)).toHaveCount(0)
+  })
+
+  test('A valid [n] citation renders a citation button while an out-of-range marker stays literal text', async ({
+    page,
+  }) => {
+    await seedThread(participantId, {
+      title: 'Citation markers',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'Explain the concept' }],
+        },
+        {
+          role: 'assistant',
+          content: [
+            docQueryPart({
+              toolCallId: 'call-1',
+              sources: [
+                {
+                  file_name: 'Testing Guide.pdf',
+                  source_url: 'https://example.com/testing-guide.pdf',
+                  source_type: 'document',
+                  page_number: 1,
+                },
+              ],
+            }),
+            {
+              type: 'text',
+              text: 'See [1] for details, but [9] is undefined.',
+            },
+          ],
+        },
+      ],
+    })
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+
+    const citations = page.getByTestId('chat-citation')
+    await expect(citations).toHaveCount(1)
+    await expect(citations).toHaveAccessibleName('Source 1: Testing Guide.pdf')
+
+    await expect(
+      page.getByTestId('chat-assistant-message-content')
+    ).toContainText('[9]')
+  })
+
+  test('Clicking a citation scrolls to its source without navigating or changing the URL hash', async ({
+    page,
+  }) => {
+    await seedThread(participantId, {
+      title: 'Citation click',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'Explain the concept' }],
+        },
+        {
+          role: 'assistant',
+          content: [
+            docQueryPart({
+              toolCallId: 'call-1',
+              sources: [
+                {
+                  file_name: 'Reference.pdf',
+                  source_url: 'https://example.com/reference.pdf',
+                  source_type: 'document',
+                  page_number: 1,
+                },
+              ],
+            }),
+            { type: 'text', text: 'As shown in [1].' },
+          ],
+        },
+      ],
+    })
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+    // Selecting a thread is itself a client-side navigation. Let it commit
+    // before the baseline is taken, or the citation click gets blamed for a
+    // URL change the router had already queued.
+    await expect(page).toHaveURL(/\/threads\//)
+    await expect(page.getByTestId('chat-citation')).toBeVisible()
+
+    const urlBefore = page.url()
+    const hashBefore = await page.evaluate(() => window.location.hash)
+
+    await page.getByTestId('chat-citation').click()
+
+    expect(page.url()).toBe(urlBefore)
+    expect(await page.evaluate(() => window.location.hash)).toBe(hashBefore)
+  })
+
+  test('doc_query tool chip shows the exact label for each settled state and only the search icon for successful searches', async ({
+    page,
+  }) => {
+    await seedThread(participantId, {
+      title: 'Tool chip states',
+      messages: [
+        { role: 'user', content: [{ type: 'text', text: 'Query 1' }] },
+        {
+          role: 'assistant',
+          content: [
+            docQueryPart({
+              toolCallId: 'call-done',
+              sources: [
+                {
+                  file_name: 'Material.pdf',
+                  source_url: 'https://example.com/material.pdf',
+                  source_type: 'document',
+                  page_number: 3,
+                },
+              ],
+            }),
+          ],
+        },
+        { role: 'user', content: [{ type: 'text', text: 'Query 2' }] },
+        {
+          role: 'assistant',
+          content: [docQueryPart({ toolCallId: 'call-empty', sources: [] })],
+        },
+        { role: 'user', content: [{ type: 'text', text: 'Query 3' }] },
+        {
+          role: 'assistant',
+          content: [failedDocQueryPart('call-failed')],
+        },
+        { role: 'user', content: [{ type: 'text', text: 'Query 4' }] },
+        {
+          role: 'assistant',
+          content: [genericToolPart('call-generic')],
+        },
+      ],
+    })
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+
+    const toggles = page.getByTestId('chat-tool-call-toggle')
+    await expect(toggles).toHaveCount(4)
+
+    const doneToggle = toggles.nth(0)
+    const emptyToggle = toggles.nth(1)
+    const failedToggle = toggles.nth(2)
+    const genericToggle = toggles.nth(3)
+
+    await expect(doneToggle).toHaveText('Searched course materials')
+    await expect(emptyToggle).toHaveText(
+      'Searched course materials · no results'
+    )
+    await expect(failedToggle).toHaveText('Course material search failed')
+    await expect(genericToggle).toHaveText('Used search')
+
+    await expect(doneToggle.locator('svg.lucide-search')).toHaveCount(1)
+    await expect(emptyToggle.locator('svg.lucide-search')).toHaveCount(1)
+    await expect(failedToggle.locator('svg.lucide-search')).toHaveCount(0)
+    await expect(genericToggle.locator('svg.lucide-search')).toHaveCount(0)
+  })
+
+  test('Composer hint is visible in standalone mode and hidden when embedded', async ({
+    page,
+  }) => {
+    await visitChat(page)
+
+    await expect(page.getByTestId('chat-composer')).toBeVisible()
+    await expect(page.getByTestId('chat-composer-hint')).toBeVisible()
+    await expect(page.getByTestId('chat-composer-hint')).toHaveText(
+      'Chatbot answers can be wrong — verify against your course materials.'
+    )
+
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}?embed=true`, {
+      waitUntil: 'domcontentloaded',
+    })
+
+    await expect(page.getByTestId('chat-composer')).toBeVisible()
+    await expect(page.getByTestId('chat-composer-hint')).toHaveCount(0)
+  })
+
+  test('Assistant message caption exposes a parseable ISO timestamp', async ({
+    page,
+  }) => {
+    await seedThread(participantId, {
+      title: 'Timestamp test',
+      messages: [
+        { role: 'user', content: [{ type: 'text', text: 'A question' }] },
+        {
+          role: 'assistant',
+          content: [{ type: 'text', text: 'A timed answer' }],
+        },
+      ],
+    })
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+
+    const time = page
+      .getByTestId('chat-assistant-message-content')
+      .locator('time')
+    await expect(time).toBeVisible()
+
+    const datetime = await time.getAttribute('datetime')
+    expect(datetime).toBeTruthy()
+    expect(Number.isNaN(new Date(datetime as string).getTime())).toBe(false)
+  })
+
+  // Regression guard: an answer whose only custom metadata is `modelId` (no
+  // chatMode/reasoningEffort/creditsUsed) must not render the aria-hidden
+  // "visible parts" separator with nothing in front of it — see the
+  // dangling-separator note in `MessageMetadata` (thread.tsx).
+  test('Assistant message caption with only a modelId does not render a leading separator', async ({
+    page,
+  }) => {
+    const messageId = '4a1b2c3d-0008-4a91-8f6c-2b7d1e5a9c40'
+    await seedThread(participantId, {
+      title: 'Model-only metadata',
+      messages: [
+        { role: 'user', content: [{ type: 'text', text: 'A question' }] },
+        {
+          id: messageId,
+          role: 'assistant',
+          content: [{ type: 'text', text: 'A model-tagged answer' }],
+        },
+      ],
+    })
+    await setMessageModelId(messageId, 'gpt-4.1-mini')
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+
+    const content = page.getByTestId('chat-assistant-message-content')
+    await expect(content.locator('time')).toBeVisible()
+
+    const visibleText = await content.innerText()
+    const lastLine = visibleText
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .pop()
+
+    expect(lastLine).toBeTruthy()
+    expect(lastLine?.startsWith('—')).toBe(false)
   })
 })
