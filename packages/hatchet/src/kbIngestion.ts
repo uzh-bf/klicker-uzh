@@ -10,6 +10,7 @@ import {
 } from './kbIngestionApi.js'
 
 const KB_INGESTION_POLL_CONCURRENCY = 8
+const KB_INGESTION_POLL_LIMIT = 32
 
 export type KBIngestionLogger = {
   info?: (
@@ -40,6 +41,7 @@ export type MonitorKBIngestionsDependencies = {
   prisma: KBIngestionPrisma
   client?: KBIngestionApiClient
   env?: NodeJS.ProcessEnv
+  now?: () => Date
   logger?: KBIngestionLogger
 }
 
@@ -373,6 +375,20 @@ async function reconcileResource({
       return
     }
 
+    if (
+      operation.status === 'succeeded' &&
+      (operation.observedSha256 !== contentSha256 ||
+        operation.serving.activeResourceVersion !== resource.resourceVersion ||
+        operation.serving.activeSha256 !== contentSha256)
+    ) {
+      await logErrorBestEffort(
+        logger,
+        'KB ingestion serving correlation failed',
+        identifiers
+      )
+      return
+    }
+
     const transition = mapOperationStatus(operation.status)
     const sourceStatuses =
       operation.status === 'accepted'
@@ -408,15 +424,29 @@ export async function monitorActiveKBIngestions(
   dependencies: MonitorKBIngestionsDependencies
 ): Promise<void> {
   const env = dependencies.env ?? process.env
-  const resources = await dependencies.prisma.kBResource.findMany({
-    where: {
-      status: {
-        in: [KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING],
-      },
-      ingestionAttemptId: { not: null },
-      contentSha256: { not: null },
-      externalOperationId: { not: null },
+  const activeWhere = {
+    status: {
+      in: [KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING],
     },
+    ingestionAttemptId: { not: null },
+    contentSha256: { not: null },
+    externalOperationId: { not: null },
+  }
+  const activeCount = await dependencies.prisma.kBResource.count({
+    where: activeWhere,
+  })
+  if (activeCount === 0) {
+    return
+  }
+
+  const pollWindow = Math.floor(
+    (dependencies.now?.() ?? new Date()).getTime() / 60_000
+  )
+  const skip =
+    ((pollWindow % activeCount) * KB_INGESTION_POLL_LIMIT) % activeCount
+  const query = {
+    where: activeWhere,
+    orderBy: { id: 'asc' as const },
     select: {
       id: true,
       kbId: true,
@@ -425,9 +455,19 @@ export async function monitorActiveKBIngestions(
       contentSha256: true,
       externalOperationId: true,
     },
+  }
+  const resources = await dependencies.prisma.kBResource.findMany({
+    ...query,
+    skip,
+    take: KB_INGESTION_POLL_LIMIT,
   })
-  if (resources.length === 0) {
-    return
+  if (resources.length < KB_INGESTION_POLL_LIMIT && skip > 0) {
+    resources.push(
+      ...(await dependencies.prisma.kBResource.findMany({
+        ...query,
+        take: Math.min(KB_INGESTION_POLL_LIMIT - resources.length, skip),
+      }))
+    )
   }
   const client = dependencies.client ?? createKBIngestionApiClient({ env })
 

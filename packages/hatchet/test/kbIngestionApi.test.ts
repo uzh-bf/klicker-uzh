@@ -194,6 +194,26 @@ describe('canonical ingestion API client', () => {
       )
     ).rejects.toThrow('Ingestion API returned an invalid response')
   })
+
+  it.each([{ status: ['succeeded'] }, { operation: ['update'] }])(
+    'rejects non-string operation enums',
+    async (override) => {
+      const fetchRequest = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: vi.fn().mockResolvedValue({
+          ...operationResponse,
+          ...override,
+        }),
+      })
+
+      await expect(
+        createKBIngestionApiClient({ env, fetchRequest }).getOperation(
+          operationResponse.operation_id
+        )
+      ).rejects.toThrow('Ingestion API returned an invalid response')
+    }
+  )
 })
 
 describe('ingestion source preparation', () => {

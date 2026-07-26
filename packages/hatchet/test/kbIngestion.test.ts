@@ -261,7 +261,12 @@ describe('KB ingestion reconciliation', () => {
   function monitorPrisma(resources: Record<string, unknown>[]) {
     return {
       kBResource: {
-        findMany: vi.fn().mockResolvedValue(resources),
+        count: vi.fn().mockResolvedValue(resources.length),
+        findMany: vi
+          .fn()
+          .mockImplementation(async ({ skip = 0, take = resources.length }) =>
+            resources.slice(skip, skip + take)
+          ),
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
     }
@@ -327,9 +332,16 @@ describe('KB ingestion reconciliation', () => {
     await monitorActiveKBIngestions({
       prisma: prisma as never,
       client: client({
-        getOperation: vi
-          .fn()
-          .mockResolvedValue(operation({ status: 'succeeded' })),
+        getOperation: vi.fn().mockResolvedValue(
+          operation({
+            status: 'succeeded',
+            observedSha256: CONTENT_SHA256,
+            serving: {
+              activeResourceVersion: 3,
+              activeSha256: CONTENT_SHA256,
+            },
+          })
+        ),
       }),
     })
 
@@ -340,6 +352,59 @@ describe('KB ingestion reconciliation', () => {
     })
     expect(update.data.ingestedAt).toBeInstanceOf(Date)
   })
+
+  it.each([
+    {
+      observedSha256: null,
+      serving: {
+        activeResourceVersion: 3,
+        activeSha256: CONTENT_SHA256,
+      },
+    },
+    {
+      observedSha256: CONTENT_SHA256,
+      serving: {
+        activeResourceVersion: 2,
+        activeSha256: CONTENT_SHA256,
+      },
+    },
+    {
+      observedSha256: CONTENT_SHA256,
+      serving: {
+        activeResourceVersion: 3,
+        activeSha256: 'a'.repeat(64),
+      },
+    },
+  ])(
+    'refuses success until the exact version and digest are actively serving',
+    async (servingIdentity) => {
+      const prisma = monitorPrisma([activeResource])
+      const logger = { error: vi.fn() }
+
+      await monitorActiveKBIngestions({
+        prisma: prisma as never,
+        client: client({
+          getOperation: vi.fn().mockResolvedValue(
+            operation({
+              status: 'succeeded',
+              ...servingIdentity,
+            })
+          ),
+        }),
+        logger,
+      })
+
+      expect(prisma.kBResource.updateMany).not.toHaveBeenCalled()
+      expect(logger.error).toHaveBeenCalledWith(
+        'KB ingestion serving correlation failed',
+        {
+          resourceId: RESOURCE_ID,
+          kbId: KB_ID,
+          ingestionAttemptId: ATTEMPT_ID,
+        }
+      )
+    }
+  )
 
   it('refuses a status response that does not match every correlation field', async () => {
     const prisma = monitorPrisma([activeResource])
@@ -396,5 +461,45 @@ describe('KB ingestion reconciliation', () => {
 
     expect(getOperation).toHaveBeenCalledTimes(17)
     expect(peak).toBe(8)
+  })
+
+  it('rotates a bounded 32-resource reconciliation window each minute', async () => {
+    const resources = Array.from({ length: 49 }, (_, index) => ({
+      ...activeResource,
+      id: `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
+      externalOperationId: `${OPERATION_ID}_${index}`,
+    }))
+    const prisma = {
+      kBResource: {
+        count: vi.fn().mockResolvedValue(resources.length),
+        findMany: vi.fn().mockImplementation(async ({ skip = 0, take }) => {
+          return resources.slice(skip, skip + take)
+        }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+    }
+    const getOperation = vi.fn().mockImplementation(async (operationId) => {
+      const index = Number(operationId.split('_').at(-1))
+      return operation({
+        operationId,
+        externalResourceId: resources[index]!.id,
+      })
+    })
+
+    await monitorActiveKBIngestions({
+      prisma: prisma as never,
+      client: client({ getOperation }),
+      now: () => new Date(60_000),
+    })
+
+    expect(prisma.kBResource.findMany).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ skip: 32, take: 32 })
+    )
+    expect(prisma.kBResource.findMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ take: 15 })
+    )
+    expect(getOperation).toHaveBeenCalledTimes(32)
   })
 })

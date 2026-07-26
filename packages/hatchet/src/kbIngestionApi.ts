@@ -197,10 +197,12 @@ function parseOperationStatus(value: unknown): KBOperationStatusResponse {
       'updated_at',
     ]) ||
     !isBoundedString(operation.operation_id, 255) ||
+    typeof operation.status !== 'string' ||
     !['accepted', 'running', 'succeeded', 'failed', 'superseded'].includes(
-      String(operation.status)
+      operation.status
     ) ||
-    !['create', 'update', 'delete'].includes(String(operation.operation)) ||
+    typeof operation.operation !== 'string' ||
+    !['create', 'update', 'delete'].includes(operation.operation) ||
     !isBoundedString(operation.project_id, 255) ||
     !isBoundedString(operation.producer, 255) ||
     !isBoundedString(operation.external_resource_id, 512) ||
