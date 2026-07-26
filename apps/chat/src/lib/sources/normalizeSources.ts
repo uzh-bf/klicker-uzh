@@ -1,3 +1,4 @@
+import { TOOL_NAME_SUFFIX_LENGTH } from '../config/toolNames'
 import type { ChatSource, ChatSourceType } from './types'
 
 const MAX_SOURCES = 12
@@ -8,11 +9,14 @@ const EXCERPT_MAX_LENGTH = 240
 // the bare tool name.
 //
 // The optional trailing group covers the disambiguation suffix `toSafeToolName`
-// appends — 8 hex characters of a sha256 — when two servers expose the same
-// tool name or the namespaced name exceeds its length cap. Without it, a
-// chatbot with two RAG servers would silently lose sources, citations and the
-// friendly chip for whichever server got the suffix.
-const DOC_QUERY_TOOL_NAME_RE = /(^|_)doc_query(_[0-9a-f]{8})?$/
+// appends — hex characters of a sha256 — when two servers expose the same tool
+// name or the namespaced name exceeds its length cap. Without it, a chatbot
+// with two RAG servers would silently lose sources, citations and the friendly
+// chip for whichever server got the suffix. The length comes from the same
+// constant `toSafeToolName` slices the hash to, so the two cannot drift.
+const DOC_QUERY_TOOL_NAME_RE = new RegExp(
+  `(^|_)doc_query(_[0-9a-f]{${TOOL_NAME_SUFFIX_LENGTH}})?$`
+)
 
 /**
  * Minimal structural shape shared by live (streamed) and persisted assistant
@@ -50,6 +54,11 @@ export function isDocQueryToolName(toolName: string): boolean {
  * Returns `undefined` for an out-of-range marker or when the message has no
  * sources at all, in which case the caller (`CitationChip`) renders the
  * original `[n]` text instead of a citation chip.
+ *
+ * If this bounds rule or the numbering in `normalizeSourcesFromParts` changes,
+ * update `CITATION_CONTRACT` in `lib/server/citationInstructions.ts` to match.
+ * That prose is what tells the model which number to write, and no compiler
+ * checks the two against each other.
  */
 export function resolveCitationSource(
   index: number,

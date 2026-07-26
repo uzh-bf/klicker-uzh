@@ -416,6 +416,52 @@ describe('normalizeSourcesFromParts', () => {
     }
   )
 
+  // `source_type` is a free-text label from the doc_query pipeline, and the
+  // type it maps to decides both the card icon and which of the two grids in
+  // `SourcesSection` the card lands in. Every other fixture here is a
+  // document, so these cover the remaining branches of `inferSourceType`.
+  test.each([
+    ['video', 'video', 'video'],
+    ['youtube', 'youtube', 'video'],
+    ['image', 'image', 'image'],
+    ['figure', 'figure', 'image'],
+    ['mixed case', 'Video Recording', 'video'],
+  ])('maps a %s source_type to the %s type', (_label, sourceType, expected) => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        answer: 'text',
+        sources: [
+          {
+            file_name: 'vorlesung-04.mp4',
+            source_type: sourceType,
+            source_url: 'https://example.com/vorlesung-04.mp4',
+          },
+        ],
+      }),
+    ])
+
+    expect(result[0]?.type).toBe(expected)
+  })
+
+  // A URL whose last path segment carries no file extension is a page to open,
+  // not a document to cite by name.
+  test('maps an extensionless url to the link type', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        answer: 'text',
+        sources: [
+          {
+            expert: 'Course wiki',
+            source_url: 'https://example.com/wiki/expected-value',
+          },
+        ],
+      }),
+    ])
+
+    expect(result[0]?.type).toBe('link')
+    expect(result[0]?.title).toBe('expected-value')
+  })
+
   test('answer mode keeps an https source_url as the link target', () => {
     const result = normalizeSourcesFromParts([
       toolCallPart('KB_doc_query', {
