@@ -1,3 +1,4 @@
-[submodule "modules/eval"]
-	path = modules/eval
-	url = git@gitlab.uzh.ch:ai-infrastructure/evaluation.git
+[submodule "evaluation/framework"]
+	path = evaluation/framework
+	url = https://gitlab.uzh.ch/ai-infrastructure/evaluation.git
+	update = none
