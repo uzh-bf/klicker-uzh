@@ -4,7 +4,7 @@
 
 - Date: 2026-07-24; grill rulings recorded 2026-07-25; branch topology corrected 2026-07-26. Implementing branch: `kb-poc`, carried by [PR #5174](https://github.com/uzh-bf/klicker-uzh/pull/5174) into `v3-ai`. The roadmap was reviewed on `claude/admiring-nightingale-c30fa4`, then moved onto the implementing branch before W1 execution.
 - Inputs reviewed: [PR #5182](https://github.com/uzh-bf/klicker-uzh/pull/5182) (junior implementation of the [POC plan](2026-07-15-pr-5174-kb-poc-plan.md), branch `feat/kb-poc-management-ui`, base `kb-poc`, 149 files / +23k), [PR #5078](https://github.com/uzh-bf/klicker-uzh/pull/5078) (older full-scale KB prototype, branch `codex/kb-management-ui`, ruled REPLACE by the 2026-07-23/24 program review), the R5.0 scope-grill handoff and the program's final roadmap + A6 Klicker lens report (external `_local` review artifacts, not in this repo).
-- Method: three independent Opus review subagents (5182 core-plan conformance; 5182 beyond-plan scope vs the canonical ingestion-platform contract; 5078 salvage inventory vs 5182), synthesized here. Review worktree: `trees/kb-review-5182` (detached at `9b5fc7af2`, read-only; remove after this plan lands — needs approval).
+- Method: three independent Opus review subagents (5182 core-plan conformance; 5182 beyond-plan scope vs the canonical ingestion-platform contract; 5078 salvage inventory vs 5182), synthesized here. `trees/kb-review-5182` was attached to `feat/kb-poc-management-ui` on 2026-07-26 and is now the W1 implementation worktree.
 - Purpose: (1) reviewable record of the [PR #5182](https://github.com/uzh-bf/klicker-uzh/pull/5182) findings, (2) the ruled decision record of the product-scope grill (program gate R5.0), (3) the finalized production v1 work-package roadmap. Rulings recorded and roadmap finalized 2026-07-25.
 
 ## Fixed Program Constraints (user-ruled 2026-07-23/24 — do not re-litigate)
@@ -122,5 +122,16 @@ External (platform-track) dependencies to watch, not owned here: R1.1 `resource_
 - [x] 2026-07-25: Grill rulings Q1-Q11 recorded (see Decisions section)
 - [x] 2026-07-25: Roadmap finalized from rulings
 - [x] 2026-07-26: Roadmap moved onto `kb-poc`; Q10 corrected so [PR #5174](https://github.com/uzh-bf/klicker-uzh/pull/5174) is the integration line into `v3-ai`
+- [x] 2026-07-26: PR #5182 worktree attached to `feat/kb-poc-management-ui`; full pre-split head `9b5fc7af2` preserved on local branch `feat/kb-knowledge-graph-parked`; latest `kb-poc` roadmap merged into the implementation branch
+- [ ] 2026-07-26: W1 slice active — remove KG visualization/model-selection scope from PR #5182 while retaining core KB ingestion and general Hatchet development-startup fixes; publish the preserved head as a parked draft PR
 - [ ] Program roadmap §3a amended (R5.0 satisfied) — external `_local` artifact, done outside this repo on user request
 - [ ] W1 executed (KG split, 5182 fixes, wiki/screenshots refreshed, merge into `kb-poc`)
+
+## Active Autonomous Goal
+
+- Objective: finish W1 on PR #5182 and bring it to fresh, verified merge-ready state.
+- Terminal condition: KG/model-selection scope is parked in a separate draft PR; the core branch has the per-resource Ingest UI, aligned webhook transition, no unfenced Hatchet logger workaround, current plans/wiki/screenshots, passing repository checks, and completed review gates.
+- Boundaries: do not start W2, expose staging, merge PR #5182, mark it ready, or modify the parked W9 scope beyond what extraction requires. M1 resource-monitor scaling remains deferred to W2; graph-monitor scaling remains with W9.
+- Branches: implement on `feat/kb-poc-management-ui`; preserve the full pre-split head on `feat/kb-knowledge-graph-parked`; target both at `kb-poc`.
+- Verification: targeted package tests after each slice; root `check:all` and build before handoff; delegated-login browser walkthrough with EN/DE and desktop/mobile screenshots for the UI slice; fresh PR CI plus security, maintainability, and branch-review gates.
+- Pause conditions: stop for user direction only if a decision would change the ruled W1 scope, if credentials or external infrastructure block required verification, or at the explicit PR #5182 merge-approval gate.
