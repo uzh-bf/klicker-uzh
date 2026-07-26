@@ -2,10 +2,10 @@
 
 ## Plan Identity
 
-- Date: 2026-07-24; grill rulings recorded 2026-07-25. Branch: `claude/admiring-nightingale-c30fa4` (currently `v3`-based; per ruling Q10 it gets rebased onto `v3-ai` as the first step of W1).
-- Inputs reviewed: PR #5182 (junior implementation of the [POC plan](2026-07-15-pr-5174-kb-poc-plan.md), branch `feat/kb-poc-management-ui`, base `kb-poc`, 149 files / +23k), PR #5078 (older full-scale KB prototype, branch `codex/kb-management-ui`, ruled REPLACE by the 2026-07-23/24 program review), the R5.0 scope-grill handoff and the program's final roadmap + A6 Klicker lens report (external `_local` review artifacts, not in this repo).
+- Date: 2026-07-24; grill rulings recorded 2026-07-25; branch topology corrected 2026-07-26. Implementing branch: `kb-poc`, carried by [PR #5174](https://github.com/uzh-bf/klicker-uzh/pull/5174) into `v3-ai`. The roadmap was reviewed on `claude/admiring-nightingale-c30fa4`, then moved onto the implementing branch before W1 execution.
+- Inputs reviewed: [PR #5182](https://github.com/uzh-bf/klicker-uzh/pull/5182) (junior implementation of the [POC plan](2026-07-15-pr-5174-kb-poc-plan.md), branch `feat/kb-poc-management-ui`, base `kb-poc`, 149 files / +23k), [PR #5078](https://github.com/uzh-bf/klicker-uzh/pull/5078) (older full-scale KB prototype, branch `codex/kb-management-ui`, ruled REPLACE by the 2026-07-23/24 program review), the R5.0 scope-grill handoff and the program's final roadmap + A6 Klicker lens report (external `_local` review artifacts, not in this repo).
 - Method: three independent Opus review subagents (5182 core-plan conformance; 5182 beyond-plan scope vs the canonical ingestion-platform contract; 5078 salvage inventory vs 5182), synthesized here. Review worktree: `trees/kb-review-5182` (detached at `9b5fc7af2`, read-only; remove after this plan lands — needs approval).
-- Purpose: (1) reviewable record of the PR 5182 findings, (2) the ruled decision record of the product-scope grill (program gate R5.0), (3) the finalized production v1 work-package roadmap. Rulings recorded and roadmap finalized 2026-07-25.
+- Purpose: (1) reviewable record of the [PR #5182](https://github.com/uzh-bf/klicker-uzh/pull/5182) findings, (2) the ruled decision record of the product-scope grill (program gate R5.0), (3) the finalized production v1 work-package roadmap. Rulings recorded and roadmap finalized 2026-07-25.
 
 ## Fixed Program Constraints (user-ruled 2026-07-23/24 — do not re-litigate)
 
@@ -17,7 +17,7 @@
 - `kb_id` server-side validation is deferred ONLY until lecturer self-service KB creation exists (D-8) — self-service in v1 triggers that gate.
 - Platform-side gates outside this repo: Klicker tenant mount on shared `mcp-doc-query.stg-doc-query` (R4.3, needs blast-radius fixes R1.3/R1.4), producer-enable + 10-scenario synthetic journey (R4.4), `resource_active` retrieval gating (R1.1) and Milvus partition wiring (R1.2) block ANY retrieval canary.
 
-## PR 5182 Review — Verdict and Findings
+## [PR #5182](https://github.com/uzh-bf/klicker-uzh/pull/5182) Review — Verdict and Findings
 
 **Verdict: needs-fixes (1 blocker) before merging into `kb-poc`.** The core S2-S8 implementation conforms to the POC plan and is hardened beyond its minimum in several places. The problems concentrate where later beyond-plan work landed on the same branch.
 
@@ -62,7 +62,7 @@
 | Versions / two-axis status | **Adaptable** | Absent at resource level; KG's `selectionRevision`/`builtRevision` equality gate is the best existing analog of "candidate invisible until active". |
 | Feature gating | **Absent** | No flags anywhere; GrowthBook per D-5. |
 
-## PR 5078 Salvage — What to Take, When
+## [PR #5078](https://github.com/uzh-bf/klicker-uzh/pull/5078) Salvage — What to Take, When
 
 5182 already independently rebuilt the valuable 5078 primitives (HMAC sign/verify, ownership + row-lock patterns, larger test suite) — **nothing to port there**. Genuine take-later items, mapped to v1 work packages:
 
@@ -95,7 +95,7 @@ All Q1-Q11 ruled by the user in the 2026-07-25 grill session. Ruling column is b
 | Q7 | Delete semantics for lecturers | (a) Soft-delete fence (`deletedAt`/`deletedById` + delete-guard while QUEUED/PROCESSING), async hard cleanup, tombstone-compatible ingestion delete | Aligns with the platform tombstone contract; port the 5078 column pair + guard (W5). |
 | Q8 | Per-KB quotas for the ingestion registry allowlist | 100 resources / 500 MB per KB (tighter than the proposed 200 / 1 GB) | Conservative pilot posture; raisable later without migration (W6). Per-file 25MB and MIME allowlist pdf/txt/md/docx/pptx stand as previously ruled (D12). |
 | Q9 | GrowthBook cohort shape | Broader pilot: courses opt in via an external Microsoft Forms form (faculty, course, use-case description, AI-Buddy-pilot participation — if participating, AI Buddy pays the AI cost, otherwise the course pays itself); the user then enables the course on GrowthBook. The gate covers **tutor chatbots only**; the other AI features are public beta for anyone with Catalyst at UZH. User-only flag administration; soft kill-switch = disable ingestion dispatch + hide attach UI, already-ingested content keeps serving | W8 rewritten to this shape. The Forms front door lives outside Klicker; Klicker-side work is the GrowthBook gate + kill-switch semantics only. |
-| Q10 | Branch topology | (a) Rebase this plan branch onto `v3-ai`; it becomes the v1 integration branch that 5182 (via `kb-poc`) merges into. Rebase + force-push deferred to the W1 session as its first step | Merging `v3-ai`-history branches into a `v3`-based branch would drag the whole `v3-ai` line in. The rulings commit lands on the current `v3`-based branch first. |
+| Q10 | Branch topology | Superseded 2026-07-26: `kb-poc` / [PR #5174](https://github.com/uzh-bf/klicker-uzh/pull/5174) is the v1 integration line into `v3-ai`. [PR #5182](https://github.com/uzh-bf/klicker-uzh/pull/5182) merges into `kb-poc`; W2+ continues there. The roadmap branch remains review history and is not rebased or force-pushed. | Keeps the plan and implementation in one PR. The older full-scale [PR #5078](https://github.com/uzh-bf/klicker-uzh/pull/5078) remains a read-only source for selective reimplementation of useful UI and behavior; it is never merged wholesale. |
 | Q11 | Legacy static course chatbots (informational confirm) | Confirmed: untouched throughout v1 until the gated `chatbot_id`→`kb_id` migration (program R10.4); lecturers keep current behavior | Informational; no roadmap change. |
 
 ## Production v1 Roadmap (Klicker side — finalized 2026-07-25)
@@ -104,7 +104,7 @@ Work packages, dependency-ordered. Each lands as its own slice set with per-slic
 
 | Pkg | What | Depends on | Notes |
 | --- | --- | --- | --- |
-| W1 | **5182 finish + merge into `kb-poc`**: rebase this plan branch onto `v3-ai` (Q10, first step); extract KG visualization + model selection into a parked PR (Q3); restore the per-resource Ingest button + `kb.ingestResource*` i18n keys (B1/M3, Q1); align webhook transition table (minor); fence/remove the `tsx --watch` monkeypatch; refresh stale Progress/screenshots to HEAD; then merge 5182 → `kb-poc` (PR 5174 line) with the bridge intact (Q2 hybrid) | Rulings Q1/Q2/Q3/Q10 (done) | CI on 5182 already green (check/test pass). M1 is NOT fixed here: resource-path fix deferred to W2, graph-path travels with the parked PR (W9). Nothing else lands on the line until W2 completes. |
+| W1 | **5182 finish + merge into `kb-poc`**: keep this roadmap on the `kb-poc` integration line (Q10, done); extract KG visualization + model selection into a parked PR (Q3); restore the per-resource Ingest button + `kb.ingestResource*` i18n keys (B1/M3, Q1); align webhook transition table (minor); fence/remove the `tsx --watch` monkeypatch; refresh stale Progress/screenshots and affected engineering-wiki pages to HEAD; then merge [PR #5182](https://github.com/uzh-bf/klicker-uzh/pull/5182) into `kb-poc` with the bridge intact (Q2 hybrid) | Rulings Q1/Q2/Q3/Q10 (done) | CI on 5182 was green before W1 changes and must run fresh afterward. M1 is NOT fixed here: resource-path fix deferred to W2, graph-path travels with the parked PR (W9). Nothing else lands on the line until W2 completes. |
 | W2 | **Contract alignment** (immediately after W1, hard ordering per Q2): replace bridge transport with sync ingestion API client (`POST /v1/resources` family), receiver speaks `OperationStatusEvent` + `X-Ingestion-*` verbatim (`extra="forbid"`, replay-window check), keep HMAC/correlation/reconciliation-sweep skeleton, drop second-Hatchet client + `runs.list` recovery; reconciliation cron polls the operations API instead (absorbs the M1 resource-path fix) | W1; platform contract stable | Program packages R5.1/R5.2 effectively collapse into W1+W2: 5182 supersedes the "re-author 5078" framing |
 | W3 | **Versioning + two-axis status**: schema columns per Q6 (`resourceVersion`, `activeResourceVersion`, `activeContentSha256`, `errorCode`), replace-on-re-ingest flow, `KBIngestionRun`-style attempt history, minimal status UI (operation vs serving axes), retry affordance | W2 | Salvage: 5078 run-history shape |
 | W4 | **Chatbot binding + retrieval seam**: KB-level attach with one-enabled-KB-per-chatbot invariant (Q5), ES256 scope-token minting per chat request (`kb_id` claim), `ChatbotMCPServer`/`ChatbotMCPConfig` wiring (no schema change needed), citation-card fix (`KB.doc_query` → `KB_doc_query`), "no enabled KB" warning | W2; platform R4.3 tenant mount (external) | The actual lecturer-value moment: chatbots answer from KBs. `KBCourse` deferred per Q5. |
@@ -121,5 +121,6 @@ External (platform-track) dependencies to watch, not owned here: R1.1 `resource_
 - [x] 2026-07-24: Three-agent review complete (5182 core, 5182 extras/contract, 5078 salvage); findings synthesized; grill agenda drafted; roadmap drafted pending rulings. Review worktree `trees/kb-review-5182` still present (removal needs approval).
 - [x] 2026-07-25: Grill rulings Q1-Q11 recorded (see Decisions section)
 - [x] 2026-07-25: Roadmap finalized from rulings
+- [x] 2026-07-26: Roadmap moved onto `kb-poc`; Q10 corrected so [PR #5174](https://github.com/uzh-bf/klicker-uzh/pull/5174) is the integration line into `v3-ai`
 - [ ] Program roadmap §3a amended (R5.0 satisfied) — external `_local` artifact, done outside this repo on user request
-- [ ] W1 executed (rebase onto `v3-ai`, KG split, 5182 fixes + merge into `kb-poc`)
+- [ ] W1 executed (KG split, 5182 fixes, wiki/screenshots refreshed, merge into `kb-poc`)
