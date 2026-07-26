@@ -2,7 +2,7 @@
 
 **Reviewed:** 2026-07-07; execution resumed against current `v3` on 2026-07-20, finalized on 2026-07-22, and natively verified in PowerPoint on 2026-07-26.
 **Scope:** `apps/office-addin` (React/Webpack → vanilla TS/Rollup), deployed artifacts in `apps/docs/static/office-addin`, package documentation, lockfile.
-**Verdict:** The original blockers and final review findings are resolved. The branch is published, current-head CI is green, and the PR is ready for review. Real PowerPoint checks D1, D2, D3, and D5 pass; D4 legacy migration remains blocked on a user-supplied legacy deck. Maintainer approval remains required, and this plan does not authorize merge.
+**Verdict:** The original blockers and final review findings are resolved. A late CodeRabbit finding exposed a real cross-handler settings race and incomplete failed-write rollback; the source now uses one tested mutation queue and awaits a second save for rollback. Focused local checks pass, and fresh current-head CI is required after publication. Real PowerPoint checks D1, D2, D3, and D5 passed before this final persistence hardening; D4 legacy migration remains blocked on a user-supplied legacy deck. Maintainer approval remains required, and this plan does not authorize merge.
 
 ## Progress
 
@@ -17,6 +17,7 @@
 - [x] Finish verification: under pinned Node 24.16.0 and pnpm 11.5.0, the frozen install, full production build (22 tasks), full test build (20 tasks), all 24 type-check tasks, lint, syncpack, AGENTS.md smoke check, Prisma sync/namespace checks, tracked-branch formatting, Office URL tests, production build/deploy parity (13 files), and Microsoft manifest validation passed. Existing build warnings are unrelated to the add-in rewrite.
 - [x] Finish publication: branch pushed, stale GitHub discussion resolved, whole-branch PR title/body refreshed, current-head CI green, and PR marked ready.
 - [x] Native PowerPoint checks D1, D2, D3, and D5 on Microsoft PowerPoint 16.111.1 for macOS: the exact committed bundle loaded through a temporary HTTPS tunnel; a real evaluation rendered; save/close/reopen restored it; two instances retained different live questions independently; Change URL cleared one setting across reopen without affecting the other. Evidence is stored locally under the gitignored `project/_local/2026-07-25-office-addin-pr4643-native-verification/` directory and contains no raw evaluation URL.
+- [x] Late review hardening: all settings mutations and `saveAsync` calls now pass through one shared promise queue. A failed save restores the previous in-memory state and persists that rollback with a second `saveAsync`; callers distinguish a successful rollback from a failed rollback. Six focused Node tests, TypeScript, ESLint, production build, and 13-file deployment parity pass locally.
 - [ ] Final human gates: run D4 legacy migration when a legacy deck is supplied and obtain maintainer approval. Do not merge from this plan.
 
 **Scope decisions:** preserve one persisted key per content-add-in instance; no toolbar/ribbon work; no executable packaging; no merge. PowerPoint host proof covers D1, D2, D3, and D5 on macOS; D4 remains explicitly unverified.

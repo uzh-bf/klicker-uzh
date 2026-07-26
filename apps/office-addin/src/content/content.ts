@@ -1,4 +1,5 @@
 import { getSafeEvaluationUrl, isValidEvaluationUrl } from './evaluation-url'
+import { createSettingsMutationQueue } from './settings-mutation-queue'
 
 type MessageType = 'success' | 'error' | 'info' | 'warning'
 type ValidationState = 'valid' | 'invalid' | 'empty'
@@ -21,6 +22,7 @@ const LEGACY_SETTINGS_PREFIX = 'selectedURL'
 let elements: AppElements
 let messageTimeout: ReturnType<typeof setTimeout> | undefined
 let hideMessageTimeout: ReturnType<typeof setTimeout> | undefined
+const persistSettingsMutation = createSettingsMutationQueue(saveSettings)
 
 Office.onReady((info) => {
   const initialize = () => void initializeOfficeAddin(info)
@@ -109,23 +111,31 @@ async function migrateLegacySetting(): Promise<string | undefined> {
       return undefined
     }
 
-    Office.context.document.settings.set(SETTINGS_KEY, safeLegacyUrl)
-    if (!(await saveSettings())) {
-      Office.context.document.settings.remove(SETTINGS_KEY)
+    const migratedSetting = await persistSettingsMutation(
+      () => Office.context.document.settings.set(SETTINGS_KEY, safeLegacyUrl),
+      () => Office.context.document.settings.remove(SETTINGS_KEY)
+    )
+    if (migratedSetting !== 'saved') {
       showMessage(
-        'Failed to update settings format. Please embed the URL again.',
+        migratedSetting === 'rollback-failed'
+          ? 'Failed to update or restore the settings format. Please embed the URL again.'
+          : 'Failed to update settings format. Please embed the URL again.',
         'error'
       )
       return undefined
     }
 
-    Office.context.document.settings.remove(legacyKey)
-    const removedLegacySetting = await saveSettings()
+    const removedLegacySetting = await persistSettingsMutation(
+      () => Office.context.document.settings.remove(legacyKey),
+      () => Office.context.document.settings.set(legacyKey, legacyUrl)
+    )
     showMessage(
-      removedLegacySetting
+      removedLegacySetting === 'saved'
         ? 'Settings format updated successfully.'
-        : 'The URL was migrated, but its old setting could not be removed.',
-      removedLegacySetting ? 'info' : 'warning',
+        : removedLegacySetting === 'rollback-failed'
+          ? 'The URL was migrated, but the old setting could not be removed or restored.'
+          : 'The URL was migrated, but its old setting could not be removed.',
+      removedLegacySetting === 'saved' ? 'info' : 'warning',
       4000
     )
 
@@ -235,9 +245,27 @@ async function handleEmbedClick(): Promise<void> {
     return
   }
 
-  Office.context.document.settings.set(SETTINGS_KEY, url)
-  if (!(await saveSettings())) {
-    showMessage('Could not save the URL. Please try again.', 'error')
+  let previousUrl: string | undefined
+  const saved = await persistSettingsMutation(
+    () => {
+      previousUrl = getStringSetting(SETTINGS_KEY)
+      Office.context.document.settings.set(SETTINGS_KEY, url)
+    },
+    () => {
+      if (previousUrl) {
+        Office.context.document.settings.set(SETTINGS_KEY, previousUrl)
+      } else {
+        Office.context.document.settings.remove(SETTINGS_KEY)
+      }
+    }
+  )
+  if (saved !== 'saved') {
+    showMessage(
+      saved === 'rollback-failed'
+        ? 'Could not save or restore the URL. Please reopen the add-in.'
+        : 'Could not save the URL. Please try again.',
+      'error'
+    )
     return
   }
 
@@ -261,16 +289,31 @@ function displayIframe(url: string): void {
 }
 
 async function handleChangeUrlClick(): Promise<void> {
-  const savedUrl = getStringSetting(SETTINGS_KEY)
+  let savedUrl: string | undefined
   elements.changeUrlButton.disabled = true
-  Office.context.document.settings.remove(SETTINGS_KEY)
 
-  if (!(await saveSettings())) {
-    if (savedUrl) {
-      Office.context.document.settings.set(SETTINGS_KEY, savedUrl)
+  const cleared = await persistSettingsMutation(
+    () => {
+      savedUrl = getStringSetting(SETTINGS_KEY)
+      Office.context.document.settings.remove(SETTINGS_KEY)
+    },
+    () => {
+      if (savedUrl) {
+        Office.context.document.settings.set(SETTINGS_KEY, savedUrl)
+      } else {
+        Office.context.document.settings.remove(SETTINGS_KEY)
+      }
     }
+  )
+
+  if (cleared !== 'saved') {
     elements.changeUrlButton.disabled = false
-    showMessage('Could not clear the saved URL.', 'warning')
+    showMessage(
+      cleared === 'rollback-failed'
+        ? 'Could not clear or restore the saved URL. Please reopen the add-in.'
+        : 'Could not clear the saved URL.',
+      'warning'
+    )
     return
   }
 
