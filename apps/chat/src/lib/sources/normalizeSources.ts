@@ -67,7 +67,7 @@ export function normalizeSourcesFromParts(
     if (sources.length >= MAX_SOURCES) break
     if (!isQualifyingPart(part)) continue
 
-    const payload = parsePayload(part.result)
+    const payload = parseDocQueryPayload(part.result)
     if (!payload || 'error' in payload) continue
 
     const candidates =
@@ -109,10 +109,20 @@ function isQualifyingPart(
   )
 }
 
-// Tolerates the raw MCP CallToolResult envelope (what @ai-sdk/mcp returns
-// when no outputSchema is configured), an already-parsed doc_query payload,
-// and its JSON-string form; never throws on garbage/truncated JSON.
-function parsePayload(raw: unknown): Record<string, unknown> | undefined {
+/**
+ * Tolerates the raw MCP CallToolResult envelope (what @ai-sdk/mcp returns
+ * when no outputSchema is configured), an already-parsed doc_query payload,
+ * and its JSON-string form; never throws on garbage/truncated JSON.
+ *
+ * Exported because "no payload at all" and "a payload that reports zero
+ * sources" mean different things to a caller: the live tool-call parts carry
+ * `'Loading...'`/`'Executing...'` placeholder strings while a call is in
+ * flight (see `hooks/useChatResponse.ts`), and those must not be mistaken for
+ * a search that genuinely came back empty.
+ */
+export function parseDocQueryPayload(
+  raw: unknown
+): Record<string, unknown> | undefined {
   if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
     const envelope = raw as Record<string, unknown>
 
