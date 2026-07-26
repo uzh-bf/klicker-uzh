@@ -1,0 +1,381 @@
+import { describe, expect, test } from 'vitest'
+import {
+  isDocQueryToolName,
+  normalizeSourcesFromParts,
+} from '../src/lib/sources/normalizeSources'
+
+function toolCallPart(toolName: string, result: unknown, isError = false) {
+  return { type: 'tool-call', toolName, result, isError }
+}
+
+describe('isDocQueryToolName', () => {
+  test('matches the MCP-namespaced tool name', () => {
+    expect(isDocQueryToolName('KB_doc_query')).toBe(true)
+  })
+
+  test('matches the bare tool name', () => {
+    expect(isDocQueryToolName('doc_query')).toBe(true)
+  })
+
+  test('rejects unrelated tool names', () => {
+    expect(isDocQueryToolName('doc_query_helper')).toBe(false)
+    expect(isDocQueryToolName('some_other_tool')).toBe(false)
+  })
+})
+
+describe('normalizeSourcesFromParts', () => {
+  test('returns [] for an empty parts array', () => {
+    expect(normalizeSourcesFromParts([])).toEqual([])
+  })
+
+  test('answer mode happy path', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        answer: 'Some answer text.',
+        sources_used: 1,
+        sources: [
+          {
+            expert: 'Prof. Muster',
+            source_url: 'https://example.com/course/lecture-01.pdf',
+            source_type: 'pdf',
+            file_name: 'lecture-01.pdf',
+            page_number: 3,
+            labeled_page_number: '3',
+          },
+        ],
+      }),
+    ])
+
+    expect(result).toEqual([
+      {
+        id: 'url:https://example.com/course/lecture-01.pdf|3|3',
+        index: 1,
+        type: 'document',
+        title: 'lecture-01.pdf',
+        page: 3,
+        labeledPage: '3',
+        url: 'https://example.com/course/lecture-01.pdf',
+      },
+    ])
+  })
+
+  test('drops "N/A" fields and falls back to the expert name as title', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        answer: 'Some answer text.',
+        sources_used: 1,
+        sources: [
+          {
+            expert: 'Prof. Muster',
+            source_url: 'N/A',
+            source_type: 'N/A',
+            file_name: 'N/A',
+            page_number: 'N/A',
+            labeled_page_number: 'N/A',
+          },
+        ],
+      }),
+    ])
+
+    expect(result).toEqual([
+      {
+        id: 'title:Prof. Muster|',
+        index: 1,
+        type: 'document',
+        title: 'Prof. Muster',
+      },
+    ])
+  })
+
+  test('parses a result that arrives as a JSON string', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart(
+        'KB_doc_query',
+        JSON.stringify({
+          answer: 'text',
+          sources_used: 1,
+          sources: [
+            {
+              expert: 'Prof. Muster',
+              source_url: 'https://example.com/a.pdf',
+              source_type: 'pdf',
+              file_name: 'a.pdf',
+              page_number: 1,
+            },
+          ],
+        })
+      ),
+    ])
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({ title: 'a.pdf', page: 1 })
+  })
+
+  test('parses a result that arrives as an already-parsed object', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        answer: 'text',
+        sources_used: 1,
+        sources: [
+          {
+            expert: 'Prof. Muster',
+            source_url: 'https://example.com/b.pdf',
+            source_type: 'pdf',
+            file_name: 'b.pdf',
+            page_number: 2,
+          },
+        ],
+      }),
+    ])
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({ title: 'b.pdf', page: 2 })
+  })
+
+  test('documents mode with excerpt and page from the first chunk', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        mode: 'documents',
+        summary: { count: 1 },
+        sources: [
+          {
+            reference: 'lecture-02.pdf',
+            reference_type: 'pdf',
+            source_type: 'document',
+            expert_id: 'expert-1',
+            title: 'Lecture 02',
+            chunks: [
+              {
+                content: 'This is the relevant excerpt text from the chunk.',
+                page_number: 5,
+                labeled_page_number: '5',
+              },
+            ],
+          },
+        ],
+      }),
+    ])
+
+    expect(result).toEqual([
+      {
+        id: 'title:Lecture 02|5',
+        index: 1,
+        type: 'document',
+        title: 'Lecture 02',
+        page: 5,
+        labeledPage: '5',
+        excerpt: 'This is the relevant excerpt text from the chunk.',
+      },
+    ])
+  })
+
+  test('documents mode truncates a long excerpt to ~240 chars', () => {
+    const longContent = 'x'.repeat(300)
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        mode: 'documents',
+        sources: [
+          {
+            reference: 'https://example.com/big-doc.pdf',
+            reference_type: 'pdf',
+            chunks: [{ content: longContent, page_number: 1 }],
+          },
+        ],
+      }),
+    ])
+
+    expect(result[0]?.excerpt?.length).toBeLessThanOrEqual(241)
+    expect(result[0]?.title).toBe('big-doc.pdf')
+    expect(result[0]?.url).toBe('https://example.com/big-doc.pdf')
+  })
+
+  test('garbage JSON string yields no sources', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', '{not valid json'),
+    ])
+
+    expect(result).toEqual([])
+  })
+
+  test('an error payload yields no sources', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', { error: 'upstream failure' }),
+    ])
+
+    expect(result).toEqual([])
+  })
+
+  test('ignores parts with a non-doc_query tool name', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_other_tool', {
+        answer: 'text',
+        sources: [
+          {
+            expert: 'Prof. Muster',
+            source_url: 'https://example.com/a.pdf',
+            file_name: 'a.pdf',
+          },
+        ],
+      }),
+    ])
+
+    expect(result).toEqual([])
+  })
+
+  test('ignores tool-call parts flagged as isError', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart(
+        'KB_doc_query',
+        {
+          answer: 'text',
+          sources: [
+            {
+              expert: 'Prof. Muster',
+              source_url: 'https://example.com/a.pdf',
+              file_name: 'a.pdf',
+            },
+          ],
+        },
+        true
+      ),
+    ])
+
+    expect(result).toEqual([])
+  })
+
+  test('dedupes across two doc_query calls and continues numbering', () => {
+    const sourceA = {
+      expert: 'Prof. Muster',
+      source_url: 'https://example.com/a.pdf',
+      file_name: 'a.pdf',
+      page_number: 1,
+    }
+    const sourceB = {
+      expert: 'Prof. Muster',
+      source_url: 'https://example.com/b.pdf',
+      file_name: 'b.pdf',
+      page_number: 1,
+    }
+
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        answer: 'first',
+        sources: [sourceA, sourceB],
+      }),
+      toolCallPart('KB_doc_query', {
+        answer: 'second',
+        // sourceA repeats (same url + page) and must be deduped; sourceC is new
+        sources: [
+          sourceA,
+          {
+            expert: 'Prof. Muster',
+            source_url: 'https://example.com/c.pdf',
+            file_name: 'c.pdf',
+            page_number: 1,
+          },
+        ],
+      }),
+    ])
+
+    expect(result.map((source) => source.title)).toEqual([
+      'a.pdf',
+      'b.pdf',
+      'c.pdf',
+    ])
+    expect(result.map((source) => source.index)).toEqual([1, 2, 3])
+  })
+
+  test('caps the total number of sources at 12', () => {
+    const sources = Array.from({ length: 20 }, (_, i) => ({
+      expert: 'Prof. Muster',
+      source_url: `https://example.com/doc-${i}.pdf`,
+      file_name: `doc-${i}.pdf`,
+      page_number: i,
+    }))
+
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', { answer: 'text', sources }),
+    ])
+
+    expect(result).toHaveLength(12)
+    expect(result[11]?.index).toBe(12)
+  })
+
+  test('accepts page_number as a numeric string', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        answer: 'text',
+        sources: [
+          {
+            expert: 'Prof. Muster',
+            source_url: 'https://example.com/a.pdf',
+            file_name: 'a.pdf',
+            page_number: '7',
+          },
+        ],
+      }),
+    ])
+
+    expect(result[0]?.page).toBe(7)
+  })
+
+  test('unwraps the MCP CallToolResult envelope with JSON text content', () => {
+    // Production shape: @ai-sdk/mcp without an outputSchema returns the raw
+    // CallToolResult envelope, whose text content holds the doc_query JSON.
+    const payload = {
+      answer: 'text',
+      sources_used: 1,
+      sources: [
+        {
+          expert: 'math',
+          source_url: 'https://example.com/kapitel-4.pdf',
+          source_type: 'pdf',
+          file_name: 'kapitel-4.pdf',
+          page_number: 4,
+        },
+      ],
+    }
+
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        content: [{ type: 'text', text: JSON.stringify(payload) }],
+        isError: false,
+      }),
+    ])
+
+    expect(result).toHaveLength(1)
+    expect(result[0]?.title).toBe('kapitel-4.pdf')
+    expect(result[0]?.page).toBe(4)
+  })
+
+  test('prefers structuredContent over text content in the envelope', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        content: [{ type: 'text', text: '{"answer":"stale","sources":[]}' }],
+        structuredContent: {
+          answer: 'text',
+          sources: [
+            {
+              expert: 'math',
+              file_name: 'from-structured.pdf',
+              page_number: 2,
+            },
+          ],
+        },
+      }),
+    ])
+
+    expect(result).toHaveLength(1)
+    expect(result[0]?.title).toBe('from-structured.pdf')
+  })
+
+  test('envelope with non-JSON text content yields no sources', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        content: [{ type: 'text', text: 'plain text, not JSON' }],
+      }),
+    ])
+
+    expect(result).toEqual([])
+  })
+})
