@@ -1117,8 +1117,16 @@ designing the question widget.
   explicitly database-native compound-key upsert that leaves existing balances
   untouched. The disclaimer regression passes twice in isolation and in the
   full suite; independent correctness, simplification, final security, and
-  strict maintainability reviews pass. All local gates are complete; refreshing
-  and pushing the draft PR is next.
+  strict maintainability reviews pass. The final screenshots then exposed
+  broken external chatbot avatar SVGs: their source URL returned `200`, but the
+  host was outside Next's image-optimizer allow-list. The four known avatar
+  instances now use the documented per-image `unoptimized` path; local fallback
+  icons keep their prior optimized behavior. Typecheck, 59/59 Vitest, lint,
+  root checks, and independent maintainability/security reviews pass for that
+  fix. A post-fix pixel screenshot could not run because local Docker/OrbStack
+  stopped responding to CLI, inspect, and route probes; shared infrastructure
+  was deliberately not restarted. All other local gates are complete;
+  refreshing and pushing the draft PR is next.
   - Hardest constraint: preserving rapid per-message rating ordering without
     making the student request wait on unreliable telemetry. The final design
     keeps ordered PostgreSQL writes and removes the unusable mirror.
