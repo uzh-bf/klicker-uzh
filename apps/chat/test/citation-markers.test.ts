@@ -50,10 +50,23 @@ describe('splitCitationMarkers', () => {
   })
 
   test('happy path: splits a single complete marker into text + link', () => {
+    // The space before the marker is dropped so the rendered chip glues to
+    // the word it cites and wraps together with it.
     expect(splitCitationMarkers('See [3] for details.')).toEqual([
-      textNode('See '),
+      textNode('See'),
       citationLinkNode(3),
       textNode(' for details.'),
+    ])
+  })
+
+  test('a whitespace-only slice before a marker is dropped entirely', () => {
+    expect(splitCitationMarkers(' [1]')).toEqual([citationLinkNode(1)])
+  })
+
+  test('a newline before a marker survives (only spaces/tabs are stripped)', () => {
+    expect(splitCitationMarkers('line one\n[1]')).toEqual([
+      textNode('line one\n'),
+      citationLinkNode(1),
     ])
   })
 
@@ -63,7 +76,7 @@ describe('splitCitationMarkers', () => {
 
   test('adjacent markers [1][2] produce no spurious empty text node between them', () => {
     expect(splitCitationMarkers('Facts [1][2].')).toEqual([
-      textNode('Facts '),
+      textNode('Facts'),
       citationLinkNode(1),
       citationLinkNode(2),
       textNode('.'),
@@ -90,9 +103,9 @@ describe('transformCitationMarkers', () => {
 
     expect(tree).toEqual(
       paragraph([
-        textNode('See '),
+        textNode('See'),
         citationLinkNode(1),
-        textNode(' and '),
+        textNode(' and'),
         citationLinkNode(2),
         textNode('.'),
       ])
@@ -202,7 +215,7 @@ describe('transformCitationMarkers', () => {
 
     expect(tree).toEqual(
       paragraph([
-        { type: 'strong', children: [textNode('See '), citationLinkNode(1)] },
+        { type: 'strong', children: [textNode('See'), citationLinkNode(1)] },
       ])
     )
   })

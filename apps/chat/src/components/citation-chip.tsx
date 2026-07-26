@@ -38,6 +38,13 @@ export function CitationChip({ index }: { index: number }) {
 
   return (
     <sup className="mx-px">
+      {/* U+2060 WORD JOINER: line-breaking treats the atomic inline button
+          below like an ideograph (UAX #14), so even with the pre-marker
+          space stripped by `splitCitationMarkers` the browser may still
+          break between the cited word and the chip. The joiner forbids a
+          break on either side of itself, so the chip wraps together with
+          its word — it can never start a line alone. */}
+      {'\u2060'}
       <Tooltip>
         <TooltipTrigger asChild>
           <button
