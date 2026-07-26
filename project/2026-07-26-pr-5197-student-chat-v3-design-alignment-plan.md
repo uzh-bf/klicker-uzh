@@ -276,3 +276,21 @@ simplify subagent on the exact commit → integrate accepted findings → re-ver
   Evidence: 107/107 chat tests, `check` clean, eslint clean, routes touched
   post-typegen (health 200), browser re-verified en+de with a DOM check
   showing every chip icon `aria-hidden`. Next: S5 prompt contract.
+- 2026-07-26 S5 done: `lib/server/citationInstructions.ts` exports pure
+  `withCitationContract(systemPrompt, toolNames)`, gated on
+  `isDocQueryToolName` (the same predicate the UI uses — not "has any MCP
+  tool", since only doc_query results become resolvable sources). Appends a
+  short English block: bracketed `[1]`/`[2]` markers in returned-source
+  order, numbering continuous across searches in one answer, never invent a
+  number, no citation when not using retrieved material, and an explicit
+  "these are not LaTeX" clause phrased WITHOUT referencing DEFAULT_PROMPT's
+  bracket rule (a chatbot's stored prompt replaces the default entirely and
+  may never mention LaTeX). Idempotent (contains-check). Wired in route.ts
+  right after `toolNames` is computed, mutating `systemPrompt` so the
+  existing `systemPromptLength`/`systemPromptHash` telemetry keeps describing
+  what is actually sent. 8 new tests (115/115), `check` + eslint clean,
+  routes touched post-typegen (health 200).
+  Boundary: no `UPSTREAM_OPENAI_API_KEY` in this DevPod, so model compliance
+  with the contract is UNVERIFIED — only prompt assembly is proven. Carry
+  this into the PR body as a manual-verification item.
+  Next: S5 review+simplify, then S6 composer hint + timestamps.

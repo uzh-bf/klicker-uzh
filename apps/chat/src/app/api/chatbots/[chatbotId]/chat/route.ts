@@ -7,6 +7,7 @@ import {
   getChatModelRegistry,
   type ChatModelConfig,
 } from '@/src/lib/server/chatModelRegistry'
+import { withCitationContract } from '@/src/lib/server/citationInstructions'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import {
   getParentSpanContext,
@@ -802,6 +803,13 @@ export async function POST(
   // Load MCP tools from database configurations or fallback to legacy
   const mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
   const toolNames = Object.keys(mcpTools || {})
+
+  // Append the citation contract only when a doc_query-style RAG tool is
+  // actually available; mutating `systemPrompt` here (rather than deriving a
+  // separate `instructions` variable) keeps the `systemPromptLength` /
+  // `systemPromptHash` telemetry below truthful to what is actually sent to
+  // the model.
+  systemPrompt = withCitationContract(systemPrompt, toolNames)
 
   if (!chatbot) {
     return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
