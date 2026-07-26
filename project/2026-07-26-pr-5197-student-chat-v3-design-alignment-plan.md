@@ -357,3 +357,48 @@ simplify subagent on the exact commit → integrate accepted findings → re-ver
   (`withHashSuffix` slices the base at 55 chars) — needs a server name over
   ~45 chars, and no rename-safe signal survives the truncation. 3 new tests
   (117/117), eslint clean on both files.
+- 2026-07-26 S6 adjustments (review+simplify on 5a6f844a4): accepted —
+  (1) the credit clause is GONE from the composer hint. "1 credit per
+  message" was simply false: `calcCost` in the chat route prices each answer
+  from input/output tokens, and the app's own `chat.credits.costHint` already
+  says "how many depends on the model and the length of the exchange". A
+  student watching a 1.2-credit answer land under a "1 credit per message"
+  promise reads the app as broken. Verified in route.ts:1685 before acting,
+  not taken on the reviewer's word. Dropping it also retires the reviewer's
+  separate complaint that `creditsLoaded && credits.total > 0` was an
+  unfalsifiable stand-in for a credits-enabled flag (`creditMaxCredits Int
+  @default(1)`, no disabled value exists) and the layout shift it caused.
+  `chat.composer.creditCostHint` removed from en+de.
+  (2) the relative timestamp now ticks: `useNow({ updateInterval: 60_000 })`
+  instead of `new Date()`. A completed message only re-renders on its own
+  state changes (vote, edit, branch switch), so the label used to freeze for
+  as long as the student read the answer. Proven live, not asserted: label
+  read "1 minute ago", then "2 minutes ago" 80s later with no reload and no
+  interaction.
+  (3) my own find while reading the diff, missed by both agents: `visibleParts`
+  can be empty while `fullParts` is not (an answer carrying only a model id —
+  chatbot with no modes, non-reasoning model, credits off), and the standalone
+  aria-hidden separator span then rendered the caption as a dangling
+  "— 5 minutes ago". Separator now hangs off each metadata span instead, which
+  also gives screen readers the boundary cue the reviewer asked for (a11y
+  finding, confidence 50) for free. Reproduced in the browser by seeding that
+  exact metadata combination before and after.
+  Simplify accepted: merged the separator into the visible span, trimmed the
+  `createdAt` and timestamp comments to what the code cannot say itself,
+  dropped the fragment around the credit separator (moot after (1)).
+  Declined: single combined `useSettingsStore` selector (splitting is the
+  established pattern — zustand referential equality) and extracting a shared
+  credits-enabled helper (moot after (1)).
+  Deferred to S7 (review F5, e2e is S7's slice): Playwright coverage of the
+  hint's embedded/standalone gating, `<time dateTime>` presence, and the
+  model-id-only caption case from (3).
+  Evidence: 117/117, `check` clean, eslint clean on thread.tsx (only the
+  pre-existing `<img>` warning), prettier clean. Browser en+de on the seeded
+  thread: hint is the disclaimer sentence alone in both locales, caption
+  renders `Tutor — Medium — 1 credit — ` visible / `Tutor — gpt-5 — Medium —
+  1 credit — ` sr-only / `<time>` "2 hours ago" resp. "vor 2 Stunden", 0
+  console errors in both. Env: touching every route file at once tripped a
+  Turbopack EMFILE plus a torn read of the host-edited en.ts ("Could not
+  parse module … file not found"); recovered by touching the i18n files and
+  thread.tsx in-container, no `devrouter ensure` and no DB reset needed.
+  Next: S7.

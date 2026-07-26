@@ -67,7 +67,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 import Image from 'next/image'
 import { useParams } from 'next/navigation'
 
-import { useFormatter, useTranslations } from 'next-intl'
+import { useFormatter, useNow, useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 
 type ThreadProps = { chatbotAvatar: string }
@@ -139,16 +139,20 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
   const message = useMessage() as MessageWithCustomMetadata & {
     role: string
     status?: { type: string }
-    // `useMessage()` always carries a native, non-optional `createdAt: Date`
-    // (assistant-ui's `ThreadMessage`/`MessageCommonProps`) — `convertMessage`
-    // in RuntimeProvider.tsx spreads `...rest` from our `ExtendedThreadMessageLike`
-    // (which lib/api/types.ts populates via `new Date(apiMessage.createdAt)`),
-    // so it reaches here untouched. Declared here only to widen the local cast.
+    // `useMessage()` already returns `createdAt` at runtime (assistant-ui's
+    // `ThreadMessage`); declared here only to widen the local cast, like
+    // `role`/`status` above.
     createdAt: Date
   }
   const { modelOptions } = useSettingsStore()
   const t = useTranslations()
   const format = useFormatter()
+  // A ticking `now`, not `new Date()`: the caption is rendered once and its
+  // message only re-renders on its own state changes (a vote, an edit, a branch
+  // switch), so a fixed `now` would freeze an answer at "less than a minute
+  // ago" for as long as the student reads it. Passing `now` at all is also what
+  // keeps next-intl from logging an ENVIRONMENT_FALLBACK error every render.
+  const now = useNow({ updateInterval: 60_000 })
 
   // Hide metadata while the assistant is still streaming
   if (message.role === 'assistant' && message.status?.type === 'running') {
@@ -200,29 +204,29 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
   ].filter(Boolean)
   const hasCustomMetadata = fullParts.length > 0
 
-  // S6: relative send time. `title` on the <time> itself (not the outer div)
-  // so hovering the timestamp shows the absolute date/time, while hovering
-  // the rest of the caption still shows the full mode/model/reasoning/credits
-  // detail. Not sr-only/aria-hidden — unlike mode/reasoning/credits above,
-  // there's no separate "visible vs. full" version to reconcile, so both
-  // sighted users and assistive tech get the same relative-time text.
-  // `now` is passed explicitly: without it next-intl logs an
-  // ENVIRONMENT_FALLBACK error every render (no global `now` is configured)
-  // even though it silently falls back to the current time anyway.
+  // Relative send time. `title` sits on the <time> so hovering it shows the
+  // absolute date, while hovering the rest of the caption still shows the full
+  // mode/model/reasoning/credits detail. It renders plain (no sr-only /
+  // aria-hidden split) because there is only one version of this text.
   const absoluteTimestamp = format.dateTime(message.createdAt, {
     dateStyle: 'medium',
     timeStyle: 'short',
   })
   const timestamp = (
     <time dateTime={message.createdAt.toISOString()} title={absoluteTimestamp}>
-      {format.relativeTime(message.createdAt, new Date())}
+      {format.relativeTime(message.createdAt, now)}
     </time>
   )
 
-  // The `title` tooltip is mouse-only; the sr-only copy keeps the full
-  // detail (incl. model) reachable for screen readers. Every completed
-  // assistant message carries a `createdAt`, so the timestamp always renders
-  // even when there is no mode/model/reasoning/credits metadata to show.
+  // The `title` tooltip is mouse-only; the sr-only copy keeps the full detail
+  // (incl. model) reachable for screen readers. The timestamp always renders,
+  // so this caption is never empty even with no custom metadata at all.
+  //
+  // The trailing separator hangs off each metadata span rather than sitting in
+  // its own: `visibleParts` can be empty while `fullParts` is not — an answer
+  // carrying only a model id, from a chatbot with no modes, a non-reasoning
+  // model and credits off — and a standalone separator would then render the
+  // caption as a dangling "— 5 minutes ago".
   return (
     <div
       className="text-foreground mt-1 text-xs"
@@ -230,9 +234,10 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
     >
       {hasCustomMetadata && (
         <>
-          <span aria-hidden="true">{visibleParts.join(' — ')}</span>
-          <span className="sr-only">{fullParts.join(' — ')}</span>
-          <span aria-hidden="true"> — </span>
+          {visibleParts.length > 0 && (
+            <span aria-hidden="true">{visibleParts.join(' — ')} — </span>
+          )}
+          <span className="sr-only">{fullParts.join(' — ')} — </span>
         </>
       )}
       {timestamp}
@@ -475,15 +480,13 @@ const Composer: FC = () => {
   )
 }
 
+// Deliberately carries only the accuracy caveat. A per-message credit cost
+// belongs nowhere near here: `calcCost` in the chat route prices each answer
+// from input/output tokens, so the figure varies by model and exchange length —
+// which is exactly what `chat.credits.costHint` already says, in the credits
+// surfaces that can also show the balance it applies to.
 const ComposerHint: FC = () => {
   const t = useTranslations()
-  const credits = useSettingsStore((state) => state.credits)
-  const creditsLoaded = useSettingsStore((state) => state.creditsLoaded)
-  // There is no explicit "credits enabled for this chatbot" flag on the store
-  // (see credits-footer.tsx for the same gap). A chatbot with credits turned
-  // off never gets a `total` above 0, so that combination — loaded and a
-  // positive total — stands in for "credits are enabled".
-  const creditsEnabled = creditsLoaded && credits.total > 0
 
   return (
     <p
@@ -491,12 +494,6 @@ const ComposerHint: FC = () => {
       className="text-muted-foreground mt-1.5 w-full max-w-3xl px-2 text-center text-xs"
     >
       {t('chat.composer.disclaimerHint')}
-      {creditsEnabled && (
-        <>
-          {' · '}
-          {t('chat.composer.creditCostHint')}
-        </>
-      )}
     </p>
   )
 }
