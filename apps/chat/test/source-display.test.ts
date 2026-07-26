@@ -113,7 +113,10 @@ describe('getDisplayUrl', () => {
       `https://example.com/${'a'.repeat(120)}/final-segment`
     )
 
-    expect(result?.startsWith('example.com')).toBe(true)
+    // Anchored regex, not startsWith: CodeQL reads a `startsWith('example.com')`
+    // as an (incomplete) URL sanitization check, which this display-format
+    // assertion is not. The ellipsis is the truncation marker after the host.
+    expect(result).toMatch(/^example\.com…/)
     expect(result?.endsWith('final-segment')).toBe(true)
     expect(result?.length).toBeLessThanOrEqual(49)
   })
