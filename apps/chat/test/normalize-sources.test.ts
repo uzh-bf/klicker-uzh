@@ -17,9 +17,22 @@ describe('isDocQueryToolName', () => {
     expect(isDocQueryToolName('doc_query')).toBe(true)
   })
 
+  // `toSafeToolName` appends 8 hex characters of a sha256 when two servers
+  // expose the same tool name, or when the namespaced name exceeds 64 chars.
+  test('matches the hash-disambiguated tool name', () => {
+    expect(isDocQueryToolName('KB_doc_query_1a2b3c4d')).toBe(true)
+    expect(isDocQueryToolName('doc_query_deadbeef')).toBe(true)
+  })
+
   test('rejects unrelated tool names', () => {
     expect(isDocQueryToolName('doc_query_helper')).toBe(false)
     expect(isDocQueryToolName('some_other_tool')).toBe(false)
+  })
+
+  test('rejects a suffix that is not an 8-character hash', () => {
+    expect(isDocQueryToolName('KB_doc_query_1a2b3c4')).toBe(false)
+    expect(isDocQueryToolName('KB_doc_query_1a2b3c4de')).toBe(false)
+    expect(isDocQueryToolName('KB_doc_query_1a2b3c4g')).toBe(false)
   })
 })
 

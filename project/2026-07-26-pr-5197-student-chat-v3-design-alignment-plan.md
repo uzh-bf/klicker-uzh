@@ -343,3 +343,17 @@ simplify subagent on the exact commit → integrate accepted findings → re-ver
   occurrence this session). PR screenshots must come from host-run Playwright
   in S7, not agent-browser.
   Next: S6 review+simplify, then S7.
+- 2026-07-26 Out-of-slice fix (gap I flagged during S4, carried until now):
+  `isDocQueryToolName` now accepts the hash-disambiguated tool name.
+  `toSafeToolName` (services/mcpClients.ts:56) appends 8 hex chars of a
+  sha256 whenever the namespaced name exceeds 64 chars OR collides with
+  another server's, so a chatbot with two RAG servers both exposing
+  `doc_query` gets e.g. `KB_doc_query_1a2b3c4d` for the second one — which
+  the old `/(^|_)doc_query$/` missed, silently dropping that server's
+  sources, citations, friendly chip AND the S5 prompt contract (same
+  predicate gates all four). Suffix group is `(_[0-9a-f]{8})?$`, tight enough
+  that `doc_query_helper` and non-hex/wrong-length suffixes still reject.
+  Not fixed: a name long enough to be truncated before the suffix
+  (`withHashSuffix` slices the base at 55 chars) — needs a server name over
+  ~45 chars, and no rename-safe signal survives the truncation. 3 new tests
+  (117/117), eslint clean on both files.

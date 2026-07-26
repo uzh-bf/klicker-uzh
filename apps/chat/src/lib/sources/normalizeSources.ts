@@ -6,7 +6,13 @@ const EXCERPT_MAX_LENGTH = 240
 // MCP tools are namespaced by server, e.g. `KB_doc_query` (see
 // `toSafeToolName` in `services/mcpClients.ts`). Match the namespaced form or
 // the bare tool name.
-const DOC_QUERY_TOOL_NAME_RE = /(^|_)doc_query$/
+//
+// The optional trailing group covers the disambiguation suffix `toSafeToolName`
+// appends — 8 hex characters of a sha256 — when two servers expose the same
+// tool name or the namespaced name exceeds its length cap. Without it, a
+// chatbot with two RAG servers would silently lose sources, citations and the
+// friendly chip for whichever server got the suffix.
+const DOC_QUERY_TOOL_NAME_RE = /(^|_)doc_query(_[0-9a-f]{8})?$/
 
 /**
  * Minimal structural shape shared by live (streamed) and persisted assistant
