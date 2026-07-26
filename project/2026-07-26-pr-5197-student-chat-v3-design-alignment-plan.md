@@ -234,3 +234,23 @@ simplify subagent on the exact commit → integrate accepted findings → re-ver
   Declined: folding useMessageSources into provider (hook is reused/testable
   seam). Evidence: 99/99 chat tests in-container, `check` clean, routes
   touched post-typegen, health 200. Next: S4 friendly activity chips.
+- 2026-07-26 S4 done: doc_query chips get friendly localized labels. Pure
+  exported `getDocQueryChipState({toolName,isRunning,isFailed,result,isError})`
+  → running|done|doneEmpty|failed (doneEmpty = completed, non-error, result
+  present, `normalizeSourcesFromParts` empty), memoized in ToolFallback and
+  mapped to one `chat.tools.*` key each; SearchIcon on doc_query chips when
+  not running/failed (spinner + error icons keep precedence). Unknown tools
+  keep formatToolName. New keys en+de: searchingCourseMaterial,
+  searchedCourseMaterial, searchedCourseMaterialEmpty,
+  searchCourseMaterialFailed. 6 new tests (105/105 in-container), chat
+  `check` clean. Env: chat dev had OOM-crashed mid-slice → `devrouter
+  ensure .` (DB wiped again). Browser evidence on seeded 4-chip thread
+  (hit / no-hit / unknown tool / failed doc_query): en = "Searched course
+  materials", "… · no results", "Used list documents", "Failed to search
+  course materials"; de = "Kursmaterialien durchsucht", "… · keine Treffer",
+  "list documents verwendet", "Kursmaterialien konnten nicht durchsucht
+  werden"; DOM check confirms lucide-search only on the two doc_query
+  success chips, circle-alert on the failed one, none on the unknown tool.
+  Sources section + citation chips still correct on the same message.
+  Console clean apart from pre-existing Langfuse/Radix-describedby noise.
+  Next: S4 review+simplify, then S5 prompt contract.

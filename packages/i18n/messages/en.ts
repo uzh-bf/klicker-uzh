@@ -157,6 +157,12 @@ export default {
       showMore:
         '{count, plural, one {Show more (# more line)} other {Show more (# more lines)}}',
     },
+    tools: {
+      searchingCourseMaterial: 'Searching course materials...',
+      searchedCourseMaterial: 'Searched course materials',
+      searchedCourseMaterialEmpty: 'Searched course materials · no results',
+      searchCourseMaterialFailed: 'Failed to search course materials',
+    },
     sources: {
       title: 'Sources',
       page: 'p. {page}',

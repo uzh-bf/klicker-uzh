@@ -160,6 +160,13 @@ export default {
       showMore:
         '{count, plural, one {Mehr anzeigen (# weitere Zeile)} other {Mehr anzeigen (# weitere Zeilen)}}',
     },
+    tools: {
+      searchingCourseMaterial: 'Kursmaterialien werden durchsucht...',
+      searchedCourseMaterial: 'Kursmaterialien durchsucht',
+      searchedCourseMaterialEmpty: 'Kursmaterialien durchsucht · keine Treffer',
+      searchCourseMaterialFailed:
+        'Kursmaterialien konnten nicht durchsucht werden',
+    },
     sources: {
       title: 'Quellen',
       page: 'S. {page}',
