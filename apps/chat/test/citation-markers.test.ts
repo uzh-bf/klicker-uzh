@@ -6,7 +6,7 @@ import {
   transformCitationMarkers,
   type MarkdownAstNode,
 } from '../src/lib/markdown/remarkCitationMarkers'
-import { resolveCitationSource } from '../src/lib/sources/resolveCitationSource'
+import { resolveCitationSource } from '../src/lib/sources/normalizeSources'
 import type { ChatSource } from '../src/lib/sources/types'
 
 function textNode(value: string): MarkdownAstNode {
@@ -97,6 +97,54 @@ describe('transformCitationMarkers', () => {
         textNode('.'),
       ])
     )
+  })
+
+  test('marker nested inside a link label (via emphasis) is left untouched', () => {
+    const tree = paragraph([
+      {
+        type: 'link',
+        url: 'https://example.com',
+        children: [
+          {
+            type: 'strong',
+            children: [textNode('see [1] here')],
+          },
+        ],
+      },
+    ])
+    const before = JSON.parse(JSON.stringify(tree))
+
+    transformCitationMarkers(tree)
+
+    expect(tree).toEqual(before)
+  })
+
+  test('marker at the very start of a text node transforms end to end', () => {
+    const tree = paragraph([textNode('[1] is the source.')])
+    transformCitationMarkers(tree)
+
+    expect(tree).toEqual(
+      paragraph([citationLinkNode(1), textNode(' is the source.')])
+    )
+
+    const link = (tree.children ?? [])[0]
+    const parsed = parseCitationHref(link?.url as string)
+    expect(parsed).toBe(1)
+    expect(resolveCitationSource(parsed as number, [SOURCE_A])).toEqual(
+      SOURCE_A
+    )
+  })
+
+  test('[0] transforms to a chip href but resolves to no source', () => {
+    const tree = paragraph([textNode('Nullmarker [0] bleibt folgenlos.')])
+    transformCitationMarkers(tree)
+
+    const link = (tree.children ?? []).find((n) => n.type === 'link')
+    const parsed = parseCitationHref(link?.url as string)
+    expect(parsed).toBe(0)
+    expect(
+      resolveCitationSource(parsed as number, [SOURCE_A, SOURCE_B])
+    ).toBeUndefined()
   })
 
   test('marker inside an inline code span is left untouched', () => {

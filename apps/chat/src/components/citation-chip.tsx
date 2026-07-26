@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl'
 import type { MouseEvent } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-import { resolveCitationSource } from '@/src/lib/sources/resolveCitationSource'
+import { resolveCitationSource } from '@/src/lib/sources/normalizeSources'
 import { getSourceSecondaryLine } from '@/src/lib/sources/sourceDisplay'
 import { useMessageSourcesContext } from './message-sources-context'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'

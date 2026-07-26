@@ -27,16 +27,13 @@ export interface MarkdownAstNode {
 }
 
 // Text that is already the label of a real link must stay exactly what the
-// author linked to. `code`/`inlineCode` are included for documentation only:
-// mdast represents both as leaf nodes carrying a raw `value` string, never
-// as `text` children, so a marker inside a code span or fenced code block
-// never reaches the `text`-node branch below in the first place.
-const SKIPPED_PARENT_TYPES = new Set([
-  'link',
-  'linkReference',
-  'code',
-  'inlineCode',
-])
+// author linked to — including text nested deeper inside the label (e.g.
+// `[**see [1]**](url)`), which is why the skip state is threaded through the
+// whole subtree in `walk`, not just checked on the immediate parent. Code
+// needs no entry here: mdast represents code spans and fenced blocks as leaf
+// nodes carrying a raw `value` string, never as `text` children, so a marker
+// inside code never reaches the `text`-node branch in the first place.
+const SKIPPED_PARENT_TYPES = new Set(['link', 'linkReference'])
 
 // Complete numbered marker, e.g. `[1]` or `[12]`. No `g` flag — safe to
 // `.test()` repeatedly without shared-state bugs; the `g`-flagged exec below
@@ -111,22 +108,24 @@ export function transformCitationMarkers<T extends MarkdownAstNode>(
   return tree
 }
 
-function walk(node: MarkdownAstNode): void {
+function walk(node: MarkdownAstNode, insideSkipped = false): void {
   if (!Array.isArray(node.children)) return
+
+  const skipped = insideSkipped || SKIPPED_PARENT_TYPES.has(node.type)
 
   const nextChildren: MarkdownAstNode[] = []
   for (const child of node.children) {
     if (
       child.type === 'text' &&
       typeof child.value === 'string' &&
-      !SKIPPED_PARENT_TYPES.has(node.type) &&
+      !skipped &&
       HAS_CITATION_MARKER_RE.test(child.value)
     ) {
       nextChildren.push(...splitCitationMarkers(child.value))
       continue
     }
 
-    walk(child)
+    walk(child, skipped)
     nextChildren.push(child)
   }
   node.children = nextChildren
