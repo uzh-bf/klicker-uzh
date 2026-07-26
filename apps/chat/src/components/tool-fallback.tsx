@@ -1,11 +1,17 @@
 import {
+  isDocQueryToolName,
+  normalizeSourcesFromParts,
+} from '@/src/lib/sources/normalizeSources'
+import type { Translate } from '@/src/lib/sources/sourceDisplay'
+import {
   AlertCircleIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   LoaderCircleIcon,
+  SearchIcon,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { useState, type FC } from 'react'
+import { useMemo, useState, type FC } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const MAX_PREVIEW_LINES = 10
@@ -70,6 +76,51 @@ function formatToolName(raw: string) {
   return (sep === -1 ? raw : raw.slice(sep + 1)).replace(/_/g, ' ')
 }
 
+export type DocQueryChipState = 'running' | 'done' | 'doneEmpty' | 'failed'
+
+/**
+ * Picks which of the four friendly `chat.tools.*` messages the doc_query
+ * chip should show. Pure so it can be unit-tested without mounting the
+ * component: a "done" state with zero normalized sources (not an error, a
+ * result is present, but nothing came back) gets its own "no results"
+ * variant instead of reading like a silent no-op.
+ */
+export function getDocQueryChipState({
+  toolName,
+  isRunning,
+  isFailed,
+  result,
+  isError,
+}: {
+  toolName: string
+  isRunning: boolean
+  isFailed: boolean
+  result: unknown
+  isError?: boolean
+}): DocQueryChipState {
+  if (isFailed) return 'failed'
+  if (isRunning) return 'running'
+  if (result === undefined) return 'done'
+
+  const sources = normalizeSourcesFromParts([
+    { type: 'tool-call', toolName, result, isError },
+  ])
+  return sources.length > 0 ? 'done' : 'doneEmpty'
+}
+
+function docQueryChipLabel(t: Translate, state: DocQueryChipState): string {
+  switch (state) {
+    case 'running':
+      return t('chat.tools.searchingCourseMaterial')
+    case 'doneEmpty':
+      return t('chat.tools.searchedCourseMaterialEmpty')
+    case 'failed':
+      return t('chat.tools.searchCourseMaterialFailed')
+    case 'done':
+      return t('chat.tools.searchedCourseMaterial')
+  }
+}
+
 interface ToolFallbackProps {
   toolName: string
   argsText: string
@@ -90,6 +141,21 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
   const isRunning = status.type === 'running'
   const isFailed = isError === true && !isRunning
   const tool = formatToolName(toolName)
+  const isDocQuery = isDocQueryToolName(toolName)
+
+  const docQueryState = useMemo(
+    () =>
+      isDocQuery
+        ? getDocQueryChipState({
+            toolName,
+            isRunning,
+            isFailed,
+            result,
+            isError,
+          })
+        : undefined,
+    [isDocQuery, toolName, isRunning, isFailed, result, isError]
+  )
 
   const resultText =
     result === undefined
@@ -121,11 +187,16 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
           <LoaderCircleIcon className="text-primary size-3 animate-spin" />
         )}
         {isFailed && <AlertCircleIcon className="text-destructive size-3" />}
-        {isFailed
-          ? t('chat.toolFallback.failed', { tool })
-          : isRunning
-            ? t('chat.toolFallback.running', { tool })
-            : t('chat.toolFallback.done', { tool })}
+        {isDocQuery && !isRunning && !isFailed && (
+          <SearchIcon className="size-3" />
+        )}
+        {docQueryState
+          ? docQueryChipLabel(t, docQueryState)
+          : isFailed
+            ? t('chat.toolFallback.failed', { tool })
+            : isRunning
+              ? t('chat.toolFallback.running', { tool })
+              : t('chat.toolFallback.done', { tool })}
       </button>
 
       <div
