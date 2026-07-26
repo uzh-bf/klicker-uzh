@@ -136,6 +136,13 @@ On the render side, `remarkCitationMarkers` rewrites `[n]` in markdown **text** 
 runs once per message in `AssistantMessage` (`useMessageSources`) and reaches both the cards and
 the chips through `MessageSourcesContext` — do not re-parse the tool JSON in a leaf component.
 
+A chip must wrap **with** the word it cites, never start a line on its own. Two mechanisms
+enforce that and both are needed: `splitCitationMarkers` strips spaces/tabs directly before a
+marker (newlines survive — a soft break is content), and `CitationChip` prefixes a U+2060 WORD
+JOINER, because an atomic inline like the chip's button is a legal break point under UAX #14
+even with no whitespace before it. Removing either one reintroduces orphaned chips at narrow
+widths.
+
 The line under a source's name is per-type, chosen by `getSourceSecondaryLine` in
 `src/lib/sources/sourceDisplay.ts` and shared by the card and the citation hover preview:
 documents lead with the page (`p. 12` / `S. 12`, plus the publisher's own label when distinct)
@@ -149,7 +156,11 @@ field** — its source shape is `source_url`/`source_type`/`file_name`/`page_num
 notation so a chapter label like `Kapitel IV` is never misread as a position; a dedicated
 timestamp field is phase-2 work in the doc-query service. Card titles clamp at two lines with the
 full name in the `title` attribute — and note that `line-clamp-2` needs `display: -webkit-box`,
-so adding `block` alongside it silently disables the clamp.
+so adding `block` alongside it silently disables the clamp. Document cards lay out with
+`repeat(auto-fit, minmax(min(230px, 100%), 1fr))`: `auto-fit` (not `auto-fill`) collapses empty
+tracks so fewer cards stretch across the whole row and only wrap when they genuinely no longer
+fit, and the `min(230px, 100%)` floor keeps a track from forcing horizontal overflow in
+containers narrower than 230px (embedded mode).
 
 The activity chip's four states come from the pure `getDocQueryChipState` in `tool-fallback.tsx`.
 "No results" is claimed only for a payload that actually **parsed**: a cancelled call leaves the
@@ -158,7 +169,15 @@ its result, and labelling that as an empty search would be a lie.
 
 ## Localization
 
-Chat has no locale switcher: the locale comes from the `NEXT_LOCALE` cookie and falls back to `en`. It is resolved **directly in the chat-local `getRequestConfig`** (`src/types/i18n.ts`). Relying on `setRequestLocale`/`requestLocale` alone produces a split brain — `<html lang>` follows the cookie while server-side `getTranslations()` stays on the default locale. Strings live in `packages/i18n/messages/{en,de}.ts`; `apps/chat/src/types/app.d.ts` enforces en/de key parity through a `DeepIntersection`, so a missing key fails `pnpm --filter @klicker-uzh/chat check` rather than at runtime. German addressed to students is informal (`Du`/`Dein`/`Dir`), instructors are "Dozierende", and Swiss `ss` is used instead of `ß`.
+Chat has no locale switcher: the locale comes from the `NEXT_LOCALE` cookie and falls back to `en`. It is resolved **directly in the chat-local `getRequestConfig`** (`src/types/i18n.ts`). Relying on `setRequestLocale`/`requestLocale` alone produces a split brain — `<html lang>` follows the cookie while server-side `getTranslations()` stays on the default locale. Messages come from the static `messagesByLocale` map exported there, which the root layout reuses: Turbopack cannot build a dynamic-import context for a bare package subpath (`import('@klicker-uzh/i18n/messages/' + locale)`), so the dynamic form silently resolves nothing in this app. Strings live in `packages/i18n/messages/{en,de}.ts`; `apps/chat/src/types/app.d.ts` enforces en/de key parity through a `DeepIntersection`, so a missing key fails `pnpm --filter @klicker-uzh/chat check` rather than at runtime. German addressed to students is informal (`Du`/`Dein`/`Dir`), instructors are "Dozierende", and Swiss `ss` is used instead of `ß`.
+
+Model answers are held to the same orthography server-side: the chat route wraps every system
+prompt in `withLanguageStyleContract` (`src/lib/server/languageInstructions.ts`) — unconditionally,
+unlike the citation contract, because a lecturer's stored prompt replaces `DEFAULT_PROMPT`
+entirely and a rule written only in the default text silently disappears the moment a custom
+prompt is saved. The contract asks for Swiss High German ("ss" not "ß", real umlauts, never
+ae/oe/ue). As with the citation contract, only prompt assembly is unit-tested; model compliance
+needs a live key the devcontainer does not carry.
 
 Two recurring traps in this app's strings:
 
