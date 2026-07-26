@@ -6,6 +6,11 @@ import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import type { ToolSet } from 'ai'
 import { buildMcpServiceUrl } from './mcpUrl'
+import {
+  createFenceSentinel,
+  fenceToolSetResults,
+  type FenceSentinel,
+} from './toolOutputFencing'
 
 type LecturerMcpClient = Awaited<ReturnType<typeof createSDKMCPClient>>
 
@@ -16,6 +21,11 @@ export type LecturerMcpToolBundle = {
   // keep the assistant's system prompt honest about what it can actually
   // call (see buildManageAssistantSystemPrompt).
   hasDraftScope: boolean
+  // Per-request sentinel used to fence tool-result content in `tools`
+  // (see toolOutputFencing.ts). Callers thread this into
+  // buildManageAssistantSystemPrompt so the model is told what the fence
+  // markers mean for this exact request.
+  sentinel: FenceSentinel
   tools: ToolSet
 }
 
@@ -63,13 +73,17 @@ export function getLecturerMcpUrl(
 
 export async function loadLecturerMcpTools(
   userId: string,
-  sessionScope: string | undefined
+  sessionScope: string | undefined,
+  // Injectable for deterministic tests; production callers rely on the
+  // default fresh-per-request sentinel.
+  toolOutputFenceSentinel: FenceSentinel = createFenceSentinel()
 ): Promise<LecturerMcpToolBundle> {
   const url = getLecturerMcpUrl()
   if (!url) {
     return {
       close: async () => {},
       hasDraftScope: false,
+      sentinel: toolOutputFenceSentinel,
       tools: {},
     }
   }
@@ -102,7 +116,11 @@ export async function loadLecturerMcpTools(
     return {
       close,
       hasDraftScope,
-      tools: filterToolsByDraftScope(tools, hasDraftScope),
+      sentinel: toolOutputFenceSentinel,
+      tools: fenceToolSetResults(
+        filterToolsByDraftScope(tools, hasDraftScope),
+        toolOutputFenceSentinel
+      ),
     }
   } catch (error) {
     await close()

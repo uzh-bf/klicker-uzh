@@ -5,6 +5,10 @@ import {
   formatManageContextForPrompt,
   type ManageAssistantContext,
 } from './manageContext'
+import {
+  describeToolOutputFencingForSystemPrompt,
+  type FenceSentinel,
+} from './toolOutputFencing'
 
 const BASE_MANAGE_ASSISTANT_PROMPT = [
   'You are the KlickerUZH Manage assistant for lecturers.',
@@ -23,7 +27,8 @@ const BASE_MANAGE_ASSISTANT_PROMPT = [
 export function buildManageAssistantSystemPrompt(
   context: ManageAssistantContext | null,
   toolsAvailable = true,
-  draftToolsAvailable = true
+  draftToolsAvailable = true,
+  toolOutputFenceSentinel?: FenceSentinel
 ) {
   const contextPrompt = formatManageContextForPrompt(context)
   const toolPrompt = !toolsAvailable
@@ -31,9 +36,21 @@ export function buildManageAssistantSystemPrompt(
     : draftToolsAvailable
       ? 'Lecturer MCP read tools are available for authorized course and question-pool lookups; draft-only question, answer-choice, feedback, and signed proposal tools are available for content scaffolding.'
       : 'Lecturer MCP read tools are available for authorized course and question-pool lookups. This session has read-only Manage access: draft-only question, answer-choice, and feedback scaffolding tools and the signed proposal tool are NOT available. Do not attempt to call them; instead tell the lecturer that drafting and proposing new content requires broader Manage access.'
+  // Only meaningful when tools are actually available to call (nothing to
+  // fence otherwise) and a sentinel was minted for this request.
+  const injectionDefensePrompt =
+    toolsAvailable && toolOutputFenceSentinel
+      ? describeToolOutputFencingForSystemPrompt(toolOutputFenceSentinel)
+      : null
   const skillsPrompt = buildManageAssistantSkillsPrompt()
 
-  return [BASE_MANAGE_ASSISTANT_PROMPT, toolPrompt, skillsPrompt, contextPrompt]
+  return [
+    BASE_MANAGE_ASSISTANT_PROMPT,
+    toolPrompt,
+    injectionDefensePrompt,
+    skillsPrompt,
+    contextPrompt,
+  ]
     .filter(Boolean)
     .join('\n\n')
 }

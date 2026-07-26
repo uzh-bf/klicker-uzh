@@ -8,6 +8,7 @@ import {
 } from '@/src/services/manageAssistantRuntime'
 import { sanitizeManageAssistantContext } from '@/src/services/manageContext'
 import { createRateLimiter } from '@/src/services/rateLimiter'
+import { createFenceSentinel } from '@/src/services/toolOutputFencing'
 import { createOpenAI } from '@ai-sdk/openai'
 import {
   convertToModelMessages,
@@ -112,6 +113,7 @@ export async function POST(req: NextRequest) {
     return {
       close: async () => {},
       hasDraftScope: false,
+      sentinel: createFenceSentinel(),
       tools: {},
     }
   })
@@ -139,7 +141,8 @@ export async function POST(req: NextRequest) {
       system: buildManageAssistantSystemPrompt(
         context,
         toolCount > 0,
-        lecturerMcp.hasDraftScope
+        lecturerMcp.hasDraftScope,
+        lecturerMcp.sentinel
       ),
       toolChoice: 'auto',
       tools: lecturerMcp.tools,
