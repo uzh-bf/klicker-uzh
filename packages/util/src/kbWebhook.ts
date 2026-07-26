@@ -1,6 +1,6 @@
 import { createHmac } from 'node:crypto'
 
-export function signKBIngestionWebhook({
+export function createKBIngestionWebhookSignature({
   rawBody,
   secret,
   timestamp,
@@ -10,15 +10,36 @@ export function signKBIngestionWebhook({
   timestamp: number | string
 }) {
   const timestampHeader = String(timestamp)
-  const signedPayload = Buffer.concat([
-    Buffer.from(`${timestampHeader}.`, 'utf8'),
-    rawBody,
-  ])
+  return createHmac('sha256', secret)
+    .update(
+      Buffer.concat([Buffer.from(`${timestampHeader}.`, 'utf8'), rawBody])
+    )
+    .digest('hex')
+}
+
+export function signKBIngestionWebhook({
+  eventId,
+  eventType,
+  rawBody,
+  secret,
+  timestamp,
+}: {
+  eventId: string
+  eventType: string
+  rawBody: Buffer
+  secret: string
+  timestamp: number | string
+}) {
+  const timestampHeader = String(timestamp)
 
   return {
-    'x-kb-timestamp': timestampHeader,
-    'x-kb-signature': createHmac('sha256', secret)
-      .update(signedPayload)
-      .digest('hex'),
+    'x-ingestion-event-id': eventId,
+    'x-ingestion-event-type': eventType,
+    'x-ingestion-timestamp': timestampHeader,
+    'x-ingestion-signature': createKBIngestionWebhookSignature({
+      rawBody,
+      secret,
+      timestamp: timestampHeader,
+    }),
   }
 }
