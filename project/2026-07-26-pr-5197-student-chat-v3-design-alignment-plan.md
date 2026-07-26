@@ -479,3 +479,45 @@ simplify subagent on the exact commit → integrate accepted findings → re-ver
   unharmed: chat `/` returning 404 is normal (chat is chatbot-scoped), and
   `/<chatbotId>` answered 307 to login.
   Next: PR #5197 body update, then screenshots need manual attachment.
+- 2026-07-26 Post-ready round (S8–S11), user request after marking PR ready:
+  automated reviews + chip wrapping + mobile-first pass + Swiss German
+  orthography + mockup gap map.
+  S8 Greptile triage: P2 #1 valid — root layout still used the dynamic
+  bare-subpath messages import that `types/i18n.ts` exists to avoid; fixed by
+  exporting `messagesByLocale` there and resolving the layout's messages from
+  the same static map. P2 #2 (feedback-route Langfuse timeout) NOT applicable
+  at head: the feedback route contains no Langfuse call — mirroring is
+  deliberately disabled pending OTel repair (wiki "Message feedback and
+  Langfuse"). Copilot review quota-blocked, nothing to triage.
+  S9 chip glue, two layers, both needed: `splitCitationMarkers` strips
+  spaces/tabs before a marker (newlines survive as soft breaks) AND
+  `CitationChip` prefixes U+2060 WORD JOINER — an atomic inline is a legal
+  UAX #14 break point even with no whitespace, so the strip alone still
+  orphaned chips. 2 new unit tests + expectations updated.
+  S10 responsive: document-card grid switched to
+  `repeat(auto-fit, minmax(min(230px,100%),1fr))` — fewer cards stretch the
+  full row, wrap only when they no longer fit, and the 100% floor prevents
+  overflow under 230px (embedded). Audit found the rest already mobile-safe:
+  mode switcher scrolls (`overflow-x-auto scrollbar-none`), thread paddings
+  scale, the "N" circle in mobile shots is the Next.js dev-tools overlay,
+  not product UI.
+  S11 orthography: `withLanguageStyleContract`
+  (`lib/server/languageInstructions.ts`) appended unconditionally in the chat
+  route (stored prompts replace DEFAULT_PROMPT entirely, so the rule cannot
+  live there — the now-redundant clause was removed from the default tutor
+  prompt); phrased "when writing German" so non-German prompts are
+  unaffected. 5 new tests. Model compliance UNVERIFIED (no
+  UPSTREAM_OPENAI_API_KEY in this DevPod) — same boundary as the citation
+  contract.
+  Evidence: vitest 167/167 in-container, `tsc --noEmit` exit 0, eslint +
+  prettier clean. Browser: throwaway host-run Playwright spec (deleted, never
+  staged) seeded a 4-source thread with glue-case markers and shot
+  1440/768/390/360 × en/de — no chip ever starts a line, no gap before
+  punctuation, cards stretch on desktop and stack cleanly at 360px, no
+  horizontal overflow anywhere. Recipe gotcha for reruns: select the thread
+  once at desktop width, then only resize — the sidebar (and
+  `chat-thread-select`) collapses below md.
+  S12 gap map vs the four MAT182 mockups delivered in chat; phase-2-blocked
+  items (thumbnails, transcript hover previews, durations) already tracked in
+  §"Citation system — phase 2".
+  Next: commit slices, push, PR body update, Greptile replies.
