@@ -196,7 +196,7 @@ The initial review inferred that `Office.context.document.settings` was shared b
 
 ### 4.4 Repository hygiene
 
-- [x] The historical 1,369-line package plan was deleted; this project artifact is the durable plan. `README.md` documents real development and release steps, and `CLAUDE.md` is a 36-line package-specific invariant sheet.
+- [x] The historical 1,369-line package plan was deleted; this project artifact is the durable plan. `README.md` documents real development and release steps, and `AGENTS.md` is the package-specific invariant sheet with `CLAUDE.md` symlinked to it.
 
 ---
 
