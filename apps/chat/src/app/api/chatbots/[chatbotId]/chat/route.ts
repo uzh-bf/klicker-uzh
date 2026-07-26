@@ -14,6 +14,7 @@ import {
   getTraceIdForMessage,
   isAiTelemetryEnabled,
 } from '@/src/lib/server/langfuseTracing'
+import { withLanguageStyleContract } from '@/src/lib/server/languageInstructions'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import {
   mapAssistantStepContent,
@@ -808,8 +809,12 @@ export async function POST(
   // actually available; mutating `systemPrompt` here (rather than deriving a
   // separate `instructions` variable) keeps the `systemPromptLength` /
   // `systemPromptHash` telemetry below truthful to what is actually sent to
-  // the model.
-  systemPrompt = withCitationContract(systemPrompt, toolNames)
+  // the model. The language-style contract applies unconditionally: stored
+  // lecturer prompts replace DEFAULT_PROMPT entirely, so Swiss High German
+  // orthography must be enforced here, not in the default prompt text.
+  systemPrompt = withLanguageStyleContract(
+    withCitationContract(systemPrompt, toolNames)
+  )
 
   if (!chatbot) {
     return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
