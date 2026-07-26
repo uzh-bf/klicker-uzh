@@ -1,5 +1,6 @@
 import type { ToolSet } from 'ai'
 import { describe, expect, test } from 'vitest'
+import { unfenceToolResultText } from '../src/services/toolFenceSyntax'
 import {
   closeFenceMarker,
   createFenceSentinel,
@@ -131,6 +132,36 @@ describe('neutralizeFenceForgeryAttempts', () => {
     // Stripping reassembles the literal sentinel, which is then defused —
     // the intact sentinel must not survive in the untrusted text.
     expect(neutralized).not.toContain(SENTINEL)
+  })
+})
+
+describe('unfenceToolResultText', () => {
+  test('round-trips text that fenceToolResultText wrapped', () => {
+    const payload = JSON.stringify({ kind: 'element.create.proposal' })
+
+    expect(unfenceToolResultText(fenceToolResultText(payload, SENTINEL))).toBe(
+      payload
+    )
+  })
+
+  test('preserves multi-line payloads exactly', () => {
+    const payload = 'line one\n\nline three'
+
+    expect(unfenceToolResultText(fenceToolResultText(payload, SENTINEL))).toBe(
+      payload
+    )
+  })
+
+  test('returns unfenced text unchanged', () => {
+    expect(unfenceToolResultText('plain tool output')).toBe('plain tool output')
+  })
+
+  test('leaves an envelope with mismatched sentinels wrapped', () => {
+    const mismatched = `${openFenceMarker(SENTINEL)}\ndata\n${closeFenceMarker(
+      'other'
+    )}`
+
+    expect(unfenceToolResultText(mismatched)).toBe(mismatched)
   })
 })
 

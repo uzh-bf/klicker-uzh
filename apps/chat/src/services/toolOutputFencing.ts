@@ -1,5 +1,6 @@
 import type { ToolCallOptions, ToolSet } from 'ai'
 import { randomUUID } from 'crypto'
+import { closeFenceMarker, openFenceMarker } from './toolFenceSyntax'
 
 // Output fencing for lecturer MCP tool results (extension roadmap X4).
 //
@@ -21,8 +22,10 @@ import { randomUUID } from 'crypto'
 
 export type FenceSentinel = string
 
-const FENCE_OPEN_TAG = 'KLICKER_TOOL_DATA'
-const FENCE_CLOSE_TAG = 'END_KLICKER_TOOL_DATA'
+// The marker shape itself lives in `toolFenceSyntax.ts` because the browser
+// reads fenced tool output back (see that module's header).
+export { closeFenceMarker, openFenceMarker }
+
 const ZERO_WIDTH_SPACE = '\u200b'
 
 // Invisible format characters (Unicode category Cf: zero-width spaces and
@@ -56,14 +59,6 @@ const FENCE_LOOKALIKE_PATTERN = new RegExp(
 
 export function createFenceSentinel(): FenceSentinel {
   return randomUUID()
-}
-
-export function openFenceMarker(sentinel: FenceSentinel): string {
-  return `<<<${FENCE_OPEN_TAG} ${sentinel}>>>`
-}
-
-export function closeFenceMarker(sentinel: FenceSentinel): string {
-  return `<<<${FENCE_CLOSE_TAG} ${sentinel}>>>`
 }
 
 // Splits every character of `value` with a zero-width space, which breaks

@@ -4,6 +4,11 @@ import {
   getManageProposalResult,
   isManageProposalResult,
 } from '../src/components/manage-proposal-card'
+import {
+  closeFenceMarker,
+  openFenceMarker,
+} from '../src/services/toolFenceSyntax'
+import { fenceToolResultText } from '../src/services/toolOutputFencing'
 
 // manage-proposal-card.tsx renders the preview through shared-components,
 // which pulls in @uzh-bf/design-system's CSS entrypoint. That CSS import
@@ -40,6 +45,38 @@ describe('Manage proposal card', () => {
         isError: false,
       })
     ).toEqual(proposalEnvelope)
+  })
+
+  // Regression: X4 output fencing wraps EVERY MCP tool result, the proposal
+  // tool's included, so this is the shape the browser actually receives. A
+  // bare JSON.parse throws on the marker line and the card silently vanishes.
+  test('extracts proposal envelopes from fenced MCP text-content results', () => {
+    const sentinel = '0c5d3973-bc42-4232-b72a-f820635ec6b0'
+
+    expect(
+      getManageProposalResult({
+        content: [
+          {
+            text: fenceToolResultText(
+              JSON.stringify(proposalEnvelope),
+              sentinel
+            ),
+            type: 'text',
+          },
+        ],
+        isError: false,
+      })
+    ).toEqual(proposalEnvelope)
+  })
+
+  test('does not unwrap an envelope whose closing sentinel disagrees', () => {
+    const forged = `${openFenceMarker('real-sentinel')}\n${JSON.stringify(
+      proposalEnvelope
+    )}\n${closeFenceMarker('other-sentinel')}`
+
+    expect(
+      getManageProposalResult({ content: [{ text: forged, type: 'text' }] })
+    ).toBe(null)
   })
 
   test('rejects arbitrary tool output', () => {

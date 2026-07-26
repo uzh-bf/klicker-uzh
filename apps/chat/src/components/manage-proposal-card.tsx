@@ -4,6 +4,7 @@ import { CheckIcon, LoaderCircleIcon, XIcon } from 'lucide-react'
 import { useState, type FC } from 'react'
 import { notifyManageParent } from '../services/manageParentNotify'
 import { parseManageProposalPayload } from '../services/proposalToElementInstance'
+import { unfenceToolResultText } from '../services/toolFenceSyntax'
 import { ManageProposalPreview } from './manage-proposal-preview'
 import { formatToolName } from './tool-labels'
 
@@ -89,7 +90,10 @@ export function getManageProposalResult(
     if (record.type !== 'text' || typeof record.text !== 'string') continue
 
     try {
-      const parsed = JSON.parse(record.text)
+      // Tool results reach the browser fenced (X4 output fencing wraps every
+      // MCP result, the proposal tool's included), so unwrap the envelope
+      // before parsing — a bare JSON.parse throws on the marker line.
+      const parsed = JSON.parse(unfenceToolResultText(record.text))
       if (isManageProposalResult(parsed)) return parsed
     } catch {
       // Ignore non-JSON MCP text payloads and keep looking.
