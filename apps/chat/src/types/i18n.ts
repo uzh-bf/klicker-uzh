@@ -10,8 +10,10 @@ import { cookies } from 'next/headers'
 // via a dynamic `import('@klicker-uzh/i18n/messages/' + locale)`, but Turbopack
 // (this App Router app) cannot build a dynamic-import context for a bare
 // package-subpath specifier, so the dynamic form fails to resolve here. With
-// only two locales a static map is cheap and robust.
-const messagesByLocale = { en, de }
+// only two locales a static map is cheap and robust. Exported so the root
+// layout resolves its messages from the same map instead of re-introducing
+// the dynamic-import pattern this file exists to avoid.
+export const messagesByLocale = { en, de }
 
 export default getRequestConfig(async () => {
   // Chat has no `[locale]` route segment, so `requestLocale` is not populated
