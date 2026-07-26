@@ -12,7 +12,9 @@ parsed from tool-result JSON.
 - Target: `v3`, PR: [#5197](https://github.com/uzh-bf/klicker-uzh/pull/5197) (draft — keep draft)
 - History: `project/2026-07-19-student-chat-v3-reskin-plan.md` (done),
   `project/2026-07-23-student-chat-v3-production-readiness-plan.md` (done, finish-gated)
-- ADRs in force: 0001 (locale cookie), 0002 (rating field). New: 0003 (citation contract, S7).
+- ADRs in force: 0001 (locale cookie), 0002 (rating field), 0003 (framework
+  upgrade). New: [0004](../docs/adr/0004-chat-citations-from-tool-call-parts.md)
+  (citation contract, S7).
 
 ## Goal
 
@@ -35,14 +37,18 @@ parsed from tool-result JSON.
   user instruction; mockup text-logo ignored).
 - D4 Sources derive client-side from persisted tool-call parts. No DB schema
   change, no new persisted field. Live streaming + history render identically
-  because both read message content parts. → ADR 0003.
+  because both read message content parts. → ADR 0004.
 - D5 Citation markers: model writes `[n]`; n = 1-based index over the deduped,
   first-appearance-ordered source list across the message's doc_query calls.
   Out-of-range or sourceless `[n]` stays plain text.
 - D6 Activity chips replace the collapsed chip label only; expanded raw
   args/result panel stays (transparency + debugging).
-- D7 Composer hint shows disclaimer sentence always; credit-cost segment only
-  when credits are enabled for the chatbot.
+- D7 Composer hint shows the disclaimer sentence only. Superseded during the S6
+  adjustment pass: the planned credit-cost segment ("1 credit per message") was
+  dropped, and its i18n key with it, because `calcCost` prices each answer from
+  input/output tokens — the per-message cost varies by model and exchange
+  length, so the flat claim was wrong. The credits surfaces already carry the
+  honest variable-cost copy next to the balance it applies to.
 
 ## Research (done)
 
@@ -164,7 +170,7 @@ parsed from tool-result JSON.
   their icon gating, per S4 review F1 — existing `Y-chat.spec.ts` tool cases
   use generic tool names only; composer hint visible); wiki
   `docs/chat-platform.md` citation-display section; ADR
-  `docs/adr/0003-chat-citations-from-tool-parts.md`; plan Progress final;
+  `docs/adr/0004-chat-citations-from-tool-call-parts.md`; plan Progress final;
   PR #5197 body update (rs-mr-description-writer); final security +
   maintainability gates.
 - Check: host Playwright run vs worktree stack; container check:all-equivalents;

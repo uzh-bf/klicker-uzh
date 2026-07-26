@@ -1,5 +1,17 @@
 # Log
 
+## 2026-07-26
+
+- **Update**: [chat-platform](./chat-platform.md) gains a "Sources and citations" section —
+  how the source list is derived from a message's own `doc_query` tool-call parts, the tool-name
+  forms the gate has to tolerate, the numbering rules the rendered cards and the server-side
+  prompt contract must agree on, and the parsed-payload gate behind the "no results" copy. The
+  Testing section describes the new end-to-end block and how it seeds the MCP result envelope.
+
+- **Creation**: [ADR 0004](./adr/0004-chat-citations-from-tool-call-parts.md) records why
+  citations are derived client-side from persisted tool-call parts instead of a new persisted
+  field, so live streaming and reloaded history render from the same source.
+
 ## 2026-07-25
 
 - **Update**: [chat-platform](./chat-platform.md) documents per-message feedback ordering,
