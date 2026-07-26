@@ -10,6 +10,7 @@ import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
+import * as KnowledgeService from '../services/knowledge.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as ParticipantService from '../services/participants.js'
@@ -69,6 +70,7 @@ import {
   GroupActivityInstance,
   GroupActivitySummary,
 } from './groupActivity.js'
+import { KB } from './knowledge.js'
 import {
   Feedback,
   LiveQuiz,
@@ -1406,6 +1408,23 @@ export const Query = builder.queryType({
           }
 
           return await AnalyticsService.getActivityAnalytics(args, ctx)
+        },
+      }),
+
+      getUserKbs: t.withAuth(asUser).field({
+        nullable: false,
+        type: [KB],
+        resolve: async (_, __, ctx) => {
+          return await KnowledgeService.getUserKbs(ctx)
+        },
+      }),
+
+      getKb: t.withAuth(asUser).field({
+        nullable: false,
+        type: KB,
+        args: { id: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getKb(args, ctx)
         },
       }),
 

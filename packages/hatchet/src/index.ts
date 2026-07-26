@@ -1,11 +1,22 @@
-import { Priority, type HatchetClient } from '@hatchet-dev/typescript-sdk'
+import {
+  ConcurrencyLimitStrategy,
+  Priority,
+  type Context,
+  type HatchetClient,
+} from '@hatchet-dev/typescript-sdk'
 import { prisma } from '@klicker-uzh/prisma'
-import type { HatchetHandlers } from '@klicker-uzh/types'
+import type { HatchetHandlers, IngestKBResourceInput } from '@klicker-uzh/types'
 import type EventEmitter from 'events'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
+import {
+  dispatchKBIngestion,
+  monitorActiveKBIngestions,
+  sendKBIngestionStatus,
+} from './kbIngestion.js'
 
 export * from './client.js'
+export * from './kbIngestion.js'
 
 export type { HatchetHandlers } from '@klicker-uzh/types'
 
@@ -56,6 +67,40 @@ export function prepareHatchetTasks({
       ctx.logger.info(`Audit log entry: ${info}`, args)
     },
   })
+
+  const ingestKBResourceDefinition = {
+    name: 'ingest-kb-resource',
+    retries: 3,
+    fn: async (
+      input: IngestKBResourceInput,
+      ctx: Context<IngestKBResourceInput>
+    ) => {
+      // Stub seam: the real ingestion service call is implemented separately.
+      await ctx.logger.info('KB ingestion dispatch stub', {
+        resourceId: input.resourceId,
+        kbId: input.kbId,
+        type: input.type,
+      })
+      await dispatchKBIngestion(input, {
+        prisma,
+        logger: ctx.logger,
+      })
+      return { success: true }
+    },
+    onFailure: {
+      retries: 3,
+      fn: async (input: IngestKBResourceInput) => {
+        await sendKBIngestionStatus({
+          resourceId: input.resourceId,
+          ingestionAttemptId: input.ingestionAttemptId,
+          status: 'FAILED',
+          statusMessage:
+            'The external ingestion workflow could not be started.',
+        })
+      },
+    },
+  }
+  const ingestKBResource = hatchet.task(ingestKBResourceDefinition)
   // #endregion
 
   // ! ACTIVITY PUBLICATION TASKS
@@ -274,6 +319,17 @@ export function prepareHatchetTasks({
     },
   })
 
+  const monitorKBIngestions = hatchet.task({
+    name: 'monitor-kb-ingestions',
+    onCrons: ['* * * * *'],
+    concurrency: {
+      expression: '"monitor-kb-ingestions"',
+      maxRuns: 1,
+      limitStrategy: ConcurrencyLimitStrategy.CANCEL_NEWEST,
+    },
+    fn: async () => monitorActiveKBIngestions({ prisma }),
+  })
+
   // ? temporarily paused workflow, since the functionality is currently not available and needs fixing
   const sendPushNotifications = hatchet.task({
     name: 'send-push-notifications',
@@ -302,6 +358,8 @@ export function prepareHatchetTasks({
     endExpiredMicroLearning,
     aggregateLiveQuizBlockResultsStandard,
     aggregateLiveQuizBlockResultsAssessment,
+    ingestKBResource,
+    monitorKBIngestions,
     createAuditLogEntry,
   }
 }

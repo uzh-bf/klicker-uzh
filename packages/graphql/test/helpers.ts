@@ -22,6 +22,7 @@ import {
   ElementData,
   ElementInstanceOptions,
   ElementInstanceResults,
+  IngestKBResourceInput,
 } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
@@ -141,6 +142,13 @@ export async function testInitialization(
 
   // initialize tasks to be called
   const tasks = {
+    ingestKBResource: hatchet.task({
+      name: 'ingest-kb-resource',
+      fn: async (input: IngestKBResourceInput) => {
+        console.info('KB ingestion dispatch stub triggered', input)
+        return { success: true }
+      },
+    }),
     createAuditLogEntry: hatchet.task({
       name: 'create-audit-log-entry',
       fn: async ({

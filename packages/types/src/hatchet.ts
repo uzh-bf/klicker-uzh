@@ -1,6 +1,7 @@
 import type {
   Context,
   HatchetClient,
+  JsonObject,
   TaskWorkflowDeclaration,
 } from '@hatchet-dev/typescript-sdk/index.js'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
@@ -17,6 +18,30 @@ export interface HatchetHandlerGlobalContext {
   redisCache?: Redis
   prisma: PrismaClient
 }
+
+export const kbIngestionSpeedModes = ['balanced', 'quality', 'fast'] as const
+export type KBIngestionSpeedMode = (typeof kbIngestionSpeedModes)[number]
+
+type IngestKBResourceInputBase = JsonObject & {
+  resourceId: string
+  kbId: string
+  title: string
+  ingestionAttemptId: string
+  speedMode: KBIngestionSpeedMode
+}
+
+export type IngestKBResourceInput = IngestKBResourceInputBase &
+  (
+    | {
+        type: 'BLOB'
+        blobName: string
+        containerName: string
+      }
+    | {
+        type: 'URL'
+        sourceUrl: string
+      }
+  )
 
 // Shared contract for Hatchet task handler injections.
 export interface HatchetHandlers {
@@ -94,6 +119,10 @@ export interface HatchetHandlers {
 
 // Contract for the tasks that are passed into the GraphQL context.
 export interface PreparedHatchetTasks {
+  ingestKBResource: TaskWorkflowDeclaration<
+    IngestKBResourceInput,
+    { success: boolean }
+  >
   createAuditLogEntry: TaskWorkflowDeclaration<
     {
       message: Record<string, string | undefined> & {

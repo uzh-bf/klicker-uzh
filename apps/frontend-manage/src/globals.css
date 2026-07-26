@@ -9,6 +9,7 @@
 @plugin '@tailwindcss/container-queries';
 
 @source "../node_modules/@uzh-bf/design-system/src";
+@source "../../../packages/kb-management/src";
 @source "../../../packages/shared-components/src";
 @source "../../../packages/markdown/src";
 

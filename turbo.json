@@ -40,6 +40,14 @@
     "HATCHET_API_URL",
     "HATCHET_TENANT_ID",
     "HATCHET_LOG_LEVEL",
+    "KB_INGESTION_HATCHET_CLIENT_TOKEN",
+    "KB_INGESTION_HATCHET_CLIENT_HOST_PORT",
+    "KB_INGESTION_HATCHET_API_URL",
+    "KB_INGESTION_HATCHET_CLIENT_TLS_STRATEGY",
+    "KB_INGESTION_HATCHET_WORKFLOW_NAME",
+    "KB_INGESTION_TIMEOUT_SECONDS",
+    "KB_WEBHOOK_SECRET",
+    "KB_WEBHOOK_URL",
     "LTI_DB_TYPE",
     "LTI_DB_HOST",
     "LTI_DB_PORT",
@@ -131,6 +139,7 @@
         "@klicker-uzh/util#build",
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
+        "@klicker-uzh/hatchet#build",
         "@klicker-uzh/markdown#build",
         "@klicker-uzh/word-cloud#build",
         "@klicker-uzh/transactional#build"
@@ -143,6 +152,7 @@
         "@klicker-uzh/util#build",
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
+        "@klicker-uzh/hatchet#build",
         "@klicker-uzh/markdown#build",
         "@klicker-uzh/word-cloud#build",
         "@klicker-uzh/transactional#build"
@@ -155,6 +165,7 @@
         "@klicker-uzh/util#build",
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
+        "@klicker-uzh/hatchet#build",
         "@klicker-uzh/markdown#build",
         "@klicker-uzh/word-cloud#build",
         "@klicker-uzh/transactional#build"
@@ -167,6 +178,7 @@
         "@klicker-uzh/util#build",
         "@klicker-uzh/prisma#build",
         "@klicker-uzh/graphql#build",
+        "@klicker-uzh/hatchet#build",
         "@klicker-uzh/markdown#build",
         "@klicker-uzh/word-cloud#build",
         "@klicker-uzh/transactional#build"
