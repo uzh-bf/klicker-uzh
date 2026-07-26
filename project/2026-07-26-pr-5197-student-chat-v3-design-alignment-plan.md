@@ -294,3 +294,21 @@ simplify subagent on the exact commit → integrate accepted findings → re-ver
   with the contract is UNVERIFIED — only prompt assembly is proven. Carry
   this into the PR body as a manual-verification item.
   Next: S5 review+simplify, then S6 composer hint + timestamps.
+- 2026-07-26 S5 adjustments (review+simplify on 21a7fe834): accepted —
+  contract now tells the model to REUSE a repeat source's original number.
+  Real mismatch, not stylistic: `normalizeSourcesFromParts` skips a source it
+  has already seen and never mints a second index, so "keep numbering
+  continuous" alone would make the model label a repeat `[4]` when only 3
+  unique sources exist, and `resolveCitationSource` renders any marker beyond
+  N as literal text — exactly the case a multi-part question about one
+  lecture triggers. Also dropped the idempotency guard (single call site,
+  no retry path recomputes the prompt — verified in route.ts) and collapsed
+  the empty/whitespace base-prompt tests into one `test.each` (both inputs
+  reduce to the same `trimEnd()` branch); added a test pinning the reuse
+  sentence. Declined: template literal for the contract (would embed literal
+  newlines mid-sentence in the text sent to the model) and moving the module
+  into `lib/config/prompts.ts` (that directory holds data records, this is
+  logic). Reviewer independently confirmed the gate sees exactly the tools
+  passed to `streamText` and that the mutation precedes every consumer, so
+  the telemetry claim holds. Evidence: 115/115, `check` + eslint clean,
+  health 200. Next: S6 composer hint + timestamps.

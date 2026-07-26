@@ -11,6 +11,12 @@ import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
  * message and numbered 1..N (`normalizeSourcesFromParts`), and `[n]` only
  * resolves for `1 <= n <= N` (`resolveCitationSource`).
  *
+ * The reuse sentence is load-bearing for that match. A source returned again
+ * by a later search is skipped by the dedupe and keeps its original number —
+ * no new one is minted — so a model that kept counting upward for the repeat
+ * would emit a marker beyond N, which renders as literal text instead of a
+ * chip.
+ *
  * The closing sentence keeps this from colliding with `DEFAULT_PROMPT`'s
  * "Never use angle brackets [] to enclose LaTeX" rule. It is phrased without
  * pointing at that rule, because a chatbot's own stored prompt replaces the
@@ -21,7 +27,9 @@ const CITATION_CONTRACT =
   'mark it with a bracketed source number such as [1] or [2], following the ' +
   'order the search results were returned in. Keep numbering continuous ' +
   'across multiple searches within the same answer instead of restarting at ' +
-  '[1]. Only use numbers that a search actually returned - never invent a ' +
+  '[1]. If a later search returns a source you have already cited, reuse the ' +
+  'number you gave it the first time instead of assigning a new one. Only ' +
+  'use numbers that a search actually returned - never invent a ' +
   'citation. Do not add a citation when you are not drawing on retrieved ' +
   'material. These bracketed numbers are citation markers and are never ' +
   'LaTeX, so any rule about brackets in formulas does not apply to them.'
@@ -29,16 +37,12 @@ const CITATION_CONTRACT =
 /**
  * Appends the citation contract to `systemPrompt` when `toolNames` includes
  * a doc_query-style RAG tool, otherwise returns `systemPrompt` unchanged.
- *
- * Safe to call more than once with its own output: if the contract text is
- * already present, it is not appended again.
  */
 export function withCitationContract(
   systemPrompt: string,
   toolNames: readonly string[]
 ): string {
   if (!toolNames.some(isDocQueryToolName)) return systemPrompt
-  if (systemPrompt.includes(CITATION_CONTRACT)) return systemPrompt
 
   const trimmedBase = systemPrompt.trimEnd()
   return trimmedBase.length > 0

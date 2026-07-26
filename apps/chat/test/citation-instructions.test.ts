@@ -30,17 +30,12 @@ describe('withCitationContract', () => {
     expect(result).toContain('[1]')
   })
 
-  test('handles an empty base prompt without leading blank lines', () => {
-    const result = withCitationContract('', ['doc_query'])
-    expect(result.startsWith('\n')).toBe(false)
+  test.each([
+    ['empty', ''],
+    ['whitespace-only', '   \n  '],
+  ])('handles a %s base prompt without leading blank lines', (_label, base) => {
+    const result = withCitationContract(base, ['doc_query'])
     expect(result.trim()).toBe(result)
-    expect(result).toContain('[1]')
-  })
-
-  test('handles a whitespace-only base prompt without leading blank lines', () => {
-    const result = withCitationContract('   \n  ', ['doc_query'])
-    expect(result.startsWith('\n')).toBe(false)
-    expect(result.startsWith(' ')).toBe(false)
     expect(result).toContain('[1]')
   })
 
@@ -51,10 +46,11 @@ describe('withCitationContract', () => {
     expect(result.toLowerCase()).toContain('citation')
   })
 
-  test('is idempotent when called twice with its own output', () => {
-    const base = 'You are a helpful tutor.'
-    const once = withCitationContract(base, ['doc_query'])
-    const twice = withCitationContract(once, ['doc_query'])
-    expect(twice).toBe(once)
+  // The UI's dedupe keeps a repeat source's original number and never mints a
+  // new one, so a model that kept counting upward would emit a marker beyond
+  // the resolvable range (see normalizeSourcesFromParts / resolveCitationSource).
+  test('the appended block tells the model to reuse a repeat source number', () => {
+    const result = withCitationContract('Base prompt.', ['doc_query'])
+    expect(result.toLowerCase()).toContain('reuse the number')
   })
 })
