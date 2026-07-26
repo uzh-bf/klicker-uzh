@@ -7,7 +7,7 @@ import { createElement, useMemo, useState } from 'react'
 import { TextField, useSidebar } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useParams, useRouter } from 'next/navigation'
-import { getModeIcon } from '../lib/config/modes'
+import { formatModeLabel, getModeIcon } from '../lib/config/modes'
 import { useChatStore, type Thread } from '../stores/chatStore'
 
 export const ThreadList: FC = () => {
@@ -297,18 +297,29 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
             data-cy="chat-thread-select"
             onClick={onSelect}
             aria-current={isActive ? 'page' : undefined}
-            className="flex min-w-0 flex-grow items-center gap-2 px-3 py-1 text-start"
+            className="flex min-w-0 flex-grow flex-col gap-0.5 px-3 py-1 text-start"
           >
-            {/* Badge the row with the icon of the mode the thread was last
+            <p className="truncate text-sm">{getThreadTitle()}</p>
+            {/* Second line: the icon + name of the mode the thread was last
                 used in (D6). Rendered via createElement rather than bound to a
                 capitalized local: assigning the looked-up icon in the render
                 body reads to the React Compiler lint as defining a new
-                component on every render. */}
-            {thread.lastChatMode &&
-              createElement(getModeIcon(thread.lastChatMode), {
-                className: 'text-muted-foreground size-4 shrink-0',
-              })}
-            <p className="truncate text-sm">{getThreadTitle()}</p>
+                component on every render. Omitted entirely (no empty line)
+                when the thread has no stored mode, e.g. threads created
+                before mode tracking shipped. */}
+            {thread.lastChatMode && (
+              <p
+                data-cy="chat-thread-mode"
+                className="text-muted-foreground flex items-center gap-1 text-xs"
+              >
+                {createElement(getModeIcon(thread.lastChatMode), {
+                  className: 'size-3 shrink-0',
+                })}
+                <span className="truncate">
+                  {formatModeLabel(t, thread.lastChatMode)}
+                </span>
+              </p>
+            )}
           </button>
           <button
             type="button"
