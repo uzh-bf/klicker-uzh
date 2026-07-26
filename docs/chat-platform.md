@@ -102,7 +102,16 @@ That predicate must tolerate MCP namespacing. `toSafeToolName` (`src/services/mc
 prefixes the server name and appends **8 hex characters of a sha256** when the namespaced name
 exceeds 64 characters or collides with another server's, so the same logical tool can arrive as
 `doc_query`, `KB_doc_query`, or `KB_doc_query_1a2b3c4d`. A chatbot with two RAG servers is the
-realistic trigger.
+realistic trigger. The suffix length lives in `lib/config/toolNames.ts` and is imported by both
+the side that builds the name and the regex that matches it, so bumping it cannot silently break
+recognition — `mcpClients.ts` is `'use server'` and therefore cannot export the constant itself.
+
+One known edge, not currently handled: `withHashSuffix` truncates the whole `server_tool` string
+to 55 characters **from the end** before appending the hash. A server name longer than about 45
+characters pushes `doc_query` out of the kept prefix entirely, and the predicate then matches
+nothing — sources, citations, the activity chip and the prompt contract all switch off silently
+for that server. No such server name exists today; fix by truncating the server name rather than
+the combined string if one ever appears.
 
 `normalizeSourcesFromParts` is deliberately forgiving and never throws: it unwraps the raw MCP
 `CallToolResult` envelope (`{ content: [{ type: 'text', text: '<json>' }] }`), a JSON string, or
