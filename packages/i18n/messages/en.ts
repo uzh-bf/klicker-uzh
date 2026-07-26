@@ -163,6 +163,10 @@ export default {
       video: 'Video',
       image: 'Image',
     },
+    citations: {
+      label: 'Source {index}: {title}',
+      goToSource: 'Go to source',
+    },
     noLogin: {
       title: 'Login Required',
       message:

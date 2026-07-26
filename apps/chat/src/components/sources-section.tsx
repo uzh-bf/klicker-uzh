@@ -1,4 +1,3 @@
-import { useMessage } from '@assistant-ui/react'
 import {
   BookOpenIcon,
   ExternalLinkIcon,
@@ -8,30 +7,15 @@ import {
   PlayIcon,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { useMemo, type ComponentType, type SVGProps } from 'react'
+import { type ComponentType, type SVGProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import {
-  normalizeSourcesFromParts,
-  type ChatSourcePart,
-} from '@/src/lib/sources/normalizeSources'
+  getSourceSecondaryLine,
+  isMediaSource,
+} from '@/src/lib/sources/sourceDisplay'
 import type { ChatSource, ChatSourceType } from '@/src/lib/sources/types'
-
-// Minimal shape this component needs from the assistant message — kept local
-// (rather than importing assistant-ui's ThreadAssistantMessage type) so this
-// file only depends on what it actually reads, matching the
-// `MessageWithCustomMetadata` pattern used elsewhere in thread.tsx. `readonly`
-// matches assistant-ui's own message part arrays (and normalizeSourcesFromParts
-// gets a mutable copy at the call site).
-type MessageWithSourceParts = {
-  id: string
-  content?: readonly ChatSourcePart[]
-}
-
-// Video/image sources render as a second, more compact row (no page/chapter
-// data, just a type label) — everything else (documents, plain links) shares
-// the primary card grid.
-const MEDIA_TYPES: readonly ChatSourceType[] = ['video', 'image']
+import { useMessageSourcesContext } from './message-sources-context'
 
 // Module-scope map (not a function returning a component per call) so
 // `<Icon />` below resolves to a stable, already-existing component
@@ -55,26 +39,21 @@ function SourceCard({
 }) {
   const t = useTranslations()
   const Icon = SOURCE_TYPE_ICONS[source.type]
-  const isMedia = MEDIA_TYPES.includes(source.type)
-
-  // "S. 4 · IV" when both a numeric page and a human page label are
-  // present, either one alone, a type label for video/image, or null when
-  // none of these apply.
-  const secondaryLineParts: string[] = []
-  if (isMedia) {
-    secondaryLineParts.push(
-      t(source.type === 'video' ? 'chat.sources.video' : 'chat.sources.image')
-    )
-  }
-  if (typeof source.page === 'number') {
-    secondaryLineParts.push(t('chat.sources.page', { page: source.page }))
-  }
-  if (source.labeledPage) secondaryLineParts.push(source.labeledPage)
-  const secondaryLine =
-    secondaryLineParts.length > 0 ? secondaryLineParts.join(' · ') : null
+  const isMedia = isMediaSource(source)
+  const secondaryLine = getSourceSecondaryLine(source, t)
 
   const inner = (
     <>
+      {/* The visible "01" badge below is aria-hidden — without this, a
+          screen-reader user following a citation chip's "Source 1: ..." link
+          would land on a card with no announced number to confirm the
+          match. */}
+      <span className="sr-only">
+        {t('chat.citations.label', {
+          index: source.index,
+          title: source.title,
+        })}
+      </span>
       <span
         aria-hidden="true"
         className="text-muted-foreground shrink-0 pt-0.5 font-mono text-xs tabular-nums"
@@ -141,40 +120,16 @@ function SourceCard({
 
 export function SourcesSection() {
   const t = useTranslations()
-  const message = useMessage() as MessageWithSourceParts
-  const parts = message.content ?? []
-
-  // The message store re-renders this component on every streamed token and
-  // rebuilds `content` (so its reference is never stable). Tool results are
-  // set exactly once, so a cheap fingerprint of the tool-call parts is enough
-  // to skip re-parsing the tool JSON on unrelated re-renders.
-  let fingerprint = message.id
-  for (const part of parts) {
-    if (part.type !== 'tool-call') continue
-    const result = part.result
-    const resultMark =
-      result === undefined || result === null
-        ? '-'
-        : typeof result === 'string'
-          ? `s${result.length}`
-          : 'o'
-    fingerprint += `|${'toolCallId' in part ? String(part.toolCallId) : ''}:${part.isError ? 1 : 0}:${resultMark}`
-  }
-
-  const sources = useMemo(
-    () => normalizeSourcesFromParts(parts),
-    // Deliberately keyed on the fingerprint: `parts` is referentially
-    // unstable on every render, and the fingerprint captures the values that
-    // can actually change the normalization result.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [fingerprint]
-  )
+  // Computed once in `AssistantMessage` (see `useMessageSources`) and shared
+  // via context with the inline citation chips, instead of re-parsing the
+  // tool JSON here again.
+  const { messageId, sources } = useMessageSourcesContext()
 
   if (sources.length === 0) return null
 
-  const documentSources = sources.filter((s) => !MEDIA_TYPES.includes(s.type))
-  const mediaSources = sources.filter((s) => MEDIA_TYPES.includes(s.type))
-  const headingId = `chat-sources-heading-${message.id}`
+  const documentSources = sources.filter((s) => !isMediaSource(s))
+  const mediaSources = sources.filter((s) => isMediaSource(s))
+  const headingId = `chat-sources-heading-${messageId}`
 
   return (
     <section
@@ -193,11 +148,7 @@ export function SourcesSection() {
       {documentSources.length > 0 && (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-2">
           {documentSources.map((source) => (
-            <SourceCard
-              key={source.id}
-              source={source}
-              messageId={message.id}
-            />
+            <SourceCard key={source.id} source={source} messageId={messageId} />
           ))}
         </div>
       )}
@@ -210,11 +161,7 @@ export function SourcesSection() {
           )}
         >
           {mediaSources.map((source) => (
-            <SourceCard
-              key={source.id}
-              source={source}
-              messageId={message.id}
-            />
+            <SourceCard key={source.id} source={source} messageId={messageId} />
           ))}
         </div>
       )}

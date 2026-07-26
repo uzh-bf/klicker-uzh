@@ -166,6 +166,10 @@ export default {
       video: 'Video',
       image: 'Bild',
     },
+    citations: {
+      label: 'Quelle {index}: {title}',
+      goToSource: 'Zur Quelle springen',
+    },
     noLogin: {
       title: 'Anmeldung erforderlich',
       message:

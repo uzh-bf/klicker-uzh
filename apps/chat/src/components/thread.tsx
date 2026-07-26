@@ -39,6 +39,7 @@ import {
   useState,
 } from 'react'
 
+import { useMessageSources } from '@/src/hooks/useMessageSources'
 import {
   getImageAttachmentKey,
   hasAnyImageAttachmentData,
@@ -58,6 +59,7 @@ import { BranchPicker } from './branch-picker'
 import { useChatUi } from './chat-ui-context'
 import { MessageAttachments } from './message-attachments'
 import { AssistantMessageParts } from './message-parts'
+import { MessageSourcesProvider } from './message-sources-context'
 import { SourcesSection } from './sources-section'
 import { actionBarButtonClassName } from './ui/action-bar-button'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
@@ -1113,6 +1115,10 @@ const AssistantMessage: FC<{
       m.status?.type === 'running' &&
       m.content.length === 0
   )
+  // Computed once here (not inside SourcesSection/MarkdownText) and shared
+  // via context, so the sources grid and the inline `[n]` citation chips
+  // read the same normalized list instead of each re-parsing the tool JSON.
+  const messageSources = useMessageSources()
 
   return (
     <MessagePrimitive.Root
@@ -1166,8 +1172,10 @@ const AssistantMessage: FC<{
         )}
       >
         {isPendingEmpty && <ThinkingDots />}
-        <AssistantMessageParts />
-        <SourcesSection />
+        <MessageSourcesProvider value={messageSources}>
+          <AssistantMessageParts />
+          <SourcesSection />
+        </MessageSourcesProvider>
         <MessageMetadata includeCredits />
       </div>
 
