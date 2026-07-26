@@ -44,19 +44,31 @@ Note the account-duplication trap: participant emails are only unique per auth m
 
 `apps/mcp-lecturer` is currently an internal backend service for the embedded Manage assistant, not an OAuth-exposed MCP server:
 
-1. `getAuthenticatedManageUserId` in `apps/chat/src/lib/server/manageAuth.ts` verifies the lecturer's `next-auth.session-token` with `APP_SECRET`.
-2. `mintLecturerMcpJwt` in `apps/chat/src/lib/server/mcpAuthMint.ts` creates a five-minute HS256 bearer token with `purpose: lecturer-mcp` and the fixed scopes `manage:read manage:draft`.
-3. `loadLecturerMcpTools` in `apps/chat/src/services/lecturerMcp.ts` sends that token to the internal Streamable HTTP endpoint.
-4. `apps/mcp-lecturer/src/auth.ts` verifies the signature, issuer, subject, role, purpose, and scopes. Tool queries then enforce the lecturer's derived object permissions; proposal tools only return a separately signed draft proposal, and the authenticated chat confirmation route performs persistence.
+1. `getAuthenticatedManageUser` in `apps/chat/src/lib/server/manageAuth.ts` verifies the lecturer's `next-auth.session-token` with `APP_SECRET` and returns `{ sub, role, scope }`, rejecting (returning `null` for) any session whose role is not `USER` or `ADMIN` — mirroring the backend role lattice, where `ADMIN` satisfies every `USER` gate (`packages/graphql/src/builder.ts`). (`getAuthenticatedManageUserId` remains as a thin sub-only wrapper for the one caller — the Manage assistant page shell — that only needs the id.)
+2. `mintLecturerMcpJwt(userId, sessionScope)` in `apps/chat/src/lib/server/mcpAuthMint.ts` creates a five-minute HS256 bearer token with `purpose: lecturer-mcp`, mapping the session's `UserLoginScope` to the minted MCP scope via `resolveLecturerMcpScope`:
+
+   | Session `UserLoginScope`                                | Minted MCP scope           | Why                                                                                                                                                                                                |
+   | ------------------------------------------------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+   | `ACCOUNT_OWNER`, `FULL_ACCESS`                          | `manage:read manage:draft` | The only session scopes the GraphQL layer lets author/persist content — `packages/graphql/src/schema/mutation.ts` gates every question/course-authoring mutation behind `FULL_ACCESS` or higher.   |
+   | `SESSION_EXEC`, `READ_ONLY`                             | `manage:read`              | `SESSION_EXEC` only unlocks live-quiz run/feedback-moderation mutations, never content drafting — granting `manage:draft` here would over-grant exactly like the original bug did for `READ_ONLY`. |
+   | `OTP`                                                   | rejected (mint throws)     | Activation/reset sessions, not working sessions — the GraphQL layer does not even consider `OTP` authenticated (`packages/graphql/src/builder.ts`).                                                |
+   | missing (pre-scope sessions), or any other/future value | `manage:read`              | Availability-safe floor: an unrecognized scope degrades to read-only instead of breaking the assistant or over-granting.                                                                           |
+
+   A real Edu-ID lecturer session always carries `ACCOUNT_OWNER` (the `apps/auth` lecturer `jwt` callback sets it whenever the OIDC profile carries `swissEduPersonUniqueID`, which Edu-ID's essential claims always provide), so this mapping does not restrict production Edu-ID lecturers to read-only. `EDUID` is a real `UserLoginScope` enum member, but only _participant_ sessions ever carry it (separate cookie, separate `jwt` callback in `apps/auth`) — it never reaches a lecturer/Manage session, so it only matters here as one of the "any other value" fallback cases.
+
+   The in-process mint cache is keyed on `userId:mcpScope` (not just `userId`), since one lecturer can hold sessions with different scopes concurrently.
+
+3. `loadLecturerMcpTools(userId, sessionScope)` in `apps/chat/src/services/lecturerMcp.ts` sends that token to the internal Streamable HTTP endpoint, then filters the returned toolset: when the minted scope lacks `manage:draft`, the four draft/proposal tools (`klicker_lecturer_question_draft`, `klicker_lecturer_choices_draft`, `klicker_lecturer_feedback_draft`, `klicker_lecturer_element_create_draft_proposal`) are dropped from what is advertised to the model, so it never attempts a call that would only come back `MISSING_SCOPE`. That tool-name list is duplicated from `LECTURER_MCP_TOOL_POLICIES` in `apps/mcp-lecturer/src/toolPolicy.ts` — the MCP `tools/list` response carries no `rbacScope` field to derive it from at request time, so keep the two lists in sync if the policy table changes. `buildManageAssistantSystemPrompt` (`apps/chat/src/services/manageAssistantRuntime.ts`) takes a matching `draftToolsAvailable` flag so the system prompt does not claim draft/proposal tools are available when they were filtered out.
+4. `apps/mcp-lecturer/src/auth.ts` verifies the signature, issuer, subject, role, purpose, and scopes. Tool queries then enforce the lecturer's derived object permissions; proposal tools only return a separately signed draft proposal, and the authenticated chat confirmation route performs persistence under the lecturer's own session — so the GraphQL scope ladder remains the final enforcement point for any mutation regardless of what the MCP token carries.
 
 There is no OAuth authorization-server configuration, protected-resource metadata, token endpoint, client registration, consent, PKCE, or external token acquisition flow. The service is deployed as Kubernetes `ClusterIP`; Helm points chat at its internal service name, and local development binds it to port 7081 without a devrouter route. Its `/mcp` endpoint still requires the custom bearer token, but network placement is not the authentication mechanism.
 
 Current hardening boundaries:
 
 - The MCP token has no `aud`/resource claim, so it is not resource-bound.
-- Chat always grants both read and draft scopes; it does not propagate delegated-login `UserLoginScope` into the MCP token.
 - Code supports a dedicated `MCP_LECTURER_JWT_SECRET`, but the current Helm deployment supplies the shared chat `APP_SECRET`.
 - The chart does not currently add a lecturer-MCP NetworkPolicy.
+- The MCP token always stamps `role: USER` even for `ADMIN`-role sessions — a deliberate downscope (the MCP layer treats every caller as a lecturer; ADMIN gains nothing extra there).
 
 An external MCP integration therefore needs a separately approved authentication design: OAuth discovery and protected-resource metadata, audience-bound access tokens, external client registration/consent, delegated scope mapping, dedicated signing keys, ingress and network policy, and audit/rate-limit decisions.
 

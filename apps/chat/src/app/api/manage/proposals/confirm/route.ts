@@ -1,4 +1,4 @@
-import { getAuthenticatedManageUserId } from '@/src/lib/server/manageAuth'
+import { getAuthenticatedManageUser } from '@/src/lib/server/manageAuth'
 import {
   confirmManageProposal,
   getRequiredManageOrigin,
@@ -34,10 +34,11 @@ function getGraphqlEndpoint() {
 }
 
 export async function POST(req: NextRequest) {
-  const userId = await getAuthenticatedManageUserId()
-  if (!userId) {
+  const manageUser = await getAuthenticatedManageUser()
+  if (!manageUser) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+  const userId = manageUser.sub
 
   const rateLimit = confirmRateLimiter.check(userId)
   if (!rateLimit.allowed) {

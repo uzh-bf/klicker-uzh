@@ -111,6 +111,33 @@ describe('Manage assistant runtime helpers', () => {
     )
   })
 
+  test('builds a read-only-scope prompt that steers the model away from draft/proposal tools', () => {
+    const readOnlyPrompt = buildManageAssistantSystemPrompt(
+      SAMPLE_CONTEXT,
+      true,
+      false
+    )
+
+    expect(readOnlyPrompt).toContain(
+      'Lecturer MCP read tools are available for authorized course and question-pool lookups'
+    )
+    expect(readOnlyPrompt).toContain('read-only Manage access')
+    expect(readOnlyPrompt).toContain('Do not attempt to call them')
+    expect(readOnlyPrompt).not.toContain(
+      'draft-only question, answer-choice, feedback, and signed proposal tools are available for content scaffolding'
+    )
+    expect(readOnlyPrompt).not.toContain(
+      'Lecturer MCP tools are currently unavailable'
+    )
+  })
+
+  test('tools-unavailable branch wins over draftToolsAvailable when tools are absent entirely', () => {
+    const prompt = buildManageAssistantSystemPrompt(SAMPLE_CONTEXT, false, true)
+
+    expect(prompt).toContain('Lecturer MCP tools are currently unavailable')
+    expect(prompt).not.toContain('read-only Manage access')
+  })
+
   test('selects the first primary model and falls back when needed', () => {
     expect(
       selectManageAssistantModel([

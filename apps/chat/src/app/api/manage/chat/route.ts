@@ -1,5 +1,5 @@
 import { getChatModelRegistry } from '@/src/lib/server/chatModelRegistry'
-import { getAuthenticatedManageUserId } from '@/src/lib/server/manageAuth'
+import { getAuthenticatedManageUser } from '@/src/lib/server/manageAuth'
 import { loadLecturerMcpTools } from '@/src/services/lecturerMcp'
 import {
   buildManageAssistantSystemPrompt,
@@ -78,10 +78,11 @@ function createManageAssistantModel(deploymentId: string) {
 }
 
 export async function POST(req: NextRequest) {
-  const userId = await getAuthenticatedManageUserId()
-  if (!userId) {
+  const manageUser = await getAuthenticatedManageUser()
+  if (!manageUser) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+  const userId = manageUser.sub
 
   const rateLimit = chatRateLimiter.check(userId)
   if (!rateLimit.allowed) {
@@ -103,10 +104,14 @@ export async function POST(req: NextRequest) {
   }
 
   const context = sanitizeManageAssistantContext(parsed.data.manageContext)
-  const lecturerMcp = await loadLecturerMcpTools(userId).catch((error) => {
+  const lecturerMcp = await loadLecturerMcpTools(
+    userId,
+    manageUser.scope
+  ).catch((error) => {
     console.warn('Failed to load lecturer MCP tools:', error)
     return {
       close: async () => {},
+      hasDraftScope: false,
       tools: {},
     }
   })
@@ -131,7 +136,11 @@ export async function POST(req: NextRequest) {
         openai: getManageAssistantOpenAIProviderOptions(),
       },
       stopWhen: stepCountIs(5),
-      system: buildManageAssistantSystemPrompt(context, toolCount > 0),
+      system: buildManageAssistantSystemPrompt(
+        context,
+        toolCount > 0,
+        lecturerMcp.hasDraftScope
+      ),
       toolChoice: 'auto',
       tools: lecturerMcp.tools,
       onAbort: closeTools,

@@ -22,12 +22,15 @@ const BASE_MANAGE_ASSISTANT_PROMPT = [
 
 export function buildManageAssistantSystemPrompt(
   context: ManageAssistantContext | null,
-  toolsAvailable = true
+  toolsAvailable = true,
+  draftToolsAvailable = true
 ) {
   const contextPrompt = formatManageContextForPrompt(context)
-  const toolPrompt = toolsAvailable
-    ? 'Lecturer MCP read tools are available for authorized course and question-pool lookups; draft-only question, answer-choice, feedback, and signed proposal tools are available for content scaffolding.'
-    : 'Lecturer MCP tools are currently unavailable. Be transparent that live Klicker data cannot be queried in this response.'
+  const toolPrompt = !toolsAvailable
+    ? 'Lecturer MCP tools are currently unavailable. Be transparent that live Klicker data cannot be queried in this response.'
+    : draftToolsAvailable
+      ? 'Lecturer MCP read tools are available for authorized course and question-pool lookups; draft-only question, answer-choice, feedback, and signed proposal tools are available for content scaffolding.'
+      : 'Lecturer MCP read tools are available for authorized course and question-pool lookups. This session has read-only Manage access: draft-only question, answer-choice, and feedback scaffolding tools and the signed proposal tool are NOT available. Do not attempt to call them; instead tell the lecturer that drafting and proposing new content requires broader Manage access.'
   const skillsPrompt = buildManageAssistantSkillsPrompt()
 
   return [BASE_MANAGE_ASSISTANT_PROMPT, toolPrompt, skillsPrompt, contextPrompt]
