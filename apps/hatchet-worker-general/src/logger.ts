@@ -8,9 +8,7 @@ const SERVICE_NAME = process.env.HATCHET_WORKER_NAME ?? 'hatchet-worker-general'
 const level = (process.env.LOG_LEVEL ?? 'info').toLowerCase()
 
 const isPretty =
-  (process.env.NODE_ENV !== 'production' &&
-    process.env.PINO_PRETTY !== 'false') ??
-  false
+  process.env.NODE_ENV !== 'production' && process.env.PINO_PRETTY !== 'false'
 
 const options = {
   level,
@@ -21,8 +19,8 @@ const options = {
   messageKey: 'message',
 }
 
-// Keep development formatting in-process. A Pino transport starts another
-// worker thread, whose messages collide with `tsx --watch` worker tracking.
+// Keep development formatting in-process so logging does not need a
+// background transport thread.
 export const logger = isPretty
   ? pino(
       options,

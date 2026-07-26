@@ -4,15 +4,15 @@
 
 **Goal:** Ensure every local application development variant builds `@klicker-uzh/hatchet` before persistent workers and applications start.
 
-**Architecture:** Extend the existing explicit Turborepo build prerequisites for the four application development variants. Preserve the package scripts, add a narrow shared-client logger compatibility method for Hatchet SDK 1.9.4 under `tsx --watch`, and keep Pino's development formatter in-process instead of starting a second logging worker thread. Verify both the static task graph and a real local worker registration before exercising the Build mutation.
+**Architecture:** Extend the existing explicit Turborepo build prerequisites for the four application development variants. Run both Hatchet workers as persistent `tsx` processes without watch mode, remove the unsupported Hatchet SDK internal-logger patch, and keep the general worker's Pino development formatter in-process. Verify both the static task graph and real local resource-ingestion worker registration.
 
 **Tech Stack:** Turborepo 2.5.6, pnpm 11.5.0, Hatchet TypeScript SDK 1.9.4, JSON configuration
 
 ## Global Constraints
 
-- Modify `turbo.json` for startup ordering, the shared Hatchet client for the reproduced SDK/`tsx --watch` heartbeat collision, and the general worker logger to avoid a development-only Pino transport worker.
+- Modify `turbo.json` for startup ordering, remove `tsx --watch` from both Hatchet workers, remove the SDK-internal logger workaround, and keep the general worker logger in-process.
 - Apply the same prerequisite to `dev`, `dev:lti`, `dev:offline`, and `dev:assessment`.
-- Do not change package scripts, dependencies, environment variables, or external service configuration.
+- Do not change dependencies, environment variables, or external service configuration.
 - Keep the existing dependency order and add `@klicker-uzh/hatchet#build` immediately after `@klicker-uzh/graphql#build` in each task.
 - Do not restart `run_app_dependencies` or the external port forwards.
 
@@ -99,31 +99,30 @@ Selected workflows
 Starting worker to process jobs...
 ```
 
-Verify local Hatchet contains all three KB workflows:
+Verify local Hatchet contains both core KB workflows:
 
 ```sql
 SELECT name
 FROM "Workflow"
 WHERE name IN (
-  'build-chatbot-knowledge-graph',
   'ingest-kb-resource',
   'monitor-kb-ingestions'
 )
 ORDER BY name;
 ```
 
-Expected: three rows.
+Expected: two rows.
 
-- [x] **Step 6: Verify graph Build dispatch**
+- [x] **Step 6: Verify resource Ingest dispatch**
 
-Retry Build for chatbot `8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f` in the manage UI.
+Trigger Ingest for a resource in the manage UI.
 
 Expected:
 
-- local `build-chatbot-knowledge-graph` is accepted by a current general worker;
-- graph status progresses from `QUEUED` to `PROCESSING`;
-- `externalWorkflowRunId` is persisted;
-- external Hatchet contains a new `course-kg-ingestion` run.
+- local `ingest-kb-resource` is accepted by a current general worker;
+- resource status progresses from `QUEUED` to `PROCESSING`;
+- `externalWorkflowRunId` is persisted on the resource;
+- external Hatchet contains a new ingestion run.
 
 - [x] **Step 7: Record the startup-ordering invariant**
 
@@ -136,6 +135,6 @@ Add this entry under `project/CODEBASE_NOTES.md`'s infrastructure section:
 - [x] **Step 8: Commit the implementation**
 
 ```bash
-git add apps/hatchet-worker-general/src/logger.ts packages/hatchet/src/client.ts turbo.json docs/superpowers/specs/2026-07-21-hatchet-worker-dev-ordering-design.md docs/superpowers/plans/2026-07-21-hatchet-worker-dev-ordering.md project/CODEBASE_NOTES.md
+git add apps/hatchet-worker-general/package.json apps/hatchet-worker-general/src/logger.ts apps/hatchet-worker-response-processor/package.json packages/hatchet/src/client.ts turbo.json docs/superpowers/specs/2026-07-21-hatchet-worker-dev-ordering-design.md docs/superpowers/plans/2026-07-21-hatchet-worker-dev-ordering.md project/CODEBASE_NOTES.md
 git commit -m "fix(hatchet): stabilize worker startup in development"
 ```

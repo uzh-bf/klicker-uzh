@@ -1,23 +1,9 @@
 import { HatchetClient } from '@hatchet-dev/typescript-sdk'
-import { HatchetLogger } from '@hatchet-dev/typescript-sdk/clients/hatchet-client/index.js'
 import type { LogLevel } from '@hatchet-dev/typescript-sdk/util/logger/logger.js'
 
 const globalForHatchet = global as unknown as { hatchetClient: HatchetClient }
 
 const validLogLevels = ['INFO', 'OFF', 'DEBUG', 'WARN', 'ERROR']
-
-function createHatchetLogger(context: string, logLevel?: LogLevel) {
-  const logger = new HatchetLogger(context, logLevel) as HatchetLogger & {
-    undefined: () => void
-  }
-
-  // `tsx --watch` sends development control messages through worker threads.
-  // Hatchet 1.9.4 assumes every heartbeat message has a log-level `type`, so
-  // messages without that shape become a call to the logger's `undefined` key.
-  logger.undefined = () => undefined
-
-  return logger
-}
 
 function setupClient() {
   const hatchet = HatchetClient.init({
@@ -36,7 +22,6 @@ function setupClient() {
       )
         ? (process.env.HATCHET_LOG_LEVEL as LogLevel)
         : 'INFO',
-    logger: createHatchetLogger,
   })
 
   return hatchet

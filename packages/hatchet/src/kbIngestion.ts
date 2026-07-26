@@ -120,7 +120,7 @@ export type ExternalKBIngestionPayload = {
   speed_mode: IngestKBResourceInput['speedMode']
 }
 
-export type KBIngestionSourceInput =
+type KBIngestionSourceInput =
   | {
       type: 'BLOB'
       blobName: string
@@ -131,7 +131,7 @@ export type KBIngestionSourceInput =
       sourceUrl: string
     }
 
-export type RecoveredExternalKBIngestionRun = {
+type RecoveredExternalKBIngestionRun = {
   runId: string
   startedAt: Date
 }
@@ -315,7 +315,7 @@ export function getKBIngestionSourceUrl(
   return `${blobClient.url}?${sas}`
 }
 
-export async function recoverExternalKBIngestionRun({
+async function recoverExternalKBIngestionRun({
   client,
   workflowName,
   additionalMetadata,
@@ -380,7 +380,7 @@ async function logInfoBestEffort(
   }
 }
 
-export async function cancelExternalKBIngestionRunBestEffort({
+async function cancelExternalKBIngestionRunBestEffort({
   client,
   runId,
   identifiers,

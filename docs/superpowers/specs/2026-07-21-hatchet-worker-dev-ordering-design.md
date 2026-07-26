@@ -6,8 +6,8 @@ The general Hatchet worker imports `@klicker-uzh/hatchet` through the
 package's generated `dist` output. The root Turborepo development tasks do
 not currently require that package's build to finish before persistent
 development processes start. On a clean startup, the worker can therefore
-fail its initial import and remain idle in `tsx --watch`, leaving workflows
-such as `build-chatbot-knowledge-graph` unregistered in local Hatchet.
+fail its initial import and remain idle, leaving workflows such as
+`ingest-kb-resource` unregistered in local Hatchet.
 
 ## Design
 
@@ -27,35 +27,31 @@ Hatchet package build succeeds.
 
 Clean-start verification exposed a second, independent failure in the
 existing development runtime. Hatchet SDK 1.9.4 assumes every heartbeat
-worker-thread message contains a log-level `type`, but `tsx --watch` also
-sends control messages without that shape. The shared Hatchet logger therefore
-accepts a no-op `undefined` method until that SDK behavior changes. The general
-worker's Pino pretty formatter also runs in-process because `pino.transport()`
-creates another worker thread that collides with the same watch mechanism.
-
-No package scripts, dependencies, environment variables, or runtime retry
-loops will change. Production JSON logging remains unchanged.
+worker-thread message contains a log-level `type`, while `tsx --watch` sends
+unrelated control messages over the same worker-thread channel. Run the
+Hatchet workers without `tsx --watch` instead of importing and modifying the
+SDK's internal logger implementation. They remain persistent Turbo tasks and
+can be restarted when their source changes. The general worker's Pino
+development formatter stays in-process; production JSON logging remains
+unchanged.
 
 ## Runtime Flow
 
 1. A developer starts one of the four supported development variants.
 2. Turborepo builds the Hatchet package before starting persistent `dev`
    processes.
-3. The development logger absorbs non-Hatchet watch control messages and uses
-   in-process pretty formatting.
+3. Both Hatchet workers run without a `tsx --watch` control thread; the general
+   worker uses in-process pretty formatting.
 4. The general worker imports a complete Hatchet package and registers its
    workflows with local Hatchet.
-5. A knowledge-graph Build request can enqueue
-   `build-chatbot-knowledge-graph`, which can then dispatch the configured
-   external `course-kg-ingestion` workflow.
+5. A resource Ingest request can enqueue `ingest-kb-resource`, which can then
+   dispatch the configured external ingestion workflow.
 
 ## Error Handling
 
 Build failures remain visible through Turbo and prevent the persistent
-development processes from starting with incomplete dependencies. The logger
-compatibility handler ignores only messages that lack the SDK's expected log
-type; normal Hatchet log levels and existing worker/GraphQL error handling are
-unchanged.
+development processes from starting with incomplete dependencies. Normal
+Hatchet log levels and existing worker/GraphQL error handling are unchanged.
 
 ## Verification
 
@@ -64,13 +60,15 @@ unchanged.
    the general worker's development task.
 3. Start the normal development stack from built dependencies and confirm a
    current `hatchet-worker-general` listener exists.
-4. Confirm local Hatchet registers `build-chatbot-knowledge-graph`,
-   `ingest-kb-resource`, and `monitor-kb-ingestions`.
-5. Trigger one chatbot graph Build and correlate the local run with a new
-   external `course-kg-ingestion` run ID persisted on the graph.
+4. Confirm local Hatchet registers `ingest-kb-resource` and
+   `monitor-kb-ingestions`.
+5. Trigger one resource Ingest action and correlate it with the external run
+   ID persisted on the resource.
 
 ## Scope
 
 The change fixes local development startup and watch compatibility only. It
 does not alter production deployment ordering, external Hatchet configuration,
 FalkorDB connectivity, or the separate chat i18n module-resolution issue.
+Knowledge-graph startup and dispatch verification belongs to the parked W9
+scope.
