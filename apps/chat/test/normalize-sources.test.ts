@@ -79,7 +79,7 @@ describe('normalizeSourcesFromParts', () => {
 
     expect(result).toEqual([
       {
-        id: 'title:Prof. Muster|',
+        id: 'title:Prof. Muster||',
         index: 1,
         type: 'document',
         title: 'Prof. Muster',
@@ -158,7 +158,7 @@ describe('normalizeSourcesFromParts', () => {
 
     expect(result).toEqual([
       {
-        id: 'title:Lecture 02|5',
+        id: 'title:Lecture 02|5|5',
         index: 1,
         type: 'document',
         title: 'Lecture 02',
