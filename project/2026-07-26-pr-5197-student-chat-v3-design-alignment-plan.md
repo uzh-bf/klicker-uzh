@@ -221,3 +221,16 @@ simplify subagent on the exact commit → integrate accepted findings → re-ver
   fresh console errors, health 200. Gotcha confirmed: disclaimer dialog
   animate-out never unmounts in headless tab → reload after accept.
   Next: S3 review+simplify, then S4.
+- 2026-07-26 S3 adjustments (review+simplify on fda37e0d1): accepted —
+  ancestor-chain skip flag in `walk(node, insideSkipped)` so markers nested
+  deeper inside link labels (e.g. `[**see [1]**](url)`) stay literal;
+  `SKIPPED_PARENT_TYPES` trimmed to link/linkReference (code is a leaf value
+  in mdast, documented); `resolveCitationSource` folded into
+  normalizeSources.ts (single-function file deleted); `Translate` type in
+  sourceDisplay.ts retyped `ReturnType<typeof useTranslations<never>>`
+  (reasoning.ts precedent) instead of `any`-based signature; 3 new tests
+  (nested-link-label skip, leading-marker end-to-end via
+  parseCitationHref→resolveCitationSource, `[0]` resolves to no source).
+  Declined: folding useMessageSources into provider (hook is reused/testable
+  seam). Evidence: 99/99 chat tests in-container, `check` clean, routes
+  touched post-typegen, health 200. Next: S4 friendly activity chips.

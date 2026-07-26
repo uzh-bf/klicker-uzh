@@ -1,3 +1,5 @@
+import type { useTranslations } from 'next-intl'
+
 import type { ChatSource, ChatSourceType } from './types'
 
 // Video/image sources have no page/chapter data — just a type label — while
@@ -10,17 +12,11 @@ export function isMediaSource(source: Pick<ChatSource, 'type'>): boolean {
   return MEDIA_SOURCE_TYPES.includes(source.type)
 }
 
-// A loose stand-in for next-intl's `useTranslations()` return type. The real
-// type (`Translator<Messages, never>`) types `key` as a namespace-relative
-// union of ~3000 possible message keys and `values` as
-// `Record<string, string | number | Date>`; reproducing it here via
-// `ReturnType<typeof useTranslations>` blows up into a "type instantiation is
-// excessively deep" error, and plain `string`/`Record<string, unknown>` param
-// types fail the opposite way (strict contravariance rejects passing the
-// narrower real `t` in — `unknown` isn't assignable to `string | number |
-// Date`). `any` on both params short-circuits variance checking in both
-// directions while keeping this module's own two call sites meaningful.
-export type Translate = (key: any, values?: any) => string
+// next-intl's `useTranslations()` return type, instantiated at the root
+// namespace (`<never>`) — same pattern as `lib/config/reasoning.ts`. Bare
+// `ReturnType<typeof useTranslations>` hits "type instantiation is
+// excessively deep" against the full Messages union.
+export type Translate = ReturnType<typeof useTranslations<never>>
 
 /**
  * "S. 4 · IV" when both a numeric page and a human page label are present,
