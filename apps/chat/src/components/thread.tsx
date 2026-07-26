@@ -1197,7 +1197,7 @@ const AssistantMessage: FC<{
             src={
               chatbotAvatar
                 ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${chatbotAvatar}.svg`
-                : '../../public/user-solid.svg'
+                : '/user-solid.svg'
             }
             alt=""
             width={chatbotAvatar ? '35' : '32'}
@@ -1212,7 +1212,7 @@ const AssistantMessage: FC<{
             src={
               chatbotAvatar
                 ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${chatbotAvatar}.svg`
-                : '../../public/user-solid.svg'
+                : '/user-solid.svg'
             }
             alt=""
             width="24"
