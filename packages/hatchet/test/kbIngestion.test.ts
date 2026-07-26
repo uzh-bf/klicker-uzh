@@ -590,6 +590,17 @@ describe('KB ingestion source and payload', () => {
     expect(getKBIngestionSourceUrl(urlInput)).toBe(urlInput.sourceUrl)
   })
 
+  it.each([
+    'http://127.0.0.1/admin',
+    'http://169.254.169.254/latest/meta-data',
+    'http://service.internal/admin',
+    'https://user:password@example.org/file',
+  ])('rejects a non-public URL source before dispatch: %s', (sourceUrl) => {
+    expect(() => getKBIngestionSourceUrl({ ...urlInput, sourceUrl })).toThrow(
+      'URL is invalid'
+    )
+  })
+
   it('creates a blob-scoped, read-only, HTTPS-only one-hour SAS', () => {
     const sourceUrl = getKBIngestionSourceUrl(blobInput, {
       env: {

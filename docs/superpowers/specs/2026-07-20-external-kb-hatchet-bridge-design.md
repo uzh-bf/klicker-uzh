@@ -87,7 +87,8 @@ Mapping decisions:
 - `sources` contains only the selected resource.
 - `speed_mode` is the value selected for that click.
 - The other processing options are fixed POC behavior.
-- URL resources are passed through unchanged and must be publicly reachable by the external workflow.
+- URL resources must use HTTP(S) without embedded credentials and a public hostname or IPv4 address. Klicker rejects local, private, reserved, IPv6-literal, and non-public test/internal destinations both when the resource is created and immediately before dispatch.
+- The external ingestion service remains responsible for DNS-resolution and redirect egress controls; do not expose this bridge to lecturer traffic until that deployment boundary is verified.
 
 The local ingestion-attempt UUID is attached as Hatchet `additionalMetadata`; it is not added to the Python workflow input.
 

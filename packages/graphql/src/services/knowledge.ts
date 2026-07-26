@@ -9,6 +9,7 @@ import type {
   IngestKBResourceInput,
   KBIngestionSpeedMode,
 } from '@klicker-uzh/types'
+import { normalizePublicHttpUrl } from '@klicker-uzh/util/public-url'
 import { randomUUID } from 'crypto'
 import { GraphQLError } from 'graphql'
 import { validate as validateUuid } from 'uuid'
@@ -400,13 +401,10 @@ export async function createKbUrlResource(
 ) {
   await getOwnedKbOrThrow(ctx, kbId)
 
-  let parsedUrl: URL
+  let sourceUrl: string
   try {
-    parsedUrl = new URL(url.trim())
+    sourceUrl = normalizePublicHttpUrl(url)
   } catch {
-    throw new GraphQLError('KB resource URL is invalid')
-  }
-  if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
     throw new GraphQLError('KB resource URL is invalid')
   }
 
@@ -415,7 +413,7 @@ export async function createKbUrlResource(
       kbId,
       type: DB.KBResourceType.URL,
       title: validateKbResourceTitle(title),
-      sourceUrl: parsedUrl.toString(),
+      sourceUrl,
       status: DB.KBResourceStatus.ADDED,
     },
   })

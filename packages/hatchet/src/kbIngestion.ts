@@ -9,6 +9,7 @@ import { HatchetClient } from '@hatchet-dev/typescript-sdk'
 import { KBResourceStatus, type PrismaClient } from '@klicker-uzh/prisma/client'
 import type { IngestKBResourceInput } from '@klicker-uzh/types'
 import { signKBIngestionWebhook } from '@klicker-uzh/util'
+import { normalizePublicHttpUrl } from '@klicker-uzh/util/public-url'
 
 const DEFAULT_KB_INGESTION_TIMEOUT_SECONDS = 3600
 const KB_BLOB_SAS_CLOCK_SKEW_MS = 5 * 60 * 1000
@@ -283,7 +284,7 @@ export function getKBIngestionSourceUrl(
   }: { env?: NodeJS.ProcessEnv; now?: () => Date } = {}
 ): string {
   if (input.type === 'URL') {
-    return input.sourceUrl
+    return normalizePublicHttpUrl(input.sourceUrl)
   }
 
   const accountName = requireEnvironmentVariable(

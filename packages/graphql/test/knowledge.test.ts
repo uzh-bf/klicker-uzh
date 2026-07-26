@@ -601,6 +601,26 @@ describe('Integration tests for knowledge base CRUD', () => {
       createKbUrlResource(
         {
           kbId: created.id,
+          title: 'Private',
+          url: 'http://169.254.169.254/latest/meta-data',
+        },
+        userOneCtx
+      )
+    ).rejects.toThrow('KB resource URL is invalid')
+    await expect(
+      createKbUrlResource(
+        {
+          kbId: created.id,
+          title: 'Credentials',
+          url: 'https://user:password@example.com/file',
+        },
+        userOneCtx
+      )
+    ).rejects.toThrow('KB resource URL is invalid')
+    await expect(
+      createKbUrlResource(
+        {
+          kbId: created.id,
           title: 'Foreign',
           url: 'https://example.com',
         },
@@ -615,7 +635,7 @@ describe('Integration tests for knowledge base CRUD', () => {
       {
         kbId: created.id,
         title: 'Lecture recording',
-        url: 'https://video.example.test/watch?id=123',
+        url: 'https://video.example.com/watch?id=123',
       },
       userOneCtx
     )
@@ -624,7 +644,7 @@ describe('Integration tests for knowledge base CRUD', () => {
       kbId: created.id,
       title: 'Lecture recording',
       type: KBResourceType.URL,
-      sourceUrl: 'https://video.example.test/watch?id=123',
+      sourceUrl: 'https://video.example.com/watch?id=123',
     })
     await expect(
       deleteKbResource({ id: resource.id }, userTwoCtx)

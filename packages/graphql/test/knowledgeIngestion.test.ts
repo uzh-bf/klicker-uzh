@@ -51,7 +51,7 @@ describe('Integration tests for knowledge base ingestion', () => {
         {
           kbId: created.id,
           title: 'Lecture recording',
-          url: 'https://video.example.test/course',
+          url: 'https://video.example.com/course',
         },
         userOneCtx
       )
@@ -73,7 +73,7 @@ describe('Integration tests for knowledge base ingestion', () => {
         kbId: created.id,
         type: 'URL',
         title: 'Lecture recording',
-        sourceUrl: 'https://video.example.test/course',
+        sourceUrl: 'https://video.example.com/course',
         ingestionAttemptId: queued.ingestionAttemptId,
         speedMode,
       })
@@ -92,7 +92,7 @@ describe('Integration tests for knowledge base ingestion', () => {
       {
         kbId: created.id,
         title: 'Lecture recording',
-        url: 'https://video.example.test/course',
+        url: 'https://video.example.com/course',
       },
       userOneCtx
     )
@@ -179,7 +179,7 @@ describe('Integration tests for knowledge base ingestion', () => {
       {
         kbId: created.id,
         title: 'Lecture recording',
-        url: 'https://video.example.test/course',
+        url: 'https://video.example.com/course',
       },
       userOneCtx
     )
@@ -206,7 +206,7 @@ describe('Integration tests for knowledge base ingestion', () => {
       {
         kbId: created.id,
         title: 'Lecture recording',
-        url: 'https://video.example.test/course',
+        url: 'https://video.example.com/course',
       },
       userOneCtx
     )
@@ -249,7 +249,7 @@ describe('Integration tests for knowledge base ingestion', () => {
         kbId: created.id,
         type: KBResourceType.URL,
         title: 'Lecture recording',
-        sourceUrl: 'https://video.example.test/course',
+        sourceUrl: 'https://video.example.com/course',
         status: 'READY',
         ingestionAttemptId: observedAttemptId,
       },
@@ -298,7 +298,7 @@ describe('Integration tests for knowledge base ingestion', () => {
       {
         kbId: created.id,
         title: 'Lecture recording',
-        url: 'https://video.example.test/course',
+        url: 'https://video.example.com/course',
       },
       userOneCtx
     )
@@ -341,7 +341,7 @@ describe('Integration tests for knowledge base ingestion', () => {
       {
         kbId: created.id,
         title: 'Lecture recording',
-        url: 'https://video.example.test/course',
+        url: 'https://video.example.com/course',
       },
       userOneCtx
     )
@@ -369,7 +369,7 @@ describe('Integration tests for knowledge base ingestion', () => {
       {
         kbId: created.id,
         title: 'Lecture recording',
-        url: 'https://video.example.test/course',
+        url: 'https://video.example.com/course',
       },
       userOneCtx
     )

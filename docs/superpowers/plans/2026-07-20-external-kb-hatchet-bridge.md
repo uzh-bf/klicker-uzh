@@ -18,7 +18,7 @@
 - Keep KB containers private. Do not change media-library visibility or move KB blobs into media containers.
 - Mint blob-scoped read-only, HTTPS-only SAS URLs for one hour with five minutes of clock-skew allowance. Include the approved comment that the duration may need adjustment for larger files or slower workflows.
 - Do not persist or log SAS URLs, access keys, Hatchet tokens, webhook secrets, or raw external SDK errors.
-- Pass URL resources through unchanged; deployment/testing must ensure they are publicly reachable from the external namespace.
+- Normalize URL resources through the shared public-HTTP URL guard at registration and immediately before dispatch. Reject credentials and local/private/reserved literal destinations; deployment testing must also prove DNS and redirect egress controls in the external namespace.
 - Do not change the external Python workflow and do not require it to call Klicker's webhook.
 - Store only the latest attempt/run metadata; do not add an ingestion-history table, outbox, or webhook inbox.
 - Default speed mode to `balanced` in the UI and do not persist it as a KB resource preference.
@@ -1063,7 +1063,7 @@ Expected: all required checks pass. Diagnose exact logs before changing code; do
 - [ ] The attempt UUID appears in external `additionalMetadata`, local persistence guards, and signed webhook payloads.
 - [ ] Blob SAS is read-only, HTTPS-only, blob-scoped, one hour, clock-skew tolerant, and contains the approved future-file-size comment.
 - [ ] No SAS URL or secret appears in application logs, database fields, screenshots, commits, or PR text.
-- [ ] URL resources remain unchanged and are documented as publicly reachable.
+- [ ] URL resources pass both public-destination guards; external DNS and redirect egress controls are verified before lecturer exposure.
 - [ ] Only the latest attempt/run metadata is stored.
 - [ ] External terminal statuses and timeout map through the signed webhook; the external workflow itself does not call Klicker.
 - [ ] The sweep is database-driven, once per minute, non-overlapping, sequential, and failure-isolated.
