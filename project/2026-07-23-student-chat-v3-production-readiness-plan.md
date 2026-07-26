@@ -1121,7 +1121,7 @@ designing the question widget.
   broken external chatbot avatar SVGs: their source URL returned `200`, but the
   host was outside Next's image-optimizer allow-list. The four known avatar
   instances now use the documented per-image `unoptimized` path; local fallback
-  icons keep their prior optimized behavior. Typecheck, 59/59 Vitest, lint,
+  icons keep their prior/default behavior. Typecheck, 59/59 Vitest, lint,
   root checks, and independent maintainability/security reviews pass for that
   fix. A post-fix pixel screenshot could not run because local Docker/OrbStack
   stopped responding to CLI, inspect, and route probes; shared infrastructure
