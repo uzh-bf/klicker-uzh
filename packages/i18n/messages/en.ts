@@ -157,6 +157,12 @@ export default {
       showMore:
         '{count, plural, one {Show more (# more line)} other {Show more (# more lines)}}',
     },
+    sources: {
+      title: 'Sources',
+      page: 'p. {page}',
+      video: 'Video',
+      image: 'Image',
+    },
     noLogin: {
       title: 'Login Required',
       message:

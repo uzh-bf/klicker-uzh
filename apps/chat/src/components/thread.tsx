@@ -58,6 +58,7 @@ import { BranchPicker } from './branch-picker'
 import { useChatUi } from './chat-ui-context'
 import { MessageAttachments } from './message-attachments'
 import { AssistantMessageParts } from './message-parts'
+import { SourcesSection } from './sources-section'
 import { actionBarButtonClassName } from './ui/action-bar-button'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
@@ -1166,6 +1167,7 @@ const AssistantMessage: FC<{
       >
         {isPendingEmpty && <ThinkingDots />}
         <AssistantMessageParts />
+        <SourcesSection />
         <MessageMetadata includeCredits />
       </div>
 
