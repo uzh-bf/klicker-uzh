@@ -11,12 +11,13 @@ import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
 import {
   dispatchKBIngestion,
+  failKBIngestionDispatch,
   monitorActiveKBIngestions,
-  sendKBIngestionStatus,
 } from './kbIngestion.js'
 
 export * from './client.js'
 export * from './kbIngestion.js'
+export * from './kbIngestionApi.js'
 
 export type { HatchetHandlers } from '@klicker-uzh/types'
 
@@ -75,8 +76,7 @@ export function prepareHatchetTasks({
       input: IngestKBResourceInput,
       ctx: Context<IngestKBResourceInput>
     ) => {
-      // Stub seam: the real ingestion service call is implemented separately.
-      await ctx.logger.info('KB ingestion dispatch stub', {
+      await ctx.logger.info('KB ingestion dispatch started', {
         resourceId: input.resourceId,
         kbId: input.kbId,
         type: input.type,
@@ -90,13 +90,7 @@ export function prepareHatchetTasks({
     onFailure: {
       retries: 3,
       fn: async (input: IngestKBResourceInput) => {
-        await sendKBIngestionStatus({
-          resourceId: input.resourceId,
-          ingestionAttemptId: input.ingestionAttemptId,
-          status: 'FAILED',
-          statusMessage:
-            'The external ingestion workflow could not be started.',
-        })
+        await failKBIngestionDispatch({ input, prisma })
       },
     },
   }

@@ -35,6 +35,10 @@ const BLOCKED_HOSTNAMES = new Set(
   BLOCKED_HOSTNAME_SUFFIXES.map((suffix) => suffix.slice(1))
 )
 
+export function isPublicIPv4Address(value: string): boolean {
+  return isIP(value) === 4 && !BLOCKED_IPV4_ADDRESSES.check(value, 'ipv4')
+}
+
 export function normalizePublicHttpUrl(value: string): string {
   let parsedUrl: URL
   try {
@@ -61,7 +65,7 @@ export function normalizePublicHttpUrl(value: string): string {
     (ipVersion === 0 && !hostname.includes('.')) ||
     BLOCKED_HOSTNAMES.has(hostname) ||
     BLOCKED_HOSTNAME_SUFFIXES.some((suffix) => hostname.endsWith(suffix)) ||
-    (ipVersion === 4 && BLOCKED_IPV4_ADDRESSES.check(hostname, 'ipv4')) ||
+    (ipVersion === 4 && !isPublicIPv4Address(hostname)) ||
     ipVersion === 6
   ) {
     throw new Error('URL is invalid')

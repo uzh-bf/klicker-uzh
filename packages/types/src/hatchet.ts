@@ -27,6 +27,7 @@ type IngestKBResourceInputBase = JsonObject & {
   kbId: string
   title: string
   ingestionAttemptId: string
+  resourceVersion: number
   speedMode: KBIngestionSpeedMode
 }
 
@@ -36,6 +37,8 @@ export type IngestKBResourceInput = IngestKBResourceInputBase &
         type: 'BLOB'
         blobName: string
         containerName: string
+        mimeType: string
+        sizeBytes: number
       }
     | {
         type: 'URL'

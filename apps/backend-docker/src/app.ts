@@ -6,6 +6,7 @@ import { usePersistedOperations } from '@graphql-yoga/plugin-persisted-operation
 import {
   enhanceContext,
   handleKBIngestionWebhook,
+  handleKBSourceGateway,
   schema,
 } from '@klicker-uzh/graphql'
 import { verifyJWT } from '@klicker-uzh/util'
@@ -17,6 +18,8 @@ import { createRequire } from 'node:module'
 
 const require = createRequire(import.meta.url)
 const persistedOperations = require('@klicker-uzh/graphql/dist/server.json')
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 declare namespace global {
   let __coverage__: any
 }
@@ -194,6 +197,47 @@ function prepareApp({
   app.use('/healthz', function (req, res) {
     res.send('OK')
   })
+
+  app.get(
+    '/api/ingestion/resources/:resourceId/versions/:resourceVersion',
+    async (req, res) => {
+      const resourceVersion = Number(req.params.resourceVersion)
+      if (
+        !UUID_PATTERN.test(req.params.resourceId) ||
+        !/^[1-9]\d*$/.test(req.params.resourceVersion) ||
+        !Number.isSafeInteger(resourceVersion)
+      ) {
+        res.status(404).json({ error: 'Resource not found' })
+        return
+      }
+
+      try {
+        const result = await handleKBSourceGateway({
+          prisma,
+          resourceId: req.params.resourceId,
+          resourceVersion,
+          authorization: req.headers.authorization,
+        })
+        if (result.statusCode !== 200) {
+          res.status(result.statusCode).json(result.body)
+          return
+        }
+
+        res.status(200)
+        res.set({
+          'Cache-Control': 'private, no-store',
+          'Content-Length': String(result.contentLength),
+          'Content-Type': result.contentType,
+          'X-Content-Type-Options': 'nosniff',
+        })
+        result.stream.on('error', () => res.destroy())
+        result.stream.pipe(res)
+      } catch (error) {
+        console.error('KB source gateway failed', error)
+        res.status(500).json({ error: 'Internal server error' })
+      }
+    }
+  )
 
   app.post(
     '/api/webhooks/kb-ingestion',

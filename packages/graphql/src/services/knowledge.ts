@@ -465,18 +465,27 @@ export async function ingestKbResource(
   ) {
     throw new GraphQLError('KB resource cannot be ingested')
   }
+  if (resource.resourceVersion >= 2_147_483_647) {
+    throw new GraphQLError('KB resource version limit reached')
+  }
 
   const ingestionAttemptId = randomUUID()
+  const resourceVersion = resource.resourceVersion + 1
   const basePayload = {
     resourceId: resource.id,
     kbId: resource.kbId,
     title: resource.title,
     ingestionAttemptId,
+    resourceVersion,
     speedMode,
   }
   let payload: IngestKBResourceInput
   if (resource.type === DB.KBResourceType.BLOB) {
-    if (!resource.blobName) {
+    if (
+      !resource.blobName ||
+      !resource.mimeType ||
+      resource.sizeBytes === null
+    ) {
       throw new GraphQLError('KB blob metadata is invalid')
     }
     payload = {
@@ -484,6 +493,8 @@ export async function ingestKbResource(
       type: DB.KBResourceType.BLOB,
       blobName: resource.blobName,
       containerName: getKbContainerName(ctx.user.sub),
+      mimeType: resource.mimeType,
+      sizeBytes: resource.sizeBytes,
     }
   } else {
     if (!resource.sourceUrl) {
@@ -508,8 +519,10 @@ export async function ingestKbResource(
       statusMessage: null,
       ingestedAt: null,
       ingestionAttemptId,
-      externalWorkflowRunId: null,
-      externalWorkflowStartedAt: null,
+      resourceVersion,
+      contentSha256: null,
+      externalOperationId: null,
+      externalOperationStartedAt: null,
     },
   })
   if (claim.count !== 1) {
@@ -530,8 +543,10 @@ export async function ingestKbResource(
         statusMessage: resource.statusMessage,
         ingestedAt: resource.ingestedAt,
         ingestionAttemptId: resource.ingestionAttemptId,
-        externalWorkflowRunId: resource.externalWorkflowRunId,
-        externalWorkflowStartedAt: resource.externalWorkflowStartedAt,
+        resourceVersion: resource.resourceVersion,
+        contentSha256: resource.contentSha256,
+        externalOperationId: resource.externalOperationId,
+        externalOperationStartedAt: resource.externalOperationStartedAt,
       },
     })
     throw new GraphQLError('KB ingestion could not be queued')

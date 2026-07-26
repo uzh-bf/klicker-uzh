@@ -67,6 +67,7 @@ describe('Integration tests for knowledge base ingestion', () => {
       expect(queued).toMatchObject({
         status: 'QUEUED',
         ingestionAttemptId: expect.stringMatching(UUID_PATTERN),
+        resourceVersion: 1,
       })
       expect(runNoWait).toHaveBeenCalledWith({
         resourceId: resource.id,
@@ -75,6 +76,7 @@ describe('Integration tests for knowledge base ingestion', () => {
         title: 'Lecture recording',
         sourceUrl: 'https://video.example.com/course',
         ingestionAttemptId: queued.ingestionAttemptId,
+        resourceVersion: 1,
         speedMode,
       })
       await expect(
@@ -82,6 +84,7 @@ describe('Integration tests for knowledge base ingestion', () => {
       ).resolves.toMatchObject({
         status: 'QUEUED',
         ingestionAttemptId: queued.ingestionAttemptId,
+        resourceVersion: 1,
       })
     }
   )
@@ -105,8 +108,10 @@ describe('Integration tests for knowledge base ingestion', () => {
         statusMessage: 'Previous ingestion completed',
         ingestedAt,
         ingestionAttemptId: oldAttemptId,
-        externalWorkflowRunId: 'old-run-id',
-        externalWorkflowStartedAt: new Date('2026-07-19T11:30:00.000Z'),
+        resourceVersion: 2,
+        contentSha256: 'a'.repeat(64),
+        externalOperationId: 'old-operation-id',
+        externalOperationStartedAt: new Date('2026-07-19T11:30:00.000Z'),
       },
     })
     const runNoWait = vi
@@ -122,14 +127,17 @@ describe('Integration tests for knowledge base ingestion', () => {
       status: 'QUEUED',
       statusMessage: null,
       ingestedAt: null,
-      externalWorkflowRunId: null,
-      externalWorkflowStartedAt: null,
+      resourceVersion: 3,
+      contentSha256: null,
+      externalOperationId: null,
+      externalOperationStartedAt: null,
     })
     expect(queued.ingestionAttemptId).toMatch(UUID_PATTERN)
     expect(queued.ingestionAttemptId).not.toBe(oldAttemptId)
     expect(runNoWait).toHaveBeenCalledWith(
       expect.objectContaining({
         ingestionAttemptId: queued.ingestionAttemptId,
+        resourceVersion: 3,
         speedMode: 'balanced',
       })
     )
@@ -169,6 +177,9 @@ describe('Integration tests for knowledge base ingestion', () => {
       blobName: resource.blobName,
       containerName: `kb-${userOneCtx.user.sub}`,
       ingestionAttemptId: queued.ingestionAttemptId,
+      resourceVersion: 1,
+      mimeType: 'application/pdf',
+      sizeBytes: 1024,
       speedMode: 'quality',
     })
   })
@@ -237,6 +248,7 @@ describe('Integration tests for knowledge base ingestion', () => {
     ).resolves.toMatchObject({
       status: 'QUEUED',
       ingestionAttemptId: dispatchedAttemptId,
+      resourceVersion: 1,
     })
   })
 
@@ -312,8 +324,10 @@ describe('Integration tests for knowledge base ingestion', () => {
         statusMessage: 'Previous external run failed',
         ingestedAt: oldIngestedAt,
         ingestionAttemptId: oldAttemptId,
-        externalWorkflowRunId: 'previous-run-id',
-        externalWorkflowStartedAt: oldExternalStartedAt,
+        resourceVersion: 2,
+        contentSha256: 'b'.repeat(64),
+        externalOperationId: 'previous-operation-id',
+        externalOperationStartedAt: oldExternalStartedAt,
       },
     })
     vi.spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait').mockRejectedValue(
@@ -330,8 +344,10 @@ describe('Integration tests for knowledge base ingestion', () => {
       statusMessage: 'Previous external run failed',
       ingestedAt: oldIngestedAt,
       ingestionAttemptId: oldAttemptId,
-      externalWorkflowRunId: 'previous-run-id',
-      externalWorkflowStartedAt: oldExternalStartedAt,
+      resourceVersion: 2,
+      contentSha256: 'b'.repeat(64),
+      externalOperationId: 'previous-operation-id',
+      externalOperationStartedAt: oldExternalStartedAt,
     })
   })
 
@@ -381,8 +397,9 @@ describe('Integration tests for knowledge base ingestion', () => {
           where: { id: resource.id },
           data: {
             ingestionAttemptId: newerAttemptId,
-            externalWorkflowRunId: 'newer-run-id',
-            externalWorkflowStartedAt: newerStartedAt,
+            resourceVersion: 2,
+            externalOperationId: 'newer-operation-id',
+            externalOperationStartedAt: newerStartedAt,
             statusMessage: 'Newer attempt accepted',
           },
         })
@@ -399,8 +416,9 @@ describe('Integration tests for knowledge base ingestion', () => {
       status: 'QUEUED',
       statusMessage: 'Newer attempt accepted',
       ingestionAttemptId: newerAttemptId,
-      externalWorkflowRunId: 'newer-run-id',
-      externalWorkflowStartedAt: newerStartedAt,
+      resourceVersion: 2,
+      externalOperationId: 'newer-operation-id',
+      externalOperationStartedAt: newerStartedAt,
     })
   })
 })
