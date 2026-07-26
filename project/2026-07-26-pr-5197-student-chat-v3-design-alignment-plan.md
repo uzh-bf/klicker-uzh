@@ -205,3 +205,19 @@ simplify subagent on the exact commit → integrate accepted findings → re-ver
   + 3 cards post-change (screenshot capture flaky in daemon; snapshot is the
   evidence). Torn-write lesson: in-container prettier --write while dev
   watcher reads → turbopack caches parse error; remedy touch the file.
+- 2026-07-26 S3 done: remark plugin `remarkCitationMarkers` (mdast text-node
+  visitor → `#cite-n` links; code/links skipped structurally) + CitationChip
+  (button-in-sup, tooltip w/ title/page/excerpt/goToSource, click scrolls to
+  card anchor, no hash change) intercepted in markdown-text `a` override;
+  `useMessageSources` hook + MessageSourcesContext (AssistantMessage provides,
+  SourcesSection + chips consume — normalize runs once per message);
+  sr-only source numbers on cards (S2 a11y item); `chat.citations.*` en+de.
+  17 new tests (96/96). Env incident: turbopack EMFILE crash (3 concurrent
+  stacks) → `devrouter ensure .` reconciled; DB re-seeded → thread re-seeded
+  w/ [1][2][7] markers, JWT re-minted, scripts deleted. Browser evidence
+  (a11y snapshots; CDP screenshot capture hangs in this daemon): en+de chips
+  "Source/Quelle n: <title>" with correct a11y names, [7] stays literal,
+  hover tooltip "kapitel-4.pdf p. 4 Go to source", click = no nav/hash, no
+  fresh console errors, health 200. Gotcha confirmed: disclaimer dialog
+  animate-out never unmounts in headless tab → reload after accept.
+  Next: S3 review+simplify, then S4.
