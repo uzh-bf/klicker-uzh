@@ -181,3 +181,9 @@ simplify subagent on the exact commit → integrate accepted findings → re-ver
 
 - 2026-07-26: plan written; research R1/R2 done; slices pending. Next: commit
   plan, then S1.
+- 2026-07-26 S1 done: `apps/chat/src/lib/sources/{types,normalizeSources}.ts`
+  + 23 unit tests (79/79 chat suite green in container). Implement finding:
+  @ai-sdk/mcp without outputSchema returns the raw MCP CallToolResult envelope
+  as `result` — normalizer unwraps envelope (structuredContent preferred, then
+  text content JSON) in addition to plain object/string payloads. Next: S1
+  review+simplify subagents, then S2.
