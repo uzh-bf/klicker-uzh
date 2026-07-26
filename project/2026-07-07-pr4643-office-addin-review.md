@@ -1,8 +1,8 @@
 # PR #4643 Review — Office Add-in Rewrite (Vanilla TS)
 
-**Reviewed:** 2026-07-07; execution resumed against current `v3` on 2026-07-20 and finalized on 2026-07-22.
+**Reviewed:** 2026-07-07; execution resumed against current `v3` on 2026-07-20, finalized on 2026-07-22, and natively verified in PowerPoint on 2026-07-26.
 **Scope:** `apps/office-addin` (React/Webpack → vanilla TS/Rollup), deployed artifacts in `apps/docs/static/office-addin`, package documentation, lockfile.
-**Verdict:** The original blockers and final review findings are resolved. Publishing, current-head CI, PR refresh, and the ready transition remain; a real PowerPoint sideload is an explicit manual pre-merge check.
+**Verdict:** The original blockers and final review findings are resolved. The branch is published, current-head CI is green, and the PR is ready for review. Real PowerPoint checks D1, D2, D3, and D5 pass; D4 legacy migration remains blocked on a user-supplied legacy deck. Maintainer approval remains required, and this plan does not authorize merge.
 
 ## Progress
 
@@ -15,9 +15,11 @@
 - [x] Slice 4a: replaced permissive regex validation with a small URL parser and Node tests; reduced `content.ts` from 605 lines; serialized startup so legacy migration cannot overwrite user input; removed stale debug/browser metadata, the Office lint wrapper, the asset-copy wrapper, and the 1,369-line branch-local plan; rewrote package docs; and updated the wiki. The exact Node 24 suite passed. A fresh `agent-browser` run reverified both viewports, invalid/valid URLs, fullscreen, Change URL, and zero console/page errors. The CLI's `Page.captureScreenshot` command timed out on three fresh capture attempts; the earlier Slice 2 screenshots remain the visual evidence because markup and CSS did not change in this slice.
 - [x] Slice 4b: committed the implementation, merged `v3` at `c8de9c897`, fixed the final maintainability findings, and completed independent review. Security and thermo-nuclear reviews passed with no reportable findings; Agy with Gemini 3.5 Flash High returned “Clean. No reportable findings.” GitHub thread replies remain a publication step after the new head is pushed.
 - [x] Finish verification: under pinned Node 24.16.0 and pnpm 11.5.0, the frozen install, full production build (22 tasks), full test build (20 tasks), all 24 type-check tasks, lint, syncpack, AGENTS.md smoke check, Prisma sync/namespace checks, tracked-branch formatting, Office URL tests, production build/deploy parity (13 files), and Microsoft manifest validation passed. Existing build warnings are unrelated to the add-in rewrite.
-- [ ] Finish publication: push the branch, correct and resolve stale GitHub discussion, refresh the whole-branch PR title/body, monitor current-head CI, and mark ready when the automated gates are green. Never merge from this plan.
+- [x] Finish publication: branch pushed, stale GitHub discussion resolved, whole-branch PR title/body refreshed, current-head CI green, and PR marked ready.
+- [x] Native PowerPoint checks D1, D2, D3, and D5 on Microsoft PowerPoint 16.111.1 for macOS: the exact committed bundle loaded through a temporary HTTPS tunnel; a real evaluation rendered; save/close/reopen restored it; two instances retained different live questions independently; Change URL cleared one setting across reopen without affecting the other. Evidence is stored locally under the gitignored `project/_local/2026-07-25-office-addin-pr4643-native-verification/` directory and contains no raw evaluation URL.
+- [ ] Final human gates: run D4 legacy migration when a legacy deck is supplied and obtain maintainer approval. Do not merge from this plan.
 
-**Scope decisions:** preserve one persisted key per content-add-in instance; no toolbar/ribbon work; no executable packaging; no merge. If PowerPoint sideloading is unavailable, record it as a manual release check instead of claiming host-level proof.
+**Scope decisions:** preserve one persisted key per content-add-in instance; no toolbar/ribbon work; no executable packaging; no merge. PowerPoint host proof covers D1, D2, D3, and D5 on macOS; D4 remains explicitly unverified.
 
 ### Dependency audit (2026-07-20)
 
@@ -168,9 +170,9 @@ The initial review inferred that `Office.context.document.settings` was shared b
 
 ### 3.4 Cypress CI red
 
-- [ ] **Confirm the cypress failure is unrelated, then get it green**
+- [x] **Confirm the cypress failure is unrelated, then get it green**
 
-**Evidence:** "cypress-run" FAILURE on the PR head. The add-in isn't covered by cypress, so this is likely staleness of the branch (last CI run 2025-08-02) rather than this PR — but "probably unrelated" isn't evidence.
+**Evidence:** The earlier "cypress-run" failure belonged to the stale pre-sync head. Current-head CI on `1549ae80abde2fdb3f2ff8a9cf0c806866eeff7b` is green, including the repository's current Playwright test matrix; no add-in-specific Cypress failure remains.
 
 **Fix:** after rebasing onto `v3` (item 1.3), let CI re-run. If cypress still fails, diff the failing specs against a green `v3` run before touching anything.
 
@@ -219,7 +221,7 @@ The initial review inferred that `Office.context.document.settings` was shared b
    - Two embeds on two slides → **each keeps its own URL after reopen** (this is the 2.1 acceptance test).
    - Legacy file: open a deck that used the V1 add-in → migration message, embed still shows.
    - "Change URL" → back to input, setting cleared.
-5. Desktop PowerPoint (Windows at minimum) once before release — webview differs from browser.
+5. Desktop PowerPoint host check — completed on Microsoft PowerPoint 16.111.1 for macOS for D1, D2, D3, and D5. D4 awaits a legacy deck. Windows was not run; no Windows-specific implementation path exists in this branch.
 
 ## 7. Suggested order of execution
 
