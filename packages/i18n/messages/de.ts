@@ -142,6 +142,9 @@ export default {
       placeholder: 'Nachricht schreiben...',
       send: 'Nachricht senden',
       stop: 'Antwort stoppen',
+      disclaimerHint:
+        'Antworten des Chatbots können falsch sein — bitte anhand Deiner Kursmaterialien prüfen.',
+      creditCostHint: '1 Credit pro Nachricht',
       attachmentLimitError: 'Du kannst höchstens {max} Bilder anhängen.',
       dismissError: 'Fehler schliessen',
       dropImages: 'Bilder zum Anhängen hier ablegen',

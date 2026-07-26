@@ -139,6 +139,9 @@ export default {
       placeholder: 'Write a message...',
       send: 'Send message',
       stop: 'Stop response',
+      disclaimerHint:
+        'Chatbot answers can be wrong — verify against your course materials.',
+      creditCostHint: '1 credit per message',
       attachmentLimitError: 'You can only attach up to {max} images.',
       dismissError: 'Dismiss error',
       dropImages: 'Drop images to attach',
