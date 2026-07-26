@@ -6,17 +6,27 @@
  * syntax highlighted code blocks, and HTML rendering in frontend previews.
  */
 
+import type { Locator } from '@playwright/test'
 import { getPrisma } from '../global-setup.js'
 import { cleanupTest } from '../util/cleanup.js'
 import { URL_MANAGE } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import {
+  pasteEditorField,
   saveElement,
   searchAndEdit,
   setElementStatus,
   switchElementType,
 } from '../util/fixtures/elements.js'
 import { elementTypeLabels, statusLabels } from '../util/messages.js'
+
+async function expectNormalizedPastedTable(rows: Locator) {
+  await expect(rows).toHaveCount(4)
+  await expect(rows.nth(0).locator('th, td')).toHaveText(['Header', 'Detail'])
+  await expect(rows.nth(1).locator('th, td')).toHaveText(['Group', ''])
+  await expect(rows.nth(2).locator('th, td')).toHaveText(['First', 'Second'])
+  await expect(rows.nth(3).locator('th, td')).toHaveText(['', 'Third'])
+}
 
 test('CLEANUP', cleanupTest)
 
@@ -246,5 +256,63 @@ test.describe('Test Tiptap Editor Rich Text, Table, Code Block, and Preview Feat
         data: { content: dbQuestion!.content },
       })
     }
+  })
+
+  test('Normalizes merged cells before persisting a pasted table', async ({
+    page,
+  }, testInfo) => {
+    const questionTitle = `Tiptap Pasted Table E2E Test Element ${testInfo.workerIndex}-${Date.now()}`
+
+    await page.getByTestId('create-question').click()
+    await switchElementType(page, elementTypeLabels.content)
+    await page.getByTestId('insert-question-title').fill(questionTitle)
+    await setElementStatus(page, statusLabels.draft)
+
+    await pasteEditorField(
+      page,
+      'insert-question-text',
+      'Header\tDetail\nGroup\nFirst\tSecond\nThird',
+      '<table><thead><tr><th rowspan="0">Header</th><th>Detail</th></tr></thead><tbody><tr><td colspan="2">Group</td></tr><tr><td rowspan="2">First</td><td>Second</td></tr><tr><td>Third</td></tr></tbody></table>'
+    )
+
+    const editor = page.getByTestId('insert-question-text')
+    const pastedRows = editor.locator('table tr')
+    await expectNormalizedPastedTable(pastedRows)
+    await expect(
+      editor.locator(
+        'td[colspan]:not([colspan="1"]), th[colspan]:not([colspan="1"])'
+      )
+    ).toHaveCount(0)
+    await expect(
+      editor.locator(
+        'td[rowspan]:not([rowspan="1"]), th[rowspan]:not([rowspan="1"])'
+      )
+    ).toHaveCount(0)
+
+    await saveElement(page)
+
+    const prisma = await getPrisma()
+    const dbQuestion = await prisma.element.findFirst({
+      where: { name: questionTitle, isDeleted: false },
+    })
+    expect(dbQuestion).not.toBeNull()
+    expect(dbQuestion!.content).not.toContain('<table')
+    expect(dbQuestion!.content).not.toMatch(/(?:rowspan|colspan)/i)
+
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    await page.goto(`${manageUrl}/questions/${dbQuestion!.id}`)
+
+    const previewRows = page
+      .getByTestId('question-preview-container')
+      .locator('table tr')
+    await expectNormalizedPastedTable(previewRows)
+
+    await page.goto(manageUrl)
+    await searchAndEdit(page, questionTitle)
+
+    const reopenedRows = page
+      .getByTestId('insert-question-text')
+      .locator('table tr')
+    await expectNormalizedPastedTable(reopenedRows)
   })
 })

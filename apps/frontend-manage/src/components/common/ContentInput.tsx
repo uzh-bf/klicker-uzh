@@ -42,8 +42,125 @@ const normalizeLegacyEmptyContent = (content?: string) => {
   return /^\s*(<br\s*\/?>\s*)+$/i.test(currentContent) ? '' : currentContent
 }
 
+const normalizePastedTableSpans = (html: string) => {
+  if (!/(?:rowspan|colspan)\s*=/i.test(html)) {
+    return html
+  }
+
+  const document = new DOMParser().parseFromString(html, 'text/html')
+  let changed = false
+
+  document.querySelectorAll('table').forEach((table) => {
+    const sections = [
+      table.tHead,
+      ...Array.from(table.tBodies),
+      table.tFoot,
+    ].filter((section): section is HTMLTableSectionElement => section !== null)
+    const hasMergedCells = sections.some((section) => {
+      const rows = Array.from(section.rows)
+
+      return rows.some((row, rowIndex) =>
+        Array.from(row.cells).some(
+          (cell) =>
+            cell.colSpan > 1 ||
+            cell.rowSpan === 0 ||
+            Math.min(cell.rowSpan, rows.length - rowIndex) > 1
+        )
+      )
+    })
+
+    if (!hasMergedCells) {
+      return
+    }
+
+    changed = true
+    const normalizedSections = sections.map((section) => {
+      const rows = Array.from(section.rows)
+      const grid: Array<Array<HTMLTableCellElement | undefined>> = rows.map(
+        () => []
+      )
+      const fallbackTags = rows.map((row) =>
+        Array.from(row.cells).every((cell) => cell.tagName === 'TH')
+          ? 'th'
+          : 'td'
+      )
+
+      rows.forEach((row, rowIndex) => {
+        let columnIndex = 0
+
+        Array.from(row.cells).forEach((cell) => {
+          const columnSpan = cell.colSpan
+          const rowSpan =
+            cell.rowSpan === 0
+              ? rows.length - rowIndex
+              : Math.min(cell.rowSpan, rows.length - rowIndex)
+
+          while (
+            Array.from(
+              { length: columnSpan },
+              (_, offset) => grid[rowIndex][columnIndex + offset]
+            ).some(Boolean)
+          ) {
+            columnIndex += 1
+          }
+
+          cell.removeAttribute('colspan')
+          cell.removeAttribute('rowspan')
+
+          for (
+            let targetRow = rowIndex;
+            targetRow < rowIndex + rowSpan;
+            targetRow += 1
+          ) {
+            for (
+              let targetColumn = columnIndex;
+              targetColumn < columnIndex + columnSpan;
+              targetColumn += 1
+            ) {
+              grid[targetRow][targetColumn] =
+                targetRow === rowIndex && targetColumn === columnIndex
+                  ? cell
+                  : (document.createElement(
+                      cell.tagName.toLowerCase()
+                    ) as HTMLTableCellElement)
+            }
+          }
+
+          columnIndex += columnSpan
+        })
+      })
+
+      return { fallbackTags, grid, rows }
+    })
+
+    const columnCount = Math.max(
+      ...normalizedSections.flatMap(({ grid }) => grid.map((row) => row.length))
+    )
+    normalizedSections.forEach(({ fallbackTags, grid, rows }) => {
+      rows.forEach((row, rowIndex) => {
+        const cells = Array.from({ length: columnCount }, (_, columnIndex) => {
+          return (
+            grid[rowIndex][columnIndex] ??
+            (document.createElement(
+              fallbackTags[rowIndex]
+            ) as HTMLTableCellElement)
+          )
+        })
+
+        row.replaceChildren(...cells)
+      })
+    })
+  })
+
+  return changed ? document.body.innerHTML : html
+}
+
 const PasteMarkdown = Extension.create({
   name: 'pasteMarkdown',
+
+  transformPastedHTML(html) {
+    return normalizePastedTableSpans(html)
+  },
 
   addProseMirrorPlugins() {
     return [

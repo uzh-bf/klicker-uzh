@@ -65,7 +65,7 @@ test.describe('Markdown video embeds', () => {
       `[video](https://www.youtube.com/watch?v=${YOUTUBE_ID})`,
       `<strong>[video](https://www.youtube.com/watch?v=${YOUTUBE_ID})</strong>`
     )
-    await expect(editor.locator('strong')).toContainText('[video]')
+    await expect(editor.locator('strong').first()).toContainText('[video]')
     await expect(preview.locator('iframe')).toHaveCount(0)
     await fillEditorField(page, 'insert-question-text', '', true)
 

@@ -2,7 +2,7 @@
 
 ## 2026-07-26
 
-- **Update**: [frontend-conventions](./frontend-conventions.md) documents plain-text Markdown link parsing on paste, including the video/embed preview contract and the unchanged rich-HTML/plain-text paths.
+- **Update**: [frontend-conventions](./frontend-conventions.md) documents Markdown-safe clipboard handling, including plain-text Markdown links, video/embed previews, and merged-table normalization.
 
 ## 2026-07-19
 
