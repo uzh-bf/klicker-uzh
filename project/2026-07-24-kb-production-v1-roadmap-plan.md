@@ -123,7 +123,10 @@ External (platform-track) dependencies to watch, not owned here: R1.1 `resource_
 - [x] 2026-07-25: Roadmap finalized from rulings
 - [x] 2026-07-26: Roadmap moved onto `kb-poc`; Q10 corrected so [PR #5174](https://github.com/uzh-bf/klicker-uzh/pull/5174) is the integration line into `v3-ai`
 - [x] 2026-07-26: PR #5182 worktree attached to `feat/kb-poc-management-ui`; full pre-split head `9b5fc7af2` preserved on local branch `feat/kb-knowledge-graph-parked`; latest `kb-poc` roadmap merged into the implementation branch
-- [ ] 2026-07-26: W1 slice active — remove KG visualization/model-selection scope from PR #5182 while retaining core KB ingestion and general Hatchet development-startup fixes; publish the preserved head as a parked draft PR
+- [x] 2026-07-26: W1 extraction complete — full KG visualization/model-selection head preserved on `feat/kb-knowledge-graph-parked` and published as draft [PR #5206](https://github.com/uzh-bf/klicker-uzh/pull/5206); core extraction committed as `f4984229a`
+- [x] 2026-07-26: W1 core fixes complete — repeated `PROCESSING` callbacks accepted (`dab6aa63e`); unsupported Hatchet internal-logger patch removed and both workers verified live without `tsx --watch` (`720fe43cd`)
+- [x] 2026-07-26: W1 UI re-verified on `https://manage.klicker.feat-kb-poc-management-ui.localhost` — delegated login, URL resource creation, `FAST` selection, Ingest -> `QUEUED`, local `ingest-kb-resource` receipt, privacy-safe stub log, EN desktop and DE 375 px screenshots. The isolated environment has no real external ingestion endpoint, so the expected sanitized external-dispatch failure remains the already-documented deployment smoke prerequisite.
+- [ ] 2026-07-26: W1 finish gate active — refresh final plan/knowledge notes, run full checks and final review gates, push #5182, read back fresh CI, then stop for merge approval
 - [ ] Program roadmap §3a amended (R5.0 satisfied) — external `_local` artifact, done outside this repo on user request
 - [ ] W1 executed (KG split, 5182 fixes, wiki/screenshots refreshed, merge into `kb-poc`)
 
