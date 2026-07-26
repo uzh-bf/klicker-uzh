@@ -55,6 +55,11 @@ export function parseCitationHref(
   return match ? Number(match[1]) : null
 }
 
+// Spaces/tabs directly before a marker. Newlines are deliberately excluded:
+// a soft line break before a marker must survive, only intra-line spacing is
+// collapsed so the chip glues to the preceding word.
+const TRAILING_INLINE_WHITESPACE_RE = /[ \t]+$/
+
 /**
  * Pure: splits a single text value into text/link mdast nodes around any
  * complete `[n]` markers it contains. A partial marker still streaming in
@@ -62,6 +67,12 @@ export function parseCitationHref(
  * this is what makes the transform streaming-safe without any additional
  * state. Returns a single-element array with the original text unchanged
  * when there is nothing to split.
+ *
+ * Spaces before a marker are dropped ("Mittel [1]." renders as "Mittel[1]."),
+ * which is what glues the chip to the word it cites: browsers only break
+ * lines at whitespace, so without the space the word+chip pair wraps as one
+ * unit and a chip can never start a line on its own. Adjacent markers
+ * ("[1] [2]") collapse to a tight pair the same way.
  */
 export function splitCitationMarkers(value: string): MarkdownAstNode[] {
   if (!HAS_CITATION_MARKER_RE.test(value)) {
@@ -77,7 +88,12 @@ export function splitCitationMarkers(value: string): MarkdownAstNode[] {
     const [full, digits] = match
     const start = match.index
     if (start > lastIndex) {
-      nodes.push({ type: 'text', value: value.slice(lastIndex, start) })
+      const before = value
+        .slice(lastIndex, start)
+        .replace(TRAILING_INLINE_WHITESPACE_RE, '')
+      if (before.length > 0) {
+        nodes.push({ type: 'text', value: before })
+      }
     }
     nodes.push({
       type: 'link',

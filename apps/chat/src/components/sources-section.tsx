@@ -154,8 +154,13 @@ export function SourcesSection() {
         {t('chat.sources.title')} · {sources.length}
       </h3>
 
+      {/* `auto-fit`, not `auto-fill`: with fewer cards than would fit, the
+          empty tracks collapse and the cards stretch across the full row —
+          cards only wrap when they genuinely no longer fit. The `min(230px,
+          100%)` floor keeps a track from forcing horizontal overflow in
+          containers narrower than 230px (embedded mode). */}
       {documentSources.length > 0 && (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-2">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(230px,100%),1fr))] gap-2">
           {documentSources.map((source) => (
             <SourceCard key={source.id} source={source} messageId={messageId} />
           ))}
