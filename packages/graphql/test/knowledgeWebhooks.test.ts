@@ -99,6 +99,30 @@ describe('KB ingestion webhook contract', () => {
     })
   })
 
+  it('accepts a repeated signed PROCESSING callback', async () => {
+    await prisma.kBResource.update({
+      where: { id: resourceId },
+      data: {
+        status: KBResourceStatus.PROCESSING,
+        statusMessage: 'Started',
+      },
+    })
+    const request = createRequest({
+      resourceId,
+      ingestionAttemptId: INGESTION_ATTEMPT_ID,
+      status: 'PROCESSING',
+      statusMessage: 'Still processing',
+    })
+
+    await expect(
+      handleKBIngestionWebhook({ prisma, ...request })
+    ).resolves.toEqual({ statusCode: 200, body: { ok: true } })
+    await expect(getResource()).resolves.toMatchObject({
+      status: KBResourceStatus.PROCESSING,
+      statusMessage: 'Still processing',
+    })
+  })
+
   it('sets ingestedAt for a valid READY transition', async () => {
     await prisma.kBResource.update({
       where: { id: resourceId },

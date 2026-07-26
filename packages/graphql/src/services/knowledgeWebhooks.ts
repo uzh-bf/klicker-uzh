@@ -118,10 +118,10 @@ export async function handleKBIngestionWebhook({
     return { statusCode: 400, body: { error: 'Invalid request' } }
   }
 
-  const allowedSources: KBResourceStatus[] =
-    payload.status === KBResourceStatus.PROCESSING
-      ? [KBResourceStatus.QUEUED]
-      : [KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING]
+  const allowedSources: KBResourceStatus[] = [
+    KBResourceStatus.QUEUED,
+    KBResourceStatus.PROCESSING,
+  ]
 
   await prisma.kBResource.updateMany({
     where: {
