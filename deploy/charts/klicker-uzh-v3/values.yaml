@@ -56,12 +56,9 @@ hatchet:
     tenantId: ""
     hostPort: ""
   kbIngestion:
-    clientHostPort: ""
     apiUrl: ""
-    tlsStrategy: "none"
-    workflowName: ""
-    timeoutSeconds: 3600
-    webhookUrl: ""
+    projectId: "klicker-course-materials"
+    sourceGatewayUrl: ""
   workers:
     general:
       replicaCount: 1

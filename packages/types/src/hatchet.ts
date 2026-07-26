@@ -19,16 +19,12 @@ export interface HatchetHandlerGlobalContext {
   prisma: PrismaClient
 }
 
-export const kbIngestionSpeedModes = ['balanced', 'quality', 'fast'] as const
-export type KBIngestionSpeedMode = (typeof kbIngestionSpeedModes)[number]
-
 type IngestKBResourceInputBase = JsonObject & {
   resourceId: string
   kbId: string
   title: string
   ingestionAttemptId: string
   resourceVersion: number
-  speedMode: KBIngestionSpeedMode
 }
 
 export type IngestKBResourceInput = IngestKBResourceInputBase &

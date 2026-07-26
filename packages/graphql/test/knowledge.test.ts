@@ -49,7 +49,7 @@ function withIngestionClaimSignal(
 }
 
 describe('Knowledge base GraphQL contract', () => {
-  it('rejects an invalid ingestion speed enum literal during validation', () => {
+  it('requires the resource id for ingestion', () => {
     const schema = buildSchema(
       readFileSync(
         new URL('../src/public/schema.graphql', import.meta.url),
@@ -58,14 +58,14 @@ describe('Knowledge base GraphQL contract', () => {
     )
     const document = parse(`
       mutation {
-        ingestKbResource(id: "resource-id", speedMode: TURBO) {
+        ingestKbResource {
           id
         }
       }
     `)
 
     expect(validate(schema, document).map(({ message }) => message)).toEqual([
-      'Value "TURBO" does not exist in "KBSpeedMode" enum.',
+      'Field "ingestKbResource" argument "id" of type "ID!" is required, but it was not provided.',
     ])
   })
 })
@@ -746,7 +746,7 @@ describe('Integration tests for knowledge base CRUD', () => {
     const deletion = deleteKbResource({ id: resource.id }, userOneCtx)
     await deletionStarted.promise
     const ingestion = expect(
-      ingestKbResource({ id: resource.id, speedMode: 'balanced' }, ingestCtx)
+      ingestKbResource({ id: resource.id }, ingestCtx)
     ).rejects.toThrow('KB resource cannot be ingested')
     await claimStarted.promise
 
@@ -794,7 +794,7 @@ describe('Integration tests for knowledge base CRUD', () => {
     const deletion = deleteKb({ id: created.id }, userOneCtx)
     await deletionStarted.promise
     const ingestion = expect(
-      ingestKbResource({ id: resource.id, speedMode: 'balanced' }, ingestCtx)
+      ingestKbResource({ id: resource.id }, ingestCtx)
     ).rejects.toThrow('KB resource cannot be ingested')
     await claimStarted.promise
 

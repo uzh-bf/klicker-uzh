@@ -1259,10 +1259,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     ingestResourceSuccess: 'Ressource wurde zur Verarbeitung eingeplant.',
     ingestResourceError:
       'Die Ressource konnte nicht zur Verarbeitung eingeplant werden.',
-    speedModeLabel: 'Geschwindigkeit',
-    speedModeBalanced: 'Ausgewogen',
-    speedModeQuality: 'Qualität',
-    speedModeFast: 'Schnell',
   },
   manage: {
     general: {

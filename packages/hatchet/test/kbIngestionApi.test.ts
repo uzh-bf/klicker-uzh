@@ -203,7 +203,6 @@ describe('ingestion source preparation', () => {
     title: 'Lecture 1',
     ingestionAttemptId: ATTEMPT_ID,
     resourceVersion: 3,
-    speedMode: 'balanced',
     type: 'BLOB',
     containerName: 'kb-owner',
     blobName: `${RESOURCE_ID}.pdf`,
@@ -240,7 +239,6 @@ describe('ingestion source preparation', () => {
       title: 'Lecture notes',
       ingestionAttemptId: ATTEMPT_ID,
       resourceVersion: 3,
-      speedMode: 'balanced',
       type: 'URL',
       sourceUrl: 'https://example.com/notes',
     } satisfies IngestKBResourceInput

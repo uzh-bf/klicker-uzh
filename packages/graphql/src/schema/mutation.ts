@@ -42,7 +42,7 @@ import {
   GroupActivityGradingInput,
   GroupActivityInstance,
 } from './groupActivity.js'
-import { KB, KBFileUpload, KBResource, KBSpeedMode } from './knowledge.js'
+import { KB, KBFileUpload, KBResource } from './knowledge.js'
 import {
   ConfusionTimestep,
   Feedback,
@@ -1712,10 +1712,7 @@ export const Mutation = builder.mutationType({
       ingestKbResource: t.withAuth(asUserFullAccess).field({
         nullable: false,
         type: KBResource,
-        args: {
-          id: t.arg.id({ required: true }),
-          speedMode: t.arg({ type: KBSpeedMode, required: true }),
-        },
+        args: { id: t.arg.id({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.ingestKbResource(args, ctx)
         },

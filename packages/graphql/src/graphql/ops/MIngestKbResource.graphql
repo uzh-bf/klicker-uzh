@@ -1,5 +1,5 @@
-mutation IngestKbResource($id: ID!, $speedMode: KBSpeedMode!) {
-  ingestKbResource(id: $id, speedMode: $speedMode) {
+mutation IngestKbResource($id: ID!) {
+  ingestKbResource(id: $id) {
     id
     status
   }

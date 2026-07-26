@@ -30,4 +30,5 @@ Conventions (design system, Tailwind v4, Apollo, i18n, CSP): [docs/frontend-conv
 
 - `frontend-manage` (lecturer), `frontend-pwa` (student; also has a localforage offline side-channel for live-quiz answers — don't bypass `storageHelpers.ts`), `frontend-control` (mobile controller), `auth` (login flows — auth changes also need [docs/auth-model.md](../../../docs/auth-model.md)).
 - Knowledge-base management is a reusable package mounted by `frontend-manage`: edit `packages/kb-management`, not duplicate app-local components. Verify `/resources/knowledgeBases` plus the detail route at desktop and mobile widths, both locales, and every changed empty/active/success/failure state.
+- The knowledge-resource Ingest action accepts only the resource identifier. Do not expose transport tuning in the UI unless the GraphQL and ingestion-platform contracts add a real user-controlled setting.
 - **`apps/chat` is out of scope here** — app router, zustand, assistant-ui; read [docs/chat-platform.md](../../../docs/chat-platform.md) and follow its local conventions instead.

@@ -27,7 +27,6 @@ const input = {
   title: 'Lecture 1',
   ingestionAttemptId: ATTEMPT_ID,
   resourceVersion: 3,
-  speedMode: 'balanced',
   type: 'URL',
   sourceUrl: 'https://example.com/lecture.txt',
 } satisfies IngestKBResourceInput

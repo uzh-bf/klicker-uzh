@@ -5,10 +5,7 @@ import {
   StorageSharedKeyCredential,
 } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma/client'
-import type {
-  IngestKBResourceInput,
-  KBIngestionSpeedMode,
-} from '@klicker-uzh/types'
+import type { IngestKBResourceInput } from '@klicker-uzh/types'
 import { normalizePublicHttpUrl } from '@klicker-uzh/util/public-url'
 import { randomUUID } from 'crypto'
 import { GraphQLError } from 'graphql'
@@ -454,7 +451,7 @@ export async function deleteKbResource(
 }
 
 export async function ingestKbResource(
-  { id, speedMode }: { id: string; speedMode: KBIngestionSpeedMode },
+  { id }: { id: string },
   ctx: ContextWithUser
 ) {
   const resource = await getOwnedKbResourceOrThrow(ctx, id)
@@ -477,7 +474,6 @@ export async function ingestKbResource(
     title: resource.title,
     ingestionAttemptId,
     resourceVersion,
-    speedMode,
   }
   let payload: IngestKBResourceInput
   if (resource.type === DB.KBResourceType.BLOB) {

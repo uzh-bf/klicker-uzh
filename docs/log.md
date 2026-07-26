@@ -2,7 +2,7 @@
 
 ## 2026-07-26
 
-- **Update**: [domain-model](./domain-model.md), [async-and-workers](./async-and-workers.md), and [frontend-conventions](./frontend-conventions.md) document the KB resource model, current external-ingestion bridge and signed callback flow, lecturer routes, reusable UI package, and the remaining DNS/redirect deployment gate.
+- **Update**: [domain-model](./domain-model.md), [async-and-workers](./async-and-workers.md), [frontend-conventions](./frontend-conventions.md), and [ci-and-deployment](./ci-and-deployment.md) document the KB resource model, synchronous ingestion API dispatch, polling plus strict signed-event reconciliation, source-gateway boundary, lecturer routes, reusable UI package, and deployment configuration split.
 
 ## 2026-07-18
 

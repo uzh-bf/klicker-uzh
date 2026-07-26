@@ -8,12 +8,9 @@ metadata:
 data:
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
-  KB_INGESTION_HATCHET_CLIENT_HOST_PORT: {{ .Values.hatchet.kbIngestion.clientHostPort | quote }}
-  KB_INGESTION_HATCHET_API_URL: {{ .Values.hatchet.kbIngestion.apiUrl | quote }}
-  KB_INGESTION_HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.kbIngestion.tlsStrategy | quote }}
-  KB_INGESTION_HATCHET_WORKFLOW_NAME: {{ .Values.hatchet.kbIngestion.workflowName | quote }}
-  KB_INGESTION_TIMEOUT_SECONDS: {{ .Values.hatchet.kbIngestion.timeoutSeconds | quote }}
-  KB_WEBHOOK_URL: {{ .Values.hatchet.kbIngestion.webhookUrl | quote }}
+  KB_INGESTION_API_URL: {{ .Values.hatchet.kbIngestion.apiUrl | quote }}
+  KB_INGESTION_PROJECT_ID: {{ .Values.hatchet.kbIngestion.projectId | quote }}
+  KB_SOURCE_GATEWAY_URL: {{ .Values.hatchet.kbIngestion.sourceGatewayUrl | quote }}
   BLOB_STORAGE_ACCOUNT_NAME: {{ .Values.blobStorage.accountName | quote }}
 ---
 apiVersion: v1

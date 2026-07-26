@@ -10,19 +10,11 @@ import {
   IngestKbResourceDocument,
   KbResourceStatus,
   KbResourceType,
-  KbSpeedMode,
   type GetKbQuery,
 } from '@klicker-uzh/graphql/dist/ops'
-import {
-  Badge,
-  Button,
-  H3,
-  Select,
-  toast,
-  Tooltip,
-} from '@uzh-bf/design-system'
+import { Badge, Button, H3, toast, Tooltip } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
-import React, { useMemo, useState } from 'react'
+import React, { useState } from 'react'
 import DeleteKnowledgeBaseResourceModal from './DeleteKnowledgeBaseResourceModal'
 
 type KnowledgeBaseResource = GetKbQuery['getKb']['resources'][number]
@@ -48,31 +40,7 @@ function KnowledgeBaseResourceList({
   const [deletionTarget, setDeletionTarget] =
     useState<KnowledgeBaseResource | null>(null)
   const [ingestingId, setIngestingId] = useState<string | null>(null)
-  const [speedModeByResource, setSpeedModeByResource] = useState<
-    Record<string, KbSpeedMode>
-  >({})
   const [ingestResource] = useMutation(IngestKbResourceDocument)
-
-  const speedModeItems = useMemo(
-    () => [
-      {
-        value: KbSpeedMode.Balanced,
-        label: t('kb.speedModeBalanced'),
-        data: { cy: 'kb-speed-mode-balanced' },
-      },
-      {
-        value: KbSpeedMode.Quality,
-        label: t('kb.speedModeQuality'),
-        data: { cy: 'kb-speed-mode-quality' },
-      },
-      {
-        value: KbSpeedMode.Fast,
-        label: t('kb.speedModeFast'),
-        data: { cy: 'kb-speed-mode-fast' },
-      },
-    ],
-    [t]
-  )
 
   const formatFileSize = (sizeBytes: number | null | undefined) => {
     if (sizeBytes === null || sizeBytes === undefined) return '—'
@@ -155,10 +123,7 @@ function KnowledgeBaseResourceList({
     setIngestingId(resource.id)
     try {
       await ingestResource({
-        variables: {
-          id: resource.id,
-          speedMode: speedModeByResource[resource.id] ?? KbSpeedMode.Balanced,
-        },
+        variables: { id: resource.id },
         refetchQueries: [{ query: GetKbDocument, variables: { id: kbId } }],
         awaitRefetchQueries: true,
       })
@@ -237,38 +202,6 @@ function KnowledgeBaseResourceList({
                 </span>
               </div>
               <div className="grid grid-cols-2 items-end gap-2 sm:flex sm:flex-wrap">
-                <div className="col-span-2 flex w-full flex-col sm:w-36">
-                  <label
-                    htmlFor={`kb-speed-mode-trigger-${resource.id}`}
-                    className="my-auto -mb-0.5 mr-2 mt-1 min-w-max font-bold leading-6 text-gray-600"
-                  >
-                    {t('kb.speedModeLabel')}
-                    <span className="sr-only">: {resource.title}</span>
-                  </label>
-                  <Select
-                    id={`kb-speed-mode-trigger-${resource.id}`}
-                    items={speedModeItems}
-                    value={
-                      speedModeByResource[resource.id] ?? KbSpeedMode.Balanced
-                    }
-                    onChange={(value) =>
-                      setSpeedModeByResource((current) => ({
-                        ...current,
-                        [resource.id]: value as KbSpeedMode,
-                      }))
-                    }
-                    disabled={
-                      ingestingId !== null ||
-                      resource.status === KbResourceStatus.Queued ||
-                      resource.status === KbResourceStatus.Processing
-                    }
-                    data={{ cy: `kb-speed-mode-${resource.id}` }}
-                    className={{
-                      root: 'w-full',
-                      trigger: 'w-full',
-                    }}
-                  />
-                </div>
                 <Button
                   primary
                   onClick={() => handleIngest(resource)}

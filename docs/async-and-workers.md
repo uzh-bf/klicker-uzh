@@ -48,12 +48,16 @@ Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. No
 
 `packages/hatchet/src/index.ts:prepareHatchetTasks` registers two local workflows:
 
-- `ingest-kb-resource` accepts one selected resource and speed mode, then calls `packages/hatchet/src/kbIngestion.ts:dispatchKBIngestion`. The current POC bridges to an external Hatchet workflow; the production contract will replace this transport with the synchronous ingestion HTTP API.
-- `monitor-kb-ingestions` runs every minute and calls `packages/hatchet/src/kbIngestion.ts:monitorActiveKBIngestions` to reconcile active rows with the external operation.
+- `ingest-kb-resource` accepts the selected resource, version, and attempt identifiers, prepares the exact source bytes, then calls `packages/hatchet/src/kbIngestion.ts:dispatchKBIngestion`. Dispatch awaits `POST /v1/resources`, stores the returned operation identifier, and reuses the same version, digest, source URL, and idempotency key when an attempt is retried.
+- `monitor-kb-ingestions` runs every minute and calls `packages/hatchet/src/kbIngestion.ts:monitorActiveKBIngestions`. It polls `GET /v1/operations/{operation_id}` with bounded concurrency and applies only responses matching the local operation, resource version, and content digest.
 
-The local worker never writes terminal status directly. Status returns through the raw-body, HMAC-signed `/api/webhooks/kb-ingestion` route registered by `apps/backend-docker/src/app.ts:prepareApp`, and `packages/graphql/src/services/knowledgeWebhooks.ts:handleKBIngestionWebhook` applies attempt-correlated transitions. Both Hatchet workers intentionally run `tsx` without `--watch`; watch restarts unregister workflows during development.
+Operation events also return through the raw-body `/api/webhooks/kb-ingestion` route registered by `apps/backend-docker/src/app.ts:prepareApp`. `packages/graphql/src/services/knowledgeWebhooks.ts:handleKBIngestionWebhook` accepts the strict canonical event body and the four `X-Ingestion-*` headers, verifies an HMAC-SHA256 signature within the five-minute replay window against the current or previous webhook secret, then applies the same operation/version/digest correlation guards as polling. A resource becomes `READY` only when the platform reports that the expected version and digest are actively serving.
 
-Literal URL destinations are screened before dispatch, but DNS rebinding and redirect-hop egress controls are not complete. Treat those controls, plus external-ingestion connectivity, as deployment gates before lecturers can use ingestion.
+URL resources are registered only with public HTTP(S) destinations using ports 80 or 443 and without credentials, fragments, or secret-like query parameters. Before dispatch, every redirect hop is resolved to a public IPv4 address and fetched through that pinned address while the original public URL remains the ingestion source identity. Private blobs are exposed to the ingestion platform through the authenticated backend source gateway; no Azure storage credential or SAS URL crosses the API contract.
+
+The general worker requires `KB_INGESTION_API_URL`, `KB_INGESTION_API_KEY`, and `KB_SOURCE_GATEWAY_URL`; `KB_INGESTION_PROJECT_ID` defaults to `klicker-course-materials`. The backend requires `KB_SOURCE_GATEWAY_KEY` and `KB_WEBHOOK_SECRET`, with optional `KB_WEBHOOK_PREVIOUS_SECRET` during webhook-key rotation. The API key, gateway key, and webhook keys are secrets and must stay outside chart ConfigMaps.
+
+Both Hatchet workers intentionally run `tsx` without `--watch`; watch restarts unregister workflows during development.
 
 ## Running locally (config-derived — verify on your machine)
 

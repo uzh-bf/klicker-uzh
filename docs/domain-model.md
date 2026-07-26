@@ -51,9 +51,9 @@ Scheduled publication/ending is executed by the Hatchet general worker — witho
 
 ## Knowledge bases
 
-Lecturer-owned knowledge bases use `KB` with child `KBResource` records (`packages/prisma/src/prisma/schema/knowledge.prisma:KB`, `packages/prisma/src/prisma/schema/knowledge.prisma:KBResource`). A resource is either a private uploaded blob or a public HTTP(S) URL. URL registration rejects credentials and literal local, private, reserved, or IPv6 destinations through `packages/util/src/publicUrl.ts:normalizePublicHttpUrl`; DNS resolution and redirect-hop enforcement remain deployment gates before lecturer exposure.
+Lecturer-owned knowledge bases use `KB` with child `KBResource` records (`packages/prisma/src/prisma/schema/knowledge.prisma:KB`, `packages/prisma/src/prisma/schema/knowledge.prisma:KBResource`). A resource is either a private uploaded blob or a public HTTP(S) URL. URL registration rejects credentials, fragments, secret-like query parameters, non-standard ports, and literal local, private, reserved, or IPv6 destinations through `packages/util/src/publicUrl.ts:normalizePublicHttpUrl`. Dispatch preparation resolves and pins every redirect hop to a public IPv4 address; the ingestion platform still enforces its own independent egress policy.
 
-Resources move through `ADDED → QUEUED → PROCESSING → READY | FAILED`. The row also stores the latest ingestion attempt and external workflow identifiers; this is current-status state, not ingestion history. Ingestion transport and status reconciliation are described in [Async & Workers](./async-and-workers.md).
+Resources move through `ADDED → QUEUED → PROCESSING → READY | FAILED`. The row stores the current `resourceVersion`, exact-byte `contentSha256`, ingestion attempt, and external operation identifiers. This is current-status state, not ingestion history: retrying a terminal resource creates a new attempt and version while preserving a stable request identity within that attempt. Ingestion transport and status reconciliation are described in [Async & Workers](./async-and-workers.md).
 
 ## Gamification details
 

@@ -24,14 +24,6 @@ export const KBResourceStatus = builder.enumType('KBResourceStatus', {
   values: Object.values(DB.KBResourceStatus),
 })
 
-export const KBSpeedMode = builder.enumType('KBSpeedMode', {
-  values: {
-    BALANCED: { value: 'balanced' },
-    QUALITY: { value: 'quality' },
-    FAST: { value: 'fast' },
-  } as const,
-})
-
 export const KBResourceRef = builder.objectRef<DB.KBResource>('KBResource')
 export const KBResource = KBResourceRef.implement({
   fields: (t) => ({

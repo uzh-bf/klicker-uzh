@@ -43,51 +43,44 @@ describe('Integration tests for knowledge base ingestion', () => {
     await testCleanup(prisma)
   })
 
-  it.each(['balanced', 'quality', 'fast'] as const)(
-    'queues an owned URL resource with the %s speed mode and a fresh attempt',
-    async (speedMode) => {
-      const created = await createKb({ name: 'Finance notes' }, userOneCtx)
-      const resource = await createKbUrlResource(
-        {
-          kbId: created.id,
-          title: 'Lecture recording',
-          url: 'https://video.example.com/course',
-        },
-        userOneCtx
-      )
-      const runNoWait = vi
-        .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
-        .mockResolvedValue({} as never)
-
-      const queued = await ingestKbResource(
-        { id: resource.id, speedMode },
-        userOneCtx
-      )
-
-      expect(queued).toMatchObject({
-        status: 'QUEUED',
-        ingestionAttemptId: expect.stringMatching(UUID_PATTERN),
-        resourceVersion: 1,
-      })
-      expect(runNoWait).toHaveBeenCalledWith({
-        resourceId: resource.id,
+  it('queues an owned URL resource with a fresh attempt', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const resource = await createKbUrlResource(
+      {
         kbId: created.id,
-        type: 'URL',
         title: 'Lecture recording',
-        sourceUrl: 'https://video.example.com/course',
-        ingestionAttemptId: queued.ingestionAttemptId,
-        resourceVersion: 1,
-        speedMode,
-      })
-      await expect(
-        prisma.kBResource.findUnique({ where: { id: resource.id } })
-      ).resolves.toMatchObject({
-        status: 'QUEUED',
-        ingestionAttemptId: queued.ingestionAttemptId,
-        resourceVersion: 1,
-      })
-    }
-  )
+        url: 'https://video.example.com/course',
+      },
+      userOneCtx
+    )
+    const runNoWait = vi
+      .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
+      .mockResolvedValue({} as never)
+
+    const queued = await ingestKbResource({ id: resource.id }, userOneCtx)
+
+    expect(queued).toMatchObject({
+      status: 'QUEUED',
+      ingestionAttemptId: expect.stringMatching(UUID_PATTERN),
+      resourceVersion: 1,
+    })
+    expect(runNoWait).toHaveBeenCalledWith({
+      resourceId: resource.id,
+      kbId: created.id,
+      type: 'URL',
+      title: 'Lecture recording',
+      sourceUrl: 'https://video.example.com/course',
+      ingestionAttemptId: queued.ingestionAttemptId,
+      resourceVersion: 1,
+    })
+    await expect(
+      prisma.kBResource.findUnique({ where: { id: resource.id } })
+    ).resolves.toMatchObject({
+      status: 'QUEUED',
+      ingestionAttemptId: queued.ingestionAttemptId,
+      resourceVersion: 1,
+    })
+  })
 
   it('clears prior external metadata when claiming a new attempt', async () => {
     const created = await createKb({ name: 'Finance notes' }, userOneCtx)
@@ -118,10 +111,7 @@ describe('Integration tests for knowledge base ingestion', () => {
       .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
       .mockResolvedValue({} as never)
 
-    const queued = await ingestKbResource(
-      { id: resource.id, speedMode: 'balanced' },
-      userOneCtx
-    )
+    const queued = await ingestKbResource({ id: resource.id }, userOneCtx)
 
     expect(queued).toMatchObject({
       status: 'QUEUED',
@@ -138,7 +128,6 @@ describe('Integration tests for knowledge base ingestion', () => {
       expect.objectContaining({
         ingestionAttemptId: queued.ingestionAttemptId,
         resourceVersion: 3,
-        speedMode: 'balanced',
       })
     )
   })
@@ -163,10 +152,7 @@ describe('Integration tests for knowledge base ingestion', () => {
       .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
       .mockResolvedValue({} as never)
 
-    const queued = await ingestKbResource(
-      { id: resource.id, speedMode: 'quality' },
-      userOneCtx
-    )
+    const queued = await ingestKbResource({ id: resource.id }, userOneCtx)
 
     expect(queued.status).toBe('QUEUED')
     expect(runNoWait).toHaveBeenCalledWith({
@@ -180,7 +166,6 @@ describe('Integration tests for knowledge base ingestion', () => {
       resourceVersion: 1,
       mimeType: 'application/pdf',
       sizeBytes: 1024,
-      speedMode: 'quality',
     })
   })
 
@@ -199,14 +184,14 @@ describe('Integration tests for knowledge base ingestion', () => {
       .mockResolvedValue({} as never)
 
     await expect(
-      ingestKbResource({ id: resource.id, speedMode: 'balanced' }, userTwoCtx)
+      ingestKbResource({ id: resource.id }, userTwoCtx)
     ).rejects.toThrow('KB resource not found')
     await prisma.kBResource.update({
       where: { id: resource.id },
       data: { status: 'PROCESSING' },
     })
     await expect(
-      ingestKbResource({ id: resource.id, speedMode: 'balanced' }, userOneCtx)
+      ingestKbResource({ id: resource.id }, userOneCtx)
     ).rejects.toThrow('KB resource cannot be ingested')
     expect(runNoWait).not.toHaveBeenCalled()
   })
@@ -226,8 +211,8 @@ describe('Integration tests for knowledge base ingestion', () => {
       .mockResolvedValue({} as never)
 
     const results = await Promise.allSettled([
-      ingestKbResource({ id: resource.id, speedMode: 'balanced' }, userOneCtx),
-      ingestKbResource({ id: resource.id, speedMode: 'quality' }, userOneCtx),
+      ingestKbResource({ id: resource.id }, userOneCtx),
+      ingestKbResource({ id: resource.id }, userOneCtx),
     ])
 
     expect(
@@ -291,9 +276,9 @@ describe('Integration tests for knowledge base ingestion', () => {
       },
     } as unknown as ContextWithUser
 
-    await expect(
-      ingestKbResource({ id: resource.id, speedMode: 'balanced' }, abaCtx)
-    ).rejects.toThrow('KB resource cannot be ingested')
+    await expect(ingestKbResource({ id: resource.id }, abaCtx)).rejects.toThrow(
+      'KB resource cannot be ingested'
+    )
     expect(runNoWait).not.toHaveBeenCalled()
     await expect(
       prisma.kBResource.findUniqueOrThrow({ where: { id: resource.id } })
@@ -335,7 +320,7 @@ describe('Integration tests for knowledge base ingestion', () => {
     )
 
     await expect(
-      ingestKbResource({ id: resource.id, speedMode: 'fast' }, userOneCtx)
+      ingestKbResource({ id: resource.id }, userOneCtx)
     ).rejects.toThrow('KB ingestion could not be queued')
     await expect(
       prisma.kBResource.findUnique({ where: { id: resource.id } })
@@ -372,7 +357,7 @@ describe('Integration tests for knowledge base ingestion', () => {
     )
 
     await expect(
-      ingestKbResource({ id: resource.id, speedMode: 'balanced' }, userOneCtx)
+      ingestKbResource({ id: resource.id }, userOneCtx)
     ).rejects.toThrow('KB ingestion could not be queued')
     await expect(
       prisma.kBResource.findUnique({ where: { id: resource.id } })
@@ -408,7 +393,7 @@ describe('Integration tests for knowledge base ingestion', () => {
     )
 
     await expect(
-      ingestKbResource({ id: resource.id, speedMode: 'fast' }, userOneCtx)
+      ingestKbResource({ id: resource.id }, userOneCtx)
     ).rejects.toThrow('KB ingestion could not be queued')
     await expect(
       prisma.kBResource.findUnique({ where: { id: resource.id } })

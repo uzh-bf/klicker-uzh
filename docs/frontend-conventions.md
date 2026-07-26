@@ -46,7 +46,7 @@ Apollo Client with **generated documents only** — `import { UserProfileDocumen
 
 The lecturer routes `apps/frontend-manage/src/pages/resources/knowledgeBases.tsx:KnowledgeBasesPage` and `apps/frontend-manage/src/pages/resources/knowledgeBases/[id].tsx:KnowledgeBasePage` mount the buildless `@klicker-uzh/kb-management` package inside the authenticated manage layout. Keep reusable KB UI in that package rather than duplicating it in the host app.
 
-`packages/kb-management/src/components/KnowledgeBaseResourceList.tsx:KnowledgeBaseResourceList` owns per-resource status polling presentation, speed selection, Ingest, and guarded deletion. Changes must preserve EN/DE messages, `data-cy` hooks, and browser evidence for desktop plus mobile states, including empty, active (`QUEUED`/`PROCESSING`), ready, and failed feedback where affected.
+`packages/kb-management/src/components/KnowledgeBaseResourceList.tsx:KnowledgeBaseResourceList` owns per-resource status polling presentation, the identifier-only Ingest action, and guarded deletion. Transport tuning is not user-controlled. Changes must preserve EN/DE messages, `data-cy` hooks, and browser evidence for desktop plus mobile states, including empty, active (`QUEUED`/`PROCESSING`), ready, and failed feedback where affected.
 
 ## i18n (next-intl)
 
