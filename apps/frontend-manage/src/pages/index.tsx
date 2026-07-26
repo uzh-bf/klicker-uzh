@@ -12,6 +12,7 @@ import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Suspense, useCallback, useEffect, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import ActivityCreation from '../components/activities/ActivityCreation'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
 import Pagination from '../components/common/Pagination'
@@ -304,8 +305,13 @@ function Index() {
         </>
       )}
 
-      <div className="flex h-full flex-col gap-4 overflow-y-auto md:flex-row">
-        <div>
+      <div
+        className={twMerge(
+          'flex flex-col gap-4 overflow-y-auto md:flex-row',
+          creationMode ? 'min-h-0 flex-1' : 'h-full'
+        )}
+      >
+        <div className="h-full">
           <FilterList
             key={creationMode}
             defaultValue={
@@ -386,7 +392,7 @@ function Index() {
               </div>
             </div>
 
-            <div className="h-full overflow-y-auto">
+            <div className="min-h-0 flex-1 overflow-y-auto">
               {!dataElements || loadingElements ? (
                 <div className="flex h-full items-center justify-center">
                   <Loader />

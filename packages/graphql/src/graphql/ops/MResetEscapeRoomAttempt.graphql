@@ -1,0 +1,17 @@
+mutation ResetEscapeRoomAttempt(
+  $practiceQuizId: String
+  $microLearningId: String
+  $groupActivityId: String
+  $elementBlockId: Int
+  $participantId: String
+  $groupId: String
+) {
+  resetEscapeRoomAttempt(
+    practiceQuizId: $practiceQuizId
+    microLearningId: $microLearningId
+    groupActivityId: $groupActivityId
+    elementBlockId: $elementBlockId
+    participantId: $participantId
+    groupId: $groupId
+  )
+}

@@ -95,6 +95,15 @@ export function processElementData(
       id: `${element.id}-v${element.version}`,
       elementId: element.id,
     }
+  } else if (element.type === PrismaElementType.QR_SCAN) {
+    // Never copy Element.qrScanCode into participant-facing instance data.
+    return {
+      ...pick(element, QUESTION_KEYS),
+      type: element.type,
+      options: {},
+      id: `${element.id}-v${element.version}`,
+      elementId: element.id,
+    }
   } else if (
     element.type === PrismaElementType.SELECTION &&
     'hasSampleSolution' in element.options &&
@@ -218,6 +227,8 @@ export function getInitialInstanceResults(
     return {
       total: 0,
     }
+  } else if (elementData.type === PrismaElementType.QR_SCAN) {
+    return { total: 0 }
   } else if (elementData.type === PrismaElementType.SELECTION) {
     if (
       !('answerCollection' in elementData.options) ||
@@ -442,6 +453,11 @@ export function getActivityInstanceConnectOrCreate({
         elementData: existingInstance.elementData,
         options: {
           ...additionalInstanceOptions,
+          ...getEscapeRoomHintUpdate(
+            typeof instance.escapeRoomHint === 'undefined'
+              ? existingInstance.options.escapeRoomHint
+              : instance.escapeRoomHint
+          ),
           basePoints: existingInstance.elementData.basePoints,
           pointsMultiplier:
             activityMultiplier * existingInstance.elementData.pointsMultiplier,
@@ -484,6 +500,7 @@ export function getActivityInstanceConnectOrCreate({
         elementData: elementData,
         options: {
           ...additionalInstanceOptions,
+          ...getEscapeRoomHintUpdate(instance.escapeRoomHint),
           basePoints: element.basePoints,
           pointsMultiplier: activityMultiplier * element.pointsMultiplier,
         },
@@ -501,4 +518,11 @@ export function getActivityInstanceConnectOrCreate({
       },
     }
   }
+}
+
+export function getEscapeRoomHintUpdate(hint: string | null | undefined) {
+  if (typeof hint === 'undefined') return {}
+
+  const normalizedHint = (hint ?? '').trim()
+  return { escapeRoomHint: normalizedHint || null }
 }

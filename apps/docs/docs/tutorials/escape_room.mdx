@@ -1,0 +1,134 @@
+---
+title: Escape Room
+hide_title: true
+---
+
+import CatalystTitle from '../../src/components/CatalystTitle'
+
+<CatalystTitle title="Escape Room" />
+
+## What is an Escape Room?
+
+Escape Room is a mode applied to an existing activity type, not a standalone activity. Its behavior differs by mode:
+
+- **Practice Quiz and Microlearning** reveal an ordered stack of stages. Each stage remains hidden until the preceding one is cleared.
+- **Live Quiz** reveals supported questions in an Escape Room block one at a time; each correct answer unlocks the next question within the block.
+- **Group Activity** presents one shared challenge: the complete answerable set is visible to the group from the start and submitted together as a single attempt.
+
+In all modes, a wrong answer keeps the participant on the current challenge and triggers a short server-enforced lockout before a retry is allowed. Time and hint penalties remain authoritative across page reloads, so participants cannot gain an advantage by refreshing.
+
+---
+
+## Choose the activity mode
+
+How you enable Escape Room depends on the activity type.
+
+| Activity type  | Where to enable                                             |
+| -------------- | ----------------------------------------------------------- |
+| Practice Quiz  | Activity settings – enable Escape Room Mode                 |
+| Microlearning  | Activity settings – enable Escape Room Mode                 |
+| Group Activity | Activity settings – enable Escape Room Mode                 |
+| Live Quiz      | Per content block, in that block's countdown/settings modal |
+
+For Practice Quiz, Microlearning, and Group Activity, the setting applies to the entire activity. For Live Quiz, it applies at the individual block level – different blocks in the same session can have different configurations. One constraint applies to Live Quiz specifically: assessment mode and Escape Room cannot be active on the same block at the same time.
+
+---
+
+## Configure the Escape Room
+
+Three settings become available once Escape Room Mode is active:
+
+1. **Time Limit (minutes)** – an integer from 1 to 1440. The timer starts when a participant (or group) presses Start Attempt and continues even if the page is reloaded.
+2. **Hint Penalty (seconds)** – an integer from 0 to 3600. Each hint reveal deducts this amount from the participant's remaining time. Setting it to 0 makes hints free.
+3. **Intro Story (optional)** – a Markdown field (maximum 5000 characters). Use it to frame the scenario and establish context before the first stage appears. A well-written intro makes later stages feel more connected.
+
+---
+
+## Author stages and hints
+
+**To add and structure stages:**
+
+1. Open the activity editor and add a stack or block, depending on the activity type.
+2. Add questions as you would in the underlying activity.
+3. For Practice Quiz and Microlearning, add the ordered stacks. For Live Quiz, arrange the questions inside the Escape Room block. For Group Activity, keep the complete answer set in the shared challenge.
+
+**To add hints to individual questions:**
+
+1. In the activity wizard, scroll below the element placement for the question you want to annotate.
+2. Enter hint text for that element. Participants see a **Reveal hint** button only on elements that have a hint configured.
+3. A revealed hint remains visible after a page reload and subtracts the configured Hint Penalty (seconds) immediately on reveal.
+
+**Attempt rules by activity type:**
+
+- Practice Quiz and Microlearning: one server-owned attempt per participant. The timer starts when the participant presses Start Attempt.
+- Group Activity: one shared attempt per group. All members share progress, hints revealed, lockout state, completion, and reset – a hint revealed by one member is visible to all and costs the group the configured penalty. The timer starts when any group member presses Start Attempt.
+- Live Quiz: one attempt per participant per Escape Room block; participants start the attempt explicitly when the block opens.
+
+**Eligibility:**
+
+Participants must be logged in and enrolled in the course to start an attempt. Group Activity additionally requires group membership. Live Quiz requires a regular participant account; temporary participants cannot join an Escape Room block.
+
+---
+
+## Add a QR Scan stage
+
+QR Scan is a question type available exclusively inside Escape Rooms. It connects a digital stage to a physical location, requiring participants to find and scan (or manually enter) a code placed in the room.
+
+**Create and prepare the question:**
+
+1. Create a QR Scan Question in the Library and save it.
+2. Add it to a stage in the Escape Room activity editor.
+3. Reopen (edit) that saved element in the editor.
+4. Select **Open QR print sheets**.
+5. Choose the number of decoy codes (0 to 20; the default is 3).
+6. Print the sheets.
+
+Only the owner of the QR Scan question sees and can use the print action, because the print view contains the private answer code. Collaborators with shared access can use the question in an activity but must ask its owner to prepare the sheets.
+
+The printed sheets place the real QR code among the decoys in a shuffled arrangement, so its position on the page is not predictable. Each station on the sheet includes a scannable QR code and a printed manual code. The on-screen answer legend – which shows which code is correct – appears in the QR print view and is hidden from the printed output.
+
+**Place the stations physically:**
+
+- Put the real station at the location that corresponds to the intended stage.
+- Distribute the decoy stations in plausible but incorrect locations. More deliberate placement of decoys (locations that seem reasonable) produces more productive exploration than random placement.
+- Participants can scan with a device camera or type the printed manual code directly. A camera is not required.
+
+---
+
+## Monitor progress
+
+**Practice Quiz and Microlearning**
+
+Open the activity's **Evaluation** tab and select the **Escape Room** sub-tab. The view shows the enrolled roster with one of four statuses for each participant: Not started, In progress, Completed, or Expired. For each participant, the view also shows current stage progress, hints used, total penalty time, completion time for completed attempts, and any active lockout.
+
+**Group Activity**
+
+The grading/monitoring page shows the shared group attempt. Progress, hints revealed, penalty, lockout, and completion all reflect the group's collective state rather than individual members.
+
+**Live Quiz**
+
+The **Lecturer Cockpit** displays per-participant progress for the active Escape Room block and updates automatically while open, giving a clear picture of where the group is during the session.
+
+---
+
+## Reset an attempt
+
+Reset is a lecturer-only action. It deletes the current attempt entirely and allows a fresh start with the full time limit restored.
+
+- Practice Quiz and Microlearning: reset an individual participant's attempt from the Evaluation view.
+- Group Activity: reset the shared group attempt from the grading/monitoring page. The reset applies to the entire group.
+- Live Quiz: reset an individual participant's active block attempt from the Lecturer Cockpit.
+
+Reset is irreversible. After a reset, Practice Quiz and Microlearning restart at the first stack; Live Quiz restarts at the first question in the Escape Room block; and Group Activity restarts the single shared challenge.
+
+---
+
+## Before you publish
+
+Before making the activity available to students, complete these checks:
+
+1. **Run the full route yourself.** Work through every stage, including any QR Scan stations, to confirm that the experience is unbroken from start to finish.
+2. **Verify QR placement.** Confirm the real station is at the intended location and all decoys are in position before the session begins.
+3. **Calibrate the time limit.** Adjust the Time Limit (minutes) based on your test run. A limit that is too generous reduces tension; one that is too tight increases the likelihood of requests to reset.
+4. **Review every hint.** Hints that are too vague frustrate participants; hints that are too explicit reduce the challenge. A second read after a day away often reveals which ones need adjustment.
+5. **Confirm access requirements.** All participants must be logged in and enrolled in the course. Group Activity participants additionally require group membership. Live Quiz requires a regular participant account; temporary participants cannot start an Escape Room block attempt.

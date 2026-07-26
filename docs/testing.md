@@ -22,11 +22,13 @@ tags:
 
 **Never run root `pnpm run test:run` blind** — the turbo fan-out includes Cypress, which needs a running, seeded stack. The graphql vitest config forces `pool: forks, singleFork: true` (serialized specs sharing DB state) — don't parallelize it.
 
+Escape Room GraphQL integration coverage is split by lifecycle, hints, reset, GroupActivity, LiveQuiz, templates, completion, and retention/progress. Those files share `packages/graphql/test/escapeRoomTestHarness.ts`; keep feature-only fixtures, database cleanup, and context mocks there rather than growing the generic `test/helpers.ts` or recreating process-global state in each suite.
+
 ## Two e2e stacks, one selector convention
 
 **Playwright is the primary suite — all new e2e specs land there.** The Cypress suite is a frozen parity suite pending removal: touch it only to keep existing specs green, never to add coverage. Both still run in CI until the removal actually happens, so both stacks stay documented below.
 
-Both frameworks click the same `data-cy` attributes ([Frontend Conventions](./frontend-conventions.md)). Specs are letter-prefixed for run order (`A-login-workflow` … `X-review-workflow`; Playwright adds `Y-chat` with no Cypress counterpart).
+Both frameworks click the same `data-cy` attributes ([Frontend Conventions](./frontend-conventions.md)). Specs are letter-prefixed for run order (`A-login-workflow` … `X-review-workflow`; Playwright adds `Y-chat` and `Z-escape-room` with no Cypress counterpart). The Escape Room spec keeps one serial orchestrator while mode-specific workflows live under `playwright/tests/escape-room/`; keep titles, selectors, screenshot names, and execution order stable when extending those modules.
 
 |               | Cypress (`cypress/`)                                               | Playwright (`playwright/`)                                 |
 | ------------- | ------------------------------------------------------------------ | ---------------------------------------------------------- |
@@ -36,6 +38,8 @@ Both frameworks click the same `data-cy` attributes ([Frontend Conventions](./fr
 | CI            | 8-way `cypress-split` (draft PRs) / Cypress Cloud (non-draft + v3) | official Playwright container, 8-way shard, all PRs        |
 
 The three seed paths (dev `seedTEST.ts`, Cypress, Playwright) are **independent** — a fixture added to one does not exist in the others ([Data & Migrations](./data-and-migrations.md)). `*:raw` script variants skip Infisical on both sides. `_run_app_dependencies.sh` with no args (or `local`/`dev`/`playwright`) applies the schema with `prisma:push` without forcing a reset; the `test`/`cypress` argument is the Cypress-specific **reset** path.
+
+For an exact DevPod routed through a workspace-namespaced devrouter host, `playwright/playwright.config.ts` accepts `PLAYWRIGHT_BROWSER_EXECUTABLE_PATH` for the container-installed Chromium and `PLAYWRIGHT_HOST_RESOLVER_RULES` for the browser's `*.localhost` mapping. The `URL_*`, `APP_ORIGIN_AUTH`, and `COOKIE_DOMAIN` values passed to the test process must use the same workspace host suffix; mixing primary and namespaced hosts produces authentication redirects rather than selector failures.
 
 For authoring specifics, helper patterns, and failure triage, use the skills — `klicker-cypress-e2e` and `klicker-playwright-e2e` ([.agents/skills/](../.agents/skills/)) — rather than duplicating their content here.
 

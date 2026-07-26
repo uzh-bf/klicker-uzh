@@ -12,6 +12,58 @@ import type {
   ResponseCorrectness as PrismaResponseCorrectness,
 } from '@klicker-uzh/prisma/client'
 
+export const ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES: readonly ElementType[] = [
+  'SC',
+  'MC',
+  'KPRIM',
+  'NUMERICAL',
+  'FREE_TEXT',
+  'QR_SCAN',
+]
+
+export const ESCAPE_ROOM_GRACE_SECONDS = 5
+
+export type EscapeRoomLifecycleTargetKind =
+  | 'practiceQuiz'
+  | 'microLearning'
+  | 'groupActivity'
+  | 'liveQuizBlock'
+
+export function getEscapeRoomLifecycleClaimKey(
+  targetKind: EscapeRoomLifecycleTargetKind,
+  targetId: string | number,
+  actorId: string
+) {
+  return `escape-room:${targetKind}:${targetId}:${actorId}:lifecycle`
+}
+
+export function isEscapeRoomExpired(
+  attempt: {
+    startedAt: Date | string
+    timeLimit: number
+    penaltySeconds: number
+  },
+  now = Date.now()
+) {
+  const deadline =
+    new Date(attempt.startedAt).getTime() +
+    (attempt.timeLimit - attempt.penaltySeconds + ESCAPE_ROOM_GRACE_SECONDS) *
+      1000
+
+  // Preserve the established action-grace contract: the exact deadline is
+  // still valid; the attempt expires immediately after it.
+  return now > deadline
+}
+
+export function getCurrentEscapeRoomInstance<T extends { id: number }>(
+  orderedInstances: readonly T[],
+  clearedInstanceIds: ReadonlySet<string>
+): T | undefined {
+  return orderedInstances.find(
+    (instance) => !clearedInstanceIds.has(String(instance.id))
+  )
+}
+
 // ----- HATCHET (WORKER/TASK) TYPES -----
 export * from './assessmentReport.js'
 export * from './hatchet.js'
@@ -63,6 +115,10 @@ export enum SharingType {
 export type ElementBlockInput = {
   order: number
   timeLimit?: number | null
+  isEscapeRoom?: boolean | null
+  escapeRoomTimeLimit?: number | null
+  escapeRoomHintPenalty?: number | null
+  escapeRoomIntroText?: string | null
   elements: ElementInstanceInput[]
 }
 
@@ -78,6 +134,9 @@ export type ElementInstanceInput = {
   order: number
   existingInstanceId?: number | null
   duplicateInstance: boolean
+  // Escape-room per-instance hint text (optional). Persisted into the instance
+  // `options` on create/duplicate; see ElementInstanceOptions.escapeRoomHint.
+  escapeRoomHint?: string | null
 }
 
 export type ElementVersionInput = {
@@ -261,6 +320,11 @@ export type TemplateBlockElementInput = {
 
 export type TemplateBlockInput = {
   timeLimit?: number | null
+  isEscapeRoom?: boolean | null
+  escapeRoomTimeLimit?: number | null
+  escapeRoomHintPenalty?: number | null
+  escapeRoomLockoutSeconds?: number | null
+  escapeRoomIntroText?: string | null
   order: number
   elements: TemplateBlockElementInput[]
 }
@@ -280,6 +344,7 @@ export type StackResponseInput = {
   freeTextResponse?: string | null
   selectionResponse?: number[] | null
   caseStudyResponse?: CaseStudyCaseResponse[] | null
+  qrScanResponse?: string | null
 }
 
 export type GroupActivityClueInput = {
@@ -596,6 +661,26 @@ export interface ElementOptionsCaseStudy extends BaseElementOptions {
 
 export interface ElementOptionsFlashcard {}
 export interface ElementOptionsContent {}
+export interface ElementOptionsQrScan {}
+
+export const QR_SCAN_CODE_LENGTH = 12
+export const QR_SCAN_CODE_PATTERN = /^[A-Za-z0-9_-]{12}$/
+
+export function normalizeQrScanCode(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+export function isValidQrScanCode(value: unknown): value is string {
+  return QR_SCAN_CODE_PATTERN.test(normalizeQrScanCode(value))
+}
+
+export function gradeQrScanResponse(
+  expected: string | null | undefined,
+  submitted: unknown
+): boolean {
+  const normalized = normalizeQrScanCode(submitted)
+  return isValidQrScanCode(normalized) && normalized === expected
+}
 
 export type ElementOptions =
   | ElementOptionsChoices
@@ -603,6 +688,7 @@ export type ElementOptions =
   | ElementOptionsFreeText
   | ElementOptionsFlashcard
   | ElementOptionsContent
+  | ElementOptionsQrScan
   | ElementOptionsSelection
   | ElementOptionsCaseStudy
 
@@ -642,6 +728,7 @@ export type FlashcardElementData = IElementData<
   ElementOptionsFlashcard
 >
 export type ContentElementData = IElementData<'CONTENT', ElementOptionsContent>
+export type QrScanElementData = IElementData<'QR_SCAN', ElementOptionsQrScan>
 export type SelectionElementData = IElementData<
   'SELECTION',
   ElementOptionsSelection
@@ -657,6 +744,7 @@ export type ElementData =
   | NumericalElementData
   | FlashcardElementData
   | ContentElementData
+  | QrScanElementData
   | SelectionElementData
   | CaseStudyElementData
 
@@ -664,6 +752,12 @@ export type ElementInstanceOptions = {
   basePoints?: boolean
   pointsMultiplier?: number
   resetTimeDays?: number
+  // Escape-room per-instance hint text. Stored on the instance (not the shared
+  // element) since it is specific to how this element is used in this activity.
+  // SECURITY: never exposed to participants as raw text — the GraphQL layer only
+  // derives a content-free `hasHint` boolean; the text is returned exclusively by
+  // the `requestEscapeRoomHint` mutation after attempt-ownership checks.
+  escapeRoomHint?: string | null
 }
 
 export type ElementResultsChoices = {
@@ -733,6 +827,7 @@ export type GroupActivityDecision = {
   contentResponse?: SingleQuestionResponseContent['viewed'] | null
   selectionResponse?: SingleQuestionResponseSelection['selection'] | null
   caseStudyResponse?: SingleQuestionResponseCaseStudy['assessment'] | null
+  qrScanResponse?: string | null
 }
 export type GroupActivityDecisions = GroupActivityDecision[]
 

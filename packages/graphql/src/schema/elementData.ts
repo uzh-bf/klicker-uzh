@@ -291,6 +291,14 @@ export const ElementInstanceOptions = builder
       basePoints: t.exposeBoolean('basePoints', { nullable: true }),
       pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
       resetTimeDays: t.exposeInt('resetTimeDays', { nullable: true }),
+      // SECURITY: expose only whether a hint exists, never the text itself. The
+      // raw `escapeRoomHint` string is deliberately NOT declared here, so Pothos
+      // never serializes it to any client. The text is returned exclusively by
+      // the `requestEscapeRoomHint` mutation after attempt-ownership validation.
+      hasHint: t.boolean({
+        nullable: true,
+        resolve: (options) => !!options.escapeRoomHint,
+      }),
     }),
   })
 
@@ -372,6 +380,17 @@ export const ContentElementData = builder
     }),
   })
 
+// QR_SCAN participant data intentionally contains no scan code. The opaque
+// code remains on the source Element and is accessed through owner-only APIs.
+export interface IQrScanElementData extends BaseElementData {}
+export const QrScanElementData = builder
+  .objectRef<IQrScanElementData>('QrScanElementData')
+  .implement({
+    fields: (t) => ({
+      ...sharedElementData(t),
+    }),
+  })
+
 export const ElementData = builder.unionType('ElementData', {
   types: [
     ChoicesElementData,
@@ -381,6 +400,7 @@ export const ElementData = builder.unionType('ElementData', {
     ContentElementData,
     SelectionElementData,
     CaseStudyElementData,
+    QrScanElementData,
   ],
   resolveType: (element) => {
     switch (element.type) {
@@ -400,6 +420,8 @@ export const ElementData = builder.unionType('ElementData', {
         return FlashcardElementData
       case DB.ElementType.CONTENT:
         return ContentElementData
+      case DB.ElementType.QR_SCAN:
+        return QrScanElementData
     }
   },
 })

@@ -6,6 +6,26 @@ query GroupActivityDetails($activityId: String!, $groupId: String!) {
     description
     scheduledStartAt
     scheduledEndAt
+    escapeRoomConfig {
+      id
+      timeLimit
+      hintPenalty
+      lockoutSeconds
+      introText
+    }
+    escapeRoomAttempts {
+      id
+      startedAt
+      timeLimit
+      penaltySeconds
+      remainingSeconds
+      expiresInSeconds
+      hintsUsed
+      status
+      completedAt
+      lockoutUntil
+      elementBlockId
+    }
 
     clues {
       id
@@ -14,14 +34,19 @@ query GroupActivityDetails($activityId: String!, $groupId: String!) {
 
     stacks {
       id
+      isCorrect
       type
       displayName
       description
       order
       elements {
         id
+        revealedHint
         type
         elementType
+        options {
+          hasHint
+        }
         ...ElementDataWithoutSolutions
       }
     }

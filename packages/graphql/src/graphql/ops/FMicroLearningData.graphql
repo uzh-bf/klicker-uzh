@@ -7,6 +7,26 @@ fragment MicroLearningData on MicroLearning {
   pointsMultiplier
   scheduledStartAt
   scheduledEndAt
+  escapeRoomConfig {
+    id
+    timeLimit
+    hintPenalty
+    lockoutSeconds
+    introText
+  }
+  escapeRoomAttempts {
+    id
+    startedAt
+    timeLimit
+    penaltySeconds
+    remainingSeconds
+    expiresInSeconds
+    hintsUsed
+    status
+    completedAt
+    lockoutUntil
+    elementBlockId
+  }
   course {
     id
     displayName
@@ -18,10 +38,12 @@ fragment MicroLearningData on MicroLearning {
     displayName
     description
     order
+    isCorrect
     elements {
       id
       type
       elementType
+      revealedHint
       ...ElementData
     }
   }

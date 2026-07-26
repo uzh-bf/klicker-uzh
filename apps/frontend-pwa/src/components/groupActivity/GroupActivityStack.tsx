@@ -1,4 +1,4 @@
-import { useMutation } from '@apollo/client'
+import { ApolloError, useMutation } from '@apollo/client'
 import {
   CaseStudyCaseResponse,
   ElementStack,
@@ -6,6 +6,7 @@ import {
   GroupActivityDecision,
   GroupActivityDetailsDocument,
   GroupActivityResults,
+  RequestEscapeRoomHintDocument,
   ResponseCorrectnessType,
   SelectionElementData,
   SubmitGroupActivityDecisionsDocument,
@@ -18,7 +19,7 @@ import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/Dynam
 import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStudentResponse'
 import getEmptySelectionResponse from '@klicker-uzh/shared-components/src/utils/getEmptySelectionResponse'
 import { ChoicesResponse } from '@klicker-uzh/types'
-import { Button } from '@uzh-bf/design-system'
+import { Button, UserNotification, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -33,6 +34,9 @@ interface GroupActivityStackProps {
   decisions?: GroupActivityDecision[] | null
   results?: GroupActivityResults | null
   submittedAt?: string
+  groupActivityId?: string
+  hintPenalty?: number
+  onEscapeRoomStateChanged?: () => Promise<unknown> | void
 }
 
 function GroupActivityStack({
@@ -42,6 +46,9 @@ function GroupActivityStack({
   decisions,
   results,
   submittedAt,
+  groupActivityId,
+  hintPenalty = 0,
+  onEscapeRoomStateChanged,
 }: GroupActivityStackProps) {
   const t = useTranslations()
   const router = useRouter()
@@ -60,6 +67,11 @@ function GroupActivityStack({
         },
       ],
     })
+  const [requestEscapeRoomHint, { loading: hintLoading }] = useMutation(
+    RequestEscapeRoomHintDocument
+  )
+  const [revealedHints, setRevealedHints] = useState<Record<number, string>>({})
+  const [lockoutRemaining, setLockoutRemaining] = useState(0)
   const elementFeedbacks = useStackElementFeedbacks({
     instanceIds: stack.elements?.map((element) => element.id) ?? [],
     withParticipant: true,
@@ -188,6 +200,72 @@ function GroupActivityStack({
     setStudentResponse((prev) => loadedResponses || prev)
   }, [decisions, stack.elements])
 
+  useEffect(() => {
+    setRevealedHints(
+      Object.fromEntries(
+        (stack.elements ?? []).flatMap((element) =>
+          element.revealedHint ? [[element.id, element.revealedHint]] : []
+        )
+      )
+    )
+  }, [stack.elements])
+
+  useEffect(() => {
+    if (lockoutRemaining <= 0) return
+    const timeout = setTimeout(
+      () => setLockoutRemaining((remaining) => Math.max(0, remaining - 1)),
+      1000
+    )
+    return () => clearTimeout(timeout)
+  }, [lockoutRemaining])
+
+  const handleEscapeRoomError = async (error: unknown) => {
+    const escapeError =
+      error instanceof ApolloError
+        ? error.graphQLErrors.find((entry) =>
+            String(entry.extensions?.code).startsWith('ESCAPE_ROOM_')
+          )
+        : undefined
+    if (escapeError?.extensions?.code === 'ESCAPE_ROOM_LOCKOUT') {
+      const remaining = escapeError.extensions.lockoutRemainingSeconds
+      if (typeof remaining === 'number') setLockoutRemaining(remaining)
+      toast({
+        type: 'error',
+        message: t('pwa.practiceQuiz.escapeRoomLockoutToast'),
+      })
+    } else if (escapeError?.extensions?.code === 'ESCAPE_ROOM_EXPIRED') {
+      toast({
+        type: 'error',
+        message: t('pwa.practiceQuiz.escapeRoomExpiredToast'),
+      })
+    } else {
+      toast({ type: 'error', message: t('shared.generic.systemError') })
+    }
+    await onEscapeRoomStateChanged?.()
+  }
+
+  const revealHint = async (instanceId: number) => {
+    if (!groupActivityId || revealedHints[instanceId]) return
+    try {
+      const result = await requestEscapeRoomHint({
+        variables: { groupActivityId, instanceId },
+      })
+      const hint = result.data?.requestEscapeRoomHint?.hint
+      if (hint) {
+        setRevealedHints((current) => ({ ...current, [instanceId]: hint }))
+        toast({
+          type: 'success',
+          message: t('pwa.practiceQuiz.escapeRoomHintRevealedToast', {
+            penalty: hintPenalty,
+          }),
+        })
+      }
+      await onEscapeRoomStateChanged?.()
+    } catch (error) {
+      await handleEscapeRoomError(error)
+    }
+  }
+
   return (
     <>
       <div className="flex flex-col gap-12 md:gap-8">
@@ -229,6 +307,30 @@ function GroupActivityStack({
                   hideReadButton
                   disabledInput={!!decisions || activityEnded}
                 />
+                {groupActivityId && element.options?.hasHint && (
+                  <div className="mt-2">
+                    {revealedHints[element.id] ? (
+                      <UserNotification
+                        type="info"
+                        message={revealedHints[element.id]}
+                      />
+                    ) : (
+                      <Button
+                        basic
+                        disabled={lockoutRemaining > 0}
+                        loading={hintLoading}
+                        onClick={() => revealHint(element.id)}
+                        data={{ cy: `group-escape-room-hint-${elementIx}` }}
+                      >
+                        <Button.Label>
+                          {t('pwa.practiceQuiz.escapeRoomRequestHint', {
+                            penalty: hintPenalty,
+                          })}
+                        </Button.Label>
+                      </Button>
+                    )}
+                  </div>
+                )}
                 {grading && correctness && (
                   <div
                     className={twMerge(
@@ -276,123 +378,138 @@ function GroupActivityStack({
           disabled={
             Object.values(studentResponse).some(
               (response) => !response.valid
-            ) || activityEnded
+            ) ||
+            activityEnded ||
+            lockoutRemaining > 0
           }
           onClick={async () => {
-            const result = await submitGroupActivityDecisions({
-              variables: {
-                activityId: activityId,
-                responses: Object.entries(studentResponse).map(
-                  ([instanceId, value]) => {
-                    if (
-                      value.type === ElementType.Sc ||
-                      value.type === ElementType.Mc ||
-                      value.type === ElementType.Kprim
-                    ) {
-                      // convert the solution objects into integer lists
-                      const responseList: ChoicesResponse[] = Object.entries(
-                        value.response!
-                      )
-                        .filter(([, value]) => value)
-                        .map(([key, value]) => ({
-                          ix: parseInt(key),
-                          selected: value ?? false,
-                        }))
-
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: value.type,
-                        choicesResponse: responseList,
-                      }
-                    } else if (value.type === ElementType.Numerical) {
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: ElementType.Numerical,
-                        numericalResponse: parseFloat(value.response!),
-                      }
-                    } else if (value.type === ElementType.FreeText) {
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: ElementType.FreeText,
-                        freeTextResponse: value.response,
-                      }
-                    } else if (value.type === ElementType.Content) {
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: ElementType.Content,
-                        contentReponse: value.response,
-                      }
-                    } else if (value.type === ElementType.Selection) {
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: ElementType.Selection,
-                        selectionResponse: Object.values(
+            try {
+              const result = await submitGroupActivityDecisions({
+                variables: {
+                  activityId: activityId,
+                  responses: Object.entries(studentResponse).map(
+                    ([instanceId, value]) => {
+                      if (
+                        value.type === ElementType.Sc ||
+                        value.type === ElementType.Mc ||
+                        value.type === ElementType.Kprim
+                      ) {
+                        // convert the solution objects into integer lists
+                        const responseList: ChoicesResponse[] = Object.entries(
                           value.response!
-                        ).filter(
-                          (entry) =>
-                            entry !== -1 &&
-                            typeof entry !== 'undefined' &&
-                            entry !== null
-                        ),
-                      }
-                    } else if (value.type === ElementType.CaseStudy) {
-                      const caseStudyResponse: CaseStudyCaseResponse[] =
-                        Object.entries(value.response!).map(
-                          ([caseId, caseResponse]) => {
-                            return {
-                              caseId,
-                              itemResponses: Object.entries(caseResponse).map(
-                                ([itemId, itemResponse]) => {
-                                  return {
-                                    itemId: parseInt(itemId),
-                                    criterionResponses: Object.entries(
-                                      itemResponse
-                                    ).flatMap(
-                                      ([criterionId, criterionResponse]) => {
-                                        if (
-                                          typeof criterionResponse ===
-                                          'undefined'
-                                        ) {
-                                          return []
-                                        }
-
-                                        return {
-                                          criterionId: criterionId,
-                                          response: criterionResponse,
-                                        }
-                                      }
-                                    ),
-                                  }
-                                }
-                              ),
-                            }
-                          }
                         )
+                          .filter(([, value]) => value)
+                          .map(([key, value]) => ({
+                            ix: parseInt(key),
+                            selected: value ?? false,
+                          }))
 
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: value.type,
-                        caseStudyResponse,
-                      }
-                    } else {
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: value.type,
-                        response: value.response,
+                        return {
+                          instanceId: parseInt(instanceId),
+                          type: value.type,
+                          choicesResponse: responseList,
+                        }
+                      } else if (value.type === ElementType.Numerical) {
+                        return {
+                          instanceId: parseInt(instanceId),
+                          type: ElementType.Numerical,
+                          numericalResponse: parseFloat(value.response!),
+                        }
+                      } else if (value.type === ElementType.FreeText) {
+                        return {
+                          instanceId: parseInt(instanceId),
+                          type: ElementType.FreeText,
+                          freeTextResponse: value.response,
+                        }
+                      } else if (value.type === ElementType.QrScan) {
+                        return {
+                          instanceId: parseInt(instanceId),
+                          type: ElementType.QrScan,
+                          qrScanResponse: value.response,
+                        }
+                      } else if (value.type === ElementType.Content) {
+                        return {
+                          instanceId: parseInt(instanceId),
+                          type: ElementType.Content,
+                          contentReponse: value.response,
+                        }
+                      } else if (value.type === ElementType.Selection) {
+                        return {
+                          instanceId: parseInt(instanceId),
+                          type: ElementType.Selection,
+                          selectionResponse: Object.values(
+                            value.response!
+                          ).filter(
+                            (entry) =>
+                              entry !== -1 &&
+                              typeof entry !== 'undefined' &&
+                              entry !== null
+                          ),
+                        }
+                      } else if (value.type === ElementType.CaseStudy) {
+                        const caseStudyResponse: CaseStudyCaseResponse[] =
+                          Object.entries(value.response!).map(
+                            ([caseId, caseResponse]) => {
+                              return {
+                                caseId,
+                                itemResponses: Object.entries(caseResponse).map(
+                                  ([itemId, itemResponse]) => {
+                                    return {
+                                      itemId: parseInt(itemId),
+                                      criterionResponses: Object.entries(
+                                        itemResponse
+                                      ).flatMap(
+                                        ([criterionId, criterionResponse]) => {
+                                          if (
+                                            typeof criterionResponse ===
+                                            'undefined'
+                                          ) {
+                                            return []
+                                          }
+
+                                          return {
+                                            criterionId: criterionId,
+                                            response: criterionResponse,
+                                          }
+                                        }
+                                      ),
+                                    }
+                                  }
+                                ),
+                              }
+                            }
+                          )
+
+                        return {
+                          instanceId: parseInt(instanceId),
+                          type: value.type,
+                          caseStudyResponse,
+                        }
+                      } else {
+                        return {
+                          instanceId: parseInt(instanceId),
+                          type: value.type,
+                          response: value.response,
+                        }
                       }
                     }
-                  }
-                ),
-              },
-            })
+                  ),
+                },
+              })
 
-            if (!result?.data?.submitGroupActivityDecisions) {
-              console.error('Error submitting response')
-              return
+              if (!result?.data?.submitGroupActivityDecisions) {
+                toast({
+                  type: 'error',
+                  message: t('shared.generic.systemError'),
+                })
+                return
+              }
+
+              setStudentResponse({})
+              await onEscapeRoomStateChanged?.()
+            } catch (error) {
+              await handleEscapeRoomError(error)
             }
-
-            // set status and score according to returned correctness
-            setStudentResponse({})
           }}
           type="submit"
           loading={submitLoading}

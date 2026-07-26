@@ -1,4 +1,4 @@
-import type { ElementInstanceOptions, ResponseInput } from '@/ops.js'
+import type { ResponseInput } from '@/ops.js'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   ElementInstanceResults,
@@ -8,6 +8,7 @@ import type {
 import { ActivityType, ResponseCorrectness } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
+  getEscapeRoomHintUpdate,
   propagateActivityToElements,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
@@ -29,10 +30,19 @@ import {
 } from '../lib/randomizedGroups.js'
 import { computeRanks, shuffle } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
-import { getPermissionBooleans } from './activities.js'
+import {
+  activityInputContainsElementType,
+  getPermissionBooleans,
+} from './activities.js'
+import {
+  restoreUsedEscapeRoomHints,
+  validateEscapeRoomConfig,
+} from './escapeRooms.js'
+import { submitEscapeRoomGroupActivityDecisions } from './groupEscapeRoomSubmissions.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
+import { checkAccess } from './sharing.js'
 import {
   type RespondToElementStackInput,
   updateCaseStudyResults,
@@ -835,6 +845,10 @@ interface CreateGroupActivityArgs {
   endDate: Date
   clues: ClueInput[]
   stack: ElementStackInput
+  isEscapeRoom?: boolean | null
+  escapeRoomTimeLimit?: number | null
+  escapeRoomHintPenalty?: number | null
+  escapeRoomIntroText?: string | null
 }
 
 export async function manipulateGroupActivity(
@@ -849,9 +863,20 @@ export async function manipulateGroupActivity(
     endDate,
     clues,
     stack,
+    isEscapeRoom,
+    escapeRoomTimeLimit,
+    escapeRoomHintPenalty,
+    escapeRoomIntroText,
   }: CreateGroupActivityArgs,
   ctx: ContextWithUser
 ) {
+  if (isEscapeRoom) {
+    validateEscapeRoomConfig({
+      timeLimit: escapeRoomTimeLimit ?? 3600,
+      hintPenalty: escapeRoomHintPenalty ?? 120,
+    })
+  }
+
   // in EDIT mode - validate that the group activity exists and is not published, remove the old clues
   let existingActivity: DB.GroupActivity | null = null
   if (id) {
@@ -897,6 +922,21 @@ export async function manipulateGroupActivity(
     anyInstanceOutdated,
   } = await splitActivityInstances({ stacksOrBlocks: [stack] }, ctx)
 
+  if (
+    !isEscapeRoom &&
+    activityInputContainsElementType({
+      stacksOrBlocks: [stack],
+      persistentInstances,
+      duplicationInstances,
+      elementMap,
+      type: DB.ElementType.QR_SCAN,
+    })
+  ) {
+    throw new GraphQLError(
+      'QR scan questions are only supported in escape room activities'
+    )
+  }
+
   // in EDIT mode - check which instances and stacks should be removed
   let instancesToDelete: number[] = []
   let unlinkedElementIds: number[] = [] // ids of all elements, which will no longer require a derived permissions link to the activity
@@ -919,7 +959,7 @@ export async function manipulateGroupActivity(
   }
 
   const newId = uuidv4()
-  const createOrUpdateJSON = {
+  const createOrUpdateJSON: any = {
     id: id ?? newId,
     name: name,
     displayName: displayName,
@@ -980,9 +1020,38 @@ export async function manipulateGroupActivity(
     course: { connect: { id: courseId } },
   }
 
+  // nested upsert is only valid on the update branch of the activity upsert;
+  // the create branch needs a plain nested create
+  const escapeRoomConfigData = isEscapeRoom
+    ? {
+        timeLimit: escapeRoomTimeLimit ?? 3600,
+        hintPenalty: escapeRoomHintPenalty ?? 120,
+        lockoutSeconds: 5,
+        introText: escapeRoomIntroText?.trim() || null,
+      }
+    : null
+
+  if (escapeRoomConfigData) {
+    createOrUpdateJSON.escapeRoomConfig = {
+      upsert: {
+        create: escapeRoomConfigData,
+        update: {
+          timeLimit: escapeRoomConfigData.timeLimit,
+          hintPenalty: escapeRoomConfigData.hintPenalty,
+          introText: escapeRoomConfigData.introText,
+        },
+      },
+    }
+  }
+
   // Use a transaction to ensure atomicity of all database operations
   const activity = await ctx.prisma.$transaction(
     async (prisma) => {
+      const persistentInputs = new Map(
+        stack.elements
+          .filter((instance) => !instance.duplicateInstance)
+          .map((instance) => [instance.existingInstanceId, instance])
+      )
       // delete all instances that are not used anymore
       await prisma.elementInstance.deleteMany({
         where: { id: { in: instancesToDelete } },
@@ -1004,6 +1073,9 @@ export async function manipulateGroupActivity(
             order: persistentInstanceOrderMap[instance.id],
             options: {
               ...instance.options,
+              ...getEscapeRoomHintUpdate(
+                persistentInputs.get(instance.id)?.escapeRoomHint
+              ),
               pointsMultiplier: multiplier * elementMultiplier,
             },
           },
@@ -1015,10 +1087,21 @@ export async function manipulateGroupActivity(
         where: { id: { in: stacksToDelete } },
       })
 
+      if (!isEscapeRoom && id) {
+        await prisma.escapeRoomConfig
+          .delete({
+            where: { groupActivityId: id },
+          })
+          .catch(() => {})
+      }
+
       const upsertedActivity = await prisma.groupActivity.upsert({
         where: { id: id ?? newId },
         create: {
           ...createOrUpdateJSON,
+          ...(escapeRoomConfigData
+            ? { escapeRoomConfig: { create: escapeRoomConfigData } }
+            : {}),
           owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
         },
         update: createOrUpdateJSON,
@@ -1234,6 +1317,7 @@ export async function getGroupActivityDetails(
     },
     include: {
       course: true,
+      escapeRoomConfig: true,
       clues: { orderBy: { displayName: 'asc' } },
       stacks: { include: { elements: { orderBy: { order: 'asc' } } } },
       parameters: true,
@@ -1279,8 +1363,21 @@ export async function getGroupActivityDetails(
     },
   })
 
+  const attempt = groupActivity.escapeRoomConfig
+    ? await ctx.prisma.escapeRoomAttempt.findUnique({
+        where: {
+          groupId_groupActivityId: { groupId, groupActivityId: activityId },
+        },
+        select: { hintsUsed: true },
+      })
+    : null
+
   return {
     ...groupActivity,
+    stacks: restoreUsedEscapeRoomHints(
+      groupActivity.stacks,
+      attempt?.hintsUsed ?? []
+    ),
     group,
     activityInstance: activityInstance
       ? {
@@ -1444,7 +1541,7 @@ export async function submitGroupActivityDecisions(
     await ctx.prisma.groupActivityInstance.findUnique({
       where: { id: activityId },
       include: {
-        groupActivity: true,
+        groupActivity: { include: { escapeRoomConfig: true } },
         group: { include: { participants: { where: { id: ctx.user.sub } } } },
       },
     })
@@ -1470,6 +1567,20 @@ export async function submitGroupActivityDecisions(
     dayjs().isAfter(groupActivityInstance.groupActivity.scheduledEndAt)
   ) {
     return null
+  }
+
+  if (groupActivityInstance.groupActivity.escapeRoomConfig) {
+    return submitEscapeRoomGroupActivityDecisions(
+      {
+        activityId,
+        groupActivityId: groupActivityInstance.groupActivityId,
+        groupId: groupActivityInstance.groupId,
+        responses,
+        lockoutSeconds:
+          groupActivityInstance.groupActivity.escapeRoomConfig.lockoutSeconds,
+      },
+      ctx
+    )
   }
 
   // save answers on instances in aggregated form
@@ -1579,6 +1690,7 @@ export async function getGroupActivity(
     include: {
       course: true,
       clues: true,
+      escapeRoomConfig: true,
       activityInstances: { include: { group: true } },
       stacks: { include: { elements: { orderBy: { order: 'asc' } } } },
     },
@@ -2157,6 +2269,7 @@ export async function getGradingGroupActivity(
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
     where: { id },
     include: {
+      escapeRoomConfig: true,
       stacks: { include: { elements: { orderBy: { order: 'asc' } } } },
       activityInstances: {
         include: { group: true },
@@ -2167,12 +2280,26 @@ export async function getGradingGroupActivity(
 
   if (!groupActivity) return null
 
+  const canResetEscapeRoom = await checkAccess(
+    [
+      {
+        groupActivityId: id,
+        minimumPermissionLevel: DB.PermissionLevel.WRITE,
+      },
+    ],
+    ctx
+  )
+
   const mappedInstances = groupActivity?.activityInstances.map((instance) => ({
     ...instance,
     groupName: instance.group.name,
   }))
 
-  return { ...groupActivity, activityInstances: mappedInstances }
+  return {
+    ...groupActivity,
+    activityInstances: mappedInstances,
+    canResetEscapeRoom,
+  }
 }
 
 interface GradeGroupActivitySubmissionArgs {
@@ -2199,7 +2326,7 @@ export async function gradeGroupActivitySubmission(
     where: { id: { in: instanceIds } },
   })
   const elementInstanceMap = elementInstances.reduce<
-    Record<number, ElementInstanceOptions>
+    Record<number, PrismaJson.PrismaElementInstanceOptions>
   >((acc, instance) => ({ ...acc, [instance.id]: instance.options }), {})
 
   const updatedInstance = await ctx.prisma.groupActivityInstance.update({

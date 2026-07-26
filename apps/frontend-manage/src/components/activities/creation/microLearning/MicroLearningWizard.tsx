@@ -16,6 +16,7 @@ import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
 import { ElementSelectCourse } from '../../ActivityCreation'
 import CompletionStep from '../CompletionStep'
+import { useEscapeRoomYupFields } from '../escapeRoomValidation'
 import StackCreationStep from '../StackCreationStep'
 import WizardLayout, { MicroLearningFormValues } from '../WizardLayout'
 import MicroLearningDescriptionStep from './MicroLearningDescriptionStep'
@@ -62,6 +63,7 @@ interface MicroLearningWizardProps {
   closeWizard: () => void
   editMode: boolean
   duplicationMode: boolean
+  escapeRoomHints: Array<{ instanceId: number; hint: string }>
 }
 
 function MicroLearningWizard({
@@ -73,6 +75,7 @@ function MicroLearningWizard({
   closeWizard,
   editMode,
   duplicationMode,
+  escapeRoomHints,
 }: MicroLearningWizardProps) {
   const t = useTranslations()
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
@@ -86,6 +89,10 @@ function MicroLearningWizard({
     useCoursesGamificationSplit({
       courseSelection: courses,
     })
+  const escapeRoomYupFields = useEscapeRoomYupFields()
+  const escapeRoomHintMap = new Map(
+    escapeRoomHints.map(({ instanceId, hint }) => [instanceId, hint])
+  )
 
   const nameValidationSchema = yup.object().shape({
     name: yup.string().required(t('manage.activityWizard.activityName')),
@@ -137,6 +144,7 @@ function MicroLearningWizard({
     courseId: yup
       .string()
       .required(t('manage.activityWizard.microlearningCourse')),
+    ...escapeRoomYupFields,
   })
 
   const stackValiationSchema = yup.object().shape({
@@ -156,7 +164,7 @@ function MicroLearningWizard({
                 type: yup
                   .string()
                   .oneOf(
-                    acceptedTypes,
+                    [...acceptedTypes, ElementType.QrScan],
                     t('manage.activityWizard.microlearningTypes')
                   ),
                 hasSampleSolution: yup.boolean().when('type', {
@@ -199,6 +207,10 @@ function MicroLearningWizard({
     courseEndDate: undefined,
     multiplier: '1',
     courseId: undefined,
+    isEscapeRoom: false,
+    escapeRoomTimeLimit: '60',
+    escapeRoomHintPenalty: '0',
+    escapeRoomIntroText: '',
   }
 
   const workflowItems = [
@@ -239,7 +251,7 @@ function MicroLearningWizard({
             const [elementId, _] = instance.elementData.id.split('-v')
 
             return {
-              id: parseInt(elementId),
+              id: parseInt(elementId, 10),
               title: instance.elementData.name,
               type: instance.elementData.type,
               hasSampleSolution:
@@ -248,6 +260,7 @@ function MicroLearningWizard({
                   : true,
               existingInstanceId: instance.id,
               duplicateInstance: duplicationMode,
+              escapeRoomHint: escapeRoomHintMap.get(instance.id),
             }
           }),
         }))
@@ -264,7 +277,24 @@ function MicroLearningWizard({
       ? String(initialValues?.pointsMultiplier)
       : formDefaultValues.multiplier,
     courseId: initialValues?.course?.id ?? formDefaultValues.courseId,
+    isEscapeRoom: !!initialValues?.escapeRoomConfig,
+    escapeRoomTimeLimit: initialValues?.escapeRoomConfig?.timeLimit
+      ? String(Math.round(initialValues.escapeRoomConfig.timeLimit / 60))
+      : formDefaultValues.escapeRoomTimeLimit,
+    escapeRoomHintPenalty:
+      typeof initialValues?.escapeRoomConfig?.hintPenalty !== 'undefined' &&
+      initialValues?.escapeRoomConfig?.hintPenalty !== null
+        ? String(initialValues.escapeRoomConfig.hintPenalty)
+        : formDefaultValues.escapeRoomHintPenalty,
+    escapeRoomIntroText:
+      initialValues?.escapeRoomConfig?.introText ??
+      formDefaultValues.escapeRoomIntroText,
   })
+
+  // QR scan questions are only placeable in escape-room activities
+  const stackAcceptedTypes = formData.isEscapeRoom
+    ? [...acceptedTypes, ElementType.QrScan]
+    : acceptedTypes
 
   const [createMicroLearning, { data: creationData }] = useMutation(
     CreateMicroLearningDocument
@@ -421,7 +451,7 @@ function MicroLearningWizard({
           editMode={editMode}
           selection={selection}
           resetSelection={resetSelection}
-          acceptedTypes={acceptedTypes}
+          acceptedTypes={stackAcceptedTypes}
           formRef={formRef}
           formData={formData}
           continueDisabled={false}

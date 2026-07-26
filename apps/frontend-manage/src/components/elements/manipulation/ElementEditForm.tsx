@@ -46,6 +46,7 @@ import useValidationSchema from './useValidationSchema'
 function ElementEditForm({
   isTemplate = false,
   inputsDisabled = false,
+  canPrintQrCodes = false,
   templateId,
   onClose,
   onSuccess,
@@ -62,6 +63,8 @@ function ElementEditForm({
 }: {
   // flag to disable inputs (edit mode and read permissions)
   inputsDisabled?: boolean
+  // QR codes are sensitive answer material and remain owner-only.
+  canPrintQrCodes?: boolean
   // flag to highlight template mode
   isTemplate?: boolean
   templateId?: string
@@ -194,6 +197,29 @@ function ElementEditForm({
                       values={values}
                       setFieldValue={setFieldValue}
                     />
+
+                    {values.type === ElementType.QrScan &&
+                      mode === ElementEditMode.EDIT &&
+                      elementId != null &&
+                      canPrintQrCodes &&
+                      !inputsDisabled && (
+                        <Button
+                          type="button"
+                          className={{ root: 'mt-4' }}
+                          data={{ cy: 'open-qr-print-view' }}
+                          onClick={() =>
+                            window.open(
+                              `/elements/${elementId}/qr-print`,
+                              '_blank',
+                              'noopener,noreferrer'
+                            )
+                          }
+                        >
+                          <Button.Label>
+                            {t('manage.elements.qrPrintOpen')}
+                          </Button.Label>
+                        </Button>
+                      )}
 
                     {/* scoring section */}
                     {!isTemplate &&

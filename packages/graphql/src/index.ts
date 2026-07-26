@@ -10,6 +10,7 @@ import './schema/assessment.js'
 import './schema/course.js'
 import './schema/element.js'
 import './schema/elementData.js'
+import './schema/escapeRoomConfig.js'
 import './schema/evaluation.js'
 import './schema/groupActivity.js'
 import './schema/microLearning.js'
@@ -60,6 +61,7 @@ import {
 } from './services/notifications.js'
 import { handleUpdateWeeklyTimelineEntries } from './services/participants.js'
 import { handlePublishScheduledPracticeQuiz } from './services/practiceQuizzes.js'
+import { handlePruneEscapeRooms } from './services/pruneEscapeRooms.js'
 
 export const schema = builder.toSchema({
   schemaDirectives: {
@@ -82,4 +84,5 @@ export const handlers: HatchetHandlers = {
   handlePublishScheduledMicroLearning,
   handleStandardLiveQuizBlockClosureAggregation,
   handleAssessmentLiveQuizBlockClosureAggregation,
+  handlePruneEscapeRooms,
 }

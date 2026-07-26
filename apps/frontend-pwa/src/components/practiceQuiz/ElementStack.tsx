@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { ApolloError, useMutation, useQuery } from '@apollo/client'
 import {
   CaseStudyCaseResponse,
   ElementStack as ElementStackType,
@@ -6,6 +6,7 @@ import {
   FlashcardCorrectness,
   FlashcardCorrectnessType,
   GetPreviousStackEvaluationDocument,
+  RequestEscapeRoomHintDocument,
   RespondToElementStackDocument,
   StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -17,7 +18,7 @@ import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/Dynam
 import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStudentResponse'
 import { ChoicesResponse } from '@klicker-uzh/types'
 import { useLocalStorage } from '@uidotdev/usehooks'
-import { Button, H2, UserNotification } from '@uzh-bf/design-system'
+import { Button, H2, toast, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import useComponentVisibleCounter from '../hooks/useComponentVisibleCounter'
@@ -39,8 +40,10 @@ interface ElementStackProps {
     status: StackFeedbackStatus
     score?: number | null
   }) => void
-  handleNextElement: () => void
-  onAllStacksCompletion: () => void
+  // the freshly graded status is passed on the immediate (flashcard/content)
+  // continue path, where the parent's progress state is not yet settled
+  handleNextElement: (gradedStatus?: StackFeedbackStatus) => void
+  onAllStacksCompletion: (gradedStatus?: StackFeedbackStatus) => void
   withParticipant?: boolean
   bookmarks?: number[] | null
   hideBookmark?: boolean
@@ -48,6 +51,16 @@ interface ElementStackProps {
   activityExpired?: boolean
   activityExpiredMessage?: string
   previewOnly?: boolean
+  // Escape-room hints: set only when this stack belongs to an escape-room
+  // activity. Drives the per-element "reveal hint" button (shown only for
+  // elements whose options.hasHint is true). Revealing charges hintPenalty
+  // seconds server-side; onStateChanged refetches so timer/lockout state stays
+  // synchronized after hints and submissions.
+  escapeRoom?: {
+    activityType: 'practiceQuiz' | 'microLearning'
+    hintPenalty: number
+    onStateChanged: () => void | Promise<unknown>
+  }
 }
 
 function ElementStack({
@@ -67,6 +80,7 @@ function ElementStack({
   activityExpired = false,
   activityExpiredMessage,
   previewOnly = false,
+  escapeRoom,
 }: ElementStackProps) {
   const t = useTranslations()
   const timeRef = useRef(0)
@@ -83,6 +97,15 @@ function ElementStack({
   const [respondToElementStack, { loading: submittingResponse }] = useMutation(
     RespondToElementStackDocument
   )
+
+  // Escape-room hints: revealed text is kept per instanceId so it stays visible
+  // once unlocked. The server charge is idempotent, but we also track a
+  // per-instance "requesting" flag to disable the button while in flight.
+  const [requestEscapeRoomHint] = useMutation(RequestEscapeRoomHintDocument)
+  const [revealedHints, setRevealedHints] = useState<Record<number, string>>({})
+  const [requestingHintFor, setRequestingHintFor] = useState<number | null>(
+    null
+  )
   const elementFeedbacks = useStackElementFeedbacks({
     instanceIds: stack.elements?.map((element) => element.id) ?? [],
     withParticipant: withParticipant,
@@ -98,6 +121,114 @@ function ElementStack({
     useState<StackStudentResponseType>({})
 
   const [openEvaluations, setOpenEvaluations] = useState<Set<number>>(new Set())
+  const [lastGradedStatus, setLastGradedStatus] =
+    useState<StackFeedbackStatus>()
+
+  // Escape-room lockout: a wrong answer sets a server-side lockout window, and
+  // the next submit throws ESCAPE_ROOM_LOCKOUT carrying lockoutUntil. Track it
+  // to disable the submit button and show a live retry countdown.
+  const [lockoutDeadline, setLockoutDeadline] = useState<number | null>(null)
+  const [lockoutRemaining, setLockoutRemaining] = useState(0)
+
+  useEffect(() => {
+    if (lockoutDeadline === null) {
+      setLockoutRemaining(0)
+      return
+    }
+    const tick = () => {
+      const remaining = Math.max(
+        0,
+        Math.ceil((lockoutDeadline - performance.now()) / 1000)
+      )
+      setLockoutRemaining(remaining)
+      if (remaining <= 0) setLockoutDeadline(null)
+    }
+    tick()
+    const interval = setInterval(tick, 1000)
+    return () => clearInterval(interval)
+  }, [lockoutDeadline])
+
+  // Map the structured escape-room error codes thrown by respondToElementStack
+  // to localized participant feedback. Non-escape errors surface a generic
+  // system-error toast (previously the rejected promise failed silently).
+  const handleEscapeRoomError = (error: unknown) => {
+    const gqlErrors = error instanceof ApolloError ? error.graphQLErrors : []
+    const escapeError = gqlErrors.find((err) => {
+      const code = err.extensions?.code
+      return typeof code === 'string' && code.startsWith('ESCAPE_ROOM_')
+    })
+    if (!escapeError) {
+      toast({
+        message: t('shared.generic.systemError'),
+        type: 'error',
+      })
+      return
+    }
+    switch (escapeError.extensions?.code) {
+      case 'ESCAPE_ROOM_LOCKOUT': {
+        const remaining = escapeError.extensions?.lockoutRemainingSeconds
+        if (typeof remaining === 'number') {
+          setLockoutDeadline(performance.now() + remaining * 1000)
+        }
+        toast({
+          message: t('pwa.practiceQuiz.escapeRoomLockoutToast'),
+          type: 'error',
+        })
+        break
+      }
+      case 'ESCAPE_ROOM_EXPIRED':
+        toast({
+          message: t('pwa.practiceQuiz.escapeRoomExpiredToast'),
+          type: 'error',
+        })
+        break
+      case 'ESCAPE_ROOM_GATED':
+        toast({
+          message: t('pwa.practiceQuiz.escapeRoomGatedToast'),
+          type: 'error',
+        })
+        break
+      default:
+        toast({
+          message: t('pwa.practiceQuiz.escapeRoomForbiddenToast'),
+          type: 'error',
+        })
+    }
+  }
+
+  const handleRequestHint = async (instanceId: number) => {
+    const restoredHint = stack.elements?.find(
+      (element) => element.id === instanceId
+    )?.revealedHint
+    if (!escapeRoom || revealedHints[instanceId] || restoredHint) return
+    setRequestingHintFor(instanceId)
+    try {
+      const result = await requestEscapeRoomHint({
+        variables: {
+          instanceId,
+          ...(escapeRoom.activityType === 'microLearning'
+            ? { microLearningId: parentId }
+            : { practiceQuizId: parentId }),
+        },
+      })
+      const hint = result.data?.requestEscapeRoomHint?.hint
+      if (hint) {
+        setRevealedHints((prev) => ({ ...prev, [instanceId]: hint }))
+        toast({
+          message: t('pwa.practiceQuiz.escapeRoomHintRevealedToast', {
+            penalty: escapeRoom.hintPenalty,
+          }),
+          type: 'success',
+        })
+        // Refetch so the live countdown picks up the newly charged penalty.
+        await escapeRoom.onStateChanged()
+      }
+    } catch (error) {
+      handleEscapeRoomError(error)
+    } finally {
+      setRequestingHintFor(null)
+    }
+  }
 
   const showMarkAsRead = useMemo(() => {
     if (
@@ -342,6 +473,8 @@ function ElementStack({
           {stack.elements &&
             stack.elements.length > 0 &&
             stack.elements.map((element, elementIx) => {
+              const revealedHint =
+                revealedHints[element.id] ?? element.revealedHint
               return (
                 <div key={`${element.id}-student`}>
                   <InstanceHeader
@@ -383,6 +516,31 @@ function ElementStack({
                     stackStorage={stackStorage}
                     preview={embedded && !openEvaluations.has(element.id)}
                   />
+                  {withParticipant &&
+                    escapeRoom &&
+                    element.options?.hasHint &&
+                    (revealedHint ? (
+                      <UserNotification
+                        type="success"
+                        className={{ root: 'mt-2' }}
+                        message={revealedHint}
+                        data={{ cy: `escape-room-hint-text-${element.id}` }}
+                      />
+                    ) : (
+                      <Button
+                        className={{ root: 'mt-2' }}
+                        loading={requestingHintFor === element.id}
+                        disabled={requestingHintFor !== null}
+                        onClick={() => handleRequestHint(element.id)}
+                        data={{ cy: `request-escape-room-hint-${element.id}` }}
+                      >
+                        <Button.Label>
+                          {t('pwa.practiceQuiz.escapeRoomRequestHint', {
+                            penalty: escapeRoom.hintPenalty,
+                          })}
+                        </Button.Label>
+                      </Button>
+                    ))}
                 </div>
               )
             })}
@@ -397,9 +555,9 @@ function ElementStack({
                 setStudentResponse({})
 
                 if (currentStep === totalSteps) {
-                  onAllStacksCompletion()
+                  onAllStacksCompletion(lastGradedStatus)
                 } else {
-                  handleNextElement()
+                  handleNextElement(lastGradedStatus)
                 }
               }}
               className={{
@@ -456,6 +614,17 @@ function ElementStack({
           </Button>
         )}
 
+      {lockoutRemaining > 0 && (
+        <UserNotification
+          type="error"
+          className={{ root: 'mt-2' }}
+          message={t('pwa.practiceQuiz.escapeRoomLockoutCountdown', {
+            seconds: lockoutRemaining,
+          })}
+          data={{ cy: 'escape-room-lockout-countdown' }}
+        />
+      )}
+
       {typeof stackStorage === 'undefined' &&
         !showMarkAsRead &&
         wrapEmbedded(
@@ -464,6 +633,7 @@ function ElementStack({
             loading={submittingResponse}
             disabled={
               (!previewOnly && activityExpired) ||
+              lockoutRemaining > 0 ||
               Object.values(studentResponse).some((response) => !response.valid)
             }
             className={{
@@ -472,7 +642,6 @@ function ElementStack({
             onClick={async () => {
               const result = await respondToElementStack({
                 variables: {
-                  isOwner: previewOnly,
                   stackId: stack.id,
                   courseId: courseId,
                   stackAnswerTime: timeRef.current,
@@ -535,6 +704,12 @@ function ElementStack({
                           type: ElementType.FreeText,
                           freeTextResponse: value.response,
                         }
+                      } else if (value.type === ElementType.QrScan) {
+                        return {
+                          instanceId: parseInt(instanceId),
+                          type: ElementType.QrScan,
+                          qrScanResponse: value.response,
+                        }
                       } else if (value.type === ElementType.Selection) {
                         return {
                           instanceId: parseInt(instanceId),
@@ -595,9 +770,13 @@ function ElementStack({
                     }
                   ),
                 },
+              }).catch(async (error) => {
+                handleEscapeRoomError(error)
+                await escapeRoom?.onStateChanged()
+                return undefined
               })
 
-              if (!result.data || !result.data?.respondToElementStack) {
+              if (!result?.data || !result.data?.respondToElementStack) {
                 console.error('Error submitting response')
                 return
               }
@@ -622,6 +801,8 @@ function ElementStack({
 
               // set status and score according to returned correctness
               const grading = result.data?.respondToElementStack
+              await escapeRoom?.onStateChanged()
+              setLastGradedStatus(grading.status)
               setStudentResponse({})
 
               if (typeof setStepStatus !== 'undefined') {
@@ -640,9 +821,9 @@ function ElementStack({
                 )
               ) {
                 if (currentStep === totalSteps) {
-                  onAllStacksCompletion()
+                  onAllStacksCompletion(grading.status)
                 } else {
-                  handleNextElement()
+                  handleNextElement(grading.status)
                 }
               }
             }}

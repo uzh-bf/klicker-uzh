@@ -23,6 +23,10 @@ interface CommonFormValues {
   courseEndDate?: Date
   courseGroupDeadline?: Date
   multiplier: string
+  isEscapeRoom?: boolean
+  escapeRoomTimeLimit?: string
+  escapeRoomHintPenalty?: string
+  escapeRoomIntroText?: string
 }
 
 export interface ElementInstanceFormInput {
@@ -32,10 +36,18 @@ export interface ElementInstanceFormInput {
   hasSampleSolution: boolean
   existingInstanceId: number | null
   duplicateInstance: boolean
+  // Escape-room mode only: optional per-element hint a participant can reveal
+  // for a time penalty. Only applied to newly created/duplicated instances on
+  // submit; the raw text is never read back into the form (leak-proof).
+  escapeRoomHint?: string | null
 }
 
 export interface ElementBlockFormValues {
   timeLimit?: number
+  isEscapeRoom?: boolean
+  escapeRoomTimeLimit?: number
+  escapeRoomHintPenalty?: number
+  escapeRoomIntroText?: string
   elements: ElementInstanceFormInput[]
 }
 

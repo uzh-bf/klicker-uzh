@@ -24,3 +24,6 @@ export * from './auth.js'
 
 // export everything from the crypto module
 export * from './crypto.js'
+
+// export QR scan code helpers
+export * from './qrScan.js'

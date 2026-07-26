@@ -2,6 +2,14 @@
 
 ## 2026-07-19
 
+- **Update**: final Escape Room hardening centralizes attempt/hint/reset ownership, makes reset atomic, serializes GraphQL and LiveQuiz grading with post-claim state checks, preserves Escape Room LiveQuiz templates, aligns edit/reset/QR controls with permissions, and splits the large regression modules along mode boundaries.
+
+- **Update**: the lecturer and student Escape Room tutorials now cover Practice Quiz, Microlearning, Group Activity, Live Quiz blocks, shared group attempts, QR print/decoy setup, camera fallback, monitoring, and reset behavior. The Docusaurus production build passes; existing unrelated link and anchor warnings remain.
+
+- **Update**: [getting-started](./getting-started.md) and the environment-doctor skill record the required `/AddResponse` suffix for LiveQuiz submissions in every local routing mode.
+
+- **Update**: [auth-model](./auth-model.md), [testing](./testing.md), and the Playwright E2E skill document participant-cookie forwarding during PWA SSR and exact-workspace browser routing overrides used by the verified Escape Room suite.
+
 - **Update**: [getting-started](./getting-started.md), [frontend-conventions](./frontend-conventions.md), and [testing](./testing.md) document the runtime-owned TypeScript compiler matrix, explicit Next.js build-validation config, isolated incremental-cache ownership, and check-only declaration trap. The matching verification procedure and solution notes preserve the required checks.
 
 ## 2026-07-18
@@ -32,7 +40,22 @@
 
 - **Update**: [getting-started](./getting-started.md) and the environment-doctor skill now make `devrouter workspace ensure .` the canonical linked-worktree startup path. The devcontainer overlay preserves host Git metadata, and `post-start.sh` reconciles only its fingerprinted process group.
 
+- **Update**: Escape Room configuration now rejects non-integer or out-of-range game times and hint penalties before database access in all four modes; the shared five-second grace policy is used by GraphQL and response-api.
+- **Update**: LiveQuiz Escape Rooms now enforce server-owned stage order for participant content, answers, and hints, and participant clients resynchronize after attempt start and stage completion.
+- **Update**: Escape Room runtime hardening now expires incorrect-response counters, resets participant response state when an attempt scope changes, awaits dashboard resets, reports initial progress-query failures, and protects QR print data with schema-level element permission checks.
+- **Update**: [async-and-workers](./async-and-workers.md), [domain-model](./domain-model.md), and [graphql-api-layer](./graphql-api-layer.md) now document the 02:00 UTC prune schedule, all-enrolled roster semantics, configuration limits, LiveQuiz stage masking, and QR print authorization.
+
 ## 2026-07-11
+
+- **Update**: QR Scan questions can now be answered across all Escape Room modes through native browser scanning or validated manual entry; exact-code grading remains server-side, malformed values fail closed, and QR placement outside Escape Room activities is rejected.
+- **Update**: QR Scan owners now have printable, neutrally labeled QR sheets with request-time ephemeral decoys and a screen-only answer legend; decoys are neither persisted nor participant-visible.
+- **Update**: QR Scan elements can now be authored, reopened, and duplicated; codes are generated on create/duplicate, preserved on edit, and readable only by the exact owner.
+- **Update**: [domain-model](./domain-model.md) now documents the `QR_SCAN` element contract, opaque CSPRNG code storage, and participant snapshot leakage boundary.
+- **Update**: LiveQuiz blocks now support Escape Room authoring and participant runtime: validated gradable element types, config/hint edit readback, explicit attempt start, attempt-scoped local progress, timer/lockout controls, charged hint reveal/restoration, and completion state.
+- **Update**: the LiveQuiz cockpit now polls active Escape Room block progress, binds quiz/block identifiers to prevent cross-quiz reads, reports completed block progress, and exposes reset only with WRITE permission.
+- **Update**: [async-and-workers](./async-and-workers.md) and [domain-model](./domain-model.md) now document the enforced LiveQuiz Escape Room response contract, multi-instance completion, and deterministic event deduplication.
+- **Update**: [domain-model](./domain-model.md) and [graphql-api-layer](./graphql-api-layer.md) now document shared GroupActivity escape-room attempts, atomic concurrent hint penalties/restoration, retry-preserving lockouts, and structured participant errors.
+- **Update**: escape room production pass on the `codex/escape-room-production` branch — practice quiz game loop fixed for server-side stack masking (escape-mode advance/retry in `PracticeQuiz.tsx`), `Z-escape-room.spec.ts` rewritten as a full 11-test workflow, and user-facing lecturer/student tutorials added to `apps/docs`. Roadmap details: `project/2026-07-10-pr-5143-escape-room-implementation-review.md`.
 
 - **Update**: [getting-started](./getting-started.md), [data-and-migrations](./data-and-migrations.md), [frontend-conventions](./frontend-conventions.md), and [testing](./testing.md) document the TypeScript 6 workspace baseline, the separate Office Add-in exception, Prisma generation compatibility guard, explicit path mapping, and compiler-upgrade verification surfaces. Matching procedure was added to `klicker-data-model` and `klicker-testing-verification`.
 
@@ -47,6 +70,8 @@
 ## 2026-07-08
 
 - **Update**: [frontend-conventions](./frontend-conventions.md) updated with Markdown link interception behavior and Kaltura PlaykitJs bypass player details.
+- **Update**: [testing](./testing.md) guide updated to document `Z-escape-room.spec.ts` in Playwright E2E spec list.
+- **Update**: [domain-model](./domain-model.md) updated to document the generalized Escape Room Mode, configuration attributes, group activity correctness checks, reset permissions, and average stats aggregation.
 
 ## 2026-07-07
 

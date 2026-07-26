@@ -40,6 +40,9 @@ model PracticeQuiz {
   isAssessmentEnabled   Boolean @default(false)
   isDeleted             Boolean @default(false)
 
+  escapeRoomConfig      EscapeRoomConfig?
+  escapeRoomAttempts    EscapeRoomAttempt[]
+
   stacks ElementStack[]
 
   responses               QuestionResponse[]
@@ -167,6 +170,9 @@ model MicroLearning {
   isAssessmentEnabled      Boolean @default(false)
   isDeleted                Boolean @default(false)
 
+  escapeRoomConfig      EscapeRoomConfig?
+  escapeRoomAttempts    EscapeRoomAttempt[]
+
   areInstancesOutdated Boolean @default(false) // flag to indicate if the any instances in this microlearning are outdated due to changes in the corresponding element
 
   stacks ElementStack[]
@@ -276,6 +282,9 @@ model GroupActivity {
   isGamificationEnabled Boolean @default(false)
   isAssessmentEnabled   Boolean @default(false)
   isDeleted             Boolean @default(false)
+
+  escapeRoomConfig      EscapeRoomConfig?
+  escapeRoomAttempts    EscapeRoomAttempt[]
 
   stacks ElementStack[]
 
@@ -463,3 +472,71 @@ view UserActivities {
 }
 
 // #endregion
+
+enum EscapeRoomStatus {
+  IN_PROGRESS
+  COMPLETED
+  EXPIRED
+}
+
+model EscapeRoomConfig {
+  id             String  @id @default(uuid()) @db.Uuid
+  timeLimit      Int
+  hintPenalty    Int     @default(30)
+  lockoutSeconds Int     @default(5)
+  introText      String?
+
+  practiceQuiz   PracticeQuiz?  @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade)
+  practiceQuizId String?        @unique @db.Uuid
+
+  microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade)
+  microLearningId String?        @unique @db.Uuid
+
+  groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: Cascade)
+  groupActivityId String?        @unique @db.Uuid
+
+  elementBlock    ElementBlock?  @relation(fields: [elementBlockId], references: [id], onDelete: Cascade)
+  elementBlockId  Int?           @unique
+}
+
+model EscapeRoomAttempt {
+  id String @id @default(uuid()) @db.Uuid
+
+  startedAt      DateTime         @default(now())
+  timeLimit      Int
+  penaltySeconds Int              @default(0)
+  hintsUsed      Json             @default("[]") // Store used hint IDs/keys
+  status         EscapeRoomStatus @default(IN_PROGRESS)
+  completedAt    DateTime?
+  lockoutUntil   DateTime?
+
+  // Set once the prune job has processed this finished attempt for retention.
+  // Response/instance statistics are owned by submission/event-time paths;
+  // completed/expired attempts remain the replay-integrity record until stale.
+  statsAggregatedAt DateTime?
+
+  // Individual Play (PracticeQuiz / MicroLearning / LiveQuiz block)
+  participant   Participant? @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  participantId String?      @db.Uuid
+
+  // Group Play (GroupActivity)
+  group   ParticipantGroup? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId String?           @db.Uuid
+
+  practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade)
+  practiceQuizId String?       @db.Uuid
+
+  microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade)
+  microLearningId String?        @db.Uuid
+
+  groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: Cascade)
+  groupActivityId String?        @db.Uuid
+
+  elementBlock    ElementBlock?  @relation(fields: [elementBlockId], references: [id], onDelete: Cascade)
+  elementBlockId  Int?
+
+  @@unique([participantId, practiceQuizId])
+  @@unique([participantId, microLearningId])
+  @@unique([groupId, groupActivityId])
+  @@unique([participantId, elementBlockId])
+}

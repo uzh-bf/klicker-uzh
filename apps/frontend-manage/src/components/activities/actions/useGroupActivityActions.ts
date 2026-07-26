@@ -140,6 +140,16 @@ function useGroupActivityActions({
         data: { cy: `end-group-activity-${groupActivity.name}` },
       },
       {
+        id: 'monitorGroupActivity',
+        label: t('manage.course.monitorGroupActivity'),
+        icon: faGraduationCap,
+        onClick: () =>
+          router.push({
+            pathname: `/courses/grading/groupActivity/${groupActivity.id}`,
+          }),
+        data: { cy: `monitor-group-activity-${groupActivity.name}` },
+      },
+      {
         id: 'gradeGroupActivity',
         label: t('manage.course.gradeGroupActivity'),
         icon: faGraduationCap,

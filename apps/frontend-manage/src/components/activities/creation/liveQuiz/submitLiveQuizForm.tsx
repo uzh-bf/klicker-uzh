@@ -57,12 +57,25 @@ async function submitLiveQuizForm({
       return {
         order: ix,
         timeLimit: block.timeLimit,
+        isEscapeRoom: block.isEscapeRoom ?? false,
+        escapeRoomTimeLimit: block.isEscapeRoom
+          ? (block.escapeRoomTimeLimit ?? 5) * 60
+          : undefined,
+        escapeRoomHintPenalty: block.isEscapeRoom
+          ? block.escapeRoomHintPenalty
+          : undefined,
+        escapeRoomIntroText: block.isEscapeRoom
+          ? block.escapeRoomIntroText
+          : undefined,
         elements: block.elements.map((element, ix) => {
           return {
             elementId: element.id,
             order: ix,
             existingInstanceId: element.existingInstanceId,
             duplicateInstance: element.duplicateInstance,
+            escapeRoomHint: block.isEscapeRoom
+              ? (element.escapeRoomHint ?? undefined)
+              : undefined,
           }
         }),
       }

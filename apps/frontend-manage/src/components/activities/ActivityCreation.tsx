@@ -71,7 +71,10 @@ function ActivityCreation({
   const { data: dataMicroLearning, loading: microLoading } = useQuery(
     GetSingleMicroLearningDocument,
     {
-      variables: { id: activityId || '' },
+      variables: {
+        id: activityId || '',
+        withEscapeRoomHints: editMode === ActivityType.MicroLearning,
+      },
       skip:
         !activityId ||
         (editMode !== ActivityType.MicroLearning &&
@@ -83,7 +86,10 @@ function ActivityCreation({
   const { data: dataPracticeQuiz, loading: learningLoading } = useQuery(
     GetSinglePracticeQuizDocument,
     {
-      variables: { id: activityId || '' },
+      variables: {
+        id: activityId || '',
+        withEscapeRoomHints: editMode === ActivityType.PracticeQuiz,
+      },
       skip:
         !activityId ||
         (editMode !== ActivityType.PracticeQuiz &&
@@ -95,7 +101,10 @@ function ActivityCreation({
   const { data: dataGroupActivity, loading: groupActivityLoading } = useQuery(
     GetGroupActivityDocument,
     {
-      variables: { id: activityId || '' },
+      variables: {
+        id: activityId || '',
+        withEscapeRoomHints: editMode === ActivityType.GroupActivity,
+      },
       skip:
         !activityId ||
         (editMode !== ActivityType.GroupActivity &&
@@ -191,6 +200,7 @@ function ActivityCreation({
         | 'stacks'
         | 'pointsMultiplier'
         | 'course'
+        | 'escapeRoomConfig'
       > & {
         id?: string
         orderType?: string
@@ -212,11 +222,12 @@ function ActivityCreation({
       stacks: microData.stacks,
       pointsMultiplier: microData.pointsMultiplier,
       course: microData.course as Course,
+      escapeRoomConfig: microData.escapeRoomConfig,
     }
   }
 
   return (
-    <div className="print-hidden md:h-73 md:min-h-73 mb-3 flex flex-col justify-center">
+    <div className="print-hidden md:min-h-73 mb-3 flex flex-col justify-center md:h-auto">
       <div className="h-full w-full">
         {creationMode === ActivityType.LiveQuiz && (
           <LiveQuizWizard
@@ -239,6 +250,7 @@ function ActivityCreation({
             resetSelection={resetSelection}
             editMode={editMode === ActivityType.LiveQuiz}
             duplicationMode={duplicationMode === ActivityType.LiveQuiz}
+            escapeRoomHints={dataLiveQuiz?.escapeRoomHints ?? []}
           />
         )}
         {creationMode === ActivityType.MicroLearning && (
@@ -262,6 +274,7 @@ function ActivityCreation({
             resetSelection={resetSelection}
             editMode={editMode === ActivityType.MicroLearning}
             duplicationMode={duplicationMode === ActivityType.MicroLearning}
+            escapeRoomHints={dataMicroLearning?.escapeRoomHints ?? []}
           />
         )}
         {(creationMode === ActivityType.PracticeQuiz ||
@@ -287,6 +300,7 @@ function ActivityCreation({
             conversion={conversionMode === 'microLearningToPracticeQuiz'}
             editMode={editMode === ActivityType.PracticeQuiz}
             duplicationMode={duplicationMode === ActivityType.PracticeQuiz}
+            escapeRoomHints={dataPracticeQuiz?.escapeRoomHints ?? []}
           />
         )}
         {creationMode === ActivityType.GroupActivity && (
@@ -301,6 +315,7 @@ function ActivityCreation({
             }
             editMode={editMode === ActivityType.GroupActivity}
             duplicationMode={duplicationMode === ActivityType.GroupActivity}
+            escapeRoomHints={dataGroupActivity?.escapeRoomHints ?? []}
           />
         )}
       </div>

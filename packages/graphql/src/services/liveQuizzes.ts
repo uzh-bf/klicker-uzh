@@ -5,6 +5,8 @@ import {
   ElementInstanceResults,
   ElementResultsCaseStudy,
   ElementResultsOpen,
+  ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES,
+  getCurrentEscapeRoomInstance,
   HatchetHandlers,
   type ElementBlockInput,
   type ElementResultsChoices,
@@ -32,9 +34,14 @@ import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { computeRanks } from '../lib/util.js'
-import { getPermissionBooleans } from './activities.js'
+import {
+  activityInputContainsElementType,
+  getPermissionBooleans,
+} from './activities.js'
+import { validateEscapeRoomConfig } from './escapeRooms.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
+import { checkAccess } from './sharing.js'
 import { computeStackEvaluation } from './stacks.js'
 
 // TODO: rework scheduling for serverless
@@ -209,6 +216,13 @@ export async function manipulateLiveQuiz(
   }: ManipulateLiveQuizArgs,
   ctx: ContextWithUser
 ) {
+  for (const block of blocks.filter((entry) => entry.isEscapeRoom)) {
+    validateEscapeRoomConfig({
+      timeLimit: block.escapeRoomTimeLimit ?? 300,
+      hintPenalty: block.escapeRoomHintPenalty ?? 0,
+    })
+  }
+
   // in EDIT mode - validate that the live quiz exists and is not published
   let existingActivity:
     | (DB.LiveQuiz & { course?: { _count: { permissions: number } } | null })
@@ -254,6 +268,52 @@ export async function manipulateLiveQuiz(
     anyInstanceOutdated,
   } = await splitActivityInstances({ stacksOrBlocks: blocks }, ctx)
 
+  if (
+    blocks.some((block) => !block.isEscapeRoom) &&
+    blocks
+      .filter((block) => !block.isEscapeRoom)
+      .some((block) =>
+        activityInputContainsElementType({
+          stacksOrBlocks: [block],
+          persistentInstances,
+          duplicationInstances,
+          elementMap,
+          type: DB.ElementType.QR_SCAN,
+        })
+      )
+  ) {
+    throw new GraphQLError(
+      'QR scan questions are only supported in escape room activities'
+    )
+  }
+
+  for (const block of blocks.filter((entry) => entry.isEscapeRoom)) {
+    if (block.elements.length === 0) {
+      throw new GraphQLError('Escape room blocks require at least one question')
+    }
+    const unsupported = block.elements.some((entry) => {
+      const source = entry.existingInstanceId
+        ? [...persistentInstances, ...duplicationInstances].find(
+            (instance) => instance.id === entry.existingInstanceId
+          )
+        : elementMap[entry.elementId]
+      const elementType = source
+        ? 'elementType' in source
+          ? source.elementType
+          : source.type
+        : null
+      return (
+        !elementType ||
+        !ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES.includes(elementType)
+      )
+    })
+    if (unsupported) {
+      throw new GraphQLError(
+        'Escape room blocks only support SC, MC, KPRIM, numerical, free-text, and QR scan questions'
+      )
+    }
+  }
+
   // in EDIT mode - check which instances and blocks should be removed
   let instancesToDelete: number[] = []
   let unlinkedElementIds: number[] = [] // ids of all elements, which will no longer require a derived permissions link to the activity
@@ -290,6 +350,11 @@ export async function manipulateLiveQuiz(
 
   // only activities in assessment courses will be marked as being part of assessment
   const assessmentSetting = course?.isAssessmentEnabled ?? false
+  if (assessmentSetting && blocks.some((block) => block.isEscapeRoom)) {
+    throw new GraphQLError(
+      'Escape room blocks are not supported in assessment live quizzes'
+    )
+  }
 
   // pin protection applies when assessment is enabled or explicitly enabled via flag
   const pinProtection = assessmentSetting || isPinProtected
@@ -385,6 +450,15 @@ export async function manipulateLiveQuiz(
       create: blocks.map((block) => ({
         order: block.order,
         timeLimit: block.timeLimit,
+        escapeRoomConfig: block.isEscapeRoom
+          ? {
+              create: {
+                timeLimit: block.escapeRoomTimeLimit ?? 300,
+                hintPenalty: block.escapeRoomHintPenalty ?? 0,
+                introText: block.escapeRoomIntroText?.trim() || null,
+              },
+            }
+          : undefined,
         elements: {
           connectOrCreate: block.elements.map((instance) =>
             getActivityInstanceConnectOrCreate({
@@ -411,6 +485,9 @@ export async function manipulateLiveQuiz(
 
       // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
       for (const instance of persistentInstances) {
+        const submittedInstance = blocks
+          .flatMap((block) => block.elements)
+          .find((entry) => entry.existingInstanceId === instance.id)
         const elementMultiplier =
           'pointsMultiplier' in instance.elementData
             ? ((instance.elementData.pointsMultiplier as number) ?? 1)
@@ -423,6 +500,12 @@ export async function manipulateLiveQuiz(
             order: persistentInstanceOrderMap[instance.id],
             options: {
               ...instance.options,
+              ...(typeof submittedInstance?.escapeRoomHint === 'undefined'
+                ? {}
+                : {
+                    escapeRoomHint:
+                      submittedInstance.escapeRoomHint?.trim() || null,
+                  }),
               pointsMultiplier: Math.max(multiplier, 1) * elementMultiplier,
             },
           },
@@ -636,6 +719,11 @@ export async function getLiveQuizData(
               order: 'asc',
             },
           },
+          // required so the wizard can restore escape-room block settings on
+          // edit (isEscapeRoom / time limit / hint penalty / intro text);
+          // without it the exposed escapeRoomConfig is null and the settings
+          // silently disappear when re-editing a live quiz
+          escapeRoomConfig: true,
         },
         orderBy: {
           order: 'asc',
@@ -689,7 +777,6 @@ export async function getLecturerViewLiveQuiz(
     return null
   }
 
-  // recude live quiz to only contain what is required for the lecturer cockpit
   const reducedQuiz = {
     ...liveQuiz,
     confusionSummary: aggregateFeedbacks(liveQuiz.confusionFeedbacks),
@@ -968,10 +1055,18 @@ export async function getCockpitQuiz(
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
     where: { id, status: DB.PublicationStatus.PUBLISHED },
     include: {
-      activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
+      activeBlock: {
+        include: {
+          escapeRoomConfig: true,
+          elements: { orderBy: { order: 'asc' } },
+        },
+      },
       blocks: {
         orderBy: { order: 'asc' },
-        include: { elements: { orderBy: { order: 'asc' } } },
+        include: {
+          escapeRoomConfig: true,
+          elements: { orderBy: { order: 'asc' } },
+        },
       },
       course: true,
       confusionFeedbacks: true,
@@ -1026,7 +1121,17 @@ export async function getCockpitQuiz(
       activeBlockParticipants ?? blockParticipants[liveQuiz.activeBlock.id] ?? 0
   }
 
-  // recude live quiz to only contain what is required for the lecturer cockpit
+  const canResetEscapeRoom = await checkAccess(
+    [
+      {
+        liveQuizId: id,
+        minimumPermissionLevel: DB.PermissionLevel.WRITE,
+      },
+    ],
+    ctx
+  )
+
+  // reduce live quiz to only contain what is required for the lecturer cockpit
   const reducedQuiz = {
     ...liveQuiz,
     activeBlock: liveQuiz.activeBlock,
@@ -1055,6 +1160,7 @@ export async function getCockpitQuiz(
       }
     }),
     confusionSummary: aggregateFeedbacks(liveQuiz.confusionFeedbacks),
+    canResetEscapeRoom,
   }
 
   return reducedQuiz
@@ -1095,7 +1201,12 @@ export async function activateLiveQuizBlock(
       },
     },
     include: {
-      activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
+      activeBlock: {
+        include: {
+          elements: { orderBy: { order: 'asc' } },
+          escapeRoomConfig: true,
+        },
+      },
       blocks: {
         include: { elements: { orderBy: { order: 'asc' } } },
         orderBy: { order: 'asc' },
@@ -1116,40 +1227,48 @@ export async function activateLiveQuizBlock(
     )
   }
 
+  const isEscapeRoomBlock = !!updatedQuiz.activeBlock?.escapeRoomConfig
+
   // update the quiz with an updated version through the corresponding subscription
   ctx.pubSub.publish('runningLiveQuizUpdated', {
     id: updatedQuiz.id,
     beforeFirstBlock: false,
     activeBlock: {
       ...updatedQuiz.activeBlock,
-      elements: updatedQuiz.activeBlock!.elements
-        ? await Promise.all(
-            removeSolutionFromInstances({
-              instances: updatedQuiz.activeBlock!.elements,
-            }).map(async (instance) => {
-              if (!quiz.isAssessmentEnabled) {
-                return instance
-              }
-
-              // for assessment quizzes, add a correlation key to verify a student's submission
-              const correlationKey = await signJWT(
-                {
-                  instanceId: instance.id,
-                  execution: updatedQuiz.activeBlock!.execution,
-                  liveQuizId: quiz.id,
-                  sub: '', // dummy sub, since this value is required
-                },
-                process.env.APP_SECRET as string,
-                {
-                  issuer: process.env.APP_ORIGIN_ASSESSMENT_API,
-                  issuedAt: updatedQuiz.activeBlock?.startedAt ?? new Date(0),
+      elements: isEscapeRoomBlock
+        ? []
+        : updatedQuiz.activeBlock!.elements
+          ? await Promise.all(
+              removeSolutionFromInstances({
+                instances: updatedQuiz.activeBlock!.elements,
+              }).map(async (instance) => {
+                if (!quiz.isAssessmentEnabled) {
+                  return instance
                 }
-              )
 
-              return { ...instance, correlationKey }
-            })
-          )
-        : [],
+                // for assessment quizzes, add a correlation key to verify a student's submission
+                const correlationKey = await signJWT(
+                  {
+                    instanceId: instance.id,
+                    execution: updatedQuiz.activeBlock!.execution,
+                    liveQuizId: quiz.id,
+                    sub: '', // dummy sub, since this value is required
+                  },
+                  process.env.APP_SECRET as string,
+                  {
+                    issuer: process.env.APP_ORIGIN_ASSESSMENT_API,
+                    issuedAt: updatedQuiz.activeBlock?.startedAt ?? new Date(0),
+                  }
+                )
+
+                return { ...instance, correlationKey }
+              })
+            )
+          : [],
+      escapeRoomTotalInstances: isEscapeRoomBlock
+        ? updatedQuiz.activeBlock!.elements.length
+        : null,
+      escapeRoomClearedInstances: isEscapeRoomBlock ? 0 : null,
     },
     // for future blocks, do not return the elements
     blocks: updatedQuiz.blocks.map((block) => ({
@@ -1184,6 +1303,15 @@ export async function activateLiveQuizBlock(
       timeToZeroBonus: updatedQuiz.timeToZeroBonus,
       blockExecution: updatedQuiz.activeBlock!.execution,
       blockStartedAt: Number(updatedQuiz.activeBlock!.startedAt),
+      isEscapeRoom: updatedQuiz.activeBlock!.escapeRoomConfig
+        ? 'true'
+        : 'false',
+      escapeRoomTimeLimit:
+        updatedQuiz.activeBlock!.escapeRoomConfig?.timeLimit ?? '',
+      escapeRoomHintPenalty:
+        updatedQuiz.activeBlock!.escapeRoomConfig?.hintPenalty ?? '',
+      escapeRoomLockoutSeconds:
+        updatedQuiz.activeBlock!.escapeRoomConfig?.lockoutSeconds ?? '',
     }
 
     switch (elementData.type) {
@@ -1247,6 +1375,14 @@ export async function activateLiveQuizBlock(
           participants: 0,
         })
 
+        break
+      }
+
+      case DB.ElementType.QR_SCAN: {
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, commonInfo)
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
+          participants: 0,
+        })
         break
       }
 
@@ -2918,10 +3054,16 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
     where: { id },
     include: {
       activeBlock: {
-        include: { elements: { orderBy: { order: 'asc' } } },
+        include: {
+          escapeRoomConfig: true,
+          elements: { orderBy: { order: 'asc' } },
+        },
       },
       blocks: {
-        include: { elements: { orderBy: { order: 'asc' } } },
+        include: {
+          escapeRoomConfig: true,
+          elements: { orderBy: { order: 'asc' } },
+        },
         orderBy: { order: 'asc' },
       },
       course: true,
@@ -2936,12 +3078,70 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
   // extract solution from instances in active block
   let quizWithoutSolutions: any
   if (quiz && quiz.activeBlock) {
+    const isEscapeRoomBlock = !!quiz.activeBlock.escapeRoomConfig
+    const escapeParticipantId =
+      isEscapeRoomBlock && ctx.user?.role === DB.UserRole.PARTICIPANT
+        ? ctx.user.sub
+        : null
+    const isParticipantEscapeRoom = escapeParticipantId !== null
+    const escapeAttempt = isParticipantEscapeRoom
+      ? await ctx.prisma.escapeRoomAttempt.findUnique({
+          where: {
+            participantId_elementBlockId: {
+              participantId: escapeParticipantId,
+              elementBlockId: quiz.activeBlock.id,
+            },
+          },
+        })
+      : null
+    const clearedInstanceIds = new Set(
+      escapeAttempt
+        ? await ctx.redisExec.smembers(
+            `escape-attempt:${escapeAttempt.id}:cleared`
+          )
+        : []
+    )
+    const escapeRoomInstances = isEscapeRoomBlock
+      ? quiz.activeBlock.elements.filter((instance) =>
+          ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES.includes(instance.elementType)
+        )
+      : []
+    const escapeRoomTotalInstances = isEscapeRoomBlock
+      ? escapeRoomInstances.length
+      : null
+    const escapeRoomClearedInstances = isEscapeRoomBlock
+      ? escapeAttempt?.status === DB.EscapeRoomStatus.COMPLETED
+        ? escapeRoomInstances.length
+        : escapeRoomInstances.filter((instance) =>
+            clearedInstanceIds.has(String(instance.id))
+          ).length
+      : null
+    const participantVisibleInstances = isEscapeRoomBlock
+      ? escapeAttempt?.status === DB.EscapeRoomStatus.IN_PROGRESS
+        ? [
+            getCurrentEscapeRoomInstance(
+              escapeRoomInstances,
+              clearedInstanceIds
+            ),
+          ].filter((instance) => instance !== undefined)
+        : []
+      : quiz.activeBlock.elements
+    const revealedHintIds = new Set(
+      Array.isArray(escapeAttempt?.hintsUsed)
+        ? escapeAttempt.hintsUsed.map(String)
+        : []
+    )
     const activeBlockInstances = await Promise.all(
       removeSolutionFromInstances({
-        instances: quiz.activeBlock.elements,
+        instances: participantVisibleInstances,
       }).map(async (instance) => {
         if (!quiz.isAssessmentEnabled) {
-          return instance
+          return {
+            ...instance,
+            revealedHint: revealedHintIds.has(String(instance.id))
+              ? (instance.options.escapeRoomHint ?? null)
+              : null,
+          }
         }
 
         // for assessment quizzes, add a correlation key to verify a student's submission
@@ -2966,7 +3166,12 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
     quizWithoutSolutions = {
       ...quiz,
       beforeFirstBlock,
-      activeBlock: { ...quiz.activeBlock, elements: activeBlockInstances },
+      activeBlock: {
+        ...quiz.activeBlock,
+        elements: activeBlockInstances,
+        escapeRoomTotalInstances,
+        escapeRoomClearedInstances,
+      },
       // for future blocks, do not return the elements
       blocks: quiz.blocks.map((block) => ({
         ...block,

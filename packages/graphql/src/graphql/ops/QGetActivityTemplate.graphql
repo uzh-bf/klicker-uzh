@@ -31,6 +31,13 @@ query GetActivityTemplate($templateId: String!) {
         order
         status
         timeLimit
+        escapeRoomConfig {
+          id
+          timeLimit
+          hintPenalty
+          lockoutSeconds
+          introText
+        }
         elements {
           id
           type
@@ -50,6 +57,14 @@ query GetActivityTemplate($templateId: String!) {
       pointsMultiplier
       resetTimeDays
       orderType
+
+      escapeRoomConfig {
+        id
+        timeLimit
+        hintPenalty
+        lockoutSeconds
+        introText
+      }
 
       stacks {
         id
@@ -77,6 +92,14 @@ query GetActivityTemplate($templateId: String!) {
       scheduledStartAt
       scheduledEndAt
 
+      escapeRoomConfig {
+        id
+        timeLimit
+        hintPenalty
+        lockoutSeconds
+        introText
+      }
+
       stacks {
         id
         order
@@ -102,6 +125,14 @@ query GetActivityTemplate($templateId: String!) {
       status
       scheduledStartAt
       scheduledEndAt
+
+      escapeRoomConfig {
+        id
+        timeLimit
+        hintPenalty
+        lockoutSeconds
+        introText
+      }
 
       clues {
         id

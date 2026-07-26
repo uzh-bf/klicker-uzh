@@ -334,6 +334,11 @@ export const TemplateBlockInputRef =
 export const TemplateBlockInput = TemplateBlockInputRef.implement({
   fields: (t) => ({
     timeLimit: t.int({ required: false }),
+    isEscapeRoom: t.boolean({ required: false }),
+    escapeRoomTimeLimit: t.int({ required: false }),
+    escapeRoomHintPenalty: t.int({ required: false }),
+    escapeRoomLockoutSeconds: t.int({ required: false }),
+    escapeRoomIntroText: t.string({ required: false }),
     order: t.int({ required: true }),
     elements: t.field({ type: [TemplateBlockElementInput], required: true }),
   }),
@@ -849,6 +854,34 @@ export const ContentElement = builder
     }),
   })
 
+export interface IQrScanElement extends IBaseElementProps {}
+export const QrScanElement = builder
+  .objectRef<IQrScanElement>('QrScanElement')
+  .implement({
+    fields: (t) => ({
+      ...sharedElementProps(t),
+    }),
+  })
+
+export interface IQrScanPrintData {
+  elementId: number
+  name: string
+  content: string
+  code: string
+  decoys: string[]
+}
+export const QrScanPrintData = builder
+  .objectRef<IQrScanPrintData>('QrScanPrintData')
+  .implement({
+    fields: (t) => ({
+      elementId: t.exposeInt('elementId'),
+      name: t.exposeString('name'),
+      content: t.exposeString('content'),
+      code: t.exposeString('code'),
+      decoys: t.exposeStringList('decoys'),
+    }),
+  })
+
 export const Element = builder.unionType('Element', {
   types: [
     ChoicesElement,
@@ -858,6 +891,7 @@ export const Element = builder.unionType('Element', {
     ContentElement,
     SelectionElement,
     CaseStudyElement,
+    QrScanElement,
   ],
   resolveType: (element) => {
     switch (element.type) {
@@ -877,6 +911,8 @@ export const Element = builder.unionType('Element', {
         return SelectionElement
       case DB.ElementType.CASE_STUDY:
         return CaseStudyElement
+      case DB.ElementType.QR_SCAN:
+        return QrScanElement
     }
   },
 })
@@ -891,6 +927,7 @@ export interface IUserElementList {
     | IContentElement
     | ISelectionElement
     | ICaseStudyElement
+    | IQrScanElement
   )[]
 }
 
@@ -924,6 +961,7 @@ export interface IElementInstance
   extends Omit<DB.ElementInstance, 'isVersionOutdated'> {
   feedbacks?: DB.ElementFeedback[] | null
   correlationKey?: string | null
+  revealedHint?: string | null
 }
 export const ElementInstanceRef =
   builder.objectRef<IElementInstance>('ElementInstance')
@@ -934,6 +972,7 @@ export const ElementInstance = ElementInstanceRef.implement({
     type: t.expose('type', { type: ElementInstanceType }),
     elementType: t.expose('elementType', { type: ElementType }),
     correlationKey: t.exposeString('correlationKey', { nullable: true }), // correlation key for assessment response validation
+    revealedHint: t.exposeString('revealedHint', { nullable: true }),
 
     elementData: t.field({
       type: ElementData,

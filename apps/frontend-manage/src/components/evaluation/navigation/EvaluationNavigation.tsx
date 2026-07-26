@@ -25,6 +25,7 @@ interface EvaluationNavigationProps {
   type: ActivityEvaluationType
   leaderboardAvailable?: boolean
   feedbacksAvailable?: boolean
+  escapeRoomAvailable?: boolean
 }
 
 function EvaluationNavigation({
@@ -40,6 +41,7 @@ function EvaluationNavigation({
   type,
   leaderboardAvailable,
   feedbacksAvailable,
+  escapeRoomAvailable,
 }: EvaluationNavigationProps) {
   const t = useTranslations()
   const { data: user, loading } = useQuery(UserProfileDocument, {
@@ -100,6 +102,7 @@ function EvaluationNavigation({
           type={type}
           leaderboardAvailable={leaderboardAvailable}
           feedbacksAvailable={feedbacksAvailable}
+          escapeRoomAvailable={escapeRoomAvailable}
         />
       </div>
     </div>

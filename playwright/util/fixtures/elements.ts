@@ -438,6 +438,45 @@ export async function createQuestionSC({
   }
 }
 
+export async function createQuestionQrScan({
+  name,
+  content,
+  code,
+  userId,
+}: {
+  name: string
+  content: string
+  code: string
+  userId: string
+}) {
+  const prisma = await getPrisma()
+  const { ElementType, PermissionLevel: PL } = await import(
+    '@klicker-uzh/prisma/client'
+  )
+  const question = await prisma.element.create({
+    data: {
+      type: ElementType.QR_SCAN,
+      name,
+      content,
+      basePoints: true,
+      pointsMultiplier: 1,
+      options: {},
+      qrScanCode: code,
+      owner: { connect: { id: userId } },
+    },
+  })
+  await prisma.derivedPermission.upsert({
+    where: { elementId_userId: { elementId: question.id, userId } },
+    create: {
+      permissionLevel: PL.OWNER,
+      element: { connect: { id: question.id } },
+      user: { connect: { id: userId } },
+    },
+    update: { permissionLevel: PL.OWNER },
+  })
+  return true
+}
+
 export async function createQuestionMC({
   name,
   content,

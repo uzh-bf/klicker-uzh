@@ -8,6 +8,10 @@ mutation EditPracticeQuiz(
   $multiplier: Int!
   $order: ElementOrderType!
   $resetTimeDays: Int!
+  $isEscapeRoom: Boolean
+  $escapeRoomTimeLimit: Int
+  $escapeRoomHintPenalty: Int
+  $escapeRoomIntroText: String
 ) {
   editPracticeQuiz(
     id: $id
@@ -19,6 +23,10 @@ mutation EditPracticeQuiz(
     multiplier: $multiplier
     order: $order
     resetTimeDays: $resetTimeDays
+    isEscapeRoom: $isEscapeRoom
+    escapeRoomTimeLimit: $escapeRoomTimeLimit
+    escapeRoomHintPenalty: $escapeRoomHintPenalty
+    escapeRoomIntroText: $escapeRoomIntroText
   ) {
     ...ActivityInfoData
   }

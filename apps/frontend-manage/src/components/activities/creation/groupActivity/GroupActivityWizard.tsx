@@ -17,6 +17,7 @@ import * as yup from 'yup'
 import useCoursesGroupActivitySplit from '../../../../lib/hooks/useCoursesGroupActivitySplit'
 import { ElementSelectCourse } from '../../ActivityCreation'
 import CompletionStep from '../CompletionStep'
+import { useEscapeRoomYupFields } from '../escapeRoomValidation'
 import WizardLayout, {
   GroupActivityClueFormValues,
   GroupActivityFormValues,
@@ -65,6 +66,7 @@ interface GroupActivityWizardProps {
   initialValues?: GroupActivity
   editMode: boolean
   duplicationMode: boolean
+  escapeRoomHints: Array<{ instanceId: number; hint: string }>
 }
 
 function GroupActivityWizard({
@@ -76,6 +78,7 @@ function GroupActivityWizard({
   initialValues,
   editMode,
   duplicationMode,
+  escapeRoomHints,
 }: GroupActivityWizardProps) {
   const t = useTranslations()
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
@@ -92,6 +95,10 @@ function GroupActivityWizard({
   } = useCoursesGroupActivitySplit({
     courseSelection: courses,
   })
+  const escapeRoomYupFields = useEscapeRoomYupFields()
+  const escapeRoomHintMap = new Map(
+    escapeRoomHints.map(({ instanceId, hint }) => [instanceId, hint])
+  )
 
   const nameValidationSchema = yup.object().shape({
     name: yup
@@ -146,6 +153,7 @@ function GroupActivityWizard({
     courseId: yup
       .string()
       .required(t('manage.activityWizard.groupActivityCourse')),
+    ...escapeRoomYupFields,
   })
 
   const stackCluesValiationSchema = yup.object().shape({
@@ -160,7 +168,7 @@ function GroupActivityWizard({
             type: yup
               .string()
               .oneOf(
-                acceptedTypes,
+                [...acceptedTypes, ElementType.QrScan],
                 t('manage.activityWizard.groupActivityTypes')
               ),
           })
@@ -225,6 +233,10 @@ function GroupActivityWizard({
     courseStartDate: undefined,
     courseEndDate: undefined,
     courseGroupDeadline: undefined,
+    isEscapeRoom: false,
+    escapeRoomTimeLimit: '60',
+    escapeRoomHintPenalty: '0',
+    escapeRoomIntroText: '',
   }
 
   const workflowItems = [
@@ -274,12 +286,13 @@ function GroupActivityWizard({
             const [elementId, _] = instance.elementData.id.split('-v')
 
             return {
-              id: parseInt(elementId),
+              id: parseInt(elementId, 10),
               title: instance.elementData.name,
               type: instance.elementData.type,
               hasSampleSolution: false,
               existingInstanceId: instance.id,
               duplicateInstance: duplicationMode,
+              escapeRoomHint: escapeRoomHintMap.get(instance.id),
             }
           }),
         }
@@ -298,7 +311,24 @@ function GroupActivityWizard({
       ? String(initialValues?.pointsMultiplier)
       : formDefaultValues.multiplier,
     courseId: initialValues?.course?.id || formDefaultValues.courseId,
+    isEscapeRoom: !!initialValues?.escapeRoomConfig,
+    escapeRoomTimeLimit: initialValues?.escapeRoomConfig?.timeLimit
+      ? String(Math.round(initialValues.escapeRoomConfig.timeLimit / 60))
+      : formDefaultValues.escapeRoomTimeLimit,
+    escapeRoomHintPenalty:
+      typeof initialValues?.escapeRoomConfig?.hintPenalty !== 'undefined' &&
+      initialValues?.escapeRoomConfig?.hintPenalty !== null
+        ? String(initialValues.escapeRoomConfig.hintPenalty)
+        : formDefaultValues.escapeRoomHintPenalty,
+    escapeRoomIntroText:
+      initialValues?.escapeRoomConfig?.introText ??
+      formDefaultValues.escapeRoomIntroText,
   })
+
+  // QR scan questions are only placeable in escape-room activities
+  const stackAcceptedTypes = formData.isEscapeRoom
+    ? [...acceptedTypes, ElementType.QrScan]
+    : acceptedTypes
 
   const [createGroupActivity, { data: creationData }] = useMutation(
     CreateGroupActivityDocument
@@ -450,7 +480,8 @@ function GroupActivityWizard({
           editMode={editMode}
           selection={selection}
           resetSelection={resetSelection}
-          acceptedTypes={acceptedTypes}
+          isEscapeRoom={formData.isEscapeRoom}
+          acceptedTypes={stackAcceptedTypes}
           formRef={formRef}
           formData={formData}
           continueDisabled={false}

@@ -58,6 +58,8 @@ Clone-and-run via a self-contained devcontainer — no Infisical, no external Ed
 
 Devrouter owns generic process lifecycle and HTTP readiness. `ensure` verifies all ten routes and can spend one container recreate when an exact workspace is alive but an application remains unhealthy, including after a production build replaces live Next.js output.
 
+The PWA response URL keeps the response API's `/AddResponse` path in every local mode, including workspace-namespaced routes. The bare response API host is only a GET health endpoint; posting live-quiz answers there returns 404.
+
 The consumer contract is pinned once in `.devrouter.yml` at devrouter `0.0.35`. The devcontainer image contains no devrouter package or helper, and `devcontainer.json` does not run the managed adapter independently.
 
 The image does include the repository's development toolchain: pnpm `11.5.0`, uv `0.11.12`, and the Python 3.12 selection used by analytics CI. This keeps `pnpm run check:all` reproducible inside the container.

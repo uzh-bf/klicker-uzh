@@ -2,7 +2,7 @@
 type: API Layer
 title: GraphQL API Layer
 description: Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
-timestamp: '2026-07-07'
+timestamp: '2026-07-13'
 tags:
   - backend
   - graphql
@@ -50,5 +50,9 @@ and **commit the regenerated outputs** (`src/ops.ts`, `src/ops.schema.json`, `sr
 Field filters over the shared pubSub: `schema/subscription.ts:feedbackCreated` pipes `ctx.pubSub.subscribe('feedbackCreated')` through a `liveQuizId` filter; the publishing side is a service (`services/feedbacks.ts`). Frontends consume via `subscribeToMore` with the generated `S*Document`.
 
 ## Worked feature traces
+
+Escape Room hint text follows a split contract: participant activity queries expose only `hasHint` plus an already-authorized `revealedHint`, while `requestEscapeRoomHint` validates the active participant/group attempt before returning text. The `escapeRoomHints` edit query requires WRITE permission, so authorized collaborators can reopen shared activities without exposing hint text to READ-only users. Attempt start, hint reveal, and lecturer reset share the canonical Escape Room service; start and reset coordinate with response processing through one target-level lifecycle claim, and reset validates one typed activity/participant-or-group target before removing attempt plus progress state in one transaction. The generic group and stack services only dispatch or run their existing grading loop; Escape Room preflight, response-shape validation, lifecycle claims, transaction orchestration, and finalization live in `groupEscapeRoomSubmissions.ts`, `escapeRoomStackSubmissions.ts`, and `escapeRoomResponseValidation.ts`. Group submit failures use `ESCAPE_ROOM_LOCKOUT`, `ESCAPE_ROOM_EXPIRED`, `ESCAPE_ROOM_NO_ATTEMPT`, and `ESCAPE_ROOM_RESPONSE_PROCESSING` extensions so clients can present localized retry state.
+
+QR Scan print data follows the same three-layer authorization shape: `qrScanPrintData` requires an authenticated owner role, a schema-level OWNER permission check for the element, and an exact-owner service check before returning the answer code or ephemeral decoys (`packages/graphql/src/schema/query.ts:qrScanPrintData`, `packages/graphql/src/services/elements.ts:getQrScanPrintData`).
 
 Read-only feature end-to-end: commit `ff61d9bc7` (#4951) — new object type, two query fields, service function, ops + committed codegen, manage page, i18n. Schema-change + mutation + heavy vitest variant: `38c92d035` (#4958). Step-by-step walkthrough: [Developing a Feature](./developing-a-feature.md).

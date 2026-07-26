@@ -41,6 +41,7 @@ const statusActionMap = {
   ],
   [PublicationStatus.Published]: [
     'extendGroupActivity',
+    'monitorGroupActivity',
     'endGroupActivity',
     'activityLog',
     'shareGroupActivity',
@@ -107,6 +108,7 @@ function GroupActivityActions({
         'startGroupActivityNow',
         'extendGroupActivity',
         'endGroupActivity',
+        'monitorGroupActivity',
         'gradeGroupActivity',
       ],
       isShared: ['activityLog'],

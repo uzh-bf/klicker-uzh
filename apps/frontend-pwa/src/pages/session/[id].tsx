@@ -16,7 +16,6 @@ import {
   SetLiveQuizPinDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import {
   Button,
@@ -34,6 +33,7 @@ import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import * as Yup from 'yup'
+import { buildLiveQuizResponsePayload } from '~/lib/liveQuizResponse'
 import Layout from '../../components/Layout'
 import LiveQuizQuestionColumn from '../../components/liveQuiz/LiveQuizQuestionColumn'
 import LiveQuizSidebarColumn from '../../components/liveQuiz/LiveQuizSidebarColumn'
@@ -57,68 +57,29 @@ async function handleNewResponse({
   answer: any
   correlationKey?: string | null
 }): // statusCode: 0 = client-side invalid input / general error; otherwise HTTP status codes 200, 208, 400, 401, 404, 500
-Promise<{ statusCode: number; responseTimestamp?: number }> {
+Promise<{
+  statusCode: number
+  responseTimestamp?: number
+  responseStatus?: string
+  completed?: boolean
+  lockoutUntil?: string
+}> {
   let requestOptions: RequestInit = {
     method: 'POST',
     credentials: 'include',
   }
 
-  if (QUESTION_GROUPS.CHOICES.includes(type)) {
-    requestOptions = {
-      ...requestOptions,
-      body: JSON.stringify({
-        correlationKey,
-        instanceId,
-        liveQuizId,
-        response: { choices: answer },
-      }),
-    }
-  } else if (
-    QUESTION_GROUPS.NUMERICAL.includes(type) ||
-    QUESTION_GROUPS.FREE_TEXT.includes(type)
-  ) {
-    requestOptions = {
-      ...requestOptions,
-      body: JSON.stringify({
-        correlationKey,
-        instanceId,
-        liveQuizId,
-        response: { value: answer },
-      }),
-    }
-  } else if (type === ElementType.Selection) {
-    requestOptions = {
-      ...requestOptions,
-      body: JSON.stringify({
-        correlationKey,
-        instanceId,
-        liveQuizId,
-        response: { selection: answer },
-      }),
-    }
-  } else if (type === ElementType.CaseStudy) {
-    requestOptions = {
-      ...requestOptions,
-      body: JSON.stringify({
-        correlationKey,
-        instanceId,
-        liveQuizId,
-        response: { assessment: answer },
-      }),
-    }
-  } else if (type === ElementType.Content) {
-    requestOptions = {
-      ...requestOptions,
-      body: JSON.stringify({
-        correlationKey,
-        instanceId,
-        liveQuizId,
-        response: { viewed: true },
-      }),
-    }
-  } else {
+  const payload = buildLiveQuizResponsePayload({
+    correlationKey,
+    instanceId,
+    liveQuizId,
+    type,
+    answer,
+  })
+  if (!payload) {
     return { statusCode: 1 }
   }
+  requestOptions = { ...requestOptions, body: JSON.stringify(payload) }
 
   try {
     const response = await fetch(
@@ -127,15 +88,30 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
     )
 
     let responseTimestamp: number | undefined
+    let responseStatus: string | undefined
+    let completed: boolean | undefined
+    let lockoutUntil: string | undefined
     try {
       const json = await response.json()
       if (json && typeof json.responseTimestamp === 'number') {
         responseTimestamp = json.responseTimestamp
       }
+      if (json && typeof json.status === 'string') responseStatus = json.status
+      if (json && typeof json.completed === 'boolean')
+        completed = json.completed
+      if (json && typeof json.lockoutUntil === 'string') {
+        lockoutUntil = json.lockoutUntil
+      }
     } catch (_) {
       // ignore JSON parse errors; not all responses may have a body
     }
-    return { statusCode: response.status, responseTimestamp }
+    return {
+      statusCode: response.status,
+      responseTimestamp,
+      responseStatus,
+      completed,
+      lockoutUntil,
+    }
   } catch (e) {
     console.log('error', e)
     return { statusCode: 1 }
@@ -440,6 +416,7 @@ function Index({ id }: { id: string }) {
         onSelectBlock={setSelectedBlock}
         isGamificationEnabled={isGamificationEnabled}
         handleNewResponse={handleNewResponse}
+        refetchLiveQuiz={refetch}
         className={extraClassName}
       />
     )
@@ -541,6 +518,12 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   }
 
   const apolloClient = initializeApollo()
+  const participantToken =
+    process.env.ASSESSMENT_MODE === 'true'
+      ? ctx.req.cookies?.['next-auth.participant-session-token']
+      : (ctx.req.cookies?.['participant_token'] ??
+        ctx.req.cookies?.['temporary_participant_token'] ??
+        ctx.req.cookies?.['next-auth.session-token'])
 
   let liveQuiz = null
   try {
@@ -549,10 +532,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       variables: { id: ctx.query?.id as string },
       context: {
         headers: {
-          authorization: ctx.req.cookies?.[
-            'next-auth.participant-session-token'
-          ]
-            ? `Bearer ${ctx.req.cookies?.['next-auth.participant-session-token'] ?? ''}`
+          authorization: participantToken
+            ? `Bearer ${participantToken}`
             : undefined,
         },
       },

@@ -11,6 +11,7 @@ import ContentElement from './ContentElement'
 import Flashcard from './Flashcard'
 import FreeTextQuestion from './FreeTextQuestion'
 import NumericalQuestion from './NumericalQuestion'
+import QrScanQuestion from './QrScanQuestion'
 import SelectionQuestion from './SelectionQuestion'
 
 export type ElementChoicesType =
@@ -74,6 +75,12 @@ export type InstanceStackStudentResponseType =
   | {
       type: ElementType.CaseStudy
       response?: CaseStudyStudentResponseType
+      valid?: boolean
+      evaluation?: InstanceEvaluation
+    }
+  | {
+      type: ElementType.QrScan
+      response?: string
       valid?: boolean
       evaluation?: InstanceEvaluation
     }
@@ -428,6 +435,37 @@ function StudentElement({
           stackStorage?.[element.id]?.response as FlashcardCorrectness
         }
         elementIx={elementIx}
+      />
+    )
+  } else if (element.elementData.__typename === 'QrScanElementData') {
+    return (
+      <QrScanQuestion
+        key={element.id}
+        content={element.elementData.content}
+        response={
+          typeof studentResponse !== 'undefined'
+            ? (studentResponse[element.id]?.response as string)
+            : (singleStudentResponse.response as string)
+        }
+        setResponse={(value, valid) => {
+          typeof setStudentResponse !== 'undefined'
+            ? setStudentResponse((response) => ({
+                ...response,
+                [element.id]: {
+                  ...response[element.id],
+                  type: ElementType.QrScan,
+                  response: value,
+                  valid,
+                },
+              }))
+            : setSingleStudentResponse((response) => ({
+                ...response,
+                type: ElementType.QrScan,
+                response: value,
+                valid,
+              }))
+        }}
+        disabled={disabledInput || preview}
       />
     )
   } else if (element.elementData.__typename === 'ContentElementData') {

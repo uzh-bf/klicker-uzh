@@ -9,6 +9,26 @@ fragment PracticeQuizData on PracticeQuiz {
   availableFrom
   orderType
   numOfStacks
+  escapeRoomConfig {
+    id
+    timeLimit
+    hintPenalty
+    lockoutSeconds
+    introText
+  }
+  escapeRoomAttempts {
+    id
+    startedAt
+    timeLimit
+    penaltySeconds
+    remainingSeconds
+    expiresInSeconds
+    hintsUsed
+    status
+    completedAt
+    lockoutUntil
+    elementBlockId
+  }
   # previouslyAnswered
   # previousScore
   # previousPointsAwarded
@@ -28,10 +48,12 @@ fragment PracticeQuizData on PracticeQuiz {
     displayName
     description
     order
+    isCorrect
     elements {
       id
       type
       elementType
+      revealedHint
       ...ElementData
     }
   }

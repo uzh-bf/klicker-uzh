@@ -5,6 +5,7 @@ import { randomUUID } from 'crypto'
 import { createServer, IncomingMessage, ServerResponse } from 'http'
 import { Redis } from 'ioredis'
 import { createHash } from 'node:crypto'
+import { handleEscapeRoomValidation } from './escapeRoom.js'
 
 const redis = new Redis({
   family: 4,
@@ -128,6 +129,22 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     if (forwarded.length > 0) {
       cookie = forwarded.join('; ')
     }
+  }
+
+  // Synchronous Escape Room Lockout & Correctness Check
+  const instanceKey = `lq:${liveQuizId}:i:${instanceId}`
+  const instanceInfo = await redis.hgetall(`${instanceKey}:info`)
+
+  if (instanceInfo) {
+    const isHandled = await handleEscapeRoomValidation(
+      req,
+      res,
+      payload,
+      cookie,
+      instanceInfo,
+      redis
+    )
+    if (isHandled) return
   }
 
   const responseTimestamp = Date.now()
@@ -362,6 +379,9 @@ const server = createServer(async (req, res) => {
 
     // add response endpoint
     if (url.pathname === '/AddResponse' && req.method === 'POST') {
+      // Escape-room validation can respond early from a separate module, so
+      // establish CORS before dispatching to any response path.
+      setCorsHeaders(req, res)
       // if not in assessment mode, call standard processing logic
       if (process.env.ASSESSMENT_MODE === 'true') {
         return await handleAddAssessmentResponse(req, res)

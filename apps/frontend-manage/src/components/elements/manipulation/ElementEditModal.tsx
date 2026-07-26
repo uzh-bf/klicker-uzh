@@ -11,6 +11,7 @@ import {
   ManipulateFlashcardElementDocument,
   ManipulateFreeTextQuestionDocument,
   ManipulateNumericalQuestionDocument,
+  ManipulateQrScanElementDocument,
   ManipulateSelectionQuestionDocument,
   UpdateElementInstancesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -27,6 +28,7 @@ import {
   prepareFlashcardArgs,
   prepareFreeTextArgs,
   prepareNumericalArgs,
+  prepareQrScanArgs,
   prepareSelectionArgs,
 } from './helpers'
 import { ElementFormTypes } from './types'
@@ -100,6 +102,7 @@ function ElementEditModal({
   const [manipulateCaseStudyQuestion] = useMutation(
     ManipulateCaseStudyQuestionDocument
   )
+  const [manipulateQrScanElement] = useMutation(ManipulateQrScanElementDocument)
   const [createAnswerCollection] = useMutation(CreateAnswerCollectionDocument)
   const [updateElementInstances] = useMutation(UpdateElementInstancesDocument)
   const [flagOutdatedElementInstances] = useMutation(
@@ -127,6 +130,7 @@ function ElementEditModal({
       mode={mode}
       elementId={elementId}
       inputsDisabled={inputsDisabled}
+      canPrintQrCodes={dataQuestion?.element?.isOwner ?? false}
       loading={
         loadingQuestion ||
         !formikInitialValues ||
@@ -174,6 +178,25 @@ function ElementEditModal({
                 return false
               }
 
+              break
+            }
+
+            case ElementType.QrScan: {
+              const args = prepareQrScanArgs({
+                elementId,
+                isDuplication,
+                values,
+              })
+              const result = await manipulateQrScanElement({
+                variables: args,
+                refetchQueries: [{ query: GetUserTagsDocument }],
+              })
+              await refetchElements()
+
+              const data = result.data?.manipulateQrScanElement
+              if (data?.__typename !== 'QrScanElement' || !data.id) {
+                return false
+              }
               break
             }
 

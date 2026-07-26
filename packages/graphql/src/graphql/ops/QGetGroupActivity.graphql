@@ -1,4 +1,8 @@
-query GetGroupActivity($id: String!) {
+query GetGroupActivity($id: String!, $withEscapeRoomHints: Boolean! = false) {
+  escapeRoomHints(groupActivityId: $id) @include(if: $withEscapeRoomHints) {
+    instanceId
+    hint
+  }
   groupActivity(id: $id) {
     id
     name
@@ -7,6 +11,26 @@ query GetGroupActivity($id: String!) {
     pointsMultiplier
     scheduledStartAt
     scheduledEndAt
+    escapeRoomConfig {
+      id
+      timeLimit
+      hintPenalty
+      lockoutSeconds
+      introText
+    }
+    escapeRoomAttempts {
+      id
+      startedAt
+      timeLimit
+      penaltySeconds
+      remainingSeconds
+      expiresInSeconds
+      hintsUsed
+      status
+      completedAt
+      lockoutUntil
+      elementBlockId
+    }
 
     clues {
       id
@@ -21,6 +45,7 @@ query GetGroupActivity($id: String!) {
       id
       displayName
       description
+      isCorrect
       elements {
         id
         type

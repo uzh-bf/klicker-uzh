@@ -12,6 +12,7 @@ import {
   handlePublishScheduledMicroLearning,
 } from '@/services/microLearning.js'
 import { handlePublishScheduledPracticeQuiz } from '@/services/practiceQuizzes.js'
+import { handlePruneEscapeRooms } from '@/services/pruneEscapeRooms.js'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import { prisma } from '@klicker-uzh/prisma'
@@ -272,6 +273,16 @@ export async function testInitialization(
       ) => {
         const success = await handleAssessmentLiveQuizBlockClosureAggregation(
           { liveQuizId, blockId },
+          hatchetCtx,
+          executionContext
+        )
+        return { success }
+      },
+    }),
+    pruneEscapeRooms: hatchet.task({
+      name: 'prune-escape-rooms',
+      fn: async (_, executionContext) => {
+        const success = await handlePruneEscapeRooms(
           hatchetCtx,
           executionContext
         )

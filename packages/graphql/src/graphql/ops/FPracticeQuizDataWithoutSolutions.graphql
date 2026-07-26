@@ -9,6 +9,26 @@ fragment PracticeQuizDataWithoutSolutions on PracticeQuiz {
   availableFrom
   orderType
   numOfStacks
+  escapeRoomConfig {
+    id
+    timeLimit
+    hintPenalty
+    lockoutSeconds
+    introText
+  }
+  escapeRoomAttempts {
+    id
+    startedAt
+    timeLimit
+    penaltySeconds
+    remainingSeconds
+    expiresInSeconds
+    hintsUsed
+    status
+    completedAt
+    lockoutUntil
+    elementBlockId
+  }
   # previouslyAnswered
   # previousScore
   # previousPointsAwarded
@@ -28,10 +48,15 @@ fragment PracticeQuizDataWithoutSolutions on PracticeQuiz {
     displayName
     description
     order
+    isCorrect
     elements {
       id
       type
       elementType
+      revealedHint
+      options {
+        hasHint
+      }
       ...ElementDataWithoutSolutions
     }
   }

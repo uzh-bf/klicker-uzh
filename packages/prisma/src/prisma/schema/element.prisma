@@ -16,6 +16,7 @@ enum ElementType {
   FLASHCARD
   SELECTION
   CASE_STUDY
+  QR_SCAN
 }
 
 model Element {
@@ -39,6 +40,10 @@ model Element {
 
   status ElementStatus @default(READY)
   type   ElementType
+
+  // Opaque authoring/print secret for QR_SCAN elements. It is deliberately
+  // stored outside the participant-facing elementData JSON snapshot.
+  qrScanCode String? @unique
 
   tags Tag[]
 
@@ -204,6 +209,9 @@ model ElementBlock {
   liveQuiz         LiveQuiz   @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   liveQuizId       String     @db.Uuid
   activeInLiveQuiz LiveQuiz[] @relation(name: "ActiveElementBlock")
+
+  escapeRoomConfig   EscapeRoomConfig?
+  escapeRoomAttempts EscapeRoomAttempt[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -160,7 +160,10 @@ analytics image and lint CI so the root quality gate runs inside the container.
 - `node_modules` is a named volume (pnpm hoists natives into the root
   `node_modules/.pnpm`, so one root volume covers the monorepo).
 - Reset the DB: `pnpm --filter @klicker-uzh/prisma exec prisma migrate reset --skip-seed --force`.
-- `response-api` + both workers run `tsx --watch --env-file=.env`; node 24 errors
-  if `.env` is missing, so `post-create` seeds an **empty** `.env` in each dir
-  (the container env from `devcontainer.env` is what actually applies).
+- `response-api` runs `tsx --watch`; the Hatchet workers build with Rollup and
+  run the emitted JavaScript under nodemon. Hatchet's heartbeat worker threads
+  are incompatible with in-process watch loaders. Node 24 errors if an
+  `--env-file` is missing, so `post-create` seeds an **empty** `.env` in each
+  directory (the container env from `devcontainer.env` is what actually
+  applies).
 - Tier 3 (`chat`) needs an upstream LLM key: set `UPSTREAM_OPENAI_API_KEY`.
