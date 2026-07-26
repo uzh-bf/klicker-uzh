@@ -312,3 +312,34 @@ simplify subagent on the exact commit → integrate accepted findings → re-ver
   passed to `streamText` and that the mutation precedes every consumer, so
   the telemetry claim holds. Evidence: 115/115, `check` + eslint clean,
   health 200. Next: S6 composer hint + timestamps.
+- 2026-07-26 S6 done: `ComposerHint` under the composer, standalone only
+  (`!embedded`, same gate as ThreadScrollToBottom) — disclaimer sentence plus
+  `· 1 Credit pro Nachricht` when `creditsLoaded && credits.total > 0` (no
+  dedicated credits-enabled flag exists on the store or API; same gap
+  credits-footer.tsx documents). Relative timestamp added to the existing
+  `MessageMetadata` caption rather than a parallel element: `<time>` with ISO
+  `dateTime` and an absolute-datetime `title`, rendered for every completed
+  assistant message even when there is no mode/model/credits metadata (the
+  caption used to return null in that case). `createdAt` needed no plumbing —
+  lib/api/types.ts:226 already maps it and RuntimeProvider's convertMessage
+  spreads it into assistant-ui's native `ThreadMessage.createdAt`.
+  `format.relativeTime(date, new Date())` passes `now` explicitly: without it
+  next-intl logs ENVIRONMENT_FALLBACK on every render.
+  Evidence: 115/115 (one filtered-run failure was the known dev-recompile
+  flake — direct `vitest run` and a filtered re-run both green), `check`
+  clean, eslint clean on thread.tsx (only the pre-existing `<img>` warning at
+  line 680, untouched region). Browser: en hint "Chatbot answers can be wrong
+  — verify against your course materials. · 1 credit per message" + "1 hour
+  ago" (dateTime 2026-07-26T13:39:16.681Z, title "Jul 26, 2026, 3:39 PM"); de
+  "Antworten des Chatbots können falsch sein — bitte anhand Deiner
+  Kursmaterialien prüfen. · 1 Credit pro Nachricht" + "vor 1 Stunde"
+  (title "26.07.2026, 15:39"); `?embed=true` shows no hint (timestamp still
+  present, as intended); at 390px the hint wraps to two lines with no page
+  overflow. Console clean on fresh loads in both locales (earlier
+  MISSING_MESSAGE/ENVIRONMENT_FALLBACK entries were stale buffer, proven by
+  `console --clear` + reload = 0).
+  Env limitation: agent-browser `screenshot` times out on
+  `Page.captureScreenshot` in this daemon across full restarts (3rd
+  occurrence this session). PR screenshots must come from host-run Playwright
+  in S7, not agent-browser.
+  Next: S6 review+simplify, then S7.
