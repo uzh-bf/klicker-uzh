@@ -89,6 +89,49 @@ scrollable. Embedded mode shows the loading state and compact credit/model infor
 the shared settings components. Direct thread URL activation resynchronizes the thread's stored
 chat mode once per activation, without overriding a mode manually chosen afterward.
 
+## Sources and citations
+
+An answer's sources are **derived from the message's own tool-call parts**, not carried in a
+dedicated API field or database column ([ADR 0004](./adr/0004-chat-citations-from-tool-call-parts.md)).
+`src/lib/sources/normalizeSources.ts` is the single seam: everything downstream — the source
+cards, the inline `[n]` chips, the friendly activity chip, and the server-side prompt contract —
+keys off the same `isDocQueryToolName` predicate, so a tool the predicate misses silently loses
+all four at once.
+
+That predicate must tolerate MCP namespacing. `toSafeToolName` (`src/services/mcpClients.ts`)
+prefixes the server name and appends **8 hex characters of a sha256** when the namespaced name
+exceeds 64 characters or collides with another server's, so the same logical tool can arrive as
+`doc_query`, `KB_doc_query`, or `KB_doc_query_1a2b3c4d`. A chatbot with two RAG servers is the
+realistic trigger.
+
+`normalizeSourcesFromParts` is deliberately forgiving and never throws: it unwraps the raw MCP
+`CallToolResult` envelope (`{ content: [{ type: 'text', text: '<json>' }] }`), a JSON string, or
+an already-parsed object; it treats the pipeline's literal `"N/A"` as absent; it dedupes by
+file/page/url and numbers what survives **1..N in first-appearance order across every doc_query
+call in one message**, capped at `MAX_SOURCES`. Two rules follow from that numbering and are easy
+to break independently:
+
+- `resolveCitationSource` resolves `[n]` only for `1 <= n <= N`. Anything outside that range stays
+  literal text in the answer — which is the intended failure mode, not a bug.
+- A source returned again by a later search keeps its original number; no second index is ever
+  minted. `src/lib/server/citationInstructions.ts` therefore tells the model to **reuse** a repeat
+  source's number rather than keep counting, or a multi-search answer emits `[4]` when only three
+  unique sources exist. That contract is appended to the system prompt only when a doc_query-style
+  tool is actually available for the request.
+- **Model compliance with the citation contract is unverified.** Prompt assembly is unit-tested;
+  whether a given model honours it needs a live model key, which the devcontainer does not carry.
+
+On the render side, `remarkCitationMarkers` rewrites `[n]` in markdown **text** nodes into
+`#cite-n` links, skipping anything inside a link label (including nested emphasis), and
+`markdown-text.tsx` intercepts those in its `a` override to render `CitationChip`. Normalization
+runs once per message in `AssistantMessage` (`useMessageSources`) and reaches both the cards and
+the chips through `MessageSourcesContext` — do not re-parse the tool JSON in a leaf component.
+
+The activity chip's four states come from the pure `getDocQueryChipState` in `tool-fallback.tsx`.
+"No results" is claimed only for a payload that actually **parsed**: a cancelled call leaves the
+literal `'Loading...'` / `'Executing...'` placeholder from `src/hooks/useChatResponse.ts` behind as
+its result, and labelling that as an empty search would be a lie.
+
 ## Localization
 
 Chat has no locale switcher: the locale comes from the `NEXT_LOCALE` cookie and falls back to `en`. It is resolved **directly in the chat-local `getRequestConfig`** (`src/types/i18n.ts`). Relying on `setRequestLocale`/`requestLocale` alone produces a split brain — `<html lang>` follows the cookie while server-side `getTranslations()` stays on the default locale. Strings live in `packages/i18n/messages/{en,de}.ts`; `apps/chat/src/types/app.d.ts` enforces en/de key parity through a `DeepIntersection`, so a missing key fails `pnpm --filter @klicker-uzh/chat check` rather than at runtime. German addressed to students is informal (`Du`/`Dein`/`Dir`), instructors are "Dozierende", and Swiss `ss` is used instead of `ß`.
