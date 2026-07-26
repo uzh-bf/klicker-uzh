@@ -15,6 +15,7 @@ import { cleanupTest } from '../util/cleanup.js'
 import { expect, test } from '../util/fixtures.js'
 import {
   deleteElement,
+  fillEditorField,
   searchAndEdit,
   validateElement,
 } from '../util/fixtures/elements.js'
@@ -733,12 +734,9 @@ test.describe('Test creation and editing functionalities for Case Study elements
     await questionText.pressSequentially(CS.content)
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
 
-    await page.getByTestId('insert-question-explanation').click()
-    await page.getByTestId('insert-question-explanation').clear()
+    await fillEditorField(page, 'insert-question-explanation', '', true)
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
-    await page
-      .getByTestId('insert-question-explanation')
-      .pressSequentially(CS.explanation)
+    await fillEditorField(page, 'insert-question-explanation', CS.explanation)
 
     await page.getByTestId('configure-sample-solution').click()
     await page.getByTestId('criterion-0-name').clear()
@@ -986,11 +984,7 @@ test.describe('Test creation and editing functionalities for Case Study elements
     await page.getByTestId('insert-question-title').clear()
     await page.getByTestId('insert-question-title').fill(CS.titleEdited)
 
-    await page.getByTestId('insert-question-text').click()
-    await page.getByTestId('insert-question-text').clear()
-    await page
-      .getByTestId('insert-question-text')
-      .pressSequentially(CS.contentEdited)
+    await fillEditorField(page, 'insert-question-text', CS.contentEdited, true)
 
     // Change collection with cancel then confirm
     await page.getByTestId('select-answer-collection').click()
@@ -1339,16 +1333,18 @@ test.describe('Test creation and editing functionalities for Case Study elements
 
     await page.getByTestId('insert-question-title').clear()
     await page.getByTestId('insert-question-title').fill(CS_INLINE.titleEdited)
-    await page.getByTestId('insert-question-text').click()
-    await page.getByTestId('insert-question-text').clear()
-    await page
-      .getByTestId('insert-question-text')
-      .pressSequentially(CS_INLINE.contentEdited)
-    await page.getByTestId('insert-question-explanation').click()
-    await page.getByTestId('insert-question-explanation').clear()
-    await page
-      .getByTestId('insert-question-explanation')
-      .pressSequentially(CS_INLINE.explanationEdited)
+    await fillEditorField(
+      page,
+      'insert-question-text',
+      CS_INLINE.contentEdited,
+      true
+    )
+    await fillEditorField(
+      page,
+      'insert-question-explanation',
+      CS_INLINE.explanationEdited,
+      true
+    )
 
     // Creating inline collection is not available during edit
     await expect(

@@ -15,6 +15,7 @@ import { cleanupTest } from '../util/cleanup.js'
 import { expect, test } from '../util/fixtures.js'
 import {
   deleteElement,
+  fillEditorField,
   searchAndEdit,
   validateElement,
 } from '../util/fixtures/elements.js'
@@ -397,16 +398,13 @@ test.describe('Test creation and editing functionalities for Selection elements'
     await page.getByTestId('insert-question-title').click()
     await page.getByTestId('insert-question-title').clear()
     await page.getByTestId('insert-question-title').fill(SE.titleEdited)
-    await page.getByTestId('insert-question-text').click()
-    await page.getByTestId('insert-question-text').clear()
-    await page
-      .getByTestId('insert-question-text')
-      .pressSequentially(SE.contentEdited)
-    await page.getByTestId('insert-question-explanation').click()
-    await page.getByTestId('insert-question-explanation').clear()
-    await page
-      .getByTestId('insert-question-explanation')
-      .pressSequentially(SE.explanationEdited)
+    await fillEditorField(page, 'insert-question-text', SE.contentEdited, true)
+    await fillEditorField(
+      page,
+      'insert-question-explanation',
+      SE.explanationEdited,
+      true
+    )
 
     // Switch collection
     await page.getByTestId('select-answer-collection').click()
@@ -729,16 +727,18 @@ test.describe('Test creation and editing functionalities for Selection elements'
 
     await page.getByTestId('insert-question-title').clear()
     await page.getByTestId('insert-question-title').fill(SE_INLINE.titleEdited)
-    await page.getByTestId('insert-question-text').click()
-    await page.getByTestId('insert-question-text').clear()
-    await page
-      .getByTestId('insert-question-text')
-      .pressSequentially(SE_INLINE.contentEdited)
-    await page.getByTestId('insert-question-explanation').click()
-    await page.getByTestId('insert-question-explanation').clear()
-    await page
-      .getByTestId('insert-question-explanation')
-      .pressSequentially(SE_INLINE.explanationEdited)
+    await fillEditorField(
+      page,
+      'insert-question-text',
+      SE_INLINE.contentEdited,
+      true
+    )
+    await fillEditorField(
+      page,
+      'insert-question-explanation',
+      SE_INLINE.explanationEdited,
+      true
+    )
 
     // Creating inline collection is not available during edit
     await expect(

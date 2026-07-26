@@ -58,8 +58,7 @@ test.describe('Test creation and editing functionalities for Single Choice eleme
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
 
     // Clearing answer option 1 should re-disable save
-    await page.getByTestId('insert-answer-field-1').click()
-    await page.getByTestId('insert-answer-field-1').clear()
+    await fillAnswerField(page, 1, '', true)
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
 
     await fillAnswerField(page, 1, SC.choices[1])
@@ -186,11 +185,9 @@ test.describe('Test creation and editing functionalities for Single Choice eleme
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
 
     // Clearing feedbacks re-disables save
-    await page.getByTestId('insert-answer-feedback-1').click()
-    await page.getByTestId('insert-answer-feedback-1').clear()
+    await fillFeedbackField(page, 1, '', true)
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
-    await page.getByTestId('insert-answer-feedback-0').click()
-    await page.getByTestId('insert-answer-feedback-0').clear()
+    await fillFeedbackField(page, 0, '', true)
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
     await fillFeedbackField(page, 0, SC.choicesFeedbacks[0])
     await expect(page.getByTestId('save-new-question')).toBeDisabled()

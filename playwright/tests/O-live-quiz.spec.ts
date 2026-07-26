@@ -8,6 +8,7 @@ import fs from 'node:fs'
 import { setSessionCookieForUrl } from '../util/authSession.js'
 import { PARTICIPANT_IDS } from '../util/constants.js'
 import { test } from '../util/fixtures.js'
+import { fillEditorField } from '../util/fixtures/elements.js'
 import { getDatetimeValidationString, getFutureDate } from '../util/helpers.js'
 import { enMessages as messages } from '../util/messages.js'
 import {
@@ -4124,11 +4125,11 @@ test.describe.serial('Different live-quiz workflows', () => {
       page.getByTestId('insert-question-title'),
       data.liveQuiz.newSCTitle
     )
-    await page.getByTestId('insert-question-text').click()
-    await page.getByTestId('insert-question-text').clear()
-    await typeInto(
-      page.getByTestId('insert-question-text'),
-      data.liveQuiz.newSCContent
+    await fillEditorField(
+      page,
+      'insert-question-text',
+      data.liveQuiz.newSCContent,
+      true
     )
     await page.getByTestId('save-new-question').click()
     await page.waitForTimeout(1000)
