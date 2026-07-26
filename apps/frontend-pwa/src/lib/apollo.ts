@@ -40,11 +40,19 @@ function createIsomorphLink(ctx?: GetServerSidePropsContext) {
     process.env.NODE_ENV === 'development'
       ? []
       : [
-          createPersistedQueryLink({
-            useGETForHashedQueries: true, // Optional but allows better caching
-            // eslint-disable-next-line react-hooks/rules-of-hooks
-            generateHash: usePregeneratedHashes(hashes),
-          }),
+          split(
+            ({ operationName }) => operationName === 'QGetVerifiableCredential',
+            createPersistedQueryLink({
+              useGETForHashedQueries: false,
+              // eslint-disable-next-line react-hooks/rules-of-hooks
+              generateHash: usePregeneratedHashes(hashes),
+            }),
+            createPersistedQueryLink({
+              useGETForHashedQueries: true,
+              // eslint-disable-next-line react-hooks/rules-of-hooks
+              generateHash: usePregeneratedHashes(hashes),
+            })
+          ),
         ]
 
   const authLink = setContext((_, { headers }) => {

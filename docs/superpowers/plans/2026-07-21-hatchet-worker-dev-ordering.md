@@ -1,3 +1,14 @@
+---
+type: Implementation Plan
+title: Hatchet Worker Development Startup Ordering Implementation Plan
+description: Build the Hatchet package before persistent local workers and remove watch-mode interference.
+timestamp: '2026-07-21'
+tags:
+  - hatchet
+  - development
+  - turborepo
+---
+
 # Hatchet Worker Development Startup Ordering Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

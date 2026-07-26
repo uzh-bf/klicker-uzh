@@ -174,6 +174,7 @@ export const Assistant = ({
   if (participationRequired) {
     return (
       <div
+        data-cy="chat-participation-required"
         className={twMerge(
           'bg-muted flex w-full items-center justify-center px-4',
           embedded ? 'h-full p-4' : 'min-h-screen'
@@ -220,6 +221,7 @@ export const Assistant = ({
   if (isLoading) {
     return (
       <div
+        data-cy="chat-loading"
         className={twMerge(
           'flex items-center justify-center',
           embedded ? 'h-full' : 'h-screen'
@@ -237,6 +239,7 @@ export const Assistant = ({
     return (
       <>
         <div
+          data-cy="chat-disclaimer-declined"
           className={twMerge(
             'flex items-center justify-center',
             embedded ? 'h-full p-4' : 'h-screen'
@@ -262,6 +265,7 @@ export const Assistant = ({
             </p>
             {!embedded && (
               <button
+                data-cy="chat-show-disclaimer-again"
                 onClick={() => setShowDisclaimerModal(true)}
                 className="mt-4 rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
               >

@@ -14,11 +14,14 @@
     "APP_CHAT_GUEST_SECRET",
     "CHAT_GUEST_SEED",
     "ASSESSMENT_MODE",
+    "AUTH_LECTURER_ALLOWED_HOSTS",
+    "AUTH_STUDENT_ALLOWED_HOSTS",
     "AZUREWEBJOBSFEATUREFLAGS",
     "AZUREWEBJOBSSTORAGE",
     "BLOB_STORAGE_ACCESS_KEY",
     "BLOB_STORAGE_ACCOUNT_NAME",
     "COOKIE_DOMAIN",
+    "CORS_ALLOWED_ORIGINS",
     "CRON_TOKEN",
     "DATABASE_IMPORT_USER",
     "DATABASE_URL",
@@ -72,6 +75,8 @@
     "NOTIFICATION_URL",
     "OLAT_API_KEY",
     "PRISMA_OPTIMIZE",
+    "REDIS_ASSESSMENT_HOST",
+    "REDIS_ASSESSMENT_PORT",
     "REDIS_CACHE_HOST",
     "REDIS_CACHE_PASS",
     "REDIS_CACHE_PORT",
@@ -124,6 +129,9 @@
       "cache": false,
       "outputLogs": "new-only",
       "dependsOn": ["^build"]
+    },
+    "@klicker-uzh/prisma#check": {
+      "dependsOn": ["build"]
     },
     "build": {
       "dependsOn": ["^build"],

@@ -54,6 +54,7 @@ export function ThreadImageViewerModal({
 
   return (
     <Modal
+      data={{ cy: 'chat-image-viewer' }}
       title={title}
       className={{
         content:
@@ -65,6 +66,7 @@ export function ThreadImageViewerModal({
       <div className="space-y-4">
         {previewSrc ? (
           <img
+            data-cy="chat-image-viewer-image"
             src={previewSrc}
             alt={description || title}
             className="max-h-[70vh] w-full rounded-lg border object-contain"
@@ -91,7 +93,7 @@ export function ThreadImageViewerModal({
         {error ? (
           <div className="space-y-3">
             <p className="text-sm text-red-600">{error}</p>
-            <Button onClick={onRetry}>
+            <Button data={{ cy: 'chat-image-viewer-retry' }} onClick={onRetry}>
               <Button.Label>Retry</Button.Label>
             </Button>
           </div>

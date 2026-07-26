@@ -1,13 +1,7 @@
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import LanguageChanger from '@klicker-uzh/shared-components/src/LanguageChanger'
 import useStickyState from '@klicker-uzh/shared-components/src/hooks/useStickyState'
-import {
-  Button,
-  Checkbox,
-  H1,
-  Tooltip,
-  UserNotification,
-} from '@uzh-bf/design-system'
+import { Button, Checkbox, H1, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { signIn, signOut, useSession } from 'next-auth/react'
 import { useTranslations } from 'next-intl'
@@ -59,30 +53,7 @@ function SignInOutButton() {
     )
   }
 
-  const eduIdLoginButton = (
-    <Button
-      fluid
-      disabled={!tosChecked}
-      data={{ cy: 'eduid-login-button' }}
-      className={{ root: 'p-4 disabled:opacity-50' }}
-      onClick={() =>
-        signIn(process.env.NEXT_PUBLIC_EDUID_ID, {
-          callbackUrl:
-            (router.query?.redirectTo as string) ||
-            process.env.NEXT_PUBLIC_MANAGE_URL,
-        })
-      }
-    >
-      <Image
-        src="/edu-id-logo.svg"
-        width={300}
-        height={90}
-        alt="Logo"
-        className="mx-auto"
-        data-cy="login-logo"
-      />
-    </Button>
-  )
+  const eduIdLoginHintId = 'eduid-login-disabled-reason'
 
   return (
     <div className="flex flex-col gap-4">
@@ -131,13 +102,39 @@ function SignInOutButton() {
         checked={tosChecked}
       />
 
-      {!tosChecked ? (
-        <Tooltip tooltip={t('auth.tosAgreementRequired')}>
-          {eduIdLoginButton}
-        </Tooltip>
-      ) : (
-        eduIdLoginButton
+      {!tosChecked && (
+        <span id={eduIdLoginHintId} className="sr-only">
+          {t('auth.tosAgreementRequired')}
+        </span>
       )}
+      <span
+        className="block"
+        title={!tosChecked ? t('auth.tosAgreementRequired') : undefined}
+      >
+        <Button
+          fluid
+          disabled={!tosChecked}
+          aria-describedby={!tosChecked ? eduIdLoginHintId : undefined}
+          data={{ cy: 'eduid-login-button' }}
+          className={{ root: 'p-4 disabled:opacity-50' }}
+          onClick={() =>
+            signIn(process.env.NEXT_PUBLIC_EDUID_ID, {
+              callbackUrl:
+                (router.query?.redirectTo as string) ||
+                process.env.NEXT_PUBLIC_MANAGE_URL,
+            })
+          }
+        >
+          <Image
+            src="/edu-id-logo.svg"
+            width={300}
+            height={90}
+            alt="Logo"
+            className="mx-auto"
+            data-cy="login-logo"
+          />
+        </Button>
+      </span>
       <Button
         className={{
           root: 'justify-center italic disabled:opacity-50',

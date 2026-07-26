@@ -1,3 +1,14 @@
+---
+type: Design
+title: Hatchet Worker Development Startup Ordering
+description: Define deterministic local Hatchet package build and worker startup ordering.
+timestamp: '2026-07-21'
+tags:
+  - hatchet
+  - development
+  - turborepo
+---
+
 # Hatchet Worker Development Startup Ordering
 
 ## Problem

@@ -29,6 +29,24 @@ export function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+// assign standard competition ranks (1, 2, 2, 4) to an already-sorted list of
+// entries, so that entries with an equal score share the same rank
+export function computeRanks<T extends { score: number }>(
+  sortedEntries: T[]
+): (T & { rank: number })[] {
+  let rank = 0
+  let previousScore: number | undefined
+
+  return sortedEntries.map((entry, ix) => {
+    if (entry.score !== previousScore) {
+      rank = ix + 1
+      previousScore = entry.score
+    }
+
+    return { ...entry, rank }
+  })
+}
+
 export function checkCronToken(ctx: Context) {
   if (typeof process.env.CRON_TOKEN === 'undefined') {
     throw new GraphQLError('No token available.')

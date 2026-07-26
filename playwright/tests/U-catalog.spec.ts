@@ -189,6 +189,7 @@ test.describe
       ownership ? 'exist' : 'not.exist'
     )
     await page.getByTestId('close-share-object').click({ force: true })
+    await expect(page.getByTestId('close-share-object')).toBeHidden()
     await clickCatalogCollectionAction(
       data.CCPublic,
       'delete-catalog-collection'
@@ -1143,6 +1144,7 @@ test.describe
       'exist'
     )
     await page.getByTestId('close-share-object').click({ force: true })
+    await expect(page.getByTestId('close-share-object')).toBeHidden()
     await clickCatalogCollectionAction(
       data.CCRestricted,
       'delete-catalog-collection'

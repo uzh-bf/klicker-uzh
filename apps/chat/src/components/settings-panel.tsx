@@ -50,6 +50,7 @@ export function SettingsPanel() {
   return (
     <div>
       <div
+        data-cy="chat-settings-toggle"
         className="flex cursor-pointer items-center gap-2 border-t px-3 py-2 hover:bg-gray-100"
         onClick={() => setOpen(!open)}
       >
@@ -65,12 +66,16 @@ export function SettingsPanel() {
         </span>
       </div>
       {open && (
-        <div className="border-muted space-y-3 border-t px-3 pb-2 pt-2">
+        <div
+          data-cy="chat-settings-panel"
+          className="border-muted space-y-3 border-t px-3 pb-2 pt-2"
+        >
           <div>
             {/* mode selection */}
-            <div className="space-y-1">
+            <div data-cy="chat-mode-selection" className="space-y-1">
               <label className="text-sm font-bold">Chat Mode</label>
               <Select
+                data={{ cy: 'chat-mode-select' }}
                 placeholder="Select Chat Mode"
                 items={
                   Object.keys(modeOptions).length > 0
@@ -88,11 +93,12 @@ export function SettingsPanel() {
             </div>
 
             {/* model selection */}
-            <div className="mt-2 space-y-1">
+            <div data-cy="chat-model-selection" className="mt-2 space-y-1">
               <label className="text-sm font-bold">AI Model</label>
               {modelSelectionEnabled ? (
                 <>
                   <Select
+                    data={{ cy: 'chat-model-select' }}
                     placeholder="Select AI Model"
                     items={modelOptions.map((option) => ({
                       value: option.id,
@@ -112,7 +118,10 @@ export function SettingsPanel() {
                 </>
               ) : (
                 <>
-                  <div className="rounded-md border px-3 py-2 text-sm">
+                  <div
+                    data-cy="chat-model-display"
+                    className="rounded-md border px-3 py-2 text-sm"
+                  >
                     {modelOptions.find((option) => option.id === selectedModel)
                       ?.name || selectedModel}
                   </div>
@@ -127,9 +136,13 @@ export function SettingsPanel() {
             </div>
 
             {showReasoningEffortSelector ? (
-              <div className="mt-2 space-y-1">
+              <div
+                data-cy="chat-reasoning-effort-selection"
+                className="mt-2 space-y-1"
+              >
                 <label className="text-sm font-bold">Reasoning Effort</label>
                 <Select
+                  data={{ cy: 'chat-reasoning-effort-select' }}
                   placeholder="Select reasoning effort"
                   items={availableReasoningEfforts.map((value) => ({
                     value,
@@ -150,7 +163,7 @@ export function SettingsPanel() {
         </div>
       )}
 
-      <div className="border-t px-3 py-2">
+      <div data-cy="chat-credits-section" className="border-t px-3 py-2">
         {/* credits display */}
         <div className="space-y-1">
           <div className="flex items-center gap-2">
@@ -159,7 +172,10 @@ export function SettingsPanel() {
           </div>
           <div className="space-y-1">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">
+              <span
+                data-cy="chat-credits-display"
+                className="text-muted-foreground"
+              >
                 {Math.round(credits.current)} / {credits.total}
               </span>
               <span className="text-muted-foreground">
@@ -176,7 +192,10 @@ export function SettingsPanel() {
               formatter={() => null}
             />
             {credits.current === 0 ? (
-              <div className="text-muted-foreground text-sm">
+              <div
+                data-cy="chat-credits-empty-message"
+                className="text-muted-foreground text-sm"
+              >
                 You have used up all your credits. However, you can still use
                 the smaller model.
               </div>

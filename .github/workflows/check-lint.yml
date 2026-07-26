@@ -3,15 +3,9 @@ name: Check linting
 on:
   push:
     branches: ['v3', 'v3*']
-    paths:
-      - apps/**
-      - packages/**
   pull_request:
     branches: ['v3', 'v3*']
     types: [opened, synchronize, reopened]
-    paths:
-      - apps/**
-      - packages/**
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -23,16 +17,47 @@ env:
   TURBO_REMOTE_ONLY: true
 
 jobs:
-  lint:
+  check-lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Check for changes
+        id: filter
+        uses: ./.github/actions/changed-paths
+        with:
+          pattern: '^(apps/|packages/|cypress/|playwright/|util/|AGENTS\.md|CLAUDE\.md|package\.json|pnpm-lock\.yaml|\.eslintrc|\.github/workflows/check-lint\.yml|\.github/actions/changed-paths/)'
+
+      - name: Define node version
+        if: steps.filter.outputs.should_run == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+
+      - name: Set up uv
+        if: steps.filter.outputs.should_run == 'true'
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: '3.12'
+          enable-cache: false
+
       - uses: pnpm/action-setup@v4
+        if: steps.filter.outputs.should_run == 'true'
         with:
           version: 11.5.0
           run_install: true
+
       - name: Check linting
+        if: steps.filter.outputs.should_run == 'true'
         shell: bash
         run: |
           pnpm run lint
+
+      - name: Check Prisma schema sync drift
+        if: steps.filter.outputs.should_run == 'true'
+        run: pnpm run check:prisma-sync
+
+      - name: Check AGENTS.md command smoke
+        if: steps.filter.outputs.should_run == 'true'
+        run: pnpm run check:agents-md

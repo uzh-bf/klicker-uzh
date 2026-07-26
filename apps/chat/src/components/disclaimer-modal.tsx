@@ -80,6 +80,7 @@ export const DisclaimerModal = ({
 
   return (
     <Modal
+      data-cy="chat-disclaimer-modal"
       title={disclaimer.title}
       className={{
         content:
@@ -88,7 +89,7 @@ export const DisclaimerModal = ({
       open={isOpen}
       onClose={() => {}} // Prevent closing the modal
     >
-      <div className="space-y-6">
+      <div data-cy="chat-disclaimer-content" className="space-y-6">
         <div className="flex flex-row space-x-12">
           {/* Custom Introduction */}
           {disclaimer.introText && (
@@ -136,10 +137,18 @@ export const DisclaimerModal = ({
 
         {/* Action Buttons */}
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-          <Button onClick={handleDecline} disabled={isLoading}>
+          <Button
+            data-cy="chat-disclaimer-decline"
+            onClick={handleDecline}
+            disabled={isLoading}
+          >
             Decline
           </Button>
-          <Button onClick={handleAccept} disabled={isLoading}>
+          <Button
+            data-cy="chat-disclaimer-accept"
+            onClick={handleAccept}
+            disabled={isLoading}
+          >
             {isLoading ? 'Saving...' : 'Accept and continue'}
           </Button>
         </div>

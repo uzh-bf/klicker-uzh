@@ -1,3 +1,14 @@
+---
+type: Design
+title: External KB Hatchet Bridge Design
+description: Design the POC bridge from one selected KB resource to an external Hatchet workflow.
+timestamp: '2026-07-20'
+tags:
+  - kb
+  - hatchet
+  - ingestion
+---
+
 # External KB Hatchet Bridge Design
 
 Date: 2026-07-20
