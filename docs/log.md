@@ -2,6 +2,12 @@
 
 ## 2026-07-26
 
+- **Update**: [chat-platform](./chat-platform.md) documents the per-type locator line under a
+  source's name (`getSourceSecondaryLine`): documents lead with the page, web links with a
+  cleaned display URL, videos with a `12:34`-style position — and records that doc_query has no
+  timestamp field, so video positions can only come from a clock-valued `labeled_page_number`
+  or a `t`/`start`/`#t=` URL parameter until the doc-query service grows a dedicated field.
+
 - **Update**: [chat-platform](./chat-platform.md) gains a "Sources and citations" section —
   how the source list is derived from a message's own `doc_query` tool-call parts, the tool-name
   forms the gate has to tolerate, the numbering rules the rendered cards and the server-side

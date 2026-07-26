@@ -65,7 +65,16 @@ function SourceCard({
         className="text-muted-foreground mt-0.5 size-3.5 shrink-0"
       />
       <span className="min-w-0 flex-1">
-        <span className="text-foreground block truncate text-sm font-medium">
+        {/* Two lines, not `truncate`: these are file names like
+            `kapitel-4-erwartungswert-und-varianz.pdf`, which a single
+            ellipsized line cuts before the part that identifies it. `title`
+            keeps the untruncated name reachable on hover. No `block` here —
+            it would override the `display: -webkit-box` that `line-clamp-2`
+            needs, silently disabling the clamp. */}
+        <span
+          title={source.title}
+          className="text-foreground line-clamp-2 break-words text-sm font-medium"
+        >
           {source.title}
         </span>
         {secondaryLine && (

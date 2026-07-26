@@ -136,6 +136,21 @@ On the render side, `remarkCitationMarkers` rewrites `[n]` in markdown **text** 
 runs once per message in `AssistantMessage` (`useMessageSources`) and reaches both the cards and
 the chips through `MessageSourcesContext` — do not re-parse the tool JSON in a leaf component.
 
+The line under a source's name is per-type, chosen by `getSourceSecondaryLine` in
+`src/lib/sources/sourceDisplay.ts` and shared by the card and the citation hover preview:
+documents lead with the page (`p. 12` / `S. 12`, plus the publisher's own label when distinct)
+and fall back to a cleaned display URL when they carry no page; web links always lead with the
+display URL (host kept visible, scheme/`www.`/trailing slash stripped, middle-truncated); videos
+lead with a `12:34`-style position; images keep their type label. **doc_query has no timestamp
+field** — its source shape is `source_url`/`source_type`/`file_name`/`page_number`/
+`labeled_page_number` — so a video position can only come from a clock- or `1m30s`-valued
+`labeled_page_number` or from a `t`/`start`/`time_continue`/`#t=` parameter on the source URL
+(`getSourceTimestamp`). `parseTimestampSeconds` deliberately rejects anything that is not a time
+notation so a chapter label like `Kapitel IV` is never misread as a position; a dedicated
+timestamp field is phase-2 work in the doc-query service. Card titles clamp at two lines with the
+full name in the `title` attribute — and note that `line-clamp-2` needs `display: -webkit-box`,
+so adding `block` alongside it silently disables the clamp.
+
 The activity chip's four states come from the pure `getDocQueryChipState` in `tool-fallback.tsx`.
 "No results" is claimed only for a payload that actually **parsed**: a cancelled call leaves the
 literal `'Loading...'` / `'Executing...'` placeholder from `src/hooks/useChatResponse.ts` behind as
