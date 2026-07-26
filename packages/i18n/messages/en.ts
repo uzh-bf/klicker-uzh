@@ -161,7 +161,7 @@ export default {
       searchingCourseMaterial: 'Searching course materials...',
       searchedCourseMaterial: 'Searched course materials',
       searchedCourseMaterialEmpty: 'Searched course materials · no results',
-      searchCourseMaterialFailed: 'Failed to search course materials',
+      searchCourseMaterialFailed: 'Course material search failed',
     },
     sources: {
       title: 'Sources',

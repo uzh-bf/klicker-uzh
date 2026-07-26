@@ -160,7 +160,9 @@ parsed from tool-result JSON.
 ### S7 — E2E + wiki + ADR + PR finish
 
 - Do: Playwright spec additions (sources section renders from seeded tool part;
-  citation chip renders + popover; composer hint visible); wiki
+  citation chip renders + popover; the four doc_query activity-chip states and
+  their icon gating, per S4 review F1 — existing `Y-chat.spec.ts` tool cases
+  use generic tool names only; composer hint visible); wiki
   `docs/chat-platform.md` citation-display section; ADR
   `docs/adr/0003-chat-citations-from-tool-parts.md`; plan Progress final;
   PR #5197 body update (rs-mr-description-writer); final security +
@@ -254,3 +256,23 @@ simplify subagent on the exact commit → integrate accepted findings → re-ver
   Sources section + citation chips still correct on the same message.
   Console clean apart from pre-existing Langfuse/Radix-describedby noise.
   Next: S4 review+simplify, then S5 prompt contract.
+- 2026-07-26 S4 adjustments (review+simplify on 42ea01676): accepted —
+  "no results" is now claimed only for a payload that actually parsed
+  (`parseDocQueryPayload`, the former private `parsePayload`, is exported for
+  this), because a cancelled call leaves the literal `'Loading...'`/
+  `'Executing...'` placeholder from `hooks/useChatResponse.ts` behind as the
+  result and would otherwise be labelled as an empty search — verified real
+  in useChatResponse.ts:395,410, not just asserted; dropped the `useMemo`
+  around the chip state (neighbouring `resultText` does heavier
+  `JSON.stringify` unmemoized every render, and the memo depended on an
+  undocumented referential-stability detail of the assistant-ui streaming
+  path); search icon now derives from the computed state instead of
+  re-deriving `!isRunning && !isFailed`; `aria-hidden` on all chip icons
+  (each sits next to the chip's own text label); tightened the failed string
+  for tense parity (en "Course material search failed", de "Suche in
+  Kursmaterialien fehlgeschlagen"). Declined: switch→lookup-map for the label
+  (loses union exhaustiveness). Deferred to S7: Playwright coverage of the
+  four doc_query chip states + icon gating (review F1, e2e is S7's slice).
+  Evidence: 107/107 chat tests, `check` clean, eslint clean, routes touched
+  post-typegen (health 200), browser re-verified en+de with a DOM check
+  showing every chip icon `aria-hidden`. Next: S5 prompt contract.

@@ -164,8 +164,7 @@ export default {
       searchingCourseMaterial: 'Kursmaterialien werden durchsucht...',
       searchedCourseMaterial: 'Kursmaterialien durchsucht',
       searchedCourseMaterialEmpty: 'Kursmaterialien durchsucht · keine Treffer',
-      searchCourseMaterialFailed:
-        'Kursmaterialien konnten nicht durchsucht werden',
+      searchCourseMaterialFailed: 'Suche in Kursmaterialien fehlgeschlagen',
     },
     sources: {
       title: 'Quellen',
