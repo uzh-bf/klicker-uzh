@@ -187,3 +187,11 @@ simplify subagent on the exact commit → integrate accepted findings → re-ver
   as `result` — normalizer unwraps envelope (structuredContent preferred, then
   text content JSON) in addition to plain object/string payloads. Next: S1
   review+simplify subagents, then S2.
+- 2026-07-26 S2 done: `sources-section.tsx` (QUELLEN/SOURCES header, numbered
+  doc-card grid + media-card row, url cards link out, anchors
+  `src-<msgid>-<n>`, data-cy attrs) wired into AssistantMessage;
+  `chat.sources.*` i18n en+de. Verified: browser via seeded doc_query thread
+  (testuser24) — desktop en+de 1440x900, mobile 390x844, no-tool control shows
+  no section, logo intact, no console errors (screenshots in session
+  scratchpad s2/); chat check (typegen+tsc) clean; vitest 79/79; prettier
+  clean; routes restored (health 200). Next: S2 review+simplify, then S3.

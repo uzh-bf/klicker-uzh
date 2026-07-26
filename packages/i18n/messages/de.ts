@@ -160,6 +160,12 @@ export default {
       showMore:
         '{count, plural, one {Mehr anzeigen (# weitere Zeile)} other {Mehr anzeigen (# weitere Zeilen)}}',
     },
+    sources: {
+      title: 'Quellen',
+      page: 'S. {page}',
+      video: 'Video',
+      image: 'Bild',
+    },
     noLogin: {
       title: 'Anmeldung erforderlich',
       message:
