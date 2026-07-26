@@ -477,11 +477,7 @@ async function preparePublicUrlSource(
     }
 
     const digest = await sha256Stream(response, MAX_KB_SOURCE_BYTES)
-    return buildKBIngestionSource(
-      { ...input, sourceUrl: currentUrl.toString() },
-      mimeType,
-      digest.contentSha256
-    )
+    return buildKBIngestionSource(input, mimeType, digest.contentSha256)
   }
   throw new Error('KB ingestion source redirect is invalid')
 }

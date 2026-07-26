@@ -34,6 +34,16 @@ const BLOCKED_HOSTNAME_SUFFIXES = [
 const BLOCKED_HOSTNAMES = new Set(
   BLOCKED_HOSTNAME_SUFFIXES.map((suffix) => suffix.slice(1))
 )
+const SECRET_QUERY_PARAMETERS = new Set([
+  'access_token',
+  'api_key',
+  'code',
+  'key',
+  'sas',
+  'sig',
+  'signature',
+  'token',
+])
 
 export function isPublicIPv4Address(value: string): boolean {
   return isIP(value) === 4 && !BLOCKED_IPV4_ADDRESSES.check(value, 'ipv4')
@@ -50,7 +60,14 @@ export function normalizePublicHttpUrl(value: string): string {
   if (
     (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') ||
     parsedUrl.username ||
-    parsedUrl.password
+    parsedUrl.password ||
+    parsedUrl.hash ||
+    (parsedUrl.port !== '' &&
+      parsedUrl.port !== '80' &&
+      parsedUrl.port !== '443') ||
+    [...parsedUrl.searchParams.keys()].some((key) =>
+      SECRET_QUERY_PARAMETERS.has(key.toLowerCase())
+    )
   ) {
     throw new Error('URL is invalid')
   }

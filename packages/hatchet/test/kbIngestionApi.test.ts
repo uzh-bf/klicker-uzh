@@ -271,7 +271,7 @@ describe('ingestion source preparation', () => {
       })
     ).resolves.toEqual({
       kind: 'url',
-      url: 'https://cdn.example.com/notes.txt',
+      url: 'https://example.com/notes',
       mimeType: 'text/plain',
       displayName: 'Lecture notes',
       contentSha256:

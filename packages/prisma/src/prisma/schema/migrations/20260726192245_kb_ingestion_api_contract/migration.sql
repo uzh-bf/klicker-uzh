@@ -8,3 +8,14 @@ RENAME COLUMN "externalWorkflowStartedAt" TO "externalOperationStartedAt";
 ALTER TABLE "public"."KBResource"
 ADD COLUMN "contentSha256" TEXT,
 ADD COLUMN "resourceVersion" INTEGER NOT NULL DEFAULT 0;
+
+-- Legacy Hatchet workflow IDs are not valid ingestion API operation IDs.
+-- Make active legacy rows retryable instead of leaving them permanently active.
+UPDATE "public"."KBResource"
+SET
+  "status" = 'FAILED',
+  "statusMessage" = 'Ingestion must be retried after the integration upgrade.',
+  "ingestionAttemptId" = NULL,
+  "externalOperationId" = NULL,
+  "externalOperationStartedAt" = NULL
+WHERE "status" IN ('QUEUED', 'PROCESSING');

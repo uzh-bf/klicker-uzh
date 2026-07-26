@@ -17,6 +17,10 @@ describe('normalizePublicHttpUrl', () => {
   it.each([
     'ftp://example.com/file',
     'https://user:password@example.com/file',
+    'https://example.com/file#section',
+    'https://example.com/file?token=sensitive',
+    'https://example.com/file?API_KEY=sensitive',
+    'https://example.com:8443/file',
     'http://localhost:3000/admin',
     'http://metadata/admin',
     'http://service.internal/admin',
