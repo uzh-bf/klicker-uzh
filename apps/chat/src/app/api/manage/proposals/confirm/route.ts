@@ -2,6 +2,7 @@ import { getAuthenticatedManageUser } from '@/src/lib/server/manageAuth'
 import {
   confirmManageProposal,
   getRequiredManageOrigin,
+  recordProposalConfirmationAudit,
   verifyManageProposalToken,
 } from '@/src/services/manageProposals'
 import { createRateLimiter } from '@/src/services/rateLimiter'
@@ -97,14 +98,24 @@ export async function POST(req: NextRequest) {
       { issuer, secret }
     )
 
-    return NextResponse.json(
-      await confirmManageProposal({
-        graphqlEndpoint,
-        manageOrigin,
-        proposal,
-        sessionToken,
-      })
-    )
+    const confirmation = await confirmManageProposal({
+      graphqlEndpoint,
+      manageOrigin,
+      proposal,
+      sessionToken,
+    })
+
+    // Best-effort audit record (extension roadmap X5) — never fails the
+    // response; persistence above already succeeded.
+    await recordProposalConfirmationAudit({
+      jti: proposal.jti,
+      kind: proposal.kind,
+      objectId: String(confirmation.element.id),
+      summary: proposal.summary,
+      userId,
+    })
+
+    return NextResponse.json(confirmation)
   } catch (error) {
     if (
       error instanceof Error &&

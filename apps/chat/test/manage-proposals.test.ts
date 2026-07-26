@@ -1,12 +1,23 @@
 import { signJWT } from '@klicker-uzh/util'
-import { describe, expect, test, vi } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import {
   buildManageProposalGraphqlRequest,
   confirmManageProposal,
   getRequiredManageOrigin,
+  recordProposalConfirmationAudit,
   verifyManageProposalToken,
   type ManageElementCreateProposal,
 } from '../src/services/manageProposals'
+
+const mockAuditLogEntryCreate = vi.fn()
+
+vi.mock('@klicker-uzh/prisma', () => ({
+  prisma: {
+    auditLogEntry: {
+      create: (...args: unknown[]) => mockAuditLogEntryCreate(...args),
+    },
+  },
+}))
 
 const proposalPayload = {
   basePoints: true,
@@ -40,6 +51,10 @@ const proposal = {
 } satisfies ManageElementCreateProposal
 
 describe('Manage proposal confirmation helpers', () => {
+  afterEach(() => {
+    mockAuditLogEntryCreate.mockReset()
+  })
+
   test('builds a persisted DRAFT choices-question mutation request', () => {
     const request = buildManageProposalGraphqlRequest(proposal)
 
@@ -227,5 +242,126 @@ describe('Manage proposal confirmation helpers', () => {
     expect(JSON.parse(init.body).operationName).toBe(
       'ManipulateChoicesQuestion'
     )
+  })
+})
+
+describe('recordProposalConfirmationAudit (extension roadmap X5)', () => {
+  afterEach(() => {
+    mockAuditLogEntryCreate.mockReset()
+  })
+
+  test('writes an ASSISTANT_PROPOSAL_CONFIRMED audit entry with a short, PII-free message', async () => {
+    mockAuditLogEntryCreate.mockResolvedValue({ id: 1 })
+
+    await recordProposalConfirmationAudit({
+      jti: 'jti-123',
+      kind: 'element.create.proposal',
+      objectId: '42',
+      summary: 'Create DRAFT MC question',
+      userId: 'lecturer-1',
+    })
+
+    expect(mockAuditLogEntryCreate).toHaveBeenCalledTimes(1)
+    const [{ data }] = mockAuditLogEntryCreate.mock.calls[0]
+    expect(data).toMatchObject({
+      objectId: '42',
+      objectType: 'ELEMENT',
+      sourceUserId: 'lecturer-1',
+      type: 'ASSISTANT_PROPOSAL_CONFIRMED',
+    })
+    expect(JSON.parse(data.message)).toEqual({
+      jti: 'jti-123',
+      kind: 'element.create.proposal',
+      summary: 'Create DRAFT MC question',
+    })
+    // No full payload dump — only kind/jti/summary in the message.
+    expect(data.message).not.toMatch(/standard deviation/i)
+  })
+
+  test('normalizes a legacy no-jti proposal to jti: null in the message', async () => {
+    mockAuditLogEntryCreate.mockResolvedValue({ id: 2 })
+
+    await recordProposalConfirmationAudit({
+      jti: null,
+      kind: 'element.create.proposal',
+      objectId: '7',
+      summary: undefined,
+      userId: 'lecturer-2',
+    })
+
+    const [{ data }] = mockAuditLogEntryCreate.mock.calls[0]
+    expect(JSON.parse(data.message)).toEqual({
+      jti: null,
+      kind: 'element.create.proposal',
+      summary: null,
+    })
+  })
+
+  test('is best-effort: a write failure is swallowed, not thrown', async () => {
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+    mockAuditLogEntryCreate.mockRejectedValue(new Error('DB unavailable'))
+
+    await expect(
+      recordProposalConfirmationAudit({
+        jti: 'jti-456',
+        kind: 'element.create.proposal',
+        objectId: '9',
+        summary: 'Create DRAFT SC question',
+        userId: 'lecturer-3',
+      })
+    ).resolves.toBeUndefined()
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'Failed to record Manage-assistant proposal confirmation audit entry:',
+      expect.any(Error)
+    )
+    consoleErrorSpy.mockRestore()
+  })
+})
+
+describe('verifyManageProposalToken jti surfacing (feeds the X5 audit trail)', () => {
+  test('surfaces the signed jti for a fresh proposal token', async () => {
+    const token = await signJWT(
+      {
+        jti: 'jti-fresh',
+        kind: proposal.kind,
+        payload: proposal.payload,
+        purpose: 'manage-assistant-proposal',
+        summary: proposal.summary,
+        sub: 'lecturer-jti',
+      },
+      'proposal-secret',
+      { expiresIn: '15m', issuer: 'https://auth.test' }
+    )
+
+    await expect(
+      verifyManageProposalToken(token, 'lecturer-jti', {
+        issuer: 'https://auth.test',
+        secret: 'proposal-secret',
+      })
+    ).resolves.toMatchObject({ jti: 'jti-fresh' })
+  })
+
+  test('normalizes a legacy token with no jti claim to jti: null', async () => {
+    const token = await signJWT(
+      {
+        kind: proposal.kind,
+        payload: proposal.payload,
+        purpose: 'manage-assistant-proposal',
+        summary: proposal.summary,
+        sub: 'lecturer-legacy',
+      },
+      'proposal-secret',
+      { expiresIn: '15m', issuer: 'https://auth.test' }
+    )
+
+    await expect(
+      verifyManageProposalToken(token, 'lecturer-legacy', {
+        issuer: 'https://auth.test',
+        secret: 'proposal-secret',
+      })
+    ).resolves.toMatchObject({ jti: null })
   })
 })

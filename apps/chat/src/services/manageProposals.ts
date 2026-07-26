@@ -1,4 +1,6 @@
 import hashes from '@klicker-uzh/graphql/dist/client.json'
+import { prisma } from '@klicker-uzh/prisma'
+import { AuditLogType, ObjectType } from '@klicker-uzh/prisma/client'
 import { verifyJWT } from '@klicker-uzh/util'
 import { z } from 'zod'
 import {
@@ -145,7 +147,7 @@ export async function verifyManageProposalToken(
   token: string,
   userId: string,
   settings: { issuer: string; secret: string }
-): Promise<ManageElementCreateProposal> {
+): Promise<ManageElementCreateProposal & { jti: string | null }> {
   let parsed: z.infer<typeof manageProposalTokenSchema>
   try {
     const payload = await verifyJWT(token, settings.secret, {
@@ -167,10 +169,62 @@ export async function verifyManageProposalToken(
   }
 
   return {
+    // `jti` is absent on tokens signed before the replay guard existed (see
+    // claimProposalJti comment above) — normalized to `null` here so callers
+    // (e.g. the audit trail, X5) always get an explicit legacy marker rather
+    // than `undefined`.
+    jti: parsed.jti ?? null,
     kind: parsed.kind,
     payload: parsed.payload,
     requiresConfirmation: true,
     summary: parsed.summary,
+  }
+}
+
+/**
+ * Best-effort audit trail for a confirmed Manage-assistant proposal
+ * (extension roadmap X5, plan finding §3.4: today there is no durable record
+ * of who confirmed what and when — only the resulting object row).
+ *
+ * Persistence has already happened by the time this is called
+ * (`confirmManageProposal` succeeded) — an audit-write failure must never
+ * fail the confirmation response, so this function swallows its own errors
+ * after logging them. The `message` column intentionally stays a short,
+ * PII-free summary (kind + jti + the proposal's own short human-readable
+ * summary) rather than a full payload dump.
+ */
+export async function recordProposalConfirmationAudit({
+  jti,
+  kind,
+  objectId,
+  summary,
+  userId,
+}: {
+  jti: string | null
+  kind: string
+  objectId: string
+  summary: string | undefined
+  userId: string
+}): Promise<void> {
+  try {
+    await prisma.auditLogEntry.create({
+      data: {
+        message: JSON.stringify({
+          jti,
+          kind,
+          summary: summary ?? null,
+        }),
+        objectId,
+        objectType: ObjectType.ELEMENT,
+        sourceUserId: userId,
+        type: AuditLogType.ASSISTANT_PROPOSAL_CONFIRMED,
+      },
+    })
+  } catch (error) {
+    console.error(
+      'Failed to record Manage-assistant proposal confirmation audit entry:',
+      error
+    )
   }
 }
 
