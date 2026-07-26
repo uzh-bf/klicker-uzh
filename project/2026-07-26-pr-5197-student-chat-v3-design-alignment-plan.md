@@ -402,3 +402,42 @@ simplify subagent on the exact commit → integrate accepted findings → re-ver
   parse module … file not found"); recovered by touching the i18n files and
   thread.tsx in-container, no `devrouter ensure` and no DB reset needed.
   Next: S7.
+- 2026-07-26 S7 done. Wiki + ADR: `docs/chat-platform.md` gains a "Sources and
+  citations" section (derivation from tool parts, the tool-name forms the gate
+  must tolerate, the numbering rules the UI and the prompt contract must agree
+  on, the parsed-payload gate behind "no results") and a Testing paragraph on
+  the new e2e block; ADR is **0004**, not 0003 as this plan originally said —
+  0003 was already taken by the chat framework upgrade.
+  E2E: 8 new tests in `Y-chat.spec.ts` under `Chatbot Source Citations`,
+  covering card order + count, dedupe across two calls, valid vs out-of-range
+  `[n]`, click-without-navigation, all four chip labels + icon gating, the
+  hint's standalone/embedded gate, the ISO timestamp, and the model-id-only
+  caption regression from the S6 adjustment. First run was 7/8: the
+  click-without-navigation test captured its URL baseline before the
+  thread-select client navigation had committed, so the router's own URL
+  change was attributed to the citation click — a test race, not a product
+  bug (fixed with a `toHaveURL` gate). Full file green afterwards: 58 passed.
+  Two product bugs found during S7, each committed separately:
+  (a) answer-mode `source_url` reached the card's `href` with no scheme check
+  while documents mode already gated `reference` through `isUrlLike`. React 19
+  neuters `javascript:` on its own so this is hardening, not a live XSS —
+  stated that way in the commit rather than overclaiming. 4 new unit tests.
+  (b) a chatbot without an avatar rendered a BROKEN IMAGE on every assistant
+  message: the fallback src was the build-time relative path
+  `../../public/user-solid.svg`, which resolves against the thread URL and
+  404s. `middleware.ts` already allowlists `/user-solid.svg`, so the intended
+  path was there all along. Caught only because the PR screenshots showed it.
+  Verification: chat vitest 121/121; repo `pnpm run check` 24/24 tasks;
+  `pnpm run lint` 5/6 — the only failure is `@klicker-uzh/analytics`, a Python
+  package whose `pandas` wheel will not build in this container and which is
+  outside the devcontainer stack by design (pre-existing, unrelated).
+  Playwright host-run recipe that worked, for the next session: socat proxy
+  `docker run -d --name s7-pgproxy --network default-cl-b426a_default -p
+  15433:5432 alpine/socat TCP-LISTEN:5432,fork,reuseaddr
+  TCP:default-cl-b426a-postgres-1:5432`, then DATABASE_URL on 127.0.0.1:15433,
+  NODE_EXTRA_CA_CERTS from mkcert, APP_SECRET=abcd, COOKIE_DOMAIN and URL_*
+  on `klicker.claude-student-chat-v3-design-34.localhost`.
+  PR screenshots came from a throwaway Playwright spec (deleted before commit,
+  never staged), not agent-browser, whose CDP screenshot call still hangs in
+  this daemon: desktop 1440x900 + mobile 390x844 in en and de, plus embedded.
+  Next: final security + maintainability gates, then the PR body.
