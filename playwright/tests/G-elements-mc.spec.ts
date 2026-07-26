@@ -180,8 +180,7 @@ test.describe('Test creation and editing functionalities for Multiple Choice ele
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
 
     // Clear feedback 1 re-disables
-    await page.getByTestId('insert-answer-feedback-1').click()
-    await page.getByTestId('insert-answer-feedback-1').clear()
+    await fillFeedbackField(page, 1, '', true)
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
     await fillFeedbackField(page, 1, MC.choicesFeedbacks[1])
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()

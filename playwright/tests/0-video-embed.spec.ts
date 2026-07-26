@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 import { COURSE_ID_TEST, USER_ID_TEST } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
+import { fillEditorField, pasteEditorField } from '../util/fixtures/elements.js'
 import {
   createLiveQuiz,
   deleteLiveQuiz,
@@ -45,10 +46,32 @@ test.describe('Markdown video embeds', () => {
     await page.getByTestId('create-question').click()
 
     const editor = page.getByTestId('insert-question-text')
-    await editor.fill(VIDEO_MARKDOWN)
+    const preview = page.getByTestId('student-element-preview')
+
+    const markdownImage = '![alt](/klickerUZH.svg)'
+    await pasteEditorField(page, 'insert-question-text', markdownImage)
+    await expect(editor).toContainText(markdownImage)
+    await expect(editor.locator('img')).toHaveCount(0)
+    await fillEditorField(page, 'insert-question-text', '', true)
+
+    await pasteEditorField(page, 'insert-question-text', 'Ordinary plain text')
+    await expect(editor).toContainText('Ordinary plain text')
+    await expect(preview.locator('iframe')).toHaveCount(0)
+    await fillEditorField(page, 'insert-question-text', '', true)
+
+    await pasteEditorField(
+      page,
+      'insert-question-text',
+      `[video](https://www.youtube.com/watch?v=${YOUTUBE_ID})`,
+      `<strong>[video](https://www.youtube.com/watch?v=${YOUTUBE_ID})</strong>`
+    )
+    await expect(editor.locator('strong')).toContainText('[video]')
+    await expect(preview.locator('iframe')).toHaveCount(0)
+    await fillEditorField(page, 'insert-question-text', '', true)
+
+    await pasteEditorField(page, 'insert-question-text', VIDEO_MARKDOWN)
     await expect(editor).toContainText('YouTube link')
 
-    const preview = page.getByTestId('student-element-preview')
     const players = preview.locator('iframe')
     await expect(players).toHaveCount(3)
     await expect(players.nth(0)).toHaveAttribute('src', YOUTUBE_EMBED)

@@ -13,11 +13,13 @@ import {
   faTerminal,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Extension } from '@tiptap/core'
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
 import Image from '@tiptap/extension-image'
 import Placeholder from '@tiptap/extension-placeholder'
 import { TableKit } from '@tiptap/extension-table'
 import { Markdown } from '@tiptap/markdown'
+import { Plugin } from '@tiptap/pm/state'
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { common, createLowlight } from 'lowlight'
@@ -39,6 +41,31 @@ const normalizeLegacyEmptyContent = (content?: string) => {
   const currentContent = content ?? ''
   return /^\s*(<br\s*\/?>\s*)+$/i.test(currentContent) ? '' : currentContent
 }
+
+const PasteMarkdown = Extension.create({
+  name: 'pasteMarkdown',
+
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        props: {
+          handlePaste: (_view, event) => {
+            const text = event.clipboardData?.getData('text/plain')
+            const html = event.clipboardData?.getData('text/html')
+
+            if (!text || html || !/(^|[^!])\[[^\]]+\]\([^)]+\)/m.test(text)) {
+              return false
+            }
+
+            return this.editor.commands.insertContent(text, {
+              contentType: 'markdown',
+            })
+          },
+        },
+      }),
+    ]
+  },
+})
 
 export interface ContentInputClassName {
   root?: string
@@ -86,6 +113,7 @@ function ContentInput({
       }),
       Image,
       Markdown,
+      PasteMarkdown,
       // eslint-disable-next-line react-hooks/refs -- Tiptap reads the callback from its ProseMirror plugin outside React render.
       Placeholder.configure({
         placeholder: () => placeholderRef.current,

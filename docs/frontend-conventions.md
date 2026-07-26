@@ -2,7 +2,7 @@
 type: Frontend Conventions
 title: Frontend Conventions
 description: Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.
-timestamp: '2026-07-19'
+timestamp: '2026-07-26'
 tags:
   - frontend
 ---
@@ -32,6 +32,7 @@ Scope: `frontend-manage`, `frontend-pwa`, `frontend-control`, `auth` — all Nex
 - Clickable rows must ignore events from marked interactive subtrees so opening a dropdown or modal cannot also trigger the row navigation.
 - Async Formik submit handlers must return or await their mutation promise so `isSubmitting` remains active and users cannot navigate away before the save completes.
 - **Rich content persists as Markdown.** Expose only editor behavior that survives `ContentInput`'s Markdown serialization and the shared `Markdown` preview renderer. Tables are pipe-table compatible: insert, add/delete rows or columns, and delete the table; merged cells and persisted column widths are intentionally unavailable. Code fences retain their language tag; the editor registers Lowlight's common languages while the preview keeps a safe Prism superset. (`apps/frontend-manage/src/components/common/ContentInput.tsx:ContentInput`, `packages/markdown/src/Markdown.tsx:Markdown`)
+- **Plain-text Markdown links are parsed on paste.** `ContentInput` treats clipboard text containing Markdown link syntax as Markdown so supported `[video](...)` and `[embed](...)` links keep their preview behavior. Rich HTML clipboard content and ordinary plain text keep Tiptap's default paste path. (`apps/frontend-manage/src/components/common/ContentInput.tsx:ContentInput`)
 - **Tiptap selection state needs an explicit React subscription.** Toolbar active states and contextual controls must use `useEditorState`; `onUpdate` only covers document changes, so direct `editor.isActive(...)` reads can remain stale after cursor-only movement. Set `immediatelyRender: false` for pages-router SSR. (`apps/frontend-manage/src/components/common/ContentInput.tsx:ContentInput`)
 - **Empty rich content is an empty string.** Pass `''` or `undefined` to `ContentInput`; never synthesize the legacy `'<br>'` sentinel. Tiptap treats `<br>` as a hard break, so the editor no longer counts as empty and its placeholder disappears. Read and validation paths may still recognize `'<br>'` for backward compatibility with stored legacy content. (`apps/frontend-manage/src/components/common/ContentInput.tsx:ContentInput`, `apps/frontend-manage/src/components/elements/manipulation/ElementContentInput.tsx:ElementContentInput`)
 
