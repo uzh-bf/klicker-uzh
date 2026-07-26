@@ -1,21 +1,21 @@
 # Proxy-only routing over the shared external `devnet` network by container
-# alias (NO published host ports in devrouter mode). The monorepo runs every app
-# in one container via `turbo dev`; each hostname routes to that container's
-# internal port. ${WORKSPACE} is substituted by devrouter at runtime so
-# parallel worktrees target distinct aliases (`<workspace>-app` / `<workspace>-db`)
-# instead of all sharing one `klicker-app`.
+# alias. Linked worktrees publish no host ports; the primary checkout keeps its
+# documented fixed localhost ports. The monorepo runs every app in one container
+# via `turbo dev`; each hostname routes to that container's internal port.
+# ${WORKSPACE} is substituted by devrouter at runtime so parallel worktrees
+# target distinct aliases (`<workspace>-app` / `<workspace>-db`).
 # Full walkthrough: devrouter docs/DEVCONTAINER.md.
 #
-# Usage: `dev up` + `dev tls install` (creates devnet + the mkcert CA), THEN
-# bring the devcontainer up, then:
-#   for a in api auth pwa manage control olat-api response-api lti chat db; do dev app run "$a"; done
+# Usage: `devrouter setup --yes` once, then from either checkout kind run
+# `devrouter ensure .`. Use
+# `devrouter workspace up <branch>` to create a new worktree. Primary checkouts
+# use the one-at-a-time localhost overlay documented in `.devcontainer/README.md`.
 #
-# PHASE 1: core apps. PHASE 2 Tier 1 adds olat-api (3030) + response-api (7078);
-# the two hatchet workers run in the same container with no port/route. Remaining
-# Phase 2: lti (4000) and chat (3004).
+# The container runs every routed app plus the two Hatchet workers. Workers have
+# no route; analytics, Office add-in, and docs remain outside this stack.
 version: 1
 devrouter:
-  version: 0.0.21 # proxy + protocol: tcp requires >= 0.0.21
+  version: 0.0.35
 project:
   name: klicker-uzh
 apps:

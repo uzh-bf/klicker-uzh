@@ -43,7 +43,7 @@ New non-obvious patterns discovered during a task go to the matching page above 
 3. Validate + format:
 
    ```bash
-   bash ~/.agents/skills/rs-llm-wiki-okf/scripts/validate.sh docs   # if the validator is available; no trailing slash
+   bash ~/.agents/skills/rs-llm-wiki-okf/scripts/validate.sh docs   # no trailing slash
    pnpm exec prettier --write docs/
    ```
 

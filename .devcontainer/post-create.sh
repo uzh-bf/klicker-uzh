@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Runs once when the dev container is created. Installs deps, builds the
 # workspace packages the apps import, prepares the DB, and picks up the Hatchet
-# token. Core apps + Phase 2 Tier 1 (olat-api, response-api, 2 hatchet workers).
+# token. Every routed app plus the two Hatchet workers.
 set -euo pipefail
 cd /workspaces/klicker-uzh
 

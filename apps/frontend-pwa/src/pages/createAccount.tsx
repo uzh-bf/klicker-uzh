@@ -7,13 +7,13 @@ import { useRouter } from 'next/router'
 import nookies from 'nookies'
 
 import { useMutation } from '@apollo/client'
+import Layout from '@components/Layout'
+import CreateAccountForm from '@components/forms/CreateAccountForm'
 import { CreateParticipantAccountDocument } from '@klicker-uzh/graphql/dist/ops'
+import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
 import bodyParser from 'body-parser'
-import Layout from 'src/components/Layout'
-import CreateAccountForm from 'src/components/forms/CreateAccountForm'
-import { addApolloState, initializeApollo } from 'src/lib/apollo'
 
 interface Props {
   signedLtiData?: string

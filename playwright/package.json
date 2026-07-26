@@ -9,9 +9,10 @@
     "@types/node": "^24.10.1",
     "bcryptjs": "~2.4.3",
     "jose": "~5.9.4",
-    "typescript": "~5.6.3"
+    "typescript": "~6.0.3"
   },
   "scripts": {
+    "check": "tsc --noEmit -p tsconfig.json",
     "show-report": "playwright show-report",
     "test": "../util/_run_with_infisical.sh --env dev-playwright playwright test",
     "test:headed": "../util/_run_with_infisical.sh --env dev-playwright playwright test --headed --project=chromium",

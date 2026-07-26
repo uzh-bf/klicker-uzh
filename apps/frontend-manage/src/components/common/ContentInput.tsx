@@ -86,6 +86,7 @@ function ContentInput({
       }),
       Image,
       Markdown,
+      // eslint-disable-next-line react-hooks/refs -- Tiptap reads the callback from its ProseMirror plugin outside React render.
       Placeholder.configure({
         placeholder: () => placeholderRef.current,
         emptyEditorClass: 'is-editor-empty',

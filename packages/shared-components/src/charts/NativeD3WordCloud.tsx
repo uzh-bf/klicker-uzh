@@ -6,7 +6,7 @@ import {
   type RendererHandle,
   type WordCloudWord,
 } from '@klicker-uzh/word-cloud'
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 interface NativeD3WordCloudProps {
   words: WordCloudWord[]
