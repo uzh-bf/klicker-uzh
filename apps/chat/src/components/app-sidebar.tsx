@@ -16,7 +16,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import * as React from 'react'
-import { ChatGraphModeSwitch } from './knowledge-graph/ChatGraphModeSwitch'
 import { SettingsPanel } from './settings-panel'
 import { ThreadList } from './thread-list'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
@@ -85,9 +84,6 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <div className="border-b border-[#E9E9E9] px-2 pb-2">
-          <ChatGraphModeSwitch chatbotId={chatbotId} compact />
-        </div>
         <ThreadList />
       </SidebarContent>
 

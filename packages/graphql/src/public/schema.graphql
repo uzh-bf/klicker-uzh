@@ -311,22 +311,6 @@ type AssessmentResultsLiveQuiz {
   studentResults: [StudentAssessmentResultsItem!]!
 }
 
-type AvailableChatbotKnowledgeGraphResource {
-  assignmentChatbotId: ID
-  assignmentChatbotName: String
-  id: ID!
-  status: KBResourceStatus!
-  title: String!
-  type: KBResourceType!
-}
-
-type AvailableChatbotKnowledgeGraphResourceGroup {
-  description: String
-  id: ID!
-  name: String!
-  resources: [AvailableChatbotKnowledgeGraphResource!]!
-}
-
 type AvatarSettings {
   accessory: String!
   clothing: String!
@@ -656,32 +640,6 @@ type ChatbotDisclaimerSummary {
   name: String!
   pendingCount: Int!
   title: String!
-}
-
-type ChatbotKnowledgeGraphConfig {
-  activeBuildRevision: Int
-  builtRevision: Int
-  chatbotId: ID!
-  createdAt: Date
-  externalStartedAt: Date
-  externalWorkflowRunId: String
-  id: ID
-  lastBuildSpeedMode: KBSpeedMode
-  lastBuiltAt: Date
-  selectedResourceIds: [ID!]!
-  selectionRevision: Int!
-  status: ChatbotKnowledgeGraphStatus!
-  statusMessage: String
-  updatedAt: Date
-}
-
-enum ChatbotKnowledgeGraphStatus {
-  DIRTY
-  EMPTY
-  FAILED
-  PROCESSING
-  QUEUED
-  READY
 }
 
 type ChatbotMcpConfigurationSummary {
@@ -1661,7 +1619,6 @@ type KBResource {
   createdAt: Date!
   id: ID!
   ingestedAt: Date
-  knowledgeGraphAssignment: KBResourceKnowledgeGraphAssignment
   mimeType: String
   originalFilename: String
   sizeBytes: Int
@@ -1671,11 +1628,6 @@ type KBResource {
   title: String!
   type: KBResourceType!
   updatedAt: Date!
-}
-
-type KBResourceKnowledgeGraphAssignment {
-  chatbotId: ID!
-  chatbotName: String!
 }
 
 enum KBResourceStatus {
@@ -1695,40 +1647,6 @@ enum KBSpeedMode {
   BALANCED
   FAST
   QUALITY
-}
-
-type KnowledgeGraphEdge {
-  id: ID!
-  label: String!
-  properties: Json!
-  source: ID!
-  target: ID!
-  type: String!
-}
-
-type KnowledgeGraphNode {
-  content: String
-  degree: Int!
-  displayLabel: String!
-  id: ID!
-  kind: String!
-  labels: [String!]!
-  sourceReferences: [KnowledgeGraphSourceReference!]!
-  summary: String
-}
-
-type KnowledgeGraphResponse {
-  builtRevision: Int!
-  chatbotId: ID!
-  edges: [KnowledgeGraphEdge!]!
-  nodes: [KnowledgeGraphNode!]!
-  truncated: Boolean!
-}
-
-type KnowledgeGraphSourceReference {
-  reference: String
-  resourceId: ID!
-  title: String!
 }
 
 type LeaderboardEntry {
@@ -2007,7 +1925,6 @@ type Mutation {
   publishMicroLearning(id: String!): MicroLearning
   publishPracticeQuiz(availableFrom: Date, id: String!): PracticeQuiz
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
-  rebuildChatbotKnowledgeGraph(chatbotId: ID!, cleaningModel: String!, generationModel: String!, speedMode: KBSpeedMode!): ChatbotKnowledgeGraphConfig!
   removeCatalogObjectAssignment(assignmentId: Int!): Boolean!
   removeObject(objectId: String!, objectType: ObjectType!): String
   removeUserFromGroup(groupId: Int!, userId: String!): Boolean!
@@ -2038,7 +1955,6 @@ type Mutation {
   unpublishMicroLearning(id: String!): MicroLearning
   unpublishPracticeQuiz(id: String!): PracticeQuiz
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
-  updateChatbotKnowledgeGraphResources(chatbotId: ID!, resourceIds: [ID!]!): ChatbotKnowledgeGraphConfig!
   updateChatbotModelSettings(allowedModelIds: [String!]!, allowedReasoningEffortsByModel: [ChatbotReasoningConfigInput!], chatbotId: String!, modelSelection: Boolean!): Chatbot
   updateCourseSettings(color: String, description: String, displayName: String, endDate: Date, groupDeadlineDate: Date, id: String!, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean, language: LocaleType!, name: String, notificationEmail: String, startDate: Date): Course
   updateElementInstances(elementId: Int!, includeTemplates: Boolean!): [ElementInstance!]
@@ -2482,7 +2398,6 @@ type Query {
   getAnswerCollectionCatalogInfo(catalogCollectionId: String, collectionId: Int!): AnswerCollection
   getAnswerCollectionsElements(templateId: String): [AnswerCollection!]
   getAnswerCollectionsInfo: [AnswerCollection!]
-  getAvailableChatbotKnowledgeGraphResources(chatbotId: ID!): [AvailableChatbotKnowledgeGraphResourceGroup!]!
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
   getCatalogAnswerCollections: [CatalogSelectionObject!]
@@ -2493,9 +2408,6 @@ type Query {
   getCatalogObjects(catalogCollectionId: String): [CatalogObject!]
   getCatalogSharingRequests: [ObjectSharingRequest!]
   getChatModelRegistry: [ChatModelCapability!]!
-  getChatbotKnowledgeGraphConfig(chatbotId: ID!): ChatbotKnowledgeGraphConfig!
-  getChatbotKnowledgeGraphNeighbors(chatbotId: ID!, nodeId: ID!): KnowledgeGraphResponse!
-  getChatbotKnowledgeGraphOverview(chatbotId: ID!): KnowledgeGraphResponse!
   getChatbotsInfo: [Chatbot!]
   getCourseActivities(courseId: String!): Course
   getCourseActivityAnalytics(courseId: String!): CourseActivityAnalytics
@@ -2559,7 +2471,6 @@ type Query {
   practiceQuiz(id: String!): PracticeQuiz
   previousPointCorrections(courseId: String, instanceId: Int, liveQuizId: String): [PointCorrection!]
   publicParticipantProfile(participantId: String!): Participant
-  searchChatbotKnowledgeGraph(chatbotId: ID!, query: String!): KnowledgeGraphResponse!
   self(liveQuizId: String): Participant
   selfWithAchievements: ParticipantWithAchievements
   shortnameQuizzes(shortname: String!): [LiveQuiz!]

@@ -23,7 +23,3 @@ data:
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
   # Deprecated - kept for backward compatibility during transition
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
-  KB_FALKORDB_HOST: {{ .Values.knowledgeGraph.falkordb.host | quote }}
-  KB_FALKORDB_PORT: {{ .Values.knowledgeGraph.falkordb.port | quote }}
-  KB_FALKORDB_TLS: {{ .Values.knowledgeGraph.falkordb.tls | quote }}
-  KB_FALKORDB_QUERY_TIMEOUT_MS: {{ .Values.knowledgeGraph.falkordb.queryTimeoutMs | quote }}

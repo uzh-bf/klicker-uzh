@@ -13,10 +13,6 @@ data:
   OPENAI_BASE_URL: {{ .Values.chat.openai.baseUrl | quote }}
   CHAT_OPENAI_STORE_RESPONSES: {{ .Values.chat.openai.storeResponses | default false | quote }}
   CHAT_ENABLE_AI_TELEMETRY: {{ $chatTelemetryEnabled | quote }}
-  KB_FALKORDB_HOST: {{ .Values.knowledgeGraph.falkordb.host | quote }}
-  KB_FALKORDB_PORT: {{ .Values.knowledgeGraph.falkordb.port | quote }}
-  KB_FALKORDB_TLS: {{ .Values.knowledgeGraph.falkordb.tls | quote }}
-  KB_FALKORDB_QUERY_TIMEOUT_MS: {{ .Values.knowledgeGraph.falkordb.queryTimeoutMs | quote }}
   {{- if .Values.chat.modelRegistry }}
   CHAT_MODEL_REGISTRY_JSON: {{ .Values.chat.modelRegistry | toJson | quote }}
   {{- end }}

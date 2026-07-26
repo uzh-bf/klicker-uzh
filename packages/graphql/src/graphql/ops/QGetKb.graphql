@@ -16,10 +16,6 @@ query GetKb($id: ID!) {
       ingestedAt
       createdAt
       updatedAt
-      knowledgeGraphAssignment {
-        chatbotId
-        chatbotName
-      }
     }
   }
 }

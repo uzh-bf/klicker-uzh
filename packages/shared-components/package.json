@@ -3,9 +3,6 @@
   "name": "@klicker-uzh/shared-components",
   "main": "src/index.ts",
   "types": "src/index.ts",
-  "dependencies": {
-    "cytoscape": "3.34.0"
-  },
   "devDependencies": {
     "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/markdown": "workspace:*",

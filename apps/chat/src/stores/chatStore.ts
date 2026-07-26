@@ -56,16 +56,12 @@ export interface Thread {
   updatedAt: Date
 }
 
-export const DEFAULT_PARTICIPATION_MESSAGE =
-  'You need to join the corresponding KlickerUZH course before you can use this chatbot. Please enrol in the course or contact your instructor for access.'
-
 interface ChatState {
   threads: Thread[]
   activeThreadId: string | null
   isLoading: boolean
   participationRequired: boolean
   participationMessage: string | null
-  setParticipationRequired: (required: boolean, message?: string) => void
 
   // thread management actions
   createThread: (chatbotId: string) => Promise<string>
@@ -109,20 +105,24 @@ interface ChatState {
  * - API integration for persistence
  */
 export const useChatStore = create<ChatState>((set, get) => {
+  const DEFAULT_PARTICIPATION_MESSAGE =
+    'You need to join the corresponding KlickerUZH course before you can use this chatbot. Please enrol in the course or contact your instructor for access.'
   const attachmentHydrationRequests = new Map<
     string,
     Promise<ExtendedThreadMessageLike | undefined>
   >()
 
-  const setParticipationRequired = (required: boolean, message?: string) => {
+  const markParticipationRequired = (message?: string) => {
     set({
-      participationRequired: required,
-      participationMessage: required
-        ? message?.trim()
-          ? message
-          : DEFAULT_PARTICIPATION_MESSAGE
-        : null,
+      participationRequired: true,
+      participationMessage: message?.trim()
+        ? message
+        : DEFAULT_PARTICIPATION_MESSAGE,
     })
+  }
+
+  const clearParticipationNotice = () => {
+    set({ participationRequired: false, participationMessage: null })
   }
 
   const mergeMessageAttachments = (
@@ -196,7 +196,7 @@ export const useChatStore = create<ChatState>((set, get) => {
           ? DEFAULT_PARTICIPATION_MESSAGE
           : apiMessage
 
-      setParticipationRequired(true, friendlyMessage)
+      markParticipationRequired(friendlyMessage)
     }
   }
 
@@ -206,7 +206,6 @@ export const useChatStore = create<ChatState>((set, get) => {
     isLoading: false,
     participationRequired: false,
     participationMessage: null,
-    setParticipationRequired,
 
     /**
      * Creates a new conversation thread
@@ -236,7 +235,7 @@ export const useChatStore = create<ChatState>((set, get) => {
           }
         })
 
-        setParticipationRequired(false)
+        clearParticipationNotice()
 
         return newThread.id
       } catch (error) {

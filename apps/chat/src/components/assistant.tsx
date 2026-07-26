@@ -9,7 +9,7 @@ import {
 } from '@uzh-bf/design-system'
 import { Loader2, Plus } from 'lucide-react'
 import Link from 'next/link'
-import { useParams, usePathname, useRouter } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { RuntimeProvider } from '../app/RuntimeProvider'
@@ -21,8 +21,6 @@ import { AppSidebar } from './app-sidebar'
 import { ChatUiProvider, useChatUi } from './chat-ui-context'
 import { DisclaimerModal } from './disclaimer-modal'
 import { EmbeddedSettings } from './embedded-settings'
-import { ChatGraphModeSwitch } from './knowledge-graph/ChatGraphModeSwitch'
-import { ChatKnowledgeGraphWorkspace } from './knowledge-graph/ChatKnowledgeGraphWorkspace'
 import { Thread } from './thread'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
@@ -308,11 +306,9 @@ export const Assistant = ({
 
 function SidebarMain({
   chatbot,
-  graphMode,
   showFooter,
 }: {
   chatbot: { id: string; name: string; avatar?: string }
-  graphMode: boolean
   showFooter: boolean
 }) {
   const { open } = useSidebar()
@@ -331,7 +327,7 @@ function SidebarMain({
   }
 
   return (
-    <SidebarInset className="min-w-0">
+    <SidebarInset>
       <div
         className={twMerge(
           'flex shrink-0 items-center gap-2 border-b bg-gray-50 px-2 py-1.5',
@@ -354,14 +350,6 @@ function SidebarMain({
           <TooltipContent>New Chat</TooltipContent>
         </Tooltip>
       </div>
-      <div
-        className={twMerge(
-          'shrink-0 border-b border-[#E9E9E9] bg-white p-2',
-          open && 'md:hidden'
-        )}
-      >
-        <ChatGraphModeSwitch chatbotId={chatbot.id} />
-      </div>
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="relative flex min-h-0 flex-1 flex-col">
           {isLoading && (
@@ -369,11 +357,7 @@ function SidebarMain({
               <Loader2 className="text-muted-foreground size-6 animate-spin" />
             </div>
           )}
-          {graphMode ? (
-            <ChatKnowledgeGraphWorkspace chatbotId={chatbot.id} />
-          ) : (
-            <Thread chatbotAvatar={chatbot.avatar ?? ''} />
-          )}
+          <Thread chatbotAvatar={chatbot.avatar ?? ''} />
         </div>
         {showFooter && <Footer />}
       </div>
@@ -387,18 +371,12 @@ function AssistantLayout({
   chatbot: { id: string; name: string; avatar?: string }
 }) {
   const { showSidebar, showFooter } = useChatUi()
-  const pathname = usePathname()
-  const graphMode = pathname === `/${chatbot.id}/graph`
 
   if (showSidebar) {
     return (
       <SidebarProvider className="h-dvh overflow-hidden">
         <AppSidebar chatbotName={chatbot.name} />
-        <SidebarMain
-          chatbot={chatbot}
-          graphMode={graphMode}
-          showFooter={showFooter}
-        />
+        <SidebarMain chatbot={chatbot} showFooter={showFooter} />
       </SidebarProvider>
     )
   }
@@ -411,15 +389,8 @@ function AssistantLayout({
         </div>
         <EmbeddedSettings />
       </div>
-      <div className="shrink-0 border-b border-[#E9E9E9] bg-white p-2">
-        <ChatGraphModeSwitch chatbotId={chatbot.id} />
-      </div>
       <div className="flex min-h-0 flex-1 flex-col">
-        {graphMode ? (
-          <ChatKnowledgeGraphWorkspace chatbotId={chatbot.id} />
-        ) : (
-          <Thread chatbotAvatar={chatbot.avatar ?? ''} />
-        )}
+        <Thread chatbotAvatar={chatbot.avatar ?? ''} />
         {showFooter && <Footer />}
       </div>
     </div>

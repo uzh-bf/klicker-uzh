@@ -14,21 +14,6 @@ enum KBResourceStatus {
   FAILED
 }
 
-enum ChatbotKnowledgeGraphStatus {
-  EMPTY
-  DIRTY
-  QUEUED
-  PROCESSING
-  READY
-  FAILED
-}
-
-enum KBIngestionSpeedMode {
-  BALANCED
-  QUALITY
-  FAST
-}
-
 model KB {
   id          String  @id @default(uuid()) @db.Uuid
   name        String
@@ -43,31 +28,6 @@ model KB {
   updatedAt DateTime @updatedAt
 
   @@index([ownerId])
-}
-
-model ChatbotKnowledgeGraph {
-  id        String  @id @default(uuid()) @db.Uuid
-  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  chatbotId String  @unique @db.Uuid
-
-  resources KBResource[]
-
-  status            ChatbotKnowledgeGraphStatus @default(EMPTY)
-  statusMessage     String?
-  selectionRevision Int                         @default(0)
-  builtRevision     Int?
-
-  activeAttemptId       String? @db.Uuid
-  activeBuildRevision   Int?
-  externalWorkflowRunId String?
-  externalStartedAt     DateTime?
-  lastBuiltAt           DateTime?
-  lastBuildSpeedMode    KBIngestionSpeedMode?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([status])
 }
 
 model KBResource {
@@ -96,15 +56,11 @@ model KBResource {
   kb   KB     @relation(fields: [kbId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   kbId String @db.Uuid
 
-  knowledgeGraph   ChatbotKnowledgeGraph? @relation(fields: [knowledgeGraphId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  knowledgeGraphId String?                 @db.Uuid
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([kbId, status])
   @@index([status])
-  @@index([knowledgeGraphId])
 }
 
 // #endregion

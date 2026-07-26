@@ -22,36 +22,6 @@ export interface HatchetHandlerGlobalContext {
 export const kbIngestionSpeedModes = ['balanced', 'quality', 'fast'] as const
 export type KBIngestionSpeedMode = (typeof kbIngestionSpeedModes)[number]
 
-export const kbIngestionModelIds = [
-  // Default
-  'klickeruzh/azure/gpt-4.1',
-  'klickeruzh/azure/gpt-4.1-mini',
-  'klickeruzh/azure/gpt-4.1-nano',
-  'klickeruzh/azure/gpt-5.1',
-  'klickeruzh/azure/gpt-5.4',
-  'klickeruzh/azure/gpt-5.5',
-  // Swiss Foundry
-  'klickeruzh/azure/gpt-5.4-low',
-  'klickeruzh/azure/gpt-5.4-medium',
-  'klickeruzh/azure/gpt-5.5-low',
-  'klickeruzh/azure/gpt-5.6-sol',
-  'klickeruzh/azure/gpt-5.6-terra',
-  'klickeruzh/azure/gpt-5.6-luna',
-  'klickeruzh/azure/gpt-5.6-luna-medium',
-  'klickeruzh/azure/gpt-5.6-luna-high',
-  'klickeruzh/azure/gpt-5.6-luna-xhigh',
-  'klickeruzh/azure/gpt-5.6-sol-low',
-  'klickeruzh/azure/gpt-5.6-sol-medium',
-] as const
-
-export type KBIngestionModelId = (typeof kbIngestionModelIds)[number]
-
-export function isKBIngestionModelId(
-  value: string
-): value is KBIngestionModelId {
-  return (kbIngestionModelIds as readonly string[]).includes(value)
-}
-
 type IngestKBResourceInputBase = JsonObject & {
   resourceId: string
   kbId: string
@@ -72,31 +42,6 @@ export type IngestKBResourceInput = IngestKBResourceInputBase &
         sourceUrl: string
       }
   )
-
-export type BuildChatbotKnowledgeGraphInput = JsonObject & {
-  graphId: string
-  chatbotId: string
-  attemptId: string
-  selectionRevision: number
-  speedMode: KBIngestionSpeedMode
-  generationModel: KBIngestionModelId
-  cleaningModel: KBIngestionModelId
-  resources: Array<
-    | {
-        resourceId: string
-        title: string
-        type: 'BLOB'
-        blobName: string
-        containerName: string
-      }
-    | {
-        resourceId: string
-        title: string
-        type: 'URL'
-        sourceUrl: string
-      }
-  >
-}
 
 // Shared contract for Hatchet task handler injections.
 export interface HatchetHandlers {
@@ -174,10 +119,6 @@ export interface HatchetHandlers {
 
 // Contract for the tasks that are passed into the GraphQL context.
 export interface PreparedHatchetTasks {
-  buildChatbotKnowledgeGraph: TaskWorkflowDeclaration<
-    BuildChatbotKnowledgeGraphInput,
-    { success: boolean }
-  >
   ingestKBResource: TaskWorkflowDeclaration<
     IngestKBResourceInput,
     { success: boolean }
