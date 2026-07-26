@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the two e2e stacks and their seeds, and the CI test matrix.
-timestamp: '2026-07-19'
+timestamp: '2026-07-26'
 tags:
   - testing
   - ci
@@ -43,7 +43,7 @@ For authoring specifics, helper patterns, and failure triage, use the skills —
 
 - Tests that **publish, schedule, or end activities** need the Hatchet **general worker** running on top of the test stack — otherwise mutations fail with `workflow not found`. The worker needs `DATABASE_URL` pointed at the test DB ([Async & Workers](./async-and-workers.md)).
 - **Live-quiz response tests** additionally need `response-api` + the response processor with the same `APP_SECRET`/Redis/Postgres settings — otherwise the UI accepts answers that never reach cockpit/evaluation.
-- Markdown video integration is covered on genuine Manage element-editor and mobile PWA live-quiz surfaces in `playwright/tests/0-video-embed.spec.ts`. The spec verifies immediate YouTube/Kaltura iframes, ordinary-link behavior, and the absence of horizontal overflow.
+- Markdown video integration is covered on genuine Manage element-editor and mobile PWA live-quiz surfaces in `playwright/tests/0-video-embed.spec.ts`. The editor case dispatches plain-text and rich-HTML clipboard events through the browser, then verifies paste-path precedence, immediate YouTube/Kaltura iframes, and ordinary-link behavior; the PWA case verifies both providers without horizontal overflow. `playwright/tests/ZA-editor-rich-features.spec.ts` verifies that pasted merged tables expand into an explicit grid through save, preview, and editor reopen.
 - Cypress `cy.loginStudent()`/`cy.loginStudentPassword()` clear localforage by default; continuation tests that rely on stored answers pass `{ preserveClientState: true }`.
 
 ## CI matrix

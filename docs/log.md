@@ -1,5 +1,9 @@
 # Log
 
+## 2026-07-26
+
+- **Update**: [frontend-conventions](./frontend-conventions.md) documents Markdown-safe clipboard handling, including plain-text Markdown links, video/embed previews, and merged-table normalization.
+
 ## 2026-07-19
 
 - **Update**: [getting-started](./getting-started.md), [frontend-conventions](./frontend-conventions.md), and [testing](./testing.md) document the runtime-owned TypeScript compiler matrix, explicit Next.js build-validation config, isolated incremental-cache ownership, and check-only declaration trap. The matching verification procedure and solution notes preserve the required checks.
@@ -36,6 +40,8 @@
 
 - **Update**: [getting-started](./getting-started.md), [data-and-migrations](./data-and-migrations.md), [frontend-conventions](./frontend-conventions.md), and [testing](./testing.md) document the TypeScript 6 workspace baseline, the separate Office Add-in exception, Prisma generation compatibility guard, explicit path mapping, and compiler-upgrade verification surfaces. Matching procedure was added to `klicker-data-model` and `klicker-testing-verification`.
 
+- **Update**: standardized empty Tiptap form content on `''`/`undefined`, documented why the legacy `'<br>'` sentinel suppresses editor placeholders, aligned frontend and Playwright skills with the empty-state contract in [frontend-conventions](./frontend-conventions.md), and corrected the wiki validator path.
+
 ## 2026-07-10
 
 - **Update**: [chat-platform](./chat-platform.md), [testing](./testing.md), and [ci-and-deployment](./ci-and-deployment.md) documented the initial Next 16 single-Webpack strategy, superseded by the mixed-bundler update on 2026-07-18. They also cover the standalone image contract, generated PWA artifacts, and framework-upgrade verification boundary. The testing-verification skill now matches the eight Playwright CI shards.
@@ -43,6 +49,8 @@
 - **Update**: [auth-model](./auth-model.md) documents validated login return targets for manage, PWA, and chat. Manage accepts only its configured origin. PWA accepts its configured origin plus the configured chat origin. Malformed and untrusted targets fall back to the application root.
 
 - **Update**: [frontend-conventions](./frontend-conventions.md) and [getting-started](./getting-started.md) document deterministic Next.js route-type generation: app checks run `next typegen`, generated `next-env.d.ts` stays ignored, both route-type directories stay in the Next-owned config, and PWA app check configs omit duplicate dev validators from raw `tsc`. Matching procedure added to `klicker-testing-verification`.
+
+- **Update**: documented the Markdown-safe Tiptap boundary, including round-trippable table controls and the editor/preview syntax-highlighting contract, in [frontend-conventions](./frontend-conventions.md); aligned the frontend and Playwright skills with the same behavior.
 
 ## 2026-07-08
 

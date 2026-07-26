@@ -103,7 +103,7 @@ function CaseStudyCasesFields({
                         error={meta.error}
                         touched={meta.touched}
                         disabled={inputsDisabled}
-                        content={field.value || '<br>'}
+                        content={field.value}
                         onChange={(newValue: string) => {
                           setFieldValue(
                             `options.cases.${ix}.description`,

@@ -100,7 +100,10 @@ Action menus:
 
 Editors and selects:
 
-- Use `fillEditorField` and `verifyEditorField` for Slate/rich-text fields.
+- Use `.ProseMirror` (with `.first()`/`.last()`) to target the Tiptap rich-text editor DOM.
+- Use the shared `fillEditorField` / answer / feedback helpers for Tiptap fields. They clear through `ControlOrMeta+A` plus `Backspace`; locator `.clear()` does not model contenteditable deletion reliably.
+- Use `pasteEditorField` when the test contract depends on clipboard parsing. It dispatches a plain-text paste instead of using `.fill()`, which bypasses Tiptap's paste handlers.
+- `verifyEditorField` remains the read-only content helper.
 - Use direct `toHaveValue` for ordinary inputs; do not wrap simple fields just for symmetry.
 - Use `switchElementType` and `setElementStatus` for element modal dropdowns when applicable.
 - Prefer `selectOption` from repo helpers for design-system selects.
@@ -129,6 +132,10 @@ Cleanup dialogs:
 - **react-select**: target the inner `<input>` via `#container-id input` for `.fill()`/`.press()`/visibility assertions — Cypress `.type()` works on the wrapper, Playwright does not. (`playwright/tests/K-elements-selection.spec.ts`)
 - **localforage parity**: Playwright creates a fresh context per test (Cypress keeps IndexedDB across `it` blocks). Serial workflows depending on previous PWA answers must snapshot/restore localforage — and direct QR links may need restoration on the `https://pwa.klicker.com` origin, not `127.0.0.1`. (`playwright/util/workflow.ts`)
 - **PIN-cookie bridges**: clear test-side PIN cookie bridges whenever the Cypress source clears cookies, or later direct-link checks bypass the expected PIN form via a stale `live-quiz-pin-*` cookie. (`playwright/tests/O-live-quiz.spec.ts`)
+- **Tiptap Editor Layout Shifts & Accordion Clicks**: The Tiptap editor mounts asynchronously and shifts the surrounding layout. Before opening an accordion near it, wait for `.ProseMirror`, return when the stable child control is already visible, inspect `aria-expanded`, and click once only when closed. Never retry by blindly toggling the trigger.
+- **Tiptap Auto-Save / False Dirty States**: Programmatic synchronization must not emit form updates: use `setContent(..., { emitUpdate: false })` for external content and `setEditable(editable, false)` for disabled-state changes. Normalization is only a comparison aid for deciding whether content differs; it is not a substitute for suppressing programmatic update events.
+- **Tiptap Empty State**: Form bindings pass `''` or `undefined`, never `'<br>'`. Verify empty editors through the decorated `p.is-editor-empty[data-placeholder]`; a hard-break node suppresses that placeholder while looking visually blank.
+- **Tiptap Code Block Language Selection**: To assert correct syntax highlighting (Highlight.js in the editor, Prism.js in the preview `/questions/[id]`), do not use toolbar button terminal clicks (which omit the language tag). Type fenced Markdown input rules directly into the editor, exit a block with three Enter presses, and cover both JavaScript/TypeScript and a non-JS language shared by the registries (R is the regression choice) in editor and preview assertions.
 
 ## CI Notes
 
