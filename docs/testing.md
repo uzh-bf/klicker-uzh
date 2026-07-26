@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the two e2e stacks and their seeds, and the CI test matrix.
-timestamp: '2026-07-18'
+timestamp: '2026-07-26'
 tags:
   - testing
   - ci
@@ -46,9 +46,18 @@ For authoring specifics, helper patterns, and failure triage, use the skills —
 - Markdown video integration is covered on genuine Manage element-editor and mobile PWA live-quiz surfaces in `playwright/tests/0-video-embed.spec.ts`. The spec verifies immediate YouTube/Kaltura iframes, ordinary-link behavior, and the absence of horizontal overflow.
 - Cypress `cy.loginStudent()`/`cy.loginStudentPassword()` clear localforage by default; continuation tests that rely on stored answers pass `{ preserveClientState: true }`.
 
+## Lecturer MCP smoke tests
+
+`apps/mcp-lecturer` has two smoke scripts on top of its mocked vitest unit tests (`pnpm --filter @klicker-uzh/mcp-lecturer run test:run`), both built on shared helpers in `util/mcpSmokeClient.mts`:
+
+- `smoke:local` (`scripts/smoke.ts`) — happy path: initialize, list tools, walk every read/draft tool against the seeded lecturer (`USER_ID_TEST`/`COURSE_ID_TEST` from `packages/prisma-data/src/data/constants.ts`, created by `seedTEST.ts`).
+- `smoke:negative` (`scripts/smoke-negative.ts`) — authZ/negative paths: garbage/wrong-secret/wrong-issuer/wrong-purpose/wrong-role/expired bearer tokens (all rejected with HTTP 401 at `initialize`, since FastMCP authenticates once per session and never re-checks the token on `tools/call`), a `manage:read`-only token (read tool succeeds, draft tool fails `MISSING_SCOPE`), an unknown-but-well-formed course UUID (non-enumerating `FORBIDDEN`), a malformed course id (schema-validation rejection), a foreign `sub` (zero courses, not an error), and a leak check that none of the captured error messages expose a stack trace, `node_modules` path, or `DATABASE_URL`.
+
+Both scripts need a migrated + seeded Postgres and a running `apps/mcp-lecturer` on the configured URL, with `APP_SECRET`/`APP_ORIGIN_AUTH` matching what the server booted with (`--help` on either script documents the env vars and defaults).
+
 ## CI matrix
 
-Path-filtered unit workflows: `test-grading`, `test-util`, `test-markdown` (package-only, no services), `test-graphql` (spins Postgres ×2 + hatchet-lite + Redis), `test-olat-api` (docker compose test stack). Playwright tests use a path-scoped filter and compile once in a `build-and-compile` job before running the 8 shards. The workflow tars the five `.next` trees before artifact upload and extracts them in each shard so Turbopack's runtime dependency symlinks survive the cross-job handoff. All path-skipped workflows report through `-status` gates to satisfy branch protection. Cypress CI signal quirk: the merge-group check can show a rising failed count while `cypress-run-cloud` is still in progress — wait for cloud completion before reading logs.
+Path-filtered unit workflows: `test-grading`, `test-util`, `test-markdown` (package-only, no services), `test-graphql` (spins Postgres ×2 + hatchet-lite + Redis), `test-olat-api` (docker compose test stack), `test-mcp-lecturer` (Postgres only: unit tests, then migrate + `seed:test`, then boots the built server and runs `smoke:local` + `smoke:negative` against it). Playwright tests use a path-scoped filter and compile once in a `build-and-compile` job before running the 8 shards. The workflow tars the five `.next` trees before artifact upload and extracts them in each shard so Turbopack's runtime dependency symlinks survive the cross-job handoff. All path-skipped workflows report through `-status` gates to satisfy branch protection. Cypress CI signal quirk: the merge-group check can show a rising failed count while `cypress-run-cloud` is still in progress — wait for cloud completion before reading logs.
 
 **Git hooks run no tests** (pre-commit = `check:all`, pre-push = `build`). The expectation before a PR: `check:all` + build + targeted vitest for touched logic + browser evidence for UI changes; CI is the real e2e gate.
 

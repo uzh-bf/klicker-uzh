@@ -1,5 +1,9 @@
 # Log
 
+## 2026-07-26
+
+- **Update**: [testing](./testing.md) documents the lecturer MCP's `smoke:negative` authZ/negative-path script alongside the existing `smoke:local` happy path, and the new `test-mcp-lecturer` CI workflow (Postgres-only: unit tests, migrate + `seed:test`, boot the built server, run both smokes).
+
 ## 2026-07-25
 
 - **Update**: [frontend-conventions](./frontend-conventions.md) and [chat-platform](./chat-platform.md) document the Manage assistant's portalled modal boundary: the dialog stays outside the inert, assistive-technology-hidden page root.
