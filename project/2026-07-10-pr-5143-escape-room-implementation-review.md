@@ -252,7 +252,7 @@ This was the backlog before the revised plan in §11 was executed:
 
 ### Current verdict
 
-**Release-ready locally; fresh CI remains.** Every roadmap slice and local release gate is complete. The branch is integrated with the latest verified `origin/v3`, and the post-integration security, maintainability, and Klicker branch reviews report no Critical or Important findings. Do not merge until the pushed head passes required CI and the user gives explicit merge approval.
+**Release-ready; reviewer approval remains.** Every roadmap slice, local release gate, and current-head CI check is complete. The branch is integrated with the latest verified `origin/v3`, and the post-integration security, maintainability, and Klicker branch reviews report no Critical or Important findings. Do not merge until a reviewer approves the PR and the user gives explicit merge authority.
 
 ### Execution progress
 
