@@ -763,40 +763,39 @@ test.describe('Chatbot Message Actions & Branching', () => {
   // the edit composer's own send (see thread.tsx:EditComposer) — submitting
   // via threadRuntime.append() collapses the root message's null parentId
   // and silently turns the edit into a new turn instead of a sibling branch.
-  test(
-    'Editing the ROOT user message creates a new branch',
-    async ({ page }) => {
-      await visitChat(page)
-      await sendMessage(page, 'Root prompt')
-      await expect(page.getByTestId('chat-assistant-message')).toBeVisible({
-        timeout: 15_000,
-      })
+  test('Editing the ROOT user message creates a new branch', async ({
+    page,
+  }) => {
+    await visitChat(page)
+    await sendMessage(page, 'Root prompt')
+    await expect(page.getByTestId('chat-assistant-message')).toBeVisible({
+      timeout: 15_000,
+    })
 
-      const rootMessage = page.getByTestId('chat-user-message').first()
-      await rootMessage.hover()
-      await rootMessage.getByTestId('chat-edit-message-button').click()
+    const rootMessage = page.getByTestId('chat-user-message').first()
+    await rootMessage.hover()
+    await rootMessage.getByTestId('chat-edit-message-button').click()
 
-      const editInput = page.getByTestId('chat-edit-composer-input')
-      await expect(editInput).toBeVisible()
-      await editInput.fill('Root edited')
-      await page.getByTestId('chat-edit-send-button').click()
+    const editInput = page.getByTestId('chat-edit-composer-input')
+    await expect(editInput).toBeVisible()
+    await editInput.fill('Root edited')
+    await page.getByTestId('chat-edit-send-button').click()
 
-      await expect(
-        page
-          .getByTestId('chat-user-message-content')
-          .filter({ hasText: 'Root edited' })
-      ).toBeVisible()
-
-      await page
-        .getByTestId('chat-user-message')
+    await expect(
+      page
+        .getByTestId('chat-user-message-content')
         .filter({ hasText: 'Root edited' })
-        .hover()
-      await expect(page.getByTestId('chat-branch-picker').first()).toBeVisible()
-      await expect(
-        page.getByTestId('chat-branch-indicator').first()
-      ).toContainText('/ 2')
-    }
-  )
+    ).toBeVisible()
+
+    await page
+      .getByTestId('chat-user-message')
+      .filter({ hasText: 'Root edited' })
+      .hover()
+    await expect(page.getByTestId('chat-branch-picker').first()).toBeVisible()
+    await expect(
+      page.getByTestId('chat-branch-indicator').first()
+    ).toContainText('/ 2')
+  })
 })
 
 // ===========================================================================
