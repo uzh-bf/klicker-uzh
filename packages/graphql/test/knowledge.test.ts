@@ -2,6 +2,7 @@ import { BlobServiceClient } from '@azure/storage-blob'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import { prisma as prismaClient } from '@klicker-uzh/prisma'
 import {
+  KBIngestionOperation,
   KBIngestionStatus,
   KBResourceStatus,
   KBResourceType,
@@ -51,6 +52,35 @@ function withIngestionClaimSignal(
         },
       },
     },
+  })
+  return { ...ctx, prisma: prisma as unknown as PrismaClient }
+}
+
+function withTombstonePause(
+  ctx: ContextWithUser,
+  model: 'kB' | 'kBResource',
+  onTombstone: () => void,
+  continueTombstone: Promise<void>
+): ContextWithUser {
+  const queryExtension = {
+    async update({
+      args,
+      query,
+    }: {
+      args: { data: { deletedAt?: unknown } }
+      query: (args: unknown) => Promise<unknown>
+    }) {
+      if (args.data.deletedAt) {
+        onTombstone()
+        await continueTombstone
+      }
+      return query(args)
+    },
+  }
+  const prisma = ctx.prisma.$extends({
+    query: (model === 'kB'
+      ? { kB: queryExtension }
+      : { kBResource: queryExtension }) as never,
   })
   return { ...ctx, prisma: prisma as unknown as PrismaClient }
 }
@@ -403,6 +433,32 @@ describe('Integration tests for knowledge base CRUD', () => {
     expect(configurations.every(({ isEnabled }) => !isEnabled)).toBe(true)
   })
 
+  it('disables chatbot retrieval when its knowledge base is tombstoned', async () => {
+    const kb = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const course = await seedCourse({}, userOneCtx)
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Finance tutor',
+        ownerId: userOneCtx.user.sub,
+        courseId: course.id,
+      },
+    })
+    await attachKbToChatbot({ kbId: kb.id, chatbotId: chatbot.id }, userOneCtx)
+
+    await deleteKb({ id: kb.id }, userOneCtx)
+
+    await expect(
+      prisma.kBChatbot.findUnique({
+        where: { kbId_chatbotId: { kbId: kb.id, chatbotId: chatbot.id } },
+      })
+    ).resolves.toMatchObject({ isEnabled: false })
+    const configurations = await prisma.chatbotMCPConfig.findMany({
+      where: { chatbotId: chatbot.id, mcpServer: { name: 'KB' } },
+    })
+    expect(configurations).toHaveLength(2)
+    expect(configurations.every(({ isEnabled }) => !isEnabled)).toBe(true)
+  })
+
   it('rejects an empty knowledge base name', async () => {
     await expect(createKb({ name: '   ' }, userOneCtx)).rejects.toThrow(
       'KB name is required'
@@ -411,17 +467,24 @@ describe('Integration tests for knowledge base CRUD', () => {
     await expect(getUserKbs(userOneCtx)).resolves.toEqual([])
   })
 
-  it('deletes an owned knowledge base', async () => {
+  it('hides an owned knowledge base behind a durable tombstone', async () => {
     const created = await createKb({ name: 'Finance notes' }, userOneCtx)
 
     await deleteKb({ id: created.id }, userOneCtx)
 
+    await expect(getUserKbs(userOneCtx)).resolves.toEqual([])
+    await expect(getKb({ id: created.id }, userOneCtx)).rejects.toThrow(
+      'KB not found'
+    )
     await expect(
       prisma.kB.findUnique({ where: { id: created.id } })
-    ).resolves.toBeNull()
+    ).resolves.toMatchObject({
+      deletedById: userOneCtx.user.sub,
+      deletedAt: expect.any(Date),
+    })
   })
 
-  it('deletes blob resources before deleting their knowledge base', async () => {
+  it('tombstones blob resources without deleting storage synchronously', async () => {
     const created = await createKb({ name: 'Finance notes' }, userOneCtx)
     const resource = await prisma.kBResource.create({
       data: {
@@ -436,22 +499,23 @@ describe('Integration tests for knowledge base CRUD', () => {
           'https://kbtestaccount.blob.core.windows.net/container/notes.pdf',
       },
     })
-    deleteBlobIfExists.mockImplementation(async () => {
-      await expect(
-        prisma.kBResource.findUnique({ where: { id: resource.id } })
-      ).resolves.toBeTruthy()
-      return { succeeded: true }
-    })
+    const runNoWait = vi.spyOn(userOneCtx.tasks.deleteKBResource, 'runNoWait')
 
     await deleteKb({ id: created.id }, userOneCtx)
 
-    expect(deleteBlobIfExists).toHaveBeenCalledOnce()
-    const deleteOptions = deleteBlobIfExists.mock.calls[0]?.[0]
-    expect(deleteOptions?.abortSignal).toBeInstanceOf(AbortSignal)
-    expect(deleteOptions?.abortSignal.aborted).toBe(false)
+    expect(deleteBlobIfExists).not.toHaveBeenCalled()
+    expect(runNoWait).toHaveBeenCalledOnce()
     await expect(
       prisma.kB.findUnique({ where: { id: created.id } })
-    ).resolves.toBeNull()
+    ).resolves.toMatchObject({ deletedAt: expect.any(Date) })
+    await expect(
+      prisma.kBResource.findUnique({ where: { id: resource.id } })
+    ).resolves.toMatchObject({
+      deletedAt: expect.any(Date),
+      ingestionOperation: KBIngestionOperation.DELETE,
+      status: KBResourceStatus.QUEUED,
+      resourceVersion: 1,
+    })
   })
 
   it.each([KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING])(
@@ -869,7 +933,57 @@ describe('Integration tests for knowledge base CRUD', () => {
     await deleteKbResource({ id: resource.id }, userOneCtx)
     await expect(
       prisma.kBResource.findUnique({ where: { id: resource.id } })
-    ).resolves.toBeNull()
+    ).resolves.toMatchObject({
+      deletedById: userOneCtx.user.sub,
+      deletedAt: expect.any(Date),
+      ingestionOperation: KBIngestionOperation.DELETE,
+      status: KBResourceStatus.QUEUED,
+      resourceVersion: 1,
+    })
+    await expect(getKb({ id: created.id }, userOneCtx)).resolves.toMatchObject({
+      resources: [],
+    })
+  })
+
+  it('keeps a tombstone hidden when queueing its delete task fails', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const resource = await createKbUrlResource(
+      {
+        kbId: created.id,
+        title: 'Lecture recording',
+        url: 'https://video.example.com/watch?id=123',
+      },
+      userOneCtx
+    )
+    vi.spyOn(
+      userOneCtx.tasks.deleteKBResource,
+      'runNoWait'
+    ).mockRejectedValueOnce(new Error('queue unavailable'))
+
+    await expect(
+      deleteKbResource({ id: resource.id }, userOneCtx)
+    ).resolves.toMatchObject({ id: resource.id })
+
+    const tombstone = await prisma.kBResource.findUniqueOrThrow({
+      where: { id: resource.id },
+    })
+    expect(tombstone).toMatchObject({
+      deletedAt: expect.any(Date),
+      status: KBResourceStatus.QUEUED,
+      errorCode: 'DELETION_QUEUE_FAILED',
+    })
+    await expect(
+      prisma.kBIngestionRun.findUniqueOrThrow({
+        where: { id: tombstone.ingestionAttemptId! },
+      })
+    ).resolves.toMatchObject({
+      operation: KBIngestionOperation.DELETE,
+      status: KBIngestionStatus.QUEUED,
+      errorCode: 'DELETION_QUEUE_FAILED',
+    })
+    await expect(getKb({ id: created.id }, userOneCtx)).resolves.toMatchObject({
+      resources: [],
+    })
   })
 
   it('returns only the five newest ingestion runs to the resource owner', async () => {
@@ -912,7 +1026,7 @@ describe('Integration tests for knowledge base CRUD', () => {
     )
   })
 
-  it('keeps a blob resource row when storage deletion fails', async () => {
+  it('defers blob storage deletion to asynchronous cleanup', async () => {
     const created = await createKb({ name: 'Finance notes' }, userOneCtx)
     const resource = await prisma.kBResource.create({
       data: {
@@ -927,17 +1041,13 @@ describe('Integration tests for knowledge base CRUD', () => {
           'https://kbtestaccount.blob.core.windows.net/container/notes.pdf',
       },
     })
-    deleteBlobIfExists.mockRejectedValue(new Error('storage unavailable'))
-
     await expect(
       deleteKbResource({ id: resource.id }, userOneCtx)
-    ).rejects.toThrow('storage unavailable')
-    const deleteOptions = deleteBlobIfExists.mock.calls[0]?.[0]
-    expect(deleteOptions?.abortSignal).toBeInstanceOf(AbortSignal)
-    expect(deleteOptions?.abortSignal.aborted).toBe(false)
+    ).resolves.toMatchObject({ id: resource.id })
+    expect(deleteBlobIfExists).not.toHaveBeenCalled()
     await expect(
       prisma.kBResource.findUnique({ where: { id: resource.id } })
-    ).resolves.toBeTruthy()
+    ).resolves.toMatchObject({ deletedAt: expect.any(Date) })
   })
 
   it.each([KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING])(
@@ -986,11 +1096,13 @@ describe('Integration tests for knowledge base CRUD', () => {
       },
     })
     const deletionStarted = createDeferred<void>()
-    const finishDeletion = createDeferred<{ succeeded: true }>()
-    deleteBlobIfExists.mockImplementationOnce(() => {
-      deletionStarted.resolve(undefined)
-      return finishDeletion.promise
-    })
+    const finishDeletion = createDeferred<void>()
+    const deleteCtx = withTombstonePause(
+      userOneCtx,
+      'kBResource',
+      () => deletionStarted.resolve(undefined),
+      finishDeletion.promise
+    )
     const claimStarted = createDeferred<void>()
     const ingestCtx = withIngestionClaimSignal(userOneCtx, () =>
       claimStarted.resolve(undefined)
@@ -999,7 +1111,7 @@ describe('Integration tests for knowledge base CRUD', () => {
       .spyOn(ingestCtx.tasks.ingestKBResource, 'runNoWait')
       .mockResolvedValue({} as never)
 
-    const deletion = deleteKbResource({ id: resource.id }, userOneCtx)
+    const deletion = deleteKbResource({ id: resource.id }, deleteCtx)
     await deletionStarted.promise
     const ingestion = expect(
       ingestKbResource({ id: resource.id }, ingestCtx)
@@ -1007,15 +1119,15 @@ describe('Integration tests for knowledge base CRUD', () => {
     await claimStarted.promise
 
     expect(runNoWait).not.toHaveBeenCalled()
-    finishDeletion.resolve({ succeeded: true })
+    finishDeletion.resolve(undefined)
     await expect(deletion).resolves.toMatchObject({ id: resource.id })
     await ingestion
 
-    expect(deleteBlobIfExists).toHaveBeenCalledOnce()
+    expect(deleteBlobIfExists).not.toHaveBeenCalled()
     expect(runNoWait).not.toHaveBeenCalled()
     await expect(
       prisma.kBResource.findUnique({ where: { id: resource.id } })
-    ).resolves.toBeNull()
+    ).resolves.toMatchObject({ deletedAt: expect.any(Date) })
   })
 
   it('serializes knowledge base deletion against a concurrent ingestion claim', async () => {
@@ -1034,11 +1146,13 @@ describe('Integration tests for knowledge base CRUD', () => {
       },
     })
     const deletionStarted = createDeferred<void>()
-    const finishDeletion = createDeferred<{ succeeded: true }>()
-    deleteBlobIfExists.mockImplementationOnce(() => {
-      deletionStarted.resolve(undefined)
-      return finishDeletion.promise
-    })
+    const finishDeletion = createDeferred<void>()
+    const deleteCtx = withTombstonePause(
+      userOneCtx,
+      'kB',
+      () => deletionStarted.resolve(undefined),
+      finishDeletion.promise
+    )
     const claimStarted = createDeferred<void>()
     const ingestCtx = withIngestionClaimSignal(userOneCtx, () =>
       claimStarted.resolve(undefined)
@@ -1047,7 +1161,7 @@ describe('Integration tests for knowledge base CRUD', () => {
       .spyOn(ingestCtx.tasks.ingestKBResource, 'runNoWait')
       .mockResolvedValue({} as never)
 
-    const deletion = deleteKb({ id: created.id }, userOneCtx)
+    const deletion = deleteKb({ id: created.id }, deleteCtx)
     await deletionStarted.promise
     const ingestion = expect(
       ingestKbResource({ id: resource.id }, ingestCtx)
@@ -1055,17 +1169,17 @@ describe('Integration tests for knowledge base CRUD', () => {
     await claimStarted.promise
 
     expect(runNoWait).not.toHaveBeenCalled()
-    finishDeletion.resolve({ succeeded: true })
+    finishDeletion.resolve(undefined)
     await expect(deletion).resolves.toMatchObject({ id: created.id })
     await ingestion
 
-    expect(deleteBlobIfExists).toHaveBeenCalledOnce()
+    expect(deleteBlobIfExists).not.toHaveBeenCalled()
     expect(runNoWait).not.toHaveBeenCalled()
     await expect(
       prisma.kB.findUnique({ where: { id: created.id } })
-    ).resolves.toBeNull()
+    ).resolves.toMatchObject({ deletedAt: expect.any(Date) })
     await expect(
       prisma.kBResource.findUnique({ where: { id: resource.id } })
-    ).resolves.toBeNull()
+    ).resolves.toMatchObject({ deletedAt: expect.any(Date) })
   })
 })

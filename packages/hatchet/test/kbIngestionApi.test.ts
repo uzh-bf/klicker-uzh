@@ -105,6 +105,45 @@ describe('canonical ingestion API client', () => {
     })
   })
 
+  it('sends the canonical delete request with a stable idempotency key', async () => {
+    const fetchRequest = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 202,
+      json: vi.fn().mockResolvedValue({
+        operation_id: 'op_01J2X8K3M9QZ4R7T6V5W1Y0BND',
+      }),
+    })
+    const client = createKBIngestionApiClient({ env, fetchRequest })
+
+    await expect(
+      client.deleteResource({
+        resourceId: RESOURCE_ID,
+        kbId: KB_ID,
+        resourceVersion: 4,
+        deletionAttemptId: ATTEMPT_ID,
+      })
+    ).resolves.toBe('op_01J2X8K3M9QZ4R7T6V5W1Y0BND')
+
+    const [url, request] = fetchRequest.mock.calls[0]!
+    expect(url.toString()).toBe(
+      `https://ingestion.example/v1/resources/${RESOURCE_ID}`
+    )
+    expect(request).toMatchObject({
+      method: 'DELETE',
+      headers: {
+        Authorization: 'Bearer api-key',
+        'Content-Type': 'application/json',
+        'Idempotency-Key': ATTEMPT_ID,
+      },
+    })
+    expect(JSON.parse(request.body)).toEqual({
+      project_id: 'klicker-course-materials',
+      producer: 'klicker',
+      resource_version: 4,
+      scope: { kb_id: KB_ID },
+    })
+  })
+
   it('parses the canonical operation response for reconciliation', async () => {
     const fetchRequest = vi.fn().mockResolvedValue({
       ok: true,

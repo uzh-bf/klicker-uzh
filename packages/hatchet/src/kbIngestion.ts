@@ -1,9 +1,13 @@
 import {
+  KBIngestionOperation,
   KBIngestionStatus,
   KBResourceStatus,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
-import type { IngestKBResourceInput } from '@klicker-uzh/types'
+import type {
+  DeleteKBResourceInput,
+  IngestKBResourceInput,
+} from '@klicker-uzh/types'
 import {
   buildKBIngestionSource,
   createKBIngestionApiClient,
@@ -42,6 +46,14 @@ export type DispatchKBIngestionDependencies = {
 }
 
 export type MonitorKBIngestionsDependencies = {
+  prisma: KBIngestionPrisma
+  client?: KBIngestionApiClient
+  env?: NodeJS.ProcessEnv
+  now?: () => Date
+  logger?: KBIngestionLogger
+}
+
+export type DispatchKBDeletionDependencies = {
   prisma: KBIngestionPrisma
   client?: KBIngestionApiClient
   env?: NodeJS.ProcessEnv
@@ -120,6 +132,7 @@ async function persistPreparedSource({
       where: {
         id: input.ingestionAttemptId,
         resourceId: input.resourceId,
+        operation: KBIngestionOperation.UPSERT,
         resourceVersion: input.resourceVersion,
         status: {
           in: [KBIngestionStatus.QUEUED, KBIngestionStatus.PROCESSING],
@@ -345,6 +358,7 @@ export async function failKBIngestionDispatch({
       where: {
         id: input.ingestionAttemptId,
         resourceId: input.resourceId,
+        operation: KBIngestionOperation.UPSERT,
         resourceVersion: input.resourceVersion,
         status: {
           in: [KBIngestionStatus.QUEUED, KBIngestionStatus.PROCESSING],
@@ -359,6 +373,173 @@ export async function failKBIngestionDispatch({
     })
     if (runUpdate.count !== 1) {
       throw new Error('KB ingestion dispatch failure could not be correlated')
+    }
+  })
+}
+
+export async function dispatchKBDeletion(
+  input: DeleteKBResourceInput,
+  dependencies: DispatchKBDeletionDependencies
+): Promise<string | undefined> {
+  const env = dependencies.env ?? process.env
+  const identifiers = {
+    resourceId: input.resourceId,
+    kbId: input.kbId,
+    deletionAttemptId: input.deletionAttemptId,
+  }
+
+  try {
+    const resource = await dependencies.prisma.kBResource.findUnique({
+      where: { id: input.resourceId },
+      select: {
+        deletedAt: true,
+        ingestionOperation: true,
+        ingestionAttemptId: true,
+        resourceVersion: true,
+        externalOperationId: true,
+      },
+    })
+    if (
+      !resource?.deletedAt ||
+      resource.ingestionOperation !== KBIngestionOperation.DELETE ||
+      resource.ingestionAttemptId !== input.deletionAttemptId ||
+      resource.resourceVersion !== input.resourceVersion
+    ) {
+      return undefined
+    }
+    if (resource.externalOperationId) {
+      return resource.externalOperationId
+    }
+
+    const client = dependencies.client ?? createKBIngestionApiClient({ env })
+    const startedAt = (dependencies.now ?? (() => new Date()))()
+    const operationId = await client.deleteResource(input)
+    const persisted = await dependencies.prisma.$transaction(async (tx) => {
+      const resourceUpdate = await tx.kBResource.updateMany({
+        where: {
+          id: input.resourceId,
+          deletedAt: { not: null },
+          ingestionOperation: KBIngestionOperation.DELETE,
+          ingestionAttemptId: input.deletionAttemptId,
+          resourceVersion: input.resourceVersion,
+          externalOperationId: null,
+        },
+        data: {
+          externalOperationId: operationId,
+          externalOperationStartedAt: startedAt,
+          statusMessage: null,
+          errorCode: null,
+        },
+      })
+      if (resourceUpdate.count !== 1) {
+        return false
+      }
+      const runUpdate = await tx.kBIngestionRun.updateMany({
+        where: {
+          id: input.deletionAttemptId,
+          resourceId: input.resourceId,
+          operation: KBIngestionOperation.DELETE,
+          resourceVersion: input.resourceVersion,
+          status: {
+            in: [KBIngestionStatus.QUEUED, KBIngestionStatus.PROCESSING],
+          },
+        },
+        data: {
+          externalOperationId: operationId,
+          startedAt,
+          statusMessage: null,
+          errorCode: null,
+        },
+      })
+      if (runUpdate.count !== 1) {
+        throw new Error('KB deletion operation could not be correlated')
+      }
+      return true
+    })
+    if (!persisted) {
+      const current = await dependencies.prisma.kBResource.findUnique({
+        where: { id: input.resourceId },
+        select: {
+          ingestionAttemptId: true,
+          resourceVersion: true,
+          externalOperationId: true,
+        },
+      })
+      if (
+        current?.ingestionAttemptId === input.deletionAttemptId &&
+        current?.resourceVersion === input.resourceVersion &&
+        current?.externalOperationId === operationId
+      ) {
+        return operationId
+      }
+      await logErrorBestEffort(
+        dependencies.logger,
+        'Accepted KB deletion operation could not be correlated',
+        identifiers
+      )
+      return undefined
+    }
+
+    await logInfoBestEffort(
+      dependencies.logger,
+      'KB deletion operation accepted',
+      identifiers
+    )
+    return operationId
+  } catch {
+    await logErrorBestEffort(
+      dependencies.logger,
+      'KB deletion dispatch failed',
+      identifiers
+    )
+    throw new Error('KB deletion dispatch failed')
+  }
+}
+
+export async function retainFailedKBDeletionDispatch({
+  input,
+  prisma,
+}: {
+  input: DeleteKBResourceInput
+  prisma: KBIngestionPrisma
+}): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    const resourceUpdate = await tx.kBResource.updateMany({
+      where: {
+        id: input.resourceId,
+        deletedAt: { not: null },
+        ingestionOperation: KBIngestionOperation.DELETE,
+        ingestionAttemptId: input.deletionAttemptId,
+        resourceVersion: input.resourceVersion,
+        externalOperationId: null,
+      },
+      data: {
+        status: KBResourceStatus.QUEUED,
+        statusMessage: 'The deletion operation is awaiting retry.',
+        errorCode: 'DELETION_DISPATCH_FAILED',
+      },
+    })
+    if (resourceUpdate.count !== 1) {
+      return
+    }
+    const runUpdate = await tx.kBIngestionRun.updateMany({
+      where: {
+        id: input.deletionAttemptId,
+        resourceId: input.resourceId,
+        operation: KBIngestionOperation.DELETE,
+        resourceVersion: input.resourceVersion,
+        status: {
+          in: [KBIngestionStatus.QUEUED, KBIngestionStatus.PROCESSING],
+        },
+      },
+      data: {
+        status: KBIngestionStatus.QUEUED,
+        statusMessage: 'The deletion operation is awaiting retry.',
+        errorCode: 'DELETION_DISPATCH_FAILED',
+      },
+    })
+    if (runUpdate.count !== 1) {
+      throw new Error('KB deletion retry state could not be correlated')
     }
   })
 }
@@ -419,6 +600,7 @@ async function reconcileResource({
     resourceVersion: number
     contentSha256: string | null
     externalOperationId: string | null
+    ingestionOperation: KBIngestionOperation
   }
   client: KBIngestionApiClient
   prisma: KBIngestionPrisma
@@ -426,7 +608,13 @@ async function reconcileResource({
   logger?: KBIngestionLogger
 }) {
   const { ingestionAttemptId, contentSha256, externalOperationId } = resource
-  if (!ingestionAttemptId || !contentSha256 || !externalOperationId) {
+  const ingestionOperation =
+    resource.ingestionOperation ?? KBIngestionOperation.UPSERT
+  if (
+    !ingestionAttemptId ||
+    !externalOperationId ||
+    (ingestionOperation === KBIngestionOperation.UPSERT && !contentSha256)
+  ) {
     return
   }
   const identifiers = {
@@ -443,7 +631,13 @@ async function reconcileResource({
       operation.producer !== 'klicker' ||
       operation.externalResourceId !== resource.id ||
       operation.resourceVersion !== resource.resourceVersion ||
-      operation.expectedSha256 !== contentSha256
+      operation.expectedSha256 !==
+        (ingestionOperation === KBIngestionOperation.DELETE
+          ? null
+          : contentSha256) ||
+      (ingestionOperation === KBIngestionOperation.DELETE
+        ? operation.operation !== 'delete'
+        : operation.operation === 'delete')
     ) {
       await logErrorBestEffort(
         logger,
@@ -454,6 +648,7 @@ async function reconcileResource({
     }
 
     if (
+      ingestionOperation === KBIngestionOperation.UPSERT &&
       operation.status === 'succeeded' &&
       operation.observedSha256 !== contentSha256
     ) {
@@ -467,8 +662,12 @@ async function reconcileResource({
 
     const transition = mapOperationStatus(operation.status)
     const servingMatchesCurrent =
-      operation.serving.activeResourceVersion === resource.resourceVersion &&
-      operation.serving.activeSha256 === contentSha256
+      ingestionOperation === KBIngestionOperation.DELETE
+        ? operation.serving.activeResourceVersion === null &&
+          operation.serving.activeSha256 === null
+        : operation.serving.activeResourceVersion ===
+            resource.resourceVersion &&
+          operation.serving.activeSha256 === contentSha256
     if (operation.status === 'succeeded' && !servingMatchesCurrent) {
       await logInfoBestEffort(
         logger,
@@ -501,8 +700,12 @@ async function reconcileResource({
           id: resource.id,
           ingestionAttemptId,
           resourceVersion: resource.resourceVersion,
-          contentSha256,
+          contentSha256:
+            ingestionOperation === KBIngestionOperation.DELETE
+              ? null
+              : contentSha256,
           externalOperationId,
+          ingestionOperation,
           status: {
             in: sourceStatuses,
           },
@@ -525,6 +728,7 @@ async function reconcileResource({
         where: {
           id: ingestionAttemptId,
           resourceId: resource.id,
+          operation: ingestionOperation,
           resourceVersion: resource.resourceVersion,
           status: { in: sourceRunStatuses },
         },
@@ -557,8 +761,18 @@ export async function monitorActiveKBIngestions(
       in: [KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING],
     },
     ingestionAttemptId: { not: null },
-    contentSha256: { not: null },
     externalOperationId: { not: null },
+    OR: [
+      {
+        ingestionOperation: KBIngestionOperation.UPSERT,
+        contentSha256: { not: null },
+        deletedAt: null,
+      },
+      {
+        ingestionOperation: KBIngestionOperation.DELETE,
+        deletedAt: { not: null },
+      },
+    ],
   }
   const activeCount = await dependencies.prisma.kBResource.count({
     where: activeWhere,
@@ -582,6 +796,7 @@ export async function monitorActiveKBIngestions(
       resourceVersion: true,
       contentSha256: true,
       externalOperationId: true,
+      ingestionOperation: true,
     },
   }
   const resources = await dependencies.prisma.kBResource.findMany({

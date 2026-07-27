@@ -154,6 +154,13 @@ export async function testInitialization(
         return { success: true }
       },
     }),
+    deleteKBResource: hatchet.task({
+      name: 'delete-kb-resource',
+      fn: async (input) => {
+        console.info('KB deletion dispatch stub triggered', input)
+        return { success: true }
+      },
+    }),
     createAuditLogEntry: hatchet.task({
       name: 'create-audit-log-entry',
       fn: async ({

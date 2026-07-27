@@ -1,4 +1,5 @@
 import {
+  KBIngestionOperation,
   KBIngestionStatus,
   KBResourceStatus,
   type PrismaClient,
@@ -311,38 +312,47 @@ export async function handleKBIngestionWebhook({
       select: {
         ingestionAttemptId: true,
         contentSha256: true,
+        ingestionOperation: true,
       },
     })
     if (!resource?.ingestionAttemptId) {
       return
     }
 
+    const run = await tx.kBIngestionRun.findUnique({
+      where: { id: resource.ingestionAttemptId },
+      select: { status: true, operation: true },
+    })
+    if (!run || run.operation !== resource.ingestionOperation) {
+      return
+    }
     const servingMatchesCurrent =
-      payload.serving.active_resource_version === payload.resource_version &&
-      payload.serving.active_sha256 !== null &&
-      payload.serving.active_sha256 === resource.contentSha256
+      resource.ingestionOperation === KBIngestionOperation.DELETE
+        ? payload.serving.active_resource_version === null &&
+          payload.serving.active_sha256 === null
+        : payload.serving.active_resource_version ===
+            payload.resource_version &&
+          payload.serving.active_sha256 !== null &&
+          payload.serving.active_sha256 === resource.contentSha256
     const servingState = {
       activeResourceVersion: payload.serving.active_resource_version,
       activeContentSha256: payload.serving.active_sha256,
     }
 
     if (!transition) {
-      const run = await tx.kBIngestionRun.findUnique({
-        where: { id: resource.ingestionAttemptId },
-        select: { status: true },
-      })
       await tx.kBResource.updateMany({
         where: {
           id: payload.external_resource_id,
           resourceVersion: payload.resource_version,
           externalOperationId: payload.operation_id,
           ingestionAttemptId: resource.ingestionAttemptId,
+          ingestionOperation: resource.ingestionOperation,
           status: {
             in: [KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING],
           },
         },
         data:
-          servingMatchesCurrent && run?.status === KBIngestionStatus.SUCCEEDED
+          servingMatchesCurrent && run.status === KBIngestionStatus.SUCCEEDED
             ? {
                 ...servingState,
                 status: KBResourceStatus.READY,
@@ -366,6 +376,7 @@ export async function handleKBIngestionWebhook({
         resourceVersion: payload.resource_version,
         externalOperationId: payload.operation_id,
         ingestionAttemptId: resource.ingestionAttemptId,
+        ingestionOperation: resource.ingestionOperation,
         status: {
           in: [KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING],
         },
@@ -397,6 +408,7 @@ export async function handleKBIngestionWebhook({
         id: resource.ingestionAttemptId,
         resourceId: payload.external_resource_id,
         resourceVersion: payload.resource_version,
+        operation: resource.ingestionOperation,
         status: { in: sourceRunStatuses },
       },
       data: {

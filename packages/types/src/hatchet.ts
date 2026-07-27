@@ -42,6 +42,13 @@ export type IngestKBResourceInput = IngestKBResourceInputBase &
       }
   )
 
+export type DeleteKBResourceInput = JsonObject & {
+  resourceId: string
+  kbId: string
+  deletionAttemptId: string
+  resourceVersion: number
+}
+
 // Shared contract for Hatchet task handler injections.
 export interface HatchetHandlers {
   handleSendTeamsNotification: (
@@ -120,6 +127,10 @@ export interface HatchetHandlers {
 export interface PreparedHatchetTasks {
   ingestKBResource: TaskWorkflowDeclaration<
     IngestKBResourceInput,
+    { success: boolean }
+  >
+  deleteKBResource: TaskWorkflowDeclaration<
+    DeleteKBResourceInput,
     { success: boolean }
   >
   createAuditLogEntry: TaskWorkflowDeclaration<

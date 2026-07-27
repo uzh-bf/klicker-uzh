@@ -5,7 +5,10 @@ import {
   StorageSharedKeyCredential,
 } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma/client'
-import type { IngestKBResourceInput } from '@klicker-uzh/types'
+import type {
+  DeleteKBResourceInput,
+  IngestKBResourceInput,
+} from '@klicker-uzh/types'
 import { normalizePublicHttpUrl } from '@klicker-uzh/util/public-url'
 import { randomUUID } from 'crypto'
 import { GraphQLError } from 'graphql'
@@ -13,10 +16,7 @@ import { validate as validateUuid } from 'uuid'
 import type { ContextWithUser } from '../lib/context.js'
 
 const MAX_KB_FILE_SIZE_BYTES = 25 * 1024 * 1024
-// Bound external storage I/O while database row locks are held.
-const KB_BLOB_DELETE_TIMEOUT_MS = 30_000
-// Leave database cleanup time after the bounded storage operation completes or aborts.
-const KB_DELETION_TRANSACTION_TIMEOUT_MS = 60_000
+const KB_DELETE_QUEUE_CONCURRENCY = 8
 const KB_MCP_SERVER_NAME = 'KB'
 const KB_MCP_CHAT_MODES = ['tutor', 'explainer'] as const
 const KB_FILE_TYPES: Record<string, readonly string[]> = {
@@ -93,7 +93,9 @@ function validateKbResourceTitle(title: string) {
 }
 
 async function getOwnedKbOrThrow(ctx: ContextWithUser, id: string) {
-  const kb = await ctx.prisma.kB.findUnique({ where: { id } })
+  const kb = await ctx.prisma.kB.findFirst({
+    where: { id, deletedAt: null },
+  })
   if (!kb || kb.ownerId !== ctx.user.sub) {
     throw new GraphQLError('KB not found')
   }
@@ -102,7 +104,11 @@ async function getOwnedKbOrThrow(ctx: ContextWithUser, id: string) {
 
 async function getOwnedKbResourceOrThrow(ctx: ContextWithUser, id: string) {
   const resource = await ctx.prisma.kBResource.findFirst({
-    where: { id, kb: { ownerId: ctx.user.sub } },
+    where: {
+      id,
+      deletedAt: null,
+      kb: { ownerId: ctx.user.sub, deletedAt: null },
+    },
   })
   if (!resource) {
     throw new GraphQLError('KB resource not found')
@@ -120,6 +126,7 @@ async function lockOwnedKbOrThrow(
     FROM "public"."KB"
     WHERE "id" = CAST(${id} AS UUID)
       AND "ownerId" = CAST(${ownerId} AS UUID)
+      AND "deletedAt" IS NULL
     FOR UPDATE
   `
   if (lockedKb.length === 0) {
@@ -138,11 +145,34 @@ async function lockOwnedKbResourceOrThrow(
     INNER JOIN "public"."KB" AS kb ON kb."id" = resource."kbId"
     WHERE resource."id" = CAST(${id} AS UUID)
       AND kb."ownerId" = CAST(${ownerId} AS UUID)
+      AND resource."deletedAt" IS NULL
+      AND kb."deletedAt" IS NULL
     FOR UPDATE OF resource
   `
   if (lockedResource.length === 0) {
     throw new GraphQLError('KB resource not found')
   }
+}
+
+async function lockOwnedKbForResourceOrThrow(
+  prisma: DB.Prisma.TransactionClient,
+  resourceId: string,
+  ownerId: string
+) {
+  const lockedKb = await prisma.$queryRaw<Array<{ kbId: string }>>`
+    SELECT kb."id" AS "kbId"
+    FROM "public"."KB" AS kb
+    INNER JOIN "public"."KBResource" AS resource ON resource."kbId" = kb."id"
+    WHERE resource."id" = CAST(${resourceId} AS UUID)
+      AND kb."ownerId" = CAST(${ownerId} AS UUID)
+      AND kb."deletedAt" IS NULL
+      AND resource."deletedAt" IS NULL
+    FOR UPDATE OF kb
+  `
+  if (lockedKb.length === 0) {
+    throw new GraphQLError('KB resource not found')
+  }
+  return lockedKb[0]!.kbId
 }
 
 async function lockOwnedChatbotOrThrow(
@@ -179,9 +209,12 @@ async function getKbMcpServerOrThrow(prisma: DB.Prisma.TransactionClient) {
 
 export async function getUserKbs(ctx: ContextWithUser) {
   return ctx.prisma.kB.findMany({
-    where: { ownerId: ctx.user.sub },
+    where: { ownerId: ctx.user.sub, deletedAt: null },
     include: {
-      resources: { orderBy: { updatedAt: 'desc' } },
+      resources: {
+        where: { deletedAt: null },
+        orderBy: { updatedAt: 'desc' },
+      },
     },
     orderBy: { updatedAt: 'desc' },
   })
@@ -194,6 +227,7 @@ export async function getKb({ id }: { id: string }, ctx: ContextWithUser) {
     where: { id },
     include: {
       resources: {
+        where: { deletedAt: null },
         orderBy: { updatedAt: 'desc' },
         include: {
           ingestionRuns: { orderBy: { createdAt: 'desc' }, take: 1 },
@@ -368,18 +402,83 @@ export async function createKb(
   })
 }
 
+async function recordDeletionQueueFailure(
+  input: DeleteKBResourceInput,
+  ctx: ContextWithUser
+) {
+  await ctx.prisma.$transaction(async (prisma) => {
+    const resourceUpdate = await prisma.kBResource.updateMany({
+      where: {
+        id: input.resourceId,
+        deletedAt: { not: null },
+        ingestionOperation: DB.KBIngestionOperation.DELETE,
+        ingestionAttemptId: input.deletionAttemptId,
+        resourceVersion: input.resourceVersion,
+        externalOperationId: null,
+      },
+      data: {
+        status: DB.KBResourceStatus.QUEUED,
+        statusMessage: 'The deletion operation is awaiting retry.',
+        errorCode: 'DELETION_QUEUE_FAILED',
+      },
+    })
+    if (resourceUpdate.count !== 1) return
+
+    await prisma.kBIngestionRun.updateMany({
+      where: {
+        id: input.deletionAttemptId,
+        resourceId: input.resourceId,
+        operation: DB.KBIngestionOperation.DELETE,
+        resourceVersion: input.resourceVersion,
+        status: {
+          in: [DB.KBIngestionStatus.QUEUED, DB.KBIngestionStatus.PROCESSING],
+        },
+      },
+      data: {
+        status: DB.KBIngestionStatus.QUEUED,
+        statusMessage: 'The deletion operation is awaiting retry.',
+        errorCode: 'DELETION_QUEUE_FAILED',
+      },
+    })
+  })
+}
+
+async function queueKbDeletions(
+  inputs: DeleteKBResourceInput[],
+  ctx: ContextWithUser
+) {
+  for (
+    let start = 0;
+    start < inputs.length;
+    start += KB_DELETE_QUEUE_CONCURRENCY
+  ) {
+    const batch = inputs.slice(start, start + KB_DELETE_QUEUE_CONCURRENCY)
+    const results = await Promise.allSettled(
+      batch.map((input) => ctx.tasks.deleteKBResource.runNoWait(input))
+    )
+    await Promise.all(
+      results.map((result, index) =>
+        result.status === 'rejected'
+          ? recordDeletionQueueFailure(batch[index]!, ctx)
+          : Promise.resolve()
+      )
+    )
+  }
+}
+
 export async function deleteKb({ id }: { id: string }, ctx: ContextWithUser) {
-  return ctx.prisma.$transaction(
+  const { kb, deletionInputs } = await ctx.prisma.$transaction(
     async (prisma) => {
       await lockOwnedKbOrThrow(prisma, id, ctx.user.sub)
       await prisma.$queryRaw<Array<{ id: string }>>`
       SELECT "id"
       FROM "public"."KBResource"
       WHERE "kbId" = CAST(${id} AS UUID)
+        AND "deletedAt" IS NULL
       FOR UPDATE
     `
       const resources = await prisma.kBResource.findMany({
-        where: { kbId: id },
+        where: { kbId: id, deletedAt: null },
       })
 
       if (
@@ -391,31 +490,86 @@ export async function deleteKb({ id }: { id: string }, ctx: ContextWithUser) {
       ) {
         throw new GraphQLError('KB cannot be deleted')
       }
-
-      const blobResources = resources.filter(
-        ({ type }) => type === DB.KBResourceType.BLOB
-      )
-      if (blobResources.length > 0) {
-        const { containerClient } = getKbBlobContainer(ctx.user.sub)
-        await Promise.all(
-          blobResources.map(({ blobName }) => {
-            if (!blobName) {
-              throw new GraphQLError('KB blob metadata is invalid')
-            }
-            return containerClient.getBlobClient(blobName).deleteIfExists({
-              abortSignal: AbortSignal.timeout(KB_BLOB_DELETE_TIMEOUT_MS),
-            })
-          })
+      if (
+        resources.some(
+          ({ resourceVersion }) => resourceVersion >= 2_147_483_647
         )
+      ) {
+        throw new GraphQLError('KB resource version limit reached')
       }
 
-      return prisma.kB.delete({
+      const deletedAt = new Date()
+      const deletionInputs = resources.map((resource) => ({
+        resourceId: resource.id,
+        kbId: id,
+        deletionAttemptId: randomUUID(),
+        resourceVersion: resource.resourceVersion + 1,
+      }))
+
+      await prisma.kB.update({
+        where: { id },
+        data: { deletedAt, deletedById: ctx.user.sub },
+      })
+      const bindings = await prisma.kBChatbot.findMany({
+        where: { kbId: id, isEnabled: true },
+        select: { chatbotId: true },
+      })
+      if (bindings.length > 0) {
+        await prisma.kBChatbot.updateMany({
+          where: { kbId: id, isEnabled: true },
+          data: { isEnabled: false },
+        })
+        const mcpServer = await prisma.chatbotMCPServer.findUnique({
+          where: { name: KB_MCP_SERVER_NAME },
+          select: { id: true },
+        })
+        if (mcpServer) {
+          await prisma.chatbotMCPConfig.updateMany({
+            where: {
+              mcpServerId: mcpServer.id,
+              chatbotId: { in: bindings.map(({ chatbotId }) => chatbotId) },
+            },
+            data: { isEnabled: false },
+          })
+        }
+      }
+
+      for (const input of deletionInputs) {
+        await prisma.kBResource.update({
+          where: { id: input.resourceId },
+          data: {
+            deletedAt,
+            deletedById: ctx.user.sub,
+            status: DB.KBResourceStatus.QUEUED,
+            statusMessage: null,
+            ingestionOperation: DB.KBIngestionOperation.DELETE,
+            ingestionAttemptId: input.deletionAttemptId,
+            resourceVersion: input.resourceVersion,
+            contentSha256: null,
+            externalOperationId: null,
+            externalOperationStartedAt: null,
+            errorCode: null,
+          },
+        })
+        await prisma.kBIngestionRun.create({
+          data: {
+            id: input.deletionAttemptId,
+            resourceId: input.resourceId,
+            operation: DB.KBIngestionOperation.DELETE,
+            resourceVersion: input.resourceVersion,
+          },
+        })
+      }
+
+      const kb = await prisma.kB.findUniqueOrThrow({
         where: { id },
         include: { resources: true },
       })
-    },
-    { timeout: KB_DELETION_TRANSACTION_TIMEOUT_MS }
+      return { kb, deletionInputs }
+    }
   )
+  await queueKbDeletions(deletionInputs, ctx)
+  return kb
 }
 
 export async function requestKbFileUpload(
@@ -494,8 +648,15 @@ export async function confirmKbFileUpload(
   }
   const normalizedTitle = validateKbResourceTitle(title)
 
-  const existingResource = await ctx.prisma.kBResource.findFirst({
-    where: { id: blobId, kb: { ownerId: ctx.user.sub } },
+  const existingResource = await ctx.prisma.$transaction(async (prisma) => {
+    await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
+    return prisma.kBResource.findFirst({
+      where: {
+        id: blobId,
+        deletedAt: null,
+        kb: { ownerId: ctx.user.sub, deletedAt: null },
+      },
+    })
   })
   if (existingResource) {
     if (
@@ -523,44 +684,47 @@ export async function confirmKbFileUpload(
     throw new GraphQLError('KB blob metadata is invalid')
   }
 
-  let resource: DB.KBResource
-  try {
-    resource = await ctx.prisma.kBResource.upsert({
-      where: { id: blobId },
-      create: {
-        id: blobId,
-        kbId,
-        type: DB.KBResourceType.BLOB,
-        title: normalizedTitle,
-        originalFilename,
-        mimeType: validated.contentType,
-        sizeBytes,
-        blobName,
-        blobHref: blobClient.url,
-        status: DB.KBResourceStatus.ADDED,
-      },
-      update: {},
-    })
-  } catch (error) {
-    if (
-      !(error instanceof DB.Prisma.PrismaClientKnownRequestError) ||
-      error.code !== 'P2002'
-    ) {
-      throw error
+  return ctx.prisma.$transaction(async (prisma) => {
+    await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
+    let resource: DB.KBResource
+    try {
+      resource = await prisma.kBResource.upsert({
+        where: { id: blobId },
+        create: {
+          id: blobId,
+          kbId,
+          type: DB.KBResourceType.BLOB,
+          title: normalizedTitle,
+          originalFilename,
+          mimeType: validated.contentType,
+          sizeBytes,
+          blobName,
+          blobHref: blobClient.url,
+          status: DB.KBResourceStatus.ADDED,
+        },
+        update: {},
+      })
+    } catch (error) {
+      if (
+        !(error instanceof DB.Prisma.PrismaClientKnownRequestError) ||
+        error.code !== 'P2002'
+      ) {
+        throw error
+      }
+
+      const racedResource = await prisma.kBResource.findFirst({
+        where: { id: blobId, deletedAt: null },
+      })
+      if (!racedResource) throw error
+      resource = racedResource
     }
 
-    const racedResource = await ctx.prisma.kBResource.findUnique({
-      where: { id: blobId },
-    })
-    if (!racedResource) throw error
-    resource = racedResource
-  }
+    if (resource.kbId !== kbId || resource.blobName !== blobName) {
+      throw new GraphQLError('KB blob name is invalid')
+    }
 
-  if (resource.kbId !== kbId || resource.blobName !== blobName) {
-    throw new GraphQLError('KB blob name is invalid')
-  }
-
-  return resource
+    return resource
+  })
 }
 
 export async function createKbUrlResource(
@@ -584,14 +748,17 @@ export async function createKbUrlResource(
     throw new GraphQLError('KB resource URL is invalid')
   }
 
-  return ctx.prisma.kBResource.create({
-    data: {
-      kbId,
-      type: DB.KBResourceType.URL,
-      title: validateKbResourceTitle(title),
-      sourceUrl,
-      status: DB.KBResourceStatus.ADDED,
-    },
+  return ctx.prisma.$transaction(async (prisma) => {
+    await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
+    return prisma.kBResource.create({
+      data: {
+        kbId,
+        type: DB.KBResourceType.URL,
+        title: validateKbResourceTitle(title),
+        sourceUrl,
+        status: DB.KBResourceStatus.ADDED,
+      },
+    })
   })
 }
 
@@ -599,8 +766,9 @@ export async function deleteKbResource(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  return ctx.prisma.$transaction(
+  const { resource, deletionInput } = await ctx.prisma.$transaction(
     async (prisma) => {
+      const kbId = await lockOwnedKbForResourceOrThrow(prisma, id, ctx.user.sub)
       await lockOwnedKbResourceOrThrow(prisma, id, ctx.user.sub)
       const resource = await prisma.kBResource.findUniqueOrThrow({
         where: { id },
@@ -612,21 +780,45 @@ export async function deleteKbResource(
       ) {
         throw new GraphQLError('KB resource cannot be deleted')
       }
-
-      if (resource.type === DB.KBResourceType.BLOB) {
-        if (!resource.blobName) {
-          throw new GraphQLError('KB blob metadata is invalid')
-        }
-        const { containerClient } = getKbBlobContainer(ctx.user.sub)
-        await containerClient.getBlobClient(resource.blobName).deleteIfExists({
-          abortSignal: AbortSignal.timeout(KB_BLOB_DELETE_TIMEOUT_MS),
-        })
+      if (resource.resourceVersion >= 2_147_483_647) {
+        throw new GraphQLError('KB resource version limit reached')
       }
 
-      return prisma.kBResource.delete({ where: { id } })
-    },
-    { timeout: KB_DELETION_TRANSACTION_TIMEOUT_MS }
+      const deletionInput = {
+        resourceId: resource.id,
+        kbId,
+        deletionAttemptId: randomUUID(),
+        resourceVersion: resource.resourceVersion + 1,
+      } satisfies DeleteKBResourceInput
+      const deletedResource = await prisma.kBResource.update({
+        where: { id },
+        data: {
+          deletedAt: new Date(),
+          deletedById: ctx.user.sub,
+          status: DB.KBResourceStatus.QUEUED,
+          statusMessage: null,
+          ingestionOperation: DB.KBIngestionOperation.DELETE,
+          ingestionAttemptId: deletionInput.deletionAttemptId,
+          resourceVersion: deletionInput.resourceVersion,
+          contentSha256: null,
+          externalOperationId: null,
+          externalOperationStartedAt: null,
+          errorCode: null,
+        },
+      })
+      await prisma.kBIngestionRun.create({
+        data: {
+          id: deletionInput.deletionAttemptId,
+          resourceId: resource.id,
+          operation: DB.KBIngestionOperation.DELETE,
+          resourceVersion: deletionInput.resourceVersion,
+        },
+      })
+      return { resource: deletedResource, deletionInput }
+    }
   )
+  await queueKbDeletions([deletionInput], ctx)
+  return resource
 }
 
 export async function ingestKbResource(
@@ -688,11 +880,13 @@ export async function ingestKbResource(
         id: resource.id,
         status: resource.status,
         ingestionAttemptId: resource.ingestionAttemptId,
-        kb: { ownerId: ctx.user.sub },
+        deletedAt: null,
+        kb: { ownerId: ctx.user.sub, deletedAt: null },
       },
       data: {
         status: DB.KBResourceStatus.QUEUED,
         statusMessage: null,
+        ingestionOperation: DB.KBIngestionOperation.UPSERT,
         ingestionAttemptId,
         resourceVersion,
         contentSha256: null,
@@ -708,6 +902,7 @@ export async function ingestKbResource(
       data: {
         id: ingestionAttemptId,
         resourceId: resource.id,
+        operation: DB.KBIngestionOperation.UPSERT,
         resourceVersion,
       },
     })

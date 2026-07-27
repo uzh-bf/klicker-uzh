@@ -68,8 +68,16 @@ export type AcceptKBResourceInput = {
   source: KBIngestionSource
 }
 
+export type DeleteKBResourceInput = {
+  resourceId: string
+  kbId: string
+  resourceVersion: number
+  deletionAttemptId: string
+}
+
 export type KBIngestionApiClient = {
   acceptResource: (input: AcceptKBResourceInput) => Promise<string>
+  deleteResource: (input: DeleteKBResourceInput) => Promise<string>
   getOperation: (operationId: string) => Promise<KBOperationStatusResponse>
 }
 
@@ -310,6 +318,27 @@ export function createKBIngestionApiClient({
               display_name: input.source.displayName,
             },
             content_sha256: input.source.contentSha256,
+          }),
+        },
+        202
+      )
+      return parseAcceptedOperation(value)
+    },
+
+    async deleteResource(input) {
+      const value = await request(
+        `/v1/resources/${encodeURIComponent(input.resourceId)}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Idempotency-Key': input.deletionAttemptId,
+          },
+          body: JSON.stringify({
+            project_id: projectId,
+            producer: KB_INGESTION_PRODUCER,
+            resource_version: input.resourceVersion,
+            scope: { kb_id: input.kbId },
           }),
         },
         202

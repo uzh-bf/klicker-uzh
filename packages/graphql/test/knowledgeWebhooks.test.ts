@@ -1,5 +1,6 @@
 import { prisma as prismaClient } from '@klicker-uzh/prisma'
 import {
+  KBIngestionOperation,
   KBIngestionStatus,
   KBResourceStatus,
   KBResourceType,
@@ -224,6 +225,52 @@ describe('KB ingestion webhook contract', () => {
       activeContentSha256: CONTENT_SHA256,
     })
     await expect(getRun()).resolves.toMatchObject({
+      status: KBIngestionStatus.SUCCEEDED,
+      finishedAt: new Date(OCCURRED_AT),
+    })
+  })
+
+  it('marks a delete succeeded only when no resource remains served', async () => {
+    await prisma.kBResource.update({
+      where: { id: resourceId },
+      data: {
+        deletedAt: new Date(OCCURRED_AT),
+        ingestionOperation: KBIngestionOperation.DELETE,
+        contentSha256: null,
+        activeResourceVersion: 2,
+        activeContentSha256: 'a'.repeat(64),
+      },
+    })
+    await prisma.kBIngestionRun.update({
+      where: { id: INGESTION_ATTEMPT_ID },
+      data: {
+        operation: KBIngestionOperation.DELETE,
+        contentSha256: null,
+      },
+    })
+    const request = createRequest(
+      event('resource.processing_succeeded', {
+        serving: {
+          active_resource_version: null,
+          active_sha256: null,
+        },
+      })
+    )
+
+    await expect(
+      handleKBIngestionWebhook({
+        prisma,
+        ...request,
+        env: { KB_WEBHOOK_SECRET: SECRET },
+      })
+    ).resolves.toEqual({ statusCode: 200, body: { ok: true } })
+    await expect(getResource()).resolves.toMatchObject({
+      status: KBResourceStatus.READY,
+      activeResourceVersion: null,
+      activeContentSha256: null,
+    })
+    await expect(getRun()).resolves.toMatchObject({
+      operation: KBIngestionOperation.DELETE,
       status: KBIngestionStatus.SUCCEEDED,
       finishedAt: new Date(OCCURRED_AT),
     })

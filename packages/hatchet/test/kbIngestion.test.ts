@@ -1,10 +1,19 @@
-import { KBIngestionStatus, KBResourceStatus } from '@klicker-uzh/prisma/client'
-import type { IngestKBResourceInput } from '@klicker-uzh/types'
+import {
+  KBIngestionOperation,
+  KBIngestionStatus,
+  KBResourceStatus,
+} from '@klicker-uzh/prisma/client'
+import type {
+  DeleteKBResourceInput,
+  IngestKBResourceInput,
+} from '@klicker-uzh/types'
 import { describe, expect, it, vi } from 'vitest'
 import {
+  dispatchKBDeletion,
   dispatchKBIngestion,
   failKBIngestionDispatch,
   monitorActiveKBIngestions,
+  retainFailedKBDeletionDispatch,
   validateKBIngestionWorkerConfig,
 } from '../src/kbIngestion.js'
 import type {
@@ -30,6 +39,13 @@ const input = {
   type: 'URL',
   sourceUrl: 'https://example.com/lecture.txt',
 } satisfies IngestKBResourceInput
+
+const deletionInput = {
+  resourceId: RESOURCE_ID,
+  kbId: KB_ID,
+  deletionAttemptId: ATTEMPT_ID,
+  resourceVersion: 4,
+} satisfies DeleteKBResourceInput
 
 const source = {
   kind: 'url',
@@ -69,6 +85,7 @@ function client(
 ): KBIngestionApiClient {
   return {
     acceptResource: vi.fn().mockResolvedValue(OPERATION_ID),
+    deleteResource: vi.fn().mockResolvedValue(OPERATION_ID),
     getOperation: vi.fn().mockResolvedValue(operation()),
     ...overrides,
   }
@@ -270,6 +287,7 @@ describe('KB ingestion dispatch', () => {
       where: {
         id: ATTEMPT_ID,
         resourceId: RESOURCE_ID,
+        operation: 'UPSERT',
         resourceVersion: 3,
         status: {
           in: [KBIngestionStatus.QUEUED, KBIngestionStatus.PROCESSING],
@@ -282,6 +300,107 @@ describe('KB ingestion dispatch', () => {
         finishedAt: expect.any(Date),
       },
     })
+  })
+})
+
+describe('KB deletion dispatch', () => {
+  it('dispatches a current tombstone and persists its operation correlation', async () => {
+    const prisma = dispatchPrisma({
+      deletedAt: NOW,
+      ingestionOperation: KBIngestionOperation.DELETE,
+      ingestionAttemptId: ATTEMPT_ID,
+      resourceVersion: 4,
+      externalOperationId: null,
+    })
+    const apiClient = client()
+
+    await expect(
+      dispatchKBDeletion(deletionInput, {
+        prisma: prisma as never,
+        client: apiClient,
+        now: () => NOW,
+      })
+    ).resolves.toBe(OPERATION_ID)
+
+    expect(apiClient.deleteResource).toHaveBeenCalledWith(deletionInput)
+    expect(prisma.kBResource.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: RESOURCE_ID,
+        deletedAt: { not: null },
+        ingestionOperation: KBIngestionOperation.DELETE,
+        ingestionAttemptId: ATTEMPT_ID,
+        resourceVersion: 4,
+        externalOperationId: null,
+      },
+      data: {
+        externalOperationId: OPERATION_ID,
+        externalOperationStartedAt: NOW,
+        statusMessage: null,
+        errorCode: null,
+      },
+    })
+    expect(prisma.kBIngestionRun.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: ATTEMPT_ID,
+        resourceId: RESOURCE_ID,
+        operation: KBIngestionOperation.DELETE,
+        resourceVersion: 4,
+        status: {
+          in: [KBIngestionStatus.QUEUED, KBIngestionStatus.PROCESSING],
+        },
+      },
+      data: {
+        externalOperationId: OPERATION_ID,
+        startedAt: NOW,
+        statusMessage: null,
+        errorCode: null,
+      },
+    })
+  })
+
+  it('does not redispatch a stale deletion attempt', async () => {
+    const prisma = dispatchPrisma({
+      deletedAt: NOW,
+      ingestionOperation: KBIngestionOperation.DELETE,
+      ingestionAttemptId: '77996ac1-ad9a-4379-8ff8-2a07d2184a31',
+      resourceVersion: 4,
+      externalOperationId: null,
+    })
+    const apiClient = client()
+
+    await expect(
+      dispatchKBDeletion(deletionInput, {
+        prisma: prisma as never,
+        client: apiClient,
+      })
+    ).resolves.toBeUndefined()
+    expect(apiClient.deleteResource).not.toHaveBeenCalled()
+  })
+
+  it('keeps a failed deletion hidden and retryable', async () => {
+    const prisma = dispatchPrisma({}, [1])
+
+    await retainFailedKBDeletionDispatch({
+      input: deletionInput,
+      prisma: prisma as never,
+    })
+
+    expect(prisma.kBResource.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: KBResourceStatus.QUEUED,
+          errorCode: 'DELETION_DISPATCH_FAILED',
+        }),
+      })
+    )
+    expect(prisma.kBIngestionRun.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: KBIngestionStatus.QUEUED,
+          errorCode: 'DELETION_DISPATCH_FAILED',
+        }),
+      })
+    )
   })
 })
 
@@ -314,6 +433,96 @@ describe('KB ingestion reconciliation', () => {
     contentSha256: CONTENT_SHA256,
     externalOperationId: OPERATION_ID,
   }
+
+  it('reconciles a succeeded delete only after serving is empty', async () => {
+    const deletedResource = {
+      ...activeResource,
+      resourceVersion: 4,
+      contentSha256: null,
+      ingestionOperation: KBIngestionOperation.DELETE,
+    }
+    const prisma = monitorPrisma([deletedResource])
+
+    await monitorActiveKBIngestions({
+      prisma: prisma as never,
+      client: client({
+        getOperation: vi.fn().mockResolvedValue(
+          operation({
+            status: 'succeeded',
+            operation: 'delete',
+            resourceVersion: 4,
+            expectedSha256: null,
+            observedSha256: null,
+            serving: {
+              activeResourceVersion: null,
+              activeSha256: null,
+            },
+          })
+        ),
+      }),
+    })
+
+    expect(prisma.kBResource.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          ingestionOperation: KBIngestionOperation.DELETE,
+          contentSha256: null,
+        }),
+        data: expect.objectContaining({
+          status: KBResourceStatus.READY,
+          activeResourceVersion: null,
+          activeContentSha256: null,
+        }),
+      })
+    )
+    expect(prisma.kBIngestionRun.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          operation: KBIngestionOperation.DELETE,
+        }),
+        data: expect.objectContaining({
+          status: KBIngestionStatus.SUCCEEDED,
+        }),
+      })
+    )
+  })
+
+  it('keeps a succeeded delete processing while old content still serves', async () => {
+    const deletedResource = {
+      ...activeResource,
+      resourceVersion: 4,
+      contentSha256: null,
+      ingestionOperation: KBIngestionOperation.DELETE,
+    }
+    const prisma = monitorPrisma([deletedResource])
+
+    await monitorActiveKBIngestions({
+      prisma: prisma as never,
+      client: client({
+        getOperation: vi.fn().mockResolvedValue(
+          operation({
+            status: 'succeeded',
+            operation: 'delete',
+            resourceVersion: 4,
+            expectedSha256: null,
+            observedSha256: null,
+            serving: {
+              activeResourceVersion: 3,
+              activeSha256: CONTENT_SHA256,
+            },
+          })
+        ),
+      }),
+    })
+
+    expect(prisma.kBResource.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: KBResourceStatus.PROCESSING,
+        }),
+      })
+    )
+  })
 
   it.each([
     ['accepted', KBResourceStatus.QUEUED, KBIngestionStatus.QUEUED, null],
@@ -356,6 +565,7 @@ describe('KB ingestion reconciliation', () => {
           resourceVersion: 3,
           contentSha256: CONTENT_SHA256,
           externalOperationId: OPERATION_ID,
+          ingestionOperation: 'UPSERT',
           status: {
             in:
               externalStatus === 'accepted'
@@ -375,6 +585,7 @@ describe('KB ingestion reconciliation', () => {
         where: {
           id: ATTEMPT_ID,
           resourceId: RESOURCE_ID,
+          operation: 'UPSERT',
           resourceVersion: 3,
           status: {
             in:
@@ -427,6 +638,7 @@ describe('KB ingestion reconciliation', () => {
       where: {
         id: ATTEMPT_ID,
         resourceId: RESOURCE_ID,
+        operation: 'UPSERT',
         resourceVersion: 3,
         status: {
           in: [
