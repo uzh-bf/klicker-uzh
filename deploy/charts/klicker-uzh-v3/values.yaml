@@ -180,6 +180,11 @@ chat:
   mcp:
     key: ''
 
+  docQueryScope:
+    issuer: ''
+    audience: ''
+    keyId: ''
+
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat
     pullPolicy: Always

@@ -31,6 +31,7 @@ model KB {
   ownerId String @db.Uuid
 
   resources KBResource[]
+  chatbots  KBChatbot[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -98,6 +99,24 @@ model KBIngestionRun {
 
   @@index([resourceId, createdAt])
   @@index([status])
+}
+
+model KBChatbot {
+  id String @id @default(uuid()) @db.Uuid
+
+  isEnabled Boolean @default(true)
+
+  kb   KB     @relation(fields: [kbId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  kbId String @db.Uuid
+
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  chatbotId String  @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([kbId, chatbotId])
+  @@index([chatbotId])
 }
 
 // #endregion

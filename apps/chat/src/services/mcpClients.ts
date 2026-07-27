@@ -3,8 +3,10 @@
 import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
 import { safeDecrypt } from '@klicker-uzh/util'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
-import { createHash } from 'crypto'
+import { createHash, randomUUID } from 'crypto'
+import { signDocQueryScopeToken } from '../lib/server/docQueryScopeToken'
 import { mintParticipantMcpJwt } from '../lib/server/mcpAuthMint'
+import { canLoadMCPServer, DOC_QUERY_MCP_SERVER_NAME } from './mcpScope'
 
 // Type definitions for MCP server configuration
 export interface MCPServerConfig {
@@ -27,6 +29,13 @@ export interface MCPConfigSettings {
 export interface MCPServerWithConfig {
   server: MCPServerConfig
   config: MCPConfigSettings
+}
+
+export interface MCPRequestContext {
+  chatbotId: string
+  participantId: string
+  kbId?: string
+  sessionId?: string
 }
 
 const MAX_TOOL_NAME_LENGTH = 64
@@ -88,27 +97,50 @@ function toSafeToolName(
 /**
  * Creates authentication headers based on server auth type
  */
-async function createAuthHeaders(
+export async function createAuthHeaders(
   server: MCPServerConfig,
-  chatbotId: string,
-  participantId: string
+  context: MCPRequestContext
 ): Promise<Record<string, string>> {
   const baseHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
+  }
+  const authType = server.authType.toLowerCase()
+
+  if (server.name === DOC_QUERY_MCP_SERVER_NAME && authType !== 'scope_token') {
+    throw new Error('Scoped knowledge retrieval is not available')
+  }
+
+  if (authType === 'scope_token') {
+    if (
+      server.name !== DOC_QUERY_MCP_SERVER_NAME ||
+      !context.kbId ||
+      !context.sessionId
+    ) {
+      throw new Error('Scoped knowledge retrieval is not available')
+    }
+
+    const token = await signDocQueryScopeToken({
+      kbId: context.kbId,
+      chatbotId: context.chatbotId,
+      sessionId: context.sessionId,
+      jti: randomUUID(),
+    })
+    baseHeaders.Authorization = `Bearer ${token}`
+    return baseHeaders
   }
 
   // Add chatbot ID if configured (new behavior - defaults to false for backward compatibility)
   if (server.passChatbotId) {
     const raw = server.chatbotIdHeader || 'Chatbot-ID'
     const headerName = raw.replace(/[^A-Za-z0-9-]/g, '') || 'Chatbot-ID'
-    baseHeaders[headerName] = chatbotId
+    baseHeaders[headerName] = context.chatbotId
   }
 
   // Per-participant JWT mint for the Klicker MCP server. Identity
   // comes from the caller's verified participant cookie, not a static
   // shared secret, so the MCP server can apply row-level auth.
-  if (server.authType.toLowerCase() === 'klicker-participant-jwt') {
-    const token = await mintParticipantMcpJwt(participantId)
+  if (authType === 'klicker-participant-jwt') {
+    const token = await mintParticipantMcpJwt(context.participantId)
     baseHeaders.Authorization = `Bearer ${token}`
     return baseHeaders
   }
@@ -119,7 +151,7 @@ async function createAuthHeaders(
 
   const decryptedSecret = safeDecrypt(server.authSecret)
 
-  switch (server.authType.toLowerCase()) {
+  switch (authType) {
     case 'custom':
       // Parse and apply custom headers from JSON
       try {
@@ -154,15 +186,14 @@ async function createAuthHeaders(
  */
 export async function createMCPClient(
   server: MCPServerConfig,
-  chatbotId: string,
-  participantId: string
+  context: MCPRequestContext
 ) {
   if (!server.url) {
     throw new Error(`MCP server ${server.name} has no URL defined`)
   }
 
   try {
-    const headers = await createAuthHeaders(server, chatbotId, participantId)
+    const headers = await createAuthHeaders(server, context)
 
     const httpTransport = new StreamableHTTPClientTransport(
       new URL(server.url),
@@ -208,13 +239,12 @@ function isToolAllowed(toolName: string, allowedTools: string[]): boolean {
  */
 async function loadServerTools(
   serverWithConfig: MCPServerWithConfig,
-  chatbotId: string,
-  participantId: string
+  context: MCPRequestContext
 ): Promise<Record<string, any>> {
   const { server, config } = serverWithConfig
 
   try {
-    const client = await createMCPClient(server, chatbotId, participantId)
+    const client = await createMCPClient(server, context)
     const rawTools = await client.tools()
 
     // Apply tool filtering
@@ -246,18 +276,20 @@ async function loadServerTools(
  */
 export async function getAggregatedMCPTools(
   serversWithConfigs: MCPServerWithConfig[],
-  chatbotId: string,
-  participantId: string
+  context: MCPRequestContext
 ): Promise<Record<string, any>> {
-  console.log(`Loading MCP Tools from ${serversWithConfigs.length} servers...`)
+  const usableServers = serversWithConfigs.filter(({ server }) =>
+    canLoadMCPServer(server, context)
+  )
+  console.log(`Loading MCP Tools from ${usableServers.length} servers...`)
 
-  if (serversWithConfigs.length === 0) {
+  if (usableServers.length === 0) {
     console.log('No MCP servers configured')
     return {}
   }
 
   // Sort by priority (lower number = higher priority)
-  const sortedServers = [...serversWithConfigs].sort(
+  const sortedServers = [...usableServers].sort(
     (a, b) => a.config.priority - b.config.priority
   )
 
@@ -266,11 +298,7 @@ export async function getAggregatedMCPTools(
   // Load tools from each server in priority order
   for (const serverWithConfig of sortedServers) {
     try {
-      const serverTools = await loadServerTools(
-        serverWithConfig,
-        chatbotId,
-        participantId
-      )
+      const serverTools = await loadServerTools(serverWithConfig, context)
       for (const [name, def] of Object.entries(serverTools)) {
         if (!(name in aggregatedTools)) {
           aggregatedTools[name] = def
@@ -321,8 +349,7 @@ export async function getMCPTools(chatbotId: string, participantId: string) {
   try {
     const serverTools = await loadServerTools(
       { server: legacyServer, config: legacyConfig },
-      chatbotId,
-      participantId
+      { chatbotId, participantId }
     )
     return serverTools
   } catch (error) {

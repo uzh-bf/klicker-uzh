@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-07-26'
+timestamp: '2026-07-27'
 tags:
   - backend
   - prisma
@@ -54,6 +54,8 @@ Scheduled publication/ending is executed by the Hatchet general worker — witho
 Lecturer-owned knowledge bases use `KB` with child `KBResource` records (`packages/prisma/src/prisma/schema/knowledge.prisma:KB`, `packages/prisma/src/prisma/schema/knowledge.prisma:KBResource`). A resource is either a private uploaded blob or a public HTTP(S) URL. URL registration rejects credentials, fragments, secret-like query parameters, non-standard ports, and literal local, private, reserved, or IPv6 destinations through `packages/util/src/publicUrl.ts:normalizePublicHttpUrl`. Dispatch preparation resolves and pins every redirect hop to a public IPv4 address; the ingestion platform still enforces its own independent egress policy.
 
 Resources move through `ADDED → QUEUED → PROCESSING → READY | FAILED`. `KBResource` stores the latest operation identity (`resourceVersion`, exact-byte `contentSha256`, attempt, and external operation), the independently active serving identity (`activeResourceVersion` and `activeContentSha256`), and the latest safe error code. `KBIngestionRun` is the append-only, resource-scoped attempt ledger: its UUID is the ingestion attempt/idempotency key, and retrying creates a new run plus a monotonic resource version. A failed replacement therefore remains visible without erasing the previously active serving version. Ingestion transport and atomic status reconciliation are described in [Async & Workers](./async-and-workers.md).
+
+`KBChatbot` is the typed ownership link between a knowledge base and a chatbot. A chatbot may retain historical disabled links, but the partial unique index `KBChatbot_one_enabled_per_chatbot_key` permits at most one enabled knowledge base per chatbot. The corresponding KB MCP configurations are derived runtime state, not the ownership relation itself.
 
 ## Gamification details
 

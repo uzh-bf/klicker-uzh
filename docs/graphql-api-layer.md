@@ -47,6 +47,8 @@ and **commit the regenerated outputs** (`src/ops.ts`, `src/ops.schema.json`, `sr
 
 Knowledge-base detail polling exposes only each resource's latest ingestion run, loaded with the resource list in `packages/graphql/src/services/knowledge.ts:getKb`. Full attempt history is a separate `getKbResourceIngestionRuns` query: it checks resource ownership, returns at most the five newest runs, and is requested only when the lecturer expands that resource. Do not nest full history under the polled parent list or expose the unbounded ledger.
 
+Knowledge-base/chatbot binding uses `getKbChatbotBindings`, `attachKbToChatbot`, and `detachKbFromChatbot`. The query and mutations are owner-scoped, attach/detach require full-access scope, and `packages/graphql/src/services/knowledge.ts` locks both owner rows before replacing a binding. Attach atomically enables the one selected link and reconciles exactly the `tutor` and `explainer` KB MCP configurations; detach disables those configurations when no enabled link remains.
+
 ## Subscriptions
 
 Field filters over the shared pubSub: `schema/subscription.ts:feedbackCreated` pipes `ctx.pubSub.subscribe('feedbackCreated')` through a `liveQuizId` filter; the publishing side is a service (`services/feedbacks.ts`). Frontends consume via `subscribeToMore` with the generated `S*Document`.

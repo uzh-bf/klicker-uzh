@@ -95,3 +95,21 @@ export const KB = KBRef.implement({
     updatedAt: t.expose('updatedAt', { type: 'Date' }),
   }),
 })
+
+interface IKBChatbotBinding {
+  chatbotId: string
+  chatbotName: string
+  enabledKbId: string | null
+  enabledKbName: string | null
+}
+
+export const KBChatbotBindingRef =
+  builder.objectRef<IKBChatbotBinding>('KBChatbotBinding')
+export const KBChatbotBinding = KBChatbotBindingRef.implement({
+  fields: (t) => ({
+    chatbotId: t.exposeID('chatbotId'),
+    chatbotName: t.exposeString('chatbotName'),
+    enabledKbId: t.exposeID('enabledKbId', { nullable: true }),
+    enabledKbName: t.exposeString('enabledKbName', { nullable: true }),
+  }),
+})

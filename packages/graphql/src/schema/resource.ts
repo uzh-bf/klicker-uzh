@@ -166,7 +166,23 @@ export interface IChatbot {
   usageSummary?: IChatbotUsageSummary | null
   disclaimerSummary?: IChatbotDisclaimerSummary | null
   mcpConfigurations?: IChatbotMcpConfigurationSummary[]
+  enabledKnowledgeBase?: IChatbotKnowledgeBaseSummary | null
 }
+
+export interface IChatbotKnowledgeBaseSummary {
+  id: string
+  name: string
+}
+
+export const ChatbotKnowledgeBaseSummaryRef =
+  builder.objectRef<IChatbotKnowledgeBaseSummary>('ChatbotKnowledgeBaseSummary')
+export const ChatbotKnowledgeBaseSummary =
+  ChatbotKnowledgeBaseSummaryRef.implement({
+    fields: (t) => ({
+      id: t.exposeID('id'),
+      name: t.exposeString('name'),
+    }),
+  })
 
 export interface IChatbotUsageSummary {
   threadCount: number
@@ -287,6 +303,11 @@ export const Chatbot = ChatbotRef.implement({
     mcpConfigurations: t.field({
       type: [ChatbotMcpConfigurationSummaryRef],
       resolve: (chatbot) => chatbot.mcpConfigurations ?? [],
+    }),
+    enabledKnowledgeBase: t.field({
+      type: ChatbotKnowledgeBaseSummaryRef,
+      nullable: true,
+      resolve: (chatbot) => chatbot.enabledKnowledgeBase ?? null,
     }),
     createdAt: t.expose('createdAt', { type: 'Date', nullable: true }),
     updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),

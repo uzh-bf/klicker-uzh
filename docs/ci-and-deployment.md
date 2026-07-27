@@ -2,7 +2,7 @@
 type: Operations
 title: CI & Deployment
 description: PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
-timestamp: '2026-07-26'
+timestamp: '2026-07-27'
 tags:
   - ci
   - deployment
@@ -43,6 +43,7 @@ Version bumps are **local and manual** via standard-version: `pnpm run release[:
 - **prd** (`*.klicker.uzh.ch`): pinned version tags, `replicaCount: 2` for web/API services.
 - **Secrets are external**: deployments reference `envFrom.secretRef` names, but the chart defines no `Secret` manifests — provision them out-of-band with matching names.
 - **KB ingestion split**: the general-worker ConfigMap carries only the ingestion API URL, project identifier, source-gateway URL, and blob account name. The ingestion API key belongs in the worker secret; the source-gateway and webhook signing keys belong in the backend secret. The chart never renders their values.
+- **KB retrieval signer split**: the chat ConfigMap renders only `DOC_QUERY_SCOPE_ISSUER`, `DOC_QUERY_SCOPE_AUDIENCE`, and `DOC_QUERY_SCOPE_KID`. The ES256 `DOC_QUERY_SCOPE_PRIVATE_KEY` belongs in the external chat secret and is never rendered by the chart. Missing or invalid signer configuration fails closed by omitting KB tools.
 - **Rollout strategy**: use `RollingUpdate` in prd values; `Recreate` can leave a service with zero endpoints during slow image pulls (PDBs don't protect against Deployment-driven scale-downs). `maxUnavailable: 0` only for singletons.
 - `deploy/compose*` are v2-era self-hoster examples; `deploy/scripts/rollout.sh` is a legacy manual `kubectl rollout restart`.
 

@@ -1280,6 +1280,26 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       'Der Verarbeitungsvorgang konnte nicht gestartet werden.',
     ingestionFailed: 'Der Verarbeitungsvorgang ist fehlgeschlagen.',
     ingestionSuperseded: 'Der Verarbeitungsvorgang wurde ersetzt.',
+    chatbotsTitle: 'Verknüpfte Chatbots',
+    chatbotsDescription:
+      'Wählen Sie, welcher Chatbot diese Wissensdatenbank verwenden kann. Ein Chatbot kann jeweils eine Wissensdatenbank verwenden.',
+    chatbotsLoadError: 'Die Chatbots konnten nicht geladen werden.',
+    noChatbots:
+      'Erstellen Sie einen Chatbot, bevor Sie eine Wissensdatenbank verknüpfen.',
+    chatbotSelectLabel: 'Chatbot',
+    chatbotSelectPlaceholder: 'Chatbot auswählen',
+    attachChatbot: 'Chatbot verknüpfen',
+    replaceChatbot: 'Wissensdatenbank ersetzen',
+    detachChatbot: 'Verknüpfung aufheben',
+    linkedChatbots: 'Verwendet diese Wissensdatenbank',
+    noLinkedChatbots: 'Kein Chatbot verwendet diese Wissensdatenbank.',
+    chatbotReplacementWarning:
+      'Dieser Chatbot verwendet derzeit „{kbName}“. Durch die Verknüpfung wird diese Wissensdatenbank ersetzt.',
+    chatbotAttachSuccess: 'Chatbot wurde mit der Wissensdatenbank verknüpft.',
+    chatbotAttachError: 'Der Chatbot konnte nicht verknüpft werden.',
+    chatbotDetachSuccess: 'Die Verknüpfung des Chatbots wurde aufgehoben.',
+    chatbotDetachError:
+      'Die Verknüpfung des Chatbots konnte nicht aufgehoben werden.',
   },
   manage: {
     general: {
@@ -3378,6 +3398,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       disclaimerDeclined: 'Abgelehnt',
       disclaimerPending: 'Ausstehend',
       mcpConfigurations: 'MCP-Konfigurationen',
+      knowledgeBase: 'Wissensdatenbank',
+      noEnabledKnowledgeBase:
+        'Es ist keine Wissensdatenbank verknüpft. Dieser Chatbot kann Kursmaterial nicht durchsuchen.',
       noMcpConfigurations: 'Keine MCP-Konfigurationen.',
       mcpServerActive: 'Server aktiv',
       mcpServerInactive: 'Server inaktiv',

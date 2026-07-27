@@ -70,7 +70,7 @@ import {
   GroupActivityInstance,
   GroupActivitySummary,
 } from './groupActivity.js'
-import { KB, KBIngestionRun } from './knowledge.js'
+import { KB, KBChatbotBinding, KBIngestionRun } from './knowledge.js'
 import {
   Feedback,
   LiveQuiz,
@@ -1425,6 +1425,15 @@ export const Query = builder.queryType({
         args: { id: t.arg.id({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.getKb(args, ctx)
+        },
+      }),
+
+      getKbChatbotBindings: t.withAuth(asUser).field({
+        nullable: false,
+        type: [KBChatbotBinding],
+        args: { kbId: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getKbChatbotBindings(args, ctx)
         },
       }),
 

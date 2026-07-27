@@ -1274,6 +1274,24 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     ingestionStartError: 'The ingestion operation could not be started.',
     ingestionFailed: 'The ingestion operation failed.',
     ingestionSuperseded: 'The ingestion operation was superseded.',
+    chatbotsTitle: 'Connected chatbots',
+    chatbotsDescription:
+      'Choose which chatbot can use this knowledge base. A chatbot can use one knowledge base at a time.',
+    chatbotsLoadError: 'The chatbots could not be loaded.',
+    noChatbots: 'Create a chatbot before connecting a knowledge base.',
+    chatbotSelectLabel: 'Chatbot',
+    chatbotSelectPlaceholder: 'Choose a chatbot',
+    attachChatbot: 'Connect chatbot',
+    replaceChatbot: 'Replace knowledge base',
+    detachChatbot: 'Disconnect',
+    linkedChatbots: 'Using this knowledge base',
+    noLinkedChatbots: 'No chatbot is using this knowledge base.',
+    chatbotReplacementWarning:
+      'This chatbot currently uses “{kbName}”. Connecting it here replaces that knowledge base.',
+    chatbotAttachSuccess: 'Chatbot connected to the knowledge base.',
+    chatbotAttachError: 'The chatbot could not be connected.',
+    chatbotDetachSuccess: 'Chatbot disconnected from the knowledge base.',
+    chatbotDetachError: 'The chatbot could not be disconnected.',
   },
   manage: {
     general: {
@@ -3319,6 +3337,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       disclaimerDeclined: 'Declined',
       disclaimerPending: 'Pending',
       mcpConfigurations: 'MCP Configurations',
+      knowledgeBase: 'Knowledge base',
+      noEnabledKnowledgeBase:
+        'No knowledge base is connected. This chatbot cannot search course material.',
       noMcpConfigurations: 'No MCP configurations.',
       mcpServerActive: 'Server active',
       mcpServerInactive: 'Server inactive',

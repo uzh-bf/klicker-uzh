@@ -125,6 +125,7 @@ model Chatbot {
 
   // Relations
   mcpConfigurations ChatbotMCPConfig[]
+  knowledgeBases    KBChatbot[]
   threads           ChatThread[]
   usageCredits      ChatUsageCredits[]
 

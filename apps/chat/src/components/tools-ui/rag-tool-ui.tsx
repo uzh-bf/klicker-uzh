@@ -2,6 +2,7 @@
 import { makeAssistantToolUI } from '@assistant-ui/react'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { BookOpen } from 'lucide-react'
+import { DOC_QUERY_TOOL_NAME } from '../../services/mcpScope'
 
 type RAGSearchArgs = {
   query: string
@@ -15,7 +16,7 @@ type RAGSearchResult =
   | string
 
 export const RAGToolUI = makeAssistantToolUI<RAGSearchArgs, RAGSearchResult>({
-  toolName: 'KB.doc_query',
+  toolName: DOC_QUERY_TOOL_NAME,
   render: ({ args, status, result }) => {
     if (status.type === 'running') {
       return (

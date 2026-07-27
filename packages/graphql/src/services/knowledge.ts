@@ -17,6 +17,8 @@ const MAX_KB_FILE_SIZE_BYTES = 25 * 1024 * 1024
 const KB_BLOB_DELETE_TIMEOUT_MS = 30_000
 // Leave database cleanup time after the bounded storage operation completes or aborts.
 const KB_DELETION_TRANSACTION_TIMEOUT_MS = 60_000
+const KB_MCP_SERVER_NAME = 'KB'
+const KB_MCP_CHAT_MODES = ['tutor', 'explainer'] as const
 const KB_FILE_TYPES: Record<string, readonly string[]> = {
   pdf: ['application/pdf'],
   txt: ['text/plain'],
@@ -143,6 +145,38 @@ async function lockOwnedKbResourceOrThrow(
   }
 }
 
+async function lockOwnedChatbotOrThrow(
+  prisma: DB.Prisma.TransactionClient,
+  id: string,
+  ownerId: string
+) {
+  const lockedChatbot = await prisma.$queryRaw<Array<{ id: string }>>`
+    SELECT "id"
+    FROM "public"."Chatbot"
+    WHERE "id" = CAST(${id} AS UUID)
+      AND "ownerId" = CAST(${ownerId} AS UUID)
+    FOR UPDATE
+  `
+  if (lockedChatbot.length === 0) {
+    throw new GraphQLError('Chatbot not found')
+  }
+}
+
+async function getKbMcpServerOrThrow(prisma: DB.Prisma.TransactionClient) {
+  const mcpServer = await prisma.chatbotMCPServer.findUnique({
+    where: { name: KB_MCP_SERVER_NAME },
+    select: { id: true, authType: true, isActive: true },
+  })
+  if (
+    !mcpServer ||
+    !mcpServer.isActive ||
+    mcpServer.authType !== 'scope_token'
+  ) {
+    throw new GraphQLError('Knowledge base retrieval is not configured')
+  }
+  return mcpServer
+}
+
 export async function getUserKbs(ctx: ContextWithUser) {
   return ctx.prisma.kB.findMany({
     where: { ownerId: ctx.user.sub },
@@ -166,6 +200,133 @@ export async function getKb({ id }: { id: string }, ctx: ContextWithUser) {
         },
       },
     },
+  })
+}
+
+export async function getKbChatbotBindings(
+  { kbId }: { kbId: string },
+  ctx: ContextWithUser
+) {
+  await getOwnedKbOrThrow(ctx, kbId)
+
+  const chatbots = await ctx.prisma.chatbot.findMany({
+    where: { ownerId: ctx.user.sub },
+    select: {
+      id: true,
+      name: true,
+      knowledgeBases: {
+        where: { isEnabled: true },
+        select: {
+          kb: { select: { id: true, name: true } },
+        },
+        take: 1,
+      },
+    },
+    orderBy: { name: 'asc' },
+  })
+
+  return chatbots.map((chatbot) => ({
+    chatbotId: chatbot.id,
+    chatbotName: chatbot.name,
+    enabledKbId: chatbot.knowledgeBases[0]?.kb.id ?? null,
+    enabledKbName: chatbot.knowledgeBases[0]?.kb.name ?? null,
+  }))
+}
+
+export async function attachKbToChatbot(
+  { kbId, chatbotId }: { kbId: string; chatbotId: string },
+  ctx: ContextWithUser
+) {
+  return ctx.prisma.$transaction(async (prisma) => {
+    await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
+    await lockOwnedChatbotOrThrow(prisma, chatbotId, ctx.user.sub)
+    const mcpServer = await getKbMcpServerOrThrow(prisma)
+
+    await prisma.kBChatbot.updateMany({
+      where: {
+        chatbotId,
+        kbId: { not: kbId },
+        isEnabled: true,
+      },
+      data: { isEnabled: false },
+    })
+    await prisma.kBChatbot.upsert({
+      where: { kbId_chatbotId: { kbId, chatbotId } },
+      create: { kbId, chatbotId, isEnabled: true },
+      update: { isEnabled: true },
+    })
+
+    for (const chatMode of KB_MCP_CHAT_MODES) {
+      await prisma.chatbotMCPConfig.upsert({
+        where: {
+          chatbotId_mcpServerId_chatMode: {
+            chatbotId,
+            mcpServerId: mcpServer.id,
+            chatMode,
+          },
+        },
+        create: {
+          chatbotId,
+          mcpServerId: mcpServer.id,
+          chatMode,
+          allowedTools: ['doc_query'],
+          priority: 0,
+          isEnabled: true,
+        },
+        update: {
+          allowedTools: ['doc_query'],
+          priority: 0,
+          isEnabled: true,
+        },
+      })
+    }
+
+    const [chatbot, kb] = await Promise.all([
+      prisma.chatbot.findUniqueOrThrow({
+        where: { id: chatbotId },
+        select: { name: true },
+      }),
+      prisma.kB.findUniqueOrThrow({
+        where: { id: kbId },
+        select: { name: true },
+      }),
+    ])
+    return {
+      chatbotId,
+      chatbotName: chatbot.name,
+      enabledKbId: kbId,
+      enabledKbName: kb.name,
+    }
+  })
+}
+
+export async function detachKbFromChatbot(
+  { kbId, chatbotId }: { kbId: string; chatbotId: string },
+  ctx: ContextWithUser
+) {
+  return ctx.prisma.$transaction(async (prisma) => {
+    await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
+    await lockOwnedChatbotOrThrow(prisma, chatbotId, ctx.user.sub)
+
+    await prisma.kBChatbot.deleteMany({ where: { kbId, chatbotId } })
+    const enabledBinding = await prisma.kBChatbot.findFirst({
+      where: { chatbotId, isEnabled: true },
+      select: { id: true },
+    })
+    if (!enabledBinding) {
+      const mcpServer = await prisma.chatbotMCPServer.findUnique({
+        where: { name: KB_MCP_SERVER_NAME },
+        select: { id: true },
+      })
+      if (mcpServer) {
+        await prisma.chatbotMCPConfig.updateMany({
+          where: { chatbotId, mcpServerId: mcpServer.id },
+          data: { isEnabled: false },
+        })
+      }
+    }
+
+    return true
   })
 }
 

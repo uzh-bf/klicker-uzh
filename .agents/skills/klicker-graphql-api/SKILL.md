@@ -44,6 +44,8 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
 
 Do not nest full history under a frequently polled parent list. The KB detail query loads only each resource's latest run; the separate owner-checked history query returns at most the five newest runs and is called on expansion.
 
+KB/chatbot attach and detach must lock both owner rows, replace the enabled link atomically, and reconcile only the `tutor` and `explainer` KB MCP configurations. Do not expose a configuration without the matching scoped-retrieval runtime support.
+
 ## Subscriptions (extra steps)
 
 Publish from the service (`ctx.pubSub.publish('<topic>', payload)`), subscribe in `subscription.ts` with a `filter` on the target id (template: `feedbackCreated`), consume with `subscribeToMore` + the generated `S*Document`.

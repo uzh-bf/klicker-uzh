@@ -14,18 +14,21 @@ import { buildSchema, parse, validate } from 'graphql'
 import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
+  attachKbToChatbot,
   confirmKbFileUpload,
   createKb,
   createKbUrlResource,
   deleteKb,
   deleteKbResource,
+  detachKbFromChatbot,
   getKb,
+  getKbChatbotBindings,
   getKbResourceIngestionRuns,
   getUserKbs,
   ingestKbResource,
   requestKbFileUpload,
 } from '../src/services/knowledge.js'
-import { testCleanup, testInitialization } from './helpers.js'
+import { seedCourse, testCleanup, testInitialization } from './helpers.js'
 
 function createDeferred<T>() {
   let resolve!: (value: T) => void
@@ -108,6 +111,20 @@ describe('Integration tests for knowledge base CRUD', () => {
     const initialized = await testInitialization(prisma, hatchet, emitter)
     userOneCtx = initialized.userOneCtx
     userTwoCtx = initialized.userTwoCtx
+    await prisma.chatbotMCPServer.upsert({
+      where: { name: 'KB' },
+      create: {
+        name: 'KB',
+        description: 'Knowledge base retrieval',
+        url: 'http://localhost:1417/mcp',
+        authType: 'scope_token',
+        isActive: true,
+      },
+      update: {
+        authType: 'scope_token',
+        isActive: true,
+      },
+    })
 
     previousBlobAccountName = process.env.BLOB_STORAGE_ACCOUNT_NAME
     previousBlobAccessKey = process.env.BLOB_STORAGE_ACCESS_KEY
@@ -191,6 +208,199 @@ describe('Integration tests for knowledge base CRUD', () => {
 
     expect(kb.id).toBe(created.id)
     expect(kb.resources).toEqual([])
+  })
+
+  it('lists owned chatbots with their enabled knowledge base', async () => {
+    const kb = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const otherKb = await createKb({ name: 'Other notes' }, userTwoCtx)
+    const course = await seedCourse({}, userOneCtx)
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Finance tutor',
+        ownerId: userOneCtx.user.sub,
+        courseId: course.id,
+      },
+    })
+    const otherCourse = await seedCourse({}, userTwoCtx)
+    const otherChatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Other tutor',
+        ownerId: userTwoCtx.user.sub,
+        courseId: otherCourse.id,
+      },
+    })
+    await prisma.kBChatbot.create({
+      data: { kbId: otherKb.id, chatbotId: otherChatbot.id },
+    })
+
+    await attachKbToChatbot({ kbId: kb.id, chatbotId: chatbot.id }, userOneCtx)
+    const bindings = await getKbChatbotBindings({ kbId: kb.id }, userOneCtx)
+
+    expect(bindings).toEqual([
+      {
+        chatbotId: chatbot.id,
+        chatbotName: 'Finance tutor',
+        enabledKbId: kb.id,
+        enabledKbName: 'Finance notes',
+      },
+    ])
+  })
+
+  it('replaces the enabled binding and provisions only doc_query', async () => {
+    const firstKb = await createKb({ name: 'First KB' }, userOneCtx)
+    const secondKb = await createKb({ name: 'Second KB' }, userOneCtx)
+    const course = await seedCourse({}, userOneCtx)
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Finance tutor',
+        ownerId: userOneCtx.user.sub,
+        courseId: course.id,
+      },
+    })
+
+    await attachKbToChatbot(
+      { kbId: firstKb.id, chatbotId: chatbot.id },
+      userOneCtx
+    )
+    await attachKbToChatbot(
+      { kbId: secondKb.id, chatbotId: chatbot.id },
+      userOneCtx
+    )
+
+    const links = await prisma.kBChatbot.findMany({
+      where: { chatbotId: chatbot.id },
+      orderBy: { kbId: 'asc' },
+    })
+    expect(links).toHaveLength(2)
+    expect(links.filter(({ isEnabled }) => isEnabled)).toEqual([
+      expect.objectContaining({ kbId: secondKb.id }),
+    ])
+
+    const configurations = await prisma.chatbotMCPConfig.findMany({
+      where: { chatbotId: chatbot.id, mcpServer: { name: 'KB' } },
+      orderBy: { chatMode: 'asc' },
+    })
+    expect(configurations).toHaveLength(2)
+    expect(configurations).toEqual([
+      expect.objectContaining({
+        chatMode: 'explainer',
+        allowedTools: ['doc_query'],
+        isEnabled: true,
+      }),
+      expect.objectContaining({
+        chatMode: 'tutor',
+        allowedTools: ['doc_query'],
+        isEnabled: true,
+      }),
+    ])
+  })
+
+  it('serializes concurrent replacements to one enabled binding', async () => {
+    const firstKb = await createKb({ name: 'First KB' }, userOneCtx)
+    const secondKb = await createKb({ name: 'Second KB' }, userOneCtx)
+    const course = await seedCourse({}, userOneCtx)
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Finance tutor',
+        ownerId: userOneCtx.user.sub,
+        courseId: course.id,
+      },
+    })
+
+    await Promise.all([
+      attachKbToChatbot(
+        { kbId: firstKb.id, chatbotId: chatbot.id },
+        userOneCtx
+      ),
+      attachKbToChatbot(
+        { kbId: secondKb.id, chatbotId: chatbot.id },
+        userOneCtx
+      ),
+    ])
+
+    await expect(
+      prisma.kBChatbot.count({
+        where: { chatbotId: chatbot.id, isEnabled: true },
+      })
+    ).resolves.toBe(1)
+  })
+
+  it('rejects bindings across ownership boundaries', async () => {
+    const kb = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const otherKb = await createKb({ name: 'Other notes' }, userTwoCtx)
+    const course = await seedCourse({}, userOneCtx)
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Finance tutor',
+        ownerId: userOneCtx.user.sub,
+        courseId: course.id,
+      },
+    })
+    const otherCourse = await seedCourse({}, userTwoCtx)
+    const otherChatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Other tutor',
+        ownerId: userTwoCtx.user.sub,
+        courseId: otherCourse.id,
+      },
+    })
+
+    await expect(
+      attachKbToChatbot({ kbId: otherKb.id, chatbotId: chatbot.id }, userOneCtx)
+    ).rejects.toThrow('KB not found')
+    await expect(
+      attachKbToChatbot({ kbId: kb.id, chatbotId: otherChatbot.id }, userOneCtx)
+    ).rejects.toThrow('Chatbot not found')
+  })
+
+  it('fails closed when scoped retrieval is not configured', async () => {
+    const kb = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const course = await seedCourse({}, userOneCtx)
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Finance tutor',
+        ownerId: userOneCtx.user.sub,
+        courseId: course.id,
+      },
+    })
+    await prisma.chatbotMCPServer.update({
+      where: { name: 'KB' },
+      data: { authType: 'none' },
+    })
+
+    await expect(
+      attachKbToChatbot({ kbId: kb.id, chatbotId: chatbot.id }, userOneCtx)
+    ).rejects.toThrow('Knowledge base retrieval is not configured')
+    await expect(
+      prisma.kBChatbot.count({ where: { chatbotId: chatbot.id } })
+    ).resolves.toBe(0)
+  })
+
+  it('detaches the binding and disables KB MCP configurations', async () => {
+    const kb = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const course = await seedCourse({}, userOneCtx)
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Finance tutor',
+        ownerId: userOneCtx.user.sub,
+        courseId: course.id,
+      },
+    })
+    await attachKbToChatbot({ kbId: kb.id, chatbotId: chatbot.id }, userOneCtx)
+
+    await detachKbFromChatbot(
+      { kbId: kb.id, chatbotId: chatbot.id },
+      userOneCtx
+    )
+
+    await expect(
+      prisma.kBChatbot.count({ where: { chatbotId: chatbot.id } })
+    ).resolves.toBe(0)
+    const configurations = await prisma.chatbotMCPConfig.findMany({
+      where: { chatbotId: chatbot.id, mcpServer: { name: 'KB' } },
+    })
+    expect(configurations).toHaveLength(2)
+    expect(configurations.every(({ isEnabled }) => !isEnabled)).toBe(true)
   })
 
   it('rejects an empty knowledge base name', async () => {

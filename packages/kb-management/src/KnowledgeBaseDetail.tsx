@@ -4,6 +4,7 @@ import { H2, Skeleton, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
+import KnowledgeBaseChatbotBindings from './components/KnowledgeBaseChatbotBindings'
 import KnowledgeBaseFileDropzone from './components/KnowledgeBaseFileDropzone'
 import KnowledgeBaseResourceList from './components/KnowledgeBaseResourceList'
 import KnowledgeBaseUrlForm from './components/KnowledgeBaseUrlForm'
@@ -87,6 +88,7 @@ function KnowledgeBaseDetail({ kbId }: { kbId: string }) {
         <KnowledgeBaseFileDropzone kbId={kbId} />
         <KnowledgeBaseUrlForm kbId={kbId} />
       </div>
+      <KnowledgeBaseChatbotBindings kbId={kbId} />
       <KnowledgeBaseResourceList kbId={kbId} resources={data.getKb.resources} />
     </div>
   )

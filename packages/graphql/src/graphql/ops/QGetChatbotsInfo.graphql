@@ -46,6 +46,10 @@ query GetChatbotsInfo {
       priority
       allowedToolsCount
     }
+    enabledKnowledgeBase {
+      id
+      name
+    }
     createdAt
     updatedAt
   }

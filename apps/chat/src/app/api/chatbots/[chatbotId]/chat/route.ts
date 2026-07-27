@@ -794,6 +794,7 @@ export async function POST(
   // fetch chatbot with MCP configurations and system prompt
   let systemPrompt = ''
   let mcpServersWithConfigs: MCPServerWithConfig[] = []
+  let enabledKnowledgeBaseId: string | undefined
   let chatbot = null
 
   try {
@@ -810,10 +811,17 @@ export async function POST(
           },
           orderBy: { priority: 'asc' },
         },
+        knowledgeBases: {
+          where: { isEnabled: true },
+          select: { kbId: true },
+          take: 1,
+        },
       },
     })
 
     if (chatbot) {
+      enabledKnowledgeBaseId = chatbot.knowledgeBases[0]?.kbId
+
       // Extract system prompt
       const systemPrompts = chatbot.systemPrompts as Record<
         string,
@@ -887,11 +895,12 @@ export async function POST(
   }))
 
   // Load MCP tools from database configurations or fallback to legacy
-  const mcpTools = await getAggregatedMCPTools(
-    mcpServersWithConfigs,
+  const mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, {
     chatbotId,
-    participantId
-  )
+    participantId,
+    kbId: enabledKnowledgeBaseId,
+    sessionId: currentThreadId ?? requestId,
+  })
 
   if (!chatbot) {
     return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })

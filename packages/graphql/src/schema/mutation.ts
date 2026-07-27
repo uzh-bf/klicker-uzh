@@ -42,7 +42,7 @@ import {
   GroupActivityGradingInput,
   GroupActivityInstance,
 } from './groupActivity.js'
-import { KB, KBFileUpload, KBResource } from './knowledge.js'
+import { KB, KBChatbotBinding, KBFileUpload, KBResource } from './knowledge.js'
 import {
   ConfusionTimestep,
   Feedback,
@@ -1654,6 +1654,29 @@ export const Mutation = builder.mutationType({
         args: { id: t.arg.id({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.deleteKb(args, ctx)
+        },
+      }),
+
+      attachKbToChatbot: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBChatbotBinding,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          chatbotId: t.arg.id({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.attachKbToChatbot(args, ctx)
+        },
+      }),
+
+      detachKbFromChatbot: t.withAuth(asUserFullAccess).boolean({
+        nullable: false,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          chatbotId: t.arg.id({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.detachKbFromChatbot(args, ctx)
         },
       }),
 
