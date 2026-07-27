@@ -521,3 +521,38 @@ simplify subagent on the exact commit → integrate accepted findings → re-ver
   items (thumbnails, transcript hover previews, durations) already tracked in
   §"Citation system — phase 2".
   Next: commit slices, push, PR body update, Greptile replies.
+- 2026-07-27 improvement round (S14–S17, Opus subagents; from the S12 gap
+  map): CI first — `680fee56c` anchors the display-url test regex (CodeQL
+  false-positive on `startsWith('example.com')`), `1f1f9667b` excludes
+  `packages/i18n/messages/**` from Sonar CPD (parallel locale catalogs read
+  as duplication by construction). S14 `b5fd85929`: markdown blockquotes in
+  answers restyled as amber info callouts (mockup "Merke" boxes); override
+  only renders from assistant messages. S15 `3f4a7c465`: thread list shows a
+  mode icon + localized label under each title (`formatModeLabel` in
+  `lib/config/modes.ts`, unknown modes capitalize; 3 unit tests). S16
+  `0f3805887`: branch pager fix — pager UI + `parentId` persistence already
+  existed, but EditComposer bypassed the runtime edit path via
+  `threadRuntime.append()`, whose public normalization collapses a null
+  parentId to "last message", so root edits became new turns and the picker
+  never showed. Fix routes edits through
+  `messageRuntime.composer.send({ startRun: true })` (startRun forces the
+  vendor change gate that cannot see kept-original attachments; app-side
+  canSubmit is the real gate). Verified in browser: edit → 2/2 pager,
+  prev/next switches, survives reload; vitest 170/170, tsc clean. Note: the
+  worktree DB lost its seed (OOM-reap earlier) — re-seeded via
+  `prisma db push --force-reset` + `seed:test` in-container. S17 `9378fbee9`:
+  "Image analyzed"/"Bild analysiert" chip on replies to image-bearing turns —
+  pure `parentMessageHasImageAttachment` over the chatStore message list (the
+  runtime-converted message hides `imageAttachments` in `metadata.custom`),
+  chip styled like the doc-query tool chips, no server changes; vitest
+  175/175, browser-verified both locales against a DB-seeded image thread.
+  Environment notes for reruns: `docker exec` psql seeding needs `-i` (a
+  heredoc without it silently executes nothing); the chat app can crash with
+  Turbopack EMFILE ("Too many open files") — kill `turbo run dev` in-container
+  and re-run `devrouter ensure` from the WORKTREE directory (a `devrouter
+  ensure/exec .` from the primary checkout hits the primary's stack, and the
+  shared-devnet `postgres` alias collision means its post-create can reset
+  this worktree's DB); `seed:assessment-course` currently fails upstream
+  (P2025 in `packages/util` `recomputeDerivedPermissions`), which makes any
+  full post-create lifecycle fail — `seed:test` alone suffices for chat work.
+  Next: S18 round verify, review, push, PR update.
