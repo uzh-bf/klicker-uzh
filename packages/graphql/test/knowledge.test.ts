@@ -1,10 +1,13 @@
 import { BlobServiceClient } from '@azure/storage-blob'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
+import { prisma as prismaClient } from '@klicker-uzh/prisma'
 import {
+  KBIngestionStatus,
   KBResourceStatus,
   KBResourceType,
   PrismaClient,
 } from '@klicker-uzh/prisma/client'
+import { randomUUID } from 'crypto'
 import { EventEmitter } from 'events'
 import { readFileSync } from 'fs'
 import { buildSchema, parse, validate } from 'graphql'
@@ -17,11 +20,12 @@ import {
   deleteKb,
   deleteKbResource,
   getKb,
+  getKbResourceIngestionRuns,
   getUserKbs,
   ingestKbResource,
   requestKbFileUpload,
 } from '../src/services/knowledge.js'
-import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
+import { testCleanup, testInitialization } from './helpers.js'
 
 function createDeferred<T>() {
   let resolve!: (value: T) => void
@@ -87,10 +91,12 @@ describe('Integration tests for knowledge base CRUD', () => {
   let getBlobClient: ReturnType<typeof vi.fn>
 
   beforeAll(async () => {
-    const initialized = await initializePrisma()
-    prisma = initialized.prisma
-    hatchet = initialized.hatchet
-    emitter = initialized.emitter
+    prisma = prismaClient
+    await testCleanup(prisma)
+    hatchet = {
+      task: vi.fn(() => ({ runNoWait: vi.fn() })),
+    } as unknown as Hatchet
+    emitter = new EventEmitter()
   })
 
   afterAll(async () => {
@@ -654,6 +660,46 @@ describe('Integration tests for knowledge base CRUD', () => {
     await expect(
       prisma.kBResource.findUnique({ where: { id: resource.id } })
     ).resolves.toBeNull()
+  })
+
+  it('returns only the five newest ingestion runs to the resource owner', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const resource = await createKbUrlResource(
+      {
+        kbId: created.id,
+        title: 'Lecture recording',
+        url: 'https://video.example.com/watch?id=123',
+      },
+      userOneCtx
+    )
+    const runIds = Array.from({ length: 6 }, () => randomUUID())
+
+    for (const [index, id] of runIds.entries()) {
+      await prisma.kBIngestionRun.create({
+        data: {
+          id,
+          resourceId: resource.id,
+          resourceVersion: index + 1,
+          status: KBIngestionStatus.SUCCEEDED,
+          createdAt: new Date(Date.UTC(2026, 6, 27, 10, index)),
+        },
+      })
+    }
+
+    await expect(
+      getKbResourceIngestionRuns({ resourceId: resource.id }, userTwoCtx)
+    ).rejects.toThrow('KB resource not found')
+    await expect(
+      getKbResourceIngestionRuns({ resourceId: resource.id }, userOneCtx)
+    ).resolves.toMatchObject(
+      runIds
+        .slice(1)
+        .reverse()
+        .map((id, index) => ({
+          id,
+          resourceVersion: 6 - index,
+        }))
+    )
   })
 
   it('keeps a blob resource row when storage deletion fails', async () => {

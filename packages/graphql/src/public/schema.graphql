@@ -1724,7 +1724,7 @@ type KBResource {
   errorCode: String
   id: ID!
   ingestedAt: Date
-  ingestionRuns: [KBIngestionRun!]!
+  latestIngestionRun: KBIngestionRun
   mimeType: String
   originalFilename: String
   resourceVersion: Int!
@@ -2554,6 +2554,7 @@ type Query {
   getGroupActivitySummary(id: String!): GroupActivitySummary
   getInstanceUpdateActivities(elementId: Int!, hasSampleSolution: Boolean, includeTemplateInstances: Boolean!): [InstanceUpdateActivityInfo!]
   getKb(id: ID!): KB!
+  getKbResourceIngestionRuns(resourceId: ID!): [KBIngestionRun!]!
   getLecturerViewLiveQuiz(id: String!): LiveQuiz
   getLiveQuizEmbeddingInfo(id: String!): LiveQuizEmbeddingInfo
   getLiveQuizSummary(quizId: String!): LiveQuizSummary

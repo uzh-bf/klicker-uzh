@@ -2,6 +2,8 @@
 
 ## 2026-07-27
 
+- **Update**: [frontend-conventions](./frontend-conventions.md), [graphql-api-layer](./graphql-api-layer.md), and [testing](./testing.md) document the request-time KB detail route, separate latest-operation/active-serving presentation, contextual ingestion actions, lazy bounded attempt history, and browser plus PostgreSQL verification.
+
 - **Update**: [domain-model](./domain-model.md), [async-and-workers](./async-and-workers.md), [graphql-api-layer](./graphql-api-layer.md), and [testing](./testing.md) document the resource-scoped ingestion ledger, separate operation/serving state, atomic transitions, bounded owner-facing history, and token-independent focused KB integration suites.
 
 ## 2026-07-26

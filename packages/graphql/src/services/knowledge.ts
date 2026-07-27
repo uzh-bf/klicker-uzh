@@ -159,8 +159,26 @@ export async function getKb({ id }: { id: string }, ctx: ContextWithUser) {
   return ctx.prisma.kB.findUniqueOrThrow({
     where: { id },
     include: {
-      resources: { orderBy: { updatedAt: 'desc' } },
+      resources: {
+        orderBy: { updatedAt: 'desc' },
+        include: {
+          ingestionRuns: { orderBy: { createdAt: 'desc' }, take: 1 },
+        },
+      },
     },
+  })
+}
+
+export async function getKbResourceIngestionRuns(
+  { resourceId }: { resourceId: string },
+  ctx: ContextWithUser
+) {
+  await getOwnedKbResourceOrThrow(ctx, resourceId)
+
+  return ctx.prisma.kBIngestionRun.findMany({
+    where: { resourceId },
+    orderBy: { createdAt: 'desc' },
+    take: 5,
   })
 }
 

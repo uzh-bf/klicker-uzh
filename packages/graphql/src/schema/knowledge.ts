@@ -45,7 +45,11 @@ export const KBIngestionRun = KBIngestionRunRef.implement({
   }),
 })
 
-export const KBResourceRef = builder.objectRef<DB.KBResource>('KBResource')
+interface IKBResource extends DB.KBResource {
+  ingestionRuns?: DB.KBIngestionRun[]
+}
+
+export const KBResourceRef = builder.objectRef<IKBResource>('KBResource')
 export const KBResource = KBResourceRef.implement({
   fields: (t) => ({
     id: t.exposeID('id'),
@@ -66,14 +70,10 @@ export const KBResource = KBResourceRef.implement({
       nullable: true,
     }),
     errorCode: t.exposeString('errorCode', { nullable: true }),
-    ingestionRuns: t.field({
-      type: [KBIngestionRunRef],
-      resolve: async (resource, _, ctx) =>
-        ctx.prisma.kBIngestionRun.findMany({
-          where: { resourceId: resource.id },
-          orderBy: { createdAt: 'desc' },
-          take: 5,
-        }),
+    latestIngestionRun: t.field({
+      type: KBIngestionRunRef,
+      nullable: true,
+      resolve: (resource) => resource.ingestionRuns?.[0] ?? null,
     }),
     createdAt: t.expose('createdAt', { type: 'Date' }),
     updatedAt: t.expose('updatedAt', { type: 'Date' }),
@@ -81,7 +81,7 @@ export const KBResource = KBResourceRef.implement({
 })
 
 interface IKB extends DB.KB {
-  resources: DB.KBResource[]
+  resources: IKBResource[]
 }
 
 export const KBRef = builder.objectRef<IKB>('KB')

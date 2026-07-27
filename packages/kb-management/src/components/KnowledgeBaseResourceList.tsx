@@ -1,4 +1,4 @@
-import { useMutation } from '@apollo/client'
+import { useLazyQuery, useMutation } from '@apollo/client'
 import {
   faFileLines,
   faLink,
@@ -7,14 +7,16 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetKbDocument,
+  GetKbResourceIngestionRunsDocument,
   IngestKbResourceDocument,
+  KbIngestionStatus,
   KbResourceStatus,
   KbResourceType,
   type GetKbQuery,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Badge, Button, H3, toast, Tooltip } from '@uzh-bf/design-system'
+import { Badge, Button, H3, toast } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import DeleteKnowledgeBaseResourceModal from './DeleteKnowledgeBaseResourceModal'
 
 type KnowledgeBaseResource = GetKbQuery['getKb']['resources'][number]
@@ -26,6 +28,183 @@ function getUrlHost(sourceUrl: string | null | undefined) {
   } catch {
     return sourceUrl
   }
+}
+
+function RunStatusBadge({
+  status,
+  dataCy,
+}: {
+  status: KbIngestionStatus
+  dataCy: string
+}) {
+  const t = useTranslations()
+  const presentation = (() => {
+    switch (status) {
+      case KbIngestionStatus.Queued:
+        return {
+          label: t('kb.runStatusQueued'),
+          className: 'border-amber-300 bg-amber-100 text-amber-900',
+        }
+      case KbIngestionStatus.Processing:
+        return {
+          label: t('kb.runStatusProcessing'),
+          className: 'border-amber-300 bg-amber-100 text-amber-900',
+        }
+      case KbIngestionStatus.Succeeded:
+        return {
+          label: t('kb.runStatusSucceeded'),
+          className: 'border-green-300 bg-green-100 text-green-800',
+        }
+      case KbIngestionStatus.Failed:
+        return {
+          label: t('kb.runStatusFailed'),
+          className: 'border-red-300 bg-red-100 text-red-800',
+        }
+      case KbIngestionStatus.Superseded:
+        return {
+          label: t('kb.runStatusSuperseded'),
+          className: 'border-slate-300 bg-slate-100 text-slate-700',
+        }
+    }
+  })()
+
+  return (
+    <Badge
+      variant="outline"
+      className={presentation.className}
+      data-cy={dataCy}
+    >
+      {status === KbIngestionStatus.Processing ? (
+        <FontAwesomeIcon
+          icon={faSpinner}
+          className="h-3 w-3 animate-spin motion-reduce:animate-none"
+          aria-hidden="true"
+        />
+      ) : null}
+      {presentation.label}
+    </Badge>
+  )
+}
+
+function RunStatusMessage({
+  status,
+  errorCode,
+  className,
+  dataCy,
+}: {
+  status: KbIngestionStatus
+  errorCode?: string | null
+  className?: string
+  dataCy?: string
+}) {
+  const t = useTranslations()
+  const message = (() => {
+    if (errorCode === 'QUEUE_DISPATCH_FAILED') {
+      return t('kb.ingestResourceError')
+    }
+    if (errorCode === 'INGESTION_DISPATCH_FAILED') {
+      return t('kb.ingestionStartError')
+    }
+    if (status === KbIngestionStatus.Failed) {
+      return t('kb.ingestionFailed')
+    }
+    if (status === KbIngestionStatus.Superseded) {
+      return t('kb.ingestionSuperseded')
+    }
+    return null
+  })()
+
+  return message ? (
+    <p className={className} data-cy={dataCy}>
+      {message}
+    </p>
+  ) : null
+}
+
+function KnowledgeBaseResourceHistory({
+  resourceId,
+  refreshKey,
+}: {
+  resourceId: string
+  refreshKey: number
+}) {
+  const t = useTranslations()
+  const format = useFormatter()
+  const detailsRef = useRef<HTMLDetailsElement>(null)
+  const [loadRuns, { data, loading, error }] = useLazyQuery(
+    GetKbResourceIngestionRunsDocument,
+    { variables: { resourceId } }
+  )
+
+  useEffect(() => {
+    if (refreshKey > 0 && detailsRef.current?.open) {
+      void loadRuns({ fetchPolicy: 'network-only' })
+    }
+  }, [loadRuns, refreshKey])
+
+  return (
+    <details
+      ref={detailsRef}
+      className="mt-3 border-t border-slate-200 pt-3"
+      data-cy={`kb-resource-history-${resourceId}`}
+      onToggle={(event) => {
+        if (event.currentTarget.open && !loading) {
+          void loadRuns({ fetchPolicy: 'network-only' })
+        }
+      }}
+    >
+      <summary className="text-primary-100 cursor-pointer font-medium focus-visible:outline-2 focus-visible:outline-offset-2">
+        {t('kb.recentAttempts')}
+      </summary>
+      {loading ? (
+        <p className="mt-3 text-sm text-slate-600" role="status">
+          {t('shared.generic.loading')}
+        </p>
+      ) : error ? (
+        <p className="mt-3 text-sm text-red-700" role="alert">
+          {t('kb.historyLoadError')}
+        </p>
+      ) : data?.getKbResourceIngestionRuns.length === 0 ? (
+        <p className="mt-3 text-sm text-slate-600">
+          {t('kb.noRecentAttempts')}
+        </p>
+      ) : (
+        <ol className="mt-3 space-y-2">
+          {data?.getKbResourceIngestionRuns.map((run) => (
+            <li
+              key={run.id}
+              className="grid gap-2 rounded-md border border-slate-200 p-3 text-sm sm:grid-cols-[auto_1fr_auto] sm:items-center"
+              data-cy={`kb-ingestion-run-${run.id}`}
+            >
+              <RunStatusBadge
+                status={run.status}
+                dataCy={`kb-ingestion-run-status-${run.id}`}
+              />
+              <div className="min-w-0 text-slate-600">
+                <span className="font-medium text-slate-800">
+                  {t('kb.version', { version: run.resourceVersion })}
+                </span>
+                <RunStatusMessage
+                  status={run.status}
+                  errorCode={run.errorCode}
+                  className="mt-1"
+                />
+              </div>
+              <time
+                dateTime={new Date(run.createdAt).toISOString()}
+                className="text-slate-500"
+              >
+                {format.dateTime(new Date(run.createdAt), {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                })}
+              </time>
+            </li>
+          ))}
+        </ol>
+      )}
+    </details>
+  )
 }
 
 function KnowledgeBaseResourceList({
@@ -40,6 +219,9 @@ function KnowledgeBaseResourceList({
   const [deletionTarget, setDeletionTarget] =
     useState<KnowledgeBaseResource | null>(null)
   const [ingestingId, setIngestingId] = useState<string | null>(null)
+  const [historyRefreshes, setHistoryRefreshes] = useState<
+    Record<string, number>
+  >({})
   const [ingestResource] = useMutation(IngestKbResourceDocument)
 
   const formatFileSize = (sizeBytes: number | null | undefined) => {
@@ -86,35 +268,25 @@ function KnowledgeBaseResourceList({
   }
 
   const renderStatus = (resource: KnowledgeBaseResource) => {
-    const status = getStatusPresentation(resource.status)
-    const badge = (
-      <Badge
-        variant="outline"
-        className={status.className}
-        data-cy={`kb-resource-status-${resource.id}`}
-      >
-        {resource.status === KbResourceStatus.Processing ? (
-          <FontAwesomeIcon
-            icon={faSpinner}
-            className="h-3 w-3 animate-spin motion-reduce:animate-none"
-            aria-hidden="true"
-          />
-        ) : null}
-        {status.label}
-      </Badge>
-    )
-
-    return resource.status === KbResourceStatus.Failed &&
-      resource.statusMessage ? (
-      <Tooltip
-        tooltip={resource.statusMessage}
-        data={{ cy: `kb-resource-status-message-${resource.id}` }}
-        dataContent={{ cy: `kb-resource-status-tooltip-${resource.id}` }}
-      >
-        {badge}
-      </Tooltip>
+    const latestRun = resource.latestIngestionRun
+    return latestRun ? (
+      <RunStatusBadge
+        status={latestRun.status}
+        dataCy={`kb-resource-status-${resource.id}`}
+      />
     ) : (
-      badge
+      (() => {
+        const status = getStatusPresentation(resource.status)
+        return (
+          <Badge
+            variant="outline"
+            className={status.className}
+            data-cy={`kb-resource-status-${resource.id}`}
+          >
+            {status.label}
+          </Badge>
+        )
+      })()
     )
   }
 
@@ -127,6 +299,10 @@ function KnowledgeBaseResourceList({
         refetchQueries: [{ query: GetKbDocument, variables: { id: kbId } }],
         awaitRefetchQueries: true,
       })
+      setHistoryRefreshes((current) => ({
+        ...current,
+        [resource.id]: (current[resource.id] ?? 0) + 1,
+      }))
       toast({ type: 'success', message: t('kb.ingestResourceSuccess') })
     } catch (error) {
       console.error('Failed to queue KB resource ingestion', error)
@@ -134,6 +310,16 @@ function KnowledgeBaseResourceList({
     } finally {
       setIngestingId(null)
     }
+  }
+
+  const getIngestActionLabel = (resource: KnowledgeBaseResource) => {
+    if (resource.status === KbResourceStatus.Added) {
+      return t('kb.ingestResource')
+    }
+    if (resource.status === KbResourceStatus.Failed) {
+      return t('kb.retryIngestion')
+    }
+    return t('kb.reingestResource')
   }
 
   return (
@@ -167,69 +353,144 @@ function KnowledgeBaseResourceList({
           {resources.map((resource) => (
             <li
               key={resource.id}
-              className="grid gap-3 rounded-md border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-center"
+              className="rounded-md border border-slate-200 bg-white p-4 shadow-sm"
               data-cy={`kb-resource-row-${resource.id}`}
             >
-              <div className="flex min-w-0 items-start gap-3">
-                <FontAwesomeIcon
-                  icon={
-                    resource.type === KbResourceType.Blob ? faFileLines : faLink
-                  }
-                  className="text-primary-100 mt-1 h-4 w-4 shrink-0"
-                />
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
                 <div className="min-w-0">
-                  <div className="truncate font-medium">{resource.title}</div>
-                  <div className="mt-1 break-all text-sm text-slate-600">
-                    {resource.type === KbResourceType.Blob
-                      ? formatFileSize(resource.sizeBytes)
-                      : getUrlHost(resource.sourceUrl)}
+                  <div className="flex min-w-0 items-start gap-3">
+                    <FontAwesomeIcon
+                      icon={
+                        resource.type === KbResourceType.Blob
+                          ? faFileLines
+                          : faLink
+                      }
+                      className="text-primary-100 mt-1 h-4 w-4 shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <div className="truncate font-medium">
+                        {resource.title}
+                      </div>
+                      <div className="mt-1 break-all text-sm text-slate-600">
+                        {resource.type === KbResourceType.Blob
+                          ? formatFileSize(resource.sizeBytes)
+                          : getUrlHost(resource.sourceUrl)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    className="mt-4 grid gap-3 sm:grid-cols-2"
+                    aria-live="polite"
+                    aria-atomic="true"
+                  >
+                    <div
+                      className="rounded-md bg-slate-50 p-3"
+                      data-cy={`kb-resource-operation-${resource.id}`}
+                    >
+                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        {t('kb.operationStatus')}
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-600">
+                        {renderStatus(resource)}
+                        <span>
+                          {t('kb.version', {
+                            version: resource.resourceVersion,
+                          })}
+                        </span>
+                      </div>
+                      {resource.latestIngestionRun ? (
+                        <RunStatusMessage
+                          status={resource.latestIngestionRun.status}
+                          errorCode={resource.latestIngestionRun.errorCode}
+                          className="mt-2 text-sm text-slate-600"
+                          dataCy={`kb-resource-status-message-${resource.id}`}
+                        />
+                      ) : null}
+                    </div>
+                    <div
+                      className="rounded-md bg-slate-50 p-3"
+                      data-cy={`kb-resource-serving-${resource.id}`}
+                    >
+                      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        {t('kb.servingStatus')}
+                      </div>
+                      <div className="mt-2 text-sm font-medium text-slate-800">
+                        {resource.activeResourceVersion == null
+                          ? t('kb.notServing')
+                          : resource.activeResourceVersion ===
+                                resource.resourceVersion &&
+                              resource.status === KbResourceStatus.Ready
+                            ? t('kb.servingCurrentVersion', {
+                                version: resource.activeResourceVersion,
+                              })
+                            : t('kb.servingPreviousVersion', {
+                                version: resource.activeResourceVersion,
+                              })}
+                      </div>
+                      {resource.ingestedAt ? (
+                        <div className="mt-1 text-sm text-slate-600">
+                          {t('kb.servingSince', {
+                            date: format.dateTime(
+                              new Date(resource.ingestedAt),
+                              {
+                                dateStyle: 'medium',
+                                timeStyle: 'short',
+                              }
+                            ),
+                          })}
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
+
+                <div className="grid grid-cols-2 items-end gap-2 sm:flex sm:flex-wrap lg:self-start">
+                  <Button
+                    primary
+                    onClick={() => handleIngest(resource)}
+                    loading={ingestingId === resource.id}
+                    disabled={
+                      ingestingId !== null ||
+                      resource.status === KbResourceStatus.Queued ||
+                      resource.status === KbResourceStatus.Processing
+                    }
+                    data={{ cy: `ingest-kb-resource-${resource.id}` }}
+                    className={{ root: 'w-full sm:w-auto' }}
+                  >
+                    <Button.Label>
+                      {getIngestActionLabel(resource)}
+                    </Button.Label>
+                  </Button>
+                  <Button
+                    destructive
+                    disabled={
+                      ingestingId !== null ||
+                      resource.status === KbResourceStatus.Queued ||
+                      resource.status === KbResourceStatus.Processing
+                    }
+                    onClick={() => setDeletionTarget(resource)}
+                    data={{ cy: `delete-kb-resource-${resource.id}` }}
+                    className={{ root: 'w-full sm:w-auto' }}
+                  >
+                    <Button.Label>{t('shared.generic.delete')}</Button.Label>
+                  </Button>
+                </div>
               </div>
-              <div
-                className="flex flex-wrap items-center gap-2 text-sm text-slate-600"
-                aria-live="polite"
-                aria-atomic="true"
-              >
-                {renderStatus(resource)}
-                <span>
-                  {t('kb.updatedAt', {
-                    date: format.dateTime(new Date(resource.updatedAt), {
-                      dateStyle: 'medium',
-                      timeStyle: 'short',
-                    }),
-                  })}
-                </span>
+
+              <div className="mt-3 text-sm text-slate-500">
+                {t('kb.updatedAt', {
+                  date: format.dateTime(new Date(resource.updatedAt), {
+                    dateStyle: 'medium',
+                    timeStyle: 'short',
+                  }),
+                })}
               </div>
-              <div className="grid grid-cols-2 items-end gap-2 sm:flex sm:flex-wrap">
-                <Button
-                  primary
-                  onClick={() => handleIngest(resource)}
-                  loading={ingestingId === resource.id}
-                  disabled={
-                    ingestingId !== null ||
-                    resource.status === KbResourceStatus.Queued ||
-                    resource.status === KbResourceStatus.Processing
-                  }
-                  data={{ cy: `ingest-kb-resource-${resource.id}` }}
-                  className={{ root: 'w-full sm:w-auto' }}
-                >
-                  <Button.Label>{t('kb.ingestResource')}</Button.Label>
-                </Button>
-                <Button
-                  destructive
-                  disabled={
-                    ingestingId !== null ||
-                    resource.status === KbResourceStatus.Queued ||
-                    resource.status === KbResourceStatus.Processing
-                  }
-                  onClick={() => setDeletionTarget(resource)}
-                  data={{ cy: `delete-kb-resource-${resource.id}` }}
-                  className={{ root: 'w-full sm:w-auto' }}
-                >
-                  <Button.Label>{t('shared.generic.delete')}</Button.Label>
-                </Button>
-              </div>
+
+              <KnowledgeBaseResourceHistory
+                resourceId={resource.id}
+                refreshKey={historyRefreshes[resource.id] ?? 0}
+              />
             </li>
           ))}
         </ul>

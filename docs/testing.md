@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the two e2e stacks and their seeds, and the CI test matrix.
-timestamp: '2026-07-18'
+timestamp: '2026-07-27'
 tags:
   - testing
   - ci
@@ -20,7 +20,7 @@ tags:
 | GraphQL services/resolvers                                           | `packages/graphql` vitest — needs REAL Postgres + Redis + Hatchet + `HATCHET_CLIENT_TOKEN` | `pnpm --filter @klicker-uzh/graphql test:local` (one-command bootstrap: `test/run-tests-local.sh`) |
 | UI / user flows                                                      | Playwright e2e (new specs); Cypress only for legacy maintenance                            | see routing below                                                                                  |
 
-The focused KB ingestion and signed-webhook suites deliberately avoid a real Hatchet client: ingestion uses a test-only `runNoWait` task stub, and webhook tests use Prisma directly. They still run against real PostgreSQL and cover atomic resource/run transitions, retry races, serving cutover, and terminal-event ordering.
+The focused KB CRUD, ingestion, and signed-webhook suites deliberately avoid a real Hatchet client: CRUD and ingestion use test-only task stubs, and webhook tests use Prisma directly. They still run against real PostgreSQL and cover owner-scoped bounded history, atomic resource/run transitions, retry races, serving cutover, and terminal-event ordering.
 
 **Never run root `pnpm run test:run` blind** — the turbo fan-out includes Cypress, which needs a running, seeded stack. The graphql vitest config forces `pool: forks, singleFork: true` (serialized specs sharing DB state) — don't parallelize it.
 

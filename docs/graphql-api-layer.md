@@ -2,7 +2,7 @@
 type: API Layer
 title: GraphQL API Layer
 description: Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
-timestamp: '2026-07-07'
+timestamp: '2026-07-27'
 tags:
   - backend
   - graphql
@@ -45,7 +45,7 @@ pnpm --filter @klicker-uzh/graphql generate
 
 and **commit the regenerated outputs** (`src/ops.ts`, `src/ops.schema.json`, `src/public/schema.graphql`, `src/public/client.json`, `src/public/server.json`) in the same change. They are git-tracked and load-bearing: frontends import typed documents from `@klicker-uzh/graphql/dist/ops`, and outside dev/test the backend only executes hashes present in `server.json` (see [Architecture Overview](./architecture-overview.md)). Stale artifacts fail in two distinct ways: typecheck errors (missing document) or runtime persisted-query rejection (unknown hash).
 
-Knowledge-base detail queries expose at most the five newest `KBIngestionRun` records per owned resource. Keep attempt history resource-scoped and bounded at the schema field; do not expose the unbounded ledger or bypass the parent KB/resource ownership checks.
+Knowledge-base detail polling exposes only each resource's latest ingestion run, loaded with the resource list in `packages/graphql/src/services/knowledge.ts:getKb`. Full attempt history is a separate `getKbResourceIngestionRuns` query: it checks resource ownership, returns at most the five newest runs, and is requested only when the lecturer expands that resource. Do not nest full history under the polled parent list or expose the unbounded ledger.
 
 ## Subscriptions
 

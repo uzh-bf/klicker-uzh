@@ -42,7 +42,7 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
 7. **Frontend wiring** — `import { <Name>Document } from '@klicker-uzh/graphql/dist/ops'`; `useQuery`/`useMutation` (+ `refetchQueries`) per [docs/frontend-conventions.md](../../../docs/frontend-conventions.md).
 8. **Tests** — graphql vitest for service logic (`pnpm --filter @klicker-uzh/graphql test:local`; see the heavy pattern in `38c92d035`); route further via `klicker-testing-verification`.
 
-Nested history fields must be bounded in their resolver. The KB resource contract exposes only the five newest owner-scoped ingestion runs; do not return an unbounded attempt ledger through a parent list.
+Do not nest full history under a frequently polled parent list. The KB detail query loads only each resource's latest run; the separate owner-checked history query returns at most the five newest runs and is called on expansion.
 
 ## Subscriptions (extra steps)
 

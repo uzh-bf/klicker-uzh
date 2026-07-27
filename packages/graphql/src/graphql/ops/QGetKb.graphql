@@ -12,23 +12,13 @@ query GetKb($id: ID!) {
       mimeType
       sizeBytes
       status
-      statusMessage
       ingestedAt
       resourceVersion
       activeResourceVersion
-      activeContentSha256
-      errorCode
-      ingestionRuns {
+      latestIngestionRun {
         id
         status
-        resourceVersion
-        contentSha256
-        statusMessage
         errorCode
-        startedAt
-        finishedAt
-        createdAt
-        updatedAt
       }
       createdAt
       updatedAt

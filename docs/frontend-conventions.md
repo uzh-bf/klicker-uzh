@@ -2,7 +2,7 @@
 type: Frontend Conventions
 title: Frontend Conventions
 description: Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.
-timestamp: '2026-07-26'
+timestamp: '2026-07-27'
 tags:
   - frontend
 ---
@@ -44,9 +44,9 @@ Apollo Client with **generated documents only** — `import { UserProfileDocumen
 
 ## Knowledge-base management
 
-The lecturer routes `apps/frontend-manage/src/pages/resources/knowledgeBases.tsx:KnowledgeBasesPage` and `apps/frontend-manage/src/pages/resources/knowledgeBases/[id].tsx:KnowledgeBasePage` mount the buildless `@klicker-uzh/kb-management` package inside the authenticated manage layout. Keep reusable KB UI in that package rather than duplicating it in the host app.
+The lecturer routes `apps/frontend-manage/src/pages/resources/knowledgeBases.tsx:KnowledgeBasesPage` and `apps/frontend-manage/src/pages/resources/knowledgeBases/[id].tsx:KnowledgeBasePage` mount the buildless `@klicker-uzh/kb-management` package inside the authenticated manage layout. The dynamic detail route uses `getServerSideProps`; its arbitrary database ids are resolved per request rather than through empty build-time paths. Keep reusable KB UI in that package rather than duplicating it in the host app.
 
-`packages/kb-management/src/components/KnowledgeBaseResourceList.tsx:KnowledgeBaseResourceList` owns per-resource status polling presentation, the identifier-only Ingest action, and guarded deletion. Transport tuning is not user-controlled. Changes must preserve EN/DE messages, `data-cy` hooks, and browser evidence for desktop plus mobile states, including empty, active (`QUEUED`/`PROCESSING`), ready, and failed feedback where affected.
+`packages/kb-management/src/components/KnowledgeBaseResourceList.tsx:KnowledgeBaseResourceList` owns per-resource status polling, contextual Ingest/Retry/Re-ingest actions, separate latest-operation and active-serving presentation, lazy loading of the five newest attempts, and guarded deletion. Full attempt history must stay outside the two-second detail poll. Lecturer-facing failure detail is localized from stable status/error codes; raw platform messages are not rendered. Transport tuning is not user-controlled. Changes must preserve EN/DE messages, `data-cy` hooks, and browser evidence for desktop plus mobile states, including empty, active (`QUEUED`/`PROCESSING`), ready, failed, and replacement-cutover feedback where affected.
 
 ## i18n (next-intl)
 
