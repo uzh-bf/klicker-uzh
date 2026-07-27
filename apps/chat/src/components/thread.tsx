@@ -18,6 +18,7 @@ import {
   ArrowDownIcon,
   CheckIcon,
   CopyIcon,
+  ImageIcon,
   ImagePlusIcon,
   PencilIcon,
   PencilOffIcon,
@@ -42,9 +43,13 @@ import { useMessageSources } from '@/src/hooks/useMessageSources'
 import {
   getImageAttachmentKey,
   hasAnyImageAttachmentData,
+  parentMessageHasImageAttachment,
 } from '@/src/lib/attachments/attachmentState'
 import { getAttachmentPreviewSrc } from '@/src/lib/attachments/attachmentUi'
-import { useChatStore } from '@/src/stores/chatStore'
+import {
+  type ExtendedThreadMessageLike,
+  useChatStore,
+} from '@/src/stores/chatStore'
 import {
   MAX_IMAGE_ATTACHMENTS,
   useComposerStore,
@@ -71,6 +76,7 @@ import { twMerge } from 'tailwind-merge'
 
 type ThreadProps = { chatbotAvatar: string }
 const EMPTY_REMOVED_ATTACHMENT_KEYS: string[] = []
+const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []
 
 const formatCredits = (value: number) => {
   if (!Number.isFinite(value)) return '0'
@@ -1163,6 +1169,42 @@ const EditComposer: FC = () => {
   )
 }
 
+/**
+ * Friendly activity chip, styled like the doc-query tool chips in
+ * `tool-fallback.tsx`, shown on an assistant reply whose parent user
+ * message (one hop up the active branch's `parentId` chain) attached at
+ * least one image. There is no async "analyzing" state to track — the
+ * image was already sent with the request — so this is a static badge,
+ * not a running/done toggle like the tool chips.
+ */
+const ImageAnalyzedChip: FC = () => {
+  const t = useTranslations()
+  const message = useMessage() as MessageWithCustomMetadata
+  const hasImageAttachment = useChatStore((state) => {
+    const activeThread = state.threads.find(
+      (thread) => thread.id === state.activeThreadId
+    )
+    return parentMessageHasImageAttachment(
+      activeThread?.messages ?? EMPTY_MESSAGES,
+      message.id
+    )
+  })
+
+  if (!hasImageAttachment) return null
+
+  return (
+    <div className="mb-1">
+      <span
+        data-cy="chat-image-analyzed"
+        className="text-muted-foreground inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
+      >
+        <ImageIcon className="size-3" aria-hidden />
+        {t('chat.tools.imageAnalyzed')}
+      </span>
+    </div>
+  )
+}
+
 const AssistantMessage: FC<{
   chatbotAvatar: string
 }> = ({ chatbotAvatar }) => {
@@ -1232,6 +1274,7 @@ const AssistantMessage: FC<{
         )}
       >
         {isPendingEmpty && <ThinkingDots />}
+        <ImageAnalyzedChip />
         <MessageSourcesProvider value={messageSources}>
           <AssistantMessageParts />
           <SourcesSection />

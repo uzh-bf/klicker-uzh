@@ -164,6 +164,7 @@ export default {
       searchedCourseMaterial: 'Searched course materials',
       searchedCourseMaterialEmpty: 'Searched course materials · no results',
       searchCourseMaterialFailed: 'Course material search failed',
+      imageAnalyzed: 'Image analyzed',
     },
     sources: {
       title: 'Sources',
