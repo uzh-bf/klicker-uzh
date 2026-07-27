@@ -11,6 +11,7 @@ import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
 } from '@/src/services/mcpClients'
+import { resolveMcpScopeSessionId } from '@/src/services/mcpScope'
 import { createOpenAI } from '@ai-sdk/openai'
 import { prisma } from '@klicker-uzh/prisma'
 import { Chatbot } from '@klicker-uzh/prisma/client'
@@ -894,12 +895,35 @@ export async function POST(
     content: msg.content,
   }))
 
+  const owningThread = currentThreadId
+    ? await prisma.chatThread.findFirst({
+        where: {
+          id: currentThreadId,
+          participantId,
+          chatbotId,
+        },
+        select: { id: true },
+      })
+    : null
+  const mcpSessionId = resolveMcpScopeSessionId({
+    requestedThreadId: currentThreadId,
+    owningThreadId: owningThread?.id,
+    fallbackId: requestId,
+  })
+
+  if (!mcpSessionId) {
+    return NextResponse.json(
+      { error: 'Chat thread not found' },
+      { status: 404 }
+    )
+  }
+
   // Load MCP tools from database configurations or fallback to legacy
   const mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, {
     chatbotId,
     participantId,
     kbId: enabledKnowledgeBaseId,
-    sessionId: currentThreadId ?? requestId,
+    sessionId: mcpSessionId,
   })
 
   if (!chatbot) {
@@ -1208,17 +1232,6 @@ export async function POST(
     ),
     elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
   })
-
-  const owningThread = currentThreadId
-    ? await prisma.chatThread.findFirst({
-        where: {
-          id: currentThreadId,
-          participantId,
-          chatbotId,
-        },
-        select: { id: true },
-      })
-    : null
 
   logEvent('thread.resolved', {
     hasOwningThread: Boolean(owningThread),

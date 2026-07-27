@@ -12,6 +12,7 @@ Facts about the test landscape: [docs/testing.md](../../../docs/testing.md). Thi
 | You changed…                                                    | Run                                                                                                                                      |
 | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | Pure logic in grading/util/export/word-cloud, or chat app logic | `pnpm --filter @klicker-uzh/<pkg> test` — safe with no services                                                                          |
+| Prisma seed reconciliation                                      | `pnpm --filter @klicker-uzh/prisma-data test` — Node test runner through the package's existing `tsx` toolchain                          |
 | `packages/graphql` services/schema                              | `pnpm --filter @klicker-uzh/graphql test:local` — one-command bootstrap (real Postgres + Redis + Hatchet); serialized, don't parallelize |
 | UI or user flows                                                | e2e — new specs go to `klicker-playwright-e2e` (primary suite); use `klicker-cypress-e2e` only to keep the frozen legacy suite green     |
 | React component appearance/behavior only                        | there is **no component-test layer** — verify in the browser (below) and rely on e2e if a flow covers it                                 |

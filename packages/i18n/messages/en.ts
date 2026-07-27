@@ -562,6 +562,15 @@ Other participants will only see your public **participant profile**, including 
       participationRequiredMessage:
         'We could not activate your participation for this course. Open the course in OLAT/KlickerUZH and ensure you have joined it before trying again.',
       goToCourse: 'Open course',
+      retrieval: {
+        searching: 'Searching lecture content for “{query}”…',
+        errorTitle: 'Search unavailable',
+        errorDescription:
+          'The lecture content could not be searched. Please try again.',
+        contentTitle: 'Lecture content',
+        questionLabel: 'Question',
+        noContent: 'No content available',
+      },
     },
     insights: {
       noCourseDataAvailable:

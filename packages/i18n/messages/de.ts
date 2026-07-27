@@ -564,6 +564,15 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
       participationRequiredMessage:
         'Ihre Kursteilnahme für diesen Chatbot konnte nicht eingerichtet werden. Öffnen Sie den Kurs in OLAT/KlickerUZH und treten Sie ihm bei, bevor Sie es erneut versuchen.',
       goToCourse: 'Kurs öffnen',
+      retrieval: {
+        searching: 'Vorlesungsinhalte werden nach „{query}“ durchsucht…',
+        errorTitle: 'Suche nicht verfügbar',
+        errorDescription:
+          'Die Vorlesungsinhalte konnten nicht durchsucht werden. Bitte versuchen Sie es erneut.',
+        contentTitle: 'Vorlesungsinhalte',
+        questionLabel: 'Frage',
+        noContent: 'Keine Inhalte verfügbar',
+      },
     },
     insights: {
       noCourseDataAvailable:

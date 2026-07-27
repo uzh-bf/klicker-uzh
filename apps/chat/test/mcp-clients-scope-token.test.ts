@@ -5,7 +5,11 @@ import {
   type MCPRequestContext,
   type MCPServerConfig,
 } from '../src/services/mcpClients'
-import { canLoadMCPServer, DOC_QUERY_TOOL_NAME } from '../src/services/mcpScope'
+import {
+  canLoadMCPServer,
+  DOC_QUERY_TOOL_NAME,
+  resolveMcpScopeSessionId,
+} from '../src/services/mcpScope'
 
 const TEST_ISSUER = 'https://chat.klicker.test'
 const TEST_AUDIENCE = 'klicker-doc-query-test'
@@ -95,5 +99,29 @@ describe('doc-query MCP scope authentication', () => {
 
   test('keeps the citation card aligned with the runtime tool name', () => {
     expect(DOC_QUERY_TOOL_NAME).toBe('KB_doc_query')
+  })
+
+  test('never signs a client-supplied foreign thread as the session subject', () => {
+    expect(
+      resolveMcpScopeSessionId({
+        requestedThreadId: 'foreign-thread',
+        owningThreadId: undefined,
+        fallbackId: 'server-request',
+      })
+    ).toBeNull()
+    expect(
+      resolveMcpScopeSessionId({
+        requestedThreadId: 'owned-thread',
+        owningThreadId: 'owned-thread',
+        fallbackId: 'server-request',
+      })
+    ).toBe('owned-thread')
+    expect(
+      resolveMcpScopeSessionId({
+        requestedThreadId: null,
+        owningThreadId: undefined,
+        fallbackId: 'server-request',
+      })
+    ).toBe('server-request')
   })
 })
