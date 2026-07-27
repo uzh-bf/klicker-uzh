@@ -759,9 +759,11 @@ test.describe('Chatbot Message Actions & Branching', () => {
     await expect(content('only in A')).toHaveCount(0)
   })
 
-  // KNOWN BUG: editing the ROOT user message does not create a branch (the
-  // branch picker never appears), unlike editing a non-root message above.
-  test.fixme(
+  // Regression guard for the root-edit branch fix: the edit must go through
+  // the edit composer's own send (see thread.tsx:EditComposer) — submitting
+  // via threadRuntime.append() collapses the root message's null parentId
+  // and silently turns the edit into a new turn instead of a sibling branch.
+  test(
     'Editing the ROOT user message creates a new branch',
     async ({ page }) => {
       await visitChat(page)
@@ -882,6 +884,10 @@ test.describe('Chatbot Image Attachments', () => {
 
     const tile = page.getByTestId('chat-message-attachment').first()
     await expect(tile).toBeVisible()
+
+    // The reply to an image-bearing turn carries the localized activity chip.
+    await expect(page.getByTestId('chat-image-analyzed')).toBeVisible()
+
     await tile.click()
 
     await expect(page.getByTestId('chat-image-viewer-image')).toBeVisible()
