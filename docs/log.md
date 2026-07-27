@@ -1,5 +1,16 @@
 # Log
 
+## 2026-07-27
+
+- **Update**: [chat-platform](./chat-platform.md) records the design-alignment round: thread
+  rows carry a mode icon + localized subtitle (`formatModeLabel` in `lib/config/modes.ts`),
+  assistant blockquotes render as amber info callouts (assistant-only `markdown-text.tsx`
+  override), and a new client-state gotcha — message edits must submit through
+  `messageRuntime.composer.send({ startRun: true })`, because the public
+  `threadRuntime.append()` collapses a `null` parentId and turns root-message edits into new
+  turns instead of sibling branches, hiding the branch pager. Replies to image-bearing turns
+  now carry a localized "Image analyzed" activity chip driven by a pure store-side helper.
+
 ## 2026-07-26
 
 - **Update**: [chat-platform](./chat-platform.md) documents the citation-chip wrap contract

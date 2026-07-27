@@ -73,7 +73,15 @@ empty running assistant message shows a localized thinking indicator. Send/strea
 disclaimer action failures, and thread-list failures are localized with retry affordances where
 the action can be retried. A cached thread list intentionally remains visible if only its
 background refresh fails. The welcome view contains localized starter suggestions, and
-message action bars remain mounted for touch users rather than relying on hover.
+message action bars remain mounted for touch users rather than relying on hover. Each thread
+row shows the thread's last chat mode as an icon plus localized label under the title
+(`thread.lastChatMode` via `formatModeLabel`), and Markdown blockquotes in answers render as
+amber info callouts (the `blockquote` override in `markdown-text.tsx`, which only assistant
+messages render through — user text never gets the callout styling). A reply to an
+image-bearing user turn carries a static "Image analyzed" / "Bild analysiert" chip
+(`ImageAnalyzedChip` in `thread.tsx`, gated by the pure `parentMessageHasImageAttachment`
+helper over the chatStore's loaded message list — the store, not the runtime message, because
+the assistant-ui conversion moves `imageAttachments` into `metadata.custom`).
 
 Assistant message persistence passes completed AI SDK steps through
 `src/lib/server/persistedAssistantContent.ts:mapAssistantStepContent`. Successful text,
@@ -181,7 +189,7 @@ needs a live key the devcontainer does not carry.
 
 Two recurring traps in this app's strings:
 
-- **Per-chatbot vocabulary is free-form**, so chat modes (`systemPrompts` keys) and reasoning efforts are `string`, not unions. Only the well-known values get a translation; anything else falls back to its raw name. `src/lib/config/modes.ts` holds the known-mode predicate (its two call sites translate inline, because each also needs the mode's icon); `src/lib/config/reasoning.ts` exports `formatReasoningEffort` outright, since its three call sites want nothing but the label and had already drifted apart once. Either way, go through those modules so the selector and the caption under an answer cannot end up with different words for the same value.
+- **Per-chatbot vocabulary is free-form**, so chat modes (`systemPrompts` keys) and reasoning efforts are `string`, not unions. Only the well-known values get a translation; anything else falls back to its raw name. `src/lib/config/modes.ts` holds the known-mode predicate and `formatModeLabel` (used by the thread-list mode subtitle; unknown modes fall back to their capitalized raw name), while the older call sites still translate inline alongside their icon lookups; `src/lib/config/reasoning.ts` exports `formatReasoningEffort` outright, since its three call sites want nothing but the label and had already drifted apart once. Either way, go through those modules so the selector and the caption under an answer cannot end up with different words for the same value.
 - **ICU plurals must be selected on the displayed number.** `formatCredits(1.2)` renders `1` but `Intl.PluralRules.select(1.2)` is `other`, so passing the raw float prints "1 credits". Feed `count` the rounded value the user actually sees.
 
 ## Message feedback and Langfuse
@@ -202,6 +210,7 @@ PostgreSQL is the only rating store. Do not mirror votes to Langfuse while the t
 - **Login redirects**: `src/app/noLogin/page.tsx` must pass an **absolute** chat URL as the PWA login `redirect_to`; a relative path makes the PWA redirect to its own domain and 404.
 - **Do not put user-facing English in the store.** `chatStore` maps the API's generic enrolment 403 to `null` so the notice component can render its localized default; substituting a readable English sentence in the store makes the translated fallback unreachable.
 - **Thread-row edit/delete need the row active first on touch** (`thread-list.tsx`): the buttons are `hidden` and only reveal via `group-hover`/`group-focus-within`, which touch has neither of, so a touch user must tap the row (making it active, which also sets `inline-flex`) before the edit/delete buttons appear. Accepted friction, not a bug — leave as is.
+- **Message edits must go through the edit composer's own send** — `messageRuntime.composer.send({ startRun: true })` in `thread.tsx:EditComposer`. The public `threadRuntime.append()` normalizes a `null` parentId to "last message in the current path" (vendor `toAppendMessage`), so submitting an edit through it turns a root-message edit into a brand-new turn instead of a sibling branch and the branch pager (`branch-picker.tsx`) never shows. `startRun: true` is required because the vendor's own change gate compares only composer text/attachments and cannot see the kept-original-attachment state this app tracks outside the composer; the app-side `canSubmit` is the real change gate.
 
 ## Testing
 
