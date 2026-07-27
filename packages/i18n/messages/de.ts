@@ -167,6 +167,7 @@ export default {
       searchedCourseMaterial: 'Kursmaterialien durchsucht',
       searchedCourseMaterialEmpty: 'Kursmaterialien durchsucht · keine Treffer',
       searchCourseMaterialFailed: 'Suche in Kursmaterialien fehlgeschlagen',
+      imageAnalyzed: 'Bild analysiert',
     },
     sources: {
       title: 'Quellen',
