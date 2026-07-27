@@ -28,6 +28,7 @@ Provenance: steps 2 requires a database; on a machine without one running, write
 - **Decimal fields**: Python client needs `enable_experimental_decimal = true` in `apps/analytics/prisma/schema/py.prisma` (already set — don't remove); TS side never truthy-checks Decimals.
 - **Don't touch `apps/analytics/prisma/schema/*.prisma` by hand** — `prisma:sync` overwrites everything except `py.prisma`.
 - **Participant email uniqueness is per auth mode** (`@@unique([email, isSSOAccount])`) — cross-mode duplicate prevention lives in service logic, not the schema.
+- **KB ingestion has two state axes** — `KBResource` holds the latest operation plus active serving identity; `KBIngestionRun` is append-only and uses the ingestion attempt/idempotency UUID as its primary key. Create and transition both records atomically; a failed replacement must not erase the active version.
 
 ## Seeds — three independent paths
 

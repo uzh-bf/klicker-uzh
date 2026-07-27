@@ -1696,12 +1696,38 @@ type KBFileUpload {
   uploadSasURL: String!
 }
 
-type KBResource {
+type KBIngestionRun {
+  contentSha256: String
   createdAt: Date!
+  errorCode: String
+  finishedAt: Date
+  id: ID!
+  resourceVersion: Int!
+  startedAt: Date
+  status: KBIngestionStatus!
+  statusMessage: String
+  updatedAt: Date!
+}
+
+enum KBIngestionStatus {
+  FAILED
+  PROCESSING
+  QUEUED
+  SUCCEEDED
+  SUPERSEDED
+}
+
+type KBResource {
+  activeContentSha256: String
+  activeResourceVersion: Int
+  createdAt: Date!
+  errorCode: String
   id: ID!
   ingestedAt: Date
+  ingestionRuns: [KBIngestionRun!]!
   mimeType: String
   originalFilename: String
+  resourceVersion: Int!
   sizeBytes: Int
   sourceUrl: String
   status: KBResourceStatus!

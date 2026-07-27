@@ -14,6 +14,14 @@ enum KBResourceStatus {
   FAILED
 }
 
+enum KBIngestionStatus {
+  QUEUED
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  SUPERSEDED
+}
+
 model KB {
   id          String  @id @default(uuid()) @db.Uuid
   name        String
@@ -54,14 +62,41 @@ model KBResource {
   contentSha256              String?
   externalOperationId        String?
   externalOperationStartedAt DateTime?
+  activeResourceVersion      Int?
+  activeContentSha256        String?
+  errorCode                  String?
 
   kb   KB     @relation(fields: [kbId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   kbId String @db.Uuid
+
+  ingestionRuns KBIngestionRun[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([kbId, status])
+  @@index([status])
+}
+
+model KBIngestionRun {
+  id String @id @db.Uuid
+
+  status              KBIngestionStatus @default(QUEUED)
+  resourceVersion     Int
+  contentSha256       String?
+  externalOperationId String?
+  statusMessage       String?
+  errorCode           String?
+  startedAt           DateTime?
+  finishedAt          DateTime?
+
+  resource   KBResource @relation(fields: [resourceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  resourceId String     @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([resourceId, createdAt])
   @@index([status])
 }
 

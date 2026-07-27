@@ -1,4 +1,5 @@
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
+import { prisma as prismaClient } from '@klicker-uzh/prisma'
 import { KBResourceType, PrismaClient } from '@klicker-uzh/prisma/client'
 import { EventEmitter } from 'events'
 import { vi } from 'vitest'
@@ -8,7 +9,7 @@ import {
   createKbUrlResource,
   ingestKbResource,
 } from '../src/services/knowledge.js'
-import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
+import { testCleanup, testInitialization } from './helpers.js'
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
@@ -21,10 +22,12 @@ describe('Integration tests for knowledge base ingestion', () => {
   let userTwoCtx: ContextWithUser
 
   beforeAll(async () => {
-    const initialized = await initializePrisma()
-    prisma = initialized.prisma
-    hatchet = initialized.hatchet
-    emitter = initialized.emitter
+    prisma = prismaClient
+    await testCleanup(prisma)
+    hatchet = {
+      task: vi.fn(() => ({ runNoWait: vi.fn() })),
+    } as unknown as Hatchet
+    emitter = new EventEmitter()
   })
 
   afterAll(async () => {
@@ -80,9 +83,18 @@ describe('Integration tests for knowledge base ingestion', () => {
       ingestionAttemptId: queued.ingestionAttemptId,
       resourceVersion: 1,
     })
+    await expect(
+      prisma.kBIngestionRun.findUnique({
+        where: { id: queued.ingestionAttemptId! },
+      })
+    ).resolves.toMatchObject({
+      resourceId: resource.id,
+      resourceVersion: 1,
+      status: 'QUEUED',
+    })
   })
 
-  it('clears prior external metadata when claiming a new attempt', async () => {
+  it('claims a new attempt while preserving active serving metadata', async () => {
     const created = await createKb({ name: 'Finance notes' }, userOneCtx)
     const resource = await createKbUrlResource(
       {
@@ -105,6 +117,8 @@ describe('Integration tests for knowledge base ingestion', () => {
         contentSha256: 'a'.repeat(64),
         externalOperationId: 'old-operation-id',
         externalOperationStartedAt: new Date('2026-07-19T11:30:00.000Z'),
+        activeResourceVersion: 2,
+        activeContentSha256: 'a'.repeat(64),
       },
     })
     const runNoWait = vi
@@ -116,11 +130,13 @@ describe('Integration tests for knowledge base ingestion', () => {
     expect(queued).toMatchObject({
       status: 'QUEUED',
       statusMessage: null,
-      ingestedAt: null,
+      ingestedAt,
       resourceVersion: 3,
       contentSha256: null,
       externalOperationId: null,
       externalOperationStartedAt: null,
+      activeResourceVersion: 2,
+      activeContentSha256: 'a'.repeat(64),
     })
     expect(queued.ingestionAttemptId).toMatch(UUID_PATTERN)
     expect(queued.ingestionAttemptId).not.toBe(oldAttemptId)
@@ -235,6 +251,9 @@ describe('Integration tests for knowledge base ingestion', () => {
       ingestionAttemptId: dispatchedAttemptId,
       resourceVersion: 1,
     })
+    await expect(
+      prisma.kBIngestionRun.count({ where: { resourceId: resource.id } })
+    ).resolves.toBe(1)
   })
 
   it('rejects an ABA claim when the observed attempt changes at the same status', async () => {
@@ -260,18 +279,38 @@ describe('Integration tests for knowledge base ingestion', () => {
       prisma: {
         kBResource: {
           findFirst: kbResource.findFirst.bind(kbResource),
-          updateMany: async (
-            args: Parameters<typeof kbResource.updateMany>[0]
-          ) => {
-            await kbResource.update({
-              where: { id: resource.id },
-              data: {
-                ingestionAttemptId: newerAttemptId,
-                statusMessage: 'Newer same-status attempt',
+        },
+        $transaction: async <T>(
+          callback: (tx: {
+            kBResource: {
+              updateMany: (
+                args: Parameters<typeof kbResource.updateMany>[0]
+              ) => Promise<{ count: number }>
+            }
+            kBIngestionRun: {
+              create: (
+                args: Parameters<typeof prisma.kBIngestionRun.create>[0]
+              ) => Promise<unknown>
+            }
+          }) => Promise<T>
+        ) => {
+          await prisma.kBResource.update({
+            where: { id: resource.id },
+            data: {
+              ingestionAttemptId: newerAttemptId,
+              statusMessage: 'Newer same-status attempt',
+            },
+          })
+          return prisma.$transaction(async (tx) =>
+            callback({
+              kBResource: {
+                updateMany: async (args) => tx.kBResource.updateMany(args),
+              },
+              kBIngestionRun: {
+                create: async (args) => tx.kBIngestionRun.create(args),
               },
             })
-            return kbResource.updateMany(args)
-          },
+          )
         },
       },
     } as unknown as ContextWithUser
@@ -289,7 +328,7 @@ describe('Integration tests for knowledge base ingestion', () => {
     })
   })
 
-  it('restores the complete pre-click snapshot when Hatchet dispatch fails', async () => {
+  it('records a failed attempt when Hatchet queue dispatch fails', async () => {
     const created = await createKb({ name: 'Finance notes' }, userOneCtx)
     const resource = await createKbUrlResource(
       {
@@ -313,6 +352,8 @@ describe('Integration tests for knowledge base ingestion', () => {
         contentSha256: 'b'.repeat(64),
         externalOperationId: 'previous-operation-id',
         externalOperationStartedAt: oldExternalStartedAt,
+        activeResourceVersion: 1,
+        activeContentSha256: 'c'.repeat(64),
       },
     })
     vi.spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait').mockRejectedValue(
@@ -322,17 +363,33 @@ describe('Integration tests for knowledge base ingestion', () => {
     await expect(
       ingestKbResource({ id: resource.id }, userOneCtx)
     ).rejects.toThrow('KB ingestion could not be queued')
+    const failed = await prisma.kBResource.findUniqueOrThrow({
+      where: { id: resource.id },
+    })
+    expect(failed).toMatchObject({
+      status: 'FAILED',
+      statusMessage: 'The ingestion operation could not be queued.',
+      ingestedAt: oldIngestedAt,
+      ingestionAttemptId: expect.stringMatching(UUID_PATTERN),
+      resourceVersion: 3,
+      contentSha256: null,
+      externalOperationId: null,
+      externalOperationStartedAt: null,
+      activeResourceVersion: 1,
+      activeContentSha256: 'c'.repeat(64),
+      errorCode: 'QUEUE_DISPATCH_FAILED',
+    })
+    expect(failed.ingestionAttemptId).not.toBe(oldAttemptId)
     await expect(
-      prisma.kBResource.findUnique({ where: { id: resource.id } })
+      prisma.kBIngestionRun.findUniqueOrThrow({
+        where: { id: failed.ingestionAttemptId! },
+      })
     ).resolves.toMatchObject({
       status: 'FAILED',
-      statusMessage: 'Previous external run failed',
-      ingestedAt: oldIngestedAt,
-      ingestionAttemptId: oldAttemptId,
-      resourceVersion: 2,
-      contentSha256: 'b'.repeat(64),
-      externalOperationId: 'previous-operation-id',
-      externalOperationStartedAt: oldExternalStartedAt,
+      resourceId: resource.id,
+      resourceVersion: 3,
+      errorCode: 'QUEUE_DISPATCH_FAILED',
+      finishedAt: expect.any(Date),
     })
   })
 

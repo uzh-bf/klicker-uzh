@@ -1,4 +1,4 @@
-import { KBResourceStatus } from '@klicker-uzh/prisma/client'
+import { KBIngestionStatus, KBResourceStatus } from '@klicker-uzh/prisma/client'
 import type { IngestKBResourceInput } from '@klicker-uzh/types'
 import { describe, expect, it, vi } from 'vitest'
 import {
@@ -78,14 +78,20 @@ function dispatchPrisma(
   resource: Record<string, unknown>,
   updateResults: number[] = [1, 1]
 ) {
-  return {
+  const prisma = {
     kBResource: {
       findUnique: vi.fn().mockResolvedValue(resource),
       updateMany: vi.fn().mockImplementation(async () => ({
         count: updateResults.shift() ?? 0,
       })),
     },
+    kBIngestionRun: {
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+    },
+    $transaction: vi.fn(),
   }
+  prisma.$transaction.mockImplementation(async (callback) => callback(prisma))
+  return prisma
 }
 
 describe('KB ingestion dispatch', () => {
@@ -235,7 +241,12 @@ describe('KB ingestion dispatch', () => {
   it('marks only an unaccepted current attempt failed after task retries', async () => {
     const prisma = {
       kBResource: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+      kBIngestionRun: {
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      $transaction: vi.fn(),
     }
+    prisma.$transaction.mockImplementation(async (callback) => callback(prisma))
 
     await failKBIngestionDispatch({ input, prisma: prisma as never })
 
@@ -252,6 +263,23 @@ describe('KB ingestion dispatch', () => {
       data: {
         status: KBResourceStatus.FAILED,
         statusMessage: 'The ingestion operation could not be started.',
+        errorCode: 'INGESTION_DISPATCH_FAILED',
+      },
+    })
+    expect(prisma.kBIngestionRun.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: ATTEMPT_ID,
+        resourceId: RESOURCE_ID,
+        resourceVersion: 3,
+        status: {
+          in: [KBIngestionStatus.QUEUED, KBIngestionStatus.PROCESSING],
+        },
+      },
+      data: {
+        status: KBIngestionStatus.FAILED,
+        statusMessage: 'The ingestion operation could not be started.',
+        errorCode: 'INGESTION_DISPATCH_FAILED',
+        finishedAt: expect.any(Date),
       },
     })
   })
@@ -259,7 +287,7 @@ describe('KB ingestion dispatch', () => {
 
 describe('KB ingestion reconciliation', () => {
   function monitorPrisma(resources: Record<string, unknown>[]) {
-    return {
+    const prisma = {
       kBResource: {
         count: vi.fn().mockResolvedValue(resources.length),
         findMany: vi
@@ -269,7 +297,13 @@ describe('KB ingestion reconciliation', () => {
           ),
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
+      kBIngestionRun: {
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      $transaction: vi.fn(),
     }
+    prisma.$transaction.mockImplementation(async (callback) => callback(prisma))
+    return prisma
   }
 
   const activeResource = {
@@ -282,17 +316,28 @@ describe('KB ingestion reconciliation', () => {
   }
 
   it.each([
-    ['accepted', KBResourceStatus.QUEUED, null],
-    ['running', KBResourceStatus.PROCESSING, null],
-    ['failed', KBResourceStatus.FAILED, 'The ingestion operation failed.'],
+    ['accepted', KBResourceStatus.QUEUED, KBIngestionStatus.QUEUED, null],
+    [
+      'running',
+      KBResourceStatus.PROCESSING,
+      KBIngestionStatus.PROCESSING,
+      null,
+    ],
+    [
+      'failed',
+      KBResourceStatus.FAILED,
+      KBIngestionStatus.FAILED,
+      'The ingestion operation failed.',
+    ],
     [
       'superseded',
       KBResourceStatus.FAILED,
+      KBIngestionStatus.SUPERSEDED,
       'The ingestion operation was superseded.',
     ],
   ] as const)(
     'maps %s operation status to %s',
-    async (externalStatus, localStatus, statusMessage) => {
+    async (externalStatus, localStatus, runStatus, statusMessage) => {
       const prisma = monitorPrisma([activeResource])
 
       await monitorActiveKBIngestions({
@@ -321,6 +366,30 @@ describe('KB ingestion reconciliation', () => {
         data: {
           status: localStatus,
           statusMessage,
+          errorCode: null,
+          activeResourceVersion: 2,
+          activeContentSha256: 'a'.repeat(64),
+        },
+      })
+      expect(prisma.kBIngestionRun.updateMany).toHaveBeenCalledWith({
+        where: {
+          id: ATTEMPT_ID,
+          resourceId: RESOURCE_ID,
+          resourceVersion: 3,
+          status: {
+            in:
+              externalStatus === 'accepted'
+                ? [KBIngestionStatus.QUEUED]
+                : [KBIngestionStatus.QUEUED, KBIngestionStatus.PROCESSING],
+          },
+        },
+        data: {
+          status: runStatus,
+          statusMessage,
+          errorCode: null,
+          ...(externalStatus === 'failed' || externalStatus === 'superseded'
+            ? { finishedAt: new Date('2026-07-26T12:00:00Z') }
+            : {}),
         },
       })
     }
@@ -349,37 +418,79 @@ describe('KB ingestion reconciliation', () => {
     expect(update.data).toMatchObject({
       status: KBResourceStatus.READY,
       statusMessage: null,
+      activeResourceVersion: 3,
+      activeContentSha256: CONTENT_SHA256,
+      errorCode: null,
     })
-    expect(update.data.ingestedAt).toBeInstanceOf(Date)
+    expect(update.data.ingestedAt).toEqual(new Date('2026-07-26T12:00:00.000Z'))
+    expect(prisma.kBIngestionRun.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: ATTEMPT_ID,
+        resourceId: RESOURCE_ID,
+        resourceVersion: 3,
+        status: {
+          in: [
+            KBIngestionStatus.QUEUED,
+            KBIngestionStatus.PROCESSING,
+            KBIngestionStatus.SUCCEEDED,
+          ],
+        },
+      },
+      data: {
+        status: KBIngestionStatus.SUCCEEDED,
+        statusMessage: null,
+        errorCode: null,
+        finishedAt: new Date('2026-07-26T12:00:00.000Z'),
+      },
+    })
+  })
+
+  it('refuses success when the observed digest does not match', async () => {
+    const prisma = monitorPrisma([activeResource])
+    const logger = { error: vi.fn() }
+
+    await monitorActiveKBIngestions({
+      prisma: prisma as never,
+      client: client({
+        getOperation: vi.fn().mockResolvedValue(
+          operation({
+            status: 'succeeded',
+            observedSha256: null,
+            serving: {
+              activeResourceVersion: 3,
+              activeSha256: CONTENT_SHA256,
+            },
+          })
+        ),
+      }),
+      logger,
+    })
+
+    expect(prisma.kBResource.updateMany).not.toHaveBeenCalled()
+    expect(logger.error).toHaveBeenCalledWith(
+      'KB ingestion observed digest correlation failed',
+      {
+        resourceId: RESOURCE_ID,
+        kbId: KB_ID,
+        ingestionAttemptId: ATTEMPT_ID,
+      }
+    )
   })
 
   it.each([
     {
-      observedSha256: null,
-      serving: {
-        activeResourceVersion: 3,
-        activeSha256: CONTENT_SHA256,
-      },
+      activeResourceVersion: 2,
+      activeSha256: 'a'.repeat(64),
     },
     {
-      observedSha256: CONTENT_SHA256,
-      serving: {
-        activeResourceVersion: 2,
-        activeSha256: CONTENT_SHA256,
-      },
-    },
-    {
-      observedSha256: CONTENT_SHA256,
-      serving: {
-        activeResourceVersion: 3,
-        activeSha256: 'a'.repeat(64),
-      },
+      activeResourceVersion: 3,
+      activeSha256: 'a'.repeat(64),
     },
   ])(
-    'refuses success until the exact version and digest are actively serving',
-    async (servingIdentity) => {
+    'records successful operation while serving cutover is pending',
+    async (serving) => {
       const prisma = monitorPrisma([activeResource])
-      const logger = { error: vi.fn() }
+      const logger = { info: vi.fn() }
 
       await monitorActiveKBIngestions({
         prisma: prisma as never,
@@ -387,16 +498,32 @@ describe('KB ingestion reconciliation', () => {
           getOperation: vi.fn().mockResolvedValue(
             operation({
               status: 'succeeded',
-              ...servingIdentity,
+              observedSha256: CONTENT_SHA256,
+              serving,
             })
           ),
         }),
         logger,
       })
 
-      expect(prisma.kBResource.updateMany).not.toHaveBeenCalled()
-      expect(logger.error).toHaveBeenCalledWith(
-        'KB ingestion serving correlation failed',
+      expect(prisma.kBResource.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            status: KBResourceStatus.PROCESSING,
+            activeResourceVersion: serving.activeResourceVersion,
+            activeContentSha256: serving.activeSha256,
+          }),
+        })
+      )
+      expect(prisma.kBIngestionRun.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            status: KBIngestionStatus.SUCCEEDED,
+          }),
+        })
+      )
+      expect(logger.info).toHaveBeenCalledWith(
+        'KB ingestion succeeded while serving cutover is pending',
         {
           resourceId: RESOURCE_ID,
           kbId: KB_ID,
@@ -477,7 +604,12 @@ describe('KB ingestion reconciliation', () => {
         }),
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
+      kBIngestionRun: {
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      $transaction: vi.fn(),
     }
+    prisma.$transaction.mockImplementation(async (callback) => callback(prisma))
     const getOperation = vi.fn().mockImplementation(async (operationId) => {
       const index = Number(operationId.split('_').at(-1))
       return operation({

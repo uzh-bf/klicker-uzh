@@ -226,7 +226,7 @@
    "GetGroupActivityInstances": "c720e1970bcd63a7bce7c80754a5872c8389b1ba35e693e9914f6dd014ae530f",
    "GetGroupActivitySummary": "7a3935db0e7cae8d5baf574a1c0506f568ffaaae1522a49363245946cff64d2d",
    "GetInstanceUpdateActivities": "5ddcb8ccd6ca8328d13df033a3b487710a2e62210acd3e942364f28472bdf7c1",
-   "GetKb": "a710a3129c0598be3cc4c677d77070c58d5fd5267793b88ac87c5a658f8ccc59",
+   "GetKb": "dcb483c232ab0866a3e06c03dcd8745c68b21e3086483b3f0e2ef8cda3517839",
    "GetLecturerViewLiveQuiz": "d1ab35eb40e5193d9ef4a4563d1057e860db1b9774d82076ccc1c380350139ff",
    "GetLiveQuizEmbeddingInfo": "1e69b5994b1bc2af7504ba701ce4f26cc5a0e5aa8b784c3045cee75e306b4f92",
    "GetLiveQuizEvaluation": "fa751a965ef3afe5dcc106c185df4c0aacf3e7c9614512d2e0825d6aec8ecbca",

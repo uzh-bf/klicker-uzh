@@ -45,6 +45,8 @@ pnpm --filter @klicker-uzh/graphql generate
 
 and **commit the regenerated outputs** (`src/ops.ts`, `src/ops.schema.json`, `src/public/schema.graphql`, `src/public/client.json`, `src/public/server.json`) in the same change. They are git-tracked and load-bearing: frontends import typed documents from `@klicker-uzh/graphql/dist/ops`, and outside dev/test the backend only executes hashes present in `server.json` (see [Architecture Overview](./architecture-overview.md)). Stale artifacts fail in two distinct ways: typecheck errors (missing document) or runtime persisted-query rejection (unknown hash).
 
+Knowledge-base detail queries expose at most the five newest `KBIngestionRun` records per owned resource. Keep attempt history resource-scoped and bounded at the schema field; do not expose the unbounded ledger or bypass the parent KB/resource ownership checks.
+
 ## Subscriptions
 
 Field filters over the shared pubSub: `schema/subscription.ts:feedbackCreated` pipes `ctx.pubSub.subscribe('feedbackCreated')` through a `liveQuizId` filter; the publishing side is a service (`services/feedbacks.ts`). Frontends consume via `subscribeToMore` with the generated `S*Document`.

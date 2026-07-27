@@ -42,6 +42,8 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
 7. **Frontend wiring** — `import { <Name>Document } from '@klicker-uzh/graphql/dist/ops'`; `useQuery`/`useMutation` (+ `refetchQueries`) per [docs/frontend-conventions.md](../../../docs/frontend-conventions.md).
 8. **Tests** — graphql vitest for service logic (`pnpm --filter @klicker-uzh/graphql test:local`; see the heavy pattern in `38c92d035`); route further via `klicker-testing-verification`.
 
+Nested history fields must be bounded in their resolver. The KB resource contract exposes only the five newest owner-scoped ingestion runs; do not return an unbounded attempt ledger through a parent list.
+
 ## Subscriptions (extra steps)
 
 Publish from the service (`ctx.pubSub.publish('<topic>', payload)`), subscribe in `subscription.ts` with a `filter` on the target id (template: `feedbackCreated`), consume with `subscribeToMore` + the generated `S*Document`.

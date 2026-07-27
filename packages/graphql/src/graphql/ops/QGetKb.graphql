@@ -14,6 +14,22 @@ query GetKb($id: ID!) {
       status
       statusMessage
       ingestedAt
+      resourceVersion
+      activeResourceVersion
+      activeContentSha256
+      errorCode
+      ingestionRuns {
+        id
+        status
+        resourceVersion
+        contentSha256
+        statusMessage
+        errorCode
+        startedAt
+        finishedAt
+        createdAt
+        updatedAt
+      }
       createdAt
       updatedAt
     }

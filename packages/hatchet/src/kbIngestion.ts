@@ -1,4 +1,8 @@
-import { KBResourceStatus, type PrismaClient } from '@klicker-uzh/prisma/client'
+import {
+  KBIngestionStatus,
+  KBResourceStatus,
+  type PrismaClient,
+} from '@klicker-uzh/prisma/client'
 import type { IngestKBResourceInput } from '@klicker-uzh/types'
 import {
   buildKBIngestionSource,
@@ -23,7 +27,7 @@ export type KBIngestionLogger = {
   ) => unknown | Promise<unknown>
 }
 
-type KBIngestionPrisma = Pick<PrismaClient, 'kBResource'>
+type KBIngestionPrisma = PrismaClient
 
 export type DispatchKBIngestionDependencies = {
   prisma: KBIngestionPrisma
@@ -92,23 +96,43 @@ async function persistPreparedSource({
   source: KBIngestionSource
   env: NodeJS.ProcessEnv
 }): Promise<KBIngestionSource | undefined> {
-  const persisted = await prisma.kBResource.updateMany({
-    where: {
-      id: input.resourceId,
-      ingestionAttemptId: input.ingestionAttemptId,
-      resourceVersion: input.resourceVersion,
-      status: {
-        in: [KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING],
+  const persisted = await prisma.$transaction(async (tx) => {
+    const resourceUpdate = await tx.kBResource.updateMany({
+      where: {
+        id: input.resourceId,
+        ingestionAttemptId: input.ingestionAttemptId,
+        resourceVersion: input.resourceVersion,
+        status: {
+          in: [KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING],
+        },
+        contentSha256: null,
+        externalOperationId: null,
       },
-      contentSha256: null,
-      externalOperationId: null,
-    },
-    data: {
-      contentSha256: source.contentSha256,
-      mimeType: source.mimeType,
-    },
+      data: {
+        contentSha256: source.contentSha256,
+        mimeType: source.mimeType,
+      },
+    })
+    if (resourceUpdate.count !== 1) {
+      return false
+    }
+    const runUpdate = await tx.kBIngestionRun.updateMany({
+      where: {
+        id: input.ingestionAttemptId,
+        resourceId: input.resourceId,
+        resourceVersion: input.resourceVersion,
+        status: {
+          in: [KBIngestionStatus.QUEUED, KBIngestionStatus.PROCESSING],
+        },
+      },
+      data: { contentSha256: source.contentSha256 },
+    })
+    if (runUpdate.count !== 1) {
+      throw new Error('KB ingestion source could not be correlated')
+    }
+    return true
   })
-  if (persisted.count === 1) {
+  if (persisted) {
     return source
   }
 
@@ -209,23 +233,46 @@ export async function dispatchKBIngestion(
       ingestionAttemptId: input.ingestionAttemptId,
       source,
     })
-    const persisted = await dependencies.prisma.kBResource.updateMany({
-      where: {
-        id: input.resourceId,
-        ingestionAttemptId: input.ingestionAttemptId,
-        resourceVersion: input.resourceVersion,
-        status: {
-          in: [KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING],
+    const persisted = await dependencies.prisma.$transaction(async (tx) => {
+      const resourceUpdate = await tx.kBResource.updateMany({
+        where: {
+          id: input.resourceId,
+          ingestionAttemptId: input.ingestionAttemptId,
+          resourceVersion: input.resourceVersion,
+          status: {
+            in: [KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING],
+          },
+          contentSha256: source.contentSha256,
+          externalOperationId: null,
         },
-        contentSha256: source.contentSha256,
-        externalOperationId: null,
-      },
-      data: {
-        externalOperationId: operationId,
-        externalOperationStartedAt: startedAt,
-      },
+        data: {
+          externalOperationId: operationId,
+          externalOperationStartedAt: startedAt,
+        },
+      })
+      if (resourceUpdate.count !== 1) {
+        return false
+      }
+      const runUpdate = await tx.kBIngestionRun.updateMany({
+        where: {
+          id: input.ingestionAttemptId,
+          resourceId: input.resourceId,
+          resourceVersion: input.resourceVersion,
+          status: {
+            in: [KBIngestionStatus.QUEUED, KBIngestionStatus.PROCESSING],
+          },
+        },
+        data: {
+          externalOperationId: operationId,
+          startedAt,
+        },
+      })
+      if (runUpdate.count !== 1) {
+        throw new Error('KB ingestion operation could not be correlated')
+      }
+      return true
     })
-    if (persisted.count !== 1) {
+    if (!persisted) {
       const currentResource = await dependencies.prisma.kBResource.findUnique({
         where: { id: input.resourceId },
         select: {
@@ -273,20 +320,46 @@ export async function failKBIngestionDispatch({
   input: IngestKBResourceInput
   prisma: KBIngestionPrisma
 }): Promise<void> {
-  await prisma.kBResource.updateMany({
-    where: {
-      id: input.resourceId,
-      ingestionAttemptId: input.ingestionAttemptId,
-      resourceVersion: input.resourceVersion,
-      externalOperationId: null,
-      status: {
-        in: [KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING],
+  const finishedAt = new Date()
+  await prisma.$transaction(async (tx) => {
+    const resourceUpdate = await tx.kBResource.updateMany({
+      where: {
+        id: input.resourceId,
+        ingestionAttemptId: input.ingestionAttemptId,
+        resourceVersion: input.resourceVersion,
+        externalOperationId: null,
+        status: {
+          in: [KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING],
+        },
       },
-    },
-    data: {
-      status: KBResourceStatus.FAILED,
-      statusMessage: 'The ingestion operation could not be started.',
-    },
+      data: {
+        status: KBResourceStatus.FAILED,
+        statusMessage: 'The ingestion operation could not be started.',
+        errorCode: 'INGESTION_DISPATCH_FAILED',
+      },
+    })
+    if (resourceUpdate.count !== 1) {
+      return
+    }
+    const runUpdate = await tx.kBIngestionRun.updateMany({
+      where: {
+        id: input.ingestionAttemptId,
+        resourceId: input.resourceId,
+        resourceVersion: input.resourceVersion,
+        status: {
+          in: [KBIngestionStatus.QUEUED, KBIngestionStatus.PROCESSING],
+        },
+      },
+      data: {
+        status: KBIngestionStatus.FAILED,
+        statusMessage: 'The ingestion operation could not be started.',
+        errorCode: 'INGESTION_DISPATCH_FAILED',
+        finishedAt,
+      },
+    })
+    if (runUpdate.count !== 1) {
+      throw new Error('KB ingestion dispatch failure could not be correlated')
+    }
   })
 }
 
@@ -296,33 +369,38 @@ function mapOperationStatus(
   switch (status) {
     case 'accepted':
       return {
-        status: KBResourceStatus.QUEUED,
+        resourceStatus: KBResourceStatus.QUEUED,
+        runStatus: KBIngestionStatus.QUEUED,
         statusMessage: null,
-        ingestedAt: undefined,
+        terminal: false,
       }
     case 'running':
       return {
-        status: KBResourceStatus.PROCESSING,
+        resourceStatus: KBResourceStatus.PROCESSING,
+        runStatus: KBIngestionStatus.PROCESSING,
         statusMessage: null,
-        ingestedAt: undefined,
+        terminal: false,
       }
     case 'succeeded':
       return {
-        status: KBResourceStatus.READY,
+        resourceStatus: KBResourceStatus.READY,
+        runStatus: KBIngestionStatus.SUCCEEDED,
         statusMessage: null,
-        ingestedAt: new Date(),
+        terminal: true,
       }
     case 'failed':
       return {
-        status: KBResourceStatus.FAILED,
+        resourceStatus: KBResourceStatus.FAILED,
+        runStatus: KBIngestionStatus.FAILED,
         statusMessage: 'The ingestion operation failed.',
-        ingestedAt: undefined,
+        terminal: true,
       }
     case 'superseded':
       return {
-        status: KBResourceStatus.FAILED,
+        resourceStatus: KBResourceStatus.FAILED,
+        runStatus: KBIngestionStatus.SUPERSEDED,
         statusMessage: 'The ingestion operation was superseded.',
-        ingestedAt: undefined,
+        terminal: true,
       }
   }
 }
@@ -377,39 +455,89 @@ async function reconcileResource({
 
     if (
       operation.status === 'succeeded' &&
-      (operation.observedSha256 !== contentSha256 ||
-        operation.serving.activeResourceVersion !== resource.resourceVersion ||
-        operation.serving.activeSha256 !== contentSha256)
+      operation.observedSha256 !== contentSha256
     ) {
       await logErrorBestEffort(
         logger,
-        'KB ingestion serving correlation failed',
+        'KB ingestion observed digest correlation failed',
         identifiers
       )
       return
     }
 
     const transition = mapOperationStatus(operation.status)
+    const servingMatchesCurrent =
+      operation.serving.activeResourceVersion === resource.resourceVersion &&
+      operation.serving.activeSha256 === contentSha256
+    if (operation.status === 'succeeded' && !servingMatchesCurrent) {
+      await logInfoBestEffort(
+        logger,
+        'KB ingestion succeeded while serving cutover is pending',
+        identifiers
+      )
+    }
+    const resourceStatus =
+      operation.status === 'succeeded' && !servingMatchesCurrent
+        ? KBResourceStatus.PROCESSING
+        : transition.resourceStatus
     const sourceStatuses =
       operation.status === 'accepted'
         ? [KBResourceStatus.QUEUED]
         : [KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING]
-    await prisma.kBResource.updateMany({
-      where: {
-        id: resource.id,
-        ingestionAttemptId,
-        resourceVersion: resource.resourceVersion,
-        contentSha256,
-        externalOperationId,
-        status: {
-          in: sourceStatuses,
+    const sourceRunStatuses =
+      operation.status === 'accepted'
+        ? [KBIngestionStatus.QUEUED]
+        : operation.status === 'succeeded'
+          ? [
+              KBIngestionStatus.QUEUED,
+              KBIngestionStatus.PROCESSING,
+              KBIngestionStatus.SUCCEEDED,
+            ]
+          : [KBIngestionStatus.QUEUED, KBIngestionStatus.PROCESSING]
+    const operationUpdatedAt = new Date(operation.updatedAt)
+    await prisma.$transaction(async (tx) => {
+      const resourceUpdate = await tx.kBResource.updateMany({
+        where: {
+          id: resource.id,
+          ingestionAttemptId,
+          resourceVersion: resource.resourceVersion,
+          contentSha256,
+          externalOperationId,
+          status: {
+            in: sourceStatuses,
+          },
         },
-      },
-      data: {
-        status: transition.status,
-        statusMessage: transition.statusMessage,
-        ...(transition.ingestedAt ? { ingestedAt: transition.ingestedAt } : {}),
-      },
+        data: {
+          status: resourceStatus,
+          statusMessage: transition.statusMessage,
+          errorCode: operation.errorCode,
+          activeResourceVersion: operation.serving.activeResourceVersion,
+          activeContentSha256: operation.serving.activeSha256,
+          ...(resourceStatus === KBResourceStatus.READY
+            ? { ingestedAt: operationUpdatedAt }
+            : {}),
+        },
+      })
+      if (resourceUpdate.count !== 1) {
+        return
+      }
+      const runUpdate = await tx.kBIngestionRun.updateMany({
+        where: {
+          id: ingestionAttemptId,
+          resourceId: resource.id,
+          resourceVersion: resource.resourceVersion,
+          status: { in: sourceRunStatuses },
+        },
+        data: {
+          status: transition.runStatus,
+          statusMessage: transition.statusMessage,
+          errorCode: operation.errorCode,
+          ...(transition.terminal ? { finishedAt: operationUpdatedAt } : {}),
+        },
+      })
+      if (runUpdate.count !== 1) {
+        throw new Error('KB ingestion operation state could not be correlated')
+      }
     })
   } catch {
     await logErrorBestEffort(

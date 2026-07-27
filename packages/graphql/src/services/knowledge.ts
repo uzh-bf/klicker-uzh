@@ -503,47 +503,65 @@ export async function ingestKbResource(
     }
   }
 
-  const claim = await ctx.prisma.kBResource.updateMany({
-    where: {
-      id: resource.id,
-      status: resource.status,
-      ingestionAttemptId: resource.ingestionAttemptId,
-      kb: { ownerId: ctx.user.sub },
-    },
-    data: {
-      status: DB.KBResourceStatus.QUEUED,
-      statusMessage: null,
-      ingestedAt: null,
-      ingestionAttemptId,
-      resourceVersion,
-      contentSha256: null,
-      externalOperationId: null,
-      externalOperationStartedAt: null,
-    },
+  await ctx.prisma.$transaction(async (prisma) => {
+    const claim = await prisma.kBResource.updateMany({
+      where: {
+        id: resource.id,
+        status: resource.status,
+        ingestionAttemptId: resource.ingestionAttemptId,
+        kb: { ownerId: ctx.user.sub },
+      },
+      data: {
+        status: DB.KBResourceStatus.QUEUED,
+        statusMessage: null,
+        ingestionAttemptId,
+        resourceVersion,
+        contentSha256: null,
+        externalOperationId: null,
+        externalOperationStartedAt: null,
+        errorCode: null,
+      },
+    })
+    if (claim.count !== 1) {
+      throw new GraphQLError('KB resource cannot be ingested')
+    }
+    await prisma.kBIngestionRun.create({
+      data: {
+        id: ingestionAttemptId,
+        resourceId: resource.id,
+        resourceVersion,
+      },
+    })
   })
-  if (claim.count !== 1) {
-    throw new GraphQLError('KB resource cannot be ingested')
-  }
 
   try {
     await ctx.tasks.ingestKBResource.runNoWait(payload)
   } catch {
-    await ctx.prisma.kBResource.updateMany({
-      where: {
-        id: resource.id,
-        status: DB.KBResourceStatus.QUEUED,
-        ingestionAttemptId,
-      },
-      data: {
-        status: resource.status,
-        statusMessage: resource.statusMessage,
-        ingestedAt: resource.ingestedAt,
-        ingestionAttemptId: resource.ingestionAttemptId,
-        resourceVersion: resource.resourceVersion,
-        contentSha256: resource.contentSha256,
-        externalOperationId: resource.externalOperationId,
-        externalOperationStartedAt: resource.externalOperationStartedAt,
-      },
+    const finishedAt = new Date()
+    await ctx.prisma.$transaction(async (prisma) => {
+      const failed = await prisma.kBResource.updateMany({
+        where: {
+          id: resource.id,
+          status: DB.KBResourceStatus.QUEUED,
+          ingestionAttemptId,
+        },
+        data: {
+          status: DB.KBResourceStatus.FAILED,
+          statusMessage: 'The ingestion operation could not be queued.',
+          errorCode: 'QUEUE_DISPATCH_FAILED',
+        },
+      })
+      if (failed.count === 1) {
+        await prisma.kBIngestionRun.update({
+          where: { id: ingestionAttemptId },
+          data: {
+            status: DB.KBIngestionStatus.FAILED,
+            statusMessage: 'The ingestion operation could not be queued.',
+            errorCode: 'QUEUE_DISPATCH_FAILED',
+            finishedAt,
+          },
+        })
+      }
     })
     throw new GraphQLError('KB ingestion could not be queued')
   }

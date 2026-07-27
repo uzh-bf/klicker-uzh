@@ -1,4 +1,8 @@
-import { KBResourceStatus, type PrismaClient } from '@klicker-uzh/prisma/client'
+import {
+  KBIngestionStatus,
+  KBResourceStatus,
+  type PrismaClient,
+} from '@klicker-uzh/prisma/client'
 import { createKBIngestionWebhookSignature } from '@klicker-uzh/util'
 import { timingSafeEqual } from 'node:crypto'
 
@@ -202,20 +206,25 @@ function transitionForEvent(payload: OperationStatusEvent) {
     case 'resource.processing_started':
     case 'resource.processing_progress':
       return {
-        status: KBResourceStatus.PROCESSING,
+        resourceStatus: KBResourceStatus.PROCESSING,
+        runStatus: KBIngestionStatus.PROCESSING,
         statusMessage: payload.statusDetail,
+        finishedAt: undefined,
       }
     case 'resource.processing_succeeded':
       return {
-        status: KBResourceStatus.READY,
+        resourceStatus: KBResourceStatus.READY,
+        runStatus: KBIngestionStatus.SUCCEEDED,
         statusMessage: payload.statusDetail,
-        ingestedAt: new Date(payload.occurredAt),
+        finishedAt: new Date(payload.occurredAt),
       }
     case 'resource.processing_failed':
       return {
-        status: KBResourceStatus.FAILED,
+        resourceStatus: KBResourceStatus.FAILED,
+        runStatus: KBIngestionStatus.FAILED,
         statusMessage:
           payload.statusDetail ?? 'The ingestion operation failed.',
+        finishedAt: new Date(payload.occurredAt),
       }
     case 'resource.subresources_updated':
     case 'kb.metrics_updated':
@@ -288,30 +297,121 @@ export async function handleKBIngestionWebhook({
   }
 
   const transition = transitionForEvent(payload)
-  if (!transition) {
-    return { statusCode: 200, body: { ok: true } }
-  }
-  if (
-    payload.eventType === 'resource.processing_succeeded' &&
-    (payload.serving.active_resource_version !== payload.resource_version ||
-      payload.serving.active_sha256 === null)
-  ) {
-    return { statusCode: 200, body: { ok: true } }
-  }
-
-  await prisma.kBResource.updateMany({
-    where: {
-      id: payload.external_resource_id,
-      resourceVersion: payload.resource_version,
-      externalOperationId: payload.operation_id,
-      status: {
-        in: [KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING],
+  await prisma.$transaction(async (tx) => {
+    const resource = await tx.kBResource.findFirst({
+      where: {
+        id: payload.external_resource_id,
+        resourceVersion: payload.resource_version,
+        externalOperationId: payload.operation_id,
+        ingestionAttemptId: { not: null },
+        status: {
+          in: [KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING],
+        },
       },
-      ...(payload.eventType === 'resource.processing_succeeded'
-        ? { contentSha256: payload.serving.active_sha256 }
-        : {}),
-    },
-    data: transition,
+      select: {
+        ingestionAttemptId: true,
+        contentSha256: true,
+      },
+    })
+    if (!resource?.ingestionAttemptId) {
+      return
+    }
+
+    const servingMatchesCurrent =
+      payload.serving.active_resource_version === payload.resource_version &&
+      payload.serving.active_sha256 !== null &&
+      payload.serving.active_sha256 === resource.contentSha256
+    const servingState = {
+      activeResourceVersion: payload.serving.active_resource_version,
+      activeContentSha256: payload.serving.active_sha256,
+    }
+
+    if (!transition) {
+      const run = await tx.kBIngestionRun.findUnique({
+        where: { id: resource.ingestionAttemptId },
+        select: { status: true },
+      })
+      await tx.kBResource.updateMany({
+        where: {
+          id: payload.external_resource_id,
+          resourceVersion: payload.resource_version,
+          externalOperationId: payload.operation_id,
+          ingestionAttemptId: resource.ingestionAttemptId,
+          status: {
+            in: [KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING],
+          },
+        },
+        data:
+          servingMatchesCurrent && run?.status === KBIngestionStatus.SUCCEEDED
+            ? {
+                ...servingState,
+                status: KBResourceStatus.READY,
+                statusMessage: null,
+                errorCode: null,
+                ingestedAt: new Date(payload.occurredAt),
+              }
+            : servingState,
+      })
+      return
+    }
+
+    const resourceStatus =
+      payload.eventType === 'resource.processing_succeeded' &&
+      !servingMatchesCurrent
+        ? KBResourceStatus.PROCESSING
+        : transition.resourceStatus
+    const resourceUpdate = await tx.kBResource.updateMany({
+      where: {
+        id: payload.external_resource_id,
+        resourceVersion: payload.resource_version,
+        externalOperationId: payload.operation_id,
+        ingestionAttemptId: resource.ingestionAttemptId,
+        status: {
+          in: [KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING],
+        },
+      },
+      data: {
+        ...servingState,
+        status: resourceStatus,
+        statusMessage: transition.statusMessage,
+        errorCode: payload.error_code,
+        ...(resourceStatus === KBResourceStatus.READY
+          ? { ingestedAt: new Date(payload.occurredAt) }
+          : {}),
+      },
+    })
+    if (resourceUpdate.count !== 1) {
+      return
+    }
+
+    const sourceRunStatuses =
+      transition.runStatus === KBIngestionStatus.SUCCEEDED
+        ? [
+            KBIngestionStatus.QUEUED,
+            KBIngestionStatus.PROCESSING,
+            KBIngestionStatus.SUCCEEDED,
+          ]
+        : [KBIngestionStatus.QUEUED, KBIngestionStatus.PROCESSING]
+    const runUpdate = await tx.kBIngestionRun.updateMany({
+      where: {
+        id: resource.ingestionAttemptId,
+        resourceId: payload.external_resource_id,
+        resourceVersion: payload.resource_version,
+        status: { in: sourceRunStatuses },
+      },
+      data: {
+        status: transition.runStatus,
+        statusMessage: transition.statusMessage,
+        errorCode: payload.error_code,
+        ...(payload.eventType === 'resource.processing_started'
+          ? { startedAt: new Date(payload.occurredAt) }
+          : {}),
+        ...(transition.finishedAt ? { finishedAt: transition.finishedAt } : {}),
+      },
+    })
+    if (runUpdate.count !== 1) {
+      throw new Error('KB ingestion run transition could not be correlated')
+    }
   })
 
   return { statusCode: 200, body: { ok: true } }

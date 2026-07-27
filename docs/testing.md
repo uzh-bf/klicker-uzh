@@ -20,6 +20,8 @@ tags:
 | GraphQL services/resolvers                                           | `packages/graphql` vitest — needs REAL Postgres + Redis + Hatchet + `HATCHET_CLIENT_TOKEN` | `pnpm --filter @klicker-uzh/graphql test:local` (one-command bootstrap: `test/run-tests-local.sh`) |
 | UI / user flows                                                      | Playwright e2e (new specs); Cypress only for legacy maintenance                            | see routing below                                                                                  |
 
+The focused KB ingestion and signed-webhook suites deliberately avoid a real Hatchet client: ingestion uses a test-only `runNoWait` task stub, and webhook tests use Prisma directly. They still run against real PostgreSQL and cover atomic resource/run transitions, retry races, serving cutover, and terminal-event ordering.
+
 **Never run root `pnpm run test:run` blind** — the turbo fan-out includes Cypress, which needs a running, seeded stack. The graphql vitest config forces `pool: forks, singleFork: true` (serialized specs sharing DB state) — don't parallelize it.
 
 ## Two e2e stacks, one selector convention

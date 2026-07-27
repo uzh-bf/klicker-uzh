@@ -1,4 +1,6 @@
+import { prisma as prismaClient } from '@klicker-uzh/prisma'
 import {
+  KBIngestionStatus,
   KBResourceStatus,
   KBResourceType,
   type PrismaClient,
@@ -7,7 +9,6 @@ import {
   handleKBIngestionWebhook,
   signKBIngestionWebhook,
 } from '../src/services/knowledgeWebhooks.js'
-import { initializePrisma } from './helpers.js'
 
 const SECRET = 'kb-webhook-test-secret'
 const PREVIOUS_SECRET = 'kb-webhook-previous-test-secret'
@@ -100,8 +101,14 @@ describe('KB ingestion webhook contract', () => {
     return prisma.kBResource.findUniqueOrThrow({ where: { id: resourceId } })
   }
 
+  async function getRun() {
+    return prisma.kBIngestionRun.findUniqueOrThrow({
+      where: { id: INGESTION_ATTEMPT_ID },
+    })
+  }
+
   beforeAll(async () => {
-    prisma = (await initializePrisma()).prisma
+    prisma = prismaClient
   })
 
   beforeEach(async () => {
@@ -130,6 +137,15 @@ describe('KB ingestion webhook contract', () => {
       },
     })
     resourceId = resource.id
+    await prisma.kBIngestionRun.create({
+      data: {
+        id: INGESTION_ATTEMPT_ID,
+        resourceId,
+        resourceVersion: RESOURCE_VERSION,
+        contentSha256: CONTENT_SHA256,
+        externalOperationId: OPERATION_ID,
+      },
+    })
   })
 
   afterEach(async () => {
@@ -154,6 +170,10 @@ describe('KB ingestion webhook contract', () => {
       status: KBResourceStatus.PROCESSING,
       statusMessage: null,
     })
+    await expect(getRun()).resolves.toMatchObject({
+      status: KBIngestionStatus.PROCESSING,
+      startedAt: new Date(OCCURRED_AT),
+    })
   })
 
   it('accepts progress and persists only its safe status detail', async () => {
@@ -177,6 +197,10 @@ describe('KB ingestion webhook contract', () => {
       status: KBResourceStatus.PROCESSING,
       statusMessage: 'Extracting text',
     })
+    await expect(getRun()).resolves.toMatchObject({
+      status: KBIngestionStatus.PROCESSING,
+      statusMessage: 'Extracting text',
+    })
   })
 
   it('marks the exact serving version and digest ready at occurredAt', async () => {
@@ -196,10 +220,16 @@ describe('KB ingestion webhook contract', () => {
       status: KBResourceStatus.READY,
       statusMessage: null,
       ingestedAt: new Date(OCCURRED_AT),
+      activeResourceVersion: RESOURCE_VERSION,
+      activeContentSha256: CONTENT_SHA256,
+    })
+    await expect(getRun()).resolves.toMatchObject({
+      status: KBIngestionStatus.SUCCEEDED,
+      finishedAt: new Date(OCCURRED_AT),
     })
   })
 
-  it('refuses success when the serving digest does not match', async () => {
+  it('records success while a different digest is still serving', async () => {
     const request = createRequest(
       event('resource.processing_succeeded', {
         serving: {
@@ -217,8 +247,14 @@ describe('KB ingestion webhook contract', () => {
       })
     ).resolves.toEqual({ statusCode: 200, body: { ok: true } })
     await expect(getResource()).resolves.toMatchObject({
-      status: KBResourceStatus.QUEUED,
+      status: KBResourceStatus.PROCESSING,
       ingestedAt: null,
+      activeResourceVersion: RESOURCE_VERSION,
+      activeContentSha256: '0'.repeat(64),
+    })
+    await expect(getRun()).resolves.toMatchObject({
+      status: KBIngestionStatus.SUCCEEDED,
+      finishedAt: new Date(OCCURRED_AT),
     })
   })
 
@@ -234,7 +270,13 @@ describe('KB ingestion webhook contract', () => {
     await expect(getResource()).resolves.toMatchObject({
       status: KBResourceStatus.FAILED,
       statusMessage: 'The ingestion operation failed.',
+      errorCode: 'source_fetch_failed',
       ingestedAt: null,
+    })
+    await expect(getRun()).resolves.toMatchObject({
+      status: KBIngestionStatus.FAILED,
+      errorCode: 'source_fetch_failed',
+      finishedAt: new Date(OCCURRED_AT),
     })
   })
 
@@ -258,6 +300,48 @@ describe('KB ingestion webhook contract', () => {
       })
     }
   )
+
+  it('marks a succeeded replacement ready when a later serving event cuts over', async () => {
+    const succeeded = createRequest(
+      event('resource.processing_succeeded', {
+        serving: {
+          active_resource_version: RESOURCE_VERSION - 1,
+          active_sha256: 'a'.repeat(64),
+        },
+      })
+    )
+    await handleKBIngestionWebhook({
+      prisma,
+      ...succeeded,
+      env: { KB_WEBHOOK_SECRET: SECRET },
+    })
+    await expect(getResource()).resolves.toMatchObject({
+      status: KBResourceStatus.PROCESSING,
+      activeResourceVersion: RESOURCE_VERSION - 1,
+      activeContentSha256: 'a'.repeat(64),
+    })
+
+    const cutover = createRequest(
+      event('resource.subresources_updated', {
+        serving: {
+          active_resource_version: RESOURCE_VERSION,
+          active_sha256: CONTENT_SHA256,
+        },
+      })
+    )
+    await handleKBIngestionWebhook({
+      prisma,
+      ...cutover,
+      env: { KB_WEBHOOK_SECRET: SECRET },
+    })
+
+    await expect(getResource()).resolves.toMatchObject({
+      status: KBResourceStatus.READY,
+      activeResourceVersion: RESOURCE_VERSION,
+      activeContentSha256: CONTENT_SHA256,
+      ingestedAt: new Date(OCCURRED_AT),
+    })
+  })
 
   it('accepts the previous secret during key rotation', async () => {
     const request = createRequest(event('resource.processing_started'), {

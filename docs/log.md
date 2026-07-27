@@ -1,5 +1,9 @@
 # Log
 
+## 2026-07-27
+
+- **Update**: [domain-model](./domain-model.md), [async-and-workers](./async-and-workers.md), [graphql-api-layer](./graphql-api-layer.md), and [testing](./testing.md) document the resource-scoped ingestion ledger, separate operation/serving state, atomic transitions, bounded owner-facing history, and token-independent focused KB integration suites.
+
 ## 2026-07-26
 
 - **Update**: [domain-model](./domain-model.md), [async-and-workers](./async-and-workers.md), [frontend-conventions](./frontend-conventions.md), and [ci-and-deployment](./ci-and-deployment.md) document the KB resource model, synchronous ingestion API dispatch, polling plus strict signed-event reconciliation, source-gateway boundary, lecturer routes, reusable UI package, and deployment configuration split.

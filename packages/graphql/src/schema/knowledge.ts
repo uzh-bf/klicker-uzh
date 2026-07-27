@@ -24,6 +24,27 @@ export const KBResourceStatus = builder.enumType('KBResourceStatus', {
   values: Object.values(DB.KBResourceStatus),
 })
 
+export const KBIngestionStatus = builder.enumType('KBIngestionStatus', {
+  values: Object.values(DB.KBIngestionStatus),
+})
+
+export const KBIngestionRunRef =
+  builder.objectRef<DB.KBIngestionRun>('KBIngestionRun')
+export const KBIngestionRun = KBIngestionRunRef.implement({
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    status: t.expose('status', { type: KBIngestionStatus }),
+    resourceVersion: t.exposeInt('resourceVersion'),
+    contentSha256: t.exposeString('contentSha256', { nullable: true }),
+    statusMessage: t.exposeString('statusMessage', { nullable: true }),
+    errorCode: t.exposeString('errorCode', { nullable: true }),
+    startedAt: t.expose('startedAt', { type: 'Date', nullable: true }),
+    finishedAt: t.expose('finishedAt', { type: 'Date', nullable: true }),
+    createdAt: t.expose('createdAt', { type: 'Date' }),
+    updatedAt: t.expose('updatedAt', { type: 'Date' }),
+  }),
+})
+
 export const KBResourceRef = builder.objectRef<DB.KBResource>('KBResource')
 export const KBResource = KBResourceRef.implement({
   fields: (t) => ({
@@ -37,6 +58,23 @@ export const KBResource = KBResourceRef.implement({
     status: t.expose('status', { type: KBResourceStatus }),
     statusMessage: t.exposeString('statusMessage', { nullable: true }),
     ingestedAt: t.expose('ingestedAt', { type: 'Date', nullable: true }),
+    resourceVersion: t.exposeInt('resourceVersion'),
+    activeResourceVersion: t.exposeInt('activeResourceVersion', {
+      nullable: true,
+    }),
+    activeContentSha256: t.exposeString('activeContentSha256', {
+      nullable: true,
+    }),
+    errorCode: t.exposeString('errorCode', { nullable: true }),
+    ingestionRuns: t.field({
+      type: [KBIngestionRunRef],
+      resolve: async (resource, _, ctx) =>
+        ctx.prisma.kBIngestionRun.findMany({
+          where: { resourceId: resource.id },
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+        }),
+    }),
     createdAt: t.expose('createdAt', { type: 'Date' }),
     updatedAt: t.expose('updatedAt', { type: 'Date' }),
   }),
