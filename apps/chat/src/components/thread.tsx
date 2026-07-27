@@ -13,7 +13,6 @@ import {
   useMessageRuntime,
   useThread,
   useThreadComposerAttachment,
-  useThreadRuntime,
 } from '@assistant-ui/react'
 import {
   ArrowDownIcon,
@@ -1013,7 +1012,6 @@ const EditComposer: FC = () => {
   const pendingAttachmentCount = useComposer((s) => s.attachments?.length ?? 0)
   const composerText = useEditComposer((s) => s.text)
   const originalText = extractMessageText(message)
-  const threadRuntime = useThreadRuntime()
   const messageRuntime = useMessageRuntime()
 
   useEffect(() => {
@@ -1048,24 +1046,23 @@ const EditComposer: FC = () => {
     if (!canSubmit) return
 
     try {
-      const editComposer = messageRuntime.composer
-      const state = editComposer.getState()
-      const completeAttachments = await Promise.all(
-        state.attachments.map(async (attachment) =>
-          attachment.status?.type === 'complete'
-            ? attachment
-            : await imageAttachmentAdapter.send(attachment as never)
-        )
-      )
-
-      threadRuntime.append({
-        role: 'user',
-        content: [{ type: 'text', text: composerText }],
-        attachments: completeAttachments as never,
-        parentId: message.parentId ?? undefined,
-        sourceId: message.id,
-      })
-      editComposer.cancel()
+      // The edit MUST go through the edit composer's own send: it is the
+      // only path that submits the composer's captured `parentId` without
+      // loss, so editing a thread's first message (parentId `null`) still
+      // reaches the store's `onEdit` and creates a sibling branch. The
+      // public `threadRuntime.append()` normalizes a `null` parentId to
+      // "last message in the current path" (@assistant-ui/core
+      // thread-runtime `toAppendMessage`), which made the external store
+      // treat root edits as brand-new turns — the bug that kept the
+      // BranchPicker permanently hidden.
+      //
+      // `startRun: true` because the vendor's own change gate
+      // (`text !== previous || attachmentsChanged`) cannot see the *kept*
+      // original attachments this app tracks outside the composer
+      // (`editRemovedAttachmentKeysByMessageId`), and would silently
+      // no-op a kept-attachment-only edit. `canSubmit` above is the real
+      // change gate; once it passes, the run should start unconditionally.
+      messageRuntime.composer.send({ startRun: true })
     } catch (error) {
       setAttachmentError(error instanceof Error ? error.message : String(error))
     }
