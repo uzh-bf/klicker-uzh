@@ -229,6 +229,8 @@ Any T3 item pursued is its own project with its own threat model, not a tool add
 
 Open decisions to surface to Roland, in order: **A1** (answer-first vs act-first value), **A2** (T2 preview/confirm model), **A3** (consolidate vs multiply), then **A4/A5** only if T3/external ever come up.
 
+> **Follow-up execution:** remaining work (W1 live judge run + nightly secrets, W2 X3 tracer/T1 slice, gated T1/T2 items, cleanups) is broken down junior-executable in [2026-07-27-manage-assistant-followup-roadmap.md](./2026-07-27-manage-assistant-followup-roadmap.md). This plan stays the architectural record; that roadmap owns execution from here.
+
 ## Progress (implementation phase, from 2026-07-26)
 
 - 2026-07-26: **Implementation authority granted** (Roland: "work through the plan", Opus subagents for investigation/research/implementation). Rulings A1-A5 + sequencing as proposed. Plan committed first (`dbf2147b0`, pre-commit 25/25 green). No push/merge authority.
