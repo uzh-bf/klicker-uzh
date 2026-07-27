@@ -44,6 +44,24 @@ class EvalCase:
     injection_class: str | None = None
     seed_element: str | None = None
     notes: str = ""
+    # --- E4 (proposal quality) additive extension ---
+    # Declared constraints the request placed on the proposal, checked
+    # deterministically against the real payload shape produced by
+    # `elementCreateDraftProposalSchema`/`createElementDraftProposal`
+    # (apps/mcp-lecturer/src/service.ts) -- see proposal_schema.py.
+    expected_type: str | None = None  # SC | MC | FREE_TEXT
+    expected_option_count: int | None = None
+    expected_correct_count: int | None = None
+    require_feedback: bool = False
+    # --- E7 (degradation recovery) additive extension ---
+    # `fault_type` documents which fault this case injects (informational);
+    # `expected_http_status` is the status the injected fault must actually
+    # produce (401 expired token, 429 rate limit, 200 for a live-but-degraded
+    # turn) -- checked before crediting either E7 sub-check, so a fault that
+    # silently stopped reproducing can't vacuously pass (see
+    # degradation.check_fault_reproduced).
+    fault_type: str | None = None
+    expected_http_status: int | None = None
 
 
 def _parse_calls(raw: object) -> list[ToolCallSpec]:
@@ -87,6 +105,12 @@ def parse_case_file(path: Path) -> EvalCase:
         injection_class=meta.get("injection_class"),
         seed_element=meta.get("seed_element"),
         notes=body,
+        expected_type=meta.get("expected_type"),
+        expected_option_count=meta.get("expected_option_count"),
+        expected_correct_count=meta.get("expected_correct_count"),
+        require_feedback=bool(meta.get("require_feedback", False)),
+        fault_type=meta.get("fault_type"),
+        expected_http_status=meta.get("expected_http_status"),
     )
 
 

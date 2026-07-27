@@ -191,12 +191,31 @@ def send_chat_turn(
     sub: str | None = None,
     manage_context: dict | None = None,
     timeout: float = 60.0,
+    session_ttl_seconds: int | None = None,
+    transport: httpx.BaseTransport | None = None,
 ) -> ChatTurnResult:
     """Sends one chat turn to the live Manage assistant route and returns the
     parsed result. Paces requests against the server's 30-req/5-min limiter
-    and retries once (after sleeping `Retry-After`) on a 429."""
+    and retries once (after sleeping `Retry-After`) on a 429.
+
+    `session_ttl_seconds` overrides the minted session JWT's lifetime (a
+    negative value mints an already-expired token -- see
+    `session.mint_session_token`, and the E7 `expired_token` fault case,
+    which is a REAL client-side-only fault: no stub involved). `transport`
+    is httpx's own public dependency-injection seam (e.g. `httpx.MockTransport`)
+    for the one E7 fault (`rate_limit_429`) that cannot be reproduced from a
+    black-box HTTP client without either a stub or spamming the live 30-req/
+    5-min limiter at real cost/risk to every other dimension's shared pacer
+    budget in the same run -- see test_e7_degradation.py and the README. This
+    is NOT `unittest.mock.patch`/pytest `monkeypatch`: it swaps an
+    `httpx.Client` constructor argument the library itself designed for
+    exactly this, so the harness's own real request/response/retry code path
+    below still runs unmodified against the synthetic transport."""
     sub = sub or settings.lecturer_sub
-    token = mint_session_token(sub=sub, secret=settings.app_secret, role=role, scope=scope)
+    ttl_kwargs = {} if session_ttl_seconds is None else {"ttl_seconds": session_ttl_seconds}
+    token = mint_session_token(
+        sub=sub, secret=settings.app_secret, role=role, scope=scope, **ttl_kwargs
+    )
     cookie = f"{SESSION_COOKIE_NAME}={token}"
     headers = _build_headers(cookie)
     body = _build_body(prompt, manage_context)
@@ -206,7 +225,7 @@ def send_chat_turn(
     verify = settings.ca_bundle if settings.ca_bundle else True
     result = ChatTurnResult(paced=paced)
 
-    with httpx.Client(verify=verify, timeout=timeout) as client:
+    with httpx.Client(verify=verify, timeout=timeout, transport=transport) as client:
         response = _post_once(client, settings.chat_endpoint, headers, body)
 
         if response.status_code == 429:

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import os
 import subprocess
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import lru_cache
 
 # The lecturer/Manage session cookie name verified by
@@ -42,20 +42,52 @@ def _mkcert_caroot() -> str | None:
 class Settings:
     chat_base_url: str
     ca_bundle: str | None
-    app_secret: str
-    database_url: str
+    # `repr=False` on every secret-bearing field, because this frozen dataclass
+    # is a pytest FIXTURE and pytest prints the full repr of every fixture value
+    # in the failure header of any failing test. Without it, a single failing
+    # judge-based case emits the judge API key and the DB password (with its
+    # password= component) straight into the nightly CI log. GitHub Actions
+    # masks registered `secrets.*` values, but that is the last line of defense,
+    # not the only one: a local run pointed at a non-dev database, or a failure
+    # header pasted into a PR comment, gets no masking at all.
+    app_secret: str = field(repr=False)
+    database_url: str = field(repr=False)
     lecturer_sub: str
+    # Judge model config for the E3/E4-quality/E7-graceful GEval checks (see
+    # judge.py). Deliberately a SEPARATE credential namespace from the app's
+    # own OPENAI_API_KEY/OPENAI_BASE_URL (which point the model UNDER TEST at
+    # the litellm gateway) -- the judge is a different concern and this
+    # harness must be able to gate on its own credential independently of
+    # whatever the live app's model key is doing. `judge_model` must be one
+    # of DeepEval's supported OpenAI-SDK-compatible model names (see
+    # judge.py / README); `judge_api_base` optionally points that
+    # OpenAI-SDK-shaped call at a compatible gateway (e.g. this repo's own
+    # litellm instance) instead of api.openai.com.
+    judge_model: str | None
+    judge_api_key: str | None = field(repr=False)
+    judge_api_base: str | None
 
     @property
     def chat_endpoint(self) -> str:
         return f"{self.chat_base_url.rstrip('/')}/api/manage/chat"
+
+    @property
+    def judge_configured(self) -> bool:
+        """True only when both a judge model name AND a credential are set.
+        Every judge-based check (E3 grounding, E4 proposal quality, E7
+        graceful-message) must gate on this and skip -- never silently pass
+        -- when it is False. `judge_api_base` is optional (defaults to
+        OpenAI's own endpoint)."""
+        return bool(self.judge_model) and bool(self.judge_api_key)
 
 
 def load_settings() -> Settings:
     """Reads harness configuration from the environment.
 
     Env vars (see README for the full list): KLICKER_CHAT_BASE_URL,
-    KLICKER_CA_BUNDLE, APP_SECRET, DATABASE_URL, KLICKER_LECTURER_SUB.
+    KLICKER_CA_BUNDLE, APP_SECRET, DATABASE_URL, KLICKER_LECTURER_SUB,
+    MANAGE_ASSISTANT_EVAL_JUDGE_MODEL, MANAGE_ASSISTANT_EVAL_JUDGE_API_KEY,
+    MANAGE_ASSISTANT_EVAL_JUDGE_API_BASE.
     """
     ca_bundle = os.environ.get("KLICKER_CA_BUNDLE")
     if not ca_bundle:
@@ -77,4 +109,7 @@ def load_settings() -> Settings:
             "user=klicker-prod password=klicker sslmode=require sslnegotiation=direct",
         ),
         lecturer_sub=os.environ.get("KLICKER_LECTURER_SUB", DEFAULT_LECTURER_SUB),
+        judge_model=os.environ.get("MANAGE_ASSISTANT_EVAL_JUDGE_MODEL"),
+        judge_api_key=os.environ.get("MANAGE_ASSISTANT_EVAL_JUDGE_API_KEY"),
+        judge_api_base=os.environ.get("MANAGE_ASSISTANT_EVAL_JUDGE_API_BASE"),
     )

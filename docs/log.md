@@ -1,5 +1,11 @@
 # Log
 
+## 2026-07-27
+
+- **Update**: [auth-model](./auth-model.md) records the Manage-assistant system prompt's new no-disclosure rule for the tool-output fence markers and sentinel, why it is not redundant with the fencing itself, and the before/after E6 measurement that motivated it.
+
+- **New**: [solutions/best-practice/dev-seed-is-not-idempotent-reset-first](./solutions/best-practice/dev-seed-is-not-idempotent-reset-first.md) — `seed:raw` fails `P2002` on `Account` against an already-seeded DB _after_ its delete phase, leaving a half-seeded database; reset first, and seed harness-owned elements after the base seed, never before.
+
 ## 2026-07-26
 
 - **Update**: [testing](./testing.md) documents the lecturer MCP's `smoke:negative` authZ/negative-path script alongside the existing `smoke:local` happy path, and the new `test-mcp-lecturer` CI workflow (Postgres-only: unit tests, migrate + `seed:test`, boot the built server, run both smokes).
