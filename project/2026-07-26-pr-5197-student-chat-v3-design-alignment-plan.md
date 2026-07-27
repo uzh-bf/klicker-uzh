@@ -556,3 +556,14 @@ simplify subagent on the exact commit → integrate accepted findings → re-ver
   (P2025 in `packages/util` `recomputeDerivedPermissions`), which makes any
   full post-create lifecycle fail — `seed:test` alone suffices for chat work.
   Next: S18 round verify, review, push, PR update.
+- 2026-07-27 S18 finish: Opus round review over `68edbd13d..5c097b95e` — one
+  actionable finding (edit-branch fix lacked automated coverage) fixed by
+  `7deb4d09f` (un-skipped the root-edit branching spec as a regression guard +
+  chip assertion in the stored-attachment spec; both pass host-run, 2/2).
+  Vitest 175/175 at head. `acc424981` prettier-fixes the spec (CI
+  check-format caught the `--no-verify` commit). Pushed; PR body updated to
+  cover the whole branch at `acc424981`. Host-run Playwright gotcha
+  confirmed: node-postgres cannot cross the SNI route — socat TCP proxy into
+  the compose network, then plain `DATABASE_URL` against 127.0.0.1.
+  Remaining work handed off:
+  [2026-07-27-student-chat-v3-follow-up-roadmap.md](./2026-07-27-student-chat-v3-follow-up-roadmap.md).
