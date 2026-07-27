@@ -186,7 +186,10 @@ async function main() {
   // 3. Token signed with the wrong issuer.
   await expectAuthRejectionAtInitialize(
     'wrong issuer rejected',
-    await mintToken({ issuer: 'http://wrong-issuer.invalid' })
+    // https, not http: the assertion is that the issuer does not MATCH the
+    // expected one, so the scheme is irrelevant here — and an http literal
+    // trips SonarCloud's S5332 (insecure protocol) on a non-localhost host.
+    await mintToken({ issuer: 'https://wrong-issuer.invalid' })
   )
 
   // 4. Token with the wrong purpose (e.g. a manage-assistant proposal token
