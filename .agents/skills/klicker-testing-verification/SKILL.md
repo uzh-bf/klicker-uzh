@@ -9,13 +9,14 @@ Facts about the test landscape: [docs/testing.md](../../../docs/testing.md). Thi
 
 ## Route the change
 
-| You changed…                                                    | Run                                                                                                                                      |
-| --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Pure logic in grading/util/export/word-cloud, or chat app logic | `pnpm --filter @klicker-uzh/<pkg> test` — safe with no services                                                                          |
-| `packages/graphql` services/schema                              | `pnpm --filter @klicker-uzh/graphql test:local` — one-command bootstrap (real Postgres + Redis + Hatchet); serialized, don't parallelize |
-| Auth adapter against shared Prisma client                       | `pnpm --filter @klicker-uzh/auth test:prisma-adapter` — guarded, disposable local PostgreSQL only                                        |
-| UI or user flows                                                | e2e — new specs go to `klicker-playwright-e2e` (primary suite); use `klicker-cypress-e2e` only to keep the frozen legacy suite green     |
-| React component appearance/behavior only                        | there is **no component-test layer** — verify in the browser (below) and rely on e2e if a flow covers it                                 |
+| You changed…                                                    | Run                                                                                                                                                                                         |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pure logic in grading/util/export/word-cloud, or chat app logic | `pnpm --filter @klicker-uzh/<pkg> test` — safe with no services                                                                                                                             |
+| `packages/graphql` services/schema                              | `pnpm --filter @klicker-uzh/graphql test:local` — one-command bootstrap (real Postgres + Redis + Hatchet); serialized, don't parallelize                                                    |
+| Auth adapter against shared Prisma client                       | `pnpm --filter @klicker-uzh/auth test:prisma-adapter` — guarded, disposable local PostgreSQL only                                                                                           |
+| UI or user flows                                                | e2e — new specs go to `klicker-playwright-e2e` (primary suite); use `klicker-cypress-e2e` only to keep the frozen legacy suite green                                                        |
+| React component appearance/behavior only                        | there is **no component-test layer** — verify in the browser (below) and rely on e2e if a flow covers it                                                                                    |
+| Office Add-in source, build, or manifest                        | Run its `check`, `lint`, `test`, `build:docs`, `verify:docs`, and `validate` scripts; use a stubbed Office API for browser UI checks and sideload the manifest in PowerPoint before release |
 
 Never run root `pnpm run test:run` blind — its turbo fan-out includes Cypress, which needs a running seeded stack.
 
@@ -47,6 +48,8 @@ Every item, in order; paste evidence (command + tail of output, screenshots) int
 For TypeScript or other compiler/toolchain upgrades, root `check:all` includes the Cypress and Playwright compilers through their package `check` scripts. Also run `pnpm run build:test` and the Docs production build; those surfaces remain outside the root check. Use direct package `tsc --noEmit -p tsconfig.json` commands only to isolate a Cypress or Playwright failure. When a check config extends a declaration-emitting config, verify the resolved compiler options: `noEmit` does not disable declaration portability analysis, so the check may also need explicit `declaration: false` and `declarationMap: false`. Incremental checks must use a different `tsBuildInfoFile` from the emitting build.
 
 For a Prisma major or driver-adapter change, also run a frozen install; Prisma generate/check/build; local `*:raw` reset, push, migrate, diff, deploy, and explicit-seed command smokes as applicable; the guarded Auth adapter round-trip; both root build modes; relevant database-backed tests; and the Analytics Python generation/image build. Run destructive commands only against the isolated DevPod database and state every CI-only gap.
+
+The Office Add-in is a browser application bundled by Rollup. Its package check must use the workspace TypeScript version, `moduleResolution: Bundler`, `noEmit`, and explicit `types: ["office-js"]`. `build:docs` regenerates and replaces the deployable directory; `verify:docs` must then prove exact parity. Browser checks with an Office API stub verify the UI state machine only. Persistence, multi-instance behavior, and embedded evaluation rendering still require a real PowerPoint sideload.
 
 ## Reporting
 

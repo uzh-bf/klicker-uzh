@@ -2,7 +2,7 @@
 type: Guide
 title: Getting Started
 description: Toolchain, first-time setup, infrastructure bring-up, dev-server paths, and the exact failure signatures a fresh clone produces.
-timestamp: '2026-07-19'
+timestamp: '2026-07-20'
 tags:
   - environment
   - onboarding
@@ -16,7 +16,7 @@ tags:
 
 Aligned to Node `24.16.0` and pnpm `11.5.0` across the entire workspace, including the self-contained devcontainer. Pinned in root `package.json`: `volta.node = 24.16.0`, `volta.pnpm = 11.5.0`, `packageManager = pnpm@11.5.0`.
 
-The workspace TypeScript baseline is `~6.0.3` (config-derived from root and package manifests). `apps/office-addin/package.json` intentionally remains on `~5.6.3` outside this baseline; `.syncpackrc.mjs` contains the narrow exception that keeps `pnpm run check:syncpack` honest without forcing that app into this upgrade.
+The workspace TypeScript baseline is `~6.0.3` across all packages, including `apps/office-addin`. Cypress uses that baseline with its documented legacy non-strict compiler contract; it is not a TypeScript-version exception. The Office Add-in uses the browser/bundler contract (`target: ES2022`, `module: ESNext`, `moduleResolution: Bundler`, `noEmit`) and explicitly loads the `office-js` global types required by TypeScript 6. No syncpack exception is needed.
 
 Compiler settings follow the code's runtime and build owner:
 
