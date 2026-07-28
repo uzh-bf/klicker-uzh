@@ -25,22 +25,28 @@ function DeleteKnowledgeBaseResourcesModal({
   const [deleteResources, { loading }] = useMutation(DeleteKbResourcesDocument)
 
   const handleDelete = async () => {
-    if (loading || resources.length === 0) return
+    if (loading || resources.length === 0 || resources.length > 50) return
 
     try {
       await deleteResources({
         variables: { kbId, ids: resources.map(({ id }) => id) },
       })
-      await onDeleted()
-      toast({
-        type: 'success',
-        message: t('kb.bulkDeleteSuccess', { count: resources.length }),
-      })
-      onClose()
     } catch (error) {
       console.error('Failed to delete KB resources', error)
       toast({ type: 'error', message: t('kb.bulkDeleteError') })
+      return
     }
+
+    try {
+      await onDeleted()
+    } catch (error) {
+      console.error('Failed to refresh KB resources after deletion', error)
+    }
+    toast({
+      type: 'success',
+      message: t('kb.bulkDeleteSuccess', { count: resources.length }),
+    })
+    onClose()
   }
 
   return (
@@ -51,7 +57,7 @@ function DeleteKnowledgeBaseResourcesModal({
       primaryLabel={t('kb.bulkDeleteConfirm', { count: resources.length })}
       primaryButtonStyle="destructive"
       primaryLoading={loading}
-      primaryDisabled={resources.length === 0}
+      primaryDisabled={resources.length === 0 || resources.length > 50}
       onPrimaryAction={handleDelete}
       secondaryLabel={t('shared.generic.cancel')}
       onSecondaryAction={onClose}

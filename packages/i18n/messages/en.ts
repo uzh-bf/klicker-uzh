@@ -1276,14 +1276,14 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     searchResources: 'Search resources',
     searchResourcesPlaceholder: 'Search title, filename or URL',
     filterType: 'Type',
-    filterStatus: 'Status',
+    filterStatus: 'Latest ingestion',
     filterAll: 'All',
     typeFile: 'File',
     typeUrl: 'Link',
     noResourceResults: 'No resources match these filters.',
     resourceResultCount:
       '{count, plural, =0 {No resources} one {# resource} other {# resources}}',
-    selectAllPage: 'Select all available resources on this page',
+    selectAllPage: 'Select up to 50 available resources',
     selectResource: 'Select “{title}”',
     loadMoreResources: 'Load more resources',
     noResources: 'No resources have been added yet.',
@@ -1309,7 +1309,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     bulkDeleteSuccess:
       '{count, plural, one {Resource removed. Background cleanup is in progress.} other {# resources removed. Background cleanup is in progress.}}',
     bulkDeleteError:
-      'The selected resources could not be deleted. Nothing was changed.',
+      'The deletion could not be confirmed. Refresh the list before trying again.',
     ingestResource: 'Ingest',
     retryIngestion: 'Retry',
     reingestResource: 'Re-ingest',

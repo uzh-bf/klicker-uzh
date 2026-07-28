@@ -41,6 +41,7 @@ import DeleteKnowledgeBaseResourceModal from './DeleteKnowledgeBaseResourceModal
 import DeleteKnowledgeBaseResourcesModal from './DeleteKnowledgeBaseResourcesModal'
 
 const PAGE_SIZE = 20
+const MAX_BULK_SELECTION = 50
 
 type KnowledgeBaseResource =
   GetKbResourcesQuery['getKbResources']['items'][number]
@@ -256,7 +257,7 @@ function OperationProgress({ resource }: { resource: KnowledgeBaseResource }) {
       data-cy={`kb-resource-progress-${resource.id}`}
     >
       <div className="h-1.5 overflow-hidden rounded-full bg-amber-100">
-        <div className="h-full w-2/3 animate-pulse rounded-full bg-amber-500 motion-reduce:animate-none" />
+        <div className="h-full w-full animate-pulse rounded-full bg-amber-500 motion-reduce:animate-none" />
       </div>
       <p className="mt-1 text-xs text-slate-600">
         {t('kb.operationInProgress')}
@@ -279,7 +280,7 @@ function KnowledgeBaseResourceList({
   const [search, setSearch] = useState('')
   const deferredSearch = useDeferredValue(search.trim())
   const [typeFilter, setTypeFilter] = useState<KbResourceType | ''>('')
-  const [statusFilter, setStatusFilter] = useState<KbResourceStatus | ''>('')
+  const [statusFilter, setStatusFilter] = useState<KbIngestionStatus | ''>('')
   const [polling, setPolling] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [deletionTarget, setDeletionTarget] =
@@ -290,6 +291,7 @@ function KnowledgeBaseResourceList({
   const [historyRefreshes, setHistoryRefreshes] = useState<
     Record<string, number>
   >({})
+  const pollInFlightRef = useRef(false)
   const variables = {
     kbId,
     first: PAGE_SIZE,
@@ -297,14 +299,21 @@ function KnowledgeBaseResourceList({
     type: typeFilter || null,
     status: statusFilter || null,
   }
-  const { data, loading, error, fetchMore, refetch, networkStatus } = useQuery(
-    GetKbResourcesDocument,
-    {
-      variables,
-      notifyOnNetworkStatusChange: true,
-      pollInterval: polling ? 2000 : 0,
-    }
-  )
+  const {
+    data,
+    loading,
+    error,
+    fetchMore,
+    refetch,
+    networkStatus,
+    updateQuery,
+  } = useQuery(GetKbResourcesDocument, {
+    variables,
+    notifyOnNetworkStatusChange: true,
+  })
+  const [fetchResourcePoll] = useLazyQuery(GetKbResourcesDocument, {
+    fetchPolicy: 'no-cache',
+  })
   const [ingestResource] = useMutation(IngestKbResourceDocument)
   const connection = data?.getKbResources
   const resources = connection?.items ?? []
@@ -316,12 +325,73 @@ function KnowledgeBaseResourceList({
   const selectableIds = resources
     .filter((resource) => !isActiveResource(resource))
     .map(({ id }) => id)
+  const bulkSelectableIds = selectableIds.slice(0, MAX_BULK_SELECTION)
   const allPageSelected =
-    selectableIds.length > 0 && selectableIds.every((id) => selectedIds.has(id))
+    bulkSelectableIds.length > 0 &&
+    bulkSelectableIds.every((id) => selectedIds.has(id))
 
   useEffect(() => {
     setPolling(resources.some(isActiveResource))
   }, [resources])
+
+  useEffect(() => {
+    if (!polling) return
+
+    const pollCurrentPage = async () => {
+      if (pollInFlightRef.current) return
+      pollInFlightRef.current = true
+      try {
+        const { data: pollData } = await fetchResourcePoll({
+          variables: {
+            kbId,
+            first: PAGE_SIZE,
+            after: null,
+            search: deferredSearch || null,
+            type: typeFilter || null,
+            status: statusFilter || null,
+          },
+        })
+        if (!pollData) return
+
+        updateQuery((previous) => {
+          const refreshedItems = pollData.getKbResources.items
+          const refreshedIds = new Set(refreshedItems.map(({ id }) => id))
+          const retainedLoadedItems = previous.getKbResources.items
+            .slice(PAGE_SIZE)
+            .filter(({ id }) => !refreshedIds.has(id))
+
+          return {
+            ...pollData,
+            getKbResources: {
+              ...pollData.getKbResources,
+              items: [...refreshedItems, ...retainedLoadedItems],
+              pageInfo:
+                previous.getKbResources.items.length > PAGE_SIZE
+                  ? previous.getKbResources.pageInfo
+                  : pollData.getKbResources.pageInfo,
+            },
+          }
+        })
+      } finally {
+        pollInFlightRef.current = false
+      }
+    }
+
+    const intervalId = window.setInterval(() => {
+      void pollCurrentPage().catch((pollError) => {
+        console.error('Failed to poll KB resource operations', pollError)
+      })
+    }, 2000)
+    return () => window.clearInterval(intervalId)
+  }, [
+    deferredSearch,
+    fetchResourcePoll,
+    kbId,
+    polling,
+    statusFilter,
+    typeFilter,
+    updateQuery,
+  ])
 
   useEffect(() => {
     setSelectedIds(new Set())
@@ -449,7 +519,7 @@ function KnowledgeBaseResourceList({
     setSelectedIds((current) => {
       const next = new Set(current)
       if (next.has(id)) next.delete(id)
-      else next.add(id)
+      else if (next.size < MAX_BULK_SELECTION) next.add(id)
       return next
     })
   }
@@ -457,8 +527,12 @@ function KnowledgeBaseResourceList({
   const togglePageSelection = () => {
     setSelectedIds((current) => {
       const next = new Set(current)
-      if (allPageSelected) selectableIds.forEach((id) => next.delete(id))
-      else selectableIds.forEach((id) => next.add(id))
+      if (allPageSelected) bulkSelectableIds.forEach((id) => next.delete(id))
+      else {
+        bulkSelectableIds.forEach((id) => {
+          if (next.size < MAX_BULK_SELECTION) next.add(id)
+        })
+      }
       return next
     })
   }
@@ -515,26 +589,26 @@ function KnowledgeBaseResourceList({
             name="kb-resource-status-filter"
             value={statusFilter}
             onChange={(event) =>
-              setStatusFilter(event.target.value as KbResourceStatus | '')
+              setStatusFilter(event.target.value as KbIngestionStatus | '')
             }
             className="focus-visible:border-primary-100 focus-visible:ring-primary-100 mt-1 min-h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 focus-visible:outline-none focus-visible:ring-1"
             data-cy="kb-resource-status-filter"
           >
             <option value="">{t('kb.filterAll')}</option>
-            <option value={KbResourceStatus.Added}>
-              {t('kb.statusAdded')}
+            <option value={KbIngestionStatus.Queued}>
+              {t('kb.runStatusQueued')}
             </option>
-            <option value={KbResourceStatus.Queued}>
-              {t('kb.statusQueued')}
+            <option value={KbIngestionStatus.Processing}>
+              {t('kb.runStatusProcessing')}
             </option>
-            <option value={KbResourceStatus.Processing}>
-              {t('kb.statusProcessing')}
+            <option value={KbIngestionStatus.Succeeded}>
+              {t('kb.runStatusSucceeded')}
             </option>
-            <option value={KbResourceStatus.Ready}>
-              {t('kb.statusReady')}
+            <option value={KbIngestionStatus.Failed}>
+              {t('kb.runStatusFailed')}
             </option>
-            <option value={KbResourceStatus.Failed}>
-              {t('kb.statusFailed')}
+            <option value={KbIngestionStatus.Superseded}>
+              {t('kb.runStatusSuperseded')}
             </option>
           </select>
         </label>
@@ -641,7 +715,11 @@ function KnowledgeBaseResourceList({
                       <input
                         type="checkbox"
                         checked={selectedIds.has(resource.id)}
-                        disabled={active}
+                        disabled={
+                          active ||
+                          (!selectedIds.has(resource.id) &&
+                            selectedIds.size >= MAX_BULK_SELECTION)
+                        }
                         onChange={() => toggleSelection(resource.id)}
                         className="h-4 w-4"
                         data-cy={`select-kb-resource-${resource.id}`}
@@ -871,9 +949,15 @@ function KnowledgeBaseResourceList({
                 <dd className="mt-1 text-slate-900">
                   {inspectorResource.activeResourceVersion == null
                     ? t('kb.notServing')
-                    : t('kb.servingCurrentVersion', {
-                        version: inspectorResource.activeResourceVersion,
-                      })}
+                    : inspectorResource.activeResourceVersion ===
+                          inspectorResource.resourceVersion &&
+                        inspectorResource.status === KbResourceStatus.Ready
+                      ? t('kb.servingCurrentVersion', {
+                          version: inspectorResource.activeResourceVersion,
+                        })
+                      : t('kb.servingPreviousVersion', {
+                          version: inspectorResource.activeResourceVersion,
+                        })}
                 </dd>
               </div>
             </dl>

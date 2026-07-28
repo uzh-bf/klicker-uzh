@@ -1282,14 +1282,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     searchResources: 'Ressourcen suchen',
     searchResourcesPlaceholder: 'Titel, Dateiname oder URL suchen',
     filterType: 'Typ',
-    filterStatus: 'Status',
+    filterStatus: 'Letzte Verarbeitung',
     filterAll: 'Alle',
     typeFile: 'Datei',
     typeUrl: 'Link',
     noResourceResults: 'Keine Ressourcen entsprechen diesen Filtern.',
     resourceResultCount:
       '{count, plural, =0 {Keine Ressourcen} one {# Ressource} other {# Ressourcen}}',
-    selectAllPage: 'Alle verfügbaren Ressourcen auf dieser Seite auswählen',
+    selectAllPage: 'Bis zu 50 verfügbare Ressourcen auswählen',
     selectResource: '„{title}“ auswählen',
     loadMoreResources: 'Weitere Ressourcen laden',
     noResources: 'Es wurden noch keine Ressourcen hinzugefügt.',
@@ -1315,7 +1315,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     bulkDeleteSuccess:
       '{count, plural, one {Ressource wurde entfernt. Die Bereinigung läuft im Hintergrund.} other {# Ressourcen wurden entfernt. Die Bereinigung läuft im Hintergrund.}}',
     bulkDeleteError:
-      'Die ausgewählten Ressourcen konnten nicht gelöscht werden. Es wurde nichts verändert.',
+      'Das Löschen konnte nicht bestätigt werden. Aktualisieren Sie die Liste, bevor Sie es erneut versuchen.',
     ingestResource: 'Verarbeiten',
     retryIngestion: 'Erneut versuchen',
     reingestResource: 'Neu verarbeiten',

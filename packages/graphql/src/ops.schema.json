@@ -19336,30 +19336,6 @@
             "deprecationReason": null
           },
           {
-            "name": "resources",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "LIST",
-                "name": null,
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "KBResource",
-                    "ofType": null
-                  }
-                }
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
             "name": "updatedAt",
             "description": null,
             "args": [],
@@ -39107,7 +39083,7 @@
                 "description": null,
                 "type": {
                   "kind": "ENUM",
-                  "name": "KBResourceStatus",
+                  "name": "KBIngestionStatus",
                   "ofType": null
                 },
                 "defaultValue": null,
@@ -39982,30 +39958,6 @@
                   "kind": "OBJECT",
                   "name": "UserGroup",
                   "ofType": null
-                }
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "getUserKbs",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "LIST",
-                "name": null,
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "KB",
-                    "ofType": null
-                  }
                 }
               }
             },

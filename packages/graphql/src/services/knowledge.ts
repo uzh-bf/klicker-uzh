@@ -65,7 +65,6 @@ export interface KBMetrics {
 }
 
 export interface KBWithMetrics extends DB.KB {
-  resources?: Array<DB.KBResource & { ingestionRuns?: DB.KBIngestionRun[] }>
   metrics: KBMetrics
 }
 
@@ -421,19 +420,6 @@ async function getKbMcpServerOrThrow(prisma: DB.Prisma.TransactionClient) {
   return mcpServer
 }
 
-export async function getUserKbs(ctx: ContextWithUser) {
-  return ctx.prisma.kB.findMany({
-    where: { ownerId: ctx.user.sub, deletedAt: null },
-    include: {
-      resources: {
-        where: { deletedAt: null },
-        orderBy: { updatedAt: 'desc' },
-      },
-    },
-    orderBy: { updatedAt: 'desc' },
-  })
-}
-
 function createKbMetrics({
   visibleResourceCount = 0,
   visibleSizeBytes = 0,
@@ -670,7 +656,6 @@ export async function getKb({ id }: { id: string }, ctx: ContextWithUser) {
   }
   return {
     ...kb,
-    resources: [],
     metrics: await getKbMetrics(ctx.prisma, kb.id),
   } satisfies KBWithMetrics
 }
@@ -689,7 +674,7 @@ export async function getKbResourcesConnection(
     after?: string | null
     search?: string | null
     type?: DB.KBResourceType | null
-    status?: DB.KBResourceStatus | null
+    status?: DB.KBIngestionStatus | null
   },
   ctx: ContextWithUser
 ): Promise<KBResourceConnection> {
@@ -703,6 +688,20 @@ export async function getKbResourcesConnection(
     status: status ?? null,
   })
   const cursor = decodePaginationCursor(after, 'resources', filterHash)
+  const operationStatusResourceIds = status
+    ? await ctx.prisma.$queryRaw<Array<{ id: string }>>`
+        SELECT resource."id"
+        FROM "public"."KBResource" AS resource
+        WHERE resource."kbId" = CAST(${kbId} AS UUID)
+          AND (
+            SELECT run."status"
+            FROM "public"."KBIngestionRun" AS run
+            WHERE run."resourceId" = resource."id"
+            ORDER BY run."createdAt" DESC, run."id" DESC
+            LIMIT 1
+          ) = CAST(${status} AS "KBIngestionStatus")
+      `
+    : null
   const searchWhere: DB.Prisma.KBResourceWhereInput = normalizedSearch
     ? {
         OR: [
@@ -726,7 +725,9 @@ export async function getKbResourcesConnection(
     kbId,
     deletedAt: null,
     ...(type ? { type } : {}),
-    ...(status ? { status } : {}),
+    ...(operationStatusResourceIds
+      ? { id: { in: operationStatusResourceIds.map(({ id }) => id) } }
+      : {}),
     ...searchWhere,
   }
   const where: DB.Prisma.KBResourceWhereInput = cursor
@@ -751,7 +752,10 @@ export async function getKbResourcesConnection(
       where,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       include: {
-        ingestionRuns: { orderBy: { createdAt: 'desc' }, take: 1 },
+        ingestionRuns: {
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+          take: 1,
+        },
       },
       take: pageSize + 1,
     }),
@@ -939,7 +943,6 @@ export async function createKb(
       description,
       ownerId: ctx.user.sub,
     },
-    include: { resources: true },
   })
 }
 
@@ -997,7 +1000,7 @@ async function queueKbDeletions(
     const results = await Promise.allSettled(
       batch.map((input) => ctx.tasks.deleteKBResource.runNoWait(input))
     )
-    await Promise.all(
+    await Promise.allSettled(
       results.map((result, index) =>
         result.status === 'rejected'
           ? recordDeletionQueueFailure(batch[index]!, ctx)
@@ -1132,7 +1135,6 @@ export async function deleteKb({ id }: { id: string }, ctx: ContextWithUser) {
 
       const kb = await prisma.kB.findUniqueOrThrow({
         where: { id },
-        include: { resources: true },
       })
       return { kb, deletionInputs }
     }

@@ -31,7 +31,6 @@ import {
   getKbChatbotBindings,
   getKbResourceIngestionRuns,
   getKbResourcesConnection,
-  getUserKbs,
   getUserKbsConnection,
   ingestKbResource,
   requestKbFileUpload,
@@ -250,7 +249,7 @@ describe('Integration tests for knowledge base CRUD', () => {
     )
     await createKb({ name: 'Other owner' }, userTwoCtx)
 
-    const userKbs = await getUserKbs(userOneCtx)
+    const userKbs = (await getUserKbsConnection({}, userOneCtx)).items
 
     expect(userKbs).toHaveLength(1)
     expect(userKbs[0]).toMatchObject({
@@ -261,13 +260,12 @@ describe('Integration tests for knowledge base CRUD', () => {
     })
   })
 
-  it('returns an owned knowledge base with its resources', async () => {
+  it('returns owned knowledge base metadata without an unbounded child list', async () => {
     const created = await createKb({ name: 'Finance notes' }, userOneCtx)
 
     const kb = await getKb({ id: created.id }, userOneCtx)
 
     expect(kb.id).toBe(created.id)
-    expect(kb.resources).toEqual([])
   })
 
   it('lists owned chatbots with their enabled knowledge base', async () => {
@@ -540,7 +538,9 @@ describe('Integration tests for knowledge base CRUD', () => {
       'KB name is required'
     )
 
-    await expect(getUserKbs(userOneCtx)).resolves.toEqual([])
+    await expect(getUserKbsConnection({}, userOneCtx)).resolves.toMatchObject({
+      items: [],
+    })
   })
 
   it('hides an owned knowledge base behind a durable tombstone', async () => {
@@ -548,7 +548,9 @@ describe('Integration tests for knowledge base CRUD', () => {
 
     await deleteKb({ id: created.id }, userOneCtx)
 
-    await expect(getUserKbs(userOneCtx)).resolves.toEqual([])
+    await expect(getUserKbsConnection({}, userOneCtx)).resolves.toMatchObject({
+      items: [],
+    })
     await expect(getKb({ id: created.id }, userOneCtx)).rejects.toThrow(
       'KB not found'
     )
@@ -1373,9 +1375,9 @@ describe('Integration tests for knowledge base CRUD', () => {
       status: KBResourceStatus.QUEUED,
       resourceVersion: 1,
     })
-    await expect(getKb({ id: created.id }, userOneCtx)).resolves.toMatchObject({
-      resources: [],
-    })
+    await expect(
+      getKbResourcesConnection({ kbId: created.id }, userOneCtx)
+    ).resolves.toMatchObject({ items: [] })
   })
 
   it('keeps a tombstone hidden when queueing its delete task fails', async () => {
@@ -1414,9 +1416,9 @@ describe('Integration tests for knowledge base CRUD', () => {
       status: KBIngestionStatus.QUEUED,
       errorCode: 'DELETION_QUEUE_FAILED',
     })
-    await expect(getKb({ id: created.id }, userOneCtx)).resolves.toMatchObject({
-      resources: [],
-    })
+    await expect(
+      getKbResourcesConnection({ kbId: created.id }, userOneCtx)
+    ).resolves.toMatchObject({ items: [] })
   })
 
   it('returns only the five newest ingestion runs to the resource owner', async () => {
@@ -1724,6 +1726,31 @@ describe('Integration tests for knowledge base CRUD', () => {
       where: { id: ids[0] },
       data: { status: KBResourceStatus.PROCESSING },
     })
+    await prisma.kBIngestionRun.createMany({
+      data: [
+        {
+          id: randomUUID(),
+          resourceId: ids[0]!,
+          resourceVersion: 1,
+          status: KBIngestionStatus.FAILED,
+          createdAt: new Date('2026-07-28T13:01:00.000Z'),
+        },
+        {
+          id: randomUUID(),
+          resourceId: ids[0]!,
+          resourceVersion: 2,
+          status: KBIngestionStatus.PROCESSING,
+          createdAt: new Date('2026-07-28T13:02:00.000Z'),
+        },
+        {
+          id: randomUUID(),
+          resourceId: ids[1]!,
+          resourceVersion: 1,
+          status: KBIngestionStatus.SUCCEEDED,
+          createdAt: new Date('2026-07-28T13:02:00.000Z'),
+        },
+      ],
+    })
     const secondPage = await getKbResourcesConnection(
       {
         kbId: kb.id,
@@ -1763,7 +1790,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         kbId: kb.id,
         search: 'finance',
         type: KBResourceType.URL,
-        status: KBResourceStatus.PROCESSING,
+        status: KBIngestionStatus.PROCESSING,
       },
       userOneCtx
     )

@@ -4,7 +4,7 @@ query GetKbResources(
   $after: String
   $search: String
   $type: KBResourceType
-  $status: KBResourceStatus
+  $status: KBIngestionStatus
 ) {
   getKbResources(
     kbId: $kbId

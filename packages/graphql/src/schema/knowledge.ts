@@ -114,7 +114,6 @@ export const KBMetrics = KBMetricsRef.implement({
 })
 
 interface IKB extends DB.KB {
-  resources?: IKBResource[]
   metrics?: IKBMetrics
 }
 
@@ -124,10 +123,6 @@ export const KB = KBRef.implement({
     id: t.exposeID('id'),
     name: t.exposeString('name'),
     description: t.exposeString('description', { nullable: true }),
-    resources: t.field({
-      type: [KBResourceRef],
-      resolve: (kb) => kb.resources ?? [],
-    }),
     metrics: t.field({
       type: KBMetricsRef,
       nullable: true,

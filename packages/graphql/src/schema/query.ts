@@ -75,8 +75,8 @@ import {
   KBChatbotBinding,
   KBConnection,
   KBIngestionRun,
+  KBIngestionStatus,
   KBResourceConnection,
-  KBResourceStatus,
   KBResourceType,
 } from './knowledge.js'
 import {
@@ -1419,14 +1419,6 @@ export const Query = builder.queryType({
         },
       }),
 
-      getUserKbs: t.withAuth(asUser).field({
-        nullable: false,
-        type: [KB],
-        resolve: async (_, __, ctx) => {
-          return await KnowledgeService.getUserKbs(ctx)
-        },
-      }),
-
       getUserKbsConnection: t.withAuth(asUser).field({
         nullable: false,
         type: KBConnection,
@@ -1458,7 +1450,7 @@ export const Query = builder.queryType({
           after: t.arg.string({ required: false }),
           search: t.arg.string({ required: false }),
           type: t.arg({ type: KBResourceType, required: false }),
-          status: t.arg({ type: KBResourceStatus, required: false }),
+          status: t.arg({ type: KBIngestionStatus, required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.getKbResourcesConnection(args, ctx)

@@ -1693,7 +1693,6 @@ type KB {
   id: ID!
   metrics: KBMetrics
   name: String!
-  resources: [KBResource!]!
   updatedAt: Date!
 }
 
@@ -2605,7 +2604,7 @@ type Query {
   getKb(id: ID!): KB!
   getKbChatbotBindings(kbId: ID!): [KBChatbotBinding!]!
   getKbResourceIngestionRuns(resourceId: ID!): [KBIngestionRun!]!
-  getKbResources(after: String, first: Int, kbId: ID!, search: String, status: KBResourceStatus, type: KBResourceType): KBResourceConnection!
+  getKbResources(after: String, first: Int, kbId: ID!, search: String, status: KBIngestionStatus, type: KBResourceType): KBResourceConnection!
   getLecturerViewLiveQuiz(id: String!): LiveQuiz
   getLiveQuizEmbeddingInfo(id: String!): LiveQuizEmbeddingInfo
   getLiveQuizSummary(quizId: String!): LiveQuizSummary
@@ -2631,7 +2630,6 @@ type Query {
   getTemplatePreviewAnswerCollectionEntries(answerCollectionId: Int!, templateId: String!): [AnswerCollectionPreviewEntry!]
   getUserActivitiesCourses: [CourseListEntry!]
   getUserGroupsUser: [UserGroup!]
-  getUserKbs: [KB!]!
   getUserKbsConnection(after: String, first: Int, search: String): KBConnection!
   getUsersPrivatePreview: [UserInfo!]
   groupActivities(courseId: String!): [GroupActivity!]

@@ -50,7 +50,7 @@ KB child creation and deletion share a KB-first lock order. Upload-ticket issue,
 
 KB resource-count and byte quotas use that same parent lock. Return stable GraphQL codes for quota and ticket mismatches, and derive every ingestion `kb_id` from the persisted owner-checked KB/resource relationship rather than client-supplied scope text.
 
-For scalable KB lists, use the existing owner/filter-bound opaque keyset connections: `(updatedAt, id)` for KBs and immutable `(createdAt, id)` for resources, both descending, bounded to 50. Keep exact metrics derived with grouped queries, keep full run history in its separate five-row query, and reset cursors when normalized search/type/status filters change.
+For scalable KB lists, use the existing owner/filter-bound opaque keyset connections: `(updatedAt, id)` for KBs and immutable `(createdAt, id)` for resources, both descending, bounded to 50. Do not reintroduce the former unbounded `getUserKbs` or nested `KB.resources` fields. Keep exact metrics derived with grouped queries, keep full run history in its separate five-row query, filter resources by their latest ingestion-run status, and reset cursors when normalized search/type/status filters change.
 
 Bulk resource deletion accepts at most 50 unique ids from one owned KB. Lock the parent then sorted children, reject the selection atomically for missing/foreign/active rows, create one fenced delete run per row before commit, and treat post-commit task dispatches independently.
 
