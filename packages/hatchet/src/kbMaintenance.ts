@@ -23,6 +23,10 @@ const KB_MAINTENANCE_CONCURRENCY = 8
 const KB_MAINTENANCE_INTERVAL_MS = 15 * 60 * 1000
 const KB_UPLOAD_RETENTION_GRACE_MS = 24 * 60 * 60 * 1000
 const KB_BLOB_DELETE_TIMEOUT_MS = 30_000
+const KB_TERMINAL_DELETION_STATUSES = [
+  KBIngestionStatus.FAILED,
+  KBIngestionStatus.SUPERSEDED,
+]
 
 type KBMaintenanceDependencies = {
   prisma: PrismaClient
@@ -122,7 +126,7 @@ export async function maintainKBResources(
       ingestionRuns: {
         where: {
           operation: KBIngestionOperation.DELETE,
-          status: KBIngestionStatus.FAILED,
+          status: { in: KB_TERMINAL_DELETION_STATUSES },
         },
         select: { id: true },
       },
@@ -158,7 +162,7 @@ export async function maintainKBResources(
                 some: {
                   id: resource.ingestionAttemptId!,
                   operation: KBIngestionOperation.DELETE,
-                  status: KBIngestionStatus.FAILED,
+                  status: { in: KB_TERMINAL_DELETION_STATUSES },
                 },
               },
             },
