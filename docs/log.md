@@ -2,6 +2,8 @@
 
 ## 2026-07-28
 
+- **Update**: [domain-model](./domain-model.md), [data-and-migrations](./data-and-migrations.md), [graphql-api-layer](./graphql-api-layer.md), [async-and-workers](./async-and-workers.md), [frontend-conventions](./frontend-conventions.md), and [testing](./testing.md) document cursor-bound KB/resource connections, grouped exact metrics, deterministic bulk deletion, current-page polling, the resource inspector, and lecturer scale verification.
+
 - **Update**: [domain-model](./domain-model.md), [data-and-migrations](./data-and-migrations.md), [graphql-api-layer](./graphql-api-layer.md), [async-and-workers](./async-and-workers.md), [frontend-conventions](./frontend-conventions.md), and [testing](./testing.md) document concurrency-safe KB count/byte reservations, persisted ingestion scope checks, URL replacement accounting, the PDF/TXT/MD production MIME contract, and quota verification.
 
 ## 2026-07-27

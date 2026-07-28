@@ -61,6 +61,8 @@ Deletion is asynchronous and fenced by `deletedAt`/`deletedById` on both `KB` an
 
 Each KB retains at most 100 resource allocations and 500 MiB. Quota accounting includes hidden resource tombstones and unconsumed upload tickets, so asynchronous cleanup and concurrent upload requests cannot free or oversubscribe capacity early. A ticket reserves its declared bytes; confirmation converts that reservation into a resource without double counting. URL bytes become known during source preparation and atomically replace that resource's previous measured size under the parent-KB lock.
 
+Lecturer-facing metrics are derived from these rows rather than stored counters. They distinguish visible resources and known bytes from retained quota usage, conservative 25 MiB reservations for legacy unknown-size rows, upload reservations, pending cleanup, and enabled chatbot consumers. The catalog computes the same measures with bounded grouped queries for one page of owned KBs.
+
 ## Gamification details
 
 - Responses are stored as `QuestionResponse`/`QuestionResponseDetail` (`response.prisma`) with `totalPointsAwarded`, `totalXpAwarded`, `score`.

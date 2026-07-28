@@ -25,6 +25,8 @@ For KB deletion changes, add real-PostgreSQL coverage for owner-hidden tombstone
 
 For KB quota changes, use real PostgreSQL for exact 100-resource/500-MiB boundaries, concurrent reservations, ticket conversion, tombstone retention, and cleanup release. Use Hatchet tests for persisted KB-scope mismatch and locked URL replacement accounting (`usage - old size + observed size`) before dispatch.
 
+For KB pagination and bulk operations, use real PostgreSQL for tied keyset order, malformed/owner/filter-mismatched cursors, status changes between resource pages, exact grouped metrics, tombstone hiding, deterministic lock order, all-or-nothing active/foreign guards, input bounds, and independent post-commit dispatch failure. The KB UI has no component-test layer; use the real delegated-login browser for EN/DE desktop/390 px catalog and detail flows.
+
 Direct checks for `auth`, `chat`, `frontend-control`, `frontend-manage`, and `frontend-pwa` generate ignored Next route types first through each app's `check` script. Do not hand-edit or commit `next-env.d.ts`; keep it ignored and included by `tsconfig.json`. The three PWA apps use `tsconfig.check.json` to exclude `.next/dev/types` from raw `tsc`; otherwise stale dev and fresh production Pages Router validators duplicate global declarations.
 
 For Next framework or bundler changes, verify both repository-supported paths. `pnpm run build:test` uses Turbopack in all five Next apps. `pnpm run build` uses Turbopack for auth/chat and Webpack for control/manage/PWA until their service-worker integration moves to Serwist. Confirm standalone server paths for all five apps and `sw.js`, Workbox, and custom worker outputs for the three PWA apps.
