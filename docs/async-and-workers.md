@@ -57,6 +57,8 @@ Operation events also return through the raw-body `/api/webhooks/kb-ingestion` r
 
 URL resources are registered only with public HTTP(S) destinations using ports 80 or 443 and without credentials, fragments, or secret-like query parameters. Before dispatch, every redirect hop is resolved to a public IPv4 address and fetched through that pinned address while the original public URL remains the ingestion source identity. Private blobs are exposed to the ingestion platform through the authenticated backend source gateway; no Azure storage credential or SAS URL crosses the API contract.
 
+Source preparation also verifies that the task's KB id matches the resource's persisted live parent. It records the exact fetched byte size. Under a parent-KB row lock, URL replacement accounting applies `current usage - previous resource size + observed size`; an over-limit candidate becomes `FAILED` with `KB_STORAGE_LIMIT_REACHED` before any external API call. Production-v1 source preparation accepts PDF and plain text; lecturer Markdown uploads are deliberately stored as `text/plain`.
+
 The general worker requires `KB_INGESTION_API_URL`, `KB_INGESTION_API_KEY`, and `KB_SOURCE_GATEWAY_URL`; `KB_INGESTION_PROJECT_ID` defaults to `klicker-course-materials`. The backend requires `KB_SOURCE_GATEWAY_KEY` and `KB_WEBHOOK_SECRET`, with optional `KB_WEBHOOK_PREVIOUS_SECRET` during webhook-key rotation. The API key, gateway key, and webhook keys are secrets and must stay outside chart ConfigMaps.
 
 Both Hatchet workers intentionally run `tsx` without `--watch`; watch restarts unregister workflows during development.

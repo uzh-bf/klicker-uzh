@@ -48,6 +48,8 @@ KB/chatbot attach and detach must lock both owner rows, replace the enabled link
 
 KB child creation and deletion share a KB-first lock order. Upload-ticket issue, confirmation, URL creation, resource deletion, and whole-KB deletion must require a live parent under that lock. Deletion keeps hidden tombstones and queues the external operation after commit; queue failure must remain hidden and retryable.
 
+KB resource-count and byte quotas use that same parent lock. Return stable GraphQL codes for quota and ticket mismatches, and derive every ingestion `kb_id` from the persisted owner-checked KB/resource relationship rather than client-supplied scope text.
+
 ## Subscriptions (extra steps)
 
 Publish from the service (`ctx.pubSub.publish('<topic>', payload)`), subscribe in `subscription.ts` with a `filter` on the target id (template: `feedbackCreated`), consume with `subscribeToMore` + the generated `S*Document`.

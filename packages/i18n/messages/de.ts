@@ -1238,7 +1238,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     fileUploadTitle: 'Datei hochladen',
     fileUploadDescription: 'Fügen Sie Kursmaterial von Ihrem Computer hinzu.',
     fileDropPrompt: 'Datei hier ablegen oder zum Auswählen klicken',
-    fileUploadFormats: 'PDF, TXT, MD, DOCX oder PPTX · maximal 25 MB',
+    fileUploadFormats: 'PDF, TXT oder MD · maximal 25 MB',
     uploading: 'Wird hochgeladen…',
     fileUploadSuccess: 'Datei wurde zur Wissensdatenbank hinzugefügt.',
     fileUploadError: 'Die Datei konnte nicht hochgeladen werden.',
@@ -1289,6 +1289,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     runStatusSuperseded: 'Ersetzt',
     ingestionStartError:
       'Der Verarbeitungsvorgang konnte nicht gestartet werden.',
+    storageLimitError:
+      'Diese Ressource überschreitet das Speicherlimit von 500 MB für die Wissensdatenbank.',
     ingestionFailed: 'Der Verarbeitungsvorgang ist fehlgeschlagen.',
     ingestionSuperseded: 'Der Verarbeitungsvorgang wurde ersetzt.',
     chatbotsTitle: 'Verknüpfte Chatbots',

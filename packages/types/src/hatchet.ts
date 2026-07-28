@@ -19,6 +19,9 @@ export interface HatchetHandlerGlobalContext {
   prisma: PrismaClient
 }
 
+export const MAX_KB_RESOURCE_COUNT = 100
+export const MAX_KB_TOTAL_SIZE_BYTES = 500 * 1024 * 1024
+
 type IngestKBResourceInputBase = JsonObject & {
   resourceId: string
   kbId: string

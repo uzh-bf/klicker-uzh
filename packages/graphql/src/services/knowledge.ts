@@ -9,6 +9,10 @@ import type {
   DeleteKBResourceInput,
   IngestKBResourceInput,
 } from '@klicker-uzh/types'
+import {
+  MAX_KB_RESOURCE_COUNT,
+  MAX_KB_TOTAL_SIZE_BYTES,
+} from '@klicker-uzh/types'
 import { normalizePublicHttpUrl } from '@klicker-uzh/util/public-url'
 import { randomUUID } from 'crypto'
 import { GraphQLError } from 'graphql'
@@ -22,13 +26,7 @@ const KB_MCP_CHAT_MODES = ['tutor', 'explainer'] as const
 const KB_FILE_TYPES: Record<string, readonly string[]> = {
   pdf: ['application/pdf'],
   txt: ['text/plain'],
-  md: ['text/markdown', 'text/plain', 'text/x-markdown'],
-  docx: [
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  ],
-  pptx: [
-    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  ],
+  md: ['text/plain'],
 }
 
 function getKbContainerName(userId: string) {
@@ -90,6 +88,55 @@ function validateKbResourceTitle(title: string) {
     throw new GraphQLError('KB resource title is required')
   }
   return normalizedTitle
+}
+
+async function getKbQuotaUsage(
+  prisma: DB.Prisma.TransactionClient,
+  kbId: string
+) {
+  const [resources, uploadTickets] = await Promise.all([
+    prisma.kBResource.aggregate({
+      where: { kbId },
+      _count: { _all: true },
+      _sum: { sizeBytes: true },
+    }),
+    prisma.kBUploadTicket.aggregate({
+      where: { kbId },
+      _count: { _all: true },
+      _sum: { sizeBytes: true },
+    }),
+  ])
+
+  return {
+    resourceCount: resources._count._all + uploadTickets._count._all,
+    sizeBytes:
+      (resources._sum.sizeBytes ?? 0) + (uploadTickets._sum.sizeBytes ?? 0),
+  }
+}
+
+async function assertKbQuotaAvailable(
+  prisma: DB.Prisma.TransactionClient,
+  {
+    kbId,
+    resourceCount = 0,
+    sizeBytes = 0,
+  }: {
+    kbId: string
+    resourceCount?: number
+    sizeBytes?: number
+  }
+) {
+  const usage = await getKbQuotaUsage(prisma, kbId)
+  if (usage.resourceCount + resourceCount > MAX_KB_RESOURCE_COUNT) {
+    throw new GraphQLError('KB resource limit reached', {
+      extensions: { code: 'KB_RESOURCE_LIMIT_REACHED' },
+    })
+  }
+  if (usage.sizeBytes + sizeBytes > MAX_KB_TOTAL_SIZE_BYTES) {
+    throw new GraphQLError('KB storage limit reached', {
+      extensions: { code: 'KB_STORAGE_LIMIT_REACHED' },
+    })
+  }
 }
 
 async function getOwnedKbOrThrow(ctx: ContextWithUser, id: string) {
@@ -634,11 +681,17 @@ export async function requestKbFileUpload(
   const expiresOn = new Date(Date.now() + 15 * 60 * 1000)
   await ctx.prisma.$transaction(async (prisma) => {
     await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
+    await assertKbQuotaAvailable(prisma, {
+      kbId,
+      resourceCount: 1,
+      sizeBytes,
+    })
     await prisma.kBUploadTicket.create({
       data: {
         id: blobId,
         kbId,
         blobName,
+        sizeBytes,
         expiresAt: expiresOn,
       },
     })
@@ -753,12 +806,15 @@ export async function confirmKbFileUpload(
         id: blobId,
         kbId,
         blobName,
+        sizeBytes,
         expiresAt: { gt: new Date() },
       },
       select: { id: true },
     })
     if (!ticket) {
-      throw new GraphQLError('KB upload ticket is invalid')
+      throw new GraphQLError('KB upload ticket is invalid', {
+        extensions: { code: 'KB_UPLOAD_TICKET_MISMATCH' },
+      })
     }
 
     const resource = await prisma.kBResource.create({
@@ -803,6 +859,7 @@ export async function createKbUrlResource(
 
   return ctx.prisma.$transaction(async (prisma) => {
     await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
+    await assertKbQuotaAvailable(prisma, { kbId, resourceCount: 1 })
     return prisma.kBResource.create({
       data: {
         kbId,

@@ -35,4 +35,5 @@ Conventions (design system, Tailwind v4, Apollo, i18n, CSP): [docs/frontend-conv
 - Localize KB failure detail from stable status/error codes. Do not render raw ingestion-platform status text into the EN/DE lecturer UI.
 - Replacing a chatbot's enabled KB requires an explicit warning state; verify attach, replace, detach, linked-KB, and no-KB states in both locales and at desktop/mobile widths.
 - KB delete copy must distinguish immediate removal from background external/blob cleanup; never claim that asynchronous cleanup completed in the mutation success toast.
+- KB uploads expose only PDF, TXT, and MD up to 25 MiB while the ingestion bridge supports PDF/plain text; map Markdown to `text/plain` and do not advertise DOCX/PPTX prematurely. Localize stable quota codes rather than raw service messages.
 - **`apps/chat` is out of scope here** — app router, zustand, assistant-ui; read [docs/chat-platform.md](../../../docs/chat-platform.md) and follow its local conventions instead.

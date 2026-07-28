@@ -105,6 +105,9 @@ function RunStatusMessage({
     if (errorCode === 'INGESTION_DISPATCH_FAILED') {
       return t('kb.ingestionStartError')
     }
+    if (errorCode === 'KB_STORAGE_LIMIT_REACHED') {
+      return t('kb.storageLimitError')
+    }
     if (status === KbIngestionStatus.Failed) {
       return t('kb.ingestionFailed')
     }

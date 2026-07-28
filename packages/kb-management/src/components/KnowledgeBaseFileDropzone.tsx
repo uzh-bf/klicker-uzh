@@ -13,21 +13,12 @@ const MAX_FILE_SIZE = 25 * 1024 * 1024
 const CONTENT_TYPES: Record<string, string> = {
   pdf: 'application/pdf',
   txt: 'text/plain',
-  md: 'text/markdown',
-  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  md: 'text/plain',
 }
 
 const ACCEPTED_FILES = {
   'application/pdf': ['.pdf'],
-  'text/plain': ['.txt'],
-  'text/markdown': ['.md'],
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': [
-    '.docx',
-  ],
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation': [
-    '.pptx',
-  ],
+  'text/plain': ['.txt', '.md'],
 }
 
 function KnowledgeBaseFileDropzone({ kbId }: { kbId: string }) {

@@ -8,6 +8,10 @@ import {
   KBResourceType,
   PrismaClient,
 } from '@klicker-uzh/prisma/client'
+import {
+  MAX_KB_RESOURCE_COUNT,
+  MAX_KB_TOTAL_SIZE_BYTES,
+} from '@klicker-uzh/types'
 import { randomUUID } from 'crypto'
 import { EventEmitter } from 'events'
 import { readFileSync } from 'fs'
@@ -664,6 +668,29 @@ describe('Integration tests for knowledge base CRUD', () => {
       requestKbFileUpload(
         {
           kbId: created.id,
+          fileName: 'slides.pptx',
+          contentType:
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+          sizeBytes: 1024,
+        },
+        userOneCtx
+      )
+    ).rejects.toThrow('KB file type is not supported')
+    await expect(
+      requestKbFileUpload(
+        {
+          kbId: created.id,
+          fileName: 'notes.md',
+          contentType: 'text/plain',
+          sizeBytes: 1024,
+        },
+        userOneCtx
+      )
+    ).resolves.toMatchObject({ blobName: expect.stringMatching(/\.md$/) })
+    await expect(
+      requestKbFileUpload(
+        {
+          kbId: created.id,
           fileName: 'notes.pdf',
           contentType: 'application/pdf',
           sizeBytes: 1024,
@@ -707,6 +734,7 @@ describe('Integration tests for knowledge base CRUD', () => {
     expect(persistedTicket).toMatchObject({
       kbId: created.id,
       blobName: ticket.blobName,
+      sizeBytes: 1024,
     })
     expect(Math.abs(persistedTicket.expiresAt.getTime() - expiry)).toBeLessThan(
       1000
@@ -748,6 +776,184 @@ describe('Integration tests for knowledge base CRUD', () => {
     await expect(
       prisma.kBUploadTicket.count({ where: { kbId: created.id } })
     ).resolves.toBe(0)
+  })
+
+  it('reserves the final resource slot and rejects concurrent claims beyond it', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    await prisma.kBResource.createMany({
+      data: Array.from({ length: MAX_KB_RESOURCE_COUNT - 1 }, (_, index) => ({
+        kbId: created.id,
+        type: KBResourceType.URL,
+        title: `Resource ${index}`,
+        sourceUrl: `https://example.com/resource-${index}`,
+      })),
+    })
+
+    const requests = await Promise.allSettled([
+      requestKbFileUpload(
+        {
+          kbId: created.id,
+          fileName: 'first.pdf',
+          contentType: 'application/pdf',
+          sizeBytes: 1024,
+        },
+        userOneCtx
+      ),
+      requestKbFileUpload(
+        {
+          kbId: created.id,
+          fileName: 'second.pdf',
+          contentType: 'application/pdf',
+          sizeBytes: 1024,
+        },
+        userOneCtx
+      ),
+    ])
+
+    expect(
+      requests.filter(({ status }) => status === 'fulfilled')
+    ).toHaveLength(1)
+    const rejected = requests.find(({ status }) => status === 'rejected')
+    expect(rejected).toMatchObject({
+      status: 'rejected',
+      reason: expect.objectContaining({
+        extensions: { code: 'KB_RESOURCE_LIMIT_REACHED' },
+      }),
+    })
+    await expect(
+      prisma.kBUploadTicket.count({ where: { kbId: created.id } })
+    ).resolves.toBe(1)
+  })
+
+  it('retains tombstones in quota usage until hard cleanup removes them', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const rows = Array.from({ length: MAX_KB_RESOURCE_COUNT }, (_, index) => ({
+      kbId: created.id,
+      type: KBResourceType.URL,
+      title: `Resource ${index}`,
+      sourceUrl: `https://example.com/resource-${index}`,
+      ...(index === 0
+        ? { deletedAt: new Date(), deletedById: userOneCtx.user.sub }
+        : {}),
+    }))
+    await prisma.kBResource.createMany({ data: rows })
+
+    const request = () =>
+      requestKbFileUpload(
+        {
+          kbId: created.id,
+          fileName: 'notes.pdf',
+          contentType: 'application/pdf',
+          sizeBytes: 1024,
+        },
+        userOneCtx
+      )
+    await expect(request()).rejects.toMatchObject({
+      extensions: { code: 'KB_RESOURCE_LIMIT_REACHED' },
+    })
+
+    await prisma.kBResource.deleteMany({
+      where: { kbId: created.id, deletedAt: { not: null } },
+    })
+    await expect(request()).resolves.toMatchObject({
+      blobName: expect.stringMatching(/\.pdf$/),
+    })
+  })
+
+  it('counts upload reservations toward the byte quota without double counting confirmation', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    await prisma.kBResource.create({
+      data: {
+        kbId: created.id,
+        type: KBResourceType.URL,
+        title: 'Large resource',
+        sourceUrl: 'https://example.com/large',
+        sizeBytes: MAX_KB_TOTAL_SIZE_BYTES - 1024,
+      },
+    })
+    const ticket = await requestKbFileUpload(
+      {
+        kbId: created.id,
+        fileName: 'notes.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 1024,
+      },
+      userOneCtx
+    )
+
+    await expect(
+      requestKbFileUpload(
+        {
+          kbId: created.id,
+          fileName: 'extra.pdf',
+          contentType: 'application/pdf',
+          sizeBytes: 1,
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_STORAGE_LIMIT_REACHED' },
+    })
+
+    await expect(
+      confirmKbFileUpload(
+        {
+          kbId: created.id,
+          blobName: ticket.blobName,
+          title: 'Notes',
+          originalFilename: 'notes.pdf',
+          mimeType: 'application/pdf',
+          sizeBytes: 1024,
+        },
+        userOneCtx
+      )
+    ).resolves.toMatchObject({ sizeBytes: 1024 })
+    await expect(
+      prisma.kBResource.aggregate({
+        where: { kbId: created.id },
+        _sum: { sizeBytes: true },
+      })
+    ).resolves.toMatchObject({
+      _sum: { sizeBytes: MAX_KB_TOTAL_SIZE_BYTES },
+    })
+  })
+
+  it('rejects confirmation metadata that differs from the reserved upload size', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const ticket = await requestKbFileUpload(
+      {
+        kbId: created.id,
+        fileName: 'notes.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 1024,
+      },
+      userOneCtx
+    )
+    getBlobProperties.mockResolvedValue({
+      contentLength: 2048,
+      contentType: 'application/pdf',
+    })
+
+    await expect(
+      confirmKbFileUpload(
+        {
+          kbId: created.id,
+          blobName: ticket.blobName,
+          title: 'Notes',
+          originalFilename: 'notes.pdf',
+          mimeType: 'application/pdf',
+          sizeBytes: 2048,
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_UPLOAD_TICKET_MISMATCH' },
+    })
+    await expect(
+      prisma.kBUploadTicket.findUnique({
+        where: { id: ticket.blobName.slice(0, -4) },
+      })
+    ).resolves.toBeTruthy()
   })
 
   it('confirms a matching blob idempotently', async () => {

@@ -7,6 +7,7 @@ import type {
   DeleteKBResourceInput,
   IngestKBResourceInput,
 } from '@klicker-uzh/types'
+import { MAX_KB_TOTAL_SIZE_BYTES } from '@klicker-uzh/types'
 import { describe, expect, it, vi } from 'vitest'
 import {
   dispatchKBDeletion,
@@ -53,6 +54,7 @@ const source = {
   mimeType: 'text/plain',
   displayName: input.title,
   contentSha256: CONTENT_SHA256,
+  sizeBytes: 1024,
 } satisfies KBIngestionSource
 
 function operation(
@@ -93,18 +95,36 @@ function client(
 
 function dispatchPrisma(
   resource: Record<string, unknown>,
-  updateResults: number[] = [1, 1]
+  updateResults: number[] = [1, 1],
+  quota: { resourceBytes?: number; ticketBytes?: number } = {}
 ) {
+  const persistedResource = {
+    kbId: KB_ID,
+    deletedAt: null,
+    kb: { deletedAt: null },
+    sizeBytes: 1024,
+    ...resource,
+  }
   const prisma = {
     kBResource: {
-      findUnique: vi.fn().mockResolvedValue(resource),
+      findUnique: vi.fn().mockResolvedValue(persistedResource),
+      findFirst: vi.fn().mockResolvedValue(persistedResource),
+      aggregate: vi.fn().mockResolvedValue({
+        _sum: { sizeBytes: quota.resourceBytes ?? 1024 },
+      }),
       updateMany: vi.fn().mockImplementation(async () => ({
         count: updateResults.shift() ?? 0,
       })),
     },
+    kBUploadTicket: {
+      aggregate: vi.fn().mockResolvedValue({
+        _sum: { sizeBytes: quota.ticketBytes ?? 0 },
+      }),
+    },
     kBIngestionRun: {
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
+    $queryRaw: vi.fn().mockResolvedValue([{ id: KB_ID }]),
     $transaction: vi.fn(),
   }
   prisma.$transaction.mockImplementation(async (callback) => callback(prisma))
@@ -149,6 +169,9 @@ describe('KB ingestion dispatch', () => {
     expect(prisma.kBResource.updateMany).toHaveBeenNthCalledWith(1, {
       where: {
         id: RESOURCE_ID,
+        kbId: KB_ID,
+        deletedAt: null,
+        kb: { deletedAt: null },
         ingestionAttemptId: ATTEMPT_ID,
         resourceVersion: 3,
         status: {
@@ -160,6 +183,7 @@ describe('KB ingestion dispatch', () => {
       data: {
         contentSha256: CONTENT_SHA256,
         mimeType: 'text/plain',
+        sizeBytes: 1024,
       },
     })
     expect(apiClient.acceptResource).toHaveBeenCalledWith({
@@ -195,6 +219,7 @@ describe('KB ingestion dispatch', () => {
         resourceVersion: 3,
         contentSha256: CONTENT_SHA256,
         mimeType: 'text/plain',
+        sizeBytes: 1024,
         externalOperationId: null,
       },
       [1]
@@ -222,6 +247,7 @@ describe('KB ingestion dispatch', () => {
       resourceVersion: 3,
       contentSha256: CONTENT_SHA256,
       mimeType: 'text/plain',
+      sizeBytes: 1024,
       externalOperationId: OPERATION_ID,
     })
     const apiClient = client()
@@ -242,6 +268,7 @@ describe('KB ingestion dispatch', () => {
       resourceVersion: 4,
       contentSha256: null,
       mimeType: null,
+      sizeBytes: null,
       externalOperationId: null,
     })
     const apiClient = client()
@@ -252,6 +279,117 @@ describe('KB ingestion dispatch', () => {
         client: apiClient,
       })
     ).resolves.toBeUndefined()
+    expect(apiClient.acceptResource).not.toHaveBeenCalled()
+  })
+
+  it('rejects a payload whose KB scope does not match the persisted resource', async () => {
+    const prisma = dispatchPrisma({
+      kbId: '5190edaa-2e7e-4828-a209-968a597e65b9',
+      status: KBResourceStatus.QUEUED,
+      ingestionAttemptId: ATTEMPT_ID,
+      resourceVersion: 3,
+      contentSha256: null,
+      mimeType: null,
+      sizeBytes: null,
+      externalOperationId: null,
+    })
+    const apiClient = client()
+    const prepareSource = vi.fn()
+
+    await expect(
+      dispatchKBIngestion(input, {
+        prisma: prisma as never,
+        client: apiClient,
+        prepareSource,
+      })
+    ).resolves.toBeUndefined()
+
+    expect(prepareSource).not.toHaveBeenCalled()
+    expect(apiClient.acceptResource).not.toHaveBeenCalled()
+  })
+
+  it('replaces the previous URL size without double counting at the quota boundary', async () => {
+    const prisma = dispatchPrisma(
+      {
+        status: KBResourceStatus.QUEUED,
+        ingestionAttemptId: ATTEMPT_ID,
+        resourceVersion: 3,
+        contentSha256: null,
+        mimeType: null,
+        sizeBytes: 1000,
+        externalOperationId: null,
+      },
+      [1, 1],
+      { resourceBytes: MAX_KB_TOTAL_SIZE_BYTES - 500 }
+    )
+    const boundarySource = { ...source, sizeBytes: 1500 }
+    const apiClient = client()
+
+    await expect(
+      dispatchKBIngestion(input, {
+        prisma: prisma as never,
+        client: apiClient,
+        prepareSource: vi.fn().mockResolvedValue(boundarySource),
+      })
+    ).resolves.toBe(OPERATION_ID)
+
+    expect(apiClient.acceptResource).toHaveBeenCalledWith(
+      expect.objectContaining({ source: boundarySource })
+    )
+  })
+
+  it('records a stable failure before dispatch when a URL replacement exceeds quota', async () => {
+    const prisma = dispatchPrisma(
+      {
+        status: KBResourceStatus.QUEUED,
+        ingestionAttemptId: ATTEMPT_ID,
+        resourceVersion: 3,
+        contentSha256: null,
+        mimeType: null,
+        sizeBytes: 1000,
+        externalOperationId: null,
+      },
+      [1],
+      { resourceBytes: MAX_KB_TOTAL_SIZE_BYTES - 500 }
+    )
+    const apiClient = client()
+
+    await expect(
+      dispatchKBIngestion(input, {
+        prisma: prisma as never,
+        client: apiClient,
+        prepareSource: vi
+          .fn()
+          .mockResolvedValue({ ...source, sizeBytes: 1501 }),
+      })
+    ).resolves.toBeUndefined()
+
+    expect(prisma.kBResource.updateMany).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        id: RESOURCE_ID,
+        kbId: KB_ID,
+        ingestionAttemptId: ATTEMPT_ID,
+        resourceVersion: 3,
+      }),
+      data: {
+        status: KBResourceStatus.FAILED,
+        statusMessage: 'The knowledge base storage limit was reached.',
+        errorCode: 'KB_STORAGE_LIMIT_REACHED',
+      },
+    })
+    expect(prisma.kBIngestionRun.updateMany).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        id: ATTEMPT_ID,
+        resourceId: RESOURCE_ID,
+        resourceVersion: 3,
+      }),
+      data: {
+        status: KBIngestionStatus.FAILED,
+        statusMessage: 'The knowledge base storage limit was reached.',
+        errorCode: 'KB_STORAGE_LIMIT_REACHED',
+        finishedAt: expect.any(Date),
+      },
+    })
     expect(apiClient.acceptResource).not.toHaveBeenCalled()
   })
 

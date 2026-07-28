@@ -28,6 +28,7 @@ const source = {
   mimeType: 'application/pdf',
   displayName: 'Lecture 1',
   contentSha256: CONTENT_SHA256,
+  sizeBytes: 1024,
 } as const
 
 const operationResponse = {
@@ -288,6 +289,7 @@ describe('ingestion source preparation', () => {
       displayName: 'Lecture 1',
       contentSha256:
         '6bc636ff0103a2888fb38ca3c2bf3b1371110ceac5a104a519d85d39207732b0',
+      sizeBytes: 7,
     })
   })
 
@@ -333,6 +335,7 @@ describe('ingestion source preparation', () => {
       displayName: 'Lecture notes',
       contentSha256:
         'ab5aa97074c454a0632057e704220d9a6678fbf773a0a5806fc09b8173b07309',
+      sizeBytes: 5,
     })
     expect(resolvePublicIPv4).toHaveBeenNthCalledWith(1, 'example.com')
     expect(resolvePublicIPv4).toHaveBeenNthCalledWith(2, 'cdn.example.com')
@@ -345,7 +348,13 @@ describe('ingestion source preparation', () => {
 
   it('rejects persisted source identity with a non-canonical digest', () => {
     expect(() =>
-      buildKBIngestionSource(blobInput, 'application/pdf', 'not-a-digest', env)
+      buildKBIngestionSource(
+        blobInput,
+        'application/pdf',
+        'not-a-digest',
+        1024,
+        env
+      )
     ).toThrow('KB ingestion source is invalid')
   })
 })

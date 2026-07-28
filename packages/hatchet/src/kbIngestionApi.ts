@@ -31,6 +31,7 @@ export type KBIngestionSource = {
   mimeType: string
   displayName: string
   contentSha256: string
+  sizeBytes: number
 }
 
 export type KBOperationStatus =
@@ -413,7 +414,13 @@ async function prepareBlobSource(
     throw new Error('KB ingestion source is invalid')
   }
 
-  return buildKBIngestionSource(input, mimeType, digest.contentSha256, env)
+  return buildKBIngestionSource(
+    input,
+    mimeType,
+    digest.contentSha256,
+    digest.sizeBytes,
+    env
+  )
 }
 
 async function resolvePublicIPv4(hostname: string): Promise<string> {
@@ -508,7 +515,12 @@ async function preparePublicUrlSource(
     }
 
     const digest = await sha256Stream(response, MAX_KB_SOURCE_BYTES)
-    return buildKBIngestionSource(input, mimeType, digest.contentSha256)
+    return buildKBIngestionSource(
+      input,
+      mimeType,
+      digest.contentSha256,
+      digest.sizeBytes
+    )
   }
   throw new Error('KB ingestion source redirect is invalid')
 }
@@ -527,11 +539,15 @@ export function buildKBIngestionSource(
   input: IngestKBResourceInput,
   mimeType: string,
   contentSha256: string,
+  sizeBytes: number,
   env: NodeJS.ProcessEnv = process.env
 ): KBIngestionSource {
   if (
     !SUPPORTED_INGESTION_MIME_TYPES.has(mimeType) ||
-    !SHA256_PATTERN.test(contentSha256)
+    !SHA256_PATTERN.test(contentSha256) ||
+    !Number.isSafeInteger(sizeBytes) ||
+    sizeBytes <= 0 ||
+    sizeBytes > MAX_KB_SOURCE_BYTES
   ) {
     throw new Error('KB ingestion source is invalid')
   }
@@ -550,5 +566,6 @@ export function buildKBIngestionSource(
     mimeType,
     displayName: input.title,
     contentSha256,
+    sizeBytes,
   }
 }

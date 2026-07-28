@@ -123,6 +123,7 @@ model KBUploadTicket {
   id String @id @db.Uuid
 
   blobName  String
+  sizeBytes Int      @default(0)
   expiresAt DateTime
 
   kb   KB     @relation(fields: [kbId], references: [id], onDelete: Restrict, onUpdate: Cascade)

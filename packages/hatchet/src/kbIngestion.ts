@@ -2,12 +2,14 @@ import {
   KBIngestionOperation,
   KBIngestionStatus,
   KBResourceStatus,
+  type Prisma,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
 import type {
   DeleteKBResourceInput,
   IngestKBResourceInput,
 } from '@klicker-uzh/types'
+import { MAX_KB_TOTAL_SIZE_BYTES } from '@klicker-uzh/types'
 import {
   buildKBIngestionSource,
   createKBIngestionApiClient,
@@ -61,6 +63,23 @@ export type DispatchKBDeletionDependencies = {
   logger?: KBIngestionLogger
 }
 
+async function lockPersistedKbScope(
+  prisma: Prisma.TransactionClient,
+  input: IngestKBResourceInput
+): Promise<boolean> {
+  const locked = await prisma.$queryRaw<Array<{ id: string }>>`
+    SELECT kb."id"
+    FROM "public"."KB" AS kb
+    INNER JOIN "public"."KBResource" AS resource ON resource."kbId" = kb."id"
+    WHERE kb."id" = CAST(${input.kbId} AS UUID)
+      AND resource."id" = CAST(${input.resourceId} AS UUID)
+      AND kb."deletedAt" IS NULL
+      AND resource."deletedAt" IS NULL
+    FOR UPDATE OF kb
+  `
+  return locked.length === 1
+}
+
 async function logErrorBestEffort(
   logger: KBIngestionLogger | undefined,
   message: string,
@@ -109,9 +128,84 @@ async function persistPreparedSource({
   env: NodeJS.ProcessEnv
 }): Promise<KBIngestionSource | undefined> {
   const persisted = await prisma.$transaction(async (tx) => {
+    if (!(await lockPersistedKbScope(tx, input))) {
+      return false
+    }
+    const currentResource = await tx.kBResource.findFirst({
+      where: {
+        id: input.resourceId,
+        kbId: input.kbId,
+        deletedAt: null,
+        kb: { deletedAt: null },
+      },
+      select: { sizeBytes: true },
+    })
+    if (!currentResource) {
+      return false
+    }
+    const [resources, uploadTickets] = await Promise.all([
+      tx.kBResource.aggregate({
+        where: { kbId: input.kbId },
+        _sum: { sizeBytes: true },
+      }),
+      tx.kBUploadTicket.aggregate({
+        where: { kbId: input.kbId },
+        _sum: { sizeBytes: true },
+      }),
+    ])
+    const projectedSizeBytes =
+      (resources._sum.sizeBytes ?? 0) +
+      (uploadTickets._sum.sizeBytes ?? 0) -
+      (currentResource.sizeBytes ?? 0) +
+      source.sizeBytes
+    if (projectedSizeBytes > MAX_KB_TOTAL_SIZE_BYTES) {
+      const finishedAt = new Date()
+      const resourceUpdate = await tx.kBResource.updateMany({
+        where: {
+          id: input.resourceId,
+          kbId: input.kbId,
+          deletedAt: null,
+          ingestionAttemptId: input.ingestionAttemptId,
+          resourceVersion: input.resourceVersion,
+          status: {
+            in: [KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING],
+          },
+          externalOperationId: null,
+        },
+        data: {
+          status: KBResourceStatus.FAILED,
+          statusMessage: 'The knowledge base storage limit was reached.',
+          errorCode: 'KB_STORAGE_LIMIT_REACHED',
+        },
+      })
+      if (resourceUpdate.count === 1) {
+        await tx.kBIngestionRun.updateMany({
+          where: {
+            id: input.ingestionAttemptId,
+            resourceId: input.resourceId,
+            operation: KBIngestionOperation.UPSERT,
+            resourceVersion: input.resourceVersion,
+            status: {
+              in: [KBIngestionStatus.QUEUED, KBIngestionStatus.PROCESSING],
+            },
+          },
+          data: {
+            status: KBIngestionStatus.FAILED,
+            statusMessage: 'The knowledge base storage limit was reached.',
+            errorCode: 'KB_STORAGE_LIMIT_REACHED',
+            finishedAt,
+          },
+        })
+      }
+      return false
+    }
+
     const resourceUpdate = await tx.kBResource.updateMany({
       where: {
         id: input.resourceId,
+        kbId: input.kbId,
+        deletedAt: null,
+        kb: { deletedAt: null },
         ingestionAttemptId: input.ingestionAttemptId,
         resourceVersion: input.resourceVersion,
         status: {
@@ -123,6 +217,7 @@ async function persistPreparedSource({
       data: {
         contentSha256: source.contentSha256,
         mimeType: source.mimeType,
+        sizeBytes: source.sizeBytes,
       },
     })
     if (resourceUpdate.count !== 1) {
@@ -156,13 +251,21 @@ async function persistPreparedSource({
       resourceVersion: true,
       contentSha256: true,
       mimeType: true,
+      sizeBytes: true,
+      kbId: true,
+      deletedAt: true,
+      kb: { select: { deletedAt: true } },
     },
   })
   if (
     current?.ingestionAttemptId !== input.ingestionAttemptId ||
     current.resourceVersion !== input.resourceVersion ||
+    current.kbId !== input.kbId ||
+    current.deletedAt !== null ||
+    current.kb.deletedAt !== null ||
     !current.contentSha256 ||
-    !current.mimeType
+    !current.mimeType ||
+    current.sizeBytes === null
   ) {
     return undefined
   }
@@ -170,6 +273,7 @@ async function persistPreparedSource({
     input,
     current.mimeType,
     current.contentSha256,
+    current.sizeBytes,
     env
   )
 }
@@ -195,11 +299,18 @@ export async function dispatchKBIngestion(
         resourceVersion: true,
         contentSha256: true,
         mimeType: true,
+        sizeBytes: true,
+        kbId: true,
+        deletedAt: true,
+        kb: { select: { deletedAt: true } },
         externalOperationId: true,
       },
     })
     if (
       !resource ||
+      resource.kbId !== input.kbId ||
+      resource.deletedAt !== null ||
+      resource.kb.deletedAt !== null ||
       resource.ingestionAttemptId !== input.ingestionAttemptId ||
       resource.resourceVersion !== input.resourceVersion ||
       (resource.status !== KBResourceStatus.QUEUED &&
@@ -212,11 +323,12 @@ export async function dispatchKBIngestion(
     }
 
     let source =
-      resource.contentSha256 && resource.mimeType
+      resource.contentSha256 && resource.mimeType && resource.sizeBytes
         ? buildKBIngestionSource(
             input,
             resource.mimeType,
             resource.contentSha256,
+            resource.sizeBytes,
             env
           )
         : undefined

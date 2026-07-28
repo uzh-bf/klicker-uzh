@@ -1235,7 +1235,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     fileUploadTitle: 'Upload a file',
     fileUploadDescription: 'Add course material from your computer.',
     fileDropPrompt: 'Drop a file here or click to choose one',
-    fileUploadFormats: 'PDF, TXT, MD, DOCX or PPTX · maximum 25 MB',
+    fileUploadFormats: 'PDF, TXT or MD · maximum 25 MB',
     uploading: 'Uploading…',
     fileUploadSuccess: 'File added to the knowledge base.',
     fileUploadError: 'The file could not be uploaded.',
@@ -1282,6 +1282,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     runStatusFailed: 'Failed',
     runStatusSuperseded: 'Superseded',
     ingestionStartError: 'The ingestion operation could not be started.',
+    storageLimitError:
+      'This resource exceeds the 500 MB knowledge base storage limit.',
     ingestionFailed: 'The ingestion operation failed.',
     ingestionSuperseded: 'The ingestion operation was superseded.',
     chatbotsTitle: 'Connected chatbots',

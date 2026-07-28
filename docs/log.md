@@ -1,5 +1,9 @@
 # Log
 
+## 2026-07-28
+
+- **Update**: [domain-model](./domain-model.md), [data-and-migrations](./data-and-migrations.md), [graphql-api-layer](./graphql-api-layer.md), [async-and-workers](./async-and-workers.md), [frontend-conventions](./frontend-conventions.md), and [testing](./testing.md) document concurrency-safe KB count/byte reservations, persisted ingestion scope checks, URL replacement accounting, the PDF/TXT/MD production MIME contract, and quota verification.
+
 ## 2026-07-27
 
 - **Update**: [domain-model](./domain-model.md), [graphql-api-layer](./graphql-api-layer.md), [async-and-workers](./async-and-workers.md), and [frontend-conventions](./frontend-conventions.md) document owner-hidden KB tombstones, canonical external deletion, persisted upload tickets, bounded retention cleanup, and the lecturer-visible background-cleanup contract.

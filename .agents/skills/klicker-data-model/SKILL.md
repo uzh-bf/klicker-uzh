@@ -31,6 +31,7 @@ Provenance: steps 2 requires a database; on a machine without one running, write
 - **KB ingestion has two state axes** — `KBResource` holds the latest operation plus active serving identity; `KBIngestionRun` is append-only and uses the ingestion attempt/idempotency UUID as its primary key. Create and transition both records atomically; a failed replacement must not erase the active version.
 - **KB/chatbot activation is a database invariant** — `KBChatbot` may keep disabled history, but a SQL partial unique index permits only one enabled KB per chatbot. Prisma cannot express that index; preserve and verify it in the migration SQL.
 - **KB deletion retains correlation state** — `KB`/`KBResource` tombstones hide owner reads immediately, while `KBIngestionOperation.DELETE` runs remain until external serving is empty and storage cleanup succeeds. Preserve the restrictive `KBUploadTicket` relation so pending uploads block parent hard deletion.
+- **KB quotas count retained allocations** — include every resource row (including tombstones) plus every upload ticket for the 100-item limit, and sum resource plus ticket `sizeBytes` for the 500 MiB limit. Allocate under the parent-KB row lock; confirmation consumes a reservation rather than claiming quota again.
 
 ## Seeds — three independent paths
 
