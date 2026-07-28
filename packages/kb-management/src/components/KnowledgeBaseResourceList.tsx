@@ -31,6 +31,7 @@ import {
 } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
 import React, {
+  useCallback,
   useDeferredValue,
   useEffect,
   useMemo,
@@ -266,6 +267,29 @@ function OperationProgress({ resource }: { resource: KnowledgeBaseResource }) {
   )
 }
 
+function ResourceServingStatus({
+  resource,
+}: {
+  resource: KnowledgeBaseResource
+}) {
+  const t = useTranslations()
+
+  if (resource.activeResourceVersion == null) {
+    return t('kb.notServing')
+  }
+  if (
+    resource.activeResourceVersion === resource.resourceVersion &&
+    resource.status === KbResourceStatus.Ready
+  ) {
+    return t('kb.servingCurrentVersion', {
+      version: resource.activeResourceVersion,
+    })
+  }
+  return t('kb.servingPreviousVersion', {
+    version: resource.activeResourceVersion,
+  })
+}
+
 function KnowledgeBaseResourceList({
   kbId,
   refreshKey,
@@ -281,7 +305,6 @@ function KnowledgeBaseResourceList({
   const deferredSearch = useDeferredValue(search.trim())
   const [typeFilter, setTypeFilter] = useState<KbResourceType | ''>('')
   const [statusFilter, setStatusFilter] = useState<KbIngestionStatus | ''>('')
-  const [polling, setPolling] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [deletionTarget, setDeletionTarget] =
     useState<KnowledgeBaseResource | null>(null)
@@ -292,6 +315,8 @@ function KnowledgeBaseResourceList({
     Record<string, number>
   >({})
   const pollInFlightRef = useRef(false)
+  const refreshRequestRef = useRef(0)
+  const handledRefreshTriggerRef = useRef<string | null>(null)
   const variables = {
     kbId,
     first: PAGE_SIZE,
@@ -299,24 +324,18 @@ function KnowledgeBaseResourceList({
     type: typeFilter || null,
     status: statusFilter || null,
   }
-  const {
-    data,
-    loading,
-    error,
-    fetchMore,
-    refetch,
-    networkStatus,
-    updateQuery,
-  } = useQuery(GetKbResourcesDocument, {
-    variables,
-    notifyOnNetworkStatusChange: true,
-  })
+  const { data, loading, error, fetchMore, networkStatus, updateQuery } =
+    useQuery(GetKbResourcesDocument, {
+      variables,
+      notifyOnNetworkStatusChange: true,
+    })
   const [fetchResourcePoll] = useLazyQuery(GetKbResourcesDocument, {
     fetchPolicy: 'no-cache',
   })
   const [ingestResource] = useMutation(IngestKbResourceDocument)
   const connection = data?.getKbResources
   const resources = connection?.items ?? []
+  const polling = resources.some(isActiveResource)
   const loadingMore = networkStatus === NetworkStatus.fetchMore
   const inspectorResource = useMemo(
     () => resources.find(({ id }) => id === inspectorId) ?? null,
@@ -329,10 +348,70 @@ function KnowledgeBaseResourceList({
   const allPageSelected =
     bulkSelectableIds.length > 0 &&
     bulkSelectableIds.every((id) => selectedIds.has(id))
+  const selectedResources = resources.filter(({ id }) => selectedIds.has(id))
 
-  useEffect(() => {
-    setPolling(resources.some(isActiveResource))
-  }, [resources])
+  const refreshLoadedResources = useCallback(async () => {
+    const requestId = ++refreshRequestRef.current
+    const targetCount = Math.max(resources.length, PAGE_SIZE)
+    const refreshedItems: KnowledgeBaseResource[] = []
+    let after: string | null = null
+    let refreshedConnection: GetKbResourcesQuery['getKbResources'] | null = null
+
+    try {
+      do {
+        const { data: refreshedData } = await fetchResourcePoll({
+          variables: {
+            kbId,
+            first: PAGE_SIZE,
+            after,
+            search: deferredSearch || null,
+            type: typeFilter || null,
+            status: statusFilter || null,
+          },
+        })
+        if (requestId !== refreshRequestRef.current) return false
+
+        refreshedConnection = refreshedData?.getKbResources ?? null
+        if (!refreshedConnection) return false
+        refreshedItems.push(...refreshedConnection.items)
+        after = refreshedConnection.pageInfo.endCursor ?? null
+      } while (
+        refreshedItems.length < targetCount &&
+        refreshedConnection.pageInfo.hasNextPage &&
+        after
+      )
+
+      if (requestId !== refreshRequestRef.current || !refreshedConnection) {
+        return false
+      }
+      const finalConnection = refreshedConnection
+
+      updateQuery((previous) => ({
+        ...previous,
+        getKbResources: {
+          ...finalConnection,
+          items: refreshedItems,
+        },
+      }))
+      return true
+    } catch (refreshError) {
+      if (
+        requestId !== refreshRequestRef.current ||
+        (refreshError as { name?: string }).name === 'AbortError'
+      ) {
+        return false
+      }
+      throw refreshError
+    }
+  }, [
+    deferredSearch,
+    fetchResourcePoll,
+    kbId,
+    resources.length,
+    statusFilter,
+    typeFilter,
+    updateQuery,
+  ])
 
   useEffect(() => {
     if (!polling) return
@@ -341,37 +420,7 @@ function KnowledgeBaseResourceList({
       if (pollInFlightRef.current) return
       pollInFlightRef.current = true
       try {
-        const { data: pollData } = await fetchResourcePoll({
-          variables: {
-            kbId,
-            first: PAGE_SIZE,
-            after: null,
-            search: deferredSearch || null,
-            type: typeFilter || null,
-            status: statusFilter || null,
-          },
-        })
-        if (!pollData) return
-
-        updateQuery((previous) => {
-          const refreshedItems = pollData.getKbResources.items
-          const refreshedIds = new Set(refreshedItems.map(({ id }) => id))
-          const retainedLoadedItems = previous.getKbResources.items
-            .slice(PAGE_SIZE)
-            .filter(({ id }) => !refreshedIds.has(id))
-
-          return {
-            ...pollData,
-            getKbResources: {
-              ...pollData.getKbResources,
-              items: [...refreshedItems, ...retainedLoadedItems],
-              pageInfo:
-                previous.getKbResources.items.length > PAGE_SIZE
-                  ? previous.getKbResources.pageInfo
-                  : pollData.getKbResources.pageInfo,
-            },
-          }
-        })
+        await refreshLoadedResources()
       } finally {
         pollInFlightRef.current = false
       }
@@ -382,24 +431,48 @@ function KnowledgeBaseResourceList({
         console.error('Failed to poll KB resource operations', pollError)
       })
     }, 2000)
-    return () => window.clearInterval(intervalId)
-  }, [
-    deferredSearch,
-    fetchResourcePoll,
-    kbId,
-    polling,
-    statusFilter,
-    typeFilter,
-    updateQuery,
-  ])
+    return () => {
+      window.clearInterval(intervalId)
+      refreshRequestRef.current += 1
+      pollInFlightRef.current = false
+    }
+  }, [polling, refreshLoadedResources])
 
   useEffect(() => {
+    refreshRequestRef.current += 1
     setSelectedIds(new Set())
-  }, [deferredSearch, statusFilter, typeFilter])
+  }, [deferredSearch, kbId, statusFilter, typeFilter])
 
   useEffect(() => {
-    if (refreshKey > 0) void refetch()
-  }, [refreshKey, refetch])
+    if (refreshKey === 0) return
+    const refreshTrigger = `${kbId}:${refreshKey}`
+    if (handledRefreshTriggerRef.current === refreshTrigger) return
+    handledRefreshTriggerRef.current = refreshTrigger
+    void refreshLoadedResources().catch((refreshError) => {
+      console.error('Failed to refresh KB resources', refreshError)
+      toast({ type: 'error', message: t('kb.resourcesLoadError') })
+    })
+  }, [kbId, refreshKey, refreshLoadedResources, t])
+
+  useEffect(() => {
+    const currentSelectableIds = new Set(
+      resources
+        .filter((resource) => !isActiveResource(resource))
+        .map(({ id }) => id)
+    )
+    setSelectedIds((current) => {
+      const next = new Set(
+        Array.from(current).filter((id) => currentSelectableIds.has(id))
+      )
+      return next.size === current.size ? current : next
+    })
+  }, [resources])
+
+  useEffect(() => {
+    if (selectedResources.length === 0) {
+      setBulkDeletionOpen(false)
+    }
+  }, [selectedResources.length])
 
   const formatFileSize = (sizeBytes: number | null | undefined) => {
     if (sizeBytes === null || sizeBytes === undefined) return '—'
@@ -466,7 +539,7 @@ function KnowledgeBaseResourceList({
   }
 
   const refreshWorkspace = async () => {
-    await Promise.all([refetch(), onMetricsChanged()])
+    await Promise.all([refreshLoadedResources(), onMetricsChanged()])
   }
 
   const handleIngest = async (resource: KnowledgeBaseResource) => {
@@ -474,6 +547,11 @@ function KnowledgeBaseResourceList({
     setIngestingId(resource.id)
     try {
       await ingestResource({ variables: { id: resource.id } })
+      setSelectedIds((current) => {
+        const next = new Set(current)
+        next.delete(resource.id)
+        return next
+      })
       await refreshWorkspace()
       setHistoryRefreshes((current) => ({
         ...current,
@@ -525,19 +603,8 @@ function KnowledgeBaseResourceList({
   }
 
   const togglePageSelection = () => {
-    setSelectedIds((current) => {
-      const next = new Set(current)
-      if (allPageSelected) bulkSelectableIds.forEach((id) => next.delete(id))
-      else {
-        bulkSelectableIds.forEach((id) => {
-          if (next.size < MAX_BULK_SELECTION) next.add(id)
-        })
-      }
-      return next
-    })
+    setSelectedIds(allPageSelected ? new Set() : new Set(bulkSelectableIds))
   }
-
-  const selectedResources = resources.filter(({ id }) => selectedIds.has(id))
 
   return (
     <section className="mt-8" data-cy="kb-resource-list">
@@ -785,17 +852,7 @@ function KnowledgeBaseResourceList({
                             {t('kb.servingStatus')}
                           </div>
                           <div className="mt-2 text-sm font-medium text-slate-800">
-                            {resource.activeResourceVersion == null
-                              ? t('kb.notServing')
-                              : resource.activeResourceVersion ===
-                                    resource.resourceVersion &&
-                                  resource.status === KbResourceStatus.Ready
-                                ? t('kb.servingCurrentVersion', {
-                                    version: resource.activeResourceVersion,
-                                  })
-                                : t('kb.servingPreviousVersion', {
-                                    version: resource.activeResourceVersion,
-                                  })}
+                            <ResourceServingStatus resource={resource} />
                           </div>
                           {resource.ingestedAt ? (
                             <div className="mt-1 text-sm text-slate-600">
@@ -947,17 +1004,7 @@ function KnowledgeBaseResourceList({
                   {t('kb.servingStatus')}
                 </dt>
                 <dd className="mt-1 text-slate-900">
-                  {inspectorResource.activeResourceVersion == null
-                    ? t('kb.notServing')
-                    : inspectorResource.activeResourceVersion ===
-                          inspectorResource.resourceVersion &&
-                        inspectorResource.status === KbResourceStatus.Ready
-                      ? t('kb.servingCurrentVersion', {
-                          version: inspectorResource.activeResourceVersion,
-                        })
-                      : t('kb.servingPreviousVersion', {
-                          version: inspectorResource.activeResourceVersion,
-                        })}
+                  <ResourceServingStatus resource={inspectorResource} />
                 </dd>
               </div>
             </dl>
@@ -997,7 +1044,7 @@ function KnowledgeBaseResourceList({
         />
       ) : null}
 
-      {bulkDeletionOpen ? (
+      {bulkDeletionOpen && selectedResources.length > 0 ? (
         <DeleteKnowledgeBaseResourcesModal
           kbId={kbId}
           resources={selectedResources}

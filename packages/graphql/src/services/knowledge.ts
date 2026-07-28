@@ -682,6 +682,7 @@ export async function getKbResourcesConnection(
   const pageSize = normalizePageSize(first)
   const normalizedSearch = normalizeSearch(search)
   const filterHash = getFilterHash({
+    ownerId: ctx.user.sub,
     kbId,
     search: normalizedSearch,
     type: type ?? null,
@@ -723,6 +724,12 @@ export async function getKbResourcesConnection(
     : {}
   const baseWhere: DB.Prisma.KBResourceWhereInput = {
     kbId,
+    kb: {
+      is: {
+        ownerId: ctx.user.sub,
+        deletedAt: null,
+      },
+    },
     deletedAt: null,
     ...(type ? { type } : {}),
     ...(operationStatusResourceIds
