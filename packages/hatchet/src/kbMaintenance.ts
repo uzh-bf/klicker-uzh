@@ -26,11 +26,7 @@ type KBMaintenanceDependencies = {
   env?: NodeJS.ProcessEnv
   now?: () => Date
   logger?: KBIngestionLogger
-  deleteBlob?: (
-    ownerId: string,
-    blobName: string,
-    env: NodeJS.ProcessEnv
-  ) => Promise<void>
+  deleteBlob?: (ownerId: string, blobName: string) => Promise<void>
 }
 
 async function logMaintenanceError(
@@ -88,7 +84,9 @@ export async function maintainKBResources(
 ): Promise<void> {
   const env = dependencies.env ?? process.env
   const now = (dependencies.now ?? (() => new Date()))()
-  const deleteBlob = dependencies.deleteBlob ?? deleteKBBlob
+  const deleteBlob =
+    dependencies.deleteBlob ??
+    ((ownerId, blobName) => deleteKBBlob(ownerId, blobName, env))
 
   const pendingDispatch = await dependencies.prisma.kBResource.findMany({
     where: {
@@ -151,7 +149,7 @@ export async function maintainKBResources(
   })
   await runBounded(expiredTickets, async (ticket) => {
     try {
-      await deleteBlob(ticket.kb.ownerId, ticket.blobName, env)
+      await deleteBlob(ticket.kb.ownerId, ticket.blobName)
       await dependencies.prisma.kBUploadTicket.deleteMany({
         where: {
           id: ticket.id,
@@ -213,7 +211,7 @@ export async function maintainKBResources(
         if (!resource.blobName) {
           throw new Error('KB blob metadata is invalid')
         }
-        await deleteBlob(resource.kb.ownerId, resource.blobName, env)
+        await deleteBlob(resource.kb.ownerId, resource.blobName)
       }
       await dependencies.prisma.kBResource.deleteMany({
         where: {

@@ -114,11 +114,7 @@ describe('KB retention maintenance', () => {
       deleteBlob,
     })
 
-    expect(deleteBlob).toHaveBeenCalledWith(
-      OWNER_ID,
-      ticket.blobName,
-      expect.any(Object)
-    )
+    expect(deleteBlob).toHaveBeenCalledWith(OWNER_ID, ticket.blobName)
     expect(prisma.kBUploadTicket.deleteMany).toHaveBeenCalledWith({
       where: {
         id: ticket.id,
@@ -184,11 +180,7 @@ describe('KB retention maintenance', () => {
       deleteBlob,
     })
 
-    expect(deleteBlob).toHaveBeenCalledWith(
-      OWNER_ID,
-      resource.blobName,
-      expect.any(Object)
-    )
+    expect(deleteBlob).toHaveBeenCalledWith(OWNER_ID, resource.blobName)
     expect(prisma.kBResource.deleteMany).toHaveBeenCalledWith({
       where: {
         id: RESOURCE_ID,

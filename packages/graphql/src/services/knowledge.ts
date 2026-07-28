@@ -657,7 +657,6 @@ export async function confirmKbFileUpload(
   },
   ctx: ContextWithUser
 ) {
-  await getOwnedKbOrThrow(ctx, kbId)
   const validated = validateKbFile({
     fileName: originalFilename,
     contentType: mimeType,
