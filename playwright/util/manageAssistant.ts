@@ -144,6 +144,8 @@ function toolCallStreamBody(envelope: ManageProposalEnvelope) {
 }
 
 export type ManageChatStreamErrorMode =
+  | 'http-401'
+  | 'http-429'
   | 'http-500'
   | 'stream-error'
   | 'malformed'
@@ -151,6 +153,9 @@ export type ManageChatStreamErrorMode =
 /**
  * Build the fulfillment for a broken POST /api/manage/chat response.
  *
+ * - 'http-401' / 'http-429': exact public JSON route contracts. The AI SDK
+ *   transport throws the raw response internally, while the thread renders
+ *   only its fixed generic error note.
  * - 'http-500': the request fails outright before any stream starts (e.g. the
  *   real route throwing before `toUIMessageStreamResponse`). HttpChatTransport
  *   reads a non-ok response and throws `Error(await response.text())` (see
@@ -178,6 +183,25 @@ function errorStreamFulfillment(
   mode: ManageChatStreamErrorMode,
   errorText: string
 ): { body: string; headers: Record<string, string>; status: number } {
+  if (mode === 'http-401') {
+    return {
+      body: JSON.stringify({ error: 'Unauthorized' }),
+      headers: { 'content-type': 'application/json' },
+      status: 401,
+    }
+  }
+
+  if (mode === 'http-429') {
+    return {
+      body: JSON.stringify({ error: 'Too many requests' }),
+      headers: {
+        'content-type': 'application/json',
+        'Retry-After': '30',
+      },
+      status: 429,
+    }
+  }
+
   if (mode === 'http-500') {
     return {
       body: errorText,

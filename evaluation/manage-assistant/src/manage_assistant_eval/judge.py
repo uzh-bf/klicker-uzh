@@ -1,4 +1,4 @@
-"""Judge-model wiring for the E3/E4-quality/E7-graceful DeepEval `GEval`
+"""Judge-model wiring for the E3/E4-quality/E7-assistant-message DeepEval `GEval`
 checks (see tests/test_e3_grounding.py, test_e4_proposal_quality.py,
 test_e7_degradation.py).
 

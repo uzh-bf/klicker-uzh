@@ -50,6 +50,9 @@ class ChatTurnResult:
     http_status: int = 0
     # Non-SSE (plain JSON) error body for non-200 responses.
     http_error_body: Any = None
+    # Public Retry-After response header, retained for the route-level 429
+    # degradation contract.
+    http_retry_after: str | None = None
     # Mid-stream `{"type":"error","errorText":...}` frame, if any.
     stream_error_text: str | None = None
     paced: bool = False

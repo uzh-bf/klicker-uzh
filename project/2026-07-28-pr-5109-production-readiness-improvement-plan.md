@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Date | 2026-07-28 |
-| Status | IN PROGRESS — S0 and S2 complete locally; S1 awaiting payload-envelope ruling |
+| Status | IN PROGRESS — S0, S2, and S3 complete locally; S1 awaiting payload-envelope ruling |
 | PR | [#5109](https://github.com/uzh-bf/klicker-uzh/pull/5109) |
 | Remote branch | `codex/manage-assistant-mcp-v3-ai` → `v3-ai` |
 | Local worktree | `.claude/worktrees/finalize-v3-ai-branch-0fa103` |
@@ -766,9 +766,9 @@ PR #5109 is production-ready only when all are true:
 
 - [ ] S1 rejects known-length and chunked oversized bodies and preserves the
       supported client payload.
-- [ ] S2 PWA drawer meets the repository modal contract and has stable E2E
+- [x] S2 PWA drawer meets the repository modal contract and has stable E2E
       coverage.
-- [ ] S3 has no silence-based E7 pass; 401/429 are measured through the
+- [x] S3 has no silence-based E7 pass; 401/429 are measured through the
       transport/UI contract.
 - [ ] S4 full automated gate passes at one clean commit.
 - [ ] One fully measured live judged run reports `OVERALL: PASS`.
@@ -831,3 +831,34 @@ approved.
   as the current local `fix(pwa): make course chat drawer keyboard-modal`
   commit; its review-fix amendment and full 25-check hook passed. Nothing was
   pushed.
+- 2026-07-28: S3 implementation completed. Every E7 case now declares either
+  `assistant_text` or `transport_ui`. Model-mediated faults require a
+  non-empty assistant message before the unchanged 0.90 judge gate; assistant
+  text, reasoning, tool outputs, route bodies, and `Retry-After` headers are all
+  scanned for leaks, with payload-redacted failure diagnostics. Zero-tool cases additionally
+  prove the OTP scope declaration and absence of tool activity, while
+  tool-error cases prove the expected call, arguments, and `FORBIDDEN` output.
+  Route-level 401/429 faults require their exact public JSON body, no assistant
+  prose, and a positive integer `Retry-After` for 429. Silence, `{}`, `null`,
+  HTML, stack text, unknown statuses, wrong messages, and extra fields fail
+  deterministically. The summary key now states what it measures:
+  `E7_assistant_message_or_safe_transport_ui`. Offline verification passed
+  91/91 with 53 live cases deselected; Ruff lint and format checks passed. The
+  real limiter path returned `429 {"error":"Too many requests"}` with
+  `Retry-After: 300` after 30 invalid, authenticated, no-model requests from an
+  isolated subject. The existing Chat auth suite passed 20/20 and independently
+  proves that OTP sessions cannot mint lecturer MCP credentials. The full
+  Manage Playwright suite passed 16/16 against the namespaced local stack,
+  including visible generic 401/429 errors, no raw transcript leakage, and
+  successful composer recovery. Initial independent standards, spec, and
+  security review found that fault reproduction, judge routing, hard leak
+  gating, the 429 production path, browser-visible reasoning/tool-output scans,
+  and body/header diagnostic redaction needed stronger proof; each finding was
+  fixed before amendment. Standards, spec, and security re-review were clean.
+  The initial browser run exposed two local setup conditions rather than
+  product failures: the shared namespaced cookie domain had to be supplied to
+  the host runner, and the linked Next dev server had not registered the
+  existing dynamic course route until its file was refreshed. No product or
+  test workaround was added for either condition. The existing eval and
+  Playwright skills already describe the procedure, so no skill workflow
+  changed. Nothing was pushed.

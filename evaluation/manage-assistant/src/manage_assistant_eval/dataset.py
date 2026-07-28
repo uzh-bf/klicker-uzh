@@ -21,6 +21,7 @@ import yaml
 _FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n?(.*)$", re.DOTALL)
 
 VALID_TOOL_POLICIES = {"subset", "exact"}
+VALID_DEGRADATION_CHANNELS = {"assistant_text", "transport_ui"}
 
 
 @dataclass
@@ -62,6 +63,7 @@ class EvalCase:
     # degradation.check_fault_reproduced).
     fault_type: str | None = None
     expected_http_status: int | None = None
+    degradation_channel: str | None = None
 
 
 def _parse_calls(raw: object) -> list[ToolCallSpec]:
@@ -91,6 +93,12 @@ def parse_case_file(path: Path) -> EvalCase:
     if tool_policy not in VALID_TOOL_POLICIES:
         raise ValueError(f"{path}: invalid tool_policy {tool_policy!r}")
 
+    degradation_channel = meta.get("degradation_channel")
+    if degradation_channel is not None:
+        degradation_channel = str(degradation_channel).strip().lower()
+        if degradation_channel not in VALID_DEGRADATION_CHANNELS:
+            raise ValueError(f"{path}: invalid degradation_channel {degradation_channel!r}")
+
     return EvalCase(
         case_id=path.stem,
         source_path=path,
@@ -111,6 +119,7 @@ def parse_case_file(path: Path) -> EvalCase:
         require_feedback=bool(meta.get("require_feedback", False)),
         fault_type=meta.get("fault_type"),
         expected_http_status=meta.get("expected_http_status"),
+        degradation_channel=degradation_channel,
     )
 
 

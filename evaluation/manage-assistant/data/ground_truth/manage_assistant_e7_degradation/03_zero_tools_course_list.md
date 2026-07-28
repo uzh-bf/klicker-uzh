@@ -2,7 +2,8 @@
 question: What courses do I have access to?
 fault_type: zero_tools
 expected_http_status: 200
-scope: ACCOUNT_OWNER
+degradation_channel: assistant_text
+scope: OTP
 ---
 
 Injected via `send_chat_turn(..., scope="OTP")` -- `mintLecturerMcpJwt`

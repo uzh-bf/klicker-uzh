@@ -7,6 +7,7 @@ expected_calls:
       courseId: 00000000-0000-4000-8000-000000000000
 fault_type: tool_error
 expected_http_status: 200
+degradation_channel: assistant_text
 scope: ACCOUNT_OWNER
 ---
 

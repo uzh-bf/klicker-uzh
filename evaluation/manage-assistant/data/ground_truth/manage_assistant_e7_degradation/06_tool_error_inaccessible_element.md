@@ -7,6 +7,7 @@ expected_calls:
       elementId: 999999999
 fault_type: tool_error
 expected_http_status: 200
+degradation_channel: assistant_text
 scope: ACCOUNT_OWNER
 ---
 

@@ -13,12 +13,12 @@ NEW scoring path X2b adds:
   files so the constraints under test (expected_type, expected_option_count,
   expected_correct_count, require_feedback) are the ones that actually ship,
   not synthetic stand-ins.
-- `degradation.check_fault_reproduced` / `check_no_fabrication` /
-  `check_no_leak` (E7's hard no-fabrication sub-gate and the deterministic
-  half of the soft graceful-message sub-gate) -- bound to the real shipped
-  `manage_assistant_e7_degradation` case files.
+- `degradation.check_degradation_safety` / channel-aware response checks
+  (E7's hard fault-reproduction/no-fabrication/no-leak sub-gate and the
+  deterministic half of the assistant-message-or-safe-transport/UI sub-gate)
+  -- bound to the real shipped `manage_assistant_e7_degradation` case files.
 - `judge.judge_unavailable_reason` / `Settings.judge_configured` -- the gate
-  that must make E3/E4-judge/E7-graceful skip (never silently pass) when no
+  that must make E3/E4-judge/E7-assistant-message skip (never silently pass) when no
   judge credential is configured.
 - The five new `ResultCollector` dimension registrations (threshold/hard_gate
   wiring) and the `note_judge_skip` -> `print_summary` banner path.
@@ -36,12 +36,22 @@ from scoring import ResultCollector
 from manage_assistant_eval.config import Settings
 from manage_assistant_eval.dataset import EvalCase, load_cases
 from manage_assistant_eval.degradation import (
+    check_degradation_channel,
+    check_degradation_safety,
     check_fault_reproduced,
     check_no_fabrication,
     check_no_leak,
+    check_safe_assistant_message,
+    check_safe_transport_error,
+    evaluate_degradation_response,
 )
 from manage_assistant_eval.judge import judge_unavailable_reason
-from manage_assistant_eval.models import ChatTurnResult, ProposalCard, ToolCallRecord
+from manage_assistant_eval.models import (
+    ChatTurnResult,
+    ProposalCard,
+    ToolCallRecord,
+    ToolOutputRecord,
+)
 from manage_assistant_eval.proposal_schema import validate_proposal_schema
 
 pytestmark = pytest.mark.offline
@@ -296,6 +306,63 @@ def test_check_fault_reproduced_matching_status_is_clean() -> None:
     assert check_fault_reproduced(case, ChatTurnResult(http_status=401)) is None
 
 
+def test_zero_tools_fault_requires_declared_otp_scope_and_no_tool_activity() -> None:
+    case = _e7("03_zero_tools_course_list")
+    assert case.scope == "OTP"
+    assert check_fault_reproduced(case, ChatTurnResult(http_status=200)) is None
+
+    result = ChatTurnResult(
+        http_status=200,
+        tool_calls=[ToolCallRecord("c1", "klicker_lecturer_course_list", {})],
+    )
+    issue = check_fault_reproduced(case, result)
+    assert issue is not None
+    assert "produced tool activity" in issue
+
+
+def _tool_error_result() -> ChatTurnResult:
+    tool_name = "klicker_lecturer_course_get"
+    tool_call_id = "call-1"
+    payload = {
+        "error": {
+            "code": "FORBIDDEN",
+            "message": "Object not found or not accessible",
+        }
+    }
+    return ChatTurnResult(
+        http_status=200,
+        text="I could not access that course. Check the identifier or try again.",
+        tool_calls=[
+            ToolCallRecord(
+                tool_call_id,
+                tool_name,
+                {"courseId": "00000000-0000-4000-8000-000000000000"},
+            )
+        ],
+        tool_outputs=[
+            ToolOutputRecord(
+                tool_call_id,
+                tool_name,
+                '{"error":{"code":"FORBIDDEN","message":"Object not found or not accessible"}}',
+                parsed=payload,
+            )
+        ],
+    )
+
+
+def test_tool_error_fault_requires_expected_call_and_forbidden_payload() -> None:
+    case = _e7("05_tool_error_inaccessible_course")
+    calm_text_only = ChatTurnResult(
+        http_status=200,
+        text="I could not access that course. Check the identifier or try again.",
+    )
+    issue = check_fault_reproduced(case, calm_text_only)
+    assert issue is not None
+    assert "expected calls" in issue
+
+    assert check_fault_reproduced(case, _tool_error_result()) is None
+
+
 def test_check_no_fabrication_route_level_fault_is_trivially_clean() -> None:
     # No model turn happened at all (401 expired-token / 429 rate-limit) --
     # there is nothing the model could have fabricated, so this must not
@@ -334,7 +401,7 @@ def test_check_no_fabrication_success_phrase_is_a_violation() -> None:
     assert "claims success" in issue
 
 
-def test_check_no_fabrication_graceful_message_is_clean() -> None:
+def test_check_no_fabrication_assistant_message_is_clean() -> None:
     result = ChatTurnResult(http_status=200, text="I could not reach the course tools right now.")
     assert check_no_fabrication(result) is None
 
@@ -347,11 +414,12 @@ def test_check_no_leak_stack_trace_pattern_in_assistant_text_is_a_violation() ->
 
 
 def test_check_no_leak_connection_string_in_http_error_body_is_a_violation() -> None:
-    result = ChatTurnResult(
-        http_status=500, http_error_body={"error": "postgres://user:pw@host/db"}
-    )
+    secret_payload = "postgres://user:pw@host/db"
+    result = ChatTurnResult(http_status=500, http_error_body={"error": secret_payload})
     issue = check_no_leak(result)
     assert issue is not None
+    assert "HTTP error body" in issue
+    assert secret_payload not in issue
 
 
 def test_check_no_leak_node_modules_path_is_a_violation() -> None:
@@ -359,9 +427,206 @@ def test_check_no_leak_node_modules_path_is_a_violation() -> None:
     assert check_no_leak(result) is not None
 
 
+@pytest.mark.parametrize(
+    "result",
+    [
+        ChatTurnResult(reasoning="Error: boom\n    at /app/src/reasoning.ts:12"),
+        ChatTurnResult(
+            tool_outputs=[
+                ToolOutputRecord(
+                    "call-1",
+                    "example_tool",
+                    "failed in node_modules/example/index.js",
+                )
+            ]
+        ),
+        ChatTurnResult(
+            tool_outputs=[
+                ToolOutputRecord(
+                    "call-1",
+                    "example_tool",
+                    None,
+                    error_text="DATABASE_URL was unavailable",
+                )
+            ]
+        ),
+        ChatTurnResult(
+            tool_outputs=[
+                ToolOutputRecord(
+                    "call-1",
+                    "example_tool",
+                    None,
+                    parsed={"error": "postgres://user:pw@host/db"},
+                )
+            ]
+        ),
+    ],
+)
+def test_check_no_leak_scans_every_browser_visible_output_channel(
+    result: ChatTurnResult,
+) -> None:
+    issue = check_no_leak(result)
+    assert issue is not None
+    assert "payload redacted" in issue
+    assert "postgres://user:pw@host/db" not in issue
+    assert "/app/src/reasoning.ts" not in issue
+    assert "node_modules/example" not in issue
+
+
 def test_check_no_leak_clean_message_has_no_violation() -> None:
     result = ChatTurnResult(http_status=200, text="Sorry, I could not complete that action.")
     assert check_no_leak(result) is None
+
+
+def test_degradation_safety_treats_leaks_as_hard_failures() -> None:
+    case = _e7("03_zero_tools_course_list")
+    result = ChatTurnResult(http_status=200, text="Error: boom\n    at /app/src/index.ts:12")
+    issue = check_degradation_safety(case, result)
+    assert issue is not None
+    assert "leaked internal detail" in issue
+
+
+def test_e7_cases_declare_explicit_channels() -> None:
+    cases = load_cases(DATA_DIR / "manage_assistant_e7_degradation")
+    channels = {case.case_id: case.degradation_channel for case in cases}
+    assert channels == {
+        "01_expired_token_course_list": "transport_ui",
+        "02_expired_token_element_search": "transport_ui",
+        "03_zero_tools_course_list": "assistant_text",
+        "04_zero_tools_element_lookup": "assistant_text",
+        "05_tool_error_inaccessible_course": "assistant_text",
+        "06_tool_error_inaccessible_element": "assistant_text",
+        "07_rate_limit_429_course_list": "transport_ui",
+    }
+    scopes = {case.case_id: case.scope for case in cases}
+    assert scopes["03_zero_tools_course_list"] == "OTP"
+    assert scopes["04_zero_tools_element_lookup"] == "OTP"
+
+
+def test_check_safe_transport_error_accepts_exact_401_contract() -> None:
+    result = ChatTurnResult(http_status=401, http_error_body={"error": "Unauthorized"})
+    assert check_safe_transport_error(result) is None
+
+
+def test_check_safe_transport_error_accepts_exact_429_contract() -> None:
+    result = ChatTurnResult(
+        http_status=429,
+        http_error_body={"error": "Too many requests"},
+        http_retry_after="5",
+        retried_after_429=True,
+    )
+    assert check_safe_transport_error(result) is None
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        {},
+        None,
+        "<html>bad gateway</html>",
+        "Error: boom\n    at /app/src/index.ts:12",
+        {"error": "Session expired"},
+        {"error": "Unauthorized", "internal": "token verification failed"},
+    ],
+)
+def test_check_safe_transport_error_rejects_unknown_401_shapes(body: object) -> None:
+    result = ChatTurnResult(http_status=401, http_error_body=body)
+    assert check_safe_transport_error(result) is not None
+
+
+@pytest.mark.parametrize("retry_after", [None, "", "0", "-1", "later", "1.5"])
+def test_check_safe_transport_error_requires_positive_integer_retry_after(
+    retry_after: str | None,
+) -> None:
+    result = ChatTurnResult(
+        http_status=429,
+        http_error_body={"error": "Too many requests"},
+        http_retry_after=retry_after,
+    )
+    assert check_safe_transport_error(result) is not None
+
+
+def test_check_safe_transport_error_rejects_unknown_status() -> None:
+    result = ChatTurnResult(http_status=500, http_error_body={"error": "Internal error"})
+    assert check_safe_transport_error(result) is not None
+
+
+def test_check_safe_transport_error_redacts_unexpected_body_from_diagnostic() -> None:
+    secret_payload = "postgres://user:pw@host/db"
+    result = ChatTurnResult(
+        http_status=401,
+        http_error_body={"error": "Unauthorized", "internal": secret_payload},
+    )
+    issue = check_safe_transport_error(result)
+    assert issue is not None
+    assert "actual payload redacted" in issue
+    assert secret_payload not in issue
+
+
+def test_retry_after_header_is_scanned_and_redacted_from_diagnostics() -> None:
+    secret_payload = "postgres://user:pw@host/db"
+    result = ChatTurnResult(
+        http_status=429,
+        http_error_body={"error": "Too many requests"},
+        http_retry_after=secret_payload,
+    )
+    transport_issue = check_safe_transport_error(result)
+    assert transport_issue is not None
+    assert "actual header redacted" in transport_issue
+    assert secret_payload not in transport_issue
+
+    leak_issue = check_no_leak(result)
+    assert leak_issue is not None
+    assert "HTTP Retry-After header" in leak_issue
+    assert secret_payload not in leak_issue
+
+
+def test_assistant_text_channel_rejects_silence_even_for_route_status() -> None:
+    case = _e7("03_zero_tools_course_list")
+    assert case.degradation_channel == "assistant_text"
+    result = ChatTurnResult(http_status=401, http_error_body={"error": "Unauthorized"})
+    issue = check_degradation_channel(case, result)
+    assert issue == "assistant-text degradation case produced no assistant message"
+
+
+def test_assistant_text_channel_routes_to_supplied_judge() -> None:
+    case = _e7("05_tool_error_inaccessible_course")
+    result = _tool_error_result()
+    calls: list[tuple[EvalCase, ChatTurnResult]] = []
+
+    def fake_judge(
+        judged_case: EvalCase,
+        judged_result: ChatTurnResult,
+    ) -> tuple[bool, str]:
+        calls.append((judged_case, judged_result))
+        return True, "fake score=1.000"
+
+    assert case.degradation_channel == "assistant_text"
+    assert check_safe_assistant_message(result) is None
+    assert check_degradation_channel(case, result) is None
+    assert evaluate_degradation_response(
+        case,
+        result,
+        assistant_message_judge=fake_judge,
+    ) == (True, "assistant message: fake score=1.000")
+    assert calls == [(case, result)]
+
+
+def test_transport_channel_does_not_call_assistant_message_judge() -> None:
+    case = _e7("01_expired_token_course_list")
+    result = ChatTurnResult(http_status=401, http_error_body={"error": "Unauthorized"})
+
+    def unexpected_judge(
+        _case: EvalCase,
+        _result: ChatTurnResult,
+    ) -> tuple[bool, str]:
+        raise AssertionError("transport/UI cases must not invoke the assistant-message judge")
+
+    assert evaluate_degradation_response(
+        case,
+        result,
+        assistant_message_judge=unexpected_judge,
+    ) == (True, "safe transport/UI error: HTTP 401")
 
 
 # ---------------------------------------------------------------------------
@@ -403,7 +668,7 @@ def test_judge_unavailable_reason_is_none_when_both_are_set() -> None:
         ("E4_proposal_quality_schema", 1.0, True),
         ("E4_proposal_quality_judge", 0.85, False),
         ("E7_degradation_no_fabrication", 1.0, True),
-        ("E7_degradation_graceful", 0.90, False),
+        ("E7_assistant_message_or_safe_transport_ui", 0.90, False),
     ],
 )
 def test_new_dimensions_are_registered_with_the_planned_threshold_and_gate(
@@ -431,10 +696,15 @@ def test_hard_gate_dimension_passes_when_every_case_passes() -> None:
 def test_soft_gate_dimension_fails_below_its_score_floor() -> None:
     collector = ResultCollector()
     for i in range(8):
-        collector.record("E7_degradation_graceful", f"c{i}", True)
+        collector.record("E7_assistant_message_or_safe_transport_ui", f"c{i}", True)
     for i in range(2):
-        collector.record("E7_degradation_graceful", f"miss{i}", False, "not graceful enough")
-    dim = collector.dimensions["E7_degradation_graceful"]
+        collector.record(
+            "E7_assistant_message_or_safe_transport_ui",
+            f"miss{i}",
+            False,
+            "not safe enough",
+        )
+    dim = collector.dimensions["E7_assistant_message_or_safe_transport_ui"]
     assert dim.score == pytest.approx(0.8)
     assert dim.passed_threshold is False  # 0.80 < 0.90 threshold
 
@@ -442,9 +712,9 @@ def test_soft_gate_dimension_fails_below_its_score_floor() -> None:
 def test_soft_gate_dimension_passes_at_exactly_its_threshold() -> None:
     collector = ResultCollector()
     for i in range(9):
-        collector.record("E7_degradation_graceful", f"c{i}", True)
-    collector.record("E7_degradation_graceful", "miss", False, "one miss")
-    dim = collector.dimensions["E7_degradation_graceful"]
+        collector.record("E7_assistant_message_or_safe_transport_ui", f"c{i}", True)
+    collector.record("E7_assistant_message_or_safe_transport_ui", "miss", False, "one miss")
+    dim = collector.dimensions["E7_assistant_message_or_safe_transport_ui"]
     assert dim.score == pytest.approx(0.9)
     assert dim.passed_threshold is True  # 0.90 >= 0.90 threshold
 

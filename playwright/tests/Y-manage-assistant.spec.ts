@@ -417,6 +417,51 @@ test.describe('Manage Assistant — Error paths', () => {
     await expect(confirmButton).toBeEnabled()
   })
 
+  for (const routeFailure of [
+    {
+      errorMode: 'http-401' as const,
+      rawMessage: 'Unauthorized',
+      status: 401,
+    },
+    {
+      errorMode: 'http-429' as const,
+      rawMessage: 'Too many requests',
+      status: 429,
+    },
+  ]) {
+    test(`Chat route ${routeFailure.status} shows only the generic UI error and recovers`, async ({
+      page,
+    }) => {
+      await mockManageChatStream(page, {
+        errorMode: routeFailure.errorMode,
+        text: 'Second reply after recovery.',
+      })
+      const assistant = await openManageAssistantWidget(page)
+
+      await sendManageAssistantMessage(assistant, 'Summarize my course')
+
+      const error = assistant.getByTestId('chat-assistant-message-error')
+      await expect(error).toBeVisible({ timeout: 15_000 })
+      await expect(error).toHaveText('Something went wrong. Please try again.')
+
+      const transcript = assistant.getByTestId('chat-thread')
+      await expect(transcript).not.toContainText(routeFailure.rawMessage)
+      await expect(transcript).not.toContainText('{"error"')
+      await expect(transcript).not.toContainText('node_modules')
+      await expect(transcript).not.toContainText('at /app/')
+
+      await expect(assistant.getByTestId('chat-send-button')).toBeVisible({
+        timeout: 15_000,
+      })
+      await expect(assistant.getByTestId('chat-composer-input')).toBeEditable()
+
+      await sendManageAssistantMessage(assistant, 'Try again')
+      await expect(
+        assistant.getByTestId('chat-assistant-message-content').last()
+      ).toContainText('Second reply after recovery.', { timeout: 15_000 })
+    })
+  }
+
   // Thread.tsx wires MessagePrimitive.Error / ErrorPrimitive.Message as
   // AssistantMessageError (see apps/chat/src/components/thread.tsx), so a
   // failed chat stream now renders a dedicated inline error note instead of

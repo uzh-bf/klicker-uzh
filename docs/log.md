@@ -4,6 +4,8 @@
 
 - **Update**: [frontend-conventions](./frontend-conventions.md) records that both assistant drawers implement the shared portalled-modal, focus-containment, and page-isolation contract. [testing](./testing.md) records the dedicated PWA course-chat drawer and entry-fallback Playwright coverage.
 
+- **Update**: [testing](./testing.md) and the Manage-assistant eval README now define E7 through explicit assistant-text and transport/UI channels. Route-level 401/429 checks require the exact safe public response and visible recoverable generic UI; silence or merely leak-free malformed output no longer passes.
+
 ## 2026-07-27
 
 - **Update**: [auth-model](./auth-model.md) records the Manage-assistant system prompt's new no-disclosure rule for the tool-output fence markers and sentinel, why it is not redundant with the fencing itself, and the before/after E6 measurement that motivated it.

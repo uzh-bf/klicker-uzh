@@ -53,7 +53,7 @@ class Settings:
     app_secret: str = field(repr=False)
     database_url: str = field(repr=False)
     lecturer_sub: str
-    # Judge model config for the E3/E4-quality/E7-graceful GEval checks (see
+    # Judge model config for the E3/E4-quality/E7-assistant-message GEval checks (see
     # judge.py). Deliberately a SEPARATE credential namespace from the app's
     # own OPENAI_API_KEY/OPENAI_BASE_URL (which point the model UNDER TEST at
     # the litellm gateway) -- the judge is a different concern and this
@@ -75,7 +75,7 @@ class Settings:
     def judge_configured(self) -> bool:
         """True only when both a judge model name AND a credential are set.
         Every judge-based check (E3 grounding, E4 proposal quality, E7
-        graceful-message) must gate on this and skip -- never silently pass
+        assistant-message) must gate on this and skip -- never silently pass
         -- when it is False. `judge_api_base` is optional (defaults to
         OpenAI's own endpoint)."""
         return bool(self.judge_model) and bool(self.judge_api_key)

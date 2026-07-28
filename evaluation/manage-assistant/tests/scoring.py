@@ -72,8 +72,9 @@ class ResultCollector:
     same aggregator instance without needing fixture plumbing across files.
 
     E4 and E7 hard-vs-soft dual-gate design note: the plan (§4.1) gives E4
-    ("0.85 judge; 0 schema failures") and E7 ("0.90 graceful; 0 fabricated
-    successes") each TWO independent pass criteria of different strictness.
+    ("0.85 judge; 0 schema failures") and E7 ("0.90 assistant-message or safe
+    transport/UI response; 0 fabricated successes") each TWO independent pass
+    criteria of different strictness.
     Rather than extending `DimensionResults` with a second threshold/hard-gate
     pair (which would force every consumer of this class -- `score`,
     `passed_threshold`, `print_summary` -- to branch on "does this dimension
@@ -97,13 +98,16 @@ class ResultCollector:
             # (see class docstring for why these are two dimension keys).
             "E4_proposal_quality_schema": DimensionResults(threshold=1.0, hard_gate=True),
             "E4_proposal_quality_judge": DimensionResults(threshold=0.85, hard_gate=False),
-            # E7 degradation recovery: hard no-fabrication sub-gate + soft
-            # graceful-message sub-gate (see class docstring).
+            # E7 degradation recovery: the compatibility key below now holds
+            # the hard fault-reproduction/no-fabrication/no-leak safety gate;
+            # the channel-response sub-gate remains soft (see class docstring).
             "E7_degradation_no_fabrication": DimensionResults(threshold=1.0, hard_gate=True),
-            "E7_degradation_graceful": DimensionResults(threshold=0.90, hard_gate=False),
+            "E7_assistant_message_or_safe_transport_ui": DimensionResults(
+                threshold=0.90, hard_gate=False
+            ),
         }
         # Set (via `note_judge_skip`) the first time any judge-based case
-        # (E3 grounding, E4 proposal-quality judge, E7 graceful judge) skips
+        # (E3 grounding, E4 proposal-quality judge, E7 assistant-message judge) skips
         # for lack of a configured judge credential. `print_summary` uses
         # this for a banner parallel to the MAX_TRIALS-cap one below, so a
         # judge-skipped run is never visually indistinguishable from a full
@@ -160,7 +164,7 @@ class ResultCollector:
         if self.judge_skip_reason:
             print(
                 f"!! JUDGE SKIPPED: {self.judge_skip_reason} Judge-based sub-checks (E3 "
-                "grounding, E4 proposal-quality judge, E7 graceful-message) did NOT run "
+                "grounding, E4 proposal-quality judge, E7 assistant-message) did NOT run "
                 "this pass -- only their deterministic hard-gate counterparts did. This is "
                 "not a full-strength run for those dimensions."
             )

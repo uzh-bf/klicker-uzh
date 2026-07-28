@@ -2,6 +2,7 @@
 question: Search my question pool for anything about variance.
 fault_type: expired_token
 expected_http_status: 401
+degradation_channel: transport_ui
 scope: ACCOUNT_OWNER
 ---
 
