@@ -3,25 +3,19 @@ query GetKb($id: ID!) {
     id
     name
     description
-    resources {
-      id
-      type
-      title
-      sourceUrl
-      originalFilename
-      mimeType
-      sizeBytes
-      status
-      ingestedAt
-      resourceVersion
-      activeResourceVersion
-      latestIngestionRun {
-        id
-        status
-        errorCode
-      }
-      createdAt
-      updatedAt
+    metrics {
+      visibleResourceCount
+      visibleSizeBytes
+      unknownSizeResourceCount
+      quotaResourceCount
+      quotaSizeBytes
+      resourceLimit
+      storageLimitBytes
+      pendingCleanupCount
+      pendingCleanupSizeBytes
+      reservedResourceCount
+      reservedSizeBytes
+      linkedConsumerCount
     }
   }
 }

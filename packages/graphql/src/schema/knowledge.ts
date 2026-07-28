@@ -80,8 +80,42 @@ export const KBResource = KBResourceRef.implement({
   }),
 })
 
+interface IKBMetrics {
+  visibleResourceCount: number
+  visibleSizeBytes: number
+  unknownSizeResourceCount: number
+  quotaResourceCount: number
+  quotaSizeBytes: number
+  resourceLimit: number
+  storageLimitBytes: number
+  pendingCleanupCount: number
+  pendingCleanupSizeBytes: number
+  reservedResourceCount: number
+  reservedSizeBytes: number
+  linkedConsumerCount: number
+}
+
+export const KBMetricsRef = builder.objectRef<IKBMetrics>('KBMetrics')
+export const KBMetrics = KBMetricsRef.implement({
+  fields: (t) => ({
+    visibleResourceCount: t.exposeInt('visibleResourceCount'),
+    visibleSizeBytes: t.exposeInt('visibleSizeBytes'),
+    unknownSizeResourceCount: t.exposeInt('unknownSizeResourceCount'),
+    quotaResourceCount: t.exposeInt('quotaResourceCount'),
+    quotaSizeBytes: t.exposeInt('quotaSizeBytes'),
+    resourceLimit: t.exposeInt('resourceLimit'),
+    storageLimitBytes: t.exposeInt('storageLimitBytes'),
+    pendingCleanupCount: t.exposeInt('pendingCleanupCount'),
+    pendingCleanupSizeBytes: t.exposeInt('pendingCleanupSizeBytes'),
+    reservedResourceCount: t.exposeInt('reservedResourceCount'),
+    reservedSizeBytes: t.exposeInt('reservedSizeBytes'),
+    linkedConsumerCount: t.exposeInt('linkedConsumerCount'),
+  }),
+})
+
 interface IKB extends DB.KB {
-  resources: IKBResource[]
+  resources?: IKBResource[]
+  metrics?: IKBMetrics
 }
 
 export const KBRef = builder.objectRef<IKB>('KB')
@@ -90,9 +124,62 @@ export const KB = KBRef.implement({
     id: t.exposeID('id'),
     name: t.exposeString('name'),
     description: t.exposeString('description', { nullable: true }),
-    resources: t.expose('resources', { type: [KBResourceRef] }),
+    resources: t.field({
+      type: [KBResourceRef],
+      resolve: (kb) => kb.resources ?? [],
+    }),
+    metrics: t.field({
+      type: KBMetricsRef,
+      nullable: true,
+      resolve: (kb) => kb.metrics ?? null,
+    }),
     createdAt: t.expose('createdAt', { type: 'Date' }),
     updatedAt: t.expose('updatedAt', { type: 'Date' }),
+  }),
+})
+
+interface IKBPageInfo {
+  hasNextPage: boolean
+  endCursor: string | null
+}
+
+export const KBPageInfoRef = builder.objectRef<IKBPageInfo>('KBPageInfo')
+export const KBPageInfo = KBPageInfoRef.implement({
+  fields: (t) => ({
+    hasNextPage: t.exposeBoolean('hasNextPage'),
+    endCursor: t.exposeString('endCursor', { nullable: true }),
+  }),
+})
+
+interface IKBConnection {
+  items: IKB[]
+  pageInfo: IKBPageInfo
+  totalCount: number
+}
+
+export const KBConnectionRef = builder.objectRef<IKBConnection>('KBConnection')
+export const KBConnection = KBConnectionRef.implement({
+  fields: (t) => ({
+    items: t.expose('items', { type: [KBRef] }),
+    pageInfo: t.expose('pageInfo', { type: KBPageInfoRef }),
+    totalCount: t.exposeInt('totalCount'),
+  }),
+})
+
+interface IKBResourceConnection {
+  items: IKBResource[]
+  pageInfo: IKBPageInfo
+  totalCount: number
+}
+
+export const KBResourceConnectionRef = builder.objectRef<IKBResourceConnection>(
+  'KBResourceConnection'
+)
+export const KBResourceConnection = KBResourceConnectionRef.implement({
+  fields: (t) => ({
+    items: t.expose('items', { type: [KBResourceRef] }),
+    pageInfo: t.expose('pageInfo', { type: KBPageInfoRef }),
+    totalCount: t.exposeInt('totalCount'),
   }),
 })
 

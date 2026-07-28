@@ -1691,6 +1691,7 @@ type KB {
   createdAt: Date!
   description: String
   id: ID!
+  metrics: KBMetrics
   name: String!
   resources: [KBResource!]!
   updatedAt: Date!
@@ -1701,6 +1702,12 @@ type KBChatbotBinding {
   chatbotName: String!
   enabledKbId: ID
   enabledKbName: String
+}
+
+type KBConnection {
+  items: [KB!]!
+  pageInfo: KBPageInfo!
+  totalCount: Int!
 }
 
 type KBFileUpload {
@@ -1730,6 +1737,26 @@ enum KBIngestionStatus {
   SUPERSEDED
 }
 
+type KBMetrics {
+  linkedConsumerCount: Int!
+  pendingCleanupCount: Int!
+  pendingCleanupSizeBytes: Int!
+  quotaResourceCount: Int!
+  quotaSizeBytes: Int!
+  reservedResourceCount: Int!
+  reservedSizeBytes: Int!
+  resourceLimit: Int!
+  storageLimitBytes: Int!
+  unknownSizeResourceCount: Int!
+  visibleResourceCount: Int!
+  visibleSizeBytes: Int!
+}
+
+type KBPageInfo {
+  endCursor: String
+  hasNextPage: Boolean!
+}
+
 type KBResource {
   activeContentSha256: String
   activeResourceVersion: Int
@@ -1748,6 +1775,12 @@ type KBResource {
   title: String!
   type: KBResourceType!
   updatedAt: Date!
+}
+
+type KBResourceConnection {
+  items: [KBResource!]!
+  pageInfo: KBPageInfo!
+  totalCount: Int!
 }
 
 enum KBResourceStatus {
@@ -1976,6 +2009,7 @@ type Mutation {
   deleteGroupActivity(id: String!): GroupActivity
   deleteKb(id: ID!): KB!
   deleteKbResource(id: ID!): KBResource!
+  deleteKbResources(ids: [String!]!, kbId: ID!): [KBResource!]!
   deleteLiveQuiz(id: String!): LiveQuiz
   deleteMicroLearning(id: String!): MicroLearning
   deleteParticipantAccount: Boolean
@@ -2571,6 +2605,7 @@ type Query {
   getKb(id: ID!): KB!
   getKbChatbotBindings(kbId: ID!): [KBChatbotBinding!]!
   getKbResourceIngestionRuns(resourceId: ID!): [KBIngestionRun!]!
+  getKbResources(after: String, first: Int, kbId: ID!, search: String, status: KBResourceStatus, type: KBResourceType): KBResourceConnection!
   getLecturerViewLiveQuiz(id: String!): LiveQuiz
   getLiveQuizEmbeddingInfo(id: String!): LiveQuizEmbeddingInfo
   getLiveQuizSummary(quizId: String!): LiveQuizSummary
@@ -2597,6 +2632,7 @@ type Query {
   getUserActivitiesCourses: [CourseListEntry!]
   getUserGroupsUser: [UserGroup!]
   getUserKbs: [KB!]!
+  getUserKbsConnection(after: String, first: Int, search: String): KBConnection!
   getUsersPrivatePreview: [UserInfo!]
   groupActivities(courseId: String!): [GroupActivity!]
   groupActivity(id: String!): GroupActivity

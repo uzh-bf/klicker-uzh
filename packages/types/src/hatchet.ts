@@ -20,6 +20,7 @@ export interface HatchetHandlerGlobalContext {
 }
 
 export const MAX_KB_RESOURCE_COUNT = 100
+export const MAX_KB_SOURCE_SIZE_BYTES = 25 * 1024 * 1024
 export const MAX_KB_TOTAL_SIZE_BYTES = 500 * 1024 * 1024
 
 type IngestKBResourceInputBase = JsonObject & {

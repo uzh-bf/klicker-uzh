@@ -7,7 +7,10 @@ import type {
   DeleteKBResourceInput,
   IngestKBResourceInput,
 } from '@klicker-uzh/types'
-import { MAX_KB_TOTAL_SIZE_BYTES } from '@klicker-uzh/types'
+import {
+  MAX_KB_SOURCE_SIZE_BYTES,
+  MAX_KB_TOTAL_SIZE_BYTES,
+} from '@klicker-uzh/types'
 import { describe, expect, it, vi } from 'vitest'
 import {
   dispatchKBDeletion,
@@ -96,7 +99,11 @@ function client(
 function dispatchPrisma(
   resource: Record<string, unknown>,
   updateResults: number[] = [1, 1],
-  quota: { resourceBytes?: number; ticketBytes?: number } = {}
+  quota: {
+    resourceBytes?: number
+    unknownSizeCount?: number
+    ticketBytes?: number
+  } = {}
 ) {
   const persistedResource = {
     kbId: KB_ID,
@@ -112,6 +119,7 @@ function dispatchPrisma(
       aggregate: vi.fn().mockResolvedValue({
         _sum: { sizeBytes: quota.resourceBytes ?? 1024 },
       }),
+      count: vi.fn().mockResolvedValue(quota.unknownSizeCount ?? 0),
       updateMany: vi.fn().mockImplementation(async () => ({
         count: updateResults.shift() ?? 0,
       })),
@@ -338,6 +346,40 @@ describe('KB ingestion dispatch', () => {
     )
   })
 
+  it('replaces the conservative reservation for a legacy unknown-size URL', async () => {
+    const prisma = dispatchPrisma(
+      {
+        status: KBResourceStatus.QUEUED,
+        ingestionAttemptId: ATTEMPT_ID,
+        resourceVersion: 3,
+        contentSha256: null,
+        mimeType: null,
+        sizeBytes: null,
+        externalOperationId: null,
+      },
+      [1, 1],
+      {
+        resourceBytes: 0,
+        unknownSizeCount: 20,
+      }
+    )
+    const observedSource = { ...source, sizeBytes: 1 }
+    const apiClient = client()
+
+    await expect(
+      dispatchKBIngestion(input, {
+        prisma: prisma as never,
+        client: apiClient,
+        prepareSource: vi.fn().mockResolvedValue(observedSource),
+      })
+    ).resolves.toBe(OPERATION_ID)
+
+    expect(MAX_KB_SOURCE_SIZE_BYTES * 20).toBe(MAX_KB_TOTAL_SIZE_BYTES)
+    expect(apiClient.acceptResource).toHaveBeenCalledWith(
+      expect.objectContaining({ source: observedSource })
+    )
+  })
+
   it('records a stable failure before dispatch when a URL replacement exceeds quota', async () => {
     const prisma = dispatchPrisma(
       {
@@ -390,6 +432,35 @@ describe('KB ingestion dispatch', () => {
         finishedAt: expect.any(Date),
       },
     })
+    expect(apiClient.acceptResource).not.toHaveBeenCalled()
+  })
+
+  it('rolls back an over-limit failure that cannot correlate its run', async () => {
+    const prisma = dispatchPrisma(
+      {
+        status: KBResourceStatus.QUEUED,
+        ingestionAttemptId: ATTEMPT_ID,
+        resourceVersion: 3,
+        contentSha256: null,
+        mimeType: null,
+        sizeBytes: 1000,
+        externalOperationId: null,
+      },
+      [1],
+      { resourceBytes: MAX_KB_TOTAL_SIZE_BYTES }
+    )
+    prisma.kBIngestionRun.updateMany.mockResolvedValueOnce({ count: 0 })
+    const apiClient = client()
+
+    await expect(
+      dispatchKBIngestion(input, {
+        prisma: prisma as never,
+        client: apiClient,
+        prepareSource: vi
+          .fn()
+          .mockResolvedValue({ ...source, sizeBytes: 1001 }),
+      })
+    ).rejects.toThrow('KB ingestion dispatch failed')
     expect(apiClient.acceptResource).not.toHaveBeenCalled()
   })
 

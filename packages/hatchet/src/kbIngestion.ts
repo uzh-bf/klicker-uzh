@@ -9,7 +9,10 @@ import type {
   DeleteKBResourceInput,
   IngestKBResourceInput,
 } from '@klicker-uzh/types'
-import { MAX_KB_TOTAL_SIZE_BYTES } from '@klicker-uzh/types'
+import {
+  MAX_KB_SOURCE_SIZE_BYTES,
+  MAX_KB_TOTAL_SIZE_BYTES,
+} from '@klicker-uzh/types'
 import {
   buildKBIngestionSource,
   createKBIngestionApiClient,
@@ -143,20 +146,26 @@ async function persistPreparedSource({
     if (!currentResource) {
       return false
     }
-    const [resources, uploadTickets] = await Promise.all([
+    const [resources, unknownSizeResources, uploadTickets] = await Promise.all([
       tx.kBResource.aggregate({
         where: { kbId: input.kbId },
         _sum: { sizeBytes: true },
+      }),
+      tx.kBResource.count({
+        where: { kbId: input.kbId, sizeBytes: null },
       }),
       tx.kBUploadTicket.aggregate({
         where: { kbId: input.kbId },
         _sum: { sizeBytes: true },
       }),
     ])
-    const projectedSizeBytes =
+    const retainedSizeBytes =
       (resources._sum.sizeBytes ?? 0) +
+      unknownSizeResources * MAX_KB_SOURCE_SIZE_BYTES
+    const projectedSizeBytes =
+      retainedSizeBytes +
       (uploadTickets._sum.sizeBytes ?? 0) -
-      (currentResource.sizeBytes ?? 0) +
+      (currentResource.sizeBytes ?? MAX_KB_SOURCE_SIZE_BYTES) +
       source.sizeBytes
     if (projectedSizeBytes > MAX_KB_TOTAL_SIZE_BYTES) {
       const finishedAt = new Date()
@@ -179,7 +188,7 @@ async function persistPreparedSource({
         },
       })
       if (resourceUpdate.count === 1) {
-        await tx.kBIngestionRun.updateMany({
+        const runUpdate = await tx.kBIngestionRun.updateMany({
           where: {
             id: input.ingestionAttemptId,
             resourceId: input.resourceId,
@@ -196,6 +205,9 @@ async function persistPreparedSource({
             finishedAt,
           },
         })
+        if (runUpdate.count !== 1) {
+          throw new Error('KB ingestion source could not be correlated')
+        }
       }
       return false
     }

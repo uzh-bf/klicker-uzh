@@ -1732,6 +1732,18 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      deleteKbResources: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: [KBResource],
+        args: {
+          kbId: t.arg.id({ required: true }),
+          ids: t.arg.stringList({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.deleteKbResources(args, ctx)
+        },
+      }),
+
       ingestKbResource: t.withAuth(asUserFullAccess).field({
         nullable: false,
         type: KBResource,

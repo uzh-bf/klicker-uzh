@@ -70,7 +70,15 @@ import {
   GroupActivityInstance,
   GroupActivitySummary,
 } from './groupActivity.js'
-import { KB, KBChatbotBinding, KBIngestionRun } from './knowledge.js'
+import {
+  KB,
+  KBChatbotBinding,
+  KBConnection,
+  KBIngestionRun,
+  KBResourceConnection,
+  KBResourceStatus,
+  KBResourceType,
+} from './knowledge.js'
 import {
   Feedback,
   LiveQuiz,
@@ -1419,12 +1427,41 @@ export const Query = builder.queryType({
         },
       }),
 
+      getUserKbsConnection: t.withAuth(asUser).field({
+        nullable: false,
+        type: KBConnection,
+        args: {
+          first: t.arg.int({ required: false }),
+          after: t.arg.string({ required: false }),
+          search: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getUserKbsConnection(args, ctx)
+        },
+      }),
+
       getKb: t.withAuth(asUser).field({
         nullable: false,
         type: KB,
         args: { id: t.arg.id({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.getKb(args, ctx)
+        },
+      }),
+
+      getKbResources: t.withAuth(asUser).field({
+        nullable: false,
+        type: KBResourceConnection,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          first: t.arg.int({ required: false }),
+          after: t.arg.string({ required: false }),
+          search: t.arg.string({ required: false }),
+          type: t.arg({ type: KBResourceType, required: false }),
+          status: t.arg({ type: KBResourceStatus, required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getKbResourcesConnection(args, ctx)
         },
       }),
 

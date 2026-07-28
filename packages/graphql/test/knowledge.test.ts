@@ -25,11 +25,14 @@ import {
   createKbUrlResource,
   deleteKb,
   deleteKbResource,
+  deleteKbResources,
   detachKbFromChatbot,
   getKb,
   getKbChatbotBindings,
   getKbResourceIngestionRuns,
+  getKbResourcesConnection,
   getUserKbs,
+  getUserKbsConnection,
   ingestKbResource,
   requestKbFileUpload,
 } from '../src/services/knowledge.js'
@@ -786,6 +789,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         type: KBResourceType.URL,
         title: `Resource ${index}`,
         sourceUrl: `https://example.com/resource-${index}`,
+        sizeBytes: 1,
       })),
     })
 
@@ -832,6 +836,7 @@ describe('Integration tests for knowledge base CRUD', () => {
       type: KBResourceType.URL,
       title: `Resource ${index}`,
       sourceUrl: `https://example.com/resource-${index}`,
+      sizeBytes: 1,
       ...(index === 0
         ? { deletedAt: new Date(), deletedById: userOneCtx.user.sub }
         : {}),
@@ -857,6 +862,32 @@ describe('Integration tests for knowledge base CRUD', () => {
     })
     await expect(request()).resolves.toMatchObject({
       blobName: expect.stringMatching(/\.pdf$/),
+    })
+  })
+
+  it('conservatively reserves 25 MiB for retained resources with unknown size', async () => {
+    const created = await createKb({ name: 'Legacy URLs' }, userOneCtx)
+    await prisma.kBResource.createMany({
+      data: Array.from({ length: 20 }, (_, index) => ({
+        kbId: created.id,
+        type: KBResourceType.URL,
+        title: `Legacy URL ${index}`,
+        sourceUrl: `https://example.com/legacy-${index}`,
+      })),
+    })
+
+    await expect(
+      requestKbFileUpload(
+        {
+          kbId: created.id,
+          fileName: 'notes.pdf',
+          contentType: 'application/pdf',
+          sizeBytes: 1,
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_STORAGE_LIMIT_REACHED' },
     })
   })
 
@@ -978,6 +1009,11 @@ describe('Integration tests for knowledge base CRUD', () => {
 
     const first = await confirmKbFileUpload(args, userOneCtx)
     const second = await confirmKbFileUpload(args, userOneCtx)
+    await expect(
+      confirmKbFileUpload({ ...args, title: 'Changed title' }, userOneCtx)
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_UPLOAD_TICKET_MISMATCH' },
+    })
 
     expect(first.id).toBe(ticket.blobName.slice(0, -4))
     expect(second.id).toBe(first.id)
@@ -988,6 +1024,41 @@ describe('Integration tests for knowledge base CRUD', () => {
     ).resolves.toBe(1)
     await expect(
       prisma.kBUploadTicket.findUnique({ where: { id: first.id } })
+    ).resolves.toBeNull()
+  })
+
+  it('safely converts a legacy zero-size upload ticket under the KB quota lock', async () => {
+    const created = await createKb({ name: 'Legacy upload' }, userOneCtx)
+    const blobId = randomUUID()
+    const blobName = `${blobId}.pdf`
+    await prisma.kBUploadTicket.create({
+      data: {
+        id: blobId,
+        kbId: created.id,
+        blobName,
+        sizeBytes: 0,
+        expiresAt: new Date(Date.now() + 60_000),
+      },
+    })
+
+    await expect(
+      confirmKbFileUpload(
+        {
+          kbId: created.id,
+          blobName,
+          title: 'Legacy notes',
+          originalFilename: 'notes.pdf',
+          mimeType: 'application/pdf',
+          sizeBytes: 1024,
+        },
+        userOneCtx
+      )
+    ).resolves.toMatchObject({
+      id: blobId,
+      sizeBytes: 1024,
+    })
+    await expect(
+      prisma.kBUploadTicket.findUnique({ where: { id: blobId } })
     ).resolves.toBeNull()
   })
 
@@ -1543,5 +1614,311 @@ describe('Integration tests for knowledge base CRUD', () => {
     await expect(
       prisma.kBResource.findUnique({ where: { id: resource.id } })
     ).resolves.toMatchObject({ deletedAt: expect.any(Date) })
+  })
+
+  it('paginates owned knowledge bases with tied timestamps and filter-bound cursors', async () => {
+    const timestamp = new Date('2026-07-28T12:00:00.000Z')
+    const ids = Array.from({ length: 4 }, () => randomUUID())
+      .sort()
+      .reverse()
+    await prisma.kB.createMany({
+      data: ids.map((id, index) => ({
+        id,
+        ownerId: userOneCtx.user.sub,
+        name: index === 0 ? 'Finance handbook' : `Course notes ${index}`,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      })),
+    })
+    await createKb({ name: 'Other owner' }, userTwoCtx)
+
+    const firstPage = await getUserKbsConnection({ first: 2 }, userOneCtx)
+    expect(firstPage.items.map(({ id }) => id)).toEqual(ids.slice(0, 2))
+    expect(firstPage).toMatchObject({
+      totalCount: 4,
+      pageInfo: { hasNextPage: true },
+    })
+    expect(firstPage.pageInfo.endCursor).toBeTruthy()
+
+    const secondPage = await getUserKbsConnection(
+      { first: 2, after: firstPage.pageInfo.endCursor },
+      userOneCtx
+    )
+    expect(secondPage.items.map(({ id }) => id)).toEqual(ids.slice(2))
+    expect(secondPage).toMatchObject({
+      totalCount: 4,
+      pageInfo: { hasNextPage: false },
+    })
+    await expect(
+      getUserKbsConnection(
+        {
+          first: 2,
+          after: firstPage.pageInfo.endCursor,
+          search: 'finance',
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+    await expect(
+      getUserKbsConnection(
+        { first: 2, after: firstPage.pageInfo.endCursor },
+        userTwoCtx
+      )
+    ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+    await expect(
+      getUserKbsConnection({ after: 'not+a+cursor' }, userOneCtx)
+    ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+
+    const searchResult = await getUserKbsConnection(
+      { search: '  FINANCE  ' },
+      userOneCtx
+    )
+    expect(searchResult.items.map(({ name }) => name)).toEqual([
+      'Finance handbook',
+    ])
+    expect(searchResult.totalCount).toBe(1)
+  })
+
+  it('keeps resource pagination stable across status updates and hides tombstones', async () => {
+    const kb = await createKb({ name: 'Scale test' }, userOneCtx)
+    const timestamp = new Date('2026-07-28T13:00:00.000Z')
+    const ids = Array.from({ length: 5 }, () => randomUUID())
+      .sort()
+      .reverse()
+    await prisma.kBResource.createMany({
+      data: ids.map((id, index) => ({
+        id,
+        kbId: kb.id,
+        type: index % 2 === 0 ? KBResourceType.URL : KBResourceType.BLOB,
+        title: index === 0 ? 'Finance syllabus' : `Resource ${index}`,
+        sourceUrl:
+          index % 2 === 0 ? `https://example.com/resource-${index}` : null,
+        originalFilename: index % 2 === 1 ? `resource-${index}.pdf` : null,
+        mimeType: index % 2 === 1 ? 'application/pdf' : null,
+        sizeBytes: index % 2 === 1 ? 100 + index : null,
+        blobName: index % 2 === 1 ? `${id}.pdf` : null,
+        blobHref:
+          index % 2 === 1
+            ? `https://kbtestaccount.blob.core.windows.net/container/${id}.pdf`
+            : null,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      })),
+    })
+    await prisma.kBResource.update({
+      where: { id: ids[4] },
+      data: {
+        deletedAt: new Date(),
+        deletedById: userOneCtx.user.sub,
+      },
+    })
+
+    const firstPage = await getKbResourcesConnection(
+      { kbId: kb.id, first: 2 },
+      userOneCtx
+    )
+    expect(firstPage.items.map(({ id }) => id)).toEqual(ids.slice(0, 2))
+    expect(firstPage.totalCount).toBe(4)
+
+    await prisma.kBResource.update({
+      where: { id: ids[0] },
+      data: { status: KBResourceStatus.PROCESSING },
+    })
+    const secondPage = await getKbResourcesConnection(
+      {
+        kbId: kb.id,
+        first: 2,
+        after: firstPage.pageInfo.endCursor,
+      },
+      userOneCtx
+    )
+    expect(secondPage.items.map(({ id }) => id)).toEqual(ids.slice(2, 4))
+    expect(
+      new Set([
+        ...firstPage.items.map(({ id }) => id),
+        ...secondPage.items.map(({ id }) => id),
+      ]).size
+    ).toBe(4)
+    expect(secondPage.pageInfo.hasNextPage).toBe(false)
+
+    await expect(
+      getKbResourcesConnection(
+        {
+          kbId: kb.id,
+          after: firstPage.pageInfo.endCursor,
+          type: KBResourceType.BLOB,
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+    await expect(
+      getKbResourcesConnection(
+        { kbId: kb.id, after: firstPage.pageInfo.endCursor },
+        userTwoCtx
+      )
+    ).rejects.toThrow('KB not found')
+
+    const filtered = await getKbResourcesConnection(
+      {
+        kbId: kb.id,
+        search: 'finance',
+        type: KBResourceType.URL,
+        status: KBResourceStatus.PROCESSING,
+      },
+      userOneCtx
+    )
+    expect(filtered.items.map(({ id }) => id)).toEqual([ids[0]])
+    expect(filtered.totalCount).toBe(1)
+  })
+
+  it('returns exact visible, retained, reserved, cleanup, and limit metrics', async () => {
+    const kb = await createKb({ name: 'Metrics test' }, userOneCtx)
+    await prisma.kBResource.createMany({
+      data: [
+        {
+          kbId: kb.id,
+          type: KBResourceType.BLOB,
+          title: 'Visible file',
+          sizeBytes: 100,
+        },
+        {
+          kbId: kb.id,
+          type: KBResourceType.URL,
+          title: 'Visible URL',
+        },
+        {
+          kbId: kb.id,
+          type: KBResourceType.BLOB,
+          title: 'Pending cleanup',
+          sizeBytes: 50,
+          deletedAt: new Date(),
+          deletedById: userOneCtx.user.sub,
+        },
+      ],
+    })
+    await prisma.kBUploadTicket.create({
+      data: {
+        id: randomUUID(),
+        kbId: kb.id,
+        blobName: `${randomUUID()}.pdf`,
+        sizeBytes: 25,
+        expiresAt: new Date(Date.now() + 60_000),
+      },
+    })
+
+    const result = await getKb({ id: kb.id }, userOneCtx)
+    expect(result.metrics).toEqual({
+      visibleResourceCount: 2,
+      visibleSizeBytes: 100,
+      unknownSizeResourceCount: 1,
+      quotaResourceCount: 4,
+      quotaSizeBytes: 25 * 1024 * 1024 + 175,
+      resourceLimit: MAX_KB_RESOURCE_COUNT,
+      storageLimitBytes: MAX_KB_TOTAL_SIZE_BYTES,
+      pendingCleanupCount: 1,
+      pendingCleanupSizeBytes: 50,
+      reservedResourceCount: 1,
+      reservedSizeBytes: 25,
+      linkedConsumerCount: 0,
+    })
+  })
+
+  it('bulk deletes a bounded selection with one independently queued attempt per resource', async () => {
+    const kb = await createKb({ name: 'Bulk delete' }, userOneCtx)
+    const resources = await Promise.all(
+      ['First', 'Second'].map((title) =>
+        createKbUrlResource(
+          {
+            kbId: kb.id,
+            title,
+            url: `https://example.com/${title.toLowerCase()}`,
+          },
+          userOneCtx
+        )
+      )
+    )
+    const runNoWait = vi
+      .spyOn(userOneCtx.tasks.deleteKBResource, 'runNoWait')
+      .mockRejectedValueOnce(new Error('queue unavailable'))
+      .mockResolvedValueOnce({} as never)
+
+    const deleted = await deleteKbResources(
+      { kbId: kb.id, ids: resources.map(({ id }) => id).reverse() },
+      userOneCtx
+    )
+
+    expect(deleted).toHaveLength(2)
+    expect(runNoWait).toHaveBeenCalledTimes(2)
+    const persisted = await prisma.kBResource.findMany({
+      where: { id: { in: resources.map(({ id }) => id) } },
+      orderBy: { id: 'asc' },
+    })
+    expect(persisted.every(({ deletedAt }) => deletedAt !== null)).toBe(true)
+    expect(
+      persisted.filter(({ errorCode }) => errorCode === 'DELETION_QUEUE_FAILED')
+    ).toHaveLength(1)
+    expect(
+      await prisma.kBIngestionRun.count({
+        where: {
+          resourceId: { in: resources.map(({ id }) => id) },
+          operation: KBIngestionOperation.DELETE,
+        },
+      })
+    ).toBe(2)
+  })
+
+  it('rejects an invalid or unsafe bulk deletion atomically', async () => {
+    const kb = await createKb({ name: 'Bulk guards' }, userOneCtx)
+    const foreignKb = await createKb({ name: 'Foreign' }, userTwoCtx)
+    const safe = await createKbUrlResource(
+      {
+        kbId: kb.id,
+        title: 'Safe',
+        url: 'https://example.com/safe',
+      },
+      userOneCtx
+    )
+    const active = await createKbUrlResource(
+      {
+        kbId: kb.id,
+        title: 'Active',
+        url: 'https://example.com/active',
+      },
+      userOneCtx
+    )
+    await prisma.kBResource.update({
+      where: { id: active.id },
+      data: { status: KBResourceStatus.PROCESSING },
+    })
+    const foreign = await createKbUrlResource(
+      {
+        kbId: foreignKb.id,
+        title: 'Foreign',
+        url: 'https://example.com/foreign',
+      },
+      userTwoCtx
+    )
+
+    await expect(
+      deleteKbResources({ kbId: kb.id, ids: [safe.id, active.id] }, userOneCtx)
+    ).rejects.toMatchObject({ extensions: { code: 'KB_RESOURCE_ACTIVE' } })
+    await expect(
+      deleteKbResources({ kbId: kb.id, ids: [safe.id, foreign.id] }, userOneCtx)
+    ).rejects.toThrow('KB resource not found')
+    await expect(
+      deleteKbResources({ kbId: kb.id, ids: [safe.id, safe.id] }, userOneCtx)
+    ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+    await expect(
+      deleteKbResources(
+        {
+          kbId: kb.id,
+          ids: Array.from({ length: 51 }, () => randomUUID()),
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+    await expect(
+      prisma.kBResource.findUnique({ where: { id: safe.id } })
+    ).resolves.toMatchObject({ deletedAt: null })
   })
 })

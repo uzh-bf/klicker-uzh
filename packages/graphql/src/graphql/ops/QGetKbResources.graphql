@@ -1,0 +1,43 @@
+query GetKbResources(
+  $kbId: ID!
+  $first: Int
+  $after: String
+  $search: String
+  $type: KBResourceType
+  $status: KBResourceStatus
+) {
+  getKbResources(
+    kbId: $kbId
+    first: $first
+    after: $after
+    search: $search
+    type: $type
+    status: $status
+  ) {
+    items {
+      id
+      type
+      title
+      sourceUrl
+      originalFilename
+      mimeType
+      sizeBytes
+      status
+      ingestedAt
+      resourceVersion
+      activeResourceVersion
+      latestIngestionRun {
+        id
+        status
+        errorCode
+      }
+      createdAt
+      updatedAt
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    totalCount
+  }
+}

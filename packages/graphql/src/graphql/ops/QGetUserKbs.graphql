@@ -1,7 +1,19 @@
-query GetUserKbs {
-  getUserKbs {
-    id
-    name
-    description
+query GetUserKbs($first: Int, $after: String, $search: String) {
+  getUserKbsConnection(first: $first, after: $after, search: $search) {
+    items {
+      id
+      name
+      description
+      metrics {
+        visibleResourceCount
+        visibleSizeBytes
+        linkedConsumerCount
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    totalCount
   }
 }

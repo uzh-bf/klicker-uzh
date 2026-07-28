@@ -11,22 +11,166 @@ import type {
 } from '@klicker-uzh/types'
 import {
   MAX_KB_RESOURCE_COUNT,
+  MAX_KB_SOURCE_SIZE_BYTES,
   MAX_KB_TOTAL_SIZE_BYTES,
 } from '@klicker-uzh/types'
 import { normalizePublicHttpUrl } from '@klicker-uzh/util/public-url'
-import { randomUUID } from 'crypto'
+import { createHash, randomUUID } from 'crypto'
 import { GraphQLError } from 'graphql'
 import { validate as validateUuid } from 'uuid'
 import type { ContextWithUser } from '../lib/context.js'
 
-const MAX_KB_FILE_SIZE_BYTES = 25 * 1024 * 1024
+const MAX_KB_FILE_SIZE_BYTES = MAX_KB_SOURCE_SIZE_BYTES
 const KB_DELETE_QUEUE_CONCURRENCY = 8
+const KB_DEFAULT_PAGE_SIZE = 20
+const KB_MAX_PAGE_SIZE = 50
+const KB_BULK_DELETE_LIMIT = 50
+const KB_CURSOR_VERSION = 1
 const KB_MCP_SERVER_NAME = 'KB'
 const KB_MCP_CHAT_MODES = ['tutor', 'explainer'] as const
 const KB_FILE_TYPES: Record<string, readonly string[]> = {
   pdf: ['application/pdf'],
   txt: ['text/plain'],
   md: ['text/plain'],
+}
+
+type KBPaginationKind = 'knowledge-bases' | 'resources'
+
+interface KBPaginationCursor {
+  version: number
+  kind: KBPaginationKind
+  filterHash: string
+  timestamp: string
+  id: string
+}
+
+export interface KBPageInfo {
+  hasNextPage: boolean
+  endCursor: string | null
+}
+
+export interface KBMetrics {
+  visibleResourceCount: number
+  visibleSizeBytes: number
+  unknownSizeResourceCount: number
+  quotaResourceCount: number
+  quotaSizeBytes: number
+  resourceLimit: number
+  storageLimitBytes: number
+  pendingCleanupCount: number
+  pendingCleanupSizeBytes: number
+  reservedResourceCount: number
+  reservedSizeBytes: number
+  linkedConsumerCount: number
+}
+
+export interface KBWithMetrics extends DB.KB {
+  resources?: Array<DB.KBResource & { ingestionRuns?: DB.KBIngestionRun[] }>
+  metrics: KBMetrics
+}
+
+export interface KBConnection {
+  items: KBWithMetrics[]
+  pageInfo: KBPageInfo
+  totalCount: number
+}
+
+export interface KBResourceConnection {
+  items: Array<DB.KBResource & { ingestionRuns: DB.KBIngestionRun[] }>
+  pageInfo: KBPageInfo
+  totalCount: number
+}
+
+function invalidPaginationInput(message: string): never {
+  throw new GraphQLError(message, {
+    extensions: { code: 'BAD_USER_INPUT' },
+  })
+}
+
+function normalizePageSize(first: number | null | undefined) {
+  const pageSize = first ?? KB_DEFAULT_PAGE_SIZE
+  if (
+    !Number.isSafeInteger(pageSize) ||
+    pageSize < 1 ||
+    pageSize > KB_MAX_PAGE_SIZE
+  ) {
+    invalidPaginationInput('KB page size is invalid')
+  }
+  return pageSize
+}
+
+function normalizeSearch(search: string | null | undefined) {
+  const normalized = search?.trim().replace(/\s+/g, ' ') ?? ''
+  if (normalized.length > 200) {
+    invalidPaginationInput('KB search is too long')
+  }
+  return normalized
+}
+
+function getFilterHash(filters: Record<string, string | null>) {
+  return createHash('sha256')
+    .update(JSON.stringify(filters))
+    .digest('base64url')
+}
+
+function encodePaginationCursor(cursor: KBPaginationCursor) {
+  return Buffer.from(JSON.stringify(cursor)).toString('base64url')
+}
+
+function decodePaginationCursor(
+  value: string | null | undefined,
+  expectedKind: KBPaginationKind,
+  expectedFilterHash: string
+) {
+  if (!value) return null
+  if (value.length > 2048 || !/^[A-Za-z0-9_-]+$/.test(value)) {
+    invalidPaginationInput('KB pagination cursor is invalid')
+  }
+
+  try {
+    const parsed = JSON.parse(
+      Buffer.from(value, 'base64url').toString('utf8')
+    ) as Partial<KBPaginationCursor>
+    const timestamp = new Date(parsed.timestamp ?? '')
+    if (
+      parsed.version !== KB_CURSOR_VERSION ||
+      parsed.kind !== expectedKind ||
+      parsed.filterHash !== expectedFilterHash ||
+      !validateUuid(parsed.id ?? '') ||
+      Number.isNaN(timestamp.getTime()) ||
+      timestamp.toISOString() !== parsed.timestamp
+    ) {
+      invalidPaginationInput('KB pagination cursor is invalid')
+    }
+    return {
+      timestamp,
+      id: parsed.id!,
+    }
+  } catch (error) {
+    if (error instanceof GraphQLError) throw error
+    invalidPaginationInput('KB pagination cursor is invalid')
+  }
+}
+
+function createPaginationResult<T extends { id: string }>(
+  items: T[],
+  pageSize: number,
+  cursorForItem: (item: T) => KBPaginationCursor,
+  totalCount: number
+) {
+  const hasNextPage = items.length > pageSize
+  const pageItems = hasNextPage ? items.slice(0, pageSize) : items
+  const lastItem = pageItems.at(-1)
+  return {
+    items: pageItems,
+    pageInfo: {
+      hasNextPage,
+      endCursor: lastItem
+        ? encodePaginationCursor(cursorForItem(lastItem))
+        : null,
+    },
+    totalCount,
+  }
 }
 
 function getKbContainerName(userId: string) {
@@ -94,11 +238,14 @@ async function getKbQuotaUsage(
   prisma: DB.Prisma.TransactionClient,
   kbId: string
 ) {
-  const [resources, uploadTickets] = await Promise.all([
+  const [resources, unknownSizeResources, uploadTickets] = await Promise.all([
     prisma.kBResource.aggregate({
       where: { kbId },
       _count: { _all: true },
       _sum: { sizeBytes: true },
+    }),
+    prisma.kBResource.count({
+      where: { kbId, sizeBytes: null },
     }),
     prisma.kBUploadTicket.aggregate({
       where: { kbId },
@@ -110,7 +257,9 @@ async function getKbQuotaUsage(
   return {
     resourceCount: resources._count._all + uploadTickets._count._all,
     sizeBytes:
-      (resources._sum.sizeBytes ?? 0) + (uploadTickets._sum.sizeBytes ?? 0),
+      (resources._sum.sizeBytes ?? 0) +
+      unknownSizeResources * MAX_KB_FILE_SIZE_BYTES +
+      (uploadTickets._sum.sizeBytes ?? 0),
   }
 }
 
@@ -201,6 +350,24 @@ async function lockOwnedKbResourceOrThrow(
   }
 }
 
+async function lockKbResourceInKbOrThrow(
+  prisma: DB.Prisma.TransactionClient,
+  kbId: string,
+  resourceId: string
+) {
+  const lockedResource = await prisma.$queryRaw<Array<{ id: string }>>`
+    SELECT "id"
+    FROM "public"."KBResource"
+    WHERE "id" = CAST(${resourceId} AS UUID)
+      AND "kbId" = CAST(${kbId} AS UUID)
+      AND "deletedAt" IS NULL
+    FOR UPDATE
+  `
+  if (lockedResource.length === 0) {
+    throw new GraphQLError('KB resource not found')
+  }
+}
+
 async function lockOwnedKbForResourceOrThrow(
   prisma: DB.Prisma.TransactionClient,
   resourceId: string,
@@ -267,23 +434,342 @@ export async function getUserKbs(ctx: ContextWithUser) {
   })
 }
 
+function createKbMetrics({
+  visibleResourceCount = 0,
+  visibleSizeBytes = 0,
+  visibleUnknownSizeCount = 0,
+  retainedResourceCount = 0,
+  retainedSizeBytes = 0,
+  retainedUnknownSizeCount = 0,
+  reservedResourceCount = 0,
+  reservedSizeBytes = 0,
+  linkedConsumerCount = 0,
+}: Partial<{
+  visibleResourceCount: number
+  visibleSizeBytes: number
+  visibleUnknownSizeCount: number
+  retainedResourceCount: number
+  retainedSizeBytes: number
+  retainedUnknownSizeCount: number
+  reservedResourceCount: number
+  reservedSizeBytes: number
+  linkedConsumerCount: number
+}> = {}): KBMetrics {
+  const quotaRetainedSizeBytes =
+    retainedSizeBytes + retainedUnknownSizeCount * MAX_KB_FILE_SIZE_BYTES
+  const quotaVisibleSizeBytes =
+    visibleSizeBytes + visibleUnknownSizeCount * MAX_KB_FILE_SIZE_BYTES
+
+  return {
+    visibleResourceCount,
+    visibleSizeBytes,
+    unknownSizeResourceCount: visibleUnknownSizeCount,
+    quotaResourceCount: retainedResourceCount + reservedResourceCount,
+    quotaSizeBytes: quotaRetainedSizeBytes + reservedSizeBytes,
+    resourceLimit: MAX_KB_RESOURCE_COUNT,
+    storageLimitBytes: MAX_KB_TOTAL_SIZE_BYTES,
+    pendingCleanupCount: retainedResourceCount - visibleResourceCount,
+    pendingCleanupSizeBytes: quotaRetainedSizeBytes - quotaVisibleSizeBytes,
+    reservedResourceCount,
+    reservedSizeBytes,
+    linkedConsumerCount,
+  }
+}
+
+async function getKbMetricsMap(
+  prisma: DB.Prisma.TransactionClient | ContextWithUser['prisma'],
+  kbIds: string[]
+) {
+  if (kbIds.length === 0) return new Map<string, KBMetrics>()
+
+  const [
+    visibleResources,
+    visibleUnknownSizes,
+    retainedResources,
+    retainedUnknownSizes,
+    uploadTickets,
+    linkedConsumers,
+  ] = await Promise.all([
+    prisma.kBResource.groupBy({
+      by: ['kbId'],
+      where: { kbId: { in: kbIds }, deletedAt: null },
+      _count: { _all: true },
+      _sum: { sizeBytes: true },
+    }),
+    prisma.kBResource.groupBy({
+      by: ['kbId'],
+      where: { kbId: { in: kbIds }, deletedAt: null, sizeBytes: null },
+      _count: { _all: true },
+    }),
+    prisma.kBResource.groupBy({
+      by: ['kbId'],
+      where: { kbId: { in: kbIds } },
+      _count: { _all: true },
+      _sum: { sizeBytes: true },
+    }),
+    prisma.kBResource.groupBy({
+      by: ['kbId'],
+      where: { kbId: { in: kbIds }, sizeBytes: null },
+      _count: { _all: true },
+    }),
+    prisma.kBUploadTicket.groupBy({
+      by: ['kbId'],
+      where: { kbId: { in: kbIds } },
+      _count: { _all: true },
+      _sum: { sizeBytes: true },
+    }),
+    prisma.kBChatbot.groupBy({
+      by: ['kbId'],
+      where: { kbId: { in: kbIds }, isEnabled: true },
+      _count: { _all: true },
+    }),
+  ])
+
+  const visibleByKb = new Map(visibleResources.map((row) => [row.kbId, row]))
+  const visibleUnknownByKb = new Map(
+    visibleUnknownSizes.map((row) => [row.kbId, row._count._all])
+  )
+  const retainedByKb = new Map(retainedResources.map((row) => [row.kbId, row]))
+  const retainedUnknownByKb = new Map(
+    retainedUnknownSizes.map((row) => [row.kbId, row._count._all])
+  )
+  const ticketsByKb = new Map(uploadTickets.map((row) => [row.kbId, row]))
+  const consumersByKb = new Map(
+    linkedConsumers.map((row) => [row.kbId, row._count._all])
+  )
+
+  return new Map(
+    kbIds.map((kbId) => {
+      const visible = visibleByKb.get(kbId)
+      const retained = retainedByKb.get(kbId)
+      const tickets = ticketsByKb.get(kbId)
+      return [
+        kbId,
+        createKbMetrics({
+          visibleResourceCount: visible?._count._all,
+          visibleSizeBytes: visible?._sum.sizeBytes ?? 0,
+          visibleUnknownSizeCount: visibleUnknownByKb.get(kbId),
+          retainedResourceCount: retained?._count._all,
+          retainedSizeBytes: retained?._sum.sizeBytes ?? 0,
+          retainedUnknownSizeCount: retainedUnknownByKb.get(kbId),
+          reservedResourceCount: tickets?._count._all,
+          reservedSizeBytes: tickets?._sum.sizeBytes ?? 0,
+          linkedConsumerCount: consumersByKb.get(kbId),
+        }),
+      ]
+    })
+  )
+}
+
+async function getKbMetrics(
+  prisma: DB.Prisma.TransactionClient | ContextWithUser['prisma'],
+  kbId: string
+): Promise<KBMetrics> {
+  const metrics = await getKbMetricsMap(prisma, [kbId])
+  return metrics.get(kbId) ?? createKbMetrics()
+}
+
+export async function getUserKbsConnection(
+  {
+    first,
+    after,
+    search,
+  }: {
+    first?: number | null
+    after?: string | null
+    search?: string | null
+  },
+  ctx: ContextWithUser
+): Promise<KBConnection> {
+  const pageSize = normalizePageSize(first)
+  const normalizedSearch = normalizeSearch(search)
+  const filterHash = getFilterHash({
+    ownerId: ctx.user.sub,
+    search: normalizedSearch,
+  })
+  const cursor = decodePaginationCursor(after, 'knowledge-bases', filterHash)
+  const searchWhere: DB.Prisma.KBWhereInput = normalizedSearch
+    ? {
+        OR: [
+          { name: { contains: normalizedSearch, mode: 'insensitive' } },
+          {
+            description: {
+              contains: normalizedSearch,
+              mode: 'insensitive',
+            },
+          },
+        ],
+      }
+    : {}
+  const where: DB.Prisma.KBWhereInput = {
+    ownerId: ctx.user.sub,
+    deletedAt: null,
+    ...searchWhere,
+    ...(cursor
+      ? {
+          AND: [
+            searchWhere,
+            {
+              OR: [
+                { updatedAt: { lt: cursor.timestamp } },
+                {
+                  updatedAt: cursor.timestamp,
+                  id: { lt: cursor.id },
+                },
+              ],
+            },
+          ],
+        }
+      : {}),
+  }
+
+  const [items, totalCount] = await Promise.all([
+    ctx.prisma.kB.findMany({
+      where,
+      orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+      take: pageSize + 1,
+    }),
+    ctx.prisma.kB.count({
+      where: {
+        ownerId: ctx.user.sub,
+        deletedAt: null,
+        ...searchWhere,
+      },
+    }),
+  ])
+  const metrics = await getKbMetricsMap(
+    ctx.prisma,
+    items.map(({ id }) => id)
+  )
+  const itemsWithMetrics = items.map((kb) => ({
+    ...kb,
+    resources: [],
+    metrics: metrics.get(kb.id) ?? createKbMetrics(),
+  }))
+
+  return createPaginationResult(
+    itemsWithMetrics,
+    pageSize,
+    (kb) => ({
+      version: KB_CURSOR_VERSION,
+      kind: 'knowledge-bases',
+      filterHash,
+      timestamp: kb.updatedAt.toISOString(),
+      id: kb.id,
+    }),
+    totalCount
+  )
+}
+
 export async function getKb({ id }: { id: string }, ctx: ContextWithUser) {
   const kb = await ctx.prisma.kB.findFirst({
     where: { id, ownerId: ctx.user.sub, deletedAt: null },
-    include: {
-      resources: {
-        where: { deletedAt: null },
-        orderBy: { updatedAt: 'desc' },
-        include: {
-          ingestionRuns: { orderBy: { createdAt: 'desc' }, take: 1 },
-        },
-      },
-    },
   })
   if (!kb) {
     throw new GraphQLError('KB not found')
   }
-  return kb
+  return {
+    ...kb,
+    resources: [],
+    metrics: await getKbMetrics(ctx.prisma, kb.id),
+  } satisfies KBWithMetrics
+}
+
+export async function getKbResourcesConnection(
+  {
+    kbId,
+    first,
+    after,
+    search,
+    type,
+    status,
+  }: {
+    kbId: string
+    first?: number | null
+    after?: string | null
+    search?: string | null
+    type?: DB.KBResourceType | null
+    status?: DB.KBResourceStatus | null
+  },
+  ctx: ContextWithUser
+): Promise<KBResourceConnection> {
+  await getOwnedKbOrThrow(ctx, kbId)
+  const pageSize = normalizePageSize(first)
+  const normalizedSearch = normalizeSearch(search)
+  const filterHash = getFilterHash({
+    kbId,
+    search: normalizedSearch,
+    type: type ?? null,
+    status: status ?? null,
+  })
+  const cursor = decodePaginationCursor(after, 'resources', filterHash)
+  const searchWhere: DB.Prisma.KBResourceWhereInput = normalizedSearch
+    ? {
+        OR: [
+          { title: { contains: normalizedSearch, mode: 'insensitive' } },
+          {
+            originalFilename: {
+              contains: normalizedSearch,
+              mode: 'insensitive',
+            },
+          },
+          {
+            sourceUrl: {
+              contains: normalizedSearch,
+              mode: 'insensitive',
+            },
+          },
+        ],
+      }
+    : {}
+  const baseWhere: DB.Prisma.KBResourceWhereInput = {
+    kbId,
+    deletedAt: null,
+    ...(type ? { type } : {}),
+    ...(status ? { status } : {}),
+    ...searchWhere,
+  }
+  const where: DB.Prisma.KBResourceWhereInput = cursor
+    ? {
+        AND: [
+          baseWhere,
+          {
+            OR: [
+              { createdAt: { lt: cursor.timestamp } },
+              {
+                createdAt: cursor.timestamp,
+                id: { lt: cursor.id },
+              },
+            ],
+          },
+        ],
+      }
+    : baseWhere
+
+  const [items, totalCount] = await Promise.all([
+    ctx.prisma.kBResource.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      include: {
+        ingestionRuns: { orderBy: { createdAt: 'desc' }, take: 1 },
+      },
+      take: pageSize + 1,
+    }),
+    ctx.prisma.kBResource.count({ where: baseWhere }),
+  ])
+
+  return createPaginationResult(
+    items,
+    pageSize,
+    (resource) => ({
+      version: KB_CURSOR_VERSION,
+      kind: 'resources',
+      filterHash,
+      timestamp: resource.createdAt.toISOString(),
+      id: resource.id,
+    }),
+    totalCount
+  )
 }
 
 export async function getKbChatbotBindings(
@@ -714,6 +1200,43 @@ export async function requestKbFileUpload(
   }
 }
 
+function assertMatchingConfirmedBlob(
+  resource: DB.KBResource,
+  {
+    kbId,
+    blobName,
+    title,
+    originalFilename,
+    mimeType,
+    sizeBytes,
+  }: {
+    kbId: string
+    blobName: string
+    title: string
+    originalFilename: string
+    mimeType: string
+    sizeBytes: number
+  }
+) {
+  if (
+    resource.kbId !== kbId ||
+    resource.type !== DB.KBResourceType.BLOB ||
+    resource.blobName !== blobName
+  ) {
+    throw new GraphQLError('KB blob name is invalid')
+  }
+  if (
+    resource.title !== title ||
+    resource.originalFilename !== originalFilename ||
+    resource.mimeType !== mimeType ||
+    resource.sizeBytes !== sizeBytes
+  ) {
+    throw new GraphQLError('KB upload ticket is invalid', {
+      extensions: { code: 'KB_UPLOAD_TICKET_MISMATCH' },
+    })
+  }
+}
+
 export async function confirmKbFileUpload(
   {
     kbId,
@@ -760,14 +1283,15 @@ export async function confirmKbFileUpload(
     })
   })
   if (existingResource) {
-    if (
-      existingResource.kbId === kbId &&
-      existingResource.type === DB.KBResourceType.BLOB &&
-      existingResource.blobName === blobName
-    ) {
-      return existingResource
-    }
-    throw new GraphQLError('KB blob name is invalid')
+    assertMatchingConfirmedBlob(existingResource, {
+      kbId,
+      blobName,
+      title: normalizedTitle,
+      originalFilename,
+      mimeType: validated.contentType,
+      sizeBytes,
+    })
+    return existingResource
   }
 
   const { containerClient } = getKbBlobContainer(ctx.user.sub)
@@ -791,14 +1315,15 @@ export async function confirmKbFileUpload(
       where: { id: blobId, deletedAt: null },
     })
     if (racedResource) {
-      if (
-        racedResource.kbId === kbId &&
-        racedResource.type === DB.KBResourceType.BLOB &&
-        racedResource.blobName === blobName
-      ) {
-        return racedResource
-      }
-      throw new GraphQLError('KB blob name is invalid')
+      assertMatchingConfirmedBlob(racedResource, {
+        kbId,
+        blobName,
+        title: normalizedTitle,
+        originalFilename,
+        mimeType: validated.contentType,
+        sizeBytes,
+      })
+      return racedResource
     }
 
     const ticket = await prisma.kBUploadTicket.findFirst({
@@ -806,15 +1331,17 @@ export async function confirmKbFileUpload(
         id: blobId,
         kbId,
         blobName,
-        sizeBytes,
         expiresAt: { gt: new Date() },
       },
-      select: { id: true },
+      select: { id: true, sizeBytes: true },
     })
-    if (!ticket) {
+    if (!ticket || (ticket.sizeBytes !== 0 && ticket.sizeBytes !== sizeBytes)) {
       throw new GraphQLError('KB upload ticket is invalid', {
         extensions: { code: 'KB_UPLOAD_TICKET_MISMATCH' },
       })
+    }
+    if (ticket.sizeBytes === 0) {
+      await assertKbQuotaAvailable(prisma, { kbId, sizeBytes })
     }
 
     const resource = await prisma.kBResource.create({
@@ -929,6 +1456,105 @@ export async function deleteKbResource(
   )
   await queueKbDeletions([deletionInput], ctx)
   return resource
+}
+
+export async function deleteKbResources(
+  { kbId, ids }: { kbId: string; ids: string[] },
+  ctx: ContextWithUser
+) {
+  if (
+    ids.length === 0 ||
+    ids.length > KB_BULK_DELETE_LIMIT ||
+    new Set(ids).size !== ids.length ||
+    ids.some((id) => !validateUuid(id))
+  ) {
+    invalidPaginationInput('KB bulk deletion selection is invalid')
+  }
+  const sortedIds = [...ids].sort()
+
+  const { resources, deletionInputs } = await ctx.prisma.$transaction(
+    async (prisma) => {
+      await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
+      for (const resourceId of sortedIds) {
+        await lockKbResourceInKbOrThrow(prisma, kbId, resourceId)
+      }
+
+      const resourceRows = await prisma.kBResource.findMany({
+        where: {
+          id: { in: sortedIds },
+          kbId,
+          deletedAt: null,
+        },
+      })
+      if (resourceRows.length !== sortedIds.length) {
+        throw new GraphQLError('KB resource not found')
+      }
+      if (
+        resourceRows.some(
+          ({ status }) =>
+            status === DB.KBResourceStatus.QUEUED ||
+            status === DB.KBResourceStatus.PROCESSING
+        )
+      ) {
+        throw new GraphQLError('KB resources cannot be deleted', {
+          extensions: { code: 'KB_RESOURCE_ACTIVE' },
+        })
+      }
+      if (
+        resourceRows.some(
+          ({ resourceVersion }) => resourceVersion >= 2_147_483_647
+        )
+      ) {
+        throw new GraphQLError('KB resource version limit reached')
+      }
+
+      const byId = new Map(
+        resourceRows.map((resource) => [resource.id, resource])
+      )
+      const orderedResources = sortedIds.map((id) => byId.get(id)!)
+      const deletedAt = new Date()
+      const deletionInputs = orderedResources.map((resource) => ({
+        resourceId: resource.id,
+        kbId,
+        deletionAttemptId: randomUUID(),
+        resourceVersion: resource.resourceVersion + 1,
+      }))
+      const resources: DB.KBResource[] = []
+      for (const [index, resource] of orderedResources.entries()) {
+        const input = deletionInputs[index]!
+        resources.push(
+          await prisma.kBResource.update({
+            where: { id: resource.id },
+            data: {
+              deletedAt,
+              deletedById: ctx.user.sub,
+              status: DB.KBResourceStatus.QUEUED,
+              statusMessage: null,
+              ingestionOperation: DB.KBIngestionOperation.DELETE,
+              ingestionAttemptId: input.deletionAttemptId,
+              resourceVersion: input.resourceVersion,
+              contentSha256: null,
+              externalOperationId: null,
+              externalOperationStartedAt: null,
+              errorCode: null,
+            },
+          })
+        )
+        await prisma.kBIngestionRun.create({
+          data: {
+            id: input.deletionAttemptId,
+            resourceId: resource.id,
+            operation: DB.KBIngestionOperation.DELETE,
+            resourceVersion: input.resourceVersion,
+          },
+        })
+      }
+      return { resources, deletionInputs }
+    }
+  )
+
+  await queueKbDeletions(deletionInputs, ctx)
+  return resources
 }
 
 export async function ingestKbResource(
