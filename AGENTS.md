@@ -37,9 +37,12 @@ pnpm --filter @klicker-uzh/graphql test
 pnpm run prisma:migrate       # create + apply migration (dev)
 pnpm run prisma:setup         # reset DB + push schema + seed
 pnpm run prisma:reset         # reset DB (skip seed)
+pnpm --filter @klicker-uzh/prisma prisma:seed  # seed explicitly
 pnpm run prisma:studio        # open Prisma Studio
 pnpm run prisma:sync          # sync schema to apps/analytics
 ```
+
+The commands above are the legacy host/Infisical path. In the self-contained DevPod, the environment is already injected: use `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`, then `pnpm --filter @klicker-uzh/prisma run prisma:push:raw`, then `pnpm --filter @klicker-uzh/prisma-data run seed:raw` for a full destructive reset and reseed.
 
 ### GraphQL codegen
 
@@ -97,7 +100,7 @@ cypress/                   # E2E tests
 | Styling                | TailwindCSS, @uzh-bf/design-system                    |
 | GraphQL server         | GraphQL Yoga + Pothos schema builder                  |
 | GraphQL client         | Apollo Client                                         |
-| ORM                    | Prisma 6 (PostgreSQL)                                 |
+| ORM                    | Prisma 7 (PostgreSQL)                                 |
 | Caching                | Redis (ioredis)                                       |
 | Workflow orchestration | Hatchet (workers for async processing)                |
 | Auth                   | Edu-ID (OIDC), magic links, LTI, delegated login      |
@@ -111,7 +114,7 @@ Code-first with **Pothos** in `packages/graphql/src/`. After changing types/reso
 
 ## Database Workflow
 
-Prisma split-schema under `packages/prisma/src/prisma/schema/`. After editing a `.prisma` file: `pnpm run prisma:migrate`, then `pnpm run prisma:sync` (mirrors the schema into `apps/analytics`, excluding `js.prisma`) and regenerate the client. Update GraphQL types/resolvers if the change affects the API.
+Prisma split-schema under `packages/prisma/src/prisma/schema/`. After editing a `.prisma` file: `pnpm run prisma:migrate` (creates/applies the migration and explicitly regenerates the TypeScript client), then `pnpm run prisma:sync` (mirrors model files into `apps/analytics` while preserving its Python generator and datasource), then rebuild dependents. Update GraphQL types/resolvers if the change affects the API. Prisma 7 reset and migration commands do not seed automatically; use the explicit setup or seed command for local fixtures.
 
 ## Auth Model
 
