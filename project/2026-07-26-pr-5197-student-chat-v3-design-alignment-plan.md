@@ -567,3 +567,42 @@ simplify subagent on the exact commit → integrate accepted findings → re-ver
   the compose network, then plain `DATABASE_URL` against 127.0.0.1.
   Remaining work handed off:
   [2026-07-27-student-chat-v3-follow-up-roadmap.md](./2026-07-27-student-chat-v3-follow-up-roadmap.md).
+- 2026-07-28 takeover: live GitHub state superseded the handoff. PR #5197 was
+  `DIRTY` / `CONFLICTING` after Office Add-in PR #4643 landed on `v3`, with
+  conflicts limited to `docs/log.md`, `pnpm-lock.yaml`, and
+  `sonar-project.properties`. An initial merge of `origin/v3` at `7ed533edf`
+  resolved those three files, but GitHub kept rejecting the branch because
+  `v3` requires linear history. The first recovery replayed the 116 feature
+  commits onto `7ed533edf`, combined both wiki-log entries and Sonar CPD
+  exclusions, regenerated the lockfile, and removed every merge commit.
+  During final verification, `v3` advanced again to Prisma 7 at `f16b9ceb4`.
+  The same 116 feature commits were therefore replayed onto that current base.
+  Both conflicted lockfile states were regenerated offline against the
+  relevant package manifests, with pnpm's supply-chain policy passing and
+  zero downloads. The final branch is linear and contains no merge commits.
+  Ten unresolved CodeRabbit threads were verified against current code:
+  eight valid final-polish findings were accepted (disclaimer live region,
+  localized mode tooltip, missing Tailwind v4 composer gradient, focusable
+  disabled-edit explanation, own-key mode detection, numeric publisher-label
+  ambiguity, stale Langfuse plan wording, and wrong roadmap source path).
+  Two were rejected: Swiss orthography is already enforced unconditionally
+  by `withLanguageStyleContract`, and relative `../src` imports are the
+  established `apps/chat/test` convention.
+- 2026-07-28 takeover verification: all 178 chat tests passed; chat lint passed
+  with six known warnings; and the repository type-check passed all 25 tasks
+  against the final Prisma 7 base; the full repository build passed all 22
+  tasks. The broader `check:all` remains blocked only by the pre-existing
+  analytics pandas compiler setup, while the wiki validator reports six
+  pre-existing frontmatter/type errors and does not flag
+  `docs/chat-platform.md`. Browser verification used the real local chat app
+  and normal delegated test-user authentication. Desktop (1440x900) and mobile
+  (390x844) captures cover four source cards plus the amber callout, branch
+  position 2/2, English and German image-analysis chips, and localized
+  thread-mode subtitles. Additional desktop captures prove the keyboard-
+  focusable German unavailable-edit tooltip and the German disclaimer
+  `role="alert"` failure. Clean reloads had no page errors; console output was
+  limited to normal development/HMR messages. The final Standards + Spec diff
+  review found no further actionable issues. All ten review threads have
+  verified replies and are resolved. Next: push the exact linear head, update
+  the PR body, attach the ten captures when the authenticated browser is
+  available, and watch the required CI matrix.

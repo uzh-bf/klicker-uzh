@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-07-25'
+timestamp: '2026-07-28'
 tags:
   - frontend
   - chat
@@ -71,9 +71,11 @@ key.
 Initial thread and message loading uses skeleton rows and message-shaped placeholders, and an
 empty running assistant message shows a localized thinking indicator. Send/stream failures,
 disclaimer action failures, and thread-list failures are localized with retry affordances where
-the action can be retried. A cached thread list intentionally remains visible if only its
-background refresh fails. The welcome view contains localized starter suggestions, and
-message action bars remain mounted for touch users rather than relying on hover. Each thread
+the action can be retried. Asynchronous disclaimer failures render in a live `role="alert"`
+region. A cached thread list intentionally remains visible if only its background refresh fails.
+The welcome view contains localized starter suggestions, and message action bars remain mounted
+for touch users rather than relying on hover. An unavailable image edit uses `aria-disabled`
+instead of native `disabled`, so its explanatory Radix tooltip remains focusable. Each thread
 row shows the thread's last chat mode as an icon plus localized label under the title
 (`thread.lastChatMode` via `formatModeLabel`), and Markdown blockquotes in answers render as
 amber info callouts (the `blockquote` override in `markdown-text.tsx`, which only assistant
@@ -160,9 +162,10 @@ lead with a `12:34`-style position; images keep their type label. **doc_query ha
 field** — its source shape is `source_url`/`source_type`/`file_name`/`page_number`/
 `labeled_page_number` — so a video position can only come from a clock- or `1m30s`-valued
 `labeled_page_number` or from a `t`/`start`/`time_continue`/`#t=` parameter on the source URL
-(`getSourceTimestamp`). `parseTimestampSeconds` deliberately rejects anything that is not a time
-notation so a chapter label like `Kapitel IV` is never misread as a position; a dedicated
-timestamp field is phase-2 work in the doc-query service. Card titles clamp at two lines with the
+(`getSourceTimestamp`). A bare numeric `labeled_page_number` remains a publisher page label,
+never seconds; bare seconds are accepted only from URL time parameters, where their meaning is
+unambiguous. Other labels such as `Kapitel IV` also remain page text. A dedicated timestamp
+field is phase-2 work in the doc-query service. Card titles clamp at two lines with the
 full name in the `title` attribute — and note that `line-clamp-2` needs `display: -webkit-box`,
 so adding `block` alongside it silently disables the clamp. Document cards lay out with
 `repeat(auto-fit, minmax(min(230px, 100%), 1fr))`: `auto-fit` (not `auto-fill`) collapses empty
@@ -189,7 +192,7 @@ needs a live key the devcontainer does not carry.
 
 Two recurring traps in this app's strings:
 
-- **Per-chatbot vocabulary is free-form**, so chat modes (`systemPrompts` keys) and reasoning efforts are `string`, not unions. Only the well-known values get a translation; anything else falls back to its raw name. `src/lib/config/modes.ts` holds the known-mode predicate and `formatModeLabel` (used by the thread-list mode subtitle; unknown modes fall back to their capitalized raw name), while the older call sites still translate inline alongside their icon lookups; `src/lib/config/reasoning.ts` exports `formatReasoningEffort` outright, since its three call sites want nothing but the label and had already drifted apart once. Either way, go through those modules so the selector and the caption under an answer cannot end up with different words for the same value.
+- **Per-chatbot vocabulary is free-form**, so chat modes (`systemPrompts` keys) and reasoning efforts are `string`, not unions. Only the well-known values get a translation; anything else falls back to its raw name. `src/lib/config/modes.ts` holds the own-property known-mode predicate and `formatModeLabel` (used by the thread-list mode subtitle; unknown modes fall back to their capitalized raw name), while the older call sites still translate inline alongside their icon lookups; `src/lib/config/reasoning.ts` exports `formatReasoningEffort` outright, since its three call sites want nothing but the label and had already drifted apart once. The mode switcher's native tooltip uses the same localized label, never the English-only registry description. Either way, go through those modules so the selector and the caption under an answer cannot end up with different words for the same value.
 - **ICU plurals must be selected on the displayed number.** `formatCredits(1.2)` renders `1` but `Intl.PluralRules.select(1.2)` is `other`, so passing the raw float prints "1 credits". Feed `count` the rounded value the user actually sees.
 
 ## Message feedback and Langfuse

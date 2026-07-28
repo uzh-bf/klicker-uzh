@@ -18,7 +18,7 @@ const MODE_ICONS = {
 export type KnownMode = keyof typeof MODE_ICONS
 
 export function isKnownMode(mode: string): mode is KnownMode {
-  return mode in MODE_ICONS
+  return Object.prototype.hasOwnProperty.call(MODE_ICONS, mode)
 }
 
 export function getModeIcon(mode: string): LucideIcon {

@@ -78,7 +78,7 @@ export function ModeSwitcher() {
             type="button"
             aria-pressed={isActive}
             data-cy={`chat-mode-option-${mode}`}
-            title={modeOptions[mode] || label}
+            title={label}
             onClick={() => setSelectedMode(mode)}
             className={twMerge(
               'relative z-10 inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium transition-colors',

@@ -133,6 +133,7 @@ export const DisclaimerModal = ({
         {/* Action Error */}
         {errorMessage && (
           <p
+            role="alert"
             data-cy="chat-disclaimer-error"
             className="text-destructive text-sm"
           >
