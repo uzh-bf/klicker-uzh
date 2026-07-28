@@ -1,6 +1,7 @@
 import type {
   Context,
   HatchetClient,
+  JsonObject,
   TaskWorkflowDeclaration,
 } from '@hatchet-dev/typescript-sdk/index.js'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
@@ -16,6 +17,40 @@ export interface HatchetHandlerGlobalContext {
   redisAssessmentExec: Redis
   redisCache?: Redis
   prisma: PrismaClient
+}
+
+export const MAX_KB_RESOURCE_COUNT = 100
+export const MAX_KB_SOURCE_SIZE_BYTES = 25 * 1024 * 1024
+export const MAX_KB_TOTAL_SIZE_BYTES = 500 * 1024 * 1024
+
+type IngestKBResourceInputBase = JsonObject & {
+  resourceId: string
+  kbId: string
+  title: string
+  ingestionAttemptId: string
+  resourceVersion: number
+}
+
+export type IngestKBResourceInput = IngestKBResourceInputBase &
+  (
+    | {
+        type: 'BLOB'
+        blobName: string
+        containerName: string
+        mimeType: string
+        sizeBytes: number
+      }
+    | {
+        type: 'URL'
+        sourceUrl: string
+      }
+  )
+
+export type DeleteKBResourceInput = JsonObject & {
+  resourceId: string
+  kbId: string
+  deletionAttemptId: string
+  resourceVersion: number
 }
 
 // Shared contract for Hatchet task handler injections.
@@ -94,6 +129,14 @@ export interface HatchetHandlers {
 
 // Contract for the tasks that are passed into the GraphQL context.
 export interface PreparedHatchetTasks {
+  ingestKBResource: TaskWorkflowDeclaration<
+    IngestKBResourceInput,
+    { success: boolean }
+  >
+  deleteKBResource: TaskWorkflowDeclaration<
+    DeleteKBResourceInput,
+    { success: boolean }
+  >
   createAuditLogEntry: TaskWorkflowDeclaration<
     {
       message: Record<string, string | undefined> & {

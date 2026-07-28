@@ -1,0 +1,5 @@
+mutation CreateKbUrlResource($kbId: ID!, $url: String!, $title: String!) {
+  createKbUrlResource(kbId: $kbId, url: $url, title: $title) {
+    id
+  }
+}

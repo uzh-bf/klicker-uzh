@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the two e2e stacks and their seeds, and the CI test matrix.
-timestamp: '2026-07-18'
+timestamp: '2026-07-27'
 tags:
   - testing
   - ci
@@ -19,6 +19,12 @@ tags:
 | Pure logic (grading, util, export, word-cloud, markdown, chat logic) | package vitest — **safe without any services**                                             | `pnpm --filter @klicker-uzh/grading test` (etc.)                                                   |
 | GraphQL services/resolvers                                           | `packages/graphql` vitest — needs REAL Postgres + Redis + Hatchet + `HATCHET_CLIENT_TOKEN` | `pnpm --filter @klicker-uzh/graphql test:local` (one-command bootstrap: `test/run-tests-local.sh`) |
 | UI / user flows                                                      | Playwright e2e (new specs); Cypress only for legacy maintenance                            | see routing below                                                                                  |
+
+The focused KB CRUD, ingestion, and signed-webhook suites deliberately avoid a real Hatchet client: CRUD and ingestion use test-only task stubs, and webhook tests use Prisma directly. They still run against real PostgreSQL and cover owner-scoped bounded history, atomic resource/run transitions, retry races, serving cutover, and terminal-event ordering.
+
+KB quota coverage must use real PostgreSQL for parent-row lock serialization, exact count/byte boundaries, pending tickets, tombstones, confirmation conversion, and cleanup release. Hatchet unit coverage owns persisted KB-scope rejection plus URL-size replacement arithmetic and the no-dispatch `KB_STORAGE_LIMIT_REACHED` transition.
+
+KB scale coverage uses real PostgreSQL for tied keyset traversal, cursor/filter binding, owner isolation, tombstone hiding, immutable resource-page order during status changes, exact derived metrics, and all-or-nothing bounded bulk deletion. UI appearance and interaction have no component-test layer in this repository: verify the generated-operation typechecks, then exercise catalog/detail search, filters, inspector, selection/confirmation, active polling, EN/DE, and desktop/390 px layouts through the real delegated-login browser path.
 
 **Never run root `pnpm run test:run` blind** — the turbo fan-out includes Cypress, which needs a running, seeded stack. The graphql vitest config forces `pool: forks, singleFork: true` (serialized specs sharing DB state) — don't parallelize it.
 

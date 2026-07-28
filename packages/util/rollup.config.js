@@ -5,7 +5,12 @@ import { defineConfig } from 'rollup'
 const config = defineConfig([
   {
     // Main build configuration
-    input: ['src/index.ts', 'src/auth.ts', 'src/clientAuth.ts'],
+    input: [
+      'src/index.ts',
+      'src/auth.ts',
+      'src/clientAuth.ts',
+      'src/publicUrl.ts',
+    ],
     output: {
       dir: 'dist',
       format: 'esm',

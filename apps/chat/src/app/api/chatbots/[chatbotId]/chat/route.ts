@@ -11,6 +11,7 @@ import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
 } from '@/src/services/mcpClients'
+import { resolveMcpScopeSessionId } from '@/src/services/mcpScope'
 import { createOpenAI } from '@ai-sdk/openai'
 import { prisma } from '@klicker-uzh/prisma'
 import { Chatbot } from '@klicker-uzh/prisma/client'
@@ -794,6 +795,7 @@ export async function POST(
   // fetch chatbot with MCP configurations and system prompt
   let systemPrompt = ''
   let mcpServersWithConfigs: MCPServerWithConfig[] = []
+  let enabledKnowledgeBaseId: string | undefined
   let chatbot = null
 
   try {
@@ -810,10 +812,17 @@ export async function POST(
           },
           orderBy: { priority: 'asc' },
         },
+        knowledgeBases: {
+          where: { isEnabled: true },
+          select: { kbId: true },
+          take: 1,
+        },
       },
     })
 
     if (chatbot) {
+      enabledKnowledgeBaseId = chatbot.knowledgeBases[0]?.kbId
+
       // Extract system prompt
       const systemPrompts = chatbot.systemPrompts as Record<
         string,
@@ -886,12 +895,36 @@ export async function POST(
     content: msg.content,
   }))
 
+  const owningThread = currentThreadId
+    ? await prisma.chatThread.findFirst({
+        where: {
+          id: currentThreadId,
+          participantId,
+          chatbotId,
+        },
+        select: { id: true },
+      })
+    : null
+  const mcpSessionId = resolveMcpScopeSessionId({
+    requestedThreadId: currentThreadId,
+    owningThreadId: owningThread?.id,
+    fallbackId: requestId,
+  })
+
+  if (!mcpSessionId) {
+    return NextResponse.json(
+      { error: 'Chat thread not found' },
+      { status: 404 }
+    )
+  }
+
   // Load MCP tools from database configurations or fallback to legacy
-  const mcpTools = await getAggregatedMCPTools(
-    mcpServersWithConfigs,
+  const mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, {
     chatbotId,
-    participantId
-  )
+    participantId,
+    kbId: enabledKnowledgeBaseId,
+    sessionId: mcpSessionId,
+  })
 
   if (!chatbot) {
     return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
@@ -1199,17 +1232,6 @@ export async function POST(
     ),
     elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
   })
-
-  const owningThread = currentThreadId
-    ? await prisma.chatThread.findFirst({
-        where: {
-          id: currentThreadId,
-          participantId,
-          chatbotId,
-        },
-        select: { id: true },
-      })
-    : null
 
   logEvent('thread.resolved', {
     hasOwningThread: Boolean(owningThread),

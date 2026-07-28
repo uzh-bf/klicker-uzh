@@ -239,7 +239,7 @@ async function withStudentPracticeMcp<T>({
     url,
   }
 
-  const client = await createMCPClient(server, chatbotId, participantId)
+  const client = await createMCPClient(server, { chatbotId, participantId })
 
   try {
     const tools = (await client.tools()) as unknown as Record<

@@ -1,5 +1,25 @@
 # Log
 
+## 2026-07-28
+
+- **Update**: [domain-model](./domain-model.md), [data-and-migrations](./data-and-migrations.md), [graphql-api-layer](./graphql-api-layer.md), [async-and-workers](./async-and-workers.md), [frontend-conventions](./frontend-conventions.md), and [testing](./testing.md) document cursor-bound KB/resource connections, grouped exact metrics, deterministic bulk deletion, current-page polling, the resource inspector, and lecturer scale verification.
+
+- **Update**: [domain-model](./domain-model.md), [data-and-migrations](./data-and-migrations.md), [graphql-api-layer](./graphql-api-layer.md), [async-and-workers](./async-and-workers.md), [frontend-conventions](./frontend-conventions.md), and [testing](./testing.md) document concurrency-safe KB count/byte reservations, persisted ingestion scope checks, URL replacement accounting, the PDF/TXT/MD production MIME contract, and quota verification.
+
+## 2026-07-27
+
+- **Update**: [domain-model](./domain-model.md), [graphql-api-layer](./graphql-api-layer.md), [async-and-workers](./async-and-workers.md), and [frontend-conventions](./frontend-conventions.md) document owner-hidden KB tombstones, canonical external deletion, persisted upload tickets, bounded retention cleanup, and the lecturer-visible background-cleanup contract.
+
+- **Update**: [domain-model](./domain-model.md), [data-and-migrations](./data-and-migrations.md), [graphql-api-layer](./graphql-api-layer.md), [frontend-conventions](./frontend-conventions.md), [chat-platform](./chat-platform.md), and [ci-and-deployment](./ci-and-deployment.md) document one-enabled-KB chatbot binding, atomic MCP configuration, ES256 retrieval scope tokens, citation rendering, browser states, and external secret ownership.
+
+- **Update**: [frontend-conventions](./frontend-conventions.md), [graphql-api-layer](./graphql-api-layer.md), and [testing](./testing.md) document the request-time KB detail route, separate latest-operation/active-serving presentation, contextual ingestion actions, lazy bounded attempt history, and browser plus PostgreSQL verification.
+
+- **Update**: [domain-model](./domain-model.md), [async-and-workers](./async-and-workers.md), [graphql-api-layer](./graphql-api-layer.md), and [testing](./testing.md) document the resource-scoped ingestion ledger, separate operation/serving state, atomic transitions, bounded owner-facing history, and token-independent focused KB integration suites.
+
+## 2026-07-26
+
+- **Update**: [domain-model](./domain-model.md), [async-and-workers](./async-and-workers.md), [frontend-conventions](./frontend-conventions.md), and [ci-and-deployment](./ci-and-deployment.md) document the KB resource model, synchronous ingestion API dispatch, polling plus strict signed-event reconciliation, source-gateway boundary, lecturer routes, reusable UI package, and deployment configuration split.
+
 ## 2026-07-18
 
 - **Update**: [getting-started](./getting-started.md) pins released devrouter `0.0.35`; the managed-process fingerprint now includes the exact adapter bytes and declared non-secret origin environment as well as workspace and command identity.

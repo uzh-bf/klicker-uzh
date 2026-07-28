@@ -15,6 +15,7 @@ import {
 } from 'src/stores/chatStore'
 import { useSettingsStore } from 'src/stores/settingsStore'
 import { useChatUi } from '../components/chat-ui-context'
+import { RAGToolUI } from '../components/tools-ui/rag-tool-ui'
 import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
 
 export function RuntimeProvider({
@@ -264,7 +265,7 @@ export function RuntimeProvider({
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      {/* <RAGToolUI /> */}
+      <RAGToolUI />
       {children}
     </AssistantRuntimeProvider>
   )

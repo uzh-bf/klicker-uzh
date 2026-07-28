@@ -10,6 +10,7 @@ import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
+import * as KnowledgeService from '../services/knowledge.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as ParticipantService from '../services/participants.js'
@@ -69,6 +70,15 @@ import {
   GroupActivityInstance,
   GroupActivitySummary,
 } from './groupActivity.js'
+import {
+  KB,
+  KBChatbotBinding,
+  KBConnection,
+  KBIngestionRun,
+  KBIngestionStatus,
+  KBResourceConnection,
+  KBResourceType,
+} from './knowledge.js'
 import {
   Feedback,
   LiveQuiz,
@@ -1406,6 +1416,62 @@ export const Query = builder.queryType({
           }
 
           return await AnalyticsService.getActivityAnalytics(args, ctx)
+        },
+      }),
+
+      getUserKbsConnection: t.withAuth(asUser).field({
+        nullable: false,
+        type: KBConnection,
+        args: {
+          first: t.arg.int({ required: false }),
+          after: t.arg.string({ required: false }),
+          search: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getUserKbsConnection(args, ctx)
+        },
+      }),
+
+      getKb: t.withAuth(asUser).field({
+        nullable: false,
+        type: KB,
+        args: { id: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getKb(args, ctx)
+        },
+      }),
+
+      getKbResources: t.withAuth(asUser).field({
+        nullable: false,
+        type: KBResourceConnection,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          first: t.arg.int({ required: false }),
+          after: t.arg.string({ required: false }),
+          search: t.arg.string({ required: false }),
+          type: t.arg({ type: KBResourceType, required: false }),
+          status: t.arg({ type: KBIngestionStatus, required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getKbResourcesConnection(args, ctx)
+        },
+      }),
+
+      getKbChatbotBindings: t.withAuth(asUser).field({
+        nullable: false,
+        type: [KBChatbotBinding],
+        args: { kbId: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getKbChatbotBindings(args, ctx)
+        },
+      }),
+
+      getKbResourceIngestionRuns: t.withAuth(asUser).field({
+        nullable: false,
+        type: [KBIngestionRun],
+        args: { resourceId: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getKbResourceIngestionRuns(args, ctx)
         },
       }),
 

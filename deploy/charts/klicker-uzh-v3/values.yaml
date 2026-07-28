@@ -55,6 +55,10 @@ hatchet:
     apiUrl: ""
     tenantId: ""
     hostPort: ""
+  kbIngestion:
+    apiUrl: ""
+    projectId: "klicker-course-materials"
+    sourceGatewayUrl: ""
   workers:
     general:
       replicaCount: 1
@@ -175,6 +179,11 @@ chat:
 
   mcp:
     key: ''
+
+  docQueryScope:
+    issuer: ''
+    audience: ''
+    keyId: ''
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat

@@ -206,7 +206,7 @@ export function StudentPracticeQuizCard({
     () => (quiz ? toElementStack(quiz) : EMPTY_STACK),
     [quiz]
   )
-  const startedAtMs = useRef(Date.now())
+  const startedAtMs = useRef<number | null>(null)
   const [activeElementIx, setActiveElementIx] = useState(0)
   const [studentResponse, setStudentResponse] =
     useState<StackStudentResponseType>({})
@@ -309,6 +309,14 @@ export function StudentPracticeQuizCard({
       return
     }
 
+    const submittedAtMs = Date.now()
+    const stackAnswerTimeSeconds = Math.max(
+      0,
+      Math.round(
+        (submittedAtMs - (startedAtMs.current ?? submittedAtMs)) / 1000
+      )
+    )
+
     setIsSubmitting(true)
     try {
       const response = await fetch(
@@ -317,10 +325,7 @@ export function StudentPracticeQuizCard({
           body: JSON.stringify({
             questionRef: activeQuiz.questionRef,
             responses: built.responses,
-            stackAnswerTimeSeconds: Math.max(
-              0,
-              Math.round((Date.now() - startedAtMs.current) / 1000)
-            ),
+            stackAnswerTimeSeconds,
           }),
           headers: { 'Content-Type': 'application/json' },
           method: 'POST',

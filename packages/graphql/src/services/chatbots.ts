@@ -227,6 +227,13 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
           },
         },
       },
+      knowledgeBases: {
+        where: { isEnabled: true },
+        select: {
+          kb: { select: { id: true, name: true } },
+        },
+        take: 1,
+      },
     },
     orderBy: { updatedAt: 'desc' },
   })
@@ -356,6 +363,7 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
       usageSummary,
       disclaimerSummary,
       mcpConfigurations,
+      enabledKnowledgeBase: chatbot.knowledgeBases[0]?.kb ?? null,
     }
   })
 }

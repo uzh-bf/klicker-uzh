@@ -1,0 +1,5 @@
+mutation DeleteKb($id: ID!) {
+  deleteKb(id: $id) {
+    id
+  }
+}

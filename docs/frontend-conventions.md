@@ -2,7 +2,7 @@
 type: Frontend Conventions
 title: Frontend Conventions
 description: Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.
-timestamp: '2026-07-18'
+timestamp: '2026-07-27'
 tags:
   - frontend
 ---
@@ -41,6 +41,22 @@ Scope: `frontend-manage`, `frontend-pwa`, `frontend-control`, `auth` — all Nex
 ## Data fetching
 
 Apollo Client with **generated documents only** — `import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'`; never inline `gql`. Standard query guard: `if (!data?.field) return <Loader />`. Mutations declare `refetchQueries`. New/changed ops require the codegen ritual ([API layer](./graphql-api-layer.md)). Server state lives in Apollo cache; local state in React hooks. The PWA additionally uses **localforage** as an offline side-channel for live-quiz answers (`apps/frontend-pwa/src/components/liveQuiz/storageHelpers.ts`).
+
+## Knowledge-base management
+
+The lecturer routes `apps/frontend-manage/src/pages/resources/knowledgeBases.tsx:KnowledgeBasesPage` and `apps/frontend-manage/src/pages/resources/knowledgeBases/[id].tsx:KnowledgeBasePage` mount the buildless `@klicker-uzh/kb-management` package inside the authenticated manage layout. The dynamic detail route uses `getServerSideProps`; its arbitrary database ids are resolved per request rather than through empty build-time paths. Keep reusable KB UI in that package rather than duplicating it in the host app.
+
+The catalog uses server search and cursor-driven “load more” rather than loading all owned KBs. The detail page keeps metadata/metrics separate from `packages/kb-management/src/components/KnowledgeBaseResourceList.tsx:KnowledgeBaseResourceList`, which owns server search/type/status filters, selection, confirmed bulk deletion, the source inspector, and contextual Ingest/Retry/Re-ingest/Delete actions. Poll only the currently loaded connection while it contains `QUEUED`/`PROCESSING` rows; show indeterminate real-operation progress and safe-to-leave messaging rather than invented percentages.
+
+The inspector loads the owner-checked five-attempt history lazily. Full attempt history must stay outside the two-second list poll. Lecturer-facing failure detail is localized from stable status/error codes; raw platform messages are not rendered. Transport tuning is not user-controlled. Changes must preserve EN/DE messages, `data-cy` hooks, keyboard/focus behavior, and browser evidence for desktop plus 390 px mobile states, including search/filter, selection/confirmation, empty, active, ready, failed, and replacement-cutover feedback where affected.
+
+KB and resource deletion dialogs explain the two observable phases: the item disappears immediately, while stored files and the external index are removed in the background. Success toasts confirm removal from the lecturer view without claiming that external cleanup has already completed.
+
+The KB file picker exposes only the production ingestion contract: PDF, TXT, and MD up to 25 MiB. Markdown is uploaded as `text/plain`; do not re-add DOCX/PPTX until the external ingestion platform supports them. Stable quota error codes are localized rather than exposing worker messages.
+
+`packages/kb-management/src/components/KnowledgeBaseChatbotBindings.tsx:KnowledgeBaseChatbotBindings` owns the single-enabled-KB binding UI. Replacing an existing chatbot binding requires an explicit warning step; detach is available from the current KB. `apps/frontend-manage/src/components/resources/chatbots/ChatbotDetails.tsx:ChatbotDetails` shows the reciprocal linked-KB state or an actionable no-KB warning.
+
+The detail metrics distinguish visible data, quota usage, upload reservations, pending asynchronous cleanup, unknown-size conservative reservations, and linked consumers. Do not present tombstoned storage as already released or treat derived values as mutable counters.
 
 ## i18n (next-intl)
 

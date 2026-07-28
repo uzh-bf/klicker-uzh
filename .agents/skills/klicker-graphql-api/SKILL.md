@@ -42,6 +42,18 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
 7. **Frontend wiring** — `import { <Name>Document } from '@klicker-uzh/graphql/dist/ops'`; `useQuery`/`useMutation` (+ `refetchQueries`) per [docs/frontend-conventions.md](../../../docs/frontend-conventions.md).
 8. **Tests** — graphql vitest for service logic (`pnpm --filter @klicker-uzh/graphql test:local`; see the heavy pattern in `38c92d035`); route further via `klicker-testing-verification`.
 
+Do not nest full history under a frequently polled parent list. The KB detail query loads only each resource's latest run; the separate owner-checked history query returns at most the five newest runs and is called on expansion.
+
+KB/chatbot attach and detach must lock both owner rows, replace the enabled link atomically, and reconcile only the `tutor` and `explainer` KB MCP configurations. Do not expose a configuration without the matching scoped-retrieval runtime support.
+
+KB child creation and deletion share a KB-first lock order. Upload-ticket issue, confirmation, URL creation, resource deletion, and whole-KB deletion must require a live parent under that lock. Deletion keeps hidden tombstones and queues the external operation after commit; queue failure must remain hidden and retryable.
+
+KB resource-count and byte quotas use that same parent lock. Return stable GraphQL codes for quota and ticket mismatches, and derive every ingestion `kb_id` from the persisted owner-checked KB/resource relationship rather than client-supplied scope text.
+
+For scalable KB lists, use the existing owner/filter-bound opaque keyset connections: `(updatedAt, id)` for KBs and immutable `(createdAt, id)` for resources, both descending, bounded to 50. Do not reintroduce the former unbounded `getUserKbs` or nested `KB.resources` fields. Keep exact metrics derived with grouped queries, keep full run history in its separate five-row query, filter resources by their latest ingestion-run status, and reset cursors when normalized search/type/status filters change.
+
+Bulk resource deletion accepts at most 50 unique ids from one owned KB. Lock the parent then sorted children, reject the selection atomically for missing/foreign/active rows, create one fenced delete run per row before commit, and treat post-commit task dispatches independently.
+
 ## Subscriptions (extra steps)
 
 Publish from the service (`ctx.pubSub.publish('<topic>', payload)`), subscribe in `subscription.ts` with a `filter` on the target id (template: `feedbackCreated`), consume with `subscribeToMore` + the generated `S*Document`.

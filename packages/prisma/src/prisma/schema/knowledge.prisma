@@ -1,0 +1,156 @@
+// ----- KNOWLEDGE BASES -----
+// #region
+
+enum KBResourceType {
+  BLOB // uploaded file stored in Azure Blob Storage
+  URL // external web resource (e.g., website, Kaltura MediaSpace video) fetched during ingestion
+}
+
+enum KBResourceStatus {
+  ADDED // resource registered (blob uploaded or URL added), not yet queued for ingestion
+  QUEUED
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum KBIngestionStatus {
+  QUEUED
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  SUPERSEDED
+}
+
+enum KBIngestionOperation {
+  UPSERT
+  DELETE
+}
+
+model KB {
+  id          String  @id @default(uuid()) @db.Uuid
+  name        String
+  description String?
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  deletedAt   DateTime?
+  deletedBy   User?     @relation("KBDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  deletedById String?   @db.Uuid
+
+  resources     KBResource[]
+  uploadTickets KBUploadTicket[]
+  chatbots      KBChatbot[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+  @@index([deletedAt])
+}
+
+model KBResource {
+  id String @id @default(uuid()) @db.Uuid
+
+  type  KBResourceType
+  title String
+
+  // URL resources: location of the external web resource
+  sourceUrl String?
+
+  // BLOB resources: upload metadata and blob location (resolver-enforced as required for type BLOB)
+  originalFilename String?
+  mimeType         String?
+  sizeBytes        Int?
+  blobName         String?
+  blobHref         String?
+
+  status                     KBResourceStatus     @default(ADDED)
+  statusMessage              String?
+  ingestedAt                 DateTime?
+  ingestionAttemptId         String?              @db.Uuid
+  resourceVersion            Int                  @default(0)
+  contentSha256              String?
+  externalOperationId        String?
+  externalOperationStartedAt DateTime?
+  activeResourceVersion      Int?
+  activeContentSha256        String?
+  errorCode                  String?
+  ingestionOperation         KBIngestionOperation @default(UPSERT)
+
+  deletedAt   DateTime?
+  deletedBy   User?     @relation("KBResourceDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  deletedById String?   @db.Uuid
+
+  kb   KB     @relation(fields: [kbId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  kbId String @db.Uuid
+
+  ingestionRuns KBIngestionRun[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([kbId, status])
+  @@index([status])
+  @@index([deletedAt])
+}
+
+model KBIngestionRun {
+  id String @id @db.Uuid
+
+  operation           KBIngestionOperation @default(UPSERT)
+  status              KBIngestionStatus    @default(QUEUED)
+  resourceVersion     Int
+  contentSha256       String?
+  externalOperationId String?
+  statusMessage       String?
+  errorCode           String?
+  startedAt           DateTime?
+  finishedAt          DateTime?
+
+  resource   KBResource @relation(fields: [resourceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  resourceId String     @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([resourceId, createdAt])
+  @@index([status])
+}
+
+model KBUploadTicket {
+  id String @id @db.Uuid
+
+  blobName  String
+  sizeBytes Int      @default(0)
+  expiresAt DateTime
+
+  kb   KB     @relation(fields: [kbId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  kbId String @db.Uuid
+
+  createdAt DateTime @default(now())
+
+  @@unique([kbId, blobName])
+  @@index([expiresAt])
+}
+
+model KBChatbot {
+  id String @id @default(uuid()) @db.Uuid
+
+  isEnabled Boolean @default(true)
+
+  kb   KB     @relation(fields: [kbId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  kbId String @db.Uuid
+
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  chatbotId String  @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([kbId, chatbotId])
+  @@index([chatbotId])
+}
+
+// #endregion

@@ -8,6 +8,10 @@ metadata:
 data:
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
+  KB_INGESTION_API_URL: {{ .Values.hatchet.kbIngestion.apiUrl | quote }}
+  KB_INGESTION_PROJECT_ID: {{ .Values.hatchet.kbIngestion.projectId | quote }}
+  KB_SOURCE_GATEWAY_URL: {{ .Values.hatchet.kbIngestion.sourceGatewayUrl | quote }}
+  BLOB_STORAGE_ACCOUNT_NAME: {{ .Values.blobStorage.accountName | quote }}
 ---
 apiVersion: v1
 kind: ConfigMap

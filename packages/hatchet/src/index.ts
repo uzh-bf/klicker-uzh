@@ -1,11 +1,31 @@
-import { Priority, type HatchetClient } from '@hatchet-dev/typescript-sdk'
+import {
+  ConcurrencyLimitStrategy,
+  Priority,
+  type Context,
+  type HatchetClient,
+} from '@hatchet-dev/typescript-sdk'
 import { prisma } from '@klicker-uzh/prisma'
-import type { HatchetHandlers } from '@klicker-uzh/types'
+import type {
+  DeleteKBResourceInput,
+  HatchetHandlers,
+  IngestKBResourceInput,
+} from '@klicker-uzh/types'
 import type EventEmitter from 'events'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
+import {
+  dispatchKBDeletion,
+  dispatchKBIngestion,
+  failKBIngestionDispatch,
+  monitorActiveKBIngestions,
+  retainFailedKBDeletionDispatch,
+} from './kbIngestion.js'
+import { maintainKBResources } from './kbMaintenance.js'
 
 export * from './client.js'
+export * from './kbIngestion.js'
+export * from './kbIngestionApi.js'
+export * from './kbMaintenance.js'
 
 export type { HatchetHandlers } from '@klicker-uzh/types'
 
@@ -56,6 +76,58 @@ export function prepareHatchetTasks({
       ctx.logger.info(`Audit log entry: ${info}`, args)
     },
   })
+
+  const ingestKBResourceDefinition = {
+    name: 'ingest-kb-resource',
+    retries: 3,
+    fn: async (
+      input: IngestKBResourceInput,
+      ctx: Context<IngestKBResourceInput>
+    ) => {
+      await ctx.logger.info('KB ingestion dispatch started', {
+        resourceId: input.resourceId,
+        kbId: input.kbId,
+        type: input.type,
+      })
+      await dispatchKBIngestion(input, {
+        prisma,
+        logger: ctx.logger,
+      })
+      return { success: true }
+    },
+    onFailure: {
+      retries: 3,
+      fn: async (input: IngestKBResourceInput) => {
+        await failKBIngestionDispatch({ input, prisma })
+      },
+    },
+  }
+  const ingestKBResource = hatchet.task(ingestKBResourceDefinition)
+  const deleteKBResourceDefinition = {
+    name: 'delete-kb-resource',
+    retries: 3,
+    fn: async (
+      input: DeleteKBResourceInput,
+      ctx: Context<DeleteKBResourceInput>
+    ) => {
+      await ctx.logger.info('KB deletion dispatch started', {
+        resourceId: input.resourceId,
+        kbId: input.kbId,
+      })
+      await dispatchKBDeletion(input, {
+        prisma,
+        logger: ctx.logger,
+      })
+      return { success: true }
+    },
+    onFailure: {
+      retries: 3,
+      fn: async (input: DeleteKBResourceInput) => {
+        await retainFailedKBDeletionDispatch({ input, prisma })
+      },
+    },
+  }
+  const deleteKBResource = hatchet.task(deleteKBResourceDefinition)
   // #endregion
 
   // ! ACTIVITY PUBLICATION TASKS
@@ -274,6 +346,28 @@ export function prepareHatchetTasks({
     },
   })
 
+  const monitorKBIngestions = hatchet.task({
+    name: 'monitor-kb-ingestions',
+    onCrons: ['* * * * *'],
+    concurrency: {
+      expression: '"monitor-kb-ingestions"',
+      maxRuns: 1,
+      limitStrategy: ConcurrencyLimitStrategy.CANCEL_NEWEST,
+    },
+    fn: async () => monitorActiveKBIngestions({ prisma }),
+  })
+
+  const maintainKBResourcesTask = hatchet.task({
+    name: 'maintain-kb-resources',
+    onCrons: ['*/15 * * * *'],
+    concurrency: {
+      expression: '"maintain-kb-resources"',
+      maxRuns: 1,
+      limitStrategy: ConcurrencyLimitStrategy.CANCEL_NEWEST,
+    },
+    fn: async (_, ctx) => maintainKBResources({ prisma, logger: ctx.logger }),
+  })
+
   // ? temporarily paused workflow, since the functionality is currently not available and needs fixing
   const sendPushNotifications = hatchet.task({
     name: 'send-push-notifications',
@@ -302,6 +396,10 @@ export function prepareHatchetTasks({
     endExpiredMicroLearning,
     aggregateLiveQuizBlockResultsStandard,
     aggregateLiveQuizBlockResultsAssessment,
+    ingestKBResource,
+    deleteKBResource,
+    monitorKBIngestions,
+    maintainKBResources: maintainKBResourcesTask,
     createAuditLogEntry,
   }
 }

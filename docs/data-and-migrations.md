@@ -2,7 +2,7 @@
 type: Data Layer
 title: Data & Migrations
 description: Split Prisma schema, the migrate→sync→generate ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-07-16'
+timestamp: '2026-07-27'
 tags:
   - backend
   - prisma
@@ -59,6 +59,9 @@ Json columns are typed via `prisma-json-types-generator`: a `/// [TypeName]` doc
 
 - **Prisma `Decimal` is an object, never truthy-check it** — `Decimal(0)` is truthy. Convert with a `toNumber()` helper and compare with `!= null` (pattern in `packages/graphql/src/services/chatbots.ts`).
 - **`Participant` email is unique per auth mode**: `@@unique([email, isSSOAccount])` means the same normalized email can exist once as manual and once as SSO. Queries by email alone can return the wrong account; blocking new cross-mode duplicates must happen in service logic (`packages/graphql/src/services/accounts.ts`).
+- **One enabled KB per chatbot is a SQL invariant**: Prisma cannot express the partial unique index `KBChatbot_one_enabled_per_chatbot_key`. Preserve it in `packages/prisma/src/prisma/schema/migrations/20260727124500_kb_chatbot_binding/migration.sql` and any replacement migration. `packages/prisma-data/src/data/seedMCPServers.ts:seedMCPServers` reconciles the KB server to `scope_token` auth and leaves KB MCP configs disabled unless an enabled binding exists.
+- **KB upload tickets are quota reservations**: `KBUploadTicket.sizeBytes` is the declared byte reservation. New tickets always persist the exact positive upload size; the database default exists only so pre-W6 ephemeral tickets migrate safely. Quota aggregates include every retained resource and ticket until W5 cleanup removes it.
+- **KB list order and bulk locks are deterministic**: resource pagination uses immutable `(createdAt DESC, id DESC)` keys, while bulk deletion locks the live parent KB and then the selected resource UUIDs in sorted order. Preserve `createdAt` as an immutable cursor key and the KB-first lock order when extending list operations.
 
 ## Adjacent: export package (`packages/export`)
 
