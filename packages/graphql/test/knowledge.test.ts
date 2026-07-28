@@ -632,6 +632,53 @@ describe('Integration tests for knowledge base CRUD', () => {
     await expect(
       prisma.kBResource.count({ where: { kbId: created.id } })
     ).resolves.toBe(0)
+    const persistedTicket = await prisma.kBUploadTicket.findUniqueOrThrow({
+      where: { id: ticket.blobName.slice(0, -4) },
+    })
+    expect(persistedTicket).toMatchObject({
+      kbId: created.id,
+      blobName: ticket.blobName,
+    })
+    expect(Math.abs(persistedTicket.expiresAt.getTime() - expiry)).toBeLessThan(
+      1000
+    )
+  })
+
+  it('does not issue an upload ticket after whole-KB deletion wins the lock', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const deletionStarted = createDeferred<void>()
+    const finishDeletion = createDeferred<void>()
+    const storageReady = createDeferred<void>()
+    const deleteCtx = withTombstonePause(
+      userOneCtx,
+      'kB',
+      () => deletionStarted.resolve(undefined),
+      finishDeletion.promise
+    )
+    createIfNotExists.mockImplementationOnce(async () => {
+      storageReady.resolve(undefined)
+      return { succeeded: true }
+    })
+
+    const deletion = deleteKb({ id: created.id }, deleteCtx)
+    await deletionStarted.promise
+    const uploadRequest = requestKbFileUpload(
+      {
+        kbId: created.id,
+        fileName: 'notes.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 1024,
+      },
+      userOneCtx
+    )
+    await storageReady.promise
+    finishDeletion.resolve(undefined)
+
+    await expect(deletion).resolves.toMatchObject({ id: created.id })
+    await expect(uploadRequest).rejects.toThrow('KB not found')
+    await expect(
+      prisma.kBUploadTicket.count({ where: { kbId: created.id } })
+    ).resolves.toBe(0)
   })
 
   it('confirms a matching blob idempotently', async () => {
@@ -664,6 +711,46 @@ describe('Integration tests for knowledge base CRUD', () => {
     await expect(
       prisma.kBResource.count({ where: { blobName: ticket.blobName } })
     ).resolves.toBe(1)
+    await expect(
+      prisma.kBUploadTicket.findUnique({ where: { id: first.id } })
+    ).resolves.toBeNull()
+  })
+
+  it('rejects an expired upload ticket while preserving its blob for cleanup', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const ticket = await requestKbFileUpload(
+      {
+        kbId: created.id,
+        fileName: 'notes.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 1024,
+      },
+      userOneCtx
+    )
+    await prisma.kBUploadTicket.update({
+      where: { id: ticket.blobName.slice(0, -4) },
+      data: { expiresAt: new Date(Date.now() - 1) },
+    })
+
+    await expect(
+      confirmKbFileUpload(
+        {
+          kbId: created.id,
+          blobName: ticket.blobName,
+          title: 'Finance notes',
+          originalFilename: 'notes.pdf',
+          mimeType: 'application/pdf',
+          sizeBytes: 1024,
+        },
+        userOneCtx
+      )
+    ).rejects.toThrow('KB upload ticket is invalid')
+    expect(deleteBlobIfExists).not.toHaveBeenCalled()
+    await expect(
+      prisma.kBUploadTicket.findUnique({
+        where: { id: ticket.blobName.slice(0, -4) },
+      })
+    ).resolves.toBeTruthy()
   })
 
   it('does not reveal a foreign resource through blob confirmation', async () => {

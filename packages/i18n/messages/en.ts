@@ -1223,8 +1223,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     createError: 'The knowledge base could not be created.',
     deleteTitle: 'Delete knowledge base',
     deleteDescription:
-      'Are you sure you want to delete “{name}”? This action cannot be undone.',
-    deleteSuccess: 'Knowledge base deleted.',
+      '“{name}” will disappear immediately. Its stored files and external index are removed in the background. This action cannot be undone.',
+    deleteSuccess: 'Knowledge base removed. Background cleanup is in progress.',
     deleteError: 'The knowledge base could not be deleted.',
     emptyTitle: 'No knowledge bases yet',
     emptyDescription: 'Create a knowledge base to add your first resources.',
@@ -1257,8 +1257,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     statusFailed: 'Failed',
     deleteResourceTitle: 'Delete resource',
     deleteResourceDescription:
-      'Are you sure you want to delete “{title}”? This action cannot be undone.',
-    deleteResourceSuccess: 'Resource deleted.',
+      '“{title}” will disappear immediately. Its stored file and external index are removed in the background. This action cannot be undone.',
+    deleteResourceSuccess:
+      'Resource removed. Background cleanup is in progress.',
     deleteResourceError: 'The resource could not be deleted.',
     ingestResource: 'Ingest',
     retryIngestion: 'Retry',

@@ -48,6 +48,8 @@ The lecturer routes `apps/frontend-manage/src/pages/resources/knowledgeBases.tsx
 
 `packages/kb-management/src/components/KnowledgeBaseResourceList.tsx:KnowledgeBaseResourceList` owns per-resource status polling, contextual Ingest/Retry/Re-ingest actions, separate latest-operation and active-serving presentation, lazy loading of the five newest attempts, and guarded deletion. Full attempt history must stay outside the two-second detail poll. Lecturer-facing failure detail is localized from stable status/error codes; raw platform messages are not rendered. Transport tuning is not user-controlled. Changes must preserve EN/DE messages, `data-cy` hooks, and browser evidence for desktop plus mobile states, including empty, active (`QUEUED`/`PROCESSING`), ready, failed, and replacement-cutover feedback where affected.
 
+KB and resource deletion dialogs explain the two observable phases: the item disappears immediately, while stored files and the external index are removed in the background. Success toasts confirm removal from the lecturer view without claiming that external cleanup has already completed.
+
 `packages/kb-management/src/components/KnowledgeBaseChatbotBindings.tsx:KnowledgeBaseChatbotBindings` owns the single-enabled-KB binding UI. Replacing an existing chatbot binding requires an explicit warning step; detach is available from the current KB. `apps/frontend-manage/src/components/resources/chatbots/ChatbotDetails.tsx:ChatbotDetails` shows the reciprocal linked-KB state or an actionable no-KB warning.
 
 ## i18n (next-intl)

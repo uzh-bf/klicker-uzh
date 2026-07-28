@@ -46,6 +46,8 @@ Do not nest full history under a frequently polled parent list. The KB detail qu
 
 KB/chatbot attach and detach must lock both owner rows, replace the enabled link atomically, and reconcile only the `tutor` and `explainer` KB MCP configurations. Do not expose a configuration without the matching scoped-retrieval runtime support.
 
+KB child creation and deletion share a KB-first lock order. Upload-ticket issue, confirmation, URL creation, resource deletion, and whole-KB deletion must require a live parent under that lock. Deletion keeps hidden tombstones and queues the external operation after commit; queue failure must remain hidden and retryable.
+
 ## Subscriptions (extra steps)
 
 Publish from the service (`ctx.pubSub.publish('<topic>', payload)`), subscribe in `subscription.ts` with a `filter` on the target id (template: `feedbackCreated`), consume with `subscribeToMore` + the generated `S*Document`.

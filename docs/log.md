@@ -2,6 +2,8 @@
 
 ## 2026-07-27
 
+- **Update**: [domain-model](./domain-model.md), [graphql-api-layer](./graphql-api-layer.md), [async-and-workers](./async-and-workers.md), and [frontend-conventions](./frontend-conventions.md) document owner-hidden KB tombstones, canonical external deletion, persisted upload tickets, bounded retention cleanup, and the lecturer-visible background-cleanup contract.
+
 - **Update**: [domain-model](./domain-model.md), [data-and-migrations](./data-and-migrations.md), [graphql-api-layer](./graphql-api-layer.md), [frontend-conventions](./frontend-conventions.md), [chat-platform](./chat-platform.md), and [ci-and-deployment](./ci-and-deployment.md) document one-enabled-KB chatbot binding, atomic MCP configuration, ES256 retrieval scope tokens, citation rendering, browser states, and external secret ownership.
 
 - **Update**: [frontend-conventions](./frontend-conventions.md), [graphql-api-layer](./graphql-api-layer.md), and [testing](./testing.md) document the request-time KB detail route, separate latest-operation/active-serving presentation, contextual ingestion actions, lazy bounded attempt history, and browser plus PostgreSQL verification.

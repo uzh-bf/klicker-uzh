@@ -34,4 +34,5 @@ Conventions (design system, Tailwind v4, Apollo, i18n, CSP): [docs/frontend-conv
 - Keep full KB attempt history out of the two-second detail poll. Load the bounded, owner-checked history query only when a lecturer expands a resource, while the parent query carries only the latest run needed for operation status.
 - Localize KB failure detail from stable status/error codes. Do not render raw ingestion-platform status text into the EN/DE lecturer UI.
 - Replacing a chatbot's enabled KB requires an explicit warning state; verify attach, replace, detach, linked-KB, and no-KB states in both locales and at desktop/mobile widths.
+- KB delete copy must distinguish immediate removal from background external/blob cleanup; never claim that asynchronous cleanup completed in the mutation success toast.
 - **`apps/chat` is out of scope here** — app router, zustand, assistant-ui; read [docs/chat-platform.md](../../../docs/chat-platform.md) and follow its local conventions instead.

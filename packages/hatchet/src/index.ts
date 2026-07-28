@@ -20,10 +20,12 @@ import {
   monitorActiveKBIngestions,
   retainFailedKBDeletionDispatch,
 } from './kbIngestion.js'
+import { maintainKBResources } from './kbMaintenance.js'
 
 export * from './client.js'
 export * from './kbIngestion.js'
 export * from './kbIngestionApi.js'
+export * from './kbMaintenance.js'
 
 export type { HatchetHandlers } from '@klicker-uzh/types'
 
@@ -355,6 +357,17 @@ export function prepareHatchetTasks({
     fn: async () => monitorActiveKBIngestions({ prisma }),
   })
 
+  const maintainKBResourcesTask = hatchet.task({
+    name: 'maintain-kb-resources',
+    onCrons: ['*/15 * * * *'],
+    concurrency: {
+      expression: '"maintain-kb-resources"',
+      maxRuns: 1,
+      limitStrategy: ConcurrencyLimitStrategy.CANCEL_NEWEST,
+    },
+    fn: async (_, ctx) => maintainKBResources({ prisma, logger: ctx.logger }),
+  })
+
   // ? temporarily paused workflow, since the functionality is currently not available and needs fixing
   const sendPushNotifications = hatchet.task({
     name: 'send-push-notifications',
@@ -386,6 +399,7 @@ export function prepareHatchetTasks({
     ingestKBResource,
     deleteKBResource,
     monitorKBIngestions,
+    maintainKBResources: maintainKBResourcesTask,
     createAuditLogEntry,
   }
 }

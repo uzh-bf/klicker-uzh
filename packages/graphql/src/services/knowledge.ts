@@ -221,10 +221,8 @@ export async function getUserKbs(ctx: ContextWithUser) {
 }
 
 export async function getKb({ id }: { id: string }, ctx: ContextWithUser) {
-  await getOwnedKbOrThrow(ctx, id)
-
-  return ctx.prisma.kB.findUniqueOrThrow({
-    where: { id },
+  const kb = await ctx.prisma.kB.findFirst({
+    where: { id, ownerId: ctx.user.sub, deletedAt: null },
     include: {
       resources: {
         where: { deletedAt: null },
@@ -235,6 +233,10 @@ export async function getKb({ id }: { id: string }, ctx: ContextWithUser) {
       },
     },
   })
+  if (!kb) {
+    throw new GraphQLError('KB not found')
+  }
+  return kb
 }
 
 export async function getKbChatbotBindings(
@@ -371,7 +373,13 @@ export async function getKbResourceIngestionRuns(
   await getOwnedKbResourceOrThrow(ctx, resourceId)
 
   return ctx.prisma.kBIngestionRun.findMany({
-    where: { resourceId },
+    where: {
+      resourceId,
+      resource: {
+        deletedAt: null,
+        kb: { ownerId: ctx.user.sub, deletedAt: null },
+      },
+    },
     orderBy: { createdAt: 'desc' },
     take: 5,
   })
@@ -475,6 +483,12 @@ export async function deleteKb({ id }: { id: string }, ctx: ContextWithUser) {
       FROM "public"."KBResource"
       WHERE "kbId" = CAST(${id} AS UUID)
         AND "deletedAt" IS NULL
+      FOR UPDATE
+    `
+      await prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT "id"
+      FROM "public"."KBUploadTicket"
+      WHERE "kbId" = CAST(${id} AS UUID)
       FOR UPDATE
     `
       const resources = await prisma.kBResource.findMany({
@@ -593,14 +607,27 @@ export async function requestKbFileUpload(
   )
   await containerClient.createIfNotExists()
 
-  const blobName = `${randomUUID()}.${validated.extension}`
+  const blobId = randomUUID()
+  const blobName = `${blobId}.${validated.extension}`
+  const expiresOn = new Date(Date.now() + 15 * 60 * 1000)
+  await ctx.prisma.$transaction(async (prisma) => {
+    await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
+    await prisma.kBUploadTicket.create({
+      data: {
+        id: blobId,
+        kbId,
+        blobName,
+        expiresAt: expiresOn,
+      },
+    })
+  })
   const permissions = BlobSASPermissions.parse('cw')
   const queryParams = generateBlobSASQueryParameters(
     {
       containerName: containerClient.containerName,
       blobName,
       permissions,
-      expiresOn: new Date(Date.now() + 15 * 60 * 1000),
+      expiresOn,
     },
     credential
   )
@@ -686,43 +713,48 @@ export async function confirmKbFileUpload(
 
   return ctx.prisma.$transaction(async (prisma) => {
     await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
-    let resource: DB.KBResource
-    try {
-      resource = await prisma.kBResource.upsert({
-        where: { id: blobId },
-        create: {
-          id: blobId,
-          kbId,
-          type: DB.KBResourceType.BLOB,
-          title: normalizedTitle,
-          originalFilename,
-          mimeType: validated.contentType,
-          sizeBytes,
-          blobName,
-          blobHref: blobClient.url,
-          status: DB.KBResourceStatus.ADDED,
-        },
-        update: {},
-      })
-    } catch (error) {
+    const racedResource = await prisma.kBResource.findFirst({
+      where: { id: blobId, deletedAt: null },
+    })
+    if (racedResource) {
       if (
-        !(error instanceof DB.Prisma.PrismaClientKnownRequestError) ||
-        error.code !== 'P2002'
+        racedResource.kbId === kbId &&
+        racedResource.type === DB.KBResourceType.BLOB &&
+        racedResource.blobName === blobName
       ) {
-        throw error
+        return racedResource
       }
-
-      const racedResource = await prisma.kBResource.findFirst({
-        where: { id: blobId, deletedAt: null },
-      })
-      if (!racedResource) throw error
-      resource = racedResource
-    }
-
-    if (resource.kbId !== kbId || resource.blobName !== blobName) {
       throw new GraphQLError('KB blob name is invalid')
     }
 
+    const ticket = await prisma.kBUploadTicket.findFirst({
+      where: {
+        id: blobId,
+        kbId,
+        blobName,
+        expiresAt: { gt: new Date() },
+      },
+      select: { id: true },
+    })
+    if (!ticket) {
+      throw new GraphQLError('KB upload ticket is invalid')
+    }
+
+    const resource = await prisma.kBResource.create({
+      data: {
+        id: blobId,
+        kbId,
+        type: DB.KBResourceType.BLOB,
+        title: normalizedTitle,
+        originalFilename,
+        mimeType: validated.contentType,
+        sizeBytes,
+        blobName,
+        blobHref: blobClient.url,
+        status: DB.KBResourceStatus.ADDED,
+      },
+    })
+    await prisma.kBUploadTicket.delete({ where: { id: ticket.id } })
     return resource
   })
 }

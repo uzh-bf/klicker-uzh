@@ -55,6 +55,8 @@ Lecturer-owned knowledge bases use `KB` with child `KBResource` records (`packag
 
 Resources move through `ADDED → QUEUED → PROCESSING → READY | FAILED`. `KBResource` stores the latest operation identity (`resourceVersion`, exact-byte `contentSha256`, attempt, and external operation), the independently active serving identity (`activeResourceVersion` and `activeContentSha256`), and the latest safe error code. `KBIngestionRun` is the append-only, resource-scoped attempt ledger: its UUID is the ingestion attempt/idempotency key, and retrying creates a new run plus a monotonic resource version. A failed replacement therefore remains visible without erasing the previously active serving version. Ingestion transport and atomic status reconciliation are described in [Async & Workers](./async-and-workers.md).
 
+Deletion is asynchronous and fenced by `deletedAt`/`deletedById` on both `KB` and `KBResource`. Owner queries hide tombstones immediately, while a `DELETE` ingestion run advances the resource version and retains local correlation state until the external serving version and digest are both empty. `KBUploadTicket` persists every blob-scoped upload grant with the same 15-minute expiry; confirmation atomically consumes it after creating the resource. The restrictive KB relation keeps pending tickets discoverable while abandoned blobs wait through the 24-hour retention grace.
+
 `KBChatbot` is the typed ownership link between a knowledge base and a chatbot. A chatbot may retain historical disabled links, but the partial unique index `KBChatbot_one_enabled_per_chatbot_key` permits at most one enabled knowledge base per chatbot. The corresponding KB MCP configurations are derived runtime state, not the ownership relation itself.
 
 ## Gamification details

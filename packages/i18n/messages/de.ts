@@ -1224,8 +1224,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     createError: 'Die Wissensdatenbank konnte nicht erstellt werden.',
     deleteTitle: 'Wissensdatenbank löschen',
     deleteDescription:
-      'Möchten Sie „{name}“ wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
-    deleteSuccess: 'Wissensdatenbank wurde gelöscht.',
+      '„{name}“ wird sofort ausgeblendet. Gespeicherte Dateien und der externe Index werden im Hintergrund entfernt. Diese Aktion kann nicht rückgängig gemacht werden.',
+    deleteSuccess:
+      'Wissensdatenbank wurde entfernt. Die Bereinigung läuft im Hintergrund.',
     deleteError: 'Die Wissensdatenbank konnte nicht gelöscht werden.',
     emptyTitle: 'Noch keine Wissensdatenbanken',
     emptyDescription:
@@ -1261,8 +1262,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     statusFailed: 'Fehlgeschlagen',
     deleteResourceTitle: 'Ressource löschen',
     deleteResourceDescription:
-      'Möchten Sie „{title}“ wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
-    deleteResourceSuccess: 'Ressource wurde gelöscht.',
+      '„{title}“ wird sofort ausgeblendet. Die gespeicherte Datei und der externe Index werden im Hintergrund entfernt. Diese Aktion kann nicht rückgängig gemacht werden.',
+    deleteResourceSuccess:
+      'Ressource wurde entfernt. Die Bereinigung läuft im Hintergrund.',
     deleteResourceError: 'Die Ressource konnte nicht gelöscht werden.',
     ingestResource: 'Verarbeiten',
     retryIngestion: 'Erneut versuchen',
