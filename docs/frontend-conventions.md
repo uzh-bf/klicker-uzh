@@ -2,7 +2,7 @@
 type: Frontend Conventions
 title: Frontend Conventions
 description: Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.
-timestamp: '2026-07-25'
+timestamp: '2026-07-28'
 tags:
   - frontend
 ---
@@ -30,7 +30,7 @@ Scope: `frontend-manage`, `frontend-pwa`, `frontend-control`, `auth` — all Nex
 - Function components with hooks only; PascalCase files; app-local components under `src/components/` with relative imports.
 - Clickable rows must ignore events from marked interactive subtrees so opening a dropdown or modal cannot also trigger the row navigation.
 - Async Formik submit handlers must return or await their mutation promise so `isSubmitting` remains active and users cannot navigate away before the save completes.
-- Custom modal drawers must use a neutral element with `role="dialog"` and `aria-modal="true"`, connect the launcher with `aria-controls`, `aria-expanded`, and `aria-haspopup="dialog"`, and restore focus on close. When the drawer lives beside the page root, portal it to `document.body` and make the page root `inert` plus `aria-hidden` while open; restore the exact previous state on cleanup.
+- Custom modal drawers must use a neutral element with `role="dialog"` and `aria-modal="true"`, connect the launcher with `aria-controls`, `aria-expanded`, and `aria-haspopup="dialog"`, trap keyboard focus, and restore focus on close. When the drawer lives beside the page root, portal it to `document.body` and make the page root `inert` plus `aria-hidden` while open; restore the exact previous state on cleanup. Both assistant drawers implement this contract: `apps/frontend-manage/src/components/assistant/ManageAssistantWidget.tsx` and `apps/frontend-pwa/src/components/chatbot/CourseChatDrawer.tsx`.
 
 ## Markdown and Video Embeds
 

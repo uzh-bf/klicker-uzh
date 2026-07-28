@@ -22,6 +22,7 @@ import {
  */
 
 export const CHATBOT_ID = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
+export const SECOND_CHATBOT_ID = '9a0d3f2e-5c8b-4d4f-a06e-2b3c4d5e6f70'
 export const DISCLAIMER_ID = '1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f'
 
 // participant enrolled in COURSE_ID_TEST by Playwright seed
@@ -88,6 +89,33 @@ export async function ensureChatbotSeeded() {
     },
     update: { modelSelection: true, disclaimerId: DISCLAIMER_ID },
   })
+}
+
+/** Add a second chatbot to the seeded course for selector/drawer coverage. */
+export async function ensureSecondChatbotSeeded() {
+  const prisma = await getPrisma()
+  await prisma.chatbot.upsert({
+    where: { id: SECOND_CHATBOT_ID },
+    create: {
+      id: SECOND_CHATBOT_ID,
+      name: 'E2E Chatbot Two',
+      description: 'Second chatbot used by the Playwright drawer suite.',
+      ownerId: USER_ID_TEST,
+      courseId: COURSE_ID_TEST,
+      systemPrompts: {
+        tutor: {
+          prompt: 'You are a second helpful tutor.',
+          description: 'Tutor mode.',
+        },
+      },
+    },
+    update: {},
+  })
+}
+
+export async function removeSecondChatbotSeed() {
+  const prisma = await getPrisma()
+  await prisma.chatbot.deleteMany({ where: { id: SECOND_CHATBOT_ID } })
 }
 
 /** Mint a participant_token (HS256/APP_SECRET, sub = participantId) */

@@ -109,10 +109,10 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   }
 }
 
-const CourseChatbotEntryPage = ({
+function CourseChatbotEntryPage({
   noChatbot,
   courseLink,
-}: CourseChatbotEntryPageProps) => {
+}: CourseChatbotEntryPageProps) {
   const t = useTranslations()
 
   return (
@@ -130,6 +130,7 @@ const CourseChatbotEntryPage = ({
           <Link
             href={courseLink}
             className="bg-uzh-blue hover:bg-uzh-blue-80 rounded px-4 py-2 text-center text-white"
+            data-cy="course-chatbot-course-link"
           >
             {t('pwa.chatbot.goToCourse')}
           </Link>

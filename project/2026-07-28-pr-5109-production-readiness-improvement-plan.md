@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Date | 2026-07-28 |
-| Status | PROPOSED — planning complete; implementation not started |
+| Status | IN PROGRESS — S0 and S2 complete locally; S1 awaiting payload-envelope ruling |
 | PR | [#5109](https://github.com/uzh-bf/klicker-uzh/pull/5109) |
 | Remote branch | `codex/manage-assistant-mcp-v3-ai` → `v3-ai` |
 | Local worktree | `.claude/worktrees/finalize-v3-ai-branch-0fa103` |
@@ -800,3 +800,34 @@ approved.
   `20a953251`; branch scope remains 145 commits / 305 files / +25,197 /
   -766; live checks remain 50 PASS and the one inherited GitGuardian failure.
   S0 implementation work is the plan commit only; no remote or PR mutation.
+- 2026-07-28: S0 committed locally as `2971bf532` with
+  `docs(chat): plan PR 5109 production-readiness improvements`; the hook's full
+  `pnpm run check:all` passed. Nothing was pushed.
+- 2026-07-28: S1 measurement found that the shared client permits three 5 MiB
+  images and that their serialized request is about 20.194 MiB; two images are
+  about 13.528 MiB, while 50 normal text messages are about 0.194 MiB. This
+  conflicts with the approved 16 MiB hard ceiling if all three images remain
+  supported. Recommended ruling: keep 16 MiB and cap only the Manage assistant
+  at two images; the participant chat remains at three. S1 implementation is
+  paused pending that product-envelope ruling.
+- 2026-07-28: S2 implementation completed. The PWA course-chat drawer now
+  portals to `document.body`, exposes the complete launcher/dialog contract,
+  traps focus, makes `#__next` inert and assistive-technology-hidden while
+  open, closes on route/availability transitions, restores the exact root state
+  and launcher focus on close, and exposes stable selectors. Dedicated
+  Playwright coverage includes both focus boundaries, route cleanup, keyboard
+  new-tab activation, multiple chatbots, iframe targets, desktop and
+  embedded-mobile controls, and both entry fallback cases. Verification: PWA
+  `check` passed; Playwright TypeScript and discovery passed; the amended
+  focused suite passed 6/6 in 13.2 seconds against the exact branch-local
+  devcontainer; the existing `Y-chat` suite passed 47/47 with its one
+  pre-existing skipped root-edit case. Authenticated Chromium EN desktop,
+  DE desktop, and 390x844 mobile checks confirmed live focus/root semantics,
+  localized accessible naming, and close-control geometry. Screenshots are
+  retained locally under `project/_local/screenshots/`. Independent standards
+  and spec review found the route-cleanup gap and weak focus/new-tab assertions;
+  all were fixed and reverified. The existing frontend and Playwright skills
+  already describe the procedure, so no skill workflow changed. S2 is committed
+  as the current local `fix(pwa): make course chat drawer keyboard-modal`
+  commit; its review-fix amendment and full 25-check hook passed. Nothing was
+  pushed.
