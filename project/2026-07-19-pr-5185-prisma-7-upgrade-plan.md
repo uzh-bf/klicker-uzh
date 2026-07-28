@@ -701,6 +701,7 @@ Verified without changes:
   - CodeRabbit thread on `datasource.prisma`: the finding does not reproduce. `prisma validate` on Prisma 7.8.0 reports the split schema valid with `provider = "postgres"`, and Analytics has owned the same value since #4162
   - verification on the integrated head: frozen install; Prisma generate (Client 7.8.0, Pothos, JSON types 5.1.0), check, and build; `check:prisma-sync` in sync; `check:all` 25/25 checks and 7/7 lint; `pnpm run build` 22/22 and `pnpm run build:test` 20/20; Grading 10/10, Util 46/46, Chat 40/40, Office Add-in 6/6; the guarded Auth adapter round-trip; Analytics Python client generation and the Analytics Docker image build
   - GraphQL: 523/523 tests across all 27 files passed against a clean migrated database. The previously CI-only `instancePointCorrections` and `liveQuizPointCorrections` files pass locally once a Hatchet general worker runs outside `tsx --watch`; the stack's watched worker still dies from the known SDK defect, which is unrelated to Prisma
+  - all 43 GitHub checks passed at `4dbe0a919`, including the ready-state Analytics AMD64 and ARM64 image jobs that draft state had skipped; the PR is `MERGEABLE` and blocked only on required maintainer approval
   - local harness limits worth recording: the devcontainer has no Docker, so `test:local` cannot bootstrap and the suite runs against an isolated `klicker-graphql-test` database; `prisma db push` omits the raw `VerifiableCredential_lifecycle_check` constraint, so the database must be created through `migrate reset`; and `test/helpers.ts` hardcodes `127.0.0.1:6379/6380`, which needs a TCP bridge to the `redis_exec` and `redis_assessment` services
 
 ## Approval Record
@@ -713,6 +714,5 @@ On 2026-07-19, the user approved:
 
 ## Next Steps
 
-1. Watch the GitHub checks on the integrated head, including the ready-state Analytics AMD64 and ARM64 image jobs.
-2. Obtain required maintainer approval; merge only with explicit authority and passing required checks.
-3. Optional follow-up outside this branch: the watched Hatchet worker dies under `tsx --watch`, and the GraphQL test helpers hardcode `127.0.0.1` Redis endpoints, which keeps `test:local` Docker-only inside the devcontainer.
+1. Obtain required maintainer approval; merge only with explicit authority. All 43 checks already pass at `4dbe0a919`.
+2. Optional follow-up outside this branch: the watched Hatchet worker dies under `tsx --watch`, and the GraphQL test helpers hardcode `127.0.0.1` Redis endpoints, which keeps `test:local` Docker-only inside the devcontainer.
