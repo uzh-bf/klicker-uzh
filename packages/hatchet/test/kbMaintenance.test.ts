@@ -127,9 +127,23 @@ describe('KB retention maintenance', () => {
         ingestionAttemptId: ATTEMPT_ID,
         resourceVersion: 4,
         externalOperationId: failedOperationId,
-        ingestionRuns: [{ id: ATTEMPT_ID }],
+        ingestionRuns: [{ id: ATTEMPT_ID, status: terminalStatus }],
       }
       const prisma = maintenancePrisma({ pendingDispatch: [failed] })
+      prisma.kBResource.findMany.mockReset()
+      prisma.kBResource.findMany
+        .mockImplementationOnce(async (args) => {
+          const terminalStatuses = args.select.ingestionRuns.where.status.in
+          return terminalStatuses.includes(terminalStatus) ? [failed] : []
+        })
+        .mockResolvedValueOnce([])
+      prisma.kBResource.updateMany
+        .mockReset()
+        .mockImplementationOnce(async (args) => {
+          const terminalStatuses = args.where.ingestionRuns.some.status.in
+          return { count: terminalStatuses.includes(terminalStatus) ? 1 : 0 }
+        })
+        .mockResolvedValue({ count: 1 })
       prisma.kBResource.findUnique.mockImplementation(async () => {
         const retryAttemptId =
           prisma.kBIngestionRun.create.mock.calls[0]?.[0].data.id
