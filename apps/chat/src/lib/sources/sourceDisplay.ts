@@ -67,6 +67,10 @@ export function parseTimestampSeconds(value: string): number | undefined {
   return undefined
 }
 
+function parseLabeledTimestampSeconds(value: string): number | undefined {
+  return /^\s*\d+\s*$/.test(value) ? undefined : parseTimestampSeconds(value)
+}
+
 /**
  * A video position for the card and the hover preview.
  *
@@ -80,7 +84,7 @@ export function parseTimestampSeconds(value: string): number | undefined {
  */
 export function getSourceTimestamp(source: ChatSource): string | undefined {
   if (source.labeledPage) {
-    const labeled = parseTimestampSeconds(source.labeledPage)
+    const labeled = parseLabeledTimestampSeconds(source.labeledPage)
     if (labeled !== undefined) return formatTimestamp(labeled)
   }
 
@@ -186,7 +190,7 @@ export function getSourceSecondaryLine(
   // to the video branch above.
   if (
     source.labeledPage &&
-    parseTimestampSeconds(source.labeledPage) === undefined
+    parseLabeledTimestampSeconds(source.labeledPage) === undefined
   ) {
     parts.push(source.labeledPage)
   }

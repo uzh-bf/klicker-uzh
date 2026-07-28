@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { formatModeLabel } from '../src/lib/config/modes'
+import { formatModeLabel, isKnownMode } from '../src/lib/config/modes'
 
 // Stands in for next-intl's `t`, using the same shape the real English
 // messages produce for the `chat.modes.*` keys this module reads.
@@ -21,5 +21,10 @@ describe('formatModeLabel', () => {
 
   test('only capitalizes the first character of an unknown mode', () => {
     expect(formatModeLabel(t, 'examPrep')).toBe('ExamPrep')
+  })
+
+  test('does not treat inherited object keys as known modes', () => {
+    expect(isKnownMode('toString')).toBe(false)
+    expect(formatModeLabel(t, 'toString')).toBe('ToString')
   })
 })

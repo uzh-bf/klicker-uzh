@@ -2,7 +2,8 @@
 
 - Date: 2026-07-27. Author: agent session on PR #5197.
 - Branch: `claude/student-chat-v3-design-3459db` → `v3`,
-  [PR #5197](https://github.com/uzh-bf/klicker-uzh/pull/5197), head `acc424981`.
+  [PR #5197](https://github.com/uzh-bf/klicker-uzh/pull/5197). Use the live PR head;
+  do not copy a stale SHA from this roadmap.
 - Parent plan: [2026-07-26-pr-5197-student-chat-v3-design-alignment-plan.md](./2026-07-26-pr-5197-student-chat-v3-design-alignment-plan.md)
   (execution history + environment recipe). Earlier plans: 2026-07-19 reskin,
   2026-07-23 production readiness.
@@ -30,7 +31,7 @@
 
 - Problem: PR is review-complete but not merged. Merge authority = maintainer.
 - Do:
-  1. Watch CI on `acc424981`. Known flake: Playwright shard 5
+  1. Watch CI on the current PR head. Known flake: Playwright shard 5
      (G-elements-mc/U-catalog) — rerun failed jobs once before debugging.
   2. Attach UI screenshots to the PR (CLI cannot upload). Recapture per plan
      §"Environment + verification recipe": seeded four-source answer,
@@ -51,7 +52,7 @@
   1. Citation contract: ask a doc_query-backed chatbot factual questions;
      confirm answers emit `[n]` markers that resolve to the rendered source
      cards, and that repeat sources reuse their number
-     (`apps/chat/src/lib/prompts/citationInstructions.ts`).
+     (`apps/chat/src/lib/server/citationInstructions.ts`).
   2. Orthography contract: German answers use ss/real umlauts, never ae/oe/ue
      (`withLanguageStyleContract`, unconditional in the chat route).
   3. Multi-step runs: credits decrease per `calcCost`, reasoning/tool

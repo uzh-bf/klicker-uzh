@@ -1,5 +1,12 @@
 # Log
 
+## 2026-07-28
+
+- **Update**: [chat-platform](./chat-platform.md) records the final PR #5197 review
+  fixes: live announcement of disclaimer failures, a focusable explanation for unavailable
+  image edits, localized mode tooltips with own-key mode detection, and the rule that bare
+  numeric publisher labels stay page labels while URL time parameters may use bare seconds.
+
 ## 2026-07-27
 
 - **Update**: [chat-platform](./chat-platform.md) records the design-alignment round: thread

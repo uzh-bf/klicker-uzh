@@ -68,6 +68,12 @@ describe('getSourceTimestamp', () => {
     ).toBe('12:34')
   })
 
+  test('does not read a bare numeric page label as seconds', () => {
+    expect(
+      getSourceTimestamp(source({ type: 'video', labeledPage: '12' }))
+    ).toBeUndefined()
+  })
+
   test.each([
     ['t', 'https://example.com/v/abc?t=90'],
     ['start', 'https://example.com/v/abc?start=90'],
@@ -140,6 +146,12 @@ describe('getSourceSecondaryLine', () => {
     expect(
       getSourceSecondaryLine(source({ page: 4, labeledPage: 'IV' }), t)
     ).toBe('p. 4 · IV')
+  })
+
+  test('documents keep a bare numeric publisher label', () => {
+    expect(
+      getSourceSecondaryLine(source({ page: 4, labeledPage: '12' }), t)
+    ).toBe('p. 4 · 12')
   })
 
   test('documents without a page fall back to the url', () => {

@@ -290,7 +290,7 @@ export const Thread: FC<ThreadProps> = ({ chatbotAvatar }) => {
             : 'px-2 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-4'
         )}
       >
-        <div className="from-background pointer-events-none absolute inset-x-0 bottom-full h-12 to-transparent" />
+        <div className="from-background bg-linear-to-t pointer-events-none absolute inset-x-0 bottom-full h-12 to-transparent" />
         {!embedded && <ThreadScrollToBottom />}
         <Composer />
         {/* S6: standalone-only, same as ThreadScrollToBottom above — an
@@ -951,7 +951,14 @@ const UserActionBar: FC = () => {
       <Tooltip>
         <TooltipTrigger asChild>
           {editDisabled ? (
-            <button disabled className={actionBarButtonClassName}>
+            <button
+              type="button"
+              aria-disabled="true"
+              className={twMerge(
+                actionBarButtonClassName,
+                'cursor-not-allowed opacity-50'
+              )}
+            >
               <PencilOffIcon />
               <span className="sr-only">
                 {t('chat.message.editUnavailable')}
