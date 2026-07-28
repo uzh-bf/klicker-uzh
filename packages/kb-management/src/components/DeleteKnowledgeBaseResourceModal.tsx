@@ -1,23 +1,23 @@
 import { useMutation } from '@apollo/client'
 import {
   DeleteKbResourceDocument,
-  GetKbDocument,
-  type GetKbQuery,
+  type GetKbResourcesQuery,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React from 'react'
 
-type KnowledgeBaseResource = GetKbQuery['getKb']['resources'][number]
+type KnowledgeBaseResource =
+  GetKbResourcesQuery['getKbResources']['items'][number]
 
 function DeleteKnowledgeBaseResourceModal({
-  kbId,
   resource,
   onClose,
+  onDeleted,
 }: {
-  kbId: string
   resource: KnowledgeBaseResource
   onClose: () => void
+  onDeleted: () => Promise<unknown>
 }) {
   const t = useTranslations()
   const [deleteResource, { loading }] = useMutation(DeleteKbResourceDocument)
@@ -28,9 +28,8 @@ function DeleteKnowledgeBaseResourceModal({
     try {
       await deleteResource({
         variables: { id: resource.id },
-        refetchQueries: [{ query: GetKbDocument, variables: { id: kbId } }],
-        awaitRefetchQueries: true,
       })
+      await onDeleted()
       toast({ type: 'success', message: t('kb.deleteResourceSuccess') })
       onClose()
     } catch (error) {

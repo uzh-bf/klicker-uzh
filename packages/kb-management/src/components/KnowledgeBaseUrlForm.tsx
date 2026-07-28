@@ -1,11 +1,9 @@
 import { useMutation } from '@apollo/client'
-import {
-  CreateKbUrlResourceDocument,
-  GetKbDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { CreateKbUrlResourceDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H3, TextField, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { type FormEvent, useState } from 'react'
+import { getGraphQLErrorCode } from '../graphqlError'
 
 function isValidWebUrl(value: string) {
   try {
@@ -16,7 +14,13 @@ function isValidWebUrl(value: string) {
   }
 }
 
-function KnowledgeBaseUrlForm({ kbId }: { kbId: string }) {
+function KnowledgeBaseUrlForm({
+  kbId,
+  onResourceCreated,
+}: {
+  kbId: string
+  onResourceCreated: () => Promise<unknown>
+}) {
   const t = useTranslations()
   const [title, setTitle] = useState('')
   const [url, setUrl] = useState('')
@@ -35,16 +39,22 @@ function KnowledgeBaseUrlForm({ kbId }: { kbId: string }) {
     try {
       await createUrlResource({
         variables: { kbId, title: title.trim(), url: url.trim() },
-        refetchQueries: [{ query: GetKbDocument, variables: { id: kbId } }],
-        awaitRefetchQueries: true,
       })
+      await onResourceCreated()
       setTitle('')
       setUrl('')
       setUrlTouched(false)
       toast({ type: 'success', message: t('kb.linkSuccess') })
     } catch (error) {
       console.error('Failed to create KB URL resource', error)
-      toast({ type: 'error', message: t('kb.linkError') })
+      const code = getGraphQLErrorCode(error)
+      const message =
+        code === 'KB_RESOURCE_LIMIT_REACHED'
+          ? t('kb.resourceLimitError')
+          : code === 'KB_STORAGE_LIMIT_REACHED'
+            ? t('kb.storageLimitError')
+            : t('kb.linkError')
+      toast({ type: 'error', message })
     }
   }
 
@@ -59,6 +69,7 @@ function KnowledgeBaseUrlForm({ kbId }: { kbId: string }) {
       <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
         <TextField
           id="kb-url-title"
+          autoComplete="off"
           value={title}
           onChange={setTitle}
           label={t('kb.resourceTitleLabel')}
@@ -68,6 +79,8 @@ function KnowledgeBaseUrlForm({ kbId }: { kbId: string }) {
         />
         <TextField
           id="kb-url"
+          autoComplete="off"
+          spellCheck={false}
           value={url}
           onChange={setUrl}
           label={t('kb.urlLabel')}

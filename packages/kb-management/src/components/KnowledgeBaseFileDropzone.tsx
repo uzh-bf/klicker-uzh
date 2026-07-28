@@ -1,13 +1,13 @@
 import { useMutation } from '@apollo/client'
 import {
   ConfirmKbFileUploadDocument,
-  GetKbDocument,
   RequestKbFileUploadDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { H3, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
 import { useDropzone } from 'react-dropzone'
+import { getGraphQLErrorCode } from '../graphqlError'
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024
 const CONTENT_TYPES: Record<string, string> = {
@@ -21,7 +21,13 @@ const ACCEPTED_FILES = {
   'text/plain': ['.txt', '.md'],
 }
 
-function KnowledgeBaseFileDropzone({ kbId }: { kbId: string }) {
+function KnowledgeBaseFileDropzone({
+  kbId,
+  onResourceCreated,
+}: {
+  kbId: string
+  onResourceCreated: () => Promise<unknown>
+}) {
   const t = useTranslations()
   const [uploading, setUploading] = useState(false)
   const [requestUpload] = useMutation(RequestKbFileUploadDocument)
@@ -69,13 +75,21 @@ function KnowledgeBaseFileDropzone({ kbId }: { kbId: string }) {
           mimeType: contentType,
           sizeBytes: file.size,
         },
-        refetchQueries: [{ query: GetKbDocument, variables: { id: kbId } }],
-        awaitRefetchQueries: true,
       })
+      await onResourceCreated()
       toast({ type: 'success', message: t('kb.fileUploadSuccess') })
-    } catch {
+    } catch (error) {
       console.error('Failed to upload KB file')
-      toast({ type: 'error', message: t('kb.fileUploadError') })
+      const code = getGraphQLErrorCode(error)
+      const message =
+        code === 'KB_RESOURCE_LIMIT_REACHED'
+          ? t('kb.resourceLimitError')
+          : code === 'KB_STORAGE_LIMIT_REACHED'
+            ? t('kb.storageLimitError')
+            : code === 'KB_UPLOAD_TICKET_MISMATCH'
+              ? t('kb.uploadMismatchError')
+              : t('kb.fileUploadError')
+      toast({ type: 'error', message })
     } finally {
       setUploading(false)
     }

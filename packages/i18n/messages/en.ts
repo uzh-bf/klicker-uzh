@@ -1230,8 +1230,32 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     emptyDescription: 'Create a knowledge base to add your first resources.',
     noDescription: 'No description',
     loadError: 'The knowledge bases could not be loaded.',
+    searchKnowledgeBases: 'Search knowledge bases',
+    searchKnowledgeBasesPlaceholder: 'Search by name or description',
+    noSearchResults: 'No matching knowledge bases',
+    noSearchResultsDescription: 'Try a different name or description.',
+    searchResultCount:
+      '{count, plural, =0 {No knowledge bases} one {# knowledge base} other {# knowledge bases}}',
+    catalogMetrics:
+      '{resources, plural, one {# resource} other {# resources}} · {chatbots, plural, one {# connected chatbot} other {# connected chatbots}}',
+    loadMore: 'Load more knowledge bases',
     notFound: 'The knowledge base could not be found.',
     backToList: 'Back to knowledge bases',
+    metricsTitle: 'Usage and connections',
+    metricVisibleResources: 'Visible resources',
+    metricReservedResources:
+      '{count, plural, =0 {No upload reservations} one {# upload reservation} other {# upload reservations}}',
+    metricStorage: 'Storage quota',
+    metricStorageBreakdown:
+      '{visible} visible · {reserved} reserved for uploads',
+    unknownSizesReserved:
+      '{count, plural, one {# legacy resource reserves up to 25 MiB} other {# legacy resources reserve up to 25 MiB each}}',
+    metricPendingCleanup: 'Pending cleanup',
+    metricPendingCleanupSize: '{size} awaiting cleanup',
+    metricLinkedConsumers: 'Connected chatbots',
+    metricQuotaResources: '{count} resources count toward the quota',
+    quotaReleaseMessage:
+      'Deleted resources continue to count toward the quota until background cleanup finishes.',
     fileUploadTitle: 'Upload a file',
     fileUploadDescription: 'Add course material from your computer.',
     fileDropPrompt: 'Drop a file here or click to choose one',
@@ -1248,6 +1272,20 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     linkSuccess: 'Link added to the knowledge base.',
     linkError: 'The link could not be added.',
     resourcesTitle: 'Resources',
+    resourcesLoadError: 'The resources could not be loaded.',
+    searchResources: 'Search resources',
+    searchResourcesPlaceholder: 'Search title, filename or URL',
+    filterType: 'Type',
+    filterStatus: 'Status',
+    filterAll: 'All',
+    typeFile: 'File',
+    typeUrl: 'Link',
+    noResourceResults: 'No resources match these filters.',
+    resourceResultCount:
+      '{count, plural, =0 {No resources} one {# resource} other {# resources}}',
+    selectAllPage: 'Select all available resources on this page',
+    selectResource: 'Select “{title}”',
+    loadMoreResources: 'Load more resources',
     noResources: 'No resources have been added yet.',
     updatedAt: 'Updated {date}',
     statusAdded: 'Added',
@@ -1261,12 +1299,27 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     deleteResourceSuccess:
       'Resource removed. Background cleanup is in progress.',
     deleteResourceError: 'The resource could not be deleted.',
+    bulkDelete: 'Delete selected ({count})',
+    bulkDeleteTitle:
+      '{count, plural, one {Delete # resource} other {Delete # resources}}',
+    bulkDeleteConfirm:
+      '{count, plural, one {Delete resource} other {Delete # resources}}',
+    bulkDeleteDescription:
+      '{count, plural, one {The selected resource will disappear immediately. Stored files and external indexes are removed in the background. This action cannot be undone.} other {The # selected resources will disappear immediately. Stored files and external indexes are removed in the background. This action cannot be undone.}}',
+    bulkDeleteSuccess:
+      '{count, plural, one {Resource removed. Background cleanup is in progress.} other {# resources removed. Background cleanup is in progress.}}',
+    bulkDeleteError:
+      'The selected resources could not be deleted. Nothing was changed.',
     ingestResource: 'Ingest',
     retryIngestion: 'Retry',
     reingestResource: 'Re-ingest',
     ingestResourceSuccess: 'Resource queued for ingestion.',
     ingestResourceError: 'The resource could not be queued for ingestion.',
     operationStatus: 'Latest ingestion',
+    operationInProgress:
+      'This operation is running in the background. You can leave this page.',
+    backgroundOperationsMessage:
+      'One or more operations are still running. Statuses update automatically, and you can safely leave this page.',
     servingStatus: 'Available to AI',
     notServing: 'Not available yet',
     servingCurrentVersion: 'Current version {version}',
@@ -1283,9 +1336,21 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     runStatusSuperseded: 'Superseded',
     ingestionStartError: 'The ingestion operation could not be started.',
     storageLimitError:
-      'This resource exceeds the 500 MB knowledge base storage limit.',
+      'This resource exceeds the 500 MiB knowledge base storage limit.',
+    resourceLimitError:
+      'This knowledge base has reached its limit of 100 resources.',
+    uploadMismatchError:
+      'The uploaded file no longer matches its upload reservation. Please upload it again.',
     ingestionFailed: 'The ingestion operation failed.',
     ingestionSuperseded: 'The ingestion operation was superseded.',
+    inspectResource: 'Inspect',
+    inspectorTitle: 'Resource details',
+    sourceType: 'Source type',
+    sourceLocation: 'Source URL',
+    fileName: 'Original filename',
+    mimeType: 'Media type',
+    fileSize: 'File size',
+    createdAt: 'Created',
     chatbotsTitle: 'Connected chatbots',
     chatbotsDescription:
       'Choose which chatbot can use this knowledge base. A chatbot can use one knowledge base at a time.',

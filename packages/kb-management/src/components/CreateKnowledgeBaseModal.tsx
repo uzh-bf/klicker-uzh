@@ -1,13 +1,16 @@
 import { useMutation } from '@apollo/client'
-import {
-  CreateKbDocument,
-  GetUserKbsDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { CreateKbDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Modal, TextareaField, TextField, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
 
-function CreateKnowledgeBaseModal({ onClose }: { onClose: () => void }) {
+function CreateKnowledgeBaseModal({
+  onClose,
+  onCreated,
+}: {
+  onClose: () => void
+  onCreated: () => Promise<unknown>
+}) {
   const t = useTranslations()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -23,9 +26,8 @@ function CreateKnowledgeBaseModal({ onClose }: { onClose: () => void }) {
           name: trimmedName,
           description: description.trim() || null,
         },
-        refetchQueries: [{ query: GetUserKbsDocument }],
-        awaitRefetchQueries: true,
       })
+      await onCreated()
       toast({ type: 'success', message: t('kb.createSuccess') })
       onClose()
     } catch (error) {
@@ -54,6 +56,7 @@ function CreateKnowledgeBaseModal({ onClose }: { onClose: () => void }) {
       <div className="space-y-4">
         <TextField
           id="knowledge-base-name"
+          autoComplete="off"
           value={name}
           onChange={setName}
           label={t('kb.nameLabel')}
@@ -64,6 +67,7 @@ function CreateKnowledgeBaseModal({ onClose }: { onClose: () => void }) {
         />
         <TextareaField
           id="knowledge-base-description"
+          autoComplete="off"
           value={description}
           onChange={setDescription}
           label={t('kb.descriptionLabel')}

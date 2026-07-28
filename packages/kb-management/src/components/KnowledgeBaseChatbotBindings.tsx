@@ -16,7 +16,13 @@ import {
 import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
 
-function KnowledgeBaseChatbotBindings({ kbId }: { kbId: string }) {
+function KnowledgeBaseChatbotBindings({
+  kbId,
+  onChanged,
+}: {
+  kbId: string
+  onChanged: () => Promise<unknown>
+}) {
   const t = useTranslations()
   const [selectedChatbotId, setSelectedChatbotId] = useState<
     string | undefined
@@ -58,6 +64,7 @@ function KnowledgeBaseChatbotBindings({ kbId }: { kbId: string }) {
         refetchQueries,
         awaitRefetchQueries: true,
       })
+      await onChanged()
       setSelectedChatbotId(undefined)
       toast({ type: 'success', message: t('kb.chatbotAttachSuccess') })
     } catch (mutationError) {
@@ -75,6 +82,7 @@ function KnowledgeBaseChatbotBindings({ kbId }: { kbId: string }) {
         refetchQueries,
         awaitRefetchQueries: true,
       })
+      await onChanged()
       toast({ type: 'success', message: t('kb.chatbotDetachSuccess') })
     } catch (mutationError) {
       console.error('Failed to detach KB from chatbot', mutationError)

@@ -1233,8 +1233,33 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       'Erstellen Sie eine Wissensdatenbank, um erste Ressourcen hinzuzufügen.',
     noDescription: 'Keine Beschreibung',
     loadError: 'Die Wissensdatenbanken konnten nicht geladen werden.',
+    searchKnowledgeBases: 'Wissensdatenbanken suchen',
+    searchKnowledgeBasesPlaceholder: 'Nach Name oder Beschreibung suchen',
+    noSearchResults: 'Keine passenden Wissensdatenbanken',
+    noSearchResultsDescription:
+      'Versuchen Sie es mit einem anderen Namen oder einer anderen Beschreibung.',
+    searchResultCount:
+      '{count, plural, =0 {Keine Wissensdatenbanken} one {# Wissensdatenbank} other {# Wissensdatenbanken}}',
+    catalogMetrics:
+      '{resources, plural, one {# Ressource} other {# Ressourcen}} · {chatbots, plural, one {# verknüpfter Chatbot} other {# verknüpfte Chatbots}}',
+    loadMore: 'Weitere Wissensdatenbanken laden',
     notFound: 'Die Wissensdatenbank konnte nicht gefunden werden.',
     backToList: 'Zurück zu den Wissensdatenbanken',
+    metricsTitle: 'Nutzung und Verknüpfungen',
+    metricVisibleResources: 'Sichtbare Ressourcen',
+    metricReservedResources:
+      '{count, plural, =0 {Keine Upload-Reservierungen} one {# Upload-Reservierung} other {# Upload-Reservierungen}}',
+    metricStorage: 'Speicherlimit',
+    metricStorageBreakdown:
+      '{visible} sichtbar · {reserved} für Uploads reserviert',
+    unknownSizesReserved:
+      '{count, plural, one {# ältere Ressource reserviert bis zu 25 MiB} other {# ältere Ressourcen reservieren je bis zu 25 MiB}}',
+    metricPendingCleanup: 'Ausstehende Bereinigung',
+    metricPendingCleanupSize: '{size} warten auf die Bereinigung',
+    metricLinkedConsumers: 'Verknüpfte Chatbots',
+    metricQuotaResources: '{count} Ressourcen werden dem Limit angerechnet',
+    quotaReleaseMessage:
+      'Gelöschte Ressourcen werden dem Limit weiterhin angerechnet, bis die Bereinigung im Hintergrund abgeschlossen ist.',
     fileUploadTitle: 'Datei hochladen',
     fileUploadDescription: 'Fügen Sie Kursmaterial von Ihrem Computer hinzu.',
     fileDropPrompt: 'Datei hier ablegen oder zum Auswählen klicken',
@@ -1253,6 +1278,20 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     linkSuccess: 'Link wurde zur Wissensdatenbank hinzugefügt.',
     linkError: 'Der Link konnte nicht hinzugefügt werden.',
     resourcesTitle: 'Ressourcen',
+    resourcesLoadError: 'Die Ressourcen konnten nicht geladen werden.',
+    searchResources: 'Ressourcen suchen',
+    searchResourcesPlaceholder: 'Titel, Dateiname oder URL suchen',
+    filterType: 'Typ',
+    filterStatus: 'Status',
+    filterAll: 'Alle',
+    typeFile: 'Datei',
+    typeUrl: 'Link',
+    noResourceResults: 'Keine Ressourcen entsprechen diesen Filtern.',
+    resourceResultCount:
+      '{count, plural, =0 {Keine Ressourcen} one {# Ressource} other {# Ressourcen}}',
+    selectAllPage: 'Alle verfügbaren Ressourcen auf dieser Seite auswählen',
+    selectResource: '„{title}“ auswählen',
+    loadMoreResources: 'Weitere Ressourcen laden',
     noResources: 'Es wurden noch keine Ressourcen hinzugefügt.',
     updatedAt: 'Aktualisiert {date}',
     statusAdded: 'Hinzugefügt',
@@ -1266,6 +1305,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     deleteResourceSuccess:
       'Ressource wurde entfernt. Die Bereinigung läuft im Hintergrund.',
     deleteResourceError: 'Die Ressource konnte nicht gelöscht werden.',
+    bulkDelete: 'Ausgewählte löschen ({count})',
+    bulkDeleteTitle:
+      '{count, plural, one {# Ressource löschen} other {# Ressourcen löschen}}',
+    bulkDeleteConfirm:
+      '{count, plural, one {Ressource löschen} other {# Ressourcen löschen}}',
+    bulkDeleteDescription:
+      '{count, plural, one {Die ausgewählte Ressource wird sofort ausgeblendet. Gespeicherte Dateien und externe Indizes werden im Hintergrund entfernt. Diese Aktion kann nicht rückgängig gemacht werden.} other {Die # ausgewählten Ressourcen werden sofort ausgeblendet. Gespeicherte Dateien und externe Indizes werden im Hintergrund entfernt. Diese Aktion kann nicht rückgängig gemacht werden.}}',
+    bulkDeleteSuccess:
+      '{count, plural, one {Ressource wurde entfernt. Die Bereinigung läuft im Hintergrund.} other {# Ressourcen wurden entfernt. Die Bereinigung läuft im Hintergrund.}}',
+    bulkDeleteError:
+      'Die ausgewählten Ressourcen konnten nicht gelöscht werden. Es wurde nichts verändert.',
     ingestResource: 'Verarbeiten',
     retryIngestion: 'Erneut versuchen',
     reingestResource: 'Neu verarbeiten',
@@ -1273,6 +1323,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     ingestResourceError:
       'Die Ressource konnte nicht zur Verarbeitung eingeplant werden.',
     operationStatus: 'Letzte Verarbeitung',
+    operationInProgress:
+      'Dieser Vorgang läuft im Hintergrund. Sie können diese Seite verlassen.',
+    backgroundOperationsMessage:
+      'Ein oder mehrere Vorgänge laufen noch. Die Status werden automatisch aktualisiert und Sie können diese Seite sicher verlassen.',
     servingStatus: 'Für KI verfügbar',
     notServing: 'Noch nicht verfügbar',
     servingCurrentVersion: 'Aktuelle Version {version}',
@@ -1290,9 +1344,21 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     ingestionStartError:
       'Der Verarbeitungsvorgang konnte nicht gestartet werden.',
     storageLimitError:
-      'Diese Ressource überschreitet das Speicherlimit von 500 MB für die Wissensdatenbank.',
+      'Diese Ressource überschreitet das Speicherlimit von 500 MiB für die Wissensdatenbank.',
+    resourceLimitError:
+      'Diese Wissensdatenbank hat ihr Limit von 100 Ressourcen erreicht.',
+    uploadMismatchError:
+      'Die hochgeladene Datei stimmt nicht mehr mit ihrer Upload-Reservierung überein. Laden Sie sie erneut hoch.',
     ingestionFailed: 'Der Verarbeitungsvorgang ist fehlgeschlagen.',
     ingestionSuperseded: 'Der Verarbeitungsvorgang wurde ersetzt.',
+    inspectResource: 'Details',
+    inspectorTitle: 'Ressourcendetails',
+    sourceType: 'Quelltyp',
+    sourceLocation: 'Quell-URL',
+    fileName: 'Ursprünglicher Dateiname',
+    mimeType: 'Medientyp',
+    fileSize: 'Dateigrösse',
+    createdAt: 'Erstellt',
     chatbotsTitle: 'Verknüpfte Chatbots',
     chatbotsDescription:
       'Wählen Sie, welcher Chatbot diese Wissensdatenbank verwenden kann. Ein Chatbot kann jeweils eine Wissensdatenbank verwenden.',
