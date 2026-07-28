@@ -18,7 +18,7 @@
     "jose": "~5.9.4",
     "localforage": "~1.10.0",
     "typescript": "~6.0.3",
-    "uuid": "~10.0.0"
+    "uuid": "~14.0.0"
   },
   "scripts": {
     "check": "tsc --noEmit -p tsconfig.json",

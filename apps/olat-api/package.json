@@ -16,7 +16,7 @@
     "express-rate-limit": "7.5.0",
     "graphql": "16.11.0",
     "remeda": "2.15.0",
-    "uuid": "10.0.0"
+    "uuid": "14.0.0"
   },
   "devDependencies": {
     "@klicker-uzh/util": "workspace:*",

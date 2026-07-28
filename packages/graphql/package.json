@@ -34,7 +34,7 @@
     "nodemailer": "6.9.15",
     "remeda": "2.15.0",
     "unique-names-generator": "4.7.1",
-    "uuid": "10.0.0",
+    "uuid": "14.0.0",
     "validator": "13.12.0",
     "zod": "3.25.76"
   },
