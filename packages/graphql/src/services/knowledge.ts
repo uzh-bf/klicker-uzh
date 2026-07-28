@@ -524,6 +524,14 @@ export async function deleteKb({ id }: { id: string }, ctx: ContextWithUser) {
         where: { id },
         data: { deletedAt, deletedById: ctx.user.sub },
       })
+      const bindingCandidates = await prisma.kBChatbot.findMany({
+        where: { kbId: id, isEnabled: true },
+        select: { chatbotId: true },
+        orderBy: { chatbotId: 'asc' },
+      })
+      for (const { chatbotId } of bindingCandidates) {
+        await lockOwnedChatbotOrThrow(prisma, chatbotId, ctx.user.sub)
+      }
       const bindings = await prisma.kBChatbot.findMany({
         where: { kbId: id, isEnabled: true },
         select: { chatbotId: true },
@@ -533,15 +541,29 @@ export async function deleteKb({ id }: { id: string }, ctx: ContextWithUser) {
           where: { kbId: id, isEnabled: true },
           data: { isEnabled: false },
         })
+        const chatbotIds = bindings.map(({ chatbotId }) => chatbotId)
+        const remainingBindings = await prisma.kBChatbot.findMany({
+          where: {
+            chatbotId: { in: chatbotIds },
+            isEnabled: true,
+          },
+          select: { chatbotId: true },
+        })
+        const stillEnabled = new Set(
+          remainingBindings.map(({ chatbotId }) => chatbotId)
+        )
+        const unboundChatbotIds = chatbotIds.filter(
+          (chatbotId) => !stillEnabled.has(chatbotId)
+        )
         const mcpServer = await prisma.chatbotMCPServer.findUnique({
           where: { name: KB_MCP_SERVER_NAME },
           select: { id: true },
         })
-        if (mcpServer) {
+        if (mcpServer && unboundChatbotIds.length > 0) {
           await prisma.chatbotMCPConfig.updateMany({
             where: {
               mcpServerId: mcpServer.id,
-              chatbotId: { in: bindings.map(({ chatbotId }) => chatbotId) },
+              chatbotId: { in: unboundChatbotIds },
             },
             data: { isEnabled: false },
           })

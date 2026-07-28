@@ -5,10 +5,13 @@ import {
 import {
   KBIngestionOperation,
   KBIngestionStatus,
+  KBResourceStatus,
   KBResourceType,
+  type Prisma,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
 import type { DeleteKBResourceInput } from '@klicker-uzh/types'
+import { randomUUID } from 'node:crypto'
 import { dispatchKBDeletion, type KBIngestionLogger } from './kbIngestion.js'
 import {
   createKBIngestionApiClient,
@@ -17,6 +20,7 @@ import {
 
 const KB_MAINTENANCE_BATCH_SIZE = 32
 const KB_MAINTENANCE_CONCURRENCY = 8
+const KB_MAINTENANCE_INTERVAL_MS = 15 * 60 * 1000
 const KB_UPLOAD_RETENTION_GRACE_MS = 24 * 60 * 60 * 1000
 const KB_BLOB_DELETE_TIMEOUT_MS = 30_000
 
@@ -56,6 +60,14 @@ async function runBounded<T>(
   }
 }
 
+function getBatchOffset(total: number, now: Date) {
+  if (total <= KB_MAINTENANCE_BATCH_SIZE) {
+    return 0
+  }
+  const runNumber = Math.floor(now.getTime() / KB_MAINTENANCE_INTERVAL_MS)
+  return (runNumber * KB_MAINTENANCE_BATCH_SIZE) % total
+}
+
 async function deleteKBBlob(
   ownerId: string,
   blobName: string,
@@ -88,32 +100,104 @@ export async function maintainKBResources(
     dependencies.deleteBlob ??
     ((ownerId, blobName) => deleteKBBlob(ownerId, blobName, env))
 
-  const pendingDispatch = await dependencies.prisma.kBResource.findMany({
-    where: {
-      deletedAt: { not: null },
-      ingestionOperation: KBIngestionOperation.DELETE,
-      ingestionAttemptId: { not: null },
-      externalOperationId: null,
-    },
+  const deletionRetryWhere = {
+    deletedAt: { not: null },
+    ingestionOperation: KBIngestionOperation.DELETE,
+    ingestionAttemptId: { not: null },
+    OR: [{ externalOperationId: null }, { status: KBResourceStatus.FAILED }],
+  } satisfies Prisma.KBResourceWhereInput
+  const deletionRetryCount = await dependencies.prisma.kBResource.count({
+    where: deletionRetryWhere,
+  })
+  const deletionRetryOffset = getBatchOffset(deletionRetryCount, now)
+  const deletionRetries = await dependencies.prisma.kBResource.findMany({
+    where: deletionRetryWhere,
     select: {
       id: true,
       kbId: true,
+      status: true,
       ingestionAttemptId: true,
       resourceVersion: true,
+      externalOperationId: true,
+      ingestionRuns: {
+        where: {
+          operation: KBIngestionOperation.DELETE,
+          status: KBIngestionStatus.FAILED,
+        },
+        select: { id: true },
+      },
     },
     orderBy: { id: 'asc' },
+    ...(deletionRetryOffset > 0 ? { skip: deletionRetryOffset } : {}),
     take: KB_MAINTENANCE_BATCH_SIZE,
   })
-  if (pendingDispatch.length > 0) {
-    const client = dependencies.client ?? createKBIngestionApiClient({ env })
-    await runBounded(pendingDispatch, async (resource) => {
+  const retryableDeletions = deletionRetries.filter(
+    (resource) =>
+      !resource.externalOperationId ||
+      (resource.status === KBResourceStatus.FAILED &&
+        resource.ingestionRuns.some(
+          ({ id }) => id === resource.ingestionAttemptId
+        ))
+  )
+  if (retryableDeletions.length > 0) {
+    await runBounded(retryableDeletions, async (resource) => {
+      let deletionAttemptId = resource.ingestionAttemptId!
+      if (resource.externalOperationId) {
+        const retryAttemptId = randomUUID()
+        const claimed = await dependencies.prisma.$transaction(async (tx) => {
+          const update = await tx.kBResource.updateMany({
+            where: {
+              id: resource.id,
+              deletedAt: { not: null },
+              status: KBResourceStatus.FAILED,
+              ingestionOperation: KBIngestionOperation.DELETE,
+              ingestionAttemptId: resource.ingestionAttemptId,
+              resourceVersion: resource.resourceVersion,
+              externalOperationId: resource.externalOperationId,
+              ingestionRuns: {
+                some: {
+                  id: resource.ingestionAttemptId!,
+                  operation: KBIngestionOperation.DELETE,
+                  status: KBIngestionStatus.FAILED,
+                },
+              },
+            },
+            data: {
+              status: KBResourceStatus.QUEUED,
+              statusMessage: 'The deletion operation is awaiting retry.',
+              ingestionAttemptId: retryAttemptId,
+              externalOperationId: null,
+              externalOperationStartedAt: null,
+              errorCode: null,
+            },
+          })
+          if (update.count !== 1) {
+            return false
+          }
+          await tx.kBIngestionRun.create({
+            data: {
+              id: retryAttemptId,
+              resourceId: resource.id,
+              operation: KBIngestionOperation.DELETE,
+              resourceVersion: resource.resourceVersion,
+            },
+          })
+          return true
+        })
+        if (!claimed) {
+          return
+        }
+        deletionAttemptId = retryAttemptId
+      }
       const input = {
         resourceId: resource.id,
         kbId: resource.kbId,
-        deletionAttemptId: resource.ingestionAttemptId!,
+        deletionAttemptId,
         resourceVersion: resource.resourceVersion,
       } satisfies DeleteKBResourceInput
       try {
+        const client =
+          dependencies.client ?? createKBIngestionApiClient({ env })
         await dispatchKBDeletion(input, {
           prisma: dependencies.prisma,
           client,
@@ -128,7 +212,7 @@ export async function maintainKBResources(
           {
             resourceId: resource.id,
             kbId: resource.kbId,
-            deletionAttemptId: resource.ingestionAttemptId!,
+            deletionAttemptId,
           }
         )
       }
@@ -136,8 +220,15 @@ export async function maintainKBResources(
   }
 
   const expiredBefore = new Date(now.getTime() - KB_UPLOAD_RETENTION_GRACE_MS)
+  const expiredTicketWhere = {
+    expiresAt: { lte: expiredBefore },
+  } satisfies Prisma.KBUploadTicketWhereInput
+  const expiredTicketCount = await dependencies.prisma.kBUploadTicket.count({
+    where: expiredTicketWhere,
+  })
+  const expiredTicketOffset = getBatchOffset(expiredTicketCount, now)
   const expiredTickets = await dependencies.prisma.kBUploadTicket.findMany({
-    where: { expiresAt: { lte: expiredBefore } },
+    where: expiredTicketWhere,
     select: {
       id: true,
       blobName: true,
@@ -145,6 +236,7 @@ export async function maintainKBResources(
       kb: { select: { ownerId: true } },
     },
     orderBy: { id: 'asc' },
+    ...(expiredTicketOffset > 0 ? { skip: expiredTicketOffset } : {}),
     take: KB_MAINTENANCE_BATCH_SIZE,
   })
   await runBounded(expiredTickets, async (ticket) => {
@@ -166,20 +258,25 @@ export async function maintainKBResources(
     }
   })
 
-  const deletedResources = await dependencies.prisma.kBResource.findMany({
-    where: {
-      deletedAt: { not: null },
-      ingestionOperation: KBIngestionOperation.DELETE,
-      activeResourceVersion: null,
-      activeContentSha256: null,
-      ingestionAttemptId: { not: null },
-      ingestionRuns: {
-        some: {
-          operation: KBIngestionOperation.DELETE,
-          status: KBIngestionStatus.SUCCEEDED,
-        },
+  const deletedResourceWhere = {
+    deletedAt: { not: null },
+    ingestionOperation: KBIngestionOperation.DELETE,
+    activeResourceVersion: null,
+    activeContentSha256: null,
+    ingestionAttemptId: { not: null },
+    ingestionRuns: {
+      some: {
+        operation: KBIngestionOperation.DELETE,
+        status: KBIngestionStatus.SUCCEEDED,
       },
     },
+  } satisfies Prisma.KBResourceWhereInput
+  const deletedResourceCount = await dependencies.prisma.kBResource.count({
+    where: deletedResourceWhere,
+  })
+  const deletedResourceOffset = getBatchOffset(deletedResourceCount, now)
+  const deletedResources = await dependencies.prisma.kBResource.findMany({
+    where: deletedResourceWhere,
     select: {
       id: true,
       type: true,
@@ -195,6 +292,7 @@ export async function maintainKBResources(
       },
     },
     orderBy: { id: 'asc' },
+    ...(deletedResourceOffset > 0 ? { skip: deletedResourceOffset } : {}),
     take: KB_MAINTENANCE_BATCH_SIZE,
   })
   await runBounded(deletedResources, async (resource) => {
@@ -239,26 +337,35 @@ export async function maintainKBResources(
     }
   })
 
+  const deletedKbWhere = {
+    deletedAt: { not: null },
+    resources: { none: {} },
+    uploadTickets: { none: {} },
+    chatbots: { none: { isEnabled: true } },
+  } satisfies Prisma.KBWhereInput
+  const deletedKbCount = await dependencies.prisma.kB.count({
+    where: deletedKbWhere,
+  })
+  const deletedKbOffset = getBatchOffset(deletedKbCount, now)
   const deletedKbs = await dependencies.prisma.kB.findMany({
-    where: {
-      deletedAt: { not: null },
-      resources: { none: {} },
-      uploadTickets: { none: {} },
-      chatbots: { none: { isEnabled: true } },
-    },
+    where: deletedKbWhere,
     select: { id: true },
     orderBy: { id: 'asc' },
+    ...(deletedKbOffset > 0 ? { skip: deletedKbOffset } : {}),
     take: KB_MAINTENANCE_BATCH_SIZE,
   })
-  for (const kb of deletedKbs) {
-    await dependencies.prisma.kB.deleteMany({
-      where: {
-        id: kb.id,
-        deletedAt: { not: null },
-        resources: { none: {} },
-        uploadTickets: { none: {} },
-        chatbots: { none: { isEnabled: true } },
-      },
-    })
-  }
+  await runBounded(deletedKbs, async (kb) => {
+    try {
+      await dependencies.prisma.kB.deleteMany({
+        where: {
+          id: kb.id,
+          ...deletedKbWhere,
+        },
+      })
+    } catch {
+      await logMaintenanceError(dependencies.logger, 'KB cleanup failed', {
+        kbId: kb.id,
+      })
+    }
+  })
 }

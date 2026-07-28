@@ -1,6 +1,7 @@
 import {
   KBIngestionOperation,
   KBIngestionStatus,
+  KBResourceStatus,
   KBResourceType,
 } from '@klicker-uzh/prisma/client'
 import { describe, expect, it, vi } from 'vitest'
@@ -24,19 +25,31 @@ function client(): KBIngestionApiClient {
 
 function maintenancePrisma({
   pendingDispatch = [],
+  pendingDispatchCount = pendingDispatch.length,
   expiredTickets = [],
+  expiredTicketCount = expiredTickets.length,
   deletedResources = [],
+  deletedResourceCount = deletedResources.length,
   deletedKbs = [],
+  deletedKbCount = deletedKbs.length,
   currentResource,
 }: {
   pendingDispatch?: unknown[]
+  pendingDispatchCount?: number
   expiredTickets?: unknown[]
+  expiredTicketCount?: number
   deletedResources?: unknown[]
+  deletedResourceCount?: number
   deletedKbs?: unknown[]
+  deletedKbCount?: number
   currentResource?: unknown
 } = {}) {
   const prisma = {
     kBResource: {
+      count: vi
+        .fn()
+        .mockResolvedValueOnce(pendingDispatchCount)
+        .mockResolvedValueOnce(deletedResourceCount),
       findMany: vi
         .fn()
         .mockResolvedValueOnce(pendingDispatch)
@@ -46,13 +59,16 @@ function maintenancePrisma({
       deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
     kBIngestionRun: {
+      create: vi.fn().mockResolvedValue({}),
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
     kBUploadTicket: {
+      count: vi.fn().mockResolvedValue(expiredTicketCount),
       findMany: vi.fn().mockResolvedValue(expiredTickets),
       deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
     kB: {
+      count: vi.fn().mockResolvedValue(deletedKbCount),
       findMany: vi.fn().mockResolvedValue(deletedKbs),
       deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
@@ -67,12 +83,16 @@ describe('KB retention maintenance', () => {
     const pending = {
       id: RESOURCE_ID,
       kbId: KB_ID,
+      status: KBResourceStatus.QUEUED,
       ingestionAttemptId: ATTEMPT_ID,
       resourceVersion: 4,
+      externalOperationId: null,
+      ingestionRuns: [],
     }
     const prisma = maintenancePrisma({
       pendingDispatch: [pending],
       currentResource: {
+        kbId: KB_ID,
         deletedAt: NOW,
         ingestionOperation: KBIngestionOperation.DELETE,
         ingestionAttemptId: ATTEMPT_ID,
@@ -94,6 +114,154 @@ describe('KB retention maintenance', () => {
       deletionAttemptId: ATTEMPT_ID,
       resourceVersion: 4,
     })
+  })
+
+  it('starts a fresh attempt after a terminal external delete failure', async () => {
+    const failedOperationId = 'op_01J2X8K3M9QZ4R7T6V5W1Y0OLD'
+    const failed = {
+      id: RESOURCE_ID,
+      kbId: KB_ID,
+      status: KBResourceStatus.FAILED,
+      ingestionAttemptId: ATTEMPT_ID,
+      resourceVersion: 4,
+      externalOperationId: failedOperationId,
+      ingestionRuns: [{ id: ATTEMPT_ID }],
+    }
+    const prisma = maintenancePrisma({ pendingDispatch: [failed] })
+    prisma.kBResource.findUnique.mockImplementation(async () => {
+      const retryAttemptId =
+        prisma.kBIngestionRun.create.mock.calls[0]?.[0].data.id
+      return {
+        kbId: KB_ID,
+        deletedAt: NOW,
+        ingestionOperation: KBIngestionOperation.DELETE,
+        ingestionAttemptId: retryAttemptId,
+        resourceVersion: 4,
+        externalOperationId: null,
+      }
+    })
+    const apiClient = client()
+
+    await maintainKBResources({
+      prisma: prisma as never,
+      client: apiClient,
+      now: () => NOW,
+    })
+
+    const retryAttemptId =
+      prisma.kBIngestionRun.create.mock.calls[0]?.[0].data.id
+    expect(retryAttemptId).toEqual(expect.any(String))
+    expect(retryAttemptId).not.toBe(ATTEMPT_ID)
+    expect(prisma.kBResource.updateMany).toHaveBeenNthCalledWith(1, {
+      where: {
+        id: RESOURCE_ID,
+        deletedAt: { not: null },
+        status: KBResourceStatus.FAILED,
+        ingestionOperation: KBIngestionOperation.DELETE,
+        ingestionAttemptId: ATTEMPT_ID,
+        resourceVersion: 4,
+        externalOperationId: failedOperationId,
+        ingestionRuns: {
+          some: {
+            id: ATTEMPT_ID,
+            operation: KBIngestionOperation.DELETE,
+            status: KBIngestionStatus.FAILED,
+          },
+        },
+      },
+      data: {
+        status: KBResourceStatus.QUEUED,
+        statusMessage: 'The deletion operation is awaiting retry.',
+        ingestionAttemptId: retryAttemptId,
+        externalOperationId: null,
+        externalOperationStartedAt: null,
+        errorCode: null,
+      },
+    })
+    expect(apiClient.deleteResource).toHaveBeenCalledWith({
+      resourceId: RESOURCE_ID,
+      kbId: KB_ID,
+      deletionAttemptId: retryAttemptId,
+      resourceVersion: 4,
+    })
+  })
+
+  it('continues independent cleanup when deletion dispatch is not configured', async () => {
+    const expiresAt = new Date(NOW.getTime() - 25 * 60 * 60 * 1000)
+    const pending = {
+      id: RESOURCE_ID,
+      kbId: KB_ID,
+      status: KBResourceStatus.QUEUED,
+      ingestionAttemptId: ATTEMPT_ID,
+      resourceVersion: 4,
+      externalOperationId: null,
+      ingestionRuns: [],
+    }
+    const ticket = {
+      id: '77996ac1-ad9a-4379-8ff8-2a07d2184a31',
+      blobName: 'abandoned.pdf',
+      expiresAt,
+      kb: { ownerId: OWNER_ID },
+    }
+    const prisma = maintenancePrisma({
+      pendingDispatch: [pending],
+      currentResource: {
+        kbId: KB_ID,
+        deletedAt: NOW,
+        ingestionOperation: KBIngestionOperation.DELETE,
+        ingestionAttemptId: ATTEMPT_ID,
+        resourceVersion: 4,
+        externalOperationId: null,
+      },
+      expiredTickets: [ticket],
+    })
+    const deleteBlob = vi.fn().mockResolvedValue(undefined)
+
+    await maintainKBResources({
+      prisma: prisma as never,
+      env: {},
+      now: () => NOW,
+      deleteBlob,
+    })
+
+    expect(deleteBlob).toHaveBeenCalledWith(OWNER_ID, ticket.blobName)
+    expect(prisma.kBUploadTicket.deleteMany).toHaveBeenCalledOnce()
+  })
+
+  it('rotates bounded retries so retained failures cannot starve later rows', async () => {
+    const rotatedNow = new Date(NOW.getTime() + 15 * 60 * 1000)
+    const pending = {
+      id: RESOURCE_ID,
+      kbId: KB_ID,
+      status: KBResourceStatus.QUEUED,
+      ingestionAttemptId: ATTEMPT_ID,
+      resourceVersion: 4,
+      externalOperationId: null,
+      ingestionRuns: [],
+    }
+    const prisma = maintenancePrisma({
+      pendingDispatch: [pending],
+      pendingDispatchCount: 64,
+      currentResource: {
+        kbId: KB_ID,
+        deletedAt: NOW,
+        ingestionOperation: KBIngestionOperation.DELETE,
+        ingestionAttemptId: ATTEMPT_ID,
+        resourceVersion: 4,
+        externalOperationId: null,
+      },
+    })
+
+    await maintainKBResources({
+      prisma: prisma as never,
+      client: client(),
+      now: () => rotatedNow,
+    })
+
+    expect(prisma.kBResource.findMany).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ skip: 32, take: 32 })
+    )
   })
 
   it('deletes an abandoned blob before consuming its expired ticket', async () => {

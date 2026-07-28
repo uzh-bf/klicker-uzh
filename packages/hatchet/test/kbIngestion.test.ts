@@ -306,6 +306,7 @@ describe('KB ingestion dispatch', () => {
 describe('KB deletion dispatch', () => {
   it('dispatches a current tombstone and persists its operation correlation', async () => {
     const prisma = dispatchPrisma({
+      kbId: KB_ID,
       deletedAt: NOW,
       ingestionOperation: KBIngestionOperation.DELETE,
       ingestionAttemptId: ATTEMPT_ID,
@@ -360,9 +361,30 @@ describe('KB deletion dispatch', () => {
 
   it('does not redispatch a stale deletion attempt', async () => {
     const prisma = dispatchPrisma({
+      kbId: KB_ID,
       deletedAt: NOW,
       ingestionOperation: KBIngestionOperation.DELETE,
       ingestionAttemptId: '77996ac1-ad9a-4379-8ff8-2a07d2184a31',
+      resourceVersion: 4,
+      externalOperationId: null,
+    })
+    const apiClient = client()
+
+    await expect(
+      dispatchKBDeletion(deletionInput, {
+        prisma: prisma as never,
+        client: apiClient,
+      })
+    ).resolves.toBeUndefined()
+    expect(apiClient.deleteResource).not.toHaveBeenCalled()
+  })
+
+  it('does not dispatch a deletion for a different knowledge base', async () => {
+    const prisma = dispatchPrisma({
+      kbId: '4dad13f2-1c45-47b3-b08a-1bc9cf4c5c47',
+      deletedAt: NOW,
+      ingestionOperation: KBIngestionOperation.DELETE,
+      ingestionAttemptId: ATTEMPT_ID,
       resourceVersion: 4,
       externalOperationId: null,
     })

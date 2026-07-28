@@ -85,6 +85,29 @@ function withTombstonePause(
   return { ...ctx, prisma: prisma as unknown as PrismaClient }
 }
 
+function withKbBindingSnapshotPause(
+  ctx: ContextWithUser,
+  kbId: string,
+  onSnapshot: () => void,
+  continueSnapshot: Promise<void>
+): ContextWithUser {
+  const prisma = ctx.prisma.$extends({
+    query: {
+      kBChatbot: {
+        async findMany({ args, query }) {
+          const result = await query(args)
+          if (args.where?.kbId === kbId && args.where.isEnabled === true) {
+            onSnapshot()
+            await continueSnapshot
+          }
+          return result
+        },
+      },
+    },
+  })
+  return { ...ctx, prisma: prisma as unknown as PrismaClient }
+}
+
 describe('Knowledge base GraphQL contract', () => {
   it('requires the resource id for ingestion', () => {
     const schema = buildSchema(
@@ -457,6 +480,52 @@ describe('Integration tests for knowledge base CRUD', () => {
     })
     expect(configurations).toHaveLength(2)
     expect(configurations.every(({ isEnabled }) => !isEnabled)).toBe(true)
+  })
+
+  it('preserves retrieval when another knowledge base is attached during deletion', async () => {
+    const firstKb = await createKb({ name: 'First KB' }, userOneCtx)
+    const secondKb = await createKb({ name: 'Second KB' }, userOneCtx)
+    const course = await seedCourse({}, userOneCtx)
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Finance tutor',
+        ownerId: userOneCtx.user.sub,
+        courseId: course.id,
+      },
+    })
+    await attachKbToChatbot(
+      { kbId: firstKb.id, chatbotId: chatbot.id },
+      userOneCtx
+    )
+    const bindingSnapshotted = createDeferred<void>()
+    const finishDeletion = createDeferred<void>()
+    const deleteCtx = withKbBindingSnapshotPause(
+      userOneCtx,
+      firstKb.id,
+      () => bindingSnapshotted.resolve(undefined),
+      finishDeletion.promise
+    )
+
+    const deletion = deleteKb({ id: firstKb.id }, deleteCtx)
+    await bindingSnapshotted.promise
+    await attachKbToChatbot(
+      { kbId: secondKb.id, chatbotId: chatbot.id },
+      userOneCtx
+    )
+    finishDeletion.resolve(undefined)
+    await deletion
+
+    await expect(
+      prisma.kBChatbot.findFirst({
+        where: { chatbotId: chatbot.id, isEnabled: true },
+        select: { kbId: true },
+      })
+    ).resolves.toEqual({ kbId: secondKb.id })
+    const configurations = await prisma.chatbotMCPConfig.findMany({
+      where: { chatbotId: chatbot.id, mcpServer: { name: 'KB' } },
+    })
+    expect(configurations).toHaveLength(2)
+    expect(configurations.every(({ isEnabled }) => isEnabled)).toBe(true)
   })
 
   it('rejects an empty knowledge base name', async () => {

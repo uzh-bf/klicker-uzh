@@ -392,6 +392,7 @@ export async function dispatchKBDeletion(
     const resource = await dependencies.prisma.kBResource.findUnique({
       where: { id: input.resourceId },
       select: {
+        kbId: true,
         deletedAt: true,
         ingestionOperation: true,
         ingestionAttemptId: true,
@@ -401,6 +402,7 @@ export async function dispatchKBDeletion(
     })
     if (
       !resource?.deletedAt ||
+      resource.kbId !== input.kbId ||
       resource.ingestionOperation !== KBIngestionOperation.DELETE ||
       resource.ingestionAttemptId !== input.deletionAttemptId ||
       resource.resourceVersion !== input.resourceVersion
