@@ -185,6 +185,56 @@ then — do not add the dependency speculatively. See `judge.py`'s docstring
 for a residual, live-only logprobs risk this decision carries and how to
 route around it via model-name choice if it ever bites.
 
+## Measured judged runs (2026-07-29)
+
+First fully measured judged runs of the complete suite (all 144 tests, live
+
+- offline, `MANAGE_ASSISTANT_EVAL_REQUIRE_LIVE=1`), against the local dev
+  stack (`apps/chat` routed via devrouter, app model `openai/gpt-5.6-luna`
+  through the stack's litellm gateway at OpenRouter, reasoning effort
+  `medium`).
+
+* **Judge**: `MANAGE_ASSISTANT_EVAL_JUDGE_MODEL=o3-mini` — a litellm alias
+  (image `ghcr.io/berriai/litellm:main-v1.82.3`, disposable local
+  container) mapping to the same OpenRouter upstream
+  (`openai/openai/gpt-5.6-luna`, reasoning effort `medium`). The alias
+  exists because the logprobs risk documented in `judge.py` **did bite
+  live**: with a `gpt-5.x` judge name DeepEval requests `logprobs`, which
+  the upstream rejects at `reasoning_effort != 'none'`
+  (`litellm.UnsupportedParamsError`). DeepEval never requests logprobs for
+  o-family names, so the alias routes around it exactly as `judge.py`
+  predicted. `temperature=0` on the judge.
+* **Volume per full run**: 53 live chat turns (plus ~31 rate-limit warm-up
+  requests that never reach the model) and ~16 GEval judge calls, paced by
+  the chat route's 30-req/5-min limiter; wall clock ~15.5 min per run.
+* **Run 1 (invalid, environmental)**: the stack's litellm container was
+  down mid-run (local operator error, not a product failure); every
+  model-mediated turn failed with a mid-stream connection error. Excluded
+  as a measurement.
+* **Run 2**: `142 passed / 2 failed`. All hard gates passed (E5 8/8,
+  E6 10/10, E4 schema 0 failures, E7 no-fabrication/no-leak 0 failures;
+  E1 above its 0.95 threshold). Failed soft aggregates: E3 grounding
+  0.833 < 0.90 (`02_element_details_grounding`, judge 0.700 — accurate but
+  incomplete content summary) and E7 assistant-message 0.857 < 0.90
+  (`05_tool_error_inaccessible_course`, judge 0.700 — calm and safe, but no
+  explicit backend-fault attribution or retry suggestion).
+* **Run 3**: `141 passed / 3 failed`. Hard gates all passed again. Failed
+  soft aggregates: E3 0.833 (`02_element_details_grounding` again, 0.800),
+  E4 judge 0.833 < 0.85 (`06_sc_feedback_required_three_options`, 0.800 —
+  distractor-feedback quibble), E7 assistant-message 0.714
+  (`05_tool_error_inaccessible_course` 0.600 and
+  `06_tool_error_inaccessible_element` 0.500 — same critique both times).
+* **Verdict**: OVERALL FAIL, stable across both measured runs. The failure
+  mode is consistent: dimension scores are pass-fractions, so a single
+  borderline case fails a 6–7-case dimension against a 0.90 bar.
+  `02_element_details_grounding` and `05_tool_error_inaccessible_course`
+  failed in both runs with the same judge critique; two more cases
+  flipped to borderline-fail in run 3. Hard-gate behavior (refusal,
+  injection resistance, schema validity, no fabrication/leaks) is solid.
+  Disposition of the soft-gate gap (assistant prompt tuning vs. judge
+  rubric/threshold recalibration vs. accepting soft gates as advisory) is
+  an open product decision tracked in the active plan.
+
 ## Fault injection (E7)
 
 All four `fault_type` values are exercised against the real route — no stub

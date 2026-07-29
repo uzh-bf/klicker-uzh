@@ -992,3 +992,46 @@ approved.
   test workaround was added for either condition. The existing eval and
   Playwright skills already describe the procedure, so no skill workflow
   changed. Nothing was pushed.
+- 2026-07-29: German CTA resolved per explicit product ruling: `open` in
+  `packages/i18n/messages/de.ts` now reads `Assistent` (commit `3e02d53f0`,
+  full pre-commit `check:all` passed). Browser-verified in German locale via
+  delegated login: the launcher shows "Assistent" on the user-settings page;
+  the locale was reverted to English afterwards to keep text-assertion suites
+  stable. The review-thread reply and resolution follow the next push.
+- 2026-07-29: S5.1 executed with explicit paid-run authority and an approved
+  judge route. Judge = litellm alias `o3-mini` (temperature 0) on a disposable
+  local `ghcr.io/berriai/litellm:main-v1.82.3` container, mapping to the same
+  OpenRouter upstream as the app under test (`openai/openai/gpt-5.6-luna`,
+  reasoning effort medium); key injected at container start through the
+  approved operator mapping, never printed or persisted. The `judge.py`
+  logprobs risk fired live for `gpt-5.x` judge names
+  (`litellm.UnsupportedParamsError` at `reasoning_effort='medium'`) and the
+  o-family alias routes around it as documented. A first live run was
+  invalidated by a local litellm outage (operator error, repaired; not a
+  product failure). Two full measured runs then completed (144 tests each,
+  `REQUIRE_LIVE=1`, ~15.5 min each): run 2 = 142/144 (E3 0.833 < 0.90,
+  E7-channel 0.857 < 0.90), run 3 = 141/144 (E3 0.833, E4-judge 0.833 < 0.85,
+  E7-channel 0.714). Every hard gate passed in both runs (E5 8/8, E6 10/10,
+  E4 schema 0 failures, E7 no-fabrication/no-leak 0 failures, E1 above 0.95).
+  Verdict: `OVERALL: FAIL`, stable — `02_element_details_grounding` and
+  `05_tool_error_inaccessible_course` failed both runs with the same judge
+  critique (incomplete content summary; missing explicit backend-fault
+  attribution/retry suggestion). Full evidence recorded in
+  `evaluation/manage-assistant/README.md` ("Measured judged runs"). The
+  soft-gate disposition (assistant prompt tuning vs. judge rubric/threshold
+  recalibration vs. accepting soft gates as advisory) is an open product
+  decision; the Definition of Done item stays unchecked.
+- 2026-07-29: S5.2 production Firefox/WebKit rig built with explicit container
+  authority. Probes proved that Firefox, WebKit, and curl force `*.localhost`
+  hostnames to loopback (RFC 6761), ignoring `/etc/hosts` and `--add-host`,
+  so the approved design routes through an nginx SNI multiplexer sharing its
+  network namespace with the official `mcr.microsoft.com/playwright:v1.58.2-noble`
+  container; non-app hostnames pass through to the live Traefik untouched.
+  Production images of manage, PWA, and chat were built snapshot-isolated from
+  `git archive` at `3e02d53f0` via the apps' own multi-stage Dockerfiles (the
+  auth app is not exercised by the targeted specs and was dropped). Real
+  Firefox and WebKit navigations against the production containers returned
+  the expected statuses, and the release-matrix opt-in discovered 46 targeted
+  tests across both browsers. The measured matrix run against the production
+  builds was sequenced after the judged-eval runs because both reset the same
+  workspace database.
