@@ -43,10 +43,10 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
    `OWNER` gate in the schema and repeat the exact-owner predicate in the
    service query. UI visibility is not authorization.
 
-   Escape Room participant mutations accept only the activity identity and action payload. Resolve ownership, the current attempt, active stack, timer, lockout, and preview authority from the authenticated server context; never add client-provided ownership or progression flags.
+   Escape Room participant mutations accept only the activity identity and action payload. Resolve ownership, the current attempt, active stack, timer, lockout, and preview authority from the authenticated server context; never add client-provided ownership or progression flags. Group mode derives the participant group from course membership and keys lifecycle claims by group. Its decisions mutation must recheck group membership and use one serializable transaction for the exact answer set, aggregate results, and completion or lockout.
 
 4. **Arg validation** — Zod plugin `validate:` on args (email/regex/length examples in `mutation.ts`).
-   For activity element inputs, validate the resolved new, retained, and duplicated element types in the service before any write. Template instantiation is a separate input path and needs the same fail-closed check.
+   For activity element inputs, validate the resolved new, retained, and duplicated element types in the service before any write. Template instantiation is a separate input path and needs the same fail-closed check. Group Escape Room authoring also requires at least one answerable instance and a sample solution for every answerable non-QR instance.
 5. **Client op** — new file `packages/graphql/src/graphql/ops/<Prefix><Name>.graphql`; prefix `Q`/`M`/`S`/`F` matches the kind. Reuse `F*` fragments where they exist.
 6. **Codegen — never skip:**
 
