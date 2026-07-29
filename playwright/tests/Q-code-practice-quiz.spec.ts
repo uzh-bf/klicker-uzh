@@ -32,6 +32,8 @@ const QUIZ_ID = 'f3457155-12ca-44c3-9cf0-e118199c867d'
 const QUIZ_NAME = 'CODE participant flow'
 const MICROLEARNING_ID = '3901dd31-5c30-4fc8-b92a-267688a89877'
 const MICROLEARNING_NAME = 'CODE microlearning evaluation'
+const MICROLEARNING_PARTICIPANT_ID = '20cab8d9-8ef9-46e4-b7bc-8c0dc382fda2'
+const MICROLEARNING_PARTICIPANT_USERNAME = 'code-microlearning-playwright'
 const STARTER_CODE = 'def solve(a, b):\n    return 0'
 const ANSWER_CODE = 'def solve(a, b):\n    return a + b'
 
@@ -132,6 +134,9 @@ test.describe.serial('CODE participant and evaluation flow', () => {
     const prisma = await getPrisma()
     await prisma.practiceQuiz.deleteMany({ where: { id: QUIZ_ID } })
     await prisma.microLearning.deleteMany({ where: { id: MICROLEARNING_ID } })
+    await prisma.participant.deleteMany({
+      where: { id: MICROLEARNING_PARTICIPANT_ID },
+    })
     await prisma.element.deleteMany({
       where: { name: { in: [QUIZ_NAME, MICROLEARNING_NAME] } },
     })
@@ -267,14 +272,18 @@ test.describe.serial('CODE participant and evaluation flow', () => {
     })
     microLearningStackId = microLearning.stacks[0]!.id
     microLearningInstanceId = microLearning.stacks[0]!.elements[0]!.id
-    await prisma.participation.update({
-      where: {
-        courseId_participantId: {
-          courseId: COURSE_ID_TEST,
-          participantId: PARTICIPANT_IDS[0]!,
+    await prisma.participant.create({
+      data: {
+        id: MICROLEARNING_PARTICIPANT_ID,
+        username: MICROLEARNING_PARTICIPANT_USERNAME,
+        password: 'playwright-test-only',
+        participations: {
+          create: {
+            courseId: COURSE_ID_TEST,
+            isActive: true,
+          },
         },
       },
-      data: { isActive: true },
     })
   })
 
@@ -282,6 +291,9 @@ test.describe.serial('CODE participant and evaluation flow', () => {
     const prisma = await getPrisma()
     await prisma.practiceQuiz.deleteMany({ where: { id: QUIZ_ID } })
     await prisma.microLearning.deleteMany({ where: { id: MICROLEARNING_ID } })
+    await prisma.participant.deleteMany({
+      where: { id: MICROLEARNING_PARTICIPANT_ID },
+    })
     await prisma.element.deleteMany({
       where: { name: { in: [QUIZ_NAME, MICROLEARNING_NAME] } },
     })
@@ -506,7 +518,7 @@ test.describe.serial('CODE participant and evaluation flow', () => {
           variableValues: request.variables,
           contextValue: {
             user: {
-              sub: PARTICIPANT_IDS[0]!,
+              sub: MICROLEARNING_PARTICIPANT_ID,
               role: UserRole.PARTICIPANT,
               scope: UserLoginScope.ACCOUNT_OWNER,
               catalystInstitutional: false,
@@ -588,7 +600,7 @@ test.describe.serial('CODE participant and evaluation flow', () => {
       await route.fulfill({ response })
     })
 
-    await authenticateParticipant(page, PARTICIPANT_IDS[0]!)
+    await authenticateParticipant(page, MICROLEARNING_PARTICIPANT_ID)
     await page.goto(
       `${env('URL_STUDENT')}/course/${COURSE_ID_TEST}/microLearnings/${MICROLEARNING_ID}`
     )
@@ -605,9 +617,7 @@ test.describe.serial('CODE participant and evaluation flow', () => {
     ).toBeVisible()
     await expect(page.getByTestId('student-stack-continue')).toHaveCount(0)
     blockEvaluationReadback = false
-    await page
-      .getByTestId('code-evaluation-readback-retry')
-      .dispatchEvent('click')
+    await page.getByTestId('code-evaluation-readback-retry').click()
     await expect.poll(() => successfulEvaluationReadbacks).toBeGreaterThan(1)
     expect(latestEvaluationPayload).toMatchObject({
       data: {
@@ -641,7 +651,7 @@ test.describe.serial('CODE participant and evaluation flow', () => {
             return storage[instanceId]?.response ?? null
           },
           {
-            key: `qi-code-${MICROLEARNING_ID}-${microLearningStackId}-${PARTICIPANT_IDS[0]}`,
+            key: `qi-code-${MICROLEARNING_ID}-${microLearningStackId}-${MICROLEARNING_PARTICIPANT_ID}`,
             instanceId: microLearningInstanceId,
           }
         )
