@@ -267,17 +267,16 @@ describe('requestEscapeRoomHint - time-penalty hints', () => {
   it('charges a concurrently requested hint only once', async () => {
     const { quiz, instanceId } = await seedQuizWithHint('concurrent hint')
     const participant = await seedParticipant('hint-concurrent')
+    const claims = new Map<string, string>()
+    const context = participantCtx(participant.id, claims)
     const attempt = await startEscapeRoomAttempt(
       { practiceQuizId: quiz.id },
-      participantCtx(participant.id)
+      context
     )
 
     const results = await Promise.all(
       Array.from({ length: 2 }, () =>
-        requestEscapeRoomHint(
-          { practiceQuizId: quiz.id, instanceId },
-          participantCtx(participant.id)
-        )
+        requestEscapeRoomHint({ practiceQuizId: quiz.id, instanceId }, context)
       )
     )
     expect(results.map((result) => result.hint)).toEqual([
@@ -289,6 +288,37 @@ describe('requestEscapeRoomHint - time-penalty hints', () => {
     })
     expect(persisted.penaltySeconds).toBe(30)
     expect(persisted.hintsUsed).toEqual([String(instanceId)])
+  })
+
+  it('refuses to reveal or charge a hint while another lifecycle action owns the attempt', async () => {
+    const { quiz, instanceId } = await seedQuizWithHint('locked hint')
+    const participant = await seedParticipant('hint-processing')
+    const claims = new Map<string, string>()
+    const context = participantCtx(participant.id, claims)
+    const attempt = await startEscapeRoomAttempt(
+      { practiceQuizId: quiz.id },
+      context
+    )
+    const claimKey = getEscapeRoomLifecycleClaimKey(
+      'practiceQuiz',
+      quiz.id,
+      participant.id
+    )
+    await context.redisExec.set(claimKey, 'in-flight-response', 'EX', 300, 'NX')
+
+    await expect(
+      requestEscapeRoomHint({ practiceQuizId: quiz.id, instanceId }, context)
+    ).rejects.toMatchObject({
+      extensions: { code: 'ESCAPE_ROOM_RESPONSE_PROCESSING' },
+    })
+
+    const persisted = await prisma.escapeRoomAttempt.findUniqueOrThrow({
+      where: { id: attempt.id },
+    })
+    expect(persisted.penaltySeconds).toBe(0)
+    expect(persisted.hintsUsed).toEqual([])
+
+    await context.redisExec.eval('', 1, claimKey, 'in-flight-response')
   })
 
   it('rejects a hint request for an element that has no hint', async () => {

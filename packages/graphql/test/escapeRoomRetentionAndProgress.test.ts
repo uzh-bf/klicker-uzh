@@ -30,7 +30,7 @@ describe('handlePruneEscapeRooms - retention window (B4)', () => {
         timeLimit: 3600,
         status: DB.EscapeRoomStatus.COMPLETED,
         completedAt: now,
-        statsAggregatedAt: null,
+        retentionProcessedAt: null,
       },
     })
     createdStandaloneAttemptIds.push(recentAttempt.id)
@@ -41,7 +41,7 @@ describe('handlePruneEscapeRooms - retention window (B4)', () => {
         timeLimit: 3600,
         status: DB.EscapeRoomStatus.COMPLETED,
         completedAt: oldDate,
-        statsAggregatedAt: null,
+        retentionProcessedAt: null,
       },
     })
     createdStandaloneAttemptIds.push(oldAttempt.id)
@@ -53,7 +53,7 @@ describe('handlePruneEscapeRooms - retention window (B4)', () => {
           timeLimit: 3600,
           status: DB.EscapeRoomStatus.COMPLETED,
           completedAt: now,
-          statsAggregatedAt: null,
+          retentionProcessedAt: null,
         },
       })
     createdStandaloneAttemptIds.push(recentlyCompletedLongRunningAttempt.id)
@@ -66,7 +66,7 @@ describe('handlePruneEscapeRooms - retention window (B4)', () => {
       where: { id: recentAttempt.id },
     })
     expect(recentAfter).not.toBeNull()
-    expect(recentAfter!.statsAggregatedAt).not.toBeNull()
+    expect(recentAfter!.retentionProcessedAt).not.toBeNull()
 
     const oldAfter = await prisma.escapeRoomAttempt.findUnique({
       where: { id: oldAttempt.id },
@@ -120,7 +120,7 @@ describe('handlePruneEscapeRooms - retention window (B4)', () => {
         },
       },
     })
-    expect(attempt.statsAggregatedAt).not.toBeNull()
+    expect(attempt.retentionProcessedAt).not.toBeNull()
   })
 
   it('leaves the marker untouched on transaction failure and retries safely', async () => {
@@ -151,7 +151,7 @@ describe('handlePruneEscapeRooms - retention window (B4)', () => {
         await prisma.escapeRoomAttempt.findUniqueOrThrow({
           where: { id: attempt.id },
         })
-      ).statsAggregatedAt
+      ).retentionProcessedAt
     ).toBeNull()
 
     await expect(handlePruneEscapeRooms({ prisma }, { logger })).resolves.toBe(
@@ -162,7 +162,7 @@ describe('handlePruneEscapeRooms - retention window (B4)', () => {
         await prisma.escapeRoomAttempt.findUniqueOrThrow({
           where: { id: attempt.id },
         })
-      ).statsAggregatedAt
+      ).retentionProcessedAt
     ).not.toBeNull()
   })
 })

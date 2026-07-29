@@ -6,7 +6,11 @@ import {
   UserRole,
 } from '@klicker-uzh/prisma/client'
 import { EventEmitter } from 'events'
-import type { GraphQLEnumType, GraphQLObjectType } from 'graphql'
+import type {
+  GraphQLEnumType,
+  GraphQLInputObjectType,
+  GraphQLObjectType,
+} from 'graphql'
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { schema } from '../src/index.js'
@@ -84,6 +88,27 @@ describe('QR scan GraphQL contracts', () => {
     expect((groupDecision as GraphQLObjectType).getFields()).not.toHaveProperty(
       'qrScanResponse'
     )
+  })
+
+  it('keeps future Live Quiz escape-room settings out of public inputs', () => {
+    const elementBlock = schema.getType(
+      'ElementBlockInput'
+    ) as GraphQLInputObjectType
+    const templateBlock = schema.getType(
+      'TemplateBlockInput'
+    ) as GraphQLInputObjectType
+    const futureFields = [
+      'isEscapeRoom',
+      'escapeRoomTimeLimit',
+      'escapeRoomHintPenalty',
+      'escapeRoomLockoutSeconds',
+      'escapeRoomIntroText',
+    ]
+
+    for (const field of futureFields) {
+      expect(elementBlock.getFields()).not.toHaveProperty(field)
+      expect(templateBlock.getFields()).not.toHaveProperty(field)
+    }
   })
 
   it('looks up scan codes only for the authenticated owner', async () => {

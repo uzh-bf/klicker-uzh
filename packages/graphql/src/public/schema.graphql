@@ -1219,10 +1219,6 @@ type ElementBlock {
 
 input ElementBlockInput {
   elements: [ElementInstanceInput!]!
-  escapeRoomHintPenalty: Int
-  escapeRoomIntroText: String
-  escapeRoomTimeLimit: Int
-  isEscapeRoom: Boolean
   order: Int!
   randomSelection: Int
   timeLimit: Int
@@ -3161,11 +3157,6 @@ input TemplateBlockElementInput {
 
 input TemplateBlockInput {
   elements: [TemplateBlockElementInput!]!
-  escapeRoomHintPenalty: Int
-  escapeRoomIntroText: String
-  escapeRoomLockoutSeconds: Int
-  escapeRoomTimeLimit: Int
-  isEscapeRoom: Boolean
   order: Int!
   timeLimit: Int
 }

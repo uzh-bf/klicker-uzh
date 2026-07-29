@@ -32,12 +32,12 @@ export async function handlePruneEscapeRooms(
     }
     const [marked, deleted] = await globalContext.prisma.$transaction([
       globalContext.prisma.escapeRoomAttempt.updateMany({
-        where: { ...finishedWhere, statsAggregatedAt: null },
-        data: { statsAggregatedAt: new Date() },
+        where: { ...finishedWhere, retentionProcessedAt: null },
+        data: { retentionProcessedAt: new Date() },
       }),
       globalContext.prisma.escapeRoomAttempt.deleteMany({
         where: {
-          statsAggregatedAt: { not: null },
+          retentionProcessedAt: { not: null },
           OR: [
             {
               status: DB.EscapeRoomStatus.COMPLETED,

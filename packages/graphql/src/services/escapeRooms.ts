@@ -193,10 +193,7 @@ function getEscapeRoomActivityReference({
   }
 
   const [reference] = references
-  if (!reference) {
-    throw new GraphQLError('Exactly one activity ID must be specified')
-  }
-  return reference
+  return reference!
 }
 
 interface ResolvedParticipantEscapeRoom {
@@ -429,16 +426,12 @@ function instanceBelongsToActivity(
   }
 }
 
-export async function requestEscapeRoomHint(
-  { instanceId, ...args }: RequestEscapeRoomHintArgs,
+async function revealEscapeRoomHint(
+  instanceId: number,
+  participantId: string,
+  activity: ResolvedParticipantEscapeRoom,
   ctx: ContextWithUser
 ): Promise<EscapeRoomHintResult> {
-  const participantId = requireParticipant(ctx, 'request escape room hints')
-  const activity = await resolveParticipantEscapeRoom(
-    getEscapeRoomActivityReference(args),
-    participantId,
-    ctx
-  )
   const attempt = await ctx.prisma.escapeRoomAttempt.findUnique({
     where: getAttemptWhere(activity, participantId),
   })
@@ -535,6 +528,61 @@ export async function requestEscapeRoomHint(
     attempt: await ctx.prisma.escapeRoomAttempt.findUniqueOrThrow({
       where: { id: attempt.id },
     }),
+  }
+}
+
+export async function requestEscapeRoomHint(
+  { instanceId, ...args }: RequestEscapeRoomHintArgs,
+  ctx: ContextWithUser
+): Promise<EscapeRoomHintResult> {
+  const participantId = requireParticipant(ctx, 'request escape room hints')
+  const activity = await resolveParticipantEscapeRoom(
+    getEscapeRoomActivityReference(args),
+    participantId,
+    ctx
+  )
+  const claimKey = getEscapeRoomLifecycleClaimKey(
+    activity.reference.kind,
+    activity.reference.id,
+    participantId
+  )
+  const claimToken = `hint:${randomUUID()}`
+  let claimed = false
+
+  // Concurrent requests for the same hint remain idempotent: wait for another
+  // hint reader, then re-check the attempt and current stage. A response,
+  // reset, or other lifecycle owner is not compatible and fails immediately.
+  for (let attempt = 0; attempt < 40; attempt++) {
+    const claimResult = await ctx.redisExec.set(
+      claimKey,
+      claimToken,
+      'EX',
+      300,
+      'NX'
+    )
+    if (claimResult === 'OK') {
+      claimed = true
+      break
+    }
+
+    const claimOwner = await ctx.redisExec.get(claimKey)
+    if (claimOwner != null && !claimOwner.startsWith('hint:')) {
+      break
+    }
+    await new Promise((resolve) => setTimeout(resolve, 25))
+  }
+
+  if (!claimed) {
+    throw new GraphQLError(
+      'The escape room lifecycle is currently being updated',
+      { extensions: { code: 'ESCAPE_ROOM_RESPONSE_PROCESSING' } }
+    )
+  }
+
+  try {
+    return await revealEscapeRoomHint(instanceId, participantId, activity, ctx)
+  } finally {
+    await ctx.redisExec.eval(RELEASE_ESCAPE_ROOM_CLAIM, 1, claimKey, claimToken)
   }
 }
 

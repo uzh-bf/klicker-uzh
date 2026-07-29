@@ -51,7 +51,7 @@ CREATE TABLE "public"."EscapeRoomAttempt" (
     "status" "public"."EscapeRoomStatus" NOT NULL DEFAULT 'IN_PROGRESS',
     "completedAt" TIMESTAMP(3),
     "lockoutUntil" TIMESTAMP(3),
-    "statsAggregatedAt" TIMESTAMP(3),
+    "retentionProcessedAt" TIMESTAMP(3),
     "participantId" UUID,
     "groupId" UUID,
     "practiceQuizId" UUID,

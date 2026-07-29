@@ -513,7 +513,7 @@ model EscapeRoomAttempt {
   // Set once the prune job has processed this finished attempt for retention.
   // Response/instance statistics are owned by submission/event-time paths;
   // completed/expired attempts remain the replay-integrity record until stale.
-  statsAggregatedAt DateTime?
+  retentionProcessedAt DateTime?
 
   // Individual Play (PracticeQuiz / MicroLearning / LiveQuiz block)
   participant   Participant? @relation(fields: [participantId], references: [id], onDelete: Cascade)

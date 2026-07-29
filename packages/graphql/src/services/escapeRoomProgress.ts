@@ -54,11 +54,7 @@ export async function getEscapeRoomProgress(
     throw new GraphQLError('Exactly one escape-room activity is required')
   }
 
-  const activityId = practiceQuizId ?? microLearningId
-
-  if (!activityId) {
-    throw new GraphQLError('An escape-room activity id is required')
-  }
+  const activityId = (practiceQuizId ?? microLearningId)!
 
   // 1. Load the escape-room config to confirm the activity is actually an
   //    escape room and to read the time limit for the header.

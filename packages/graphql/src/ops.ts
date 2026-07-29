@@ -1239,10 +1239,6 @@ export type ElementBlock = {
 
 export type ElementBlockInput = {
   elements: Array<ElementInstanceInput>;
-  escapeRoomHintPenalty?: InputMaybe<Scalars['Int']['input']>;
-  escapeRoomIntroText?: InputMaybe<Scalars['String']['input']>;
-  escapeRoomTimeLimit?: InputMaybe<Scalars['Int']['input']>;
-  isEscapeRoom?: InputMaybe<Scalars['Boolean']['input']>;
   order: Scalars['Int']['input'];
   timeLimit?: InputMaybe<Scalars['Int']['input']>;
 };
@@ -5071,11 +5067,6 @@ export type TemplateBlockElementInput = {
 
 export type TemplateBlockInput = {
   elements: Array<TemplateBlockElementInput>;
-  escapeRoomHintPenalty?: InputMaybe<Scalars['Int']['input']>;
-  escapeRoomIntroText?: InputMaybe<Scalars['String']['input']>;
-  escapeRoomLockoutSeconds?: InputMaybe<Scalars['Int']['input']>;
-  escapeRoomTimeLimit?: InputMaybe<Scalars['Int']['input']>;
-  isEscapeRoom?: InputMaybe<Scalars['Boolean']['input']>;
   order: Scalars['Int']['input'];
   timeLimit?: InputMaybe<Scalars['Int']['input']>;
 };

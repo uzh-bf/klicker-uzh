@@ -12,7 +12,7 @@ Evidence for Layer 2 of `2026-07-29-pr-5143-escape-room-stacked-delivery-plan.md
 
 ## Automated verification
 
-- Focused GraphQL Escape Room suite: 58/58 passed.
+- Focused GraphQL Escape Room suite: 60/60 passed.
 - QR utility tests: 3/3 passed.
 - PWA response-state test: 1/1 passed.
 - Focused Playwright Individual Escape Room suite: 16/16 passed, including the lecturer roster before any participant starts.
@@ -21,6 +21,8 @@ Evidence for Layer 2 of `2026-07-29-pr-5143-escape-room-stacked-delivery-plan.md
 - Empty PostgreSQL migration replay: all 179 migrations applied.
 - Prisma schema diff after replay: no difference detected.
 - Concurrent QR index: unique and valid.
+- Fresh replay contains `retentionProcessedAt` and no legacy
+  `statsAggregatedAt` column.
 - Analytics Prisma schema sync: passed.
 - Both managed Hatchet development workers remained authenticated and alive beyond the four-second heartbeat interval after the local token was rotated.
 
@@ -55,3 +57,9 @@ Generated Prisma and GraphQL artifacts were regenerated on current `v3`
 instead of copied from source commit `4be19aa61`. The effective Layer 2 diff
 contains no Group Activity or Live Quiz Escape Room API entry point, authoring
 control, participant runtime, or mode-specific test.
+
+The final review correction serializes hint requests through the same
+attempt-lifecycle claim as responses and resets, removes deferred Live Quiz
+settings from the public GraphQL inputs, and renames the retention marker to
+describe its actual role. Regression tests cover both the lifecycle collision
+and the Layer 2 schema boundary.

@@ -338,11 +338,6 @@ export const TemplateBlockInputRef =
 export const TemplateBlockInput = TemplateBlockInputRef.implement({
   fields: (t) => ({
     timeLimit: t.int({ required: false }),
-    isEscapeRoom: t.boolean({ required: false }),
-    escapeRoomTimeLimit: t.int({ required: false }),
-    escapeRoomHintPenalty: t.int({ required: false }),
-    escapeRoomLockoutSeconds: t.int({ required: false }),
-    escapeRoomIntroText: t.string({ required: false }),
     order: t.int({ required: true }),
     elements: t.field({ type: [TemplateBlockElementInput], required: true }),
   }),
