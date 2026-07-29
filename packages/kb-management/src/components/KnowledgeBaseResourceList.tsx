@@ -24,6 +24,7 @@ import {
   Button,
   H3,
   Modal,
+  SelectField,
   Skeleton,
   TextField,
   UserNotification,
@@ -45,6 +46,11 @@ import DeleteKnowledgeBaseResourcesModal from './DeleteKnowledgeBaseResourcesMod
 
 const PAGE_SIZE = 20
 const MAX_BULK_SELECTION = 50
+// SelectField's underlying Radix Select forbids an item value of `''` (it is
+// reserved to mean "no selection" / show the placeholder), so the "all"
+// filter option uses this sentinel and is translated to/from `''` at the
+// typeFilter/statusFilter state boundary.
+const FILTER_ALL_VALUE = 'all'
 
 type KnowledgeBaseResource =
   GetKbResourcesQuery['getKbResources']['items'][number]
@@ -319,6 +325,16 @@ function KnowledgeBaseResourceList({
   const pollInFlightRef = useRef(false)
   const refreshRequestRef = useRef(0)
   const handledRefreshTriggerRef = useRef<string | null>(null)
+  // Bounded-polling bookkeeping (P2-1): per-page cursors needed to refetch a
+  // specific loaded page (index 0's cursor is always `null`), which page
+  // indexes are known to contain an active row, and whether a full walk has
+  // established that bookkeeping since the last kb/filter reset. Populated by
+  // `refreshLoadedResources` (full walk) and extended by `loadMore`; consumed
+  // by `pollActivePages`, which the 2s interval calls instead of re-walking
+  // every loaded page.
+  const pageCursorsRef = useRef<(string | null)[]>([null])
+  const activePageIndexesRef = useRef<Set<number>>(new Set())
+  const bookkeepingValidRef = useRef(false)
   const variables = {
     kbId,
     first: PAGE_SIZE,
@@ -356,7 +372,10 @@ function KnowledgeBaseResourceList({
     const requestId = ++refreshRequestRef.current
     const targetCount = Math.max(resources.length, PAGE_SIZE)
     const refreshedItems: KnowledgeBaseResource[] = []
+    const pageCursors: (string | null)[] = [null]
+    const activePageIndexes = new Set<number>()
     let after: string | null = null
+    let pageIndex = 0
     let refreshedConnection: GetKbResourcesQuery['getKbResources'] | null = null
 
     try {
@@ -375,8 +394,14 @@ function KnowledgeBaseResourceList({
 
         refreshedConnection = refreshedData?.getKbResources ?? null
         if (!refreshedConnection) return false
-        refreshedItems.push(...refreshedConnection.items)
+        const pageItems = refreshedConnection.items
+        refreshedItems.push(...pageItems)
+        if (pageItems.some(isActiveResource)) {
+          activePageIndexes.add(pageIndex)
+        }
         after = refreshedConnection.pageInfo.endCursor ?? null
+        pageCursors[pageIndex + 1] = after
+        pageIndex += 1
       } while (
         refreshedItems.length < targetCount &&
         refreshedConnection.pageInfo.hasNextPage &&
@@ -395,6 +420,9 @@ function KnowledgeBaseResourceList({
           items: refreshedItems,
         },
       }))
+      pageCursorsRef.current = pageCursors
+      activePageIndexesRef.current = activePageIndexes
+      bookkeepingValidRef.current = true
       return true
     } catch (refreshError) {
       if (
@@ -415,6 +443,113 @@ function KnowledgeBaseResourceList({
     updateQuery,
   ])
 
+  // Bounded poll for the 2s interval (P2-1): instead of re-walking every
+  // loaded page, only refetch the first page (the entry point of the cursor
+  // walk) plus pages already known to contain an active row, using the
+  // per-page cursors captured by the last full walk. Falls back to a full
+  // walk (via refreshLoadedResources) whenever that bookkeeping isn't
+  // established yet for the currently loaded pages, or whenever a refetched
+  // non-tail page comes back with a different item count than expected --
+  // a sign that a concurrent delete shifted rows across the keyset window,
+  // so the stored cursors can no longer be trusted and state must be
+  // re-established from scratch.
+  const pollActivePages = useCallback(async () => {
+    const loadedPageCount = Math.max(1, Math.ceil(resources.length / PAGE_SIZE))
+    const cursors = pageCursorsRef.current
+
+    if (!bookkeepingValidRef.current || cursors.length < loadedPageCount) {
+      return refreshLoadedResources()
+    }
+
+    const requestId = ++refreshRequestRef.current
+    const targetPages = Array.from(
+      new Set<number>([0, ...Array.from(activePageIndexesRef.current)])
+    )
+      .filter((pageIndex) => pageIndex < loadedPageCount)
+      .sort((a, b) => a - b)
+
+    try {
+      const fetchedByPage = new Map<number, KnowledgeBaseResource[]>()
+      for (const pageIndex of targetPages) {
+        const { data: polledData } = await fetchResourcePoll({
+          variables: {
+            kbId,
+            first: PAGE_SIZE,
+            after: cursors[pageIndex],
+            search: deferredSearch || null,
+            type: typeFilter || null,
+            status: statusFilter || null,
+          },
+        })
+        if (requestId !== refreshRequestRef.current) return false
+
+        const polledConnection = polledData?.getKbResources ?? null
+        if (!polledConnection) {
+          bookkeepingValidRef.current = false
+          return refreshLoadedResources()
+        }
+
+        const isTailPage = pageIndex === loadedPageCount - 1
+        const expectedLength = isTailPage
+          ? resources.length - pageIndex * PAGE_SIZE
+          : PAGE_SIZE
+        if (!isTailPage && polledConnection.items.length !== expectedLength) {
+          bookkeepingValidRef.current = false
+          return refreshLoadedResources()
+        }
+
+        fetchedByPage.set(pageIndex, polledConnection.items)
+        // Opportunistically refresh the next page's cursor in case it
+        // becomes a poll target later (e.g. its rows become active).
+        if (pageIndex + 1 < cursors.length) {
+          cursors[pageIndex + 1] = polledConnection.pageInfo.endCursor ?? null
+        }
+      }
+
+      if (requestId !== refreshRequestRef.current) return false
+
+      fetchedByPage.forEach((items, pageIndex) => {
+        if (items.some(isActiveResource)) {
+          activePageIndexesRef.current.add(pageIndex)
+        } else {
+          activePageIndexesRef.current.delete(pageIndex)
+        }
+      })
+
+      updateQuery((previous) => {
+        const items = previous.getKbResources.items.slice()
+        fetchedByPage.forEach((pageItems, pageIndex) => {
+          items.splice(pageIndex * PAGE_SIZE, PAGE_SIZE, ...pageItems)
+        })
+        return {
+          ...previous,
+          getKbResources: {
+            ...previous.getKbResources,
+            items,
+          },
+        }
+      })
+      return true
+    } catch (pollError) {
+      if (
+        requestId !== refreshRequestRef.current ||
+        (pollError as { name?: string }).name === 'AbortError'
+      ) {
+        return false
+      }
+      throw pollError
+    }
+  }, [
+    deferredSearch,
+    fetchResourcePoll,
+    kbId,
+    refreshLoadedResources,
+    resources.length,
+    statusFilter,
+    typeFilter,
+    updateQuery,
+  ])
+
   useEffect(() => {
     if (!polling) return
 
@@ -422,7 +557,7 @@ function KnowledgeBaseResourceList({
       if (pollInFlightRef.current) return
       pollInFlightRef.current = true
       try {
-        await refreshLoadedResources()
+        await pollActivePages()
       } finally {
         pollInFlightRef.current = false
       }
@@ -438,11 +573,18 @@ function KnowledgeBaseResourceList({
       refreshRequestRef.current += 1
       pollInFlightRef.current = false
     }
-  }, [polling, refreshLoadedResources])
+  }, [polling, pollActivePages])
 
   useEffect(() => {
     refreshRequestRef.current += 1
     setSelectedIds(new Set())
+    // The kb/filter context changed, so the query variables changed too --
+    // any cursors and active-page indexes recorded for the previous context
+    // no longer describe this result set. Reset the bounded-poll bookkeeping
+    // so the next poll re-establishes it with a full walk.
+    pageCursorsRef.current = [null]
+    activePageIndexesRef.current = new Set()
+    bookkeepingValidRef.current = false
   }, [deferredSearch, kbId, statusFilter, typeFilter])
 
   useEffect(() => {
@@ -593,19 +735,36 @@ function KnowledgeBaseResourceList({
 
   const loadMore = async () => {
     if (!connection?.pageInfo.hasNextPage || loadingMore) return
+    const newPageIndex = Math.ceil(resources.length / PAGE_SIZE)
+    const cursorUsed = connection.pageInfo.endCursor ?? null
+    let newPageEndCursor: string | null = null
+    let newPageHasActive = false
     await fetchMore({
       variables: { after: connection.pageInfo.endCursor },
-      updateQuery: (previous, { fetchMoreResult }) => ({
-        ...fetchMoreResult,
-        getKbResources: {
-          ...fetchMoreResult.getKbResources,
-          items: [
-            ...previous.getKbResources.items,
-            ...fetchMoreResult.getKbResources.items,
-          ],
-        },
-      }),
+      updateQuery: (previous, { fetchMoreResult }) => {
+        newPageEndCursor =
+          fetchMoreResult.getKbResources.pageInfo.endCursor ?? null
+        newPageHasActive =
+          fetchMoreResult.getKbResources.items.some(isActiveResource)
+        return {
+          ...fetchMoreResult,
+          getKbResources: {
+            ...fetchMoreResult.getKbResources,
+            items: [
+              ...previous.getKbResources.items,
+              ...fetchMoreResult.getKbResources.items,
+            ],
+          },
+        }
+      },
     })
+    // Keep the bounded-poll bookkeeping in sync with the newly loaded page so
+    // an active row on it is picked up by the next poll without a full walk.
+    pageCursorsRef.current[newPageIndex] = cursorUsed
+    pageCursorsRef.current[newPageIndex + 1] = newPageEndCursor
+    if (newPageHasActive) {
+      activePageIndexesRef.current.add(newPageIndex)
+    }
   }
 
   const toggleSelection = (id: string) => {
@@ -649,51 +808,54 @@ function KnowledgeBaseResourceList({
           placeholder={t('kb.searchResourcesPlaceholder')}
           data={{ cy: 'kb-resource-search' }}
         />
-        <label className="block text-sm font-medium text-slate-700">
-          {t('kb.filterType')}
-          <select
-            name="kb-resource-type-filter"
-            value={typeFilter}
-            onChange={(event) =>
-              setTypeFilter(event.target.value as KbResourceType | '')
-            }
-            className="focus-visible:border-primary-100 focus-visible:ring-primary-100 mt-1 min-h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 focus-visible:outline-none focus-visible:ring-1"
-            data-cy="kb-resource-type-filter"
-          >
-            <option value="">{t('kb.filterAll')}</option>
-            <option value={KbResourceType.Blob}>{t('kb.typeFile')}</option>
-            <option value={KbResourceType.Url}>{t('kb.typeUrl')}</option>
-          </select>
-        </label>
-        <label className="block text-sm font-medium text-slate-700">
-          {t('kb.filterStatus')}
-          <select
-            name="kb-resource-status-filter"
-            value={statusFilter}
-            onChange={(event) =>
-              setStatusFilter(event.target.value as KbIngestionStatus | '')
-            }
-            className="focus-visible:border-primary-100 focus-visible:ring-primary-100 mt-1 min-h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 focus-visible:outline-none focus-visible:ring-1"
-            data-cy="kb-resource-status-filter"
-          >
-            <option value="">{t('kb.filterAll')}</option>
-            <option value={KbIngestionStatus.Queued}>
-              {t('kb.runStatusQueued')}
-            </option>
-            <option value={KbIngestionStatus.Processing}>
-              {t('kb.runStatusProcessing')}
-            </option>
-            <option value={KbIngestionStatus.Succeeded}>
-              {t('kb.runStatusSucceeded')}
-            </option>
-            <option value={KbIngestionStatus.Failed}>
-              {t('kb.runStatusFailed')}
-            </option>
-            <option value={KbIngestionStatus.Superseded}>
-              {t('kb.runStatusSuperseded')}
-            </option>
-          </select>
-        </label>
+        <SelectField
+          id="kb-resource-type-filter"
+          label={t('kb.filterType')}
+          value={typeFilter || FILTER_ALL_VALUE}
+          onChange={(newValue) =>
+            setTypeFilter(
+              newValue === FILTER_ALL_VALUE ? '' : (newValue as KbResourceType)
+            )
+          }
+          items={[
+            { value: FILTER_ALL_VALUE, label: t('kb.filterAll') },
+            { value: KbResourceType.Blob, label: t('kb.typeFile') },
+            { value: KbResourceType.Url, label: t('kb.typeUrl') },
+          ]}
+          data={{ cy: 'kb-resource-type-filter' }}
+          className={{ root: 'w-full', select: { trigger: 'w-full' } }}
+        />
+        <SelectField
+          id="kb-resource-status-filter"
+          label={t('kb.filterStatus')}
+          value={statusFilter || FILTER_ALL_VALUE}
+          onChange={(newValue) =>
+            setStatusFilter(
+              newValue === FILTER_ALL_VALUE
+                ? ''
+                : (newValue as KbIngestionStatus)
+            )
+          }
+          items={[
+            { value: FILTER_ALL_VALUE, label: t('kb.filterAll') },
+            { value: KbIngestionStatus.Queued, label: t('kb.runStatusQueued') },
+            {
+              value: KbIngestionStatus.Processing,
+              label: t('kb.runStatusProcessing'),
+            },
+            {
+              value: KbIngestionStatus.Succeeded,
+              label: t('kb.runStatusSucceeded'),
+            },
+            { value: KbIngestionStatus.Failed, label: t('kb.runStatusFailed') },
+            {
+              value: KbIngestionStatus.Superseded,
+              label: t('kb.runStatusSuperseded'),
+            },
+          ]}
+          data={{ cy: 'kb-resource-status-filter' }}
+          className={{ root: 'w-full', select: { trigger: 'w-full' } }}
+        />
       </div>
 
       {polling ? (
