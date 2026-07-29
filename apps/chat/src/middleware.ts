@@ -191,5 +191,9 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/:path*'],
+  // The Manage chat route owns a streaming 16 MiB request limit. Excluding it
+  // here prevents Next.js middleware from first cloning and buffering the body
+  // (10 MiB by default), which would both truncate supported requests and
+  // defeat the route's bounded streaming reader.
+  matcher: ['/((?!api/manage/chat$).*)'],
 }

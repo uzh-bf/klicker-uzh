@@ -71,12 +71,27 @@ export function getLecturerMcpUrl(
   })
 }
 
+function combineAbortSignals(
+  requestSignal: AbortSignal | undefined,
+  transportSignal: AbortSignal | null | undefined
+): AbortSignal | undefined {
+  const signals = [requestSignal, transportSignal].filter(
+    (candidate): candidate is AbortSignal =>
+      candidate !== undefined && candidate !== null
+  )
+
+  if (signals.length === 0) return undefined
+  if (signals.length === 1) return signals[0]
+  return AbortSignal.any(signals)
+}
+
 export async function loadLecturerMcpTools(
   userId: string,
   sessionScope: string | undefined,
   // Injectable for deterministic tests; production callers rely on the
   // default fresh-per-request sentinel.
-  toolOutputFenceSentinel: FenceSentinel = createFenceSentinel()
+  toolOutputFenceSentinel: FenceSentinel = createFenceSentinel(),
+  signal?: AbortSignal
 ): Promise<LecturerMcpToolBundle> {
   const url = getLecturerMcpUrl()
   if (!url) {
@@ -99,6 +114,14 @@ export async function loadLecturerMcpTools(
         'Content-Type': 'application/json',
       },
     },
+    // The MCP SDK supplies its own abort signal after spreading requestInit.
+    // Compose it here so the route deadline and transport close both cancel
+    // the actual fetch instead of one silently replacing the other.
+    fetch: (input, init) =>
+      fetch(input, {
+        ...init,
+        signal: combineAbortSignals(signal, init?.signal),
+      }),
   })
   const client: LecturerMcpClient = await createSDKMCPClient({ transport })
 

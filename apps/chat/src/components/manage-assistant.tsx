@@ -15,6 +15,7 @@ import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useEmbeddedManageContext } from '../hooks/useEmbeddedManageContext'
 import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
+import { MAX_MANAGE_IMAGE_ATTACHMENTS } from '../lib/config/attachmentLimits'
 import { getManageSuggestions } from '../lib/config/manageSuggestions'
 import {
   getManageContextLabel,
@@ -85,6 +86,7 @@ function ManageAssistantInner() {
           welcomeMessage={MANAGE_ASSISTANT_WELCOME}
           capabilities={MANAGE_ASSISTANT_CAPABILITIES}
           limitsNote={MANAGE_ASSISTANT_LIMITS_NOTE}
+          maxImageAttachments={MAX_MANAGE_IMAGE_ATTACHMENTS}
         />
       </div>
     </ManageAssistantRuntimeProvider>

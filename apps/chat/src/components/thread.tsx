@@ -49,11 +49,9 @@ import {
   hasAnyImageAttachmentData,
 } from '@/src/lib/attachments/attachmentState'
 import { getAttachmentPreviewSrc } from '@/src/lib/attachments/attachmentUi'
+import { MAX_IMAGE_ATTACHMENTS } from '@/src/lib/config/attachmentLimits'
 import type { ThreadSuggestion } from '@/src/lib/config/manageSuggestions'
-import {
-  MAX_IMAGE_ATTACHMENTS,
-  useComposerStore,
-} from '@/src/stores/composerStore'
+import { useComposerStore } from '@/src/stores/composerStore'
 import { useSettingsStore } from '@/src/stores/settingsStore'
 import { Button } from '@uzh-bf/design-system'
 import { BranchPicker } from './branch-picker'
@@ -94,10 +92,11 @@ type ThreadProps = {
   // One-line note shown below the capability bullets (e.g. clarifying the
   // assistant's limits). Ignored when `capabilities` is unset/empty.
   limitsNote?: string
+  maxImageAttachments?: number
 }
 const EMPTY_REMOVED_ATTACHMENT_KEYS: string[] = []
-const attachmentLimitErrorMessage = () =>
-  `You can only attach up to ${MAX_IMAGE_ATTACHMENTS} images.`
+const attachmentLimitErrorMessage = (maxImageAttachments: number) =>
+  `You can only attach up to ${maxImageAttachments} images.`
 
 const formatCredits = (value: number) => {
   if (!Number.isFinite(value)) return '0'
@@ -260,6 +259,7 @@ export const Thread: FC<ThreadProps> = ({
   welcomeMessage,
   capabilities,
   limitsNote,
+  maxImageAttachments = MAX_IMAGE_ATTACHMENTS,
 }) => {
   const { embedded } = useChatUi()
   const resolvedSuggestions =
@@ -296,7 +296,9 @@ export const Thread: FC<ThreadProps> = ({
         <ThreadPrimitive.Messages
           components={{
             UserMessage: UserMessage,
-            EditComposer: EditComposer,
+            EditComposer: () => (
+              <EditComposer maxImageAttachments={maxImageAttachments} />
+            ),
             AssistantMessage: (props) => (
               <AssistantMessage
                 {...props}
@@ -316,7 +318,7 @@ export const Thread: FC<ThreadProps> = ({
       >
         <div className="from-background pointer-events-none absolute inset-x-0 bottom-full h-12 to-transparent" />
         {!embedded && <ThreadScrollToBottom />}
-        <Composer />
+        <Composer maxImageAttachments={maxImageAttachments} />
       </div>
     </ThreadPrimitive.Root>
   )
@@ -500,13 +502,16 @@ const AttachmentErrorBanner: FC<{
   )
 }
 
-const Composer: FC = () => {
+const Composer: FC<{ maxImageAttachments: number }> = ({
+  maxImageAttachments,
+}) => {
   const { embedded } = useChatUi()
   const [attachmentError, setAttachmentError] = useState<string | null>(null)
 
   return (
     <ComposerDropzone
       setError={setAttachmentError}
+      maxImageAttachments={maxImageAttachments}
       className="w-full max-w-3xl"
       roundedClass="rounded-3xl"
     >
@@ -525,6 +530,7 @@ const Composer: FC = () => {
         <div className="flex w-full items-center">
           <ComposerAttachButton
             setError={setAttachmentError}
+            maxImageAttachments={maxImageAttachments}
             dataCy="chat-composer"
           />
           <ComposerPrimitive.Input
@@ -547,9 +553,11 @@ const Composer: FC = () => {
 const useComposerAttachmentLimit = ({
   setError,
   currentCount,
+  maxImageAttachments,
 }: {
   setError: (msg: string | null) => void
   currentCount?: number
+  maxImageAttachments: number
 }) => {
   const composerRuntime = useComposerRuntime()
   const attachments = useComposer((s) => s.attachments ?? [])
@@ -560,13 +568,13 @@ const useComposerAttachmentLimit = ({
       : Math.max(0, currentCount - composerAttachmentCount)
   const maxComposerAttachmentCount = Math.max(
     0,
-    MAX_IMAGE_ATTACHMENTS - existingAttachmentCount
+    maxImageAttachments - existingAttachmentCount
   )
 
   useEffect(() => {
     if (attachments.length <= maxComposerAttachmentCount) return
 
-    setError(attachmentLimitErrorMessage())
+    setError(attachmentLimitErrorMessage(maxImageAttachments))
 
     const overflowAttachmentIndexes = attachments
       .map((_, index) => index)
@@ -578,20 +586,38 @@ const useComposerAttachmentLimit = ({
         composerRuntime.getAttachmentByIndex(index).remove()
       )
     )
-  }, [attachments, composerRuntime, maxComposerAttachmentCount, setError])
+  }, [
+    attachments,
+    composerRuntime,
+    maxComposerAttachmentCount,
+    maxImageAttachments,
+    setError,
+  ])
 }
 
 const ComposerDropzone: FC<
   PropsWithChildren<{
     setError: (msg: string | null) => void
     currentCount?: number
+    maxImageAttachments: number
     className?: string
     roundedClass: string
   }>
-> = ({ setError, currentCount, className, roundedClass, children }) => {
+> = ({
+  setError,
+  currentCount,
+  maxImageAttachments,
+  className,
+  roundedClass,
+  children,
+}) => {
   const supportsImages = useSupportsImageAttachments()
 
-  useComposerAttachmentLimit({ setError, currentCount })
+  useComposerAttachmentLimit({
+    setError,
+    currentCount,
+    maxImageAttachments,
+  })
 
   return (
     <ComposerPrimitive.AttachmentDropzone
@@ -776,8 +802,9 @@ const ComposerAttachmentView: FC<{
 const ComposerAttachButton: FC<{
   setError: (msg: string | null) => void
   currentCount?: number
+  maxImageAttachments: number
   dataCy?: string
-}> = ({ setError, currentCount, dataCy }) => {
+}> = ({ setError, currentCount, maxImageAttachments, dataCy }) => {
   const { embedded } = useChatUi()
   const composerRuntime = useComposerRuntime()
   const composerAttachmentCount = useComposer((s) => s.attachments?.length ?? 0)
@@ -785,11 +812,11 @@ const ComposerAttachButton: FC<{
   const inputRef = useRef<HTMLInputElement | null>(null)
   const supportsImages = useSupportsImageAttachments()
 
-  if (!supportsImages || attachmentCount >= MAX_IMAGE_ATTACHMENTS) return null
+  if (!supportsImages || attachmentCount >= maxImageAttachments) return null
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return
-    const remaining = Math.max(0, MAX_IMAGE_ATTACHMENTS - attachmentCount)
+    const remaining = Math.max(0, maxImageAttachments - attachmentCount)
     const accepted = Array.from(files).slice(0, remaining)
     const rejectedCount = files.length - accepted.length
 
@@ -805,7 +832,7 @@ const ComposerAttachButton: FC<{
     }
 
     if (rejectedCount > 0) {
-      setError(attachmentLimitErrorMessage())
+      setError(attachmentLimitErrorMessage(maxImageAttachments))
     } else if (lastAdapterError) {
       setError(lastAdapterError)
     }
@@ -1013,7 +1040,9 @@ const UserActionBar: FC = () => {
   )
 }
 
-const EditComposer: FC = () => {
+const EditComposer: FC<{ maxImageAttachments: number }> = ({
+  maxImageAttachments,
+}) => {
   const { showMessageActions } = useChatUi()
   const message = useMessage() as MessageWithCustomMetadata
   const [attachmentError, setAttachmentError] = useState<string | null>(null)
@@ -1094,6 +1123,7 @@ const EditComposer: FC = () => {
     <ComposerDropzone
       setError={setAttachmentError}
       currentCount={totalAttachmentCount}
+      maxImageAttachments={maxImageAttachments}
       className="my-4 w-full max-w-[var(--thread-max-width)]"
       roundedClass="rounded-2xl"
     >
@@ -1144,6 +1174,7 @@ const EditComposer: FC = () => {
           <ComposerAttachButton
             setError={setAttachmentError}
             currentCount={totalAttachmentCount}
+            maxImageAttachments={maxImageAttachments}
             dataCy="chat-edit-composer"
           />
           <div className="ml-auto flex items-center justify-center gap-2">

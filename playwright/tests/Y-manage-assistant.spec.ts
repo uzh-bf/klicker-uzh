@@ -1,3 +1,4 @@
+import { testImageUpload } from '../util/chat.js'
 import { COURSE_ID_TEST, URL_MANAGE } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import {
@@ -196,6 +197,48 @@ test.describe('Manage Assistant — Messaging', () => {
     await expect(
       welcome.getByText(/Read-only for everything else/)
     ).toHaveClass(/(^|\s)text-muted-foreground(\s|$)/)
+  })
+
+  test('Manage composer accepts at most two images without changing the participant limit', async ({
+    page,
+  }) => {
+    await mockManageChatStream(page)
+    const assistant = await openManageAssistantWidget(page)
+    const composer = assistant.getByTestId('chat-composer')
+    const attachInput = composer.getByTestId('chat-composer-attach-input')
+
+    // Like the controlled textarea in sendManageAssistantMessage(), the
+    // embedded assistant runtime can miss the first event while it hydrates.
+    // Re-apply the selection until the runtime, not only the DOM input, owns it.
+    await expect(async () => {
+      await attachInput.setInputFiles(testImageUpload('image-1.png'))
+      await expect(
+        composer.getByTestId('chat-composer-attachment')
+      ).toHaveCount(1, { timeout: 1_000 })
+    }).toPass({ timeout: 15_000 })
+
+    await expect(async () => {
+      await attachInput.setInputFiles([
+        testImageUpload('image-2.png'),
+        testImageUpload('image-3.png'),
+      ])
+      await expect(
+        composer.getByTestId('chat-composer-attachment')
+      ).toHaveCount(2, { timeout: 1_000 })
+      await expect(
+        assistant.getByText('You can only attach up to 2 images.')
+      ).toBeVisible({ timeout: 1_000 })
+    }).toPass({ timeout: 15_000 })
+
+    await expect(
+      assistant.getByText('You can only attach up to 2 images.')
+    ).toBeVisible()
+    await expect(
+      composer.getByTestId('chat-composer-attach-button')
+    ).toHaveCount(0)
+    await expect(composer.getByTestId('chat-composer-attachment')).toHaveCount(
+      2
+    )
   })
 
   test('Dialog exposes modal semantics and isolates the Manage page', async ({

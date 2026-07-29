@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Date | 2026-07-28 |
-| Status | IN PROGRESS — S0, S2, and S3 complete locally; S1 awaiting payload-envelope ruling |
+| Status | IN PROGRESS — S0, S2, and S3 complete locally; S1 verification and review in progress |
 | PR | [#5109](https://github.com/uzh-bf/klicker-uzh/pull/5109) |
 | Remote branch | `codex/manage-assistant-mcp-v3-ai` → `v3-ai` |
 | Local worktree | `.claude/worktrees/finalize-v3-ai-branch-0fa103` |
@@ -764,13 +764,13 @@ Every new tool repeats the existing rollout gate:
 
 PR #5109 is production-ready only when all are true:
 
-- [ ] S1 rejects known-length and chunked oversized bodies and preserves the
+- [x] S1 rejects known-length and chunked oversized bodies and preserves the
       supported client payload.
 - [x] S2 PWA drawer meets the repository modal contract and has stable E2E
       coverage.
 - [x] S3 has no silence-based E7 pass; 401/429 are measured through the
       transport/UI contract.
-- [ ] S4 full automated gate passes at one clean commit.
+- [x] S4 full automated gate passes at one clean commit.
 - [ ] One fully measured live judged run reports `OVERALL: PASS`.
 - [ ] Firefox and WebKit targeted tests pass against production builds.
 - [ ] VoiceOver pass is recorded.
@@ -810,6 +810,85 @@ approved.
   supported. Recommended ruling: keep 16 MiB and cap only the Manage assistant
   at two images; the participant chat remains at three. S1 implementation is
   paused pending that product-envelope ruling.
+- 2026-07-28: Product ruling approved the recommended S1 envelope: keep the
+  16 MiB route ceiling, cap only the Manage assistant at two 5 MiB images, and
+  retain the participant-chat limit of three images. S1 implementation resumed
+  from clean local head `7465308c8`; no remote or PR mutation was performed.
+- 2026-07-28: S1's production-equivalent standalone-server probe exposed and
+  fixed Next middleware's default 10 MiB body clone/truncation by excluding only
+  `/api/manage/chat` from the matcher. Before the per-pod guard, ten concurrent
+  15.5 MiB synthetic requests peaked at 440.2 MiB. A one-request guard now
+  returns one `400` plus nine retryable `503` responses before competing bodies
+  are read, but the accepted request still peaked at 235.0 MiB. The exact
+  supported 13.528 MiB two-image envelope peaked at 198.3 MiB from a settled
+  140.6 MiB baseline, leaving only 1.7 MiB beneath the production 200 MiB limit
+  and failing the plan's 70% threshold. Recommended ruling: restore the Chat
+  pod's chart-default 400 MiB limit in staging and production while retaining
+  the approved 16 MiB route ceiling and one-request guard. No deployment,
+  remote, or PR mutation was performed.
+- 2026-07-29: The 400 MiB Chat limit was approved and restored in the staging
+  and production values; no deployment was authorized or performed. The
+  production-standalone probe was rerun with ten concurrent 15.5 MiB synthetic
+  requests: one request parsed and returned `400`, nine overlapping requests
+  returned retryable `503` before body consumption, and the 235.0 MiB peak
+  stayed below the 280 MiB risk threshold.
+- 2026-07-29: S1 implementation verification passed: Chat tests 227/227, Chat
+  typecheck, focused Manage and participant attachment-limit Chromium tests,
+  staging and production Helm lint, production Chat build, and authenticated
+  manual browser evidence with two accepted images plus the visible rejection
+  of the third. The request slot now remains held until the streamed response
+  completes or is cancelled. The wiki validator still reports only the two
+  inherited `F002` errors in the unrelated seed solution pages; this slice
+  introduced no new wiki finding. S1 is ready for its local commit and
+  independent review gates.
+- 2026-07-29: Independent S1 review found that self-hosted Next does not
+  enforce `maxDuration`, busy rejections consumed the lecturer's rate budget,
+  the shallow request schema trusted malformed/client-forged message history,
+  and image base64 validation accepted empty or mispadded payloads. The
+  accepted fixes add a 30-second body deadline and 60-second total abort
+  deadline, propagate cancellation through MCP/model/response streams, admit
+  work before rate accounting, use the AI SDK structural validator before MCP
+  setup, reject client system and invalid file/user parts, remove client-owned
+  assistant tool/data/reasoning history before model conversion, and validate
+  non-empty padded base64. Focused request/MCP tests and Chat typecheck pass;
+  the full Chat suite now has 235 tests and the production Chat build passes
+  with `NODE_ENV=production`.
+- 2026-07-29: The review also found that staging and production still overrode
+  the chart's 200 MiB Chat memory request down to 50 MiB despite a measured
+  140.6 MiB idle baseline and 235.0 MiB guarded peak. The user approved
+  restoring the 200 MiB chart-default request in both environments while
+  retaining the 400 MiB limit. The values are updated in this slice; no
+  deployment or cluster action has been performed.
+- 2026-07-29: S4 evidence accumulated at the S1 review-fix worktree state:
+  full monorepo `check:all` passed under Node 24; the full 23-package production
+  build passed before the review fixes and the affected Chat production build
+  passed afterward; lecturer MCP unit tests passed 40/40; lecturer MCP happy
+  smoke passed 9/9 and the negative/authZ matrix passed 13/13 against the
+  namespaced issuer and current Playwright-seeded course; offline eval passed
+  91 tests with 53 deselected plus clean Ruff lint/format. The final combined
+  Chromium run passed all 23 Manage-assistant and PWA drawer tests against the
+  namespaced worktree stack, including the formerly transient 401-recovery
+  case. The temporary local database tunnel was stopped. The wiki validator
+  still has only the two inherited `F002` solution-page errors and 24 inherited
+  hygiene warnings; docs formatting passes. Staging and production Helm lint
+  also pass with the approved 200 MiB request / 400 MiB limit.
+- 2026-07-29: The final exact-state automated gate passed under the pinned
+  Node 24 container: Chat tests 235/235, repository-wide `check:all`, and the
+  full 23-task production build. Together with the recorded MCP, eval, Helm,
+  wiki, and combined 23/23 Chromium evidence, S1 and S4 now satisfy their
+  automated definition of done. No remote, deployment, or cluster action was
+  performed.
+- 2026-07-29: Exact-commit re-review of `cd07ead7d` found two residual
+  trust/cancellation gaps: the pinned MCP SDK overwrote `requestInit.signal`
+  with its private transport signal, and reconstructed history still retained
+  browser-owned provider metadata. The accepted fixes compose both abort
+  signals in the transport's actual custom fetch, rebuild every accepted
+  message/part from allowlisted fields, and add regressions proving a hung MCP
+  fetch aborts and all client provider metadata is removed. Focused boundary
+  tests pass 38/38, the full Chat suite passes 236/236, Chat typecheck passes,
+  the production Chat build passes with `NODE_ENV=production`, and the
+  repository-wide `check:all` plus 23-task production build pass. The S1/S4
+  checkboxes remain subject to the amended exact-head reviewer sign-off.
 - 2026-07-28: S2 implementation completed. The PWA course-chat drawer now
   portals to `document.body`, exposes the complete launcher/dialog contract,
   traps focus, makes `#__next` inert and assistive-technology-hidden while

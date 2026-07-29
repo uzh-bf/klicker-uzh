@@ -1,5 +1,13 @@
 import { getChatModelRegistry } from '@/src/lib/server/chatModelRegistry'
 import { getAuthenticatedManageUser } from '@/src/lib/server/manageAuth'
+import {
+  MANAGE_CHAT_BODY_TIMEOUT_MS,
+  MANAGE_CHAT_TOTAL_TIMEOUT_MS,
+  readBoundedJson,
+  releaseWhenResponseCompletes,
+  tryAcquireManageChatRequest,
+  validateManageChatRequest,
+} from '@/src/lib/server/manageChatRequest'
 import { loadLecturerMcpTools } from '@/src/services/lecturerMcp'
 import {
   buildManageAssistantSystemPrompt,
@@ -10,14 +18,8 @@ import { sanitizeManageAssistantContext } from '@/src/services/manageContext'
 import { createRateLimiter } from '@/src/services/rateLimiter'
 import { createFenceSentinel } from '@/src/services/toolOutputFencing'
 import { createOpenAI } from '@ai-sdk/openai'
-import {
-  convertToModelMessages,
-  stepCountIs,
-  streamText,
-  type UIMessage,
-} from 'ai'
+import { convertToModelMessages, stepCountIs, streamText } from 'ai'
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -27,21 +29,6 @@ const isAiTelemetryEnabled = process.env.CHAT_ENABLE_AI_TELEMETRY !== 'false'
 // Best-effort, per-pod limiter (see rateLimiter.ts) — 30 requests / 5 minutes
 // per authenticated lecturer.
 const chatRateLimiter = createRateLimiter(30, 5 * 60 * 1000)
-
-const manageChatRequestSchema = z.object({
-  manageContext: z.unknown().optional(),
-  messages: z
-    .array(
-      z.custom<UIMessage>(
-        (value) =>
-          typeof value === 'object' &&
-          value !== null &&
-          Array.isArray((value as { parts?: unknown }).parts)
-      )
-    )
-    .min(1)
-    .max(50),
-})
 
 const responsesApiFetch: typeof globalThis.fetch = async (input, init) => {
   if (init?.body && typeof init.body === 'string') {
@@ -85,82 +72,137 @@ export async function POST(req: NextRequest) {
   }
   const userId = manageUser.sub
 
-  const rateLimit = chatRateLimiter.check(userId)
-  if (!rateLimit.allowed) {
+  const releaseRequest = tryAcquireManageChatRequest()
+  if (!releaseRequest) {
     return NextResponse.json(
-      { error: 'Too many requests' },
-      {
-        status: 429,
-        headers: {
-          'Retry-After': String(Math.ceil(rateLimit.retryAfterMs / 1000)),
-        },
-      }
+      { error: 'Manage assistant is busy' },
+      { status: 503, headers: { 'Retry-After': '1' } }
     )
   }
 
-  const body = await req.json().catch(() => null)
-  const parsed = manageChatRequestSchema.safeParse(body)
-  if (!parsed.success) {
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
-  }
-
-  const context = sanitizeManageAssistantContext(parsed.data.manageContext)
-  const lecturerMcp = await loadLecturerMcpTools(
-    userId,
-    manageUser.scope
-  ).catch((error) => {
-    console.warn('Failed to load lecturer MCP tools:', error)
-    return {
-      close: async () => {},
-      hasDraftScope: false,
-      sentinel: createFenceSentinel(),
-      tools: {},
-    }
-  })
-  const toolCount = Object.keys(lecturerMcp.tools).length
-  const selectedModel = selectManageAssistantModel(getChatModelRegistry())
-  const modelMessages = await convertToModelMessages(parsed.data.messages, {
-    ignoreIncompleteToolCalls: true,
-  })
-
-  const closeTools = async () => {
-    await lecturerMcp.close()
-  }
-
+  const requestSignal = AbortSignal.any([
+    req.signal,
+    AbortSignal.timeout(MANAGE_CHAT_TOTAL_TIMEOUT_MS),
+  ])
+  let releaseRequestInFinally = true
   try {
-    const result = streamText({
-      abortSignal: req.signal,
-      experimental_telemetry: { isEnabled: isAiTelemetryEnabled },
-      maxOutputTokens: selectedModel.maxOutputTokens,
-      messages: modelMessages,
-      model: createManageAssistantModel(selectedModel.deploymentId),
-      providerOptions: {
-        openai: getManageAssistantOpenAIProviderOptions(),
-      },
-      stopWhen: stepCountIs(5),
-      system: buildManageAssistantSystemPrompt(
-        context,
-        toolCount > 0,
-        lecturerMcp.hasDraftScope,
-        lecturerMcp.sentinel
-      ),
-      toolChoice: 'auto',
-      tools: lecturerMcp.tools,
-      onAbort: closeTools,
-      onError: async (error) => {
-        console.error('Manage assistant stream failed:', error)
-        await closeTools()
-      },
-      onFinish: closeTools,
+    const rateLimit = chatRateLimiter.check(userId)
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil(rateLimit.retryAfterMs / 1000)),
+          },
+        }
+      )
+    }
+
+    const bodySignal = AbortSignal.any([
+      requestSignal,
+      AbortSignal.timeout(MANAGE_CHAT_BODY_TIMEOUT_MS),
+    ])
+    const body = await readBoundedJson(req, undefined, bodySignal)
+    if (!body.ok) {
+      return NextResponse.json(
+        {
+          error:
+            body.error === 'TOO_LARGE'
+              ? 'Request body too large'
+              : body.error === 'TIMEOUT'
+                ? 'Request timed out'
+                : 'Invalid request body',
+        },
+        {
+          status:
+            body.error === 'TOO_LARGE'
+              ? 413
+              : body.error === 'TIMEOUT'
+                ? 408
+                : 400,
+        }
+      )
+    }
+
+    const parsed = await validateManageChatRequest(body.value)
+    if (!parsed) {
+      return NextResponse.json(
+        { error: 'Invalid request body' },
+        { status: 400 }
+      )
+    }
+
+    const context = sanitizeManageAssistantContext(parsed.manageContext)
+    const lecturerMcp = await loadLecturerMcpTools(
+      userId,
+      manageUser.scope,
+      undefined,
+      requestSignal
+    ).catch((error) => {
+      console.warn('Failed to load lecturer MCP tools:', error)
+      return {
+        close: async () => {},
+        hasDraftScope: false,
+        sentinel: createFenceSentinel(),
+        tools: {},
+      }
+    })
+    const toolCount = Object.keys(lecturerMcp.tools).length
+    const selectedModel = selectManageAssistantModel(getChatModelRegistry())
+    const modelMessages = await convertToModelMessages(parsed.messages, {
+      ignoreIncompleteToolCalls: true,
     })
 
-    return result.toUIMessageStreamResponse({ sendReasoning: true })
-  } catch (error) {
-    await closeTools()
-    console.error('Manage assistant request failed:', error)
-    return NextResponse.json(
-      { error: 'Manage assistant request failed' },
-      { status: 500 }
-    )
+    const closeTools = async () => {
+      await lecturerMcp.close()
+    }
+
+    try {
+      const result = streamText({
+        abortSignal: requestSignal,
+        experimental_telemetry: { isEnabled: isAiTelemetryEnabled },
+        maxOutputTokens: selectedModel.maxOutputTokens,
+        messages: modelMessages,
+        model: createManageAssistantModel(selectedModel.deploymentId),
+        providerOptions: {
+          openai: getManageAssistantOpenAIProviderOptions(),
+        },
+        stopWhen: stepCountIs(5),
+        system: buildManageAssistantSystemPrompt(
+          context,
+          toolCount > 0,
+          lecturerMcp.hasDraftScope,
+          lecturerMcp.sentinel
+        ),
+        toolChoice: 'auto',
+        tools: lecturerMcp.tools,
+        onAbort: closeTools,
+        onError: async (error) => {
+          console.error('Manage assistant stream failed:', error)
+          await closeTools()
+        },
+        onFinish: closeTools,
+      })
+
+      const response = result.toUIMessageStreamResponse({ sendReasoning: true })
+      releaseRequestInFinally = false
+      return releaseWhenResponseCompletes(
+        response,
+        releaseRequest,
+        requestSignal
+      )
+    } catch (error) {
+      await closeTools()
+      console.error('Manage assistant request failed:', error)
+      return NextResponse.json(
+        { error: 'Manage assistant request failed' },
+        { status: 500 }
+      )
+    }
+  } finally {
+    if (releaseRequestInFinally) {
+      releaseRequest()
+    }
   }
 }

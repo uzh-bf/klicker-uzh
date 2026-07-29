@@ -1,6 +1,12 @@
 # Log
 
+## 2026-07-29
+
+- **Update**: [chat-platform](./chat-platform.md) records the Manage route's Next-middleware bypass, one-request per-pod memory guard and retryable 503 contract, explicit request deadlines, server-side UI-message trust boundary, production-standalone memory evidence, and 200 MiB request / 400 MiB limit for staging and production Chat pods.
+
 ## 2026-07-28
+
+- **Update**: [chat-platform](./chat-platform.md) documents the Manage assistant's 16 MiB streamed request boundary, generic 413/400 behavior, auth/rate-limit-before-read order, and Manage-only two-image cap; participant chat remains at three images.
 
 - **Update**: [frontend-conventions](./frontend-conventions.md) records that both assistant drawers implement the shared portalled-modal, focus-containment, and page-isolation contract. [testing](./testing.md) records the dedicated PWA course-chat drawer and entry-fallback Playwright coverage.
 

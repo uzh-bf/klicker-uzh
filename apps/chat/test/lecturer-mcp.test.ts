@@ -5,6 +5,7 @@ import {
 } from '@/src/services/lecturerMcp'
 import { fenceToolResultText } from '@/src/services/toolOutputFencing'
 import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import type { ToolSet } from 'ai'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 
@@ -129,7 +130,9 @@ describe('filterToolsByDraftScope', () => {
 describe('loadLecturerMcpTools tool-result fencing (X4 regression)', () => {
   afterEach(() => {
     vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
     vi.mocked(createSDKMCPClient).mockReset()
+    vi.mocked(StreamableHTTPClientTransport).mockReset()
   })
 
   test('fences raw MCP tool-call results with the request sentinel before they reach the model', async () => {
@@ -173,5 +176,63 @@ describe('loadLecturerMcpTools tool-result fencing (X4 regression)', () => {
     })
 
     await bundle.close()
+  })
+
+  test('combines the request deadline with the MCP transport fetch signal', async () => {
+    vi.stubEnv('MCP_LECTURER_URL', 'https://mock-lecturer-mcp.test/mcp')
+    let transportFetch:
+      | ((url: string | URL, init?: RequestInit) => Promise<Response>)
+      | undefined
+    vi.mocked(StreamableHTTPClientTransport).mockImplementation(
+      (_url, options) => {
+        transportFetch = options?.fetch
+        return {} as InstanceType<typeof StreamableHTTPClientTransport>
+      }
+    )
+    const close = vi.fn().mockResolvedValue(undefined)
+    const transportAbort = new AbortController()
+    const upstreamFetch = vi.fn(
+      (_url: string | URL, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          const fetchSignal = init?.signal
+          if (fetchSignal?.aborted) {
+            reject(fetchSignal.reason)
+            return
+          }
+          fetchSignal?.addEventListener(
+            'abort',
+            () => reject(fetchSignal.reason),
+            { once: true }
+          )
+        })
+    )
+    vi.stubGlobal('fetch', upstreamFetch)
+    vi.mocked(createSDKMCPClient).mockResolvedValue({
+      close,
+      tools: vi.fn(async () => {
+        if (!transportFetch) throw new Error('Missing transport fetch')
+        await transportFetch('https://mock-lecturer-mcp.test/mcp', {
+          signal: transportAbort.signal,
+        })
+        return {}
+      }),
+    } as unknown as Awaited<ReturnType<typeof createSDKMCPClient>>)
+    const deadline = new AbortController()
+
+    const loading = loadLecturerMcpTools(
+      'user-1',
+      'FULL_ACCESS',
+      undefined,
+      deadline.signal
+    )
+    await vi.waitFor(() => expect(upstreamFetch).toHaveBeenCalledTimes(1))
+    deadline.abort(new Error('Manage request deadline'))
+
+    await expect(loading).rejects.toThrow('Manage request deadline')
+    const fetchSignal = upstreamFetch.mock.calls[0]?.[1]?.signal
+    expect(fetchSignal).not.toBe(deadline.signal)
+    expect(fetchSignal).not.toBe(transportAbort.signal)
+    expect(fetchSignal?.aborted).toBe(true)
+    expect(close).toHaveBeenCalledTimes(1)
   })
 })
