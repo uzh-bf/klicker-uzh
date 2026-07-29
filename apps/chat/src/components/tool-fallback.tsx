@@ -126,6 +126,79 @@ function docQueryChipLabel(t: Translate, state: DocQueryChipState): string {
   }
 }
 
+/**
+ * Extracts the search query a model issued to a doc_query tool from its
+ * (possibly still-streaming) JSON args text — `{ "query": "...", ... }`.
+ * Parses defensively: partial/non-JSON argsText, or a payload with no
+ * non-empty string `query` field, both read as "nothing to show" rather than
+ * throwing.
+ */
+export function parseDocQueryArgsQuery(argsText: string): string | undefined {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(argsText)
+  } catch {
+    return undefined
+  }
+
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return undefined
+  }
+
+  const query = (parsed as Record<string, unknown>).query
+  return typeof query === 'string' && query.trim().length > 0
+    ? query
+    : undefined
+}
+
+export interface DocQueryPanelContent {
+  query?: string
+  showSourcesHint: boolean
+}
+
+/**
+ * Friendly, non-raw content for an expanded doc_query tool call's panel, or
+ * `undefined` when the raw tool-name/args/result fallback should render
+ * instead: a non-doc_query tool, or a doc_query result that never parsed
+ * (running, cancelled, or failed calls all leave `result` as a
+ * placeholder/error value — see `getDocQueryChipState` — whose raw payload
+ * keeps its debugging value).
+ *
+ * `'done'` only ever reaches here once `parseDocQueryPayload(result)` above
+ * has already succeeded, so — unlike the chip label — it unambiguously means
+ * "parsed with at least one source" and is safe to key the sources hint on.
+ */
+export function getDocQueryPanelContent({
+  isDocQuery,
+  argsText,
+  result,
+  docQueryState,
+}: {
+  isDocQuery: boolean
+  argsText: string
+  result: unknown
+  docQueryState: DocQueryChipState | undefined
+}): DocQueryPanelContent | undefined {
+  if (
+    !isDocQuery ||
+    docQueryState === 'running' ||
+    docQueryState === 'failed' ||
+    !parseDocQueryPayload(result)
+  ) {
+    return undefined
+  }
+
+  const query = parseDocQueryArgsQuery(argsText)
+  const showSourcesHint = docQueryState === 'done'
+  // doneEmpty with unreadable args would yield a panel with nothing in it —
+  // fall back to the raw payload instead.
+  if (query === undefined && !showSourcesHint) {
+    return undefined
+  }
+
+  return { query, showSourcesHint }
+}
+
 interface ToolFallbackProps {
   toolName: string
   argsText: string
@@ -151,6 +224,13 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
   const docQueryState = isDocQuery
     ? getDocQueryChipState({ toolName, isRunning, isFailed, result, isError })
     : undefined
+
+  const docQueryPanelContent = getDocQueryPanelContent({
+    isDocQuery,
+    argsText,
+    result,
+    docQueryState,
+  })
 
   const resultText =
     result === undefined
@@ -216,12 +296,34 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
           <div className="bg-muted mt-1 rounded p-2 text-xs">
             {/* Not `text-muted-foreground`: that token only reaches 4.39:1 on
                 `--muted`, under the 4.5:1 AA floor for 12px text. */}
-            <p className="mb-1 font-mono">{toolName}</p>
-            <pre className="whitespace-pre-wrap">{argsText}</pre>
-            {resultText !== undefined && (
-              <div className="border-border mt-2 border-t border-dashed pt-2">
-                <TruncatedOutput text={resultText} />
-              </div>
+            {docQueryPanelContent ? (
+              <>
+                {docQueryPanelContent.query !== undefined && (
+                  <p>
+                    <span className="font-medium">
+                      {t('chat.toolFallback.docQueryQueryLabel')}:
+                    </span>{' '}
+                    {docQueryPanelContent.query}
+                  </p>
+                )}
+                {docQueryPanelContent.showSourcesHint && (
+                  <p
+                    className={docQueryPanelContent.query ? 'mt-1' : undefined}
+                  >
+                    {t('chat.toolFallback.docQuerySourcesHint')}
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                <p className="mb-1 font-mono">{toolName}</p>
+                <pre className="whitespace-pre-wrap">{argsText}</pre>
+                {resultText !== undefined && (
+                  <div className="border-border mt-2 border-t border-dashed pt-2">
+                    <TruncatedOutput text={resultText} />
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
