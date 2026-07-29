@@ -32,7 +32,7 @@ Provenance: steps 2 requires a database; on a machine without one running, write
 - **Decimal fields**: Python client needs `enable_experimental_decimal = true` in `apps/analytics/prisma/schema/py.prisma` (already set — don't remove); TS side never truthy-checks Decimals.
 - **Don't touch synced Analytics model files by hand** — `prisma:sync` overwrites them while preserving Analytics-owned `py.prisma` and `datasource.prisma`.
 - **Participant email uniqueness is per auth mode** (`@@unique([email, isSSOAccount])`) — cross-mode duplicate prevention lives in service logic, not the schema.
-- **Escape Room persistence is deliberately generalized** — `EscapeRoomConfig` and `EscapeRoomAttempt` serve Individual and Group Activity modes and retain a dormant Live Quiz block relation for its later delivery layer. Keep the optional relations and per-actor uniqueness constraints aligned with [domain-model](../../../docs/domain-model.md); runtime exposure belongs to GraphQL/service layers, not schema removal.
+- **Escape Room persistence is deliberately generalized** — `EscapeRoomConfig` and `EscapeRoomAttempt` serve Individual, Group Activity, and Live Quiz block modes. Keep the optional activity/block relations and participant/group uniqueness constraints aligned with [domain-model](../../../docs/domain-model.md); runtime exposure belongs to GraphQL, response API, and service layers, not schema specialization.
 
 ## Seeds — two independent paths
 
