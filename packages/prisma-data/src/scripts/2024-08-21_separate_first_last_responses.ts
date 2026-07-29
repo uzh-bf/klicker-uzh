@@ -1,8 +1,5 @@
-import {
-  ElementType,
-  PrismaClient,
-  ResponseCorrectness,
-} from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
+import { ElementType, ResponseCorrectness } from '@klicker-uzh/prisma/client'
 import {
   evaluateAnswerCorrectness,
   FlashcardCorrectness,
@@ -12,8 +9,6 @@ import {
 } from '../../..//graphql/src/types/app'
 
 async function run() {
-  const prisma = new PrismaClient()
-
   let deletedResponses = 0
   let counter = 0
 
