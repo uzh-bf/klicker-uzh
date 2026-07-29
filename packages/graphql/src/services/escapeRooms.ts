@@ -1,6 +1,8 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ESCAPE_ROOM_GRACE_SECONDS,
+  ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES,
+  getCurrentEscapeRoomInstance,
   getEscapeRoomLifecycleClaimKey,
   isEscapeRoomExpired,
 } from '@klicker-uzh/types'
@@ -88,6 +90,7 @@ export async function getEscapeRoomHints(
     practiceQuizId?: string | null
     microLearningId?: string | null
     groupActivityId?: string | null
+    liveQuizId?: string | null
   },
   ctx: ContextWithUser
 ) {
@@ -95,6 +98,7 @@ export async function getEscapeRoomHints(
     args.practiceQuizId,
     args.microLearningId,
     args.groupActivityId,
+    args.liveQuizId,
   ].filter((id) => id != null).length
   if (activityIdCount !== 1) {
     throw new GraphQLError('Exactly one escape room activity ID is required')
@@ -110,10 +114,15 @@ export async function getEscapeRoomHints(
           microLearningId: args.microLearningId,
           minimumPermissionLevel: DB.PermissionLevel.WRITE,
         }
-      : {
-          groupActivityId: args.groupActivityId!,
-          minimumPermissionLevel: DB.PermissionLevel.WRITE,
-        }
+      : args.groupActivityId
+        ? {
+            groupActivityId: args.groupActivityId,
+            minimumPermissionLevel: DB.PermissionLevel.WRITE,
+          }
+        : {
+            liveQuizId: args.liveQuizId!,
+            minimumPermissionLevel: DB.PermissionLevel.WRITE,
+          }
   const hasWriteAccess = await checkAccess([accessRequest], ctx)
   if (!hasWriteAccess) {
     throw new GraphQLError('Write access is required to read escape room hints')
@@ -125,7 +134,12 @@ export async function getEscapeRoomHints(
         ? { practiceQuizId: args.practiceQuizId }
         : args.microLearningId
           ? { microLearningId: args.microLearningId }
-          : { groupActivityId: args.groupActivityId! },
+          : args.groupActivityId
+            ? { groupActivityId: args.groupActivityId }
+            : undefined,
+      elementBlock: args.liveQuizId
+        ? { liveQuizId: args.liveQuizId }
+        : undefined,
     },
     select: { id: true, options: true },
   })
@@ -190,17 +204,20 @@ interface EscapeRoomActivityArgs {
   microLearningId?: string | null
   groupActivityId?: string | null
   groupId?: string | null
+  elementBlockId?: number | null
 }
 
 type EscapeRoomActivityReference =
   | { kind: 'practiceQuiz'; id: string }
   | { kind: 'microLearning'; id: string }
   | { kind: 'groupActivity'; id: string }
+  | { kind: 'liveQuizBlock'; id: number }
 
 function getEscapeRoomActivityReference({
   practiceQuizId,
   microLearningId,
   groupActivityId,
+  elementBlockId,
 }: EscapeRoomActivityArgs): EscapeRoomActivityReference {
   const references: EscapeRoomActivityReference[] = []
   if (practiceQuizId)
@@ -209,6 +226,8 @@ function getEscapeRoomActivityReference({
     references.push({ kind: 'microLearning', id: microLearningId })
   if (groupActivityId)
     references.push({ kind: 'groupActivity', id: groupActivityId })
+  if (elementBlockId != null)
+    references.push({ kind: 'liveQuizBlock', id: elementBlockId })
 
   if (references.length !== 1) {
     throw new GraphQLError('Exactly one activity ID must be specified', {
@@ -291,6 +310,22 @@ async function resolveParticipantEscapeRoom(
       groupId = participantGroup.id
       break
     }
+    case 'liveQuizBlock': {
+      const block = await ctx.prisma.elementBlock.findUnique({
+        where: { id: reference.id },
+        include: { escapeRoomConfig: true, liveQuiz: true },
+      })
+      if (
+        !block ||
+        block.status !== DB.ElementBlockStatus.ACTIVE ||
+        !block.liveQuiz.courseId
+      ) {
+        throw new GraphQLError('Block not found')
+      }
+      courseId = block.liveQuiz.courseId
+      config = block.escapeRoomConfig
+      break
+    }
   }
 
   if (!config) {
@@ -344,6 +379,13 @@ function getAttemptWhere(
           groupActivityId: activity.reference.id,
         },
       }
+    case 'liveQuizBlock':
+      return {
+        participantId_elementBlockId: {
+          participantId,
+          elementBlockId: activity.reference.id,
+        },
+      }
   }
 }
 
@@ -351,7 +393,11 @@ function getAttemptActivityData(
   activity: ResolvedParticipantEscapeRoom
 ): Pick<
   DB.Prisma.EscapeRoomAttemptUncheckedCreateInput,
-  'practiceQuizId' | 'microLearningId' | 'groupActivityId' | 'groupId'
+  | 'practiceQuizId'
+  | 'microLearningId'
+  | 'groupActivityId'
+  | 'elementBlockId'
+  | 'groupId'
 > {
   return {
     practiceQuizId:
@@ -362,6 +408,10 @@ function getAttemptActivityData(
         : null,
     groupActivityId:
       activity.reference.kind === 'groupActivity'
+        ? activity.reference.id
+        : null,
+    elementBlockId:
+      activity.reference.kind === 'liveQuizBlock'
         ? activity.reference.id
         : null,
     groupId: activity.groupId,
@@ -484,6 +534,7 @@ export interface EscapeRoomHintResult {
 
 function instanceBelongsToActivity(
   instance: {
+    elementBlockId: number | null
     elementStack: {
       practiceQuizId: string | null
       microLearningId: string | null
@@ -499,6 +550,8 @@ function instanceBelongsToActivity(
       return instance.elementStack?.microLearningId === reference.id
     case 'groupActivity':
       return instance.elementStack?.groupActivityId === reference.id
+    case 'liveQuizBlock':
+      return instance.elementBlockId === reference.id
   }
 }
 
@@ -581,6 +634,28 @@ async function revealEscapeRoomHint(
       (stack) => !isEscapeRoomStackCleared(stack.elements)
     )
     if (!currentStack || instance.elementStackId !== currentStack.id) {
+      throw new GraphQLError(
+        'You must answer all preceding questions correctly before requesting this hint',
+        { extensions: { code: 'ESCAPE_ROOM_GATED' } }
+      )
+    }
+  } else if (activity.reference.kind === 'liveQuizBlock') {
+    const blockInstances = await ctx.prisma.elementInstance.findMany({
+      where: {
+        elementBlockId: activity.reference.id,
+        elementType: { in: [...ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES] },
+      },
+      orderBy: { order: 'asc' },
+      select: { id: true },
+    })
+    const clearedInstanceIds = new Set(
+      await ctx.redisExec.smembers(`escape-attempt:${attempt.id}:cleared`)
+    )
+    const currentInstance = getCurrentEscapeRoomInstance(
+      blockInstances,
+      clearedInstanceIds
+    )
+    if (currentInstance?.id !== instanceId) {
       throw new GraphQLError(
         'You must answer all preceding questions correctly before requesting this hint',
         { extensions: { code: 'ESCAPE_ROOM_GATED' } }
@@ -711,6 +786,23 @@ async function requireResetPermission(
         ctx
       )
       break
+    case 'liveQuizBlock': {
+      const block = await ctx.prisma.elementBlock.findUnique({
+        where: { id: reference.id },
+        select: { liveQuizId: true },
+      })
+      if (!block) throw new GraphQLError('Block not found')
+      hasAccess = await checkAccess(
+        [
+          {
+            liveQuizId: block.liveQuizId,
+            minimumPermissionLevel: DB.PermissionLevel.WRITE,
+          },
+        ],
+        ctx
+      )
+      break
+    }
   }
   if (!hasAccess) {
     throw new GraphQLError('You do not have write access to this activity')
@@ -753,10 +845,15 @@ export async function resetEscapeRoomAttempt(
             microLearningId: activityReference.id,
             participantId,
           }
-        : {
-            groupActivityId: activityReference.id,
-            groupId,
-          }
+        : activityReference.kind === 'groupActivity'
+          ? {
+              groupActivityId: activityReference.id,
+              groupId,
+            }
+          : {
+              elementBlockId: activityReference.id,
+              participantId,
+            }
   const actorId =
     activityReference.kind === 'groupActivity' ? groupId! : participantId!
   const claimKey = getEscapeRoomLifecycleClaimKey(
@@ -806,6 +903,9 @@ export async function resetEscapeRoomAttempt(
               groupId: groupId!,
             },
           })
+          break
+        case 'liveQuizBlock':
+          await tx.escapeRoomAttempt.deleteMany({ where: attemptWhere })
           break
       }
     })

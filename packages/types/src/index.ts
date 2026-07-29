@@ -27,6 +27,7 @@ export type EscapeRoomLifecycleTargetKind =
   | 'practiceQuiz'
   | 'microLearning'
   | 'groupActivity'
+  | 'liveQuizBlock'
 
 export function getEscapeRoomLifecycleClaimKey(
   targetKind: EscapeRoomLifecycleTargetKind,
@@ -52,6 +53,15 @@ export function isEscapeRoomExpired(
   // Preserve the established action-grace contract: the exact deadline is
   // still valid; the attempt expires immediately after it.
   return now > deadline
+}
+
+export function getCurrentEscapeRoomInstance<T extends { id: number }>(
+  orderedInstances: readonly T[],
+  clearedInstanceIds: ReadonlySet<string>
+): T | undefined {
+  return orderedInstances.find(
+    (instance) => !clearedInstanceIds.has(String(instance.id))
+  )
 }
 
 // ----- HATCHET (WORKER/TASK) TYPES -----
@@ -106,6 +116,10 @@ export type ElementBlockInput = {
   order: number
   timeLimit?: number | null
   randomSelection?: number | null
+  isEscapeRoom?: boolean | null
+  escapeRoomTimeLimit?: number | null
+  escapeRoomHintPenalty?: number | null
+  escapeRoomIntroText?: string | null
   elements: ElementInstanceInput[]
 }
 
@@ -307,6 +321,11 @@ export type TemplateBlockElementInput = {
 
 export type TemplateBlockInput = {
   timeLimit?: number | null
+  isEscapeRoom?: boolean | null
+  escapeRoomTimeLimit?: number | null
+  escapeRoomHintPenalty?: number | null
+  escapeRoomLockoutSeconds?: number | null
+  escapeRoomIntroText?: string | null
   order: number
   elements: TemplateBlockElementInput[]
 }

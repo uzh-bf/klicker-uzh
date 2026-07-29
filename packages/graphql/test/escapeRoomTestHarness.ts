@@ -34,6 +34,12 @@ import {
   submitGroupActivityDecisions,
 } from '../src/services/groups.js'
 import {
+  activateLiveQuizBlock,
+  getCockpitQuiz,
+  getRunningLiveQuiz,
+  manipulateLiveQuiz,
+} from '../src/services/liveQuizzes.js'
+import {
   getMicroLearningData,
   manipulateMicroLearning,
 } from '../src/services/microLearning.js'
@@ -43,7 +49,7 @@ import {
 } from '../src/services/practiceQuizzes.js'
 import { handlePruneEscapeRooms } from '../src/services/pruneEscapeRooms.js'
 import { respondToElementStack } from '../src/services/stacks.js'
-import { seedCourse } from './helpers.js'
+import { seedCourse, seedLiveQuiz } from './helpers.js'
 
 const QR_SCAN_CODE = generateQrScanCode()
 const TEST_PREFIX = `escape-${Date.now()}-${QR_SCAN_CODE}`
@@ -429,6 +435,75 @@ async function seedParticipant(label: string) {
   return participant
 }
 
+async function seedEscapeRoomLiveQuiz({
+  active = true,
+  includeSecondInstance = false,
+  firstHint,
+  secondHint,
+  hintPenalty,
+}: {
+  active?: boolean
+  includeSecondInstance?: boolean
+  firstHint?: string
+  secondHint?: string
+  hintPenalty?: number
+} = {}) {
+  const liveQuiz = await seedLiveQuiz(
+    {
+      elements: [{ id: scElement.id, type: scElement.type }],
+      status: DB.PublicationStatus.PUBLISHED,
+      courseId,
+    },
+    lecturerCtx
+  )
+  const seededBlock = liveQuiz.blocks[0]!
+  if (firstHint !== undefined) {
+    await prisma.elementInstance.updateMany({
+      where: { elementBlockId: seededBlock.id },
+      data: { options: { escapeRoomHint: firstHint } },
+    })
+  }
+  if (includeSecondInstance) {
+    await prisma.elementInstance.create({
+      data: {
+        order: 1,
+        elementId: qrElement.id,
+        elementBlockId: seededBlock.id,
+        type: DB.ElementInstanceType.LIVE_QUIZ,
+        elementType: qrElement.type,
+        options: secondHint === undefined ? {} : { escapeRoomHint: secondHint },
+        elementData: {} as ElementData,
+        results: {} as ElementInstanceResults,
+        anonymousResults: {} as ElementInstanceResults,
+        ownerId: lecturerCtx.user.sub,
+      },
+    })
+  }
+  const block = await prisma.elementBlock.findUniqueOrThrow({
+    where: { id: seededBlock.id },
+    include: { elements: { orderBy: { order: 'asc' } } },
+  })
+  await prisma.escapeRoomConfig.create({
+    data: { elementBlockId: block.id, timeLimit: 300, hintPenalty },
+  })
+  if (active) {
+    await prisma.liveQuiz.update({
+      where: { id: liveQuiz.id },
+      data: {
+        activeBlockId: block.id,
+        blocks: {
+          update: {
+            where: { id: block.id },
+            data: { status: DB.ElementBlockStatus.ACTIVE },
+          },
+        },
+      },
+    })
+  }
+
+  return { liveQuiz, block }
+}
+
 async function cleanupTestData() {
   if (createdQuizIds.length > 0) {
     await prisma.escapeRoomAttempt.deleteMany({
@@ -482,6 +557,7 @@ async function cleanupTestData() {
 }
 
 export {
+  activateLiveQuizBlock,
   courseId,
   createCtx,
   createdElementIds,
@@ -492,6 +568,7 @@ export {
   createUserCtx,
   DB,
   generateQrScanCode,
+  getCockpitQuiz,
   getEscapeRoomExpiresInSeconds,
   getEscapeRoomHints,
   getEscapeRoomProgress,
@@ -500,10 +577,12 @@ export {
   getGroupActivityDetails,
   getMicroLearningData,
   getPracticeQuizData,
+  getRunningLiveQuiz,
   groupScResponse,
   handlePruneEscapeRooms,
   lecturerCtx,
   manipulateGroupActivity,
+  manipulateLiveQuiz,
   manipulateMicroLearning,
   manipulatePracticeQuiz,
   participantCtx,
@@ -520,9 +599,11 @@ export {
   scResponse,
   seedCourse,
   seedEscapeRoomGroupActivity,
+  seedEscapeRoomLiveQuiz,
   seedEscapeRoomMicroLearning,
   seedEscapeRoomPracticeQuiz,
   seedEscapeRoomQuiz,
+  seedLiveQuiz,
   seedParticipant,
   StackFeedbackStatus,
   startEscapeRoomAttempt,

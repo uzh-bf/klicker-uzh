@@ -1207,6 +1207,10 @@ enum ElementBatchSharingTargetError {
 
 type ElementBlock {
   elements: [ElementInstance!]
+  escapeRoomAttempts: [EscapeRoomAttempt!]
+  escapeRoomClearedInstances: Int
+  escapeRoomConfig: EscapeRoomConfig
+  escapeRoomTotalInstances: Int
   execution: Int
   expiresAt: Date
   id: Int!
@@ -1219,6 +1223,10 @@ type ElementBlock {
 
 input ElementBlockInput {
   elements: [ElementInstanceInput!]!
+  escapeRoomHintPenalty: Int
+  escapeRoomIntroText: String
+  escapeRoomTimeLimit: Int
+  isEscapeRoom: Boolean
   order: Int!
   randomSelection: Int
   timeLimit: Int
@@ -1356,6 +1364,7 @@ enum ElementType {
 
 type EscapeRoomAttempt {
   completedAt: Date
+  elementBlockId: Int
   expiresInSeconds: Int!
   groupActivityId: String
   groupId: String
@@ -1389,6 +1398,7 @@ type EscapeRoomAttemptProgress {
 }
 
 type EscapeRoomConfig {
+  elementBlockId: Int
   groupActivityId: String
   hintPenalty: Int!
   id: String!
@@ -1897,6 +1907,7 @@ type LiveQuiz {
   activeBlock: ElementBlock
   beforeFirstBlock: Boolean
   blocks: [ElementBlock!]
+  canResetEscapeRoom: Boolean
   confusionFeedbacks: [ConfusionTimestep!]
   confusionSummary: ConfusionSummary
   course: Course
@@ -2139,9 +2150,9 @@ type Mutation {
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
   requestCatalogCollection(catalogCollectionId: String!, requestedPermissionLevel: PermissionLevel): CatalogCollection
   requestCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!, requestedPermissionLevel: PermissionLevel): Boolean!
-  requestEscapeRoomHint(groupActivityId: String, groupId: String, instanceId: Int!, microLearningId: String, practiceQuizId: String): EscapeRoomHintResult
+  requestEscapeRoomHint(elementBlockId: Int, groupActivityId: String, groupId: String, instanceId: Int!, microLearningId: String, practiceQuizId: String): EscapeRoomHintResult
   resetAssessmentLiveQuiz(id: String!): ActivityInfo
-  resetEscapeRoomAttempt(groupActivityId: String, groupId: String, microLearningId: String, participantId: String, practiceQuizId: String): Boolean!
+  resetEscapeRoomAttempt(elementBlockId: Int, groupActivityId: String, groupId: String, microLearningId: String, participantId: String, practiceQuizId: String): Boolean!
   resolveActivityLogEntry(id: Int!): ActivityLogEntry
   resolveFeedback(id: Int!, isResolved: Boolean!, liveQuizId: String!): Feedback
   respondToElementStack(courseId: String!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
@@ -2154,7 +2165,7 @@ type Mutation {
   setLiveQuizPin(liveQuizId: String!, pin: String!): Boolean!
   shareElementsBatch(elementIds: [Int!]!, permissionLevel: PermissionLevel!, shortnameOrEmail: String, userGroupId: Int): ElementBatchSharingResult!
   shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
-  startEscapeRoomAttempt(groupActivityId: String, groupId: String, microLearningId: String, practiceQuizId: String): EscapeRoomAttempt
+  startEscapeRoomAttempt(elementBlockId: Int, groupActivityId: String, groupId: String, microLearningId: String, practiceQuizId: String): EscapeRoomAttempt
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startLiveQuiz(id: String!): LiveQuizMeta
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
@@ -2680,8 +2691,8 @@ type Query {
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   element(id: Int!): Element
   endedLiveQuizzesCourse(courseId: String!): [LiveQuizSelectionItem!]
-  escapeRoomHints(groupActivityId: String, microLearningId: String, practiceQuizId: String): [EscapeRoomHint!]
-  escapeRoomProgress(groupActivityId: String, microLearningId: String, practiceQuizId: String): EscapeRoomProgress
+  escapeRoomHints(groupActivityId: String, liveQuizId: String, microLearningId: String, practiceQuizId: String): [EscapeRoomHint!]
+  escapeRoomProgress(elementBlockId: Int, groupActivityId: String, liveQuizId: String, microLearningId: String, practiceQuizId: String): EscapeRoomProgress
   feedbacks(quizId: String!): [Feedback!]
   getActiveUserCourses(activityId: String, activityType: ActivityType): [Course!]
   getActivityAnalytics(activityId: String!): QuizAnalytics
@@ -3165,6 +3176,11 @@ input TemplateBlockElementInput {
 
 input TemplateBlockInput {
   elements: [TemplateBlockElementInput!]!
+  escapeRoomHintPenalty: Int
+  escapeRoomIntroText: String
+  escapeRoomLockoutSeconds: Int
+  escapeRoomTimeLimit: Int
+  isEscapeRoom: Boolean
   order: Int!
   timeLimit: Int
 }

@@ -3,6 +3,7 @@ mutation RequestEscapeRoomHint(
   $microLearningId: String
   $groupActivityId: String
   $groupId: String
+  $elementBlockId: Int
   $instanceId: Int!
 ) {
   requestEscapeRoomHint(
@@ -10,6 +11,7 @@ mutation RequestEscapeRoomHint(
     microLearningId: $microLearningId
     groupActivityId: $groupActivityId
     groupId: $groupId
+    elementBlockId: $elementBlockId
     instanceId: $instanceId
   ) {
     hint

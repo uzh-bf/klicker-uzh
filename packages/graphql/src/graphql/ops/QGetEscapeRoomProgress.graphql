@@ -2,11 +2,15 @@ query GetEscapeRoomProgress(
   $practiceQuizId: String
   $microLearningId: String
   $groupActivityId: String
+  $liveQuizId: String
+  $elementBlockId: Int
 ) {
   escapeRoomProgress(
     practiceQuizId: $practiceQuizId
     microLearningId: $microLearningId
     groupActivityId: $groupActivityId
+    liveQuizId: $liveQuizId
+    elementBlockId: $elementBlockId
   ) {
     activityId
     totalStacks

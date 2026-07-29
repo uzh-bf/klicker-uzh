@@ -61,6 +61,10 @@ export const ElementBlockInput = ElementBlockInputRef.implement({
     order: t.int({ required: true }),
     timeLimit: t.int({ required: false }),
     randomSelection: t.int({ required: false }),
+    isEscapeRoom: t.boolean({ required: false }),
+    escapeRoomTimeLimit: t.int({ required: false }),
+    escapeRoomHintPenalty: t.int({ required: false }),
+    escapeRoomIntroText: t.string({ required: false }),
     elements: t.field({ type: [ElementInstanceInput], required: true }),
   }),
 })
@@ -321,6 +325,7 @@ export const EscapeRoomAttempt = EscapeRoomAttemptRef.implement({
     practiceQuizId: t.exposeString('practiceQuizId', { nullable: true }),
     microLearningId: t.exposeString('microLearningId', { nullable: true }),
     groupActivityId: t.exposeString('groupActivityId', { nullable: true }),
+    elementBlockId: t.exposeInt('elementBlockId', { nullable: true }),
   }),
 })
 

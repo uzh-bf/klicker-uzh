@@ -30,7 +30,8 @@
 >>>>>>> 9cd73014c (fix(hatchet): keep development workers alive)
     "rollup": "~4.34.9",
     "tsx": "~4.19.4",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "~3.2.4"
   },
   "scripts": {
     "build": "run-s --npm-path pnpm build:ts",
@@ -45,7 +46,8 @@
     "dev:run": "nodemon -w dist/ --exec 'node --env-file .env dist/index.js'",
     "dev:test": "cross-env NODE_ENV=test ASSESSMENT_MODE=false tsx --env-file .env src/index.ts",
     "dev:watch": "run-p --npm-path pnpm dev:build dev:run",
-    "start:test": "node --env-file .env dist/index.js"
+    "start:test": "node --env-file .env dist/index.js",
+    "test": "vitest run"
   },
   "engines": {
     "node": "=24"
