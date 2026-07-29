@@ -831,6 +831,56 @@ describe('Integration tests for knowledge base CRUD', () => {
     ).resolves.toBe(1)
   })
 
+  it('reserves the final byte-quota placeholder and rejects concurrent URL claims beyond it', async () => {
+    const created = await createKb({ name: 'Legacy URLs' }, userOneCtx)
+    await prisma.kBResource.createMany({
+      data: Array.from({ length: 19 }, (_, index) => ({
+        kbId: created.id,
+        type: KBResourceType.URL,
+        title: `Legacy URL ${index}`,
+        sourceUrl: `https://example.com/legacy-${index}`,
+      })),
+    })
+
+    const requests = await Promise.allSettled([
+      createKbUrlResource(
+        {
+          kbId: created.id,
+          title: 'First',
+          url: 'https://example.com/concurrent-first',
+        },
+        userOneCtx
+      ),
+      createKbUrlResource(
+        {
+          kbId: created.id,
+          title: 'Second',
+          url: 'https://example.com/concurrent-second',
+        },
+        userOneCtx
+      ),
+    ])
+
+    expect(
+      requests.filter(({ status }) => status === 'fulfilled')
+    ).toHaveLength(1)
+    const rejected = requests.find(({ status }) => status === 'rejected')
+    expect(rejected).toMatchObject({
+      status: 'rejected',
+      reason: expect.objectContaining({
+        extensions: { code: 'KB_STORAGE_LIMIT_REACHED' },
+      }),
+    })
+    await expect(
+      prisma.kBResource.count({
+        where: {
+          kbId: created.id,
+          sourceUrl: { startsWith: 'https://example.com/concurrent' },
+        },
+      })
+    ).resolves.toBe(1)
+  })
+
   it('retains tombstones in quota usage until hard cleanup removes them', async () => {
     const created = await createKb({ name: 'Finance notes' }, userOneCtx)
     const rows = Array.from({ length: MAX_KB_RESOURCE_COUNT }, (_, index) => ({
@@ -890,6 +940,58 @@ describe('Integration tests for knowledge base CRUD', () => {
       )
     ).rejects.toMatchObject({
       extensions: { code: 'KB_STORAGE_LIMIT_REACHED' },
+    })
+  })
+
+  it('charges a URL resource its unknown-size placeholder against the byte quota', async () => {
+    const atCap = await createKb({ name: 'Legacy URLs at cap' }, userOneCtx)
+    await prisma.kBResource.createMany({
+      data: Array.from({ length: 20 }, (_, index) => ({
+        kbId: atCap.id,
+        type: KBResourceType.URL,
+        title: `Legacy URL ${index}`,
+        sourceUrl: `https://example.com/legacy-${index}`,
+      })),
+    })
+
+    await expect(
+      createKbUrlResource(
+        {
+          kbId: atCap.id,
+          title: 'One too many',
+          url: 'https://example.com/one-too-many',
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_STORAGE_LIMIT_REACHED' },
+    })
+
+    const underCap = await createKb(
+      { name: 'Legacy URLs under cap' },
+      userOneCtx
+    )
+    await prisma.kBResource.createMany({
+      data: Array.from({ length: 19 }, (_, index) => ({
+        kbId: underCap.id,
+        type: KBResourceType.URL,
+        title: `Legacy URL ${index}`,
+        sourceUrl: `https://example.com/legacy-${index}`,
+      })),
+    })
+
+    await expect(
+      createKbUrlResource(
+        {
+          kbId: underCap.id,
+          title: 'Fits under cap',
+          url: 'https://example.com/fits-under-cap',
+        },
+        userOneCtx
+      )
+    ).resolves.toMatchObject({
+      kbId: underCap.id,
+      type: KBResourceType.URL,
     })
   })
 

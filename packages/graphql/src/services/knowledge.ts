@@ -1395,7 +1395,11 @@ export async function createKbUrlResource(
 
   return ctx.prisma.$transaction(async (prisma) => {
     await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
-    await assertKbQuotaAvailable(prisma, { kbId, resourceCount: 1 })
+    await assertKbQuotaAvailable(prisma, {
+      kbId,
+      resourceCount: 1,
+      sizeBytes: MAX_KB_FILE_SIZE_BYTES,
+    })
     return prisma.kBResource.create({
       data: {
         kbId,
