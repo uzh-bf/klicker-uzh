@@ -370,16 +370,15 @@ export async function recomputeElementPermissions(
 /**
  * Recomputes derived permissions for a specific user on an element.
  *
- * This function removes any existing derived permission for the user and then
- * computes the highest granted permission level for that same user from the
- * following potential sources of access permissions:
+ * The set-based recomputation updates or removes only the selected user's row,
+ * choosing the highest permission from these sources:
  * - direct permission granted to the individual user
  * - direct permission granted to a user group the user is part of
  * - ownership of the element
  * - any derived permission granted to the individual user on an activity where
  *   an instance of the element is included, according to the following rules:
- *   READ on activity --> no access to element
- *   WRITE on activity --> no access to element
+ *   propagated READ / EXECUTE on activity --> READ on element
+ *   propagated WRITE on activity --> WRITE on element
  *   ADMIN on activity --> ADMIN on element
  *   OWNER on activity --> ADMIN on element
  *
@@ -408,7 +407,7 @@ export async function recomputeElementPermissionsUser(
 ) {
   const targetElement = await prisma.element.findUnique({
     where: { id },
-    select: { id: true, isDeleted: true, answerCollectionId: true },
+    select: { isDeleted: true, answerCollectionId: true },
   })
 
   if (!targetElement) {
@@ -435,11 +434,8 @@ export async function recomputeElementPermissionsUser(
 /**
  * Recomputes derived permissions for all users on an element.
  *
- * This function deletes all existing derived permissions for the element
- * and then recomputes them. Permissions are directly deduplicated for the
- * derived permissions table to only contain the highest permission level
- * for each user. The following sources for direct permissions on elements
- * are considered:
+ * The set-based recomputation converges all rows for the element, choosing the
+ * highest permission per user from these sources:
  * - direct permissions granted to users
  * - direct permissions granted to user groups
  * - ownership of the element
@@ -468,7 +464,7 @@ export async function recomputeElementPermissionsObject(
 ) {
   const targetElement = await prisma.element.findUnique({
     where: { id },
-    select: { id: true, isDeleted: true, answerCollectionId: true },
+    select: { isDeleted: true, answerCollectionId: true },
   })
 
   if (!targetElement) {
