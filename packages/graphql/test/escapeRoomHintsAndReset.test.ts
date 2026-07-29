@@ -8,9 +8,11 @@ import {
   createdUserIds,
   createUserCtx,
   getEscapeRoomHints,
+  getGroupActivityDetails,
   getMicroLearningData,
   getPracticeQuizData,
   lecturerCtx,
+  manipulateGroupActivity,
   manipulatePracticeQuiz,
   participantCtx,
   prisma,
@@ -19,6 +21,7 @@ import {
   respondToElementStack,
   scElement,
   scResponse,
+  seedEscapeRoomGroupActivity,
   seedEscapeRoomMicroLearning,
   seedEscapeRoomPracticeQuiz,
   seedEscapeRoomQuiz,
@@ -213,6 +216,139 @@ describe('escape-room hint authoring', () => {
     await expect(
       getEscapeRoomHints({ practiceQuizId: quiz.id }, lecturerCtx)
     ).resolves.toEqual([{ instanceId: instance.id, hint: 'owner only' }])
+  })
+
+  it('creates, reads, preserves, updates, clears, and duplicates group hints', async () => {
+    await recomputeDerivedPermissions(
+      { elementId: scElement.id, userId: lecturerCtx.user.sub },
+      prisma
+    )
+    const baseArgs = {
+      name: `${TEST_PREFIX}-group-hint-authoring`,
+      displayName: 'Group hint authoring',
+      description: 'Group hint authoring test',
+      courseId,
+      multiplier: 1,
+      startDate: new Date(Date.now() + 60_000),
+      endDate: new Date(Date.now() + 3_600_000),
+      clues: [],
+      isEscapeRoom: true,
+    }
+    const created = await manipulateGroupActivity(
+      {
+        ...baseArgs,
+        stack: {
+          order: 0,
+          elements: [
+            {
+              elementId: scElement.id,
+              order: 0,
+              existingInstanceId: null,
+              duplicateInstance: false,
+              escapeRoomHint: '  group original  ',
+            },
+          ],
+        },
+      },
+      lecturerCtx
+    )
+    const instance = await prisma.elementInstance.findFirstOrThrow({
+      where: { elementStack: { groupActivityId: created.id } },
+    })
+    expect(instance.options.escapeRoomHint).toBe('group original')
+    await expect(
+      getEscapeRoomHints({ groupActivityId: created.id }, lecturerCtx)
+    ).resolves.toEqual([{ instanceId: instance.id, hint: 'group original' }])
+
+    const edit = (escapeRoomHint?: string | null) =>
+      manipulateGroupActivity(
+        {
+          ...baseArgs,
+          id: created.id,
+          stack: {
+            order: 0,
+            elements: [
+              {
+                elementId: instance.elementId,
+                order: 0,
+                existingInstanceId: instance.id,
+                duplicateInstance: false,
+                ...(typeof escapeRoomHint === 'undefined'
+                  ? {}
+                  : { escapeRoomHint }),
+              },
+            ],
+          },
+        },
+        lecturerCtx
+      )
+
+    await edit()
+    expect(
+      (
+        await prisma.elementInstance.findUniqueOrThrow({
+          where: { id: instance.id },
+        })
+      ).options.escapeRoomHint
+    ).toBe('group original')
+    await edit(' group updated ')
+    expect(
+      (
+        await prisma.elementInstance.findUniqueOrThrow({
+          where: { id: instance.id },
+        })
+      ).options.escapeRoomHint
+    ).toBe('group updated')
+
+    const duplicate = await manipulateGroupActivity(
+      {
+        ...baseArgs,
+        name: `${baseArgs.name}-copy`,
+        stack: {
+          order: 0,
+          elements: [
+            {
+              elementId: instance.elementId,
+              order: 0,
+              existingInstanceId: instance.id,
+              duplicateInstance: true,
+            },
+          ],
+        },
+      },
+      lecturerCtx
+    )
+    expect(
+      (
+        await prisma.elementInstance.findFirstOrThrow({
+          where: { elementStack: { groupActivityId: duplicate.id } },
+        })
+      ).options.escapeRoomHint
+    ).toBe('group updated')
+
+    await edit(null)
+    expect(
+      (
+        await prisma.elementInstance.findUniqueOrThrow({
+          where: { id: instance.id },
+        })
+      ).options.escapeRoomHint
+    ).toBeNull()
+
+    const otherLecturer = await prisma.user.create({
+      data: {
+        email: `${TEST_PREFIX}-group-hint-reader@example.com`,
+        shortname: `${TEST_PREFIX}-group-hint-reader`,
+        role: DB.UserRole.USER,
+      },
+    })
+    createdUserIds.push(otherLecturer.id)
+    await expect(
+      getEscapeRoomHints(
+        { groupActivityId: duplicate.id },
+        createUserCtx(otherLecturer.id)
+      )
+    ).rejects.toThrow('Write access is required')
   })
 })
 // #endregion
@@ -550,6 +686,125 @@ describe('requestEscapeRoomHint - time-penalty hints', () => {
     expect(
       'revealedHint' in otherElement ? otherElement.revealedHint : undefined
     ).toBeNull()
+  })
+
+  it('shares distinct concurrent group hints and restores them for every member', async () => {
+    const participantA = await seedParticipant('group-hint-a')
+    const participantB = await seedParticipant('group-hint-b')
+    const fixture = await seedEscapeRoomGroupActivity(
+      {
+        elements: [scElement, scElement],
+        courseId,
+        participantIds: [participantA.id, participantB.id],
+      },
+      lecturerCtx
+    )
+    const [instanceA, instanceB] = fixture.groupActivity.stacks[0]!.elements
+    await Promise.all([
+      prisma.elementInstance.update({
+        where: { id: instanceA!.id },
+        data: {
+          options: { ...instanceA!.options, escapeRoomHint: 'group first' },
+        },
+      }),
+      prisma.elementInstance.update({
+        where: { id: instanceB!.id },
+        data: {
+          options: { ...instanceB!.options, escapeRoomHint: 'group second' },
+        },
+      }),
+    ])
+    await recomputeDerivedPermissions(
+      { groupActivityId: fixture.groupActivity.id },
+      prisma
+    )
+
+    await expect(
+      getEscapeRoomHints(
+        { groupActivityId: fixture.groupActivity.id },
+        lecturerCtx
+      )
+    ).resolves.toHaveLength(2)
+
+    const results = await Promise.all([
+      requestEscapeRoomHint(
+        {
+          groupActivityId: fixture.groupActivity.id,
+          instanceId: instanceA!.id,
+        },
+        participantCtx(participantA.id)
+      ),
+      requestEscapeRoomHint(
+        {
+          groupActivityId: fixture.groupActivity.id,
+          instanceId: instanceB!.id,
+        },
+        participantCtx(participantB.id)
+      ),
+    ])
+    expect(results.map((result) => result.hint).sort()).toEqual([
+      'group first',
+      'group second',
+    ])
+
+    const persisted = await prisma.escapeRoomAttempt.findUniqueOrThrow({
+      where: { id: fixture.attempt.id },
+    })
+    expect(persisted.penaltySeconds).toBe(60)
+    expect((persisted.hintsUsed as string[]).sort()).toEqual(
+      [String(instanceA!.id), String(instanceB!.id)].sort()
+    )
+
+    for (const participant of [participantA, participantB]) {
+      const details = await getGroupActivityDetails(
+        {
+          activityId: fixture.groupActivity.id,
+          groupId: fixture.group.id,
+        },
+        participantCtx(participant.id)
+      )
+      expect(
+        details!.stacks[0]!.elements.map((element) => element.revealedHint)
+      ).toEqual(['group first', 'group second'])
+    }
+  })
+
+  it('reuses one shared attempt when two group members start concurrently', async () => {
+    const participantA = await seedParticipant('group-start-a')
+    const participantB = await seedParticipant('group-start-b')
+    const fixture = await seedEscapeRoomGroupActivity(
+      {
+        elements: [scElement],
+        courseId,
+        participantIds: [participantA.id, participantB.id],
+      },
+      lecturerCtx
+    )
+    await prisma.escapeRoomAttempt.delete({
+      where: { id: fixture.attempt.id },
+    })
+    const sharedClaims = new Map<string, string>()
+
+    const starts = await Promise.all([
+      startEscapeRoomAttempt(
+        { groupActivityId: fixture.groupActivity.id },
+        participantCtx(participantA.id, sharedClaims)
+      ),
+      startEscapeRoomAttempt(
+        { groupActivityId: fixture.groupActivity.id },
+        participantCtx(participantB.id, sharedClaims)
+      ),
+    ])
+
+    expect(starts[0].id).toBe(starts[1].id)
+    expect(
+      await prisma.escapeRoomAttempt.count({
+        where: {
+          groupId: fixture.group.id,
+          groupActivityId: fixture.groupActivity.id,
+        },
+      })
+    ).toBe(1)
   })
 
   it('refuses to start while the target lifecycle is being updated', async () => {
