@@ -126,6 +126,45 @@ describe('live quiz response effects', () => {
     )
   })
 
+  it('does not queue identity-keyed effects for correlated participants', () => {
+    const redisMulti = new RedisHashMutationBuffer()
+    const grading = queueQuestionResponseEffects({
+      type: 'SC',
+      choiceCount: '2',
+      response: {
+        choices: [
+          { ix: 0, selected: false },
+          { ix: 1, selected: true },
+        ],
+      },
+      instanceInfo,
+      instanceKey: 'lq:quiz:i:correlated',
+      liveQuizKey: 'lq:quiz',
+      sessionBlockId: 'block',
+      responseTimestamp: 2_500,
+      basePoints: 'true',
+      defaultPoints: '10',
+      parsedSolutions: [1],
+      participantData: {
+        sub: 'participant',
+        role: 'PARTICIPANT',
+      },
+      isCorrelated: true,
+      redisMulti,
+    })
+
+    assert.equal(grading?.pointsAwarded, 60)
+    assert.equal(
+      redisMulti.mutations.some(
+        (mutation) =>
+          mutation.key.endsWith(':responses') ||
+          mutation.key.includes(':lb') ||
+          mutation.key.endsWith(':xp')
+      ),
+      false
+    )
+  })
+
   it('does not award base points for content views', () => {
     const redisMulti = new RedisHashMutationBuffer()
     const grading = queueQuestionResponseEffects({

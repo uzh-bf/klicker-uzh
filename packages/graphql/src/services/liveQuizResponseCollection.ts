@@ -1,6 +1,54 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { GraphQLError } from 'graphql'
 
+export async function lockCourseLiveQuizResponseCollectionState({
+  prisma,
+  courseId,
+}: {
+  prisma: Pick<DB.Prisma.TransactionClient, '$queryRaw'>
+  courseId: string
+}) {
+  const [course] = await prisma.$queryRaw<
+    Pick<DB.Course, 'id' | 'isAssessmentEnabled' | 'isGamificationEnabled'>[]
+  >`
+    SELECT
+      "id",
+      "isAssessmentEnabled",
+      "isGamificationEnabled"
+    FROM "public"."Course"
+    WHERE "id" = ${courseId}::uuid
+    FOR UPDATE
+  `
+  if (!course) return null
+
+  const liveQuizzes = await prisma.$queryRaw<
+    Pick<
+      DB.LiveQuiz,
+      'id' | 'pinCode' | 'responseCollectionMode' | 'status' | 'isDeleted'
+    >[]
+  >`
+    SELECT
+      "id",
+      "pinCode",
+      "responseCollectionMode"::text AS "responseCollectionMode",
+      "status"::text AS "status",
+      "isDeleted"
+    FROM "public"."LiveQuiz"
+    WHERE
+      "courseId" = ${courseId}::uuid
+      AND "isDeleted" = false
+      AND "status" IN (
+        'DRAFT'::"PublicationStatus",
+        'SCHEDULED'::"PublicationStatus",
+        'PUBLISHED'::"PublicationStatus"
+      )
+    ORDER BY "id"
+    FOR UPDATE
+  `
+
+  return { course, liveQuizzes }
+}
+
 export function resolveLiveQuizResponseCollectionMode({
   isAssessmentEnabled,
   requestedMode,

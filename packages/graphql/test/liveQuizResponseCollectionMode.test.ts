@@ -14,7 +14,10 @@ import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { loginTemporaryParticipant } from '../src/services/accounts.js'
 import { applyActivityBatchOperations } from '../src/services/activities.js'
-import { updateCourseSettings } from '../src/services/courses.js'
+import {
+  enableGamification,
+  updateCourseSettings,
+} from '../src/services/courses.js'
 import { manipulateLiveQuiz } from '../src/services/liveQuizzes.js'
 import {
   initializePrisma,
@@ -270,6 +273,30 @@ describe('Live quiz response collection mode', () => {
     })
   })
 
+  it('rejects the dedicated course gamification mutation with a correlated quiz', async () => {
+    const course = await seedCourse(
+      { isGamificationEnabled: false, isAssessmentEnabled: false },
+      userOneCtx
+    )
+    await manipulateLiveQuiz(
+      {
+        ...liveQuizArgs(),
+        courseId: course.id,
+        responseCollectionMode:
+          LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+      },
+      userOneCtx
+    )
+
+    await expect(
+      enableGamification({ courseId: course.id }, userOneCtx)
+    ).rejects.toMatchObject({
+      extensions: {
+        code: 'LIVE_QUIZ_CORRELATED_GAMIFICATION_CONFLICT',
+      },
+    })
+  })
+
   it('switches draft correlated quizzes to assessment handling with their course', async () => {
     const course = await seedCourse(
       { isGamificationEnabled: false, isAssessmentEnabled: false },
@@ -342,6 +369,65 @@ describe('Live quiz response collection mode', () => {
         code: 'LIVE_QUIZ_CORRELATED_ASSESSMENT_CONFLICT',
       },
     })
+  })
+
+  it('rechecks a concurrently published correlated quiz under the course transition lock', async () => {
+    const course = await seedCourse(
+      { isGamificationEnabled: false, isAssessmentEnabled: false },
+      userOneCtx
+    )
+    const liveQuiz = await manipulateLiveQuiz(
+      {
+        ...liveQuizArgs(),
+        courseId: course.id,
+        responseCollectionMode:
+          LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+      },
+      userOneCtx
+    )
+
+    let releasePublication!: () => void
+    let locked!: () => void
+    const publicationLocked = new Promise<void>((resolve) => {
+      locked = resolve
+    })
+    const continuePublication = new Promise<void>((resolve) => {
+      releasePublication = resolve
+    })
+    const publication = prisma.$transaction(async (transaction) => {
+      await transaction.$queryRaw`
+        SELECT "id"
+        FROM "public"."LiveQuiz"
+        WHERE "id" = ${liveQuiz.id}::uuid
+        FOR UPDATE
+      `
+      locked()
+      await continuePublication
+      await transaction.liveQuiz.update({
+        where: { id: liveQuiz.id },
+        data: { status: PublicationStatus.PUBLISHED },
+      })
+    })
+
+    await publicationLocked
+    const assessmentTransition = expect(
+      updateCourseSettings(
+        {
+          id: course.id,
+          language: Locale.en,
+          isGamificationEnabled: false,
+          isAssessmentEnabled: true,
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: {
+        code: 'LIVE_QUIZ_CORRELATED_ASSESSMENT_CONFLICT',
+      },
+    })
+    releasePublication()
+    await publication
+    await assessmentTransition
   })
 
   it('switches a correlated quiz to assessment handling in a batch', async () => {

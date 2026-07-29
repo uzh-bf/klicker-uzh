@@ -1,5 +1,8 @@
 CREATE TABLE "public"."LiveQuizPendingResponse" (
     "id" UUID NOT NULL,
+    "eventPayload" TEXT NOT NULL,
+    "nextDeliveryAt" TIMESTAMP(3) NOT NULL,
+    "deliveryAttempts" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "liveQuizId" UUID NOT NULL,
 
@@ -8,6 +11,9 @@ CREATE TABLE "public"."LiveQuizPendingResponse" (
 
 CREATE INDEX "LiveQuizPendingResponse_liveQuizId_idx"
 ON "public"."LiveQuizPendingResponse"("liveQuizId");
+
+CREATE INDEX "LiveQuizPendingResponse_nextDeliveryAt_idx"
+ON "public"."LiveQuizPendingResponse"("nextDeliveryAt");
 
 ALTER TABLE "public"."LiveQuizPendingResponse"
 ADD CONSTRAINT "LiveQuizPendingResponse_liveQuizId_fkey"

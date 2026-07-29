@@ -302,9 +302,11 @@ export async function manipulateLiveQuiz(
   }
 
   // fetch the course to which the live quiz should be linked regarding the gamification and assessment settings
-  const course = courseId
+  const targetCourseId =
+    typeof courseId !== 'undefined' ? courseId : existingActivity?.courseId
+  const course = targetCourseId
     ? await ctx.prisma.course.findUnique({
-        where: { id: courseId },
+        where: { id: targetCourseId },
         select: { isGamificationEnabled: true, isAssessmentEnabled: true },
       })
     : null
@@ -455,6 +457,31 @@ export async function manipulateLiveQuiz(
 
   const activity = await ctx.prisma.$transaction(
     async (prisma) => {
+      if (targetCourseId) {
+        const [lockedCourse] = await prisma.$queryRaw<
+          Pick<DB.Course, 'isAssessmentEnabled' | 'isGamificationEnabled'>[]
+        >`
+          SELECT
+            "isAssessmentEnabled",
+            "isGamificationEnabled"
+          FROM "public"."Course"
+          WHERE "id" = ${targetCourseId}::uuid
+          FOR UPDATE
+        `
+        if (!lockedCourse) {
+          throw new GraphQLError('Course not found')
+        }
+        if (
+          lockedCourse.isAssessmentEnabled !== course?.isAssessmentEnabled ||
+          lockedCourse.isGamificationEnabled !== course?.isGamificationEnabled
+        ) {
+          throw new GraphQLError(
+            'Course settings changed while the live quiz was being saved',
+            { extensions: { code: 'CONFLICT' } }
+          )
+        }
+      }
+
       if (id) {
         const [lockedActivity] = await prisma.$queryRaw<
           Pick<DB.LiveQuiz, 'status' | 'responseCollectionMode'>[]
@@ -896,61 +923,86 @@ export async function startLiveQuiz(
       return null
     }
 
-    // depending on the quiz assessment setting, select the corresponding redis instance
-    const redis = quiz.isAssessmentEnabled
-      ? ctx.redisAssessmentExec
-      : ctx.redisExec
-
-    switch (quiz.status) {
-      case DB.PublicationStatus.PUBLISHED:
-        return quiz
-
-      case DB.PublicationStatus.DRAFT:
-      case DB.PublicationStatus.SCHEDULED: {
-        try {
-          const pipeline = redis.pipeline()
-          pipeline.hmset(`lq:${quiz.id}:meta`, {
-            namespace: quiz.namespace,
-            startedAt: Number(new Date()),
-            isGamificationEnabled: quiz.isGamificationEnabled,
-            isAssessmentEnabled: quiz.isAssessmentEnabled,
-          })
-
-          await pipeline.exec()
-        } catch (e) {
-          console.error(e)
-        }
-
-        // remove the scheduled hatchet publication task, if it exists
-        if (quiz.scheduledPublicationTaskId) {
-          try {
-            await ctx.hatchet.scheduled.delete(quiz.scheduledPublicationTaskId)
-          } catch (error) {
-            console.error(
-              `Failed to delete scheduled task for live quiz ${id}:`,
-              error
-            )
-          }
-        }
-
-        // generate a random pin code
-        const startedLiveQuiz = await ctx.prisma.liveQuiz.update({
-          where: { id },
-          data: {
-            status: DB.PublicationStatus.PUBLISHED,
-            startedAt: new Date(),
-            scheduledPublicationTaskId: null,
-          },
-        })
-
-        await sendTeamsNotification({
-          scope: 'graphql/startLiveQuiz',
-          text: `START Live quiz ${quiz.name} with id ${quiz.id}.`,
-        })
-
-        return startedLiveQuiz
-      }
+    if (quiz.status === DB.PublicationStatus.PUBLISHED) {
+      return quiz
     }
+
+    const publication = await ctx.prisma.$transaction(async (prisma) => {
+      const [lockedQuiz] = await prisma.$queryRaw<
+        Pick<DB.LiveQuiz, 'status'>[]
+      >`
+        SELECT "status"::text AS "status"
+        FROM "public"."LiveQuiz"
+        WHERE
+          "id" = ${id}::uuid
+          AND "isDeleted" = false
+          AND "status" IN (
+            'DRAFT'::"PublicationStatus",
+            'SCHEDULED'::"PublicationStatus",
+            'PUBLISHED'::"PublicationStatus"
+          )
+        FOR UPDATE
+      `
+      if (!lockedQuiz) return null
+
+      const currentQuiz = await prisma.liveQuiz.findUnique({
+        where: { id },
+      })
+      if (!currentQuiz) return null
+      if (currentQuiz.status === DB.PublicationStatus.PUBLISHED) {
+        return { quiz: currentQuiz, didStart: false }
+      }
+
+      const redis = currentQuiz.isAssessmentEnabled
+        ? ctx.redisAssessmentExec
+        : ctx.redisExec
+      try {
+        const pipeline = redis.pipeline()
+        pipeline.hmset(`lq:${currentQuiz.id}:meta`, {
+          namespace: currentQuiz.namespace,
+          startedAt: Number(new Date()),
+          isGamificationEnabled: currentQuiz.isGamificationEnabled,
+          isAssessmentEnabled: currentQuiz.isAssessmentEnabled,
+        })
+
+        await pipeline.exec()
+      } catch (e) {
+        console.error(e)
+      }
+
+      if (currentQuiz.scheduledPublicationTaskId) {
+        try {
+          await ctx.hatchet.scheduled.delete(
+            currentQuiz.scheduledPublicationTaskId
+          )
+        } catch (error) {
+          console.error(
+            `Failed to delete scheduled task for live quiz ${id}:`,
+            error
+          )
+        }
+      }
+
+      const startedLiveQuiz = await prisma.liveQuiz.update({
+        where: { id },
+        data: {
+          status: DB.PublicationStatus.PUBLISHED,
+          startedAt: new Date(),
+          scheduledPublicationTaskId: null,
+        },
+      })
+
+      return { quiz: startedLiveQuiz, didStart: true }
+    })
+
+    if (!publication) return null
+    if (publication.didStart) {
+      await sendTeamsNotification({
+        scope: 'graphql/startLiveQuiz',
+        text: `START Live quiz ${publication.quiz.name} with id ${publication.quiz.id}.`,
+      })
+    }
+    return publication.quiz
   } catch (error) {
     await sendTeamsNotification({
       scope: 'graphql/startLiveQuiz',

@@ -159,13 +159,17 @@ model LiveQuizResponseExportLabel {
 }
 
 model LiveQuizPendingResponse {
-  id        String   @id @db.Uuid
-  createdAt DateTime @default(now())
+  id               String   @id @db.Uuid
+  eventPayload     String
+  nextDeliveryAt   DateTime
+  deliveryAttempts Int      @default(0)
+  createdAt        DateTime @default(now())
 
   liveQuiz   LiveQuiz @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   liveQuizId String   @db.Uuid
 
   @@index([liveQuizId])
+  @@index([nextDeliveryAt])
 }
 
 enum PointCorrectionType {

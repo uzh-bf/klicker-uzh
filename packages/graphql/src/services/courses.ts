@@ -32,6 +32,7 @@ import {
 } from './assessmentScores.js'
 import {
   assertLiveQuizResponseCollectionCompatibility,
+  lockCourseLiveQuizResponseCollectionState,
   resolveLiveQuizResponseCollectionMode,
 } from './liveQuizResponseCollection.js'
 import { checkAccess } from './sharing.js'
@@ -2769,40 +2770,45 @@ export async function updateCourseSettings(
       ? (isAssessmentEnabled ?? undefined)
       : undefined
 
-  const correlatedLiveQuizzes = course.liveQuizzes.filter(
-    (liveQuiz) =>
-      liveQuiz.responseCollectionMode ===
-      DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
-  )
-
-  if (
-    newAssessmentSetting === true &&
-    correlatedLiveQuizzes.some(
-      (liveQuiz) => liveQuiz.status === DB.PublicationStatus.PUBLISHED
-    )
-  ) {
-    throw new GraphQLError(
-      'A running correlated live quiz must end before assessment mode can be enabled',
-      {
-        extensions: {
-          code: 'LIVE_QUIZ_CORRELATED_ASSESSMENT_CONFLICT',
-        },
-      }
-    )
-  }
-
-  if (correlatedLiveQuizzes.length > 0) {
-    assertLiveQuizResponseCollectionCompatibility({
-      isGamificationEnabled:
-        newGamificationSetting ?? course.isGamificationEnabled,
-      responseCollectionMode: resolveLiveQuizResponseCollectionMode({
-        isAssessmentEnabled: newAssessmentSetting ?? course.isAssessmentEnabled,
-        requestedMode: DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
-      }),
-    })
-  }
-
   const updatedCourse = await ctx.prisma.$transaction(async (prisma) => {
+    const lockedState = await lockCourseLiveQuizResponseCollectionState({
+      prisma,
+      courseId: id,
+    })
+    if (!lockedState) return null
+
+    const correlatedLiveQuizzes = lockedState.liveQuizzes.filter(
+      (liveQuiz) =>
+        liveQuiz.responseCollectionMode ===
+        DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+    )
+    if (
+      newAssessmentSetting === true &&
+      correlatedLiveQuizzes.some(
+        (liveQuiz) => liveQuiz.status === DB.PublicationStatus.PUBLISHED
+      )
+    ) {
+      throw new GraphQLError(
+        'A running correlated live quiz must end before assessment mode can be enabled',
+        {
+          extensions: {
+            code: 'LIVE_QUIZ_CORRELATED_ASSESSMENT_CONFLICT',
+          },
+        }
+      )
+    }
+    if (correlatedLiveQuizzes.length > 0) {
+      assertLiveQuizResponseCollectionCompatibility({
+        isGamificationEnabled:
+          newGamificationSetting ?? lockedState.course.isGamificationEnabled,
+        responseCollectionMode: resolveLiveQuizResponseCollectionMode({
+          isAssessmentEnabled:
+            newAssessmentSetting ?? lockedState.course.isAssessmentEnabled,
+          requestedMode: DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+        }),
+      })
+    }
+
     const updated = await prisma.course.update({
       where: { id },
       data: {
@@ -2917,7 +2923,7 @@ export async function updateCourseSettings(
     })
 
     if (newAssessmentSetting === true) {
-      for (const liveQuiz of course.liveQuizzes) {
+      for (const liveQuiz of lockedState.liveQuizzes) {
         let pinCode = liveQuiz.pinCode
         if (!pinCode) {
           for (let attempt = 0; attempt < 10; attempt++) {
@@ -4154,12 +4160,32 @@ export async function enableGamification(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
-  const course = await ctx.prisma.course.update({
-    where: { id: courseId },
-    data: { isGamificationEnabled: true },
-  })
+  return ctx.prisma.$transaction(async (prisma) => {
+    const lockedState = await lockCourseLiveQuizResponseCollectionState({
+      prisma,
+      courseId,
+    })
+    if (!lockedState) return null
 
-  return course
+    if (
+      lockedState.liveQuizzes.some(
+        (liveQuiz) =>
+          liveQuiz.responseCollectionMode ===
+          DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+      )
+    ) {
+      assertLiveQuizResponseCollectionCompatibility({
+        isGamificationEnabled: true,
+        responseCollectionMode:
+          DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+      })
+    }
+
+    return prisma.course.update({
+      where: { id: courseId },
+      data: { isGamificationEnabled: true },
+    })
+  })
 }
 
 export async function getCourseActivities(

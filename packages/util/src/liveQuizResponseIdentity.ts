@@ -6,7 +6,6 @@ import { signJWT, verifyJWT, type JWTPayload } from './jwt.js'
 export const PARTICIPANT_COOKIE_NAME = 'participant_token'
 export const TEMPORARY_PARTICIPANT_COOKIE_NAME = 'temporary_participant_token'
 export const LIVE_QUIZ_RESPONDENT_COOKIE_PREFIX = 'live_quiz_respondent_token_'
-export const LIVE_QUIZ_RESPONDENT_TOKEN_HEADER = 'x-live-quiz-respondent-token'
 export const LIVE_QUIZ_RESPONDENT_ROLE = 'LIVE_QUIZ_RESPONDENT'
 export const LIVE_QUIZ_RESPONDENT_TOKEN_MAX_AGE_SECONDS = 14 * 24 * 60 * 60
 export const CORRELATED_RESPONSE_CLAIM_TTL_MS = 5 * 60 * 1000
@@ -95,13 +94,11 @@ async function verifyIdentityToken({
 
 export async function resolveLiveQuizResponseIdentity({
   cookieHeader,
-  respondentToken,
   liveQuizId,
   secret,
   issuer,
 }: {
   cookieHeader: string | undefined
-  respondentToken?: string
   liveQuizId: string
   secret: string
   issuer: string
@@ -150,30 +147,24 @@ export async function resolveLiveQuizResponseIdentity({
   }
 
   const respondentCookieName = getLiveQuizRespondentCookieName(liveQuizId)
-  const respondentTokens = [
-    cookies[respondentCookieName],
-    respondentToken,
-  ].filter((token, index, tokens): token is string => {
-    return Boolean(token) && tokens.indexOf(token) === index
+  const respondentToken = cookies[respondentCookieName]
+  const respondentPayload = await verifyIdentityToken({
+    token: respondentToken,
+    secret,
+    issuer,
   })
-  for (const resolvedRespondentToken of respondentTokens) {
-    const respondentPayload = await verifyIdentityToken({
-      token: resolvedRespondentToken,
-      secret,
-      issuer,
-    })
-    if (
-      respondentPayload?.role === LIVE_QUIZ_RESPONDENT_ROLE &&
-      respondentPayload.liveQuizId === liveQuizId &&
-      typeof respondentPayload.sub === 'string'
-    ) {
-      return {
-        kind: 'anonymous',
-        id: respondentPayload.sub,
-        liveQuizId,
-        token: resolvedRespondentToken,
-        cookieName: respondentCookieName,
-      }
+  if (
+    respondentToken &&
+    respondentPayload?.role === LIVE_QUIZ_RESPONDENT_ROLE &&
+    respondentPayload.liveQuizId === liveQuizId &&
+    typeof respondentPayload.sub === 'string'
+  ) {
+    return {
+      kind: 'anonymous',
+      id: respondentPayload.sub,
+      liveQuizId,
+      token: respondentToken,
+      cookieName: respondentCookieName,
     }
   }
 

@@ -4,6 +4,9 @@ import { describe, it } from 'node:test'
 import {
   buildCorrelatedVoteKey,
   claimCorrelatedResponse,
+  decryptCorrelatedResponseEvent,
+  dispatchPendingCorrelatedResponses,
+  encryptCorrelatedResponseEvent,
   getCorrelatedResponseAdmission,
   hasJsonContentType,
   hasPersistedCorrelatedResponse,
@@ -260,6 +263,8 @@ describe('correlated response request safeguards', () => {
         database,
         liveQuizId: '11111111-1111-4111-8111-111111111111',
         messageId: '22222222-2222-4222-8222-222222222222',
+        eventPayload: 'encrypted-payload',
+        nextDeliveryAt: new Date('2026-07-29T12:00:00.000Z'),
       }),
       true
     )
@@ -268,6 +273,8 @@ describe('correlated response request safeguards', () => {
         data: {
           id: '22222222-2222-4222-8222-222222222222',
           liveQuizId: '11111111-1111-4111-8111-111111111111',
+          eventPayload: 'encrypted-payload',
+          nextDeliveryAt: new Date('2026-07-29T12:00:00.000Z'),
         },
       },
     ])
@@ -298,6 +305,7 @@ describe('correlated response request safeguards', () => {
         database,
         liveQuizId: '11111111-1111-4111-8111-111111111111',
         messageId: '22222222-2222-4222-8222-222222222222',
+        eventPayload: 'encrypted-payload',
       }),
       false
     )
@@ -324,6 +332,121 @@ describe('correlated response request safeguards', () => {
         where: { id: '22222222-2222-4222-8222-222222222222' },
       },
     ])
+  })
+
+  it('encrypts outbox events and rejects tampering', () => {
+    const message = {
+      messageId: '22222222-2222-4222-8222-222222222222',
+      sessionId: '11111111-1111-4111-8111-111111111111',
+      instanceId: '42',
+      response: { value: 'private response' },
+      cookie: 'live_quiz_respondent_token_quiz=secret-token',
+      responseTimestamp: 1_000,
+      correlatedClaim: {
+        key: 'claim-key',
+        identityKey: 'respondent:33333333-3333-4333-8333-333333333333' as const,
+      },
+    }
+    const eventPayload = encryptCorrelatedResponseEvent({
+      message,
+      secret: 'app-secret',
+    })
+
+    assert.equal(eventPayload.includes('private response'), false)
+    assert.equal(eventPayload.includes('secret-token'), false)
+    assert.deepEqual(
+      decryptCorrelatedResponseEvent({
+        encryptedPayload: eventPayload,
+        secret: 'app-secret',
+      }),
+      message
+    )
+    const payloadParts = eventPayload.split('.')
+    const tamperedCiphertext = Buffer.from(payloadParts[3]!, 'base64url')
+    tamperedCiphertext[0] ^= 1
+    payloadParts[3] = tamperedCiphertext.toString('base64url')
+    assert.throws(() =>
+      decryptCorrelatedResponseEvent({
+        encryptedPayload: payloadParts.join('.'),
+        secret: 'app-secret',
+      })
+    )
+  })
+
+  it('reserves and republishes outbox events by stable message id', async () => {
+    const message = {
+      messageId: '22222222-2222-4222-8222-222222222222',
+      sessionId: '11111111-1111-4111-8111-111111111111',
+      instanceId: '42',
+      response: { value: 'response' },
+      responseTimestamp: 1_000,
+      correlatedClaim: {
+        key: 'claim-key',
+        identityKey:
+          'participant:33333333-3333-4333-8333-333333333333' as const,
+      },
+    }
+    const pushes: unknown[] = []
+    const result = await dispatchPendingCorrelatedResponses({
+      database: {
+        $queryRaw: async () => [
+          {
+            id: message.messageId,
+            eventPayload: encryptCorrelatedResponseEvent({
+              message,
+              secret: 'app-secret',
+            }),
+          },
+        ],
+      } as any,
+      pushEvent: async (eventName, eventMessage) => {
+        pushes.push({ eventName, eventMessage })
+      },
+      secret: 'app-secret',
+      now: new Date('2026-07-29T12:00:00.000Z'),
+    })
+
+    assert.deepEqual(result, { attempted: 1, failed: 0 })
+    assert.deepEqual(pushes, [
+      {
+        eventName: 'response-received:correlated-v1',
+        eventMessage: message,
+      },
+    ])
+  })
+
+  it('retains failed outbox events for a later reservation', async () => {
+    const message = {
+      messageId: '22222222-2222-4222-8222-222222222222',
+      sessionId: '11111111-1111-4111-8111-111111111111',
+      instanceId: '42',
+      response: { value: 'response' },
+      responseTimestamp: 1_000,
+      correlatedClaim: {
+        key: 'claim-key',
+        identityKey:
+          'participant:33333333-3333-4333-8333-333333333333' as const,
+      },
+    }
+    const result = await dispatchPendingCorrelatedResponses({
+      database: {
+        $queryRaw: async () => [
+          {
+            id: message.messageId,
+            eventPayload: encryptCorrelatedResponseEvent({
+              message,
+              secret: 'app-secret',
+            }),
+          },
+        ],
+      } as any,
+      pushEvent: async () => {
+        throw new Error('ambiguous publication failure')
+      },
+      secret: 'app-secret',
+    })
+
+    assert.deepEqual(result, { attempted: 1, failed: 1 })
   })
 })
 

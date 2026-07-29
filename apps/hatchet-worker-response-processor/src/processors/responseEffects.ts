@@ -521,7 +521,11 @@ export function queueQuestionResponseEffects({
     queueMutation({ redisMulti, mutation })
   })
 
-  if (participantData && plan.participantResponse !== undefined) {
+  if (
+    !isCorrelated &&
+    participantData &&
+    plan.participantResponse !== undefined
+  ) {
     redisMulti.hset(
       `${instanceKey}:responses`,
       participantData.role === 'TEMPORARY_PARTICIPANT'
@@ -531,7 +535,12 @@ export function queueQuestionResponseEffects({
     )
   }
 
-  if (participantData && plan.grading && plan.updatesLeaderboard) {
+  if (
+    !isCorrelated &&
+    participantData &&
+    plan.grading &&
+    plan.updatesLeaderboard
+  ) {
     if (plan.setsFirstResponseTimestamp) {
       redisMulti.hsetnx(
         `${instanceKey}:info`,

@@ -19,16 +19,18 @@ import { createServer, IncomingMessage, ServerResponse } from 'http'
 import { Redis } from 'ioredis'
 import { createHash } from 'node:crypto'
 import {
+  dispatchPendingCorrelatedResponses,
+  encryptCorrelatedResponseEvent,
   getCorrelatedResponseAdmission,
   hasJsonContentType,
   isAllowedCorsOrigin,
   prepareCorrelatedResponseSubmission,
   registerPendingCorrelatedResponse,
   releaseCorrelatedResponse,
-  removePendingCorrelatedResponse,
   resolveResponseCollectionMode,
   responseEndpointMatchesCollectionMode,
   serializeLiveQuizRespondentCookie,
+  type CorrelatedResponseEventMessage,
 } from './correlatedResponses.js'
 
 const redis = new Redis({
@@ -52,6 +54,7 @@ const CORS_ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || '')
   .split(',')
   .map((o) => o.trim())
   .filter(Boolean)
+const CORRELATED_OUTBOX_POLL_INTERVAL_MS = 5_000
 
 function setCorsHeaders(req: IncomingMessage, res: ServerResponse) {
   const origin = req.headers.origin
@@ -297,7 +300,6 @@ async function handleAddResponse(
   let cookie: string | undefined
   let eventName: string
   let claim: CorrelatedResponseClaim | undefined
-  let pendingReceiptCreated = false
 
   if (isCorrelated) {
     const admission = await getCorrelatedResponseAdmission({
@@ -342,28 +344,6 @@ async function handleAddResponse(
 
     cookie = preparation.cookie
     claim = preparation.claim
-    try {
-      pendingReceiptCreated = await registerPendingCorrelatedResponse({
-        database: prisma,
-        liveQuizId: liveQuizIdString,
-        messageId,
-      })
-    } catch (error) {
-      await releaseCorrelatedResponse({
-        redis,
-        ...claim,
-        messageId,
-      })
-      throw error
-    }
-    if (!pendingReceiptCreated) {
-      await releaseCorrelatedResponse({
-        redis,
-        ...claim,
-        messageId,
-      })
-      return sendJson(req, res, 404, { error: 'Live quiz not found' })
-    }
     eventName = CORRELATED_RESPONSE_EVENT
   } else {
     // Preserve aggregate-mode behavior: forward participant cookies based on
@@ -401,6 +381,43 @@ async function handleAddResponse(
     correlatedClaim: claim,
   }
 
+  if (isCorrelated) {
+    if (!claim) {
+      throw new Error('Missing correlated response claim')
+    }
+    const correlatedMessage: CorrelatedResponseEventMessage = {
+      ...message,
+      correlatedClaim: claim,
+    }
+    let pendingResponseRegistered = false
+    try {
+      pendingResponseRegistered = await registerPendingCorrelatedResponse({
+        database: prisma,
+        liveQuizId: liveQuizIdString,
+        messageId,
+        eventPayload: encryptCorrelatedResponseEvent({
+          message: correlatedMessage,
+          secret: getResponseIdentityConfig().secret,
+        }),
+      })
+    } catch (error) {
+      await releaseCorrelatedResponse({
+        redis,
+        ...claim,
+        messageId,
+      })
+      throw error
+    }
+    if (!pendingResponseRegistered) {
+      await releaseCorrelatedResponse({
+        redis,
+        ...claim,
+        messageId,
+      })
+      return sendJson(req, res, 404, { error: 'Live quiz not found' })
+    }
+  }
+
   console.log(`Pushing event ${eventName}`, {
     messageId,
     sessionId: liveQuizIdString,
@@ -411,32 +428,14 @@ async function handleAddResponse(
   try {
     await hatchetClient.events.push(eventName, message)
   } catch (error) {
-    const cleanupTasks: Promise<unknown>[] = []
-    if (pendingReceiptCreated) {
-      cleanupTasks.push(
-        removePendingCorrelatedResponse({
-          database: prisma,
-          messageId,
-        })
-      )
-    }
-    if (claim) {
-      cleanupTasks.push(
-        releaseCorrelatedResponse({
-          redis,
-          ...claim,
-          messageId,
-        })
-      )
-    }
-    const cleanupResults = await Promise.allSettled(cleanupTasks)
-    const cleanupFailure = cleanupResults.find(
-      (result) => result.status === 'rejected'
-    )
-    if (cleanupFailure?.status === 'rejected') {
-      console.error('Failed to clean up correlated response receipt', {
+    if (isCorrelated) {
+      console.error('Immediate correlated response delivery failed', {
         messageId,
-        error: cleanupFailure.reason,
+        error,
+      })
+      return sendJson(req, res, 200, {
+        status: 'queued',
+        responseTimestamp,
       })
     }
     throw error
@@ -732,6 +731,28 @@ async function initializeService() {
   } catch (error) {
     console.error('Failed to connect to assessment Redis:', error)
     throw error
+  }
+
+  if (process.env.ASSESSMENT_MODE !== 'true') {
+    const dispatchPending = async () => {
+      const result = await dispatchPendingCorrelatedResponses({
+        database: prisma,
+        pushEvent: (eventName, message) =>
+          hatchetClient.events.push(eventName, message),
+        secret: getResponseIdentityConfig().secret,
+      })
+      if (result.failed > 0) {
+        console.error('Correlated response outbox delivery failures', result)
+      }
+    }
+
+    await dispatchPending()
+    const outboxTimer = setInterval(() => {
+      void dispatchPending().catch((error) => {
+        console.error('Correlated response outbox dispatch failed', error)
+      })
+    }, CORRELATED_OUTBOX_POLL_INTERVAL_MS)
+    outboxTimer.unref()
   }
 
   console.log('All connections established successfully')
