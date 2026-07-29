@@ -42,6 +42,10 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
 7. **Frontend wiring** — `import { <Name>Document } from '@klicker-uzh/graphql/dist/ops'`; `useQuery`/`useMutation` (+ `refetchQueries`) per [docs/frontend-conventions.md](../../../docs/frontend-conventions.md).
 8. **Tests** — graphql vitest for service logic (`pnpm --filter @klicker-uzh/graphql test:local`; see the heavy pattern in `38c92d035`); route further via `klicker-testing-verification`.
 
+## CODE contract rule
+
+CODE is intentionally split into a full lecturer `CodeElement` projection and a participant-safe `CodeElementData` projection. Lecturer mutations/queries may include hidden tests; participant operations expose public test names, inputs, and expected outputs but must omit every hidden test and all metadata belonging to it, plus sandbox metadata. When changing a union, resolver, fragment, or operation, update both sides deliberately and run `test/codeGraphqlContract.test.ts`.
+
 ## Subscriptions (extra steps)
 
 Publish from the service (`ctx.pubSub.publish('<topic>', payload)`), subscribe in `subscription.ts` with a `filter` on the target id (template: `feedbackCreated`), consume with `subscribeToMore` + the generated `S*Document`.

@@ -2,7 +2,7 @@
 type: API Layer
 title: GraphQL API Layer
 description: Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
-timestamp: '2026-07-07'
+timestamp: '2026-07-29'
 tags:
   - backend
   - graphql
@@ -52,3 +52,7 @@ Field filters over the shared pubSub: `schema/subscription.ts:feedbackCreated` p
 ## Worked feature traces
 
 Read-only feature end-to-end: commit `ff61d9bc7` (#4951) — new object type, two query fields, service function, ops + committed codegen, manage page, i18n. Schema-change + mutation + heavy vitest variant: `38c92d035` (#4958). Step-by-step walkthrough: [Developing a Feature](./developing-a-feature.md).
+
+### CODE projection boundary
+
+CODE deliberately has two GraphQL projections. Lecturer authoring fields use `CodeElement` and include the full test contract through `manipulateCodeQuestion` / `MManipulateCodeQuestion`. Participant activity data uses `CodeElementData` with public tests only; hidden tests, their inputs, and expected outputs must be absent from the payload rather than nullable. When a union or operation gains CODE support, update both the full lecturer and participant-safe projection deliberately and keep `packages/graphql/test/codeGraphqlContract.test.ts` green.

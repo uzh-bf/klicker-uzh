@@ -16,6 +16,7 @@ Conventions (design system, Tailwind v4, Apollo, i18n, CSP): [docs/frontend-conv
    - Every new user-visible string in BOTH `packages/i18n/messages/de.ts` and `en.ts`, matching namespace; access via full-path keys (`t('manage.…')`).
    - Every new interactive element gets `data-cy` (design-system prop form: `data={{ cy: '…' }}`); pick names consistent with the sibling elements.
    - Forms: Formik + Yup. Conditional classes: `twMerge`. Feature flags gate alone — never `flag && count > 0`.
+   - CODE authoring: reuse `packages/shared-components/src/CodeEditor.tsx`; keep fixed Python/timeout policy outside Formik state, preserve editor `aria-label`/`data-cy`, expose public tests only in participant preview, and keep template authoring unsupported. Artificial-preview type changes are effect-driven, so require a string response at the CodeMirror boundary rather than trusting the transient response discriminator alone.
    - No Next.js middleware for CSP/headers — that belongs at the proxy layer.
 3. **Verify in the browser — mandatory, not optional.** Depending on your environment path:
    - **Inside Devcontainer:** Dev servers auto-start in the background. No need to start/stop them. View logs via `tail -f /tmp/dev.log`.

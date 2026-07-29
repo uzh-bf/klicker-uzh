@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the two e2e stacks and their seeds, and the CI test matrix.
-timestamp: '2026-07-20'
+timestamp: '2026-07-29'
 tags:
   - testing
   - ci
@@ -21,6 +21,20 @@ tags:
 | Auth adapter against shared Prisma client                            | disposable local PostgreSQL through the guarded Auth round-trip                            | `pnpm --filter @klicker-uzh/auth test:prisma-adapter`                                              |
 | UI / user flows                                                      | Playwright e2e (new specs); Cypress only for legacy maintenance                            | see routing below                                                                                  |
 | Office Add-in URL validation                                         | Node's built-in test runner — safe without services                                        | `pnpm --filter @klicker-uzh/office-addin test`                                                     |
+
+CODE contract/policy stabilization has two fast service-free suites:
+
+```bash
+pnpm --filter @klicker-uzh/util exec vitest run test/codeElements.test.ts
+pnpm --filter @klicker-uzh/graphql exec vitest run \
+  test/codeElementPolicy.test.ts \
+  test/codeGraphqlContract.test.ts \
+  test/validateCodeOptions.test.ts
+```
+
+These protect public-versus-hidden projection, option validation, supported activity types, and CODE-only stack rules. They do not replace the database-backed submission lifecycle tests or browser/e2e flows required by later slices.
+
+For Manage CODE browser proof, exercise the type transition itself: select CODE through `select-question-type`, require `code-options` to render without a CodeMirror console error, and verify `student-element-preview` contains public test names but no hidden test names. In the practice-quiz or microlearning wizard, a mixed CODE selection must disable the combined-stack action while leaving the separate-stack action enabled.
 
 **Never run root `pnpm run test:run` blind** — the turbo fan-out includes Cypress, which needs a running, seeded stack. The graphql vitest config forces `pool: forks, singleFork: true` (serialized specs sharing DB state) — don't parallelize it.
 
@@ -61,3 +75,5 @@ Root typecheck includes the Cypress and Playwright compiler surfaces through the
 Check-only configs must state their no-output role with `noEmit`. When they extend a declaration-emitting config, `noEmit` alone does not disable declaration portability analysis: GraphQL and Prisma therefore also set `declaration: false` and `declarationMap: false`. Incremental checks use `tsconfig.check.tsbuildinfo` rather than overwriting the emitting compiler's state. The full compiler-role matrix lives in [Getting Started](./getting-started.md#toolchain-verified-2026-07-07).
 
 For framework upgrades, run both bundler paths: `pnpm run build:test` must exercise Turbopack in all five Next apps, while `pnpm run build` must exercise production Turbopack for auth/chat and production Webpack for control/manage/PWA. All five Next builds use their canonical `tsconfig.json`; the three PWA apps reserve `tsconfig.check.json` for raw package checks that must exclude stale development validators. Inspect `.next/standalone` for all five apps and the service worker, Workbox, and custom worker outputs for control/manage/PWA. Treat configuration inspection as **config-derived**; call the artifacts verified only when the command, date, and tested SHA are recorded.
+
+Inside the devcontainer, prefer the root build because it forces `NODE_ENV=production`. If a direct Next package build is needed while the background dev process is stopped, set `NODE_ENV=production` explicitly and remove only that app's generated `.next/dev` cache before retrying; otherwise live dev validators can collide with production validators. A Google Fonts fetch failure is an external build dependency and must be reported separately from compilation results.

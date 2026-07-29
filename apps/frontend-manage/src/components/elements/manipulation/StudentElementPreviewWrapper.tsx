@@ -196,7 +196,8 @@ function StudentElementPreviewWrapper({
             content={codeData.content}
             options={codeData.options}
             response={
-              studentResponse.type === ElementType.Code
+              studentResponse.type === ElementType.Code &&
+              typeof studentResponse.response === 'string'
                 ? (studentResponse.response ??
                   codeData.options.starterCode ??
                   '')

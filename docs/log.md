@@ -3,6 +3,7 @@
 ## 2026-07-29
 
 - **Creation**: [ADR 0003](./adr/0003-use-klicker-codeapi-principal-source.md) records that Klicker-minted CodeAPI tokens use a dedicated `klicker_jwt` principal source through an environment-configurable allow-list.
+- **Update**: [domain model](./domain-model.md), [GraphQL API layer](./graphql-api-layer.md), [frontend conventions](./frontend-conventions.md), and [testing](./testing.md) now document the implemented CODE contracts, safe lecturer/participant projections, authoring boundary, focused checks, and devcontainer build caveats.
 
 ## 2026-07-20
 

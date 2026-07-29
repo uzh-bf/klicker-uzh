@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-07-07'
+timestamp: '2026-07-29'
 tags:
   - backend
   - prisma
@@ -31,7 +31,13 @@ They are unrelated models — never conflate them. A `Participant` joins a `Cour
 - **`ElementInstance`** — a _placement_ of an Element inside an activity. `type: ElementInstanceType` = `LIVE_QUIZ | PRACTICE_QUIZ | MICROLEARNING | GROUP_ACTIVITY`. It **snapshots** `elementData`/`options` at publication time and accumulates `results` — editing the source Element does not change published instances.
 - Grouping differs by activity: **`ElementStack`** (ordered instance group) for PracticeQuiz/MicroLearning/GroupActivity; **`ElementBlock`** (with scheduling status) for LiveQuiz only.
 
-`ElementType`: `SC, MC, KPRIM, FREE_TEXT, NUMERICAL, CONTENT, FLASHCARD, SELECTION, CASE_STUDY`. Type-specific behavior is dispatched in `packages/graphql/src/services/stacks.ts` (correctness: `evaluateChoicesAnswerCorrectness`; per-type grading and response-format branches). Pure scoring math is in `packages/grading/src/index.ts`: `gradeQuestionSC`, `gradeQuestionMC` (hamming-distance partial credit), `gradeQuestionKPRIM` (0 wrong → full, 1 wrong → half, else 0), `gradeQuestionNumerical`.
+`ElementType`: `SC, MC, KPRIM, FREE_TEXT, NUMERICAL, CONTENT, FLASHCARD, SELECTION, CASE_STUDY, CODE`. Type-specific behavior is dispatched in `packages/graphql/src/services/stacks.ts` (correctness: `evaluateChoicesAnswerCorrectness`; per-type grading and response-format branches). Pure scoring math is in `packages/grading/src/index.ts`: `gradeQuestionSC`, `gradeQuestionMC` (hamming-distance partial credit), `gradeQuestionKPRIM` (0 wrong → full, 1 wrong → half, else 0), `gradeQuestionNumerical`.
+
+### CODE element boundary
+
+- A CODE element is Python-only and contains starter code, an entrypoint, and 1–20 declarative JSON input/output tests. Tests are either public or hidden; participant-facing instance data contains public tests only.
+- CODE is supported only as the single element in a PracticeQuiz or MicroLearning stack. LiveQuiz, GroupActivity, mixed/multi-element stacks, and activity templates reject it.
+- Async attempts use the separate `CodeSubmission` model (`code.prisma`) with `PENDING | RUNNING | COMPLETED | FAILED` status and claim/retry fields. This keeps pending execution outside synchronous `QuestionResponse`; the worker/finalization flow is added in a later implementation slice.
 
 ## Activities
 
