@@ -2,7 +2,7 @@
 
 ## Identity
 
-- Status: approved plan; implementation not started
+- Status: approved plan; implementation in progress
 - Plan: `project/2026-07-23-pr-5198-learning-analytics-opt-out-plan.md`
 - Branch: `codex/learning-analytics-opt-out-plan`
 - Target: `v3`
@@ -212,14 +212,15 @@ Likely files:
 - `packages/prisma/src/prisma/schema/participant.prisma`
 - `packages/prisma/src/prisma/schema/migrations/`
 - `apps/analytics/prisma/schema/` through `pnpm run prisma:sync`
-- `packages/graphql/src/services/analytics.ts` or a small LA policy module
-- focused GraphQL tests
+- `packages/util/src/learningAnalytics.ts`
+- `packages/util/test/learningAnalytics.test.ts`
 
 Check:
 
 - `pnpm run prisma:sync`
 - `pnpm --filter @klicker-uzh/prisma generate`
-- focused helper and migration tests
+- `pnpm --filter @klicker-uzh/util test`
+- `pnpm --filter @klicker-uzh/util check`
 - `pnpm --filter @klicker-uzh/prisma check`
 
 Commit:
@@ -496,6 +497,15 @@ Commit:
   `docs/log.md` entry, and both branches' entries were preserved.
 - 2026-07-29: Research inventoried all Python pipelines, derived models, direct
   GraphQL aggregations, lecturer consumers, and existing client-side exports.
-- Current: Slice 1 active — establish the shared eligibility state.
-- Next: add the schema and migration, mirror it into Analytics, then implement
-  and verify the pure eligibility helper.
+- 2026-07-29: Slice 1 implemented. Migration
+  `20260729175442_add_learning_analytics_eligibility` adds the default-off course
+  flag, default-undecided participation state, inclusion/disclosure timestamps,
+  and minimal choice-event history. The Analytics schema mirror is synchronized.
+- 2026-07-29: The centralized scalar eligibility helper passed 11 boundary and
+  lifecycle cases; all 57 utility tests, utility and Prisma typechecks, both
+  package builds, schema-sync check, and migration-status check passed in the
+  branch-local devcontainer. The repository-wide `check:all` gate also passed
+  with the Analytics virtual environment pinned to Python 3.12.
+- Current: Slice 1 locally verified; per-slice review and simplification pending.
+- Next: resolve the Slice 1 reviews, push the draft PR evidence, then stop before
+  Slice 2 pending renewed execution authority.

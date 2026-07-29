@@ -1,5 +1,9 @@
 # Log
 
+## 2026-07-29
+
+- **Update**: [domain-model](./domain-model.md) and [data-and-migrations](./data-and-migrations.md) document the independent course and participant learning-analytics controls, timestamped eligibility boundary, append-only choice history, and shared-schema synchronization requirement.
+
 ## 2026-07-23
 
 - **Creation**: [ADR 0001](./adr/0001-separate-course-and-participant-learning-analytics-controls.md) records independent course and participant controls for optional learning analytics.

@@ -3,6 +3,12 @@ enum InvitationStatus {
   ACCEPTED
 }
 
+enum LearningAnalyticsParticipationStatus {
+  UNDECIDED
+  INCLUDED
+  EXCLUDED
+}
+
 model ParticipantInvitation {
   id Int @id @default(autoincrement())
 
@@ -149,6 +155,11 @@ model Participation {
   // keeps the collected points but removes them from all views
   isActive Boolean @default(false)
 
+  learningAnalyticsStatus            LearningAnalyticsParticipationStatus @default(UNDECIDED)
+  learningAnalyticsIncludedFrom      DateTime?
+  learningAnalyticsChoiceAt          DateTime?
+  learningAnalyticsDisclosureVersion String?
+
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String @db.Uuid
 
@@ -161,16 +172,33 @@ model Participation {
   sessionLeaderboards LeaderboardEntry[] @relation("SessionLeaderboards")
   timelineEntries     TimelineEntry[]
 
-  responses               QuestionResponse[]
-  detailResponses         QuestionResponseDetail[]
-  subscriptions           PushSubscription[]
-  completedMicroLearnings String[]
-  bookmarkedElementStacks ElementStack[]
+  responses                     QuestionResponse[]
+  detailResponses               QuestionResponseDetail[]
+  subscriptions                 PushSubscription[]
+  completedMicroLearnings       String[]
+  bookmarkedElementStacks       ElementStack[]
+  learningAnalyticsChoiceEvents LearningAnalyticsChoiceEvent[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([courseId, participantId])
+  @@index([courseId, learningAnalyticsStatus])
+}
+
+model LearningAnalyticsChoiceEvent {
+  id Int @id @default(autoincrement())
+
+  status            LearningAnalyticsParticipationStatus
+  includedFrom      DateTime?
+  disclosureVersion String
+
+  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participationId Int
+
+  createdAt DateTime @default(now())
+
+  @@index([participationId, createdAt])
 }
 
 model GroupAssignmentPoolEntry {

@@ -6,16 +6,17 @@ enum CourseAuthType {
 model Course {
   id String @id @default(uuid()) @db.Uuid
 
-  name              String
-  displayName       String
-  description       String?
-  language          Locale   @default(en)
-  color             String   @default("#eaa07d")
-  startDate         DateTime
-  endDate           DateTime
-  notificationEmail String?
-  areAnalyticsValid Boolean  @default(false)
-  isArchived        Boolean  @default(false)
+  name                       String
+  displayName                String
+  description                String?
+  language                   Locale   @default(en)
+  color                      String   @default("#eaa07d")
+  startDate                  DateTime
+  endDate                    DateTime
+  notificationEmail          String?
+  areAnalyticsValid          Boolean  @default(false)
+  isLearningAnalyticsEnabled Boolean  @default(false)
+  isArchived                 Boolean  @default(false)
 
   authType CourseAuthType @default(PIN)
   pinCode  Int?           @unique
@@ -56,11 +57,11 @@ model Course {
   chatbots                   Chatbot[]
   participantInvitations     ParticipantInvitation[]
 
-  directPermissions  Permission[]
-  permissions        DerivedPermission[]
-  accessRequests     AccessRequest[]
-  catalogAssignments CatalogCollectionAssignment[]
-  activityLog        ActivityLogEntry[]
+  directPermissions   Permission[]
+  permissions         DerivedPermission[]
+  accessRequests      AccessRequest[]
+  catalogAssignments  CatalogCollectionAssignment[]
+  activityLog         ActivityLogEntry[]
   verificationRecords VerifiableCredential[]
 
   competencyTree   CompetencyTree? @relation(fields: [competencyTreeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
