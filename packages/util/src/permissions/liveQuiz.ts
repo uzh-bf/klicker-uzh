@@ -7,14 +7,248 @@
  * specific user or all users.
  */
 
+import * as DB from '@klicker-uzh/prisma/client'
 import { type PrismaTransactionClient } from '../types.js'
 import { updateAccessRequestInstances } from './accessRequest.js'
 import {
-  getActivityPermissionsObject,
-  getActivityPermissionsUser,
   propagateActivityToElements,
   propagateActivityToElementsUser,
 } from './util.js'
+
+async function recomputeLiveQuizPermissionsSetBased(
+  { id, userId }: { id: string; userId?: string },
+  prisma: PrismaTransactionClient
+) {
+  await prisma.$executeRaw(
+    DB.Prisma.sql`
+      WITH target_scope AS (
+        SELECT ${userId ?? null}::uuid AS "userId"
+      ),
+      target_activity AS (
+        SELECT
+          activity."id",
+          activity."ownerId",
+          activity."isDeleted",
+          activity."courseId"
+        FROM "LiveQuiz" activity
+        WHERE activity."id" = ${id}::uuid
+      ),
+      expanded_group_users AS (
+        SELECT
+          permission."id" AS "permissionId",
+          group_data."ownerId" AS "userId"
+        FROM "Permission" permission
+        INNER JOIN "UserGroup" group_data
+          ON group_data."id" = permission."userGroupId"
+        WHERE permission."liveQuizId" = ${id}::uuid
+          AND permission."userId" IS NULL
+
+        UNION
+
+        SELECT
+          permission."id" AS "permissionId",
+          members."A" AS "userId"
+        FROM "Permission" permission
+        INNER JOIN "_UserGroupMembers" members
+          ON members."B" = permission."userGroupId"
+        WHERE permission."liveQuizId" = ${id}::uuid
+          AND permission."userId" IS NULL
+
+        UNION
+
+        SELECT
+          permission."id" AS "permissionId",
+          admins."A" AS "userId"
+        FROM "Permission" permission
+        INNER JOIN "_UserGroupAdmins" admins
+          ON admins."B" = permission."userGroupId"
+        WHERE permission."liveQuizId" = ${id}::uuid
+          AND permission."userId" IS NULL
+      ),
+      expanded_permissions AS (
+        SELECT
+          permission."id" AS "permissionId",
+          permission."permissionLevel",
+          permission."propagation",
+          permission."userId"
+        FROM "Permission" permission
+        CROSS JOIN target_scope
+        WHERE permission."liveQuizId" = ${id}::uuid
+          AND permission."userId" IS NOT NULL
+          AND (
+            target_scope."userId" IS NULL
+            OR permission."userId" = target_scope."userId"
+          )
+
+        UNION ALL
+
+        SELECT
+          permission."id" AS "permissionId",
+          permission."permissionLevel",
+          permission."propagation",
+          expanded_group_users."userId"
+        FROM expanded_group_users
+        INNER JOIN "Permission" permission
+          ON permission."id" = expanded_group_users."permissionId"
+        CROSS JOIN target_scope
+        WHERE target_scope."userId" IS NULL
+          OR expanded_group_users."userId" = target_scope."userId"
+      ),
+      direct_candidates AS (
+        SELECT
+          expanded_permissions."userId",
+          expanded_permissions."permissionLevel",
+          expanded_permissions."permissionId" AS "directPermissionId",
+          false AS "derived",
+          'DIRECT'::text AS "sourceType",
+          expanded_permissions."propagation",
+          expanded_permissions."permissionId"::text AS "sourceKey"
+        FROM expanded_permissions
+        CROSS JOIN target_activity
+        WHERE NOT target_activity."isDeleted"
+      ),
+      course_candidates AS (
+        SELECT
+          course_permission."userId",
+          CASE course_permission."permissionLevel"
+            WHEN 'OWNER' THEN 'ADMIN'::"PermissionLevel"
+            WHEN 'ADMIN' THEN 'ADMIN'::"PermissionLevel"
+            WHEN 'WRITE' THEN
+              CASE
+                WHEN direct_permission."propagation"
+                THEN 'WRITE'::"PermissionLevel"
+                ELSE 'EXECUTE'::"PermissionLevel"
+              END
+            WHEN 'EXECUTE' THEN 'EXECUTE'::"PermissionLevel"
+            WHEN 'READ' THEN 'READ'::"PermissionLevel"
+          END AS "permissionLevel",
+          course_permission."directPermissionId",
+          true AS "derived",
+          'COURSE'::text AS "sourceType",
+          false AS "propagation",
+          COALESCE(course_permission."directPermissionId"::text, '')
+            AS "sourceKey"
+        FROM target_activity
+        INNER JOIN "DerivedPermission" course_permission
+          ON course_permission."courseId" = target_activity."courseId"
+        LEFT JOIN "Permission" direct_permission
+          ON direct_permission."id" = course_permission."directPermissionId"
+        CROSS JOIN target_scope
+        WHERE (
+            target_scope."userId" IS NULL
+            OR course_permission."userId" = target_scope."userId"
+          )
+          AND (
+            course_permission."permissionLevel" = 'OWNER'
+            OR direct_permission."id" IS NOT NULL
+          )
+      ),
+      candidates AS (
+        SELECT
+          target_activity."ownerId" AS "userId",
+          'OWNER'::"PermissionLevel" AS "permissionLevel",
+          NULL::integer AS "directPermissionId",
+          false AS "derived",
+          'OWNER'::text AS "sourceType",
+          false AS "propagation",
+          ''::text AS "sourceKey"
+        FROM target_activity
+        CROSS JOIN target_scope
+        WHERE NOT target_activity."isDeleted"
+          AND (
+            target_scope."userId" IS NULL
+            OR target_activity."ownerId" = target_scope."userId"
+          )
+
+        UNION ALL
+
+        SELECT * FROM direct_candidates
+
+        UNION ALL
+
+        SELECT * FROM course_candidates
+      ),
+      ranked_candidates AS (
+        SELECT
+          candidates.*,
+          ROW_NUMBER() OVER (
+            PARTITION BY candidates."userId"
+            ORDER BY
+              CASE candidates."permissionLevel"
+                WHEN 'OWNER' THEN 5
+                WHEN 'ADMIN' THEN 4
+                WHEN 'WRITE' THEN 3
+                WHEN 'EXECUTE' THEN 2
+                WHEN 'READ' THEN 1
+              END DESC,
+              CASE candidates."sourceType"
+                WHEN 'OWNER' THEN 0
+                WHEN 'DIRECT' THEN 1
+                ELSE 2
+              END,
+              candidates."propagation" DESC,
+              CASE
+                WHEN candidates."sourceType" = 'DIRECT'
+                THEN candidates."directPermissionId"
+              END DESC,
+              candidates."sourceKey"
+          ) AS "permissionRank"
+        FROM candidates
+      ),
+      desired_permissions AS (
+        SELECT
+          ranked_candidates."userId",
+          ranked_candidates."permissionLevel",
+          ranked_candidates."directPermissionId",
+          ranked_candidates."derived"
+        FROM ranked_candidates
+        WHERE ranked_candidates."permissionRank" = 1
+      ),
+      deleted_permissions AS (
+        DELETE FROM "DerivedPermission" derived_permission
+        USING target_activity, target_scope
+        WHERE derived_permission."liveQuizId" = target_activity."id"
+          AND (
+            target_scope."userId" IS NULL
+            OR derived_permission."userId" = target_scope."userId"
+          )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM desired_permissions
+            WHERE desired_permissions."userId" = derived_permission."userId"
+          )
+      )
+      INSERT INTO "DerivedPermission" (
+        "permissionLevel",
+        "directPermissionId",
+        "derived",
+        "userId",
+        "liveQuizId",
+        "createdAt",
+        "updatedAt"
+      )
+      SELECT
+        desired_permissions."permissionLevel",
+        desired_permissions."directPermissionId",
+        desired_permissions."derived",
+        desired_permissions."userId",
+        ${id}::uuid,
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+      FROM desired_permissions
+      ON CONFLICT ("liveQuizId", "userId")
+      DO UPDATE SET
+        "permissionLevel" = EXCLUDED."permissionLevel",
+        "directPermissionId" = EXCLUDED."directPermissionId",
+        "derived" = EXCLUDED."derived",
+        "updatedAt" = CURRENT_TIMESTAMP
+      WHERE
+        "DerivedPermission"."permissionLevel" IS DISTINCT FROM EXCLUDED."permissionLevel"
+        OR "DerivedPermission"."directPermissionId" IS DISTINCT FROM EXCLUDED."directPermissionId"
+        OR "DerivedPermission"."derived" IS DISTINCT FROM EXCLUDED."derived"
+    `
+  )
+}
 
 /**
  * Dispatch function for the recomputation of derived permissions for live quizzes.
@@ -58,9 +292,8 @@ export async function recomputeLiveQuizPermissions(
 /**
  * Recomputes derived permissions for a specific user on a live quiz.
  *
- * This function removes any existing derived permission for the user and then
- * computes the highest granted permission level for that same user from the
- * following potential sources of access permissions:
+ * The set-based recomputation updates or removes only the selected user's row,
+ * choosing the highest permission from these sources:
  * - direct permission granted to the individual user
  * - direct permission granted to a user group the user is part of
  * - ownership of the live quiz
@@ -69,7 +302,7 @@ export async function recomputeLiveQuizPermissions(
  *   Additionally, the user can choose between awarding minimum required
  *   permissions or the propagation of the permissions (higher rights).
  *   READ on course --> READ on live quiz (min. required = propagated)
- *   WRITE on course --> READ / WRITE on live quiz (min. required / propagated)
+ *   WRITE on course --> EXECUTE / WRITE on live quiz (min. required / propagated)
  *   ADMIN on course --> ADMIN on live quiz (min. required = propagated)
  *   OWNER on course --> ADMIN on live quiz (min. required = propagated)
  *
@@ -90,125 +323,22 @@ export async function recomputeLiveQuizPermissionsUser(
   }: { id: string; userId: string; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
-  // check if a permission for this user exists
-  const existingPermission = await prisma.derivedPermission.findUnique({
-    where: {
-      liveQuizId_userId: {
-        liveQuizId: id,
-        userId,
-      },
-    },
-  })
-
-  // check for ownership, direct permissions, links to a course that would imply derived permissions
   const liveQuiz = await prisma.liveQuiz.findUnique({
-    where: {
-      id,
-    },
-    include: {
-      directPermissions: {
-        where: {
-          OR: [
-            { userId },
-            {
-              userGroup: {
-                OR: [
-                  { ownerId: userId },
-                  { members: { some: { id: userId } } },
-                  { admins: { some: { id: userId } } },
-                ],
-              },
-            },
-          ],
-        },
-      },
-      // course from which derived permissions would be inherited
-      course: {
-        include: {
-          permissions: {
-            where: {
-              userId,
-            },
-            include: {
-              directPermission: true,
-            },
-          },
-        },
-      },
-      // element instances (with elementId on them) contained in this quiz to propagate the derived permission update to elements
+    where: { id },
+    select: {
+      isDeleted: true,
       blocks: {
-        include: {
-          elements: true,
-        },
+        select: { elements: true },
       },
     },
   })
 
-  // if the live quiz does not exist, return
   if (!liveQuiz) {
     return
   }
 
-  // compute the derived permission level (maximum) for this user on the activity
-  const res = getActivityPermissionsUser({
-    activityOwnerId: liveQuiz.ownerId,
-    activityDeleted: liveQuiz.isDeleted,
-    userId,
-    directPermissions: liveQuiz.directPermissions,
-    coursePermissions: liveQuiz.course?.permissions ?? [],
-  })
+  await recomputeLiveQuizPermissionsSetBased({ id, userId }, prisma)
 
-  // if the user still has access, add a corresponding derived permission
-  if (res !== null) {
-    const { maxAccessLevel, parentPermissionId, derived } = res
-    if (
-      typeof maxAccessLevel !== 'undefined' &&
-      (!existingPermission ||
-        existingPermission.permissionLevel !== maxAccessLevel ||
-        existingPermission.derived !== derived ||
-        existingPermission.directPermissionId !== parentPermissionId)
-    ) {
-      await prisma.derivedPermission.upsert({
-        where: {
-          liveQuizId_userId: {
-            liveQuizId: id,
-            userId,
-          },
-        },
-        create: {
-          permissionLevel: maxAccessLevel,
-          derived,
-          directPermission:
-            typeof parentPermissionId !== 'undefined'
-              ? { connect: { id: parentPermissionId } }
-              : undefined,
-          liveQuiz: { connect: { id } },
-          user: { connect: { id: userId } },
-        },
-        update: {
-          permissionLevel: maxAccessLevel,
-          derived,
-          directPermission:
-            typeof parentPermissionId !== 'undefined'
-              ? { connect: { id: parentPermissionId } }
-              : { disconnect: true },
-        },
-      })
-    }
-  }
-  // if a derived permission exists, remove it
-  else if (existingPermission && res === null) {
-    await prisma.derivedPermission.delete({
-      where: {
-        liveQuizId_userId: {
-          liveQuizId: id,
-          userId,
-        },
-      },
-    })
-  }
-
-  // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
     await updateAccessRequestInstances(
       { liveQuizId: id, userId, objectSoftDeleted: liveQuiz.isDeleted },
@@ -216,26 +346,17 @@ export async function recomputeLiveQuizPermissionsUser(
     )
   }
 
-  // if the activity still exists and the user had ADMIN / OWNER permissions on it,
-  // the derived element permissions need to be recomputed (-> complete recompute required)
-  // users with lower permissions on the activity will never obtained derived permissions through it
-  // --> however, since the computation is based on derived activity permissions, we need to compute these before
   await propagateActivityToElementsUser(
     { stacks: liveQuiz.blocks, userId, updateAccessRequests },
     prisma
   )
-
-  return
 }
 
 /**
  * Recomputes derived permissions for all users on a live quiz.
  *
- * This function deletes all existing derived permissions for the live quiz
- * and then recomputes them. Permissions are directly deduplicated for the
- * derived permissions table to only contain the highest permission level
- * for each user. The following sources for direct permissions on live quizzes
- * are considered:
+ * The set-based recomputation converges all rows for the live quiz, choosing
+ * the highest permission per user from these sources:
  * - direct permissions granted to users
  * - direct permissions granted to user groups
  * - ownership of the live quiz
@@ -255,39 +376,12 @@ export async function recomputeLiveQuizPermissionsObject(
   { id, updateAccessRequests }: { id: string; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
-  // fetch the object and all direct permissions on it, including user groups, as well as activities the element is used in
-  // permissions on the course should automatically imply corresponding permissions on the contained live quizzes
-  // depending on the permission level on the activity, derived permissions on the contained elements might be required
   const liveQuiz = await prisma.liveQuiz.findUnique({
-    where: {
-      id,
-    },
-    include: {
-      directPermissions: {
-        include: {
-          userGroup: {
-            include: {
-              members: true,
-              admins: true,
-            },
-          },
-        },
-      },
-      // course from which derived permissions would be inherited
-      course: {
-        include: {
-          permissions: {
-            include: {
-              directPermission: true,
-            },
-          },
-        },
-      },
-      // element instances contained in the activity to propagate the derived permission update to elements
+    where: { id },
+    select: {
+      isDeleted: true,
       blocks: {
-        include: {
-          elements: true,
-        },
+        select: { elements: true },
       },
     },
   })
@@ -297,70 +391,8 @@ export async function recomputeLiveQuizPermissionsObject(
     return
   }
 
-  // compute a map between all users with direct or direct access to the considered activity
-  const userAccess = getActivityPermissionsObject({
-    activityOwnerId: liveQuiz.ownerId,
-    activityDeleted: liveQuiz.isDeleted,
-    directPermissions: liveQuiz.directPermissions,
-    coursePermissions: liveQuiz.course?.permissions ?? [],
-  })
+  await recomputeLiveQuizPermissionsSetBased({ id }, prisma)
 
-  // remove the derived permissions for all users that do not have access (anymore)
-  await prisma.derivedPermission.deleteMany({
-    where: {
-      liveQuizId: id,
-      userId: {
-        notIn: Object.keys(userAccess),
-      },
-    },
-  })
-
-  // create / update derived permissions for each user with access
-  const results = await Promise.allSettled(
-    Object.entries(userAccess).map(
-      async ([userId, { maxAccessLevel, parentPermissionId, derived }]) =>
-        await prisma.derivedPermission.upsert({
-          where: {
-            liveQuizId_userId: {
-              liveQuizId: id,
-              userId,
-            },
-          },
-          create: {
-            permissionLevel: maxAccessLevel,
-            derived,
-            directPermission:
-              typeof parentPermissionId !== 'undefined'
-                ? { connect: { id: parentPermissionId } }
-                : undefined,
-            liveQuiz: { connect: { id } },
-            user: { connect: { id: userId } },
-          },
-          update: {
-            permissionLevel: maxAccessLevel,
-            derived,
-            directPermission:
-              typeof parentPermissionId !== 'undefined'
-                ? { connect: { id: parentPermissionId } }
-                : { disconnect: true },
-          },
-        })
-    )
-  )
-
-  // check if any promise was rejected and throw an error
-  const rejectedPromises = results.filter(
-    (result): result is PromiseRejectedResult => result.status === 'rejected'
-  )
-  if (rejectedPromises.length > 0) {
-    throw new Error(
-      `Failed to update derived permissions for live quiz (ID: ${liveQuiz.id}): ${rejectedPromises
-        .map((result) => result.reason?.message || 'Unknown error')
-        .join(', ')}`
-    )
-  }
-
-  // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
     await updateAccessRequestInstances(
       { liveQuizId: id, objectSoftDeleted: liveQuiz.isDeleted },
@@ -368,7 +400,6 @@ export async function recomputeLiveQuizPermissionsObject(
     )
   }
 
-  // recompute the derived permissions on all elements contained in this activity
   await propagateActivityToElements(
     { stacks: liveQuiz.blocks, updateAccessRequests },
     prisma
