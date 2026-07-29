@@ -34,6 +34,8 @@ Participants can change their LA participation choice at any time within the cou
 
 After a participant opts back into LA, only activity created from that point onward becomes LA-eligible. Activity excluded by an earlier opt-out remains excluded from later calculations.
 
+A material disclosure change requires a new choice and excludes activity until that choice is made. Renewed inclusion starts at the new acknowledgement time; editorial changes do not create a new disclosure version or require another choice.
+
 **LA coverage**:
 Whether a participant permitted LA throughout the selected analysis period. Coverage is complete when LA was permitted for the whole period and partial when it was permitted for only part of it. Coverage does not describe whether the participant completed every activity.
 _Avoid_: Partial participant, complete participant
