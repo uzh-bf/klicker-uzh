@@ -198,16 +198,18 @@ describe('Course Q&A course-level workflows', function () {
       .parents('[data-cy^="course-qa-thread-"]')
       .first()
       .within(() => {
-        cy.get('[data-cy^="course-qa-reply-input-"]').should('not.exist')
+        cy.get('[data-cy^="course-qa-reply-input-"]').should('not.be.visible')
         cy.get('[data-cy^="course-qa-open-reply-"]')
           .should('have.attr', 'aria-expanded', 'false')
           .click()
           .should('have.attr', 'aria-expanded', 'true')
+        cy.get('[data-cy^="course-qa-reply-input-"]').type('Discarded draft')
         cy.get('[data-cy^="course-qa-cancel-reply-"]').click()
-        cy.get('[data-cy^="course-qa-reply-input-"]').should('not.exist')
         cy.get('[data-cy^="course-qa-open-reply-"]')
           .should('have.attr', 'aria-expanded', 'false')
+          .and('have.focus')
           .click()
+        cy.get('[data-cy^="course-qa-reply-input-"]').should('have.value', '')
         cy.get('[data-cy^="course-qa-reply-input-"]').type(
           this.data.threads.reply1
         )

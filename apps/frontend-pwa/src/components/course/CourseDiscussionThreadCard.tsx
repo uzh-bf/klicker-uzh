@@ -155,6 +155,7 @@ function CourseDiscussionThreadCard({
       dateStyle: 'medium',
       timeStyle: 'short',
     })
+  const replyTriggerId = `${idPrefix}-reply-trigger-${thread.id}`
   const replyComposerId = `${idPrefix}-reply-composer-${thread.id}`
 
   return (
@@ -221,14 +222,20 @@ function CourseDiscussionThreadCard({
         </span>
         {canPost && (
           <Button
+            id={replyTriggerId}
             onClick={() => setReplyComposerOpen((open) => !open)}
+            disabled={submittingReply}
             active={replyComposerOpen}
             className={{ root: 'h-8' }}
             aria-expanded={replyComposerOpen}
             aria-controls={replyComposerId}
             data={{ cy: `course-qa-open-reply-${thread.id}` }}
           >
-            <Button.Label>{t('pwa.courseQA.reply')}</Button.Label>
+            <Button.Label>
+              {replyComposerOpen
+                ? t('shared.generic.close')
+                : t('pwa.courseQA.reply')}
+            </Button.Label>
           </Button>
         )}
       </div>
@@ -289,9 +296,10 @@ function CourseDiscussionThreadCard({
           </div>
         ))}
 
-        {canPost && replyComposerOpen && (
+        {canPost && (
           <div
             id={replyComposerId}
+            hidden={!replyComposerOpen}
             className="mt-1 rounded-md border border-gray-200 p-2"
           >
             <textarea
@@ -334,6 +342,7 @@ function CourseDiscussionThreadCard({
               <Button
                 disabled={submittingReply}
                 onClick={() => {
+                  document.getElementById(replyTriggerId)?.focus()
                   setReplyComposerOpen(false)
                   setReplyDraft('')
                   setPostReplyAnonymous(false)

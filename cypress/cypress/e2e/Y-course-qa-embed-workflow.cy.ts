@@ -210,7 +210,7 @@ describe('Course Q&A embed workflow', function () {
       .parents('[data-cy^="course-qa-thread-"]')
       .first()
       .within(() => {
-        cy.get('[data-cy^="course-qa-reply-input-"]').should('not.exist')
+        cy.get('[data-cy^="course-qa-reply-input-"]').should('not.be.visible')
         cy.get('[data-cy^="course-qa-open-reply-"]').click()
         cy.get('[data-cy^="course-qa-reply-input-"]').type(
           this.data.embed.anonymousReply
