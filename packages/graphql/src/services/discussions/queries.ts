@@ -1,33 +1,37 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import type { Context } from '../../lib/context.js'
 import {
-  canParticipantAccessDiscussionScope,
   getCourseAccessActor,
   getCourseSettings,
   isCourseDiscussionEnabled,
 } from './access.js'
 import {
-  rejectEmbedCourseMismatch,
-  verifyEmbedScopeBinding,
-  verifyEmbedToken,
-} from './embeds.js'
-import {
   ACTIVE_COURSE_SCOPE_TYPES,
   buildThreadInclude,
   getThreadOrderBy,
-  isSupportedCourseScopeKey,
   mapThreads,
   parseCursor,
   parseLimit,
 } from './model.js'
+import { resolveCourseDiscussionReadContext } from './read-context.js'
 import type {
   CourseDiscussionOverview,
   CourseDiscussionOverviewArgs,
   CourseDiscussionOverviewGroup,
   CourseDiscussionThreadsArgs,
   DiscussionThreadPage,
-  ResolvedActor,
 } from './types.js'
+
+function inaccessibleDiscussionThreadPage(): DiscussionThreadPage {
+  return {
+    threads: [],
+    nextCursor: null,
+    hasMore: false,
+    canPostAnonymously: false,
+    canPostIdentified: false,
+    isAccessible: false,
+  }
+}
 
 export async function courseDiscussionThreads(
   {
@@ -42,187 +46,22 @@ export async function courseDiscussionThreads(
 ): Promise<DiscussionThreadPage> {
   const pageSize = parseLimit(limit)
   const parsedCursor = parseCursor(cursor)
+  const readContext = await resolveCourseDiscussionReadContext(
+    { courseId, scopeKey, embedToken },
+    ctx
+  )
 
-  const course = await getCourseSettings(courseId, ctx)
-  if (!isCourseDiscussionEnabled(course)) {
-    return {
-      threads: [],
-      nextCursor: null,
-      hasMore: false,
-      canPostAnonymously: false,
-      canPostIdentified: false,
-      isAccessible: false,
-    }
+  if (!readContext) {
+    return inaccessibleDiscussionThreadPage()
   }
 
-  const embedClaims = await verifyEmbedToken(embedToken)
-
-  let actor: ResolvedActor | null = null
-
-  if (!embedClaims) {
-    actor = await getCourseAccessActor({ courseId }, ctx)
-    if (!actor) {
-      return {
-        threads: [],
-        nextCursor: null,
-        hasMore: false,
-        canPostAnonymously: false,
-        canPostIdentified: false,
-        isAccessible: false,
-      }
-    }
-  } else {
-    if (embedClaims.spaceType !== DB.DiscussionSpaceType.COURSE) {
-      return {
-        threads: [],
-        nextCursor: null,
-        hasMore: false,
-        canPostAnonymously: false,
-        canPostIdentified: false,
-        isAccessible: false,
-      }
-    }
-
-    if (rejectEmbedCourseMismatch(embedClaims, courseId)) {
-      return {
-        threads: [],
-        nextCursor: null,
-        hasMore: false,
-        canPostAnonymously: false,
-        canPostIdentified: false,
-        isAccessible: false,
-      }
-    }
-  }
-
-  const canPostAnonymously =
-    !!embedClaims?.allowAnonymous && !!course.isCourseQAAnonymousEnabled
-
-  const participantActor = embedClaims
-    ? await getCourseAccessActor({ courseId }, ctx)
-    : actor
-  const participantId = participantActor?.participantId ?? null
-  const canPostIdentified = Boolean(participantId)
-
-  const effectiveScopeKey =
-    embedClaims?.scopeKey ?? scopeKey ?? `course:${courseId}`
-
-  if (!isSupportedCourseScopeKey(courseId, effectiveScopeKey)) {
-    return {
-      threads: [],
-      nextCursor: null,
-      hasMore: false,
-      canPostAnonymously: false,
-      canPostIdentified: false,
-      isAccessible: false,
-    }
-  }
-
-  if (embedClaims && scopeKey && scopeKey !== embedClaims.scopeKey) {
-    return {
-      threads: [],
-      nextCursor: null,
-      hasMore: false,
-      canPostAnonymously: false,
-      canPostIdentified: false,
-      isAccessible: false,
-    }
-  }
-
-  if (effectiveScopeKey.startsWith('ext:') && !embedClaims) {
-    return {
-      threads: [],
-      nextCursor: null,
-      hasMore: false,
-      canPostAnonymously: false,
-      canPostIdentified: false,
-      isAccessible: false,
-    }
-  }
-
-  const stackScopeMatch = effectiveScopeKey.match(/^stack:(\d+)$/)
-  if (stackScopeMatch) {
-    const stackId = Number.parseInt(stackScopeMatch[1] ?? '', 10)
-    const stack = await ctx.prisma.elementStack.findFirst({
-      where: {
-        id: stackId,
-        OR: [
-          { courseId },
-          { practiceQuiz: { courseId } },
-          { microLearning: { courseId } },
-        ],
-      },
-      select: { id: true },
-    })
-
-    const participantCanAccess = await canParticipantAccessDiscussionScope(
-      {
-        participantId,
-        courseId,
-        scope: {
-          scopeType: DB.DiscussionScopeType.PRACTICE_STACK,
-          stackId,
-        },
-      },
-      ctx
-    )
-
-    if (!stack || !participantCanAccess) {
-      return {
-        threads: [],
-        nextCursor: null,
-        hasMore: false,
-        canPostAnonymously: false,
-        canPostIdentified: false,
-        isAccessible: false,
-      }
-    }
-  }
-
-  const spaces = await ctx.prisma.discussionSpace.findMany({
-    where: {
-      spaceType: DB.DiscussionSpaceType.COURSE,
-      courseId,
-    },
-  })
-
-  if (embedClaims) {
-    const expectedSpace = spaces[0]
-    const scopeExists = expectedSpace
-      ? await ctx.prisma.discussionScope.findUnique({
-          where: {
-            spaceId_scopeKey: {
-              spaceId: expectedSpace.id,
-              scopeKey: effectiveScopeKey,
-            },
-          },
-          select: { id: true },
-        })
-      : null
-    const bindingIsValid =
-      expectedSpace &&
-      scopeExists &&
-      (await verifyEmbedScopeBinding(
-        {
-          embedClaims,
-          expectedSpace,
-          expectedScopeKey: effectiveScopeKey,
-          requireAnonymous: false,
-        },
-        ctx
-      ))
-
-    if (!bindingIsValid) {
-      return {
-        threads: [],
-        nextCursor: null,
-        hasMore: false,
-        canPostAnonymously: false,
-        canPostIdentified: false,
-        isAccessible: false,
-      }
-    }
-  }
+  const {
+    participantId,
+    canPostAnonymously,
+    canPostIdentified,
+    effectiveScopeKey,
+    spaces,
+  } = readContext
 
   if (spaces.length === 0) {
     return {
