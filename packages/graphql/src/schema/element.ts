@@ -338,6 +338,11 @@ export const TemplateBlockInputRef =
 export const TemplateBlockInput = TemplateBlockInputRef.implement({
   fields: (t) => ({
     timeLimit: t.int({ required: false }),
+    isEscapeRoom: t.boolean({ required: false }),
+    escapeRoomTimeLimit: t.int({ required: false }),
+    escapeRoomHintPenalty: t.int({ required: false }),
+    escapeRoomLockoutSeconds: t.int({ required: false }),
+    escapeRoomIntroText: t.string({ required: false }),
     order: t.int({ required: true }),
     elements: t.field({ type: [TemplateBlockElementInput], required: true }),
   }),
@@ -881,6 +886,7 @@ export interface IElementInstance
   extends Omit<DB.ElementInstance, 'isVersionOutdated'> {
   feedbacks?: DB.ElementFeedback[] | null
   correlationKey?: string | null
+  revealedHint?: string | null
 }
 export const ElementInstanceRef =
   builder.objectRef<IElementInstance>('ElementInstance')
@@ -891,6 +897,7 @@ export const ElementInstance = ElementInstanceRef.implement({
     type: t.expose('type', { type: ElementInstanceType }),
     elementType: t.expose('elementType', { type: ElementType }),
     correlationKey: t.exposeString('correlationKey', { nullable: true }), // correlation key for assessment response validation
+    revealedHint: t.exposeString('revealedHint', { nullable: true }),
 
     elementData: t.field({
       type: ElementData,

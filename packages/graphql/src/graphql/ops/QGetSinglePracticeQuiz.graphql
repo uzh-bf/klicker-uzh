@@ -1,5 +1,12 @@
-query GetSinglePracticeQuiz($id: String!) {
+query GetSinglePracticeQuiz(
+  $id: String!
+  $withEscapeRoomHints: Boolean! = false
+) {
   getSinglePracticeQuiz(id: $id) {
     ...PracticeQuizData
+  }
+  escapeRoomHints(practiceQuizId: $id) @include(if: $withEscapeRoomHints) {
+    instanceId
+    hint
   }
 }
