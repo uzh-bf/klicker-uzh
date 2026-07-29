@@ -1,5 +1,9 @@
 # Log
 
+## 2026-07-29
+
+- **Creation**: [ADR 0003](./adr/0003-use-klicker-codeapi-principal-source.md) records that Klicker-minted CodeAPI tokens use a dedicated `klicker_jwt` principal source through an environment-configurable allow-list.
+
 ## 2026-07-19
 
 - **Update**: [getting-started](./getting-started.md), [frontend-conventions](./frontend-conventions.md), and [testing](./testing.md) document the runtime-owned TypeScript compiler matrix, explicit Next.js build-validation config, isolated incremental-cache ownership, and check-only declaration trap. The matching verification procedure and solution notes preserve the required checks.
