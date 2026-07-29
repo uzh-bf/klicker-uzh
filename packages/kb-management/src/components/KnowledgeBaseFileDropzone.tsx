@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { getGraphQLErrorCode } from '../graphqlError'
+import { refreshAfterMutation } from '../refreshAfterMutation'
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024
 const CONTENT_TYPES: Record<string, string> = {
@@ -92,14 +93,7 @@ function KnowledgeBaseFileDropzone({
         return
       }
 
-      try {
-        await onResourceCreated()
-      } catch (refreshError) {
-        console.error(
-          'Failed to refresh KB resources after upload',
-          refreshError
-        )
-      }
+      await refreshAfterMutation(onResourceCreated, 'KB resources after upload')
       toast({ type: 'success', message: t('kb.fileUploadSuccess') })
     } finally {
       setUploading(false)

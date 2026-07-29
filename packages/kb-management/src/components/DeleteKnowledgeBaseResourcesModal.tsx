@@ -6,6 +6,7 @@ import {
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React from 'react'
+import { refreshAfterMutation } from '../refreshAfterMutation'
 
 type KnowledgeBaseResource =
   GetKbResourcesQuery['getKbResources']['items'][number]
@@ -37,11 +38,7 @@ function DeleteKnowledgeBaseResourcesModal({
       return
     }
 
-    try {
-      await onDeleted()
-    } catch (error) {
-      console.error('Failed to refresh KB resources after deletion', error)
-    }
+    await refreshAfterMutation(onDeleted, 'KB resources after deletion')
     toast({
       type: 'success',
       message: t('kb.bulkDeleteSuccess', { count: resources.length }),

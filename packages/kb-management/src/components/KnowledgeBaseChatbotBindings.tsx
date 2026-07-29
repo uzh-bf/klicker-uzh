@@ -15,6 +15,7 @@ import {
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
+import { refreshAfterMutation } from '../refreshAfterMutation'
 
 function KnowledgeBaseChatbotBindings({
   kbId,
@@ -62,7 +63,6 @@ function KnowledgeBaseChatbotBindings({
       await attachKb({
         variables: { kbId, chatbotId: selectedChatbotId },
         refetchQueries,
-        awaitRefetchQueries: true,
       })
     } catch (mutationError) {
       console.error('Failed to attach KB to chatbot', mutationError)
@@ -70,14 +70,7 @@ function KnowledgeBaseChatbotBindings({
       return
     }
 
-    try {
-      await onChanged()
-    } catch (refreshError) {
-      console.error(
-        'Failed to refresh KB chatbot bindings after attach',
-        refreshError
-      )
-    }
+    await refreshAfterMutation(onChanged, 'KB chatbot bindings after attach')
     setSelectedChatbotId(undefined)
     toast({ type: 'success', message: t('kb.chatbotAttachSuccess') })
   }
@@ -89,7 +82,6 @@ function KnowledgeBaseChatbotBindings({
       await detachKb({
         variables: { kbId, chatbotId },
         refetchQueries,
-        awaitRefetchQueries: true,
       })
     } catch (mutationError) {
       console.error('Failed to detach KB from chatbot', mutationError)
@@ -97,14 +89,7 @@ function KnowledgeBaseChatbotBindings({
       return
     }
 
-    try {
-      await onChanged()
-    } catch (refreshError) {
-      console.error(
-        'Failed to refresh KB chatbot bindings after detach',
-        refreshError
-      )
-    }
+    await refreshAfterMutation(onChanged, 'KB chatbot bindings after detach')
     toast({ type: 'success', message: t('kb.chatbotDetachSuccess') })
   }
 

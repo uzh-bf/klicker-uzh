@@ -3,6 +3,7 @@ import { CreateKbDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Modal, TextareaField, TextField, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
+import { refreshAfterMutation } from '../refreshAfterMutation'
 
 function CreateKnowledgeBaseModal({
   onClose,
@@ -33,14 +34,7 @@ function CreateKnowledgeBaseModal({
       return
     }
 
-    try {
-      await onCreated()
-    } catch (refreshError) {
-      console.error(
-        'Failed to refresh knowledge bases after creation',
-        refreshError
-      )
-    }
+    await refreshAfterMutation(onCreated, 'knowledge bases after creation')
     toast({ type: 'success', message: t('kb.createSuccess') })
     onClose()
   }

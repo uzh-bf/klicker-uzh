@@ -6,6 +6,7 @@ import {
 import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React from 'react'
+import { refreshAfterMutation } from '../refreshAfterMutation'
 
 type KnowledgeBaseSummary =
   GetUserKbsQuery['getUserKbsConnection']['items'][number]
@@ -35,14 +36,7 @@ function DeleteKnowledgeBaseModal({
       return
     }
 
-    try {
-      await onDeleted()
-    } catch (refreshError) {
-      console.error(
-        'Failed to refresh knowledge bases after deletion',
-        refreshError
-      )
-    }
+    await refreshAfterMutation(onDeleted, 'knowledge bases after deletion')
     toast({ type: 'success', message: t('kb.deleteSuccess') })
     onClose()
   }

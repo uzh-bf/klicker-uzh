@@ -4,6 +4,7 @@ import { Button, H3, TextField, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { type FormEvent, useState } from 'react'
 import { getGraphQLErrorCode } from '../graphqlError'
+import { refreshAfterMutation } from '../refreshAfterMutation'
 
 function isValidWebUrl(value: string) {
   try {
@@ -53,14 +54,10 @@ function KnowledgeBaseUrlForm({
       return
     }
 
-    try {
-      await onResourceCreated()
-    } catch (refreshError) {
-      console.error(
-        'Failed to refresh KB resources after link creation',
-        refreshError
-      )
-    }
+    await refreshAfterMutation(
+      onResourceCreated,
+      'KB resources after link creation'
+    )
     setTitle('')
     setUrl('')
     setUrlTouched(false)

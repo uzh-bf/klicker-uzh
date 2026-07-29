@@ -38,6 +38,7 @@ import React, {
   useRef,
   useState,
 } from 'react'
+import { refreshAfterMutation } from '../refreshAfterMutation'
 import DeleteKnowledgeBaseResourceModal from './DeleteKnowledgeBaseResourceModal'
 import DeleteKnowledgeBaseResourcesModal from './DeleteKnowledgeBaseResourcesModal'
 
@@ -560,14 +561,10 @@ function KnowledgeBaseResourceList({
         return next
       })
 
-      try {
-        await refreshWorkspace()
-      } catch (refreshError) {
-        console.error(
-          'Failed to refresh KB resources after ingestion',
-          refreshError
-        )
-      }
+      await refreshAfterMutation(
+        refreshWorkspace,
+        'KB resources after ingestion'
+      )
       setHistoryRefreshes((current) => ({
         ...current,
         [resource.id]: (current[resource.id] ?? 0) + 1,
