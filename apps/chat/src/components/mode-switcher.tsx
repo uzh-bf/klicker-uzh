@@ -5,6 +5,7 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { getModeIcon, isKnownMode } from '../lib/config/modes'
 import { useSettingsStore } from '../stores/settingsStore'
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 export function ModeSwitcher() {
   const t = useTranslations()
@@ -69,32 +70,35 @@ export function ModeSwitcher() {
         const isActive = mode === selectedMode
 
         return (
-          <button
-            key={mode}
-            ref={(el) => {
-              if (el) buttonRefs.current.set(mode, el)
-              else buttonRefs.current.delete(mode)
-            }}
-            type="button"
-            aria-pressed={isActive}
-            data-cy={`chat-mode-option-${mode}`}
-            title={label}
-            onClick={() => setSelectedMode(mode)}
-            className={twMerge(
-              'relative z-10 inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium transition-colors',
-              isActive
-                ? 'text-primary-foreground'
-                : // Full foreground rather than muted-foreground: the inactive
-                  // tab sits on bg-muted, where muted-foreground only reaches
-                  // ~4.4:1 and misses the WCAG 1.4.3 AA floor for this text
-                  // size. The active state is carried by the sliding thumb,
-                  // not by the label colour.
-                  'text-foreground hover:bg-background/60'
-            )}
-          >
-            <Icon className="size-4" />
-            <span>{label}</span>
-          </button>
+          <Tooltip key={mode}>
+            <TooltipTrigger asChild>
+              <button
+                ref={(el) => {
+                  if (el) buttonRefs.current.set(mode, el)
+                  else buttonRefs.current.delete(mode)
+                }}
+                type="button"
+                aria-pressed={isActive}
+                data-cy={`chat-mode-option-${mode}`}
+                onClick={() => setSelectedMode(mode)}
+                className={twMerge(
+                  'relative z-10 inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'text-primary-foreground'
+                    : // Full foreground rather than muted-foreground: the inactive
+                      // tab sits on bg-muted, where muted-foreground only reaches
+                      // ~4.4:1 and misses the WCAG 1.4.3 AA floor for this text
+                      // size. The active state is carried by the sliding thumb,
+                      // not by the label colour.
+                      'text-foreground hover:bg-background/60'
+                )}
+              >
+                <Icon className="size-4" />
+                <span>{label}</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{label}</TooltipContent>
+          </Tooltip>
         )
       })}
     </div>
