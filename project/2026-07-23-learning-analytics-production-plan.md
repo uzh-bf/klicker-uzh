@@ -997,10 +997,29 @@ the repository script that replaces it before continuing.
   helper/test function ASTs and decorators are preserved. The 10 PostgreSQL
   privacy cases and 55 tests across six focused dry-run/interceptor files pass,
   with three additional expected no-database skips in the latter group.
-- Active: Independently review and simplify the maintainability decomposition,
-  rerun the complete analytics gates, then request explicit publication
-  confirmation for both stacked draft PRs. After publication, read CI to a
-  terminal result without merging or deploying.
+- 2026-07-24: The exact final maintainability cleanup localizes the generic
+  diagnostic truncation helper in the workbook renderer and removes one unused
+  JSON helper from the domain builder. Independent correctness re-review and
+  the final strict maintainability/simplification gate both pass with no
+  finding at confidence 75 or higher. The final modules are a 414-line write
+  interceptor, 827-line workbook renderer, and 669-line domain-summary
+  builder, with seven public sibling imports, no private sibling dependency,
+  and no import cycle.
+- 2026-07-24: The exact final code head `d7064ed7d` passes all 199
+  database-enabled analytics tests with 18 existing dependency/dataframe
+  warnings in 358.82 seconds. Ruff passes across all 137 analytics Python
+  files; both module import orders, the focused 55-test dry-run suite, the 10
+  PostgreSQL privacy cases, and the repository commit hook also pass.
+- 2026-07-29: Live refresh found `origin/v3` advanced by the Prisma 7 upgrade
+  and Office Add-in rewrite. Both stacked draft PRs now report conflicts.
+  Phase 1 overlaps upstream in `docs/log.md`, `docs/testing.md`,
+  `packages/prisma-data/package.json`, and `pnpm-lock.yaml`; the next slice is
+  to merge current v3 into Phase 1, verify it, then merge the refreshed Phase 1
+  into Phase 2 and rerun the affected analytics gates.
+- Active: Refresh current v3 through both local branches without losing
+  analytics behavior, then request explicit publication confirmation for the
+  resulting stacked heads. After publication, update both PR descriptions and
+  read CI to a terminal result without merging or deploying.
 
 ## Finish evidence
 
@@ -1014,8 +1033,9 @@ the repository script that replaces it before continuing.
 
 ## Next Steps
 
-1. Independently review the maintainability decomposition and rerun the
-   complete analytics suite plus the final strict maintainability gate.
+1. Merge current `origin/v3` through Phase 1 and Phase 2, preserving the Prisma
+   7 runtime/dependency state and all analytics schema, seed, and worker
+   behavior; rerun affected verification.
 2. After explicit publication confirmation, push `chat-analytics` and
    `analytics-phase-a`, update both stacked draft PR descriptions, and read CI
    to a terminal result without merging or deploying.
