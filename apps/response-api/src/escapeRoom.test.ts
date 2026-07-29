@@ -555,6 +555,33 @@ describe('response-api escape-room validation', () => {
     expect(mocks.push).not.toHaveBeenCalled()
   })
 
+  it.each([
+    ['choice', 'SC', { choices: '0' }],
+    ['choice entry', 'SC', { choices: [{ ix: '0', selected: true }] }],
+    ['numerical', 'NUMERICAL', { value: 1 }],
+    ['free-text', 'FREE_TEXT', { value: 1 }],
+  ])(
+    'rejects a malformed %s response before grading',
+    async (_label, type, responseValue) => {
+      const { response, result } = responseRecorder()
+
+      await handleEscapeRoomValidation(
+        response,
+        { ...payload, response: responseValue },
+        'participant_token=token',
+        { ...info, type },
+        redisMock()
+      )
+
+      expect(result.statusCode).toBe(400)
+      expect(JSON.parse(result.body)).toEqual({
+        error: 'invalid_escape_room_response',
+      })
+      expect(mocks.grade).not.toHaveBeenCalled()
+      expect(mocks.push).not.toHaveBeenCalled()
+    }
+  )
+
   it('completes only after every answerable block instance is cleared', async () => {
     mocks.grade.mockReturnValue(1)
     mocks.findInstances.mockResolvedValue([{ id: 11 }, { id: 12 }])
@@ -690,7 +717,7 @@ describe('response-api escape-room validation', () => {
 
   it('grades only one of concurrent correct and incorrect responses', async () => {
     mocks.grade.mockImplementation(({ response }) =>
-      response[0] === 0 ? 1 : 0
+      response[0]?.ix === 0 ? 1 : 0
     )
     const redis = redisMock()
     const responses = [responseRecorder(), responseRecorder()]
@@ -698,14 +725,20 @@ describe('response-api escape-room validation', () => {
     await Promise.all([
       handleEscapeRoomValidation(
         responses[0]!.response,
-        { ...payload, response: { choices: [0] } },
+        {
+          ...payload,
+          response: { choices: [{ ix: 0, selected: true }] },
+        },
         'participant_token=token',
         info,
         redis
       ),
       handleEscapeRoomValidation(
         responses[1]!.response,
-        { ...payload, response: { choices: [1] } },
+        {
+          ...payload,
+          response: { choices: [{ ix: 1, selected: true }] },
+        },
         'participant_token=token',
         info,
         redis

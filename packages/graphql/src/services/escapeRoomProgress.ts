@@ -1,5 +1,8 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import { isEscapeRoomExpired } from '@klicker-uzh/types'
+import {
+  ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES,
+  isEscapeRoomExpired,
+} from '@klicker-uzh/types'
 import { GraphQLError } from 'graphql'
 import type { ContextWithUser } from '../lib/context.js'
 interface EscapeRoomProgressArgs {
@@ -122,16 +125,7 @@ export async function getEscapeRoomProgress(
       ? await ctx.prisma.elementInstance.count({
           where: {
             elementBlockId,
-            elementType: {
-              in: [
-                DB.ElementType.SC,
-                DB.ElementType.MC,
-                DB.ElementType.KPRIM,
-                DB.ElementType.NUMERICAL,
-                DB.ElementType.FREE_TEXT,
-                DB.ElementType.QR_SCAN,
-              ],
-            },
+            elementType: { in: [...ESCAPE_ROOM_SUPPORTED_ELEMENT_TYPES] },
           },
         })
       : stacks.length

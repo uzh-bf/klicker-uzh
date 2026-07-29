@@ -75,6 +75,52 @@ type EscapeRoomInstanceState = Awaited<
   ReturnType<typeof loadEscapeRoomInstanceState>
 >
 
+interface EscapeRoomChoice {
+  ix: number
+  selected: boolean
+}
+
+interface EscapeRoomResponse {
+  choices?: EscapeRoomChoice[]
+  value?: string
+}
+
+function isEscapeRoomChoice(value: unknown): value is EscapeRoomChoice {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  const choice = value as Record<string, unknown>
+  return (
+    Number.isInteger(choice.ix) &&
+    Number(choice.ix) >= 0 &&
+    typeof choice.selected === 'boolean'
+  )
+}
+
+function validateEscapeRoomResponse(
+  type: string | undefined,
+  response: unknown
+): EscapeRoomResponse | null {
+  if (!response || typeof response !== 'object' || Array.isArray(response)) {
+    return null
+  }
+
+  const value = response as Record<string, unknown>
+  if (type === 'SC' || type === 'MC' || type === 'KPRIM') {
+    if (
+      !Array.isArray(value.choices) ||
+      !value.choices.every(isEscapeRoomChoice)
+    ) {
+      return null
+    }
+    return { choices: value.choices }
+  }
+
+  if (type === 'NUMERICAL' || type === 'FREE_TEXT' || type === 'QR_SCAN') {
+    return typeof value.value === 'string' ? { value: value.value } : null
+  }
+
+  return null
+}
+
 function loadEscapeRoomInstanceState(instanceId: number) {
   return prisma.elementInstance.findUnique({
     where: { id: instanceId },
@@ -108,7 +154,7 @@ function isActiveEscapeRoomInstance(
 
 export async function handleEscapeRoomValidation(
   res: ServerResponse,
-  payload: { response: any; liveQuizId: string; instanceId: number },
+  payload: { response: unknown; liveQuizId: string; instanceId: number },
   cookie: string | undefined,
   instanceInfo: Record<string, string>,
   redis: Redis
@@ -117,7 +163,7 @@ export async function handleEscapeRoomValidation(
     return false
   }
 
-  const { response, liveQuizId, instanceId } = payload
+  const { response: submittedResponse, liveQuizId, instanceId } = payload
 
   const participantData = await getParticipantData(cookie)
   if (!participantData) {
@@ -197,6 +243,13 @@ export async function handleEscapeRoomValidation(
   )
   if (!instanceAlreadyCleared && currentInstance?.id !== instanceId) {
     sendJson(res, 409, { error: 'escape_room_stage_locked' })
+    return true
+  }
+
+  const type = instanceInfo.type
+  const response = validateEscapeRoomResponse(type, submittedResponse)
+  if (!response) {
+    sendJson(res, 400, { error: 'invalid_escape_room_response' })
     return true
   }
 
@@ -298,7 +351,6 @@ export async function handleEscapeRoomValidation(
 
     // Grade response
     let pointsPercentage = 0
-    const type = instanceInfo.type
     let parsedSolutions: any = undefined
     if (instanceInfo.solutions) {
       try {
