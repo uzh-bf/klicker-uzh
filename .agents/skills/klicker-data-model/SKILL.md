@@ -27,8 +27,8 @@ Provenance: steps 2 requires a database; on a machine without one running, write
 - **Pick the right area file** — don't create new `.prisma` files; `js.prisma` is generators-only and the shared `datasource.prisma` declares only the provider. JavaScript URLs live in `packages/prisma/prisma.config.ts`.
 - **Migrations may carry data backfills** (plain SQL in the migration file — `ROW_NUMBER()` example in `20260414223500_*`). Write the backfill in the same migration as the DDL.
 - **Typed Json fields are two edits**: `/// [TypeName]` doc comment on the field AND the declaration in `packages/graphql/src/types/app.ts` (`PrismaJson` namespace, shape from `@klicker-uzh/types`).
-- **Decimal fields**: Python client needs `enable_experimental_decimal = true` in `apps/analytics/prisma/schema/py.prisma` (already set — don't remove); TS side never truthy-checks Decimals.
-- **Don't touch synced Analytics model files by hand** — `prisma:sync` overwrites them while preserving Analytics-owned `py.prisma` and `datasource.prisma`.
+- **Decimal fields**: TS-side Prisma `Decimal` values are objects, so never truthy-check them. Python Analytics maps decimals through the curated `apps/analytics/src/models.py`. After a migration, run `pnpm --filter @klicker-uzh/analytics generate` to create the ignored `src/models.generated.py` reference, then reconcile only Analytics-used changes into `src/models.py`.
+- **Don't touch the synced Analytics Prisma mirror by hand** — `prisma:sync` overwrites shared model files while preserving the Analytics-owned `datasource.prisma`. The mirror is for review; the runtime uses SQLAlchemy.
 - **Participant email uniqueness is per auth mode** (`@@unique([email, isSSOAccount])`) — cross-mode duplicate prevention lives in service logic, not the schema.
 
 ## Seeds — three independent paths

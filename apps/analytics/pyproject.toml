@@ -49,8 +49,9 @@ url = "https://download.pytorch.org/whl/cpu"
 explicit = true
 
 [tool.poe.tasks]
-# Regenerate models.py from the live dev DB. Run after a Prisma migration lands.
-generate = "sqlacodegen --generator declarative $DATABASE_URL -o src/models.py"
+# Generate an introspected reference after a Prisma migration. Reconcile only
+# analytics-used mappings into the curated runtime model; never overwrite it.
+generate = "python scripts/generate_models_reference.py"
 
 [tool.pyright]
 typeCheckingMode = "strict"

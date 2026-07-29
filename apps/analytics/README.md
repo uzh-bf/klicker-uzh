@@ -12,14 +12,14 @@ This service computes learning analytics for KlickerUZH, providing insights into
 
 - The project uses uv for dependency management. Run `uv sync` in this folder to create the virtual environment and install deps.
 - The project uses PNPM to simplify the execution of scripts and to provide a watch mode for execution. Make sure that you have executed `pnpm install` in the repository before trying to run the commands below.
-- Make sure that all `.prisma` files are available in `prisma/`. If this is not the case, run the `util/sync-schema.sh` script first. The mirror is for schema review; the analytics runtime uses SQLAlchemy models generated from a live development database.
+- Make sure that all `.prisma` files are available in `prisma/`. If this is not the case, run the `util/sync-schema.sh` script first. The mirror is for schema review; the analytics runtime uses a curated SQLAlchemy model surface checked against a live development database.
 - Make sure that a valid Python environment is used (3.12). If needed, set the Python binary explicitly with `uv python pin 3.12` before running `uv sync`.
 
 ## Available Commands
 
 The following commands are available through PNPM:
 
-- `pnpm generate` - Regenerate the SQLAlchemy models from the live development database
+- `pnpm generate` - Generate the ignored `src/models.generated.py` reference from the live development database; reconcile relevant changes into `src/models.py`
 - `pnpm main` - Run the analytics service
 - `pnpm analytics:dev` - Start the service in watch mode for development
 

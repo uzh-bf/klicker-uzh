@@ -1016,10 +1016,45 @@ the repository script that replaces it before continuing.
   `packages/prisma-data/package.json`, and `pnpm-lock.yaml`; the next slice is
   to merge current v3 into Phase 1, verify it, then merge the refreshed Phase 1
   into Phase 2 and rerun the affected analytics gates.
-- Active: Refresh current v3 through both local branches without losing
-  analytics behavior, then request explicit publication confirmation for the
-  resulting stacked heads. After publication, update both PR descriptions and
-  read CI to a terminal result without merging or deploying.
+- 2026-07-29: Phase 1 now contains current `origin/v3` at merge commit
+  `7350ad1c13`. Conflict resolution preserves both documentation histories,
+  adopts the regenerated Prisma 7/pnpm lock state, and retains the Phase 1
+  Python analytics runtime. Repository `check:all` passes, Prisma Client Python
+  still generates for Phase 1, and all 36 Phase 1 Python tests pass.
+- 2026-07-29: The refreshed Phase 1 is merged into Phase 2 without restoring
+  the archived Prisma-Python runtime. The resolution keeps Prisma 7 for the
+  TypeScript client and deployment tooling, SQLAlchemy 2.x for the Analytics
+  runtime, and the guarded analytics-index deploy wrapper. Current
+  schema-mirror documentation and checks now require the Analytics-owned
+  datasource only; no current instruction references the deleted
+  `py.prisma`.
+- 2026-07-29: Phase 2 repository `check:all` passes all 25 runnable typechecks,
+  seven lint tasks, Prisma generation, 11 guarded analytics-index deploy tests,
+  formatting, Syncpack, AGENTS validation, and Prisma schema sync. Against a
+  fresh PostgreSQL 15 database initialized with the Prisma 7 schema, repository
+  seeds, and deterministic analytics interactions, the complete analytics
+  suite passes 199 tests with nine dependency/dataframe warnings in 64.90
+  seconds; Ruff reports no findings.
+- 2026-07-29: The verified Phase 2 reconciliation is committed as
+  `181c229cb2`. Independent spec review found no lost requirement, scope creep,
+  tRPC addition, or incorrect merge behavior. Standards review found one
+  contradictory model-ownership rule: current guidance could overwrite the
+  curated SQLAlchemy runtime model with an unfiltered introspection result.
+- 2026-07-29: The accepted review fix makes `src/models.py` explicitly curated
+  and generates the ignored `src/models.generated.py` reference through a
+  credential-safe Python wrapper. The wrapper selects the installed psycopg 3
+  driver, succeeds against the disposable migrated database, does not print
+  the connection string, and leaves the curated model hash unchanged. Ruff
+  passes across 138 files.
+- 2026-07-29: The full production monorepo build passes all 22 runnable build
+  tasks under Node 24 and pnpm 11.5.0. The first sandboxed attempt reached the
+  frontend builds but could not resolve Google Fonts; the allowed rerun
+  completed without a repository failure. Existing Rollup, page-size,
+  translation, and cache warnings remain non-blocking.
+- Active: Commit and review the accepted model-ownership fix, then request
+  explicit publication confirmation for the resulting stacked heads. After
+  publication, update both PR descriptions and read CI to a terminal result
+  without merging or deploying.
 
 ## Finish evidence
 
@@ -1033,9 +1068,8 @@ the repository script that replaces it before continuing.
 
 ## Next Steps
 
-1. Merge current `origin/v3` through Phase 1 and Phase 2, preserving the Prisma
-   7 runtime/dependency state and all analytics schema, seed, and worker
-   behavior; rerun affected verification.
+1. Commit and independently review the accepted SQLAlchemy model-ownership
+   correction.
 2. After explicit publication confirmation, push `chat-analytics` and
    `analytics-phase-a`, update both stacked draft PR descriptions, and read CI
    to a terminal result without merging or deploying.

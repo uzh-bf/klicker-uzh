@@ -1,3 +1,4 @@
 .venv/
 *.csv
 analytics-dryrun-*.xlsx
+src/models.generated.py
