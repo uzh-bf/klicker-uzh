@@ -1052,6 +1052,7 @@ describe('Unit tests covering the creation of derived permissions for elements',
         userId: userTwo.id,
         liveQuizId: activity.id,
         permissionLevel: PermissionLevel.READ,
+        propagation: true,
       },
     })
     await prisma.permission.create({
@@ -1059,6 +1060,7 @@ describe('Unit tests covering the creation of derived permissions for elements',
         userId: userThree.id,
         liveQuizId: activity.id,
         permissionLevel: PermissionLevel.WRITE,
+        propagation: true,
       },
     })
     const activityADMINPermissions = await prisma.permission.create({
