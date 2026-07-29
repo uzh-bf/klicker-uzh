@@ -1007,7 +1007,8 @@ export function createCodeApiClient(
 
   async function executeBatch(
     input: CodeApiSubmissionInput,
-    invocations: CodeApiInvocation[]
+    invocations: CodeApiInvocation[],
+    signal: AbortSignal
   ): Promise<CodeApiBatchResult> {
     signingKeyPromise ??= importCodeApiPrivateKey(config)
     const token = await signCodeApiJwt(
@@ -1029,11 +1030,6 @@ export function createCodeApiClient(
       perTestTimeoutSeconds: input.perTestTimeoutSeconds,
     })
 
-    const controller = new AbortController()
-    const timeout = setTimeout(
-      () => controller.abort(),
-      config.requestTimeoutMs
-    )
     let response: Response
     let responseText: string
     try {
@@ -1044,11 +1040,11 @@ export function createCodeApiClient(
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(request),
-        signal: controller.signal,
+        signal,
       })
       responseText = await readLimitedResponseBody(response)
     } catch (error) {
-      if (controller.signal.aborted) {
+      if (signal.aborted) {
         throw new CodeApiClientError(
           'request_timeout',
           'CodeAPI request timed out',
@@ -1059,8 +1055,6 @@ export function createCodeApiClient(
       throw new CodeApiClientError('request', 'CodeAPI request failed', {
         cause: error,
       })
-    } finally {
-      clearTimeout(timeout)
     }
 
     if (!response.ok) {
@@ -1121,11 +1115,28 @@ export function createCodeApiClient(
 
       let publicResult: CodeApiBatchResult | undefined
       let hiddenResult: CodeApiBatchResult | undefined
-      if (publicInvocations.length > 0) {
-        publicResult = await executeBatch(input, publicInvocations)
-      }
-      if (hiddenInvocations.length > 0) {
-        hiddenResult = await executeBatch(input, hiddenInvocations)
+      const controller = new AbortController()
+      const timeout = setTimeout(
+        () => controller.abort(),
+        config.requestTimeoutMs
+      )
+      try {
+        if (publicInvocations.length > 0) {
+          publicResult = await executeBatch(
+            input,
+            publicInvocations,
+            controller.signal
+          )
+        }
+        if (hiddenInvocations.length > 0) {
+          hiddenResult = await executeBatch(
+            input,
+            hiddenInvocations,
+            controller.signal
+          )
+        }
+      } finally {
+        clearTimeout(timeout)
       }
       if (
         publicResult &&

@@ -2672,27 +2672,56 @@ export async function recordCodeQuestionResponse({
     return
   }
 
-  const tests = Object.fromEntries(
-    Object.entries(previousResults.tests).map(([id, counts]) => [
-      id,
-      { ...counts },
-    ])
-  )
-  for (const testResult of allTestResults) {
-    const counts = tests[testResult.id]
-    if (!counts) {
-      throw new Error('CODE submission result references an unknown test')
+  const updateCodeResults = (
+    priorResults: ElementResultsCode
+  ): ElementResultsCode => {
+    const tests = Object.fromEntries(
+      Object.entries(priorResults.tests).map(([id, counts]) => [
+        id,
+        { ...counts },
+      ])
+    )
+    for (const testResult of allTestResults) {
+      const counts = tests[testResult.id]
+      if (!counts) {
+        throw new Error('CODE submission result references an unknown test')
+      }
+      counts.total += 1
+      if (testResult.passed) counts.passed += 1
     }
-    counts.total += 1
-    if (testResult.passed) counts.passed += 1
+    return {
+      tests,
+      submissions: {
+        ...priorResults.submissions,
+        [submission.id]: true,
+      },
+      total: priorResults.total + 1,
+    }
   }
-  const newAggResponses: ElementResultsCode = {
-    tests,
-    submissions: {
-      ...previousResults.submissions,
-      [submission.id]: true,
-    },
-    total: previousResults.total + 1,
+
+  const newInstanceResults = updateCodeResults(previousResults)
+  const existingParticipantResults = existingResponse?.aggregatedResponses
+  const previousParticipantResults: ElementResultsCode =
+    existingParticipantResults &&
+    'tests' in existingParticipantResults &&
+    'submissions' in existingParticipantResults
+      ? existingParticipantResults
+      : {
+          tests: Object.fromEntries(
+            Object.keys(previousResults.tests).map((id) => [
+              id,
+              { passed: 0, total: 0 },
+            ])
+          ),
+          submissions: {},
+          total: 0,
+        }
+  const newParticipantResults = updateCodeResults(previousParticipantResults)
+
+  if (
+    Object.keys(newParticipantResults.tests).length !== configuredTestIds.size
+  ) {
+    throw new Error('CODE participant results do not match configured tests')
   }
 
   const { newAverageResponseTime, newAverageInstanceTime } =
@@ -2714,7 +2743,7 @@ export async function recordCodeQuestionResponse({
   const updatedInstance = await prisma.elementInstance.update({
     where: { id: submission.elementInstanceId },
     data: {
-      results: newAggResponses,
+      results: newInstanceResults,
       instanceStatistics: statisticsUpdate,
     },
   })
@@ -2769,7 +2798,7 @@ export async function recordCodeQuestionResponse({
     lastXpAwardedAt: lastXpAwardedAt ?? new Date(),
     newAverageResponseTime,
     existingResponse,
-    newAggResponses,
+    newAggResponses: newParticipantResults,
     practiceQuizId: submission.practiceQuizId ?? undefined,
     microLearningId: submission.microLearningId ?? undefined,
     resultSpacedRepetition,

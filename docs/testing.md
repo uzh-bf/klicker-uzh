@@ -34,7 +34,7 @@ pnpm --filter @klicker-uzh/graphql exec vitest run \
   test/validateCodeOptions.test.ts
 ```
 
-These protect public-versus-hidden projection, option validation, shared JSON limits, supported activity types, CODE-only stack rules, asymmetric CodeAPI claims, invocation-only public/hidden requests, hostile response parsing, output caps, and exact JSON grading. When `python3` is available, `codeApi.test.ts` also executes the generated runner and verifies pass/error/timeout behavior, direct file-descriptor flooding, descendant cleanup, and process-group termination; Vitest marks those two tests skipped when Python is absent. These checks do not replace the database-backed submission lifecycle tests, the gated live CodeAPI smoke, or browser/e2e flows required by later slices.
+These protect public-versus-hidden projection, option validation, shared JSON limits, supported activity types, CODE-only stack rules, asymmetric CodeAPI claims, invocation-only public/hidden requests, hostile response parsing, output caps, one shared public/hidden grading deadline, and exact JSON grading. When `python3` is available, `codeApi.test.ts` also executes the generated runner and verifies pass/error/timeout behavior, direct file-descriptor flooding, descendant cleanup, and process-group termination; Vitest marks those two tests skipped when Python is absent. These checks do not replace the database-backed submission lifecycle tests, the gated live CodeAPI smoke, or browser/e2e flows required by later slices.
 
 The CODE receipt and finalization integration suite needs the GraphQL test database but not a live CodeAPI because it injects the already-sanitized grading result at the server boundary:
 
@@ -43,7 +43,7 @@ pnpm --filter @klicker-uzh/graphql exec vitest run \
   test/codeSubmissions.test.ts
 ```
 
-It covers active-receipt convergence, durable pending state after an enqueue failure, participant authorization, duplicate delivery, retry after failure and commit, expired-claim recovery, exhausted retries, a new attempt after `FAILED`, and exactly-once response, statistics, spaced-repetition, points, XP, leaderboard, and timeline writes. Keep the executor mocked in this suite; the service-free CodeAPI tests own runner and hostile-response behavior, while the gated live smoke owns the deployed integration.
+It covers active-receipt convergence, durable pending state after an enqueue failure, participant authorization, duplicate delivery, retry after failure and commit, expired and unexpired claim behavior, exhausted retries, a new attempt after `FAILED`, microlearning closure, concurrent participant finalization, separate global/participant aggregates, and exactly-once response, statistics, spaced-repetition, points, XP, leaderboard, and timeline writes. Keep the executor mocked in this suite; the service-free CodeAPI tests own runner and hostile-response behavior, while the gated live smoke owns the deployed integration.
 
 For Manage CODE browser proof, exercise the type transition itself: select CODE through `select-question-type`, require `code-options` to render without a CodeMirror console error, and verify `student-element-preview` contains public test names but no hidden test names. In the practice-quiz or microlearning wizard, a mixed CODE selection must disable the combined-stack action while leaving the separate-stack action enabled.
 

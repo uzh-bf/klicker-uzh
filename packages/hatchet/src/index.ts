@@ -41,8 +41,8 @@ export function prepareHatchetTasks({
   const gradeCodeSubmission = hatchet.task({
     name: 'grade-code-submission',
     retries: 2,
-    executionTimeout: '3m',
-    scheduleTimeout: '5m',
+    executionTimeout: '6m',
+    scheduleTimeout: '7m',
     fn: async (
       { submissionId }: { submissionId: string },
       executionContext

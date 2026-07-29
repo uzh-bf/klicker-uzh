@@ -16,11 +16,12 @@ import { recordCodeQuestionResponse } from './stacks.js'
 
 const CODE_SUBMISSION_MAX_BYTES = 64 * 1_024
 const CODE_SUBMISSION_MAX_ATTEMPTS = 3
-const CODE_SUBMISSION_CLAIM_MS = 4 * 60 * 1_000
+const CODE_SUBMISSION_CLAIM_MS = 7 * 60 * 1_000
 const CODE_SUBMISSION_FINALIZE_MS = 60 * 1_000
 const CODE_SUBMISSION_FAILURE_DETAILS_CHARS = 2_048
 
 type SubmissionRow = DB.CodeSubmission
+type CodeSubmissionReader = Pick<DB.Prisma.TransactionClient, 'codeSubmission'>
 type CodeSubmissionExecutor = (input: {
   subject: string
   role: string
@@ -63,6 +64,27 @@ function isUniqueConstraintError(error: unknown): boolean {
     error instanceof DB.Prisma.PrismaClientKnownRequestError &&
     error.code === 'P2002'
   )
+}
+
+async function findActiveCodeSubmission({
+  prisma,
+  participantId,
+  elementInstanceId,
+}: {
+  prisma: CodeSubmissionReader
+  participantId: string
+  elementInstanceId: number
+}) {
+  return await prisma.codeSubmission.findFirst({
+    where: {
+      participantId,
+      elementInstanceId,
+      status: {
+        in: [DB.CodeSubmissionStatus.PENDING, DB.CodeSubmissionStatus.RUNNING],
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  })
 }
 
 function validateSubmittedCode(code: string): void {
@@ -182,18 +204,10 @@ export async function submitCodeResponse(
         }
       }
 
-      const existing = await prisma.codeSubmission.findFirst({
-        where: {
-          participantId: ctx.user.sub,
-          elementInstanceId: instanceId,
-          status: {
-            in: [
-              DB.CodeSubmissionStatus.PENDING,
-              DB.CodeSubmissionStatus.RUNNING,
-            ],
-          },
-        },
-        orderBy: { createdAt: 'desc' },
+      const existing = await findActiveCodeSubmission({
+        prisma,
+        participantId: ctx.user.sub,
+        elementInstanceId: instanceId,
       })
       if (existing) return toReceipt(existing)
 
@@ -213,18 +227,10 @@ export async function submitCodeResponse(
     })
   } catch (error) {
     if (!isUniqueConstraintError(error)) throw error
-    const concurrent = await ctx.prisma.codeSubmission.findFirst({
-      where: {
-        participantId: ctx.user.sub,
-        elementInstanceId: instanceId,
-        status: {
-          in: [
-            DB.CodeSubmissionStatus.PENDING,
-            DB.CodeSubmissionStatus.RUNNING,
-          ],
-        },
-      },
-      orderBy: { createdAt: 'desc' },
+    const concurrent = await findActiveCodeSubmission({
+      prisma: ctx.prisma,
+      participantId: ctx.user.sub,
+      elementInstanceId: instanceId,
     })
     if (!concurrent) throw error
     receipt = toReceipt(concurrent)
@@ -327,6 +333,12 @@ async function finalizeCodeSubmission({
     })
     if (locked.count !== 1) return null
 
+    await transaction.$queryRaw`
+      SELECT "id"
+      FROM "ElementInstance"
+      WHERE "id" = ${submission.elementInstanceId}
+      FOR UPDATE
+    `
     await recordCodeQuestionResponse({
       prisma: transaction,
       submission,
@@ -491,6 +503,13 @@ export const handleRecoverCodeSubmissions: HatchetHandlers['handleRecoverCodeSub
         claimAttempts: { gte: CODE_SUBMISSION_MAX_ATTEMPTS },
         claimExpiresAt: { lt: now },
       },
+      orderBy: { createdAt: 'asc' },
+      take: 100,
+      select: {
+        id: true,
+        participantId: true,
+        claimToken: true,
+      },
     })
     for (const submission of exhausted) {
       const updated = await globalCtx.prisma.codeSubmission.updateMany({
@@ -512,11 +531,11 @@ export const handleRecoverCodeSubmissions: HatchetHandlers['handleRecoverCodeSub
       if (updated.count === 1) {
         globalCtx.pubSub.publish('codeSubmissionUpdated', {
           participantId: submission.participantId,
-          receipt: toReceipt({
-            ...submission,
-            status: DB.CodeSubmissionStatus.FAILED,
-            result: null,
-          }),
+          receipt: {
+            id: submission.id,
+            gradingStatus: DB.CodeSubmissionStatus.FAILED,
+            feedback: null,
+          },
         })
       }
     }

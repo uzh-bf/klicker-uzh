@@ -10,18 +10,6 @@ mutation SubmitCodeResponse(
     code: $code
     timeSpent: $timeSpent
   ) {
-    id
-    gradingStatus
-    feedback {
-      pointsPercentage
-      publicTestResults {
-        id
-        name
-        passed
-        actualOutput
-        stdout
-        stderr
-      }
-    }
+    ...CodeSubmissionReceiptData
   }
 }

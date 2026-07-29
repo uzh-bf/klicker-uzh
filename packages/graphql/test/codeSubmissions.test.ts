@@ -72,7 +72,9 @@ describe('CODE submission lifecycle', () => {
     await prisma.$disconnect()
   })
 
-  async function fixture() {
+  async function fixture(
+    activityKind: 'practiceQuiz' | 'microLearning' = 'practiceQuiz'
+  ) {
     const ownerId = randomUUID()
     const participantId = randomUUID()
     ownerIds.push(ownerId)
@@ -149,40 +151,62 @@ describe('CODE submission lifecycle', () => {
       { type: 'CODE' }
     >
 
-    const practiceQuiz = await prisma.practiceQuiz.create({
-      data: {
-        name: `quiz-${ownerId}`,
-        displayName: 'CODE quiz',
-        status: PublicationStatus.PUBLISHED,
-        ownerId: owner.id,
-        courseId: course.id,
-        stacks: {
-          create: {
-            type: ElementStackType.PRACTICE_QUIZ,
-            order: 0,
-            courseId: course.id,
-            elements: {
-              create: {
-                type: ElementInstanceType.PRACTICE_QUIZ,
-                elementType: ElementType.CODE,
-                order: 0,
-                options: { pointsMultiplier: 1, resetTimeDays: 6 },
-                elementData: codeElementData,
-                results: getInitialInstanceResults(codeElementData),
-                anonymousResults: getInitialInstanceResults(codeElementData),
-                elementId: element.id,
-                ownerId: owner.id,
-                instanceStatistics: { create: {} },
-              },
-            },
-          },
+    const stackData = {
+      type:
+        activityKind === 'practiceQuiz'
+          ? ElementStackType.PRACTICE_QUIZ
+          : ElementStackType.MICROLEARNING,
+      order: 0,
+      courseId: course.id,
+      elements: {
+        create: {
+          type:
+            activityKind === 'practiceQuiz'
+              ? ElementInstanceType.PRACTICE_QUIZ
+              : ElementInstanceType.MICROLEARNING,
+          elementType: ElementType.CODE,
+          order: 0,
+          options: { pointsMultiplier: 1, resetTimeDays: 6 },
+          elementData: codeElementData,
+          results: getInitialInstanceResults(codeElementData),
+          anonymousResults: getInitialInstanceResults(codeElementData),
+          elementId: element.id,
+          ownerId: owner.id,
+          instanceStatistics: { create: {} },
         },
       },
-      include: {
-        stacks: { include: { elements: true } },
-      },
-    })
-    const instance = practiceQuiz.stacks[0]!.elements[0]!
+    }
+    const activity =
+      activityKind === 'practiceQuiz'
+        ? await prisma.practiceQuiz.create({
+            data: {
+              name: `quiz-${ownerId}`,
+              displayName: 'CODE quiz',
+              status: PublicationStatus.PUBLISHED,
+              ownerId: owner.id,
+              courseId: course.id,
+              stacks: { create: stackData },
+            },
+            include: {
+              stacks: { include: { elements: true } },
+            },
+          })
+        : await prisma.microLearning.create({
+            data: {
+              name: `micro-${ownerId}`,
+              displayName: 'CODE microlearning',
+              status: PublicationStatus.PUBLISHED,
+              scheduledStartAt: new Date(now.getTime() - 86_400_000),
+              scheduledEndAt: new Date(now.getTime() + 86_400_000),
+              ownerId: owner.id,
+              courseId: course.id,
+              stacks: { create: stackData },
+            },
+            include: {
+              stacks: { include: { elements: true } },
+            },
+          })
+    const instance = activity.stacks[0]!.elements[0]!
     const runNoWait = vi.fn().mockResolvedValue({ workflowRunId: randomUUID() })
     const publish = vi.fn()
     const ctx = {
@@ -227,6 +251,30 @@ describe('CODE submission lifecycle', () => {
       },
       data.ctx
     )
+  }
+
+  async function addParticipant(data: Awaited<ReturnType<typeof fixture>>) {
+    const participant = await prisma.participant.create({
+      data: {
+        username: `participant-${randomUUID()}`,
+        password: 'test',
+      },
+    })
+    participantIds.push(participant.id)
+    await prisma.participation.create({
+      data: {
+        courseId: data.course.id,
+        participantId: participant.id,
+        isActive: true,
+      },
+    })
+    return {
+      participant,
+      ctx: {
+        ...data.ctx,
+        user: { ...data.ctx.user, sub: participant.id },
+      } as ContextWithUser,
+    }
   }
 
   it('returns one active receipt for concurrent resubmissions', async () => {
@@ -384,6 +432,123 @@ describe('CODE submission lifecycle', () => {
     )
   })
 
+  it('serializes concurrent participant aggregate updates', async () => {
+    const data = await fixture()
+    const other = await addParticipant(data)
+    const first = await submit(data)
+    const second = await submitCodeResponse(
+      {
+        instanceId: data.instance.id,
+        courseId: data.course.id,
+        code: 'def solve(a, b):\n    return a + b',
+        timeSpent: 12,
+      },
+      other.ctx
+    )
+    let executions = 0
+    let releaseExecutions!: () => void
+    const executionsReady = new Promise<void>((resolve) => {
+      releaseExecutions = resolve
+    })
+    const execute = vi.fn().mockImplementation(async () => {
+      executions += 1
+      if (executions === 2) releaseExecutions()
+      await executionsReady
+      return executorResult
+    })
+
+    await Promise.all([
+      processCodeSubmission(
+        { submissionId: first.id },
+        data.globalCtx,
+        execute
+      ),
+      processCodeSubmission(
+        { submissionId: second.id },
+        data.globalCtx,
+        execute
+      ),
+    ])
+
+    const instance = await prisma.elementInstance.findUniqueOrThrow({
+      where: { id: data.instance.id },
+      include: { instanceStatistics: true },
+    })
+    expect(instance.results).toMatchObject({
+      total: 2,
+      tests: {
+        public: { passed: 2, total: 2 },
+        hidden: { passed: 2, total: 2 },
+      },
+      submissions: {
+        [first.id]: true,
+        [second.id]: true,
+      },
+    })
+    expect(instance.instanceStatistics).toMatchObject({
+      correctCount: 2,
+      uniqueParticipantCount: 2,
+      averageTimeSpent: 12,
+    })
+    expect(
+      await prisma.questionResponseDetail.count({
+        where: { elementInstanceId: data.instance.id },
+      })
+    ).toBe(2)
+
+    const retry = await submit(data)
+    expect(
+      await processCodeSubmission(
+        { submissionId: retry.id },
+        data.globalCtx,
+        vi.fn().mockResolvedValue(executorResult)
+      )
+    ).toBe(true)
+    const [firstResponse, secondResponse, retriedInstance] = await Promise.all([
+      prisma.questionResponse.findUniqueOrThrow({
+        where: {
+          participantId_elementInstanceId: {
+            participantId: data.participant.id,
+            elementInstanceId: data.instance.id,
+          },
+        },
+      }),
+      prisma.questionResponse.findUniqueOrThrow({
+        where: {
+          participantId_elementInstanceId: {
+            participantId: other.participant.id,
+            elementInstanceId: data.instance.id,
+          },
+        },
+      }),
+      prisma.elementInstance.findUniqueOrThrow({
+        where: { id: data.instance.id },
+      }),
+    ])
+    expect(firstResponse.aggregatedResponses).toMatchObject({
+      total: 2,
+      submissions: { [first.id]: true, [retry.id]: true },
+    })
+    expect(firstResponse.aggregatedResponses).not.toHaveProperty(
+      `submissions.${second.id}`
+    )
+    expect(secondResponse.aggregatedResponses).toMatchObject({
+      total: 1,
+      submissions: { [second.id]: true },
+    })
+    expect(secondResponse.aggregatedResponses).not.toHaveProperty(
+      `submissions.${first.id}`
+    )
+    expect(retriedInstance.results).toMatchObject({
+      total: 3,
+      submissions: {
+        [first.id]: true,
+        [second.id]: true,
+        [retry.id]: true,
+      },
+    })
+  })
+
   it('retries a failed attempt without leaking partial side effects', async () => {
     const data = await fixture()
     const receipt = await submit(data)
@@ -442,6 +607,40 @@ describe('CODE submission lifecycle', () => {
     ).toMatchObject({
       status: CodeSubmissionStatus.COMPLETED,
       claimAttempts: 2,
+    })
+  })
+
+  it('does not overlap an unexpired worker claim', async () => {
+    const data = await fixture()
+    const receipt = await submit(data)
+    const claimToken = randomUUID()
+    await prisma.codeSubmission.update({
+      where: { id: receipt.id },
+      data: {
+        status: CodeSubmissionStatus.RUNNING,
+        claimToken,
+        claimExpiresAt: new Date(Date.now() + 60_000),
+        claimAttempts: 1,
+      },
+    })
+    const execute = vi.fn().mockResolvedValue(executorResult)
+
+    expect(
+      await processCodeSubmission(
+        { submissionId: receipt.id },
+        data.globalCtx,
+        execute
+      )
+    ).toBe(false)
+    expect(execute).not.toHaveBeenCalled()
+    expect(
+      await prisma.codeSubmission.findUniqueOrThrow({
+        where: { id: receipt.id },
+      })
+    ).toMatchObject({
+      status: CodeSubmissionStatus.RUNNING,
+      claimToken,
+      claimAttempts: 1,
     })
   })
 
@@ -518,6 +717,32 @@ describe('CODE submission lifecycle', () => {
         }),
       })
     )
+  })
+
+  it('finalizes a microlearning receipt and closes resubmission', async () => {
+    const data = await fixture('microLearning')
+    const receipt = await submit(data)
+
+    expect(
+      await processCodeSubmission(
+        { submissionId: receipt.id },
+        data.globalCtx,
+        vi.fn().mockResolvedValue(executorResult)
+      )
+    ).toBe(true)
+    await expect(submit(data)).rejects.toMatchObject({
+      extensions: { code: 'BAD_USER_INPUT' },
+    })
+    expect(
+      await prisma.questionResponse.findUnique({
+        where: {
+          participantId_elementInstanceId: {
+            participantId: data.participant.id,
+            elementInstanceId: data.instance.id,
+          },
+        },
+      })
+    ).not.toBeNull()
   })
 
   it('does not expose another participant submission', async () => {

@@ -425,6 +425,58 @@ describe('CodeAPI execution requests', () => {
     expect(fetchMock).toHaveBeenCalledOnce()
   })
 
+  it('shares one grading deadline across public and hidden batches', async () => {
+    let firstSignal: AbortSignal | null = null
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockImplementation(async (_input, init) => {
+        if (!firstSignal) {
+          firstSignal = init!.signal!
+          return new Response(
+            JSON.stringify(
+              executeResponse('public-session', [
+                {
+                  id: 'public-1',
+                  status: 'ok',
+                  actualOutput: 1,
+                  stdout: '',
+                  stderr: '',
+                },
+              ])
+            ),
+            { status: 200 }
+          )
+        }
+        expect(init!.signal).toBe(firstSignal)
+        return new Response(
+          new ReadableStream({
+            start(controller) {
+              init!.signal!.addEventListener('abort', () => {
+                controller.error(new Error('hidden response body aborted'))
+              })
+            },
+          }),
+          { status: 200 }
+        )
+      })
+    const client = createCodeApiClient(config({ requestTimeoutMs: 1_000 }), {
+      fetch: fetchMock,
+    })
+
+    await expect(
+      client.executeAndGrade(
+        submission([
+          codeTest(),
+          codeTest({ id: 'hidden-1', visibility: 'hidden' }),
+        ])
+      )
+    ).rejects.toMatchObject({
+      name: 'CodeApiClientError',
+      kind: 'request_timeout',
+    })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
   it('rejects more than 20 configured tests before making a request', async () => {
     const fetchMock = vi.fn<typeof fetch>()
     const client = createCodeApiClient(config(), { fetch: fetchMock })

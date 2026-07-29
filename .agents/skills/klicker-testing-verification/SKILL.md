@@ -50,7 +50,7 @@ pnpm --filter @klicker-uzh/graphql exec vitest run \
   test/codeSubmissions.test.ts
 ```
 
-Require active-receipt convergence, durable pending state after enqueue failure, participant-scoped readback, duplicate delivery, retry after failure and commit, expired claims, exhausted retries, `FAILED` retry, and exactly-once response/statistics/spaced-repetition/points/XP/leaderboard/timeline assertions. Mock only the sanitized CodeAPI executor result at this seam; runner and hostile-response behavior belongs to the service-free client suite. UI slices still require routed browser/e2e proof.
+Require active-receipt convergence, durable pending state after enqueue failure, participant-scoped readback, duplicate delivery, retry after failure and commit, expired and unexpired claims, exhausted retries, `FAILED` retry, concurrent participant finalization, separate instance/participant aggregates, microlearning closure, and exactly-once response/statistics/spaced-repetition/points/XP/leaderboard/timeline assertions. Mock only the sanitized CodeAPI executor result at this seam; runner and hostile-response behavior belongs to the service-free client suite. UI slices still require routed browser/e2e proof.
 
 Manage CODE browser proof must select CODE through `select-question-type`, assert `code-options` renders without a CodeMirror console error, and confirm `student-element-preview` includes public test names but no hidden test names. In a practice-quiz or microlearning wizard, mixed CODE selection must disable the combined-stack action while the separate-stack action remains enabled.
 

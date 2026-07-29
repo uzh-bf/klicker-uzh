@@ -1,17 +1,5 @@
 query CodeSubmission($id: ID!) {
   codeSubmission(id: $id) {
-    id
-    gradingStatus
-    feedback {
-      pointsPercentage
-      publicTestResults {
-        id
-        name
-        passed
-        actualOutput
-        stdout
-        stderr
-      }
-    }
+    ...CodeSubmissionReceiptData
   }
 }
