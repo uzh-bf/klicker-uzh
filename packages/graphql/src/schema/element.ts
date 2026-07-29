@@ -64,13 +64,17 @@ import {
   NumericalSolutionRange,
   SelectionElementOptions,
 } from './elementData.js'
+import { sharedElementProps, type IBaseElementProps } from './elementShared.js'
 import { FlashcardCorrectness } from './evaluation.js'
 import {
   CaseStudyCaseResponse,
   ChoicesResponse,
   PublicationStatus,
 } from './practiceQuiz.js'
-import { PermissionLevel, SharingType } from './sharing.js'
+import { QrScanElement, type IQrScanElement } from './qrScan.js'
+
+export { Tag } from './elementShared.js'
+export { QrScanPrintData } from './qrScan.js'
 
 export const SortByType = builder.enumType('SortByType', {
   values: Object.values(SortByTypeEnum),
@@ -720,57 +724,6 @@ export const InstanceEvaluation = builder.unionType('InstanceEvaluation', {
 
 // ----- ELEMENT INTERFACE -----
 // #region
-interface IBaseElementProps extends Omit<DB.Element, 'ownerId'> {
-  tags?: ITag[] | null
-  permissionLevel?: DB.PermissionLevel
-  derivedAccess?: boolean // = derived from other object => removal disabled
-  numSharedUsers?: number
-  isOwner?: boolean // = OWNER
-  isManager?: boolean // = OWNER / ADMIN
-  isEditor?: boolean // = OWNER / ADMIN / WRITE
-  isImported?: boolean // imported flag for UI icon
-  isShared?: boolean // flag to signal whether the object is owned or shared
-  isRemovable?: boolean // = derived from other object / direct user group permission => removal disabled
-}
-
-const sharedElementProps = (t: any) => ({
-  id: t.exposeInt('id'),
-
-  version: t.exposeInt('version'),
-  name: t.exposeString('name'),
-  status: t.expose('status', { type: ElementStatus }),
-  type: t.expose('type', { type: ElementType }),
-  content: t.exposeString('content'),
-  explanation: t.exposeString('explanation', { nullable: true }),
-  basePoints: t.exposeBoolean('basePoints'),
-  pointsMultiplier: t.exposeInt('pointsMultiplier'),
-
-  isArchived: t.exposeBoolean('isArchived', { nullable: true }),
-  isDeleted: t.exposeBoolean('isDeleted', { nullable: true }),
-
-  createdAt: t.expose('createdAt', { type: 'Date', nullable: true }),
-  updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),
-
-  permissionLevel: t.expose('permissionLevel', {
-    type: PermissionLevel,
-    nullable: true,
-  }),
-  derivedAccess: t.exposeBoolean('derivedAccess', { nullable: true }),
-  numSharedUsers: t.exposeInt('numSharedUsers', { nullable: true }),
-  isOwner: t.exposeBoolean('isOwner', { nullable: true }),
-  isManager: t.exposeBoolean('isManager', { nullable: true }),
-  isEditor: t.exposeBoolean('isEditor', { nullable: true }),
-  isImported: t.exposeBoolean('isImported', { nullable: true }),
-  isShared: t.exposeBoolean('isShared', { nullable: true }),
-  isRemovable: t.exposeBoolean('isRemovable', { nullable: true }),
-  sharingType: t.expose('sharingType', { type: SharingType, nullable: true }),
-
-  tags: t.expose('tags', {
-    type: [TagRef],
-    nullable: true,
-  }),
-})
-
 export interface IChoicesElement extends IBaseElementProps {
   options: ElementOptionsChoicesType
 }
@@ -846,34 +799,6 @@ export const ContentElement = builder
   .implement({
     fields: (t) => ({
       ...sharedElementProps(t),
-    }),
-  })
-
-export interface IQrScanElement extends IBaseElementProps {}
-export const QrScanElement = builder
-  .objectRef<IQrScanElement>('QrScanElement')
-  .implement({
-    fields: (t) => ({
-      ...sharedElementProps(t),
-    }),
-  })
-
-export interface IQrScanPrintData {
-  elementId: number
-  name: string
-  content: string
-  code: string
-  decoys: string[]
-}
-export const QrScanPrintData = builder
-  .objectRef<IQrScanPrintData>('QrScanPrintData')
-  .implement({
-    fields: (t) => ({
-      elementId: t.exposeInt('elementId'),
-      name: t.exposeString('name'),
-      content: t.exposeString('content'),
-      code: t.exposeString('code'),
-      decoys: t.exposeStringList('decoys'),
     }),
   })
 
@@ -1003,14 +928,3 @@ export const InstanceUpdateActivityInfo =
       status: t.expose('status', { type: PublicationStatus }),
     }),
   })
-
-export interface ITag
-  extends Omit<DB.Tag, 'ownerId' | 'createdAt' | 'updatedAt'> {}
-export const TagRef = builder.objectRef<ITag>('Tag')
-export const Tag = TagRef.implement({
-  fields: (t) => ({
-    id: t.exposeInt('id'),
-    name: t.exposeString('name'),
-    order: t.exposeInt('order'),
-  }),
-})
