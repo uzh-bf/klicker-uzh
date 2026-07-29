@@ -41,7 +41,7 @@ const PARTICIPANT_COURSE_LIMIT = 60
 
 const INCREMENT_WITH_EXPIRY_SCRIPT = `
 local current = redis.call('INCR', KEYS[1])
-if current == 1 then
+if current == 1 or redis.call('TTL', KEYS[1]) < 0 then
   redis.call('EXPIRE', KEYS[1], ARGV[1])
 end
 return current

@@ -143,6 +143,10 @@ export function registerAnonymousRateLimitsSuite(
         anonymousCtx
       )
 
+    const staleCounterKey = `discussion:anon:course:${course.id}:${hashAnonymousFingerprint(anonymousCtx, course.id)}`
+    await anonymousCtx.redisExec.set(staleCounterKey, '1')
+    expect(await anonymousCtx.redisExec.ttl(staleCounterKey)).toBe(-1)
+
     expect(await createAnonymousThread()).toBeTruthy()
     const counterKeys = await anonymousCtx.redisExec.keys(
       `discussion:anon:*:${course.id}:*`
