@@ -10,6 +10,7 @@ import { useLocalStorage } from '@uidotdev/usehooks'
 import { useEffect } from 'react'
 
 export interface PersistedCodeSubmission {
+  participantId: string
   receiptId: string
   code: string
   gradingStatus: CodeSubmissionStatus
@@ -18,6 +19,8 @@ export interface PersistedCodeSubmission {
 
 interface UseCodeSubmissionProps {
   storageKey: string
+  enabled: boolean
+  participantId?: string
 }
 
 function isActive(status?: CodeSubmissionStatus) {
@@ -27,12 +30,23 @@ function isActive(status?: CodeSubmissionStatus) {
   )
 }
 
-function useCodeSubmission({ storageKey }: UseCodeSubmissionProps) {
-  const [submission, setSubmission] =
-    useLocalStorage<PersistedCodeSubmission | null>(storageKey, null)
+function useCodeSubmission({
+  storageKey,
+  enabled,
+  participantId,
+}: UseCodeSubmissionProps) {
+  const [persistedSubmission, setPersistedSubmission] = useLocalStorage<
+    PersistedCodeSubmission | undefined
+  >(storageKey, undefined)
+  const submission =
+    enabled &&
+    participantId &&
+    persistedSubmission?.participantId === participantId
+      ? persistedSubmission
+      : undefined
   const [submitMutation, { loading: submitting, error: submissionError }] =
     useMutation(SubmitCodeResponseDocument)
-  const active = isActive(submission?.gradingStatus)
+  const active = enabled && isActive(submission?.gradingStatus)
 
   const {
     data: queryData,
@@ -40,7 +54,7 @@ function useCodeSubmission({ storageKey }: UseCodeSubmissionProps) {
     loading: queryLoading,
   } = useQuery(CodeSubmissionDocument, {
     variables: { id: submission?.receiptId ?? '' },
-    skip: !submission?.receiptId,
+    skip: !enabled || !submission?.receiptId,
     fetchPolicy: 'network-only',
     pollInterval: active ? 2_000 : 0,
   })
@@ -48,7 +62,7 @@ function useCodeSubmission({ storageKey }: UseCodeSubmissionProps) {
     CodeSubmissionUpdatedDocument,
     {
       variables: { id: submission?.receiptId ?? '' },
-      skip: !submission?.receiptId || !active,
+      skip: !enabled || !submission?.receiptId || !active,
     }
   )
 
@@ -62,19 +76,31 @@ function useCodeSubmission({ storageKey }: UseCodeSubmissionProps) {
         : (subscriptionReceipt ?? queryReceipt)
 
   useEffect(() => {
+    if (
+      enabled &&
+      participantId &&
+      persistedSubmission &&
+      persistedSubmission.participantId !== participantId
+    ) {
+      setPersistedSubmission(undefined)
+    }
+  }, [enabled, participantId, persistedSubmission, setPersistedSubmission])
+
+  useEffect(() => {
     if (!receipt || !submission || receipt.id !== submission.receiptId) return
+    if (!isActive(submission.gradingStatus)) return
 
     if (
       receipt.gradingStatus !== submission.gradingStatus ||
-      receipt.feedback !== submission.feedback
+      (!submission.feedback && receipt.feedback)
     ) {
-      setSubmission({
+      setPersistedSubmission({
         ...submission,
         gradingStatus: receipt.gradingStatus,
         feedback: receipt.feedback,
       })
     }
-  }, [receipt, setSubmission, submission])
+  }, [receipt, setPersistedSubmission, submission])
 
   useEffect(() => {
     if (
@@ -84,13 +110,13 @@ function useCodeSubmission({ storageKey }: UseCodeSubmissionProps) {
       submission &&
       isActive(submission.gradingStatus)
     ) {
-      setSubmission({
+      setPersistedSubmission({
         ...submission,
         gradingStatus: CodeSubmissionStatus.Failed,
         feedback: null,
       })
     }
-  }, [queryData, queryLoading, setSubmission, submission])
+  }, [queryData, queryLoading, setPersistedSubmission, submission])
 
   const submit = async ({
     instanceId,
@@ -103,6 +129,8 @@ function useCodeSubmission({ storageKey }: UseCodeSubmissionProps) {
     code: string
     timeSpent: number
   }) => {
+    if (!enabled || !participantId) return false
+
     try {
       const result = await submitMutation({
         variables: {
@@ -115,7 +143,8 @@ function useCodeSubmission({ storageKey }: UseCodeSubmissionProps) {
       const receipt = result.data?.submitCodeResponse
       if (!receipt) return false
 
-      setSubmission({
+      setPersistedSubmission({
+        participantId,
         receiptId: receipt.id,
         code,
         gradingStatus: receipt.gradingStatus,

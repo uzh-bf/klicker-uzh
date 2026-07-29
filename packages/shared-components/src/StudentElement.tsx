@@ -296,8 +296,8 @@ function StudentElement({
         content={element.elementData.content}
         options={element.elementData.options}
         response={
-          response ??
           (stackStorage?.[element.id]?.response as string | undefined) ??
+          response ??
           element.elementData.options.starterCode ??
           ''
         }

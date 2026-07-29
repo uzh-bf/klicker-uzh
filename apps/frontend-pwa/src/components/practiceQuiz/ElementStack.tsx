@@ -51,6 +51,8 @@ interface ElementStackProps {
   activityExpired?: boolean
   activityExpiredMessage?: string
   previewOnly?: boolean
+  participantId?: string
+  codeSubmissionEnabled?: boolean
 }
 
 function ElementStack({
@@ -70,6 +72,8 @@ function ElementStack({
   activityExpired = false,
   activityExpiredMessage,
   previewOnly = false,
+  participantId,
+  codeSubmissionEnabled = false,
 }: ElementStackProps) {
   const t = useTranslations()
   const timeRef = useRef(0)
@@ -91,17 +95,21 @@ function ElementStack({
     withParticipant: withParticipant,
   })
 
+  const codeElement = stack.elements?.find(
+    (element) => element.elementType === ElementType.Code
+  )
+  const codeSubmissionAvailable =
+    !!codeElement && codeSubmissionEnabled && !!participantId
   const [stackStorage, setStackStorage] =
     useLocalStorage<StackStudentResponseType>(
-      `qi-${parentId}-${stack.id}`,
+      codeElement
+        ? `qi-code-${parentId}-${stack.id}-${participantId ?? 'unresolved'}`
+        : `qi-${parentId}-${stack.id}`,
       undefined
     )
 
   const [studentResponse, setStudentResponse] =
     useState<StackStudentResponseType>({})
-  const codeElement = stack.elements?.find(
-    (element) => element.elementType === ElementType.Code
-  )
   const {
     submission: codeSubmission,
     submit: submitCodeResponse,
@@ -111,6 +119,8 @@ function ElementStack({
     active: codeSubmissionActive,
   } = useCodeSubmission({
     storageKey: `code-submission-${parentId}-${stack.id}`,
+    enabled: codeSubmissionAvailable,
+    participantId,
   })
 
   const [openEvaluations, setOpenEvaluations] = useState<Set<number>>(new Set())
@@ -453,7 +463,8 @@ function ElementStack({
                     preview={embedded && !openEvaluations.has(element.id)}
                     disabledInput={
                       element.elementType === ElementType.Code &&
-                      (codeSubmissionActive ||
+                      (!codeSubmissionAvailable ||
+                        codeSubmissionActive ||
                         codeSubmission?.gradingStatus ===
                           CodeSubmissionStatus.Completed)
                     }
@@ -463,13 +474,13 @@ function ElementStack({
             })}
         </div>
 
-        {codeSubmission && (
+        {codeElement && codeSubmission && (
           <CodeSubmissionStatusPanel
             submission={codeSubmission}
             pollingUnavailable={!!codePollingError}
           />
         )}
-        {codeSubmissionError && !codeSubmission && (
+        {codeElement && codeSubmissionError && !codeSubmission && (
           <div className="mt-4" data-cy="code-submission-failed">
             <UserNotification
               type="error"
@@ -557,14 +568,15 @@ function ElementStack({
               Object.values(studentResponse).some(
                 (response) => !response.valid
               ) ||
-              codeSubmissionActive ||
+              (!!codeElement && !codeSubmissionAvailable) ||
+              (!!codeElement && codeSubmissionActive) ||
               (!!codeElement && previewOnly)
             }
             className={{
               root: embeddedButtonClass,
             }}
             onClick={async () => {
-              if (codeElement && !previewOnly) {
+              if (codeElement && codeSubmissionAvailable && !previewOnly) {
                 const response = studentResponse[codeElement.id]
                 if (
                   response?.type !== ElementType.Code ||

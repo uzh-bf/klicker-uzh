@@ -94,6 +94,15 @@ async function authenticateParticipant(page: Page, participantId: string) {
       scope: 'ACCOUNT_OWNER',
     },
   })
+  const participantCookie = (await page.context().cookies()).find(
+    (cookie) => cookie.name === 'participant_token'
+  )
+  if (!participantCookie) throw new Error('Participant cookie was not created')
+
+  await page.goto(targetUrl, { waitUntil: 'domcontentloaded' })
+  await page.evaluate((token) => {
+    sessionStorage.setItem('participant_token', token)
+  }, participantCookie.value)
 }
 
 test.describe.serial('CODE practice-quiz participant flow', () => {
@@ -255,6 +264,26 @@ test.describe.serial('CODE practice-quiz participant flow', () => {
     )
     await expect(page.getByText('Hidden sum example')).toHaveCount(0)
     await expect(page.getByTestId('student-stack-continue')).toBeVisible()
+
+    status = 'PENDING'
+    await page.reload()
+    await page.getByTestId('start-practice-quiz').click()
+    await expect(page.getByTestId('code-submission-completed')).toBeVisible()
+    await expect(page.getByTestId('code-response-editor')).toContainText(
+      'return a + b'
+    )
+    await expect(page.getByTestId('student-stack-continue')).toBeVisible()
+
+    await authenticateParticipant(page, PARTICIPANT_IDS[1]!)
+    await page.goto(
+      `${env('URL_STUDENT')}/course/${COURSE_ID_TEST}/practiceQuizzes/${QUIZ_ID}`
+    )
+    await page.getByTestId('start-practice-quiz').click()
+    await expect(page.getByTestId('code-response-editor')).toContainText(
+      'return 0'
+    )
+    await expect(page.getByTestId('code-submission-completed')).toHaveCount(0)
+    await expect(page.getByTestId('student-stack-submit')).toBeEnabled()
   })
 
   test('keeps the code editable after failure and persists the retry receipt', async ({

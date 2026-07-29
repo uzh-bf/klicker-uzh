@@ -119,6 +119,7 @@ function MicrolearningInstance() {
             activityExpired={microLearning.status === PublicationStatus.Ended}
             activityExpiredMessage={t('pwa.microLearning.activityExpired')}
             previewOnly={previewMode}
+            participantId={selfData?.self?.id}
           />
         </div>
       </div>
