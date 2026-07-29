@@ -47,6 +47,7 @@ function CourseDiscussionThreadCard({
   const formatter = useFormatter()
   const [replyDraft, setReplyDraft] = useState('')
   const [postReplyAnonymous, setPostReplyAnonymous] = useState(false)
+  const [replyComposerOpen, setReplyComposerOpen] = useState(false)
   const [submittingReply, setSubmittingReply] = useState(false)
   const [createReply] = useMutation(CreateCourseDiscussionReplyDocument)
   const [toggleThreadUpvote] = useMutation(
@@ -154,6 +155,7 @@ function CourseDiscussionThreadCard({
       dateStyle: 'medium',
       timeStyle: 'short',
     })
+  const replyComposerId = `${idPrefix}-reply-composer-${thread.id}`
 
   return (
     <div
@@ -217,6 +219,18 @@ function CourseDiscussionThreadCard({
         <span className="text-xs text-gray-500">
           {t('pwa.courseQA.nReply', { count: thread.replyCount })}
         </span>
+        {canPost && (
+          <Button
+            onClick={() => setReplyComposerOpen((open) => !open)}
+            active={replyComposerOpen}
+            className={{ root: 'h-8' }}
+            aria-expanded={replyComposerOpen}
+            aria-controls={replyComposerId}
+            data={{ cy: `course-qa-open-reply-${thread.id}` }}
+          >
+            <Button.Label>{t('pwa.courseQA.reply')}</Button.Label>
+          </Button>
+        )}
       </div>
 
       <div className="mt-3 flex flex-col gap-2 border-l border-gray-200 pl-3">
@@ -275,8 +289,11 @@ function CourseDiscussionThreadCard({
           </div>
         ))}
 
-        {canPost && (
-          <div className="mt-1 rounded-md border border-gray-200 p-2">
+        {canPost && replyComposerOpen && (
+          <div
+            id={replyComposerId}
+            className="mt-1 rounded-md border border-gray-200 p-2"
+          >
             <textarea
               name={`${idPrefix}-reply-content-${thread.id}`}
               rows={2}
@@ -313,7 +330,19 @@ function CourseDiscussionThreadCard({
                 </p>
               ) : null)}
 
-            <div className="mt-2 flex justify-end">
+            <div className="mt-2 flex justify-end gap-2">
+              <Button
+                disabled={submittingReply}
+                onClick={() => {
+                  setReplyComposerOpen(false)
+                  setReplyDraft('')
+                  setPostReplyAnonymous(false)
+                }}
+                className={{ root: 'h-8' }}
+                data={{ cy: `course-qa-cancel-reply-${thread.id}` }}
+              >
+                <Button.Label>{t('shared.generic.cancel')}</Button.Label>
+              </Button>
               <Button
                 primary
                 loading={submittingReply}

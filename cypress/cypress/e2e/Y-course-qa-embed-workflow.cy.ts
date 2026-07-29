@@ -190,6 +190,7 @@ describe('Course Q&A embed workflow', function () {
     cy.get('[data-cy="course-qa-create-thread"]').should('not.exist')
     cy.get('[data-cy^="course-qa-reply-input-"]').should('not.exist')
     cy.get('[data-cy^="course-qa-create-reply-"]').should('not.exist')
+    cy.get('[data-cy^="course-qa-open-reply-"]').should('not.exist')
     cy.get('[data-cy^="course-qa-thread-upvote-"]').should('not.exist')
     cy.get('[data-cy^="course-qa-reply-upvote-"]').should('not.exist')
   })
@@ -209,6 +210,8 @@ describe('Course Q&A embed workflow', function () {
       .parents('[data-cy^="course-qa-thread-"]')
       .first()
       .within(() => {
+        cy.get('[data-cy^="course-qa-reply-input-"]').should('not.exist')
+        cy.get('[data-cy^="course-qa-open-reply-"]').click()
         cy.get('[data-cy^="course-qa-reply-input-"]').type(
           this.data.embed.anonymousReply
         )
