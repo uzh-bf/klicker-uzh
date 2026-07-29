@@ -45,6 +45,15 @@ function createDeferred<T>() {
   return { promise, resolve }
 }
 
+function legacyUrlResources(kbId: string, count: number) {
+  return Array.from({ length: count }, (_, index) => ({
+    kbId,
+    type: KBResourceType.URL,
+    title: `Legacy URL ${index}`,
+    sourceUrl: `https://example.com/legacy-${index}`,
+  }))
+}
+
 function withIngestionClaimSignal(
   ctx: ContextWithUser,
   onClaim: () => void
@@ -834,12 +843,7 @@ describe('Integration tests for knowledge base CRUD', () => {
   it('reserves the final byte-quota placeholder and rejects concurrent URL claims beyond it', async () => {
     const created = await createKb({ name: 'Legacy URLs' }, userOneCtx)
     await prisma.kBResource.createMany({
-      data: Array.from({ length: 19 }, (_, index) => ({
-        kbId: created.id,
-        type: KBResourceType.URL,
-        title: `Legacy URL ${index}`,
-        sourceUrl: `https://example.com/legacy-${index}`,
-      })),
+      data: legacyUrlResources(created.id, 19),
     })
 
     const requests = await Promise.allSettled([
@@ -920,12 +924,7 @@ describe('Integration tests for knowledge base CRUD', () => {
   it('conservatively reserves 25 MiB for retained resources with unknown size', async () => {
     const created = await createKb({ name: 'Legacy URLs' }, userOneCtx)
     await prisma.kBResource.createMany({
-      data: Array.from({ length: 20 }, (_, index) => ({
-        kbId: created.id,
-        type: KBResourceType.URL,
-        title: `Legacy URL ${index}`,
-        sourceUrl: `https://example.com/legacy-${index}`,
-      })),
+      data: legacyUrlResources(created.id, 20),
     })
 
     await expect(
@@ -946,12 +945,7 @@ describe('Integration tests for knowledge base CRUD', () => {
   it('charges a URL resource its unknown-size placeholder against the byte quota', async () => {
     const atCap = await createKb({ name: 'Legacy URLs at cap' }, userOneCtx)
     await prisma.kBResource.createMany({
-      data: Array.from({ length: 20 }, (_, index) => ({
-        kbId: atCap.id,
-        type: KBResourceType.URL,
-        title: `Legacy URL ${index}`,
-        sourceUrl: `https://example.com/legacy-${index}`,
-      })),
+      data: legacyUrlResources(atCap.id, 20),
     })
 
     await expect(
@@ -972,12 +966,7 @@ describe('Integration tests for knowledge base CRUD', () => {
       userOneCtx
     )
     await prisma.kBResource.createMany({
-      data: Array.from({ length: 19 }, (_, index) => ({
-        kbId: underCap.id,
-        type: KBResourceType.URL,
-        title: `Legacy URL ${index}`,
-        sourceUrl: `https://example.com/legacy-${index}`,
-      })),
+      data: legacyUrlResources(underCap.id, 19),
     })
 
     await expect(
