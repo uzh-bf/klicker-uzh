@@ -34,7 +34,7 @@ export function useEscapeRoom({
   refetch,
 }: {
   activity: EscapeRoomActivityInput | null | undefined
-  activityType: 'practiceQuiz' | 'microLearning'
+  activityType: 'practiceQuiz' | 'microLearning' | 'groupActivity'
   refetch: () => Promise<unknown>
 }) {
   const [startAttemptMutation, { loading: starting }] = useMutation(
@@ -55,8 +55,10 @@ export function useEscapeRoom({
     const variables: Record<string, string> = {}
     if (activityType === 'practiceQuiz') {
       variables.practiceQuizId = activity.id
-    } else {
+    } else if (activityType === 'microLearning') {
       variables.microLearningId = activity.id
+    } else {
+      variables.groupActivityId = activity.id
     }
 
     await startAttemptMutation({ variables })
