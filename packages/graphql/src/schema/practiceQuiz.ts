@@ -317,8 +317,10 @@ export const EscapeRoomAttempt = EscapeRoomAttemptRef.implement({
     completedAt: t.expose('completedAt', { type: 'Date', nullable: true }),
     lockoutUntil: t.expose('lockoutUntil', { type: 'Date', nullable: true }),
     participantId: t.exposeString('participantId', { nullable: true }),
+    groupId: t.exposeString('groupId', { nullable: true }),
     practiceQuizId: t.exposeString('practiceQuizId', { nullable: true }),
     microLearningId: t.exposeString('microLearningId', { nullable: true }),
+    groupActivityId: t.exposeString('groupActivityId', { nullable: true }),
   }),
 })
 
@@ -341,6 +343,7 @@ export const EscapeRoomAttemptProgress = EscapeRoomAttemptProgressRef.implement(
     fields: (t) => ({
       id: t.exposeString('id', { nullable: true }),
       participantId: t.exposeString('participantId', { nullable: true }),
+      groupId: t.exposeString('groupId', { nullable: true }),
       displayName: t.exposeString('displayName'),
       avatar: t.exposeString('avatar', { nullable: true }),
       status: t.expose('status', { type: EscapeRoomProgressStatus }),

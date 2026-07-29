@@ -1,7 +1,12 @@
-query GetEscapeRoomProgress($practiceQuizId: String, $microLearningId: String) {
+query GetEscapeRoomProgress(
+  $practiceQuizId: String
+  $microLearningId: String
+  $groupActivityId: String
+) {
   escapeRoomProgress(
     practiceQuizId: $practiceQuizId
     microLearningId: $microLearningId
+    groupActivityId: $groupActivityId
   ) {
     activityId
     totalStacks
@@ -9,6 +14,7 @@ query GetEscapeRoomProgress($practiceQuizId: String, $microLearningId: String) {
     attempts {
       id
       participantId
+      groupId
       displayName
       avatar
       status

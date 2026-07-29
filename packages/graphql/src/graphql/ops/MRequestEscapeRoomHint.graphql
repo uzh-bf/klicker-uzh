@@ -1,11 +1,13 @@
 mutation RequestEscapeRoomHint(
   $practiceQuizId: String
   $microLearningId: String
+  $groupActivityId: String
   $instanceId: Int!
 ) {
   requestEscapeRoomHint(
     practiceQuizId: $practiceQuizId
     microLearningId: $microLearningId
+    groupActivityId: $groupActivityId
     instanceId: $instanceId
   ) {
     hint

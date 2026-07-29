@@ -5,14 +5,16 @@ import type { ContextWithUser } from '../lib/context.js'
 interface EscapeRoomProgressArgs {
   practiceQuizId?: string | null
   microLearningId?: string | null
+  groupActivityId?: string | null
 }
 
-// A single participant's run through an escape-room activity, as seen by the
-// owning lecturer. clearedStacks/totalStacks drive the segmented progress bar;
-// hintsUsedCount/penaltySeconds/timeSpentSeconds surface the cost side of the run.
+// A participant's or group's run through an escape-room activity, as seen by
+// the owning lecturer. clearedStacks/totalStacks drive the segmented progress
+// bar; hintsUsedCount/penaltySeconds/timeSpentSeconds surface the cost side.
 export interface EscapeRoomAttemptProgress {
   id: string | null
   participantId: string | null
+  groupId: string | null
   displayName: string
   avatar: string | null
   status: DB.EscapeRoomStatus | 'NOT_STARTED'
@@ -36,7 +38,8 @@ function stackWhere(
   args: EscapeRoomProgressArgs
 ): DB.Prisma.ElementStackWhereInput {
   if (args.practiceQuizId) return { practiceQuizId: args.practiceQuizId }
-  return { microLearningId: args.microLearningId! }
+  if (args.microLearningId) return { microLearningId: args.microLearningId }
+  return { groupActivityId: args.groupActivityId! }
 }
 
 /**
@@ -48,13 +51,16 @@ export async function getEscapeRoomProgress(
   args: EscapeRoomProgressArgs,
   ctx: ContextWithUser
 ): Promise<EscapeRoomProgress | null> {
-  const { practiceQuizId, microLearningId } = args
+  const { practiceQuizId, microLearningId, groupActivityId } = args
 
-  if ([practiceQuizId, microLearningId].filter(Boolean).length !== 1) {
+  if (
+    [practiceQuizId, microLearningId, groupActivityId].filter(Boolean)
+      .length !== 1
+  ) {
     throw new GraphQLError('Exactly one escape-room activity is required')
   }
 
-  const activityId = (practiceQuizId ?? microLearningId)!
+  const activityId = (practiceQuizId ?? microLearningId ?? groupActivityId)!
 
   // 1. Load the escape-room config to confirm the activity is actually an
   //    escape room and to read the time limit for the header.
@@ -62,10 +68,12 @@ export async function getEscapeRoomProgress(
     where: {
       practiceQuizId: practiceQuizId ?? undefined,
       microLearningId: microLearningId ?? undefined,
+      groupActivityId: groupActivityId ?? undefined,
     },
     include: {
       practiceQuiz: { select: { courseId: true } },
       microLearning: { select: { courseId: true } },
+      groupActivity: { select: { courseId: true } },
     },
   })
   if (!config) return null
@@ -86,9 +94,11 @@ export async function getEscapeRoomProgress(
     where: {
       practiceQuizId: practiceQuizId ?? undefined,
       microLearningId: microLearningId ?? undefined,
+      groupActivityId: groupActivityId ?? undefined,
     },
     include: {
       participant: { select: { id: true, username: true, avatar: true } },
+      group: { select: { id: true, name: true } },
     },
     orderBy: { startedAt: 'asc' },
   })
@@ -183,7 +193,9 @@ export async function getEscapeRoomProgress(
     const clearedStacks =
       attempt.participantId != null
         ? (clearedByParticipant.get(attempt.participantId) ?? 0)
-        : 0
+        : attempt.status === DB.EscapeRoomStatus.COMPLETED
+          ? totalStacks
+          : 0
 
     const timeSpentSeconds = attempt.completedAt
       ? Math.round(
@@ -198,7 +210,9 @@ export async function getEscapeRoomProgress(
     return {
       id: attempt.id,
       participantId: attempt.participantId,
-      displayName: attempt.participant?.username ?? 'Unknown',
+      groupId: attempt.groupId,
+      displayName:
+        attempt.participant?.username ?? attempt.group?.name ?? 'Unknown',
       avatar: attempt.participant?.avatar ?? null,
       status: attempt.status,
       startedAt: attempt.startedAt,
@@ -243,6 +257,7 @@ export async function getEscapeRoomProgress(
         : {
             id: null,
             participantId: participant.id,
+            groupId: null,
             displayName: participant.username,
             avatar: participant.avatar,
             status: 'NOT_STARTED' as const,
@@ -262,6 +277,47 @@ export async function getEscapeRoomProgress(
         (attempt) =>
           attempt.participantId &&
           !rosterParticipantIds.has(attempt.participantId)
+      )
+      .map(progressForAttempt)
+    progress = [...rosterProgress, ...orphanProgress]
+  }
+
+  const groupCourseId = config.groupActivity?.courseId
+  if (groupCourseId) {
+    const groupRoster = await ctx.prisma.participantGroup.findMany({
+      where: { courseId: groupCourseId },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    })
+    const attemptsByGroup = new Map(
+      attempts.flatMap((attempt) =>
+        attempt.groupId ? [[attempt.groupId, attempt]] : []
+      )
+    )
+    const rosterGroupIds = new Set(groupRoster.map((group) => group.id))
+    const rosterProgress = groupRoster.map((group) => {
+      const attempt = attemptsByGroup.get(group.id)
+      return attempt
+        ? progressForAttempt(attempt)
+        : {
+            id: null,
+            participantId: null,
+            groupId: group.id,
+            displayName: group.name,
+            avatar: null,
+            status: 'NOT_STARTED' as const,
+            startedAt: null,
+            completedAt: null,
+            lockoutUntil: null,
+            penaltySeconds: 0,
+            hintsUsedCount: 0,
+            clearedStacks: 0,
+            timeSpentSeconds: null,
+          }
+    })
+    const orphanProgress = attempts
+      .filter(
+        (attempt) => attempt.groupId && !rosterGroupIds.has(attempt.groupId)
       )
       .map(progressForAttempt)
     progress = [...rosterProgress, ...orphanProgress]
