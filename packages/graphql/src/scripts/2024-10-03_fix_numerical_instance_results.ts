@@ -1,9 +1,8 @@
-import { ElementType, PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
+import { ElementType } from '@klicker-uzh/prisma/client'
 import { createHash } from 'node:crypto'
 
 async function run() {
-  const prisma = new PrismaClient()
-
   let promises: any[] = []
 
   const instances = await prisma.elementInstance.findMany({

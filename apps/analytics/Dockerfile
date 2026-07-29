@@ -14,6 +14,7 @@ RUN uv sync --frozen --no-dev --no-install-project
 
 COPY apps/analytics/ .
 COPY packages/prisma/src/prisma/schema/*.prisma prisma/schema/
-RUN rm prisma/schema/js.prisma
+RUN rm prisma/schema/js.prisma prisma/schema/datasource.prisma
+COPY apps/analytics/prisma/schema/datasource.prisma prisma/schema/datasource.prisma
 
 RUN uv run --no-sync prisma generate

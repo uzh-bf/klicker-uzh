@@ -1,8 +1,6 @@
-import { PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
 
 async function migrate() {
-  const prisma = new PrismaClient()
-
   const questionInstances = await prisma.questionInstance.findMany({})
 
   let counter = 1
