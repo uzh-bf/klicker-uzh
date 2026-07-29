@@ -701,24 +701,53 @@ export async function applyActivityBatchOperations(
   // update live quizzes (including gamification / assessment flags & all instances - depending on the required updates)
   for (const liveQuiz of liveQuizzes) {
     const updatedLiveQuiz = await ctx.prisma.$transaction(async (tx) => {
-      // check if the course is different from before
-      const isCourseChanged = !!newCourse && liveQuiz.courseId !== newCourse.id
-      const lockedCourseState = isCourseChanged
+      const lockedCourseState = newCourse
         ? await lockCourseLiveQuizResponseCollectionState({
             prisma: tx,
-            courseId: newCourse!.id,
+            courseId: newCourse.id,
           })
         : null
-      if (isCourseChanged && !lockedCourseState) {
+      if (newCourse && !lockedCourseState) {
         throw new Error('Target course no longer exists')
       }
+
+      const [lockedLiveQuiz] = await tx.$queryRaw<
+        Pick<DB.LiveQuiz, 'id' | 'status'>[]
+      >`
+        SELECT "id", "status"::text AS "status"
+        FROM "public"."LiveQuiz"
+        WHERE
+          "id" = ${liveQuiz.id}::uuid
+          AND "isDeleted" = false
+          AND "status" IN (
+            'DRAFT'::"PublicationStatus",
+            'SCHEDULED'::"PublicationStatus"
+          )
+        FOR UPDATE
+      `
+      if (!lockedLiveQuiz) return null
+
+      const currentLiveQuiz = await tx.liveQuiz.findUnique({
+        where: { id: lockedLiveQuiz.id },
+        include: { blocks: { include: { elements: true } } },
+      })
+      if (
+        !currentLiveQuiz ||
+        (currentLiveQuiz.status !== DB.PublicationStatus.DRAFT &&
+          currentLiveQuiz.status !== DB.PublicationStatus.SCHEDULED)
+      ) {
+        return null
+      }
+
+      const isCourseChanged =
+        !!newCourse && currentLiveQuiz.courseId !== newCourse.id
       const targetCourse = lockedCourseState?.course ?? newCourse
       if (isCourseChanged && targetCourse) {
         assertLiveQuizResponseCollectionCompatibility({
           isGamificationEnabled: targetCourse.isGamificationEnabled,
           responseCollectionMode: resolveLiveQuizResponseCollectionMode({
             isAssessmentEnabled: targetCourse.isAssessmentEnabled,
-            requestedMode: liveQuiz.responseCollectionMode,
+            requestedMode: currentLiveQuiz.responseCollectionMode,
           }),
         })
       }
@@ -755,7 +784,7 @@ export async function applyActivityBatchOperations(
       }
 
       const modifiedLiveQuiz = await tx.liveQuiz.update({
-        where: { id: liveQuiz.id },
+        where: { id: currentLiveQuiz.id },
         data: {
           // course re-assignment (including update of gamification and assessment flags)
           course: isCourseChanged
@@ -794,7 +823,7 @@ export async function applyActivityBatchOperations(
             : undefined,
           // if set before, update the review status
           reviewStatus:
-            liveQuiz.reviewStatus === DB.ReviewStatus.REVIEWED
+            currentLiveQuiz.reviewStatus === DB.ReviewStatus.REVIEWED
               ? {
                   set: isCourseChanged
                     ? DB.ReviewStatus.INCOMPLETE
@@ -807,7 +836,7 @@ export async function applyActivityBatchOperations(
       // if the multiplier was changed, update the instances of the live quiz accordingly
       if (setMultiplier) {
         // get all instances that have a pointsMultiplier defined
-        const instances = liveQuiz.blocks
+        const instances = currentLiveQuiz.blocks
           .flatMap((block) => block.elements)
           .filter(
             (instance) =>
@@ -836,6 +865,7 @@ export async function applyActivityBatchOperations(
       return modifiedLiveQuiz
     })
 
+    if (!updatedLiveQuiz) continue
     updatedLiveQuizzes.push(updatedLiveQuiz.id)
   }
 

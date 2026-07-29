@@ -9,7 +9,6 @@ export const TEMPORARY_PARTICIPANT_COOKIE_NAME = 'temporary_participant_token'
 export const LIVE_QUIZ_RESPONDENT_COOKIE_PREFIX = 'live_quiz_respondent_token_'
 export const LIVE_QUIZ_RESPONDENT_ROLE = 'LIVE_QUIZ_RESPONDENT'
 export const LIVE_QUIZ_RESPONDENT_TOKEN_MAX_AGE_SECONDS = 14 * 24 * 60 * 60
-export const CORRELATED_RESPONSE_CLAIM_TTL_MS = 5 * 60 * 1000
 export const CORRELATED_RESPONSE_EVENT = 'response-received:correlated-v1'
 
 export function getLiveQuizRespondentCookieName(liveQuizId: string) {
@@ -176,30 +175,14 @@ export function hashLiveQuizRespondentToken(token: string) {
   return createHash('sha256').update(token).digest('hex')
 }
 
-interface CorrelatedResponseRedis {
-  set(
-    key: string,
-    value: string,
-    expiryMode: 'PX',
-    time: number,
-    setMode: 'NX'
-  ): Promise<'OK' | null>
-  eval(
-    script: string,
-    numberOfKeys: number,
-    ...args: string[]
-  ): Promise<unknown>
-}
-
-const RELEASE_OWNED_CLAIM_SCRIPT = `
-if redis.call('GET', KEYS[1]) == ARGV[1] then
-  return redis.call('DEL', KEYS[1])
-end
-return 0
-`
-
 export type CorrelatedResponseClaim = {
   key: string
+  identityKey: LiveQuizResponseIdentityKey
+}
+
+export type AcceptedCorrelatedResponseIdentity = {
+  kind: LiveQuizResponseIdentity['kind']
+  id: string
   identityKey: LiveQuizResponseIdentityKey
 }
 
@@ -212,9 +195,17 @@ export type LiveQuizResponseEventMessage = {
   responseTimestamp: number
 }
 
-export type CorrelatedResponseEventMessage = LiveQuizResponseEventMessage & {
+export type CorrelatedResponseEventMessage = Omit<
+  LiveQuizResponseEventMessage,
+  'cookie'
+> & {
+  acceptedIdentity: AcceptedCorrelatedResponseIdentity
   correlatedClaim: CorrelatedResponseClaim
   instanceInfo: Record<string, string>
+}
+
+export type CorrelatedResponseDeliveryMessage = {
+  messageId: string
 }
 
 export function buildCorrelatedVoteKey({
@@ -230,42 +221,4 @@ export function buildCorrelatedVoteKey({
 }) {
   const identityHash = createHash('sha256').update(identityKey).digest('hex')
   return `lq:${liveQuizId}:i:${instanceId}:correlatedVotes:${blockExecution}:${identityHash}`
-}
-
-export async function claimCorrelatedResponse({
-  redis,
-  key,
-  messageId,
-}: {
-  redis: CorrelatedResponseRedis
-  key: string
-  messageId: string
-}) {
-  return (
-    (await redis.set(
-      key,
-      messageId,
-      'PX',
-      CORRELATED_RESPONSE_CLAIM_TTL_MS,
-      'NX'
-    )) === 'OK'
-  )
-}
-
-export async function releaseCorrelatedResponse({
-  redis,
-  key,
-  messageId,
-}: {
-  redis: CorrelatedResponseRedis
-  key: string
-  messageId: string
-}) {
-  const released = await redis.eval(
-    RELEASE_OWNED_CLAIM_SCRIPT,
-    1,
-    key,
-    messageId
-  )
-  return Number(released) === 1
 }

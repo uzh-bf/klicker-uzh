@@ -2778,26 +2778,27 @@ export async function updateCourseSettings(
         ? (isAssessmentEnabled ?? undefined)
         : undefined
 
+    if (
+      newAssessmentSetting !== undefined &&
+      lockedState.liveQuizzes.some(
+        (liveQuiz) => liveQuiz.status === DB.PublicationStatus.PUBLISHED
+      )
+    ) {
+      throw new GraphQLError(
+        'Running live quizzes must end before the course assessment setting can be changed',
+        {
+          extensions: {
+            code: 'LIVE_QUIZ_ASSESSMENT_TRANSITION_CONFLICT',
+          },
+        }
+      )
+    }
+
     const correlatedLiveQuizzes = lockedState.liveQuizzes.filter(
       (liveQuiz) =>
         liveQuiz.responseCollectionMode ===
         DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
     )
-    if (
-      newAssessmentSetting === true &&
-      correlatedLiveQuizzes.some(
-        (liveQuiz) => liveQuiz.status === DB.PublicationStatus.PUBLISHED
-      )
-    ) {
-      throw new GraphQLError(
-        'A running correlated live quiz must end before assessment mode can be enabled',
-        {
-          extensions: {
-            code: 'LIVE_QUIZ_CORRELATED_ASSESSMENT_CONFLICT',
-          },
-        }
-      )
-    }
     if (correlatedLiveQuizzes.length > 0) {
       assertLiveQuizResponseCollectionCompatibility({
         isGamificationEnabled:

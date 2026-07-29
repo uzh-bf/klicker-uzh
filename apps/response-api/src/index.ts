@@ -9,8 +9,11 @@ import {
   createLiveQuizRespondentToken,
   getLiveQuizRespondentCookieName,
   resolveLiveQuizResponseIdentity,
+  validateStudentResponse,
   verifyJWT,
+  type AcceptedCorrelatedResponseIdentity,
   type CorrelatedResponseClaim,
+  type CorrelatedResponseDeliveryMessage,
   type CorrelatedResponseEventMessage,
   type JWTPayload,
   type LiveQuizResponseEventMessage,
@@ -28,7 +31,6 @@ import {
   isAllowedCorsOrigin,
   prepareCorrelatedResponseSubmission,
   registerPendingCorrelatedResponse,
-  releaseCorrelatedResponse,
   resolveResponseCollectionMode,
   responseEndpointMatchesCollectionMode,
   serializeLiveQuizRespondentCookie,
@@ -300,6 +302,7 @@ async function handleAddResponse(
 
   let cookie: string | undefined
   let eventName: string
+  let acceptedIdentity: AcceptedCorrelatedResponseIdentity | undefined
   let claim: CorrelatedResponseClaim | undefined
 
   if (isCorrelated) {
@@ -324,14 +327,34 @@ async function handleAddResponse(
       })
     }
 
+    let restrictions: unknown
+    try {
+      restrictions = instanceInfo.restrictions
+        ? JSON.parse(instanceInfo.restrictions)
+        : undefined
+    } catch (error) {
+      throw new Error(
+        `Invalid response restrictions for live quiz ${liveQuizIdString}, instance ${instanceIdString}: ${String(error)}`
+      )
+    }
+    const validation = validateStudentResponse({
+      type: instanceInfo.type,
+      response,
+      restrictions:
+        typeof restrictions === 'object' && restrictions !== null
+          ? restrictions
+          : undefined,
+    })
+    if (!validation.valid) {
+      return badRequest(req, res, validation.message)
+    }
+
     const preparation = await prepareCorrelatedResponseSubmission({
       database: prisma,
-      redis,
       identity,
       liveQuizId: liveQuizIdString,
       instanceId: instanceIdString,
       blockExecution: instanceInfo.blockExecution,
-      messageId,
     })
     if (preparation.status === 'invalid_metadata') {
       return badRequest(req, res, 'Invalid correlated response metadata')
@@ -348,7 +371,7 @@ async function handleAddResponse(
       })
     }
 
-    cookie = preparation.cookie
+    acceptedIdentity = preparation.acceptedIdentity
     claim = preparation.claim
     eventName = CORRELATED_RESPONSE_EVENT
   } else {
@@ -385,44 +408,37 @@ async function handleAddResponse(
     cookie,
     responseTimestamp,
   }
-  let eventMessage: LiveQuizResponseEventMessage = message
+  let eventMessage:
+    | LiveQuizResponseEventMessage
+    | CorrelatedResponseDeliveryMessage = message
 
   if (isCorrelated) {
-    if (!claim) {
-      throw new Error('Missing correlated response claim')
+    if (!claim || !acceptedIdentity) {
+      throw new Error('Missing accepted correlated response identity')
     }
     const correlatedMessage: CorrelatedResponseEventMessage = {
-      ...message,
+      messageId,
+      sessionId: liveQuizIdString,
+      instanceId: instanceIdString,
+      response,
+      responseTimestamp,
+      acceptedIdentity,
       correlatedClaim: claim,
       instanceInfo,
     }
-    eventMessage = correlatedMessage
+    eventMessage = { messageId }
     let pendingResponseRegistration: 'registered' | 'duplicate' | 'not_found'
-    try {
-      pendingResponseRegistration = await registerPendingCorrelatedResponse({
-        database: prisma,
-        liveQuizId: liveQuizIdString,
-        messageId,
-        responseKey: claim.key,
-        eventPayload: encryptCorrelatedResponseEvent({
-          message: correlatedMessage,
-          secret: getResponseIdentityConfig().secret,
-        }),
-      })
-    } catch (error) {
-      await releaseCorrelatedResponse({
-        redis,
-        ...claim,
-        messageId,
-      })
-      throw error
-    }
+    pendingResponseRegistration = await registerPendingCorrelatedResponse({
+      database: prisma,
+      liveQuizId: liveQuizIdString,
+      messageId,
+      responseKey: claim.key,
+      eventPayload: encryptCorrelatedResponseEvent({
+        message: correlatedMessage,
+        secret: getResponseIdentityConfig().secret,
+      }),
+    })
     if (pendingResponseRegistration !== 'registered') {
-      await releaseCorrelatedResponse({
-        redis,
-        ...claim,
-        messageId,
-      })
       return pendingResponseRegistration === 'duplicate'
         ? sendJson(req, res, 208, {
             status: 'response_recorded_before',
@@ -753,7 +769,6 @@ async function initializeService() {
         database: prisma,
         pushEvent: (eventName, message) =>
           hatchetClient.events.push(eventName, message),
-        secret: getResponseIdentityConfig().secret,
       })
       if (result.failed > 0) {
         console.error('Correlated response outbox delivery failures', result)

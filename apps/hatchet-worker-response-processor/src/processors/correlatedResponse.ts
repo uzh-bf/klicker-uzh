@@ -7,9 +7,10 @@ import type { LiveQuizResponseInput } from '@klicker-uzh/types'
 import {
   buildCorrelatedVoteKey,
   buildLiveQuizResponseIdentityKey,
-  hashLiveQuizRespondentToken,
-  resolveLiveQuizResponseIdentity,
+  decryptCorrelatedResponseEvent,
+  type AcceptedCorrelatedResponseIdentity,
   type CorrelatedResponseClaim,
+  type CorrelatedResponseEventMessage,
   type LiveQuizResponseEventMessage,
   type LiveQuizResponseIdentityKey,
 } from '@klicker-uzh/util'
@@ -17,10 +18,7 @@ import type { RedisHashMutation } from './responseEffects.js'
 
 type CorrelatedResponseDatabase = Pick<
   PrismaClient,
-  | 'liveQuizRespondent'
-  | 'liveQuizResponse'
-  | 'participant'
-  | 'temporaryLeaderboardEntry'
+  'liveQuizRespondent' | 'liveQuizResponse' | 'participant'
 >
 
 export function resolveResponseInstanceInfo({
@@ -32,10 +30,13 @@ export function resolveResponseInstanceInfo({
   acceptedInstanceInfo?: Record<string, string>
   isCorrelated: boolean
 }) {
+  if (isCorrelated) {
+    return acceptedInstanceInfo
+  }
   if (Object.keys(cachedInstanceInfo).length > 0) {
     return cachedInstanceInfo
   }
-  return isCorrelated ? acceptedInstanceInfo : undefined
+  return undefined
 }
 
 interface CorrelatedProcessingRedis {
@@ -55,11 +56,7 @@ interface CorrelatedProcessingRedis {
   type(key: string): Promise<string>
 }
 
-export type CorrelatedResponseOwner = {
-  kind: 'participant' | 'temporary' | 'anonymous'
-  id: string
-  identityKey: LiveQuizResponseIdentityKey
-}
+export type CorrelatedResponseOwner = AcceptedCorrelatedResponseIdentity
 
 export type CorrelatedProcessingState = {
   owner: CorrelatedResponseOwner
@@ -72,6 +69,33 @@ export type CorrelatedProcessingState = {
 
 export class CorrelatedResponseIdentityError extends Error {}
 export class CorrelatedResponseProcessingBusyError extends Error {}
+
+export async function resolveCorrelatedResponseDelivery({
+  database,
+  messageId,
+  secret,
+}: {
+  database: Pick<PrismaClient, 'liveQuizPendingResponse'>
+  messageId: string
+  secret: string
+}): Promise<CorrelatedResponseEventMessage | null> {
+  const pendingResponse = await database.liveQuizPendingResponse.findUnique({
+    where: { id: messageId },
+    select: { eventPayload: true },
+  })
+  if (!pendingResponse) return null
+
+  const message = decryptCorrelatedResponseEvent({
+    encryptedPayload: pendingResponse.eventPayload,
+    secret,
+  })
+  if (message.messageId !== messageId) {
+    throw new Error(
+      `Correlated response outbox message id mismatch for ${messageId}`
+    )
+  }
+  return message
+}
 
 export async function settleCorrelatedResponseOutbox({
   database,
@@ -204,33 +228,24 @@ export async function applyCorrelatedRedisMutations({
 }
 
 export async function resolveCorrelatedResponseOwner({
-  cookieHeader,
+  acceptedIdentity,
   liveQuizId,
-  secret,
-  issuer,
   database,
 }: {
-  cookieHeader: string | undefined
+  acceptedIdentity: AcceptedCorrelatedResponseIdentity
   liveQuizId: string
-  secret: string
-  issuer: string
   database: CorrelatedResponseDatabase
 }): Promise<CorrelatedResponseOwner> {
-  const identity = await resolveLiveQuizResponseIdentity({
-    cookieHeader,
-    liveQuizId,
-    secret,
-    issuer,
-  })
-  if (!identity) {
+  const expectedIdentityKey = buildLiveQuizResponseIdentityKey(acceptedIdentity)
+  if (acceptedIdentity.identityKey !== expectedIdentityKey) {
     throw new CorrelatedResponseIdentityError(
-      'Missing or invalid correlated response identity'
+      'Accepted correlated response identity key is invalid'
     )
   }
 
-  if (identity.kind === 'participant') {
+  if (acceptedIdentity.kind === 'participant') {
     const participant = await database.participant.findUnique({
-      where: { id: identity.id },
+      where: { id: acceptedIdentity.id },
       select: { id: true },
     })
     if (!participant) {
@@ -239,78 +254,27 @@ export async function resolveCorrelatedResponseOwner({
       )
     }
 
-    return {
-      kind: 'participant',
-      id: identity.id,
-      identityKey: buildLiveQuizResponseIdentityKey(identity),
-    }
+    return acceptedIdentity
   }
 
-  if (identity.kind === 'temporary') {
-    let respondent = await database.liveQuizRespondent.findUnique({
-      where: { id: identity.id },
-    })
-    if (!respondent) {
-      const legacyEntry = await database.temporaryLeaderboardEntry.findUnique({
-        where: {
-          id_quizId: {
-            id: identity.id,
-            quizId: liveQuizId,
-          },
-        },
-      })
-      if (!legacyEntry) {
-        throw new CorrelatedResponseIdentityError(
-          'Temporary correlated response identity is no longer active'
-        )
-      }
-
-      respondent = await database.liveQuizRespondent.upsert({
-        where: { id: identity.id },
-        update: {},
-        create: {
-          id: identity.id,
-          type: LiveQuizRespondentType.TEMPORARY_PSEUDONYM,
-          liveQuiz: { connect: { id: liveQuizId } },
-        },
-      })
-    }
-    if (
-      respondent.liveQuizId !== liveQuizId ||
-      respondent.type !== LiveQuizRespondentType.TEMPORARY_PSEUDONYM
-    ) {
-      throw new CorrelatedResponseIdentityError(
-        'Temporary correlated response identity has invalid scope'
-      )
-    }
-  } else {
-    const verificationSecretHash = hashLiveQuizRespondentToken(identity.token)
-    const respondent = await database.liveQuizRespondent.upsert({
-      where: { id: identity.id },
-      update: {},
-      create: {
-        id: identity.id,
-        type: LiveQuizRespondentType.ANONYMOUS_CORRELATED,
-        verificationSecretHash,
-        liveQuiz: { connect: { id: liveQuizId } },
-      },
-    })
-    if (
-      respondent.liveQuizId !== liveQuizId ||
-      respondent.type !== LiveQuizRespondentType.ANONYMOUS_CORRELATED ||
-      respondent.verificationSecretHash !== verificationSecretHash
-    ) {
-      throw new CorrelatedResponseIdentityError(
-        'Anonymous correlated response identity has invalid scope or secret'
-      )
-    }
+  const respondent = await database.liveQuizRespondent.findUnique({
+    where: { id: acceptedIdentity.id },
+  })
+  const expectedType =
+    acceptedIdentity.kind === 'temporary'
+      ? LiveQuizRespondentType.TEMPORARY_PSEUDONYM
+      : LiveQuizRespondentType.ANONYMOUS_CORRELATED
+  if (
+    !respondent ||
+    respondent.liveQuizId !== liveQuizId ||
+    respondent.type !== expectedType
+  ) {
+    throw new CorrelatedResponseIdentityError(
+      'Accepted correlated response identity has invalid scope'
+    )
   }
 
-  return {
-    kind: identity.kind,
-    id: identity.id,
-    identityKey: buildLiveQuizResponseIdentityKey(identity),
-  }
+  return acceptedIdentity
 }
 
 export function buildCorrelatedResponseCreateData({
@@ -518,28 +482,30 @@ export async function prepareCorrelatedMessageProcessing({
   message,
   blockExecution,
   sessionBlockId,
-  secret,
-  issuer,
 }: {
   redis: Pick<CorrelatedProcessingRedis, 'eval' | 'hget' | 'set'>
   database: CorrelatedResponseDatabase
   message: Pick<
     LiveQuizResponseEventMessage,
-    'messageId' | 'sessionId' | 'instanceId' | 'cookie' | 'responseTimestamp'
+    'messageId' | 'sessionId' | 'instanceId' | 'responseTimestamp'
   > & {
+    acceptedIdentity?: AcceptedCorrelatedResponseIdentity
     correlatedClaim?: CorrelatedResponseClaim
   }
   blockExecution: string | undefined
   sessionBlockId: string | undefined
-  secret: string
-  issuer: string
 }): Promise<
   | { status: 'invalid' }
   | { status: 'processed' }
   | { status: 'duplicate' }
   | { status: 'process'; state: CorrelatedProcessingState }
 > {
-  if (!message.correlatedClaim || !blockExecution || !sessionBlockId) {
+  if (
+    !message.acceptedIdentity ||
+    !message.correlatedClaim ||
+    !blockExecution ||
+    !sessionBlockId
+  ) {
     return { status: 'invalid' }
   }
 
@@ -550,10 +516,8 @@ export async function prepareCorrelatedMessageProcessing({
   }
 
   const owner = await resolveCorrelatedResponseOwner({
-    cookieHeader: message.cookie,
+    acceptedIdentity: message.acceptedIdentity,
     liveQuizId: message.sessionId,
-    secret,
-    issuer,
     database,
   })
   const expectedClaimKey = buildCorrelatedVoteKey({

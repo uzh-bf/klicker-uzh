@@ -35,6 +35,8 @@ row while it is still streaming, and capture DOM identity around feedback clicks
 when the bug concerns remounts or flicker. A passing final-text assertion alone
 does not prove that the conversation stayed mounted.
 
+For correlated Live Quiz response changes, verify the full durable boundary: malformed responses fail before outbox acknowledgement, duplicate acknowledgement follows the unique database response key, Hatchet receives only `{messageId}`, the worker rejects or ignores delivery without a matching outbox row, acceptance-time metadata wins over restarted Redis state, and terminal handling removes the pending row. Run the response API, response worker, export, focused GraphQL response-mode/concurrency, and correlated-export suites together.
+
 Direct checks for `auth`, `chat`, `frontend-control`, `frontend-manage`, and `frontend-pwa` generate ignored Next route types first through each app's `check` script. Do not hand-edit or commit `next-env.d.ts`; keep it ignored and included by `tsconfig.json`. The three PWA apps use `tsconfig.check.json` only for raw package checks so stale `.next/dev/types` cannot duplicate fresh Pages Router validators. Next builds use the canonical `tsconfig.json`; Next 16 filters development validators on its production typecheck path. Auth and Chat use their main config for both checks and builds.
 
 For Next framework or bundler changes, verify both repository-supported paths. `pnpm run build:test` uses Turbopack in all five Next apps. `pnpm run build` uses Turbopack for auth/chat and Webpack for control/manage/PWA until their service-worker integration moves to Serwist. Confirm standalone server paths for all five apps and `sw.js`, Workbox, and custom worker outputs for the three PWA apps.

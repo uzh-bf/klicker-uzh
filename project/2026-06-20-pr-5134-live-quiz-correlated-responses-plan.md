@@ -6,7 +6,7 @@ Plan path: `project/2026-06-20-pr-5134-live-quiz-correlated-responses-plan.md`
 Branch: `codex/live-quiz-correlated-responses`
 Target: `v3`
 PR: [#5134](https://github.com/uzh-bf/klicker-uzh/pull/5134)
-Status: second release-blocker remediation and verification complete; exact-commit reviews pending
+Status: third release-blocker remediation implemented; verification and exact-commit reviews pending
 
 ## Non-Goals
 
@@ -517,6 +517,9 @@ Later research:
 - 2026-07-29: APP_SECRET remains the outbox encryption key in this slice. Deployment documentation now requires response API and worker replicas to share it and requires draining `LiveQuizPendingResponse` before rotation. A dedicated keyring remains follow-up work; public anonymous participation remains intentionally susceptible to cookie clearing and identity farming.
 - 2026-07-29: Second-remediation verification passed: fresh database reset through all 179 migrations; 53 utility tests; 19 response-api tests; 26 response-worker tests; 19 response-mode/concurrency GraphQL tests; 7 correlated-export GraphQL tests; 31 export tests; affected-package typechecks; Prisma schema sync; Helm rendering; the full repository `check:all` gate; and scoped backend, PWA, and manage production builds. The full gate used an ignored Python 3.12 Ruff-only environment because the dev image selected Python 3.14 and lacked a compiler for the unrelated pinned pandas source build.
 - 2026-07-29: Generic seeded-development screenshots for aggregate-only and correlated-export wizard settings are committed under `project/2026-06-20-live-quiz-correlated-responses/`. They contain no real course or participant data and will be linked from the draft PR.
+- 2026-07-29: Exact reviews of commit `6281e0bf6` found that Hatchet still carried browser bearer credentials, Redis ingress contention could acknowledge a response before durable admission, delayed responses could use restarted-instance metadata or expired JWTs, scheduled publication and batch assignment had unlocked state races, and course assessment changes could convert a running aggregate quiz into identifiable assessment handling. The findings were accepted as release blockers.
+- 2026-07-29: The third remediation makes the encrypted database outbox authoritative: ingress validates the complete response, admits its identity while the token is valid, and registers the unique response key before acknowledgement; Hatchet receives only the outbox message id; and the worker decrypts the matching row, uses its acceptance-time metadata snapshot, and never revalidates browser-token expiry. Scheduled publication, assessment transitions in both directions, and batch assignment now lock and recheck current rows. CSV size enforcement is incremental rather than post-matrix, while a dedicated response-api database role and a lock-budgeted migration rollout remain explicit operational follow-ups.
+- 2026-07-29: Third-remediation verification passed: 57 utility tests, 18 response-api tests, 26 response-worker tests, 31 export tests, 23 response-mode/concurrency GraphQL tests, 7 correlated-export GraphQL tests, the full repository `check:all` gate, and scoped production builds for response API, response worker, export, GraphQL, and backend. A clean response-api rebuild also confirmed the final shared outbox re-export.
 
 ## Goal Prompt Requirements
 
@@ -532,7 +535,7 @@ If handed to another agent:
 
 ## Next Steps
 
-1. Commit the completed hardening and verification record.
-2. Run fresh security, maintainability, and independent branch reviews against the exact commit; address any release blockers and repeat affected checks.
-3. Push the branch and update draft PR 5134 with whole-branch evidence, screenshots, rollout ordering, and documented residual privacy limits.
+1. Commit the third remediation and run fresh security, maintainability, and independent branch reviews against the exact commit.
+2. Address any release blockers and repeat affected checks.
+3. Push the reviewed branch and update draft PR 5134 with whole-branch evidence, screenshots, rollout ordering, and documented residual privacy limits.
 4. Read back the rendered draft PR, CI, reviews, and comments; keep it draft until the repository's final CI and review gates are satisfied.

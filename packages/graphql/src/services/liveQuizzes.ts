@@ -3307,17 +3307,61 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
     )
 
     try {
-      // check if the live quiz exists and if its availableFrom date is in the past
-      const liveQuiz = await globalCtx.prisma.liveQuiz.findUnique({
-        where: {
-          id: liveQuizId,
-          isDeleted: false,
-          status: DB.PublicationStatus.SCHEDULED,
-          availableFrom: { lte: new Date() },
-        },
-      })
+      const publication = await globalCtx.prisma.$transaction(
+        async (prisma) => {
+          const [lockedQuiz] = await prisma.$queryRaw<
+            Pick<DB.LiveQuiz, 'id' | 'status'>[]
+          >`
+            SELECT "id", "status"::text AS "status"
+            FROM "public"."LiveQuiz"
+            WHERE
+              "id" = ${liveQuizId}::uuid
+              AND "isDeleted" = false
+              AND "status" IN (
+                'SCHEDULED'::"PublicationStatus",
+                'PUBLISHED'::"PublicationStatus"
+              )
+            FOR UPDATE
+          `
+          if (!lockedQuiz) return null
 
-      if (!liveQuiz) {
+          const liveQuiz = await prisma.liveQuiz.findUnique({
+            where: { id: lockedQuiz.id },
+          })
+          if (!liveQuiz) return null
+          if (liveQuiz.status === DB.PublicationStatus.PUBLISHED) {
+            return { quiz: liveQuiz, didStart: false }
+          }
+          if (!liveQuiz.availableFrom || liveQuiz.availableFrom > new Date()) {
+            return null
+          }
+
+          const redis = liveQuiz.isAssessmentEnabled
+            ? globalCtx.redisAssessmentExec
+            : globalCtx.redisExec
+          await redis
+            .pipeline()
+            .hmset(`lq:${liveQuiz.id}:meta`, {
+              namespace: liveQuiz.namespace,
+              startedAt: Number(new Date()),
+              isGamificationEnabled: liveQuiz.isGamificationEnabled,
+              isAssessmentEnabled: liveQuiz.isAssessmentEnabled,
+            })
+            .exec()
+
+          const startedLiveQuiz = await prisma.liveQuiz.update({
+            where: { id: liveQuizId },
+            data: {
+              status: DB.PublicationStatus.PUBLISHED,
+              startedAt: new Date(),
+              scheduledPublicationTaskId: null,
+            },
+          })
+          return { quiz: startedLiveQuiz, didStart: true }
+        }
+      )
+
+      if (!publication) {
         await sendTeamsNotification({
           scope: 'hatchet/live-quiz-start',
           text: `Live quiz with ID ${liveQuizId} not found or scheduled start time is not in the past yet.`,
@@ -3327,37 +3371,17 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
         )
       }
 
-      // depending on the quiz assessment setting, select the corresponding redis instance
-      const redis = liveQuiz.isAssessmentEnabled
-        ? globalCtx.redisAssessmentExec
-        : globalCtx.redisExec
-
-      // start the live quiz
-      await redis
-        .pipeline()
-        .hmset(`lq:${liveQuiz.id}:meta`, {
-          namespace: liveQuiz.namespace,
-          startedAt: Number(new Date()),
+      if (publication.didStart) {
+        await sendTeamsNotification({
+          scope: 'hatchet/live-quiz-start',
+          text: `START Live quiz ${publication.quiz.name} with id ${publication.quiz.id}.`,
         })
-        .exec()
-
-      const startedLiveQuiz = await globalCtx.prisma.liveQuiz.update({
-        where: { id: liveQuizId },
-        data: {
-          status: DB.PublicationStatus.PUBLISHED,
-          startedAt: new Date(),
-        },
-      })
-
-      await sendTeamsNotification({
-        scope: 'hatchet/live-quiz-start',
-        text: `START Live quiz ${startedLiveQuiz.name} with id ${startedLiveQuiz.id}.`,
-      })
+      }
 
       // invalidate the cache for the live quiz
       globalCtx.emitter.emit('invalidate', {
         typename: 'LiveQuiz',
-        id: startedLiveQuiz.id,
+        id: publication.quiz.id,
       })
 
       return true

@@ -1,14 +1,11 @@
 import {
   LiveQuizRespondentType,
   ResponseCorrectness,
-  UserRole,
 } from '@klicker-uzh/prisma/client'
 import {
   buildCorrelatedVoteKey,
-  createLiveQuizRespondentToken,
-  getLiveQuizRespondentCookieName,
-  hashLiveQuizRespondentToken,
-  signJWT,
+  encryptCorrelatedResponseEvent,
+  type CorrelatedResponseEventMessage,
 } from '@klicker-uzh/util'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
@@ -23,15 +20,13 @@ import {
   prepareCorrelatedMessageProcessing,
   prepareCorrelatedResponseProcessing,
   releaseCorrelatedProcessingLock,
+  resolveCorrelatedResponseDelivery,
   resolveCorrelatedResponseOwner,
   resolveResponseInstanceInfo,
   settleCorrelatedResponseOutbox,
   validateCorrelatedRedisHashKeys,
 } from '../src/processors/correlatedResponse.js'
 import { RedisHashMutationBuffer } from '../src/processors/responseEffects.js'
-
-const secret = 'test-secret'
-const issuer = 'https://api.klicker.test'
 
 type RespondentRow = {
   id: string
@@ -99,21 +94,12 @@ class MemoryProcessingRedis {
 
 function createDatabase({
   participantIds = [],
-  temporaryEntries = [],
   respondentRows = [],
 }: {
   participantIds?: string[]
-  temporaryEntries?: Array<{
-    id: string
-    quizId: string
-    username: string
-    avatar: string | null
-    score: number
-  }>
   respondentRows?: RespondentRow[]
 } = {}) {
   const respondents = new Map(respondentRows.map((row) => [row.id, row]))
-  const createdRespondents: RespondentRow[] = []
 
   return {
     database: {
@@ -121,54 +107,28 @@ function createDatabase({
         findUnique: async ({ where }: any) =>
           participantIds.includes(where.id) ? { id: where.id } : null,
       },
-      temporaryLeaderboardEntry: {
-        findUnique: async ({ where }: any) =>
-          temporaryEntries.find(
-            (entry) =>
-              entry.id === where.id_quizId.id &&
-              entry.quizId === where.id_quizId.quizId
-          ) ?? null,
-      },
       liveQuizRespondent: {
         findUnique: async ({ where }: any) => respondents.get(where.id) ?? null,
-        upsert: async ({ where, create }: any) => {
-          const existing = respondents.get(where.id)
-          if (existing) return existing
-
-          const row: RespondentRow = {
-            id: create.id,
-            liveQuizId: create.liveQuiz.connect.id,
-            type: create.type,
-            verificationSecretHash: create.verificationSecretHash ?? null,
-          }
-          respondents.set(row.id, row)
-          createdRespondents.push(row)
-          return row
-        },
       },
     } as any,
-    createdRespondents,
   }
 }
 
 describe('resolveCorrelatedResponseOwner', () => {
-  it('accepts a signed participant identity that still exists', async () => {
+  it('accepts an admitted participant identity that still exists', async () => {
     const liveQuizId = randomUUID()
     const participantId = randomUUID()
-    const token = await signJWT(
-      { sub: participantId, role: UserRole.PARTICIPANT },
-      secret,
-      { expiresIn: '1h', issuer }
-    )
     const { database } = createDatabase({
       participantIds: [participantId],
     })
 
     const owner = await resolveCorrelatedResponseOwner({
-      cookieHeader: `participant_token=${token}`,
+      acceptedIdentity: {
+        kind: 'participant',
+        id: participantId,
+        identityKey: `participant:${participantId}`,
+      },
       liveQuizId,
-      secret,
-      issuer,
       database,
     })
 
@@ -179,58 +139,9 @@ describe('resolveCorrelatedResponseOwner', () => {
     })
   })
 
-  it('bridges a valid legacy temporary leaderboard entry', async () => {
+  it('accepts an admitted temporary identity after leaderboard logout', async () => {
     const liveQuizId = randomUUID()
     const respondentId = randomUUID()
-    const token = await signJWT(
-      {
-        sub: respondentId,
-        role: UserRole.TEMPORARY_PARTICIPANT,
-        scopeQuizId: liveQuizId,
-      },
-      secret,
-      { expiresIn: '1h', issuer }
-    )
-    const { database, createdRespondents } = createDatabase({
-      temporaryEntries: [
-        {
-          id: respondentId,
-          quizId: liveQuizId,
-          username: 'Temporary',
-          avatar: null,
-          score: 4,
-        },
-      ],
-    })
-
-    const owner = await resolveCorrelatedResponseOwner({
-      cookieHeader: `temporary_participant_token=${token}`,
-      liveQuizId,
-      secret,
-      issuer,
-      database,
-    })
-
-    assert.equal(owner.kind, 'temporary')
-    assert.equal(owner.id, respondentId)
-    assert.equal(
-      createdRespondents[0]?.type,
-      LiveQuizRespondentType.TEMPORARY_PSEUDONYM
-    )
-  })
-
-  it('accepts an already-admitted temporary identity after leaderboard logout', async () => {
-    const liveQuizId = randomUUID()
-    const respondentId = randomUUID()
-    const token = await signJWT(
-      {
-        sub: respondentId,
-        role: UserRole.TEMPORARY_PARTICIPANT,
-        scopeQuizId: liveQuizId,
-      },
-      secret,
-      { expiresIn: '1h', issuer }
-    )
     const { database } = createDatabase({
       respondentRows: [
         {
@@ -243,10 +154,12 @@ describe('resolveCorrelatedResponseOwner', () => {
     })
 
     const owner = await resolveCorrelatedResponseOwner({
-      cookieHeader: `temporary_participant_token=${token}`,
+      acceptedIdentity: {
+        kind: 'temporary',
+        id: respondentId,
+        identityKey: `respondent:${respondentId}`,
+      },
       liveQuizId,
-      secret,
-      issuer,
       database,
     })
 
@@ -254,107 +167,94 @@ describe('resolveCorrelatedResponseOwner', () => {
     assert.equal(owner.id, respondentId)
   })
 
-  it('rejects a stale temporary identity that was never admitted', async () => {
+  it('rejects a temporary identity that was never admitted', async () => {
     const liveQuizId = randomUUID()
     const respondentId = randomUUID()
-    const token = await signJWT(
-      {
-        sub: respondentId,
-        role: UserRole.TEMPORARY_PARTICIPANT,
-        scopeQuizId: liveQuizId,
-      },
-      secret,
-      { expiresIn: '1h', issuer }
-    )
     const { database } = createDatabase()
 
     await assert.rejects(
       resolveCorrelatedResponseOwner({
-        cookieHeader: `temporary_participant_token=${token}`,
+        acceptedIdentity: {
+          kind: 'temporary',
+          id: respondentId,
+          identityKey: `respondent:${respondentId}`,
+        },
         liveQuizId,
-        secret,
-        issuer,
         database,
       }),
       CorrelatedResponseIdentityError
     )
   })
 
-  it('creates an anonymous respondent with the signed token hash', async () => {
+  it('accepts an anonymous identity admitted while its token was valid', async () => {
     const liveQuizId = randomUUID()
     const respondentId = randomUUID()
-    const token = await createLiveQuizRespondentToken({
-      respondentId,
-      liveQuizId,
-      secret,
-      issuer,
-    })
-    const { database, createdRespondents } = createDatabase()
-
-    const owner = await resolveCorrelatedResponseOwner({
-      cookieHeader: `${getLiveQuizRespondentCookieName(liveQuizId)}=${token}`,
-      liveQuizId,
-      secret,
-      issuer,
-      database,
-    })
-
-    assert.equal(owner.kind, 'anonymous')
-    assert.equal(owner.id, respondentId)
-    assert.equal(
-      createdRespondents[0]?.verificationSecretHash,
-      hashLiveQuizRespondentToken(token)
-    )
-  })
-
-  it('rejects an anonymous token scoped to another quiz', async () => {
-    const liveQuizId = randomUUID()
-    const token = await createLiveQuizRespondentToken({
-      respondentId: randomUUID(),
-      liveQuizId: randomUUID(),
-      secret,
-      issuer,
-    })
-    const { database } = createDatabase()
-
-    await assert.rejects(
-      resolveCorrelatedResponseOwner({
-        cookieHeader: `${getLiveQuizRespondentCookieName(liveQuizId)}=${token}`,
-        liveQuizId,
-        secret,
-        issuer,
-        database,
-      }),
-      CorrelatedResponseIdentityError
-    )
-  })
-
-  it('rejects an anonymous token that does not match the stored hash', async () => {
-    const liveQuizId = randomUUID()
-    const respondentId = randomUUID()
-    const token = await createLiveQuizRespondentToken({
-      respondentId,
-      liveQuizId,
-      secret,
-      issuer,
-    })
     const { database } = createDatabase({
       respondentRows: [
         {
           id: respondentId,
           liveQuizId,
           type: LiveQuizRespondentType.ANONYMOUS_CORRELATED,
-          verificationSecretHash: 'different-token-hash',
+          verificationSecretHash: 'acceptance-time-token-hash',
+        },
+      ],
+    })
+
+    const owner = await resolveCorrelatedResponseOwner({
+      acceptedIdentity: {
+        kind: 'anonymous',
+        id: respondentId,
+        identityKey: `respondent:${respondentId}`,
+      },
+      liveQuizId,
+      database,
+    })
+
+    assert.equal(owner.kind, 'anonymous')
+    assert.equal(owner.id, respondentId)
+  })
+
+  it('rejects an admitted respondent scoped to another quiz', async () => {
+    const liveQuizId = randomUUID()
+    const respondentId = randomUUID()
+    const { database } = createDatabase({
+      respondentRows: [
+        {
+          id: respondentId,
+          liveQuizId: randomUUID(),
+          type: LiveQuizRespondentType.ANONYMOUS_CORRELATED,
+          verificationSecretHash: 'hash',
         },
       ],
     })
 
     await assert.rejects(
       resolveCorrelatedResponseOwner({
-        cookieHeader: `${getLiveQuizRespondentCookieName(liveQuizId)}=${token}`,
+        acceptedIdentity: {
+          kind: 'anonymous',
+          id: respondentId,
+          identityKey: `respondent:${respondentId}`,
+        },
         liveQuizId,
-        secret,
-        issuer,
+        database,
+      }),
+      CorrelatedResponseIdentityError
+    )
+  })
+
+  it('rejects an acceptance identity with a mismatched key', async () => {
+    const liveQuizId = randomUUID()
+    const respondentId = randomUUID()
+    const { database } = createDatabase()
+
+    await assert.rejects(
+      resolveCorrelatedResponseOwner({
+        acceptedIdentity: {
+          kind: 'anonymous',
+          id: respondentId,
+          identityKey: `respondent:${randomUUID()}`,
+        },
+        liveQuizId,
         database,
       }),
       CorrelatedResponseIdentityError
@@ -363,7 +263,7 @@ describe('resolveCorrelatedResponseOwner', () => {
 })
 
 describe('correlated response persistence helpers', () => {
-  it('uses the accepted metadata snapshot after Redis retention expires', () => {
+  it('uses the accepted metadata snapshot even after an instance restart', () => {
     const acceptedInstanceInfo = {
       type: 'SC',
       blockExecution: '3',
@@ -372,7 +272,11 @@ describe('correlated response persistence helpers', () => {
 
     assert.deepEqual(
       resolveResponseInstanceInfo({
-        cachedInstanceInfo: {},
+        cachedInstanceInfo: {
+          type: 'MC',
+          blockExecution: '4',
+          sessionBlockId: randomUUID(),
+        },
         acceptedInstanceInfo,
         isCorrelated: true,
       }),
@@ -404,6 +308,78 @@ describe('correlated response persistence helpers', () => {
     })
 
     assert.deepEqual(deleteCalls, [{ where: { id: 'message-1' } }])
+  })
+
+  it('loads correlated deliveries only from a matching outbox row', async () => {
+    const messageId = randomUUID()
+    const liveQuizId = randomUUID()
+    const respondentId = randomUUID()
+    const identityKey = `respondent:${respondentId}` as const
+    const message: CorrelatedResponseEventMessage = {
+      messageId,
+      sessionId: liveQuizId,
+      instanceId: '42',
+      response: { value: 'accepted' },
+      responseTimestamp: 123,
+      acceptedIdentity: {
+        kind: 'anonymous',
+        id: respondentId,
+        identityKey,
+      },
+      correlatedClaim: {
+        key: buildCorrelatedVoteKey({
+          liveQuizId,
+          instanceId: '42',
+          blockExecution: '3',
+          identityKey,
+        }),
+        identityKey,
+      },
+      instanceInfo: {
+        type: 'FREE_TEXT',
+        blockExecution: '3',
+        sessionBlockId: randomUUID(),
+      },
+    }
+    const eventPayload = encryptCorrelatedResponseEvent({
+      message,
+      secret: 'test-secret',
+    })
+
+    assert.equal(
+      await resolveCorrelatedResponseDelivery({
+        database: {
+          liveQuizPendingResponse: { findUnique: async () => null },
+        } as any,
+        messageId,
+        secret: 'test-secret',
+      }),
+      null
+    )
+    assert.deepEqual(
+      await resolveCorrelatedResponseDelivery({
+        database: {
+          liveQuizPendingResponse: {
+            findUnique: async () => ({ eventPayload }),
+          },
+        } as any,
+        messageId,
+        secret: 'test-secret',
+      }),
+      message
+    )
+    await assert.rejects(
+      resolveCorrelatedResponseDelivery({
+        database: {
+          liveQuizPendingResponse: {
+            findUnique: async () => ({ eventPayload }),
+          },
+        } as any,
+        messageId: randomUUID(),
+        secret: 'test-secret',
+      }),
+      /outbox message id mismatch/
+    )
   })
 
   it('builds a participant response without respondent identifiers', () => {
@@ -617,16 +593,10 @@ describe('correlated response persistence helpers', () => {
     )
   })
 
-  it('processes an accepted event after its ingress claim expires', async () => {
+  it('processes an admitted identity without revalidating its browser token', async () => {
     const liveQuizId = randomUUID()
     const respondentId = randomUUID()
     const messageId = randomUUID()
-    const token = await createLiveQuizRespondentToken({
-      respondentId,
-      liveQuizId,
-      secret,
-      issuer,
-    })
     const identityKey = `respondent:${respondentId}` as const
     const claimKey = buildCorrelatedVoteKey({
       liveQuizId,
@@ -635,7 +605,16 @@ describe('correlated response persistence helpers', () => {
       identityKey,
     })
     const redis = new MemoryProcessingRedis()
-    const { database } = createDatabase()
+    const { database } = createDatabase({
+      respondentRows: [
+        {
+          id: respondentId,
+          liveQuizId,
+          type: LiveQuizRespondentType.ANONYMOUS_CORRELATED,
+          verificationSecretHash: 'acceptance-time-token-hash',
+        },
+      ],
+    })
     ;(database as any).liveQuizResponse = {
       findUnique: async () => null,
     }
@@ -648,13 +627,15 @@ describe('correlated response persistence helpers', () => {
         sessionId: liveQuizId,
         instanceId: '42',
         responseTimestamp: 123,
-        cookie: `${getLiveQuizRespondentCookieName(liveQuizId)}=${token}`,
+        acceptedIdentity: {
+          kind: 'anonymous',
+          id: respondentId,
+          identityKey,
+        },
         correlatedClaim: { key: claimKey, identityKey },
       },
       blockExecution: '3',
       sessionBlockId: randomUUID(),
-      secret,
-      issuer,
     })
 
     assert.equal(result.status, 'process')

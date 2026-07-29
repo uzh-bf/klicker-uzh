@@ -16,9 +16,9 @@ import type {
   NumericalRestrictions,
 } from '@klicker-uzh/types'
 import {
-  releaseCorrelatedResponse,
   verifyJWT,
-  type CorrelatedResponseClaim,
+  type CorrelatedResponseDeliveryMessage,
+  type CorrelatedResponseEventMessage,
   type JWTPayload,
   type LiveQuizResponseEventMessage,
 } from '@klicker-uzh/util'
@@ -30,6 +30,7 @@ import {
   CorrelatedResponseIdentityError,
   prepareCorrelatedMessageProcessing,
   releaseCorrelatedProcessingLock,
+  resolveCorrelatedResponseDelivery,
   resolveResponseInstanceInfo,
   settleCorrelatedResponseOutbox,
   validateCorrelatedRedisHashKeys,
@@ -48,19 +49,17 @@ import {
 
 const redisExec = getRedis() // use standard redis instance for regular response processor
 
-type ProcessResponseMessage = LiveQuizResponseEventMessage & {
-  correlatedClaim?: CorrelatedResponseClaim
-  instanceInfo?: Record<string, string>
-}
+type ProcessResponseMessage =
+  | LiveQuizResponseEventMessage
+  | CorrelatedResponseDeliveryMessage
+  | CorrelatedResponseEventMessage
 
 export async function processResponseMessage(
-  message: ProcessResponseMessage,
+  incomingMessage: ProcessResponseMessage,
   ctx: Context<JsonObject, {}> | DurableContext<JsonObject, {}>
 ) {
   ctx.logger.info('ProcessResponse: received message', {
-    messageId: message.messageId,
-    sessionId: message.sessionId,
-    instanceId: message.instanceId,
+    messageId: incomingMessage.messageId,
   })
 
   try {
@@ -70,6 +69,34 @@ export async function processResponseMessage(
     throw new Error(`Redis connection error ${String(e)}`)
   }
 
+  const hasFullCorrelatedPayload =
+    'correlatedClaim' in incomingMessage &&
+    incomingMessage.correlatedClaim !== undefined
+  const isCorrelated =
+    !('sessionId' in incomingMessage) || hasFullCorrelatedPayload
+  let message: LiveQuizResponseEventMessage | CorrelatedResponseEventMessage
+
+  if (isCorrelated) {
+    const secret = process.env.APP_SECRET
+    if (!secret) {
+      throw new Error(
+        'APP_SECRET is required to process correlated live quiz responses'
+      )
+    }
+
+    const correlatedMessage = await resolveCorrelatedResponseDelivery({
+      database: prisma,
+      messageId: incomingMessage.messageId,
+      secret,
+    })
+    if (!correlatedMessage) {
+      return { status: 200 }
+    }
+    message = correlatedMessage
+  } else {
+    message = incomingMessage
+  }
+
   if (message.sessionId === 'ping') {
     if (process.env.FUNCTION_HEARTBEAT_URL) {
       await fetch(process.env.FUNCTION_HEARTBEAT_URL)
@@ -77,16 +104,11 @@ export async function processResponseMessage(
     return { status: 200 }
   }
 
-  const releaseClaim = async () => {
-    if (!message.correlatedClaim) return
+  const settleOutbox = async () => {
+    if (!isCorrelated) return
 
     await settleCorrelatedResponseOutbox({
       database: prisma,
-      messageId: message.messageId,
-    })
-    await releaseCorrelatedResponse({
-      redis: redisExec,
-      ...message.correlatedClaim,
       messageId: message.messageId,
     })
   }
@@ -94,7 +116,6 @@ export async function processResponseMessage(
   let aggregatePipeline = redisExec.pipeline()
   let redisMulti: RedisHashMutationQueue = aggregatePipeline
   let correlatedMutationBuffer: RedisHashMutationBuffer | undefined
-  const isCorrelated = message.correlatedClaim !== undefined
   let correlatedState: CorrelatedProcessingState | undefined
 
   const releaseProcessingLock = async () => {
@@ -109,7 +130,7 @@ export async function processResponseMessage(
 
   const releaseInvalidCorrelatedResponse = async () => {
     await releaseProcessingLock()
-    await releaseClaim()
+    await settleOutbox()
   }
 
   try {
@@ -126,14 +147,15 @@ export async function processResponseMessage(
             instanceId: message.instanceId,
           })
       )
-      await releaseClaim()
+      await settleOutbox()
       return { status: 400 }
     }
 
     const cachedInstanceInfo = await redisExec.hgetall(`${instanceKey}:info`)
     const instanceInfo = resolveResponseInstanceInfo({
       cachedInstanceInfo,
-      acceptedInstanceInfo: message.instanceInfo,
+      acceptedInstanceInfo:
+        'instanceInfo' in message ? message.instanceInfo : undefined,
       isCorrelated,
     })
     // Correlated events carry the acceptance-time snapshot so durable responses
@@ -144,7 +166,7 @@ export async function processResponseMessage(
         sessionId: message.sessionId,
         instanceId: message.instanceId,
       })
-      await releaseClaim()
+      await settleOutbox()
       return { status: 400 }
     }
     ctx.logger.info('Instance info loaded', {
@@ -166,7 +188,7 @@ export async function processResponseMessage(
       blockClosedAt,
     } = instanceInfo
     if (!type) {
-      await releaseClaim()
+      await settleOutbox()
       return { status: 400 }
     }
 
@@ -184,7 +206,7 @@ export async function processResponseMessage(
             })
           )?.responseCollectionMode
     if (!responseCollectionMode) {
-      await releaseClaim()
+      await settleOutbox()
       return { status: 400 }
     }
 
@@ -193,7 +215,7 @@ export async function processResponseMessage(
       LiveQuizResponseCollectionMode.CORRELATED_EXPORT
     if (isCorrelated !== storedModeIsCorrelated) {
       ctx.logger.error('Response event does not match response collection mode')
-      await releaseClaim()
+      await settleOutbox()
       return { status: 400 }
     }
 
@@ -207,33 +229,23 @@ export async function processResponseMessage(
 
     let participantData: JWTPayload | null = null
     if (isCorrelated) {
-      const secret = process.env.APP_SECRET
-      const issuer = process.env.APP_ORIGIN_API
-      if (!secret || !issuer) {
-        throw new Error(
-          'APP_SECRET and APP_ORIGIN_API are required for correlated live quiz responses'
-        )
-      }
-
       const preparation = await prepareCorrelatedMessageProcessing({
         redis: redisExec,
         database: prisma,
         message,
         blockExecution,
         sessionBlockId,
-        secret,
-        issuer,
       })
       if (preparation.status === 'invalid') {
-        await releaseClaim()
+        await settleOutbox()
         return { status: 400 }
       }
       if (preparation.status === 'processed') {
-        await releaseClaim()
+        await settleOutbox()
         return { status: 200 }
       }
       if (preparation.status === 'duplicate') {
-        await releaseClaim()
+        await settleOutbox()
         return { status: 208 }
       }
 
@@ -248,7 +260,7 @@ export async function processResponseMessage(
                 role: UserRole.TEMPORARY_PARTICIPANT,
               }
             : null
-    } else if (typeof message.cookie === 'string') {
+    } else if ('cookie' in message && typeof message.cookie === 'string') {
       try {
         const parsedCookies = message.cookie
           .split(';')
@@ -426,7 +438,7 @@ export async function processResponseMessage(
             error.code === 'P2002'
           ) {
             await releaseProcessingLock()
-            await releaseClaim()
+            await settleOutbox()
             return { status: 208 }
           }
           throw error
@@ -473,14 +485,14 @@ export async function processResponseMessage(
       })
       if (result === 'duplicate') {
         await releaseProcessingLock()
-        await releaseClaim()
+        await settleOutbox()
         return { status: 208 }
       }
     } else {
       await aggregatePipeline.exec()
     }
     await releaseProcessingLock()
-    await releaseClaim()
+    await settleOutbox()
     ctx.logger.info("Successfully processed participant's response", {
       messageId: message.messageId,
       sessionId: message.sessionId,

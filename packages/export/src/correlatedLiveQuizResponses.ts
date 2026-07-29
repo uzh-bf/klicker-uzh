@@ -142,34 +142,46 @@ export function createCorrelatedLiveQuizResponseCsv({
       `${prefix}_points`,
     ]),
   ]
-  const rows = orderedRespondents.map(({ identityKey, label }) => [
-    `respondent_${String(label).padStart(3, '0')}`,
-    ...columns.flatMap(({ key }) => {
-      const response = responseByIdentityAndColumn.get(`${identityKey}:${key}`)
-      if (!response) return ['', '', '']
 
-      const totalPoints =
-        response.basePoints + response.correctnessPoints + response.bonusPoints
-      return [
-        encodeResponse(response.response),
-        response.correctness,
-        Number.isFinite(totalPoints) ? totalPoints : 0,
-      ]
-    }),
-  ])
-
-  const csv =
-    '\uFEFF' +
-    [headers, ...rows]
-      .map((row) => row.map(escapeCsvValue).join(','))
-      .join('\r\n') +
-    '\r\n'
-  const byteLength = Buffer.byteLength(csv, 'utf8')
+  const lines = [headers.map(escapeCsvValue).join(',')]
+  let byteLength = Buffer.byteLength(`\uFEFF${lines[0]}\r\n`, 'utf8')
   if (byteLength > DEFAULT_CORRELATED_LIVE_QUIZ_EXPORT_MAX_BYTES) {
     throw new CorrelatedLiveQuizExportSizeError(
       `Correlated live quiz export exceeds ${DEFAULT_CORRELATED_LIVE_QUIZ_EXPORT_MAX_BYTES} bytes`
     )
   }
+
+  for (const { identityKey, label } of orderedRespondents) {
+    const row = [
+      `respondent_${String(label).padStart(3, '0')}`,
+      ...columns.flatMap(({ key }) => {
+        const response = responseByIdentityAndColumn.get(
+          `${identityKey}:${key}`
+        )
+        if (!response) return ['', '', '']
+
+        const totalPoints =
+          response.basePoints +
+          response.correctnessPoints +
+          response.bonusPoints
+        return [
+          encodeResponse(response.response),
+          response.correctness,
+          Number.isFinite(totalPoints) ? totalPoints : 0,
+        ]
+      }),
+    ]
+    const line = row.map(escapeCsvValue).join(',')
+    byteLength += Buffer.byteLength(`${line}\r\n`, 'utf8')
+    if (byteLength > DEFAULT_CORRELATED_LIVE_QUIZ_EXPORT_MAX_BYTES) {
+      throw new CorrelatedLiveQuizExportSizeError(
+        `Correlated live quiz export exceeds ${DEFAULT_CORRELATED_LIVE_QUIZ_EXPORT_MAX_BYTES} bytes`
+      )
+    }
+    lines.push(line)
+  }
+
+  const csv = `\uFEFF${lines.join('\r\n')}\r\n`
 
   return {
     csv,

@@ -18,7 +18,10 @@ import {
   enableGamification,
   updateCourseSettings,
 } from '../src/services/courses.js'
-import { manipulateLiveQuiz } from '../src/services/liveQuizzes.js'
+import {
+  handlePublishScheduledLiveQuiz,
+  manipulateLiveQuiz,
+} from '../src/services/liveQuizzes.js'
 import {
   initializePrisma,
   seedCourse,
@@ -97,6 +100,35 @@ describe('Live quiz response collection mode', () => {
     return {
       ...userOneCtx,
       prisma: prismaWithCourseOverride,
+    }
+  }
+
+  function withLiveQuizFindMany(
+    findMany: (
+      args: Parameters<typeof prisma.liveQuiz.findMany>[0]
+    ) => Promise<unknown>
+  ): ContextWithUser {
+    const liveQuiz = new Proxy(prisma.liveQuiz, {
+      get(target, property, receiver) {
+        if (property === 'findMany') {
+          return findMany as unknown as typeof prisma.liveQuiz.findMany
+        }
+        return Reflect.get(target, property, receiver)
+      },
+    })
+    const prismaWithLiveQuizOverride = new Proxy(prisma, {
+      get(target, property, receiver) {
+        if (property === 'liveQuiz') {
+          return liveQuiz
+        }
+        const value = Reflect.get(target, property, receiver)
+        return typeof value === 'function' ? value.bind(target) : value
+      },
+    })
+
+    return {
+      ...userOneCtx,
+      prisma: prismaWithLiveQuizOverride,
     }
   }
 
@@ -316,6 +348,47 @@ describe('Live quiz response collection mode', () => {
     expect(storedQuiz.courseId).toBeNull()
   })
 
+  it('skips a quiz published after batch selection', async () => {
+    const liveQuiz = await manipulateLiveQuiz(liveQuizArgs(), userOneCtx)
+    const course = await seedCourse(
+      { isGamificationEnabled: false, isAssessmentEnabled: false },
+      userOneCtx
+    )
+    await recomputeDerivedPermissions({ courseId: course.id }, prisma)
+
+    const findMany = prisma.liveQuiz.findMany.bind(prisma.liveQuiz)
+    let published = false
+    const findManyDuringPublication = async (
+      args: Parameters<typeof prisma.liveQuiz.findMany>[0]
+    ) => {
+      const staleLiveQuizzes = await findMany(args)
+      if (!published) {
+        published = true
+        await prisma.liveQuiz.update({
+          where: { id: liveQuiz.id },
+          data: { status: PublicationStatus.PUBLISHED },
+        })
+      }
+      return staleLiveQuizzes
+    }
+
+    await expect(
+      applyActivityBatchOperations(
+        {
+          activityIds: [liveQuiz.id],
+          courseId: course.id,
+        },
+        withLiveQuizFindMany(findManyDuringPublication)
+      )
+    ).resolves.toBe(0)
+
+    const stored = await prisma.liveQuiz.findUniqueOrThrow({
+      where: { id: liveQuiz.id },
+    })
+    expect(stored.status).toBe(PublicationStatus.PUBLISHED)
+    expect(stored.courseId).toBeNull()
+  })
+
   it('rejects enabling gamification on a course with a correlated quiz', async () => {
     const course = await seedCourse(
       { isGamificationEnabled: false, isAssessmentEnabled: false },
@@ -490,7 +563,75 @@ describe('Live quiz response collection mode', () => {
       )
     ).rejects.toMatchObject({
       extensions: {
-        code: 'LIVE_QUIZ_CORRELATED_ASSESSMENT_CONFLICT',
+        code: 'LIVE_QUIZ_ASSESSMENT_TRANSITION_CONFLICT',
+      },
+    })
+  })
+
+  it('rejects assessment mode while an aggregate live quiz is running', async () => {
+    const course = await seedCourse(
+      { isGamificationEnabled: false, isAssessmentEnabled: false },
+      userOneCtx
+    )
+    const liveQuiz = await manipulateLiveQuiz(
+      {
+        ...liveQuizArgs(),
+        courseId: course.id,
+      },
+      userOneCtx
+    )
+    await prisma.liveQuiz.update({
+      where: { id: liveQuiz.id },
+      data: { status: PublicationStatus.PUBLISHED },
+    })
+
+    await expect(
+      updateCourseSettings(
+        {
+          id: course.id,
+          language: Locale.en,
+          isGamificationEnabled: false,
+          isAssessmentEnabled: true,
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: {
+        code: 'LIVE_QUIZ_ASSESSMENT_TRANSITION_CONFLICT',
+      },
+    })
+  })
+
+  it('rejects disabling assessment while an assessment live quiz is running', async () => {
+    const course = await seedCourse(
+      { isGamificationEnabled: false, isAssessmentEnabled: true },
+      userOneCtx
+    )
+    const liveQuiz = await manipulateLiveQuiz(
+      {
+        ...liveQuizArgs(),
+        courseId: course.id,
+      },
+      userOneCtx
+    )
+    await prisma.liveQuiz.update({
+      where: { id: liveQuiz.id },
+      data: { status: PublicationStatus.PUBLISHED },
+    })
+
+    await expect(
+      updateCourseSettings(
+        {
+          id: course.id,
+          language: Locale.en,
+          isGamificationEnabled: false,
+          isAssessmentEnabled: false,
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: {
+        code: 'LIVE_QUIZ_ASSESSMENT_TRANSITION_CONFLICT',
       },
     })
   })
@@ -546,7 +687,7 @@ describe('Live quiz response collection mode', () => {
       )
     ).rejects.toMatchObject({
       extensions: {
-        code: 'LIVE_QUIZ_CORRELATED_ASSESSMENT_CONFLICT',
+        code: 'LIVE_QUIZ_ASSESSMENT_TRANSITION_CONFLICT',
       },
     })
     releasePublication()
@@ -763,5 +904,69 @@ describe('Live quiz response collection mode', () => {
     expect(stored.responseCollectionMode).toBe(
       LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS
     )
+  })
+
+  it('publishes a scheduled quiz from its locked current settings', async () => {
+    const scheduledQuiz = await seedLiveQuiz(
+      {
+        elements: [],
+        status: PublicationStatus.SCHEDULED,
+      },
+      userOneCtx
+    )
+    await prisma.liveQuiz.update({
+      where: { id: scheduledQuiz.id },
+      data: {
+        availableFrom: new Date(Date.now() - 60_000),
+        isGamificationEnabled: false,
+        isAssessmentEnabled: false,
+      },
+    })
+
+    const metadata: Record<string, string> = {}
+    const redis = {
+      pipeline() {
+        return {
+          hmset(_key: string, values: Record<string, unknown>) {
+            Object.assign(
+              metadata,
+              Object.fromEntries(
+                Object.entries(values).map(([key, value]) => [
+                  key,
+                  String(value),
+                ])
+              )
+            )
+            return this
+          },
+          async exec() {
+            return []
+          },
+        }
+      },
+    }
+    await expect(
+      handlePublishScheduledLiveQuiz(
+        { liveQuizId: scheduledQuiz.id },
+        {
+          ...userOneCtx,
+          redisExec: redis,
+          redisAssessmentExec: redis,
+        } as any,
+        { logger: { info: vi.fn() } } as any
+      )
+    ).resolves.toBe(true)
+
+    const stored = await prisma.liveQuiz.findUniqueOrThrow({
+      where: { id: scheduledQuiz.id },
+    })
+    expect(stored.status).toBe(PublicationStatus.PUBLISHED)
+    expect(stored.scheduledPublicationTaskId).toBeNull()
+
+    expect(metadata).toMatchObject({
+      namespace: stored.namespace,
+      isGamificationEnabled: 'false',
+      isAssessmentEnabled: 'false',
+    })
   })
 })
