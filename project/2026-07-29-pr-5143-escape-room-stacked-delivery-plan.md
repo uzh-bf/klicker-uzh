@@ -1,0 +1,167 @@
+# Escape Room — Stacked Delivery Plan
+
+- **Status:** Approved; execution in progress
+- **Goal:** Replace the oversized PR #5143 with a reviewable stack while preserving its completed implementation.
+- **Source of truth:** `codex/escape-room-production` at `4be19aa61`
+- **Starting trunk:** `v3` at `f16b9ceb4` (Prisma 7)
+- **Stack worktree:** `trees/escape-room-stack`
+- **Topology owner:** this worktree; all stack operations use the official `gh stack` extension.
+- **Original PR:** Keep #5143 and its branch unchanged as the safety reference until the replacement stack exists and is verified.
+
+## Decisions
+
+- Extract and adapt the final implementation; do not rewrite the feature from scratch.
+- Use one linear GitHub stack with four branches and four PRs.
+- Put settings in the first runtime-capable Escape Room PR. Do not expose settings in a standalone PR without working runtime behavior.
+- Land QR Scan authoring and printing first, but keep QR Scan unavailable in ordinary activities. Participant answering arrives with the individual Escape Room layer.
+- Keep Group Activity and Live Quiz in separate layers because their submission, concurrency, and monitoring models differ.
+- Regenerate Prisma and GraphQL artifacts on the current trunk instead of copying stale generated output.
+- Publish draft PRs through `gh stack submit --auto`, then set the exact conventional titles and complete bodies with `gh pr edit`; humans merge through the GitHub UI.
+- Treat `gh stack` exit code 9 as a hard publication blocker. Do not fall back to improvised regular PR chaining when repository stacks are unavailable.
+- No branch deletion, force-push of the original branch, stack reorder, unstack, or merge without fresh authorization.
+
+## Extraction method
+
+1. Prefer clean cherry-picks from the source history when a commit belongs wholly to one layer.
+2. For mixed commits, transplant the final source behavior by file or hunk into its owning layer.
+3. Resolve shared files in dependency order, preserving the final behavior at `4be19aa61`.
+4. Re-run generators on Prisma 7 and retain only generated output produced from the extracted source.
+5. Compare each completed layer with the corresponding source paths and contracts; record intentional omissions.
+6. Rebase the upstack with `gh stack rebase --upstack` whenever a lower layer changes.
+7. At the final gate, compare the top-of-stack path inventory with `4be19aa61` and maintain an explicit ledger for every intentionally omitted source path or behavior.
+
+## Stack
+
+### Layer 1 — QR Scan foundation
+
+- **Branch:** `codex/escape-room-qr`
+- **PR title:** `feat(elements): add QR scan authoring and print workflow`
+- **Base:** `v3`
+- **Includes:**
+  - `QR_SCAN` data-model and shared type contracts.
+  - Opaque CSPRNG code creation, preservation on edit, and regeneration on duplication.
+  - Participant-safe serialization that never exposes the answer code.
+  - Lecturer editor, owner-authorized code access, print view, request-time decoys, and print styling.
+  - Server-side create, edit, and template guards that reject QR Scan placement in every activity while no Escape Room runtime exists.
+  - Prisma migration and analytics schema parity.
+  - Targeted lifecycle, authorization, uniqueness, and leakage tests.
+  - Engineering wiki, relevant repository skills, i18n, and browser evidence.
+- **Excludes:**
+  - Placement in ordinary activities.
+  - Participant scanner, answer submission, and grading.
+  - Escape Room configuration and attempts.
+- **Source commits:** `f4a387a22`, `f0c75481b`, `b7e914a46`, plus QR-only corrections from later source commits.
+- **Acceptance:**
+  - Creation, edit, duplication, preview, and printing work for an exact owner.
+  - Unauthorized code and print access fail closed.
+  - Codes and decoys meet format, uniqueness, and non-disclosure contracts.
+  - QR Scan remains unavailable in activity element selection until Layer 2, and direct API/template placement fails closed.
+
+### Layer 2 — Individual Escape Rooms
+
+- **Branch:** `codex/escape-room-individual`
+- **PR title:** `feat(escape-room): add individual quiz mode`
+- **Base:** `codex/escape-room-qr`
+- **Includes:**
+  - Escape Room configuration, attempts, sequential gating, timers, lockouts, hints, reset, pruning, statistics ownership, and monitoring.
+  - The preserved generalized data model, including dormant Group Activity and Live Quiz relations required by later layers; only individual runtime behavior is exposed in this layer.
+  - Practice Quiz and Microlearning authoring and participant runtime.
+  - QR Scan placement, scanner/manual fallback, grading, and secure participant payloads for these modes.
+  - Complete individual-mode GraphQL and browser regression coverage.
+  - Lecturer/student documentation, engineering wiki, repository skills, and screenshots.
+- **Excludes:** Group Activity and Live Quiz Escape Room behavior.
+- **Acceptance:**
+  - Both individual modes enforce server-owned attempts and current-stage access.
+  - Timers remain server-anchored and hints survive reload without double charging.
+  - Monitoring includes not-started participants and authorized reset.
+  - QR Scan codes never appear in participant data or persisted participant-visible decisions.
+
+### Layer 3 — Group Activity Escape Rooms
+
+- **Branch:** `codex/escape-room-group`
+- **PR title:** `feat(group-activity): add escape room mode`
+- **Base:** `codex/escape-room-individual`
+- **Includes:**
+  - Shared group attempts and participant flow.
+  - Exact-set validation and atomic multi-answer grading.
+  - Concurrent start, hint, submission, lockout, completion, and reset behavior.
+  - Group monitoring and two-participant runtime evidence.
+  - Group-specific docs, wiki, skill, test, and screenshot updates.
+- **Acceptance:**
+  - Invalid, partial, duplicate, and foreign submissions leave state unchanged.
+  - Concurrent submissions produce one consistent transition.
+  - Every group member sees the same attempt and monitoring state.
+
+### Layer 4 — Live Quiz Escape Rooms
+
+- **Branch:** `codex/escape-room-live`
+- **PR title:** `feat(live-quiz): add escape room mode`
+- **Base:** `codex/escape-room-group`
+- **Includes:**
+  - Per-block authoring, template round-trip, and participant runtime.
+  - Response API and worker validation, atomic claims, retry idempotency, and authoritative active-block checks.
+  - Hint, QR Scan, timer, lockout, progression, cockpit monitoring, and reset behavior.
+  - Live Quiz docs, wiki, skill, test, and screenshot updates.
+- **Acceptance:**
+  - No question content is disclosed before start or beyond the current stage.
+  - Duplicate delivery and concurrent responses grade at most once.
+  - Responses fail once the block is no longer active.
+  - Cockpit progress and reset remain correctly permission-scoped.
+
+## Verification loop
+
+Run in the exact stack worktree DevPod established by `devrouter ensure .`.
+
+For every layer:
+
+1. Run targeted unit/integration tests for the extracted contracts.
+2. Regenerate and verify Prisma/GraphQL artifacts where applicable.
+3. Run affected package checks and `git diff --check`.
+4. Exercise UI changes with `npx agent-browser@0.32.2` against the routed worktree; capture current-head screenshots in relevant locales and viewports.
+5. Update affected engineering wiki pages and relevant repository skills in the same layer.
+6. Stage deliberately and perform the public-repository data-hygiene review before committing.
+7. Obtain independent correctness and simplification review; resolve verified findings.
+8. Rebase and re-verify the upstack after lower-layer corrections.
+
+Before draft publication of the complete stack:
+
+- `pnpm run check:all`
+- `pnpm run build`
+- Targeted GraphQL, util, response-api, worker, and Playwright checks owned by each layer
+- Prisma schema/migration parity
+- Empty-schema Prisma 7 `migrate deploy` replay, clean schema diff, analytics schema sync, and explicit validation of the non-transactional concurrent QR index migration
+- Current generated GraphQL artifacts
+- Top-of-stack source path inventory and intentional-omissions ledger against `4be19aa61`
+- Branch-scoped security review
+- Mandatory maintainability review
+- Klicker branch crosscheck
+- Clean worktree and `git diff --check`
+
+## Goal prompt
+
+Continue autonomously until all four approved stack layers have been extracted from `4be19aa61`, adapted to current `v3`, independently verified, committed, reviewed, and published as draft GitHub stacked PRs through `gh stack submit --auto`, or until a genuine external blocker prevents progress.
+
+Preserve the original PR #5143 and source branch unchanged. Use one worktree and one linear `gh stack` topology. Do not reimplement established feature behavior when it can be transplanted from the source. Put each correction in the lowest owning layer and rebase the upstack. Do not weaken or delete tests to obtain green checks. Keep behavior documentation, wiki facts, repository skills, generated artifacts, and browser evidence with the layer that owns them. Do not merge, queue, unstack, reorder, delete, or force-push without explicit authorization.
+
+After submission, set the planned titles and complete PR bodies with `gh pr edit`, then read back every PR's base, head, draft state, URL, and GitHub stack order. If `gh stack` reports that repository stacks are unavailable, stop rather than creating an improvised stack.
+
+When blocked by environment or authentication, complete every independent local task, record the exact failing command and error, and stop only at the boundary that needs user action.
+
+## Progress
+
+- [x] Confirm approved extraction-based four-layer topology.
+- [x] Verify clean source worktree at `4be19aa61`.
+- [x] Fast-forward local `v3` to `f16b9ceb4`.
+- [x] Create `trees/escape-room-stack`.
+- [x] Initialize `gh stack` with `codex/escape-room-qr` rooted at `v3`.
+- [x] Commit and independently review this plan; revision findings incorporated.
+- [ ] Extract and verify Layer 1.
+- [ ] Add, extract, and verify Layer 2.
+- [ ] Add, extract, and verify Layer 3.
+- [ ] Add, extract, and verify Layer 4.
+- [ ] Run final stack-wide review and verification gates.
+- [ ] Publish draft PRs and read back stack/PR state.
+
+## Current blocker
+
+- `gh auth status` reports that the active `rschlaefli` token is invalid. Local stack work can continue; draft publication requires re-authentication before `gh stack submit --auto`.
