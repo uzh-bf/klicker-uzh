@@ -42,6 +42,7 @@ import './schema/subscription.js'
 import {
   handleGradeCodeSubmission,
   handleRecoverCodeSubmissions,
+  processCodeSubmission,
 } from './services/codeSubmissions.js'
 import {
   handleEndExpiredGroupActivity,
@@ -90,3 +91,5 @@ export const handlers: HatchetHandlers = {
   handleStandardLiveQuizBlockClosureAggregation,
   handleAssessmentLiveQuizBlockClosureAggregation,
 }
+
+export { processCodeSubmission }

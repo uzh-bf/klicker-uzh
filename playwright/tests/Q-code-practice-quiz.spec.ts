@@ -1,18 +1,23 @@
 import {
-  CodeSubmissionStatus,
   ElementInstanceType,
   ElementStackType,
   ElementType,
   PermissionLevel,
   PublicationStatus,
-  ResponseCorrectness,
+  UserLoginScope,
+  UserRole,
 } from '@klicker-uzh/prisma/client'
+import type {
+  CodeSubmissionResult,
+  HatchetHandlerGlobalContext,
+} from '@klicker-uzh/types'
 import {
   expect,
   type Page,
   type Route,
   type WebSocketRoute,
 } from '@playwright/test'
+import { execute, parse } from 'graphql'
 import { getPrisma } from '../global-setup.js'
 import { setSessionCookieForUrl } from '../util/authSession.js'
 import {
@@ -219,22 +224,6 @@ test.describe.serial('CODE participant and evaluation flow', () => {
     })
     stackId = quiz.stacks[0]!.id
 
-    const microLearningElement = await prisma.element.create({
-      data: {
-        type: ElementType.CODE,
-        name: MICROLEARNING_NAME,
-        content: 'Return the sum of two numbers.',
-        explanation: 'Use addition.',
-        options,
-        ownerId: USER_ID_TEST,
-      },
-    })
-    const microLearningElementData = {
-      ...elementData,
-      id: `${microLearningElement.id}-v${microLearningElement.version}`,
-      elementId: microLearningElement.id,
-      name: microLearningElement.name,
-    }
     const now = new Date()
     const microLearning = await prisma.microLearning.create({
       data: {
@@ -263,17 +252,10 @@ test.describe.serial('CODE participant and evaluation flow', () => {
                 elementType: ElementType.CODE,
                 order: 0,
                 options: { pointsMultiplier: 1, resetTimeDays: 6 },
-                elementData: microLearningElementData,
-                results: {
-                  tests: {
-                    'public-sum': { passed: 1, total: 1 },
-                    'hidden-sum': { passed: 1, total: 1 },
-                  },
-                  submissions: { [PARTICIPANT_IDS[0]!]: 1 },
-                  total: 1,
-                },
+                elementData,
+                results,
                 anonymousResults: results,
-                elementId: microLearningElement.id,
+                elementId: element.id,
                 ownerId: USER_ID_TEST,
                 instanceStatistics: { create: {} },
               },
@@ -285,6 +267,15 @@ test.describe.serial('CODE participant and evaluation flow', () => {
     })
     microLearningStackId = microLearning.stacks[0]!.id
     microLearningInstanceId = microLearning.stacks[0]!.elements[0]!.id
+    await prisma.participation.update({
+      where: {
+        courseId_participantId: {
+          courseId: COURSE_ID_TEST,
+          participantId: PARTICIPANT_IDS[0]!,
+        },
+      },
+      data: { isActive: true },
+    })
   })
 
   test.afterAll(async () => {
@@ -463,82 +454,138 @@ test.describe.serial('CODE participant and evaluation flow', () => {
   })
 
   test('restores a completed microlearning evaluation', async ({ page }) => {
-    const receiptId = '863cb88c-9d34-4b11-bd12-d8c94bc0c39a'
+    let receiptId: string | undefined
+    let initialEvaluationReadbackCompleted = false
+    let blockEvaluationReadback = false
+    let successfulEvaluationReadbacks = 0
+    let latestEvaluationPayload: unknown
+    let submittedCode: string | undefined
+    await page.routeWebSocket('**/api/graphql', async (socket) => {
+      socket.onMessage((rawMessage) => {
+        const message = JSON.parse(rawMessage.toString()) as { type?: string }
+        if (message.type === 'connection_init') {
+          socket.send(JSON.stringify({ type: 'connection_ack' }))
+        } else if (message.type === 'ping') {
+          socket.send(JSON.stringify({ type: 'pong' }))
+        }
+      })
+    })
     await page.route('**/api/graphql*', async (route) => {
       const operation = operationName(route)
+      if (
+        operation === 'GetPreviousStackEvaluation' &&
+        blockEvaluationReadback
+      ) {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            errors: [{ message: 'Temporary evaluation readback failure' }],
+          }),
+        })
+        return
+      }
       if (operation === 'SubmitCodeResponse') {
+        const request = route.request().postDataJSON() as {
+          operationName?: string
+          query?: string
+          variables?: Record<string, unknown>
+        }
+        if (!request.query) {
+          throw new Error('CODE submission mutation contains no query')
+        }
+
         const prisma = await getPrisma()
-        const participation = await prisma.participation.findFirstOrThrow({
-          where: {
-            courseId: COURSE_ID_TEST,
-            participantId: PARTICIPANT_IDS[0]!,
+        const { processCodeSubmission, schema } = await import(
+          '@klicker-uzh/graphql'
+        )
+        const mutationResult = await execute({
+          schema,
+          document: parse(request.query),
+          operationName: request.operationName,
+          variableValues: request.variables,
+          contextValue: {
+            user: {
+              sub: PARTICIPANT_IDS[0]!,
+              role: UserRole.PARTICIPANT,
+              scope: UserLoginScope.ACCOUNT_OWNER,
+              catalystInstitutional: false,
+              catalystIndividual: false,
+            },
+            prisma,
+            tasks: {
+              gradeCodeSubmission: {
+                runNoWait: async () => ({
+                  workflowRunId: 'playwright-code-finalization',
+                }),
+              },
+            },
           },
         })
-        const completedAt = new Date()
-        await prisma.$transaction([
-          prisma.questionResponse.create({
-            data: {
-              trialsCount: 1,
-              totalScore: 10,
-              totalPointsAwarded: 10,
-              totalXpAwarded: 10,
-              averageTimeSpent: 12,
-              lastAwardedAt: completedAt,
-              lastXpAwardedAt: completedAt,
-              lastAnsweredAt: completedAt,
-              correctCount: 1,
-              correctCountStreak: 1,
-              lastCorrectAt: completedAt,
-              firstResponse: { code: ANSWER_CODE },
-              firstResponseCorrectness: ResponseCorrectness.CORRECT,
-              lastResponse: { code: ANSWER_CODE },
-              lastResponseCorrectness: ResponseCorrectness.CORRECT,
-              participantId: PARTICIPANT_IDS[0]!,
-              participationId: participation.id,
-              elementInstanceId: microLearningInstanceId,
-              microLearningId: MICROLEARNING_ID,
-              courseId: COURSE_ID_TEST,
+        const payload = mutationResult as {
+          data?: { submitCodeResponse?: { id?: string } }
+        }
+        receiptId = payload.data?.submitCodeResponse?.id
+        if (!receiptId) {
+          throw new Error(
+            `Real CODE submission mutation returned no receipt: ${JSON.stringify(payload)}`
+          )
+        }
+
+        const executorResult: CodeSubmissionResult = {
+          pointsPercentage: 0.5,
+          publicTestResults: [
+            {
+              id: 'public-sum',
+              name: 'Public sum example',
+              passed: true,
+              actualOutput: 3,
+              stdout: '',
+              stderr: '',
             },
-          }),
-          prisma.codeSubmission.create({
-            data: {
-              id: receiptId,
-              status: CodeSubmissionStatus.COMPLETED,
-              code: ANSWER_CODE,
-              timeSpent: 12,
-              result: {
-                pointsPercentage: 1,
-                publicTestResults: [
-                  {
-                    id: 'public-sum',
-                    name: 'Public sum example',
-                    passed: true,
-                    actualOutput: 3,
-                    stdout: '',
-                    stderr: '',
-                  },
-                ],
-                hiddenTestResults: [{ id: 'hidden-sum', passed: true }],
-              },
-              completedAt,
-              participantId: PARTICIPANT_IDS[0]!,
-              participationId: participation.id,
-              elementInstanceId: microLearningInstanceId,
-              microLearningId: MICROLEARNING_ID,
-              courseId: COURSE_ID_TEST,
-            },
-          }),
-        ])
-        await fulfillGraphql(route, {
-          submitCodeResponse: receipt({ id: receiptId, status: 'COMPLETED' }),
+          ],
+          hiddenTestResults: [{ id: 'hidden-sum', passed: false }],
+        }
+        const processed = await processCodeSubmission(
+          { submissionId: receiptId },
+          {
+            prisma,
+            pubSub: { publish: () => undefined },
+          } as unknown as HatchetHandlerGlobalContext,
+          async () => executorResult
+        )
+        if (!processed) {
+          throw new Error('Real CODE submission was not finalized')
+        }
+        submittedCode = (
+          await prisma.codeSubmission.findUniqueOrThrow({
+            where: { id: receiptId },
+            select: { code: true },
+          })
+        ).code
+        blockEvaluationReadback = true
+
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(mutationResult),
         })
-      } else if (operation === 'CodeSubmission') {
-        await fulfillGraphql(route, {
-          codeSubmission: receipt({ id: receiptId, status: 'COMPLETED' }),
-        })
-      } else {
-        await forwardGraphql(route)
+        return
       }
+
+      const requestUrl = new URL(route.request().url())
+      const backendUrl = new URL('http://127.0.0.1:3000/api/graphql')
+      backendUrl.search = requestUrl.search
+      const response = await route.fetch({
+        url: backendUrl.toString(),
+      })
+      if (operation === 'GetPreviousStackEvaluation') {
+        initialEvaluationReadbackCompleted = true
+        successfulEvaluationReadbacks += 1
+        latestEvaluationPayload = await response.json()
+      }
+
+      await route.fulfill({ response })
     })
 
     await authenticateParticipant(page, PARTICIPANT_IDS[0]!)
@@ -548,12 +595,38 @@ test.describe.serial('CODE participant and evaluation flow', () => {
     await page.getByTestId('start-microlearning').click()
     await expect(page.getByText('Public sum example')).toBeVisible()
     await expect(page.getByText('Hidden sum example')).toHaveCount(0)
+    await expect.poll(() => initialEvaluationReadbackCompleted).toBe(true)
 
     await replaceEditorValue(page, ANSWER_CODE)
     await page.getByTestId('student-stack-submit').click()
     await expect(page.getByTestId('code-submission-completed')).toBeVisible()
+    await expect(
+      page.getByTestId('code-evaluation-readback-failed')
+    ).toBeVisible()
+    await expect(page.getByTestId('student-stack-continue')).toHaveCount(0)
+    blockEvaluationReadback = false
+    await page
+      .getByTestId('code-evaluation-readback-retry')
+      .dispatchEvent('click')
+    await expect.poll(() => successfulEvaluationReadbacks).toBeGreaterThan(1)
+    expect(latestEvaluationPayload).toMatchObject({
+      data: {
+        getPreviousStackEvaluation: {
+          evaluations: [
+            {
+              __typename: 'CodeInstanceEvaluation',
+            },
+          ],
+        },
+      },
+    })
     await expect(page.getByTestId('student-stack-continue')).toBeVisible()
+    await expect(
+      page.getByTestId('code-evaluation-readback-failed')
+    ).toHaveCount(0)
     await expect(page.getByText('Hidden sum example')).toHaveCount(0)
+    expect(receiptId).toBeTruthy()
+    expect(submittedCode).toBeTruthy()
     await expect
       .poll(async () =>
         page.evaluate(
@@ -573,7 +646,7 @@ test.describe.serial('CODE participant and evaluation flow', () => {
           }
         )
       )
-      .toBe(ANSWER_CODE)
+      .toBe(submittedCode)
 
     await page.getByTestId('student-stack-continue').click()
     await expect(page).toHaveURL(
@@ -581,7 +654,7 @@ test.describe.serial('CODE participant and evaluation flow', () => {
         `/course/${COURSE_ID_TEST}/microLearnings/${MICROLEARNING_ID}/evaluation`
       )
     )
-    await expect(page.getByText('10/10')).toBeVisible()
+    await expect(page.getByText('5/10')).toBeVisible()
   })
 
   test('shows per-test instructor aggregates for a CODE microlearning', async ({
@@ -623,17 +696,18 @@ test.describe.serial('CODE participant and evaluation flow', () => {
       },
     })
     await expect(page.getByTestId('code-evaluation')).toBeVisible()
-    await expect(
-      page.getByTestId('code-evaluation-test-public-sum')
-    ).toContainText('Public sum example')
-    await expect(
-      page.getByTestId('code-evaluation-test-public-sum')
-    ).toContainText('1')
-    await expect(
-      page.getByTestId('code-evaluation-test-hidden-sum')
-    ).toContainText('Hidden sum example')
-    await expect(
-      page.getByTestId('code-evaluation-test-hidden-sum')
-    ).toContainText('1')
+    const publicRow = page.getByTestId('code-evaluation-test-public-sum')
+    await expect(publicRow.locator('td').nth(0)).toHaveText(
+      'Public sum example'
+    )
+    await expect(publicRow.locator('td').nth(1)).toHaveText('1')
+    await expect(publicRow.locator('td').nth(2)).toHaveText('1')
+
+    const hiddenRow = page.getByTestId('code-evaluation-test-hidden-sum')
+    await expect(hiddenRow.locator('td').nth(0)).toHaveText(
+      'Hidden sum example'
+    )
+    await expect(hiddenRow.locator('td').nth(1)).toHaveText('0')
+    await expect(hiddenRow.locator('td').nth(2)).toHaveText('1')
   })
 })

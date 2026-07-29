@@ -20,7 +20,14 @@ import { ChoicesResponse } from '@klicker-uzh/types'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import useComponentVisibleCounter from '../hooks/useComponentVisibleCounter'
 import useStackElementFeedbacks from '../hooks/useStackElementFeedbacks'
 import Bookmark from './Bookmark'
@@ -77,6 +84,7 @@ function ElementStack({
 }: ElementStackProps) {
   const t = useTranslations()
   const timeRef = useRef(0)
+  const evaluationReadbackReceiptRef = useRef<string | null>(null)
   useComponentVisibleCounter({ timeRef })
 
   const embeddedButtonClass = embedded ? 'shadow-lg' : 'float-right mt-4'
@@ -165,6 +173,7 @@ function ElementStack({
   const {
     data: evaluationData,
     error: evaluationError,
+    loading: evaluationLoading,
     refetch: refetchEvaluation,
   } = useQuery(GetPreviousStackEvaluationDocument, {
     skip: previewOnly || !singleSubmission || !!stackStorage,
@@ -172,6 +181,19 @@ function ElementStack({
       stackId: stack.id,
     },
   })
+  const [evaluationReadbackFailed, setEvaluationReadbackFailed] =
+    useState(false)
+  const retryEvaluationReadback = useCallback(async () => {
+    setEvaluationReadbackFailed(false)
+    try {
+      const result = await refetchEvaluation()
+      if (result.errors?.length) {
+        setEvaluationReadbackFailed(true)
+      }
+    } catch {
+      setEvaluationReadbackFailed(true)
+    }
+  }, [refetchEvaluation])
 
   useEffect(() => {
     if (
@@ -184,7 +206,11 @@ function ElementStack({
     }
 
     if (singleSubmission) {
-      void refetchEvaluation().catch(() => undefined)
+      if (evaluationReadbackReceiptRef.current === codeSubmission.receiptId) {
+        return
+      }
+      evaluationReadbackReceiptRef.current = codeSubmission.receiptId
+      void retryEvaluationReadback()
       return
     }
 
@@ -213,7 +239,7 @@ function ElementStack({
   }, [
     codeElement,
     codeSubmission,
-    refetchEvaluation,
+    retryEvaluationReadback,
     setStackStorage,
     setStepStatus,
     singleSubmission,
@@ -509,13 +535,23 @@ function ElementStack({
         )}
         {codeElement &&
           singleSubmission &&
-          evaluationError &&
+          (evaluationError || evaluationReadbackFailed) &&
           codeSubmission?.gradingStatus === CodeSubmissionStatus.Completed && (
             <div className="mt-4" data-cy="code-evaluation-readback-failed">
               <UserNotification
                 type="error"
                 message={t('shared.generic.systemError')}
               />
+              <Button
+                className={{ root: 'mt-2' }}
+                data={{ cy: 'code-evaluation-readback-retry' }}
+                loading={evaluationLoading}
+                onClick={() => {
+                  void retryEvaluationReadback()
+                }}
+              >
+                <Button.Label>{t('shared.generic.tryAgain')}</Button.Label>
+              </Button>
             </div>
           )}
       </div>

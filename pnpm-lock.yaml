@@ -2527,6 +2527,9 @@ importers:
 
   playwright:
     devDependencies:
+      '@klicker-uzh/graphql':
+        specifier: workspace:*
+        version: link:../packages/graphql
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../packages/prisma
@@ -2545,6 +2548,9 @@ importers:
       bcryptjs:
         specifier: ~2.4.3
         version: 2.4.3
+      graphql:
+        specifier: ~16.11.0
+        version: 16.11.0
       jose:
         specifier: ~5.9.4
         version: 5.9.4

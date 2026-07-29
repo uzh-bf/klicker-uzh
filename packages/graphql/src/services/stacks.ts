@@ -2750,12 +2750,10 @@ export async function recordCodeQuestionResponse({
     },
   })
 
-  const score = computeSimpleAwardedPoints({
-    points: POINTS_PER_INSTANCE,
-    pointsPercentage: correctness,
+  const { score, xp } = computeCodeScoreAndXp({
+    correctness,
     pointsMultiplier: updatedInstance.options.pointsMultiplier,
   })
-  const xp = computeAwardedXp({ pointsPercentage: correctness })
   const { pointsAwarded, lastAwardedAt, lastXpAwardedAt, xpAwarded } =
     computeAwardedPointsAndXP({
       score,
@@ -3975,6 +3973,23 @@ function computeCodeEvaluation({
   }
 }
 
+function computeCodeScoreAndXp({
+  correctness,
+  pointsMultiplier,
+}: {
+  correctness: number
+  pointsMultiplier: number | undefined
+}) {
+  return {
+    score: computeSimpleAwardedPoints({
+      points: POINTS_PER_INSTANCE,
+      pointsPercentage: correctness,
+      pointsMultiplier,
+    }),
+    xp: computeAwardedXp({ pointsPercentage: correctness }),
+  }
+}
+
 function computeInstanceEvaluation({
   instance,
 }: {
@@ -4478,9 +4493,8 @@ function getPreviousEvaluationCode({
   lastResponse: SingleQuestionResponseCode
 }): EvaluationAggregationReturn {
   const correctness = submissionResult.pointsPercentage
-  const score = computeSimpleAwardedPoints({
-    points: POINTS_PER_INSTANCE,
-    pointsPercentage: correctness,
+  const { score, xp } = computeCodeScoreAndXp({
+    correctness,
     pointsMultiplier: multiplier,
   })
   const publicResults = new Map(
@@ -4494,7 +4508,7 @@ function getPreviousEvaluationCode({
       elementType: DB.ElementType.CODE,
       pointsMultiplier: multiplier ?? 1,
       score,
-      xp: computeAwardedXp({ pointsPercentage: correctness }),
+      xp,
       pointsAwarded: response.totalPointsAwarded,
       xpAwarded: response.totalXpAwarded,
       correctness,
@@ -4544,6 +4558,7 @@ export async function getPreviousStackEvaluation(
             },
             orderBy: { completedAt: 'desc' },
             take: 1,
+            select: { result: true },
           },
         },
       },
