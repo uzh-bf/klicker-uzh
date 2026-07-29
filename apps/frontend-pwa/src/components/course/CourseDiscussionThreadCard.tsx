@@ -1,0 +1,332 @@
+import { useMutation } from '@apollo/client'
+import { faThumbsUp } from '@fortawesome/free-regular-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  CreateCourseDiscussionReplyDocument,
+  type GetCourseDiscussionThreadsQuery,
+  ToggleCourseDiscussionReplyUpvoteDocument,
+  ToggleCourseDiscussionThreadUpvoteDocument,
+} from '@klicker-uzh/graphql/dist/ops'
+import { Button, toast } from '@uzh-bf/design-system'
+import { useFormatter, useTranslations } from 'next-intl'
+import { useCallback, useEffect, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
+
+type CourseDiscussionThread =
+  GetCourseDiscussionThreadsQuery['courseDiscussionThreads']['threads'][number] & {
+    scopeDisplayLabel: string
+    sourceDisplayLabel: string | null | undefined
+  }
+
+interface CourseDiscussionThreadCardProps {
+  courseId: string
+  thread: CourseDiscussionThread
+  embedToken?: string
+  compact: boolean
+  canPost: boolean
+  canVote: boolean
+  canChooseAnonymity: boolean
+  mustPostAnonymously: boolean
+  idPrefix: string
+  onReplyCreated: () => Promise<unknown>
+}
+
+function CourseDiscussionThreadCard({
+  courseId,
+  thread,
+  embedToken,
+  compact,
+  canPost,
+  canVote,
+  canChooseAnonymity,
+  mustPostAnonymously,
+  idPrefix,
+  onReplyCreated,
+}: CourseDiscussionThreadCardProps) {
+  const t = useTranslations()
+  const formatter = useFormatter()
+  const [replyDraft, setReplyDraft] = useState('')
+  const [postReplyAnonymous, setPostReplyAnonymous] = useState(false)
+  const [createReply, { loading: creatingReply }] = useMutation(
+    CreateCourseDiscussionReplyDocument
+  )
+  const [toggleThreadUpvote] = useMutation(
+    ToggleCourseDiscussionThreadUpvoteDocument
+  )
+  const [toggleReplyUpvote] = useMutation(
+    ToggleCourseDiscussionReplyUpvoteDocument
+  )
+
+  useEffect(() => {
+    if (canChooseAnonymity || mustPostAnonymously) return
+
+    setPostReplyAnonymous(false)
+  }, [canChooseAnonymity, mustPostAnonymously])
+
+  const handleCreateReply = useCallback(async () => {
+    const content = replyDraft.trim()
+    if (!content) return
+
+    try {
+      const result = await createReply({
+        variables: {
+          input: {
+            courseId,
+            threadId: thread.id,
+            content,
+            isAnonymous:
+              mustPostAnonymously || (canChooseAnonymity && postReplyAnonymous),
+            embedToken,
+          },
+        },
+      })
+
+      if (!result.data?.createCourseDiscussionReply) {
+        toast({
+          type: 'error',
+          message: t('pwa.courseQA.replyPostFailed'),
+        })
+        return
+      }
+
+      setReplyDraft('')
+      setPostReplyAnonymous(false)
+      await onReplyCreated()
+    } catch {
+      toast({
+        type: 'error',
+        message: t('pwa.courseQA.replyPostError'),
+      })
+    }
+  }, [
+    replyDraft,
+    createReply,
+    courseId,
+    thread.id,
+    mustPostAnonymously,
+    canChooseAnonymity,
+    postReplyAnonymous,
+    embedToken,
+    onReplyCreated,
+    t,
+  ])
+
+  const handleToggleThreadUpvote = useCallback(async () => {
+    try {
+      await toggleThreadUpvote({
+        variables: {
+          threadId: thread.id,
+          upvote: !thread.hasUpvoted,
+        },
+      })
+    } catch {
+      toast({
+        type: 'error',
+        message: t('pwa.courseQA.upvoteFailed'),
+      })
+    }
+  }, [thread.id, thread.hasUpvoted, toggleThreadUpvote, t])
+
+  const handleToggleReplyUpvote = useCallback(
+    async (replyId: number, hasUpvoted?: boolean | null) => {
+      try {
+        await toggleReplyUpvote({
+          variables: {
+            replyId,
+            upvote: !hasUpvoted,
+          },
+        })
+      } catch {
+        toast({
+          type: 'error',
+          message: t('pwa.courseQA.upvoteFailed'),
+        })
+      }
+    },
+    [toggleReplyUpvote, t]
+  )
+
+  const formatDateTime = (value: string) =>
+    formatter.dateTime(new Date(value), {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    })
+
+  return (
+    <div
+      className={twMerge(
+        'rounded-lg border border-gray-200 bg-white p-4 shadow-sm',
+        compact && 'p-3'
+      )}
+      data-cy={`course-qa-thread-${thread.id}`}
+    >
+      <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-gray-600">
+        {thread.sourceDisplayLabel &&
+          thread.sourceDisplayLabel !== thread.scopeDisplayLabel && (
+            <span className="max-w-full break-words rounded-full bg-gray-100 px-2 py-0.5">
+              {thread.sourceDisplayLabel}
+            </span>
+          )}
+        <span className="max-w-full break-words rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">
+          {thread.scopeDisplayLabel}
+        </span>
+        <span>{formatDateTime(thread.createdAt)}</span>
+      </div>
+
+      <div
+        className="whitespace-pre-wrap break-words text-sm"
+        data-cy={`course-qa-thread-content-${thread.id}`}
+      >
+        {thread.content}
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {canVote ? (
+          <Button
+            onClick={handleToggleThreadUpvote}
+            active={!!thread.hasUpvoted}
+            className={{
+              root: 'h-8 motion-safe:transition-transform motion-safe:hover:scale-105',
+            }}
+            data={{ cy: `course-qa-thread-upvote-${thread.id}` }}
+            aria-label={t('pwa.courseQA.threadUpvoteAriaLabel', {
+              count: thread.upvotes,
+            })}
+          >
+            <Button.Icon icon={faThumbsUp} />
+            <Button.Label>{String(thread.upvotes)}</Button.Label>
+          </Button>
+        ) : (
+          <span
+            className="inline-flex h-8 items-center gap-2 px-2 text-sm text-gray-600"
+            aria-label={t('pwa.courseQA.threadUpvoteCountAriaLabel', {
+              count: thread.upvotes,
+            })}
+          >
+            <FontAwesomeIcon
+              icon={faThumbsUp}
+              className="h-4 w-4"
+              aria-hidden
+            />
+            {thread.upvotes}
+          </span>
+        )}
+        <span className="text-xs text-gray-500">
+          {t('pwa.courseQA.nReply', { count: thread.replyCount })}
+        </span>
+      </div>
+
+      <div className="mt-3 flex flex-col gap-2 border-l border-gray-200 pl-3">
+        {thread.replies?.map((reply) => (
+          <div
+            key={reply.id}
+            className="rounded-md bg-gray-50 p-2"
+            data-cy={`course-qa-reply-${reply.id}`}
+          >
+            <div
+              className="mb-1 whitespace-pre-wrap break-words text-sm"
+              data-cy={`course-qa-reply-content-${reply.id}`}
+            >
+              {reply.content}
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs text-gray-500">
+                {formatDateTime(reply.createdAt)}
+              </span>
+              {canVote ? (
+                <Button
+                  onClick={() =>
+                    handleToggleReplyUpvote(reply.id, reply.hasUpvoted)
+                  }
+                  active={!!reply.hasUpvoted}
+                  className={{
+                    root: 'h-7 motion-safe:transition-transform motion-safe:hover:scale-105',
+                  }}
+                  data={{ cy: `course-qa-reply-upvote-${reply.id}` }}
+                  aria-label={t('pwa.courseQA.replyUpvoteAriaLabel', {
+                    count: reply.upvotes,
+                  })}
+                >
+                  <Button.Icon
+                    icon={faThumbsUp}
+                    className={{ root: 'h-3 w-3' }}
+                  />
+                  <Button.Label>{String(reply.upvotes)}</Button.Label>
+                </Button>
+              ) : (
+                <span
+                  className="inline-flex h-7 items-center gap-2 px-2 text-xs text-gray-600"
+                  aria-label={t('pwa.courseQA.replyUpvoteCountAriaLabel', {
+                    count: reply.upvotes,
+                  })}
+                >
+                  <FontAwesomeIcon
+                    icon={faThumbsUp}
+                    className="h-3 w-3"
+                    aria-hidden
+                  />
+                  {reply.upvotes}
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {canPost && (
+          <div className="mt-1 rounded-md border border-gray-200 p-2">
+            <textarea
+              name={`${idPrefix}-reply-content-${thread.id}`}
+              rows={2}
+              maxLength={4000}
+              value={replyDraft}
+              onChange={(event) => setReplyDraft(event.target.value)}
+              autoComplete="off"
+              placeholder={t('pwa.courseQA.replyPlaceholder')}
+              className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
+              aria-label={t('pwa.courseQA.replyPlaceholder')}
+              data-cy={`course-qa-reply-input-${thread.id}`}
+            />
+
+            {embedToken &&
+              (canChooseAnonymity ? (
+                <label className="mt-2 inline-flex items-center gap-2 text-xs text-gray-700">
+                  <input
+                    name={`${idPrefix}-reply-anonymous-${thread.id}`}
+                    type="checkbox"
+                    checked={postReplyAnonymous}
+                    onChange={(event) =>
+                      setPostReplyAnonymous(event.target.checked)
+                    }
+                    data-cy={`course-qa-reply-anonymous-${thread.id}`}
+                  />
+                  {t('pwa.courseQA.replyAnonymously')}
+                </label>
+              ) : mustPostAnonymously ? (
+                <p
+                  className="mt-2 text-xs text-gray-600"
+                  data-cy={`course-qa-reply-anonymous-${thread.id}`}
+                >
+                  {t('pwa.courseQA.replyingAnonymously')}
+                </p>
+              ) : null)}
+
+            <div className="mt-2 flex justify-end">
+              <Button
+                primary
+                loading={creatingReply}
+                disabled={creatingReply || replyDraft.trim().length === 0}
+                onClick={handleCreateReply}
+                className={{ root: 'h-8' }}
+                data={{ cy: `course-qa-create-reply-${thread.id}` }}
+              >
+                <Button.Label>{t('pwa.courseQA.reply')}</Button.Label>
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export default CourseDiscussionThreadCard
