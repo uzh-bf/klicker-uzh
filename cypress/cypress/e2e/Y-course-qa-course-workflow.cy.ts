@@ -67,6 +67,13 @@ describe('Course Q&A course-level workflows', function () {
     cy.get('[data-cy="course-overview-qa-panel"]').should('exist')
     cy.location('pathname').should('not.include', '/qa')
     cy.get('[data-cy="course-qa-empty"]').should('exist')
+    cy.get('[data-cy="course-overview-qa-panel"]').then(($qa) => {
+      cy.get('[data-cy="course-overview-content"]').then(($content) => {
+        expect($qa[0].getBoundingClientRect().left).to.be.at.least(
+          $content[0].getBoundingClientRect().right
+        )
+      })
+    })
 
     cy.visit(`${Cypress.env('URL_STUDENT')}/course/${this.data.courseId}/qa`)
     cy.location('pathname').should(
@@ -84,6 +91,15 @@ describe('Course Q&A course-level workflows', function () {
     cy.get('[data-cy="course-overview-qa-toggle"]')
       .should('be.visible')
       .and('have.attr', 'aria-expanded', 'false')
+    cy.get('[data-cy="course-overview-qa-panel"]').then(($qa) => {
+      cy.get('[data-cy="course-overview-content"]').then(($content) => {
+        expect($qa.parent()[0]).to.equal($content.parent()[0])
+        expect($qa.next()[0]).to.equal($content[0])
+        expect($qa[0].getBoundingClientRect().bottom).to.be.at.most(
+          $content[0].getBoundingClientRect().top
+        )
+      })
+    })
     cy.get('[data-cy="course-qa-thread-input"]').should('not.be.visible')
 
     cy.get('[data-cy="course-overview-qa-toggle"]').click()

@@ -8,7 +8,7 @@
 
 ---
 
-## Follow-up status (2026-07-24)
+## Follow-up status (2026-07-29)
 
 This document preserves the 2026-07-07 review snapshot below. The takeover
 branch has since resolved every original P0 and the decision-free P1 findings,
@@ -32,19 +32,28 @@ gate is a product decision, not an unimplemented backend primitive.
 ### Current UX assessment
 
 - Desktop course, practice, and microlearning views place Q&A beside the content
-  it discusses. Mobile uses an in-page disclosure, and `/qa` remains only a
-  fallback/deep-link and embed host. This is the right primary navigation model.
+  it discusses. Mobile uses an in-page disclosure before long contextual
+  content, and `/qa` remains only a fallback/deep-link and embed host. This is
+  the right primary navigation model.
 - The lecturer surface is integrated as a course tab with pagination rather
-  than a separate moderation application.
+  than a separate moderation application. Its remaining layout issue is the
+  unrelated Course Leaderboard beside the selected Q&A tab; the tab should use
+  the full content width or suppress the leaderboard.
 - Highest-value next improvement is the unresolved moderation choice. Minimum
   deletion is the recommended pilot scope; answered/pinned state should only be
   pulled forward if triage is required for the named pilot.
-- After moderation, prefer a context-specific rail heading, a collapsed reply
-  composer until the user chooses Reply, and denser lecturer filters. These are
-  polish, not merge blockers.
-- Screenshots `01` to `13` are prior real-runtime evidence. Screenshots `14` to
-  `16` are historical embed evidence. Fresh browser capture is blocked by the
-  local devrouter/auth runtime and must not be represented as current proof.
+- Reply composers are now collapsed until the user chooses Reply. After
+  moderation, prefer a context-specific rail heading, rate-limit-specific error
+  copy, and denser lecturer filters. These are polish, not merge blockers.
+- Fresh real-browser evidence covers course, practice, test-published
+  microlearning, Manage, external and course-wide embeds, desktop, and mobile in
+  `project/_local/course-qa-screenshots/index.html`. The backend suite passes
+  `30/30`.
+- Current Cypress runs are blocked before the first Q&A assertion because its
+  localhost-oriented login helper does not establish the devrouter session.
+  General Hatchet workflow execution is also unavailable, so microlearning was
+  published only in the disposable local database for browser proof. Neither
+  limitation should be represented as production-like worker or Cypress proof.
 
 ---
 

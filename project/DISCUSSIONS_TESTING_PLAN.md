@@ -41,20 +41,20 @@ behavior has browser or backend runtime evidence appropriate to the assertion.
 
 ## Current Status
 
-Last reconciled: 2026-07-24.
+Last reconciled: 2026-07-29.
 
 | ID | Status | Scenario | Last Result | Remaining Delta |
 |---|---|---|---|---|
-| `QA-001` | PASS | Rollout and runtime gates hide Q&A in Manage until enabled | Rollout Chromium `7/7`; course baseline `8/8` | Re-run current course spec with later READ-only case |
-| `QA-002` | PASS | Course overview integrates Q&A only when both gates allow it | Course/rollout Chromium baseline; screenshots `01`, `03`, `04` | Re-run later Q&A-only-course case |
-| `QA-003` | PASS | Participant creates a course thread and reply in place | Course Chromium baseline; screenshot `02` | Current-spec rerun |
-| `QA-004` | PASS | Thread and reply upvotes toggle without counter drift | Course baseline; backend `30/30`; screenshot `02` | Current-spec rerun |
-| `QA-005` | PARTIAL | Evaluated practice and microlearning stacks expose contextual Q&A, while answering does not | Practice Chromium `7/7`; evaluated-state screenshots `08` to `12` | Fresh microlearning answering/evaluation run |
-| `QA-006` | PASS | Lecturer overview groups and paginates course and stack threads | Course/practice baseline; screenshots `06`, `07` | Current-spec rerun |
-| `QA-007` | PARTIAL | Lecturer generates external-block and course-wide embed links | External-only baseline; old screenshot `14`; current backend proof | Re-run after fragment transport and course-wide mode |
-| `QA-008` | PARTIAL | Anonymous embed posting requires a valid token and enabled course policy | Pre-fragment Chromium baseline; current backend proof; old screenshots `15`, `16` | Re-run current fragment-token flow |
-| `QA-009` | PARTIAL | Tampered or stale embed scope/token fails closed without persistent side effects | Pre-fragment Chromium baseline; current backend proof | Re-run current browser history/tamper assertions |
-| `QA-010` | PARTIAL | Anonymous rate limits reject repeated posting and bound audit writes | Backend scope/course/IP/TTL cases pass | Browser error-state proof |
+| `QA-001` | PASS | Rollout and runtime gates hide Q&A in Manage until enabled | Historical focused Cypress baseline plus fresh Manage browser proof | Current Cypress rerun blocked by auth harness |
+| `QA-002` | PASS | Course overview integrates Q&A only when both gates allow it | Fresh desktop and mobile browser proof, screenshots `25` to `28` | Current Cypress rerun blocked by auth harness |
+| `QA-003` | PASS | Participant creates a course thread and reply in place | Fresh real API/browser proof, screenshot `26` | Current Cypress rerun blocked by auth harness |
+| `QA-004` | PASS | Thread and reply upvotes toggle without counter drift | Fresh browser proof plus backend `30/30`, screenshot `26` | None |
+| `QA-005` | PASS | Evaluated practice and microlearning stacks expose contextual Q&A, while answering does not | Fresh practice and test-published microlearning browser proof, screenshots `29` to `35` | Production-like microlearning publication blocked by missing Hatchet workflow |
+| `QA-006` | PARTIAL | Lecturer overview groups and paginates course and stack threads | Fresh grouped overview screenshot `37`; historical pagination screenshots `06`, `07` | Fresh >20-thread pagination rerun |
+| `QA-007` | PASS | Lecturer generates external-block and course-wide embed links | Fresh generator and both embed modes, screenshots `21`, `40` | None |
+| `QA-008` | PASS | Anonymous embed posting requires a valid token and enabled course policy | Fresh fragment-token thread and reply flow, screenshots `22`, `23` | None |
+| `QA-009` | PASS | Tampered or stale embed scope/token fails closed without persistent side effects | Backend suite `30/30`; fallback/deep-link browser proof | Current Cypress history assertion blocked by auth harness |
+| `QA-010` | PASS | Anonymous rate limits reject repeated posting and bound audit writes | Backend suite plus fresh mobile browser rejection, screenshot `24` | Improve generic error copy |
 | `QA-011` | PASS | Non-participants and unevaluated stack participants cannot read/write protected scopes | Rollout Chromium baseline; current backend proof | Current-spec rerun |
 | `QA-012` | PENDING | Existing v1 live-feedback create/read/upvote flow remains unchanged | No fresh branch runtime run | Manual smoke |
 
@@ -90,15 +90,13 @@ rollout `7/7`. The course spec gained two cases afterward. The embed baseline
 predates fragment-token transport and course-wide mode, so it is historical
 evidence rather than current-branch proof.
 
-The 2026-07-24 current-spec attempt confirmed Chromium 150 and one-spec
-selection after correcting the command above. Cleanup passed, but the first
-lecturer case returned to Auth before any Q&A assertion. A later fresh
-agent-browser attempt found the local devrouter helper unavailable with
-`devrouter is not built yet`; manual process fallback then loaded the frontends
-with non-workspace API origins and reproduced the Auth redirect or an empty
-loading state. Treat the focused browser rerun and new screenshots as blocked
-by local cross-app routing/session validation, not as a Course Q&A assertion
-failure.
+On 2026-07-29 the isolated devrouter runtime and delegated browser login were
+restored. Three bounded Cypress attempts still returned to Auth in the first
+lecturer case before any Q&A assertion: the Cypress login helper and cookie
+origins use localhost semantics while the runtime uses devrouter hostnames.
+Treat the focused Cypress rerun as blocked by the test harness, not as a Course
+Q&A assertion failure. The equivalent product routes and interactions pass
+through `agent-browser`.
 
 Run the current DB-backed service suite with:
 
@@ -114,25 +112,25 @@ concurrency, scope behavior, pagination, and presentation metadata.
 
 ## Screenshot Inventory
 
-| File | Functionality | Evidence age |
-|---|---|---|
-| `01-course-overview-desktop.png` | Integrated course overview with desktop Q&A rail | Prior real runtime |
-| `02-course-thread-reply-upvotes.png` | Thread, reply, and upvote interaction | Prior real runtime |
-| `03-course-overview-mobile.png` | Course overview on mobile | Prior real runtime |
-| `04-course-qa-mobile-panel.png` | In-page course Q&A on mobile | Prior real runtime |
-| `05-practice-stack-desktop-rail.png` | Initial practice desktop rail proof | Prior real runtime |
-| `06-manage-overview-first-page.png` | Lecturer overview at 20-thread first page | Prior real runtime |
-| `07-manage-overview-all-threads.png` | Lecturer overview after loading all 27 threads | Prior real runtime |
-| `08-practice-mobile-collapsed.png` | Practice Q&A collapsed after evaluation | Prior real runtime |
-| `09-practice-mobile-expanded.png` | Practice Q&A expanded in place | Prior real runtime |
-| `10-practice-desktop-responsive-rail.png` | Practice Q&A beside evaluated content | Prior real runtime |
-| `11-microlearning-evaluation-desktop.png` | Microlearning results with contextual desktop rail | Prior real runtime |
-| `12-microlearning-evaluation-mobile-collapsed.png` | Microlearning Q&A before long results, collapsed | Prior real runtime |
-| `12-microlearning-evaluation-mobile-expanded.png` | Microlearning Q&A expanded in place | Prior real runtime |
-| `13-qa-fallback-deep-link.png` | Standalone fallback/deep-link route | Prior real runtime |
-| `14-manage-embed-generated-redacted.png` | External-only embed generator with token redacted | Historical, before course-wide mode |
-| `15-anonymous-embed-empty.png` | Chrome-free anonymous embed baseline | Historical, before fragment transport |
-| `16-anonymous-embed-thread-reply.png` | Anonymous thread/reply baseline | Historical, before fragment transport |
+The canonical review surface is
+`project/_local/course-qa-screenshots/index.html`. It contains 21 fresh images:
+
+- Manage empty/grouped overview, settings, and external embed generation:
+  screenshots `19` to `21`, `37`, and `38`
+- anonymous external embed empty, thread/reply, and rate-limit states:
+  screenshots `22` to `24`
+- course desktop rail, thread/reply/upvotes, and mobile disclosure:
+  screenshots `25` to `28`
+- evaluated practice desktop/mobile rail and thread:
+  screenshots `29` to `32`
+- test-published microlearning desktop/mobile rail:
+  screenshots `33` to `35`
+- fallback/deep-link route and course-wide read-only embed:
+  screenshots `36` and `40`
+
+Historical screenshots `06` and `07` remain the runtime evidence for lecturer
+pagination from 20 to all 27 threads, bringing the gallery to 23 images. The
+gallery and images are intentionally ignored local artifacts.
 
 ## Targeted Pending Runs
 
@@ -140,16 +138,6 @@ Use `agent-browser` against the devrouter URLs. Save evidence under
 `project/_local/course-qa-screenshots/`. If participant or delegated login
 fails, record the exact redirect/session behavior; do not substitute static
 proof.
-
-### QA-010: Anonymous rate-limit error
-
-1. Generate a current external-block embed URL with anonymous posting enabled.
-2. Open it in a fresh unauthenticated browser session.
-3. Submit one thread and confirm it appears.
-4. Submit a second thread in the same scope and browser fingerprint within 90
-   seconds.
-5. Confirm the UI reports failure and no second thread appears.
-6. Capture the error state at `390x844`.
 
 ### QA-012: Legacy live-feedback smoke
 
@@ -163,12 +151,16 @@ proof.
 
 ### Final current-branch rerun
 
-1. Run all four focused Chromium commands above.
-2. Run all `30/30` backend scenarios.
-3. Capture fresh embed generator and anonymous embed screenshots for
-   fragment-token transport and both embed modes.
-4. Re-check desktop `1440x900` and mobile `390x844` for any visible behavior
-   changed after the existing screenshot set.
+Completed on 2026-07-29:
+
+1. The backend suite passes all `30/30` scenarios.
+2. Fresh desktop `1440x900` and mobile `390x844` browser proof covers the
+   integrated course, practice, microlearning, Manage, and embed surfaces.
+3. Fragment-token transport and both embed modes have fresh browser evidence.
+
+The attempted course workflow is blocked at login by the devrouter/auth harness
+mismatch described above. The other focused workflows share that login setup
+and were not rerun after the repeated course-workflow failure.
 
 ## Deferred Scope
 

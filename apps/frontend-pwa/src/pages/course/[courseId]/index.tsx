@@ -215,7 +215,28 @@ function CourseOverview({
                   'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(20rem,24rem)] lg:items-start lg:gap-6 xl:grid-cols-[minmax(0,1fr)_26rem]'
               )}
             >
-              <div className="min-w-0">
+              {courseQAAvailable && (
+                <ResponsiveDiscussionRail
+                  ariaLabel={t('pwa.courseQA.title')}
+                  mobileLabel={t('pwa.courseQA.title')}
+                  panelId="course-overview-qa-panel-content"
+                  dataCy="course-overview-qa-panel"
+                  toggleDataCy="course-overview-qa-toggle"
+                  className="mb-4 lg:col-start-2 lg:row-start-1 lg:mb-0"
+                >
+                  <CourseDiscussionPanel
+                    courseId={courseId}
+                    compact
+                    className="mx-0 max-w-none"
+                    idPrefix="course-overview-qa"
+                  />
+                </ResponsiveDiscussionRail>
+              )}
+
+              <div
+                className="min-w-0 lg:col-start-1 lg:row-start-1"
+                data-cy="course-overview-content"
+              >
                 <Tabs
                   defaultValue={
                     course.isAssessmentEnabled
@@ -663,24 +684,6 @@ function CourseOverview({
                   )}
                 </Tabs>
               </div>
-
-              {courseQAAvailable && (
-                <ResponsiveDiscussionRail
-                  ariaLabel={t('pwa.courseQA.title')}
-                  mobileLabel={t('pwa.courseQA.title')}
-                  panelId="course-overview-qa-panel-content"
-                  dataCy="course-overview-qa-panel"
-                  toggleDataCy="course-overview-qa-toggle"
-                  className="mt-6 lg:mt-0"
-                >
-                  <CourseDiscussionPanel
-                    courseId={courseId}
-                    compact
-                    className="mx-0 max-w-none"
-                    idPrefix="course-overview-qa"
-                  />
-                </ResponsiveDiscussionRail>
-              )}
             </div>
             {isProfileModalOpen && participantId ? (
               <ParticipantProfileModal
