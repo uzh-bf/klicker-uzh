@@ -1,5 +1,9 @@
 # Log
 
+## 2026-07-29
+
+- **Creation**: [course-discussions](./course-discussions.md) documents the gated Q&A data model, centralized access and scope rules, integrated desktop/mobile surfaces, lecturer overview, embed capability security, verification suites, and current moderation boundary.
+
 ## 2026-07-19
 
 - **Update**: [getting-started](./getting-started.md), [frontend-conventions](./frontend-conventions.md), and [testing](./testing.md) document the runtime-owned TypeScript compiler matrix, explicit Next.js build-validation config, isolated incremental-cache ownership, and check-only declaration trap. The matching verification procedure and solution notes preserve the required checks.
