@@ -291,8 +291,9 @@ export async function recomputePracticeQuizPermissions(
  * - direct permission granted to a user group the user is part of
  * - ownership of the practice quiz
  * - any derived permission granted to the individual user on a course that
- *   includes the considered practice quiz, according to the rules defined
- *   in the derived permission recomputation for live quizzes (see above).
+ *   includes the considered practice quiz:
+ *   READ maps to READ, non-propagating WRITE maps to EXECUTE, propagating
+ *   WRITE maps to WRITE, EXECUTE maps to EXECUTE, and ADMIN/OWNER map to ADMIN.
  *
  * Additionally, a recomputation of the derived permissions on all elements
  * used in the activity is triggered.
