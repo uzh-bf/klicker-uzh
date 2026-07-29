@@ -60,6 +60,18 @@ async function logMaintenanceError(
   }
 }
 
+async function logInvalidRetryPayload(
+  logger: KBIngestionLogger | undefined,
+  resource: { id: string; kbId: string },
+  ingestionAttemptId: string
+) {
+  await logMaintenanceError(logger, 'KB ingestion retry payload is invalid', {
+    resourceId: resource.id,
+    kbId: resource.kbId,
+    ingestionAttemptId,
+  })
+}
+
 async function runBounded<T>(
   values: T[],
   callback: (value: T) => Promise<void>
@@ -298,14 +310,10 @@ export async function maintainKBResources(
           !resource.mimeType ||
           resource.sizeBytes === null
         ) {
-          await logMaintenanceError(
+          await logInvalidRetryPayload(
             dependencies.logger,
-            'KB ingestion retry payload is invalid',
-            {
-              resourceId: resource.id,
-              kbId: resource.kbId,
-              ingestionAttemptId,
-            }
+            resource,
+            ingestionAttemptId
           )
           return
         }
@@ -319,14 +327,10 @@ export async function maintainKBResources(
         }
       } else {
         if (!resource.sourceUrl) {
-          await logMaintenanceError(
+          await logInvalidRetryPayload(
             dependencies.logger,
-            'KB ingestion retry payload is invalid',
-            {
-              resourceId: resource.id,
-              kbId: resource.kbId,
-              ingestionAttemptId,
-            }
+            resource,
+            ingestionAttemptId
           )
           return
         }
