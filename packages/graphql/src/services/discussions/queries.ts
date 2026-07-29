@@ -60,10 +60,10 @@ export async function courseDiscussionThreads(
     canPostAnonymously,
     canPostIdentified,
     effectiveScopeKey,
-    spaces,
+    space,
   } = readContext
 
-  if (spaces.length === 0) {
+  if (!space) {
     return {
       threads: [],
       nextCursor: null,
@@ -76,7 +76,7 @@ export async function courseDiscussionThreads(
 
   const threads = await ctx.prisma.discussionThread.findMany({
     where: {
-      spaceId: { in: spaces.map((space) => space.id) },
+      spaceId: space.id,
       isDeleted: false,
       scope: {
         scopeType: { in: [...ACTIVE_COURSE_SCOPE_TYPES] },

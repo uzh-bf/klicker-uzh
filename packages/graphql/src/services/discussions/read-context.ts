@@ -19,7 +19,7 @@ interface CourseDiscussionReadContext {
   canPostAnonymously: boolean
   canPostIdentified: boolean
   effectiveScopeKey: string
-  spaces: DB.DiscussionSpace[]
+  space: DB.DiscussionSpace | null
 }
 
 export async function resolveCourseDiscussionReadContext(
@@ -99,20 +99,18 @@ export async function resolveCourseDiscussionReadContext(
     }
   }
 
-  const spaces = await ctx.prisma.discussionSpace.findMany({
+  const space = await ctx.prisma.discussionSpace.findUnique({
     where: {
-      spaceType: DB.DiscussionSpaceType.COURSE,
       courseId,
     },
   })
 
   if (embedClaims) {
-    const expectedSpace = spaces[0]
-    const scopeExists = expectedSpace
+    const scopeExists = space
       ? await ctx.prisma.discussionScope.findUnique({
           where: {
             spaceId_scopeKey: {
-              spaceId: expectedSpace.id,
+              spaceId: space.id,
               scopeKey: effectiveScopeKey,
             },
           },
@@ -120,12 +118,12 @@ export async function resolveCourseDiscussionReadContext(
         })
       : null
     const bindingIsValid =
-      expectedSpace &&
+      space &&
       scopeExists &&
       (await verifyEmbedScopeBinding(
         {
           embedClaims,
-          expectedSpace,
+          expectedSpace: space,
           expectedScopeKey: effectiveScopeKey,
           requireAnonymous: false,
         },
@@ -142,6 +140,6 @@ export async function resolveCourseDiscussionReadContext(
     canPostAnonymously,
     canPostIdentified,
     effectiveScopeKey,
-    spaces,
+    space,
   }
 }
