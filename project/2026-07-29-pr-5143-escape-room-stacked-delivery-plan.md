@@ -1,6 +1,6 @@
 # Escape Room — Stacked Delivery Plan
 
-- **Status:** Approved; execution in progress
+- **Status:** Implemented and verified; draft publication pending
 - **Goal:** Replace the oversized PR #5143 with a reviewable stack while preserving its completed implementation.
 - **Source of truth:** `codex/escape-room-production` at `4be19aa61`
 - **Starting trunk:** `v3` at `f16b9ceb4` (Prisma 7)
@@ -159,7 +159,7 @@ When blocked by environment or authentication, complete every independent local 
 - [x] Add, extract, and verify Layer 2.
 - [x] Add, extract, and verify Layer 3.
 - [x] Add, extract, and verify Layer 4.
-- [ ] Run final stack-wide review and verification gates.
+- [x] Run final stack-wide review and verification gates.
 - [ ] Publish draft PRs and read back stack/PR state.
 
 ## Publication state
@@ -213,16 +213,23 @@ The review found that client-only filtering after the existing `numEntries`/`off
 
 ## Layer 1 evidence
 
-- **Primary implementation commits:** `4ce964b08`, `01b7693a4`, `a270c49b5`, `37eacfb31`; the final review correction is committed with this progress update.
-- **Verification:** affected package checks, 13 focused GraphQL contract and placement tests, full `check:all`, full production build, Prisma 7 empty-schema replay and clean diff, analytics schema parity, and desktop/mobile browser evidence all passed.
+- **Implementation commits:** `4ce964b08`, `01b7693a4`, `a270c49b5`,
+  `37eacfb31`, `0a430ec8e`, `b469e382a`, and `488ff84e3`.
+- **Verification:** affected package checks, 14 focused GraphQL contract and
+  placement tests, full `check:all`, full production build, Prisma 7
+  empty-schema replay and clean diff, analytics schema parity, and
+  desktop/mobile browser evidence all passed.
 - **Independent review:** the security/correctness review found one minor no-op QR sample-solution control. QR Scan was removed from that UI capability group and the owner edit flow was rechecked semantically and visually. The simplification review found no code changes that reduced complexity without weakening the contracts.
+- **Final review corrections:** shared GraphQL element definitions were split
+  into focused modules after `element.ts` crossed the repository's
+  maintainability threshold, and requested QR decoy counts are truncated and
+  bounded before allocation.
 - **Known unrelated validation debt:** the engineering-wiki validator still reports the pre-existing missing `type` field in `docs/solutions/best-practice/repeat-production-seeds-use-prior-state.md`; Layer 1 documentation itself passes repository formatting and type checks.
 
 ## Layer 2 evidence
 
-- **Implementation commits:** `0ab3141bf`, `c2bd07757`, `ae33b4e4d`,
-  `ecef38846`, `844de0875`, `43ab3c0ee`, and review correction
-  `4d408b883`.
+- **Implementation commits:** `768b5a596`, `679323573`, `731f064a6`,
+  `65f7e38fa`, `2a3535fbf`, `0818f7abd`, `d99c16f44`, and `4ecd7a29a`.
 - **Verification:** 60 focused GraphQL Escape Room tests, three QR utility
   tests, one PWA response-state test, repository-wide `check:all`, the full
   22-workspace production build, and all 16 routed Individual Escape Room
@@ -255,8 +262,8 @@ The review found that client-only filtering after the existing `numEntries`/`off
 
 ## Layer 3 evidence
 
-- **Implementation commits:** `b07726167`, `ffc79e4d2`, `40d1e99e8`,
-  `4d4e682f6`, `33275873a`, and review correction `ac8a49d15`.
+- **Implementation commits:** `79b3fb0b3`, `30d352956`, `6ef0a66a9`,
+  `ee6e83a98`, `ef45b977a`, `bcb239d03`, and `b45f1c4d9`.
 - **Verification:** 85 focused GraphQL Escape Room tests, affected GraphQL,
   PWA, and Playwright checks, repository-wide `check:all`, the full
   22-workspace production build, and all 18 routed Escape Room Playwright
@@ -284,11 +291,11 @@ The review found that client-only filtering after the existing `numEntries`/`off
 
 ## Layer 4 evidence
 
-- **Implementation commits:** `019f8190a`, `c1444d129`, `0b54ebcce`,
-  response-path and browser correction `083d04e30`, and documentation
-  `8193f213a`.
+- **Implementation commits:** `5d5ed60fe`, `613a68b00`, `a18f3e1e3`,
+  `e9d7f462c`, `6dcf20daf`, `f83839158`, `216f004f0`, `b31c50c41`, and
+  `f20681e83`.
 - **Verification:** 102 non-template GraphQL Escape Room/QR tests and the
-  isolated template test, 23 Response API enforcement tests, four util
+  isolated template test, 27 Response API enforcement tests, four util
   response-closure tests, eight response-processor deduplication tests, one PWA
   response serialization/parsing test, and affected GraphQL, Response API,
   worker, Manage, PWA, and Playwright checks passed. Generated GraphQL
@@ -313,6 +320,18 @@ The review found that client-only filtering after the existing `numEntries`/`off
   identity, group roster monitoring, QR placement regression tests, and
   fail-closed template validation. The per-layer verification README records
   exact commands, screenshots, and the final OKF validator result.
+- **Final stack-wide gates:** repository-wide `check:all`, the full
+  22-workspace production build, and the current-head ordered Chromium suite
+  all passed; the browser suite completed 20/20 scenarios against the exact
+  routed DevPod. The response path now rejects malformed payload shapes with a
+  400 response, reuses the canonical supported element set for progress, and
+  keeps timers monotonic across reloads.
+- **Security and static analysis:** the branch security review found no
+  high-confidence finding in the new authorization, response, CORS, lifecycle,
+  or data-disclosure paths. Opengrep reported one new changed-line match for
+  the exact-origin CORS allowlist; manual inspection confirmed that the
+  allowlist compares the full request origin against configured application
+  origins and does not use the flagged substring pattern.
 
 ## Top-of-stack source disposition
 

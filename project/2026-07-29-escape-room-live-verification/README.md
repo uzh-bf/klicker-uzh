@@ -21,7 +21,8 @@ Evidence for Layer 4 of
 - GraphQL Escape Room and QR tests: 102/102 passed serially across the nine
   non-template suites; the isolated Live Quiz template suite passed 1/1 on a
   clean DevPod database.
-- Response API Escape Room enforcement: 23/23 passed.
+- Response API Escape Room enforcement: 27/27 passed, including malformed
+  choice, numerical, free-text, and QR payload rejection.
 - Response processor deduplication: 8/8 passed.
 - Live Quiz response/closure coordination: 4/4 passed.
 - PWA Live Quiz response serialization/parsing: 1/1 passed.
@@ -30,6 +31,8 @@ Evidence for Layer 4 of
 - Generated GraphQL operations and public artifacts are current.
 - Ordered Chromium Escape Room workflow: 20/20 passed, preserving all
   Individual and Group scenarios and adding the two Live Quiz journeys.
+- Repository-wide `check:all` and the full 22-workspace production build passed
+  on the final rebased stack head.
 - Production Docusaurus build passed. It retained only pre-existing broken-link
   and CSS compatibility warnings outside the Escape Room tutorials.
 - Repository formatting and `git diff --check` passed for the layer.
@@ -68,6 +71,10 @@ are synthetic repository fixtures.
   refetch the authoritative status once at expiry.
 - Live cockpit progress expands the Live Quiz course roster so enrolled
   participants without attempts appear as `NOT_STARTED`.
+- Escape Room response validation rejects malformed element-specific payloads
+  before grading and returns the stable `invalid_escape_room_response` error.
+- Shared progress logic uses the canonical supported element-type contract
+  instead of maintaining a second list.
 
 ## Engineering wiki conformance
 
