@@ -18,10 +18,12 @@ Evidence for Layer 4 of
 
 ## Automated verification
 
-- GraphQL Escape Room tests: 88/88 passed serially across the seven
-  non-template suites; the isolated Live Quiz template suite passed 1/1.
-- Response API Escape Room enforcement: 20/20 passed.
-- Response processor deduplication: 7/7 passed.
+- GraphQL Escape Room and QR tests: 102/102 passed serially across the nine
+  non-template suites; the isolated Live Quiz template suite passed 1/1 on a
+  clean DevPod database.
+- Response API Escape Room enforcement: 23/23 passed.
+- Response processor deduplication: 8/8 passed.
+- Live Quiz response/closure coordination: 4/4 passed.
 - PWA Live Quiz response serialization/parsing: 1/1 passed.
 - GraphQL, Response API, response processor, Manage, PWA, and Playwright
   package typechecks passed.
@@ -56,10 +58,20 @@ are synthetic repository fixtures.
   for primary, linked, and direct-local execution. Before this correction,
   Live Quiz browser submissions posted to the health endpoint and returned
   404.
+- Escape Room responses now apply the same exact-origin credentialed CORS
+  policy as every other Response API path.
+- A Redis close gate rejects late submissions and drains both in-flight grading
+  and accepted worker events before block results are snapshotted. Failed
+  closure reopens the gate rather than silently dropping an accepted answer.
+- Live Quiz participant timers animate from the server's
+  `remainingSeconds`/`expiresInSeconds` snapshot with a monotonic clock, and
+  refetch the authoritative status once at expiry.
+- Live cockpit progress expands the Live Quiz course roster so enrolled
+  participants without attempts appear as `NOT_STARTED`.
 
-## Known unrelated validation debt
+## Engineering wiki conformance
 
-The engineering-wiki OKF validator still reports the pre-existing missing
-`type` frontmatter field in
-`docs/solutions/best-practice/repeat-production-seeds-use-prior-state.md`.
-The Live Quiz wiki edits add no new core conformance error.
+The source branch's missing OKF metadata correction for
+`repeat-production-seeds-use-prior-state.md` is retained in this layer. The
+validator reports the bundle as OKF v0.1 core conformant with 20 pre-existing
+hygiene warnings.

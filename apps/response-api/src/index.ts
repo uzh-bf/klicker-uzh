@@ -2,9 +2,11 @@ import { hatchetClient } from '@klicker-uzh/hatchet'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
 import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
-import { createServer, IncomingMessage, ServerResponse } from 'http'
+import { createServer } from 'http'
+import type { IncomingMessage, ServerResponse } from 'http'
 import { Redis } from 'ioredis'
 import { createHash } from 'node:crypto'
+import { getCorsAllowedOrigins, setCorsHeaders } from './cors.js'
 import { handleEscapeRoomValidation } from './escapeRoom.js'
 
 const redis = new Redis({
@@ -24,23 +26,6 @@ const assessmentRedis = new Redis({
 })
 
 const PORT = Number(process.env.PORT ?? 7078)
-const CORS_ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || '')
-  .split(',')
-  .map((o) => o.trim())
-  .filter(Boolean)
-
-function setCorsHeaders(req: IncomingMessage, res: ServerResponse) {
-  const origin = req.headers.origin
-  // Only allow explicitly whitelisted origins, and never allow "null"
-  if (origin && origin !== 'null' && CORS_ALLOWED_ORIGINS.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin)
-    res.setHeader('Vary', 'Origin')
-    res.setHeader('Access-Control-Allow-Credentials', 'true')
-  }
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Cookie')
-}
-
 function sendJson(
   req: IncomingMessage,
   res: ServerResponse,
@@ -406,7 +391,7 @@ async function initializeService() {
   console.log(
     `Assessment mode: ${process.env.ASSESSMENT_MODE === 'true' ? 'enabled' : 'disabled'}`
   )
-  console.log(`CORS origins: ${CORS_ALLOWED_ORIGINS.join(', ')}`)
+  console.log(`CORS origins: ${getCorsAllowedOrigins().join(', ')}`)
 
   // test connection to Redis cache for standard responses
   console.log('Testing Redis (standard responses) connection...')

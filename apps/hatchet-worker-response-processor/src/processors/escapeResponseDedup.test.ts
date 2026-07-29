@@ -30,6 +30,7 @@ function redisMock(initial: Record<string, string> = {}) {
       }
     ),
     del: vi.fn(async (key: string) => (values.delete(key) ? 1 : 0)),
+    zrem: vi.fn().mockResolvedValue(1),
   }
 }
 
@@ -43,6 +44,21 @@ describe('escape response worker deduplication', () => {
       withEscapeResponseDedup({ messageId, redis, process })
     ).resolves.toEqual({ status: 200 })
     expect(process).not.toHaveBeenCalled()
+  })
+
+  it('clears a pending block event when a completed message is retried', async () => {
+    const messageId = 'escape:attempt-1:11'
+    const pendingKey = 'escape-room:liveQuizBlock:7:pending-events'
+    const redis = redisMock({ [`response-message:${messageId}:done`]: '1' })
+
+    await withEscapeResponseDedup({
+      messageId,
+      redis,
+      pendingEventKey: pendingKey,
+      process: vi.fn(),
+    })
+
+    expect(redis.zrem).toHaveBeenCalledWith(pendingKey, messageId)
   })
 
   it('keeps lock contention retryable instead of acknowledging it', async () => {

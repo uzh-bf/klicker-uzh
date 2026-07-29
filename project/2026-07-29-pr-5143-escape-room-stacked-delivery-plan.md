@@ -287,11 +287,12 @@ The review found that client-only filtering after the existing `numEntries`/`off
 - **Implementation commits:** `019f8190a`, `c1444d129`, `0b54ebcce`,
   response-path and browser correction `083d04e30`, and documentation
   `8193f213a`.
-- **Verification:** 89 focused GraphQL tests, 20 Response API enforcement
-  tests, seven response-processor deduplication tests, one PWA response
-  serialization/parsing test, and affected GraphQL, Response API, worker,
-  Manage, PWA, and Playwright checks passed. Generated GraphQL artifacts are
-  current.
+- **Verification:** 102 non-template GraphQL Escape Room/QR tests and the
+  isolated template test, 23 Response API enforcement tests, four util
+  response-closure tests, eight response-processor deduplication tests, one PWA
+  response serialization/parsing test, and affected GraphQL, Response API,
+  worker, Manage, PWA, and Playwright checks passed. Generated GraphQL
+  artifacts are current.
 - **Browser evidence:** all 20 ordered Escape Room Chromium scenarios passed.
   Live-specific coverage verifies block-setting edit round-trip, explicit
   participant start, incorrect-answer lockout, reload, completion, German
@@ -311,4 +312,19 @@ The review found that client-only filtering after the existing `numEntries`/`off
   `4be19aa61` while preserving lower-layer corrections: explicit routed Group
   identity, group roster monitoring, QR placement regression tests, and
   fail-closed template validation. The per-layer verification README records
-  exact commands, screenshots, and the unchanged OKF validator baseline.
+  exact commands, screenshots, and the final OKF validator result.
+
+## Top-of-stack source disposition
+
+The final source-path inventory against `4be19aa61` has the following
+intentional omissions:
+
+| Source path | Disposition |
+| --- | --- |
+| `packages/graphql/src/graphql/ops/QGetCourseGroupActivities.graphql` | The source added `escapeRoomConfig`, but the only course-list consumer does not read it; the activity detail query owns runtime settings. Omitting the unused fields avoids list overfetch without removing behavior. |
+| `project/2026-07-07-pr-5143-escape-room-quiz-mode-plan.md` and `project/2026-07-10-pr-5143-escape-room-implementation-review.md` | Superseded by this approved stacked-delivery plan and its per-layer progress/evidence. |
+| `project/2026-07-19-escape-room-verification/*` | Superseded by current-head, per-layer browser evidence under the four dated verification directories. |
+
+The source's Live Quiz SSR authentication note, local `/AddResponse` routing
+note, and OKF solution frontmatter are retained. Generated artifacts were
+regenerated on current `v3`; no source behavior is omitted implicitly.

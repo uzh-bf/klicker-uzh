@@ -191,7 +191,12 @@ export function registerLiveQuizEscapeRoomTests() {
       await germanAttemptRow
         .locator('[data-cy^="escape-room-reset-confirm-"]')
         .click()
-      await expect(germanAttemptRow).not.toBeAttached()
+      await expect(germanAttemptRow).toContainText(
+        deMessages.manage.evaluation.escapeRoomStatusNotStarted
+      )
+      await expect(
+        germanAttemptRow.locator('[data-cy^="escape-room-reset-"]')
+      ).not.toBeAttached()
 
       await student.reload()
       await expect(student.getByTestId('escape-room-start')).toBeVisible()

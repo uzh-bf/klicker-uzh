@@ -429,6 +429,9 @@ describe('LiveQuiz block attempt start/reset contract', () => {
       },
     })
     const participant = await seedParticipant('live-block-start')
+    const notStartedParticipant = await seedParticipant(
+      'live-block-not-started'
+    )
 
     await expect(
       startEscapeRoomAttempt(
@@ -454,14 +457,22 @@ describe('LiveQuiz block attempt start/reset contract', () => {
     expect(progress).toMatchObject({
       activityId: String(block.id),
       totalStacks: 1,
-      attempts: [
-        {
+    })
+    expect(progress?.attempts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
           id: started.id,
           participantId: participant.id,
           clearedStacks: 0,
-        },
-      ],
-    })
+        }),
+        expect.objectContaining({
+          id: null,
+          participantId: notStartedParticipant.id,
+          status: 'NOT_STARTED',
+          clearedStacks: 0,
+        }),
+      ])
+    )
 
     await prisma.escapeRoomAttempt.update({
       where: { id: started.id },
@@ -474,7 +485,11 @@ describe('LiveQuiz block attempt start/reset contract', () => {
       { liveQuizId: liveQuiz.id, elementBlockId: block.id },
       lecturerCtx
     )
-    expect(completedProgress?.attempts[0]?.clearedStacks).toBe(1)
+    expect(
+      completedProgress?.attempts.find(
+        (entry) => entry.participantId === participant.id
+      )?.clearedStacks
+    ).toBe(1)
 
     const foreignQuiz = await seedLiveQuiz(
       {

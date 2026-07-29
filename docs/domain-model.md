@@ -89,9 +89,9 @@ Hints and penalties are shared across every member and restored after reload. Le
 
 A Live Quiz Escape Room is scoped to one non-assessment `ElementBlock` and one attempt per regular participant. It supports SC, MC, KPRIM, numerical, free-text, and QR Scan questions; temporary participants and assessment Live Quizzes are rejected. Participants explicitly start after the lecturer activates the block, and participant payloads reveal only the current uncleared question.
 
-The response API validates the participant token, active quiz/block binding, attempt, lockout, expiry, and current stage before grading. Correct stages are recorded in an attempt-scoped Redis set, deterministic event IDs make accepted retries stable, and the response processor deduplicates delivery before updating ordinary Live Quiz statistics. Start, answer, hint, and lecturer reset share the same participant/block lifecycle claim, preventing stale answer or reset races.
+The response API validates the participant token, active quiz/block binding, attempt, lockout, expiry, and current stage before grading. Correct stages are recorded in an attempt-scoped Redis set, deterministic event IDs make accepted retries stable, and the response processor deduplicates delivery before updating ordinary Live Quiz statistics. A block-wide close gate drains active grading and accepted worker events before result aggregation, so a response cannot complete after the closure snapshot. Start, answer, hint, and lecturer reset share the same participant/block lifecycle claim, preventing stale answer or reset races.
 
-The lecturer cockpit polls block-scoped progress and offers WRITE-authorized resets. Live Quiz templates preserve block settings and per-instance hints server-side; QR elements created from a template receive fresh private codes.
+The lecturer cockpit polls block-scoped progress, expands the owning course roster with `NOT_STARTED` participants, and offers WRITE-authorized resets. Live Quiz templates preserve block settings and per-instance hints server-side; QR elements created from a template receive fresh private codes.
 
 ## Course deletion
 

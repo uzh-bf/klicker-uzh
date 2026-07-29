@@ -11,7 +11,7 @@ import type {
   LiveQuizResponseInput,
   NumericalRestrictions,
 } from '@klicker-uzh/types'
-import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
+import { pendingEventKey, verifyJWT, type JWTPayload } from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
 import type { ChainableCommander } from 'ioredis'
@@ -39,6 +39,7 @@ async function processResponseMessageUnprotected(
   message: {
     messageId: string
     sessionId: string
+    blockId?: number
     instanceId: string
     response: LiveQuizResponseInput
     cookie?: string
@@ -699,6 +700,9 @@ async function processResponseMessageUnprotected(
         redis: redisExec,
       })
       redisMulti.set(dedupDoneKey, '1', 'EX', 60 * 60 * 24 * 30)
+      if (message.blockId != null) {
+        redisMulti.zrem(pendingEventKey(message.blockId), message.messageId)
+      }
     }
     const results = await redisMulti.exec()
     const commandError = results?.find(([error]) => error)?.[0]
@@ -732,6 +736,8 @@ export async function processResponseMessage(
   return withEscapeResponseDedup({
     messageId: message.messageId,
     redis: redisExec,
+    pendingEventKey:
+      message.blockId != null ? pendingEventKey(message.blockId) : undefined,
     process: (doneKey) =>
       processResponseMessageUnprotected(message, ctx, doneKey),
   })

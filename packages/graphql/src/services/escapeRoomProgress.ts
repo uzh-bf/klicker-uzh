@@ -99,6 +99,9 @@ export async function getEscapeRoomProgress(
       practiceQuiz: { select: { courseId: true } },
       microLearning: { select: { courseId: true } },
       groupActivity: { select: { courseId: true } },
+      elementBlock: {
+        select: { liveQuiz: { select: { courseId: true } } },
+      },
     },
   })
   if (!config) return null
@@ -276,7 +279,9 @@ export async function getEscapeRoomProgress(
 
   let progress = attempts.map(progressForAttempt)
   const participantCourseId =
-    config.practiceQuiz?.courseId ?? config.microLearning?.courseId
+    config.practiceQuiz?.courseId ??
+    config.microLearning?.courseId ??
+    config.elementBlock?.liveQuiz.courseId
   if (participantCourseId) {
     // The progress dashboard tracks the whole class, so include every enrolled
     // participant rather than only leaderboard-active ones (isActive gates

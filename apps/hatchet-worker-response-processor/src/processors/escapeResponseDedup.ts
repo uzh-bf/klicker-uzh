@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto'
 
 interface DedupRedis {
   get(key: string): Promise<string | null>
+  zrem(key: string, member: string): Promise<unknown>
   set(
     key: string,
     value: string,
@@ -57,16 +58,23 @@ export async function withEscapeResponseDedup<T extends { status: number }>({
   messageId,
   redis,
   process,
+  pendingEventKey,
 }: {
   messageId: string
   redis: DedupRedis
   process: (doneKey?: string) => Promise<T>
+  pendingEventKey?: string
 }) {
   if (!messageId.startsWith('escape:')) return process()
 
   const doneKey = `response-message:${messageId}:done`
   const lockKey = `response-message:${messageId}:lock`
-  if ((await redis.get(doneKey)) === '1') return { status: 200 } as T
+  if ((await redis.get(doneKey)) === '1') {
+    if (pendingEventKey) {
+      await redis.zrem(pendingEventKey, messageId)
+    }
+    return { status: 200 } as T
+  }
 
   const lockToken = randomUUID()
   const lock = await redis.set(lockKey, lockToken, 'EX', 300, 'NX')

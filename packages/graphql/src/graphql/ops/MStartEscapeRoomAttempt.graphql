@@ -16,6 +16,8 @@ mutation StartEscapeRoomAttempt(
     startedAt
     timeLimit
     penaltySeconds
+    remainingSeconds
+    expiresInSeconds
     lockoutUntil
     hintsUsed
     status

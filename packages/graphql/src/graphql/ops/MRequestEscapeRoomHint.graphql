@@ -20,6 +20,8 @@ mutation RequestEscapeRoomHint(
       startedAt
       timeLimit
       penaltySeconds
+      remainingSeconds
+      expiresInSeconds
       lockoutUntil
       hintsUsed
       status

@@ -1,6 +1,7 @@
 import { useMutation } from '@apollo/client'
 import {
   ElementInstance,
+  EscapeRoomAttempt,
   EscapeRoomStatus,
   RequestEscapeRoomHintDocument,
   StartEscapeRoomAttemptDocument,
@@ -9,16 +10,19 @@ import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-export type LiveQuizEscapeRoomAttempt = {
-  id: string
-  startedAt: string
-  timeLimit: number
-  penaltySeconds: number
-  hintsUsed: string[]
-  status: EscapeRoomStatus
-  lockoutUntil?: string | null
-  completedAt?: string | null
-}
+export type LiveQuizEscapeRoomAttempt = Pick<
+  EscapeRoomAttempt,
+  | 'id'
+  | 'startedAt'
+  | 'timeLimit'
+  | 'penaltySeconds'
+  | 'remainingSeconds'
+  | 'expiresInSeconds'
+  | 'hintsUsed'
+  | 'status'
+  | 'lockoutUntil'
+  | 'completedAt'
+>
 
 export type LiveQuizEscapeRoomResponse = {
   completed?: boolean
@@ -52,6 +56,7 @@ export function useLiveQuizEscapeRoom({
     initialAttempt?.status === EscapeRoomStatus.Completed
   )
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null)
+  const [expiresInSeconds, setExpiresInSeconds] = useState<number | null>(null)
   const [lockoutRemaining, setLockoutRemaining] = useState(0)
   const [revealedHints, setRevealedHints] = useState<Record<number, string>>(
     Object.fromEntries(
@@ -62,20 +67,32 @@ export function useLiveQuizEscapeRoom({
       )
     )
   )
-  const serverAttemptIdRef = useRef(initialAttempt?.id ?? null)
+  const serverAttemptProjection = initialAttempt
+    ? [
+        initialAttempt.id,
+        initialAttempt.status,
+        initialAttempt.remainingSeconds,
+        initialAttempt.expiresInSeconds,
+        initialAttempt.penaltySeconds,
+        initialAttempt.lockoutUntil,
+        initialAttempt.completedAt,
+        initialAttempt.hintsUsed.join(','),
+      ].join('|')
+    : ''
+  const serverAttemptProjectionRef = useRef(serverAttemptProjection)
+  const expiryHandledAttemptIdRef = useRef<string | null>(null)
   const revealedHintProjection = instances
     .map((instance) => `${instance.id}:${instance.revealedHint ?? ''}`)
     .join('|')
 
   useEffect(() => {
-    const nextServerAttemptId = initialAttempt?.id ?? null
-    if (serverAttemptIdRef.current === nextServerAttemptId) return
+    if (serverAttemptProjectionRef.current === serverAttemptProjection) return
 
-    serverAttemptIdRef.current = nextServerAttemptId
+    serverAttemptProjectionRef.current = serverAttemptProjection
     setAttempt(initialAttempt ?? null)
     setIsCompleted(initialAttempt?.status === EscapeRoomStatus.Completed)
     setLockoutRemaining(0)
-  }, [initialAttempt])
+  }, [initialAttempt, serverAttemptProjection])
 
   useEffect(() => {
     setRevealedHints(
@@ -90,19 +107,25 @@ export function useLiveQuizEscapeRoom({
   }, [instances, revealedHintProjection])
 
   useEffect(() => {
-    if (!config || !attempt) {
+    if (!config || !attempt || attempt.status !== EscapeRoomStatus.InProgress) {
       setRemainingSeconds(null)
+      setExpiresInSeconds(null)
       return
     }
+
+    const receivedAt = performance.now()
     const tick = () => {
-      const elapsed =
-        (Date.now() - new Date(attempt.startedAt).getTime()) / 1000
-      setRemainingSeconds(
-        Math.max(
-          0,
-          Math.ceil(attempt.timeLimit - attempt.penaltySeconds - elapsed)
-        )
+      const elapsed = (performance.now() - receivedAt) / 1000
+      const remaining = Math.max(
+        0,
+        Math.ceil(attempt.remainingSeconds - elapsed)
       )
+      const expiresIn = Math.max(
+        0,
+        Math.ceil(attempt.expiresInSeconds - elapsed)
+      )
+      setRemainingSeconds(remaining)
+      setExpiresInSeconds(expiresIn)
       setLockoutRemaining(
         attempt.lockoutUntil
           ? Math.max(
@@ -113,11 +136,15 @@ export function useLiveQuizEscapeRoom({
             )
           : 0
       )
+      if (expiresIn <= 0 && expiryHandledAttemptIdRef.current !== attempt.id) {
+        expiryHandledAttemptIdRef.current = attempt.id
+        void refetch?.()
+      }
     }
     tick()
     const interval = setInterval(tick, 1000)
     return () => clearInterval(interval)
-  }, [attempt, config])
+  }, [attempt, config, refetch])
 
   const startAttempt = useCallback(async () => {
     if (!blockId) return
@@ -178,7 +205,10 @@ export function useLiveQuizEscapeRoom({
     attempt,
     isCompleted,
     isExpired:
-      attempt?.status === EscapeRoomStatus.Expired || remainingSeconds === 0,
+      attempt?.status === EscapeRoomStatus.Expired ||
+      (attempt?.status === EscapeRoomStatus.InProgress &&
+        expiresInSeconds !== null &&
+        expiresInSeconds <= 0),
     remainingSeconds,
     lockoutRemaining,
     revealedHints,

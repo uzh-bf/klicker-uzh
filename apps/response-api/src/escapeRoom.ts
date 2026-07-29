@@ -16,10 +16,18 @@ import {
   isValidQrScanCode,
   normalizeQrScanCode,
 } from '@klicker-uzh/types'
-import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
-import { IncomingMessage, ServerResponse } from 'http'
+import {
+  acquireEscapeRoomResponseSlot,
+  completeEscapeRoomResponseEvent,
+  releaseEscapeRoomResponseSlot,
+  trackEscapeRoomResponseEvent,
+  verifyJWT,
+  type JWTPayload,
+} from '@klicker-uzh/util'
+import type { IncomingMessage, ServerResponse } from 'http'
 import { Redis } from 'ioredis'
 import { randomUUID } from 'node:crypto'
+import { setCorsHeaders } from './cors.js'
 
 const RELEASE_ESCAPE_ROOM_CLAIM = `
   if redis.call('get', KEYS[1]) == ARGV[1] then
@@ -110,6 +118,7 @@ export async function handleEscapeRoomValidation(
   if (instanceInfo.isEscapeRoom !== 'true') {
     return false
   }
+  setCorsHeaders(req, res)
 
   const { response, liveQuizId, instanceId } = payload
 
@@ -206,7 +215,19 @@ export async function handleEscapeRoomValidation(
     return true
   }
 
+  const responseSlotToken = randomUUID()
+  let responseSlotAcquired = false
   try {
+    responseSlotAcquired = await acquireEscapeRoomResponseSlot({
+      redis,
+      blockId,
+      token: responseSlotToken,
+    })
+    if (!responseSlotAcquired) {
+      sendJson(res, 409, { error: 'escape_room_block_closed' })
+      return true
+    }
+
     const [currentInstanceState, currentInstanceInfo] = await Promise.all([
       loadEscapeRoomInstanceState(instanceId),
       redis.hgetall(`lq:${liveQuizId}:i:${instanceId}:info`),
@@ -362,6 +383,7 @@ export async function handleEscapeRoomValidation(
       const message = {
         messageId: `escape:${attempt.id}:${instanceId}`,
         sessionId: String(liveQuizId),
+        blockId,
         instanceId: String(instanceId),
         response,
         cookie,
@@ -369,10 +391,24 @@ export async function handleEscapeRoomValidation(
         tries,
       }
 
-      await hatchetClient.events.push(
-        'response-received:authenticated',
-        message
-      )
+      await trackEscapeRoomResponseEvent({
+        redis,
+        blockId,
+        messageId: message.messageId,
+      })
+      try {
+        await hatchetClient.events.push(
+          'response-received:authenticated',
+          message
+        )
+      } catch (error) {
+        await completeEscapeRoomResponseEvent({
+          redis,
+          blockId,
+          messageId: message.messageId,
+        })
+        throw error
+      }
       await redis.sadd(clearedKey, String(instanceId))
       clearedInstances.add(String(instanceId))
       await redis.expire(clearedKey, 60 * 60 * 24 * 30)
@@ -426,6 +462,13 @@ export async function handleEscapeRoomValidation(
       return true
     }
   } finally {
+    if (responseSlotAcquired) {
+      await releaseEscapeRoomResponseSlot({
+        redis,
+        blockId,
+        token: responseSlotToken,
+      })
+    }
     await redis.eval(RELEASE_ESCAPE_ROOM_CLAIM, 1, claimKey, claimToken)
   }
 }

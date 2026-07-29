@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   grade: vi.fn(),
@@ -34,9 +34,9 @@ vi.mock('@klicker-uzh/prisma', () => ({
     },
   },
 }))
-vi.mock('@klicker-uzh/util', () => ({
+vi.mock('@klicker-uzh/util', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@klicker-uzh/util')>()),
   verifyJWT: mocks.verifyJWT,
-  QR_SCAN_CODE_PATTERN: /^[A-Za-z0-9_-]{12}$/,
 }))
 
 import { handleEscapeRoomValidation } from './escapeRoom.js'
@@ -68,9 +68,16 @@ function responseRecorder() {
 function redisMock() {
   const sets = new Map<string, Set<string>>()
   const claims = new Map<string, string>()
+  const sortedSets = new Map<string, Set<string>>()
   const transaction = {
     incr: vi.fn().mockReturnThis(),
     expire: vi.fn().mockReturnThis(),
+    zadd: vi.fn((key: string, _score: number, value: string) => {
+      const values = sortedSets.get(key) ?? new Set<string>()
+      values.add(value)
+      sortedSets.set(key, values)
+      return transaction
+    }),
     exec: vi.fn().mockResolvedValue([
       [null, 1],
       [null, 1],
@@ -80,11 +87,28 @@ function redisMock() {
     hgetall: vi.fn().mockResolvedValue({}),
     get: vi.fn().mockResolvedValue(null),
     del: vi.fn(async (key: string) => {
-      const removed = claims.delete(key) || sets.delete(key)
+      const removed =
+        claims.delete(key) || sets.delete(key) || sortedSets.delete(key)
       return removed ? 1 : 0
     }),
     eval: vi.fn(
-      async (_script: string, _keys: number, key: string, token: string) => {
+      async (
+        script: string,
+        _keys: number,
+        key: string,
+        token: string,
+        ...args: string[]
+      ) => {
+        if (script.includes('escape-room-response-acquire')) {
+          const gateKey = key
+          const inFlightKey = token
+          const responseSlotToken = args[2]!
+          if (claims.has(gateKey)) return 0
+          const values = sortedSets.get(inFlightKey) ?? new Set<string>()
+          values.add(responseSlotToken)
+          sortedSets.set(inFlightKey, values)
+          return 1
+        }
         if (claims.get(key) !== token) return 0
         claims.delete(key)
         return 1
@@ -107,6 +131,9 @@ function redisMock() {
       return values.size - size
     }),
     smembers: vi.fn(async (key: string) => [...(sets.get(key) ?? [])]),
+    zrem: vi.fn(async (key: string, value: string) =>
+      sortedSets.get(key)?.delete(value) ? 1 : 0
+    ),
     multi: vi.fn(() => transaction),
     transaction,
     expire: vi.fn().mockResolvedValue(1),
@@ -166,6 +193,29 @@ describe('response-api escape-room validation', () => {
     mocks.updateAttempts.mockResolvedValue({ count: 1 })
     mocks.grade.mockReturnValue(0)
     mocks.push.mockResolvedValue(undefined)
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it('returns credentialed CORS headers for an allowed participant origin', async () => {
+    const origin = 'https://pwa.klicker.localhost'
+    vi.stubEnv('CORS_ALLOWED_ORIGINS', origin)
+    const { response, result } = responseRecorder()
+
+    await handleEscapeRoomValidation(
+      { headers: { origin } } as any,
+      response,
+      payload,
+      'participant_token=token',
+      info,
+      redisMock()
+    )
+
+    expect(result.headers.get('Access-Control-Allow-Origin')).toBe(origin)
+    expect(result.headers.get('Access-Control-Allow-Credentials')).toBe('true')
+    expect(result.headers.get('Vary')).toBe('Origin')
   })
 
   it('rejects temporary participants before reading escape-room state', async () => {
@@ -265,7 +315,56 @@ describe('response-api escape-room validation', () => {
     expect(mocks.push).not.toHaveBeenCalled()
     expect(redis.sadd).not.toHaveBeenCalled()
     expect(mocks.updateAttempts).not.toHaveBeenCalled()
-    expect(redis.eval).toHaveBeenCalledOnce()
+    expect(redis.eval).toHaveBeenCalledTimes(2)
+  })
+
+  it('rejects a response when block closure wins the response-slot race', async () => {
+    const redis = redisMock()
+    redis.eval.mockResolvedValueOnce(0)
+    const { response, result } = responseRecorder()
+
+    await handleEscapeRoomValidation(
+      {} as any,
+      response,
+      payload,
+      'participant_token=token',
+      info,
+      redis
+    )
+
+    expect(result.statusCode).toBe(409)
+    expect(JSON.parse(result.body)).toEqual({
+      error: 'escape_room_block_closed',
+    })
+    expect(mocks.grade).not.toHaveBeenCalled()
+    expect(mocks.push).not.toHaveBeenCalled()
+  })
+
+  it('releases the participant claim when response-slot acquisition fails', async () => {
+    const redis = redisMock()
+    redis.eval.mockRejectedValueOnce(new Error('redis unavailable'))
+
+    await expect(
+      handleEscapeRoomValidation(
+        {} as any,
+        responseRecorder().response,
+        payload,
+        'participant_token=token',
+        info,
+        redis
+      )
+    ).rejects.toThrow('redis unavailable')
+
+    const retry = responseRecorder()
+    await handleEscapeRoomValidation(
+      {} as any,
+      retry.response,
+      payload,
+      'participant_token=token',
+      info,
+      redis
+    )
+    expect(retry.result.statusCode).toBe(200)
   })
 
   it('rejects cached instance metadata already marked as closed', async () => {
@@ -327,7 +426,7 @@ describe('response-api escape-room validation', () => {
     expect(result.statusCode).toBe(429)
     expect(JSON.parse(result.body).status).toBe('lockout')
     expect(mocks.grade).not.toHaveBeenCalled()
-    expect(redis.eval).toHaveBeenCalledOnce()
+    expect(redis.eval).toHaveBeenCalledTimes(2)
   })
 
   it('accepts the five-second grace boundary and expires beyond it', async () => {
