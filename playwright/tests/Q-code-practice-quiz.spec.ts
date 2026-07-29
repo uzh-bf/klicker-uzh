@@ -4,7 +4,12 @@ import {
   ElementType,
   PublicationStatus,
 } from '@klicker-uzh/prisma/client'
-import { expect, type Page, type Route } from '@playwright/test'
+import {
+  expect,
+  type Page,
+  type Route,
+  type WebSocketRoute,
+} from '@playwright/test'
 import { getPrisma } from '../global-setup.js'
 import { setSessionCookieForUrl } from '../util/authSession.js'
 import {
@@ -211,17 +216,39 @@ test.describe.serial('CODE practice-quiz participant flow', () => {
   test('persists a pending receipt across reload and advances after completion', async ({
     page,
   }) => {
-    let status: ReceiptStatus = 'PENDING'
+    const pollingStatus: ReceiptStatus = 'PENDING'
     const receiptId = 'code-receipt-reload'
+    let subscriptionId: string | undefined
+    let subscriptionSocket: WebSocketRoute | undefined
+    await page.routeWebSocket('**/api/graphql', async (socket) => {
+      subscriptionSocket = socket
+      socket.onMessage((rawMessage) => {
+        const message = JSON.parse(rawMessage.toString()) as {
+          id?: string
+          type?: string
+          payload?: { query?: string }
+        }
+        if (message.type === 'connection_init') {
+          socket.send(JSON.stringify({ type: 'connection_ack' }))
+        } else if (
+          message.type === 'subscribe' &&
+          message.payload?.query?.includes('CodeSubmissionUpdated')
+        ) {
+          subscriptionId = message.id
+        } else if (message.type === 'ping') {
+          socket.send(JSON.stringify({ type: 'pong' }))
+        }
+      })
+    })
     await page.route('**/api/graphql*', async (route) => {
       const operation = operationName(route)
       if (operation === 'SubmitCodeResponse') {
         await fulfillGraphql(route, {
-          submitCodeResponse: receipt({ id: receiptId, status }),
+          submitCodeResponse: receipt({ id: receiptId, status: pollingStatus }),
         })
       } else if (operation === 'CodeSubmission') {
         await fulfillGraphql(route, {
-          codeSubmission: receipt({ id: receiptId, status }),
+          codeSubmission: receipt({ id: receiptId, status: pollingStatus }),
         })
       } else {
         await forwardGraphql(route)
@@ -255,7 +282,21 @@ test.describe.serial('CODE practice-quiz participant flow', () => {
       'return a + b'
     )
 
-    status = 'COMPLETED'
+    await expect.poll(() => subscriptionId).toBeTruthy()
+    subscriptionSocket!.send(
+      JSON.stringify({
+        id: subscriptionId,
+        type: 'next',
+        payload: {
+          data: {
+            codeSubmissionUpdated: receipt({
+              id: receiptId,
+              status: 'COMPLETED',
+            }),
+          },
+        },
+      })
+    )
     await expect(page.getByTestId('code-submission-completed')).toBeVisible({
       timeout: 8_000,
     })
@@ -265,7 +306,6 @@ test.describe.serial('CODE practice-quiz participant flow', () => {
     await expect(page.getByText('Hidden sum example')).toHaveCount(0)
     await expect(page.getByTestId('student-stack-continue')).toBeVisible()
 
-    status = 'PENDING'
     await page.reload()
     await page.getByTestId('start-practice-quiz').click()
     await expect(page.getByTestId('code-submission-completed')).toBeVisible()
