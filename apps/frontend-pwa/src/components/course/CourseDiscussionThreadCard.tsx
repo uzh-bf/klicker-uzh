@@ -47,9 +47,8 @@ function CourseDiscussionThreadCard({
   const formatter = useFormatter()
   const [replyDraft, setReplyDraft] = useState('')
   const [postReplyAnonymous, setPostReplyAnonymous] = useState(false)
-  const [createReply, { loading: creatingReply }] = useMutation(
-    CreateCourseDiscussionReplyDocument
-  )
+  const [submittingReply, setSubmittingReply] = useState(false)
+  const [createReply] = useMutation(CreateCourseDiscussionReplyDocument)
   const [toggleThreadUpvote] = useMutation(
     ToggleCourseDiscussionThreadUpvoteDocument
   )
@@ -66,6 +65,8 @@ function CourseDiscussionThreadCard({
   const handleCreateReply = useCallback(async () => {
     const content = replyDraft.trim()
     if (!content) return
+
+    setSubmittingReply(true)
 
     try {
       const result = await createReply({
@@ -97,6 +98,8 @@ function CourseDiscussionThreadCard({
         type: 'error',
         message: t('pwa.courseQA.replyPostError'),
       })
+    } finally {
+      setSubmittingReply(false)
     }
   }, [
     replyDraft,
@@ -313,8 +316,8 @@ function CourseDiscussionThreadCard({
             <div className="mt-2 flex justify-end">
               <Button
                 primary
-                loading={creatingReply}
-                disabled={creatingReply || replyDraft.trim().length === 0}
+                loading={submittingReply}
+                disabled={submittingReply || replyDraft.trim().length === 0}
                 onClick={handleCreateReply}
                 className={{ root: 'h-8' }}
                 data={{ cy: `course-qa-create-reply-${thread.id}` }}
