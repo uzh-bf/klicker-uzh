@@ -44,7 +44,7 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
 
 ## CODE contract rule
 
-CODE has three deliberate surfaces documented in [docs/graphql-api-layer.md](../../../docs/graphql-api-layer.md): full lecturer `CodeElement`, authenticated full instance `AuthoringCodeElementData`, and participant-safe `CodeElementData`. When changing a union, resolver, fragment, or operation, update every applicable surface and run `test/codeGraphqlContract.test.ts`. Participant operations may expose public tests and static execution limits, but must omit hidden tests and runtime sandbox/session artifacts.
+CODE has three deliberate element surfaces documented in [docs/graphql-api-layer.md](../../../docs/graphql-api-layer.md): full lecturer `CodeElement`, authenticated full instance `AuthoringCodeElementData`, and participant-safe `CodeElementData`. Evaluation is also role-specific: participant `getPreviousStackEvaluation` may restore only public test outcomes from the caller's latest completed submission, while authorized activity evaluation may aggregate every authored public/hidden test without exposing individual hidden execution details. When changing a union, resolver, fragment, or operation, update every applicable surface and run `test/codeGraphqlContract.test.ts` plus the database-backed microlearning tracer in `test/codeSubmissions.test.ts`.
 
 ## Subscriptions (extra steps)
 

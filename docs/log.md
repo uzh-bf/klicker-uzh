@@ -7,6 +7,7 @@
 - **Update**: [architecture overview](./architecture-overview.md) and [testing](./testing.md) document the server-only CodeAPI trust boundary, separate public/hidden execution, short-lived asymmetric identity, shared JSON limits, process-group output/timeout enforcement, sanitized exact JSON grading, and service-free verification.
 - **Update**: [domain model](./domain-model.md), [GraphQL API layer](./graphql-api-layer.md), [async workers](./async-and-workers.md), and [testing](./testing.md) document the participant-owned CODE receipt, expiring worker claims, recovery task, transactional exactly-once response side effects, subscription/poll fallback, and database-backed lifecycle tracer.
 - **Update**: [frontend conventions](./frontend-conventions.md) and [testing](./testing.md) document the PWA CODE receipt state machine, participant-scoped recovery, terminal-state monotonicity, practice-quiz-only submission gate, completion-only advancement, failed retry, participant-safe feedback, and its real-app Playwright tracer.
+- **Update**: [GraphQL API layer](./graphql-api-layer.md), [frontend conventions](./frontend-conventions.md), and [testing](./testing.md) document CODE microlearning submission, finalized participant readback, participant-scoped evaluation storage, public-only participant results, authorized public/hidden instructor aggregates, and the routed Playwright/agent-browser proof.
 
 ## 2026-07-20
 

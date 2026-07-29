@@ -17,6 +17,7 @@ import type {
   Choice,
   ChoicesElementData,
   ChoicesResponse,
+  CodeElementData,
   CodeSubmissionResult,
   ContentElementData,
   ElementData,
@@ -24,6 +25,7 @@ import type {
   ElementOptionsAnswerCollection,
   ElementOptionsCaseStudy,
   ElementOptionsChoices,
+  ElementOptionsCode,
   ElementOptionsFreeText,
   ElementOptionsNumerical,
   ElementOptionsSelection,
@@ -3950,6 +3952,29 @@ function computeContentEvaluation({
   }
 }
 
+function computeCodeEvaluation({
+  options,
+  results,
+  common,
+}: {
+  options: ElementOptionsCode
+  results: ElementResultsCode
+  common: CommonEvaluationProps
+}) {
+  return {
+    ...common,
+    results: {
+      totalAnswers: results.total,
+      testResults: options.testCases.map((testCase) => ({
+        id: testCase.id,
+        name: testCase.name,
+        passedCount: results.tests[testCase.id]?.passed ?? 0,
+        totalCount: results.tests[testCase.id]?.total ?? 0,
+      })),
+    },
+  }
+}
+
 function computeInstanceEvaluation({
   instance,
 }: {
@@ -4048,6 +4073,16 @@ function computeInstanceEvaluation({
     return computeContentEvaluation({
       results: instance.results,
       anonymousResults: instance.anonymousResults,
+      common: commonInstanceData,
+    })
+  } else if (
+    instanceType === DB.ElementType.CODE &&
+    'tests' in instance.results &&
+    'submissions' in instance.results
+  ) {
+    return computeCodeEvaluation({
+      options: instance.elementData.options,
+      results: instance.results,
       common: commonInstanceData,
     })
   }
@@ -4427,6 +4462,62 @@ function getPreviousEvaluationCaseStudy({
   }
 }
 
+function getPreviousEvaluationCode({
+  instanceId,
+  elementData,
+  multiplier,
+  response,
+  submissionResult,
+  lastResponse,
+}: {
+  instanceId: number
+  elementData: CodeElementData
+  multiplier: number | undefined
+  response: DB.QuestionResponse
+  submissionResult: CodeSubmissionResult
+  lastResponse: SingleQuestionResponseCode
+}): EvaluationAggregationReturn {
+  const correctness = submissionResult.pointsPercentage
+  const score = computeSimpleAwardedPoints({
+    points: POINTS_PER_INSTANCE,
+    pointsPercentage: correctness,
+    pointsMultiplier: multiplier,
+  })
+  const publicResults = new Map(
+    submissionResult.publicTestResults.map((result) => [result.id, result])
+  )
+
+  return {
+    evaluation: {
+      ...elementData,
+      instanceId,
+      elementType: DB.ElementType.CODE,
+      pointsMultiplier: multiplier ?? 1,
+      score,
+      xp: computeAwardedXp({ pointsPercentage: correctness }),
+      pointsAwarded: response.totalPointsAwarded,
+      xpAwarded: response.totalXpAwarded,
+      correctness,
+      lastResponse,
+      testResults: elementData.options.testCases
+        .filter((testCase) => testCase.visibility === 'public')
+        .map((testCase) => ({
+          id: testCase.id,
+          name: testCase.name,
+          passedCount: publicResults.get(testCase.id)?.passed ? 1 : 0,
+          totalCount: 1,
+        })),
+    },
+    newStatus:
+      correctness === 1
+        ? StackFeedbackStatus.CORRECT
+        : correctness === 0
+          ? StackFeedbackStatus.INCORRECT
+          : StackFeedbackStatus.PARTIAL,
+    stackScore: score,
+  }
+}
+
 export async function getPreviousStackEvaluation(
   { stackId }: { stackId: number },
   ctx: Context
@@ -4445,6 +4536,14 @@ export async function getPreviousStackEvaluation(
             where: {
               participantId: ctx.user.sub,
             },
+          },
+          codeSubmissions: {
+            where: {
+              participantId: ctx.user.sub,
+              status: DB.CodeSubmissionStatus.COMPLETED,
+            },
+            orderBy: { completedAt: 'desc' },
+            take: 1,
           },
         },
       },
@@ -4620,6 +4719,30 @@ export async function getPreviousStackEvaluation(
             lastResponse: element.responses[0]
               .lastResponse as SingleQuestionResponseCaseStudy,
           })
+
+        if (evaluation) {
+          acc.evaluations.push(evaluation)
+          acc.stackFeedback = combineStackStatus({
+            prevStatus: acc.stackFeedback,
+            newStatus,
+          })
+          acc.stackScore = (acc.stackScore ?? 0) + (stackScore ?? 0)
+        }
+      } else if (
+        element.elementData.type === DB.ElementType.CODE &&
+        element.codeSubmissions[0]?.result
+      ) {
+        const { evaluation, newStatus, stackScore } = getPreviousEvaluationCode(
+          {
+            instanceId: element.id,
+            elementData: element.elementData,
+            multiplier: element.options.pointsMultiplier,
+            response: element.responses[0],
+            submissionResult: element.codeSubmissions[0].result,
+            lastResponse: element.responses[0]
+              .lastResponse as SingleQuestionResponseCode,
+          }
+        )
 
         if (evaluation) {
           acc.evaluations.push(evaluation)

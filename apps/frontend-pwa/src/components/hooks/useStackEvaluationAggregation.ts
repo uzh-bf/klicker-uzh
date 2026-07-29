@@ -7,10 +7,12 @@ interface UseStackEvaluationAggregationProps {
     MicroLearning,
     'name' | 'status' | 'arePushNotificationsSent' | 'course'
   > | null
+  participantId?: string
 }
 
 function useStackEvaluationAggregation({
   microlearning,
+  participantId,
 }: UseStackEvaluationAggregationProps) {
   return useMemo(() => {
     if (!microlearning) {
@@ -25,9 +27,13 @@ function useStackEvaluationAggregation({
       totalPointsAwarded: number
     }>(
       (acc, stack) => {
-        const rawStackStorage = localStorage.getItem(
-          `qi-${microlearning.id}-${stack.id}`
+        const codeStack = stack.elements?.some(
+          (element) => element.elementType === ElementType.Code
         )
+        const storageKey = codeStack
+          ? `qi-code-${microlearning.id}-${stack.id}-${participantId ?? 'unresolved'}`
+          : `qi-${microlearning.id}-${stack.id}`
+        const rawStackStorage = localStorage.getItem(storageKey)
         const stackStorage: StackStudentResponseType = rawStackStorage
           ? JSON.parse(rawStackStorage)
           : null
@@ -85,7 +91,7 @@ function useStackEvaluationAggregation({
       },
       { evaluation: {}, totalPointsAwarded: 0 }
     )
-  }, [microlearning])
+  }, [microlearning, participantId])
 }
 
 export default useStackEvaluationAggregation

@@ -36,6 +36,10 @@ import {
   processCodeSubmission,
   submitCodeResponse,
 } from '../src/services/codeSubmissions.js'
+import {
+  computeStackEvaluation,
+  getPreviousStackEvaluation,
+} from '../src/services/stacks.js'
 
 const executorResult: CodeSubmissionResult = {
   pointsPercentage: 1,
@@ -743,6 +747,63 @@ describe('CODE submission lifecycle', () => {
         },
       })
     ).not.toBeNull()
+
+    const previousEvaluation = await getPreviousStackEvaluation(
+      { stackId: data.instance.elementStackId! },
+      data.ctx
+    )
+    expect(previousEvaluation).toMatchObject({
+      status: 'correct',
+      score: 10,
+      evaluations: [
+        {
+          elementType: ElementType.CODE,
+          instanceId: data.instance.id,
+          correctness: 1,
+          lastResponse: {
+            code: 'def solve(a, b):\n    return a + b',
+          },
+          testResults: [
+            {
+              id: 'public',
+              name: 'Public example',
+              passedCount: 1,
+              totalCount: 1,
+            },
+          ],
+        },
+      ],
+    })
+
+    const persistedStack = await prisma.elementStack.findUniqueOrThrow({
+      where: { id: data.instance.elementStackId! },
+      include: { elements: true },
+    })
+    expect(computeStackEvaluation([persistedStack])).toMatchObject([
+      {
+        instances: [
+          {
+            results: {
+              totalAnswers: 1,
+              testResults: [
+                {
+                  id: 'public',
+                  name: 'Public example',
+                  passedCount: 1,
+                  totalCount: 1,
+                },
+                {
+                  id: 'hidden',
+                  name: 'Hidden example',
+                  passedCount: 1,
+                  totalCount: 1,
+                },
+              ],
+            },
+          },
+        ],
+      },
+    ])
   })
 
   it('does not expose another participant submission', async () => {

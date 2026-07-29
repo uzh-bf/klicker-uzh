@@ -161,6 +161,18 @@ function ElementStack({
     }))
   }, [codeElement, codeSubmission?.code, stackStorage])
 
+  // if single submission is enabled, fetch the previous answer & evaluation and do not submit again
+  const {
+    data: evaluationData,
+    error: evaluationError,
+    refetch: refetchEvaluation,
+  } = useQuery(GetPreviousStackEvaluationDocument, {
+    skip: previewOnly || !singleSubmission || !!stackStorage,
+    variables: {
+      stackId: stack.id,
+    },
+  })
+
   useEffect(() => {
     if (
       !codeElement ||
@@ -168,6 +180,11 @@ function ElementStack({
       codeSubmission.gradingStatus !== CodeSubmissionStatus.Completed ||
       stackStorage
     ) {
+      return
+    }
+
+    if (singleSubmission) {
+      void refetchEvaluation().catch(() => undefined)
       return
     }
 
@@ -196,21 +213,12 @@ function ElementStack({
   }, [
     codeElement,
     codeSubmission,
+    refetchEvaluation,
     setStackStorage,
     setStepStatus,
+    singleSubmission,
     stackStorage,
   ])
-
-  // if single submission is enabled, fetch the previous answer & evaluation and do not submit again
-  const { data: evaluationData } = useQuery(
-    GetPreviousStackEvaluationDocument,
-    {
-      skip: previewOnly || !singleSubmission || !!stackStorage,
-      variables: {
-        stackId: stack.id,
-      },
-    }
-  )
 
   // if single submission is enabled, fetch the previous answer & evaluation from the database (if available)
   useEffect(() => {
@@ -354,6 +362,17 @@ function ElementStack({
               }
 
               return acc
+            } else if (
+              elementType === ElementType.Code &&
+              evaluation.__typename === 'CodeInstanceEvaluation'
+            ) {
+              acc[evaluation.instanceId] = {
+                ...commonAttributes,
+                type: elementType,
+                response: evaluation.lastResponse.code,
+              }
+
+              return acc
             }
 
             return acc
@@ -488,6 +507,17 @@ function ElementStack({
             />
           </div>
         )}
+        {codeElement &&
+          singleSubmission &&
+          evaluationError &&
+          codeSubmission?.gradingStatus === CodeSubmissionStatus.Completed && (
+            <div className="mt-4" data-cy="code-evaluation-readback-failed">
+              <UserNotification
+                type="error"
+                message={t('shared.generic.systemError')}
+              />
+            </div>
+          )}
       </div>
 
       {/* display continue button if question was already answered */}
@@ -570,6 +600,9 @@ function ElementStack({
               ) ||
               (!!codeElement && !codeSubmissionAvailable) ||
               (!!codeElement && codeSubmissionActive) ||
+              (!!codeElement &&
+                codeSubmission?.gradingStatus ===
+                  CodeSubmissionStatus.Completed) ||
               (!!codeElement && previewOnly)
             }
             className={{

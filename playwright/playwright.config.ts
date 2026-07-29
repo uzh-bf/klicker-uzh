@@ -7,6 +7,7 @@ const baseURL =
   process.env.PLAYWRIGHT_BASE_URL ??
   process.env.URL_STUDENT ??
   'http://127.0.0.1:3001'
+const hostResolverRules = process.env.PLAYWRIGHT_HOST_RESOLVER_RULES
 
 export default defineConfig({
   testDir: './tests',
@@ -47,7 +48,12 @@ export default defineConfig({
     ignoreHTTPSErrors: true,
     // Disable CSS animations to stabilise interactions (mirrors cypress support/e2e.ts)
     launchOptions: {
-      args: ['--lang=en-US'],
+      args: [
+        '--lang=en-US',
+        ...(hostResolverRules
+          ? [`--host-resolver-rules=${hostResolverRules}`]
+          : []),
+      ],
     },
     locale: 'en-US',
     viewport: { width: 1920, height: 1080 }, // macbook-16 equivalent
