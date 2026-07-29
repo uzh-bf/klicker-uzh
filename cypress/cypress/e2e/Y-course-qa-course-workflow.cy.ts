@@ -75,6 +75,25 @@ describe('Course Q&A course-level workflows', function () {
     cy.get('[data-cy="course-qa-empty"]').should('exist')
   })
 
+  it('Student can expand the collapsed course Q&A on mobile', function () {
+    cy.viewport(390, 844)
+    cy.loginStudent()
+    cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
+
+    cy.get('[data-cy="course-overview-qa-toggle"]')
+      .should('be.visible')
+      .and('have.attr', 'aria-expanded', 'false')
+    cy.get('[data-cy="course-qa-thread-input"]').should('not.be.visible')
+
+    cy.get('[data-cy="course-overview-qa-toggle"]').click()
+    cy.get('[data-cy="course-overview-qa-toggle"]').should(
+      'have.attr',
+      'aria-expanded',
+      'true'
+    )
+    cy.get('[data-cy="course-qa-thread-input"]').should('be.visible')
+  })
+
   it('Malformed external scope links fail closed without crashing the fallback page', function () {
     cy.loginStudent()
     const malformedScope = encodeURIComponent('ext:%E0%A4%A:ref')

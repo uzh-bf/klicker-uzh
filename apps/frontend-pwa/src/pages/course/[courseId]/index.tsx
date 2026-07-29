@@ -38,6 +38,7 @@ import { Suspense, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../../components/Layout'
 import CourseDiscussionPanel from '../../../components/course/CourseDiscussionPanel'
+import ResponsiveDiscussionRail from '../../../components/course/ResponsiveDiscussionRail'
 import SuspendedGroupView from '../../../components/course/SuspendedGroupView'
 import SuspendedAssessmentResults from '../../../components/insights/assessmentResults/SuspendedAssessmentResults'
 import LeaveLeaderboardModal from '../../../components/participant/LeaveLeaderboardModal'
@@ -664,20 +665,21 @@ function CourseOverview({
               </div>
 
               {courseQAAvailable && (
-                <aside
-                  aria-label={t('pwa.courseQA.title')}
-                  className="mt-6 min-w-0 lg:mt-0"
-                  data-cy="course-overview-qa-panel"
+                <ResponsiveDiscussionRail
+                  ariaLabel={t('pwa.courseQA.title')}
+                  mobileLabel={t('pwa.courseQA.title')}
+                  panelId="course-overview-qa-panel-content"
+                  dataCy="course-overview-qa-panel"
+                  toggleDataCy="course-overview-qa-toggle"
+                  className="mt-6 lg:mt-0"
                 >
-                  <div className="lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
-                    <CourseDiscussionPanel
-                      courseId={courseId}
-                      compact
-                      className="mx-0 max-w-none"
-                      idPrefix="course-overview-qa"
-                    />
-                  </div>
-                </aside>
+                  <CourseDiscussionPanel
+                    courseId={courseId}
+                    compact
+                    className="mx-0 max-w-none"
+                    idPrefix="course-overview-qa"
+                  />
+                </ResponsiveDiscussionRail>
               )}
             </div>
             {isProfileModalOpen && participantId ? (
