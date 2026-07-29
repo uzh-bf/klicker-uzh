@@ -10,9 +10,16 @@ import {
   type Prisma,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
-import type { DeleteKBResourceInput } from '@klicker-uzh/types'
+import type {
+  DeleteKBResourceInput,
+  IngestKBResourceInput,
+} from '@klicker-uzh/types'
 import { randomUUID } from 'node:crypto'
-import { dispatchKBDeletion, type KBIngestionLogger } from './kbIngestion.js'
+import {
+  dispatchKBDeletion,
+  dispatchKBIngestion,
+  type KBIngestionLogger,
+} from './kbIngestion.js'
 import {
   createKBIngestionApiClient,
   type KBIngestionApiClient,
@@ -20,7 +27,11 @@ import {
 
 const KB_MAINTENANCE_BATCH_SIZE = 32
 const KB_MAINTENANCE_CONCURRENCY = 8
-const KB_MAINTENANCE_INTERVAL_MS = 15 * 60 * 1000
+// The maintenance task itself runs on this cadence (see the `maintain-kb-resources`
+// cron in `index.ts`), so a QUEUED/UPSERT row with no `externalOperationId` that is
+// older than one interval has necessarily survived at least one full sweep without
+// being dispatched or reconciled, i.e. it is stranded rather than merely in flight.
+export const KB_MAINTENANCE_INTERVAL_MS = 15 * 60 * 1000
 const KB_UPLOAD_RETENTION_GRACE_MS = 24 * 60 * 60 * 1000
 const KB_BLOB_DELETE_TIMEOUT_MS = 30_000
 const KB_TERMINAL_DELETION_STATUSES = [
@@ -217,6 +228,132 @@ export async function maintainKBResources(
             resourceId: resource.id,
             kbId: resource.kbId,
             deletionAttemptId,
+          }
+        )
+      }
+    })
+  }
+
+  // Recovers UPSERT dispatches stranded when the process crashed between the
+  // commit that claims a fresh `ingestionAttemptId` (status QUEUED,
+  // externalOperationId null) and the enqueue of the ingestion task. Such rows
+  // are invisible to `monitorActiveKBIngestions` (which requires a non-null
+  // externalOperationId) and cannot be re-ingested or deleted through the API
+  // while QUEUED, so they would otherwise be stuck forever.
+  const upsertRetryStaleBefore = new Date(
+    now.getTime() - KB_MAINTENANCE_INTERVAL_MS
+  )
+  const upsertRetryWhere = {
+    deletedAt: null,
+    ingestionOperation: KBIngestionOperation.UPSERT,
+    status: KBResourceStatus.QUEUED,
+    externalOperationId: null,
+    ingestionAttemptId: { not: null },
+    updatedAt: { lte: upsertRetryStaleBefore },
+  } satisfies Prisma.KBResourceWhereInput
+  const upsertRetryCount = await dependencies.prisma.kBResource.count({
+    where: upsertRetryWhere,
+  })
+  const upsertRetryOffset = getBatchOffset(upsertRetryCount, now)
+  const upsertRetries = await dependencies.prisma.kBResource.findMany({
+    where: upsertRetryWhere,
+    select: {
+      id: true,
+      kbId: true,
+      title: true,
+      type: true,
+      blobName: true,
+      mimeType: true,
+      sizeBytes: true,
+      sourceUrl: true,
+      ingestionAttemptId: true,
+      resourceVersion: true,
+      kb: { select: { ownerId: true } },
+    },
+    orderBy: { id: 'asc' },
+    ...(upsertRetryOffset > 0 ? { skip: upsertRetryOffset } : {}),
+    take: KB_MAINTENANCE_BATCH_SIZE,
+  })
+  if (upsertRetries.length > 0) {
+    await runBounded(upsertRetries, async (resource) => {
+      // The same attempt id is reused (never a new one, never a status
+      // transition): the external platform dedupes on this id via its
+      // Idempotency-Key, so re-dispatching is safe even if a previous crash
+      // happened after the platform had already accepted the operation.
+      const ingestionAttemptId = resource.ingestionAttemptId
+      if (!ingestionAttemptId) {
+        return
+      }
+      const basePayload = {
+        resourceId: resource.id,
+        kbId: resource.kbId,
+        title: resource.title,
+        ingestionAttemptId,
+        resourceVersion: resource.resourceVersion,
+      }
+      let payload: IngestKBResourceInput
+      if (resource.type === KBResourceType.BLOB) {
+        if (
+          !resource.blobName ||
+          !resource.mimeType ||
+          resource.sizeBytes === null
+        ) {
+          await logMaintenanceError(
+            dependencies.logger,
+            'KB ingestion retry payload is invalid',
+            {
+              resourceId: resource.id,
+              kbId: resource.kbId,
+              ingestionAttemptId,
+            }
+          )
+          return
+        }
+        payload = {
+          ...basePayload,
+          type: KBResourceType.BLOB,
+          blobName: resource.blobName,
+          containerName: `kb-${resource.kb.ownerId}`,
+          mimeType: resource.mimeType,
+          sizeBytes: resource.sizeBytes,
+        }
+      } else {
+        if (!resource.sourceUrl) {
+          await logMaintenanceError(
+            dependencies.logger,
+            'KB ingestion retry payload is invalid',
+            {
+              resourceId: resource.id,
+              kbId: resource.kbId,
+              ingestionAttemptId,
+            }
+          )
+          return
+        }
+        payload = {
+          ...basePayload,
+          type: KBResourceType.URL,
+          sourceUrl: resource.sourceUrl,
+        }
+      }
+      try {
+        const client =
+          dependencies.client ?? createKBIngestionApiClient({ env })
+        await dispatchKBIngestion(payload, {
+          prisma: dependencies.prisma,
+          client,
+          env,
+          now: () => now,
+          logger: dependencies.logger,
+        })
+      } catch {
+        await logMaintenanceError(
+          dependencies.logger,
+          'KB ingestion retry failed',
+          {
+            resourceId: resource.id,
+            kbId: resource.kbId,
+            ingestionAttemptId,
           }
         )
       }

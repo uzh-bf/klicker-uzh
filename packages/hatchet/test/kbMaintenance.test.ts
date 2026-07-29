@@ -6,18 +6,23 @@ import {
 } from '@klicker-uzh/prisma/client'
 import { describe, expect, it, vi } from 'vitest'
 import type { KBIngestionApiClient } from '../src/kbIngestionApi.js'
-import { maintainKBResources } from '../src/kbMaintenance.js'
+import {
+  KB_MAINTENANCE_INTERVAL_MS,
+  maintainKBResources,
+} from '../src/kbMaintenance.js'
 
 const RESOURCE_ID = '7f3e2a10-9c4b-4d8e-b1a6-5e0f9d2c7b3a'
 const KB_ID = 'c2a91f74-6e0b-4c3d-8f5a-1b9e7d4a2c60'
 const OWNER_ID = 'f490ce41-bd11-42c1-b601-74bdbcd4d3d7'
 const ATTEMPT_ID = 'b5d4c3a2-1f0e-4d9c-8b7a-6e5f4d3c2b1a'
 const OPERATION_ID = 'op_01J2X8K3M9QZ4R7T6V5W1Y0BND'
+const CONTENT_SHA256 =
+  '9b74c9897bac770ffc029102a200c5de11ba9dbd0e0f28c991eb64b0fb54d96e'
 const NOW = new Date('2026-07-27T12:00:00.000Z')
 
 function client(): KBIngestionApiClient {
   return {
-    acceptResource: vi.fn(),
+    acceptResource: vi.fn().mockResolvedValue(OPERATION_ID),
     deleteResource: vi.fn().mockResolvedValue(OPERATION_ID),
     getOperation: vi.fn(),
   }
@@ -26,6 +31,8 @@ function client(): KBIngestionApiClient {
 function maintenancePrisma({
   pendingDispatch = [],
   pendingDispatchCount = pendingDispatch.length,
+  pendingUpsertRetries = [],
+  pendingUpsertRetryCount = pendingUpsertRetries.length,
   expiredTickets = [],
   expiredTicketCount = expiredTickets.length,
   deletedResources = [],
@@ -36,6 +43,8 @@ function maintenancePrisma({
 }: {
   pendingDispatch?: unknown[]
   pendingDispatchCount?: number
+  pendingUpsertRetries?: unknown[]
+  pendingUpsertRetryCount?: number
   expiredTickets?: unknown[]
   expiredTicketCount?: number
   deletedResources?: unknown[]
@@ -49,10 +58,12 @@ function maintenancePrisma({
       count: vi
         .fn()
         .mockResolvedValueOnce(pendingDispatchCount)
+        .mockResolvedValueOnce(pendingUpsertRetryCount)
         .mockResolvedValueOnce(deletedResourceCount),
       findMany: vi
         .fn()
         .mockResolvedValueOnce(pendingDispatch)
+        .mockResolvedValueOnce(pendingUpsertRetries)
         .mockResolvedValueOnce(deletedResources),
       findUnique: vi.fn().mockResolvedValue(currentResource),
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
@@ -136,7 +147,8 @@ describe('KB retention maintenance', () => {
           const terminalStatuses = args.select.ingestionRuns.where.status.in
           return terminalStatuses.includes(terminalStatus) ? [failed] : []
         })
-        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]) // no stranded UPSERT dispatches
+        .mockResolvedValueOnce([]) // no hard-deletable resources
       prisma.kBResource.updateMany
         .mockReset()
         .mockImplementationOnce(async (args) => {
@@ -471,5 +483,160 @@ describe('KB retention maintenance', () => {
         chatbots: { none: { isEnabled: true } },
       },
     })
+  })
+
+  it('retries a stranded UPSERT dispatch stuck in the crash window with its stable attempt id', async () => {
+    const stranded = {
+      id: RESOURCE_ID,
+      kbId: KB_ID,
+      title: 'Lecture 1',
+      type: KBResourceType.URL,
+      blobName: null,
+      mimeType: null,
+      sizeBytes: null,
+      sourceUrl: 'https://example.com/lecture.txt',
+      ingestionAttemptId: ATTEMPT_ID,
+      resourceVersion: 3,
+      kb: { ownerId: OWNER_ID },
+    }
+    const prisma = maintenancePrisma({
+      pendingUpsertRetries: [stranded],
+      currentResource: {
+        status: KBResourceStatus.QUEUED,
+        ingestionAttemptId: ATTEMPT_ID,
+        resourceVersion: 3,
+        contentSha256: CONTENT_SHA256,
+        mimeType: 'text/plain',
+        sizeBytes: 1024,
+        kbId: KB_ID,
+        deletedAt: null,
+        kb: { deletedAt: null },
+        externalOperationId: null,
+      },
+    })
+    const apiClient = client()
+
+    await maintainKBResources({
+      prisma: prisma as never,
+      client: apiClient,
+      now: () => NOW,
+    })
+
+    expect(apiClient.acceptResource).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resourceId: RESOURCE_ID,
+        kbId: KB_ID,
+        resourceVersion: 3,
+        ingestionAttemptId: ATTEMPT_ID,
+        source: expect.objectContaining({
+          contentSha256: CONTENT_SHA256,
+          mimeType: 'text/plain',
+          sizeBytes: 1024,
+        }),
+      })
+    )
+    // Recovery reuses the existing attempt: no new attempt id, no status
+    // transition performed by the maintenance sweep itself.
+    expect(prisma.kBIngestionRun.create).not.toHaveBeenCalled()
+  })
+
+  it('excludes upsert rows that are fresh, still in flight, tombstoned, or mid-deletion', async () => {
+    const prisma = maintenancePrisma()
+    const apiClient = client()
+
+    await maintainKBResources({
+      prisma: prisma as never,
+      client: apiClient,
+      now: () => NOW,
+    })
+
+    expect(prisma.kBResource.findMany).toHaveBeenNthCalledWith(2, {
+      where: {
+        deletedAt: null,
+        ingestionOperation: KBIngestionOperation.UPSERT,
+        status: KBResourceStatus.QUEUED,
+        externalOperationId: null,
+        ingestionAttemptId: { not: null },
+        updatedAt: {
+          lte: new Date(NOW.getTime() - KB_MAINTENANCE_INTERVAL_MS),
+        },
+      },
+      select: {
+        id: true,
+        kbId: true,
+        title: true,
+        type: true,
+        blobName: true,
+        mimeType: true,
+        sizeBytes: true,
+        sourceUrl: true,
+        ingestionAttemptId: true,
+        resourceVersion: true,
+        kb: { select: { ownerId: true } },
+      },
+      orderBy: { id: 'asc' },
+      take: 32,
+    })
+    expect(apiClient.acceptResource).not.toHaveBeenCalled()
+  })
+
+  it('re-dispatches the same attempt id across repeated sweeps without minting a new attempt', async () => {
+    const stranded = {
+      id: RESOURCE_ID,
+      kbId: KB_ID,
+      title: 'Lecture 1',
+      type: KBResourceType.URL,
+      blobName: null,
+      mimeType: null,
+      sizeBytes: null,
+      sourceUrl: 'https://example.com/lecture.txt',
+      ingestionAttemptId: ATTEMPT_ID,
+      resourceVersion: 3,
+      kb: { ownerId: OWNER_ID },
+    }
+    const currentResource = {
+      status: KBResourceStatus.QUEUED,
+      ingestionAttemptId: ATTEMPT_ID,
+      resourceVersion: 3,
+      contentSha256: CONTENT_SHA256,
+      mimeType: 'text/plain',
+      sizeBytes: 1024,
+      kbId: KB_ID,
+      deletedAt: null,
+      kb: { deletedAt: null },
+      externalOperationId: null,
+    }
+    const apiClient = client()
+
+    // Two independent sweeps against the same still-stranded row (e.g. a
+    // second crash before the first sweep's dispatch could be correlated):
+    // both must reuse the identical attempt id, which the ingestion API
+    // dedupes on via its Idempotency-Key, so the double dispatch is harmless.
+    const firstPrisma = maintenancePrisma({
+      pendingUpsertRetries: [stranded],
+      currentResource,
+    })
+    await maintainKBResources({
+      prisma: firstPrisma as never,
+      client: apiClient,
+      now: () => NOW,
+    })
+
+    const secondPrisma = maintenancePrisma({
+      pendingUpsertRetries: [stranded],
+      currentResource,
+    })
+    await maintainKBResources({
+      prisma: secondPrisma as never,
+      client: apiClient,
+      now: () => NOW,
+    })
+
+    expect(apiClient.acceptResource).toHaveBeenCalledTimes(2)
+    for (const call of vi.mocked(apiClient.acceptResource).mock.calls) {
+      expect(call[0]).toMatchObject({ ingestionAttemptId: ATTEMPT_ID })
+    }
+    expect(firstPrisma.kBIngestionRun.create).not.toHaveBeenCalled()
+    expect(secondPrisma.kBIngestionRun.create).not.toHaveBeenCalled()
   })
 })
