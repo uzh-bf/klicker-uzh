@@ -105,7 +105,6 @@ async function recomputeCoursePermissionsSetBased(
           target_course."ownerId" AS "userId",
           'OWNER'::"PermissionLevel" AS "permissionLevel",
           NULL::integer AS "directPermissionId",
-          false AS "derived",
           'OWNER'::text AS "sourceType",
           false AS "propagation"
         FROM target_course
@@ -119,7 +118,6 @@ async function recomputeCoursePermissionsSetBased(
           expanded_permissions."userId",
           expanded_permissions."permissionLevel",
           expanded_permissions."permissionId" AS "directPermissionId",
-          false AS "derived",
           'DIRECT'::text AS "sourceType",
           expanded_permissions."propagation"
         FROM expanded_permissions
@@ -151,8 +149,7 @@ async function recomputeCoursePermissionsSetBased(
         SELECT
           ranked_candidates."userId",
           ranked_candidates."permissionLevel",
-          ranked_candidates."directPermissionId",
-          ranked_candidates."derived"
+          ranked_candidates."directPermissionId"
         FROM ranked_candidates
         WHERE ranked_candidates."permissionRank" = 1
       ),
@@ -182,7 +179,7 @@ async function recomputeCoursePermissionsSetBased(
       SELECT
         desired_permissions."permissionLevel",
         desired_permissions."directPermissionId",
-        desired_permissions."derived",
+        false,
         desired_permissions."userId",
         ${id}::uuid,
         CURRENT_TIMESTAMP,
