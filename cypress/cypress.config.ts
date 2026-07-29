@@ -2,6 +2,7 @@ import { prisma } from '@klicker-uzh/prisma'
 import {
   AchievementType,
   CourseAuthType,
+  ElementBlockStatus,
   ElementType,
   ObjectAccess,
   PermissionLevel,
@@ -21,6 +22,7 @@ import {
   ElementOptionsSelection,
 } from '@klicker-uzh/types'
 import bcrypt from 'bcryptjs'
+import { createHash } from 'crypto'
 import { defineConfig } from 'cypress'
 import cypressSplit from 'cypress-split'
 // import cypressCodeCoverage from '@cypress/code-coverage/task'
@@ -1704,6 +1706,132 @@ export default defineConfig({
             }
 
             return liveQuiz.pinCode
+          } catch (error) {
+            throw error
+          }
+        },
+        async seedWordCloudLiveQuizResponses({
+          freeTextAnswer,
+          freeTextTitle,
+          numericalAnswer,
+          numericalTitle,
+          quizName,
+          secondFreeTextAnswer,
+          secondFreeTextTitle,
+        }: {
+          freeTextAnswer: string
+          freeTextTitle: string
+          numericalAnswer: string
+          numericalTitle: string
+          quizName: string
+          secondFreeTextAnswer: string
+          secondFreeTextTitle: string
+        }) {
+          try {
+            const liveQuiz = await prisma.liveQuiz.findFirst({
+              where: { name: quizName, isDeleted: false },
+              include: {
+                blocks: {
+                  include: { elements: true },
+                  orderBy: { order: 'asc' },
+                },
+              },
+            })
+
+            if (!liveQuiz) {
+              throw new Error(`Live quiz ${quizName} not found`)
+            }
+
+            const block = liveQuiz.blocks[0]
+            if (!block) {
+              throw new Error(`Live quiz ${quizName} has no blocks`)
+            }
+
+            const instances = liveQuiz.blocks.flatMap((block) => block.elements)
+            const getInstance = (title: string, type: ElementType) => {
+              const instance = instances.find(
+                (element) =>
+                  element.elementType === type &&
+                  typeof element.elementData === 'object' &&
+                  element.elementData !== null &&
+                  'name' in element.elementData &&
+                  element.elementData.name === title
+              )
+
+              if (!instance) {
+                throw new Error(
+                  `Instance ${title} (${type}) not found in live quiz ${quizName}`
+                )
+              }
+
+              return instance
+            }
+
+            const numericalInstance = getInstance(
+              numericalTitle,
+              ElementType.NUMERICAL
+            )
+            const freeTextInstance = getInstance(
+              freeTextTitle,
+              ElementType.FREE_TEXT
+            )
+            const secondFreeTextInstance = getInstance(
+              secondFreeTextTitle,
+              ElementType.FREE_TEXT
+            )
+
+            const openResults = (value: string, normalize: boolean) => {
+              const normalizedValue = normalize
+                ? value.trim().toLowerCase()
+                : String(parseFloat(value))
+              const hash = createHash('md5')
+                .update(normalizedValue)
+                .digest('hex')
+
+              return {
+                responses: {
+                  [hash]: {
+                    value: normalizedValue,
+                    count: 1,
+                  },
+                },
+                total: 1,
+              }
+            }
+
+            await prisma.$transaction([
+              prisma.elementInstance.update({
+                where: { id: numericalInstance.id },
+                data: {
+                  anonymousResults: openResults(numericalAnswer, false),
+                },
+              }),
+              prisma.elementInstance.update({
+                where: { id: freeTextInstance.id },
+                data: {
+                  anonymousResults: openResults(freeTextAnswer, true),
+                },
+              }),
+              prisma.elementInstance.update({
+                where: { id: secondFreeTextInstance.id },
+                data: {
+                  anonymousResults: openResults(secondFreeTextAnswer, true),
+                },
+              }),
+              prisma.elementBlock.update({
+                where: { id: block.id },
+                data: {
+                  closedAt: new Date(),
+                  status: ElementBlockStatus.EXECUTED,
+                },
+              }),
+              prisma.liveQuiz.update({
+                where: { id: liveQuiz.id },
+                data: { activeBlockId: null },
+              }),
+            ])
+
+            return true
           } catch (error) {
             throw error
           }

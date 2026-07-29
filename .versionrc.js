@@ -21,6 +21,7 @@ module.exports = {
     'packages/lti/',
     'packages/prisma/',
     'packages/markdown/',
+    'packages/word-cloud',
     'packages/shared-components',
     'packages/next-config',
     'packages/i18n',

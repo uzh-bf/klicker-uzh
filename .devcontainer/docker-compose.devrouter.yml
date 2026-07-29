@@ -1,0 +1,32 @@
+# Overlay to enable devrouter routing (https://*.klicker.localhost) and local trust of mkcert root CA.
+
+services:
+  postgres:
+    networks:
+      devnet:
+        aliases:
+          - '${WORKSPACE:-klicker-uzh}-db'
+
+  app:
+    environment:
+      DEVROUTER_WORKSPACE: '${DEVROUTER_WORKSPACE:-}'
+    extra_hosts:
+      - 'api.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
+      - 'auth.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
+      - 'pwa.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
+      - 'manage.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
+      - 'control.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
+      - 'olat-api.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
+      - 'response-api.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
+      - 'lti.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
+      - 'chat.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
+    networks:
+      devnet:
+        aliases:
+          - '${WORKSPACE:-klicker-uzh}-app'
+    volumes:
+      # Linked worktree .git files point into this absolute host path. workspace
+      # ensure supplies it and validates the same-path mount inside the container.
+      - type: bind
+        source: '${DEVROUTER_GIT_COMMON_DIR:?DEVROUTER_GIT_COMMON_DIR must be set by devrouter ensure}'
+        target: '${DEVROUTER_GIT_COMMON_DIR:?DEVROUTER_GIT_COMMON_DIR must be set by devrouter ensure}'

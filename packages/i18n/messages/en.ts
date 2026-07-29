@@ -399,6 +399,8 @@ export default {
       unknownUser: 'Unknown User',
       deletedUser: 'Deleted User',
       correction: 'Correction',
+      filter: 'Filter',
+      listExamples: 'e.g.',
     },
     types: {
       ACTIVITIES: 'Activities',
@@ -1117,6 +1119,90 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       noPointsCorrection: '+ 0 Points (no change): {reason}',
       nonZeroPointCorrection:
         '{points} Points ({basePoints} base points, {correctnessPoints} correctness points, {bonusPoints} bonus points): {reason}',
+      reportTitle: 'Assessment performance report',
+      issuedAt: 'Issued at',
+      reportTimeZone: 'Europe/Zurich',
+      courseReferenceLabel: 'Internal course reference',
+      identitySourceLabel: 'Verified identity source',
+      identitySourceCourseInvitation:
+        'Accepted assessment-course invitation email',
+      achievedPointsLabel: 'Achieved',
+      availablePointsLabel: 'Available',
+      performanceInsightsTitle: 'Peer comparison',
+      percentileText: 'Percentile rank: {percentile}.',
+      percentileExplanation:
+        'The percentile indicates the percentage of participants who achieved a score less than or equal to yours. For example, a percentile of 75% means your performance was equal to or better than 75% of the peer group.',
+      histogramTitle: 'Score Distribution',
+      histogramDescription:
+        'The chart shows the aggregated distribution of total scores for active participants. Your score range is highlighted.',
+      histogramUserRange: 'Your score range: {range}.',
+      notEnoughDataForComparison:
+        'No peer comparison is available. It is only included for at least 10 active participants and a non-zero available score range.',
+      exportReportButton: 'Export Performance Report (HTML)',
+      exportReportExplanation:
+        'Issue an HTML report from the current assessment record. Once it is ready, you can open it or download the file. The report includes a link for checking its current status and claims.',
+      exportReportReady:
+        'Your assessment report is ready. Open it in a new tab or download the HTML file.',
+      viewReportButton: 'View report',
+      downloadReportButton: 'Download report',
+      refreshReportButton: 'Refresh report',
+      exportReportNotEligibleError:
+        'No assessment report can be issued for this course. Confirm that you are enrolled and that assessed activities have ended, or contact your lecturers.',
+      exportReportIdentityUnverifiedError:
+        'No accepted assessment-course invitation email could be confirmed. Please contact the course administrator or support.',
+      exportReportRevokedError:
+        'This unchanged assessment report was revoked and cannot be issued again. Contact your lecturers if the authoritative report data should be corrected.',
+      exportReportInvalidDataError:
+        'The assessment data could not be validated for a report. Please try again later or contact your lecturers.',
+      exportReportIssuanceError:
+        'The assessment report could not be issued. Check your connection and try again.',
+      exportReportDownloadError:
+        'The report was issued, but the HTML file could not be created. Please try again.',
+      exportReportViewError:
+        'The report could not be opened in a new tab. Allow pop-ups for this page or download the HTML file instead.',
+      privacyAndTransparencyNotice:
+        'Peer comparison is released only for at least 10 active participants. Ten initial score ranges are merged until every displayed range represents at least 3 participants. The report contains no peer scores or identifiers.',
+      courseNameLabel: 'Course',
+      studentEmailLabel: 'Student',
+      pointsSummaryLabel: 'Points Summary',
+      yourScoreLabel: 'You',
+      countLabel: 'Count',
+      binLabel: 'Points Range',
+      privacyNoticeTitle: 'Privacy & Transparency',
+      verificationTitle: 'Check this assessment record',
+      verificationText:
+        'KlickerUZH stores the assessment snapshot represented in this report. Open the verification page to check the record status and compare its current claims with this file.',
+      verificationLink: 'Open verification page',
+      verificationQrAlt: 'QR code for the KlickerUZH verification page',
+      verificationPageTitle: 'Verify assessment report | KlickerUZH',
+      verificationHeading: 'Assessment report verification',
+      verificationIntro:
+        'Check the current status and server-held claims of a KlickerUZH assessment report.',
+      verificationLoading: 'Loading assessment record',
+      verificationInvalidLinkTitle: 'Invalid verification link',
+      verificationMissingToken:
+        'This link does not contain a verification token.',
+      verificationInvalidToken:
+        'The verification token in this link has an invalid format.',
+      verificationLoadError:
+        'The assessment record could not be loaded. Please try again later.',
+      verificationNotFoundTitle: 'Assessment record not found',
+      verificationNotFoundText:
+        'No assessment report exists for this verification link.',
+      verificationActiveTitle: 'Active assessment record',
+      verificationActiveText:
+        'The claims below match the active snapshot stored by KlickerUZH. Compare them with the downloaded report.',
+      verificationRevokedTitle: 'Revoked assessment record',
+      verificationRevokedText:
+        'This report, issued on {date}, was revoked and must no longer be treated as active. Its claims are not disclosed.',
+      verificationSupersededTitle: 'Superseded assessment record',
+      verificationSupersededText:
+        'A changed assessment snapshot was issued later. This older report is no longer active, and its claims are not disclosed.',
+      verificationDataUnavailableTitle: 'Assessment data unavailable',
+      verificationDataUnavailableText:
+        'The record exists, but its stored claims cannot be validated safely. No claims are disclosed.',
+      verificationIdentityTitle: 'Report identity',
+      cohortSizeLabel: 'Comparison cohort: {count} active participants',
     },
   },
   manage: {
@@ -1328,6 +1414,40 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       responseBy: 'Response by {email}',
       noSampleSolution: 'No sample solution',
       detailedResultsLiveQuiz: 'Detailed results for this live quiz',
+      reportRecordsButton: 'Assessment reports ({count})',
+      reportRecordsTitle: 'Issued assessment reports',
+      reportRecordsLoadError:
+        'The assessment reports could not be loaded. Check your permissions and try again.',
+      reportRecordsEmpty: 'No matching assessment reports were found.',
+      reportSearchPlaceholder: 'Search recipient email',
+      reportStatusAll: 'All statuses',
+      reportStatusActive: 'Active',
+      reportStatusRevoked: 'Revoked',
+      reportStatusSuperseded: 'Superseded',
+      reportRecipient: 'Recipient',
+      reportToken: 'Verification token',
+      reportIssuedAt: 'Issued',
+      reportStatus: 'Status',
+      reportStatusChangedAt: 'Status changed',
+      reportActions: 'Actions',
+      reportCopyLinkTooltip: 'Copy verification link',
+      reportLinkCopied: 'The verification link was copied.',
+      reportLinkCopyError: 'The verification link could not be copied.',
+      reportRevoke: 'Revoke',
+      reportRevokeTitle: 'Revoke assessment report',
+      reportRevokeConfirm: 'Revoke report',
+      reportRevokeMessage:
+        'Revoke the active assessment report for {email}? The existing verification link will immediately show the record as revoked.',
+      reportRevokePolicy:
+        'The same unchanged assessment snapshot cannot be issued again. If authoritative identity, course, or score claims later change, the student can issue a new active report.',
+      reportRevocationSuccess: 'The assessment report was revoked.',
+      reportAlreadyInactive:
+        'The assessment report became inactive before it could be revoked. Its current status is shown in the list.',
+      reportRevocationError:
+        'The assessment report could not be revoked. No local status was changed.',
+      reportRecordsRefreshError:
+        'The report status changed, but the visible list could not be refreshed. Close and reopen the dialog to load the current status.',
+      reportTimeZone: 'Europe/Zurich',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
@@ -2551,6 +2671,26 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       displayedWindow: 'Displayed running window: {window} times interval',
       table: 'Table',
       wordCloud: 'Word Cloud',
+      wordCloudFilterMode: 'Filter Mode',
+      wordCloudLanguageFilter: 'Language Filter',
+      wordCloudLanguageFilterTooltip:
+        'When a language is selected, stopwords for that language (e.g. "the", "and") are filtered out. Disable the filter to show all words.',
+      wordCloudLanguageNone: 'Disabled',
+      wordCloudDisplayLimit: 'Display limit',
+      wordCloudDisplayLimitAll: 'All',
+      wordCloudModeWords: 'Individual words',
+      wordCloudOmittedWords:
+        '{count} {count, plural, one {word} other {words}} could not be displayed due to the display limit or space constraints.',
+      wordCloudOmittedSentences:
+        '{count} {count, plural, one {response} other {responses}} could not be displayed due to the display limit or space constraints.',
+      wordCloudModeSentences: 'Full responses',
+      wordCloudNoResponses:
+        'No participants have submitted responses for this question 😔.',
+      wordCloudNoResponsesFiltered:
+        'No responses match the current filter settings 🧐.',
+      wordCloudNoResponsesDisplayed:
+        'No responses are displayed due to the current filter settings or the provided font sizes 😰.',
+      numberOfVotes: 'Frequency: {number}',
       histogram: 'Histogram',
       barChart: 'Bar Chart',
       scatterPlot: 'Scatter Plot',

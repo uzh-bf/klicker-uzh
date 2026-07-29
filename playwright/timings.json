@@ -1,0 +1,31 @@
+{
+  "durations": [
+    { "spec": "tests/0-baseline-ops.spec.ts", "duration": 12 },
+    { "spec": "tests/A-login.spec.ts", "duration": 37 },
+    { "spec": "tests/B-feature-access.spec.ts", "duration": 21 },
+    { "spec": "tests/C-control.spec.ts", "duration": 17 },
+    { "spec": "tests/D-elements-content.spec.ts", "duration": 12 },
+    { "spec": "tests/E-elements-flashcards.spec.ts", "duration": 13 },
+    { "spec": "tests/F-elements-sc.spec.ts", "duration": 25 },
+    { "spec": "tests/G-elements-mc.spec.ts", "duration": 31 },
+    { "spec": "tests/H-elements-kprim.spec.ts", "duration": 25 },
+    { "spec": "tests/I-elements-numerical.spec.ts", "duration": 23 },
+    { "spec": "tests/J-elements-free-text.spec.ts", "duration": 14 },
+    { "spec": "tests/K-elements-selection.spec.ts", "duration": 40 },
+    { "spec": "tests/L-elements-case-study.spec.ts", "duration": 155 },
+    { "spec": "tests/MA-elements-operations.spec.ts", "duration": 255 },
+    { "spec": "tests/MB-instance-updates.spec.ts", "duration": 92 },
+    { "spec": "tests/N-course.spec.ts", "duration": 273 },
+    { "spec": "tests/O-live-quiz.spec.ts", "duration": 1288 },
+    { "spec": "tests/P-microlearning.spec.ts", "duration": 531 },
+    { "spec": "tests/Q-practice-quiz.spec.ts", "duration": 381 },
+    { "spec": "tests/R-bookmarking.spec.ts", "duration": 67 },
+    { "spec": "tests/S-group-activity.spec.ts", "duration": 572 },
+    { "spec": "tests/T-resources.spec.ts", "duration": 330 },
+    { "spec": "tests/U-catalog.spec.ts", "duration": 420 },
+    { "spec": "tests/V-template.spec.ts", "duration": 528 },
+    { "spec": "tests/W-activity-log.spec.ts", "duration": 119 },
+    { "spec": "tests/X-review.spec.ts", "duration": 208 },
+    { "spec": "tests/Y-chat.spec.ts", "duration": 120 }
+  ]
+}

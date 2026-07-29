@@ -3,14 +3,8 @@ name: Check typescript types
 on:
   push:
     branches: ['v3', 'v3*']
-    paths:
-      - apps/**
-      - packages/**
   pull_request:
     types: [opened, synchronize, reopened]
-    paths:
-      - apps/**
-      - packages/**
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -22,35 +16,49 @@ env:
   TURBO_REMOTE_ONLY: true
 
 jobs:
-  check:
+  check-types:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # full history so the change-based turbo --filter below can find a merge base
+          fetch-depth: 0
+
+      - name: Check for changes
+        id: filter
+        uses: ./.github/actions/changed-paths
+        with:
+          pattern: '^(apps/|packages/|package\.json|pnpm-lock\.yaml|tsconfig\.json|.*/tsconfig\.json|\.github/workflows/check-types\.yml|\.github/actions/changed-paths/)'
+
+      - name: Define node version
+        if: steps.filter.outputs.should_run == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
 
       - uses: pnpm/action-setup@v4
+        if: steps.filter.outputs.should_run == 'true'
         with:
-          version: 10.15.0
+          version: 11.5.0
           run_install: true
 
-      - name: Build relevant packages
+      - name: Build packages (turbo)
+        if: steps.filter.outputs.should_run == 'true'
         run: |
-          cd packages/markdown
-          pnpm run build
-          cd ../grading
-          pnpm run build
-          cd ../prisma
-          pnpm run build
-          cd ../types
-          pnpm run build
-          cd ../util
-          pnpm run build
-          cd ../graphql
-          pnpm run build
-          cd ../hatchet
-          pnpm run build
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch origin ${{ github.base_ref }}
+            pnpm exec turbo run build --filter="...[origin/${{ github.base_ref }}...HEAD]"
+          else
+            pnpm exec turbo run build --filter="...[HEAD~1...HEAD]"
+          fi
 
       - name: Check the typescript types of all packages and apps
+        if: steps.filter.outputs.should_run == 'true'
         shell: bash
         run: |
-          pnpm run check
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            pnpm exec turbo run check --filter="...[origin/${{ github.base_ref }}...HEAD]"
+          else
+            pnpm exec turbo run check --filter="...[HEAD~1...HEAD]"
+          fi

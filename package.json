@@ -26,7 +26,7 @@
     "Bulin Shaqiri <bulin.shaqiri@bf.uzh.ch>"
   ],
   "devDependencies": {
-    "@types/node": "^20.19.11",
+    "@types/node": "^24.10.1",
     "cross-env": "~7.0.3",
     "husky": "~9.1.7",
     "knip": "~5.83.0",
@@ -38,26 +38,30 @@
     "standard-version": "~9.5.0",
     "syncpack": "~13.0.4",
     "turbo": "~2.5.6",
-    "typescript": "~5.6.3",
+    "typescript": "~6.0.3",
     "yaml": "~2.6.1"
   },
   "scripts": {
-    "build": "turbo run build",
-    "build:test": "cross-env NODE_ENV=test turbo run build:test --cache-dir=.turbo",
+    "build": "cross-env NODE_ENV=production turbo run build",
+    "build:test": "bash ./util/_with_local_test_origins.sh cross-env NODE_ENV=test turbo run build:test --cache-dir=.turbo",
     "check": "turbo run check --parallel --continue",
-    "check:all": "run-p check check:format check:lint check:syncpack",
+    "check:agents-md": "node ./util/check-agents-md.mjs",
+    "check:all": "run-p --npm-path pnpm check check:format check:lint check:syncpack check:agents-md check:prisma-sync",
     "check:format": "lint-staged",
     "check:lint": "turbo run lint --parallel --continue",
+    "check:prisma-sync": "bash ./util/check-prisma-sync.sh",
     "check:syncpack": "syncpack lint",
     "dev": "./util/_run_with_infisical.sh --env dev pnpm dev:raw",
     "dev:assessment": "./util/_run_with_infisical.sh --env dev-assessment turbo run dev:assessment --concurrency 30",
     "dev:cleverreach": "./util/_run_with_infisical.sh --env dev-cleverreach pnpm run dev:raw",
+    "dev:container": "turbo run dev --filter=@klicker-uzh/backend-docker --filter=@klicker-uzh/auth --filter=@klicker-uzh/frontend-pwa --filter=@klicker-uzh/frontend-manage --filter=@klicker-uzh/frontend-control --filter=@klicker-uzh/olat-api --filter=@klicker-uzh/response-api --filter=@klicker-uzh/lti-service --filter=@klicker-uzh/chat --filter=@klicker-uzh/hatchet-worker-general --filter=@klicker-uzh/hatchet-worker-response-processor --concurrency 30",
     "dev:docs": "turbo run dev:docs",
     "dev:lti": "./util/_run_with_infisical.sh --env dev-lti turbo run dev:lti",
     "dev:offline": "./util/_run_with_infisical.sh --env dev turbo run dev:offline --concurrency 30",
+    "dev:playwright": "./util/_run_with_infisical.sh --env dev-playwright bash ./util/_with_local_test_origins.sh cross-env NODE_ENV=test turbo run dev:test --concurrency 30",
     "dev:prepare-prod": "./util/_prepare_local_prod.sh",
     "dev:raw": "turbo run dev --concurrency 30",
-    "dev:test": "./util/_run_with_infisical.sh --env dev-cypress bash -c \"cross-env NODE_ENV=test turbo run dev:test\"",
+    "dev:test": "./util/_run_with_infisical.sh --env dev-cypress bash ./util/_with_local_test_origins.sh cross-env NODE_ENV=test turbo run dev:test --concurrency 30",
     "format": "prettier --write . --config .prettierrc.mjs",
     "format:check": "prettier --check . --config .prettierrc.mjs",
     "knip": "knip",
@@ -66,7 +70,7 @@
     "prisma:deploy": "pnpm run --filter @klicker-uzh/prisma prisma:deploy",
     "prisma:migrate": "pnpm run --filter @klicker-uzh/prisma prisma:migrate",
     "prisma:reset": "pnpm run --filter @klicker-uzh/prisma prisma:reset",
-    "prisma:setup": "run-s prisma:setup:1 prisma:setup:2",
+    "prisma:setup": "run-s --npm-path pnpm prisma:setup:1 prisma:setup:2",
     "prisma:setup:1": "pnpm run --filter @klicker-uzh/prisma prisma:setup",
     "prisma:setup:2": "pnpm run --filter @klicker-uzh/prisma-data seed",
     "prisma:setup:raw": "pnpm run --filter @klicker-uzh/prisma prisma:setup:raw",
@@ -84,8 +88,10 @@
     "release:rc": "standard-version --prerelease rc --no-verify",
     "release:rc:dry": "standard-version --dry-run --prerelease rc",
     "start": "turbo run start",
-    "start:test": "run-s build:test start:test:ci",
-    "start:test:ci": "cross-env NODE_ENV=test turbo run start:test",
+    "start:playwright": "run-s --npm-path pnpm build:test start:playwright:ci",
+    "start:playwright:ci": "bash ./util/_with_local_test_origins.sh cross-env NODE_ENV=test turbo run start:test --filter=@klicker-uzh/frontend-manage --filter=@klicker-uzh/frontend-pwa --filter=@klicker-uzh/auth --filter=@klicker-uzh/chat --filter=@klicker-uzh/backend-docker --filter=@klicker-uzh/response-api --filter=@klicker-uzh/frontend-control --filter=@klicker-uzh/hatchet-worker-general --filter=@klicker-uzh/hatchet-worker-response-processor",
+    "start:test": "run-s --npm-path pnpm build:test start:test:ci",
+    "start:test:ci": "bash ./util/_with_local_test_origins.sh cross-env NODE_ENV=test turbo run start:test",
     "syncpack:format": "syncpack format",
     "syncpack:lint": "syncpack lint",
     "syncpack:mismatches": "syncpack list-mismatches",
@@ -93,14 +99,14 @@
     "syncpack:update": "syncpack update",
     "test:run": "turbo run test:run",
     "test:run:playwright": "pnpm --filter @klicker-uzh/playwright test:run",
-    "test:watch": "run-p test dev:test"
+    "test:watch": "run-p --npm-path pnpm test dev:test"
   },
   "engines": {
-    "node": "=20"
+    "node": "=24"
   },
   "volta": {
-    "node": "20.19.4",
-    "pnpm": "10.15.0"
+    "node": "24.16.0",
+    "pnpm": "11.5.0"
   },
-  "packageManager": "pnpm@10.15.0"
+  "packageManager": "pnpm@11.5.0"
 }

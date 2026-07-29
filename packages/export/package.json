@@ -15,19 +15,19 @@
     "@klicker-uzh/types": "workspace:*",
     "@rollup/plugin-node-resolve": "~15.3.1",
     "@rollup/plugin-typescript": "~12.1.4",
-    "@types/node": "^20.19.11",
+    "@types/node": "^24.10.1",
     "cross-env": "~7.0.3",
     "npm-run-all": "~4.1.5",
     "rollup": "~4.34.9",
     "tsx": "~4.19.4",
-    "typescript": "~5.6.3",
+    "typescript": "~6.0.3",
     "vitest": "~3.2.4"
   },
   "scripts": {
     "build": "run-s build:ts",
     "build:test": "pnpm run build",
     "build:ts": "cross-env NODE_ENV=production rollup -c && chmod +x dist/scripts/export-course.js",
-    "check": "tsc --noEmit",
+    "check": "tsc --noEmit --tsBuildInfoFile dist/tsconfig.check.tsbuildinfo",
     "dev": "cross-env NODE_ENV=development rollup -c --watch",
     "export": "node dist/scripts/export-course.js",
     "export:dev": "tsx src/scripts/export-course.ts",
@@ -35,7 +35,7 @@
     "test:watch": "vitest"
   },
   "engines": {
-    "node": "=20"
+    "node": "=24"
   },
   "volta": {
     "extends": "../../package.json"

@@ -27,7 +27,7 @@ const ThreadListItems: FC = () => {
   const groupedThreads = useMemo(() => groupThreadsByDate(threads), [threads])
 
   return (
-    <div className="flex flex-col gap-2 p-1">
+    <div data-cy="chat-thread-list" className="flex flex-col gap-2 p-1">
       {groupedThreads.map(({ label, items }) => (
         <div key={label} className="flex flex-col gap-0.5">
           <p className="text-muted-foreground px-2 text-xs font-semibold uppercase">
@@ -175,11 +175,13 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
 
   return (
     <div
+      data-cy="chat-thread-item"
       className={`group/thread focus-visible:bg-muted focus-visible:ring-ring flex items-center rounded-lg py-1 transition-all focus-visible:outline-none focus-visible:ring-2 ${isActive ? 'bg-primary/15' : 'hover:bg-accent'}`}
     >
       {isEditing ? (
         <>
           <TextField
+            data-cy="chat-thread-title-input"
             value={editTitle}
             onChange={setEditTitle}
             onKeyDown={handleKeyDown}
@@ -188,6 +190,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
           />
           <button
             type="button"
+            data-cy="chat-thread-title-save"
             onClick={handleEditSave}
             aria-label="Save"
             className="text-foreground focus-visible:ring-ring mr-1 inline-flex size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors hover:text-green-600 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
@@ -197,6 +200,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
           </button>
           <button
             type="button"
+            data-cy="chat-thread-title-cancel"
             onClick={handleEditCancel}
             aria-label="Cancel"
             className="text-foreground focus-visible:ring-ring mr-2 inline-flex size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors hover:text-red-600 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
@@ -209,6 +213,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
         <>
           <button
             type="button"
+            data-cy="chat-thread-select"
             onClick={onSelect}
             className="min-w-0 flex-grow px-3 py-1 text-start"
           >
@@ -216,6 +221,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
           </button>
           <button
             type="button"
+            data-cy="chat-thread-edit-button"
             onClick={handleEditStart}
             aria-label="Edit name"
             className={`text-foreground hover:text-primary focus-visible:ring-ring mr-1 size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4 ${isActive ? 'inline-flex' : 'hidden group-focus-within/thread:inline-flex group-hover/thread:inline-flex'}`}
@@ -225,6 +231,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
           </button>
           <button
             type="button"
+            data-cy="chat-thread-delete-button"
             onClick={onDelete}
             aria-label="Delete chat"
             className={`text-foreground hover:text-destructive focus-visible:ring-ring mr-2 size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4 ${isActive ? 'inline-flex' : 'hidden group-focus-within/thread:inline-flex group-hover/thread:inline-flex'}`}

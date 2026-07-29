@@ -25,6 +25,7 @@ export interface IStudentAssessmentResults {
   microLearnings: ActivityStudentPerformanceType[]
   groupActivities: ActivityStudentPerformanceType[]
 }
+
 export const StudentAssessmentResultsRef =
   builder.objectRef<IStudentAssessmentResults>('StudentAssessmentResults')
 export const StudentAssessmentResults = StudentAssessmentResultsRef.implement({

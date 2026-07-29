@@ -5,5 +5,8 @@
     "dev": "node server.mjs",
     "mock-api": "node mock-api.mjs",
     "start": "node server.mjs"
+  },
+  "engines": {
+    "node": "=24"
   }
 }

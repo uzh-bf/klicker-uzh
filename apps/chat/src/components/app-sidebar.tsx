@@ -49,6 +49,7 @@ export function AppSidebar({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
+                    data-cy="chat-new-thread-button"
                     onClick={handleNewThread}
                     disabled={participationRequired}
                     className="text-muted-foreground hover:text-foreground ml-auto mr-1 inline-flex size-4 items-center justify-center rounded-sm transition-colors disabled:pointer-events-none disabled:opacity-50"

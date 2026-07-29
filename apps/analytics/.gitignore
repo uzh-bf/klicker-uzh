@@ -1,3 +1,2 @@
-prisma/schema/**
-!prisma/schema/py.prisma
+.venv/
 *.csv

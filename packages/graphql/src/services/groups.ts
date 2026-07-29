@@ -1,3 +1,4 @@
+import type { ElementInstanceOptions, ResponseInput } from '@/ops.js'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   ElementInstanceResults,
@@ -14,7 +15,6 @@ import dayjs from 'dayjs'
 import EventEmitter from 'events'
 import { GraphQLError } from 'graphql'
 import { omitBy, pick, prop, sortBy } from 'remeda'
-import type { ElementInstanceOptions, ResponseInput } from 'src/ops.js'
 import {
   adjectives,
   animals,
@@ -27,7 +27,7 @@ import {
   splitGroupsFinal,
   splitGroupsRunning,
 } from '../lib/randomizedGroups.js'
-import { shuffle } from '../lib/util.js'
+import { computeRanks, shuffle } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
 import { getPermissionBooleans } from './activities.js'
 import { splitActivityInstances } from './liveQuizzes.js'
@@ -802,15 +802,17 @@ export async function getParticipantGroups(
   return participant.participantGroups.map((group) => ({
     ...group,
     score: group.averageMemberScore + group.groupActivityScore,
-    participants: sortBy(
-      group.participants.map((participant) => ({
-        ...participant,
-        score: participant.leaderboards[0]?.score ?? 0,
-        isSelf: participant.id === ctx.user!.sub,
-      })),
-      [prop('score'), 'desc'],
-      [prop('username'), 'asc']
-    ).map((entry, ix) => ({ ...entry, rank: ix + 1 })),
+    participants: computeRanks(
+      sortBy(
+        group.participants.map((participant) => ({
+          ...participant,
+          score: participant.leaderboards[0]?.score ?? 0,
+          isSelf: participant.id === ctx.user!.sub,
+        })),
+        [prop('score'), 'desc'],
+        [prop('username'), 'asc']
+      )
+    ),
   }))
 }
 

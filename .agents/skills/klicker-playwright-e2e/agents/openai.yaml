@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Klicker Playwright E2E'
+  short_description: 'KlickerUZH Playwright E2E guidance'
+  default_prompt: 'Use $klicker-playwright-e2e to fix or extend KlickerUZH Playwright E2E tests.'

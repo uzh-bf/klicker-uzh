@@ -3,14 +3,8 @@ name: Check syncpack conformity
 on:
   push:
     branches: ['v3', 'v3*']
-    paths:
-      - apps/**
-      - packages/**
   pull_request:
     types: [opened, synchronize, reopened]
-    paths:
-      - apps/**
-      - packages/**
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -22,18 +16,32 @@ env:
   TURBO_REMOTE_ONLY: true
 
 jobs:
-  check:
+  check-syncpack:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
+      - name: Check for changes
+        id: filter
+        uses: ./.github/actions/changed-paths
         with:
-          version: 10.15.0
+          pattern: '^(package\.json|pnpm-workspace\.yaml|pnpm-lock\.yaml|\.github/workflows/check-syncpack\.yml|\.github/actions/changed-paths/|.*/package\.json)'
+
+      - name: Define node version
+        if: steps.filter.outputs.should_run == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+
+      - uses: pnpm/action-setup@v4
+        if: steps.filter.outputs.should_run == 'true'
+        with:
+          version: 11.5.0
           run_install: true
 
       - name: Check the syncpack conformity of all packages and apps
+        if: steps.filter.outputs.should_run == 'true'
         shell: bash
         run: |
           pnpm run check:syncpack

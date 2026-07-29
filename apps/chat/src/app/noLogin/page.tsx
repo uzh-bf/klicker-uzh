@@ -39,9 +39,15 @@ export default async function Page({ searchParams }: NoLoginPageProps) {
     : `${loginBaseUrl}/login`
 
   return (
-    <div className="bg-muted flex min-h-screen w-full items-center justify-center px-4">
+    <div
+      data-cy="chat-no-login"
+      className="bg-muted flex min-h-screen w-full items-center justify-center px-4"
+    >
       <div className="bg-card w-full max-w-lg rounded-lg border p-8 text-center shadow-sm">
-        <h1 className="text-foreground text-2xl font-semibold">
+        <h1
+          data-cy="chat-no-login-title"
+          className="text-foreground text-2xl font-semibold"
+        >
           Login Required
         </h1>
         <p className="text-muted-foreground mt-4 text-base">
@@ -56,6 +62,7 @@ export default async function Page({ searchParams }: NoLoginPageProps) {
           </p>
         )}
         <Link
+          data-cy="chat-no-login-link"
           href={loginHref}
           className="bg-uzh-blue hover:bg-uzh-blue-80 focus-visible:outline-uzh-blue-40 mt-8 inline-flex w-full items-center justify-center rounded-md px-4 py-2 text-base font-semibold text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
           prefetch={false}

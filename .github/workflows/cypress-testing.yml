@@ -1,18 +1,6 @@
 name: Klicker automated testing with cypress
 on:
-  push:
-    branches: ['v3', 'v3*']
-    # paths:
-    #   - apps/**
-    #   - packages/**
-  pull_request:
-    branches: ['v3', 'v3*']
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - apps/**
-      - packages/**
-      - cypress/**
-      - .github/workflows/cypress-testing.yml
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -121,16 +109,16 @@ jobs:
       - run: echo "Running parallel Cypress tests for draft PR (container ${{ matrix.containers }})"
 
       - name: Define node version
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Check out repository code
         uses: actions/checkout@v3
 
-      - uses: pnpm/action-setup@v2
+      - uses: pnpm/action-setup@v4
         with:
-          version: 10.15.0
+          version: 11.5.0
           run_install: false
 
       - name: Get pnpm store directory
@@ -334,16 +322,16 @@ jobs:
       - run: echo "Running Cypress tests with Cloud recording for non-draft PR or push to v3"
 
       - name: Define node version
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Check out repository code
         uses: actions/checkout@v3
 
-      - uses: pnpm/action-setup@v2
+      - uses: pnpm/action-setup@v4
         with:
-          version: 10.15.0
+          version: 11.5.0
           run_install: false
 
       - name: Get pnpm store directory

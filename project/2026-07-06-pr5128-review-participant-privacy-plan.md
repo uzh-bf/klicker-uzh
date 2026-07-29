@@ -114,7 +114,7 @@ Nulling email columns does not remove emails from DB backups/dumps. Add to the c
 
 ## 4. Usefulness assessment
 
-High. The codebase findings are verifiable and correct (section 1), the slices map to real files and functions, the merge/linking section correctly enumerates the uniqueness constraints that make naive merges impossible, and the CODEBASE_NOTES.md additions are accurate and worth having even independent of this plan. The gaps are additive (missing surfaces, missing decisions), not structural — no re-write needed.
+High. The codebase findings are verifiable and correct (section 1), the slices map to real files and functions, the merge/linking section correctly enumerates the uniqueness constraints that make naive merges impossible, and the migrated auth wiki additions are accurate and worth having even independent of this plan. The gaps are additive (missing surfaces, missing decisions), not structural — no re-write needed.
 
 ## 5. Path to production readiness
 

@@ -4,6 +4,27 @@ packages:
   - cypress
   - playwright
 
+# Delay automated dependency resolution for newly published packages by 14 days
+# to reduce exposure to compromised releases. Manual emergency exceptions should
+# be exact package/version selectors reviewed with the matching package.json bump.
+minimumReleaseAge: 20160
+minimumReleaseAgeStrict: true
+minimumReleaseAgeIgnoreMissingTime: false
+minimumReleaseAgeExclude: []
+
+overrides:
+  'axios@<=0.31.1': 0.32.0
+  'fast-xml-parser@>=5.0.0 <5.7.0': 5.7.0
+  'glob@>=10.2.0 <10.5.0': 10.5.0
+  'mysql2@<3.9.8': 3.9.8
+  'next@>=15.0.0 <15.5.16': 15.5.18
+  'systeminformation@>=4.17.0 <=5.31.5': 5.31.6
+
+packageExtensions:
+  'recharts@2.15.3':
+    peerDependencies:
+      '@types/react': '*'
+
 ignoredBuiltDependencies:
   - '@microsoft/teamsapp-cli'
   - keytar
@@ -24,3 +45,22 @@ onlyBuiltDependencies:
   - protobufjs
   - sharp
   - unrs-resolver
+
+allowBuilds:
+  '@apollo/protobufjs': true
+  '@hatchet-dev/typescript-sdk': true
+  '@microsoft/teamsapp-cli': false
+  '@prisma/client': true
+  '@prisma/engines': true
+  '@swc/core': true
+  '@tailwindcss/oxide': true
+  azure-functions-core-tools: true
+  core-js: true
+  core-js-pure: true
+  cypress: true
+  esbuild: true
+  keytar: false
+  prisma: true
+  protobufjs: true
+  sharp: true
+  unrs-resolver: true

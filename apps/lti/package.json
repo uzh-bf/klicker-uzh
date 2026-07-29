@@ -11,32 +11,33 @@
     "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/util": "workspace:*",
     "cross-env": "7.0.3",
-    "ltijs": "5.9.7",
+    "ltijs": "5.9.9",
     "ltijs-sequelize": "2.4.4"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "~15.3.1",
     "@rollup/plugin-typescript": "~12.1.4",
     "@types/ltijs": "^4.0.12",
-    "@types/node": "^20.19.11",
-    "nodemon": "~3.1.10",
+    "@types/node": "^24.10.1",
+    "nodemon": "~3.1.14",
     "npm-run-all": "~4.1.5",
     "rollup": "~4.34.9",
     "rollup-plugin-copy": "~3.5.0",
-    "typescript": "~5.6.3"
+    "typescript": "~6.0.3"
   },
   "scripts": {
     "build": "cross-env NODE_ENV=production pnpm run build:ts",
     "build:ts": "rollup -c",
-    "check": "tsc --noEmit",
+    "check": "tsc --noEmit --tsBuildInfoFile dist/tsconfig.check.tsbuildinfo",
+    "dev": "npm-run-all --parallel dev:build dev:run",
     "dev:build": "rollup -c --watch",
     "dev:infisical": "../../util/_run_with_infisical.sh --env dev pnpm run dev:lti",
-    "dev:lti": "npm-run-all --parallel dev:build dev:run",
+    "dev:lti": "pnpm run dev",
     "dev:run": "nodemon -w dist/ --exec 'node ./dist/index.js'",
     "start": "node dist/index.js"
   },
   "engines": {
-    "node": "=20"
+    "node": "=24"
   },
   "volta": {
     "extends": "../../package.json"
