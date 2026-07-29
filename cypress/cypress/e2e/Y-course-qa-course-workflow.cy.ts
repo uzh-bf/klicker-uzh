@@ -1,5 +1,6 @@
 describe('Course Q&A course-level workflows', function () {
   beforeEach('Load fixture for this test case', function () {
+    cy.viewport(1280, 900)
     cy.fixture('Y-course-qa.json').then((data) => {
       this.data = data
     })
