@@ -44,7 +44,7 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
 
 ## CODE contract rule
 
-CODE is intentionally split into a full lecturer `CodeElement` projection and a participant-safe `CodeElementData` projection. Lecturer mutations/queries may include hidden tests; participant operations expose public test names, inputs, and expected outputs but must omit every hidden test and all metadata belonging to it, plus sandbox metadata. When changing a union, resolver, fragment, or operation, update both sides deliberately and run `test/codeGraphqlContract.test.ts`.
+CODE has three deliberate surfaces documented in [docs/graphql-api-layer.md](../../../docs/graphql-api-layer.md): full lecturer `CodeElement`, authenticated full instance `AuthoringCodeElementData`, and participant-safe `CodeElementData`. When changing a union, resolver, fragment, or operation, update every applicable surface and run `test/codeGraphqlContract.test.ts`. Participant operations may expose public tests and static execution limits, but must omit hidden tests and runtime sandbox/session artifacts.
 
 ## Subscriptions (extra steps)
 

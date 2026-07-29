@@ -55,4 +55,10 @@ Read-only feature end-to-end: commit `ff61d9bc7` (#4951) — new object type, tw
 
 ### CODE projection boundary
 
-CODE deliberately has two GraphQL projections. Lecturer authoring fields use `CodeElement` and include the full test contract through `manipulateCodeQuestion` / `MManipulateCodeQuestion`. Participant activity data uses `CodeElementData` with public tests only; hidden tests, their inputs, and expected outputs must be absent from the payload rather than nullable. When a union or operation gains CODE support, update both the full lecturer and participant-safe projection deliberately and keep `packages/graphql/test/codeGraphqlContract.test.ts` green.
+CODE deliberately has three GraphQL projections:
+
+- `CodeElement` is the full lecturer-owned element used by authoring queries and `manipulateCodeQuestion` / `MManipulateCodeQuestion`.
+- `AuthoringCodeElementData` exposes the full snapshotted instance contract only through the authenticated `ElementInstance.codeAuthoringData` field.
+- `CodeElementData` is participant-safe activity data. It includes public tests and static `executionLimits`, but omits hidden tests and all runtime sandbox artifacts, session identifiers, output, and exception metadata.
+
+When a union or operation gains CODE support, update all applicable projections deliberately and keep `packages/graphql/test/codeGraphqlContract.test.ts` green. Hidden tests, their inputs, and expected outputs must be absent from participant payloads rather than nullable.
