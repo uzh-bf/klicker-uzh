@@ -44,10 +44,14 @@ function SourceCard({
 
   const inner = (
     <>
-      {/* The visible "01" badge below is aria-hidden — without this, a
+      {/* The visible index badge below is aria-hidden — without this, a
           screen-reader user following a citation chip's "Source 1: ..." link
           would land on a card with no announced number to confirm the
-          match. */}
+          match. Styled as the same filled-badge family as `CitationChip`
+          (bg-primary/10 + rounded square), just a size up for the roomier
+          card context, so the two indices read as one visual token instead
+          of two different numbering conventions — hence a plain digit
+          here too, no leading-zero `padStart`, matching the inline chip. */}
       <span className="sr-only">
         {t('chat.citations.label', {
           index: source.index,
@@ -56,9 +60,9 @@ function SourceCard({
       </span>
       <span
         aria-hidden="true"
-        className="text-muted-foreground shrink-0 pt-0.5 font-mono text-xs tabular-nums"
+        className="bg-primary/10 text-primary mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-[4px] font-mono text-xs font-semibold tabular-nums"
       >
-        {String(source.index).padStart(2, '0')}
+        {source.index}
       </span>
       <Icon
         aria-hidden="true"
