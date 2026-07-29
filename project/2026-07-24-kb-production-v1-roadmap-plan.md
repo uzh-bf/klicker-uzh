@@ -98,6 +98,13 @@ All Q1-Q11 ruled by the user in the 2026-07-25 grill session. Ruling column is b
 | Q10 | Branch topology | Superseded 2026-07-26: `kb-poc` / [PR #5174](https://github.com/uzh-bf/klicker-uzh/pull/5174) is the v1 integration line into `v3-ai`. [PR #5182](https://github.com/uzh-bf/klicker-uzh/pull/5182) merges into `kb-poc`; W2+ continues there. The roadmap branch remains review history and is not rebased or force-pushed. | Keeps the plan and implementation in one PR. The older full-scale [PR #5078](https://github.com/uzh-bf/klicker-uzh/pull/5078) remains a read-only source for selective reimplementation of useful UI and behavior; it is never merged wholesale. |
 | Q11 | Legacy static course chatbots (informational confirm) | Confirmed: untouched throughout v1 until the gated `chatbot_id`→`kb_id` migration (program R10.4); lecturers keep current behavior | Informational; no roadmap change. |
 
+### Amendments (2026-07-29)
+
+- Decision: GrowthBook is not yet available; the W8 GrowthBook gate is deferred. Interim gating uses the existing per-lecturer `User.privatePreview` flag (already gating the chatbots nav on this branch) plus a deployment env kill-switch on ingestion dispatch. This supersedes the gating mechanism of ruling Q9 and the "Feature gating via GrowthBook" fixed-constraint line for the pilot window only; the Q9 course-cohort model (Forms opt-in → course enablement) resumes when GrowthBook lands and replaces the interim gate.
+- Consequence: interim gate granularity is per-lecturer-account, not per-course. Accepted for the private-preview phase; course-level cohorting is explicitly deferred, not dropped.
+- Evidence: `packages/prisma/src/prisma/schema/user.prisma:111` (`privatePreview`), `apps/frontend-manage/src/components/common/Header.tsx:59-69` (chatbots nav already gated), `packages/graphql/src/schema/mutation.ts:1639-1735` (KB mutations currently `asUserFullAccess` only, no preview check), `packages/graphql/src/lib/context.ts:38-47` (`ctx.user` carries JWT claims only — no `privatePreview`).
+- Decision: the 2026-07-29 senior review findings ([review record](2026-07-29-kb-w1-w7-senior-review.md)) define the pre-pilot remediation set: P1-1 stranded UPSERT dispatch recovery, P1-2 URL-creation quota placeholder, P1-3 refresh-failure/mutation-success isolation. Secondary items (P2-1 poll bound, P2-2/P2-3 test hardening, P2-4 SelectField, P2-5 cascade documentation, P3-1 log fix) batch into the same package; P3-2 rate limiting stays backlog (pre-existing app-wide gap).
+
 ## Production v1 Roadmap (Klicker side — finalized 2026-07-25)
 
 Work packages, dependency-ordered. Each lands as its own slice set with per-slice review per `$rs-sliced-development-workflow`; merges user-gated; everything behind the Q9 gating mechanism until platform gates pass.
@@ -148,6 +155,10 @@ External (platform-track) dependencies to watch, not owned here: R1.1 `resource_
 - [x] 2026-07-28: The final standards pass found only two non-blocking P3 edges. The bulk-confirmation modal now closes automatically if polling removes its last selected row, and creation-triggered list-refresh failures are caught, logged, and shown through the localized resource-load error instead of becoming unhandled promises. Each creation refresh key is consumed once per KB/key pair, so later loaded-count changes cannot retrigger it. A disposable two-row polling fixture verified that the open modal disappeared, the selected row cleared, and its checkbox disabled when that row became active; the fixture was removed. Focused KB package and lecturer-app checks pass. NEXT: amend the final fix commit, obtain the clean exact-range ruling, push, refresh draft PR #5174, and read back fresh CI.
 - [ ] Program roadmap §3a amended (R5.0 satisfied) — external `_local` artifact, done outside this repo on user request
 - [x] W1 executed (KG split, 5182 fixes, wiki/screenshots refreshed, merge into `kb-poc`)
+- [x] 2026-07-28: W6/W7 publication complete — this entry closes the stale `NEXT:` markers in the four 2026-07-28 entries above. Head `925eea6a8` (`fix(kb): preserve loaded resource state`) is committed and pushed, draft [PR #5174](https://github.com/uzh-bf/klicker-uzh/pull/5174) is refreshed, and fresh current-head CI passes every check (formatting, lint, syncpack, types, GraphQL, builds, CodeQL, all eight Playwright shards and both status gates) except the known pre-existing GitGuardian incident `1509424`.
+- [x] 2026-07-29: Read-only W1–W7 senior architecture/engineering review complete over `20a953251..925eea6a8` (six lenses, findings line-verified). No P0. Three P1s (stranded UPSERT dispatch after a crash between commit and enqueue; URL-creation quota missing the 25 MiB unknown-size placeholder; refresh failures masking mutation success in 7 of 8 UI handlers), five P2s, four P3s. Verdicts: architecture sound, engineering good, security clean with no new secret/PII exposure (GitGuardian red = pre-existing `1509424` only), safe to continue W8/W9 while draft. Full findings: [2026-07-29-kb-w1-w7-senior-review.md](2026-07-29-kb-w1-w7-senior-review.md).
+- [x] 2026-07-29: User ruling — GrowthBook deferred (not yet available); W8 gating replaced by the interim per-lecturer `privatePreview` gate plus env kill-switch (see Amendments). W8-Interim slice plan added; execution pending approval.
+- [ ] W8-Interim package executed (slices 1-8: review record, P1-1/P1-2/P1-3 remediation, privatePreview gate + kill switch, workspace polish, test hardening, wiki + finish gate)
 
 ### W4 Slice Plan
 
@@ -223,9 +234,47 @@ External (platform-track) dependencies to watch, not owned here: R1.1 `resource_
    - Update the domain, data, GraphQL, async-worker, frontend, testing, and change-log wiki pages plus affected task skills.
    - Run focused real-PostgreSQL/API/Hatchet suites, generated-artifact cleanliness, package checks, root `check:all`, production build, current web-interface-guideline review, independent maintainability/security/spec reviews, committed-range crosscheck, delegated-login browser proof, push/read-back, draft-PR refresh, and fresh CI. Do not merge or deploy.
 
+### W8-Interim Slice Plan (2026-07-29 — review remediation + privatePreview gating)
+
+Scope: the 2026-07-29 [senior-review](2026-07-29-kb-w1-w7-senior-review.md) remediation set plus the Amendments-ruled interim gate. Non-goals: GrowthBook integration, Forms course-cohort, W9 KG re-landing (parked [PR #5206](https://github.com/uzh-bf/klicker-uzh/pull/5206)), external D-8/R4.3/R4.4 gates, rate limiting (backlog), merging or un-drafting [PR #5174](https://github.com/uzh-bf/klicker-uzh/pull/5174).
+
+1. **Plan and review record** (this commit)
+   - Do: commit `project/2026-07-29-kb-w1-w7-senior-review.md` and this plan amendment; no code changes.
+   - Commit: `docs(kb): record senior review and plan W8-interim package`.
+2. **Quota placeholder fix (P1-2)**
+   - Do: pass `sizeBytes: MAX_KB_FILE_SIZE_BYTES` in `createKbUrlResource`'s `assertKbQuotaAvailable` call (`knowledge.ts:1398`).
+   - Check: new real-PostgreSQL boundary test creating unknown-size URL resources through the service up to the byte cap (21st rejected with `KB_STORAGE_LIMIT_REACHED`); add the missing concurrent byte-quota race test mirroring the count-boundary pattern (`knowledge.test.ts:786`).
+   - Commit: `fix(kb): reserve unknown-size quota at URL creation`.
+3. **Stranded UPSERT dispatch recovery (P1-1)**
+   - Decision (recommended): extend `maintainKBResources` with an UPSERT retry branch mirroring `deletionRetryWhere` — select `deletedAt: null, ingestionOperation: UPSERT, status: QUEUED, externalOperationId: null` rows older than a staleness threshold (≥ one maintenance interval) and re-dispatch the same attempt with its stable idempotency key. Rejected alternative: widening `monitorActiveKBIngestions`, which is correlation-based and would conflate "never dispatched" with "in flight".
+   - Check: `kbMaintenance.test.ts` cases for retry-after-crash-window, no interference with live QUEUED rows younger than the threshold, and idempotent double-dispatch via the stable key.
+   - Commit: `fix(kb): recover stranded ingestion dispatches`.
+4. **Frontend refresh/success isolation (P1-3 + P3-1)**
+   - Do: apply the two-block pattern from `DeleteKnowledgeBaseResourcesModal.tsx:30-49` to the seven affected handlers; include the caught error object in the dropzone `console.error`.
+   - Check: KB package + manage typecheck; delegated-login browser proof of create/delete/upload/attach happy paths at `https://manage.klicker.kb-poc.localhost`.
+   - Commit: `fix(kb): keep mutation success distinct from refresh failures`.
+5. **Interim gating + kill switch (Amendments ruling)**
+   - Do: gate the `knowledge-bases-item` nav entry behind `user?.privatePreview` (mirror chatbots, `Header.tsx:45-51`); add a shared `assertKbPreviewAccess(ctx)` guard (one PK-indexed `user.findUnique` selecting `privatePreview`) called at every KB mutation entry point and the KB queries; add env kill-switch (e.g. `KB_INGESTION_DISABLED`) refusing new dispatch (ingest/upload/URL-create) with a stable localized error while reads, deletion, and already-serving content stay live; wire the var through `turbo.json` `globalEnv` and Helm values.
+   - Decision (recommended): DB-read guard over JWT-claim extension — no token-shape change across apps, flag effective without re-login, trivially removable when GrowthBook replaces it.
+   - Check: negative real-PostgreSQL tests (non-preview user rejected on every KB mutation/query; kill-switch refuses dispatch, allows deletion); grep Playwright/Cypress specs for KB flows run by non-preview fixtures (seeded `lecturer` has `privatePreview: true`); EN/DE browser proof incl. hidden nav for a non-preview user.
+   - Commit: `enhance(kb): gate KB workspace behind private preview`.
+6. **Workspace polish (P2-1 + P2-4)**
+   - Do: bound active polling to the pages containing active rows (fall back to first page) instead of the full loaded window; replace the two native `<select>` filters with design-system `SelectField`.
+   - Check: browser proof that a later-page active row still refreshes and loaded rows are preserved; package typechecks.
+   - Commit: `enhance(kb): bound active polling and align filter controls`.
+7. **Test hardening (P2-2 + P2-3 + P3-4 remainder)**
+   - Do: convert the source-gateway suite's happy path to real-PostgreSQL (prove the authz filter rejects READY/FAILED, missing sha, foreign owner); add real `resolvePublicIPv4` unit coverage using locally resolvable names (`localhost` → rejected) without external network; add a multi-KB metrics attribution test.
+   - Commit: `test(kb): harden gateway, SSRF, and metrics coverage`.
+8. **Wiki + finish gate**
+   - Do: update affected wiki pages (`docs/graphql-api-layer.md`, `docs/async-and-workers.md`, `docs/frontend-conventions.md`, `docs/data-and-migrations.md`, `docs/log.md`) and `klicker-*` skills for the gate, kill switch, and recovery sweep; document the `KB.owner` cascade constraint (P2-5) and the gateway-key trust model (P3-3) in the data/API pages.
+   - Check: focused suites, root `check:all`, production build, independent maintainability/security reviews plus committed-range crosscheck, push, draft-PR refresh via the MR/PR description workflow, fresh CI read-back. Keep the PR draft; un-drafting remains user-gated behind the external D-8 discussion.
+   - Commit: `docs(kb): update wiki for interim gating and remediation` plus finish-gate adjustments.
+
 ## Active Autonomous Goal
 
-- Objective: execute all Klicker-owned W6 quota and scope-validation work followed by the complete W7 scale and lecturer-UX pack on `kb-poc`.
+Superseded 2026-07-29: the W6/W7 goal below completed at `925eea6a8` (see Progress). The next goal is the W8-Interim slice plan above; it inherits the same boundaries (no external ingestion/deployment mutation, no platform-registry invention, no D-8 closure claims, no GrowthBook/W9 scope, keep [PR #5174](https://github.com/uzh-bf/klicker-uzh/pull/5174) draft, no merge/deploy) and the same verification bar, and starts only on explicit user approval.
+
+- Objective (completed): execute all Klicker-owned W6 quota and scope-validation work followed by the complete W7 scale and lecturer-UX pack on `kb-poc`.
 - Terminal condition: concurrency-safe 100-resource/500 MiB per-KB quotas and persisted-scope validation protect all Klicker mutations and worker seams; both list surfaces are cursor-paginated and server-filtered with exact metrics; bulk actions, inspector, real operation progress, async-wait guidance, and linked-consumer visibility work accessibly in English and German; focused and full local verification, independent final reviews, browser evidence, fresh draft-PR CI, and PR read-back pass.
 - Boundaries: preserve W1-W5 behavior and the current external PDF/plain-text ingestion contract. Do not mutate the external ingestion or deployment repositories, invent a platform registry schema, claim platform-side D-8 closure, add GrowthBook/W8 or KG/W9 scope, expose staging, create credentials, merge [PR #5174](https://github.com/uzh-bf/klicker-uzh/pull/5174), or deploy.
 - Branch and checkpoint: implement and commit the reviewed plan and each coherent slice directly on `kb-poc`; keep [PR #5174](https://github.com/uzh-bf/klicker-uzh/pull/5174) draft into `v3-ai`. Keep this `Progress` section synchronized and resume from verified Git state.
