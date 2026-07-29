@@ -39,7 +39,9 @@ feedback, evaluation, grading, and gamification continue unchanged.
 - `packages/graphql/src/services/analytics.ts` reads derived analytics and also
   aggregates some response and feedback data directly.
 - Lecturer performance analytics exposes participant ID, username, and email.
-- The current lecturer UI has no dedicated LA export.
+- The current lecturer UI creates three client-side LA CSV downloads. The
+  participant activity performance download includes identified participant
+  data and bypasses a server-enforced export policy.
 - Current privacy and terms text describes participant data as anonymized or
   aggregated, which does not match the identified performance table.
 - GraphQL remains the live API. The dual GraphQL-to-tRPC migration is still open
@@ -162,6 +164,30 @@ Before implementation:
 - Send the German privacy notice, German terms, participant disclosure, and
   lecturer explanation to UZH data-protection/legal review. English remains an
   informational translation.
+
+Findings from 2026-07-29:
+
+- Dedicated persistence spans the analytics models in
+  `packages/prisma/src/prisma/schema/analytics.prisma`. All eight Python
+  pipelines write or derive those results, while four GraphQL analytics queries
+  expose them to lecturer dashboards.
+- Two GraphQL analytics paths also aggregate operational response details and
+  feedback directly. Deleting derived rows alone therefore cannot enforce
+  opt-out or course disablement.
+- Three lecturer dashboards generate CSV files client-side. The identified
+  participant activity performance CSV is the highest-priority export privacy
+  gap and must be replaced by the server-side export in Slice 5.
+- Current cumulative `QuestionResponse` attempt counters cannot partition
+  activity before and after renewed inclusion. Attempt-sensitive LA in Slice 4
+  must be rebuilt from eligible `QuestionResponseDetail` rows.
+- `ParticipantActivityPerformance` has no direct `courseId`; course cleanup must
+  reach it through its practice-quiz or microlearning relation.
+- The repository contains manual analytics initializer scripts and image builds,
+  but no documented runtime schedule. Deployment scheduling remains an
+  environment-level unknown.
+- Slice 1 remains limited to the eligibility state, migration, schema mirror,
+  and pure scalar eligibility helper. Query gates, cleanup, Python filtering,
+  exports, and UI remain in later slices.
 
 ## Slice 1: Establish the eligibility state
 
@@ -298,6 +324,9 @@ Do:
 - Apply it before every participant, activity, instance, course, and aggregate
   calculation.
 - Filter by the current inclusion time, not by course-enabled intervals.
+- Rebuild attempt-sensitive metrics from eligible `QuestionResponseDetail` rows;
+  do not filter cumulative `QuestionResponse` counters that combine eligible and
+  ineligible attempts.
 - Prevent save functions from writing results for disabled courses or ineligible
   participants.
 - Update direct GraphQL feedback, response-count, and performance aggregation to
@@ -463,6 +492,10 @@ Commit:
 - 2026-07-29: Greptile review findings accepted. The participation status field
   name is explicit, and renewed inclusion after a material disclosure change
   resets eligibility to the new acknowledgement time.
-- Current: rebase the draft PR onto current `v3`, then execute Research and
-  Slice 1.
-- Next: inventory every LA path and establish the shared eligibility state.
+- 2026-07-29: Rebased onto current `v3`; the only conflict was the additive
+  `docs/log.md` entry, and both branches' entries were preserved.
+- 2026-07-29: Research inventoried all Python pipelines, derived models, direct
+  GraphQL aggregations, lecturer consumers, and existing client-side exports.
+- Current: Slice 1 active — establish the shared eligibility state.
+- Next: add the schema and migration, mirror it into Analytics, then implement
+  and verify the pure eligibility helper.
