@@ -506,6 +506,9 @@ Commit:
   package builds, schema-sync check, and migration-status check passed in the
   branch-local devcontainer. The repository-wide `check:all` gate also passed
   with the Analytics virtual environment pinned to Python 3.12.
-- Current: Slice 1 locally verified; per-slice review and simplification pending.
-- Next: resolve the Slice 1 reviews, push the draft PR evidence, then stop before
-  Slice 2 pending renewed execution authority.
+- 2026-07-29: Independent correctness/privacy and simplification reviews of
+  commit `216278d69` reported no findings. Choice mutations in Slice 3 must
+  atomically update the current snapshot and append the event history.
+- Current: Research and Slice 1 complete.
+- Next: Slice 2 remains gated on renewed execution authority. The draft PR stays
+  open for the remaining implementation and legal-review evidence.
