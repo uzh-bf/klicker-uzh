@@ -34,6 +34,7 @@ Status: final reviews and browser verification in progress
   - `CORRELATED_EXPORT`: durable responses for all respondents in that quiz.
 - Decision: setting editable only while draft/scheduled. Lock once published/running/ended.
 - Decision: assessment excluded. No assessment without identifiable tracing.
+- Decision: correlated export and gamification are mutually exclusive. A leaderboard score can otherwise be matched to response-derived points and reidentify a pseudonymous export row.
 - Decision: participant notice persistent and compact before + during quiz.
 - Decision: correlated mode wording avoids strict "anonymous" promise.
 - Decision: all respondent types included in correlated mode: logged-in participants, temporary pseudonym users, anonymous correlated users.
@@ -503,6 +504,7 @@ Later research:
 - 2026-07-23: The strict maintainability review rejected the remaining duplicate question-type grading dispatch. Live Quiz response effects now pass through one typed exhaustive planner that produces aggregate mutations, stored participant response values, grading details, and first-response timing. `processor.ts` retains identity, persistence, and transaction orchestration; the five obsolete scoring wrappers were removed. Focused worker tests increased from 17 to 21, response API tests pass 13/13, both package typechecks pass, and the full repository `check:all` gate passes.
 - 2026-07-23: The security review also found that a gamified correlated export can be reidentified by matching response-derived scores to the visible named or pseudonymous leaderboard. The recommended resolution is to make `CORRELATED_EXPORT` incompatible with gamification. This is a product behavior change beyond the approved implementation details and awaits explicit confirmation before enforcement.
 - 2026-07-24: Exact-commit review found that post-enqueue claim promotion raced fast worker completion, Hatchet-listener polling depended on internal SDK fields, mixed response API replicas could still accept a new PWA submission on the legacy endpoint, and content views could create zero-score leaderboard rows. Claim promotion and the readiness heartbeat were removed: the five-minute Redis claim is now only an ingress duplicate lease, while an accepted versioned Hatchet event remains processable after the lease expires. Correlated PWA submissions use `/AddCorrelatedResponse`, which old replicas cannot silently accept, and new replicas reject a mode/endpoint mismatch. Content responses again update only the instance participant count. Focused verification passes 12 response API tests, 22 worker tests, and response API, worker, and PWA typechecks.
+- 2026-07-29: User approved the privacy-safe product rule from the security review: correlated response export and gamification are mutually exclusive. The implementation now rejects the combination for direct create/edit, batch course assignment, and course-level gamification changes; enforces it with a database constraint; surfaces actionable errors outside the wizard; and keeps the wizard in a valid state by switching the other option off or disabling incompatible locked choices.
 
 ## Goal Prompt Requirements
 
@@ -518,7 +520,7 @@ If handed to another agent:
 
 ## Next Steps
 
-1. Resolve the gamification/export reidentification decision and implement the selected product rule.
-2. Commit the versioned delivery and unified response-effect remediation, then rerun fresh security, maintainability, and independent branch reviews against the exact commit.
+1. Verify the gamification/correlated-export invariant in focused tests and the real wizard.
+2. Commit the final privacy rule, then rerun fresh security, maintainability, and independent branch reviews against the exact commit.
 3. Recheck the PWA identity initialization and token-header path in the real browser.
-4. Push the branch and update draft PR 5134 with whole-branch evidence, screenshots, rollout ordering, and the remaining CI-only e2e gate.
+4. Sync with current `v3`, push the branch, and update draft PR 5134 with whole-branch evidence, screenshots, rollout ordering, and the remaining CI-only e2e gate.

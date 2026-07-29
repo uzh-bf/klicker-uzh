@@ -319,6 +319,21 @@ export async function manipulateLiveQuiz(
       existingActivity?.responseCollectionMode ??
       DB.LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS)
 
+  if (
+    gamificationSetting &&
+    responseCollectionModeSetting ===
+      DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+  ) {
+    throw new GraphQLError(
+      'Correlated response exports cannot be enabled for gamified live quizzes',
+      {
+        extensions: {
+          code: 'LIVE_QUIZ_CORRELATED_GAMIFICATION_CONFLICT',
+        },
+      }
+    )
+  }
+
   if (existingActivity) {
     assertLiveQuizModeEditable({
       activity: existingActivity,

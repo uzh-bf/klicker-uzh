@@ -7,7 +7,12 @@ CREATE TYPE "public"."LiveQuizRespondentType" AS ENUM ('TEMPORARY_PSEUDONYM', 'A
 -- AlterTable
 ALTER TABLE "public"."LiveQuiz"
 ADD COLUMN "exportSalt" TEXT,
-ADD COLUMN "responseCollectionMode" "public"."LiveQuizResponseCollectionMode" NOT NULL DEFAULT 'AGGREGATED_ANONYMOUS';
+ADD COLUMN "responseCollectionMode" "public"."LiveQuizResponseCollectionMode" NOT NULL DEFAULT 'AGGREGATED_ANONYMOUS',
+ADD CONSTRAINT "LiveQuiz_correlated_response_mode_check"
+CHECK (
+    "responseCollectionMode" <> 'CORRELATED_EXPORT'
+    OR (NOT "isGamificationEnabled" AND NOT "isAssessmentEnabled")
+);
 
 -- CreateTable
 CREATE TABLE "public"."LiveQuizRespondent" (

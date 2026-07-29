@@ -98,6 +98,32 @@ function LiveQuizSettingsStep({
           !selectedCourse?.isManager
         const responseCollectionModeDisabled =
           values.isAssessmentEnabled || responseCollectionModeLocked
+        const correlatedModeSelected =
+          values.responseCollectionMode ===
+          LiveQuizResponseCollectionMode.CorrelatedExport
+        const lockedCorrelatedMode =
+          responseCollectionModeLocked && correlatedModeSelected
+        const selectableCourseGroups = lockedCorrelatedMode
+          ? groupedCourses.map((group) => ({
+              ...group,
+              items: group.items.map((item) => {
+                const incompatibleCourse = [
+                  ...(gamifiedCourses ?? []),
+                  ...(assessmentCourses ?? []),
+                ].some((course) => course.value === item.value)
+
+                return incompatibleCourse
+                  ? {
+                      ...item,
+                      disabled: true,
+                      tooltip: t(
+                        'manage.activityWizard.responseCollectionLockedCourseConflict'
+                      ),
+                    }
+                  : item
+              }),
+            }))
+          : groupedCourses
 
         return (
           <Form className="h-full w-full">
@@ -165,6 +191,12 @@ function LiveQuizSettingsStep({
                             // if the new course has gamification enabled, set the setting accordingly
                             if (selectedCourse?.isGamified) {
                               setFieldValue('isGamificationEnabled', true)
+                              if (!responseCollectionModeLocked) {
+                                setFieldValue(
+                                  'responseCollectionMode',
+                                  LiveQuizResponseCollectionMode.AggregatedAnonymous
+                                )
+                              }
                             }
 
                             // if the new course has assessment enabled, set the assessment and pin protection settings accordingly
@@ -201,7 +233,7 @@ function LiveQuizSettingsStep({
                         placeholder={t(
                           'manage.activityWizard.liveQuizSelectCourse'
                         )}
-                        groups={groupedCourses}
+                        groups={selectableCourseGroups}
                         data={{ cy: 'select-course' }}
                         className={{
                           select: {
@@ -246,12 +278,24 @@ function LiveQuizSettingsStep({
                         <Checkbox
                           label={t('shared.generic.gamification')}
                           checked={values.isGamificationEnabled}
-                          onCheck={() =>
+                          disabled={lockedCorrelatedMode}
+                          onCheck={() => {
+                            const enableGamification =
+                              !values.isGamificationEnabled
+                            if (enableGamification && correlatedModeSelected) {
+                              if (responseCollectionModeLocked) {
+                                return
+                              }
+                              setFieldValue(
+                                'responseCollectionMode',
+                                LiveQuizResponseCollectionMode.AggregatedAnonymous
+                              )
+                            }
                             setFieldValue(
                               'isGamificationEnabled',
-                              !values.isGamificationEnabled
+                              enableGamification
                             )
-                          }
+                          }}
                           className={{
                             indicator: 'text-xs',
                             root: 'w-4.5 h-4.5',
@@ -344,6 +388,12 @@ function LiveQuizSettingsStep({
                           onValueChange={(value) => {
                             if (value) {
                               setFieldValue('responseCollectionMode', value)
+                              if (
+                                value ===
+                                LiveQuizResponseCollectionMode.CorrelatedExport
+                              ) {
+                                setFieldValue('isGamificationEnabled', false)
+                              }
                             }
                           }}
                           aria-labelledby="response-collection-mode-label"
@@ -365,6 +415,7 @@ function LiveQuizSettingsStep({
                             value={
                               LiveQuizResponseCollectionMode.CorrelatedExport
                             }
+                            disabled={selectedCourse?.isGamified}
                             className="min-h-10 whitespace-normal px-2 text-xs"
                           >
                             {t(
@@ -381,14 +432,18 @@ function LiveQuizSettingsStep({
                               ? t(
                                   'manage.activityWizard.responseCollectionAssessment'
                                 )
-                              : values.responseCollectionMode ===
-                                  LiveQuizResponseCollectionMode.CorrelatedExport
+                              : values.isGamificationEnabled
                                 ? t(
-                                    'manage.activityWizard.responseCollectionCorrelatedSummary'
+                                    'manage.activityWizard.responseCollectionGamificationConflict'
                                   )
-                                : t(
-                                    'manage.activityWizard.responseCollectionAggregatedSummary'
-                                  )}
+                                : values.responseCollectionMode ===
+                                    LiveQuizResponseCollectionMode.CorrelatedExport
+                                  ? t(
+                                      'manage.activityWizard.responseCollectionCorrelatedSummary'
+                                    )
+                                  : t(
+                                      'manage.activityWizard.responseCollectionAggregatedSummary'
+                                    )}
                           </p>
                           {!values.isAssessmentEnabled &&
                           responseCollectionModeLocked ? (

@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { ApolloError, useMutation, useQuery } from '@apollo/client'
 import { faPenToSquare } from '@fortawesome/free-regular-svg-icons'
 import {
   faChartPie,
@@ -15,7 +15,13 @@ import {
   UpdateCourseSettingsDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Dropdown, H1, UserNotification } from '@uzh-bf/design-system'
+import {
+  Button,
+  Dropdown,
+  H1,
+  toast,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -282,7 +288,24 @@ function CourseOverviewHeader({
                 setSubmitting(false)
               }
             } catch (error) {
-              onError()
+              const isCorrelatedGamificationConflict =
+                error instanceof ApolloError &&
+                error.graphQLErrors.some(
+                  (graphQLError) =>
+                    graphQLError.extensions?.code ===
+                    'LIVE_QUIZ_CORRELATED_GAMIFICATION_CONFLICT'
+                )
+              if (isCorrelatedGamificationConflict) {
+                toast({
+                  type: 'error',
+                  message: t(
+                    'manage.courseList.gamificationCorrelatedQuizConflict'
+                  ),
+                  options: { duration: 6000 },
+                })
+              } else {
+                onError()
+              }
               setSubmitting(false)
               console.log(error)
             }

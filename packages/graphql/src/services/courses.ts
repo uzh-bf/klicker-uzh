@@ -19,6 +19,7 @@ import {
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat.js'
+import { GraphQLError } from 'graphql'
 import { random } from 'mathjs'
 import { prop, sortBy } from 'remeda'
 import type { Context, ContextWithUser } from '../lib/context.js'
@@ -2709,6 +2710,22 @@ export async function updateCourseSettings(
   const course = await ctx.prisma.course.findUnique({
     where: { id },
     include: {
+      liveQuizzes: {
+        where: {
+          isDeleted: false,
+          responseCollectionMode:
+            DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+          status: {
+            in: [
+              DB.PublicationStatus.DRAFT,
+              DB.PublicationStatus.SCHEDULED,
+              DB.PublicationStatus.PUBLISHED,
+            ],
+          },
+        },
+        select: { id: true },
+        take: 1,
+      },
       _count: {
         select: {
           liveQuizzes: { where: { isDeleted: false } },
@@ -2744,6 +2761,21 @@ export async function updateCourseSettings(
     course.isAssessmentEnabled !== isAssessmentEnabled
       ? (isAssessmentEnabled ?? undefined)
       : undefined
+
+  if (
+    newGamificationSetting &&
+    !newAssessmentSetting &&
+    course.liveQuizzes.length > 0
+  ) {
+    throw new GraphQLError(
+      'Correlated response exports cannot be enabled for gamified live quizzes',
+      {
+        extensions: {
+          code: 'LIVE_QUIZ_CORRELATED_GAMIFICATION_CONFLICT',
+        },
+      }
+    )
+  }
 
   const updatedCourse = await ctx.prisma.course.update({
     where: { id },

@@ -1600,6 +1600,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Only a part of your batch operation could be applied successfully. Please check the affected activities and your permissions.',
       batchOperationFailed:
         'An error occurred while applying the batch operation. Please check your permissions and try again.',
+      batchCorrelatedGamificationConflict:
+        'The selected activities include a correlated-response Live Quiz, which cannot be assigned to a gamified course.',
     },
     assessment: {
       assessmentResults: 'Assessment Results',
@@ -2146,6 +2148,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Responses are stored per participant and can be exported with random labels instead of names.',
       responseCollectionAssessment:
         'This setting does not apply: assessment quizzes always store identifiable responses.',
+      responseCollectionGamificationConflict:
+        'Correlated exports cannot be combined with gamification because leaderboard scores could reveal respondents.',
+      responseCollectionLockedCourseConflict:
+        'This correlated quiz cannot be assigned to a gamified or assessment course after publication.',
       responseCollectionLocked:
         'This setting cannot be changed after the quiz is published.',
       displayNameTooltip: 'The display name is shown to participants.',
@@ -3016,6 +3022,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       languageTooltip:
         'Choose a language that will be used as the default when exporting activity access links, etc. Students can still change the language in the student app.',
       courseCreationFailed: 'Failed to create course...',
+      gamificationCorrelatedQuizConflict:
+        'Gamification cannot be enabled while this course contains a correlated-response Live Quiz. Change the quiz response collection setting first.',
       groupDeadlineFuture: 'The group creation deadline must be in the future.',
       groupDeadlineBeforeEnd:
         'The group creation deadline must be before the course end date.',

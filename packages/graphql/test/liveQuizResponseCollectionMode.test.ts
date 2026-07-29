@@ -2,15 +2,18 @@ import type { Hatchet } from '@hatchet-dev/typescript-sdk/index.js'
 import {
   LiveQuizRespondentType,
   LiveQuizResponseCollectionMode,
+  Locale,
   PrismaClient,
   PublicationStatus,
 } from '@klicker-uzh/prisma/client'
-import { decodeJWT } from '@klicker-uzh/util'
+import { decodeJWT, recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import { v4 as uuid } from 'uuid'
 import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { loginTemporaryParticipant } from '../src/services/accounts.js'
+import { applyActivityBatchOperations } from '../src/services/activities.js'
+import { updateCourseSettings } from '../src/services/courses.js'
 import { manipulateLiveQuiz } from '../src/services/liveQuizzes.js'
 import {
   initializePrisma,
@@ -83,6 +86,7 @@ describe('Live quiz response collection mode', () => {
       SELECT conname::text AS "name", pg_get_constraintdef(oid) AS "definition"
       FROM pg_constraint
       WHERE conname IN (
+        'LiveQuiz_correlated_response_mode_check',
         'LiveQuizResponse_identity_check',
         'LiveQuizRespondent_secret_check'
       )
@@ -99,6 +103,15 @@ describe('Live quiz response collection mode', () => {
     )
     expect(definitions.LiveQuizRespondent_secret_check).toContain(
       '"verificationSecretHash" IS NOT NULL'
+    )
+    expect(definitions.LiveQuiz_correlated_response_mode_check).toContain(
+      `"responseCollectionMode" <> 'CORRELATED_EXPORT'`
+    )
+    expect(definitions.LiveQuiz_correlated_response_mode_check).toContain(
+      'NOT "isGamificationEnabled"'
+    )
+    expect(definitions.LiveQuiz_correlated_response_mode_check).toContain(
+      'NOT "isAssessmentEnabled"'
     )
 
     const indexes = await prisma.$queryRaw<{ name: string }[]>`
@@ -151,6 +164,143 @@ describe('Live quiz response collection mode', () => {
       LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS
     )
     expect(aggregated.exportSalt).toBe(correlated.exportSalt)
+  })
+
+  it('rejects correlated exports when gamification is enabled directly', async () => {
+    await expect(
+      manipulateLiveQuiz(
+        {
+          ...liveQuizArgs(),
+          isGamificationEnabled: true,
+          responseCollectionMode:
+            LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: {
+        code: 'LIVE_QUIZ_CORRELATED_GAMIFICATION_CONFLICT',
+      },
+    })
+  })
+
+  it('rejects correlated exports inherited from a gamified course', async () => {
+    const gamifiedCourse = await seedCourse(
+      { isGamificationEnabled: true, isAssessmentEnabled: false },
+      userOneCtx
+    )
+
+    await expect(
+      manipulateLiveQuiz(
+        {
+          ...liveQuizArgs(),
+          courseId: gamifiedCourse.id,
+          responseCollectionMode:
+            LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: {
+        code: 'LIVE_QUIZ_CORRELATED_GAMIFICATION_CONFLICT',
+      },
+    })
+  })
+
+  it('rejects assigning a correlated quiz to a gamified course in a batch', async () => {
+    const correlatedQuiz = await manipulateLiveQuiz(
+      {
+        ...liveQuizArgs(),
+        responseCollectionMode:
+          LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+      },
+      userOneCtx
+    )
+    const gamifiedCourse = await seedCourse(
+      { isGamificationEnabled: true, isAssessmentEnabled: false },
+      userOneCtx
+    )
+    await recomputeDerivedPermissions({ courseId: gamifiedCourse.id }, prisma)
+
+    await expect(
+      applyActivityBatchOperations(
+        {
+          activityIds: [correlatedQuiz.id],
+          courseId: gamifiedCourse.id,
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: {
+        code: 'LIVE_QUIZ_CORRELATED_GAMIFICATION_CONFLICT',
+      },
+    })
+  })
+
+  it('rejects enabling gamification on a course with a correlated quiz', async () => {
+    const course = await seedCourse(
+      { isGamificationEnabled: false, isAssessmentEnabled: false },
+      userOneCtx
+    )
+    await manipulateLiveQuiz(
+      {
+        ...liveQuizArgs(),
+        courseId: course.id,
+        responseCollectionMode:
+          LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+      },
+      userOneCtx
+    )
+
+    await expect(
+      updateCourseSettings(
+        {
+          id: course.id,
+          language: Locale.en,
+          isGamificationEnabled: true,
+          isAssessmentEnabled: false,
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: {
+        code: 'LIVE_QUIZ_CORRELATED_GAMIFICATION_CONFLICT',
+      },
+    })
+  })
+
+  it('switches a correlated quiz to assessment handling in a batch', async () => {
+    const correlatedQuiz = await manipulateLiveQuiz(
+      {
+        ...liveQuizArgs(),
+        responseCollectionMode:
+          LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+      },
+      userOneCtx
+    )
+    const assessmentCourse = await seedCourse(
+      { isGamificationEnabled: true, isAssessmentEnabled: true },
+      userOneCtx
+    )
+    await recomputeDerivedPermissions({ courseId: assessmentCourse.id }, prisma)
+
+    await expect(
+      applyActivityBatchOperations(
+        {
+          activityIds: [correlatedQuiz.id],
+          courseId: assessmentCourse.id,
+        },
+        userOneCtx
+      )
+    ).resolves.toBe(1)
+
+    const stored = await prisma.liveQuiz.findUniqueOrThrow({
+      where: { id: correlatedQuiz.id },
+    })
+    expect(stored.isAssessmentEnabled).toBe(true)
+    expect(stored.responseCollectionMode).toBe(
+      LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS
+    )
   })
 
   it('assigns temporary pseudonyms the same quiz-scoped respondent identity', async () => {

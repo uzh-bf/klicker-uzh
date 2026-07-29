@@ -1607,6 +1607,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Nur ein Teil Ihrer Batch-Operation konnte erfolgreich angewendet werden. Bitte überprüfen Sie die betroffenen Aktivitäten und Ihre Berechtigungen.',
       batchOperationFailed:
         'Beim Anwenden der Batch-Operation ist ein Fehler aufgetreten. Bitte überprüfen Sie Ihre Berechtigungen und versuchen Sie es erneut.',
+      batchCorrelatedGamificationConflict:
+        'Die ausgewählten Aktivitäten enthalten ein Live Quiz mit korrelierter Antwortspeicherung, das keinem gamifizierten Kurs zugewiesen werden kann.',
     },
     assessment: {
       assessmentResults: 'Assessment Resultate',
@@ -2160,6 +2162,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Antworten werden pro Person gespeichert und können mit zufälligen Bezeichnungen statt Namen exportiert werden.',
       responseCollectionAssessment:
         'Diese Einstellung gilt nicht: Assessments speichern Antworten immer identifizierbar.',
+      responseCollectionGamificationConflict:
+        'Korrelierte Exporte können nicht mit Gamification kombiniert werden, weil Ranglistenpunkte Rückschlüsse auf Personen ermöglichen könnten.',
+      responseCollectionLockedCourseConflict:
+        'Dieses korrelierte Live Quiz kann nach der Veröffentlichung keinem gamifizierten oder Assessment-Kurs zugewiesen werden.',
       responseCollectionLocked:
         'Diese Einstellung kann nach der Veröffentlichung des Live Quiz nicht mehr geändert werden.',
       displayNameTooltip:
@@ -3066,6 +3072,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       languageTooltip:
         'Wählen Sie eine Sprache, welche beim Export von Kurs-Links, etc. als Standard verwendet werden soll. Studierende haben nach wie vor die Möglichkeit, die Sprache in der Studierenden-App zu ändern.',
       courseCreationFailed: 'Erstellen des Kurses fehlgeschlagen...',
+      gamificationCorrelatedQuizConflict:
+        'Gamifizierung kann nicht aktiviert werden, solange dieser Kurs ein Live Quiz mit korrelierter Antwortspeicherung enthält. Ändern Sie zuerst die Einstellung zur Antwortspeicherung des Quiz.',
       groupDeadlineFuture:
         'Die Deadline für die Gruppenbildung muss in der Zukunft liegen.',
       groupDeadlineBeforeEnd:

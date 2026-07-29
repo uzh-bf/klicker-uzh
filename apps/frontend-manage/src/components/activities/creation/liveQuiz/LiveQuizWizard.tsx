@@ -144,6 +144,16 @@ function LiveQuizWizard({
     responseCollectionMode: yup
       .mixed<LiveQuizResponseCollectionMode>()
       .oneOf(Object.values(LiveQuizResponseCollectionMode))
+      .test(
+        'not-gamified-correlated',
+        t('manage.activityWizard.responseCollectionGamificationConflict'),
+        function (value) {
+          return !(
+            value === LiveQuizResponseCollectionMode.CorrelatedExport &&
+            this.parent.isGamificationEnabled
+          )
+        }
+      )
       .required(),
     defaultPoints: yup
       .number()

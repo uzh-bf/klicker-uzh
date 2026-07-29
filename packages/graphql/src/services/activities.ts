@@ -6,6 +6,7 @@ import {
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import generatePassword from 'generate-password'
+import { GraphQLError } from 'graphql'
 import { POINTS_PER_GROUP_ACTIVITY_ELEMENT } from './groups.js'
 import { POINTS_PER_INSTANCE } from './stacks.js'
 
@@ -490,6 +491,25 @@ export async function applyActivityBatchOperations(
     include: { blocks: { include: { elements: true } } },
   })
 
+  if (
+    newCourse?.isGamificationEnabled &&
+    !newCourse.isAssessmentEnabled &&
+    liveQuizzes.some(
+      (liveQuiz) =>
+        liveQuiz.responseCollectionMode ===
+        DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+    )
+  ) {
+    throw new GraphQLError(
+      'Correlated response exports cannot be enabled for gamified live quizzes',
+      {
+        extensions: {
+          code: 'LIVE_QUIZ_CORRELATED_GAMIFICATION_CONFLICT',
+        },
+      }
+    )
+  }
+
   // fetch all practice quizzes that should be updated
   const practiceQuizzes = !setLiveQuizPoints
     ? await ctx.prisma.practiceQuiz.findMany({
@@ -731,6 +751,12 @@ export async function applyActivityBatchOperations(
           isAssessmentEnabled: isCourseChanged
             ? { set: newCourse.isAssessmentEnabled }
             : undefined,
+          responseCollectionMode:
+            isCourseChanged && newCourse.isAssessmentEnabled
+              ? {
+                  set: DB.LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS,
+                }
+              : undefined,
           // if the course is changed to an assessment course, assign a pin
           pinCode: isCourseChanged ? newPinCode : undefined,
           // multiplier updates
