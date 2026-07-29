@@ -71,7 +71,10 @@ function ActivityCreation({
   const { data: dataMicroLearning, loading: microLoading } = useQuery(
     GetSingleMicroLearningDocument,
     {
-      variables: { id: activityId || '' },
+      variables: {
+        id: activityId || '',
+        withEscapeRoomHints: editMode === ActivityType.MicroLearning,
+      },
       skip:
         !activityId ||
         (editMode !== ActivityType.MicroLearning &&
@@ -83,7 +86,10 @@ function ActivityCreation({
   const { data: dataPracticeQuiz, loading: learningLoading } = useQuery(
     GetSinglePracticeQuizDocument,
     {
-      variables: { id: activityId || '' },
+      variables: {
+        id: activityId || '',
+        withEscapeRoomHints: editMode === ActivityType.PracticeQuiz,
+      },
       skip:
         !activityId ||
         (editMode !== ActivityType.PracticeQuiz &&
@@ -191,6 +197,7 @@ function ActivityCreation({
         | 'stacks'
         | 'pointsMultiplier'
         | 'course'
+        | 'escapeRoomConfig'
       > & {
         id?: string
         orderType?: string
@@ -212,6 +219,7 @@ function ActivityCreation({
       stacks: microData.stacks,
       pointsMultiplier: microData.pointsMultiplier,
       course: microData.course as Course,
+      escapeRoomConfig: microData.escapeRoomConfig,
     }
   }
 
@@ -262,6 +270,7 @@ function ActivityCreation({
             resetSelection={resetSelection}
             editMode={editMode === ActivityType.MicroLearning}
             duplicationMode={duplicationMode === ActivityType.MicroLearning}
+            escapeRoomHints={dataMicroLearning?.escapeRoomHints ?? []}
           />
         )}
         {(creationMode === ActivityType.PracticeQuiz ||
@@ -287,6 +296,7 @@ function ActivityCreation({
             conversion={conversionMode === 'microLearningToPracticeQuiz'}
             editMode={editMode === ActivityType.PracticeQuiz}
             duplicationMode={duplicationMode === ActivityType.PracticeQuiz}
+            escapeRoomHints={dataPracticeQuiz?.escapeRoomHints ?? []}
           />
         )}
         {creationMode === ActivityType.GroupActivity && (

@@ -2,6 +2,7 @@ import { faComment, faFaceSmile } from '@fortawesome/free-regular-svg-icons'
 import {
   faChevronLeft,
   faChevronRight,
+  faDoorOpen,
   faGamepad,
   faLayerGroup,
   IconDefinition,
@@ -22,6 +23,7 @@ interface StackNavigationProps {
   type: ActivityEvaluationType
   leaderboardAvailable?: boolean
   feedbacksAvailable?: boolean
+  escapeRoomAvailable?: boolean
 }
 
 const NavigationButton = ({
@@ -68,6 +70,7 @@ function StackNavigation({
   type,
   leaderboardAvailable = false,
   feedbacksAvailable = false,
+  escapeRoomAvailable = false,
 }: StackNavigationProps) {
   const t = useTranslations()
   const width = 1
@@ -170,6 +173,17 @@ function StackNavigation({
             label={t('manage.evaluation.confusion')}
           />
         </>
+      )}
+      {escapeRoomAvailable && (
+        <NavigationButton
+          onClick={() => {
+            setActiveStack('escapeRoom')
+          }}
+          data={{ cy: 'evaluation-escape-room' }}
+          active={activeStack === 'escapeRoom'}
+          icon={faDoorOpen}
+          label={t('manage.evaluation.escapeRoomTab')}
+        />
       )}
     </div>
   )
