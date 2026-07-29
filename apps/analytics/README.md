@@ -19,7 +19,12 @@ This service computes learning analytics for KlickerUZH, providing insights into
 
 The following commands are available through PNPM:
 
-- `pnpm generate` - Generate the ignored `src/models.generated.py` reference from the live development database; reconcile relevant changes into `src/models.py`
+- `pnpm generate` - Generate the ignored `src/models.generated.py` reference on the legacy host with Infisical
+- `pnpm generate:raw` - Generate the same reference in the self-contained DevPod from its injected `DATABASE_URL`
+
+Both generation paths query the migrated live development database. Reconcile
+only relevant changes from the generated reference into `src/models.py`.
+
 - `pnpm main` - Run the analytics service
 - `pnpm analytics:dev` - Start the service in watch mode for development
 

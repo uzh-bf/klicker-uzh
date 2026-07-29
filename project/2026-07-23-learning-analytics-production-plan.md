@@ -1046,15 +1046,20 @@ the repository script that replaces it before continuing.
   driver, succeeds against the disposable migrated database, does not print
   the connection string, and leaves the curated model hash unchanged. Ruff
   passes across 138 files.
+- 2026-07-29: Standards re-review passes after separating the Analytics
+  generation commands: `generate:raw` consumes the DevPod's injected
+  `DATABASE_URL`, while `generate` remains the legacy Infisical wrapper. The
+  raw path succeeds end to end against a second disposable migrated PostgreSQL
+  15 database, and current documentation and skills consistently distinguish
+  the two environments.
 - 2026-07-29: The full production monorepo build passes all 22 runnable build
   tasks under Node 24 and pnpm 11.5.0. The first sandboxed attempt reached the
   frontend builds but could not resolve Google Fonts; the allowed rerun
   completed without a repository failure. Existing Rollup, page-size,
   translation, and cache warnings remain non-blocking.
-- Active: Commit and review the accepted model-ownership fix, then request
-  explicit publication confirmation for the resulting stacked heads. After
-  publication, update both PR descriptions and read CI to a terminal result
-  without merging or deploying.
+- Active: Request explicit publication confirmation for the verified stacked
+  heads. After publication, update both PR descriptions and read CI to a
+  terminal result without merging or deploying.
 
 ## Finish evidence
 
@@ -1068,15 +1073,13 @@ the repository script that replaces it before continuing.
 
 ## Next Steps
 
-1. Commit and independently review the accepted SQLAlchemy model-ownership
-   correction.
-2. After explicit publication confirmation, push `chat-analytics` and
+1. After explicit publication confirmation, push `chat-analytics` and
    `analytics-phase-a`, update both stacked draft PR descriptions, and read CI
    to a terminal result without merging or deploying.
-3. Before staging, scan the exact image digest for CVEs, confirm the deployed
+2. Before staging, scan the exact image digest for CVEs, confirm the deployed
    Hatchet control-plane compatibility, and verify the owning
    ExternalSecret/Infisical sync is ready.
-4. Cold-cut over in staging with one replica and one slot. Run the proof task
+3. Cold-cut over in staging with one replica and one slot. Run the proof task
    and one scoped incremental/finalize course, compare rows and privacy
    convergence, and measure duration, query plans, memory, and CPU before
    changing resources or enabling the schedule.
