@@ -205,7 +205,7 @@ export const Assistant = ({
           {!embedded && (
             <Link
               href={pwaBaseUrl}
-              className="bg-uzh-blue hover:bg-uzh-blue-80 focus-visible:outline-uzh-blue-40 mt-8 inline-flex w-full items-center justify-center rounded-md px-4 py-2 text-base font-semibold text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              className="bg-primary hover:bg-primary/90 focus-visible:outline-primary/40 mt-8 inline-flex w-full items-center justify-center rounded-md px-4 py-2 text-base font-semibold text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
               prefetch={false}
             >
               {t('chat.assistant.openKlickerUzh')}
@@ -246,26 +246,32 @@ export const Assistant = ({
         >
           <div
             className={twMerge(
-              'rounded-lg bg-red-50 text-center',
+              'bg-destructive/10 rounded-lg text-center',
               embedded ? 'max-w-sm p-4' : 'max-w-md p-6'
             )}
           >
             <h2
               className={twMerge(
-                'font-semibold text-red-800',
+                'text-foreground font-semibold',
                 embedded ? 'mb-2 text-base' : 'mb-4 text-xl'
               )}
             >
               {t('chat.assistant.disclaimerDeclinedTitle')}
             </h2>
-            <p className={twMerge('text-red-700', embedded && 'text-sm')}>
+            <p className={twMerge('text-foreground', embedded && 'text-sm')}>
               {t('chat.assistant.disclaimerDeclinedMessage')}
             </p>
             {!embedded && (
+              // text-white, not text-destructive-foreground: this app's
+              // theme only defines --color-destructive (see globals.css),
+              // no matching foreground token. White sits ~4.8:1 on the solid
+              // destructive bg, near the 4.5:1 AA floor — so the hover must
+              // darken (brightness-90), not alpha-lighten like the app's
+              // hover:bg-primary/90 pattern, which would drop below AA here.
               <button
                 data-cy="chat-show-disclaimer-again"
                 onClick={() => setShowDisclaimerModal(true)}
-                className="mt-4 rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+                className="bg-destructive mt-4 rounded px-4 py-2 text-white transition-[filter] hover:brightness-90"
               >
                 {t('chat.assistant.showDisclaimerAgain')}
               </button>
