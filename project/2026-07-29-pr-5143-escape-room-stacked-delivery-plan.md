@@ -158,13 +158,15 @@ When blocked by environment or authentication, complete every independent local 
 - [x] Extract and verify Layer 1.
 - [x] Add, extract, and verify Layer 2.
 - [x] Add, extract, and verify Layer 3.
-- [ ] Add, extract, and verify Layer 4.
+- [x] Add, extract, and verify Layer 4.
 - [ ] Run final stack-wide review and verification gates.
 - [ ] Publish draft PRs and read back stack/PR state.
 
-## Current blocker
+## Publication state
 
-- `gh auth status` reports that the active `rschlaefli` token is invalid. Local stack work can continue; draft publication requires re-authentication before `gh stack submit --auto`.
+- `gh auth status` confirms the active `rschlaefli` account is authenticated
+  with repository and workflow scopes. No external publication blocker is
+  currently known.
 
 ## Layer 1 corrective follow-up — 2026-08-01
 
@@ -279,3 +281,34 @@ The review found that client-only filtering after the existing `numEntries`/`off
   response API/worker behavior, or Live-specific GraphQL inputs. The per-layer
   verification README records the screenshots, commands, review corrections,
   and the unchanged wiki-validator baseline warning.
+
+## Layer 4 evidence
+
+- **Implementation commits:** `019f8190a`, `c1444d129`, `0b54ebcce`,
+  response-path and browser correction `083d04e30`, and documentation
+  `8193f213a`.
+- **Verification:** 89 focused GraphQL tests, 20 Response API enforcement
+  tests, seven response-processor deduplication tests, one PWA response
+  serialization/parsing test, and affected GraphQL, Response API, worker,
+  Manage, PWA, and Playwright checks passed. Generated GraphQL artifacts are
+  current.
+- **Browser evidence:** all 20 ordered Escape Room Chromium scenarios passed.
+  Live-specific coverage verifies block-setting edit round-trip, explicit
+  participant start, incorrect-answer lockout, reload, completion, German
+  cockpit progress, lecturer reset, and return to the protected start state
+  through the real Response API and worker.
+- **Environment correction:** browser verification exposed that all
+  devcontainer variants configured the Response API origin without the
+  required `/AddResponse` path. Primary, linked, and direct-local URLs now
+  route Live Quiz submissions to the actual POST endpoint; devrouter
+  fingerprint reconciliation restarted the exact stack process with the
+  corrected value.
+- **Documentation:** the lecturer and student tutorials now cover all four
+  Escape Room modes. The engineering wiki and data-model, GraphQL, frontend,
+  and verification skills describe the Live-specific contracts. The
+  production Docusaurus build passed.
+- **Extraction boundary:** the Live layer reuses the source implementation at
+  `4be19aa61` while preserving lower-layer corrections: explicit routed Group
+  identity, group roster monitoring, QR placement regression tests, and
+  fail-closed template validation. The per-layer verification README records
+  exact commands, screenshots, and the unchanged OKF validator baseline.
