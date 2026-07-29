@@ -81,7 +81,11 @@ feedback, evaluation, grading, and gamification continue unchanged.
 - Opt-out excludes all past and future activity from subsequent calculations
   and removes participant-level LA output immediately.
 - A materially changed disclosure version suspends eligibility until the
-  participant makes a new choice. Normal course access remains available.
+  participant makes a new choice. If they choose inclusion, the effective
+  inclusion time resets to that acknowledgement and activity from the
+  intervening period remains excluded. Editorial changes do not advance the
+  disclosure version or require another choice. Normal course access remains
+  available.
 
 ### Lecturer output
 
@@ -108,7 +112,7 @@ Use names consistent with the existing `Course`, `Participant`, and
 - `Course.isLearningAnalyticsEnabled Boolean @default(false)`
 - `LearningAnalyticsParticipationStatus` with `UNDECIDED`, `INCLUDED`, and
   `EXCLUDED`
-- Current status on `Participation`
+- `Participation.learningAnalyticsStatus LearningAnalyticsParticipationStatus @default(UNDECIDED)`
 - `Participation.learningAnalyticsIncludedFrom DateTime?`
 - `Participation.learningAnalyticsChoiceAt DateTime?`
 - `Participation.learningAnalyticsDisclosureVersion String?`
@@ -127,7 +131,8 @@ The shared eligibility rule is:
 4. The activity timestamp is on or after `learningAnalyticsIncludedFrom`.
 
 A course toggle never changes `learningAnalyticsIncludedFrom`. Participant
-opt-out clears current eligibility. Participant opt-in sets a new inclusion time.
+opt-out clears current eligibility. Participant opt-in and inclusion after a
+material disclosure change set a new inclusion time.
 
 ## Authorization
 
@@ -455,6 +460,9 @@ Commit:
 - 2026-07-23: Product decisions locked in `CONTEXT.md` and ADRs 0001-0002.
 - 2026-07-23: Implementation plan approved by the user.
 - 2026-07-23: Approved plan and ADRs published in draft PR #5198.
-- Current: draft PR published; implementation not started.
-- Next: wait for explicit implementation authority, then start Research and
-  Slice 1 on this same branch and draft PR.
+- 2026-07-29: Greptile review findings accepted. The participation status field
+  name is explicit, and renewed inclusion after a material disclosure change
+  resets eligibility to the new acknowledgement time.
+- Current: rebase the draft PR onto current `v3`, then execute Research and
+  Slice 1.
+- Next: inventory every LA path and establish the shared eligibility state.
