@@ -1575,6 +1575,7 @@ describe('Unit tests covering the creation of derived permissions for elements',
         name: 'Answer Collection Group',
         ownerId: userThree.id,
         members: { connect: { id: userTwo.id } },
+        admins: { connect: { id: userFour.id } },
       },
     })
     const groupPermission = await prisma.permission.create({
@@ -1582,13 +1583,14 @@ describe('Unit tests covering the creation of derived permissions for elements',
         userGroupId: userGroup.id,
         answerCollectionId: answerCollection.id,
         permissionLevel: PermissionLevel.WRITE,
+        propagation: true,
       },
     })
     await prisma.permission.create({
       data: {
         userId: userTwo.id,
         answerCollectionId: answerCollection.id,
-        permissionLevel: PermissionLevel.READ,
+        permissionLevel: PermissionLevel.WRITE,
       },
     })
     const elementPermission = await prisma.permission.create({
@@ -1663,9 +1665,9 @@ describe('Unit tests covering the creation of derived permissions for elements',
       },
       [userFour.id]: {
         userId: userFour.id,
-        permissionLevel: PermissionLevel.READ,
-        directPermissionId: elementPermission.id,
-        derived: true,
+        permissionLevel: PermissionLevel.WRITE,
+        directPermissionId: groupPermission.id,
+        derived: false,
       },
       [userFive.id]: {
         userId: userFive.id,
@@ -1673,6 +1675,21 @@ describe('Unit tests covering the creation of derived permissions for elements',
         directPermissionId: templatePermission.id,
         derived: true,
       },
+    })
+
+    await prisma.userGroup.update({
+      where: { id: userGroup.id },
+      data: { admins: { disconnect: { id: userFour.id } } },
+    })
+    await recomputeDerivedPermissions(
+      { answerCollectionId: answerCollection.id, userId: userFour.id },
+      prisma
+    )
+    expect((await getPermissionRows())[userFour.id]).toEqual({
+      userId: userFour.id,
+      permissionLevel: PermissionLevel.READ,
+      directPermissionId: elementPermission.id,
+      derived: true,
     })
 
     await prisma.permission.update({
@@ -1699,6 +1716,35 @@ describe('Unit tests covering the creation of derived permissions for elements',
     expect((await getPermissionRows())[userThree.id]?.permissionLevel).toBe(
       PermissionLevel.ADMIN
     )
+
+    await prisma.answerCollection.update({
+      where: { id: answerCollection.id },
+      data: { isDeleted: true },
+    })
+    await recomputeDerivedPermissions(
+      { answerCollectionId: answerCollection.id },
+      prisma
+    )
+    expect(await getPermissionRows()).toEqual({
+      [userOne.id]: {
+        userId: userOne.id,
+        permissionLevel: PermissionLevel.READ,
+        directPermissionId: null,
+        derived: true,
+      },
+      [userFour.id]: {
+        userId: userFour.id,
+        permissionLevel: PermissionLevel.READ,
+        directPermissionId: elementPermission.id,
+        derived: true,
+      },
+      [userFive.id]: {
+        userId: userFive.id,
+        permissionLevel: PermissionLevel.READ,
+        directPermissionId: templatePermission.id,
+        derived: true,
+      },
+    })
   })
 
   it('Verify that all users with permission on element automatically get derived access on linked answer collections (derived permissions always READ)', async () => {

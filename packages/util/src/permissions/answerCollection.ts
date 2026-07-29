@@ -405,8 +405,6 @@ export async function recomputeAnswerCollectionPermissionsUser(
       prisma
     )
   }
-
-  return
 }
 
 /**
