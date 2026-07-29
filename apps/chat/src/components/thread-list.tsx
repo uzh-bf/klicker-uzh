@@ -2,13 +2,17 @@
 
 import { CheckIcon, EditIcon, Trash2, XIcon } from 'lucide-react'
 import type { FC } from 'react'
-import { createElement, useMemo, useState } from 'react'
+import { createElement, useEffect, useMemo, useRef, useState } from 'react'
 
 import { TextField, useSidebar } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useParams, useRouter } from 'next/navigation'
 import { formatModeLabel, getModeIcon } from '../lib/config/modes'
 import { useChatStore, type Thread } from '../stores/chatStore'
+import {
+  transitionDeleteConfirm,
+  type DeleteConfirmPhase,
+} from './thread-list-state'
 
 export const ThreadList: FC = () => {
   return (
@@ -182,6 +186,10 @@ const startOfWeek = (date: Date) => {
   return startOfDay(addDays(date, diff))
 }
 
+// How long the row stays armed after the first delete click before it
+// auto-reverts (T2.3).
+const DELETE_CONFIRM_TIMEOUT_MS = 4000
+
 interface ThreadListItemProps {
   thread: Thread
   isActive: boolean
@@ -200,6 +208,76 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState('')
   const { updateThreadTitle } = useChatStore()
+
+  const [deletePhase, setDeletePhase] = useState<DeleteConfirmPhase>('idle')
+  // Holds the pending auto-revert timeout so a second click, an explicit
+  // cancel, or unmount can all clear it before it fires.
+  const deleteRevertTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const clearDeleteRevertTimer = () => {
+    if (deleteRevertTimer.current !== null) {
+      clearTimeout(deleteRevertTimer.current)
+      deleteRevertTimer.current = null
+    }
+  }
+
+  // Timer cleanup on unmount — reads the ref directly rather than calling
+  // clearDeleteRevertTimer so the effect has no external dependency.
+  useEffect(() => {
+    return () => {
+      if (deleteRevertTimer.current !== null) {
+        clearTimeout(deleteRevertTimer.current)
+      }
+    }
+  }, [])
+
+  const revertDeleteConfirm = () => {
+    clearDeleteRevertTimer()
+    setDeletePhase('idle')
+  }
+
+  const handleDeleteClick = () => {
+    clearDeleteRevertTimer()
+    const { phase, shouldDelete } = transitionDeleteConfirm(
+      deletePhase,
+      'click'
+    )
+    setDeletePhase(phase)
+    if (shouldDelete) {
+      // Always the current onDelete prop for this render, so this never
+      // deletes a stale/wrong thread even if the row re-renders while armed.
+      onDelete()
+      return
+    }
+    deleteRevertTimer.current = setTimeout(
+      revertDeleteConfirm,
+      DELETE_CONFIRM_TIMEOUT_MS
+    )
+  }
+
+  const handleDeleteKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape' && deletePhase === 'confirming') {
+      revertDeleteConfirm()
+    }
+  }
+
+  // Covers both mouse (pointer truly leaving the row) and keyboard/touch
+  // (focus moving to something outside the row) — either one cancels a
+  // pending confirm, matching the "focus/pointer leaves the row" requirement.
+  const handleRowMouseLeave = () => {
+    if (deletePhase === 'confirming') {
+      revertDeleteConfirm()
+    }
+  }
+
+  const handleRowBlur = (e: React.FocusEvent<HTMLDivElement>) => {
+    if (
+      deletePhase === 'confirming' &&
+      !e.currentTarget.contains(e.relatedTarget)
+    ) {
+      revertDeleteConfirm()
+    }
+  }
 
   const getThreadTitle = () => {
     if (thread.title) return thread.title
@@ -220,6 +298,9 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
   }
 
   const handleEditStart = () => {
+    // Switching to the edit UI hides the delete button entirely, so drop any
+    // pending delete confirm rather than leave its timer running unseen.
+    revertDeleteConfirm()
     setEditTitle(getThreadTitle())
     setIsEditing(true)
   }
@@ -251,6 +332,11 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
       // focus-visible: here would be dead CSS. focus-within: highlights the
       // row when a child (select/edit/delete button, title input) has focus.
       className={`group/thread focus-within:bg-muted focus-within:ring-ring flex items-center rounded-lg py-1 transition-all focus-within:outline-none focus-within:ring-2 ${isActive ? 'bg-primary/15' : 'hover:bg-accent'}`}
+      // A pending delete confirm reverts as soon as the pointer or focus
+      // leaves the row (T2.3) — covers both moving the mouse away and
+      // tabbing/tapping to a different row.
+      onMouseLeave={handleRowMouseLeave}
+      onBlur={handleRowBlur}
     >
       {isEditing ? (
         <>
@@ -334,12 +420,35 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
           <button
             type="button"
             data-cy="chat-thread-delete-button"
-            onClick={onDelete}
-            aria-label={t('chat.threadList.deleteChat')}
-            className={`text-foreground hover:text-destructive focus-visible:ring-ring mr-2 size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4 ${isActive ? 'inline-flex' : 'hidden group-focus-within/thread:inline-flex group-hover/thread:inline-flex'}`}
+            onClick={handleDeleteClick}
+            onKeyDown={handleDeleteKeyDown}
+            // Confirm state gets the deleteConfirmAria name ("Confirm
+            // deleting this chat") rather than the plain "Delete chat" —
+            // the visible "Delete?"/"Löschen?" label alone doesn't convey
+            // that a second click is destructive.
+            aria-label={
+              deletePhase === 'confirming'
+                ? t('chat.threadList.deleteConfirmAria')
+                : t('chat.threadList.deleteChat')
+            }
+            className={`focus-visible:ring-ring mr-2 shrink-0 items-center justify-center whitespace-nowrap rounded-md text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 ${
+              deletePhase === 'confirming'
+                ? 'bg-destructive/10 text-destructive hover:bg-destructive/20 h-6 gap-1 px-2 text-xs font-semibold'
+                : 'text-foreground hover:text-destructive size-6 p-1 [&>svg]:size-4'
+            } ${isActive ? 'inline-flex' : 'hidden group-focus-within/thread:inline-flex group-hover/thread:inline-flex'}`}
           >
-            <Trash2 />
-            <span className="sr-only">{t('chat.threadList.deleteChat')}</span>
+            {deletePhase === 'confirming' ? (
+              // aria-label above already carries the accessible name here, so
+              // this visible label doesn't need an sr-only mirror alongside it.
+              <span>{t('chat.threadList.deleteConfirm')}</span>
+            ) : (
+              <>
+                <Trash2 />
+                <span className="sr-only">
+                  {t('chat.threadList.deleteChat')}
+                </span>
+              </>
+            )}
           </button>
         </>
       )}
