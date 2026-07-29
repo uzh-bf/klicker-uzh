@@ -40,6 +40,10 @@ import './schema/subscription.js'
 // }
 
 import {
+  handleGradeCodeSubmission,
+  handleRecoverCodeSubmissions,
+} from './services/codeSubmissions.js'
+import {
   handleEndExpiredGroupActivity,
   handleFinalRandomGroupAssignments,
   handlePublishScheduledGroupActivity,
@@ -69,6 +73,8 @@ export const schema = builder.toSchema({
 })
 
 export const handlers: HatchetHandlers = {
+  handleGradeCodeSubmission,
+  handleRecoverCodeSubmissions,
   handleFinalRandomGroupAssignments,
   handleRunningRandomGroupAssignments,
   handleUpdateGroupAverageScores,

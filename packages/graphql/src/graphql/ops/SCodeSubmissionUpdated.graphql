@@ -1,0 +1,17 @@
+subscription CodeSubmissionUpdated($id: ID!) {
+  codeSubmissionUpdated(id: $id) {
+    id
+    gradingStatus
+    feedback {
+      pointsPercentage
+      publicTestResults {
+        id
+        name
+        passed
+        actualOutput
+        stdout
+        stderr
+      }
+    }
+  }
+}

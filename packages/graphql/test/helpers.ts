@@ -141,6 +141,14 @@ export async function testInitialization(
 
   // initialize tasks to be called
   const tasks = {
+    gradeCodeSubmission: hatchet.task({
+      name: 'grade-code-submission',
+      fn: async () => ({ success: true }),
+    }),
+    recoverCodeSubmissions: hatchet.task({
+      name: 'recover-code-submissions',
+      fn: async () => ({ recovered: 0 }),
+    }),
     createAuditLogEntry: hatchet.task({
       name: 'create-audit-log-entry',
       fn: async ({

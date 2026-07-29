@@ -1,0 +1,27 @@
+mutation SubmitCodeResponse(
+  $instanceId: Int!
+  $courseId: String!
+  $code: String!
+  $timeSpent: Int!
+) {
+  submitCodeResponse(
+    instanceId: $instanceId
+    courseId: $courseId
+    code: $code
+    timeSpent: $timeSpent
+  ) {
+    id
+    gradingStatus
+    feedback {
+      pointsPercentage
+      publicTestResults {
+        id
+        name
+        passed
+        actualOutput
+        stdout
+        stderr
+      }
+    }
+  }
+}

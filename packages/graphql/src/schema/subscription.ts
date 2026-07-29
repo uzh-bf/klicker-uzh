@@ -1,6 +1,9 @@
+import * as DB from '@klicker-uzh/prisma/client'
+import type { CodeSubmissionReceipt as CodeSubmissionReceiptType } from '@klicker-uzh/types'
 import { filter, pipe } from 'graphql-yoga'
 
 import builder from '../builder.js'
+import { CodeSubmissionReceipt } from './code.js'
 import { GroupActivityRef } from './groupActivity.js'
 import {
   FeedbackRef,
@@ -9,16 +12,21 @@ import {
 } from './liveQuiz.js'
 import { MicroLearningRef } from './microLearning.js'
 
+type CodeSubmissionUpdatedEvent = {
+  participantId: string
+  receipt: CodeSubmissionReceiptType
+}
+
 export const Subscription = builder.subscriptionType({
   fields(t) {
     // const asAuthenticated = t.withAuth({
     //   authenticated: true,
     // })
 
-    // const asParticipant = t.withAuth({
-    //   authenticated: true,
-    //   role: DB.UserRole.PARTICIPANT,
-    // })
+    const asParticipant = {
+      authenticated: true,
+      role: DB.UserRole.PARTICIPANT,
+    }
 
     // const asUser = t.withAuth({
     //   authenticated: true,
@@ -26,6 +34,25 @@ export const Subscription = builder.subscriptionType({
     // })
 
     return {
+      codeSubmissionUpdated: t.withAuth(asParticipant).field({
+        type: CodeSubmissionReceipt,
+        args: { id: t.arg.id({ required: true }) },
+        subscribe: (_, args, ctx) => {
+          const events = ctx.pubSub.subscribe(
+            'codeSubmissionUpdated'
+          ) as AsyncIterable<CodeSubmissionUpdatedEvent>
+          return pipe(
+            events,
+            filter(
+              (data) =>
+                data.receipt.id === String(args.id) &&
+                data.participantId === ctx.user?.sub
+            )
+          )
+        },
+        resolve: (payload) => payload.receipt,
+      }),
+
       runningLiveQuizUpdated: t.field({
         type: LiveQuizRef,
         args: { id: t.arg.string({ required: true }) },

@@ -41,7 +41,16 @@ uv run --no-project --python 3.12 -- \
   node node_modules/vitest/vitest.mjs run test/codeApi.test.ts
 ```
 
-The runner tests cover pass/error/timeout behavior plus direct file-descriptor flooding and descendant-process cleanup. Do not send a live request until the CodeAPI deployment accepts `klicker_jwt`; once enabled, require distinct public/hidden sessions and retain no hidden output or session identifiers. Later async-submission slices still require database-backed lifecycle tests; UI slices still require routed browser/e2e proof.
+The runner tests cover pass/error/timeout behavior plus direct file-descriptor flooding and descendant-process cleanup. Do not send a live request until the CodeAPI deployment accepts `klicker_jwt`; once enabled, require distinct public/hidden sessions and retain no hidden output or session identifiers.
+
+For CODE receipt, worker, or finalization changes, run the serialized database-backed lifecycle tracer:
+
+```bash
+pnpm --filter @klicker-uzh/graphql exec vitest run \
+  test/codeSubmissions.test.ts
+```
+
+Require active-receipt convergence, durable pending state after enqueue failure, participant-scoped readback, duplicate delivery, retry after failure and commit, expired claims, exhausted retries, `FAILED` retry, and exactly-once response/statistics/spaced-repetition/points/XP/leaderboard/timeline assertions. Mock only the sanitized CodeAPI executor result at this seam; runner and hostile-response behavior belongs to the service-free client suite. UI slices still require routed browser/e2e proof.
 
 Manage CODE browser proof must select CODE through `select-question-type`, assert `code-options` renders without a CodeMirror console error, and confirm `student-element-preview` includes public test names but no hidden test names. In a practice-quiz or microlearning wizard, mixed CODE selection must disable the combined-stack action while the separate-stack action remains enabled.
 

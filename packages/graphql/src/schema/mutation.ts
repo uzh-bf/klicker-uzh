@@ -5,6 +5,7 @@ import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
 import * as ChatbotsService from '../services/chatbots.js'
+import * as CodeSubmissionService from '../services/codeSubmissions.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
@@ -21,6 +22,7 @@ import * as TemplateService from '../services/templates.js'
 import { ActivityInfo } from './activities.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
 import { PointCorrection, PointCorrectionType } from './assessment.js'
+import { CodeSubmissionReceipt } from './code.js'
 import { Course } from './course.js'
 import {
   Element,
@@ -476,6 +478,23 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await NotificationService.unsubscribeFromPush(args, ctx)
+        },
+      }),
+
+      submitCodeResponse: t.withAuth(asParticipant).field({
+        nullable: false,
+        type: CodeSubmissionReceipt,
+        args: {
+          instanceId: t.arg.int({ required: true }),
+          courseId: t.arg.string({ required: true }),
+          code: t.arg.string({ required: true }),
+          timeSpent: t.arg.int({
+            required: true,
+            validate: { min: 0, max: 86_400 },
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await CodeSubmissionService.submitCodeResponse(args, ctx)
         },
       }),
 

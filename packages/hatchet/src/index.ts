@@ -36,6 +36,46 @@ export function prepareHatchetTasks({
     prisma,
   }
 
+  // ! CODE SUBMISSION GRADING
+  // #region
+  const gradeCodeSubmission = hatchet.task({
+    name: 'grade-code-submission',
+    retries: 2,
+    executionTimeout: '3m',
+    scheduleTimeout: '5m',
+    fn: async (
+      { submissionId }: { submissionId: string },
+      executionContext
+    ) => {
+      const success = await handlers.handleGradeCodeSubmission(
+        { submissionId },
+        globalContext,
+        executionContext
+      )
+      return { success }
+    },
+  })
+
+  const recoverCodeSubmissions = hatchet.task({
+    name: 'recover-code-submissions',
+    retries: 2,
+    onCrons: ['*/1 * * * *'],
+    fn: async (_, executionContext) => {
+      const submissionIds = await handlers.handleRecoverCodeSubmissions(
+        {},
+        globalContext,
+        executionContext
+      )
+      if (submissionIds.length > 0) {
+        await gradeCodeSubmission.runNoWait(
+          submissionIds.map((submissionId) => ({ submissionId }))
+        )
+      }
+      return { recovered: submissionIds.length }
+    },
+  })
+  // #endregion
+
   // ! AUDIT LOGGING
   // #region
   const createAuditLogEntry = hatchet.task({
@@ -289,6 +329,8 @@ export function prepareHatchetTasks({
   // #endregion
 
   return {
+    gradeCodeSubmission,
+    recoverCodeSubmissions,
     updateGroupAverageScores,
     runningRandomGroupAssignments,
     finalRandomGroupAssignments,

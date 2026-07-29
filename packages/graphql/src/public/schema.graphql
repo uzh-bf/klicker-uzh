@@ -2141,6 +2141,7 @@ type Mutation {
   shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startLiveQuiz(id: String!): LiveQuizMeta
+  submitCodeResponse(code: String!, courseId: String!, instanceId: Int!, timeSpent: Int!): CodeSubmissionReceipt!
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
   toggleArchiveCourse(id: String!, isArchived: Boolean!): Course
@@ -2624,6 +2625,7 @@ type Query {
   checkTemplateInfoAvailable(activityId: String!, activityType: ActivityType!): ActivityTemplateInfo
   checkValidCoursePin(pin: Int!): String
   cockpitQuiz(id: String!): LiveQuiz
+  codeSubmission(id: ID!): CodeSubmissionReceipt
   controlCourse(id: String!): Course
   controlCourses: [Course!]
   controlLiveQuiz(id: String!): LiveQuiz
@@ -3078,6 +3080,7 @@ type StudentPointCorrection {
 }
 
 type Subscription {
+  codeSubmissionUpdated(id: ID!): CodeSubmissionReceipt!
   feedbackAdded(quizId: String!): Feedback!
   feedbackCreated(quizId: String!): Feedback!
   feedbackPinned(quizId: String!): Feedback!
