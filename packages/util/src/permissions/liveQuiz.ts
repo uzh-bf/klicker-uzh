@@ -101,8 +101,7 @@ async function recomputeLiveQuizPermissionsSetBased(
           expanded_permissions."permissionId" AS "directPermissionId",
           false AS "derived",
           'DIRECT'::text AS "sourceType",
-          expanded_permissions."propagation",
-          expanded_permissions."permissionId"::text AS "sourceKey"
+          expanded_permissions."propagation"
         FROM expanded_permissions
         CROSS JOIN target_activity
         WHERE NOT target_activity."isDeleted"
@@ -125,9 +124,7 @@ async function recomputeLiveQuizPermissionsSetBased(
           course_permission."directPermissionId",
           true AS "derived",
           'COURSE'::text AS "sourceType",
-          false AS "propagation",
-          COALESCE(course_permission."directPermissionId"::text, '')
-            AS "sourceKey"
+          false AS "propagation"
         FROM target_activity
         INNER JOIN "DerivedPermission" course_permission
           ON course_permission."courseId" = target_activity."courseId"
@@ -150,8 +147,7 @@ async function recomputeLiveQuizPermissionsSetBased(
           NULL::integer AS "directPermissionId",
           false AS "derived",
           'OWNER'::text AS "sourceType",
-          false AS "propagation",
-          ''::text AS "sourceKey"
+          false AS "propagation"
         FROM target_activity
         CROSS JOIN target_scope
         WHERE NOT target_activity."isDeleted"
@@ -190,8 +186,7 @@ async function recomputeLiveQuizPermissionsSetBased(
               CASE
                 WHEN candidates."sourceType" = 'DIRECT'
                 THEN candidates."directPermissionId"
-              END DESC,
-              candidates."sourceKey"
+              END DESC
           ) AS "permissionRank"
         FROM candidates
       ),

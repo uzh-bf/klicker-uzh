@@ -3053,6 +3053,14 @@ describe('Unit tests covering the creation of derived permissions for activities
         permissionLevel: PermissionLevel.READ,
       },
     })
+    const courseTiePermission = await prisma.permission.create({
+      data: {
+        userId: userTwo.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.WRITE,
+        propagation: true,
+      },
+    })
     const courseWritePermission = await prisma.permission.create({
       data: {
         userId: userFour.id,
@@ -3166,6 +3174,12 @@ describe('Unit tests covering the creation of derived permissions for activities
 
     expect(await readRows()).toEqual(
       sortedRows([
+        {
+          userId: userTwo.id,
+          permissionLevel: PermissionLevel.WRITE,
+          directPermissionId: courseTiePermission.id,
+          derived: true,
+        },
         {
           userId: userOne.id,
           permissionLevel: PermissionLevel.OWNER,
