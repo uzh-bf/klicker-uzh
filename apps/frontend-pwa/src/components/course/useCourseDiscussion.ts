@@ -11,7 +11,7 @@ import {
 } from '@klicker-uzh/shared-components/src/discussionUtils'
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface UseCourseDiscussionOptions {
   courseId: string
@@ -21,7 +21,7 @@ interface UseCourseDiscussionOptions {
 }
 
 function getCourseDiscussionScopeKey(courseId: string, scopeKey?: string) {
-  return scopeKey ?? `course:${courseId}`
+  return scopeKey || `course:${courseId}`
 }
 
 function useCourseDiscussion({
@@ -36,10 +36,7 @@ function useCourseDiscussion({
   const [loadingMore, setLoadingMore] = useState(false)
   const loadingMoreRef = useRef(false)
 
-  const activeScopeKey = useMemo(
-    () => getCourseDiscussionScopeKey(courseId, scopeKey),
-    [courseId, scopeKey]
-  )
+  const activeScopeKey = getCourseDiscussionScopeKey(courseId, scopeKey)
   const {
     data: threadsData,
     loading: loadingThreads,
@@ -64,16 +61,11 @@ function useCourseDiscussion({
   )
 
   const parsedScopeInput = parseScopeKeyToInput(courseId, activeScopeKey)
-  const canCreateThreadForActiveScope = useMemo(() => {
-    if (!parsedScopeInput) return false
-    if (activeScopeKey === `course:${courseId}`) return true
-    if (activeScopeKey.startsWith('stack:')) return true
-    if (activeScopeKey.startsWith('ext:') && embedded && !!embedToken) {
-      return true
-    }
-
-    return false
-  }, [activeScopeKey, courseId, embedded, embedToken, parsedScopeInput])
+  const canCreateThreadForActiveScope =
+    Boolean(parsedScopeInput) &&
+    (activeScopeKey === `course:${courseId}` ||
+      activeScopeKey.startsWith('stack:') ||
+      (activeScopeKey.startsWith('ext:') && embedded && !!embedToken))
 
   const threads = threadsData?.courseDiscussionThreads?.threads ?? []
   const courseDisplayLabel = t('shared.generic.course')
@@ -127,7 +119,7 @@ function useCourseDiscussion({
     return () => stopPolling()
   }, [activeScopeKey, courseId, embedToken, startPolling, stopPolling])
 
-  const handleCreateThread = useCallback(async () => {
+  const handleCreateThread = async () => {
     if (
       !threadDraft.trim() ||
       !canCreateThreadForActiveScope ||
@@ -168,21 +160,9 @@ function useCourseDiscussion({
         message: t('pwa.courseQA.threadPostError'),
       })
     }
-  }, [
-    threadDraft,
-    createThread,
-    courseId,
-    parsedScopeInput,
-    postThreadAnonymous,
-    canChooseAnonymity,
-    mustPostAnonymously,
-    embedToken,
-    canCreateThreadForActiveScope,
-    refetchThreads,
-    t,
-  ])
+  }
 
-  const handleLoadMore = useCallback(async () => {
+  const handleLoadMore = async () => {
     if (!nextCursor || !hasMore || loadingMoreRef.current) return
 
     loadingMoreRef.current = true
@@ -222,7 +202,7 @@ function useCourseDiscussion({
       loadingMoreRef.current = false
       setLoadingMore(false)
     }
-  }, [nextCursor, hasMore, fetchMore, stopPolling, t])
+  }
 
   return {
     localizedThreads,
