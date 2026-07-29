@@ -771,8 +771,11 @@ PR #5109 is production-ready only when all are true:
 - [x] S3 has no silence-based E7 pass; 401/429 are measured through the
       transport/UI contract.
 - [x] S4 full automated gate passes at one clean commit.
-- [ ] One fully measured live judged run reports `OVERALL: PASS`.
-- [ ] Firefox and WebKit targeted tests pass against production builds.
+- [ ] One fully measured live judged run reports `OVERALL: PASS`. (Two full
+      measured runs completed 2026-07-29; verdict `OVERALL: FAIL` on soft
+      judge aggregates with all hard gates passing — see Progress. Disposition
+      is an open product decision.)
+- [x] Firefox and WebKit targeted tests pass against production builds.
 - [ ] VoiceOver pass is recorded.
 - [x] Wiki, skills, eval README, and plan Progress match the implementation.
 - [x] Independent standards, spec, security, simplification, and
@@ -1035,3 +1038,22 @@ approved.
   tests across both browsers. The measured matrix run against the production
   builds was sequenced after the judged-eval runs because both reset the same
   workspace database.
+- 2026-07-29: S5.2 measured and green. The first measured matrix run passed
+  Firefox 146.0.1 23/23 but failed every WebKit browser test at launch: the
+  shared Playwright `use` block passed the Chromium-only CLI flag
+  `--lang=en-US`, which WebKit's launcher rejects (`Unknown option`), isolated
+  with a standalone launch probe outside the test suite. The flag was scoped
+  into the chromium project's own `use` block (commit `90deb5bee`; the shared
+  `locale: 'en-US'` already covers Firefox/WebKit), preserving default
+  Chromium discovery (846 tests) and matrix discovery (2538). The runner
+  image was rebuilt from a fresh `git archive` snapshot at `90deb5bee` with
+  verified provenance, the three production app images were reused after a
+  diff check showed no app source changed, and the final evidence pass
+  reported 46/46 green — Firefox 146.0.1 23/23 and WebKit 26.0 23/23 —
+  against the production Docker builds in 90 s with zero retries and the
+  real `globalSetup` database reset/seed path exercised. One environmental
+  requirement surfaced for containerized runs: `URL_STUDENT_LOGIN` must be
+  set explicitly (the fixture reads it independently of `URL_STUDENT`).
+  All matrix containers were torn down afterwards; images were kept for
+  reuse. The Definition of Done item for production Firefox/WebKit is now
+  checked; VoiceOver remains the sole outstanding S5 human gate.
