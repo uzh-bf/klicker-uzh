@@ -26,6 +26,8 @@ omitted), `controlCourse` in `query.ts` (EXECUTE), `getLiveQuizSummary` (READ).
 Existing fields use `t.withAuth(...)` exclusively — follow them rather than
 inventing `authScopes` variants.
 
+Sensitive answer material uses defense in depth. `qrScanPrintData` requires `OWNER` through `withPermission` and repeats the exact-owner predicate in the service query; the schema gate protects the API contract while the service gate prevents accidental disclosure if the service is reused. Do not weaken answer-bearing reads to `READ`, `WRITE`, or UI-only hiding.
+
 ## Layering contract
 
 - `schema/*.ts` — Pothos object types + root `query.ts`/`mutation.ts`/`subscription.ts`. Resolvers delegate immediately: `resolve: (_, args, ctx) => CourseService.deleteCourse(args, ctx)`.
@@ -36,6 +38,7 @@ inventing `authScopes` variants.
 
 - Arg validation via the Pothos **Zod plugin** — pass `validate:` on args (email/regex/length examples in `mutation.ts`); issues are joined into a `GraphQLError` by the shaper in `builder.ts`.
 - Service-level errors: prefer `GraphQLError` with `extensions.code` (e.g. `LIVE_QUIZ_PIN_INVALID`, `FORBIDDEN` in `services/liveQuizzes.ts`). Plain `throw new Error` exists in older code — don't add more.
+- Validate element-type placement in the service after resolving new, retained, and duplicated instances, not only in the authoring UI. The QR foundation deliberately rejects QR placement in all activity and live-quiz-template inputs with `BAD_USER_INPUT` until its participant runtime and grading are present.
 
 ## Client operations and codegen
 

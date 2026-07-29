@@ -857,9 +857,13 @@ export const Query = builder.queryType({
           elementId: t.arg.int({ required: true }),
           decoyCount: t.arg.int({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          return await ElementService.getQrScanPrintData(args, ctx)
-        },
+        resolve: withPermission(
+          (args) => ({ elementId: args.elementId }),
+          DB.PermissionLevel.OWNER,
+          async (_, args, ctx) => {
+            return await ElementService.getQrScanPrintData(args, ctx)
+          }
+        ),
       }),
 
       getInstanceUpdateActivities: t.withAuth(asUser).field({

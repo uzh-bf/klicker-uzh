@@ -46,6 +46,7 @@ import useValidationSchema from './useValidationSchema'
 function ElementEditForm({
   isTemplate = false,
   inputsDisabled = false,
+  canPrintQrCodes = false,
   templateId,
   onClose,
   onSuccess,
@@ -62,6 +63,8 @@ function ElementEditForm({
 }: {
   // flag to disable inputs (edit mode and read permissions)
   inputsDisabled?: boolean
+  // QR codes are answer material and remain exact-owner-only.
+  canPrintQrCodes?: boolean
   // flag to highlight template mode
   isTemplate?: boolean
   templateId?: string
@@ -197,7 +200,9 @@ function ElementEditForm({
 
                     {values.type === ElementType.QrScan &&
                       mode === ElementEditMode.EDIT &&
-                      elementId != null && (
+                      elementId != null &&
+                      canPrintQrCodes &&
+                      !inputsDisabled && (
                         <Button
                           type="button"
                           className={{ root: 'mt-4' }}
