@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Date | 2026-07-28 |
-| Status | IN PROGRESS — S0-S4 complete locally; S5 release automation prepared, evidence gates remain |
+| Status | BLOCKED — S0-S4 complete locally; S5 automation prepared; live release and publication gates require authority |
 | PR | [#5109](https://github.com/uzh-bf/klicker-uzh/pull/5109) |
 | Remote branch | `codex/manage-assistant-mcp-v3-ai` → `v3-ai` |
 | Local worktree | `.claude/worktrees/finalize-v3-ai-branch-0fa103` |
@@ -774,8 +774,8 @@ PR #5109 is production-ready only when all are true:
 - [ ] One fully measured live judged run reports `OVERALL: PASS`.
 - [ ] Firefox and WebKit targeted tests pass against production builds.
 - [ ] VoiceOver pass is recorded.
-- [ ] Wiki, skills, eval README, and plan Progress match the implementation.
-- [ ] Independent standards, spec, security, simplification, and
+- [x] Wiki, skills, eval README, and plan Progress match the implementation.
+- [x] Independent standards, spec, security, simplification, and
       maintainability reviews are clean.
 - [ ] PR body and live head/check state agree.
 - [ ] No unresolved actionable review thread remains.
@@ -917,6 +917,24 @@ approved.
   production-build pass is claimed. S5.1 is also blocked because no approved
   judge model/key/base URL is configured and no paid-run authority exists;
   S5.3 remains a real VoiceOver human gate, not a simulator claim.
+- 2026-07-29: Independent S5.2 spec and
+  standards/simplification/maintainability reviews are clean at
+  `40124f02f`. The default project list and existing CI remain Chromium-only,
+  the exact opt-in exposes Firefox and WebKit, the documented command matches
+  the configuration and Playwright 1.58.2, and every unavailable live gate
+  remains explicitly unclaimed.
+- 2026-07-29: S6 live reconciliation found the clean local branch at
+  `40124f02f`, five commits ahead of the published PR head, with 150 commits
+  and 315 files changed from live base `20a953251` (+28,416 / -793). PR #5109
+  remains open and non-draft at published head `60e1d5366`; 50 checks are
+  successful and the documented inherited GitGuardian check still fails. The
+  PR body is stale at head `79e70be28` and 133 commits / 217 files. One
+  unresolved, non-outdated review thread remains in
+  `packages/i18n/messages/de.ts` for the separately parked German CTA. No
+  push, PR-body mutation, review-thread resolution, ready-state change, merge,
+  deployment, or production enablement is authorized. S6 publication and
+  hosted CI therefore remain blocked even though local implementation and
+  review gates are clean.
 - 2026-07-28: S2 implementation completed. The PWA course-chat drawer now
   portals to `document.body`, exposes the complete launcher/dialog contract,
   traps focus, makes `#__next` inert and assistive-technology-hidden while
