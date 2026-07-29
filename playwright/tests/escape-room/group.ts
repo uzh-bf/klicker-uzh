@@ -186,14 +186,14 @@ export function registerGroupEscapeRoomTests() {
       )
       await captureEvidence(page, 'group-dashboard-en-desktop.png')
 
-      await member1.getByTestId('sc-0-answer-option-1').click()
+      await member1.getByTestId('sc-1-answer-option-1').click()
       await member1.getByTestId('submit-group-activity').click()
       await expect(
         member1.getByText(messages.pwa.practiceQuiz.escapeRoomLockoutToast)
       ).toBeVisible()
 
       // The second member hits the same server-owned group lockout.
-      await member2.getByTestId('sc-0-answer-option-1').click()
+      await member2.getByTestId('sc-1-answer-option-1').click()
       await member2.getByTestId('submit-group-activity').click()
       await expect(
         member2.getByText(deMessages.pwa.practiceQuiz.escapeRoomLockoutToast)
@@ -203,7 +203,7 @@ export function registerGroupEscapeRoomTests() {
       await expect(member1.getByTestId('submit-group-activity')).toBeEnabled({
         timeout: 15_000,
       })
-      await member1.getByTestId('sc-0-answer-option-0').click()
+      await member1.getByTestId('sc-1-answer-option-0').click()
       await member1.getByTestId('submit-group-activity').click()
       await expect(
         member1
@@ -229,7 +229,12 @@ export function registerGroupEscapeRoomTests() {
       await attemptRow
         .locator('[data-cy^="escape-room-reset-confirm-"]')
         .click()
-      await expect(attemptRow).not.toBeAttached()
+      await expect(attemptRow).toContainText(
+        messages.manage.evaluation.escapeRoomStatusNotStarted
+      )
+      await expect(
+        attemptRow.locator('[data-cy^="escape-room-reset-"]')
+      ).not.toBeAttached()
 
       await Promise.all([member1.reload(), member2.reload()])
       await expect(member1.getByTestId('start-group-activity')).toBeVisible()

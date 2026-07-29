@@ -18782,26 +18782,6 @@
             "deprecationReason": null
           },
           {
-            "name": "escapeRoomAttempts",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "LIST",
-              "name": null,
-              "ofType": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "OBJECT",
-                  "name": "EscapeRoomAttempt",
-                  "ofType": null
-                }
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
             "name": "escapeRoomConfig",
             "description": null,
             "args": [],
@@ -31440,6 +31420,18 @@
                 "deprecationReason": null
               },
               {
+                "name": "groupId",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "instanceId",
                 "description": null,
                 "type": {
@@ -32558,6 +32550,18 @@
             "args": [
               {
                 "name": "groupActivityId",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "groupId",
                 "description": null,
                 "type": {
                   "kind": "SCALAR",

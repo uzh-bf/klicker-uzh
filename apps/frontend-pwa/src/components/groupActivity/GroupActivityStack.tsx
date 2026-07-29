@@ -35,6 +35,7 @@ interface GroupActivityStackProps {
   results?: GroupActivityResults | null
   submittedAt?: string
   groupActivityId?: string
+  groupId?: string
   hintPenalty?: number
   onEscapeRoomStateChanged?: () => Promise<unknown> | void
 }
@@ -60,6 +61,7 @@ function GroupActivityStack({
   results,
   submittedAt,
   groupActivityId,
+  groupId,
   hintPenalty = 0,
   onEscapeRoomStateChanged,
 }: GroupActivityStackProps) {
@@ -265,10 +267,10 @@ function GroupActivityStack({
   }
 
   const revealHint = async (instanceId: number) => {
-    if (!groupActivityId || revealedHints[instanceId]) return
+    if (!groupActivityId || !groupId || revealedHints[instanceId]) return
     try {
       const result = await requestEscapeRoomHint({
-        variables: { groupActivityId, instanceId },
+        variables: { groupActivityId, groupId, instanceId },
       })
       const hint = result.data?.requestEscapeRoomHint?.hint
       if (hint) {

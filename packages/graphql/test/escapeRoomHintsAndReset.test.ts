@@ -1,5 +1,6 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { getEscapeRoomLifecycleClaimKey } from '@klicker-uzh/types'
+import { v4 as uuidv4 } from 'uuid'
 import { describe, expect, it } from 'vitest'
 import {
   type ContextWithUser,
@@ -730,6 +731,7 @@ describe('requestEscapeRoomHint - time-penalty hints', () => {
       requestEscapeRoomHint(
         {
           groupActivityId: fixture.groupActivity.id,
+          groupId: fixture.group.id,
           instanceId: instanceA!.id,
         },
         participantCtx(participantA.id)
@@ -737,6 +739,7 @@ describe('requestEscapeRoomHint - time-penalty hints', () => {
       requestEscapeRoomHint(
         {
           groupActivityId: fixture.groupActivity.id,
+          groupId: fixture.group.id,
           instanceId: instanceB!.id,
         },
         participantCtx(participantB.id)
@@ -787,11 +790,17 @@ describe('requestEscapeRoomHint - time-penalty hints', () => {
 
     const starts = await Promise.all([
       startEscapeRoomAttempt(
-        { groupActivityId: fixture.groupActivity.id },
+        {
+          groupActivityId: fixture.groupActivity.id,
+          groupId: fixture.group.id,
+        },
         participantCtx(participantA.id, sharedClaims)
       ),
       startEscapeRoomAttempt(
-        { groupActivityId: fixture.groupActivity.id },
+        {
+          groupActivityId: fixture.groupActivity.id,
+          groupId: fixture.group.id,
+        },
         participantCtx(participantB.id, sharedClaims)
       ),
     ])
@@ -805,6 +814,67 @@ describe('requestEscapeRoomHint - time-penalty hints', () => {
         },
       })
     ).toBe(1)
+  })
+
+  it('uses the routed group when a participant belongs to multiple course groups', async () => {
+    const participant = await seedParticipant('group-route-identity')
+    const fixture = await seedEscapeRoomGroupActivity(
+      {
+        elements: [scElement],
+        courseId,
+        participantIds: [participant.id],
+      },
+      lecturerCtx
+    )
+    await prisma.escapeRoomAttempt.delete({
+      where: { id: fixture.attempt.id },
+    })
+
+    const latestGroup = await prisma.participantGroup.findFirst({
+      where: { courseId },
+      orderBy: { code: 'desc' },
+      select: { code: true },
+    })
+    const secondGroup = await prisma.participantGroup.create({
+      data: {
+        name: uuidv4(),
+        code: (latestGroup?.code ?? 0) + 1,
+        courseId,
+        participants: { connect: { id: participant.id } },
+      },
+    })
+    await prisma.groupActivityInstance.create({
+      data: {
+        groupId: secondGroup.id,
+        groupActivityId: fixture.groupActivity.id,
+      },
+    })
+
+    await expect(
+      startEscapeRoomAttempt(
+        { groupActivityId: fixture.groupActivity.id },
+        participantCtx(participant.id)
+      )
+    ).rejects.toThrow('A group ID is required')
+
+    const firstAttempt = await startEscapeRoomAttempt(
+      {
+        groupActivityId: fixture.groupActivity.id,
+        groupId: fixture.group.id,
+      },
+      participantCtx(participant.id)
+    )
+    const secondAttempt = await startEscapeRoomAttempt(
+      {
+        groupActivityId: fixture.groupActivity.id,
+        groupId: secondGroup.id,
+      },
+      participantCtx(participant.id)
+    )
+
+    expect(firstAttempt.groupId).toBe(fixture.group.id)
+    expect(secondAttempt.groupId).toBe(secondGroup.id)
+    expect(firstAttempt.id).not.toBe(secondAttempt.id)
   })
 
   it('refuses to start while the target lifecycle is being updated', async () => {

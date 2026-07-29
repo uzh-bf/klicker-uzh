@@ -77,7 +77,6 @@ contract is unchanged.
 
 Apollo Client with **generated documents only** — `import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'`; never inline `gql`. Standard query guard: `if (!data?.field) return <Loader />`. Mutations declare `refetchQueries`. New/changed ops require the codegen ritual ([API layer](./graphql-api-layer.md)). Server state lives in Apollo cache; local state in React hooks. The PWA additionally uses **localforage** as an offline side-channel for live-quiz answers (`apps/frontend-pwa/src/components/liveQuiz/storageHelpers.ts`).
 
-<<<<<<< HEAD
 The manage Elements and Activities lists use the shared `Pagination` control
 with finite `10`, `20`, and `50` page sizes plus an opt-in `All` value. `All`
 keeps the active filters and sort, resets to page 1, omits `numEntries` and
@@ -97,7 +96,7 @@ shows the server-provided total, and resets to page 1 after an import or delete.
 CSV selection rejects files above 1 MiB and imports above 200 data rows before
 submitting a mutation (`apps/frontend-manage/src/pages/courses/[id]/assessment/invitations.tsx:AssessmentParticipantInvitations`).
 
-Escape Room clients render the attempt, timer, hints, lockout, and available stage from server snapshots. The local monotonic countdown only animates between refetches. Group Activities reuse this contract with one shared attempt: `apps/frontend-pwa/src/components/groupActivity/GroupActivityStack.tsx:GroupActivityStack` sends only answerable question responses in its atomic submission, while read-only content remains visible and never enters the exact response set. Lecturer monitoring uses the server-provided participant or group roster and group-aware reset identity.
+Escape Room clients render the attempt, timer, hints, lockout, and available stage from server snapshots. The local monotonic countdown only animates between refetches. Group Activities reuse this contract with one shared attempt: the routed `groupId` accompanies start and hint requests so the server can verify the exact membership, and `apps/frontend-pwa/src/components/groupActivity/GroupActivityStack.tsx:GroupActivityStack` sends only answerable question responses in its atomic submission while read-only content remains visible. Lecturer monitoring uses the server-provided participant or group roster and group-aware reset identity.
 
 ## i18n (next-intl)
 

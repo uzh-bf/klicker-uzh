@@ -81,7 +81,7 @@ The lecturer progress dashboard is roster-based: every enrolled participant appe
 
 ### Group Activity
 
-A Group Activity Escape Room has one shared attempt per `(groupId, groupActivityId)`, not one attempt per participant. The server derives the participant's group from course membership, and every start, hint, response, lockout, completion, and reset uses the group ID as the lifecycle actor. Concurrent starts by different members therefore converge on the same attempt (`packages/graphql/src/services/escapeRooms.ts:startEscapeRoomAttempt`).
+A Group Activity Escape Room has one shared attempt per `(groupId, groupActivityId)`, not one attempt per participant. Start and hint requests carry the group ID from the routed participant page; the server verifies that the activity belongs to the same course and that the authenticated participant belongs to that exact group before using it as the lifecycle actor. This remains deterministic when one participant belongs to multiple groups in a course, while concurrent starts by members of the same routed group converge on one attempt (`packages/graphql/src/services/escapeRooms.ts:startEscapeRoomAttempt`).
 
 Group submission is an all-or-nothing answer gate. `packages/graphql/src/services/groupEscapeRoomSubmissions.ts:submitEscapeRoomGroupActivityDecisions` requires the exact set of answerable instances, validates every response shape and sample solution, grades and updates aggregate results in one serializable transaction, and persists completion or the shared lockout atomically. Content and flashcards may be displayed but are excluded from that answer set. QR values are graded against the private source code and cleared before decisions are persisted.
 

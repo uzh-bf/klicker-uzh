@@ -19,6 +19,19 @@ const RELEASE_ESCAPE_ROOM_CLAIM = `
   return 0
 `
 
+export async function releaseEscapeRoomLifecycleClaim(
+  ctx: Pick<ContextWithUser, 'redisExec'>,
+  claimKey: string,
+  claimToken: string
+) {
+  await ctx.redisExec.eval(
+    RELEASE_ESCAPE_ROOM_CLAIM,
+    1,
+    claimKey,
+    claimToken
+  )
+}
+
 export function validateEscapeRoomConfig({
   timeLimit,
   hintPenalty,
@@ -181,6 +194,7 @@ interface EscapeRoomActivityArgs {
   practiceQuizId?: string | null
   microLearningId?: string | null
   groupActivityId?: string | null
+  groupId?: string | null
 }
 
 type EscapeRoomActivityReference =
@@ -220,6 +234,7 @@ interface ResolvedParticipantEscapeRoom {
 async function resolveParticipantEscapeRoom(
   reference: EscapeRoomActivityReference,
   participantId: string,
+  requestedGroupId: string | null | undefined,
   ctx: ContextWithUser
 ): Promise<ResolvedParticipantEscapeRoom> {
   let courseId: string
@@ -252,6 +267,12 @@ async function resolveParticipantEscapeRoom(
       break
     }
     case 'groupActivity': {
+      if (!requestedGroupId) {
+        throw new GraphQLError(
+          'A group ID is required for group escape room access',
+          { extensions: { code: 'ESCAPE_ROOM_FORBIDDEN' } }
+        )
+      }
       const activity = await ctx.prisma.groupActivity.findUnique({
         where: { id: reference.id, isDeleted: false },
         include: { escapeRoomConfig: true },
@@ -263,6 +284,7 @@ async function resolveParticipantEscapeRoom(
       config = activity.escapeRoomConfig
       const participantGroup = await ctx.prisma.participantGroup.findFirst({
         where: {
+          id: requestedGroupId,
           courseId,
           participants: { some: { id: participantId } },
         },
@@ -368,6 +390,7 @@ export async function startEscapeRoomAttempt(
   const activity = await resolveParticipantEscapeRoom(
     getEscapeRoomActivityReference(args),
     participantId,
+    args.groupId,
     ctx
   )
   const claimKey = getEscapeRoomLifecycleClaimKey(
@@ -451,7 +474,7 @@ export async function startEscapeRoomAttempt(
       throw error
     }
   } finally {
-    await ctx.redisExec.eval(RELEASE_ESCAPE_ROOM_CLAIM, 1, claimKey, claimToken)
+    await releaseEscapeRoomLifecycleClaim(ctx, claimKey, claimToken)
   }
 }
 
@@ -602,6 +625,7 @@ export async function requestEscapeRoomHint(
   const activity = await resolveParticipantEscapeRoom(
     getEscapeRoomActivityReference(args),
     participantId,
+    args.groupId,
     ctx
   )
   const claimKey = getEscapeRoomLifecycleClaimKey(
@@ -645,13 +669,12 @@ export async function requestEscapeRoomHint(
   try {
     return await revealEscapeRoomHint(instanceId, participantId, activity, ctx)
   } finally {
-    await ctx.redisExec.eval(RELEASE_ESCAPE_ROOM_CLAIM, 1, claimKey, claimToken)
+    await releaseEscapeRoomLifecycleClaim(ctx, claimKey, claimToken)
   }
 }
 
 interface ResetEscapeRoomAttemptArgs extends EscapeRoomActivityArgs {
   participantId?: string | null
-  groupId?: string | null
 }
 
 async function requireResetPermission(
@@ -792,7 +815,7 @@ export async function resetEscapeRoomAttempt(
       }
     })
   } finally {
-    await ctx.redisExec.eval(RELEASE_ESCAPE_ROOM_CLAIM, 1, claimKey, claimToken)
+    await releaseEscapeRoomLifecycleClaim(ctx, claimKey, claimToken)
   }
 
   return true

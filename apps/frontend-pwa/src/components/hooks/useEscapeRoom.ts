@@ -31,10 +31,12 @@ type EscapeRoomActivityInput = {
 export function useEscapeRoom({
   activity,
   activityType,
+  groupId,
   refetch,
 }: {
   activity: EscapeRoomActivityInput | null | undefined
   activityType: 'practiceQuiz' | 'microLearning' | 'groupActivity'
+  groupId?: string
   refetch: () => Promise<unknown>
 }) {
   const [startAttemptMutation, { loading: starting }] = useMutation(
@@ -58,7 +60,11 @@ export function useEscapeRoom({
     } else if (activityType === 'microLearning') {
       variables.microLearningId = activity.id
     } else {
+      if (!groupId) {
+        throw new Error('A group ID is required to start a group escape room')
+      }
       variables.groupActivityId = activity.id
+      variables.groupId = groupId
     }
 
     await startAttemptMutation({ variables })

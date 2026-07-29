@@ -1023,11 +1023,11 @@ export async function manipulateGroupActivity(
   }
 
   const newId = uuidv4()
-  const createOrUpdateJSON: any = {
+  const activityData = {
     id: id ?? newId,
-    name: name,
-    displayName: displayName,
-    description: description,
+    name,
+    displayName,
+    description,
     status: DB.PublicationStatus.DRAFT,
     scheduledStartAt: startDate,
     scheduledEndAt: endDate,
@@ -1084,8 +1084,6 @@ export async function manipulateGroupActivity(
     course: { connect: { id: courseId } },
   }
 
-  // nested upsert is only valid on the update branch of the activity upsert;
-  // the create branch needs a plain nested create
   const escapeRoomConfigData = isEscapeRoom
     ? {
         timeLimit: escapeRoomTimeLimit ?? 3600,
@@ -1095,18 +1093,31 @@ export async function manipulateGroupActivity(
       }
     : null
 
-  if (escapeRoomConfigData) {
-    createOrUpdateJSON.escapeRoomConfig = {
-      upsert: {
-        create: escapeRoomConfigData,
-        update: {
-          timeLimit: escapeRoomConfigData.timeLimit,
-          hintPenalty: escapeRoomConfigData.hintPenalty,
-          introText: escapeRoomConfigData.introText,
-        },
-      },
-    }
-  }
+  const createData = {
+    ...activityData,
+    ...(escapeRoomConfigData
+      ? { escapeRoomConfig: { create: escapeRoomConfigData } }
+      : {}),
+    owner: { connect: { id: ctx.user.sub } },
+  } satisfies DB.Prisma.GroupActivityCreateInput
+
+  const updateData = {
+    ...activityData,
+    ...(escapeRoomConfigData
+      ? {
+          escapeRoomConfig: {
+            upsert: {
+              create: escapeRoomConfigData,
+              update: {
+                timeLimit: escapeRoomConfigData.timeLimit,
+                hintPenalty: escapeRoomConfigData.hintPenalty,
+                introText: escapeRoomConfigData.introText,
+              },
+            },
+          },
+        }
+      : {}),
+  } satisfies DB.Prisma.GroupActivityUpdateInput
 
   const persistGroupActivity = async (prisma: PrismaTransactionClient) => {
     if (id) {
@@ -1159,23 +1170,15 @@ export async function manipulateGroupActivity(
     })
 
     if (!isEscapeRoom && id) {
-      await prisma.escapeRoomConfig
-        .delete({
-          where: { groupActivityId: id },
-        })
-        .catch(() => {})
+      await prisma.escapeRoomConfig.deleteMany({
+        where: { groupActivityId: id },
+      })
     }
 
     const upsertedActivity = await prisma.groupActivity.upsert({
       where: { id: id ?? newId },
-      create: {
-        ...createOrUpdateJSON,
-        ...(escapeRoomConfigData
-          ? { escapeRoomConfig: { create: escapeRoomConfigData } }
-          : {}),
-        owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
-      },
-      update: createOrUpdateJSON,
+      create: createData,
+      update: updateData,
       include: {
         templateInfo: true,
         permissions: {

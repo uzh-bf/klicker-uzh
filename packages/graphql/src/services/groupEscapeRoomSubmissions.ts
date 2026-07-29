@@ -17,7 +17,10 @@ import {
   hasExactEscapeRoomResponseSet,
   isGroupEscapeRoomResponseType,
 } from './escapeRoomResponseValidation.js'
-import { getRemainingSecondsUntil } from './escapeRooms.js'
+import {
+  getRemainingSecondsUntil,
+  releaseEscapeRoomLifecycleClaim,
+} from './escapeRooms.js'
 import {
   evaluateCaseStudyAnswerCorrectness,
   evaluateChoicesAnswerCorrectness,
@@ -30,13 +33,6 @@ import {
   updateNumericalResults,
   updateSelectionResults,
 } from './stacks.js'
-
-const RELEASE_ESCAPE_ROOM_CLAIM = `
-  if redis.call('GET', KEYS[1]) == ARGV[1] then
-    return redis.call('DEL', KEYS[1])
-  end
-  return 0
-`
 
 type GroupEscapeRoomInstance = DB.Prisma.ElementInstanceGetPayload<{
   include: { element: { select: { qrScanCode: true } } }
@@ -392,6 +388,6 @@ export async function submitEscapeRoomGroupActivityDecisions(
     }
     throw error
   } finally {
-    await ctx.redisExec.eval(RELEASE_ESCAPE_ROOM_CLAIM, 1, claimKey, claimToken)
+    await releaseEscapeRoomLifecycleClaim(ctx, claimKey, claimToken)
   }
 }

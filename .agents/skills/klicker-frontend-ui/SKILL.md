@@ -24,7 +24,7 @@ Conventions (design system, Tailwind v4, Apollo, i18n, CSP): [docs/frontend-conv
      services.
    - Forms: Formik + Yup. Conditional classes: `twMerge`. Feature flags gate alone — never `flag && count > 0`.
    - Answer-bearing print/export flows: show the launcher only to an exact owner, enforce ownership again in the API, keep answer legends out of printed CSS, label decoys neutrally, and use `crypto.getRandomValues` for anti-cheat ordering.
-   - Escape Room timers, progress, hints, lockouts, and stage availability render from server snapshots. Local state may animate or preserve form input, but it must not authorize advancement or reconstruct hidden stages. Group Activities submit one exact atomic answer set: keep read-only content visible, but filter content and flashcards out of the submitted response list.
+   - Escape Room timers, progress, hints, lockouts, and stage availability render from server snapshots. Local state may animate or preserve form input, but it must not authorize advancement or reconstruct hidden stages. Group Activity start and hint calls include the routed `groupId`; the server remains responsible for membership authorization. Group Activities submit one exact atomic answer set: keep read-only content visible, but filter content and flashcards out of the submitted response list.
    - No Next.js middleware for CSP/headers — that belongs at the proxy layer.
    - Assessment comparison charts use equal-width categorical bars and a
      labelled 0–100 percentile ruler; keep the exact range/count table and

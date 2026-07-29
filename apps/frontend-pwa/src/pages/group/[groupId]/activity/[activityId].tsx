@@ -77,6 +77,7 @@ function GroupActivityDetails() {
   } = useEscapeRoom({
     activity: hookActivity,
     activityType: 'groupActivity',
+    groupId: router.query.groupId as string,
     refetch,
   })
 
@@ -297,6 +298,7 @@ function GroupActivityDetails() {
                   'DD.MM.YYYY HH:mm:ss'
                 )}
                 groupActivityId={isEscapeRoom ? groupActivity.id : undefined}
+                groupId={isEscapeRoom ? groupActivity.group.id : undefined}
                 hintPenalty={isEscapeRoom ? escapeRoomHintPenalty : undefined}
                 onEscapeRoomStateChanged={
                   isEscapeRoom ? refetchEscapeRoom : undefined

@@ -18,19 +18,6 @@ query GetGroupActivity($id: String!, $withEscapeRoomHints: Boolean! = false) {
       lockoutSeconds
       introText
     }
-    escapeRoomAttempts {
-      id
-      startedAt
-      timeLimit
-      penaltySeconds
-      remainingSeconds
-      expiresInSeconds
-      hintsUsed
-      status
-      completedAt
-      lockoutUntil
-    }
-
     clues {
       id
       type

@@ -1656,7 +1656,6 @@ type GroupActivity {
   course: Course
   description: String
   displayName: String!
-  escapeRoomAttempts: [EscapeRoomAttempt!]
   escapeRoomConfig: EscapeRoomConfig
   id: ID!
   name: String!
@@ -2140,7 +2139,7 @@ type Mutation {
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
   requestCatalogCollection(catalogCollectionId: String!, requestedPermissionLevel: PermissionLevel): CatalogCollection
   requestCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!, requestedPermissionLevel: PermissionLevel): Boolean!
-  requestEscapeRoomHint(groupActivityId: String, instanceId: Int!, microLearningId: String, practiceQuizId: String): EscapeRoomHintResult
+  requestEscapeRoomHint(groupActivityId: String, groupId: String, instanceId: Int!, microLearningId: String, practiceQuizId: String): EscapeRoomHintResult
   resetAssessmentLiveQuiz(id: String!): ActivityInfo
   resetEscapeRoomAttempt(groupActivityId: String, groupId: String, microLearningId: String, participantId: String, practiceQuizId: String): Boolean!
   resolveActivityLogEntry(id: Int!): ActivityLogEntry
@@ -2155,7 +2154,7 @@ type Mutation {
   setLiveQuizPin(liveQuizId: String!, pin: String!): Boolean!
   shareElementsBatch(elementIds: [Int!]!, permissionLevel: PermissionLevel!, shortnameOrEmail: String, userGroupId: Int): ElementBatchSharingResult!
   shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
-  startEscapeRoomAttempt(groupActivityId: String, microLearningId: String, practiceQuizId: String): EscapeRoomAttempt
+  startEscapeRoomAttempt(groupActivityId: String, groupId: String, microLearningId: String, practiceQuizId: String): EscapeRoomAttempt
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startLiveQuiz(id: String!): LiveQuizMeta
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
