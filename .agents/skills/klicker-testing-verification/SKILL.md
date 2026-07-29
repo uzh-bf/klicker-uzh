@@ -22,17 +22,19 @@ Never run root `pnpm run test:run` blind — its turbo fan-out includes Cypress,
 
 Direct checks for `auth`, `chat`, `frontend-control`, `frontend-manage`, and `frontend-pwa` generate ignored Next route types first through each app's `check` script. Do not hand-edit or commit `next-env.d.ts`; keep it ignored and included by `tsconfig.json`. The three PWA apps use `tsconfig.check.json` only for raw package checks so stale `.next/dev/types` cannot duplicate fresh Pages Router validators. Next builds use the canonical `tsconfig.json`; Next 16 filters development validators on its production typecheck path. Auth and Chat use their main config for both checks and builds.
 
-For CODE contract/policy work, the fast service-free baseline is:
+For CODE contract, policy, or sandbox-client work, the fast service-free baseline is:
 
 ```bash
-pnpm --filter @klicker-uzh/util exec vitest run test/codeElements.test.ts
+pnpm --filter @klicker-uzh/util exec vitest run \
+  test/codeElements.test.ts \
+  test/codeApi.test.ts
 pnpm --filter @klicker-uzh/graphql exec vitest run \
   test/codeElementPolicy.test.ts \
   test/codeGraphqlContract.test.ts \
   test/validateCodeOptions.test.ts
 ```
 
-Later async-submission slices still require database-backed lifecycle tests; UI slices still require routed browser/e2e proof.
+For `codeApi.ts`, additionally execute one generated Python runner with a real interpreter and assert pass, error, and timeout outcomes. Do not send a live request until the CodeAPI deployment accepts `klicker_jwt`; once enabled, require distinct public/hidden sessions and retain no hidden output or session identifiers. Later async-submission slices still require database-backed lifecycle tests; UI slices still require routed browser/e2e proof.
 
 Manage CODE browser proof must select CODE through `select-question-type`, assert `code-options` renders without a CodeMirror console error, and confirm `student-element-preview` includes public test names but no hidden test names. In a practice-quiz or microlearning wizard, mixed CODE selection must disable the combined-stack action while the separate-stack action remains enabled.
 

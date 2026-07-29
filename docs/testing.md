@@ -22,17 +22,19 @@ tags:
 | UI / user flows                                                      | Playwright e2e (new specs); Cypress only for legacy maintenance                            | see routing below                                                                                  |
 | Office Add-in URL validation                                         | Node's built-in test runner — safe without services                                        | `pnpm --filter @klicker-uzh/office-addin test`                                                     |
 
-CODE contract/policy stabilization has two fast service-free suites:
+CODE contract, policy, and sandbox-client stabilization have three fast service-free suites:
 
 ```bash
-pnpm --filter @klicker-uzh/util exec vitest run test/codeElements.test.ts
+pnpm --filter @klicker-uzh/util exec vitest run \
+  test/codeElements.test.ts \
+  test/codeApi.test.ts
 pnpm --filter @klicker-uzh/graphql exec vitest run \
   test/codeElementPolicy.test.ts \
   test/codeGraphqlContract.test.ts \
   test/validateCodeOptions.test.ts
 ```
 
-These protect public-versus-hidden projection, option validation, supported activity types, and CODE-only stack rules. They do not replace the database-backed submission lifecycle tests or browser/e2e flows required by later slices.
+These protect public-versus-hidden projection, option validation, supported activity types, CODE-only stack rules, asymmetric CodeAPI claims, invocation-only public/hidden requests, hostile response parsing, output caps, and exact JSON grading. The generated Python runner also needs a direct smoke against a real Python interpreter for pass/error/timeout behavior. These checks do not replace the database-backed submission lifecycle tests, the gated live CodeAPI smoke, or browser/e2e flows required by later slices.
 
 For Manage CODE browser proof, exercise the type transition itself: select CODE through `select-question-type`, require `code-options` to render without a CodeMirror console error, and verify `student-element-preview` contains public test names but no hidden test names. In the practice-quiz or microlearning wizard, a mixed CODE selection must disable the combined-stack action while leaving the separate-stack action enabled.
 

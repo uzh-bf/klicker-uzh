@@ -2,7 +2,7 @@
 type: Architecture Overview
 title: Architecture Overview
 description: System map of apps and packages, the request path from browser to resolver, the async response pipeline, and where business logic lives.
-timestamp: '2026-07-07'
+timestamp: '2026-07-29'
 tags:
   - architecture
 ---
@@ -31,7 +31,7 @@ Apps (dev ports in [Getting Started](./getting-started.md)):
 | `apps/olat-api`, `apps/lti`, `apps/office-addin`      | LMS/Office integrations                                                             |
 | `apps/docs`                                           | User-facing Docusaurus site (not this wiki)                                         |
 
-Packages: `graphql` (schema + services + ops — the heart), `prisma` (schema + migrations), `prisma-data` (seeds), `grading` (pure scoring math), `hatchet` (task definitions), `types`, `util` (JWT/cookie helpers), `i18n`, `shared-components`, `markdown`, `export`, `word-cloud`, `next-config`, `transactional` (react-email).
+Packages: `graphql` (schema + services + ops — the heart), `prisma` (schema + migrations), `prisma-data` (seeds), `grading` (pure scoring math), `hatchet` (task definitions), `types`, `util` (JWT/cookie and CodeAPI helpers), `i18n`, `shared-components`, `markdown`, `export`, `word-cloud`, `next-config`, `transactional` (react-email).
 
 ## Request flow (query/mutation)
 
@@ -51,6 +51,14 @@ Redis has three roles, one client each (`apps/backend-docker/src/index.ts`): **e
 - `graphql/ops/*.graphql` — hand-written client operations, prefixed `Q`/`M`/`S`/`F` → codegen → `src/ops.ts` + `src/public/{client,server}.json`.
 
 Frontends import generated documents from `@klicker-uzh/graphql/dist/ops` — never write inline gql.
+
+## CODE sandbox grading boundary
+
+`packages/util/src/codeApi.ts` owns the hostile boundary to CodeAPI. It loads the `CODEAPI_*` endpoint and asymmetric JWT settings, mints short-lived `klicker_jwt` tokens, and sends only student code plus test invocation arguments. Expected values, weights, and pass/fail decisions remain in Klicker.
+
+Public and hidden tests are sent in separate `/v1/exec` requests and must return distinct session IDs. Each generated Python batch runner starts a fresh isolated child process per test with a five-second maximum. The client accepts only the verified flat CodeAPI response, rejects artifacts and unsupported fields, caps response/output size, and parses a versioned result envelope before exact JSON comparison. Downstream submission finalization must persist public details and hidden pass/fail only; sandbox session IDs and hidden output never belong in participant-facing data.
+
+The live integration remains gated on the separate CodeAPI deployment accepting the `klicker_jwt` principal source selected in [ADR 0003](./adr/0003-use-klicker-codeapi-principal-source.md). Service-free contract tests cover the client until that gate is open.
 
 ## Async response pipeline
 
