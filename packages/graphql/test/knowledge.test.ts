@@ -151,6 +151,7 @@ describe('Integration tests for knowledge base CRUD', () => {
   let emitter: EventEmitter
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
+  let nonPreviewCtx: ContextWithUser
   let previousBlobAccountName: string | undefined
   let previousBlobAccessKey: string | undefined
   let containerName: string
@@ -179,6 +180,14 @@ describe('Integration tests for knowledge base CRUD', () => {
     const initialized = await testInitialization(prisma, hatchet, emitter)
     userOneCtx = initialized.userOneCtx
     userTwoCtx = initialized.userTwoCtx
+    nonPreviewCtx = initialized.userThreeCtx
+    // the shared fixture users default to privatePreview: false; the KB workspace
+    // gate requires preview access, so opt both active owners in explicitly and
+    // leave nonPreviewCtx's backing user at the default (privatePreview: false)
+    await prisma.user.updateMany({
+      where: { id: { in: [userOneCtx.user.sub, userTwoCtx.user.sub] } },
+      data: { privatePreview: true },
+    })
     await prisma.chatbotMCPServer.upsert({
       where: { name: 'KB' },
       create: {
@@ -2038,5 +2047,109 @@ describe('Integration tests for knowledge base CRUD', () => {
     await expect(
       prisma.kBResource.findUnique({ where: { id: safe.id } })
     ).resolves.toMatchObject({ deletedAt: null })
+  })
+
+  it('rejects every KB entry point for a non-preview user', async () => {
+    const nonPreviewUser = await prisma.user.findUnique({
+      where: { id: nonPreviewCtx.user.sub },
+    })
+    expect(nonPreviewUser?.privatePreview).toBe(false)
+
+    const kbId = randomUUID()
+    const resourceId = randomUUID()
+    const chatbotId = randomUUID()
+
+    const entryPoints: Array<() => Promise<unknown>> = [
+      () => createKb({ name: 'Blocked KB' }, nonPreviewCtx),
+      () => deleteKb({ id: kbId }, nonPreviewCtx),
+      () =>
+        createKbUrlResource(
+          { kbId, url: 'https://example.com/blocked', title: 'Blocked' },
+          nonPreviewCtx
+        ),
+      () => deleteKbResource({ id: resourceId }, nonPreviewCtx),
+      () => deleteKbResources({ kbId, ids: [resourceId] }, nonPreviewCtx),
+      () => ingestKbResource({ id: resourceId }, nonPreviewCtx),
+      () =>
+        requestKbFileUpload(
+          {
+            kbId,
+            fileName: 'blocked.pdf',
+            contentType: 'application/pdf',
+            sizeBytes: 1024,
+          },
+          nonPreviewCtx
+        ),
+      () =>
+        confirmKbFileUpload(
+          {
+            kbId,
+            blobName: `${randomUUID()}.pdf`,
+            title: 'Blocked',
+            originalFilename: 'blocked.pdf',
+            mimeType: 'application/pdf',
+            sizeBytes: 1024,
+          },
+          nonPreviewCtx
+        ),
+      () => attachKbToChatbot({ kbId, chatbotId }, nonPreviewCtx),
+      () => detachKbFromChatbot({ kbId, chatbotId }, nonPreviewCtx),
+      () => getUserKbsConnection({}, nonPreviewCtx),
+      () => getKb({ id: kbId }, nonPreviewCtx),
+      () => getKbResourcesConnection({ kbId }, nonPreviewCtx),
+      () => getKbChatbotBindings({ kbId }, nonPreviewCtx),
+      () => getKbResourceIngestionRuns({ resourceId }, nonPreviewCtx),
+    ]
+
+    expect(entryPoints).toHaveLength(15)
+    for (const callEntryPoint of entryPoints) {
+      await expect(callEntryPoint()).rejects.toMatchObject({
+        extensions: { code: 'KB_PREVIEW_ACCESS_REQUIRED' },
+      })
+    }
+  })
+
+  it('refuses new KB content dispatch while the ingestion kill switch is enabled', async () => {
+    const kb = await createKb({ name: 'Kill switch KB' }, userOneCtx)
+    const existingResource = await createKbUrlResource(
+      { kbId: kb.id, title: 'Existing', url: 'https://example.com/existing' },
+      userOneCtx
+    )
+
+    vi.stubEnv('KB_INGESTION_DISABLED', 'true')
+    try {
+      await expect(
+        createKbUrlResource(
+          { kbId: kb.id, title: 'Blocked', url: 'https://example.com/blocked' },
+          userOneCtx
+        )
+      ).rejects.toMatchObject({ extensions: { code: 'KB_INGESTION_DISABLED' } })
+      await expect(
+        requestKbFileUpload(
+          {
+            kbId: kb.id,
+            fileName: 'blocked.pdf',
+            contentType: 'application/pdf',
+            sizeBytes: 1024,
+          },
+          userOneCtx
+        )
+      ).rejects.toMatchObject({ extensions: { code: 'KB_INGESTION_DISABLED' } })
+      await expect(
+        ingestKbResource({ id: existingResource.id }, userOneCtx)
+      ).rejects.toMatchObject({ extensions: { code: 'KB_INGESTION_DISABLED' } })
+
+      // reads and deletion of already-registered content stay live
+      await expect(getKb({ id: kb.id }, userOneCtx)).resolves.toMatchObject({
+        id: kb.id,
+      })
+      const deleted = await deleteKbResource(
+        { id: existingResource.id },
+        userOneCtx
+      )
+      expect(deleted.id).toBe(existingResource.id)
+    } finally {
+      vi.unstubAllEnvs()
+    }
   })
 })

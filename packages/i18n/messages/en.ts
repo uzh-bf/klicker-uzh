@@ -1369,6 +1369,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     chatbotAttachError: 'The chatbot could not be connected.',
     chatbotDetachSuccess: 'Chatbot disconnected from the knowledge base.',
     chatbotDetachError: 'The chatbot could not be disconnected.',
+    previewAccessError:
+      'The knowledge base workspace is not available for your account yet.',
+    ingestionDisabledError:
+      'Adding new content to knowledge bases is temporarily disabled.',
   },
   manage: {
     general: {

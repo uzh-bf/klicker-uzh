@@ -1379,6 +1379,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     chatbotDetachSuccess: 'Die Verknüpfung des Chatbots wurde aufgehoben.',
     chatbotDetachError:
       'Die Verknüpfung des Chatbots konnte nicht aufgehoben werden.',
+    previewAccessError:
+      'Der Wissensdatenbank-Arbeitsbereich ist für Ihr Konto noch nicht verfügbar.',
+    ingestionDisabledError:
+      'Das Hinzufügen neuer Inhalte zu Wissensdatenbanken ist vorübergehend deaktiviert.',
   },
   manage: {
     general: {

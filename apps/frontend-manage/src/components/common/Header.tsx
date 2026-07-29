@@ -42,13 +42,17 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
   const courses = courseData?.userCourses
 
   const resourceElements: NavigationMenuItemProps[] = [
-    {
-      key: 'knowledge-bases-item',
-      type: 'link' as const,
-      label: t('kb.title'),
-      onClick: () => router.push('/resources/knowledgeBases'),
-      data: { cy: 'knowledge-bases' },
-    },
+    ...(user?.privatePreview
+      ? [
+          {
+            key: 'knowledge-bases-item',
+            type: 'link' as const,
+            label: t('kb.title'),
+            onClick: () => router.push('/resources/knowledgeBases'),
+            data: { cy: 'knowledge-bases' },
+          },
+        ]
+      : []),
     {
       key: 'answer-collections-item',
       type: 'link' as const,

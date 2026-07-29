@@ -17,6 +17,10 @@ data:
   {{- if .Values.backendGraphql.debug }}
   DEBUG: {{ .Values.backendGraphql.debug | quote }}
   {{ end }}
+  {{- if .Values.backendGraphql.kbIngestionDisabled }}
+  # interim kill switch: refuses new KB content ingestion while reads/deletes/serving stay live
+  KB_INGESTION_DISABLED: {{ .Values.backendGraphql.kbIngestionDisabled | quote }}
+  {{ end }}
   {{- if .Values.heartbeats.dailyGroupScores }}
   HEARTBEAT_DAILY_GROUP_SCORES: {{ .Values.heartbeats.dailyGroupScores | quote }}
   {{ end }}

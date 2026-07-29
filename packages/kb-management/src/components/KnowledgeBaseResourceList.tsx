@@ -38,6 +38,7 @@ import React, {
   useRef,
   useState,
 } from 'react'
+import { getGraphQLErrorCode } from '../graphqlError'
 import { refreshAfterMutation } from '../refreshAfterMutation'
 import DeleteKnowledgeBaseResourceModal from './DeleteKnowledgeBaseResourceModal'
 import DeleteKnowledgeBaseResourcesModal from './DeleteKnowledgeBaseResourcesModal'
@@ -551,7 +552,12 @@ function KnowledgeBaseResourceList({
         await ingestResource({ variables: { id: resource.id } })
       } catch (mutationError) {
         console.error('Failed to queue KB resource ingestion', mutationError)
-        toast({ type: 'error', message: t('kb.ingestResourceError') })
+        const code = getGraphQLErrorCode(mutationError)
+        const message =
+          code === 'KB_INGESTION_DISABLED'
+            ? t('kb.ingestionDisabledError')
+            : t('kb.ingestResourceError')
+        toast({ type: 'error', message })
         return
       }
 

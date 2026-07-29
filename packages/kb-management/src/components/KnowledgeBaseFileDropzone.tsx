@@ -88,7 +88,9 @@ function KnowledgeBaseFileDropzone({
               ? t('kb.storageLimitError')
               : code === 'KB_UPLOAD_TICKET_MISMATCH'
                 ? t('kb.uploadMismatchError')
-                : t('kb.fileUploadError')
+                : code === 'KB_INGESTION_DISABLED'
+                  ? t('kb.ingestionDisabledError')
+                  : t('kb.fileUploadError')
         toast({ type: 'error', message })
         return
       }

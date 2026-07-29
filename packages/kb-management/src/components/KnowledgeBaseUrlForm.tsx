@@ -49,7 +49,9 @@ function KnowledgeBaseUrlForm({
           ? t('kb.resourceLimitError')
           : code === 'KB_STORAGE_LIMIT_REACHED'
             ? t('kb.storageLimitError')
-            : t('kb.linkError')
+            : code === 'KB_INGESTION_DISABLED'
+              ? t('kb.ingestionDisabledError')
+              : t('kb.linkError')
       toast({ type: 'error', message })
       return
     }
