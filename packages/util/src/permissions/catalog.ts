@@ -33,6 +33,7 @@ async function recomputeCatalogCollectionPermissionsSetBased(
         INNER JOIN "UserGroup" group_data
           ON group_data."id" = permission."userGroupId"
         WHERE permission."catalogCollectionId" = ${id}::uuid
+          AND permission."userId" IS NULL
 
         UNION
 
@@ -43,6 +44,7 @@ async function recomputeCatalogCollectionPermissionsSetBased(
         INNER JOIN "_UserGroupMembers" members
           ON members."B" = permission."userGroupId"
         WHERE permission."catalogCollectionId" = ${id}::uuid
+          AND permission."userId" IS NULL
 
         UNION
 
@@ -53,6 +55,7 @@ async function recomputeCatalogCollectionPermissionsSetBased(
         INNER JOIN "_UserGroupAdmins" admins
           ON admins."B" = permission."userGroupId"
         WHERE permission."catalogCollectionId" = ${id}::uuid
+          AND permission."userId" IS NULL
       ),
       expanded_permissions AS (
         SELECT

@@ -226,6 +226,7 @@ Gate A after Slice 3:
 - 2026-07-23 (Slice 2 review): exact-range correctness review of `5c08e15c5..a3691d171` found no code or security defect and corrected one plan ambiguity: course-origin WRITE stops before elements, while a direct propagating activity WRITE grant can reach linked elements. The separate simplification pass centralized the selector/check type union, replaced nullable ordered audit lookups with `findFirstOrThrow`, and reused the shared live-quiz fixture. Post-review verification passed the three adjusted files (97/97 tests), the full GraphQL suite (57/57 suites, 527/527 tests), and repository-wide `pnpm run check:all`. The full-suite environment used the disposable PostgreSQL database, a narrowly scoped audit worker, and temporary loopback Redis relays required by the existing test harness.
 - 2026-07-29 (Slice 3 start): maintainer approved the proposed Gate-A SLO: p95 mutation latency ≤ 2.0 s, p95 transaction duration ≤ 1.5 s, and a 5.0 s hard ceiling for every supported sharing mutation. Current `v3`, including the Prisma 7 upgrade, was merged before raw-SQL implementation. Slice 3 is active. The first sub-step is the isolated catalog-collection module, used to prove the tagged set-based delete/upsert pattern and its permanent expected-row coverage before applying it to hierarchical modules.
 - 2026-07-29 (Slice 3 catalog implementation): catalog-collection recomputation now expands direct users plus group owners, members, and admins in one tagged SQL statement, ranks permission levels explicitly, deletes stale scoped rows, and upserts on the exact catalog/user conflict target. Permanent expected-row coverage proves all group roles, propagation tie-breaking, user-scoped isolation, and object-wide convergence; the focused suite passes 11/11 tests against a disposable database. Util and GraphQL typechecks pass. The `v3` Prisma 7 merge also required declaring the benchmark's existing direct `@prisma/adapter-pg` import in the GraphQL package; the lockfile change is limited to that importer.
+- 2026-07-29 (Slice 3 catalog review): the simplification review recommended no changes. Correctness review identified that a dual-principal `Permission` row could be expanded to its group by the SQL while the previous reducer's `if`/`else if` honored only its direct user. Migrated databases enforce `UserOrGroupRequired`, but Prisma `db push` does not recreate that migration-only XOR constraint. The SQL now also requires `userId IS NULL` on every group-expansion branch, preserving fail-closed prior behavior across both construction paths. Post-review util typecheck, build, and all 11 catalog tests pass.
 
 ## Goal Prompt Requirements (for handoff)
 
@@ -233,6 +234,6 @@ Gate A after Slice 3:
 
 ## Next Steps
 
-- Commit, independently review, and simplify the Slice-3 catalog-collection sub-step.
-- Continue Slice 3 one entity module at a time, with course last, then run the Gate-A benchmark against the approved SLO.
+- Commit the accepted catalog review adjustment.
+- Continue Slice 3 with the answer-collection module, then one entity module at a time with course last, and run the Gate-A benchmark against the approved SLO.
 - Separate task (not this branch): response-api standard-mode auth audit (R4.4).
