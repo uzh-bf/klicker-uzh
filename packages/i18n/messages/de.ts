@@ -103,6 +103,8 @@ export default {
       cancel: 'Abbrechen',
       editName: 'Namen bearbeiten',
       deleteChat: 'Chat löschen',
+      deleteConfirm: 'Löschen?',
+      deleteConfirmAria: 'Löschen dieses Chats bestätigen',
       emptyState: 'Starte Deine erste Konversation mit einer Nachricht.',
       loadError: 'Deine Chats konnten nicht geladen werden.',
       retry: 'Erneut versuchen',
@@ -145,6 +147,8 @@ export default {
       disclaimerHint:
         'Antworten des Chatbots können falsch sein — bitte anhand Deiner Kursmaterialien prüfen.',
       attachmentLimitError: 'Du kannst höchstens {max} Bilder anhängen.',
+      attachmentReadError:
+        'Das Bild konnte nicht gelesen werden. Bitte versuche es mit einer anderen Datei.',
       dismissError: 'Fehler schliessen',
       dropImages: 'Bilder zum Anhängen hier ablegen',
       attachmentPreviewAlt: 'Anhang-Vorschau',
@@ -161,6 +165,9 @@ export default {
       showLess: 'Weniger anzeigen',
       showMore:
         '{count, plural, one {Mehr anzeigen (# weitere Zeile)} other {Mehr anzeigen (# weitere Zeilen)}}',
+      docQueryQueryLabel: 'Suchanfrage',
+      docQuerySourcesHint:
+        'Die Treffer erscheinen als Quellen unter der Antwort.',
     },
     tools: {
       searchingCourseMaterial: 'Kursmaterialien werden durchsucht...',
@@ -195,6 +202,8 @@ export default {
         'Es ist leider ein Fehler beim Verarbeiten Deiner Anfrage aufgetreten. Bitte versuche es erneut.',
       connectionInterrupted:
         'Verbindung unterbrochen — die Antwort ist möglicherweise unvollständig.',
+      truncated:
+        'Antwort gekürzt — schreibe «weiter» oder bitte um eine kürzere Antwort.',
     },
   },
   shared: {

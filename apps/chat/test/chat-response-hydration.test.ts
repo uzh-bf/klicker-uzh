@@ -455,8 +455,12 @@ describe('useChatResponse attachment hydration', () => {
       role: 'assistant',
       content: [
         {
-          type: 'text',
-          text: expect.stringContaining('chat.response.networkError'),
+          type: 'data',
+          name: 'chat-error',
+          data: {
+            errorLabel: 'chat.response.errorLabel',
+            message: 'chat.response.networkError',
+          },
         },
       ],
     })
@@ -498,12 +502,17 @@ describe('useChatResponse attachment hydration', () => {
     const content = finalMessage?.content as Array<{
       type: string
       text?: string
+      name?: string
+      data?: { errorLabel: string; message: string }
     }>
 
     // exactly one error part landed — the interrupted-connection suffix must
     // not also stack on top of it
-    const errorParts = content.filter((part) =>
-      part.text?.includes('chat.response.genericError')
+    const errorParts = content.filter(
+      (part) =>
+        part.type === 'data' &&
+        part.name === 'chat-error' &&
+        part.data?.message === 'chat.response.genericError'
     )
     expect(errorParts).toHaveLength(1)
 
@@ -512,10 +521,108 @@ describe('useChatResponse attachment hydration', () => {
     )
     expect(interruptedParts).toHaveLength(0)
 
+    // the partial answer that streamed before the error must remain visible
+    expect(
+      content.some(
+        (part) => part.type === 'text' && part.text === 'partial answer'
+      )
+    ).toBe(true)
+
     // the text-delta received after the error part must not have been
-    // processed
+    // processed, and must not have been duplicated after the error block
+    // either (see the `!hasStreamError` guard on the finalize-text step)
     expect(
       content.some((part) => part.text?.includes('should not be appended'))
+    ).toBe(false)
+    expect(content.filter((part) => part.type === 'text')).toHaveLength(1)
+  })
+
+  test('a non-ok response shows the localized error as a distinct data part, not markdown', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({ error: 'boom' }),
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const { generateChatResponse } = useChatResponse(
+      'model-1',
+      'chat',
+      'medium'
+    )
+
+    await generateChatResponse(
+      [
+        {
+          id: 'message-1',
+          role: 'user',
+          content: [{ type: 'text', text: 'hello' }],
+          parentId: null,
+        },
+      ] as any,
+      'thread-1'
+    )
+
+    const messages = storeState.threads[0]?.messages ?? []
+    expect(messages[1]).toMatchObject({
+      role: 'assistant',
+      content: [
+        {
+          type: 'data',
+          name: 'chat-error',
+          data: {
+            errorLabel: 'chat.response.errorLabel',
+            message: 'chat.response.genericError',
+          },
+        },
+      ],
+    })
+  })
+
+  test('a truncated response (finishReason "length") appends the localized truncation notice', async () => {
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValue(
+        createStreamingResponse([
+          'data: {"type":"text-delta","delta":"a long answer"}',
+          'data: {"type":"finish","messageMetadata":{"finishReason":"length"}}',
+          'data: [DONE]',
+        ])
+      )
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const { generateChatResponse } = useChatResponse(
+      'model-1',
+      'chat',
+      'medium'
+    )
+
+    await generateChatResponse(
+      [
+        {
+          id: 'message-1',
+          role: 'user',
+          content: [{ type: 'text', text: 'hello' }],
+          parentId: null,
+        },
+      ] as any,
+      'thread-1'
+    )
+
+    const finalMessage = storeState.threads[0]?.messages.at(-1)
+    const content = finalMessage?.content as Array<{
+      type: string
+      text?: string
+    }>
+
+    const truncationPart = content.find((part) =>
+      part.text?.includes('chat.response.truncated')
+    )
+    expect(truncationPart).toBeDefined()
+    // the hardcoded English literal this replaces must be gone
+    expect(
+      content.some((part) => part.text?.includes('Response truncated'))
     ).toBe(false)
   })
 })

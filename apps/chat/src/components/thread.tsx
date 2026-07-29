@@ -1,4 +1,8 @@
-import { imageAttachmentAdapter } from '@/src/lib/attachments/imageAttachmentAdapter'
+import {
+  ATTACHMENT_ERROR_CODE,
+  AttachmentAdapterError,
+  imageAttachmentAdapter,
+} from '@/src/lib/attachments/imageAttachmentAdapter'
 import {
   ActionBarPrimitive,
   AttachmentPrimitive,
@@ -772,7 +776,17 @@ const ComposerAttachButton: FC<{
       try {
         await composerRuntime.addAttachment(file)
       } catch (e) {
-        lastAdapterError = e instanceof Error ? e.message : String(e)
+        // the adapter rejects with a typed error + stable code for failures
+        // that need a localized message (e.g. FileReader errors, which
+        // otherwise stringify to "[object ProgressEvent]"); other adapter
+        // errors already carry a readable `message`
+        lastAdapterError =
+          e instanceof AttachmentAdapterError &&
+          e.code === ATTACHMENT_ERROR_CODE.readFailed
+            ? t('chat.composer.attachmentReadError')
+            : e instanceof Error
+              ? e.message
+              : String(e)
       }
     }
 
