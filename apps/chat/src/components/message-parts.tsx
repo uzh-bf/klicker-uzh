@@ -6,6 +6,7 @@ import {
 } from '@assistant-ui/react'
 import { Markdown } from '@klicker-uzh/markdown'
 import {
+  AlertCircleIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   LoaderCircleIcon,
@@ -134,6 +135,33 @@ const ToolGroup: FC<
   )
 }
 
+type ChatErrorPartData = {
+  errorLabel: string
+  message: string
+}
+
+/**
+ * Visually distinct callout for a stream/send failure (`useChatResponse.ts`
+ * pushes it as a `data`/`chat-error` content part instead of markdown text,
+ * so it can't be confused with model output). Reuses the failed-tool-chip
+ * treatment (`bg-destructive/10 text-foreground`) from `tool-fallback.tsx`.
+ */
+const ChatErrorPart: FC<{ data: ChatErrorPartData }> = ({ data }) => (
+  <div
+    data-cy="chat-message-error"
+    className="bg-destructive/10 text-foreground mt-2 flex items-start gap-2 rounded-md px-3 py-2 text-sm"
+  >
+    <AlertCircleIcon
+      className="text-destructive mt-0.5 size-4 shrink-0"
+      aria-hidden
+    />
+    <p>
+      <span className="font-medium">{data.errorLabel}</span>
+      {`: ${data.message}`}
+    </p>
+  </div>
+)
+
 export const AssistantMessageParts: FC = () => (
   <MessagePrimitive.GroupedParts
     indicator="never"
@@ -167,6 +195,10 @@ export const AssistantMessageParts: FC = () => (
           return <ReasoningPart {...part} />
         case 'tool-call':
           return part.toolUI ?? <ToolFallback {...part} />
+        case 'data':
+          return part.name === 'chat-error' ? (
+            <ChatErrorPart data={part.data as ChatErrorPartData} />
+          ) : null
         default:
           return null
       }

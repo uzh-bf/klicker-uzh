@@ -226,8 +226,12 @@ export function useChatResponse(
             role: 'assistant',
             content: [
               {
-                type: 'text',
-                text: `\n\n**${t('chat.response.errorLabel')}**: ${t('chat.response.genericError')}`,
+                type: 'data',
+                name: 'chat-error',
+                data: {
+                  errorLabel: t('chat.response.errorLabel'),
+                  message: t('chat.response.genericError'),
+                },
               },
             ],
             createdAt: new Date(),
@@ -463,8 +467,12 @@ export function useChatResponse(
                   hasStreamError = true
 
                   const errorContent = {
-                    type: 'text',
-                    text: `\n\n**${t('chat.response.errorLabel')}**: ${t('chat.response.genericError')}`,
+                    type: 'data',
+                    name: 'chat-error',
+                    data: {
+                      errorLabel: t('chat.response.errorLabel'),
+                      message: t('chat.response.genericError'),
+                    },
                   }
 
                   orderedContentParts.push(errorContent)
@@ -550,8 +558,13 @@ export function useChatResponse(
             if (hasStreamError) break
           }
 
-          // finalize any remaining text content
+          // finalize any remaining text content; skipped on a stream error
+          // since the error part pushed above is now the last entry (its
+          // type isn't 'text'), and the accumulated text is already synced
+          // into its own part from the last text-delta — re-pushing it here
+          // would duplicate it after the error block
           if (
+            !hasStreamError &&
             currentTextContent.trim() &&
             (orderedContentParts.length === 0 ||
               orderedContentParts[orderedContentParts.length - 1].type !==
@@ -573,7 +586,7 @@ export function useChatResponse(
           if (finishReason === 'length') {
             orderedContentParts.push({
               type: 'text',
-              text: '\n\n_(Response truncated — ask “continue” or request a shorter answer.)_',
+              text: `\n\n_(${t('chat.response.truncated')})_`,
             })
           } else if (!hasFinishEvent && !hasStreamError) {
             // only append the interrupted-connection suffix when the stream
@@ -676,8 +689,12 @@ export function useChatResponse(
             content: [
               ...orderedContentParts,
               {
-                type: 'text',
-                text: `\n\n**${t('chat.response.errorLabel')}**: ${t('chat.response.networkError')}`,
+                type: 'data',
+                name: 'chat-error',
+                data: {
+                  errorLabel: t('chat.response.errorLabel'),
+                  message: t('chat.response.networkError'),
+                },
               },
             ],
             createdAt: new Date(),
