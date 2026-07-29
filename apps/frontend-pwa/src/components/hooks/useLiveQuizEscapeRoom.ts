@@ -114,6 +114,10 @@ export function useLiveQuizEscapeRoom({
     }
 
     const receivedAt = performance.now()
+    const lockoutDeadline = attempt.lockoutUntil
+      ? receivedAt +
+        Math.max(0, new Date(attempt.lockoutUntil).getTime() - Date.now())
+      : null
     const tick = () => {
       const elapsed = (performance.now() - receivedAt) / 1000
       const remaining = Math.max(
@@ -127,13 +131,8 @@ export function useLiveQuizEscapeRoom({
       setRemainingSeconds(remaining)
       setExpiresInSeconds(expiresIn)
       setLockoutRemaining(
-        attempt.lockoutUntil
-          ? Math.max(
-              0,
-              Math.ceil(
-                (new Date(attempt.lockoutUntil).getTime() - Date.now()) / 1000
-              )
-            )
+        lockoutDeadline !== null
+          ? Math.max(0, Math.ceil((lockoutDeadline - performance.now()) / 1000))
           : 0
       )
       if (expiresIn <= 0 && expiryHandledAttemptIdRef.current !== attempt.id) {
@@ -190,12 +189,6 @@ export function useLiveQuizEscapeRoom({
     if (result.completed) setIsCompleted(true)
     if (!result.lockoutUntil) return
 
-    setLockoutRemaining(
-      Math.max(
-        0,
-        Math.ceil((new Date(result.lockoutUntil).getTime() - Date.now()) / 1000)
-      )
-    )
     setAttempt((current) =>
       current ? { ...current, lockoutUntil: result.lockoutUntil } : current
     )

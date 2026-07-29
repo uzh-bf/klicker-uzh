@@ -2,8 +2,8 @@ import { hatchetClient } from '@klicker-uzh/hatchet'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
 import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
-import { createServer } from 'http'
 import type { IncomingMessage, ServerResponse } from 'http'
+import { createServer } from 'http'
 import { Redis } from 'ioredis'
 import { createHash } from 'node:crypto'
 import { getCorsAllowedOrigins, setCorsHeaders } from './cors.js'
@@ -122,7 +122,6 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
 
   if (instanceInfo) {
     const isHandled = await handleEscapeRoomValidation(
-      req,
       res,
       payload,
       cookie,

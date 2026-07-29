@@ -24,10 +24,9 @@ import {
   verifyJWT,
   type JWTPayload,
 } from '@klicker-uzh/util'
-import type { IncomingMessage, ServerResponse } from 'http'
+import type { ServerResponse } from 'http'
 import { Redis } from 'ioredis'
 import { randomUUID } from 'node:crypto'
-import { setCorsHeaders } from './cors.js'
 
 const RELEASE_ESCAPE_ROOM_CLAIM = `
   if redis.call('get', KEYS[1]) == ARGV[1] then
@@ -108,7 +107,6 @@ function isActiveEscapeRoomInstance(
 }
 
 export async function handleEscapeRoomValidation(
-  req: IncomingMessage,
   res: ServerResponse,
   payload: { response: any; liveQuizId: string; instanceId: number },
   cookie: string | undefined,
@@ -118,7 +116,6 @@ export async function handleEscapeRoomValidation(
   if (instanceInfo.isEscapeRoom !== 'true') {
     return false
   }
-  setCorsHeaders(req, res)
 
   const { response, liveQuizId, instanceId } = payload
 

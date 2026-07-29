@@ -39,6 +39,7 @@ vi.mock('@klicker-uzh/util', async (importOriginal) => ({
   verifyJWT: mocks.verifyJWT,
 }))
 
+import { setCorsHeaders } from './cors.js'
 import { handleEscapeRoomValidation } from './escapeRoom.js'
 
 function responseRecorder() {
@@ -204,14 +205,7 @@ describe('response-api escape-room validation', () => {
     vi.stubEnv('CORS_ALLOWED_ORIGINS', origin)
     const { response, result } = responseRecorder()
 
-    await handleEscapeRoomValidation(
-      { headers: { origin } } as any,
-      response,
-      payload,
-      'participant_token=token',
-      info,
-      redisMock()
-    )
+    setCorsHeaders({ headers: { origin } } as any, response)
 
     expect(result.headers.get('Access-Control-Allow-Origin')).toBe(origin)
     expect(result.headers.get('Access-Control-Allow-Credentials')).toBe('true')
@@ -226,7 +220,6 @@ describe('response-api escape-room validation', () => {
     const { response, result } = responseRecorder()
 
     await handleEscapeRoomValidation(
-      {} as any,
       response,
       payload,
       'temporary_participant_token=token',
@@ -246,7 +239,6 @@ describe('response-api escape-room validation', () => {
     const { response, result } = responseRecorder()
 
     await handleEscapeRoomValidation(
-      {} as any,
       response,
       payload,
       'participant_token=token',
@@ -268,7 +260,6 @@ describe('response-api escape-room validation', () => {
     const { response, result } = responseRecorder()
 
     await handleEscapeRoomValidation(
-      {} as any,
       response,
       payload,
       'participant_token=token',
@@ -299,7 +290,6 @@ describe('response-api escape-room validation', () => {
     const { response, result } = responseRecorder()
 
     await handleEscapeRoomValidation(
-      {} as any,
       response,
       payload,
       'participant_token=token',
@@ -324,7 +314,6 @@ describe('response-api escape-room validation', () => {
     const { response, result } = responseRecorder()
 
     await handleEscapeRoomValidation(
-      {} as any,
       response,
       payload,
       'participant_token=token',
@@ -346,7 +335,6 @@ describe('response-api escape-room validation', () => {
 
     await expect(
       handleEscapeRoomValidation(
-        {} as any,
         responseRecorder().response,
         payload,
         'participant_token=token',
@@ -357,7 +345,6 @@ describe('response-api escape-room validation', () => {
 
     const retry = responseRecorder()
     await handleEscapeRoomValidation(
-      {} as any,
       retry.response,
       payload,
       'participant_token=token',
@@ -371,7 +358,6 @@ describe('response-api escape-room validation', () => {
     const { response, result } = responseRecorder()
 
     await handleEscapeRoomValidation(
-      {} as any,
       response,
       payload,
       'participant_token=token',
@@ -393,7 +379,6 @@ describe('response-api escape-room validation', () => {
     const { response, result } = responseRecorder()
 
     await handleEscapeRoomValidation(
-      {} as any,
       response,
       payload,
       'participant_token=token',
@@ -415,7 +400,6 @@ describe('response-api escape-room validation', () => {
     const { response, result } = responseRecorder()
 
     await handleEscapeRoomValidation(
-      {} as any,
       response,
       payload,
       'participant_token=token',
@@ -435,7 +419,6 @@ describe('response-api escape-room validation', () => {
     )
     const within = responseRecorder()
     await handleEscapeRoomValidation(
-      {} as any,
       within.response,
       payload,
       'participant_token=token',
@@ -450,7 +433,6 @@ describe('response-api escape-room validation', () => {
     )
     const beyond = responseRecorder()
     await handleEscapeRoomValidation(
-      {} as any,
       beyond.response,
       payload,
       'participant_token=token',
@@ -472,7 +454,6 @@ describe('response-api escape-room validation', () => {
     const { response, result } = responseRecorder()
 
     await handleEscapeRoomValidation(
-      {} as any,
       response,
       payload,
       'participant_token=token',
@@ -498,7 +479,6 @@ describe('response-api escape-room validation', () => {
     const { response, result } = responseRecorder()
 
     await handleEscapeRoomValidation(
-      {} as any,
       response,
       payload,
       'participant_token=token',
@@ -533,7 +513,6 @@ describe('response-api escape-room validation', () => {
 
     const correct = responseRecorder()
     await handleEscapeRoomValidation(
-      {} as any,
       correct.response,
       { ...payload, response: { value: 'AbCdEf12_-34' } },
       'participant_token=token',
@@ -547,7 +526,6 @@ describe('response-api escape-room validation', () => {
     mocks.findAttempt.mockResolvedValue(attempt({ id: 'attempt-2' }))
     const decoy = responseRecorder()
     await handleEscapeRoomValidation(
-      {} as any,
       decoy.response,
       { ...payload, response: { value: 'ZbCdEf12_-34' } },
       'participant_token=token',
@@ -565,7 +543,6 @@ describe('response-api escape-room validation', () => {
     const { response, result } = responseRecorder()
 
     await handleEscapeRoomValidation(
-      {} as any,
       response,
       { ...payload, response: { value: 'not-a-code' } },
       'participant_token=token',
@@ -585,7 +562,6 @@ describe('response-api escape-room validation', () => {
 
     const first = responseRecorder()
     await handleEscapeRoomValidation(
-      {} as any,
       first.response,
       payload,
       'participant_token=token',
@@ -597,7 +573,6 @@ describe('response-api escape-room validation', () => {
 
     const second = responseRecorder()
     await handleEscapeRoomValidation(
-      {} as any,
       second.response,
       { ...payload, instanceId: 12 },
       'participant_token=token',
@@ -614,7 +589,6 @@ describe('response-api escape-room validation', () => {
     const { response, result } = responseRecorder()
 
     await handleEscapeRoomValidation(
-      {} as any,
       response,
       { ...payload, instanceId: 12 },
       'participant_token=token',
@@ -640,7 +614,6 @@ describe('response-api escape-room validation', () => {
 
     await expect(
       handleEscapeRoomValidation(
-        {} as any,
         first.response,
         payload,
         'participant_token=token',
@@ -651,7 +624,6 @@ describe('response-api escape-room validation', () => {
 
     const retry = responseRecorder()
     await handleEscapeRoomValidation(
-      {} as any,
       retry.response,
       payload,
       'participant_token=token',
@@ -669,7 +641,6 @@ describe('response-api escape-room validation', () => {
     const redis = redisMock()
     const first = responseRecorder()
     await handleEscapeRoomValidation(
-      {} as any,
       first.response,
       payload,
       'participant_token=token',
@@ -681,7 +652,6 @@ describe('response-api escape-room validation', () => {
     mocks.findAttempt.mockResolvedValue(attempt({ id: 'attempt-2' }))
     const afterReset = responseRecorder()
     await handleEscapeRoomValidation(
-      {} as any,
       afterReset.response,
       { ...payload, instanceId: 12 },
       'participant_token=token',
@@ -703,7 +673,6 @@ describe('response-api escape-room validation', () => {
     await Promise.all(
       responses.map(({ response }) =>
         handleEscapeRoomValidation(
-          {} as any,
           response,
           payload,
           'participant_token=token',
@@ -728,7 +697,6 @@ describe('response-api escape-room validation', () => {
 
     await Promise.all([
       handleEscapeRoomValidation(
-        {} as any,
         responses[0]!.response,
         { ...payload, response: { choices: [0] } },
         'participant_token=token',
@@ -736,7 +704,6 @@ describe('response-api escape-room validation', () => {
         redis
       ),
       handleEscapeRoomValidation(
-        {} as any,
         responses[1]!.response,
         { ...payload, response: { choices: [1] } },
         'participant_token=token',
@@ -759,7 +726,6 @@ describe('response-api escape-room validation', () => {
 
     await expect(
       handleEscapeRoomValidation(
-        {} as any,
         first.response,
         payload,
         'participant_token=token',
@@ -771,7 +737,6 @@ describe('response-api escape-room validation', () => {
     mocks.push.mockResolvedValue(undefined)
     const retry = responseRecorder()
     await handleEscapeRoomValidation(
-      {} as any,
       retry.response,
       payload,
       'participant_token=token',
@@ -790,7 +755,6 @@ describe('response-api escape-room validation', () => {
 
     await expect(
       handleEscapeRoomValidation(
-        {} as any,
         first.response,
         payload,
         'participant_token=token',
@@ -801,7 +765,6 @@ describe('response-api escape-room validation', () => {
 
     const retry = responseRecorder()
     await handleEscapeRoomValidation(
-      {} as any,
       retry.response,
       payload,
       'participant_token=token',
