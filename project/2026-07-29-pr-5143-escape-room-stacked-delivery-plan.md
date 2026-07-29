@@ -1,6 +1,6 @@
 # Escape Room — Stacked Delivery Plan
 
-- **Status:** Implemented and verified; draft publication pending
+- **Status:** Implemented, verified, and published as a draft stack
 - **Goal:** Replace the oversized PR #5143 with a reviewable stack while preserving its completed implementation.
 - **Source of truth:** `codex/escape-room-production` at `4be19aa61`
 - **Starting trunk:** `v3` at `f16b9ceb4` (Prisma 7)
@@ -160,13 +160,27 @@ When blocked by environment or authentication, complete every independent local 
 - [x] Add, extract, and verify Layer 3.
 - [x] Add, extract, and verify Layer 4.
 - [x] Run final stack-wide review and verification gates.
-- [ ] Publish draft PRs and read back stack/PR state.
+- [x] Publish draft PRs and read back stack/PR state.
 
 ## Publication state
 
 - `gh auth status` confirms the active `rschlaefli` account is authenticated
   with repository and workflow scopes. No external publication blocker is
   currently known.
+- `gh stack submit --auto` pushed all four branches and created GitHub stack
+  #5228. The original SSH remote was restored after authenticated HTTPS
+  submission worked around a local SSH-agent refusal.
+- GitHub read-back confirmed each PR's title, full body, chained base and head,
+  open state, and draft state:
+
+| Layer | Draft PR | Base | Head |
+| --- | --- | --- | --- |
+| QR Scan foundation | [#5224](https://github.com/uzh-bf/klicker-uzh/pull/5224) | `v3` | `codex/escape-room-qr` |
+| Individual Escape Rooms | [#5225](https://github.com/uzh-bf/klicker-uzh/pull/5225) | `codex/escape-room-qr` | `codex/escape-room-individual` |
+| Group Activity Escape Rooms | [#5226](https://github.com/uzh-bf/klicker-uzh/pull/5226) | `codex/escape-room-individual` | `codex/escape-room-group` |
+| Live Quiz Escape Rooms | [#5227](https://github.com/uzh-bf/klicker-uzh/pull/5227) | `codex/escape-room-group` | `codex/escape-room-live` |
+
+- No PR was marked ready, merged, queued, reordered, unstacked, or deleted.
 
 ## Layer 1 corrective follow-up — 2026-08-01
 
