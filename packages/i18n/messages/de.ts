@@ -1215,7 +1215,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
   },
   manage: {
     assistant: {
-      open: 'Assistant',
+      open: 'Assistent',
       title: 'KlickerUZH Assistant',
       subtitle: 'KI-Assistent für Ihre Kurse und Ihren Fragepool',
       openInNewTab: 'Assistent in einem neuen Tab öffnen',
