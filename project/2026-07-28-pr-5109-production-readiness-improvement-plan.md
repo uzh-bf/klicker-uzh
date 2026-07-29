@@ -923,6 +923,11 @@ approved.
   the exact opt-in exposes Firefox and WebKit, the documented command matches
   the configuration and Playwright 1.58.2, and every unavailable live gate
   remains explicitly unclaimed.
+- 2026-07-29: Final-branch spec review found that the repository Playwright
+  skill still advised commenting non-Chromium projects despite the new opt-in
+  release matrix. The stale instruction was replaced with the
+  `PLAYWRIGHT_RELEASE_MATRIX=true` contract and exact targeted production-stack
+  command; the wiki log now records the synchronized skill change.
 - 2026-07-29: S6 live reconciliation found the clean local branch at
   `40124f02f`, five commits ahead of the published PR head, with 150 commits
   and 315 files changed from live base `20a953251` (+28,416 / -793). PR #5109

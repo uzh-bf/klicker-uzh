@@ -2,7 +2,7 @@
 
 ## 2026-07-29
 
-- **Update**: [testing](./testing.md) documents the opt-in Firefox/WebKit assistant release matrix. Ordinary Playwright CI remains Chromium-only; cross-browser release evidence must use production builds and matching Playwright browser binaries.
+- **Update**: [testing](./testing.md) and the `klicker-playwright-e2e` skill document the opt-in Firefox/WebKit assistant release matrix. Ordinary Playwright CI remains Chromium-only; cross-browser release evidence must use production builds and matching Playwright browser binaries.
 
 - **Update**: [chat-platform](./chat-platform.md) records the Manage route's Next-middleware bypass, one-request per-pod memory guard and retryable 503 contract, explicit request deadlines, server-side UI-message trust boundary, production-standalone memory evidence, and 200 MiB request / 400 MiB limit for staging and production Chat pods.
 
