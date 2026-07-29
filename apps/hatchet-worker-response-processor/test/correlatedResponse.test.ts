@@ -24,7 +24,8 @@ import {
   prepareCorrelatedResponseProcessing,
   releaseCorrelatedProcessingLock,
   resolveCorrelatedResponseOwner,
-  settleCorrelatedResponseReceipt,
+  resolveResponseInstanceInfo,
+  settleCorrelatedResponseOutbox,
   validateCorrelatedRedisHashKeys,
 } from '../src/processors/correlatedResponse.js'
 import { RedisHashMutationBuffer } from '../src/processors/responseEffects.js'
@@ -129,6 +130,7 @@ function createDatabase({
           ) ?? null,
       },
       liveQuizRespondent: {
+        findUnique: async ({ where }: any) => respondents.get(where.id) ?? null,
         upsert: async ({ where, create }: any) => {
           const existing = respondents.get(where.id)
           if (existing) return existing
@@ -217,7 +219,42 @@ describe('resolveCorrelatedResponseOwner', () => {
     )
   })
 
-  it('rejects a logged-out temporary identity', async () => {
+  it('accepts an already-admitted temporary identity after leaderboard logout', async () => {
+    const liveQuizId = randomUUID()
+    const respondentId = randomUUID()
+    const token = await signJWT(
+      {
+        sub: respondentId,
+        role: UserRole.TEMPORARY_PARTICIPANT,
+        scopeQuizId: liveQuizId,
+      },
+      secret,
+      { expiresIn: '1h', issuer }
+    )
+    const { database } = createDatabase({
+      respondentRows: [
+        {
+          id: respondentId,
+          liveQuizId,
+          type: LiveQuizRespondentType.TEMPORARY_PSEUDONYM,
+          verificationSecretHash: null,
+        },
+      ],
+    })
+
+    const owner = await resolveCorrelatedResponseOwner({
+      cookieHeader: `temporary_participant_token=${token}`,
+      liveQuizId,
+      secret,
+      issuer,
+      database,
+    })
+
+    assert.equal(owner.kind, 'temporary')
+    assert.equal(owner.id, respondentId)
+  })
+
+  it('rejects a stale temporary identity that was never admitted', async () => {
     const liveQuizId = randomUUID()
     const respondentId = randomUUID()
     const token = await signJWT(
@@ -326,10 +363,35 @@ describe('resolveCorrelatedResponseOwner', () => {
 })
 
 describe('correlated response persistence helpers', () => {
-  it('settles the pending receipt idempotently', async () => {
+  it('uses the accepted metadata snapshot after Redis retention expires', () => {
+    const acceptedInstanceInfo = {
+      type: 'SC',
+      blockExecution: '3',
+      sessionBlockId: randomUUID(),
+    }
+
+    assert.deepEqual(
+      resolveResponseInstanceInfo({
+        cachedInstanceInfo: {},
+        acceptedInstanceInfo,
+        isCorrelated: true,
+      }),
+      acceptedInstanceInfo
+    )
+    assert.equal(
+      resolveResponseInstanceInfo({
+        cachedInstanceInfo: {},
+        acceptedInstanceInfo,
+        isCorrelated: false,
+      }),
+      undefined
+    )
+  })
+
+  it('settles the pending outbox entry idempotently', async () => {
     const deleteCalls: any[] = []
 
-    await settleCorrelatedResponseReceipt({
+    await settleCorrelatedResponseOutbox({
       database: {
         liveQuizPendingResponse: {
           deleteMany: async (args: any) => {

@@ -1,4 +1,7 @@
-import { LiveQuizResponseCollectionMode } from '@klicker-uzh/prisma/client'
+import {
+  LiveQuizRespondentType,
+  LiveQuizResponseCollectionMode,
+} from '@klicker-uzh/prisma/client'
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
@@ -12,9 +15,9 @@ import {
   hasPersistedCorrelatedResponse,
   hasValidLiveQuizPin,
   isAllowedCorsOrigin,
+  prepareCorrelatedResponseSubmission,
   registerPendingCorrelatedResponse,
   releaseCorrelatedResponse,
-  removePendingCorrelatedResponse,
   resolveResponseCollectionMode,
   responseEndpointMatchesCollectionMode,
   serializeLiveQuizRespondentCookie,
@@ -237,7 +240,45 @@ describe('correlated response request safeguards', () => {
     assert.equal(calls.length, 2)
   })
 
-  it('registers a pending receipt while the correlated quiz is published', async () => {
+  it('durably bridges an active temporary identity before enqueue', async () => {
+    const respondentId = '33333333-3333-4333-8333-333333333333'
+    let respondentCreated = false
+    const result = await prepareCorrelatedResponseSubmission({
+      database: {
+        liveQuizResponse: { findUnique: async () => null },
+        temporaryLeaderboardEntry: {
+          findUnique: async () => ({ id: respondentId }),
+        },
+        liveQuizRespondent: {
+          upsert: async () => {
+            respondentCreated = true
+            return {
+              id: respondentId,
+              liveQuizId: 'quiz-id',
+              type: LiveQuizRespondentType.TEMPORARY_PSEUDONYM,
+            }
+          },
+        },
+      } as any,
+      redis: new MemoryRedis(),
+      identity: {
+        kind: 'temporary',
+        id: respondentId,
+        liveQuizId: 'quiz-id',
+        token: 'signed-token',
+        cookieName: 'temporary_participant_token',
+      },
+      liveQuizId: 'quiz-id',
+      instanceId: '42',
+      blockExecution: '3',
+      messageId: 'message-id',
+    })
+
+    assert.equal(result.status, 'ready')
+    assert.equal(respondentCreated, true)
+  })
+
+  it('registers a pending outbox entry while the correlated quiz is published', async () => {
     const createCalls: any[] = []
     const database = {
       $transaction: async (callback: (prisma: any) => Promise<unknown>) =>
@@ -263,16 +304,18 @@ describe('correlated response request safeguards', () => {
         database,
         liveQuizId: '11111111-1111-4111-8111-111111111111',
         messageId: '22222222-2222-4222-8222-222222222222',
+        responseKey: 'claim-key',
         eventPayload: 'encrypted-payload',
         nextDeliveryAt: new Date('2026-07-29T12:00:00.000Z'),
       }),
-      true
+      'registered'
     )
     assert.deepEqual(createCalls, [
       {
         data: {
           id: '22222222-2222-4222-8222-222222222222',
           liveQuizId: '11111111-1111-4111-8111-111111111111',
+          responseKey: 'claim-key',
           eventPayload: 'encrypted-payload',
           nextDeliveryAt: new Date('2026-07-29T12:00:00.000Z'),
         },
@@ -280,7 +323,7 @@ describe('correlated response request safeguards', () => {
     ])
   })
 
-  it('does not register a receipt after the quiz has ended', async () => {
+  it('does not register an outbox entry after the quiz has ended', async () => {
     let createCalled = false
     const database = {
       $transaction: async (callback: (prisma: any) => Promise<unknown>) =>
@@ -305,33 +348,29 @@ describe('correlated response request safeguards', () => {
         database,
         liveQuizId: '11111111-1111-4111-8111-111111111111',
         messageId: '22222222-2222-4222-8222-222222222222',
+        responseKey: 'claim-key',
         eventPayload: 'encrypted-payload',
       }),
-      false
+      'not_found'
     )
     assert.equal(createCalled, false)
   })
 
-  it('removes a pending receipt idempotently', async () => {
-    const deleteCalls: any[] = []
-
-    await removePendingCorrelatedResponse({
-      database: {
-        liveQuizPendingResponse: {
-          deleteMany: async (args: any) => {
-            deleteCalls.push(args)
-            return { count: 1 }
+  it('rejects a second pending response for the same respondent execution', async () => {
+    assert.equal(
+      await registerPendingCorrelatedResponse({
+        database: {
+          $transaction: async () => {
+            throw { code: 'P2002' }
           },
-        },
-      } as any,
-      messageId: '22222222-2222-4222-8222-222222222222',
-    })
-
-    assert.deepEqual(deleteCalls, [
-      {
-        where: { id: '22222222-2222-4222-8222-222222222222' },
-      },
-    ])
+        } as any,
+        liveQuizId: '11111111-1111-4111-8111-111111111111',
+        messageId: '22222222-2222-4222-8222-222222222222',
+        responseKey: 'claim-key',
+        eventPayload: 'encrypted-payload',
+      }),
+      'duplicate'
+    )
   })
 
   it('encrypts outbox events and rejects tampering', () => {
@@ -342,6 +381,7 @@ describe('correlated response request safeguards', () => {
       response: { value: 'private response' },
       cookie: 'live_quiz_respondent_token_quiz=secret-token',
       responseTimestamp: 1_000,
+      instanceInfo: { blockExecution: '1', sessionBlockId: 'block-1' },
       correlatedClaim: {
         key: 'claim-key',
         identityKey: 'respondent:33333333-3333-4333-8333-333333333333' as const,
@@ -371,6 +411,17 @@ describe('correlated response request safeguards', () => {
         secret: 'app-secret',
       })
     )
+
+    const invalidPayload = encryptCorrelatedResponseEvent({
+      message: { ...message, response: null } as any,
+      secret: 'app-secret',
+    })
+    assert.throws(() =>
+      decryptCorrelatedResponseEvent({
+        encryptedPayload: invalidPayload,
+        secret: 'app-secret',
+      })
+    )
   })
 
   it('reserves and republishes outbox events by stable message id', async () => {
@@ -380,6 +431,7 @@ describe('correlated response request safeguards', () => {
       instanceId: '42',
       response: { value: 'response' },
       responseTimestamp: 1_000,
+      instanceInfo: { blockExecution: '1', sessionBlockId: 'block-1' },
       correlatedClaim: {
         key: 'claim-key',
         identityKey:
@@ -422,6 +474,7 @@ describe('correlated response request safeguards', () => {
       instanceId: '42',
       response: { value: 'response' },
       responseTimestamp: 1_000,
+      instanceInfo: { blockExecution: '1', sessionBlockId: 'block-1' },
       correlatedClaim: {
         key: 'claim-key',
         identityKey:

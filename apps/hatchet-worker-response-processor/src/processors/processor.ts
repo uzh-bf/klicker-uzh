@@ -13,7 +13,6 @@ import {
 } from '@klicker-uzh/prisma/client'
 import type {
   FreeTextRestrictions,
-  LiveQuizResponseInput,
   NumericalRestrictions,
 } from '@klicker-uzh/types'
 import {
@@ -21,6 +20,7 @@ import {
   verifyJWT,
   type CorrelatedResponseClaim,
   type JWTPayload,
+  type LiveQuizResponseEventMessage,
 } from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
 import { getRedis } from '../redis.js'
@@ -30,7 +30,8 @@ import {
   CorrelatedResponseIdentityError,
   prepareCorrelatedMessageProcessing,
   releaseCorrelatedProcessingLock,
-  settleCorrelatedResponseReceipt,
+  resolveResponseInstanceInfo,
+  settleCorrelatedResponseOutbox,
   validateCorrelatedRedisHashKeys,
   type CorrelatedProcessingState,
 } from './correlatedResponse.js'
@@ -47,16 +48,13 @@ import {
 
 const redisExec = getRedis() // use standard redis instance for regular response processor
 
+type ProcessResponseMessage = LiveQuizResponseEventMessage & {
+  correlatedClaim?: CorrelatedResponseClaim
+  instanceInfo?: Record<string, string>
+}
+
 export async function processResponseMessage(
-  message: {
-    messageId: string
-    sessionId: string
-    instanceId: string
-    response: LiveQuizResponseInput
-    cookie?: string
-    responseTimestamp: number
-    correlatedClaim?: CorrelatedResponseClaim
-  },
+  message: ProcessResponseMessage,
   ctx: Context<JsonObject, {}> | DurableContext<JsonObject, {}>
 ) {
   ctx.logger.info('ProcessResponse: received message', {
@@ -82,7 +80,7 @@ export async function processResponseMessage(
   const releaseClaim = async () => {
     if (!message.correlatedClaim) return
 
-    await settleCorrelatedResponseReceipt({
+    await settleCorrelatedResponseOutbox({
       database: prisma,
       messageId: message.messageId,
     })
@@ -132,8 +130,14 @@ export async function processResponseMessage(
       return { status: 400 }
     }
 
-    const instanceInfo = await redisExec.hgetall(`${instanceKey}:info`)
-    // if the instance metadata is not available, it has been closed and purged already
+    const cachedInstanceInfo = await redisExec.hgetall(`${instanceKey}:info`)
+    const instanceInfo = resolveResponseInstanceInfo({
+      cachedInstanceInfo,
+      acceptedInstanceInfo: message.instanceInfo,
+      isCorrelated,
+    })
+    // Correlated events carry the acceptance-time snapshot so durable responses
+    // remain processable after the live Redis metadata retention window.
     if (!instanceInfo || Object.keys(instanceInfo).length === 0) {
       ctx.logger.info('Element instance metadata not found', {
         messageId: message.messageId,

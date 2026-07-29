@@ -1,5 +1,6 @@
 CREATE TABLE "public"."LiveQuizPendingResponse" (
     "id" UUID NOT NULL,
+    "responseKey" TEXT NOT NULL,
     "eventPayload" TEXT NOT NULL,
     "nextDeliveryAt" TIMESTAMP(3) NOT NULL,
     "deliveryAttempts" INTEGER NOT NULL DEFAULT 0,
@@ -11,6 +12,9 @@ CREATE TABLE "public"."LiveQuizPendingResponse" (
 
 CREATE INDEX "LiveQuizPendingResponse_liveQuizId_idx"
 ON "public"."LiveQuizPendingResponse"("liveQuizId");
+
+CREATE UNIQUE INDEX "LiveQuizPendingResponse_responseKey_key"
+ON "public"."LiveQuizPendingResponse"("responseKey");
 
 CREATE INDEX "LiveQuizPendingResponse_nextDeliveryAt_idx"
 ON "public"."LiveQuizPendingResponse"("nextDeliveryAt");

@@ -160,6 +160,7 @@ model LiveQuizResponseExportLabel {
 
 model LiveQuizPendingResponse {
   id               String   @id @db.Uuid
+  responseKey      String   @unique
   eventPayload     String
   nextDeliveryAt   DateTime
   deliveryAttempts Int      @default(0)

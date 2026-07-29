@@ -1,4 +1,5 @@
 import { UserRole } from '@klicker-uzh/prisma/client'
+import type { LiveQuizResponseInput } from '@klicker-uzh/types'
 import { createHash } from 'node:crypto'
 import { parseCookiesHeader } from './auth.js'
 import { signJWT, verifyJWT, type JWTPayload } from './jwt.js'
@@ -200,6 +201,20 @@ return 0
 export type CorrelatedResponseClaim = {
   key: string
   identityKey: LiveQuizResponseIdentityKey
+}
+
+export type LiveQuizResponseEventMessage = {
+  messageId: string
+  sessionId: string
+  instanceId: string
+  response: LiveQuizResponseInput
+  cookie?: string
+  responseTimestamp: number
+}
+
+export type CorrelatedResponseEventMessage = LiveQuizResponseEventMessage & {
+  correlatedClaim: CorrelatedResponseClaim
+  instanceInfo: Record<string, string>
 }
 
 export function buildCorrelatedVoteKey({

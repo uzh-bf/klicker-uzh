@@ -2759,23 +2759,24 @@ export async function updateCourseSettings(
     course._count.groupActivities > 0
   const containsGroups = course._count.participantGroups > 0
 
-  // check if the gamification and/or assessment settings were changed
-  const newGamificationSetting =
-    course.isGamificationEnabled !== isGamificationEnabled &&
-    (isGamificationEnabled || (!containsActivities && !containsGroups))
-      ? (isGamificationEnabled ?? false)
-      : undefined
-  const newAssessmentSetting =
-    course.isAssessmentEnabled !== isAssessmentEnabled
-      ? (isAssessmentEnabled ?? undefined)
-      : undefined
-
   const updatedCourse = await ctx.prisma.$transaction(async (prisma) => {
     const lockedState = await lockCourseLiveQuizResponseCollectionState({
       prisma,
       courseId: id,
     })
     if (!lockedState) return null
+
+    // Derive transitions only after locking so concurrent settings requests
+    // cannot update the course without propagating the same state to activities.
+    const newGamificationSetting =
+      lockedState.course.isGamificationEnabled !== isGamificationEnabled &&
+      (isGamificationEnabled || (!containsActivities && !containsGroups))
+        ? (isGamificationEnabled ?? false)
+        : undefined
+    const newAssessmentSetting =
+      lockedState.course.isAssessmentEnabled !== isAssessmentEnabled
+        ? (isAssessmentEnabled ?? undefined)
+        : undefined
 
     const correlatedLiveQuizzes = lockedState.liveQuizzes.filter(
       (liveQuiz) =>
@@ -2829,8 +2830,8 @@ export async function updateCourseSettings(
         // only enable gamification or disable it if there are no activities or groups
         isGamificationEnabled: newGamificationSetting,
         // set assessment mode - if enabling, remove PIN
-        isAssessmentEnabled: isAssessmentEnabled ?? undefined,
-        pinCode: isAssessmentEnabled ? null : undefined,
+        isAssessmentEnabled: newAssessmentSetting,
+        pinCode: newAssessmentSetting === true ? null : undefined,
         // reset the random assignment tracking if the group deadline is extended
         randomAssignmentFinalized: !newGroupDeadlinePast ? false : undefined,
         // if group creation is disabled and there are no groups, remove all participants from the random assignment pool

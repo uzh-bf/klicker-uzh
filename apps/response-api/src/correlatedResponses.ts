@@ -1,4 +1,5 @@
 import {
+  LiveQuizRespondentType,
   LiveQuizResponseCollectionMode,
   PublicationStatus,
   type PrismaClient,
@@ -13,6 +14,7 @@ import {
   parseCookiesHeader,
   releaseCorrelatedResponse,
   type CorrelatedResponseClaim,
+  type CorrelatedResponseEventMessage,
   type LiveQuizResponseIdentity,
 } from '@klicker-uzh/util'
 import {
@@ -32,16 +34,6 @@ const CORRELATED_OUTBOX_RETRY_MS = 30_000
 const CORRELATED_OUTBOX_BATCH_SIZE = 50
 const CORRELATED_OUTBOX_ENCRYPTION_CONTEXT =
   'klicker-live-quiz-correlated-outbox-v1'
-
-export type CorrelatedResponseEventMessage = {
-  messageId: string
-  sessionId: string
-  instanceId: string
-  response: unknown
-  cookie?: string
-  responseTimestamp: number
-  correlatedClaim: CorrelatedResponseClaim
-}
 
 function getOutboxEncryptionKey(secret: string) {
   return createHash('sha256')
@@ -111,6 +103,15 @@ export function decryptCorrelatedResponseEvent({
     typeof message.sessionId !== 'string' ||
     !('instanceId' in message) ||
     typeof message.instanceId !== 'string' ||
+    !('response' in message) ||
+    typeof message.response !== 'object' ||
+    message.response === null ||
+    !('instanceInfo' in message) ||
+    typeof message.instanceInfo !== 'object' ||
+    message.instanceInfo === null ||
+    Object.values(message.instanceInfo).some(
+      (value) => typeof value !== 'string'
+    ) ||
     !('responseTimestamp' in message) ||
     typeof message.responseTimestamp !== 'number' ||
     !('correlatedClaim' in message) ||
@@ -204,47 +205,67 @@ export async function registerPendingCorrelatedResponse({
   database,
   liveQuizId,
   messageId,
+  responseKey,
   eventPayload,
   nextDeliveryAt = new Date(Date.now() + CORRELATED_OUTBOX_RETRY_MS),
 }: {
   database: Pick<PrismaClient, '$transaction'>
   liveQuizId: string
   messageId: string
+  responseKey: string
   eventPayload: string
   nextDeliveryAt?: Date
 }) {
-  return database.$transaction(async (prisma) => {
-    const [liveQuiz] = await prisma.$queryRaw<
-      {
-        isAssessmentEnabled: boolean
-        responseCollectionMode: LiveQuizResponseCollectionMode
-        status: PublicationStatus
-      }[]
-    >`
-      SELECT
-        "isAssessmentEnabled",
-        "responseCollectionMode"::text AS "responseCollectionMode",
-        "status"::text AS "status"
-      FROM "public"."LiveQuiz"
-      WHERE "id" = ${liveQuizId}::uuid AND "isDeleted" = false
-      FOR UPDATE
-    `
+  try {
+    return await database.$transaction(async (prisma) => {
+      const [liveQuiz] = await prisma.$queryRaw<
+        {
+          isAssessmentEnabled: boolean
+          responseCollectionMode: LiveQuizResponseCollectionMode
+          status: PublicationStatus
+        }[]
+      >`
+        SELECT
+          "isAssessmentEnabled",
+          "responseCollectionMode"::text AS "responseCollectionMode",
+          "status"::text AS "status"
+        FROM "public"."LiveQuiz"
+        WHERE "id" = ${liveQuizId}::uuid AND "isDeleted" = false
+        FOR UPDATE
+      `
 
-    if (
-      !liveQuiz ||
-      liveQuiz.status !== PublicationStatus.PUBLISHED ||
-      liveQuiz.isAssessmentEnabled ||
-      liveQuiz.responseCollectionMode !==
-        LiveQuizResponseCollectionMode.CORRELATED_EXPORT
-    ) {
-      return false
-    }
+      if (
+        !liveQuiz ||
+        liveQuiz.status !== PublicationStatus.PUBLISHED ||
+        liveQuiz.isAssessmentEnabled ||
+        liveQuiz.responseCollectionMode !==
+          LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+      ) {
+        return 'not_found' as const
+      }
 
-    await prisma.liveQuizPendingResponse.create({
-      data: { id: messageId, liveQuizId, eventPayload, nextDeliveryAt },
+      await prisma.liveQuizPendingResponse.create({
+        data: {
+          id: messageId,
+          liveQuizId,
+          responseKey,
+          eventPayload,
+          nextDeliveryAt,
+        },
+      })
+      return 'registered' as const
     })
-    return true
-  })
+  } catch (error) {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === 'P2002'
+    ) {
+      return 'duplicate' as const
+    }
+    throw error
+  }
 }
 
 export async function reservePendingCorrelatedResponses({
@@ -316,18 +337,6 @@ export async function dispatchPendingCorrelatedResponses({
   }
 }
 
-export async function removePendingCorrelatedResponse({
-  database,
-  messageId,
-}: {
-  database: Pick<PrismaClient, 'liveQuizPendingResponse'>
-  messageId: string
-}) {
-  await database.liveQuizPendingResponse.deleteMany({
-    where: { id: messageId },
-  })
-}
-
 export async function hasPersistedCorrelatedResponse({
   database,
   identity,
@@ -374,7 +383,10 @@ export async function prepareCorrelatedResponseSubmission({
   blockExecution,
   messageId,
 }: {
-  database: Pick<PrismaClient, 'liveQuizResponse'>
+  database: Pick<
+    PrismaClient,
+    'liveQuizResponse' | 'temporaryLeaderboardEntry' | 'liveQuizRespondent'
+  >
   redis: Parameters<typeof claimCorrelatedResponse>[0]['redis']
   identity: LiveQuizResponseIdentity
   liveQuizId: string
@@ -382,6 +394,7 @@ export async function prepareCorrelatedResponseSubmission({
   blockExecution: string | undefined
   messageId: string
 }): Promise<
+  | { status: 'invalid_identity' }
   | { status: 'invalid_metadata' }
   | { status: 'duplicate' }
   | {
@@ -403,6 +416,37 @@ export async function prepareCorrelatedResponseSubmission({
     !Number.isInteger(parsedBlockExecution)
   ) {
     return { status: 'invalid_metadata' }
+  }
+
+  if (identity.kind === 'temporary') {
+    const temporaryEntry = await database.temporaryLeaderboardEntry.findUnique({
+      where: {
+        id_quizId: {
+          id: identity.id,
+          quizId: liveQuizId,
+        },
+      },
+      select: { id: true },
+    })
+    if (!temporaryEntry) {
+      return { status: 'invalid_identity' }
+    }
+
+    const respondent = await database.liveQuizRespondent.upsert({
+      where: { id: identity.id },
+      update: {},
+      create: {
+        id: identity.id,
+        type: LiveQuizRespondentType.TEMPORARY_PSEUDONYM,
+        liveQuiz: { connect: { id: liveQuizId } },
+      },
+    })
+    if (
+      respondent.liveQuizId !== liveQuizId ||
+      respondent.type !== LiveQuizRespondentType.TEMPORARY_PSEUDONYM
+    ) {
+      return { status: 'invalid_identity' }
+    }
   }
 
   if (

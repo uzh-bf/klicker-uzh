@@ -9,6 +9,7 @@ import generatePassword from 'generate-password'
 import { POINTS_PER_GROUP_ACTIVITY_ELEMENT } from './groups.js'
 import {
   assertLiveQuizResponseCollectionCompatibility,
+  lockCourseLiveQuizResponseCollectionState,
   resolveLiveQuizResponseCollectionMode,
 } from './liveQuizResponseCollection.js'
 import { POINTS_PER_INSTANCE } from './stacks.js'
@@ -702,10 +703,29 @@ export async function applyActivityBatchOperations(
     const updatedLiveQuiz = await ctx.prisma.$transaction(async (tx) => {
       // check if the course is different from before
       const isCourseChanged = !!newCourse && liveQuiz.courseId !== newCourse.id
+      const lockedCourseState = isCourseChanged
+        ? await lockCourseLiveQuizResponseCollectionState({
+            prisma: tx,
+            courseId: newCourse!.id,
+          })
+        : null
+      if (isCourseChanged && !lockedCourseState) {
+        throw new Error('Target course no longer exists')
+      }
+      const targetCourse = lockedCourseState?.course ?? newCourse
+      if (isCourseChanged && targetCourse) {
+        assertLiveQuizResponseCollectionCompatibility({
+          isGamificationEnabled: targetCourse.isGamificationEnabled,
+          responseCollectionMode: resolveLiveQuizResponseCollectionMode({
+            isAssessmentEnabled: targetCourse.isAssessmentEnabled,
+            requestedMode: liveQuiz.responseCollectionMode,
+          }),
+        })
+      }
 
       // if required, find a new pin code for the live quiz that is still available
       let newPinCode: string | null = null
-      if (isCourseChanged && newCourse.isAssessmentEnabled) {
+      if (isCourseChanged && targetCourse?.isAssessmentEnabled) {
         let pinValid = false
 
         for (let attempt = 0; attempt < 10; attempt++) {
@@ -739,16 +759,16 @@ export async function applyActivityBatchOperations(
         data: {
           // course re-assignment (including update of gamification and assessment flags)
           course: isCourseChanged
-            ? { connect: { id: newCourse.id } }
+            ? { connect: { id: targetCourse!.id } }
             : undefined,
           isGamificationEnabled: isCourseChanged
-            ? { set: newCourse.isGamificationEnabled }
+            ? { set: targetCourse!.isGamificationEnabled }
             : undefined,
           isAssessmentEnabled: isCourseChanged
-            ? { set: newCourse.isAssessmentEnabled }
+            ? { set: targetCourse!.isAssessmentEnabled }
             : undefined,
           responseCollectionMode:
-            isCourseChanged && newCourse.isAssessmentEnabled
+            isCourseChanged && targetCourse!.isAssessmentEnabled
               ? {
                   set: DB.LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS,
                 }

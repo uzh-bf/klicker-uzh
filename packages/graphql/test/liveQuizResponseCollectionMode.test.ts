@@ -71,6 +71,35 @@ describe('Live quiz response collection mode', () => {
     }
   }
 
+  function withCourseFindUnique(
+    findUnique: (
+      args: Parameters<typeof prisma.course.findUnique>[0]
+    ) => Promise<unknown>
+  ): ContextWithUser {
+    const course = new Proxy(prisma.course, {
+      get(target, property, receiver) {
+        if (property === 'findUnique') {
+          return findUnique as unknown as typeof prisma.course.findUnique
+        }
+        return Reflect.get(target, property, receiver)
+      },
+    })
+    const prismaWithCourseOverride = new Proxy(prisma, {
+      get(target, property, receiver) {
+        if (property === 'course') {
+          return course
+        }
+        const value = Reflect.get(target, property, receiver)
+        return typeof value === 'function' ? value.bind(target) : value
+      },
+    })
+
+    return {
+      ...userOneCtx,
+      prisma: prismaWithCourseOverride,
+    }
+  }
+
   it('defaults new live quizzes to aggregated anonymous responses', async () => {
     const liveQuiz = await manipulateLiveQuiz(liveQuizArgs(), userOneCtx)
     const stored = await prisma.liveQuiz.findUniqueOrThrow({
@@ -241,6 +270,52 @@ describe('Live quiz response collection mode', () => {
     })
   })
 
+  it('rechecks target course gamification while assigning a correlated quiz', async () => {
+    const correlatedQuiz = await manipulateLiveQuiz(
+      {
+        ...liveQuizArgs(),
+        responseCollectionMode:
+          LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+      },
+      userOneCtx
+    )
+    const course = await seedCourse(
+      { isGamificationEnabled: false, isAssessmentEnabled: false },
+      userOneCtx
+    )
+    await recomputeDerivedPermissions({ courseId: course.id }, prisma)
+
+    const findUnique = prisma.course.findUnique.bind(prisma.course)
+    const findUniqueDuringConcurrentUpdate = async (
+      args: Parameters<typeof prisma.course.findUnique>[0]
+    ) => {
+      const staleCourse = await findUnique(args)
+      await prisma.course.update({
+        where: { id: course.id },
+        data: { isGamificationEnabled: true },
+      })
+      return staleCourse
+    }
+    await expect(
+      applyActivityBatchOperations(
+        {
+          activityIds: [correlatedQuiz.id],
+          courseId: course.id,
+        },
+        withCourseFindUnique(findUniqueDuringConcurrentUpdate)
+      )
+    ).rejects.toMatchObject({
+      extensions: {
+        code: 'LIVE_QUIZ_CORRELATED_GAMIFICATION_CONFLICT',
+      },
+    })
+
+    const storedQuiz = await prisma.liveQuiz.findUniqueOrThrow({
+      where: { id: correlatedQuiz.id },
+    })
+    expect(storedQuiz.courseId).toBeNull()
+  })
+
   it('rejects enabling gamification on a course with a correlated quiz', async () => {
     const course = await seedCourse(
       { isGamificationEnabled: false, isAssessmentEnabled: false },
@@ -333,6 +408,55 @@ describe('Live quiz response collection mode', () => {
     expect(stored.responseCollectionMode).toBe(
       LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS
     )
+  })
+
+  it('derives course assessment transitions from the locked state', async () => {
+    const course = await seedCourse(
+      { isGamificationEnabled: false, isAssessmentEnabled: false },
+      userOneCtx
+    )
+    const liveQuiz = await manipulateLiveQuiz(
+      {
+        ...liveQuizArgs(),
+        courseId: course.id,
+      },
+      userOneCtx
+    )
+    const findUnique = prisma.course.findUnique.bind(prisma.course)
+    const findUniqueDuringConcurrentUpdate = async (
+      args: Parameters<typeof prisma.course.findUnique>[0]
+    ) => {
+      const staleCourse = await findUnique(args)
+      await prisma.course.update({
+        where: { id: course.id },
+        data: {
+          authType: CourseAuthType.SSO,
+          pinCode: null,
+          isAssessmentEnabled: true,
+        },
+      })
+      await prisma.liveQuiz.update({
+        where: { id: liveQuiz.id },
+        data: { isAssessmentEnabled: true, pinCode: 'RACE01' },
+      })
+      return staleCourse
+    }
+    await updateCourseSettings(
+      {
+        id: course.id,
+        language: Locale.en,
+        isGamificationEnabled: false,
+        isAssessmentEnabled: false,
+      },
+      withCourseFindUnique(findUniqueDuringConcurrentUpdate)
+    )
+
+    const [storedCourse, storedLiveQuiz] = await Promise.all([
+      prisma.course.findUniqueOrThrow({ where: { id: course.id } }),
+      prisma.liveQuiz.findUniqueOrThrow({ where: { id: liveQuiz.id } }),
+    ])
+    expect(storedCourse.isAssessmentEnabled).toBe(false)
+    expect(storedLiveQuiz.isAssessmentEnabled).toBe(false)
   })
 
   it('rejects assessment mode while a correlated live quiz is running', async () => {

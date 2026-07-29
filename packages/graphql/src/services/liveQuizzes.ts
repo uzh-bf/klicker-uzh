@@ -950,7 +950,11 @@ export async function startLiveQuiz(
       })
       if (!currentQuiz) return null
       if (currentQuiz.status === DB.PublicationStatus.PUBLISHED) {
-        return { quiz: currentQuiz, didStart: false }
+        return {
+          quiz: currentQuiz,
+          didStart: false,
+          scheduledPublicationTaskId: null,
+        }
       }
 
       const redis = currentQuiz.isAssessmentEnabled
@@ -970,19 +974,6 @@ export async function startLiveQuiz(
         console.error(e)
       }
 
-      if (currentQuiz.scheduledPublicationTaskId) {
-        try {
-          await ctx.hatchet.scheduled.delete(
-            currentQuiz.scheduledPublicationTaskId
-          )
-        } catch (error) {
-          console.error(
-            `Failed to delete scheduled task for live quiz ${id}:`,
-            error
-          )
-        }
-      }
-
       const startedLiveQuiz = await prisma.liveQuiz.update({
         where: { id },
         data: {
@@ -992,11 +983,27 @@ export async function startLiveQuiz(
         },
       })
 
-      return { quiz: startedLiveQuiz, didStart: true }
+      return {
+        quiz: startedLiveQuiz,
+        didStart: true,
+        scheduledPublicationTaskId: currentQuiz.scheduledPublicationTaskId,
+      }
     })
 
     if (!publication) return null
     if (publication.didStart) {
+      if (publication.scheduledPublicationTaskId) {
+        try {
+          await ctx.hatchet.scheduled.delete(
+            publication.scheduledPublicationTaskId
+          )
+        } catch (error) {
+          console.error(
+            `Failed to delete scheduled task for live quiz ${id}:`,
+            error
+          )
+        }
+      }
       await sendTeamsNotification({
         scope: 'graphql/startLiveQuiz',
         text: `START Live quiz ${publication.quiz.name} with id ${publication.quiz.id}.`,

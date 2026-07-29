@@ -10,6 +10,7 @@ import {
   hashLiveQuizRespondentToken,
   resolveLiveQuizResponseIdentity,
   type CorrelatedResponseClaim,
+  type LiveQuizResponseEventMessage,
   type LiveQuizResponseIdentityKey,
 } from '@klicker-uzh/util'
 import type { RedisHashMutation } from './responseEffects.js'
@@ -21,6 +22,21 @@ type CorrelatedResponseDatabase = Pick<
   | 'participant'
   | 'temporaryLeaderboardEntry'
 >
+
+export function resolveResponseInstanceInfo({
+  cachedInstanceInfo,
+  acceptedInstanceInfo,
+  isCorrelated,
+}: {
+  cachedInstanceInfo: Record<string, string>
+  acceptedInstanceInfo?: Record<string, string>
+  isCorrelated: boolean
+}) {
+  if (Object.keys(cachedInstanceInfo).length > 0) {
+    return cachedInstanceInfo
+  }
+  return isCorrelated ? acceptedInstanceInfo : undefined
+}
 
 interface CorrelatedProcessingRedis {
   eval(
@@ -57,7 +73,7 @@ export type CorrelatedProcessingState = {
 export class CorrelatedResponseIdentityError extends Error {}
 export class CorrelatedResponseProcessingBusyError extends Error {}
 
-export async function settleCorrelatedResponseReceipt({
+export async function settleCorrelatedResponseOutbox({
   database,
   messageId,
 }: {
@@ -231,29 +247,34 @@ export async function resolveCorrelatedResponseOwner({
   }
 
   if (identity.kind === 'temporary') {
-    const legacyEntry = await database.temporaryLeaderboardEntry.findUnique({
-      where: {
-        id_quizId: {
-          id: identity.id,
-          quizId: liveQuizId,
-        },
-      },
-    })
-    if (!legacyEntry) {
-      throw new CorrelatedResponseIdentityError(
-        'Temporary correlated response identity is no longer active'
-      )
-    }
-
-    const respondent = await database.liveQuizRespondent.upsert({
+    let respondent = await database.liveQuizRespondent.findUnique({
       where: { id: identity.id },
-      update: {},
-      create: {
-        id: identity.id,
-        type: LiveQuizRespondentType.TEMPORARY_PSEUDONYM,
-        liveQuiz: { connect: { id: liveQuizId } },
-      },
     })
+    if (!respondent) {
+      const legacyEntry = await database.temporaryLeaderboardEntry.findUnique({
+        where: {
+          id_quizId: {
+            id: identity.id,
+            quizId: liveQuizId,
+          },
+        },
+      })
+      if (!legacyEntry) {
+        throw new CorrelatedResponseIdentityError(
+          'Temporary correlated response identity is no longer active'
+        )
+      }
+
+      respondent = await database.liveQuizRespondent.upsert({
+        where: { id: identity.id },
+        update: {},
+        create: {
+          id: identity.id,
+          type: LiveQuizRespondentType.TEMPORARY_PSEUDONYM,
+          liveQuiz: { connect: { id: liveQuizId } },
+        },
+      })
+    }
     if (
       respondent.liveQuizId !== liveQuizId ||
       respondent.type !== LiveQuizRespondentType.TEMPORARY_PSEUDONYM
@@ -502,12 +523,10 @@ export async function prepareCorrelatedMessageProcessing({
 }: {
   redis: Pick<CorrelatedProcessingRedis, 'eval' | 'hget' | 'set'>
   database: CorrelatedResponseDatabase
-  message: {
-    messageId: string
-    sessionId: string
-    instanceId: string
-    cookie?: string
-    responseTimestamp: number
+  message: Pick<
+    LiveQuizResponseEventMessage,
+    'messageId' | 'sessionId' | 'instanceId' | 'cookie' | 'responseTimestamp'
+  > & {
     correlatedClaim?: CorrelatedResponseClaim
   }
   blockExecution: string | undefined

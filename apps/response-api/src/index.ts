@@ -11,7 +11,9 @@ import {
   resolveLiveQuizResponseIdentity,
   verifyJWT,
   type CorrelatedResponseClaim,
+  type CorrelatedResponseEventMessage,
   type JWTPayload,
+  type LiveQuizResponseEventMessage,
   type LiveQuizResponseIdentity,
 } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
@@ -30,7 +32,6 @@ import {
   resolveResponseCollectionMode,
   responseEndpointMatchesCollectionMode,
   serializeLiveQuizRespondentCookie,
-  type CorrelatedResponseEventMessage,
 } from './correlatedResponses.js'
 
 const redis = new Redis({
@@ -335,6 +336,11 @@ async function handleAddResponse(
     if (preparation.status === 'invalid_metadata') {
       return badRequest(req, res, 'Invalid correlated response metadata')
     }
+    if (preparation.status === 'invalid_identity') {
+      return sendJson(req, res, 401, {
+        error: 'Live quiz response identity is no longer active',
+      })
+    }
     if (preparation.status === 'duplicate') {
       return sendJson(req, res, 208, {
         status: 'response_recorded_before',
@@ -371,15 +377,15 @@ async function handleAddResponse(
       : 'response-received:anonymous'
   }
 
-  const message = {
+  const message: LiveQuizResponseEventMessage = {
     messageId,
     sessionId: liveQuizIdString,
     instanceId: instanceIdString,
     response, // pass through as-is; worker validates
     cookie,
     responseTimestamp,
-    correlatedClaim: claim,
   }
+  let eventMessage: LiveQuizResponseEventMessage = message
 
   if (isCorrelated) {
     if (!claim) {
@@ -388,13 +394,16 @@ async function handleAddResponse(
     const correlatedMessage: CorrelatedResponseEventMessage = {
       ...message,
       correlatedClaim: claim,
+      instanceInfo,
     }
-    let pendingResponseRegistered = false
+    eventMessage = correlatedMessage
+    let pendingResponseRegistration: 'registered' | 'duplicate' | 'not_found'
     try {
-      pendingResponseRegistered = await registerPendingCorrelatedResponse({
+      pendingResponseRegistration = await registerPendingCorrelatedResponse({
         database: prisma,
         liveQuizId: liveQuizIdString,
         messageId,
+        responseKey: claim.key,
         eventPayload: encryptCorrelatedResponseEvent({
           message: correlatedMessage,
           secret: getResponseIdentityConfig().secret,
@@ -408,13 +417,18 @@ async function handleAddResponse(
       })
       throw error
     }
-    if (!pendingResponseRegistered) {
+    if (pendingResponseRegistration !== 'registered') {
       await releaseCorrelatedResponse({
         redis,
         ...claim,
         messageId,
       })
-      return sendJson(req, res, 404, { error: 'Live quiz not found' })
+      return pendingResponseRegistration === 'duplicate'
+        ? sendJson(req, res, 208, {
+            status: 'response_recorded_before',
+            responseTimestamp,
+          })
+        : sendJson(req, res, 404, { error: 'Live quiz not found' })
     }
   }
 
@@ -426,7 +440,7 @@ async function handleAddResponse(
   })
 
   try {
-    await hatchetClient.events.push(eventName, message)
+    await hatchetClient.events.push(eventName, eventMessage)
   } catch (error) {
     if (isCorrelated) {
       console.error('Immediate correlated response delivery failed', {
@@ -746,13 +760,22 @@ async function initializeService() {
       }
     }
 
-    await dispatchPending()
-    const outboxTimer = setInterval(() => {
-      void dispatchPending().catch((error) => {
+    const scheduleNextDispatch = () => {
+      const outboxTimer = setTimeout(() => {
+        void dispatchPending()
+          .catch((error) => {
+            console.error('Correlated response outbox dispatch failed', error)
+          })
+          .finally(scheduleNextDispatch)
+      }, CORRELATED_OUTBOX_POLL_INTERVAL_MS)
+      outboxTimer.unref()
+    }
+
+    void dispatchPending()
+      .catch((error) => {
         console.error('Correlated response outbox dispatch failed', error)
       })
-    }, CORRELATED_OUTBOX_POLL_INTERVAL_MS)
-    outboxTimer.unref()
+      .finally(scheduleNextDispatch)
   }
 
   console.log('All connections established successfully')
