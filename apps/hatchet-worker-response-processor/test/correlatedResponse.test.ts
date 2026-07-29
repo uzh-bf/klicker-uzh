@@ -293,13 +293,13 @@ describe('correlated response persistence helpers', () => {
   })
 
   it('settles the pending outbox entry idempotently', async () => {
-    const deleteCalls: any[] = []
+    const updateCalls: any[] = []
 
     await settleCorrelatedResponseOutbox({
       database: {
         liveQuizPendingResponse: {
-          deleteMany: async (args: any) => {
-            deleteCalls.push(args)
+          updateMany: async (args: any) => {
+            updateCalls.push(args)
             return { count: 1 }
           },
         },
@@ -307,7 +307,16 @@ describe('correlated response persistence helpers', () => {
       messageId: 'message-1',
     })
 
-    assert.deepEqual(deleteCalls, [{ where: { id: 'message-1' } }])
+    assert.equal(updateCalls.length, 1)
+    assert.deepEqual(updateCalls[0], {
+      where: { id: 'message-1', settledAt: null },
+      data: {
+        eventPayload: null,
+        nextDeliveryAt: null,
+        settledAt: updateCalls[0].data.settledAt,
+      },
+    })
+    assert.ok(updateCalls[0].data.settledAt instanceof Date)
   })
 
   it('loads correlated deliveries only from a matching outbox row', async () => {
@@ -360,7 +369,7 @@ describe('correlated response persistence helpers', () => {
       await resolveCorrelatedResponseDelivery({
         database: {
           liveQuizPendingResponse: {
-            findUnique: async () => ({ eventPayload }),
+            findUnique: async () => ({ eventPayload, settledAt: null }),
           },
         } as any,
         messageId,
@@ -372,13 +381,28 @@ describe('correlated response persistence helpers', () => {
       resolveCorrelatedResponseDelivery({
         database: {
           liveQuizPendingResponse: {
-            findUnique: async () => ({ eventPayload }),
+            findUnique: async () => ({ eventPayload, settledAt: null }),
           },
         } as any,
         messageId: randomUUID(),
         secret: 'test-secret',
       }),
       /outbox message id mismatch/
+    )
+    assert.equal(
+      await resolveCorrelatedResponseDelivery({
+        database: {
+          liveQuizPendingResponse: {
+            findUnique: async () => ({
+              eventPayload: null,
+              settledAt: new Date(),
+            }),
+          },
+        } as any,
+        messageId,
+        secret: 'test-secret',
+      }),
+      null
     )
   })
 

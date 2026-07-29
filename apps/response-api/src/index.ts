@@ -177,7 +177,6 @@ async function ensureCorrelatedResponseIdentity({
     serializeLiveQuizRespondentCookie({
       token,
       liveQuizId,
-      domain: process.env.COOKIE_DOMAIN,
       secure:
         process.env.NODE_ENV === 'production' &&
         process.env.COOKIE_DOMAIN !== '127.0.0.1',

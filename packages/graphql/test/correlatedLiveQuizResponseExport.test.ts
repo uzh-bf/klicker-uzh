@@ -71,16 +71,34 @@ function createContext({
   responses = defaultResponses,
   labels = [],
   pendingResponseCount = 0,
+  responseBytes,
+  responseCount,
 }: {
   liveQuiz?: typeof defaultLiveQuiz | null
   blocks?: any[]
   responses?: any[]
   labels?: { identityHash: string; label: number }[]
   pendingResponseCount?: number
+  responseBytes?: bigint
+  responseCount?: bigint
 } = {}) {
   const queryRaw = vi
     .fn()
-    .mockResolvedValue(liveQuiz === null ? [] : [liveQuiz])
+    .mockResolvedValueOnce(liveQuiz === null ? [] : [liveQuiz])
+    .mockResolvedValueOnce([
+      {
+        responseBytes:
+          responseBytes ??
+          BigInt(
+            responses.reduce(
+              (total, response) =>
+                total + JSON.stringify(response.response).length,
+              0
+            )
+          ),
+        responseCount: responseCount ?? BigInt(responses.length),
+      },
+    ])
   const blockFindMany = vi.fn().mockResolvedValue(blocks)
   const responseFindMany = vi.fn().mockResolvedValue(responses)
   const labelFindMany = vi.fn().mockResolvedValue(labels)
@@ -237,6 +255,17 @@ describe('getCorrelatedLiveQuizResponseExport', () => {
     await expect(
       getCorrelatedLiveQuizResponseExport({ id: 'quiz-id' }, ctx)
     ).rejects.toThrow('LIVE_QUIZ_CORRELATED_EXPORT_NOT_READY')
+    expect(responseFindMany).not.toHaveBeenCalled()
+  })
+
+  it('rejects oversized response input before materializing response rows', async () => {
+    const { ctx, responseFindMany } = createContext({
+      responseBytes: BigInt(5 * 1024 * 1024 + 1),
+    })
+
+    await expect(
+      getCorrelatedLiveQuizResponseExport({ id: 'quiz-id' }, ctx)
+    ).rejects.toThrow('LIVE_QUIZ_CORRELATED_EXPORT_TOO_LARGE')
     expect(responseFindMany).not.toHaveBeenCalled()
   })
 })

@@ -419,15 +419,14 @@ describe('correlated response request safeguards', () => {
 })
 
 describe('live quiz respondent cookie', () => {
-  it('uses the same two-week lifetime as the signed token', () => {
+  it('uses a host-only cookie with the same lifetime as the signed token', () => {
     assert.equal(
       serializeLiveQuizRespondentCookie({
         token: 'signed-token',
         liveQuizId: '11111111-1111-4111-8111-111111111111',
-        domain: 'klicker.test',
         secure: true,
       }),
-      'live_quiz_respondent_token_11111111-1111-4111-8111-111111111111=signed-token; Max-Age=1209600; Domain=klicker.test; Path=/; HttpOnly; Secure; SameSite=Lax'
+      'live_quiz_respondent_token_11111111-1111-4111-8111-111111111111=signed-token; Max-Age=1209600; Path=/; HttpOnly; Secure; SameSite=Lax'
     )
   })
 })

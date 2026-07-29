@@ -2715,35 +2715,6 @@ export async function updateCourseSettings(
   // verify that no past dates are modified or enabled gamification / group creation settings are disabled
   const course = await ctx.prisma.course.findUnique({
     where: { id },
-    include: {
-      liveQuizzes: {
-        where: {
-          isDeleted: false,
-          status: {
-            in: [
-              DB.PublicationStatus.DRAFT,
-              DB.PublicationStatus.SCHEDULED,
-              DB.PublicationStatus.PUBLISHED,
-            ],
-          },
-        },
-        select: {
-          id: true,
-          pinCode: true,
-          responseCollectionMode: true,
-          status: true,
-        },
-      },
-      _count: {
-        select: {
-          liveQuizzes: { where: { isDeleted: false } },
-          practiceQuizzes: { where: { isDeleted: false } },
-          microLearnings: { where: { isDeleted: false } },
-          groupActivities: { where: { isDeleted: false } },
-          participantGroups: true,
-        },
-      },
-    },
   })
 
   if (!course) return null
@@ -2752,19 +2723,34 @@ export async function updateCourseSettings(
   const newGroupDeadlinePast = groupDeadlineDate
     ? groupDeadlineDate < new Date()
     : false
-  const containsActivities =
-    course._count.liveQuizzes > 0 ||
-    course._count.practiceQuizzes > 0 ||
-    course._count.microLearnings > 0 ||
-    course._count.groupActivities > 0
-  const containsGroups = course._count.participantGroups > 0
-
   const updatedCourse = await ctx.prisma.$transaction(async (prisma) => {
     const lockedState = await lockCourseLiveQuizResponseCollectionState({
       prisma,
       courseId: id,
     })
     if (!lockedState) return null
+
+    const lockedCounts = await prisma.course.findUnique({
+      where: { id },
+      select: {
+        _count: {
+          select: {
+            liveQuizzes: { where: { isDeleted: false } },
+            practiceQuizzes: { where: { isDeleted: false } },
+            microLearnings: { where: { isDeleted: false } },
+            groupActivities: { where: { isDeleted: false } },
+            participantGroups: true,
+          },
+        },
+      },
+    })
+    if (!lockedCounts) return null
+    const containsActivities =
+      lockedCounts._count.liveQuizzes > 0 ||
+      lockedCounts._count.practiceQuizzes > 0 ||
+      lockedCounts._count.microLearnings > 0 ||
+      lockedCounts._count.groupActivities > 0
+    const containsGroups = lockedCounts._count.participantGroups > 0
 
     // Derive transitions only after locking so concurrent settings requests
     // cannot update the course without propagating the same state to activities.

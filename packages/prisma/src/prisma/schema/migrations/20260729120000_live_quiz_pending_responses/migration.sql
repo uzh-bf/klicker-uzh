@@ -1,10 +1,11 @@
 CREATE TABLE "public"."LiveQuizPendingResponse" (
     "id" UUID NOT NULL,
     "responseKey" TEXT NOT NULL,
-    "eventPayload" TEXT NOT NULL,
-    "nextDeliveryAt" TIMESTAMP(3) NOT NULL,
+    "eventPayload" TEXT,
+    "nextDeliveryAt" TIMESTAMP(3),
     "deliveryAttempts" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "settledAt" TIMESTAMP(3),
     "liveQuizId" UUID NOT NULL,
 
     CONSTRAINT "LiveQuizPendingResponse_pkey" PRIMARY KEY ("id")

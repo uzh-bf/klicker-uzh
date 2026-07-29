@@ -97,4 +97,25 @@ describe('live quiz response validation', () => {
       }).valid
     ).toBe(true)
   })
+
+  it.each(['11abc', ' ', 'Infinity', '-Infinity', 'NaN'])(
+    'rejects a non-finite or partial numerical value: %s',
+    (value) => {
+      expect(
+        validateStudentResponse({
+          type: 'NUMERICAL',
+          response: { value },
+        }).valid
+      ).toBe(false)
+    }
+  )
+
+  it('accepts a finite numerical value with surrounding whitespace', () => {
+    expect(
+      validateStudentResponse({
+        type: 'NUMERICAL',
+        response: { value: ' 11.5 ' },
+      }).valid
+    ).toBe(true)
+  })
 })

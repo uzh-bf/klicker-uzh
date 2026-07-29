@@ -189,10 +189,13 @@ export function validateStudentResponse({
   }
 
   if (type === 'NUMERICAL') {
+    const parsedResponse =
+      typeof response.value === 'string' && response.value.trim()
+        ? Number(response.value.trim())
+        : Number.NaN
     if (
       typeof response.value !== 'string' ||
-      !response.value ||
-      Number.isNaN(Number.parseFloat(response.value))
+      !Number.isFinite(parsedResponse)
     ) {
       return {
         valid: false,
@@ -200,7 +203,6 @@ export function validateStudentResponse({
       }
     }
 
-    const parsedResponse = Number.parseFloat(response.value)
     if (
       isRecord(restrictions) &&
       (('min' in restrictions &&

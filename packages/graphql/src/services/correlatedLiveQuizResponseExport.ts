@@ -8,6 +8,9 @@ import { GraphQLError } from 'graphql'
 import { createHmac } from 'node:crypto'
 import type { ContextWithUser } from '../lib/context.js'
 
+const MAX_CORRELATED_EXPORT_RESPONSE_COUNT = 25_000n
+const MAX_CORRELATED_EXPORT_RESPONSE_BYTES = BigInt(5 * 1024 * 1024)
+
 export async function getCorrelatedLiveQuizResponseExport(
   { id }: { id: string },
   ctx: ContextWithUser
@@ -59,7 +62,7 @@ export async function getCorrelatedLiveQuizResponseExport(
 
         const pendingResponseCount = await prisma.liveQuizPendingResponse.count(
           {
-            where: { liveQuizId: id },
+            where: { liveQuizId: id, settledAt: null },
           }
         )
         if (pendingResponseCount > 0) {
@@ -88,6 +91,30 @@ export async function getCorrelatedLiveQuizResponseExport(
             },
           },
         })
+        const [responseSize] = await prisma.$queryRaw<
+          { responseBytes: bigint; responseCount: bigint }[]
+        >`
+          SELECT
+            COALESCE(SUM(octet_length(response."response"::text)), 0)::bigint AS "responseBytes",
+            COUNT(*)::bigint AS "responseCount"
+          FROM "public"."LiveQuizResponse" AS response
+          INNER JOIN "public"."ElementInstance" AS instance
+            ON instance."id" = response."instanceId"
+          INNER JOIN "public"."ElementBlock" AS block
+            ON block."id" = instance."elementBlockId"
+          WHERE
+            block."liveQuizId" = ${id}::uuid
+            AND response."correctionOnly" = false
+        `
+        if (
+          !responseSize ||
+          responseSize.responseCount > MAX_CORRELATED_EXPORT_RESPONSE_COUNT ||
+          responseSize.responseBytes > MAX_CORRELATED_EXPORT_RESPONSE_BYTES
+        ) {
+          throw new CorrelatedLiveQuizExportSizeError(
+            'Correlated live quiz export exceeds the bounded response input size'
+          )
+        }
         const responses = await prisma.liveQuizResponse.findMany({
           where: {
             correctionOnly: false,

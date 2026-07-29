@@ -183,7 +183,7 @@ export async function reservePendingCorrelatedResponses({
     WITH due AS (
       SELECT "id"
       FROM "public"."LiveQuizPendingResponse"
-      WHERE "nextDeliveryAt" <= ${now}
+      WHERE "settledAt" IS NULL AND "nextDeliveryAt" <= ${now}
       ORDER BY "nextDeliveryAt" ASC, "createdAt" ASC
       LIMIT ${batchSize}
       FOR UPDATE SKIP LOCKED
@@ -400,19 +400,16 @@ export async function prepareCorrelatedResponseSubmission({
 export function serializeLiveQuizRespondentCookie({
   token,
   liveQuizId,
-  domain,
   secure,
 }: {
   token: string
   liveQuizId: string
-  domain?: string
   secure: boolean
 }) {
   const attributes = [
     `${getLiveQuizRespondentCookieName(liveQuizId)}=${token}`,
     `Max-Age=${LIVE_QUIZ_RESPONDENT_TOKEN_MAX_AGE_SECONDS}`,
   ]
-  if (domain) attributes.push(`Domain=${domain}`)
   attributes.push('Path=/', 'HttpOnly')
   if (secure) attributes.push('Secure')
   attributes.push('SameSite=Lax')

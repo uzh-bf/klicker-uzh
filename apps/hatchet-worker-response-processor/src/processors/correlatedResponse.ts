@@ -81,9 +81,15 @@ export async function resolveCorrelatedResponseDelivery({
 }): Promise<CorrelatedResponseEventMessage | null> {
   const pendingResponse = await database.liveQuizPendingResponse.findUnique({
     where: { id: messageId },
-    select: { eventPayload: true },
+    select: { eventPayload: true, settledAt: true },
   })
-  if (!pendingResponse) return null
+  if (
+    !pendingResponse ||
+    pendingResponse.settledAt !== null ||
+    pendingResponse.eventPayload === null
+  ) {
+    return null
+  }
 
   const message = decryptCorrelatedResponseEvent({
     encryptedPayload: pendingResponse.eventPayload,
@@ -104,8 +110,13 @@ export async function settleCorrelatedResponseOutbox({
   database: Pick<PrismaClient, 'liveQuizPendingResponse'>
   messageId: string
 }) {
-  await database.liveQuizPendingResponse.deleteMany({
-    where: { id: messageId },
+  await database.liveQuizPendingResponse.updateMany({
+    where: { id: messageId, settledAt: null },
+    data: {
+      eventPayload: null,
+      nextDeliveryAt: null,
+      settledAt: new Date(),
+    },
   })
 }
 
