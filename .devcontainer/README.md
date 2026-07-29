@@ -138,18 +138,18 @@ internal port. The linked-worktree overlay publishes no host ports and exposes
 stable unnamespaced aliases plus fixed localhost ports. `.devrouter.yml` uses
 the selected checkout identity in every proxy upstream.
 
-| What              | Host                                                 | Upstream (devnet)       |
-| ----------------- | ---------------------------------------------------- | ----------------------- |
-| API (GraphQL)     | `https://api.klicker.<workspace>.localhost`          | `${WORKSPACE}-app:3000` |
-| Auth              | `https://auth.klicker.<workspace>.localhost`         | `${WORKSPACE}-app:3010` |
-| PWA (student)     | `https://pwa.klicker.<workspace>.localhost`          | `${WORKSPACE}-app:3001` |
-| Manage (lecturer) | `https://manage.klicker.<workspace>.localhost`       | `${WORKSPACE}-app:3002` |
-| Control           | `https://control.klicker.<workspace>.localhost`      | `${WORKSPACE}-app:3003` |
-| OLAT API          | `https://olat-api.klicker.<workspace>.localhost`     | `${WORKSPACE}-app:3030` |
-| Response API      | `https://response-api.klicker.<workspace>.localhost` | `${WORKSPACE}-app:7078` |
-| LTI Service       | `https://lti.klicker.<workspace>.localhost`          | `${WORKSPACE}-app:4000` |
-| Chat App          | `https://chat.klicker.<workspace>.localhost`         | `${WORKSPACE}-app:3004` |
-| Postgres          | `db.klicker.<workspace>.localhost:5432`              | `${WORKSPACE}-db:5432`  |
+| What              | Host                                                                       | Upstream (devnet)       |
+| ----------------- | -------------------------------------------------------------------------- | ----------------------- |
+| API (GraphQL)     | `https://api.klicker.<workspace>.localhost`                                | `${WORKSPACE}-app:3000` |
+| Auth              | `https://auth.klicker.<workspace>.localhost`                               | `${WORKSPACE}-app:3010` |
+| PWA (student)     | `https://pwa.klicker.<workspace>.localhost`                                | `${WORKSPACE}-app:3001` |
+| Manage (lecturer) | `https://manage.klicker.<workspace>.localhost`                             | `${WORKSPACE}-app:3002` |
+| Control           | `https://control.klicker.<workspace>.localhost`                            | `${WORKSPACE}-app:3003` |
+| OLAT API          | `https://olat-api.klicker.<workspace>.localhost`                           | `${WORKSPACE}-app:3030` |
+| Response API      | `https://response-api.klicker.<workspace>.localhost` (`POST /AddResponse`) | `${WORKSPACE}-app:7078` |
+| LTI Service       | `https://lti.klicker.<workspace>.localhost`                                | `${WORKSPACE}-app:4000` |
+| Chat App          | `https://chat.klicker.<workspace>.localhost`                               | `${WORKSPACE}-app:3004` |
+| Postgres          | `db.klicker.<workspace>.localhost:5432`                                    | `${WORKSPACE}-db:5432`  |
 
 The two Hatchet workers (`hatchet-worker-general`, `hatchet-worker-response-processor`)
 also run in the `app` container but have **no port/route** — they consume the
