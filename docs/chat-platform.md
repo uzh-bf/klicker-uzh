@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-07-28'
+timestamp: '2026-07-29'
 tags:
   - frontend
   - chat
@@ -53,6 +53,8 @@ Chat carries the UZH brand through the shadcn semantic tokens in `src/app/global
   `sr-only` "Toggle Sidebar" label. Pass an explicit localized `aria-label`; it wins the
   accessible-name computation.
 - The design system's `Select` renders a Radix `SelectTrigger` — a real `<button role="combobox">`, so a plain `<label htmlFor>` does name it. Without that, the combobox's accessible name is whatever value is currently selected, which leaves several selects on a panel indistinguishable. Pass `id` to `Select` (it forwards to the trigger) and point the visible label at it.
+- Tooltips (`src/components/ui/tooltip.tsx`) are the neutral popover style — `bg-popover text-popover-foreground border shadow-md` — not inverted brand blue. Anything rendered _inside_ a tooltip must use foreground/muted-foreground tones; `text-primary-foreground/70`-style spans were readable on the old blue surface and invisible on the white one. The arrow's `border-b border-r` assumes `side="top"`, which is the only side the app uses.
+- Hover states on saturated color surfaces must **darken**, not alpha-lighten: `hover:bg-destructive/90` drops white-on-red text below AA (~3.5:1), so the declined-screen button uses `hover:brightness-90` instead. Blue (`bg-primary`) tolerates `/90`; red does not.
 
 ## Runtime and student-visible states
 
@@ -72,7 +74,16 @@ Initial thread and message loading uses skeleton rows and message-shaped placeho
 empty running assistant message shows a localized thinking indicator. Send/stream failures,
 disclaimer action failures, and thread-list failures are localized with retry affordances where
 the action can be retried. Asynchronous disclaimer failures render in a live `role="alert"`
-region. A cached thread list intentionally remains visible if only its background refresh fails.
+region. Stream/send errors inside a message render as a styled callout, not inline markdown:
+`useChatResponse` pushes a `{ type: 'data', name: 'chat-error', data: { errorLabel, message } }`
+content part (assistant-ui's official `DataMessagePart` shape) and `message-parts.tsx` renders it
+as `ChatErrorPart` (`data-cy="chat-message-error"`). The convention is client-side only — data
+parts never persist and `serializeMessageContent` excludes them from the model-visible history,
+so an error label can never leak into a follow-up prompt. A `hasStreamError` guard keeps the
+partial text from being re-pushed alongside the error part. Truncated responses append the
+localized `chat.response.truncated` notice, and a failed image-attachment read surfaces the
+typed `AttachmentAdapterError` from `imageAttachmentAdapter.ts` as a localized composer error
+rather than a stringified `ProgressEvent`. A cached thread list intentionally remains visible if only its background refresh fails.
 The welcome view contains localized starter suggestions, and message action bars remain mounted
 for touch users rather than relying on hover. An unavailable image edit uses `aria-disabled`
 instead of native `disabled`, so its explanatory Radix tooltip remains focusable. Each thread
@@ -146,12 +157,17 @@ On the render side, `remarkCitationMarkers` rewrites `[n]` in markdown **text** 
 runs once per message in `AssistantMessage` (`useMessageSources`) and reaches both the cards and
 the chips through `MessageSourcesContext` — do not re-parse the tool JSON in a leaf component.
 
-A chip must wrap **with** the word it cites, never start a line on its own. Two mechanisms
-enforce that and both are needed: `splitCitationMarkers` strips spaces/tabs directly before a
-marker (newlines survive — a soft break is content), and `CitationChip` prefixes a U+2060 WORD
-JOINER, because an atomic inline like the chip's button is a legal break point under UAX #14
-even with no whitespace before it. Removing either one reintroduces orphaned chips at narrow
-widths.
+A chip must wrap **with** the word it cites, never start a line on its own — and the
+punctuation after it must not wrap alone either. Two mechanisms enforce that and both are
+needed: `splitCitationMarkers` strips spaces/tabs directly before a marker (newlines survive —
+a soft break is content), and `CitationChip` emits a U+2060 WORD JOINER on **both** sides of
+the chip (`CITATION_CHIP_JOINER`, exported from `citation-chip.tsx`), because an atomic inline
+like the chip's button is a legal break point under UAX #14 even with no whitespace around it.
+LB11 makes the joiner glue only what is immediately adjacent — it cannot reach past a space
+(LB18 still allows the break after a space), so a symmetric joiner welds `word[1].` into one
+unit and adjacent chip runs like `[1][2]` into another, while normal inter-word wrapping stays
+untouched. The string-level contract is pinned by `test/citation-chip.test.ts`; removing either
+mechanism reintroduces orphaned chips or lone trailing periods at narrow widths.
 
 The line under a source's name is per-type, chosen by `getSourceSecondaryLine` in
 `src/lib/sources/sourceDisplay.ts` and shared by the card and the citation hover preview:
@@ -165,7 +181,10 @@ field** — its source shape is `source_url`/`source_type`/`file_name`/`page_num
 (`getSourceTimestamp`). A bare numeric `labeled_page_number` remains a publisher page label,
 never seconds; bare seconds are accepted only from URL time parameters, where their meaning is
 unambiguous. Other labels such as `Kapitel IV` also remain page text. A dedicated timestamp
-field is phase-2 work in the doc-query service. Card titles clamp at two lines with the
+field is phase-2 work in the doc-query service. Each card's index badge mirrors the inline chip —
+a bare digit in a small `bg-primary/10` rounded square (`sources-section.tsx`), not a
+zero-padded `01` — so the number on the card and the `[n]` in the answer read as the same
+token. Card titles clamp at two lines with the
 full name in the `title` attribute — and note that `line-clamp-2` needs `display: -webkit-box`,
 so adding `block` alongside it silently disables the clamp. Document cards lay out with
 `repeat(auto-fit, minmax(min(230px, 100%), 1fr))`: `auto-fit` (not `auto-fill`) collapses empty
@@ -177,6 +196,14 @@ The activity chip's four states come from the pure `getDocQueryChipState` in `to
 "No results" is claimed only for a payload that actually **parsed**: a cancelled call leaves the
 literal `'Loading...'` / `'Executing...'` placeholder from `src/hooks/useChatResponse.ts` behind as
 its result, and labelling that as an empty search would be a lie.
+
+Expanding the chip no longer dumps raw JSON for a successful doc_query: `getDocQueryPanelContent`
+(same file, pure, tested in `test/tool-fallback-doc-query.test.ts`) yields a friendly panel — the
+model's search query (parsed defensively from the possibly-streaming args JSON by
+`parseDocQueryArgsQuery`) plus a "results appear as sources below" hint keyed on the parsed-`done`
+state. The raw tool-name/args/result path is preserved wherever the friendly panel would lie or be
+empty: non-doc_query tools, running/failed calls, unparseable results, and the doneEmpty +
+unreadable-args combination (which would otherwise render a blank panel).
 
 ## Localization
 
@@ -213,11 +240,12 @@ PostgreSQL is the only rating store. Do not mirror votes to Langfuse while the t
 - **Login redirects**: `src/app/noLogin/page.tsx` must pass an **absolute** chat URL as the PWA login `redirect_to`; a relative path makes the PWA redirect to its own domain and 404.
 - **Do not put user-facing English in the store.** `chatStore` maps the API's generic enrolment 403 to `null` so the notice component can render its localized default; substituting a readable English sentence in the store makes the translated fallback unreachable.
 - **Thread-row edit/delete need the row active first on touch** (`thread-list.tsx`): the buttons are `hidden` and only reveal via `group-hover`/`group-focus-within`, which touch has neither of, so a touch user must tap the row (making it active, which also sets `inline-flex`) before the edit/delete buttons appear. Accepted friction, not a bug — leave as is.
+- **Thread deletion is a two-step confirm on the same button** (`thread-list.tsx`): first click turns the trash icon into a destructive-styled "Delete?" pill (aria-label switches to the confirm wording), second click deletes. The confirm state reverts on a 4s timeout, Escape, pointer leaving the row, focus leaving the row, or starting a rename — the state machine is the pure `transitionDeleteConfirm` in `thread-list-state.ts` so vitest can pin it without a DOM. `data-cy="chat-thread-delete-button"` stays on the button in both states.
 - **Message edits must go through the edit composer's own send** — `messageRuntime.composer.send({ startRun: true })` in `thread.tsx:EditComposer`. The public `threadRuntime.append()` normalizes a `null` parentId to "last message in the current path" (vendor `toAppendMessage`), so submitting an edit through it turns a root-message edit into a brand-new turn instead of a sibling branch and the branch pager (`branch-picker.tsx`) never shows. `startRun: true` is required because the vendor's own change gate compares only composer text/attachments and cannot see the kept-original-attachment state this app tracks outside the composer; the app-side `canSubmit` is the real change gate.
 
 ## Testing
 
-Pure-logic vitest lives in `apps/chat/test/` (safe without services); `apps/chat/vitest.config.ts` mirrors the `@/*` alias from the app tsconfig — keep them in sync. `message-parts.test.ts` owns disclosure-state rules, while `persisted-assistant-content.test.ts` owns the provider-error redaction boundary. E2E coverage is Playwright-only (`playwright/tests/Y-chat.spec.ts` — no Cypress counterpart).
+Pure-logic vitest lives in `apps/chat/test/` (safe without services); `apps/chat/vitest.config.ts` mirrors the `@/*` alias from the app tsconfig — keep them in sync. The runner is `environment: 'node'` with no jsdom/testing-library, so component behavior is tested by extracting the decision logic into pure modules next to the component (`message-parts-state.ts`, `thread-list-state.ts`) — follow that pattern rather than adding a DOM environment. The whole suite shares **one fork** (`singleFork: true`), so a `vi.stubGlobal` is process-global: the config sets `unstubGlobals: true`, but that only restores before each _test_ — the next file's module **import** still sees whatever the previous file's last test left stubbed (a leaked `window`/`URL` once broke zustand-persist feature detection and `new URL` in unrelated files, order-dependently). Any file stubbing environment-shaped globals (`window`, `URL`, `document`) must also clean up itself with `afterEach(() => vi.unstubAllGlobals())`. `message-parts.test.ts` owns disclosure-state rules, while `persisted-assistant-content.test.ts` owns the provider-error redaction boundary. E2E coverage is Playwright-only (`playwright/tests/Y-chat.spec.ts` — no Cypress counterpart).
 
 The `Chatbot Source Citations` block in that spec exercises the citation pipeline against real persisted tool-call parts: card ordering and count, dedupe across two doc_query calls, a valid `[n]` rendering as a button while an out-of-range marker stays literal, click-scroll without navigation, all four activity-chip labels with their icon gating, the composer hint's standalone/embedded gate, and the message timestamp. Seed tool results in the raw MCP envelope shape (`result: { content: [{ type: 'text', text: '<json>' }], isError }`) — that is what production sends, and `convertApiMessageToMessage` hoists `isError` to the part. Put more than one tool-call part on a single message only when you mean to: `message-parts.tsx` wraps two or more adjacent ones in a collapsed group that a test must expand first.
 

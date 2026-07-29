@@ -606,3 +606,43 @@ simplify subagent on the exact commit → integrate accepted findings → re-ver
   verified replies and are resolved. Next: push the exact linear head, update
   the PR body, attach the ten captures when the authenticated browser is
   available, and watch the required CI matrix.
+- 2026-07-29 pre-merge design-improvement round (user-approved Tier 1+2 scope,
+  Opus subagents). Two design-review agents (code + live app) produced 18
+  findings; the approved scope landed as seven concerns implemented by six
+  parallel agents with disjoint file ownership: (1) chat-error data parts —
+  stream/send/truncation errors render as an `AlertCircle` callout via a
+  `{ type: 'data', name: 'chat-error' }` content part excluded from model
+  history, plus a localized truncation notice and typed attachment-read
+  errors; (2) symmetric U+2060 citation-chip joiner (leading + trailing) so
+  trailing punctuation cannot orphan-wrap, contract pinned in
+  `test/citation-chip.test.ts`; (3) neutral popover tooltips replacing
+  inverted-blue, with the citation tooltip's secondary text moved to
+  `text-muted-foreground` (cross-agent contrast fix); (4) friendly doc_query
+  disclosure panel (`getDocQueryPanelContent`) showing the parsed search
+  query + sources hint instead of raw JSON, raw path preserved for
+  running/failed/unparseable and blank-panel cases; (5) two-step
+  thread-delete confirm with the pure `transitionDeleteConfirm` state machine
+  (`thread-list-state.ts`), 4s/Escape/pointer-leave/blur reverts, Playwright
+  spec updated plus a new revert test; (6) source-card index badge matched to
+  the inline chip (bare digit, `bg-primary/10`); (7) chrome polish — settings
+  chevron direction, disclaimer `bg-muted` tokens, declined-screen
+  `hover:brightness-90` (AA fix over alpha-lightening red), embedded select
+  custom chevron, `noLogin` primary tokens. Consolidated Opus review verdict
+  SHIP-AFTER-FIXES; its single should-fix (R-01 blank-panel guard in
+  `getDocQueryPanelContent`) is applied with a covering test. Verifying the
+  full suite exposed a pre-existing order-dependent flake: the suite runs in
+  one fork (`singleFork`), and `image-attachment-adapter.test.ts` left
+  `window`/`URL` stubs alive across the file boundary, so whichever file the
+  scheduler imported next saw broken globals at module-evaluation time
+  (zustand persist built a storage wrapper over `window.localStorage ===
+  undefined` and `getDisplayUrl`'s `new URL` failed). Fixed twice over:
+  `unstubGlobals: true` in `vitest.config.ts` (restores stubs before every
+  test) plus an explicit `afterEach(vi.unstubAllGlobals)` in the stubbing
+  file (covers the next file's import, which happens before the config-level
+  unstub fires). Verification: chat vitest 207/207 across 24 files, stable
+  over eight shuffled-order runs; prettier and lint clean (six known
+  warnings); in-container typegen + tsc clean. Tier 3 items deferred to the
+  follow-up roadmap as W7; W6 parked decisions untouched. Wiki
+  `docs/chat-platform.md` updated (error data-parts, joiner contract,
+  friendly disclosure, delete confirm, tooltip/hover token rules, pure-module
+  test pattern).
