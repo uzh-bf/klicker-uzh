@@ -129,9 +129,36 @@
   switcher vs mockup dropdown; chatbot-identity header vs course-code sidebar
   header (chat is chatbot-scoped and has no course data today).
 
+## W7 — Deferred design polish (Tier 3 of the 2026-07-29 pre-merge round)
+
+Low-stakes items consciously deferred from the final design-improvement round
+(plan Progress, 2026-07-29 entry). None block merge; each is small and
+independent.
+
+1. Mode persistence product call: switching modes mid-thread only affects new
+   turns and the choice is not persisted until the next send — decide whether
+   that is the intended contract or the switcher should persist immediately.
+   Product decision first, then (maybe) a small store change.
+2. Disclaimer consequence box: the amber warning box inside the disclaimer
+   modal still uses raw amber utilities rather than a semantic token — fine
+   while it is the only amber surface; fold into a token if a second one
+   appears.
+3. Sidebar hover contrast: thread-row hover state is subtle against the
+   sidebar background; consider a slightly stronger hover tint after the
+   sidebar background token settles (W6 logo/header decisions may change it).
+4. Welcome-screen suggestion icons: starter suggestion cards are text-only;
+   evaluate small leading icons for scannability.
+5. Settings vs. credits ambiguity: the sidebar settings panel mixes model
+   info and credit balance; consider separating "about this chatbot" from
+   "your usage" once the embedded variant's needs are known.
+
+- Check: each item lands as its own small PR with before/after screenshots;
+  none require schema or API changes.
+
 ## Suggested order
 
 W0 now. W1 as soon as a dev key exists. W4.1/W4.2 and W5.1 anytime (small,
 independent). W3 before any feature relying on tracing. W2 is the next real
 feature epic and deserves its own plan file per the sliced workflow. W6 only
-after design input.
+after design input. W7 items are fillers — pick them up alongside any other
+chat work.
