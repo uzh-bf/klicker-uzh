@@ -50,13 +50,13 @@ Last reconciled: 2026-07-29.
 | `QA-003` | PASS | Participant creates a course thread and reply in place | Fresh real API/browser proof, screenshot `26` | Current Cypress rerun blocked by auth harness |
 | `QA-004` | PASS | Thread and reply upvotes toggle without counter drift | Fresh browser proof plus backend `30/30`, screenshot `26` | None |
 | `QA-005` | PASS | Evaluated practice and microlearning stacks expose contextual Q&A, while answering does not | Fresh practice and test-published microlearning browser proof, screenshots `29` to `35` | Production-like microlearning publication blocked by missing Hatchet workflow |
-| `QA-006` | PARTIAL | Lecturer overview groups and paginates course and stack threads | Fresh grouped overview screenshot `37`; historical pagination screenshots `06`, `07` | Fresh >20-thread pagination rerun |
+| `QA-006` | PASS | Lecturer overview groups and paginates course and stack threads | Fresh grouped overview screenshot `37`; current 20-to-21 pagination screenshots `42`, `43` | None |
 | `QA-007` | PASS | Lecturer generates external-block and course-wide embed links | Fresh generator and both embed modes, screenshots `21`, `40` | None |
 | `QA-008` | PASS | Anonymous embed posting requires a valid token and enabled course policy | Fresh fragment-token thread and reply flow, screenshots `22`, `23` | None |
 | `QA-009` | PASS | Tampered or stale embed scope/token fails closed without persistent side effects | Backend suite `30/30`; fallback/deep-link browser proof | Current Cypress history assertion blocked by auth harness |
 | `QA-010` | PASS | Anonymous rate limits reject repeated posting and bound audit writes | Backend suite plus fresh mobile browser rejection, screenshot `24` | Improve generic error copy |
 | `QA-011` | PASS | Non-participants and unevaluated stack participants cannot read/write protected scopes | Rollout Chromium baseline; current backend proof | Current-spec rerun |
-| `QA-012` | PENDING | Existing v1 live-feedback create/read/upvote flow remains unchanged | No fresh branch runtime run | Manual smoke |
+| `QA-012` | PASS | Existing v1 live-feedback create/read/upvote flow remains unchanged | Fresh student and lecturer browser flow plus exact counter checks, screenshots `44`, `45` | None |
 
 ## Runtime Commands
 
@@ -113,10 +113,11 @@ concurrency, scope behavior, pagination, and presentation metadata.
 ## Screenshot Inventory
 
 The canonical review surface is
-`project/_local/course-qa-screenshots/index.html`. It contains 21 fresh images:
+`project/_local/course-qa-screenshots/index.html`. It contains 26 fresh images:
 
-- Manage empty/grouped overview, settings, and external embed generation:
-  screenshots `19` to `21`, `37`, and `38`
+- Manage empty/full-width/grouped overview, settings, and external embed
+  generation plus current 20-to-21 pagination: screenshots `19` to `21`, `37`,
+  `38`, and `41` to `43`
 - anonymous external embed empty, thread/reply, and rate-limit states:
   screenshots `22` to `24`
 - course desktop rail, thread/reply/upvotes, and mobile disclosure:
@@ -127,12 +128,14 @@ The canonical review surface is
   screenshots `33` to `35`
 - fallback/deep-link route and course-wide read-only embed:
   screenshots `36` and `40`
+- legacy live-feedback student and lecturer states with both vote counters:
+  screenshots `44` and `45`
 
 Historical screenshots `06` and `07` remain the runtime evidence for lecturer
-pagination from 20 to all 27 threads, bringing the gallery to 23 images. The
+pagination from 20 to all 27 threads, bringing the gallery to 28 images. The
 gallery and images are intentionally ignored local artifacts.
 
-## Targeted Pending Runs
+## Targeted Runs
 
 Use `agent-browser` against the devrouter URLs. Save evidence under
 `project/_local/course-qa-screenshots/`. If participant or delegated login
@@ -141,13 +144,16 @@ proof.
 
 ### QA-012: Legacy live-feedback smoke
 
+Completed on 2026-07-29 against the seeded moderated live quiz:
+
 1. Start a seeded live quiz with the existing feedback channel enabled.
 2. As a participant, post one feedback item.
 3. As the lecturer, publish it and add a response.
-4. As the participant, confirm both are visible and upvote the feedback and
-   response once.
+4. Reopen the answered item, because the legacy response action resolves it and
+   resolved feedback cannot be upvoted; as the participant, upvote the feedback
+   and response once, then resolve it again.
 5. Confirm both counters increment once.
-6. Capture the participant result at `1440x900`.
+6. Capture the final participant and lecturer states at `1440x900`.
 
 ### Final current-branch rerun
 

@@ -36,9 +36,9 @@ gate is a product decision, not an unimplemented backend primitive.
   content, and `/qa` remains only a fallback/deep-link and embed host. This is
   the right primary navigation model.
 - The lecturer surface is integrated as a course tab with pagination rather
-  than a separate moderation application. Its remaining layout issue is the
-  unrelated Course Leaderboard beside the selected Q&A tab; the tab should use
-  the full content width or suppress the leaderboard.
+  than a separate moderation application. The selected Q&A tab now uses the full
+  course workspace and suppresses the unrelated Course Leaderboard; other tabs
+  retain their existing activity and gamification split.
 - Highest-value next improvement is the unresolved moderation choice. Minimum
   deletion is the recommended pilot scope; answered/pinned state should only be
   pulled forward if triage is required for the named pilot.
@@ -47,13 +47,22 @@ gate is a product decision, not an unimplemented backend primitive.
   copy, and denser lecturer filters. These are polish, not merge blockers.
 - Fresh real-browser evidence covers course, practice, test-published
   microlearning, Manage, external and course-wide embeds, desktop, and mobile in
-  `project/_local/course-qa-screenshots/index.html`. The backend suite passes
-  `30/30`.
-- Current Cypress runs are blocked before the first Q&A assertion because its
-  localhost-oriented login helper does not establish the devrouter session.
-  General Hatchet workflow execution is also unavailable, so microlearning was
-  published only in the disposable local database for browser proof. Neither
-  limitation should be represented as production-like worker or Cypress proof.
+  `project/_local/course-qa-screenshots/index.html`, including the full-width
+  lecturer view in screenshot `41` and current 20-to-21 pagination in screenshots
+  `42` and `43`. The backend suite passes `30/30`.
+- Legacy live-feedback compatibility now has fresh current-branch browser
+  evidence in screenshots `44` and `45`: participant posting, lecturer
+  publication and response, participant visibility, and both vote counters
+  completed through the existing UI. The response action still resolves the
+  feedback and disables its question-level upvote, so the counter check reopens
+  the item before voting and resolves it again afterward.
+- The attempted Cypress course workflow is blocked before the first Q&A
+  assertion because its localhost-oriented login helper does not establish the
+  devrouter session. The other focused workflows share that setup and were not
+  rerun. General Hatchet workflow execution is also unavailable, so
+  microlearning was published only in the disposable local database for browser
+  proof. Neither limitation should be represented as production-like worker or
+  Cypress proof.
 
 ---
 

@@ -443,13 +443,14 @@ function CourseOverviewPage() {
           </Tabs>
         )}
 
-        {data?.course?.isGamificationEnabled && (
-          <CourseGamificationInfos
-            course={course}
-            tabValue={gamificationTabValue}
-            setTabValue={setGamificationTabValue}
-          />
-        )}
+        {data?.course?.isGamificationEnabled &&
+          activeTabValue !== 'discussions' && (
+            <CourseGamificationInfos
+              course={course}
+              tabValue={gamificationTabValue}
+              setTabValue={setGamificationTabValue}
+            />
+          )}
       </div>
     </Layout>
   )
