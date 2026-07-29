@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Date | 2026-07-28 |
-| Status | IN PROGRESS — S0, S2, and S3 complete locally; S1 verification and review in progress |
+| Status | IN PROGRESS — S0-S4 complete locally; S5 release automation prepared, evidence gates remain |
 | PR | [#5109](https://github.com/uzh-bf/klicker-uzh/pull/5109) |
 | Remote branch | `codex/manage-assistant-mcp-v3-ai` → `v3-ai` |
 | Local worktree | `.claude/worktrees/finalize-v3-ai-branch-0fa103` |
@@ -889,6 +889,34 @@ approved.
   the production Chat build passes with `NODE_ENV=production`, and the
   repository-wide `check:all` plus 23-task production build pass. The S1/S4
   checkboxes remain subject to the amended exact-head reviewer sign-off.
+- 2026-07-29: Exact-head re-review of `91797feb7` is clean across independent
+  standards, spec, security/authentication, simplification, and maintainability
+  lenses. Reviewers verified the actual custom MCP fetch signal composition,
+  strict allowlist reconstruction of browser messages and parts, authentication
+  before body consumption, generic public errors, and cleanup on every exit.
+  The only residual operational limitation is documented rather than hidden:
+  the admission guard and rate limiter are per process, so multi-replica
+  fairness/distribution must be revisited before scaling.
+- 2026-07-29: S4 was rerun against exact code head `91797feb7`. Lecturer MCP
+  tests passed 40/40, happy smoke 9/9, and negative/authZ smoke 13/13 against
+  the namespaced issuer. Offline eval passed 91 tests with 53 live cases
+  deselected; Ruff lint and format passed. Both staging and production Helm
+  lint passed. Docs formatting passed; the wiki validator reproduced only the
+  two inherited `F002` solution-page errors and 24 inherited warnings. The
+  combined routed Chromium suite passed 23/23 after invalidating a generated
+  Next ISR 404 left by the prior production build; PostgreSQL, GraphQL, cookie,
+  and route probes established that this was stale generated state rather than
+  a product or auth failure. The temporary local database tunnel was stopped.
+- 2026-07-29: S5.2 release automation is implemented behind
+  `PLAYWRIGHT_RELEASE_MATRIX=true`; the default Playwright project list remains
+  Chromium-only. The host has matching Firefox and WebKit downloads, but the
+  cached WebKit executable cannot start on the current macOS because the system
+  WebKit framework lacks `_OBJC_CLASS_$__WKBrowserContext`. The official
+  Playwright 1.58.2 container is not cached locally, and pulling/running it is a
+  separately approved resource-consuming release check. No Firefox/WebKit
+  production-build pass is claimed. S5.1 is also blocked because no approved
+  judge model/key/base URL is configured and no paid-run authority exists;
+  S5.3 remains a real VoiceOver human gate, not a simulator claim.
 - 2026-07-28: S2 implementation completed. The PWA course-chat drawer now
   portals to `document.body`, exposes the complete launcher/dialog contract,
   traps focus, makes `#__next` inert and assistive-technology-hidden while
