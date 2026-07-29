@@ -63,7 +63,7 @@ function QrPrintPage() {
               data-cy="qr-print-decoy-count"
               onChange={(event) => {
                 const value = Number(event.target.value)
-                setDecoyCount(Math.max(0, Math.min(20, value || 0)))
+                setDecoyCount(Math.max(0, Math.min(20, Math.trunc(value || 0))))
               }}
             />
           </label>
