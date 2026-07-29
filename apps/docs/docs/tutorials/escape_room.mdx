@@ -1,0 +1,64 @@
+---
+title: Escape Room
+hide_title: true
+---
+
+import CatalystTitle from '../../src/components/CatalystTitle'
+
+<CatalystTitle title="Escape Room" />
+
+## What is an Escape Room?
+
+The Escape Room mode turns a Practice Quiz or Microlearning into a timed, game-like challenge. Instead of answering questions at their own pace, participants get exactly **one attempt** to clear all element stacks in sequence before a countdown runs out. Each stack acts as a "stage" that must be solved correctly before the next one is revealed, and optional hints can be unlocked at the cost of a time penalty.
+
+Escape Rooms are well suited for engaging repetition sessions, as a course kick-off or wrap-up activity, or as a self-contained challenge that groups of students can race through individually.
+
+The following rules apply to every Escape Room:
+
+- **One attempt:** Each participant can start the Escape Room exactly once. Only you as the lecturer can reset an attempt to grant a fresh start.
+- **Time limit:** A countdown starts when the participant begins their attempt. When the time runs out, the attempt expires and no further answers are accepted.
+- **Sequential stages:** The element stacks are always shown in the order you defined. A stage only becomes visible once all previous stages have been answered correctly — the content of later stages is never transmitted to the participant beforehand.
+- **Retry with lockout:** Wrong answers do not end the attempt. The participant stays on the current stage and can retry, but each wrong answer triggers a short lockout of a few seconds before the next submission is accepted.
+- **Hints with time penalty:** If you authored a hint for an element, participants can choose to reveal it. Revealing a hint deducts the configured time penalty from their remaining time.
+
+## How can I create an Escape Room?
+
+Escape Rooms are not a separate activity type — they are a **mode** that you enable while creating or editing a Practice Quiz or Microlearning. If you are not yet familiar with the creation of these activities, please first review the tutorials on the [Practice Quiz](/tutorials/practice_quiz) and the [Microlearning](/tutorials/microlearning).
+
+**Enable the mode and adjust the settings:**
+
+1. In the **settings step** of the activity wizard (where you also select the course), activate the **Escape Room Mode** checkbox.
+2. **Time Limit (minutes):** Define how much time participants have to clear all stages once they start their attempt.
+3. **Hint Penalty (seconds):** Define how much time is deducted from the remaining countdown whenever a participant reveals a hint. Set the penalty to zero if hints should be free.
+4. **Intro Story (optional):** Write a short narrative that is shown on the start screen before the participant begins their attempt and the timer starts. Markdown formatting is supported. A thematic framing ("The vault is sealed...") goes a long way towards making the activity engaging.
+5. Note that the **order** of an Escape Room is always **sequential** — the corresponding selector is locked while the mode is active, since the stage-by-stage progression requires a fixed order.
+
+**Author hints for your questions:**
+
+6. In the final step of the wizard, after adding your questions to the element stacks, an additional **hint input** appears below each element. Hints are optional: only elements with an authored hint will offer the "Reveal hint" button to participants. The hint text is never transmitted to participants until they explicitly reveal it and accept the time penalty.
+
+Design your stages with the sequential progression in mind: each stack should be solvable on its own, and the difficulty should ideally increase towards the final stage. All element types supported by the underlying activity can be used.
+
+QR Scan questions are especially useful for physical stations. Create the QR element in the library, print its station sheet from the element editor, and add it to an Escape Room stack. Participants can scan the printed code with their camera or enter the code manually. QR Scan elements cannot be used in an ordinary Practice Quiz or Microlearning.
+
+## How can I follow the progress of my participants?
+
+As soon as the activity is published and participants start their attempts, the **activity evaluation** offers an additional **Escape Room tab**. Open the evaluation from the actions dropdown of the activity and select the Escape Room entry in the navigation.
+
+The dashboard shows a live overview of every attempt, updating automatically while the tab is open:
+
+- **Status:** whether the attempt is in progress, completed, or expired, including an indicator when a participant is currently locked out after a wrong answer.
+- **Progress:** how many stages the participant has cleared so far.
+- **Hints and penalty:** how many hints were revealed and the total time penalty incurred.
+- **Time:** the time spent on the attempt.
+
+## How can I reset an attempt?
+
+Since every participant only has a single attempt, the dashboard also allows you to **reset** individual attempts — for example after a technical issue, or if you want to allow a second try. Use the reset action in the corresponding row and confirm it. The attempt is deleted and the participant can start fresh, beginning again from the first stage with the full time budget. Participants cannot reset their own attempts; the completion and expiry screens ask them to contact you instead.
+
+## What should I keep in mind?
+
+- Escape Rooms are supported for **Practice Quizzes** and **Microlearnings**.
+- Published Escape Rooms follow the same editing restrictions as their underlying activity type: content can only be modified in the draft (or scheduled) state.
+- Participants must be **logged in** to play an Escape Room: attempts are tied to their participant account, and anonymous visitors cannot start an attempt or access locked stages.
+- Time penalties from hints and lockouts after wrong answers are enforced on the server, so they cannot be bypassed by reloading the page.
