@@ -1567,6 +1567,140 @@ describe('Unit tests covering the creation of derived permissions for elements',
     return { element, answerCollection }
   }
 
+  it('converges answer collection rows across direct, group, element, and template sources', async () => {
+    const { element, answerCollection } =
+      await createElementWithAnswerCollection(prisma)
+    const userGroup = await prisma.userGroup.create({
+      data: {
+        name: 'Answer Collection Group',
+        ownerId: userThree.id,
+        members: { connect: { id: userTwo.id } },
+      },
+    })
+    const groupPermission = await prisma.permission.create({
+      data: {
+        userGroupId: userGroup.id,
+        answerCollectionId: answerCollection.id,
+        permissionLevel: PermissionLevel.WRITE,
+      },
+    })
+    await prisma.permission.create({
+      data: {
+        userId: userTwo.id,
+        answerCollectionId: answerCollection.id,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+    const elementPermission = await prisma.permission.create({
+      data: {
+        userId: userFour.id,
+        elementId: element.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+    const liveQuiz = await prisma.liveQuiz.create({
+      data: {
+        name: 'Template Activity',
+        displayName: 'Template Activity',
+        ownerId: userOne.id,
+      },
+    })
+    await prisma.activityTemplate.create({
+      data: {
+        description: 'Template',
+        instructions: 'Template',
+        liveQuizId: liveQuiz.id,
+        answerCollections: { connect: { id: answerCollection.id } },
+      },
+    })
+    const templatePermission = await prisma.permission.create({
+      data: {
+        userId: userFive.id,
+        liveQuizId: liveQuiz.id,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+
+    await recomputeDerivedPermissions({ elementId: element.id }, prisma)
+    await recomputeDerivedPermissions({ liveQuizId: liveQuiz.id }, prisma)
+    await recomputeDerivedPermissions(
+      { answerCollectionId: answerCollection.id },
+      prisma
+    )
+
+    const getPermissionRows = async () => {
+      const rows = await prisma.derivedPermission.findMany({
+        where: { answerCollectionId: answerCollection.id },
+        select: {
+          userId: true,
+          permissionLevel: true,
+          directPermissionId: true,
+          derived: true,
+        },
+      })
+
+      return Object.fromEntries(rows.map((row) => [row.userId, row]))
+    }
+
+    expect(await getPermissionRows()).toEqual({
+      [userOne.id]: {
+        userId: userOne.id,
+        permissionLevel: PermissionLevel.OWNER,
+        directPermissionId: null,
+        derived: false,
+      },
+      [userTwo.id]: {
+        userId: userTwo.id,
+        permissionLevel: PermissionLevel.WRITE,
+        directPermissionId: groupPermission.id,
+        derived: false,
+      },
+      [userThree.id]: {
+        userId: userThree.id,
+        permissionLevel: PermissionLevel.WRITE,
+        directPermissionId: groupPermission.id,
+        derived: false,
+      },
+      [userFour.id]: {
+        userId: userFour.id,
+        permissionLevel: PermissionLevel.READ,
+        directPermissionId: elementPermission.id,
+        derived: true,
+      },
+      [userFive.id]: {
+        userId: userFive.id,
+        permissionLevel: PermissionLevel.READ,
+        directPermissionId: templatePermission.id,
+        derived: true,
+      },
+    })
+
+    await prisma.permission.update({
+      where: { id: groupPermission.id },
+      data: { permissionLevel: PermissionLevel.ADMIN },
+    })
+    await recomputeDerivedPermissions(
+      { answerCollectionId: answerCollection.id, userId: userTwo.id },
+      prisma
+    )
+
+    const userScopedRows = await getPermissionRows()
+    expect(userScopedRows[userTwo.id]?.permissionLevel).toBe(
+      PermissionLevel.ADMIN
+    )
+    expect(userScopedRows[userThree.id]?.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+
+    await recomputeDerivedPermissions(
+      { answerCollectionId: answerCollection.id },
+      prisma
+    )
+    expect((await getPermissionRows())[userThree.id]?.permissionLevel).toBe(
+      PermissionLevel.ADMIN
+    )
+  })
+
   it('Verify that all users with permission on element automatically get derived access on linked answer collections (derived permissions always READ)', async () => {
     const { element, answerCollection } =
       await createElementWithAnswerCollection(prisma)

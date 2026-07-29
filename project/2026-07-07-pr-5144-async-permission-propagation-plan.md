@@ -227,6 +227,7 @@ Gate A after Slice 3:
 - 2026-07-29 (Slice 3 start): maintainer approved the proposed Gate-A SLO: p95 mutation latency ≤ 2.0 s, p95 transaction duration ≤ 1.5 s, and a 5.0 s hard ceiling for every supported sharing mutation. Current `v3`, including the Prisma 7 upgrade, was merged before raw-SQL implementation. Slice 3 is active. The first sub-step is the isolated catalog-collection module, used to prove the tagged set-based delete/upsert pattern and its permanent expected-row coverage before applying it to hierarchical modules.
 - 2026-07-29 (Slice 3 catalog implementation): catalog-collection recomputation now expands direct users plus group owners, members, and admins in one tagged SQL statement, ranks permission levels explicitly, deletes stale scoped rows, and upserts on the exact catalog/user conflict target. Permanent expected-row coverage proves all group roles, propagation tie-breaking, user-scoped isolation, and object-wide convergence; the focused suite passes 11/11 tests against a disposable database. Util and GraphQL typechecks pass. The `v3` Prisma 7 merge also required declaring the benchmark's existing direct `@prisma/adapter-pg` import in the GraphQL package; the lockfile change is limited to that importer.
 - 2026-07-29 (Slice 3 catalog review): the simplification review recommended no changes. Correctness review identified that a dual-principal `Permission` row could be expanded to its group by the SQL while the previous reducer's `if`/`else if` honored only its direct user. Migrated databases enforce `UserOrGroupRequired`, but Prisma `db push` does not recreate that migration-only XOR constraint. The SQL now also requires `userId IS NULL` on every group-expansion branch, preserving fail-closed prior behavior across both construction paths. Post-review util typecheck, build, and all 11 catalog tests pass.
+- 2026-07-29 (Slice 3 answer-collection implementation): user-scoped and object-wide answer-collection recomputation now share one tagged set-based statement. It expands direct and group grants, preserves owner/direct/linked-element/linked-template precedence, retains inherited READ access after soft deletion, preserves the activity-template relation priority, deletes stale scoped rows, and upserts on the exact answer-collection/user conflict target. A permanent exact-row oracle covers direct, group, element, and template sources plus user-scoped isolation and object-wide convergence. Focused answer-collection, template, sharing, soft-deletion, and revocation coverage passes 70/70 tests; util and GraphQL typechecks pass, and the util build passes after regenerating its ignored incremental build cache.
 
 ## Goal Prompt Requirements (for handoff)
 
@@ -234,6 +235,6 @@ Gate A after Slice 3:
 
 ## Next Steps
 
-- Commit the accepted catalog review adjustment.
-- Continue Slice 3 with the answer-collection module, then one entity module at a time with course last, and run the Gate-A benchmark against the approved SLO.
+- Commit and independently review the answer-collection sub-step.
+- Continue Slice 3 one entity module at a time with course last, then run the Gate-A benchmark against the approved SLO.
 - Separate task (not this branch): response-api standard-mode auth audit (R4.4).
