@@ -1,5 +1,9 @@
 # Log
 
+## 2026-07-29
+
+- **Update**: [domain-model](./domain-model.md) and [data-and-migrations](./data-and-migrations.md) document the independent course and participant learning-analytics controls, timestamped eligibility boundary, append-only choice history, and shared-schema synchronization requirement.
+
 ## 2026-07-23
 
 - **Update**: [async-and-workers](./async-and-workers.md) documents the dedicated native Python learning-analytics worker, triggers, health endpoints, and SQL safety boundary. [testing](./testing.md) documents the deterministic development-only analytics interaction fixture.

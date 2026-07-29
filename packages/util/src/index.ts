@@ -24,3 +24,6 @@ export * from './auth.js'
 
 // export everything from the crypto module
 export * from './crypto.js'
+
+// export everything from the learning analytics module
+export * from './learningAnalytics.js'

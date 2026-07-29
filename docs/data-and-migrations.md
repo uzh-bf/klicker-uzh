@@ -33,6 +33,8 @@ The schema is a **folder** (`prisma.config.ts` → `schema: 'src/prisma/schema'`
 
 The Analytics mirror under `apps/analytics/prisma/schema/` excludes the JavaScript generator and keeps an Analytics-owned datasource so the copied model files remain readable as a complete schema. It does not generate a Python Prisma client. `apps/analytics/src/models.py` is the curated runtime model surface. `sqlacodegen` writes an ignored `src/models.generated.py` reference from the migrated live development database; it must not overwrite the curated module.
 
+Learning-analytics eligibility state belongs to the shared schema: the course enable flag is in `course.prisma`, while the current participation choice and append-only choice history are in `participant.prisma`. Run the full migrate → sync → build ritual after changing these fields so the TypeScript client and Analytics' Python schema expose the same eligibility boundary.
+
 ## Migrations
 
 - Prisma migrations live in `packages/prisma/src/prisma/schema/migrations/` (~170 since 2022). Migrations may contain data backfills (SQL `ROW_NUMBER()` etc.), not just DDL.
