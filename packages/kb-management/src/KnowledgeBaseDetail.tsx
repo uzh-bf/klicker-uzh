@@ -8,6 +8,7 @@ import KnowledgeBaseChatbotBindings from './components/KnowledgeBaseChatbotBindi
 import KnowledgeBaseFileDropzone from './components/KnowledgeBaseFileDropzone'
 import KnowledgeBaseResourceList from './components/KnowledgeBaseResourceList'
 import KnowledgeBaseUrlForm from './components/KnowledgeBaseUrlForm'
+import { getGraphQLErrorCode } from './graphqlError'
 
 function KnowledgeBaseDetail({ kbId }: { kbId: string }) {
   const t = useTranslations()
@@ -52,7 +53,11 @@ function KnowledgeBaseDetail({ kbId }: { kbId: string }) {
       <div className="mx-auto w-full max-w-5xl">
         <UserNotification
           type="error"
-          message={t('kb.notFound')}
+          message={
+            getGraphQLErrorCode(error) === 'KB_PREVIEW_ACCESS_REQUIRED'
+              ? t('kb.previewAccessError')
+              : t('kb.notFound')
+          }
           data={{ cy: 'knowledge-base-detail-error' }}
         />
       </div>

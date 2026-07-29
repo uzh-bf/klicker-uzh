@@ -16,6 +16,7 @@ import Link from 'next/link'
 import React, { useDeferredValue, useState } from 'react'
 import CreateKnowledgeBaseModal from './components/CreateKnowledgeBaseModal'
 import DeleteKnowledgeBaseModal from './components/DeleteKnowledgeBaseModal'
+import { getGraphQLErrorCode } from './graphqlError'
 
 const PAGE_SIZE = 20
 
@@ -105,7 +106,11 @@ function KnowledgeBaseManager() {
       ) : error ? (
         <UserNotification
           type="error"
-          message={t('kb.loadError')}
+          message={
+            getGraphQLErrorCode(error) === 'KB_PREVIEW_ACCESS_REQUIRED'
+              ? t('kb.previewAccessError')
+              : t('kb.loadError')
+          }
           data={{ cy: 'knowledge-base-error' }}
           className={{ root: 'mt-6' }}
         />

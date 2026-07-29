@@ -2118,26 +2118,33 @@ describe('Integration tests for knowledge base CRUD', () => {
 
     vi.stubEnv('KB_INGESTION_DISABLED', 'true')
     try {
-      await expect(
-        createKbUrlResource(
-          { kbId: kb.id, title: 'Blocked', url: 'https://example.com/blocked' },
-          userOneCtx
-        )
-      ).rejects.toMatchObject({ extensions: { code: 'KB_INGESTION_DISABLED' } })
-      await expect(
-        requestKbFileUpload(
-          {
-            kbId: kb.id,
-            fileName: 'blocked.pdf',
-            contentType: 'application/pdf',
-            sizeBytes: 1024,
-          },
-          userOneCtx
-        )
-      ).rejects.toMatchObject({ extensions: { code: 'KB_INGESTION_DISABLED' } })
-      await expect(
-        ingestKbResource({ id: existingResource.id }, userOneCtx)
-      ).rejects.toMatchObject({ extensions: { code: 'KB_INGESTION_DISABLED' } })
+      const blockedCalls: Array<() => Promise<unknown>> = [
+        () =>
+          createKbUrlResource(
+            {
+              kbId: kb.id,
+              title: 'Blocked',
+              url: 'https://example.com/blocked',
+            },
+            userOneCtx
+          ),
+        () =>
+          requestKbFileUpload(
+            {
+              kbId: kb.id,
+              fileName: 'blocked.pdf',
+              contentType: 'application/pdf',
+              sizeBytes: 1024,
+            },
+            userOneCtx
+          ),
+        () => ingestKbResource({ id: existingResource.id }, userOneCtx),
+      ]
+      for (const callBlockedEntryPoint of blockedCalls) {
+        await expect(callBlockedEntryPoint()).rejects.toMatchObject({
+          extensions: { code: 'KB_INGESTION_DISABLED' },
+        })
+      }
 
       // reads and deletion of already-registered content stay live
       await expect(getKb({ id: kb.id }, userOneCtx)).resolves.toMatchObject({
