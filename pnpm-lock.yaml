@@ -1315,6 +1315,7 @@ importers:
       '@types/node':
         specifier: ^24.10.1
         version: 24.12.4
+<<<<<<< HEAD
       cross-env:
         specifier: ~7.0.3
         version: 7.0.3
@@ -1324,6 +1325,12 @@ importers:
       npm-run-all:
         specifier: ~4.1.5
         version: 4.1.5
+||||||| parent of 9cd73014c (fix(hatchet): keep development workers alive)
+=======
+      nodemon:
+        specifier: ~3.1.14
+        version: 3.1.14
+>>>>>>> 9cd73014c (fix(hatchet): keep development workers alive)
       rollup:
         specifier: ~4.34.9
         version: 4.34.9
@@ -1367,6 +1374,7 @@ importers:
       '@types/node':
         specifier: ^24.10.1
         version: 24.12.4
+<<<<<<< HEAD
       cross-env:
         specifier: ~7.0.3
         version: 7.0.3
@@ -1376,6 +1384,12 @@ importers:
       npm-run-all:
         specifier: ~4.1.5
         version: 4.1.5
+||||||| parent of 9cd73014c (fix(hatchet): keep development workers alive)
+=======
+      nodemon:
+        specifier: ~3.1.14
+        version: 3.1.14
+>>>>>>> 9cd73014c (fix(hatchet): keep development workers alive)
       rollup:
         specifier: ~4.34.9
         version: 4.34.9

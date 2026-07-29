@@ -360,7 +360,6 @@ export async function testInitialization(
         return { success }
       },
     }),
-<<<<<<< HEAD
     processCourseDuplication: hatchet.task({
       name: 'process-course-duplication',
       fn: vi.fn(async ({ jobId }: { jobId: string }, executionCtx) => {
