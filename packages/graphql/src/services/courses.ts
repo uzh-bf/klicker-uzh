@@ -19,6 +19,7 @@ import {
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat.js'
+import generatePassword from 'generate-password'
 import { GraphQLError } from 'graphql'
 import { random } from 'mathjs'
 import { prop, sortBy } from 'remeda'
@@ -29,6 +30,10 @@ import {
   calculateAssessmentCourseScores,
   getInstanceAvailablePoints,
 } from './assessmentScores.js'
+import {
+  assertLiveQuizResponseCollectionCompatibility,
+  resolveLiveQuizResponseCollectionMode,
+} from './liveQuizResponseCollection.js'
 import { checkAccess } from './sharing.js'
 
 // custom date parser
@@ -2713,8 +2718,6 @@ export async function updateCourseSettings(
       liveQuizzes: {
         where: {
           isDeleted: false,
-          responseCollectionMode:
-            DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
           status: {
             in: [
               DB.PublicationStatus.DRAFT,
@@ -2723,8 +2726,12 @@ export async function updateCourseSettings(
             ],
           },
         },
-        select: { id: true },
-        take: 1,
+        select: {
+          id: true,
+          pinCode: true,
+          responseCollectionMode: true,
+          status: true,
+        },
       },
       _count: {
         select: {
@@ -2762,128 +2769,193 @@ export async function updateCourseSettings(
       ? (isAssessmentEnabled ?? undefined)
       : undefined
 
+  const correlatedLiveQuizzes = course.liveQuizzes.filter(
+    (liveQuiz) =>
+      liveQuiz.responseCollectionMode ===
+      DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+  )
+
   if (
-    newGamificationSetting &&
-    !newAssessmentSetting &&
-    course.liveQuizzes.length > 0
+    newAssessmentSetting === true &&
+    correlatedLiveQuizzes.some(
+      (liveQuiz) => liveQuiz.status === DB.PublicationStatus.PUBLISHED
+    )
   ) {
     throw new GraphQLError(
-      'Correlated response exports cannot be enabled for gamified live quizzes',
+      'A running correlated live quiz must end before assessment mode can be enabled',
       {
         extensions: {
-          code: 'LIVE_QUIZ_CORRELATED_GAMIFICATION_CONFLICT',
+          code: 'LIVE_QUIZ_CORRELATED_ASSESSMENT_CONFLICT',
         },
       }
     )
   }
 
-  const updatedCourse = await ctx.prisma.course.update({
-    where: { id },
-    data: {
-      name: name ?? undefined,
-      displayName: displayName ?? undefined,
-      description,
-      language: language ?? DB.Locale.en,
-      color: color ?? undefined,
-      startDate: currentStartDatePast || !startDate ? undefined : startDate,
-      endDate: endDate ?? undefined,
-      // only enable group creation or disable it if there are no groups
-      isGroupCreationEnabled:
-        isGroupCreationEnabled || !containsGroups
-          ? (isGroupCreationEnabled ?? false)
-          : undefined,
-      groupDeadlineDate: groupDeadlineDate ?? undefined,
-      notificationEmail: notificationEmail ?? undefined,
-      // only enable gamification or disable it if there are no activities or groups
-      isGamificationEnabled: newGamificationSetting,
-      // set assessment mode - if enabling, remove PIN
-      isAssessmentEnabled: isAssessmentEnabled ?? undefined,
-      pinCode: isAssessmentEnabled ? null : undefined,
-      // reset the random assignment tracking if the group deadline is extended
-      randomAssignmentFinalized: !newGroupDeadlinePast ? false : undefined,
-      // if group creation is disabled and there are no groups, remove all participants from the random assignment pool
-      groupAssignmentPoolEntries:
-        !isGroupCreationEnabled && !containsGroups
-          ? { deleteMany: {} }
-          : undefined,
-      // if the gamification or assessment setting was changed, update all activities assigned to the course
-      ...(newGamificationSetting || newAssessmentSetting
-        ? {
-            liveQuizzes: {
-              updateMany: {
-                where: {
-                  isDeleted: false,
-                  status: {
-                    in: [
-                      DB.PublicationStatus.DRAFT,
-                      DB.PublicationStatus.SCHEDULED,
-                      DB.PublicationStatus.PUBLISHED,
-                    ],
+  if (correlatedLiveQuizzes.length > 0) {
+    assertLiveQuizResponseCollectionCompatibility({
+      isGamificationEnabled:
+        newGamificationSetting ?? course.isGamificationEnabled,
+      responseCollectionMode: resolveLiveQuizResponseCollectionMode({
+        isAssessmentEnabled: newAssessmentSetting ?? course.isAssessmentEnabled,
+        requestedMode: DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+      }),
+    })
+  }
+
+  const updatedCourse = await ctx.prisma.$transaction(async (prisma) => {
+    const updated = await prisma.course.update({
+      where: { id },
+      data: {
+        name: name ?? undefined,
+        displayName: displayName ?? undefined,
+        description,
+        language: language ?? DB.Locale.en,
+        color: color ?? undefined,
+        startDate: currentStartDatePast || !startDate ? undefined : startDate,
+        endDate: endDate ?? undefined,
+        // only enable group creation or disable it if there are no groups
+        isGroupCreationEnabled:
+          isGroupCreationEnabled || !containsGroups
+            ? (isGroupCreationEnabled ?? false)
+            : undefined,
+        groupDeadlineDate: groupDeadlineDate ?? undefined,
+        notificationEmail: notificationEmail ?? undefined,
+        // only enable gamification or disable it if there are no activities or groups
+        isGamificationEnabled: newGamificationSetting,
+        // set assessment mode - if enabling, remove PIN
+        isAssessmentEnabled: isAssessmentEnabled ?? undefined,
+        pinCode: isAssessmentEnabled ? null : undefined,
+        // reset the random assignment tracking if the group deadline is extended
+        randomAssignmentFinalized: !newGroupDeadlinePast ? false : undefined,
+        // if group creation is disabled and there are no groups, remove all participants from the random assignment pool
+        groupAssignmentPoolEntries:
+          !isGroupCreationEnabled && !containsGroups
+            ? { deleteMany: {} }
+            : undefined,
+        // if the gamification or assessment setting was changed, update all activities assigned to the course
+        ...(typeof newGamificationSetting !== 'undefined' ||
+        typeof newAssessmentSetting !== 'undefined'
+          ? {
+              liveQuizzes:
+                newAssessmentSetting === true
+                  ? undefined
+                  : {
+                      updateMany: {
+                        where: {
+                          isDeleted: false,
+                          status: {
+                            in: [
+                              DB.PublicationStatus.DRAFT,
+                              DB.PublicationStatus.SCHEDULED,
+                              DB.PublicationStatus.PUBLISHED,
+                            ],
+                          },
+                        },
+                        data: {
+                          isGamificationEnabled: newGamificationSetting,
+                          isAssessmentEnabled: newAssessmentSetting,
+                        },
+                      },
+                    },
+              practiceQuizzes: {
+                updateMany: {
+                  where: {
+                    isDeleted: false,
+                    status: {
+                      in: [
+                        DB.PublicationStatus.DRAFT,
+                        DB.PublicationStatus.SCHEDULED,
+                        DB.PublicationStatus.PUBLISHED,
+                      ],
+                    },
+                  },
+                  data: {
+                    isGamificationEnabled: newGamificationSetting,
+                    isAssessmentEnabled: newAssessmentSetting,
                   },
                 },
-                data: {
-                  isGamificationEnabled: newGamificationSetting,
-                  isAssessmentEnabled: newAssessmentSetting,
-                },
               },
-            },
-            practiceQuizzes: {
-              updateMany: {
-                where: {
-                  isDeleted: false,
-                  status: {
-                    in: [
-                      DB.PublicationStatus.DRAFT,
-                      DB.PublicationStatus.SCHEDULED,
-                      DB.PublicationStatus.PUBLISHED,
-                    ],
+              microLearnings: {
+                updateMany: {
+                  where: {
+                    isDeleted: false,
+                    status: {
+                      in: [
+                        DB.PublicationStatus.DRAFT,
+                        DB.PublicationStatus.SCHEDULED,
+                        DB.PublicationStatus.PUBLISHED,
+                      ],
+                    },
+                  },
+                  data: {
+                    isGamificationEnabled: newGamificationSetting,
+                    isAssessmentEnabled: newAssessmentSetting,
                   },
                 },
-                data: {
-                  isGamificationEnabled: newGamificationSetting,
-                  isAssessmentEnabled: newAssessmentSetting,
-                },
               },
-            },
-            microLearnings: {
-              updateMany: {
-                where: {
-                  isDeleted: false,
-                  status: {
-                    in: [
-                      DB.PublicationStatus.DRAFT,
-                      DB.PublicationStatus.SCHEDULED,
-                      DB.PublicationStatus.PUBLISHED,
-                    ],
+              groupActivities: {
+                updateMany: {
+                  where: {
+                    isDeleted: false,
+                    status: {
+                      in: [
+                        DB.PublicationStatus.DRAFT,
+                        DB.PublicationStatus.SCHEDULED,
+                        DB.PublicationStatus.PUBLISHED,
+                      ],
+                    },
+                  },
+                  data: {
+                    isGamificationEnabled: newGamificationSetting,
+                    isAssessmentEnabled: newAssessmentSetting,
                   },
                 },
-                data: {
-                  isGamificationEnabled: newGamificationSetting,
-                  isAssessmentEnabled: newAssessmentSetting,
-                },
               },
-            },
-            groupActivities: {
-              updateMany: {
-                where: {
-                  isDeleted: false,
-                  status: {
-                    in: [
-                      DB.PublicationStatus.DRAFT,
-                      DB.PublicationStatus.SCHEDULED,
-                      DB.PublicationStatus.PUBLISHED,
-                    ],
-                  },
-                },
-                data: {
-                  isGamificationEnabled: newGamificationSetting,
-                  isAssessmentEnabled: newAssessmentSetting,
-                },
-              },
-            },
+            }
+          : {}),
+      },
+    })
+
+    if (newAssessmentSetting === true) {
+      for (const liveQuiz of course.liveQuizzes) {
+        let pinCode = liveQuiz.pinCode
+        if (!pinCode) {
+          for (let attempt = 0; attempt < 10; attempt++) {
+            const candidate = generatePassword.generate({
+              uppercase: true,
+              lowercase: false,
+              numbers: true,
+              symbols: false,
+              length: 6,
+            })
+            const existing = await prisma.liveQuiz.findUnique({
+              where: { pinCode: candidate },
+              select: { id: true },
+            })
+            if (!existing) {
+              pinCode = candidate
+              break
+            }
           }
-        : {}),
-    },
+        }
+        if (!pinCode) {
+          throw new Error('Could not find available pin code for live quiz')
+        }
+
+        await prisma.liveQuiz.update({
+          where: { id: liveQuiz.id },
+          data: {
+            isGamificationEnabled: newGamificationSetting,
+            isAssessmentEnabled: true,
+            responseCollectionMode:
+              DB.LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS,
+            pinCode,
+          },
+        })
+      }
+    }
+
+    return updated
   })
 
   return updatedCourse

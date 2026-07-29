@@ -95,6 +95,61 @@ export async function getCorrelatedResponseAdmission({
   return 'ready' as const
 }
 
+export async function registerPendingCorrelatedResponse({
+  database,
+  liveQuizId,
+  messageId,
+}: {
+  database: Pick<PrismaClient, '$transaction'>
+  liveQuizId: string
+  messageId: string
+}) {
+  return database.$transaction(async (prisma) => {
+    const [liveQuiz] = await prisma.$queryRaw<
+      {
+        isAssessmentEnabled: boolean
+        responseCollectionMode: LiveQuizResponseCollectionMode
+        status: PublicationStatus
+      }[]
+    >`
+      SELECT
+        "isAssessmentEnabled",
+        "responseCollectionMode"::text AS "responseCollectionMode",
+        "status"::text AS "status"
+      FROM "public"."LiveQuiz"
+      WHERE "id" = ${liveQuizId}::uuid AND "isDeleted" = false
+      FOR UPDATE
+    `
+
+    if (
+      !liveQuiz ||
+      liveQuiz.status !== PublicationStatus.PUBLISHED ||
+      liveQuiz.isAssessmentEnabled ||
+      liveQuiz.responseCollectionMode !==
+        LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+    ) {
+      return false
+    }
+
+    await prisma.liveQuizPendingResponse.create({
+      data: { id: messageId, liveQuizId },
+    })
+    return true
+  })
+}
+
+export async function removePendingCorrelatedResponse({
+  database,
+  messageId,
+}: {
+  database: Pick<PrismaClient, 'liveQuizPendingResponse'>
+  messageId: string
+}) {
+  await database.liveQuizPendingResponse.deleteMany({
+    where: { id: messageId },
+  })
+}
+
 export async function hasPersistedCorrelatedResponse({
   database,
   identity,

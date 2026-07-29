@@ -2847,6 +2847,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Respondent labels are random. Free-text answers may still contain personal data entered by participants.',
       responseExportFailed: 'The response export could not be downloaded.',
       responseExportEmpty: 'No correlated responses are available to export.',
+      responseExportNotReady:
+        'Responses are still being processed. Try the download again shortly.',
       responseExportTooLarge:
         'This response export is too large for direct download.',
       evaluationNotYetAvailable:
@@ -3024,6 +3026,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       courseCreationFailed: 'Failed to create course...',
       gamificationCorrelatedQuizConflict:
         'Gamification cannot be enabled while this course contains a correlated-response Live Quiz. Change the quiz response collection setting first.',
+      assessmentCorrelatedQuizConflict:
+        'End the running correlated-response Live Quiz before enabling assessment mode.',
       groupDeadlineFuture: 'The group creation deadline must be in the future.',
       groupDeadlineBeforeEnd:
         'The group creation deadline must be before the course end date.',

@@ -27,18 +27,19 @@ import { getRedis } from '../redis.js'
 import {
   applyCorrelatedRedisMutations,
   buildCorrelatedResponseCreateData,
-  CorrelatedRedisMutationBuffer,
   CorrelatedResponseIdentityError,
   prepareCorrelatedMessageProcessing,
   releaseCorrelatedProcessingLock,
+  settleCorrelatedResponseReceipt,
   validateCorrelatedRedisHashKeys,
   type CorrelatedProcessingState,
-  type RedisHashMutationQueue,
 } from './correlatedResponse.js'
 import { validateStudentResponse } from './helpers.js'
 import {
   isLiveQuizQuestionType,
   queueQuestionResponseEffects,
+  RedisHashMutationBuffer,
+  type RedisHashMutationQueue,
 } from './responseEffects.js'
 
 // TODO: what if the participant is not part of the course? when starting a session, prepopulate the leaderboard with all participations? what if a participant joins the course during a session? filter out all 0 point participants before rendering the LB
@@ -81,6 +82,10 @@ export async function processResponseMessage(
   const releaseClaim = async () => {
     if (!message.correlatedClaim) return
 
+    await settleCorrelatedResponseReceipt({
+      database: prisma,
+      messageId: message.messageId,
+    })
     await releaseCorrelatedResponse({
       redis: redisExec,
       ...message.correlatedClaim,
@@ -90,7 +95,7 @@ export async function processResponseMessage(
 
   let aggregatePipeline = redisExec.pipeline()
   let redisMulti: RedisHashMutationQueue = aggregatePipeline
-  let correlatedMutationBuffer: CorrelatedRedisMutationBuffer | undefined
+  let correlatedMutationBuffer: RedisHashMutationBuffer | undefined
   const isCorrelated = message.correlatedClaim !== undefined
   let correlatedState: CorrelatedProcessingState | undefined
 
@@ -189,7 +194,7 @@ export async function processResponseMessage(
     }
 
     if (isCorrelated) {
-      correlatedMutationBuffer = new CorrelatedRedisMutationBuffer()
+      correlatedMutationBuffer = new RedisHashMutationBuffer()
       redisMulti = correlatedMutationBuffer
     } else {
       aggregatePipeline = redisExec.pipeline()

@@ -1,10 +1,6 @@
 import type { LiveQuizResponseInput } from '@klicker-uzh/types'
 import { createHash } from 'crypto'
 import { DEFAULT_POINTS } from '../constants.js'
-import type {
-  CorrelatedRedisHashMutation,
-  RedisHashMutationQueue,
-} from './correlatedResponse.js'
 import {
   getCaseStudyQuestionPointsDetails,
   getChoicesQuestionPointsDetails,
@@ -13,6 +9,53 @@ import {
   getSelectionQuestionPointsDetails,
   updateLeaderboards,
 } from './helpers.js'
+
+export type RedisHashMutation = {
+  command: 'hincrby' | 'hset' | 'hsetnx'
+  key: string
+  field: string
+  value: string
+}
+
+export interface RedisHashMutationQueue {
+  hincrby(key: string, field: string, increment: number): unknown
+  hset(key: string, field: string, value: string | number): unknown
+  hsetnx(key: string, field: string, value: string | number): unknown
+}
+
+export class RedisHashMutationBuffer implements RedisHashMutationQueue {
+  readonly mutations: RedisHashMutation[] = []
+
+  hincrby(key: string, field: string, increment: number) {
+    this.mutations.push({
+      command: 'hincrby',
+      key,
+      field,
+      value: String(increment),
+    })
+    return this
+  }
+
+  hset(key: string, field: string, value: string | number) {
+    this.mutations.push({
+      command: 'hset',
+      key,
+      field,
+      value: String(value),
+    })
+    return this
+  }
+
+  hsetnx(key: string, field: string, value: string | number) {
+    this.mutations.push({
+      command: 'hsetnx',
+      key,
+      field,
+      value: String(value),
+    })
+    return this
+  }
+}
 
 export type LiveQuizQuestionType =
   | 'SC'
@@ -34,7 +77,7 @@ export type QuestionGrading = {
 }
 
 type QuestionEffectPlan = {
-  aggregateMutations: CorrelatedRedisHashMutation[]
+  aggregateMutations: RedisHashMutation[]
   participantResponse?: string
   grading?: QuestionGrading
   setsFirstResponseTimestamp: boolean
@@ -77,11 +120,11 @@ export function isLiveQuizQuestionType(
 }
 
 function createHashMutation(
-  command: CorrelatedRedisHashMutation['command'],
+  command: RedisHashMutation['command'],
   key: string,
   field: string,
   value: string | number
-): CorrelatedRedisHashMutation {
+): RedisHashMutation {
   return { command, key, field, value: String(value) }
 }
 
@@ -141,7 +184,7 @@ function planQuestionResponseEffects({
   parsedSolutions,
   gradeResponse,
 }: PlanQuestionResponseEffectsArgs): QuestionEffectPlan {
-  const aggregateMutations: CorrelatedRedisHashMutation[] = []
+  const aggregateMutations: RedisHashMutation[] = []
   const resultsKey = `${instanceKey}:results`
   const responseHashesKey = `${instanceKey}:responseHashes`
   const participantMutation = createHashMutation(
@@ -424,7 +467,7 @@ function queueMutation({
   mutation,
 }: {
   redisMulti: RedisHashMutationQueue
-  mutation: CorrelatedRedisHashMutation
+  mutation: RedisHashMutation
 }) {
   if (mutation.command === 'hincrby') {
     redisMulti.hincrby(mutation.key, mutation.field, Number(mutation.value))

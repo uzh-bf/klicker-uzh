@@ -6,7 +6,7 @@ Plan path: `project/2026-06-20-pr-5134-live-quiz-correlated-responses-plan.md`
 Branch: `codex/live-quiz-correlated-responses`
 Target: `v3`
 PR: [#5134](https://github.com/uzh-bf/klicker-uzh/pull/5134)
-Status: final reviews and browser verification in progress
+Status: implementation hardening and verification complete; exact-commit reviews pending
 
 ## Non-Goals
 
@@ -400,7 +400,7 @@ Do:
 - Browser screenshots: manage setting; PWA notices in both modes.
 - Add lecturer-facing docs for both modes, export contents, and free-text responsibility.
 - Exercise the mandatory flows in the real browser: enable correlated mode; anonymous continuity; correlated notice; aggregate quiz unchanged; successful CSV download.
-- Manually test the no-cookie fallback. Expected degradation: the in-memory token keeps one page session stable, but a reload can create a new pseudonymous row when the browser rejects the quiz cookie.
+- Manually test cookie rejection. Expected degradation: initialization cannot preserve anonymous continuity, so the response is rejected rather than exposing the bearer token to JavaScript.
 - Security review: token scope, cookie expiry, identifier leakage, export PII warnings.
 - Final branch review.
 - PR/MR body with screenshots and manual verification list.
@@ -420,8 +420,8 @@ Commit:
 
 - Schema change to `LiveQuizResponse` can disturb assessment corrections. Keep assessment tests focused.
 - Replacing `TemporaryLeaderboardEntry` in one slice may be too large. If risky, keep compatibility bridge and migrate later.
-- A browser that rejects the quiz cookie keeps continuity only for the current page through the in-memory token header; a reload can create a new pseudonymous row. Notice/export tolerate multiple rows.
-- Browser-stored respondent ids are bearer identifiers. Use a signed token or separate secret and verify it server-side before writing correlated responses.
+- Public anonymous participation has no Sybil resistance. Clearing or rejecting the quiz cookie can create another respondent row; document this limitation and rely on deployment-level abuse controls rather than a spoofable application IP heuristic.
+- Quiz-scoped respondent cookies are bearer credentials. Keep them `HttpOnly`, signed, quiz-scoped, and verified server-side before writing correlated responses.
 - Free text can identify participants despite export pseudonyms. Warning required.
 - Row export can be mistaken for anonymity/DP. Avoid DP language.
 - Live worker has Redis-first design; DB writes must not slow response path enough to harm live quiz UX.
@@ -505,6 +505,10 @@ Later research:
 - 2026-07-23: The security review also found that a gamified correlated export can be reidentified by matching response-derived scores to the visible named or pseudonymous leaderboard. The recommended resolution is to make `CORRELATED_EXPORT` incompatible with gamification. This is a product behavior change beyond the approved implementation details and awaits explicit confirmation before enforcement.
 - 2026-07-24: Exact-commit review found that post-enqueue claim promotion raced fast worker completion, Hatchet-listener polling depended on internal SDK fields, mixed response API replicas could still accept a new PWA submission on the legacy endpoint, and content views could create zero-score leaderboard rows. Claim promotion and the readiness heartbeat were removed: the five-minute Redis claim is now only an ingress duplicate lease, while an accepted versioned Hatchet event remains processable after the lease expires. Correlated PWA submissions use `/AddCorrelatedResponse`, which old replicas cannot silently accept, and new replicas reject a mode/endpoint mismatch. Content responses again update only the instance participant count. Focused verification passes 12 response API tests, 22 worker tests, and response API, worker, and PWA typechecks.
 - 2026-07-29: User approved the privacy-safe product rule from the security review: correlated response export and gamification are mutually exclusive. The implementation now rejects the combination for direct create/edit, batch course assignment, and course-level gamification changes; enforces it with a database constraint; surfaces actionable errors outside the wizard; and keeps the wizard in a valid state by switching the other option off or disabling incompatible locked choices.
+- 2026-07-29: Final review identified three additional release blockers: the legacy course export could expose correlated rows with participant identity, accepted queued responses could be missing from an immediate export, and enabling course assessment could violate the correlated-mode database constraint. The legacy export now excludes `CORRELATED_EXPORT`; accepted correlated events create durable pending receipts that are cleared only on terminal worker settlement; the dedicated export locks the quiz and fails clearly while receipts remain; and assessment transitions atomically convert draft/scheduled correlated quizzes to aggregate assessment quizzes with unique PINs while rejecting published conflicts.
+- 2026-07-29: The anonymous respondent credential is now cookie-only. Initialization sets a signed, quiz-scoped `HttpOnly` cookie; initialization JSON and submission headers no longer expose a bearer token to JavaScript. Public anonymous participation still has no Sybil resistance because clearing or rejecting the cookie can create another row. This limitation, the pseudonymized-not-DP boundary, and the free-text reidentification risk are documented for operators and lecturers.
+- 2026-07-29: Final maintainability remediation centralized response-mode compatibility, moved generic Redis mutation buffering out of the correlated processor, and made wizard mode/gamification/course transitions atomic through pure state helpers. Focused tests cover pending receipt registration and settlement, pending-export rejection, legacy export exclusion, course assessment conversion/conflict behavior, and the refactored worker paths.
+- 2026-07-29: Final verification passed: a fresh migration reset through the new pending-receipt migration; complete `check:all`; 15 response API tests; 23 response-worker tests; 31 export tests; 22 focused GraphQL tests; affected package typechecks; Prisma schema sync; and a 13-package scoped production build. Delegated-login routing was revalidated after devrouter recreated the environment. The earlier successful wizard screenshot remains the visual evidence because the automation driver's creation portal repeatedly closed while typing the second wizard step during the final rerun.
 
 ## Goal Prompt Requirements
 
@@ -520,7 +524,7 @@ If handed to another agent:
 
 ## Next Steps
 
-1. Verify the gamification/correlated-export invariant in focused tests and the real wizard.
-2. Commit the final privacy rule, then rerun fresh security, maintainability, and independent branch reviews against the exact commit.
-3. Recheck the PWA identity initialization and token-header path in the real browser.
-4. Sync with current `v3`, push the branch, and update draft PR 5134 with whole-branch evidence, screenshots, rollout ordering, and the remaining CI-only e2e gate.
+1. Commit the completed hardening and verification record.
+2. Run fresh security, maintainability, and independent branch reviews against the exact commit; address any release blockers and repeat affected checks.
+3. Push the branch and update draft PR 5134 with whole-branch evidence, screenshots, rollout ordering, and documented residual privacy limits.
+4. Read back the rendered draft PR, CI, reviews, and comments; keep it draft until the repository's final CI and review gates are satisfied.

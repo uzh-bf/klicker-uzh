@@ -6,8 +6,11 @@ import {
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import generatePassword from 'generate-password'
-import { GraphQLError } from 'graphql'
 import { POINTS_PER_GROUP_ACTIVITY_ELEMENT } from './groups.js'
+import {
+  assertLiveQuizResponseCollectionCompatibility,
+  resolveLiveQuizResponseCollectionMode,
+} from './liveQuizResponseCollection.js'
 import { POINTS_PER_INSTANCE } from './stacks.js'
 
 export async function getUserActivitiesCourses(ctx: ContextWithUser) {
@@ -491,23 +494,16 @@ export async function applyActivityBatchOperations(
     include: { blocks: { include: { elements: true } } },
   })
 
-  if (
-    newCourse?.isGamificationEnabled &&
-    !newCourse.isAssessmentEnabled &&
-    liveQuizzes.some(
-      (liveQuiz) =>
-        liveQuiz.responseCollectionMode ===
-        DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
-    )
-  ) {
-    throw new GraphQLError(
-      'Correlated response exports cannot be enabled for gamified live quizzes',
-      {
-        extensions: {
-          code: 'LIVE_QUIZ_CORRELATED_GAMIFICATION_CONFLICT',
-        },
-      }
-    )
+  if (newCourse) {
+    for (const liveQuiz of liveQuizzes) {
+      assertLiveQuizResponseCollectionCompatibility({
+        isGamificationEnabled: newCourse.isGamificationEnabled,
+        responseCollectionMode: resolveLiveQuizResponseCollectionMode({
+          isAssessmentEnabled: newCourse.isAssessmentEnabled,
+          requestedMode: liveQuiz.responseCollectionMode,
+        }),
+      })
+    }
   }
 
   // fetch all practice quizzes that should be updated

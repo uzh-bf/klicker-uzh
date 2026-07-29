@@ -1,5 +1,6 @@
 import type { Hatchet } from '@hatchet-dev/typescript-sdk/index.js'
 import {
+  CourseAuthType,
   LiveQuizRespondentType,
   LiveQuizResponseCollectionMode,
   Locale,
@@ -265,6 +266,80 @@ describe('Live quiz response collection mode', () => {
     ).rejects.toMatchObject({
       extensions: {
         code: 'LIVE_QUIZ_CORRELATED_GAMIFICATION_CONFLICT',
+      },
+    })
+  })
+
+  it('switches draft correlated quizzes to assessment handling with their course', async () => {
+    const course = await seedCourse(
+      { isGamificationEnabled: false, isAssessmentEnabled: false },
+      userOneCtx
+    )
+    const liveQuiz = await manipulateLiveQuiz(
+      {
+        ...liveQuizArgs(),
+        courseId: course.id,
+        responseCollectionMode:
+          LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+      },
+      userOneCtx
+    )
+    await prisma.course.update({
+      where: { id: course.id },
+      data: { authType: CourseAuthType.SSO, pinCode: null },
+    })
+
+    await updateCourseSettings(
+      {
+        id: course.id,
+        language: Locale.en,
+        isGamificationEnabled: false,
+        isAssessmentEnabled: true,
+      },
+      userOneCtx
+    )
+
+    const stored = await prisma.liveQuiz.findUniqueOrThrow({
+      where: { id: liveQuiz.id },
+    })
+    expect(stored.isAssessmentEnabled).toBe(true)
+    expect(stored.responseCollectionMode).toBe(
+      LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS
+    )
+  })
+
+  it('rejects assessment mode while a correlated live quiz is running', async () => {
+    const course = await seedCourse(
+      { isGamificationEnabled: false, isAssessmentEnabled: false },
+      userOneCtx
+    )
+    const liveQuiz = await manipulateLiveQuiz(
+      {
+        ...liveQuizArgs(),
+        courseId: course.id,
+        responseCollectionMode:
+          LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+      },
+      userOneCtx
+    )
+    await prisma.liveQuiz.update({
+      where: { id: liveQuiz.id },
+      data: { status: PublicationStatus.PUBLISHED },
+    })
+
+    await expect(
+      updateCourseSettings(
+        {
+          id: course.id,
+          language: Locale.en,
+          isGamificationEnabled: false,
+          isAssessmentEnabled: true,
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: {
+        code: 'LIVE_QUIZ_CORRELATED_ASSESSMENT_CONFLICT',
       },
     })
   })

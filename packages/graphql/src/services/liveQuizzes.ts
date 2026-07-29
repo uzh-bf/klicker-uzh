@@ -33,6 +33,10 @@ import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { computeRanks } from '../lib/util.js'
 import { getPermissionBooleans } from './activities.js'
+import {
+  assertLiveQuizResponseCollectionCompatibility,
+  resolveLiveQuizResponseCollectionMode,
+} from './liveQuizResponseCollection.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -313,26 +317,16 @@ export async function manipulateLiveQuiz(
   // only activities in assessment courses will be marked as being part of assessment
   const assessmentSetting = course?.isAssessmentEnabled ?? false
 
-  const responseCollectionModeSetting = assessmentSetting
-    ? DB.LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS
-    : (responseCollectionMode ??
-      existingActivity?.responseCollectionMode ??
-      DB.LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS)
+  const responseCollectionModeSetting = resolveLiveQuizResponseCollectionMode({
+    isAssessmentEnabled: assessmentSetting,
+    requestedMode: responseCollectionMode,
+    existingMode: existingActivity?.responseCollectionMode,
+  })
 
-  if (
-    gamificationSetting &&
-    responseCollectionModeSetting ===
-      DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
-  ) {
-    throw new GraphQLError(
-      'Correlated response exports cannot be enabled for gamified live quizzes',
-      {
-        extensions: {
-          code: 'LIVE_QUIZ_CORRELATED_GAMIFICATION_CONFLICT',
-        },
-      }
-    )
-  }
+  assertLiveQuizResponseCollectionCompatibility({
+    isGamificationEnabled: gamificationSetting,
+    responseCollectionMode: responseCollectionModeSetting,
+  })
 
   if (existingActivity) {
     assertLiveQuizModeEditable({

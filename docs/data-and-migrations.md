@@ -131,6 +131,7 @@ Json columns are typed via `prisma-json-types-generator`: a `/// [TypeName]` doc
 - **`Participant` email is unique per auth mode**: `@@unique([email, isSSOAccount])` means the same normalized email can exist once as manual and once as SSO. Queries by email alone can return the wrong account; blocking new cross-mode duplicates must happen in service logic (`packages/graphql/src/services/accounts.ts`).
 - **Correlated live-quiz responses have exclusive owners**: the migration adds a validated `num_nonnulls("participantId", "respondentId") = 1` check and separate unique indexes for each nullable owner. Keep the check, both indexes, and the two Prisma compound-unique lookups aligned when changing response identity.
 - **Export labels are append-only within a quiz**: `LiveQuizResponseExportLabel` uses `(liveQuizId, identityHash)` as its primary key and `(liveQuizId, label)` as its uniqueness boundary. Export code locks the `LiveQuiz` row before assigning later labels so repeated downloads keep existing row numbers.
+- **Correlated response acknowledgement has a durable receipt**: `LiveQuizPendingResponse.id` is the Hatchet message id. The response API creates it while holding the quiz row lock before enqueue acknowledgement; terminal worker handling deletes it. Correlated export takes the same lock and refuses to run while any receipt remains.
 
 ## Adjacent: export package (`packages/export`)
 

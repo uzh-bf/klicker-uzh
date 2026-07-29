@@ -8,7 +8,6 @@ import {
   CORRELATED_RESPONSE_EVENT,
   createLiveQuizRespondentToken,
   getLiveQuizRespondentCookieName,
-  LIVE_QUIZ_RESPONDENT_TOKEN_HEADER,
   resolveLiveQuizResponseIdentity,
   verifyJWT,
   type CorrelatedResponseClaim,
@@ -24,7 +23,9 @@ import {
   hasJsonContentType,
   isAllowedCorsOrigin,
   prepareCorrelatedResponseSubmission,
+  registerPendingCorrelatedResponse,
   releaseCorrelatedResponse,
+  removePendingCorrelatedResponse,
   resolveResponseCollectionMode,
   responseEndpointMatchesCollectionMode,
   serializeLiveQuizRespondentCookie,
@@ -63,10 +64,7 @@ function setCorsHeaders(req: IncomingMessage, res: ServerResponse) {
     res.setHeader('Access-Control-Allow-Credentials', 'true')
   }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'Content-Type, Cookie, X-Live-Quiz-Respondent-Token'
-  )
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Cookie')
 }
 
 function sendJson(
@@ -190,15 +188,10 @@ async function resolveCorrelatedResponseIdentity({
   liveQuizId: string
 }) {
   const { secret, issuer } = getResponseIdentityConfig()
-  const respondentTokenHeader = req.headers[LIVE_QUIZ_RESPONDENT_TOKEN_HEADER]
 
   return resolveLiveQuizResponseIdentity({
     cookieHeader:
       typeof req.headers.cookie === 'string' ? req.headers.cookie : undefined,
-    respondentToken:
-      typeof respondentTokenHeader === 'string'
-        ? respondentTokenHeader
-        : undefined,
     liveQuizId,
     secret,
     issuer,
@@ -233,15 +226,12 @@ async function handleInitializeLiveQuizResponseIdentity(
   if (admission === 'pin_required') {
     return sendJson(req, res, 403, { error: 'Live quiz PIN required' })
   }
-  const identity = await ensureCorrelatedResponseIdentity({
+  await ensureCorrelatedResponseIdentity({
     req,
     res,
     liveQuizId: payload.liveQuizId,
   })
-  return sendJson(req, res, 200, {
-    status: 'ready',
-    respondentToken: identity.kind === 'anonymous' ? identity.token : undefined,
-  })
+  return sendJson(req, res, 200, { status: 'ready' })
 }
 
 async function handleAddResponse(
@@ -307,6 +297,7 @@ async function handleAddResponse(
   let cookie: string | undefined
   let eventName: string
   let claim: CorrelatedResponseClaim | undefined
+  let pendingReceiptCreated = false
 
   if (isCorrelated) {
     const admission = await getCorrelatedResponseAdmission({
@@ -351,6 +342,28 @@ async function handleAddResponse(
 
     cookie = preparation.cookie
     claim = preparation.claim
+    try {
+      pendingReceiptCreated = await registerPendingCorrelatedResponse({
+        database: prisma,
+        liveQuizId: liveQuizIdString,
+        messageId,
+      })
+    } catch (error) {
+      await releaseCorrelatedResponse({
+        redis,
+        ...claim,
+        messageId,
+      })
+      throw error
+    }
+    if (!pendingReceiptCreated) {
+      await releaseCorrelatedResponse({
+        redis,
+        ...claim,
+        messageId,
+      })
+      return sendJson(req, res, 404, { error: 'Live quiz not found' })
+    }
     eventName = CORRELATED_RESPONSE_EVENT
   } else {
     // Preserve aggregate-mode behavior: forward participant cookies based on
@@ -398,11 +411,32 @@ async function handleAddResponse(
   try {
     await hatchetClient.events.push(eventName, message)
   } catch (error) {
+    const cleanupTasks: Promise<unknown>[] = []
+    if (pendingReceiptCreated) {
+      cleanupTasks.push(
+        removePendingCorrelatedResponse({
+          database: prisma,
+          messageId,
+        })
+      )
+    }
     if (claim) {
-      await releaseCorrelatedResponse({
-        redis,
-        ...claim,
+      cleanupTasks.push(
+        releaseCorrelatedResponse({
+          redis,
+          ...claim,
+          messageId,
+        })
+      )
+    }
+    const cleanupResults = await Promise.allSettled(cleanupTasks)
+    const cleanupFailure = cleanupResults.find(
+      (result) => result.status === 'rejected'
+    )
+    if (cleanupFailure?.status === 'rejected') {
+      console.error('Failed to clean up correlated response receipt', {
         messageId,
+        error: cleanupFailure.reason,
       })
     }
     throw error

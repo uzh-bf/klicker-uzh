@@ -45,10 +45,7 @@ const DynamicAccountSelector = dynamic(
   { ssr: false }
 )
 
-const responseIdentityInitializations = new Map<
-  string,
-  Promise<string | undefined>
->()
+const responseIdentityInitializations = new Map<string, Promise<void>>()
 
 function getResponseApiEndpoint(endpoint: string) {
   const url = new URL(process.env.NEXT_PUBLIC_ADD_RESPONSE_URL as string)
@@ -82,11 +79,6 @@ function ensureLiveQuizResponseIdentity(
     ) {
       throw new Error('Live quiz response identity initialization failed')
     }
-
-    const payload = await response.json().catch(() => null)
-    return typeof payload?.respondentToken === 'string'
-      ? payload.respondentToken
-      : undefined
   })().catch((error) => {
     responseIdentityInitializations.delete(liveQuizId)
     throw error
@@ -112,9 +104,8 @@ async function handleNewResponse({
   responseCollectionMode: LiveQuizResponseCollectionMode
 }): // statusCode: 0 = client-side invalid input / general error; otherwise HTTP status codes 200, 208, 400, 401, 404, 500
 Promise<{ statusCode: number; responseTimestamp?: number }> {
-  let respondentToken: string | undefined
   try {
-    respondentToken = await ensureLiveQuizResponseIdentity(
+    await ensureLiveQuizResponseIdentity(
       liveQuizId,
       responseCollectionMode === LiveQuizResponseCollectionMode.CorrelatedExport
     )
@@ -127,9 +118,6 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(respondentToken
-        ? { 'X-Live-Quiz-Respondent-Token': respondentToken }
-        : {}),
     },
   }
 

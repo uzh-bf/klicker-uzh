@@ -12,6 +12,7 @@ import {
   type CorrelatedResponseClaim,
   type LiveQuizResponseIdentityKey,
 } from '@klicker-uzh/util'
+import type { RedisHashMutation } from './responseEffects.js'
 
 type CorrelatedResponseDatabase = Pick<
   PrismaClient,
@@ -38,53 +39,6 @@ interface CorrelatedProcessingRedis {
   type(key: string): Promise<string>
 }
 
-export type CorrelatedRedisHashMutation = {
-  command: 'hincrby' | 'hset' | 'hsetnx'
-  key: string
-  field: string
-  value: string
-}
-
-export interface RedisHashMutationQueue {
-  hincrby(key: string, field: string, increment: number): unknown
-  hset(key: string, field: string, value: string | number): unknown
-  hsetnx(key: string, field: string, value: string | number): unknown
-}
-
-export class CorrelatedRedisMutationBuffer implements RedisHashMutationQueue {
-  readonly mutations: CorrelatedRedisHashMutation[] = []
-
-  hincrby(key: string, field: string, increment: number) {
-    this.mutations.push({
-      command: 'hincrby',
-      key,
-      field,
-      value: String(increment),
-    })
-    return this
-  }
-
-  hset(key: string, field: string, value: string | number) {
-    this.mutations.push({
-      command: 'hset',
-      key,
-      field,
-      value: String(value),
-    })
-    return this
-  }
-
-  hsetnx(key: string, field: string, value: string | number) {
-    this.mutations.push({
-      command: 'hsetnx',
-      key,
-      field,
-      value: String(value),
-    })
-    return this
-  }
-}
-
 export type CorrelatedResponseOwner = {
   kind: 'participant' | 'temporary' | 'anonymous'
   id: string
@@ -102,6 +56,18 @@ export type CorrelatedProcessingState = {
 
 export class CorrelatedResponseIdentityError extends Error {}
 export class CorrelatedResponseProcessingBusyError extends Error {}
+
+export async function settleCorrelatedResponseReceipt({
+  database,
+  messageId,
+}: {
+  database: Pick<PrismaClient, 'liveQuizPendingResponse'>
+  messageId: string
+}) {
+  await database.liveQuizPendingResponse.deleteMany({
+    where: { id: messageId },
+  })
+}
 
 const CORRELATED_PROCESSING_LOCK_TTL_MS = 5 * 60 * 1000
 const RELEASE_PROCESSING_LOCK_SCRIPT = `
@@ -199,7 +165,7 @@ export async function applyCorrelatedRedisMutations({
   messageId,
 }: {
   redis: Pick<CorrelatedProcessingRedis, 'eval'>
-  mutations: CorrelatedRedisHashMutation[]
+  mutations: RedisHashMutation[]
   processedKey: string
   identityKey: LiveQuizResponseIdentityKey
   messageId: string

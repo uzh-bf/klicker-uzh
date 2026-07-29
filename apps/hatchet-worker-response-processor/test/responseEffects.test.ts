@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { CorrelatedRedisMutationBuffer } from '../src/processors/correlatedResponse.js'
 import {
   isLiveQuizQuestionType,
   queueQuestionResponseEffects,
+  RedisHashMutationBuffer,
 } from '../src/processors/responseEffects.js'
 
 const instanceInfo = {
@@ -31,7 +31,7 @@ describe('live quiz response effects', () => {
   })
 
   it('plans correlated grading and aggregate mutations together', () => {
-    const redisMulti = new CorrelatedRedisMutationBuffer()
+    const redisMulti = new RedisHashMutationBuffer()
     const grading = queueQuestionResponseEffects({
       type: 'SC',
       choiceCount: '2',
@@ -85,7 +85,7 @@ describe('live quiz response effects', () => {
   })
 
   it('queues participant response and leaderboard effects in aggregate mode', () => {
-    const redisMulti = new CorrelatedRedisMutationBuffer()
+    const redisMulti = new RedisHashMutationBuffer()
     const grading = queueQuestionResponseEffects({
       type: 'FREE_TEXT',
       response: { value: '  correct  ' },
@@ -127,7 +127,7 @@ describe('live quiz response effects', () => {
   })
 
   it('does not award base points for content views', () => {
-    const redisMulti = new CorrelatedRedisMutationBuffer()
+    const redisMulti = new RedisHashMutationBuffer()
     const grading = queueQuestionResponseEffects({
       type: 'CONTENT',
       response: { viewed: true },
@@ -167,7 +167,7 @@ describe('live quiz response effects', () => {
       { sub: 'participant', role: 'PARTICIPANT' },
       { sub: 'temporary', role: 'TEMPORARY_PARTICIPANT' },
     ]) {
-      const redisMulti = new CorrelatedRedisMutationBuffer()
+      const redisMulti = new RedisHashMutationBuffer()
       queueQuestionResponseEffects({
         type: 'CONTENT',
         response: { viewed: true },

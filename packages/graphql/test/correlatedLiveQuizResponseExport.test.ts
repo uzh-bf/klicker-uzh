@@ -70,11 +70,13 @@ function createContext({
   blocks = defaultBlocks,
   responses = defaultResponses,
   labels = [],
+  pendingResponseCount = 0,
 }: {
   liveQuiz?: typeof defaultLiveQuiz | null
   blocks?: any[]
   responses?: any[]
   labels?: { identityHash: string; label: number }[]
+  pendingResponseCount?: number
 } = {}) {
   const queryRaw = vi
     .fn()
@@ -83,10 +85,12 @@ function createContext({
   const responseFindMany = vi.fn().mockResolvedValue(responses)
   const labelFindMany = vi.fn().mockResolvedValue(labels)
   const labelCreateMany = vi.fn().mockResolvedValue({ count: 0 })
+  const pendingResponseCountFn = vi.fn().mockResolvedValue(pendingResponseCount)
   const transactionPrisma = {
     $queryRaw: queryRaw,
     elementBlock: { findMany: blockFindMany },
     liveQuizResponse: { findMany: responseFindMany },
+    liveQuizPendingResponse: { count: pendingResponseCountFn },
     liveQuizResponseExportLabel: {
       findMany: labelFindMany,
       createMany: labelCreateMany,
@@ -223,5 +227,16 @@ describe('getCorrelatedLiveQuizResponseExport', () => {
     await expect(
       getCorrelatedLiveQuizResponseExport({ id: 'quiz-id' }, ctx)
     ).rejects.toThrow('LIVE_QUIZ_CORRELATED_EXPORT_EMPTY')
+  })
+
+  it('waits until all acknowledged responses have been processed', async () => {
+    const { ctx, responseFindMany } = createContext({
+      pendingResponseCount: 1,
+    })
+
+    await expect(
+      getCorrelatedLiveQuizResponseExport({ id: 'quiz-id' }, ctx)
+    ).rejects.toThrow('LIVE_QUIZ_CORRELATED_EXPORT_NOT_READY')
+    expect(responseFindMany).not.toHaveBeenCalled()
   })
 })

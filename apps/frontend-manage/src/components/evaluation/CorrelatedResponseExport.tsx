@@ -36,9 +36,11 @@ function CorrelatedResponseExport({ liveQuizId }: { liveQuizId: string }) {
         type: 'error',
         message: message.includes('LIVE_QUIZ_CORRELATED_EXPORT_EMPTY')
           ? t('manage.evaluation.responseExportEmpty')
-          : message.includes('LIVE_QUIZ_CORRELATED_EXPORT_TOO_LARGE')
-            ? t('manage.evaluation.responseExportTooLarge')
-            : t('manage.evaluation.responseExportFailed'),
+          : message.includes('LIVE_QUIZ_CORRELATED_EXPORT_NOT_READY')
+            ? t('manage.evaluation.responseExportNotReady')
+            : message.includes('LIVE_QUIZ_CORRELATED_EXPORT_TOO_LARGE')
+              ? t('manage.evaluation.responseExportTooLarge')
+              : t('manage.evaluation.responseExportFailed'),
       })
     }
   }

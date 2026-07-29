@@ -57,6 +57,17 @@ export async function getCorrelatedLiveQuizResponseExport(
           })
         }
 
+        const pendingResponseCount = await prisma.liveQuizPendingResponse.count(
+          {
+            where: { liveQuizId: id },
+          }
+        )
+        if (pendingResponseCount > 0) {
+          throw new GraphQLError('LIVE_QUIZ_CORRELATED_EXPORT_NOT_READY', {
+            extensions: { code: 'BAD_USER_INPUT' },
+          })
+        }
+
         const blocks = await prisma.elementBlock.findMany({
           where: {
             liveQuizId: id,

@@ -32,11 +32,100 @@ import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import type { ElementSelectCourse } from '../../ActivityCreation'
 import CreationFormValidator from '../CreationFormValidator'
 import MultiplierSelector from '../MultiplierSelector'
+import type { LiveQuizFormValues } from '../WizardLayout'
 import WizardNavigation from '../WizardNavigation'
 import AdvancedLiveQuizSettings from './AdvancedLiveQuizSettings'
 import { LiveQuizWizardStepProps } from './LiveQuizWizard'
+
+function applyResponseCollectionMode(
+  values: LiveQuizFormValues,
+  responseCollectionMode: LiveQuizResponseCollectionMode
+) {
+  return {
+    ...values,
+    responseCollectionMode,
+    isGamificationEnabled:
+      responseCollectionMode === LiveQuizResponseCollectionMode.CorrelatedExport
+        ? false
+        : values.isGamificationEnabled,
+  }
+}
+
+function applyGamificationSetting(
+  values: LiveQuizFormValues,
+  isGamificationEnabled: boolean,
+  responseCollectionModeLocked: boolean
+) {
+  if (
+    isGamificationEnabled &&
+    responseCollectionModeLocked &&
+    values.responseCollectionMode ===
+      LiveQuizResponseCollectionMode.CorrelatedExport
+  ) {
+    return values
+  }
+
+  return {
+    ...values,
+    isGamificationEnabled,
+    responseCollectionMode:
+      isGamificationEnabled &&
+      values.responseCollectionMode ===
+        LiveQuizResponseCollectionMode.CorrelatedExport
+        ? LiveQuizResponseCollectionMode.AggregatedAnonymous
+        : values.responseCollectionMode,
+  }
+}
+
+function applyCourseSelection(
+  values: LiveQuizFormValues,
+  courseId: string,
+  previousCourse: ElementSelectCourse | undefined,
+  selectedCourse: ElementSelectCourse | undefined,
+  responseCollectionModeLocked: boolean
+) {
+  let nextValues: LiveQuizFormValues = {
+    ...values,
+    courseId,
+    isGamificationEnabled: previousCourse?.isGamified
+      ? false
+      : values.isGamificationEnabled,
+    isPinProtected: previousCourse?.isAssessmentEnabled
+      ? false
+      : values.isPinProtected,
+  }
+
+  if (courseId === 'no-course-selected') {
+    return {
+      ...nextValues,
+      isAssessmentEnabled: false,
+      multiplier: '1',
+    }
+  }
+
+  if (selectedCourse?.isGamified) {
+    nextValues = applyGamificationSetting(
+      nextValues,
+      true,
+      responseCollectionModeLocked
+    )
+  }
+
+  return {
+    ...nextValues,
+    isAssessmentEnabled: selectedCourse?.isAssessmentEnabled ?? false,
+    isPinProtected: selectedCourse?.isAssessmentEnabled
+      ? true
+      : nextValues.isPinProtected,
+    responseCollectionMode:
+      selectedCourse?.isAssessmentEnabled && !responseCollectionModeLocked
+        ? LiveQuizResponseCollectionMode.AggregatedAnonymous
+        : nextValues.responseCollectionMode,
+  }
+}
 
 function LiveQuizSettingsStep({
   editMode,
@@ -77,7 +166,14 @@ function LiveQuizSettingsStep({
       innerRef={formRef}
       validationSchema={validationSchema}
     >
-      {({ values, errors, isValid, isSubmitting, setFieldValue }) => {
+      {({
+        values,
+        errors,
+        isValid,
+        isSubmitting,
+        setFieldValue,
+        setValues,
+      }) => {
         const selectedCourse = [
           ...(gamifiedCourses ?? []),
           ...(nonGamifiedCourses ?? []),
@@ -152,7 +248,6 @@ function LiveQuizSettingsStep({
                         disabled={courseSelectionDisabled}
                         value={values.courseId}
                         onChange={(value) => {
-                          // if the live quiz was assigned to another course before, get the corresponding settings
                           const prevCourse = values.courseId
                             ? [
                                 ...(gamifiedCourses ?? []),
@@ -163,56 +258,21 @@ function LiveQuizSettingsStep({
                               )
                             : undefined
 
-                          // set the new course
-                          setFieldValue('courseId', value)
+                          const nextCourse = [
+                            ...(gamifiedCourses ?? []),
+                            ...(nonGamifiedCourses ?? []),
+                            ...(assessmentCourses ?? []),
+                          ].find((course) => course.value === value)
 
-                          // if the gamification setting was true from the previous course, reset it to false
-                          // --> only keep manually modified gamification settings
-                          if (prevCourse?.isGamified) {
-                            setFieldValue('isGamificationEnabled', false)
-                          }
-
-                          // if the pin protection setting was true from the previous course, reset it to false
-                          // --> only keep manually modified pin protection settings
-                          if (prevCourse?.isAssessmentEnabled) {
-                            setFieldValue('isPinProtected', false)
-                          }
-
-                          if (value === 'no-course-selected') {
-                            setFieldValue('isAssessmentEnabled', false)
-                            setFieldValue('multiplier', '1')
-                          } else {
-                            const selectedCourse = [
-                              ...(gamifiedCourses ?? []),
-                              ...(nonGamifiedCourses ?? []),
-                              ...(assessmentCourses ?? []),
-                            ].find((course) => course.value === value)
-
-                            // if the new course has gamification enabled, set the setting accordingly
-                            if (selectedCourse?.isGamified) {
-                              setFieldValue('isGamificationEnabled', true)
-                              if (!responseCollectionModeLocked) {
-                                setFieldValue(
-                                  'responseCollectionMode',
-                                  LiveQuizResponseCollectionMode.AggregatedAnonymous
-                                )
-                              }
-                            }
-
-                            // if the new course has assessment enabled, set the assessment and pin protection settings accordingly
-                            if (selectedCourse?.isAssessmentEnabled) {
-                              setFieldValue('isAssessmentEnabled', true)
-                              setFieldValue('isPinProtected', true)
-                              if (!responseCollectionModeLocked) {
-                                setFieldValue(
-                                  'responseCollectionMode',
-                                  LiveQuizResponseCollectionMode.AggregatedAnonymous
-                                )
-                              }
-                            } else {
-                              setFieldValue('isAssessmentEnabled', false)
-                            }
-                          }
+                          void setValues(
+                            applyCourseSelection(
+                              values,
+                              value,
+                              prevCourse,
+                              nextCourse,
+                              responseCollectionModeLocked ?? false
+                            )
+                          )
                         }}
                         label={t('shared.generic.course')}
                         tooltip={t.rich(
@@ -282,18 +342,12 @@ function LiveQuizSettingsStep({
                           onCheck={() => {
                             const enableGamification =
                               !values.isGamificationEnabled
-                            if (enableGamification && correlatedModeSelected) {
-                              if (responseCollectionModeLocked) {
-                                return
-                              }
-                              setFieldValue(
-                                'responseCollectionMode',
-                                LiveQuizResponseCollectionMode.AggregatedAnonymous
+                            void setValues(
+                              applyGamificationSetting(
+                                values,
+                                enableGamification,
+                                responseCollectionModeLocked ?? false
                               )
-                            }
-                            setFieldValue(
-                              'isGamificationEnabled',
-                              enableGamification
                             )
                           }}
                           className={{
@@ -386,14 +440,15 @@ function LiveQuizSettingsStep({
                           value={values.responseCollectionMode}
                           disabled={responseCollectionModeDisabled}
                           onValueChange={(value) => {
-                            if (value) {
-                              setFieldValue('responseCollectionMode', value)
-                              if (
-                                value ===
+                            if (
+                              value ===
+                                LiveQuizResponseCollectionMode.AggregatedAnonymous ||
+                              value ===
                                 LiveQuizResponseCollectionMode.CorrelatedExport
-                              ) {
-                                setFieldValue('isGamificationEnabled', false)
-                              }
+                            ) {
+                              void setValues(
+                                applyResponseCollectionMode(values, value)
+                              )
                             }
                           }}
                           aria-labelledby="response-collection-mode-label"

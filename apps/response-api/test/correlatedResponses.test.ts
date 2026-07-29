@@ -9,7 +9,9 @@ import {
   hasPersistedCorrelatedResponse,
   hasValidLiveQuizPin,
   isAllowedCorsOrigin,
+  registerPendingCorrelatedResponse,
   releaseCorrelatedResponse,
+  removePendingCorrelatedResponse,
   resolveResponseCollectionMode,
   responseEndpointMatchesCollectionMode,
   serializeLiveQuizRespondentCookie,
@@ -230,6 +232,98 @@ describe('correlated response request safeguards', () => {
       true
     )
     assert.equal(calls.length, 2)
+  })
+
+  it('registers a pending receipt while the correlated quiz is published', async () => {
+    const createCalls: any[] = []
+    const database = {
+      $transaction: async (callback: (prisma: any) => Promise<unknown>) =>
+        callback({
+          $queryRaw: async () => [
+            {
+              isAssessmentEnabled: false,
+              responseCollectionMode: 'CORRELATED_EXPORT',
+              status: 'PUBLISHED',
+            },
+          ],
+          liveQuizPendingResponse: {
+            create: async (args: any) => {
+              createCalls.push(args)
+              return args.data
+            },
+          },
+        }),
+    } as any
+
+    assert.equal(
+      await registerPendingCorrelatedResponse({
+        database,
+        liveQuizId: '11111111-1111-4111-8111-111111111111',
+        messageId: '22222222-2222-4222-8222-222222222222',
+      }),
+      true
+    )
+    assert.deepEqual(createCalls, [
+      {
+        data: {
+          id: '22222222-2222-4222-8222-222222222222',
+          liveQuizId: '11111111-1111-4111-8111-111111111111',
+        },
+      },
+    ])
+  })
+
+  it('does not register a receipt after the quiz has ended', async () => {
+    let createCalled = false
+    const database = {
+      $transaction: async (callback: (prisma: any) => Promise<unknown>) =>
+        callback({
+          $queryRaw: async () => [
+            {
+              isAssessmentEnabled: false,
+              responseCollectionMode: 'CORRELATED_EXPORT',
+              status: 'ENDED',
+            },
+          ],
+          liveQuizPendingResponse: {
+            create: async () => {
+              createCalled = true
+            },
+          },
+        }),
+    } as any
+
+    assert.equal(
+      await registerPendingCorrelatedResponse({
+        database,
+        liveQuizId: '11111111-1111-4111-8111-111111111111',
+        messageId: '22222222-2222-4222-8222-222222222222',
+      }),
+      false
+    )
+    assert.equal(createCalled, false)
+  })
+
+  it('removes a pending receipt idempotently', async () => {
+    const deleteCalls: any[] = []
+
+    await removePendingCorrelatedResponse({
+      database: {
+        liveQuizPendingResponse: {
+          deleteMany: async (args: any) => {
+            deleteCalls.push(args)
+            return { count: 1 }
+          },
+        },
+      } as any,
+      messageId: '22222222-2222-4222-8222-222222222222',
+    })
+
+    assert.deepEqual(deleteCalls, [
+      {
+        where: { id: '22222222-2222-4222-8222-222222222222' },
+      },
+    ])
   })
 })
 

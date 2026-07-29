@@ -303,6 +303,21 @@ function CourseOverviewHeader({
                   ),
                   options: { duration: 6000 },
                 })
+              } else if (
+                error instanceof ApolloError &&
+                error.graphQLErrors.some(
+                  (graphQLError) =>
+                    graphQLError.extensions?.code ===
+                    'LIVE_QUIZ_CORRELATED_ASSESSMENT_CONFLICT'
+                )
+              ) {
+                toast({
+                  type: 'error',
+                  message: t(
+                    'manage.courseList.assessmentCorrelatedQuizConflict'
+                  ),
+                  options: { duration: 6000 },
+                })
               } else {
                 onError()
               }

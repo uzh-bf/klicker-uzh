@@ -2893,6 +2893,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der Antwortexport konnte nicht heruntergeladen werden.',
       responseExportEmpty:
         'Es sind keine verknüpften Antworten für den Export verfügbar.',
+      responseExportNotReady:
+        'Antworten werden noch verarbeitet. Versuchen Sie den Download in Kürze erneut.',
       responseExportTooLarge:
         'Dieser Antwortexport ist für den direkten Download zu gross.',
       evaluationNotYetAvailable:
@@ -3074,6 +3076,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       courseCreationFailed: 'Erstellen des Kurses fehlgeschlagen...',
       gamificationCorrelatedQuizConflict:
         'Gamifizierung kann nicht aktiviert werden, solange dieser Kurs ein Live Quiz mit korrelierter Antwortspeicherung enthält. Ändern Sie zuerst die Einstellung zur Antwortspeicherung des Quiz.',
+      assessmentCorrelatedQuizConflict:
+        'Beenden Sie das laufende Live Quiz mit korrelierter Antwortspeicherung, bevor Sie den Assessment-Modus aktivieren.',
       groupDeadlineFuture:
         'Die Deadline für die Gruppenbildung muss in der Zukunft liegen.',
       groupDeadlineBeforeEnd:

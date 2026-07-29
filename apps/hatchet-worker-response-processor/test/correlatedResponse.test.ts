@@ -16,7 +16,6 @@ import { describe, it } from 'node:test'
 import {
   applyCorrelatedRedisMutations,
   buildCorrelatedResponseCreateData,
-  CorrelatedRedisMutationBuffer,
   CorrelatedResponseIdentityError,
   CorrelatedResponseProcessingBusyError,
   getCorrelatedProcessedKey,
@@ -25,8 +24,10 @@ import {
   prepareCorrelatedResponseProcessing,
   releaseCorrelatedProcessingLock,
   resolveCorrelatedResponseOwner,
+  settleCorrelatedResponseReceipt,
   validateCorrelatedRedisHashKeys,
 } from '../src/processors/correlatedResponse.js'
+import { RedisHashMutationBuffer } from '../src/processors/responseEffects.js'
 
 const secret = 'test-secret'
 const issuer = 'https://api.klicker.test'
@@ -325,6 +326,24 @@ describe('resolveCorrelatedResponseOwner', () => {
 })
 
 describe('correlated response persistence helpers', () => {
+  it('settles the pending receipt idempotently', async () => {
+    const deleteCalls: any[] = []
+
+    await settleCorrelatedResponseReceipt({
+      database: {
+        liveQuizPendingResponse: {
+          deleteMany: async (args: any) => {
+            deleteCalls.push(args)
+            return { count: 1 }
+          },
+        },
+      } as any,
+      messageId: 'message-1',
+    })
+
+    assert.deepEqual(deleteCalls, [{ where: { id: 'message-1' } }])
+  })
+
   it('builds a participant response without respondent identifiers', () => {
     const participantId = randomUUID()
     const submittedAt = Date.now()
@@ -584,7 +603,7 @@ describe('correlated response persistence helpers', () => {
   })
 
   it('buffers typed Redis mutations for one atomic apply operation', async () => {
-    const buffer = new CorrelatedRedisMutationBuffer()
+    const buffer = new RedisHashMutationBuffer()
     buffer.hincrby('results', 'participants', 1)
     buffer.hset('responses', 'respondent', 'answer')
     buffer.hsetnx('info', 'firstResponseReceivedAt', 123)

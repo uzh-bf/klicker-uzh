@@ -55,6 +55,8 @@ Scheduled publication/ending is executed by the Hatchet general worker — witho
 
 Anonymous and temporary users are represented by the identity-only `LiveQuizRespondent`; this is not a `Participant` account and stores no username, avatar, or score. `LiveQuizResponse` has exactly one owner (`participantId` or `respondentId`) and unique first-response constraints per instance, block execution, and owner. `LiveQuizResponseExportLabel` stores only an HMAC-derived identity hash and stable positive row number for each quiz. Assessment remains a separate, always-identifiable response workflow.
 
+Anonymous continuity is best-effort and cookie-based. Public participation has no Sybil resistance: clearing or rejecting the quiz cookie can create another respondent row, so the correlated teaching export must not be treated as proof of one human per row. The CSV is pseudonymized individual-level data, not a differentially private research export; free-text answers may identify their authors. Deployment-level abuse controls are required if public anonymous participation is exposed to hostile traffic.
+
 ## Gamification details
 
 - Responses are stored as `QuestionResponse`/`QuestionResponseDetail` (`response.prisma`) with `totalPointsAwarded`, `totalXpAwarded`, `score`.
