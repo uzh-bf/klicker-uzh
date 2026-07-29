@@ -819,6 +819,19 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       flashcardYesResponse: 'Ja',
       resetAnswers: 'Antworten zurücksetzen',
       markAllAsRead: 'Alle als gelesen markieren',
+      codeSubmissionPending:
+        'Ihr Programm wird bewertet. Sie können diese Seite sicher verlassen oder neu laden.',
+      codePollingUnavailable:
+        'Ihr Programm wird weiterhin bewertet. Statusaktualisierungen sind vorübergehend nicht verfügbar; diese Seite versucht es weiter.',
+      codeSubmissionFailed:
+        'Die Bewertung konnte nicht abgeschlossen werden. Überprüfen Sie Ihr Programm und reichen Sie es erneut ein.',
+      codeSubmissionCompleted:
+        'Die Bewertung wurde mit {percentage}% der verfügbaren Punkte abgeschlossen.',
+      codeTestPassed: 'bestanden',
+      codeTestFailed: 'nicht bestanden',
+      codeActualOutput: 'Tatsächliche Ausgabe',
+      codeStandardOutput: 'Programmausgabe',
+      codeStandardError: 'Fehlerausgabe des Programms',
       read: 'Gelesen',
       feedbackTransmitted: 'Ihr Feedback wurde erfolgreich übermittelt.',
       feedbackRequired: 'Bitte fügen Sie einen Inhalt zu Ihrem Feedback hinzu',

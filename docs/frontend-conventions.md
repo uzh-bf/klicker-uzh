@@ -55,6 +55,8 @@ CODE authoring uses the shared accessible CodeMirror wrapper at `packages/shared
 
 The Manage artificial preview updates its GraphQL typename and student response through separate effects. During an element-type transition those discriminants can briefly disagree; narrow the response at strict component boundaries (for CODE, require an actual string before passing it to CodeMirror) instead of trusting the transient enum value alone.
 
+In the participant PWA, CODE stacks use the asynchronous receipt lifecycle instead of the synchronous stack-response mutation. Persist the submitted code and receipt id under a separate activity-and-stack-scoped local-storage key, recover it after reload, subscribe with polling fallback while it is active, and write normal practice-quiz completion state only after the receipt reaches `COMPLETED`. A `FAILED` receipt must leave the editor enabled for a new attempt. Participant rendering may show public test inputs, expectations, and results only; hidden test metadata and execution output never cross the GraphQL boundary.
+
 ## Gotchas absorbed from experience
 
 - **Feature flags gate alone.** Don't combine a flag with data-dependent counts (`flag && count > 0`) — that creates chicken-and-egg visibility problems.

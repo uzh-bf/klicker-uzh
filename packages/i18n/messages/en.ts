@@ -816,6 +816,19 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       flashcardYesResponse: 'Yes',
       resetAnswers: 'Reset answers',
       markAllAsRead: 'Mark all as read',
+      codeSubmissionPending:
+        'Your program is being graded. You can safely leave or reload this page.',
+      codePollingUnavailable:
+        'Your program is still being graded. Status updates are temporarily unavailable; this page will keep trying.',
+      codeSubmissionFailed:
+        'Grading could not be completed. Review your program and submit it again.',
+      codeSubmissionCompleted:
+        'Grading completed with {percentage}% of the available points.',
+      codeTestPassed: 'passed',
+      codeTestFailed: 'failed',
+      codeActualOutput: 'Actual output',
+      codeStandardOutput: 'Program output',
+      codeStandardError: 'Program error output',
       read: 'Read',
       feedbackTransmitted: 'Your feedback has been transmitted successfully.',
       feedbackRequired: 'Please add a text to your feedback.',

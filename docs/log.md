@@ -6,6 +6,7 @@
 - **Update**: [domain model](./domain-model.md), [GraphQL API layer](./graphql-api-layer.md), [frontend conventions](./frontend-conventions.md), and [testing](./testing.md) now document the implemented CODE contracts, safe lecturer/participant projections, authoring boundary, focused checks, and devcontainer build caveats.
 - **Update**: [architecture overview](./architecture-overview.md) and [testing](./testing.md) document the server-only CodeAPI trust boundary, separate public/hidden execution, short-lived asymmetric identity, shared JSON limits, process-group output/timeout enforcement, sanitized exact JSON grading, and service-free verification.
 - **Update**: [domain model](./domain-model.md), [GraphQL API layer](./graphql-api-layer.md), [async workers](./async-and-workers.md), and [testing](./testing.md) document the participant-owned CODE receipt, expiring worker claims, recovery task, transactional exactly-once response side effects, subscription/poll fallback, and database-backed lifecycle tracer.
+- **Update**: [frontend conventions](./frontend-conventions.md) and [testing](./testing.md) document the PWA CODE receipt state machine, reload recovery, completion-only advancement, failed retry, participant-safe feedback, and its real-app Playwright tracer.
 
 ## 2026-07-20
 

@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   CaseStudyCaseResponse,
+  CodeSubmissionStatus,
   ElementStack as ElementStackType,
   ElementType,
   FlashcardCorrectness,
@@ -23,7 +24,9 @@ import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import useComponentVisibleCounter from '../hooks/useComponentVisibleCounter'
 import useStackElementFeedbacks from '../hooks/useStackElementFeedbacks'
 import Bookmark from './Bookmark'
+import CodeSubmissionStatusPanel from './CodeSubmissionStatus'
 import InstanceHeader from './InstanceHeader'
+import useCodeSubmission from './useCodeSubmission'
 
 interface ElementStackProps {
   parentId: string
@@ -96,6 +99,19 @@ function ElementStack({
 
   const [studentResponse, setStudentResponse] =
     useState<StackStudentResponseType>({})
+  const codeElement = stack.elements?.find(
+    (element) => element.elementType === ElementType.Code
+  )
+  const {
+    submission: codeSubmission,
+    submit: submitCodeResponse,
+    submitting: submittingCodeResponse,
+    submissionError: codeSubmissionError,
+    pollingError: codePollingError,
+    active: codeSubmissionActive,
+  } = useCodeSubmission({
+    storageKey: `code-submission-${parentId}-${stack.id}`,
+  })
 
   const [openEvaluations, setOpenEvaluations] = useState<Set<number>>(new Set())
 
@@ -121,6 +137,59 @@ function ElementStack({
     currentStep,
     setStudentResponse,
   })
+
+  useEffect(() => {
+    if (!codeElement || !codeSubmission?.code || stackStorage) return
+
+    setStudentResponse((current) => ({
+      ...current,
+      [codeElement.id]: {
+        type: ElementType.Code,
+        response: codeSubmission.code,
+        valid: codeSubmission.code.length > 0,
+      },
+    }))
+  }, [codeElement, codeSubmission?.code, stackStorage])
+
+  useEffect(() => {
+    if (
+      !codeElement ||
+      !codeSubmission ||
+      codeSubmission.gradingStatus !== CodeSubmissionStatus.Completed ||
+      stackStorage
+    ) {
+      return
+    }
+
+    setStackStorage({
+      [codeElement.id]: {
+        type: ElementType.Code,
+        response: codeSubmission.code,
+        valid: true,
+      },
+    })
+    setStudentResponse({})
+
+    const pointsPercentage =
+      codeSubmission.feedback?.pointsPercentage ?? undefined
+    if (typeof setStepStatus !== 'undefined') {
+      setStepStatus({
+        status:
+          pointsPercentage === 1
+            ? StackFeedbackStatus.Correct
+            : pointsPercentage === 0
+              ? StackFeedbackStatus.Incorrect
+              : StackFeedbackStatus.Partial,
+        score: null,
+      })
+    }
+  }, [
+    codeElement,
+    codeSubmission,
+    setStackStorage,
+    setStepStatus,
+    stackStorage,
+  ])
 
   // if single submission is enabled, fetch the previous answer & evaluation and do not submit again
   const { data: evaluationData } = useQuery(
@@ -382,11 +451,32 @@ function ElementStack({
                     setStudentResponse={setStudentResponse}
                     stackStorage={stackStorage}
                     preview={embedded && !openEvaluations.has(element.id)}
+                    disabledInput={
+                      element.elementType === ElementType.Code &&
+                      (codeSubmissionActive ||
+                        codeSubmission?.gradingStatus ===
+                          CodeSubmissionStatus.Completed)
+                    }
                   />
                 </div>
               )
             })}
         </div>
+
+        {codeSubmission && (
+          <CodeSubmissionStatusPanel
+            submission={codeSubmission}
+            pollingUnavailable={!!codePollingError}
+          />
+        )}
+        {codeSubmissionError && !codeSubmission && (
+          <div className="mt-4" data-cy="code-submission-failed">
+            <UserNotification
+              type="error"
+              message={t('pwa.practiceQuiz.codeSubmissionFailed')}
+            />
+          </div>
+        )}
       </div>
 
       {/* display continue button if question was already answered */}
@@ -461,15 +551,37 @@ function ElementStack({
         wrapEmbedded(
           <Button
             primary
-            loading={submittingResponse}
+            loading={submittingResponse || submittingCodeResponse}
             disabled={
               (!previewOnly && activityExpired) ||
-              Object.values(studentResponse).some((response) => !response.valid)
+              Object.values(studentResponse).some(
+                (response) => !response.valid
+              ) ||
+              codeSubmissionActive ||
+              (!!codeElement && previewOnly)
             }
             className={{
               root: embeddedButtonClass,
             }}
             onClick={async () => {
+              if (codeElement && !previewOnly) {
+                const response = studentResponse[codeElement.id]
+                if (
+                  response?.type !== ElementType.Code ||
+                  typeof response.response !== 'string'
+                ) {
+                  return
+                }
+
+                await submitCodeResponse({
+                  instanceId: codeElement.id,
+                  courseId,
+                  code: response.response,
+                  timeSpent: timeRef.current,
+                })
+                return
+              }
+
               const result = await respondToElementStack({
                 variables: {
                   isOwner: previewOnly,

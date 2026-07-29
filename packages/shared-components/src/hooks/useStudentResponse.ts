@@ -89,9 +89,17 @@ function useStudentResponse({
           }
 
           return acc
-        }
-        // default case - valid for FREE_TEXT, NUMERICAL, FLASHCARD elements
-        else {
+        } else if (element.elementData.__typename === 'CodeElementData') {
+          const starterCode = element.elementData.options.starterCode ?? ''
+          acc[element.id] = {
+            type: ElementType.Code,
+            response: starterCode,
+            valid: starterCode.length > 0,
+          }
+
+          return acc
+        } else {
+          // default case - valid for FREE_TEXT, NUMERICAL, FLASHCARD elements
           acc[element.id] = {
             type: element.elementData.type,
             response: undefined,
