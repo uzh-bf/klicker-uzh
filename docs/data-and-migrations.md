@@ -2,7 +2,7 @@
 type: Data Layer
 title: Data & Migrations
 description: Split Prisma schema, the migrate→sync→build ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-07-19'
+timestamp: '2026-07-29'
 tags:
   - backend
   - prisma
@@ -19,11 +19,11 @@ pnpm run prisma:sync      # 3. mirror model files into apps/analytics
 pnpm run build            # 4. rebuild the generated client and dependents
 ```
 
-`prisma:migrate` explicitly regenerates the TypeScript client after Prisma 7's `migrate dev`; Prisma no longer does that implicitly (`packages/prisma/package.json:scripts`). Forgetting step 3 still silently desynchronizes Analytics: `util/sync-schema.sh` copies the shared model files but excludes both `js.prisma` and `datasource.prisma`. Analytics keeps its own `py.prisma` generator and URL-bearing `datasource.prisma`; `util/check-prisma-sync.sh` fails closed if either owned file disappears. Update GraphQL types/resolvers if the API surface changed ([API layer](./graphql-api-layer.md)).
+`prisma:migrate` explicitly regenerates the TypeScript client after Prisma 7's `migrate dev`; Prisma no longer does that implicitly (`packages/prisma/package.json:scripts`). Forgetting step 3 still silently desynchronizes Analytics' review mirror: `util/sync-schema.sh` copies the shared model files but excludes both `js.prisma` and `datasource.prisma`. Analytics keeps its own URL-bearing `datasource.prisma`, and `util/check-prisma-sync.sh` fails closed if that owned file disappears. The runtime uses the curated SQLAlchemy surface in `apps/analytics/src/models.py`. When an Analytics-used model changes, run `pnpm --filter @klicker-uzh/analytics generate` against the migrated live development database; it writes the ignored `src/models.generated.py` reference. Reconcile the relevant mapping changes into `src/models.py` and test them. Update GraphQL types/resolvers if the API surface changed ([API layer](./graphql-api-layer.md)).
 
 ## Prisma 7 client and datasource ownership
 
-JavaScript owns its runtime URL in `packages/prisma/prisma.config.ts`; the shared `datasource.prisma` declares only PostgreSQL. `packages/prisma/src/index.ts:createPrismaClient` is the single owner of `PrismaPg` construction and the development singleton. Apps, workers, seeds, and maintenance scripts import that shared client instead of constructing adapter-less clients. The Analytics Docker build likewise removes the shared JavaScript generator and datasource before restoring the two Analytics-owned files (`apps/analytics/Dockerfile`).
+JavaScript owns its runtime URL in `packages/prisma/prisma.config.ts`; the shared `datasource.prisma` declares only PostgreSQL. `packages/prisma/src/index.ts:createPrismaClient` is the single owner of `PrismaPg` construction and the development singleton. Apps, TypeScript workers, seeds, and maintenance scripts import that shared client instead of constructing adapter-less clients. The Python Analytics runtime is separate: it uses SQLAlchemy and psycopg directly, while its mirrored Prisma schema is reference material rather than an image-generation input.
 
 Prisma Client 7.8.0 and `prisma-json-types-generator` 5.1.0 emit declarations that compile directly under TypeScript 6. The former namespace patch, its invariant test, and the generator peer override are gone. Run generation through `pnpm --filter @klicker-uzh/prisma generate`; the package `check` regenerates before compiling. `prisma:migrate` and `prisma:push` wrappers also generate explicitly because Prisma 7 removed implicit post-command generation.
 
@@ -31,7 +31,7 @@ Prisma Client 7.8.0 and `prisma-json-types-generator` 5.1.0 emit declarations th
 
 The schema is a **folder** (`prisma.config.ts` → `schema: 'src/prisma/schema'`), 15 files split by area: `user`, `participant`, `course`, `element`, `quiz`, `response`, `gamification`, `sharing`, `chat`, `analytics`, `resources`, `verification`, `other`, plus `datasource.prisma` (PostgreSQL provider only) and `js.prisma` (generators only: `prisma-client` ESM output to `../client`, Pothos types, `prisma-json-types-generator`). JavaScript datasource and migration settings live in `prisma.config.ts`.
 
-The Python twin (`apps/analytics/prisma/schema/py.prisma`) uses `prisma-client-py` with `interface = "sync"` and **`enable_experimental_decimal = true`** — keep that flag whenever shared schema `Decimal` fields exist (chat credit fields are `@db.Decimal(18,6)`), and note the Python side still uses the older `prismaSchemaFolder` preview flag.
+The Analytics mirror under `apps/analytics/prisma/schema/` excludes the JavaScript generator and keeps an Analytics-owned datasource so the copied model files remain readable as a complete schema. It does not generate a Python Prisma client. `apps/analytics/src/models.py` is the curated runtime model surface. `sqlacodegen` writes an ignored `src/models.generated.py` reference from the migrated live development database; it must not overwrite the curated module.
 
 ## Migrations
 

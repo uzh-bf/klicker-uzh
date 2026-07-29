@@ -45,7 +45,7 @@ git status   # regenerated src/ops.ts + src/public/*.json MUST be committed with
 
 ## Check 4 — stale Prisma schema sync
 
-If `apps/analytics` complains about schema drift or a schema edit isn't visible: `pnpm run prisma:sync` (mirrors model files while preserving Analytics-owned `py.prisma` and `datasource.prisma`), then regenerate/build. Full ritual: [docs/data-and-migrations.md](../../../docs/data-and-migrations.md).
+If `apps/analytics` complains about schema drift or a schema edit isn't visible: `pnpm run prisma:sync` (mirrors shared model files while preserving the Analytics-owned `datasource.prisma`). When an Analytics-used model changed, run `pnpm --filter @klicker-uzh/analytics generate` against the migrated live development database and reconcile the ignored `src/models.generated.py` reference into the curated `src/models.py`; then rebuild. Full ritual: [docs/data-and-migrations.md](../../../docs/data-and-migrations.md).
 
 ## Check 5 — port conflicts
 
