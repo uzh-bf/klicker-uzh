@@ -6,18 +6,18 @@ import {
   jwtVerify,
   type KeyLike,
 } from 'jose'
+import { spawnSync } from 'node:child_process'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import {
   buildCodeApiExecutionRequest,
   CodeApiClientError,
   createCodeApiClient,
-  gradeCodeInvocationOutcomes,
   mintCodeApiJwt,
-  parseCodeApiRunnerOutput,
   type CodeApiClientConfig,
 } from '../src/codeApi.js'
 
 const NOW_SECONDS = 1_750_000_000
+const HAS_PYTHON = spawnSync('python3', ['--version']).status === 0
 
 let privateKeyPem: string
 let publicKey: KeyLike
@@ -73,6 +73,53 @@ function decodeRunnerPayload(code: string): Record<string, unknown> {
     string,
     unknown
   >
+}
+
+function codeTest(overrides: Partial<CodeTestCase> = {}): CodeTestCase {
+  return {
+    id: 'public-1',
+    name: 'public test',
+    args: [],
+    expectedOutput: 1,
+    visibility: 'public',
+    weight: 1,
+    ...overrides,
+  }
+}
+
+function submission(
+  tests: CodeTestCase[],
+  overrides: Partial<{
+    subject: string
+    role: string
+    studentCode: string
+    entrypoint: string
+    perTestTimeoutSeconds: number
+  }> = {}
+) {
+  return {
+    subject: 'participant-42',
+    studentCode: 'def solve(value=None):\n    return value',
+    entrypoint: 'solve',
+    tests,
+    perTestTimeoutSeconds: 5,
+    ...overrides,
+  }
+}
+
+function runGeneratedPythonRunner(
+  input: Parameters<typeof buildCodeApiExecutionRequest>[0]
+): Record<string, unknown> {
+  const request = buildCodeApiExecutionRequest(input)
+  const result = spawnSync('python3', ['-I', '-c', request.code], {
+    encoding: 'utf8',
+    maxBuffer: 2 * 1_024 * 1_024,
+    timeout: 10_000,
+  })
+  if (result.status !== 0) {
+    throw new Error(`Generated runner failed: ${result.stderr}`)
+  }
+  return JSON.parse(result.stdout) as Record<string, unknown>
 }
 
 describe('CodeAPI JWT', () => {
@@ -149,8 +196,9 @@ describe('CodeAPI execution requests', () => {
       ]
     `)
     expect(request.lang).toBe('python')
-    expect(request.code).toContain('subprocess.run')
-    expect(request.code).toContain('timeout=PER_TEST_TIMEOUT_SECONDS')
+    expect(request.code).toContain('subprocess.Popen')
+    expect(request.code).toContain('selectors.DefaultSelector')
+    expect(request.code).toContain('os.killpg')
     expect(decodeRunnerPayload(request.code)).toEqual({
       studentCode: 'def solve(value):\n    return value',
       entrypoint: 'solve',
@@ -207,14 +255,18 @@ describe('CodeAPI execution requests', () => {
     })
 
     await expect(
-      client.executeBatches({
-        subject: 'participant-42',
-        studentCode: 'def solve(value):\n    return value',
-        entrypoint: 'solve',
-        publicInvocations: [{ id: 'public-1', args: [1] }],
-        hiddenInvocations: [{ id: 'hidden-1', args: [2] }],
-        perTestTimeoutSeconds: 5,
-      })
+      client.executeAndGrade(
+        submission([
+          codeTest({ args: [1], expectedOutput: 1 }),
+          codeTest({
+            id: 'hidden-1',
+            name: 'hidden test',
+            args: [2],
+            expectedOutput: 2,
+            visibility: 'hidden',
+          }),
+        ])
+      )
     ).rejects.toMatchObject({
       name: 'CodeApiClientError',
       kind: 'session_reuse',
@@ -251,7 +303,7 @@ describe('CodeAPI execution requests', () => {
     ).toMatch(/^Bearer /)
   })
 
-  it('returns typed public and hidden batches for distinct sessions', async () => {
+  it('returns a sanitized grade for distinct public and hidden sessions', async () => {
     const fetchMock = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(
@@ -290,42 +342,39 @@ describe('CodeAPI execution requests', () => {
       fetch: fetchMock,
       nowSeconds: () => NOW_SECONDS,
       randomUUID: () => 'request-id',
-    }).executeBatches({
-      subject: 'participant-42',
-      studentCode: 'def solve(value):\n    return value',
-      entrypoint: 'solve',
-      publicInvocations: [{ id: 'public-1', args: [1] }],
-      hiddenInvocations: [{ id: 'hidden-1', args: [2] }],
-      perTestTimeoutSeconds: 5,
-    })
+    }).executeAndGrade(
+      submission([
+        codeTest({
+          args: [1],
+          expectedOutput: { answer: 1 },
+          weight: 2,
+        }),
+        codeTest({
+          id: 'hidden-1',
+          name: 'hidden test',
+          args: [2],
+          expectedOutput: 2,
+          visibility: 'hidden',
+        }),
+      ])
+    )
 
     expect(result).toEqual({
-      public: {
-        visibility: 'public',
-        sessionId: 'public-session',
-        outcomes: [
-          {
-            id: 'public-1',
-            status: 'ok',
-            actualOutput: { answer: 1 },
-            stdout: 'public output',
-            stderr: '',
-          },
-        ],
-      },
-      hidden: {
-        visibility: 'hidden',
-        sessionId: 'hidden-session',
-        outcomes: [
-          {
-            id: 'hidden-1',
-            status: 'timeout',
-            stdout: '',
-            stderr: '',
-          },
-        ],
-      },
+      pointsPercentage: 2 / 3,
+      publicTestResults: [
+        {
+          id: 'public-1',
+          name: 'public test',
+          passed: true,
+          actualOutput: { answer: 1 },
+          stdout: 'public output',
+          stderr: '',
+        },
+      ],
+      hiddenTestResults: [{ id: 'hidden-1', passed: false }],
     })
+    expect(JSON.stringify(result)).not.toContain('session')
+    expect(JSON.stringify(result)).not.toContain('hidden output')
   })
 
   it('surfaces Retry-After without reflecting the hostile response body', async () => {
@@ -339,13 +388,7 @@ describe('CodeAPI execution requests', () => {
     })
 
     await expect(
-      client.executeBatches({
-        subject: 'participant-42',
-        studentCode: 'def solve():\n    return 1',
-        entrypoint: 'solve',
-        publicInvocations: [{ id: 'public-1', args: [] }],
-        perTestTimeoutSeconds: 5,
-      })
+      client.executeAndGrade(submission([codeTest()]))
     ).rejects.toMatchObject({
       name: 'CodeApiClientError',
       kind: 'rate_limit',
@@ -374,18 +417,50 @@ describe('CodeAPI execution requests', () => {
     })
 
     await expect(
-      client.executeBatches({
-        subject: 'participant-42',
-        studentCode: 'def solve():\n    return 1',
-        entrypoint: 'solve',
-        publicInvocations: [{ id: 'public-1', args: [] }],
-        perTestTimeoutSeconds: 5,
-      })
+      client.executeAndGrade(submission([codeTest()]))
     ).rejects.toMatchObject({
       name: 'CodeApiClientError',
       kind: 'request_timeout',
     })
     expect(fetchMock).toHaveBeenCalledOnce()
+  })
+
+  it('rejects more than 20 configured tests before making a request', async () => {
+    const fetchMock = vi.fn<typeof fetch>()
+    const client = createCodeApiClient(config(), { fetch: fetchMock })
+
+    await expect(
+      client.executeAndGrade(
+        submission(
+          Array.from({ length: 21 }, (_, index) =>
+            codeTest({ id: `test-${index}` })
+          )
+        )
+      )
+    ).rejects.toMatchObject({
+      name: 'CodeApiClientError',
+      kind: 'request',
+    })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('enforces the shared JSON limits before making a request', async () => {
+    const fetchMock = vi.fn<typeof fetch>()
+    const client = createCodeApiClient(config(), { fetch: fetchMock })
+    const tooDeep = Array.from({ length: 22 }).reduce<unknown[]>(
+      (nested) => [nested],
+      []
+    )
+
+    await expect(
+      client.executeAndGrade(
+        submission([codeTest({ args: [tooDeep] as never })])
+      )
+    ).rejects.toMatchObject({
+      name: 'CodeApiClientError',
+      kind: 'request',
+    })
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it.each([
@@ -443,13 +518,7 @@ describe('CodeAPI execution requests', () => {
     })
 
     await expect(
-      client.executeBatches({
-        subject: 'participant-42',
-        studentCode: 'def solve():\n    return 1',
-        entrypoint: 'solve',
-        publicInvocations: [{ id: 'public-1', args: [] }],
-        perTestTimeoutSeconds: 5,
-      })
+      client.executeAndGrade(submission([codeTest()]))
     ).rejects.toMatchObject({
       name: 'CodeApiClientError',
       kind,
@@ -457,52 +526,161 @@ describe('CodeAPI execution requests', () => {
   })
 })
 
+describe.skipIf(!HAS_PYTHON)('generated Python runner isolation', () => {
+  it('executes pass, error, and timeout outcomes in fresh child processes', () => {
+    const result = runGeneratedPythonRunner({
+      studentCode: `
+def solve(mode):
+    if mode == "pass":
+        print("visible")
+        return 4
+    if mode == "error":
+        raise ValueError("boom")
+    while True:
+        pass
+`.trim(),
+      entrypoint: 'solve',
+      invocations: [
+        { id: 'pass', args: ['pass'] },
+        { id: 'error', args: ['error'] },
+        { id: 'timeout', args: ['timeout'] },
+      ],
+      perTestTimeoutSeconds: 1,
+    })
+
+    expect(result).toEqual({
+      version: 1,
+      outcomes: [
+        {
+          id: 'pass',
+          status: 'ok',
+          actualOutput: 4,
+          stdout: 'visible\n',
+          stderr: '',
+        },
+        {
+          id: 'error',
+          status: 'error',
+          stdout: '',
+          stderr: '',
+          exception: 'ValueError: boom',
+        },
+        {
+          id: 'timeout',
+          status: 'timeout',
+          stdout: '',
+          stderr: '',
+        },
+      ],
+    })
+  })
+
+  it('caps direct file-descriptor output and kills descendant process groups', () => {
+    const result = runGeneratedPythonRunner({
+      studentCode: `
+import os
+import subprocess
+import sys
+
+def solve(mode):
+    if mode == "fd-output":
+        os.write(1, b"x" * (1024 * 1024))
+        return 1
+    subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
+    return 1
+`.trim(),
+      entrypoint: 'solve',
+      invocations: [
+        { id: 'fd-output', args: ['fd-output'] },
+        { id: 'descendant', args: ['descendant'] },
+      ],
+      perTestTimeoutSeconds: 1,
+    })
+
+    expect(result).toEqual({
+      version: 1,
+      outcomes: [
+        {
+          id: 'fd-output',
+          status: 'error',
+          stdout: '',
+          stderr: '',
+          exception: 'output_limit_exceeded',
+        },
+        {
+          id: 'descendant',
+          status: 'timeout',
+          stdout: '',
+          stderr: '',
+        },
+      ],
+    })
+  })
+})
+
 describe('CodeAPI runner output', () => {
-  it('accepts pass, failure, and timeout fixtures and caps text', () => {
-    const output = parseCodeApiRunnerOutput(
-      JSON.stringify({
-        version: 1,
-        outcomes: [
-          {
-            id: 'pass',
-            status: 'ok',
-            actualOutput: { answer: 42 },
-            stdout: 'x'.repeat(9_000),
-            stderr: '',
-          },
-          {
-            id: 'failure',
-            status: 'error',
-            stdout: '',
-            stderr: 'bad input',
-            exception: 'ValueError: bad input',
-          },
-          {
-            id: 'timeout',
-            status: 'timeout',
-            stdout: '',
-            stderr: '',
-          },
-        ],
-      })
+  it('accepts pass, failure, and timeout fixtures and caps public text', async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(
+        JSON.stringify(
+          executeResponse('public-session', [
+            {
+              id: 'pass',
+              status: 'ok',
+              actualOutput: { answer: 42 },
+              stdout: 'x'.repeat(9_000),
+              stderr: '',
+            },
+            {
+              id: 'failure',
+              status: 'error',
+              stdout: '',
+              stderr: 'bad input',
+              exception: 'ValueError: bad input',
+            },
+            {
+              id: 'timeout',
+              status: 'timeout',
+              stdout: '',
+              stderr: '',
+            },
+          ])
+        ),
+        { status: 200 }
+      )
+    )
+    const result = await createCodeApiClient(config(), {
+      fetch: fetchMock,
+    }).executeAndGrade(
+      submission([
+        codeTest({
+          id: 'pass',
+          expectedOutput: { answer: 42 },
+        }),
+        codeTest({ id: 'failure' }),
+        codeTest({ id: 'timeout' }),
+      ])
     )
 
-    expect(output[0]).toMatchObject({
+    expect(result.publicTestResults[0]).toMatchObject({
       id: 'pass',
-      status: 'ok',
+      passed: true,
       actualOutput: { answer: 42 },
     })
-    expect(output[0]!.stdout.length).toBeLessThanOrEqual(8_192)
-    expect(output[1]).toEqual({
+    expect(result.publicTestResults[0]!.stdout?.length).toBeLessThanOrEqual(
+      4_096
+    )
+    expect(result.publicTestResults[1]).toEqual({
       id: 'failure',
-      status: 'error',
+      name: 'public test',
+      passed: false,
       stdout: '',
       stderr: 'bad input',
-      exception: 'ValueError: bad input',
     })
-    expect(output[2]).toEqual({
+    expect(result.publicTestResults[2]).toEqual({
       id: 'timeout',
-      status: 'timeout',
+      name: 'public test',
+      passed: false,
       stdout: '',
       stderr: '',
     })
@@ -528,13 +706,25 @@ describe('CodeAPI runner output', () => {
         outcomes: [{ id: 'one', status: 'passed', stdout: '', stderr: '' }],
       }),
     ],
-  ])('rejects malformed runner output: %s', (_label, stdout) => {
-    expect(() => parseCodeApiRunnerOutput(stdout)).toThrow(CodeApiClientError)
+  ])('rejects malformed runner output: %s', async (_label, stdout) => {
+    const response = executeResponse('public-session', [])
+    response.stdout = stdout
+    const client = createCodeApiClient(config(), {
+      fetch: vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(
+          new Response(JSON.stringify(response), { status: 200 })
+        ),
+    })
+
+    await expect(
+      client.executeAndGrade(submission([codeTest()]))
+    ).rejects.toBeInstanceOf(CodeApiClientError)
   })
 })
 
 describe('exact JSON grading', () => {
-  it('compares JSON values exactly and excludes hidden execution details', () => {
+  it('compares JSON values exactly and excludes hidden execution details', async () => {
     const tests: CodeTestCase[] = [
       {
         id: 'public-pass',
@@ -562,29 +752,51 @@ describe('exact JSON grading', () => {
       },
     ]
 
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify(
+            executeResponse('public-session', [
+              {
+                id: 'public-pass',
+                status: 'ok',
+                actualOutput: { nested: [true, null], answer: 42 },
+                stdout: 'visible',
+                stderr: '',
+              },
+              {
+                id: 'public-timeout',
+                status: 'timeout',
+                stdout: '',
+                stderr: '',
+              },
+            ])
+          ),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify(
+            executeResponse('hidden-session', [
+              {
+                id: 'hidden-fail',
+                status: 'ok',
+                actualOutput: 5,
+                stdout: 'secret output',
+                stderr: 'secret error',
+              },
+            ])
+          ),
+          { status: 200 }
+        )
+      )
+
     expect(
-      gradeCodeInvocationOutcomes(tests, [
-        {
-          id: 'public-pass',
-          status: 'ok',
-          actualOutput: { nested: [true, null], answer: 42 },
-          stdout: 'visible',
-          stderr: '',
-        },
-        {
-          id: 'hidden-fail',
-          status: 'ok',
-          actualOutput: 5,
-          stdout: 'secret output',
-          stderr: 'secret error',
-        },
-        {
-          id: 'public-timeout',
-          status: 'timeout',
-          stdout: '',
-          stderr: '',
-        },
-      ])
+      await createCodeApiClient(config(), { fetch: fetchMock }).executeAndGrade(
+        submission(tests)
+      )
     ).toEqual({
       pointsPercentage: 0.5,
       publicTestResults: [

@@ -34,7 +34,7 @@ pnpm --filter @klicker-uzh/graphql exec vitest run \
   test/validateCodeOptions.test.ts
 ```
 
-These protect public-versus-hidden projection, option validation, supported activity types, CODE-only stack rules, asymmetric CodeAPI claims, invocation-only public/hidden requests, hostile response parsing, output caps, and exact JSON grading. The generated Python runner also needs a direct smoke against a real Python interpreter for pass/error/timeout behavior. These checks do not replace the database-backed submission lifecycle tests, the gated live CodeAPI smoke, or browser/e2e flows required by later slices.
+These protect public-versus-hidden projection, option validation, shared JSON limits, supported activity types, CODE-only stack rules, asymmetric CodeAPI claims, invocation-only public/hidden requests, hostile response parsing, output caps, and exact JSON grading. When `python3` is available, `codeApi.test.ts` also executes the generated runner and verifies pass/error/timeout behavior, direct file-descriptor flooding, descendant cleanup, and process-group termination; Vitest marks those two tests skipped when Python is absent. These checks do not replace the database-backed submission lifecycle tests, the gated live CodeAPI smoke, or browser/e2e flows required by later slices.
 
 For Manage CODE browser proof, exercise the type transition itself: select CODE through `select-question-type`, require `code-options` to render without a CodeMirror console error, and verify `student-element-preview` contains public test names but no hidden test names. In the practice-quiz or microlearning wizard, a mixed CODE selection must disable the combined-stack action while leaving the separate-stack action enabled.
 

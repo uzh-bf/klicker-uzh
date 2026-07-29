@@ -36,6 +36,7 @@ They are unrelated models — never conflate them. A `Participant` joins a `Cour
 ### CODE element boundary
 
 - A CODE element is Python-only and contains starter code, an entrypoint, and 1–20 declarative JSON input/output tests. Tests are either public or hidden; participant-facing instance data contains public tests only.
+- Each test's argument array and expected output use the same authoring/runtime JSON boundary: at most 20 levels, 2,000 nodes, and 16 KiB when serialized.
 - CODE is supported only as the single element in a PracticeQuiz or MicroLearning stack. LiveQuiz, GroupActivity, mixed/multi-element stacks, and activity templates reject it.
 - Async attempts use the separate `CodeSubmission` model (`code.prisma`) with `PENDING | RUNNING | COMPLETED | FAILED` status and claim/retry fields. This keeps pending execution outside synchronous `QuestionResponse`; the worker/finalization flow is added in a later implementation slice.
 

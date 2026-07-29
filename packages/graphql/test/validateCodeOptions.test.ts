@@ -96,6 +96,35 @@ describe('CODE element option validation', () => {
       },
     ],
     [
+      'an argument beyond the shared JSON depth limit',
+      {
+        ...validOptions,
+        testCases: [
+          {
+            ...validOptions.testCases[0],
+            args: [
+              Array.from({ length: 22 }).reduce<unknown[]>(
+                (nested) => [nested],
+                []
+              ),
+            ],
+          },
+        ],
+      },
+    ],
+    [
+      'an expected output beyond the shared JSON byte limit',
+      {
+        ...validOptions,
+        testCases: [
+          {
+            ...validOptions.testCases[0],
+            expectedOutput: 'x'.repeat(16 * 1_024),
+          },
+        ],
+      },
+    ],
+    [
       'a non-positive weight',
       {
         ...validOptions,

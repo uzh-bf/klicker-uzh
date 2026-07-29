@@ -685,6 +685,62 @@ export interface ElementOptionsCaseStudy extends BaseElementOptions {
   cases: CaseStudyCase[]
 }
 
+export const CODE_JSON_MAX_DEPTH = 20
+export const CODE_JSON_MAX_NODES = 2_000
+export const CODE_JSON_MAX_BYTES = 16 * 1_024
+
+export function isCodeJsonValue(value: unknown): value is JsonValue {
+  const stack: Array<{ depth: number; value: unknown }> = [{ depth: 0, value }]
+  let nodes = 0
+
+  while (stack.length > 0) {
+    const current = stack.pop()!
+    nodes += 1
+    if (nodes > CODE_JSON_MAX_NODES || current.depth > CODE_JSON_MAX_DEPTH) {
+      return false
+    }
+
+    if (
+      current.value === null ||
+      typeof current.value === 'string' ||
+      typeof current.value === 'boolean'
+    ) {
+      continue
+    }
+    if (typeof current.value === 'number') {
+      if (!Number.isFinite(current.value)) return false
+      continue
+    }
+    if (Array.isArray(current.value)) {
+      for (const item of current.value) {
+        stack.push({ depth: current.depth + 1, value: item })
+      }
+      continue
+    }
+    if (
+      typeof current.value === 'object' &&
+      (Object.getPrototypeOf(current.value) === Object.prototype ||
+        Object.getPrototypeOf(current.value) === null)
+    ) {
+      for (const item of Object.values(current.value)) {
+        stack.push({ depth: current.depth + 1, value: item })
+      }
+      continue
+    }
+    return false
+  }
+
+  try {
+    const serialized = JSON.stringify(value)
+    return (
+      typeof serialized === 'string' &&
+      new TextEncoder().encode(serialized).byteLength <= CODE_JSON_MAX_BYTES
+    )
+  } catch {
+    return false
+  }
+}
+
 export type CodeTestCase = {
   id: string
   name: string

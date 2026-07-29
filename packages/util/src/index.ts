@@ -16,9 +16,6 @@ export * from './levels.js'
 // export everything from the jwt module
 export * from './jwt.js'
 
-// export everything from the CodeAPI module
-export * from './codeApi.js'
-
 // export everything from the email module
 export * from './email.js'
 

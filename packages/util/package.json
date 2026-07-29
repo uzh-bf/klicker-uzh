@@ -45,5 +45,15 @@
   "volta": {
     "extends": "../../package.json"
   },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./code-api": {
+      "types": "./dist/codeApi.d.ts",
+      "default": "./dist/codeApi.js"
+    }
+  },
   "type": "module"
 }

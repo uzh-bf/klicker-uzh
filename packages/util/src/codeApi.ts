@@ -3,6 +3,7 @@ import type {
   CodeTestCase,
   JsonValue,
 } from '@klicker-uzh/types'
+import { isCodeJsonValue } from '@klicker-uzh/types'
 import { importPKCS8, SignJWT } from 'jose'
 import { createHash, randomUUID } from 'node:crypto'
 import { isDeepStrictEqual } from 'node:util'
@@ -10,11 +11,9 @@ import { isDeepStrictEqual } from 'node:util'
 const CODEAPI_PRINCIPAL_SOURCE = 'klicker_jwt'
 const MAX_TOKEN_TTL_SECONDS = 300
 const MAX_INVOCATIONS = 20
-const MAX_RESPONSE_BYTES = 256 * 1024
+const MAX_RESPONSE_BYTES = 3 * 1_024 * 1_024
 const MAX_RUNNER_OUTPUT_CHARS = 4_096
 const MAX_EXCEPTION_CHARS = 2_048
-const MAX_JSON_DEPTH = 20
-const MAX_JSON_NODES = 2_000
 
 const CHILD_RUNNER = String.raw`
 import contextlib
@@ -94,8 +93,6 @@ sys.stdout.write(
 `
 
 export type CodeApiJwtAlgorithm = 'EdDSA' | 'RS256'
-export type CodeApiVisibility = 'public' | 'hidden'
-
 export interface CodeApiClientConfig {
   baseUrl: string
   issuer: string
@@ -108,12 +105,12 @@ export interface CodeApiClientConfig {
   requestTimeoutMs: number
 }
 
-export interface CodeApiInvocation {
+interface CodeApiInvocation {
   id: string
   args: JsonValue[]
 }
 
-export interface CodeApiExecutionRequestInput {
+interface CodeApiExecutionRequestInput {
   studentCode: string
   entrypoint: string
   invocations: CodeApiInvocation[]
@@ -125,7 +122,7 @@ export interface CodeApiExecutionRequest {
   code: string
 }
 
-export type CodeApiInvocationOutcome =
+type CodeApiInvocationOutcome =
   | {
       id: string
       status: 'ok'
@@ -147,25 +144,18 @@ export type CodeApiInvocationOutcome =
       stderr: string
     }
 
-export interface CodeApiBatchResult {
-  visibility: CodeApiVisibility
+interface CodeApiBatchResult {
   sessionId: string
   outcomes: CodeApiInvocationOutcome[]
 }
 
-export interface CodeApiBatchExecutionInput {
+export interface CodeApiSubmissionInput {
   subject: string
   role?: string
   studentCode: string
   entrypoint: string
-  publicInvocations?: CodeApiInvocation[]
-  hiddenInvocations?: CodeApiInvocation[]
+  tests: CodeTestCase[]
   perTestTimeoutSeconds: number
-}
-
-export interface CodeApiBatchExecutionResult {
-  public?: CodeApiBatchResult
-  hidden?: CodeApiBatchResult
 }
 
 export type CodeApiClientErrorKind =
@@ -345,8 +335,25 @@ export function buildCodeApiAuthContextHash(input: {
     .digest('base64url')
 }
 
-export async function mintCodeApiJwt(
-  rawConfig: CodeApiClientConfig,
+type CodeApiPrivateKey = Awaited<ReturnType<typeof importPKCS8>>
+
+async function importCodeApiPrivateKey(
+  config: CodeApiClientConfig
+): Promise<CodeApiPrivateKey> {
+  try {
+    return await importPKCS8(config.privateKeyPem, config.algorithm)
+  } catch (error) {
+    throw new CodeApiClientError(
+      'config',
+      'CodeAPI JWT private key is invalid',
+      { cause: error }
+    )
+  }
+}
+
+async function signCodeApiJwt(
+  config: CodeApiClientConfig,
+  privateKey: CodeApiPrivateKey,
   claims: {
     subject: string
     role?: string
@@ -356,7 +363,6 @@ export async function mintCodeApiJwt(
     jti?: string
   } = {}
 ): Promise<string> {
-  const config = normalizeConfig(rawConfig)
   const subject = requireString(claims.subject, 'CodeAPI JWT subject', 256)
   const role = claims.role
     ? requireString(claims.role, 'CodeAPI JWT role', 128)
@@ -366,17 +372,6 @@ export async function mintCodeApiJwt(
 
   if (!Number.isInteger(nowSeconds) || nowSeconds < 0) {
     throw new CodeApiClientError('config', 'CodeAPI JWT time is invalid')
-  }
-
-  let privateKey
-  try {
-    privateKey = await importPKCS8(config.privateKeyPem, config.algorithm)
-  } catch (error) {
-    throw new CodeApiClientError(
-      'config',
-      'CodeAPI JWT private key is invalid',
-      { cause: error }
-    )
   }
 
   return new SignJWT({
@@ -404,56 +399,43 @@ export async function mintCodeApiJwt(
     .sign(privateKey)
 }
 
+export async function mintCodeApiJwt(
+  rawConfig: CodeApiClientConfig,
+  claims: {
+    subject: string
+    role?: string
+  },
+  options: {
+    nowSeconds?: number
+    jti?: string
+  } = {}
+): Promise<string> {
+  const config = normalizeConfig(rawConfig)
+  return signCodeApiJwt(
+    config,
+    await importCodeApiPrivateKey(config),
+    claims,
+    options
+  )
+}
+
 function assertJsonValue(
   value: unknown,
-  label: string
+  label: string,
+  kind: CodeApiClientErrorKind
 ): asserts value is JsonValue {
-  const stack: Array<{ depth: number; value: unknown }> = [{ depth: 0, value }]
-  let nodes = 0
-
-  while (stack.length > 0) {
-    const current = stack.pop()!
-    nodes += 1
-    if (nodes > MAX_JSON_NODES || current.depth > MAX_JSON_DEPTH) {
-      throw new CodeApiClientError('response', `${label} is too complex`)
-    }
-
-    if (
-      current.value === null ||
-      typeof current.value === 'string' ||
-      typeof current.value === 'boolean'
-    ) {
-      continue
-    }
-    if (typeof current.value === 'number') {
-      if (!Number.isFinite(current.value)) {
-        throw new CodeApiClientError('response', `${label} is not valid JSON`)
-      }
-      continue
-    }
-    if (Array.isArray(current.value)) {
-      for (const item of current.value) {
-        stack.push({ depth: current.depth + 1, value: item })
-      }
-      continue
-    }
-    if (
-      typeof current.value === 'object' &&
-      Object.getPrototypeOf(current.value) === Object.prototype
-    ) {
-      for (const item of Object.values(current.value)) {
-        stack.push({ depth: current.depth + 1, value: item })
-      }
-      continue
-    }
-
-    throw new CodeApiClientError('response', `${label} is not valid JSON`)
+  if (!isCodeJsonValue(value)) {
+    throw new CodeApiClientError(kind, `${label} exceeds the CODE JSON limits`)
   }
 }
 
-function validateInvocationId(value: unknown, label: string): string {
+function validateInvocationId(
+  value: unknown,
+  label: string,
+  kind: CodeApiClientErrorKind = 'response'
+): string {
   if (typeof value !== 'string' || value.length === 0 || value.length > 128) {
-    throw new CodeApiClientError('response', `${label} is invalid`)
+    throw new CodeApiClientError(kind, `${label} is invalid`)
   }
   return value
 }
@@ -492,7 +474,7 @@ function validateExecutionInput(input: CodeApiExecutionRequestInput): void {
 
   const ids = new Set<string>()
   for (const invocation of input.invocations) {
-    const id = validateInvocationId(invocation.id, 'Invocation id')
+    const id = validateInvocationId(invocation.id, 'Invocation id', 'request')
     if (ids.has(id)) {
       throw new CodeApiClientError(
         'request',
@@ -506,7 +488,7 @@ function validateExecutionInput(input: CodeApiExecutionRequestInput): void {
         'CODE invocation arguments must be an array'
       )
     }
-    assertJsonValue(invocation.args, 'CODE invocation arguments')
+    assertJsonValue(invocation.args, 'CODE invocation arguments', 'request')
   }
 }
 
@@ -530,17 +512,35 @@ export function buildCodeApiExecutionRequest(
   const code = String.raw`
 import base64
 import json
+import os
+import selectors
+import signal
 import subprocess
 import sys
+import time
 
 PER_TEST_TIMEOUT_SECONDS = ${input.perTestTimeoutSeconds}
-MAX_CHILD_RESPONSE_CHARS = ${MAX_RUNNER_OUTPUT_CHARS * 2 + MAX_EXCEPTION_CHARS + 2_048}
+MAX_CHILD_PIPE_BYTES = 64 * 1024
 PAYLOAD = json.loads(base64.b64decode("${encodedPayload}").decode("utf-8"))
 CHILD_RUNNER = base64.b64decode("${encodedChildRunner}").decode("utf-8")
 
 
 def capped(value, limit):
     return value[:limit] if isinstance(value, str) else ""
+
+
+def kill_process_group(process):
+    try:
+        os.killpg(process.pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+    except PermissionError:
+        process.kill()
+    try:
+        process.wait(timeout=1)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait()
 
 
 def run_invocation(invocation):
@@ -550,15 +550,88 @@ def run_invocation(invocation):
         "args": invocation["args"],
     }
     try:
-        completed = subprocess.run(
+        process = subprocess.Popen(
             [sys.executable, "-I", "-c", CHILD_RUNNER],
-            input=json.dumps(child_payload, ensure_ascii=False),
-            capture_output=True,
-            text=True,
-            timeout=PER_TEST_TIMEOUT_SECONDS,
-            check=False,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            start_new_session=True,
         )
+    except OSError:
+        return {
+            "id": invocation["id"],
+            "status": "error",
+            "stdout": "",
+            "stderr": "",
+            "exception": "child_process_failed",
+        }
+
+    try:
+        process.stdin.write(
+            json.dumps(child_payload, ensure_ascii=False).encode("utf-8")
+        )
+        process.stdin.close()
+    except (BrokenPipeError, OSError):
+        kill_process_group(process)
+        return {
+            "id": invocation["id"],
+            "status": "error",
+            "stdout": "",
+            "stderr": "",
+            "exception": "child_process_failed",
+        }
+
+    streams = selectors.DefaultSelector()
+    streams.register(process.stdout, selectors.EVENT_READ, "stdout")
+    streams.register(process.stderr, selectors.EVENT_READ, "stderr")
+    output = {"stdout": bytearray(), "stderr": bytearray()}
+    total_bytes = 0
+    deadline = time.monotonic() + PER_TEST_TIMEOUT_SECONDS
+    failure = None
+
+    while streams.get_map():
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            failure = "timeout"
+            break
+
+        for key, _ in streams.select(timeout=min(remaining, 0.05)):
+            chunk = os.read(key.fileobj.fileno(), 8192)
+            if not chunk:
+                streams.unregister(key.fileobj)
+                continue
+            total_bytes += len(chunk)
+            if total_bytes > MAX_CHILD_PIPE_BYTES:
+                failure = "output_limit"
+                break
+            output[key.data].extend(chunk)
+        if failure:
+            break
+
+    if failure:
+        streams.close()
+        kill_process_group(process)
+        if failure == "timeout":
+            return {
+                "id": invocation["id"],
+                "status": "timeout",
+                "stdout": "",
+                "stderr": "",
+            }
+        return {
+            "id": invocation["id"],
+            "status": "error",
+            "stdout": "",
+            "stderr": output["stderr"]
+                .decode("utf-8", errors="replace")[:${MAX_RUNNER_OUTPUT_CHARS}],
+            "exception": "output_limit_exceeded",
+        }
+
+    streams.close()
+    try:
+        return_code = process.wait(timeout=max(0.01, deadline - time.monotonic()))
     except subprocess.TimeoutExpired:
+        kill_process_group(process)
         return {
             "id": invocation["id"],
             "status": "timeout",
@@ -566,26 +639,35 @@ def run_invocation(invocation):
             "stderr": "",
         }
 
-    if (
-        completed.returncode != 0
-        or len(completed.stdout) > MAX_CHILD_RESPONSE_CHARS
-    ):
+    try:
+        child_stdout = output["stdout"].decode("utf-8")
+        child_stderr = output["stderr"].decode("utf-8")
+    except UnicodeDecodeError:
         return {
             "id": invocation["id"],
             "status": "error",
             "stdout": "",
-            "stderr": capped(completed.stderr, ${MAX_RUNNER_OUTPUT_CHARS}),
+            "stderr": "",
+            "exception": "invalid_child_encoding",
+        }
+
+    if return_code != 0:
+        return {
+            "id": invocation["id"],
+            "status": "error",
+            "stdout": "",
+            "stderr": capped(child_stderr, ${MAX_RUNNER_OUTPUT_CHARS}),
             "exception": "child_process_failed",
         }
 
     try:
-        child_result = json.loads(completed.stdout)
+        child_result = json.loads(child_stdout)
     except (TypeError, ValueError):
         return {
             "id": invocation["id"],
             "status": "error",
             "stdout": "",
-            "stderr": capped(completed.stderr, ${MAX_RUNNER_OUTPUT_CHARS}),
+            "stderr": capped(child_stderr, ${MAX_RUNNER_OUTPUT_CHARS}),
             "exception": "invalid_child_result",
         }
 
@@ -656,9 +738,7 @@ function cappedString(
   return value.slice(0, maxLength)
 }
 
-export function parseCodeApiRunnerOutput(
-  stdout: string
-): CodeApiInvocationOutcome[] {
+function parseCodeApiRunnerOutput(stdout: string): CodeApiInvocationOutcome[] {
   if (
     typeof stdout !== 'string' ||
     stdout.length === 0 ||
@@ -727,7 +807,8 @@ export function parseCodeApiRunnerOutput(
       }
       assertJsonValue(
         outcome.actualOutput,
-        `CodeAPI outcome ${index} actual output`
+        `CodeAPI outcome ${index} actual output`,
+        'runner'
       )
       return {
         id,
@@ -922,14 +1003,16 @@ export function createCodeApiClient(
   const nowSeconds =
     dependencies.nowSeconds ?? (() => Math.floor(Date.now() / 1_000))
   const createRequestId = dependencies.randomUUID ?? randomUUID
+  let signingKeyPromise: Promise<CodeApiPrivateKey> | undefined
 
   async function executeBatch(
-    visibility: CodeApiVisibility,
-    input: CodeApiBatchExecutionInput,
+    input: CodeApiSubmissionInput,
     invocations: CodeApiInvocation[]
   ): Promise<CodeApiBatchResult> {
-    const token = await mintCodeApiJwt(
+    signingKeyPromise ??= importCodeApiPrivateKey(config)
+    const token = await signCodeApiJwt(
       config,
+      await signingKeyPromise,
       {
         subject: input.subject,
         role: input.role,
@@ -1019,53 +1102,85 @@ export function createCodeApiClient(
       )
     }
     return {
-      visibility,
       sessionId: parsed.sessionId,
       outcomes: parsed.outcomes,
     }
   }
 
   return {
-    async executeBatches(
-      input: CodeApiBatchExecutionInput
-    ): Promise<CodeApiBatchExecutionResult> {
-      const result: CodeApiBatchExecutionResult = {}
-      if (input.publicInvocations?.length) {
-        result.public = await executeBatch(
-          'public',
-          input,
-          input.publicInvocations
-        )
+    async executeAndGrade(
+      input: CodeApiSubmissionInput
+    ): Promise<CodeSubmissionResult> {
+      validateCodeApiTests(input.tests)
+      const publicInvocations = input.tests
+        .filter((test) => test.visibility === 'public')
+        .map(({ id, args }) => ({ id, args }))
+      const hiddenInvocations = input.tests
+        .filter((test) => test.visibility === 'hidden')
+        .map(({ id, args }) => ({ id, args }))
+
+      let publicResult: CodeApiBatchResult | undefined
+      let hiddenResult: CodeApiBatchResult | undefined
+      if (publicInvocations.length > 0) {
+        publicResult = await executeBatch(input, publicInvocations)
       }
-      if (input.hiddenInvocations?.length) {
-        result.hidden = await executeBatch(
-          'hidden',
-          input,
-          input.hiddenInvocations
-        )
-      }
-      if (!result.public && !result.hidden) {
-        throw new CodeApiClientError(
-          'request',
-          'At least one CODE invocation batch is required'
-        )
+      if (hiddenInvocations.length > 0) {
+        hiddenResult = await executeBatch(input, hiddenInvocations)
       }
       if (
-        result.public &&
-        result.hidden &&
-        result.public.sessionId === result.hidden.sessionId
+        publicResult &&
+        hiddenResult &&
+        publicResult.sessionId === hiddenResult.sessionId
       ) {
         throw new CodeApiClientError(
           'session_reuse',
           'Public and hidden CODE batches reused a sandbox session'
         )
       }
-      return result
+      return gradeCodeInvocationOutcomes(input.tests, [
+        ...(publicResult?.outcomes ?? []),
+        ...(hiddenResult?.outcomes ?? []),
+      ])
     },
   }
 }
 
-export function gradeCodeInvocationOutcomes(
+function validateCodeApiTests(tests: CodeTestCase[]): void {
+  if (
+    !Array.isArray(tests) ||
+    tests.length === 0 ||
+    tests.length > MAX_INVOCATIONS
+  ) {
+    throw new CodeApiClientError(
+      'request',
+      `CODE grading requires between 1 and ${MAX_INVOCATIONS} tests`
+    )
+  }
+
+  const ids = new Set<string>()
+  for (const test of tests) {
+    const id = validateInvocationId(test.id, 'CODE test id', 'request')
+    if (ids.has(id)) {
+      throw new CodeApiClientError('request', 'CODE test ids must be unique')
+    }
+    ids.add(id)
+    if (
+      typeof test.name !== 'string' ||
+      test.name.trim().length === 0 ||
+      (test.visibility !== 'public' && test.visibility !== 'hidden') ||
+      typeof test.weight !== 'number' ||
+      !Number.isFinite(test.weight) ||
+      test.weight <= 0 ||
+      !Array.isArray(test.args)
+    ) {
+      throw new CodeApiClientError('request', 'CODE test is invalid')
+    }
+    assertJsonValue(test.args, 'CODE test arguments', 'request')
+    assertJsonValue(test.expectedOutput, 'CODE expected output', 'request')
+  }
+}
+
+function gradeCodeInvocationOutcomes(
   tests: CodeTestCase[],
   outcomes: CodeApiInvocationOutcome[]
 ): CodeSubmissionResult {

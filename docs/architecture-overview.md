@@ -54,9 +54,9 @@ Frontends import generated documents from `@klicker-uzh/graphql/dist/ops` — ne
 
 ## CODE sandbox grading boundary
 
-`packages/util/src/codeApi.ts` owns the hostile boundary to CodeAPI. It loads the `CODEAPI_*` endpoint and asymmetric JWT settings, mints short-lived `klicker_jwt` tokens, and sends only student code plus test invocation arguments. Expected values, weights, and pass/fail decisions remain in Klicker.
+The server-only `@klicker-uzh/util/code-api` entry (`packages/util/src/codeApi.ts`) owns the hostile boundary to CodeAPI; it is deliberately absent from the browser-used util root. It loads the `CODEAPI_*` endpoint and asymmetric JWT settings, mints short-lived `klicker_jwt` tokens, and sends only student code plus test invocation arguments. Expected values, weights, and pass/fail decisions remain in Klicker.
 
-Public and hidden tests are sent in separate `/v1/exec` requests and must return distinct session IDs. Each generated Python batch runner starts a fresh isolated child process per test with a five-second maximum. The client accepts only the verified flat CodeAPI response, rejects artifacts and unsupported fields, caps response/output size, and parses a versioned result envelope before exact JSON comparison. Downstream submission finalization must persist public details and hidden pass/fail only; sandbox session IDs and hidden output never belong in participant-facing data.
+Public and hidden tests are derived from the authored visibility and sent in separate `/v1/exec` requests that must return distinct session IDs. Each generated Python batch runner starts a fresh child process group per test, drains its pipes under a byte cap, and kills the full group on timeout or overflow. Authoring and execution share depth, node, and serialized-byte limits for JSON inputs and outputs. The client accepts only the verified flat CodeAPI response, rejects artifacts and unsupported fields, parses a versioned result envelope, compares exact JSON, and returns only the sanitized `CodeSubmissionResult`; raw sessions and hidden diagnostics cannot cross its public boundary.
 
 The live integration remains gated on the separate CodeAPI deployment accepting the `klicker_jwt` principal source selected in [ADR 0003](./adr/0003-use-klicker-codeapi-principal-source.md). Service-free contract tests cover the client until that gate is open.
 

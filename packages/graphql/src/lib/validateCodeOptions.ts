@@ -1,9 +1,9 @@
 import type {
   CodeTestCase,
   ElementOptionsInput,
-  JsonValue,
   OptionsCodeInput,
 } from '@klicker-uzh/types'
+import { isCodeJsonValue } from '@klicker-uzh/types'
 
 const PYTHON_ENTRYPOINT = /^[A-Za-z_][A-Za-z0-9_]*$/
 const PYTHON_KEYWORDS = new Set([
@@ -44,34 +44,6 @@ const PYTHON_KEYWORDS = new Set([
   'yield',
 ])
 const UNSAFE_RESULT_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
-
-function isJsonValue(value: unknown): value is JsonValue {
-  if (
-    value === null ||
-    typeof value === 'boolean' ||
-    typeof value === 'string'
-  ) {
-    return true
-  }
-
-  if (typeof value === 'number') {
-    return Number.isFinite(value)
-  }
-
-  if (Array.isArray(value)) {
-    return value.every(isJsonValue)
-  }
-
-  if (typeof value === 'object') {
-    const prototype = Object.getPrototypeOf(value)
-    if (prototype !== Object.prototype && prototype !== null) {
-      return false
-    }
-    return Object.values(value).every(isJsonValue)
-  }
-
-  return false
-}
 
 type ValidatedCodeOptionsInput = Omit<
   OptionsCodeInput,
@@ -115,8 +87,8 @@ function validateCodeOptions(
       typeof testCase.name !== 'string' ||
       testCase.name.trim().length === 0 ||
       !Array.isArray(testCase.args) ||
-      !testCase.args.every(isJsonValue) ||
-      !isJsonValue(testCase.expectedOutput) ||
+      !isCodeJsonValue(testCase.args) ||
+      !isCodeJsonValue(testCase.expectedOutput) ||
       (testCase.visibility !== 'public' && testCase.visibility !== 'hidden') ||
       typeof testCase.weight !== 'number' ||
       !Number.isFinite(testCase.weight) ||
