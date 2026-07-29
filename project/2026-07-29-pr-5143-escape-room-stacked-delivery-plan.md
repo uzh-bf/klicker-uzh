@@ -155,7 +155,7 @@ When blocked by environment or authentication, complete every independent local 
 - [x] Create `trees/escape-room-stack`.
 - [x] Initialize `gh stack` with `codex/escape-room-qr` rooted at `v3`.
 - [x] Commit and independently review this plan; revision findings incorporated.
-- [ ] Extract and verify Layer 1.
+- [x] Extract and verify Layer 1.
 - [ ] Add, extract, and verify Layer 2.
 - [ ] Add, extract, and verify Layer 3.
 - [ ] Add, extract, and verify Layer 4.
@@ -165,3 +165,10 @@ When blocked by environment or authentication, complete every independent local 
 ## Current blocker
 
 - `gh auth status` reports that the active `rschlaefli` token is invalid. Local stack work can continue; draft publication requires re-authentication before `gh stack submit --auto`.
+
+## Layer 1 evidence
+
+- **Primary implementation commits:** `4ce964b08`, `01b7693a4`, `a270c49b5`, `37eacfb31`; the final review correction is committed with this progress update.
+- **Verification:** affected package checks, 13 focused GraphQL contract and placement tests, full `check:all`, full production build, Prisma 7 empty-schema replay and clean diff, analytics schema parity, and desktop/mobile browser evidence all passed.
+- **Independent review:** the security/correctness review found one minor no-op QR sample-solution control. QR Scan was removed from that UI capability group and the owner edit flow was rechecked semantically and visually. The simplification review found no code changes that reduced complexity without weakening the contracts.
+- **Known unrelated validation debt:** the engineering-wiki validator still reports the pre-existing missing `type` field in `docs/solutions/best-practice/repeat-production-seeds-use-prior-state.md`; Layer 1 documentation itself passes repository formatting and type checks.

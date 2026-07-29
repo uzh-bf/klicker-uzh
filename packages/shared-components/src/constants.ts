@@ -50,7 +50,6 @@ export const QUESTION_GROUPS: Record<string, ElementType[]> = {
     ElementType.Numerical,
     ElementType.Selection,
     ElementType.CaseStudy,
-    ElementType.QrScan,
   ],
   WITH_PERCENTAGES: [
     ElementType.Sc,

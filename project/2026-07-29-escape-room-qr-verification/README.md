@@ -14,7 +14,7 @@ isolated development database. No production or personal data was used.
 | File | Verified state |
 | --- | --- |
 | `01-qr-authoring-en-desktop.png` | QR Scan can be selected and authored in the English Manage UI at 1440×1000. |
-| `02-qr-edit-owner-print-en-desktop.png` | The exact owner sees the print-sheet launcher while editing the QR element. |
+| `02-qr-edit-owner-print-en-desktop.png` | The exact owner sees the print-sheet launcher and scoring controls, without the unsupported sample-solution toggle. |
 | `03-qr-print-en-desktop.png` | The English print view renders the correct sheet plus three shuffled decoys. |
 | `04-qr-print-de-mobile.png` | The German print view renders at 390×844 with localized controls and stacked cards. |
 
