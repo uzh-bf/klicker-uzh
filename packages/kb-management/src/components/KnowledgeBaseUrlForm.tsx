@@ -40,11 +40,6 @@ function KnowledgeBaseUrlForm({
       await createUrlResource({
         variables: { kbId, title: title.trim(), url: url.trim() },
       })
-      await onResourceCreated()
-      setTitle('')
-      setUrl('')
-      setUrlTouched(false)
-      toast({ type: 'success', message: t('kb.linkSuccess') })
     } catch (error) {
       console.error('Failed to create KB URL resource', error)
       const code = getGraphQLErrorCode(error)
@@ -55,7 +50,21 @@ function KnowledgeBaseUrlForm({
             ? t('kb.storageLimitError')
             : t('kb.linkError')
       toast({ type: 'error', message })
+      return
     }
+
+    try {
+      await onResourceCreated()
+    } catch (refreshError) {
+      console.error(
+        'Failed to refresh KB resources after link creation',
+        refreshError
+      )
+    }
+    setTitle('')
+    setUrl('')
+    setUrlTouched(false)
+    toast({ type: 'success', message: t('kb.linkSuccess') })
   }
 
   return (

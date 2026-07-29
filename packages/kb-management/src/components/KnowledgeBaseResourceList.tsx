@@ -546,21 +546,33 @@ function KnowledgeBaseResourceList({
     if (ingestingId !== null) return
     setIngestingId(resource.id)
     try {
-      await ingestResource({ variables: { id: resource.id } })
+      try {
+        await ingestResource({ variables: { id: resource.id } })
+      } catch (mutationError) {
+        console.error('Failed to queue KB resource ingestion', mutationError)
+        toast({ type: 'error', message: t('kb.ingestResourceError') })
+        return
+      }
+
       setSelectedIds((current) => {
         const next = new Set(current)
         next.delete(resource.id)
         return next
       })
-      await refreshWorkspace()
+
+      try {
+        await refreshWorkspace()
+      } catch (refreshError) {
+        console.error(
+          'Failed to refresh KB resources after ingestion',
+          refreshError
+        )
+      }
       setHistoryRefreshes((current) => ({
         ...current,
         [resource.id]: (current[resource.id] ?? 0) + 1,
       }))
       toast({ type: 'success', message: t('kb.ingestResourceSuccess') })
-    } catch (mutationError) {
-      console.error('Failed to queue KB resource ingestion', mutationError)
-      toast({ type: 'error', message: t('kb.ingestResourceError') })
     } finally {
       setIngestingId(null)
     }

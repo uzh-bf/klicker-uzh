@@ -27,13 +27,22 @@ function CreateKnowledgeBaseModal({
           description: description.trim() || null,
         },
       })
-      await onCreated()
-      toast({ type: 'success', message: t('kb.createSuccess') })
-      onClose()
     } catch (error) {
       console.error('Failed to create knowledge base', error)
       toast({ type: 'error', message: t('kb.createError') })
+      return
     }
+
+    try {
+      await onCreated()
+    } catch (refreshError) {
+      console.error(
+        'Failed to refresh knowledge bases after creation',
+        refreshError
+      )
+    }
+    toast({ type: 'success', message: t('kb.createSuccess') })
+    onClose()
   }
 
   return (

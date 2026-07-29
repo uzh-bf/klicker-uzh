@@ -46,50 +46,61 @@ function KnowledgeBaseFileDropzone({
 
     setUploading(true)
     try {
-      const { data } = await requestUpload({
-        variables: {
-          kbId,
-          fileName: file.name,
-          contentType,
-          sizeBytes: file.size,
-        },
-      })
-      const ticket = data?.requestKbFileUpload
-      if (!ticket) throw new Error('Upload ticket was not returned')
+      try {
+        const { data } = await requestUpload({
+          variables: {
+            kbId,
+            fileName: file.name,
+            contentType,
+            sizeBytes: file.size,
+          },
+        })
+        const ticket = data?.requestKbFileUpload
+        if (!ticket) throw new Error('Upload ticket was not returned')
 
-      const { BlobServiceClient } = await import('@azure/storage-blob')
-      const serviceClient = new BlobServiceClient(ticket.uploadSasURL)
-      const blockBlobClient = serviceClient
-        .getContainerClient(ticket.containerName)
-        .getBlockBlobClient(ticket.blobName)
-      await blockBlobClient.uploadData(file, {
-        blobHTTPHeaders: { blobContentType: contentType },
-      })
+        const { BlobServiceClient } = await import('@azure/storage-blob')
+        const serviceClient = new BlobServiceClient(ticket.uploadSasURL)
+        const blockBlobClient = serviceClient
+          .getContainerClient(ticket.containerName)
+          .getBlockBlobClient(ticket.blobName)
+        await blockBlobClient.uploadData(file, {
+          blobHTTPHeaders: { blobContentType: contentType },
+        })
 
-      await confirmUpload({
-        variables: {
-          kbId,
-          blobName: ticket.blobName,
-          title: file.name,
-          originalFilename: file.name,
-          mimeType: contentType,
-          sizeBytes: file.size,
-        },
-      })
-      await onResourceCreated()
+        await confirmUpload({
+          variables: {
+            kbId,
+            blobName: ticket.blobName,
+            title: file.name,
+            originalFilename: file.name,
+            mimeType: contentType,
+            sizeBytes: file.size,
+          },
+        })
+      } catch (error) {
+        console.error('Failed to upload KB file', error)
+        const code = getGraphQLErrorCode(error)
+        const message =
+          code === 'KB_RESOURCE_LIMIT_REACHED'
+            ? t('kb.resourceLimitError')
+            : code === 'KB_STORAGE_LIMIT_REACHED'
+              ? t('kb.storageLimitError')
+              : code === 'KB_UPLOAD_TICKET_MISMATCH'
+                ? t('kb.uploadMismatchError')
+                : t('kb.fileUploadError')
+        toast({ type: 'error', message })
+        return
+      }
+
+      try {
+        await onResourceCreated()
+      } catch (refreshError) {
+        console.error(
+          'Failed to refresh KB resources after upload',
+          refreshError
+        )
+      }
       toast({ type: 'success', message: t('kb.fileUploadSuccess') })
-    } catch (error) {
-      console.error('Failed to upload KB file')
-      const code = getGraphQLErrorCode(error)
-      const message =
-        code === 'KB_RESOURCE_LIMIT_REACHED'
-          ? t('kb.resourceLimitError')
-          : code === 'KB_STORAGE_LIMIT_REACHED'
-            ? t('kb.storageLimitError')
-            : code === 'KB_UPLOAD_TICKET_MISMATCH'
-              ? t('kb.uploadMismatchError')
-              : t('kb.fileUploadError')
-      toast({ type: 'error', message })
     } finally {
       setUploading(false)
     }

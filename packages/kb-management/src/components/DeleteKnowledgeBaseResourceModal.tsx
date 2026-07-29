@@ -29,13 +29,22 @@ function DeleteKnowledgeBaseResourceModal({
       await deleteResource({
         variables: { id: resource.id },
       })
-      await onDeleted()
-      toast({ type: 'success', message: t('kb.deleteResourceSuccess') })
-      onClose()
     } catch (error) {
       console.error('Failed to delete KB resource', error)
       toast({ type: 'error', message: t('kb.deleteResourceError') })
+      return
     }
+
+    try {
+      await onDeleted()
+    } catch (refreshError) {
+      console.error(
+        'Failed to refresh KB resources after deletion',
+        refreshError
+      )
+    }
+    toast({ type: 'success', message: t('kb.deleteResourceSuccess') })
+    onClose()
   }
 
   return (

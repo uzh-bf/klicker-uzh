@@ -29,13 +29,22 @@ function DeleteKnowledgeBaseModal({
       await deleteKb({
         variables: { id: knowledgeBase.id },
       })
-      await onDeleted()
-      toast({ type: 'success', message: t('kb.deleteSuccess') })
-      onClose()
     } catch (error) {
       console.error('Failed to delete knowledge base', error)
       toast({ type: 'error', message: t('kb.deleteError') })
+      return
     }
+
+    try {
+      await onDeleted()
+    } catch (refreshError) {
+      console.error(
+        'Failed to refresh knowledge bases after deletion',
+        refreshError
+      )
+    }
+    toast({ type: 'success', message: t('kb.deleteSuccess') })
+    onClose()
   }
 
   return (

@@ -64,13 +64,22 @@ function KnowledgeBaseChatbotBindings({
         refetchQueries,
         awaitRefetchQueries: true,
       })
-      await onChanged()
-      setSelectedChatbotId(undefined)
-      toast({ type: 'success', message: t('kb.chatbotAttachSuccess') })
     } catch (mutationError) {
       console.error('Failed to attach KB to chatbot', mutationError)
       toast({ type: 'error', message: t('kb.chatbotAttachError') })
+      return
     }
+
+    try {
+      await onChanged()
+    } catch (refreshError) {
+      console.error(
+        'Failed to refresh KB chatbot bindings after attach',
+        refreshError
+      )
+    }
+    setSelectedChatbotId(undefined)
+    toast({ type: 'success', message: t('kb.chatbotAttachSuccess') })
   }
 
   const handleDetach = async (chatbotId: string) => {
@@ -82,12 +91,21 @@ function KnowledgeBaseChatbotBindings({
         refetchQueries,
         awaitRefetchQueries: true,
       })
-      await onChanged()
-      toast({ type: 'success', message: t('kb.chatbotDetachSuccess') })
     } catch (mutationError) {
       console.error('Failed to detach KB from chatbot', mutationError)
       toast({ type: 'error', message: t('kb.chatbotDetachError') })
+      return
     }
+
+    try {
+      await onChanged()
+    } catch (refreshError) {
+      console.error(
+        'Failed to refresh KB chatbot bindings after detach',
+        refreshError
+      )
+    }
+    toast({ type: 'success', message: t('kb.chatbotDetachSuccess') })
   }
 
   return (
