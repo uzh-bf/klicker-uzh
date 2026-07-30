@@ -35,12 +35,14 @@ function Metric({
 
 function AttemptSummary({
   summary,
+  cohortSize,
 }: {
   summary: AdaptiveCohortAttemptSummary
+  cohortSize: number | null
 }) {
   const t = useTranslations()
   const metrics = [
-    { key: 'completed', value: summary.completed },
+    { key: 'completed', value: cohortSize },
     { key: 'classified', value: summary.classified },
     { key: 'capped', value: summary.capped },
     { key: 'poolExhausted', value: summary.poolExhausted },
@@ -239,7 +241,10 @@ function AdaptivePracticeQuizEvaluation({
           />
         ) : null}
 
-        <AttemptSummary summary={results.attemptSummary} />
+        <AttemptSummary
+          summary={results.attemptSummary}
+          cohortSize={results.cohortSize ?? null}
+        />
         <AdaptivePilotMetrics
           metrics={results.pilotMetrics}
           items={results.itemDiagnostics}

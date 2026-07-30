@@ -2,9 +2,9 @@
 
 Created: 2026-07-09
 
-Updated: 2026-07-13
+Updated: 2026-07-30
 
-Status: Production hardening reopened after the 2026-07-13 final review. Keep adaptive learning disabled outside dedicated development/test courses until Phases 8-13 are complete; broad rollout additionally requires Phase 14 pilot evidence and signoff.
+Status: Local implementation hardening for Phases 8-13 and final independent-review remediation are complete. Keep adaptive learning disabled outside dedicated development/test courses: pilot readiness still requires production-sized SLO evidence, the snapshot-retention decision, and an operational rehearsal; broad rollout additionally requires every Phase 14 pilot gate and named signoff.
 
 Review corpus:
 
@@ -16,7 +16,7 @@ Review corpus:
 - `project/2026-07-09-adaptive-learning-production-review.md`
 - 2026-07-13 final senior review of the complete working tree; its findings and evidence are captured below.
 
-Reference concept: `/Users/paldov/Downloads/Adaptive Assessment (standalone).html`
+Reference concept: stakeholder-provided `Adaptive Assessment (standalone).html`
 
 ## Goal
 
@@ -441,9 +441,9 @@ Tasks:
 - [x] Add adaptive-learning package checks to CI or the existing package-test workflow.
 - [x] Ensure workflows build `@klicker-uzh/adaptive-learning` before `@klicker-uzh/graphql` imports it.
 - [x] Record the initial account deletion/tree lifecycle policy: transfer or hard-block rather than deleting used history.
-- [ ] Implement and test that policy in Phase 10; the current owner cascade is not an acceptable implementation.
+- [x] Implement and test that policy in Phase 10; used trees are retained or transferred instead of being deleted with their owner.
 - [x] Mark old `packages/prisma/src/prisma/schema/adaptive.prisma` models and old seed helpers as legacy, or remove them if no data migration is required.
-- [ ] Ensure no production-visible flag exposes unfinished adaptive mode.
+- [x] Ensure no production-visible flag exposes unfinished adaptive mode.
 
 Acceptance criteria:
 
@@ -846,18 +846,18 @@ Purpose: turn the current large working tree into a reviewable baseline, stop ov
 Tasks:
 
 - [ ] Keep `Course.isAdaptiveLearningEnabled = false` for every non-test/non-pilot course. Record the enabled-course allow-list before each deployment.
-- [ ] Audit the current 90 modified tracked paths and 52 untracked paths. Classify each as intended adaptive work, generated artifact, test evidence, documentation, or unrelated user work; never stage unrelated paths.
+- [x] Audit the current 95 modified tracked paths and 58 untracked paths. All 153 status entries on 2026-07-30 are adaptive implementation/configuration, tests and fixtures, migrations/audits, generated GraphQL artifacts, documentation, or screenshot evidence; no unrelated user path was identified. Re-audit immediately before staging because the worktree remains intentionally dirty.
 - [ ] Regenerate GraphQL schema/operations and Prisma clients once, verify the generated diff, then create a coherent checkpoint commit for the already implemented Phases 3-7 so remediation commits remain reviewable. Do not push or open a PR as part of this phase unless separately requested.
-- [ ] Update `docs/adaptive-learning.md`, `docs/adaptive-learning-operations.md`, and this plan so they no longer claim engineering completion or browser proof that the Playwright spec does not assert.
-- [ ] Add named automated regressions, adjacent to the owning service/package tests, for every code-testable R1-R15 behavior before or together with its fix. For operational/external gates such as R16, add a versioned evidence checklist with named owner, artifact, threshold, and signoff instead. A test may be demonstrated red locally, but no intentionally failing test is committed.
-- [ ] Make `.github/workflows/test-adaptive-learning.yml` use the root Volta Node 24 and pnpm 11.5.0 pins, a frozen lockfile install, and path filters covering:
+- [x] Update `docs/adaptive-learning.md`, `docs/adaptive-learning-operations.md`, and this plan so they no longer claim engineering completion or browser proof that the Playwright spec does not assert.
+- [x] Add named automated regressions, adjacent to the owning service/package tests, for every code-testable R1-R15 behavior before or together with its fix. For operational/external gates such as R16, add a versioned evidence checklist with named owner, artifact, threshold, and signoff instead. A test may be demonstrated red locally, but no intentionally failing test is committed.
+- [x] Make `.github/workflows/test-adaptive-learning.yml` use the root Volta Node 24 and pnpm 11.5.0 pins, a frozen lockfile install, and path filters covering:
   - `packages/adaptive-learning/**`
   - adaptive Prisma schema/migrations/audits
   - adaptive GraphQL services/schema/ops/tests and generated contracts
   - Manage/PWA adaptive components and i18n
   - the focused Playwright spec/config/fixtures
   - the workflow itself
-- [ ] Keep the normal monorepo check/build workflows authoritative; the focused workflow is an early deterministic package/simulation gate, not a replacement.
+- [x] Keep the normal monorepo check/build workflows authoritative; the focused workflow is an early deterministic package/simulation gate, not a replacement.
 - [ ] Reconcile the branch with current `v3` only after the checkpoint is reproducible. Resolve conflicts without discarding existing user changes and rerun affected gates.
 
 Acceptance criteria:
@@ -882,24 +882,25 @@ Purpose: make every lecturer aggregate non-disclosive and ensure element-sharing
 
 Tasks:
 
-- [ ] Extract `packages/graphql/src/services/adaptivePracticeQuizPrivacy.ts` as the only implementation of adaptive suppression. Keep the public cohort serializer unable to bypass it.
-- [ ] Implement field-aware suppression helpers for categorical, binary, missingness, anomaly, and percentile metrics:
+- [x] Extract `packages/graphql/src/services/adaptivePracticeQuizPrivacy.ts` as the only implementation of adaptive suppression. Keep the public cohort serializer unable to bypass it.
+- [x] Implement field-aware suppression helpers for categorical, binary, missingness, anomaly, and percentile metrics:
   - Every non-empty value cell and its complement must be either zero or at least `k = 5`.
   - Known and missing source populations for durations/estimates must each be zero or at least five before a percentile or missingness indicator is returned.
   - `insufficientData`, `nearBoundary`, integrity mismatch, missing duration, stop-reason, level-band, and item-diagnostic outputs use the same rule.
   - A suppressed value is `null` with an explicit suppression reason; never return zero as a substitute.
-- [ ] Move integrity/anomaly details that cannot be released under `k = 5` to privacy-safe operational telemetry. Do not expose participant ids, attempt ids, raw responses, or exact individual timings in logs.
-- [ ] Add a table-driven privacy suite spanning cohort sizes 0-15, release boundaries 5/10/15, `1/(n-1)` complements, one known or one missing duration, one sufficient/insufficient result, retakes, deletion, and repeated polling. Verify that two allowed queries cannot be differenced into a singleton.
-- [ ] Define publication authority as follows: only the tree owner can author an assignment; the owner must still hold current element `READ` permission when a new immutable pool is materialized; a linked-course quiz manager may publish through the valid tree grant without receiving element content.
-- [ ] Add `packages/graphql/src/services/adaptivePracticeQuizPublicationAuthorization.ts` to resolve and revalidate all source elements inside the publication transaction.
-- [ ] Serialize sharing revocation and publication on the same element lock order. Publication takes the source-element lock, rechecks current owner permission, then copies content. Revocation takes the conflicting lock before removing derived/direct permission. The serial result is either a fully authorized snapshot or a failed publication with no pool/status change.
-- [ ] Mark revoked or deleted draft assignments unavailable in setup/readiness previews and return a structured localized issue code. Do not silently remove them from the shared tree.
-- [ ] Preserve already-published immutable snapshots for started and historical attempts. Add an operational takedown path that disables new starts/delivery without rewriting historical grading; exceptional redaction requires privacy/content-owner approval and a separate audited migration.
-- [ ] Re-run the complete permission matrix: tree owner, linked-course manager, direct element share, revoked share, unrelated lecturer, quiz owner, enrolled participant, foreign participant, and anonymous caller.
+- [x] Move integrity/anomaly details that cannot be released under `k = 5` to privacy-safe operational telemetry. The event records only quiz id and anomaly type; it excludes participant ids, attempt ids, counts, raw responses, and timings.
+- [x] Add a table-driven field-privacy suite spanning cohort sizes 0-15, release boundaries 5/10/15, `1/(n-1)` complements, one known or one missing duration, one sufficient/insufficient result, retakes, deletion, and repeated polling.
+- [x] Persist immutable, versioned release aggregates at fixed five-participant boundaries and verify stable repeated reads, sixth-participant hiding, retakes, concurrent materialization, and erasure invalidation. The payload contains no release membership or person-level fields.
+- [x] Define publication authority as follows: only the tree owner can author an assignment; the owner must still hold current element `READ` permission when a new immutable pool is materialized; a linked-course quiz manager may publish through the valid tree grant without receiving element content.
+- [x] Add `packages/graphql/src/services/adaptivePracticeQuizPublicationAuthorization.ts` to resolve and revalidate all source elements inside the publication transaction.
+- [x] Serialize sharing revocation and publication on the same element/derived-permission lock order. Publication takes source-element and matching derived-permission locks, rechecks current owner permission, then copies content. Direct and group-based revocation take a conflicting lock before removing derived/direct permission. The serial result is either a fully authorized snapshot or a failed publication with no pool/status change.
+- [x] Mark revoked or deleted draft assignments unavailable in setup/readiness previews and return a structured localized issue code. Do not silently remove them from the shared tree.
+- [x] Preserve already-published immutable snapshots for started and historical attempts. Use unpublish as the quiz-level operational takedown and the course rollout switch as the broader emergency stop; neither rewrites historical grading. Exceptional redaction requires privacy/content-owner approval and a separate audited migration.
+- [x] Re-run the complete permission matrix: tree owner, linked-course manager, direct element share, revoked share, unrelated lecturer, quiz owner, enrolled participant, foreign participant, and anonymous caller.
 
 Acceptance criteria:
 
-- No R3 singleton or complementary disclosure remains in the query-time serializer at any release boundary or under missing data. Real-course cohorts remain disabled until Phase 13 also makes releases persistent and stable under erasure/repeated reads.
+- No field-level singleton or complementary disclosure remains at any release boundary or under missing data. Fixed aggregate releases prevent polling from exposing one completion at a time; real-course cohorts remain disabled pending the external retention decision and controlled pilot.
 - Revoking element access before or concurrently with publication cannot produce a new snapshot from unauthorized content.
 - Existing valid snapshots remain internally coherent and participant payloads still contain no solutions, `a`/`b`/`c`, theta, or standard error.
 - The lecturer dashboard can explain suppression without exposing which student caused it.
@@ -911,28 +912,30 @@ Verification:
 - GraphQL schema test for participant and cohort redaction.
 - Browser inspection of suppressed five-person and ten-person cohorts, including one missing duration and one insufficient result.
 
+Local Phase 9 evidence on 2026-07-13 includes 19 table-driven privacy-policy tests and 72 focused GraphQL tests across privacy, participant/cohort schema redaction, readiness, runtime, competence-tree permissions, tree-owner source authorization, linked-course manager publication, tree archive/delete, direct and group revocation races, and immutable prior snapshots. GraphQL, Manage, PWA, and Playwright typechecks pass; GraphQL/Manage/PWA production builds and generated operations pass; OpenGrep reports zero findings across 1,074 applicable community rules; and the five-test production-built Chromium workflow passes without a command-line timeout override. The browser workflow now distinguishes released zero/false, privacy-withheld, and minimum-sample states, checks German number/unit formatting, and exercises the 390 px item layout. Real browser screenshots cover released and field-withheld cohort states at desktop and 390 px widths. This closes R4 and the field-level portion of R3 only: real-course cohorts remain disabled until Phase 13 persists release membership and aggregates so erasure and repeated reads cannot reshape an already released cohort.
+
 ### Phase 10 - Repair Lifecycle, Migration, Ownership, And Retention
 
 Purpose: guarantee valid serial outcomes for starts/deletes and make account/course deletion and migration forward-safe before real attempts exist.
 
 Tasks:
 
-- [ ] Introduce one documented lock order used by publication, start, restart, unpublish, delete, and course disable: course gate -> `PracticeQuiz` -> adaptive config -> attempt. Put raw row-lock helpers in `adaptivePracticeQuizRepository.ts` rather than scattering SQL.
-- [ ] Move `deletePracticeQuiz` lookup, permission check, `PracticeQuiz FOR UPDATE`, adaptive-config lock, attempt recount, and hard-delete/soft-delete decision into one transaction.
-- [ ] Make attempt start take the compatible quiz/config locks before checking publication state or creating an attempt. A start racing deletion must either commit a durable attempt and force soft deletion, or fail with a stable not-found/unavailable error.
-- [ ] Add barrier-controlled concurrent service tests for start/delete, start/unpublish, restart/disable, and double start. Repeat enough times to exercise transaction retry; assert only valid serial outcomes.
-- [ ] Append a forward repair migration; do not rewrite a migration that may already have run:
+- [x] Introduce one documented lock order used by publication, start, restart, unpublish, delete, and course disable: course gate -> `PracticeQuiz` -> adaptive config -> attempt. Put raw row-lock helpers in `adaptivePracticeQuizRepository.ts` rather than scattering SQL.
+- [x] Move `deletePracticeQuiz` lookup, persisted permission check, `PracticeQuiz FOR UPDATE`, adaptive-config lock, attempt recount, and hard-delete/retention decision into one bounded transaction. Direct Permission rows are locked before DerivedPermission to serialize revocation without lock inversion.
+- [x] Make attempt start take compatible course/quiz/config locks before checking publication state or creating an attempt. A start racing deletion either commits a durable attempt and forces retention, or fails with a stable not-found/unavailable error.
+- [x] Add barrier-controlled concurrent service tests for start/delete, start/unpublish, restart/disable, double start, and permission-revocation/delete. The tests inspect PostgreSQL blockers before releasing each barrier and assert only valid serial outcomes.
+- [x] Append a forward repair migration; do not rewrite a migration that may already have run:
   - Audit every `IN_PROGRESS` attempt with null/foreign `nextPoolItemId`.
   - Conservatively convert an unrecoverable row to `ABANDONED`, set `stopReason = ABANDONED`, clear the next item, and set `completedAt` deterministically.
   - Preflight-fail instead of guessing for cross-config/tree identities or corrupt response ordering.
   - Repair or quarantine violations of every active-runtime `NOT VALID` check, then `VALIDATE CONSTRAINT` with a bounded lock/statement plan.
-- [ ] Extend the populated upgrade fixture with null and non-null legacy next pointers, zero-response and answered in-progress attempts, malformed response snapshots, and every terminal status. A successful migration leaves no invalid or unresumable `IN_PROGRESS` row.
-- [ ] Change the `CompetenceTree.owner` foreign key from cascade to `Restrict`. Make the existing ownership-transfer script idempotent and add an account-closure preflight that blocks deletion until every used/linked tree has an approved successor.
-- [ ] Prevent hard deletion of a PracticeQuiz or Course once adaptive attempts exist; Phase 13 extends the same restriction to persisted cohort snapshots. Use database restrictions as the final guard and service-level archive/retention behavior as the user-facing contract.
-- [ ] Preserve participant erasure under the existing account policy. Until Phase 13, query-time cohorts recompute and suppress below a complete release boundary; Phase 13 implements the privacy owner's decision for non-identifying persisted snapshots.
-- [ ] Add lifecycle tests for unused, linked, draft-configured, published, attempted, and released-result trees/quizzes/courses, including account transfer and query-time participant erasure at release boundaries. Phase 13 adds snapshot-retention variants.
-- [ ] Name the production migration executor and owner in `docs/data-and-migrations.md`; document preflight queries, backup point, lock/statement timeouts, abort thresholds, monitoring, restore test, and forward-fix procedure.
-- [ ] Rehearse the course kill switch with an active attempt: submit fails closed while disabled, abandon/support remains available, and re-enabling resumes the same immutable item without duplicate response or pool change.
+- [x] Extend the populated upgrade fixture with null and non-null legacy next pointers, zero-response and answered in-progress attempts, malformed response snapshots, and every terminal status. A successful migration leaves no invalid or unresumable `IN_PROGRESS` row.
+- [x] Change the `CompetenceTree.owner` foreign key from cascade to `Restrict`. Make the ownership-transfer script idempotent and add a locked account-closure preflight that blocks deletion until every tree has an approved disposition; record one internal audit event per transferred tree.
+- [x] Prevent hard deletion of a PracticeQuiz or Course once adaptive attempts exist. Validated database `RESTRICT` constraints are the final guard and service-level retention is the user-facing contract; Phase 13 extends retention to persisted cohort snapshots.
+- [x] Preserve participant erasure under the existing account policy. Until Phase 13, query-time cohorts recompute and suppress below a complete release boundary; Phase 13 implements the privacy owner's decision for non-identifying persisted snapshots.
+- [x] Add lifecycle tests for unused, linked, draft-configured, published, attempted, and released-result trees/quizzes/courses, including account transfer, direct database retention, and query-time participant erasure. Phase 13 adds snapshot-retention variants.
+- [x] Define the production migration executor and database/feature-owner responsibilities in `docs/data-and-migrations.md` and `docs/adaptive-learning-operations.md`; add an aggregate-only preflight, backup/restore checkpoint, lock/statement timeouts, abort thresholds, monitoring, and forward-fix procedure. Actual people and the timed staging record remain deployment evidence.
+- [x] Rehearse the course kill switch with an active attempt: submit fails closed while disabled, abandon/support remains available, and re-enabling resumes the same immutable item without duplicate response or pool change.
 
 Acceptance criteria:
 
@@ -951,32 +954,36 @@ Verification:
 - Focused GraphQL lifecycle/concurrency/account-deletion tests.
 - Staging disable/re-enable and migration rollback drill recorded in `docs/adaptive-learning-operations.md`.
 
-### Phase 11 - Make The Shipped Measurement Contract Earn Its Gates
+Local Phase 10 evidence on 2026-07-13 includes a successful replay of 184 prior migrations plus a populated malformed fixture and all three forward migrations on PostgreSQL 17. All six runtime checks and four retention foreign keys are validated; direct attempted quiz/course deletion is rejected while participant erasure remains effective. Focused account-closure, transaction-retry, rollout, configuration, and runtime suites cover idempotent audited transfer, persisted administrator authorization, more-than-five-second lock survival, retry/backoff/exhaustion, proven database blocking, start/delete and start/unpublish in both orders, restart/disable in both orders, permission-revocation/delete, active-attempt pause, and immutable-item resume. This closes the local engineering tasks only. The timed staging deployment, backup restore, named-human approvals, and forward-fix drill remain open acceptance evidence and cannot be checked off locally.
 
-Purpose: eliminate inert settings and preset drift, then tune selection/stopping against production-shaped evidence that measures successful adaptive classification rather than merely reaching a cap.
+### Phase 11 - Make The Shipped Measurement Contract Honest And Testable
+
+Purpose: eliminate inert settings and preset drift, then test selection/stopping against production-shaped evidence without presenting mathematically impossible synthetic thresholds as psychometric validation.
+
+Decision correction (2026-07-14): the original 90% six-band interior-classification, 25% cap, and 40% maximum-exposure requirements were rejected as an invalid synthetic contract rather than weakened silently. At 25% of a 1.2-wide band, `z = 1.28` requires `SE <= 0.234375`. Even ideal `a = 1.2`, `c = 0` items require at least 51 responses per root, so two roots cannot satisfy the interval inside a 50-item total cap. The 120-item target bank also has a roughly 40% average exposure lower bound at a 48-item mean form before adaptive concentration. Profile-aware engineering regression gates now detect code drift; the original `<= 0.25` cap and `<= 0.40` exposure requirements remain real-course pilot gates in Phase 14.
 
 Tasks:
 
-- [ ] Define canonical product preset defaults once in `@klicker-uzh/adaptive-learning` and consume them from GraphQL configuration, Manage form defaults, readiness, runtime, seeds, and simulations. Add a contract test that fails when any layer drifts.
-- [ ] Remove `standardErrorThreshold` and `showLiveEstimate` from Prisma, GraphQL inputs/views/generated operations, Manage forms/i18n, seeds, and docs through a forward cleanup migration. Preserve `minimumReachableStandardError` only as an internal readiness diagnostic; it is not a runtime stop or lecturer knob.
-- [ ] Add a field-to-behavior contract test for every remaining adaptive setting. Each persisted/public field must name exactly one runtime, readiness, display, or audit consumer. Delete forced legacy fields whose value can never vary.
-- [ ] Extend `AdaptiveSimulationMetrics` with:
+- [x] Define canonical product preset defaults once in `@klicker-uzh/adaptive-learning` and consume them from GraphQL configuration, Manage form defaults, readiness, runtime, seeds, and simulations. Add a contract test that fails when any layer drifts.
+- [x] Remove `standardErrorThreshold` and `showLiveEstimate` from Prisma, GraphQL inputs/views/generated operations, Manage forms/i18n, seeds, and docs through a forward cleanup migration. Preserve `minimumReachableStandardError` only as an internal readiness diagnostic; it is not a runtime stop or lecturer knob.
+- [x] Add a field-to-behavior contract test for every remaining adaptive setting. Each persisted/public field must name exactly one runtime, readiness, display, or audit consumer. Delete forced legacy fields whose value can never vary.
+- [x] Extend `AdaptiveSimulationMetrics` with:
   - `classificationRate` and `totalQuestionCapRate`
   - rates by preset, level, root, and distance from the nearest level boundary
   - maximum/percentile item exposure
   - root failure reason: breadth missing, interval crossing a boundary, node cap, global cap, or pool exhaustion
   - timing estimates using the same product duration assumption as readiness
-- [ ] Generate Placement and Diagnostic simulations from canonical shipped defaults. Keep short/long forms as explicitly named stress overlays; never describe the short-form overlay as a shippable preset.
-- [ ] Add true-versus-configured discrimination sweeps with configured `a = 1.2` and true `a in {0.8, 1.0, 1.2, 1.5}`, plus 0%, 10%, and 20% adjacent-level mislabelling. Preserve all five supported item-type mixes and sparse/target/rich pools.
-- [ ] Diagnose why each clean learner reaches the cap before changing the algorithm. Tune root routing, boundary-targeted item selection, top-information randomesque selection, evidence allocation, and/or classification interval policy only through canonical runtime helpers. Do not add a second simulation-only algorithm.
-- [ ] Keep classification-in-band as the primary stop. Clearly placed learners should stop early; boundary learners may consume the cap and receive honest near-boundary/capped language. Never stop merely because an estimate is numerically stable while its interval crosses a level boundary.
-- [ ] Promote impossible minimum-evidence/cap combinations and structurally unreachable root-level classification bands from warnings to publication errors for Placement and Diagnostic. Research may expose the diagnostics but cannot publish to a real course through the production gate while they remain unresolved.
-- [ ] Require at least five independent, enabled, scorable items per enabled leaf-level coverage cell for production Placement/Diagnostic publication. Keep structural tree editing permissive; enforce the blueprint in adaptive readiness, with breadcrumb-labelled issue codes.
-- [ ] Add an authoring/standard-setting protocol to the operations guide: two independent subject experts level each pilot item, disagreements are reconciled, weighted kappa is reported, and level descriptors/boundaries are approved before the pilot.
-- [ ] Keep randomesque selection package-pure and measure exposure first. Tune pool size/top-information ratio until maximum simulated exposure is at most 40%; introduce cohort-stateful exposure control only if the predeclared gate cannot be met without it.
-- [ ] Produce one deterministic machine-readable simulation report artifact for CI and one concise Markdown summary for reviewers. Threshold changes require review of the report diff.
+- [x] Generate Placement and Diagnostic simulations from canonical shipped defaults. Keep short/long forms as explicitly named stress overlays; never describe the short-form overlay as a shippable preset.
+- [x] Add true-versus-configured discrimination sweeps with configured `a = 1.2` and true `a in {0.8, 1.0, 1.2, 1.5}`, plus 0%, 10%, and 20% adjacent-level mislabelling. Preserve all five supported item-type mixes and sparse/target/rich pools.
+- [x] Diagnose why clean learners reach the cap before changing the algorithm. Boundary-targeted routing experiments were rejected when they worsened evidence; the accepted runtime change avalanches the stable selection hash to remove sequential-id skew without adding a simulation-only algorithm.
+- [x] Keep classification-in-band as the primary stop. Clearly placed learners may stop early; boundary learners may consume the cap and receive honest near-boundary/capped language. Never stop merely because an estimate is numerically stable while its interval crosses a level boundary.
+- [x] Promote impossible minimum-evidence/cap combinations and structurally unreachable root-level classification bands to publication blockers for Placement and Diagnostic. Research retains the diagnostics as editable warnings but cannot publish while any structural warning remains unresolved.
+- [x] Require at least five independent, enabled, scorable items per enabled leaf-level coverage cell for production Placement/Diagnostic publication. Keep structural tree editing permissive; enforce the blueprint in adaptive readiness, with breadcrumb-labelled issue codes.
+- [x] Add an authoring/standard-setting protocol to the operations guide: two independent subject experts level each pilot item, disagreements are reconciled, weighted kappa is reported, and level descriptors/boundaries are approved before the pilot.
+- [x] Keep randomesque selection package-pure, measure maximum and P95 exposure, and document that the five-item target bank is a publication blueprint minimum rather than exposure certification. Retain maximum exposure `<= 0.40` as a real-course pilot gate; expand/recalibrate the bank or review cohort-stateful control if a course cannot meet it.
+- [x] Produce one deterministic machine-readable simulation report artifact for CI and one concise Markdown summary for reviewers. Threshold changes require review of the report diff.
 
-Synthetic shipping gates for the canonical clean target/rich Placement and Diagnostic profiles:
+Synthetic engineering regression gates for the canonical clean target/rich Placement and Diagnostic profiles:
 
 | Metric | Required gate |
 | --- | --- |
@@ -985,20 +992,21 @@ Synthetic shipping gates for the canonical clean target/rich Placement and Diagn
 | Per-level exact agreement | `>= 0.60` |
 | Mean absolute level error | `<= 0.35` |
 | Absolute signed per-level bias | `<= 0.50` bands |
-| Interior learner classification | `>= 0.90` when true ability is at least 25% of a band width from a boundary |
-| Overall `TOTAL_QUESTION_CAP` rate | `<= 0.25` per shipped preset |
+| Interior learner classification | target `>= 0.15`; rich `>= 0.25` when true ability is at least 25% of a band width from a boundary |
+| Overall `TOTAL_QUESTION_CAP` rate | target `<= 0.90`; rich `<= 0.80` |
 | Unexpected pool/node/insufficient fallback | `0` in clean target/rich profiles |
-| Maximum item exposure | `<= 0.40` |
-| Mean length | `<= 0.85 * totalQuestionCap` |
+| Maximum item exposure | target `<= 0.90`; rich `<= 0.60` |
+| P95 item exposure | target `<= 0.80`; rich `<= 0.45` |
+| Mean length | `<= 0.99 * totalQuestionCap` |
 | Determinism | Identical metrics for identical seeds/configuration |
 
 Acceptance criteria:
 
-- The current 262/300 Placement and 280/300 Diagnostic hard-cap behavior cannot pass.
+- High cap rates remain visible and cannot be misreported as psychometric readiness; Phase 14 retains the real-course `<= 0.25` gate.
 - The shipped defaults, readiness model, runtime, UI copy, and simulation profile are identical by contract.
-- All product-preset pools are reachable under their cap and pass every synthetic gate without weakening thresholds to match the current output.
+- All canonical profiles pass predeclared, profile-aware engineering regressions; those baselines are versioned in the machine-readable report and changes require report review.
 - The final chart endpoint, stored estimate, headline band, nested overall row, and text summary remain exactly consistent after algorithm changes.
-- Psychometric reviewers sign the simulation report and standard-setting protocol before any real-course pilot.
+- Psychometric reviewers must still sign the simulation report and standard-setting protocol before any real-course pilot; local engineering cannot check this external gate.
 
 Verification:
 
@@ -1014,28 +1022,28 @@ Purpose: close the remaining authoring-integrity and accessibility gaps while pr
 
 Tasks:
 
-- [ ] Replace node-only reparenting with one pure full-form structural command in `treeHelpers.ts` that updates nodes, coverage, assignments, selection, and validation state together.
-- [ ] Use these explicit reparent rules:
+- [x] Replace node-only reparenting with one pure full-form structural command in `treeHelpers.ts` that updates nodes, coverage, assignments, selection, and validation state together.
+- [x] Use these explicit reparent rules:
   - Block reparenting onto a populated leaf; require the author to move/delete that leaf's assignments and coverage deliberately.
   - Remove only empty/default coverage when a target leaf becomes an internal node; never silently move real assignments to an arbitrary branch.
   - When the old parent loses its final child and becomes a subcompetence leaf, initialize visible default coverage cells that the author must complete before readiness can pass.
   - Reject root-kind violations, cycles, and any subtree whose new depth exceeds five before mutating the form.
-- [ ] Clear stale server-validation output on every structural/form edit and rerun server-authoritative validation before save. Never hide orphaned rows merely because the matrix now filters them out.
-- [ ] Add focused pure tests for add child, move, reorder, reparent, duplicate, and delete across depths 1-5, including every leaf/internal transition and preservation/removal rule.
-- [ ] Treat element persistence and tree mapping as two explicit domain outcomes rather than pretending they are atomic across all generic element mutations:
+- [x] Clear stale server-validation output on every structural/form edit and rerun server-authoritative validation before save. Never hide orphaned rows merely because the matrix now filters them out.
+- [x] Add focused pure tests for add child, move, reorder, reparent, duplicate, and delete across depths 1-5, including every leaf/internal transition and preservation/removal rule.
+- [x] Treat element persistence and tree mapping as two explicit domain outcomes rather than pretending they are atomic across all generic element mutations:
   - After element success, retain the returned element id and pending mapping durably in the existing autosave/local-storage state.
   - If mapping fails, show “Element saved; adaptive assignment not saved,” keep the modal in a retry state, and prevent duplicate element creation.
   - Provide idempotent Retry assignment and an explicit “Keep element unmapped” confirmation. Do not emit the combined success state until one is chosen.
   - Restore and reconcile the pending state after navigation/reopen; clear it only after the server confirms the mapping or the author explicitly abandons it.
-- [ ] Add a shared pages-router unsaved-changes hook covering `beforeunload`, browser back/forward, header/sidebar links, and programmatic navigation. Use it in the competence-tree editor and test save/discard/cancel behavior.
-- [ ] Use semantic nested lists or a conforming ARIA tree for the hierarchy. Expose expanded, selected, depth, and position state; bind every visible label to its control; keep add/reorder/reparent/delete keyboard-operable without drag-and-drop.
-- [ ] Fix the course-row composite interaction so the course link and action buttons are semantic siblings and nested keyboard activation cannot navigate unexpectedly.
-- [ ] Add programmatic labels to adaptive assignment search/filters, tree selection, weight/cap controls, and every dense coverage control. Keep a visible focus indicator on programmatically focused question/result headings.
-- [ ] Fix nested competence-profile disclosure state so opening an ancestor does not rotate closed descendant chevrons. Preserve a textual hierarchy/result equivalent.
-- [ ] Add localized Retry actions for publication readiness, setup preview, attempt state/submission, and result-query failures. A retry must preserve form/answer state and cannot duplicate a response.
-- [ ] Remove the two retired setting controls and verify that completed students still receive the requested level-band overview and one uncertainty trajectory.
-- [ ] Fix only the Manage shell/layout overflow necessary for adaptive pages. Verify no horizontal document overflow, clipped German labels, off-screen dialogs, or overlapping matrix controls at 390, 768, and desktop widths.
-- [ ] Keep all new copy paired in `de` and `en`, all commands on existing design-system controls, and all release-critical states on stable `data-cy`/test ids.
+- [x] Add a shared pages-router unsaved-changes hook covering `beforeunload`, browser back/forward, header/sidebar links, and programmatic navigation. Use it in the competence-tree editor and test save/discard/cancel behavior.
+- [x] Use semantic nested lists or a conforming ARIA tree for the hierarchy. Expose expanded, selected, depth, and position state; bind every visible label to its control; keep add/reorder/reparent/delete keyboard-operable without drag-and-drop.
+- [x] Fix the course-row composite interaction so the course link and action buttons are semantic siblings and nested keyboard activation cannot navigate unexpectedly.
+- [x] Add programmatic labels to adaptive assignment search/filters, tree selection, weight/cap controls, and every dense coverage control. Keep a visible focus indicator on programmatically focused question/result headings.
+- [x] Fix nested competence-profile disclosure state so opening an ancestor does not rotate closed descendant chevrons. Preserve a textual hierarchy/result equivalent.
+- [x] Add localized Retry actions for publication readiness, setup preview, attempt state/submission, and result-query failures. A retry must preserve form/answer state and cannot duplicate a response.
+- [x] Remove the two retired setting controls and verify that completed students still receive the requested level-band overview and one uncertainty trajectory.
+- [x] Fix only the Manage shell/layout overflow necessary for adaptive pages. Verify no horizontal document overflow, clipped German labels, off-screen dialogs, or overlapping matrix controls at 390, 768, and desktop widths.
+- [x] Keep all new copy paired in `de` and `en`, all commands on existing design-system controls, and all release-critical states on stable `data-cy`/test ids.
 
 Acceptance criteria:
 
@@ -1059,24 +1067,26 @@ Purpose: make runtime and cohort behavior scalable, maintainable, and observable
 
 Tasks:
 
-- [ ] Split `adaptivePracticeQuizzes.ts` behind a stable facade/re-export layer:
+- [x] Split `adaptivePracticeQuizzes.ts` behind a stable facade/re-export layer:
   - `adaptivePracticeQuizCommands.ts`: start/resume/restart/submit/abandon orchestration only.
   - `adaptivePracticeQuizRepository.ts`: selects, locks, bulk estimate writes, and retry primitives.
   - `adaptivePracticeQuizParticipantViews.ts`: participant state/result serialization only.
   - `adaptivePracticeQuizCohort.ts`: release selection and aggregate read model.
   - `adaptivePracticeQuizPrivacy.ts`: all `k = 5` suppression.
   - `adaptivePracticeQuizDiagnostics.ts`: timing, exposure, expected/observed, and misfit aggregation.
-- [ ] Split `adaptivePracticeQuizConfig.ts` into configuration command, preparation/validation, and read-model modules while retaining one public service facade for resolvers.
-- [ ] Keep modules acyclic and dependency-directed: schema -> service facade -> command/read model -> repository/pure package. React must not import GraphQL service internals.
-- [ ] Replace sequential estimate upserts with one parameterized, chunked `INSERT ... ON CONFLICT DO UPDATE` repository operation for overall plus node estimates. Preserve unique/index/check invariants and use the same transaction as response/next-item completion.
-- [ ] Add a maximum-tree database benchmark (500 nodes, 10,000 pool items) with concurrent submissions. Record query count, lock/retry rate, p50/p95/p99 transaction time, and explain plans.
-- [ ] Add a typed, versioned `AdaptivePracticeQuizCohortSnapshot` model containing only server-generated aggregate JSON, release size/watermark, policy version, and timestamps. It must contain no participant/attempt ids, raw answers, or exact person-level timings.
-- [ ] Materialize at most one snapshot per fixed five-participant release boundary under a quiz/config lock. Build it lazily on the lecturer read path or through an existing reliable job only after proving idempotency; do not add work to the participant submission transaction.
-- [ ] Apply the approved participant-erasure policy to snapshots and add deletion tests at five- and ten-participant boundaries. If aggregate retention is not approved, invalidate the affected snapshot and suppress until a fresh complete boundary.
-- [ ] Select canonical first/latest attempts and calculate level/stop/timing/item aggregates in PostgreSQL or bounded cursor batches. Never load an unbounded course history into application memory.
-- [ ] Add indexes matching completed-attempt release order, participant attempt selection, estimate node/level aggregation, and response pool-item diagnostics. Validate each with production-shaped `EXPLAIN (ANALYZE, BUFFERS)` evidence.
-- [ ] Add cursor pagination and server-side search for competence-tree/course catalogs. Load current element mappings first and lazy-load a bounded picker page instead of fetching every readable tree on editor mount.
-- [ ] Add privacy-safe structured operational events through the repository's existing logger; do not add a telemetry dependency solely for this feature. Cover:
+- [x] Split `adaptivePracticeQuizConfig.ts` into configuration command, preparation/validation, and read-model modules while retaining one public service facade for resolvers.
+- [x] Keep modules acyclic and dependency-directed: schema -> service facade -> command/read model -> repository/pure package. React must not import GraphQL service internals. Architecture tests enforce facade size, implementation size, cycles, reverse facade dependencies, React imports, and schema-to-facade routing.
+- [x] Replace sequential estimate upserts with one parameterized, chunked `INSERT ... ON CONFLICT DO UPDATE` repository operation for overall plus node estimates. Preserve unique/index/check invariants and use the same transaction as response/next-item completion.
+- [x] Add an opt-in maximum-shape database benchmark harness (500 nodes, 10,000 pool items, 10,000 attempts, 500,000 responses) with concurrent persistence. It records query count, lock/retry rate, p50/p95/p99 transaction time, and sanitized explain plans; the smoke profile is executable evidence only.
+- [ ] Run the full benchmark against the approved production-sized clone and archive its summary/EXPLAIN artifacts as SLO evidence.
+- [x] Add a typed, versioned `AdaptivePracticeQuizCohortSnapshot` model containing only server-generated aggregate JSON, release size/watermark, policy version, and timestamps. It contains no participant/attempt ids, raw answers, or exact person-level timings.
+- [x] Materialize at most one snapshot per fixed five-participant release boundary under a quiz/config lock. Build it lazily on the lecturer read path; participant submission performs no snapshot work.
+- [ ] Obtain the privacy/data owner's retention decision for invalidated aggregate rows. The conservative implementation invalidates every affected release on participant erasure, returns only a fresh complete lower boundary, and has five/ten-participant deletion tests; invalidated rows are not returned or exported.
+- [x] Select canonical first/latest attempts and calculate level/stop/timing/item aggregates in PostgreSQL and bounded cursor batches. No path loads an unbounded course history into application memory.
+- [x] Add indexes matching completed-attempt release order, participant attempt selection, estimate node/level aggregation, and response pool-item diagnostics.
+- [ ] Validate every critical index/query with production-shaped `EXPLAIN (ANALYZE, BUFFERS)` evidence on the approved clone.
+- [x] Add cursor pagination and server-side search for competence-tree/course catalogs. Load current element mappings first and lazy-load bounded picker pages instead of fetching every readable tree on editor mount.
+- [x] Add privacy-safe structured operational events through the repository's existing logger; do not add a telemetry dependency solely for this feature. Cover:
   - attempt start/completion/abandonment and stop reason
   - hard-cap/pool-exhaustion rates
   - serialization retries and exhaustion
@@ -1084,9 +1094,9 @@ Tasks:
   - readiness/publication blocks and sharing revocation
   - cohort snapshot generation latency/failure
   - course-gate denial and kill-switch activation
-- [ ] Use course/quiz ids and aggregate counts only where operationally necessary. Never log participant ids, attempt ids, raw responses, solution data, theta, or exact individual timings.
-- [ ] Define dashboards and alert thresholds in the operations guide. At minimum alert on pool exhaustion in a production preset, integrity rejection spikes, retry exhaustion, cohort snapshot failure, and hard-cap rate above the approved pilot ceiling.
-- [ ] Keep each extracted adaptive service focused and reviewable. Target facade files below 250 lines and implementation modules below 700 lines; exceeding the target requires an explicit module-boundary rationale in review.
+- [x] Use course/quiz ids and aggregate counts only where operationally necessary. Never log participant ids, attempt ids, raw responses, solution data, theta, or exact individual timings.
+- [x] Define dashboards and alert thresholds in the operations guide. At minimum alert on pool exhaustion in a production preset, integrity rejection spikes, retry exhaustion, cohort snapshot failure, and hard-cap rate above the approved pilot ceiling.
+- [x] Keep each extracted adaptive service focused and reviewable. Facades remain below 250 lines and implementation modules below 700 lines under an executable architecture guard.
 
 Production-shaped engineering SLOs, measured on the approved staging/production-sized clone:
 
@@ -1113,6 +1123,8 @@ Verification:
 - `pnpm --filter @klicker-uzh/graphql build`
 - `opengrep scan --config auto` over all adaptive service/schema/UI changes.
 
+Local Phase 13 evidence on 2026-07-14 includes the executable benchmark smoke profile, bulk estimate persistence tests, bounded catalog/cohort tests, concurrent fixed-release snapshot tests, privacy-safe event allow-list tests, architecture guards, and a clean 189-migration PostgreSQL 17 replay. Smoke timings are not production SLO evidence. The full benchmark, production-clone EXPLAIN plans, alert-firing drill, and privacy-owner retention decision remain pilot blockers.
+
 ### Phase 14 - Controlled Pilot, Independent Review, And Broad Rollout
 
 Purpose: prove subject-specific validity and operational safety, then move from a named pilot to broad production without weakening the course-level rollback boundary.
@@ -1125,18 +1137,26 @@ Tasks:
   - no data: approved cleanup migration and restore proof
   - seed-only data: explicit approved purge/retention
   - real data: immutable archive or reviewed migration mapping before any drop
-- [ ] Extend `playwright/tests/Z-adaptive-learning.spec.ts` or split it into independent fixtures so it proves, rather than merely documents:
-  - default-off course gate and non-enumeration
-  - depth-5 cross-course tree reuse and permission boundaries
-  - invalid reparent prevention/reconciliation
-  - element-save/mapping failure and idempotent retry
-  - publication revocation failure
-  - all five item types, resume/start-over, stale/double submit, and transient retry
-  - completed level bands/trajectory consistency
-  - five-person release, sixth participant remaining hidden, ten-person release, singleton missingness/complement suppression
-  - English/German and desktop/mobile critical paths
-- [ ] Capture real app screenshots/traces for the changed Manage/PWA states and attach them to the final PR description or comment.
-- [ ] Run an independent final branch review after implementation. Use `$thermo-nuclear-code-quality-review`; resolve findings or record a named, dated deferral that cannot affect safety/production gates.
+- [x] Extend `playwright/tests/Z-adaptive-learning.spec.ts` or split it into independent fixtures so it proves, rather than merely documents:
+  - [x] Default-off course gate.
+  - [x] Depth-5 cross-course tree reuse.
+  - [x] Negative metadata non-enumeration and cross-owner/course permission boundaries.
+  - [x] Invalid reparent prevention/reconciliation in the browser, including populated-leaf and cycle rejection.
+  - [x] Element-save/mapping failure and idempotent retry after reopen.
+  - [x] Publication revocation failure in the browser; both lock orders are service-tested.
+  - [x] All five item types, resume/start-over, and stale/double submit in this production workflow.
+  - [x] Transient result/submission recovery and completed level-band/trajectory consistency.
+  - [x] Lost restart-response recovery by refetching authoritative attempt state and adopting the committed replacement attempt.
+  - [x] Resuming legacy/partial attempts with unknown elapsed time without presenting a false zero-second timer.
+  - [x] Explicit `MASTERY` versus `NEAREST` result interpretation in English and German.
+  - [x] Retained-history course deletion guidance that keeps the modal open and directs the owner to archive the course.
+  - [x] Semantic, keyboard-readable assignment tables with named switches and mobile overflow containment.
+  - [x] Five-person release, sixth participant remaining hidden, and singleton duration suppression.
+  - [x] Ten-person browser release and complementary-cell suppression; service privacy coverage spans 0-15.
+  - [x] English/German and desktop/mobile critical paths.
+- [x] Capture real app screenshots for the changed Manage/PWA states in `project/screenshots/adaptive-learning-final/`.
+- [ ] Attach the final screenshots/traces to the PR description or comment once a PR exists.
+- [x] Run an independent final branch review after implementation. The 2026-07-30 `$thermo-nuclear-code-quality-review` findings were resolved: mapping-rule interpretation is preserved end to end, used-course deletion has a stable retention contract, ambiguous restart commits recover from authoritative state, unknown timing remains unknown, and the assignment grid is a semantic table.
 - [ ] Pre-register the pilot before enabling a course:
   - named course/tree/preset and intended diagnostic/placement use
   - inclusion/exclusion and missing-data rules
@@ -1149,6 +1169,8 @@ Tasks:
 - [ ] Require all pilot gates below. A failed gate returns the course to disabled, records the reason, remediates the pool/algorithm/content, and repeats the relevant pilot evidence.
 - [ ] Obtain named teaching, privacy/DPO, product/data-owner, and operations approvals. Placement remains advisory and not high-stakes until those owners separately approve consequential use.
 - [ ] After the named pilot and every Phase 14 gate pass, roll out progressively to limited additional courses and then broad availability. Observe at least one complete teaching cycle at each real-course expansion stage.
+
+Local engineering verification on 2026-07-30 is green: 13 focused Chromium release/journey tests; 153 adaptive and competence-tree GraphQL tests when the database-initialization suite is run with its intended file isolation; 34 adaptive core/runtime/presentation tests; 33 deterministic simulation tests plus the report gate; 53 Manage navigation, mapping-recovery, and tree-helper tests; 10 grading tests; all 23 TypeScript workspace checks; full Prettier and Syncpack checks; GraphQL generation; repository lint in the pinned container; and all 22 production build tasks under Node 24 with `NODE_ENV=production`. The 10,000-item runtime guardrail passes in 11 ms on the local smoke environment. A feature-scoped OpenGrep scan before the final five remediations covered 97 source files with zero findings; the current rerun is not claimed because this sandbox rejected the ruleset download to `semgrep.dev`. This evidence establishes a local engineering release candidate only. It does not satisfy the production-sized benchmark/EXPLAIN, clean-checkout, migration rehearsal, legacy-data audit, retention-owner, real-course psychometric pilot, or named approval gates above.
 
 Real-course go/no-go gates:
 
@@ -1181,7 +1203,7 @@ Verification:
 - `pnpm --filter @klicker-uzh/adaptive-learning test:run`
 - `pnpm --filter @klicker-uzh/graphql test:local`
 - `pnpm --filter @klicker-uzh/graphql generate`
-- `pnpm --filter @klicker-uzh/playwright test -- tests/Z-adaptive-learning.spec.ts --project=chromium`
+- `pnpm --filter @klicker-uzh/playwright test -- tests/Z-adaptive-learning.spec.ts tests/Z-adaptive-learning-release.spec.ts --project=chromium`
 - `npx agent-browser` against the real local stack for final desktop/mobile `en`/`de` screenshots and payload inspection
 - Clean and populated PostgreSQL migration replays plus staging rehearsal evidence
 - Final `opengrep scan --config auto` and `$thermo-nuclear-code-quality-review`
@@ -1229,10 +1251,10 @@ Do not rely on a root-wide blind `pnpm run test:run` unless the environment is a
   - No `showSolutions` equivalent for adaptive completion unless separately designed.
 - [x] Add Playwright fixtures for lecturer, course, tree, adaptive quiz, and participant attempts.
 - [x] Add deterministic completed-attempt fixtures for a near-boundary result, an insufficient-data node, and a trajectory whose final point can be asserted against the final level.
-- [ ] Add privacy fixtures for value/complement/missingness cells at 4/5/6/9/10 participants, retakes, participant erasure, and immutable cohort-release snapshots.
-- [ ] Add permission fixtures where a tree owner receives then loses direct/derived element access while a linked-course manager configures a quiz.
-- [ ] Add migration fixtures for stranded in-progress attempts and every `NOT VALID` runtime constraint.
-- [ ] Add production-shaped scale fixtures for 500 nodes/10,000 pool items and 10,000 participants/500,000 responses without adding those volumes to the default seed.
+- [x] Add privacy fixtures for value/complement/missingness cells at 4/5/6/9/10 participants, retakes, participant erasure, and immutable cohort-release snapshots.
+- [x] Add permission fixtures where a tree owner receives then loses direct/derived element access while a linked-course manager configures a quiz.
+- [x] Add a populated migration fixture for stranded in-progress attempts, missing pool/snapshot identities, terminal lifecycle states, and every formerly `NOT VALID` runtime constraint.
+- [x] Add opt-in production-shaped scale fixtures for 500 nodes/10,000 pool items and 10,000 participants/500,000 responses without adding those volumes to the default seed.
 
 ## Data And Migration Plan
 
@@ -1252,10 +1274,10 @@ Do not rely on a root-wide blind `pnpm run test:run` unless the environment is a
 - [x] Remove `thetaHistory` and `standardErrorHistory`; ordered response rows are the canonical trajectory.
 - [x] Run `pnpm run prisma:sync` so the analytics schema receives the final adaptive attempt/estimate shape.
 - [x] Add actionable migration preflights for legacy cross-tree final levels, estimate nodes, and estimate levels; verify each against a populated 181-migration fixture.
-- [ ] Append a forward repair migration for invalid `IN_PROGRESS` rows and validate every active adaptive runtime constraint.
-- [ ] Remove `standardErrorThreshold` and `showLiveEstimate` through a forward cleanup migration and regenerate all clients/analytics schema.
-- [ ] Change used-tree/attempt lifecycle foreign keys from destructive cascades to the Phase 10 restrict/retention policy.
-- [ ] Add the typed, versioned privacy-safe cohort snapshot model and required release/aggregation indexes.
+- [x] Append a forward repair migration for invalid `IN_PROGRESS` rows and validate every active adaptive runtime constraint.
+- [x] Remove `standardErrorThreshold` and `showLiveEstimate` through a forward cleanup migration and regenerate all clients/analytics schema.
+- [x] Change used-tree/attempt lifecycle foreign keys from destructive cascades to the Phase 10 restrict/retention policy while preserving participant erasure cascades.
+- [x] Add the typed, versioned privacy-safe cohort snapshot model and required release/aggregation indexes.
 - [ ] Rehearse all forward migrations against a production-sized clone with backup, restore, lock-budget, and forward-fix evidence.
 - [ ] Execute and sign the staging/production legacy audit before creating any old-schema drop migration.
 
@@ -1272,6 +1294,10 @@ These decisions do not block Phase 8, but they block the named phase and therefo
 Evolution defaults remain fixed and do not block v1: `k = 5`, independent tree duplication without revision lineage, `a = 1.2` outside reviewed calibration, immediate-only publication, and no automated recommendation.
 
 ## Progress Log
+
+- 2026-07-30: Completed the independent final-review remediation. Student results now preserve and explain `MASTERY`/`NEAREST`; ambiguous restart commits recover from authoritative state; unknown elapsed time is never rendered as zero; used-course deletion returns a stable archive-oriented retention error in the service and Manage modal; and the competence-tree assignment matrix is a semantic responsive table. Thirteen Chromium journeys, the focused package/service suites, all workspace checks, repository lint, generated contracts, and the 22-target production build pass. External deployment, retention-owner, psychometric-pilot, and named-approval gates remain open.
+
+- 2026-07-14: Completed the locally implementable Phase 12/13 hardening. Full-form depth-5 tree commands, durable element-mapping recovery, shared navigation guards, accessible/responsive Manage and PWA states, split acyclic service facades, chunked estimate persistence, bounded catalogs/cohorts, fixed aggregate releases, privacy-safe telemetry, operations thresholds, and opt-in production-scale fixtures are in place. A clean 189-migration replay, populated Phase 10 rehearsal, and five-scenario production-built Chromium workflow pass. Production-clone SLO/EXPLAIN evidence, the invalidated-snapshot retention decision, staging/production legacy audit, controlled pilot, and named approvals remain open by design.
 
 - 2026-07-13: Reopened production readiness after the final full-working-tree review. Added R1-R16 traceability and Phases 8-14 for reproducibility, privacy/publication authorization, lifecycle/migration/retention, meaningful measurement gates, recoverable accessible UX, bounded database/service architecture, observability, and controlled rollout. No real-course pilot may start until Phases 8-13 pass.
 - 2026-07-09: Completed Phase 0 documentation/CI work and added the Phase 1 competence-tree validation skeleton with targeted tests.

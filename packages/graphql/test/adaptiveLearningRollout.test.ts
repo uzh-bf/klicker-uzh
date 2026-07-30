@@ -90,7 +90,112 @@ describe('adaptive-learning course rollout administration', () => {
       )
     ).rejects.toMatchObject({ extensions: { code: 'NOT_FOUND' } })
   })
+
+  it('locks persisted administrator state and waits beyond five seconds for the course', async () => {
+    const admin = await prisma.user.create({
+      data: {
+        email: 'adaptive-rollout-lock-admin@example.com',
+        shortname: 'adaptive-rollout-lock-admin',
+        role: DB.UserRole.ADMIN,
+      },
+    })
+    const course = await createCourse(admin.id)
+    const ctx = contextFor(admin.id, DB.UserRole.ADMIN)
+    const courseBlocker = holdCourseShareLock(course.id)
+    await courseBlocker.ready
+
+    const enable = setCourseAdaptiveLearningEnabled(
+      { courseId: course.id, enabled: true },
+      ctx
+    )
+    let demotion!: Promise<DB.User>
+    try {
+      await waitForBlockedDatabaseQuery('%FROM "Course"%FOR UPDATE%')
+      demotion = (async () =>
+        await prisma.user.update({
+          where: { id: admin.id },
+          data: { role: DB.UserRole.USER },
+        }))()
+      await waitForBlockedBackendCount(2)
+      await new Promise((resolve) => setTimeout(resolve, 5_250))
+    } finally {
+      courseBlocker.release()
+      await courseBlocker.done
+    }
+    const [enabledCourse, demotedUser] = await Promise.all([enable, demotion])
+
+    expect(enabledCourse.isAdaptiveLearningEnabled).toBe(true)
+    expect(demotedUser.role).toBe(DB.UserRole.USER)
+    await expect(
+      setCourseAdaptiveLearningEnabled(
+        { courseId: course.id, enabled: false },
+        ctx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'ADAPTIVE_ROLLOUT_FORBIDDEN' },
+    })
+  }, 15_000)
 })
+
+function holdCourseShareLock(courseId: string) {
+  let release!: () => void
+  let ready!: () => void
+  const readyPromise = new Promise<void>((resolve) => {
+    ready = resolve
+  })
+  const releasePromise = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  const done = prisma.$transaction(
+    async (tx) => {
+      await tx.$queryRaw`
+        SELECT "id"
+        FROM "Course"
+        WHERE "id" = ${courseId}::uuid
+        FOR SHARE
+      `
+      ready()
+      await releasePromise
+    },
+    { timeout: 12_000 }
+  )
+  return { ready: readyPromise, release, done }
+}
+
+async function waitForBlockedDatabaseQuery(queryPattern: string) {
+  for (let attempt = 0; attempt < 300; attempt++) {
+    const [state] = await prisma.$queryRaw<Array<{ blocked: boolean }>>`
+      SELECT EXISTS (
+        SELECT 1
+        FROM pg_stat_activity
+        WHERE datname = current_database()
+          AND pid <> pg_backend_pid()
+          AND query LIKE ${queryPattern}
+          AND cardinality(pg_blocking_pids(pid)) > 0
+      ) AS blocked
+    `
+    if (state?.blocked) return
+    await new Promise((resolve) => setTimeout(resolve, 10))
+  }
+  throw new Error(`Timed out waiting for blocked query ${queryPattern}.`)
+}
+
+async function waitForBlockedBackendCount(expectedCount: number) {
+  for (let attempt = 0; attempt < 300; attempt++) {
+    const [state] = await prisma.$queryRaw<Array<{ blockedCount: number }>>`
+      SELECT COUNT(*)::integer AS "blockedCount"
+      FROM pg_stat_activity
+      WHERE datname = current_database()
+        AND pid <> pg_backend_pid()
+        AND cardinality(pg_blocking_pids(pid)) > 0
+    `
+    if ((state?.blockedCount ?? 0) >= expectedCount) return
+    await new Promise((resolve) => setTimeout(resolve, 10))
+  }
+  throw new Error(
+    `Timed out waiting for ${expectedCount} blocked database backends.`
+  )
+}
 
 async function createCourse(ownerId: string) {
   const endDate = new Date('2027-07-13T00:00:00.000Z')

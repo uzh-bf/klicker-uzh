@@ -28,8 +28,6 @@ export type AdaptiveReadinessIssueLike = {
     totalQuestionCap?: number | null
     classifiableLevelCount?: number | null
     levelCount?: number | null
-    targetQuestionCount?: number | null
-    maximumQuestionCount?: number | null
     estimatedDurationMinutes?: number | null
     secondsPerItem?: number | null
     assignmentId?: number | null
@@ -47,6 +45,10 @@ export function formatAdaptiveReadinessIssue(
       return t(
         'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_COURSE_DISABLED'
       )
+    case 'ADAPTIVE_COMPETENCE_TREE_UNAVAILABLE':
+      return t(
+        'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_COMPETENCE_TREE_UNAVAILABLE'
+      )
     case 'ADAPTIVE_NO_ENABLED_COMPETENCE':
       return t(
         'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_NO_ENABLED_COMPETENCE'
@@ -59,6 +61,11 @@ export function formatAdaptiveReadinessIssue(
     case 'ADAPTIVE_ITEM_UNAVAILABLE':
       return t(
         'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_ITEM_UNAVAILABLE',
+        { elementName: p.elementName ?? '' }
+      )
+    case 'ADAPTIVE_ITEM_ACCESS_REVOKED':
+      return t(
+        'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_ITEM_ACCESS_REVOKED',
         { elementName: p.elementName ?? '' }
       )
     case 'ADAPTIVE_ITEM_NOT_SCORABLE':
@@ -74,6 +81,14 @@ export function formatAdaptiveReadinessIssue(
     case 'ADAPTIVE_COVERAGE_CELL_EMPTY':
       return t(
         'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_COVERAGE_CELL_EMPTY'
+      )
+    case 'ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM':
+      return t(
+        'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM',
+        {
+          minimumValue: p.minimumValue ?? 0,
+          enabledAssignmentCount: p.enabledAssignmentCount ?? 0,
+        }
       )
     case 'ADAPTIVE_COVERAGE_BELOW_TARGET':
       return t(
@@ -109,11 +124,6 @@ export function formatAdaptiveReadinessIssue(
           totalQuestionCap: p.totalQuestionCap ?? 0,
         }
       )
-    case 'ADAPTIVE_STANDARD_ERROR_UNREACHABLE':
-      return t(
-        'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_STANDARD_ERROR_UNREACHABLE',
-        { nodeName: p.nodeName ?? '' }
-      )
     case 'ADAPTIVE_CLASSIFICATION_BANDS_UNREACHABLE':
       return t(
         'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_CLASSIFICATION_BANDS_UNREACHABLE',
@@ -121,14 +131,6 @@ export function formatAdaptiveReadinessIssue(
           nodeName: p.nodeName ?? '',
           classifiableLevelCount: p.classifiableLevelCount ?? 0,
           levelCount: p.levelCount ?? 0,
-        }
-      )
-    case 'ADAPTIVE_COVERAGE_TARGETS_CAPPED':
-      return t(
-        'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_COVERAGE_TARGETS_CAPPED',
-        {
-          targetQuestionCount: p.targetQuestionCount ?? 0,
-          maximumQuestionCount: p.maximumQuestionCount ?? 0,
         }
       )
     case 'ADAPTIVE_TIME_BUDGET_EXCEEDED':
@@ -162,10 +164,6 @@ export function formatAdaptiveReadinessIssue(
       return t(
         'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_CLASSIFICATION_Z_INVALID',
         { maximumValue: p.maximumValue ?? 0 }
-      )
-    case 'ADAPTIVE_STANDARD_ERROR_THRESHOLD_INVALID':
-      return t(
-        'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_STANDARD_ERROR_THRESHOLD_INVALID'
       )
     case 'ADAPTIVE_TOP_INFORMATION_RATIO_INVALID':
       return t(

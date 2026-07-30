@@ -15,6 +15,15 @@ import {
   submitAdaptivePracticeQuizResponse,
   withSerializableRetry,
 } from '../src/services/adaptivePracticeQuizzes.js'
+import {
+  deleteCourse,
+  setCourseAdaptiveLearningEnabled,
+} from '../src/services/courses.js'
+import {
+  deletePracticeQuiz,
+  publishPracticeQuiz,
+  unpublishPracticeQuiz,
+} from '../src/services/practiceQuizzes.js'
 
 describe('adaptive practice quiz service', () => {
   beforeEach(async () => {
@@ -34,16 +43,15 @@ describe('adaptive practice quiz service', () => {
       DB.UserRole.PARTICIPANT
     )
 
-    const [first, second] = await Promise.all([
-      startAdaptivePracticeQuizAttempt(
-        { practiceQuizId: fixture.quizId },
-        participantCtx
-      ),
-      startAdaptivePracticeQuizAttempt(
-        { practiceQuizId: fixture.quizId },
-        participantCtx
-      ),
-    ])
+    const starts = await Promise.all(
+      Array.from({ length: 6 }, () =>
+        startAdaptivePracticeQuizAttempt(
+          { practiceQuizId: fixture.quizId },
+          participantCtx
+        )
+      )
+    )
+    const first = starts[0]!
     const resumed = await resumeAdaptivePracticeQuizAttempt(
       { attemptId: first.attemptId },
       participantCtx
@@ -58,11 +66,14 @@ describe('adaptive practice quiz service', () => {
       answeredQuestions: 0,
       questionNumber: 1,
       maximumQuestions: 8,
+      elapsedSeconds: null,
       showTimer: true,
       canStartNewAttempt: false,
     })
     expect(first.servedItem).not.toBeNull()
-    expect(second.attemptId).toBe(first.attemptId)
+    expect(new Set(starts.map(({ attemptId }) => attemptId))).toEqual(
+      new Set([first.attemptId])
+    )
     expect(resumed.attemptId).toBe(first.attemptId)
     expect(queried?.attemptId).toBe(first.attemptId)
     expect(
@@ -70,6 +81,179 @@ describe('adaptive practice quiz service', () => {
         where: { participantId: fixture.participantId },
       })
     ).toBe(1)
+  })
+
+  it('retains attempt history across direct lifecycle deletes while preserving participant erasure', async () => {
+    const fixture = await createRuntimeFixture()
+    const participantCtx = contextFor(
+      fixture.participantId,
+      DB.UserRole.PARTICIPANT
+    )
+    const state = await startAdaptivePracticeQuizAttempt(
+      { practiceQuizId: fixture.quizId },
+      participantCtx
+    )
+
+    for (const deletion of [
+      () =>
+        prisma.practiceQuizAdaptiveConfig.delete({
+          where: { id: fixture.configId },
+        }),
+      () => prisma.practiceQuiz.delete({ where: { id: fixture.quizId } }),
+      () => prisma.course.delete({ where: { id: fixture.courseId } }),
+    ]) {
+      await expect(deletion()).rejects.toMatchObject({ code: 'P2003' })
+    }
+    await expect(
+      prisma.adaptivePracticeQuizAttempt.findUnique({
+        where: { id: state.attemptId },
+      })
+    ).resolves.not.toBeNull()
+
+    await prisma.participant.delete({
+      where: { id: fixture.participantId },
+    })
+
+    await expect(
+      prisma.adaptivePracticeQuizAttempt.findUnique({
+        where: { id: state.attemptId },
+      })
+    ).resolves.toBeNull()
+    await expect(
+      prisma.practiceQuiz.findUnique({ where: { id: fixture.quizId } })
+    ).resolves.not.toBeNull()
+  })
+
+  it('returns a stable retention error when course deletion encounters adaptive history', async () => {
+    const fixture = await createRuntimeFixture()
+    const participantCtx = contextFor(
+      fixture.participantId,
+      DB.UserRole.PARTICIPANT
+    )
+    await startAdaptivePracticeQuizAttempt(
+      { practiceQuizId: fixture.quizId },
+      participantCtx
+    )
+
+    await expect(
+      deleteCourse(
+        { id: fixture.courseId },
+        contextFor(fixture.ownerId, DB.UserRole.USER)
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'ADAPTIVE_COURSE_HISTORY_RETAINED' },
+    })
+    await expect(
+      prisma.course.findUnique({ where: { id: fixture.courseId } })
+    ).resolves.not.toBeNull()
+    await expect(
+      prisma.practiceQuiz.findUnique({ where: { id: fixture.quizId } })
+    ).resolves.not.toBeNull()
+  })
+
+  it('deletes a course when no adaptive history needs retention', async () => {
+    const fixture = await createRuntimeFixture()
+
+    await expect(
+      deleteCourse(
+        { id: fixture.courseId },
+        contextFor(fixture.ownerId, DB.UserRole.USER)
+      )
+    ).resolves.toMatchObject({ id: fixture.courseId })
+    await expect(
+      prisma.course.findUnique({ where: { id: fixture.courseId } })
+    ).resolves.toBeNull()
+  })
+
+  it('lets an in-flight start finish before retention-aware course deletion', async () => {
+    const fixture = await createRuntimeFixture()
+    const configBlocker = holdConfigLock(fixture.configId, 'UPDATE')
+    await configBlocker.ready
+
+    const starting = startAdaptivePracticeQuizAttempt(
+      { practiceQuizId: fixture.quizId },
+      contextFor(fixture.participantId, DB.UserRole.PARTICIPANT)
+    )
+    await waitForCourseLockConflict(fixture.courseId, 'UPDATE')
+    const deleting = deleteCourse(
+      { id: fixture.courseId },
+      contextFor(fixture.ownerId, DB.UserRole.USER)
+    )
+    await waitForBlockedDatabaseQuery('%FROM "Course"%FOR UPDATE%')
+
+    configBlocker.release()
+    await configBlocker.done
+    await expect(starting).resolves.toMatchObject({
+      status: DB.AdaptivePracticeQuizAttemptStatus.IN_PROGRESS,
+    })
+    await expect(deleting).rejects.toMatchObject({
+      extensions: { code: 'ADAPTIVE_COURSE_HISTORY_RETAINED' },
+    })
+  })
+
+  it('prevents a new start after retention-aware course deletion has begun', async () => {
+    const fixture = await createRuntimeFixture()
+    const attemptTableBlocker = holdAdaptiveAttemptTableLock()
+    await attemptTableBlocker.ready
+
+    const deleting = deleteCourse(
+      { id: fixture.courseId },
+      contextFor(fixture.ownerId, DB.UserRole.USER)
+    )
+    await waitForCourseLockConflict(fixture.courseId, 'SHARE')
+    const starting = startAdaptivePracticeQuizAttempt(
+      { practiceQuizId: fixture.quizId },
+      contextFor(fixture.participantId, DB.UserRole.PARTICIPANT)
+    )
+    await waitForBlockedDatabaseQuery('%FROM "Course"%FOR SHARE%')
+
+    attemptTableBlocker.release()
+    await attemptTableBlocker.done
+    await expect(deleting).resolves.toMatchObject({ id: fixture.courseId })
+    await expect(starting).rejects.toMatchObject({
+      extensions: { code: 'ADAPTIVE_QUIZ_NOT_FOUND' },
+    })
+  })
+
+  it('keeps persisted cohort snapshots aggregate-only and erasure-aware', async () => {
+    const columns = await prisma.$queryRaw<Array<{ columnName: string }>>`
+      SELECT column_name::text AS "columnName"
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'AdaptivePracticeQuizCohortSnapshot'
+      ORDER BY ordinal_position
+    `
+    const columnNames = columns.map(({ columnName }) => columnName)
+    expect(columnNames).toEqual(
+      expect.arrayContaining([
+        'configId',
+        'practiceQuizId',
+        'releaseSize',
+        'releaseWatermark',
+        'policyVersion',
+        'attemptSelectionPolicy',
+        'aggregate',
+        'invalidatedAt',
+      ])
+    )
+    expect(columnNames).not.toEqual(
+      expect.arrayContaining([
+        'participantId',
+        'participationId',
+        'attemptId',
+        'response',
+        'elapsedSeconds',
+      ])
+    )
+    const trigger = await prisma.$queryRaw<Array<{ triggerName: string }>>`
+      SELECT tgname::text AS "triggerName"
+      FROM pg_trigger
+      WHERE tgrelid = '"AdaptivePracticeQuizAttempt"'::regclass
+        AND NOT tgisinternal
+    `
+    expect(trigger).toContainEqual({
+      triggerName: 'apqa_invalidate_cohort_snapshots_after_delete',
+    })
   })
 
   it('enforces the course rollout gate without deleting attempt history', async () => {
@@ -205,6 +389,362 @@ describe('adaptive practice quiz service', () => {
     ).toBe(0)
   })
 
+  it('retains an attempt when start reaches the lifecycle lock before deletion', async () => {
+    const fixture = await createRuntimeFixture()
+    const configBlocker = holdConfigLock(fixture.configId, 'UPDATE')
+    await configBlocker.ready
+
+    const started = startAdaptivePracticeQuizAttempt(
+      { practiceQuizId: fixture.quizId },
+      contextFor(fixture.participantId, DB.UserRole.PARTICIPANT)
+    )
+    await waitForQuizLockConflict(fixture.quizId, 'UPDATE')
+    const deleted = deletePracticeQuiz(
+      { id: fixture.quizId },
+      contextFor(fixture.ownerId, DB.UserRole.USER)
+    )
+    await waitForBlockedDatabaseQuery('%FROM "PracticeQuiz"%FOR UPDATE%')
+
+    configBlocker.release()
+    await configBlocker.done
+    const [attempt, deletedQuiz] = await Promise.all([started, deleted])
+
+    expect(deletedQuiz).toMatchObject({ id: fixture.quizId, isDeleted: true })
+    expect(
+      await prisma.adaptivePracticeQuizAttempt.findUnique({
+        where: { id: attempt.attemptId },
+      })
+    ).toMatchObject({ id: attempt.attemptId })
+    expect(
+      await prisma.practiceQuiz.findUniqueOrThrow({
+        where: { id: fixture.quizId },
+      })
+    ).toMatchObject({ isDeleted: true })
+  })
+
+  it('fails start cleanly when deletion reaches the lifecycle lock first', async () => {
+    const fixture = await createRuntimeFixture()
+    const configBlocker = holdConfigLock(fixture.configId, 'SHARE')
+    await configBlocker.ready
+
+    const deleted = deletePracticeQuiz(
+      { id: fixture.quizId },
+      contextFor(fixture.ownerId, DB.UserRole.USER)
+    )
+    await waitForQuizLockConflict(fixture.quizId, 'SHARE')
+    const started = startAdaptivePracticeQuizAttempt(
+      { practiceQuizId: fixture.quizId },
+      contextFor(fixture.participantId, DB.UserRole.PARTICIPANT)
+    )
+    await waitForBlockedDatabaseQuery('%FROM "PracticeQuiz"%FOR SHARE%')
+
+    configBlocker.release()
+    await configBlocker.done
+    await expect(deleted).resolves.toMatchObject({ id: fixture.quizId })
+    await expect(started).rejects.toMatchObject({
+      extensions: { code: 'ADAPTIVE_QUIZ_NOT_FOUND' },
+    })
+    expect(
+      await prisma.practiceQuiz.findUnique({ where: { id: fixture.quizId } })
+    ).toBeNull()
+    expect(
+      await prisma.adaptivePracticeQuizAttempt.count({
+        where: { practiceQuizId: fixture.quizId },
+      })
+    ).toBe(0)
+  })
+
+  it('fails start without creating an attempt when unpublish locks first', async () => {
+    const fixture = await createRuntimeFixture()
+    const configBlocker = holdConfigLock(fixture.configId, 'SHARE')
+    await configBlocker.ready
+
+    const unpublished = unpublishPracticeQuiz(
+      { id: fixture.quizId },
+      contextFor(fixture.ownerId, DB.UserRole.USER)
+    )
+    await waitForQuizLockConflict(fixture.quizId, 'SHARE')
+    const started = startAdaptivePracticeQuizAttempt(
+      { practiceQuizId: fixture.quizId },
+      contextFor(fixture.participantId, DB.UserRole.PARTICIPANT)
+    )
+    await waitForBlockedDatabaseQuery('%FROM "PracticeQuiz"%FOR SHARE%')
+
+    configBlocker.release()
+    await configBlocker.done
+    await expect(unpublished).resolves.toMatchObject({
+      status: DB.PublicationStatus.DRAFT,
+    })
+    await expect(started).rejects.toMatchObject({
+      extensions: { code: 'ADAPTIVE_QUIZ_UNAVAILABLE' },
+    })
+    expect(
+      await prisma.adaptivePracticeQuizAttempt.count({
+        where: { practiceQuizId: fixture.quizId },
+      })
+    ).toBe(0)
+  })
+
+  it('retains and pauses an attempt when start locks before unpublish', async () => {
+    const fixture = await createRuntimeFixture()
+    const participantCtx = contextFor(
+      fixture.participantId,
+      DB.UserRole.PARTICIPANT
+    )
+    const ownerCtx = contextFor(fixture.ownerId, DB.UserRole.USER)
+    const configBlocker = holdConfigLock(fixture.configId, 'UPDATE')
+    await configBlocker.ready
+
+    const started = startAdaptivePracticeQuizAttempt(
+      { practiceQuizId: fixture.quizId },
+      participantCtx
+    )
+    await waitForQuizLockConflict(fixture.quizId, 'UPDATE')
+    const unpublished = unpublishPracticeQuiz({ id: fixture.quizId }, ownerCtx)
+    await waitForBlockedDatabaseQuery('%FROM "PracticeQuiz"%FOR UPDATE%')
+
+    configBlocker.release()
+    await configBlocker.done
+    const [attempt, draftQuiz] = await Promise.all([started, unpublished])
+
+    expect(draftQuiz).toMatchObject({
+      id: fixture.quizId,
+      status: DB.PublicationStatus.DRAFT,
+    })
+    await expect(
+      resumeAdaptivePracticeQuizAttempt(
+        { attemptId: attempt.attemptId },
+        participantCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'ADAPTIVE_QUIZ_UNAVAILABLE' },
+    })
+    await expect(
+      submitAdaptivePracticeQuizResponse(
+        {
+          attemptId: attempt.attemptId,
+          servedItemId: attempt.servedItem!.poolItemId,
+          response: { choiceIndices: [0] },
+        },
+        participantCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'ADAPTIVE_QUIZ_UNAVAILABLE' },
+    })
+    expect(
+      await prisma.adaptivePracticeQuizAttempt.count({
+        where: { id: attempt.attemptId },
+      })
+    ).toBe(1)
+    expect(
+      await prisma.practiceQuizAdaptivePoolItem.count({
+        where: { configId: fixture.configId },
+      })
+    ).toBe(fixture.poolItemIds.length)
+
+    await expect(
+      publishPracticeQuiz({ id: fixture.quizId }, ownerCtx)
+    ).resolves.toMatchObject({
+      id: fixture.quizId,
+      status: DB.PublicationStatus.PUBLISHED,
+    })
+    await expect(
+      resumeAdaptivePracticeQuizAttempt(
+        { attemptId: attempt.attemptId },
+        participantCtx
+      )
+    ).resolves.toMatchObject({
+      attemptId: attempt.attemptId,
+      servedItem: { poolItemId: attempt.servedItem!.poolItemId },
+      answeredQuestions: 0,
+    })
+    expect(
+      await prisma.practiceQuizAdaptivePoolItem.findMany({
+        where: { configId: fixture.configId },
+        select: { id: true },
+        orderBy: { id: 'asc' },
+      })
+    ).toEqual(
+      [...fixture.poolItemIds]
+        .sort((left, right) => left - right)
+        .map((id) => ({ id }))
+    )
+    expect(
+      await prisma.adaptivePracticeQuizResponse.count({
+        where: { attemptId: attempt.attemptId },
+      })
+    ).toBe(0)
+  })
+
+  it('does not deadlock quiz deletion behind concurrent permission removal', async () => {
+    const fixture = await createRuntimeFixture()
+    const manager = await prisma.user.create({
+      data: {
+        email: 'adaptive-delete-manager@example.com',
+        shortname: 'adaptive-delete-manager',
+      },
+    })
+    const permission = await prisma.permission.create({
+      data: {
+        practiceQuizId: fixture.quizId,
+        userId: manager.id,
+        permissionLevel: DB.PermissionLevel.ADMIN,
+      },
+    })
+    await prisma.derivedPermission.create({
+      data: {
+        practiceQuizId: fixture.quizId,
+        userId: manager.id,
+        permissionLevel: DB.PermissionLevel.ADMIN,
+        directPermissionId: permission.id,
+      },
+    })
+    const revocation = holdPermissionRemoval(permission.id)
+    await revocation.ready
+
+    const deletion = deletePracticeQuiz(
+      { id: fixture.quizId },
+      contextFor(fixture.ownerId, DB.UserRole.USER)
+    )
+    await waitForBlockedDatabaseQuery('%FROM "Permission"%FOR SHARE%')
+
+    revocation.release()
+    await revocation.done
+    await expect(deletion).resolves.toMatchObject({ id: fixture.quizId })
+    await expect(
+      prisma.practiceQuiz.findUnique({ where: { id: fixture.quizId } })
+    ).resolves.toBeNull()
+  })
+
+  it('serializes restart with disable and resumes the same item after re-enable', async () => {
+    const fixture = await createRuntimeFixture()
+    const participantCtx = contextFor(
+      fixture.participantId,
+      DB.UserRole.PARTICIPANT
+    )
+    const initial = await startAdaptivePracticeQuizAttempt(
+      { practiceQuizId: fixture.quizId },
+      participantCtx
+    )
+    await prisma.user.update({
+      where: { id: fixture.ownerId },
+      data: { role: DB.UserRole.ADMIN },
+    })
+    const adminCtx = contextFor(fixture.ownerId, DB.UserRole.ADMIN)
+    const attemptBlocker = holdAttemptLock(initial.attemptId)
+    await attemptBlocker.ready
+
+    const restarted = restartAdaptivePracticeQuizAttempt(
+      { attemptId: initial.attemptId },
+      participantCtx
+    )
+    await waitForQuizLockConflict(fixture.quizId, 'UPDATE')
+    const disabled = setCourseAdaptiveLearningEnabled(
+      { courseId: fixture.courseId, enabled: false },
+      adminCtx
+    )
+    await waitForBlockedDatabaseQuery('%FROM "Course"%FOR UPDATE%')
+
+    attemptBlocker.release()
+    await attemptBlocker.done
+    const [replacement] = await Promise.all([restarted, disabled])
+    const poolSize = await prisma.practiceQuizAdaptivePoolItem.count({
+      where: { configId: fixture.configId },
+    })
+
+    await expect(
+      resumeAdaptivePracticeQuizAttempt(
+        { attemptId: replacement.attemptId },
+        participantCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'ADAPTIVE_COURSE_DISABLED' },
+    })
+    await expect(
+      submitAdaptivePracticeQuizResponse(
+        {
+          attemptId: replacement.attemptId,
+          servedItemId: replacement.servedItem!.poolItemId,
+          response: { choiceIndices: [0] },
+        },
+        participantCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'ADAPTIVE_COURSE_DISABLED' },
+    })
+
+    await setCourseAdaptiveLearningEnabled(
+      { courseId: fixture.courseId, enabled: true },
+      adminCtx
+    )
+    await expect(
+      resumeAdaptivePracticeQuizAttempt(
+        { attemptId: replacement.attemptId },
+        participantCtx
+      )
+    ).resolves.toMatchObject({
+      attemptId: replacement.attemptId,
+      servedItem: { poolItemId: replacement.servedItem!.poolItemId },
+      answeredQuestions: 0,
+    })
+    expect(
+      await prisma.practiceQuizAdaptivePoolItem.count({
+        where: { configId: fixture.configId },
+      })
+    ).toBe(poolSize)
+    expect(
+      await prisma.adaptivePracticeQuizResponse.count({
+        where: { attemptId: replacement.attemptId },
+      })
+    ).toBe(0)
+  })
+
+  it('fails restart cleanly when the course disable transaction locks first', async () => {
+    const fixture = await createRuntimeFixture()
+    const participantCtx = contextFor(
+      fixture.participantId,
+      DB.UserRole.PARTICIPANT
+    )
+    const initial = await startAdaptivePracticeQuizAttempt(
+      { practiceQuizId: fixture.quizId },
+      participantCtx
+    )
+    await prisma.user.update({
+      where: { id: fixture.ownerId },
+      data: { role: DB.UserRole.ADMIN },
+    })
+    const activityLogBlocker = holdActivityLogTableLock()
+    await activityLogBlocker.ready
+
+    const disabled = setCourseAdaptiveLearningEnabled(
+      { courseId: fixture.courseId, enabled: false },
+      contextFor(fixture.ownerId, DB.UserRole.ADMIN)
+    )
+    await waitForCourseLockConflict(fixture.courseId, 'SHARE')
+    const restarted = restartAdaptivePracticeQuizAttempt(
+      { attemptId: initial.attemptId },
+      participantCtx
+    )
+    await waitForBlockedDatabaseQuery('%FROM "Course"%FOR SHARE%')
+
+    activityLogBlocker.release()
+    await activityLogBlocker.done
+    await expect(disabled).resolves.toMatchObject({
+      isAdaptiveLearningEnabled: false,
+    })
+    await expect(restarted).rejects.toMatchObject({
+      extensions: { code: 'ADAPTIVE_COURSE_DISABLED' },
+    })
+    await expect(
+      prisma.adaptivePracticeQuizAttempt.findUniqueOrThrow({
+        where: { id: initial.attemptId },
+      })
+    ).resolves.toMatchObject({
+      status: DB.AdaptivePracticeQuizAttemptStatus.IN_PROGRESS,
+      nextPoolItemId: initial.servedItem!.poolItemId,
+    })
+  })
+
   it('preserves missing response timing and rejects implausible durations', async () => {
     const fixture = await createRuntimeFixture()
     const participantCtx = contextFor(
@@ -242,6 +782,13 @@ describe('adaptive practice quiz service', () => {
     expect(afterMissingTiming.status).toBe(
       DB.AdaptivePracticeQuizAttemptStatus.IN_PROGRESS
     )
+    expect(afterMissingTiming.elapsedSeconds).toBeNull()
+    await expect(
+      getAdaptivePracticeQuizState(
+        { practiceQuizId: fixture.quizId },
+        participantCtx
+      )
+    ).resolves.toMatchObject({ elapsedSeconds: null })
     await submitAdaptivePracticeQuizResponse(
       {
         attemptId: state.attemptId,
@@ -534,6 +1081,7 @@ describe('adaptive practice quiz service', () => {
       elapsedSeconds: 24,
     })
     expect(result.levelLabel).not.toBeNull()
+    expect(result.levelInterpretation).toBe(DB.AdaptiveLevelMappingRule.NEAREST)
     expect(result.confidence).not.toBe('INSUFFICIENT_DATA')
     expect(result.levelBands).toHaveLength(3)
     expect(result.competenceProfile).toHaveLength(2)
@@ -566,6 +1114,7 @@ describe('adaptive practice quiz service', () => {
     expect(await prisma.questionResponseDetail.count()).toBe(0)
     expect(await prisma.leaderboardEntry.count()).toBe(0)
     expect(await prisma.timelineEntry.count()).toBe(0)
+    expect(await prisma.adaptivePracticeQuizCohortSnapshot.count()).toBe(0)
 
     const serialized = JSON.stringify(result)
     expect(serialized).not.toContain('standardError')
@@ -594,6 +1143,40 @@ describe('adaptive practice quiz service', () => {
     )
     expect(retake.attemptId).not.toBe(state.attemptId)
     expect(retake.canStartNewAttempt).toBe(false)
+  })
+
+  it('exposes mastery interpretation for placement results', async () => {
+    const fixture = await createRuntimeFixture({
+      attemptSelectionPolicy: DB.AdaptiveAttemptSelectionPolicy.FIRST_COMPLETED,
+    })
+    const participantCtx = contextFor(
+      fixture.participantId,
+      DB.UserRole.PARTICIPANT
+    )
+    let state = await startAdaptivePracticeQuizAttempt(
+      { practiceQuizId: fixture.quizId },
+      participantCtx
+    )
+    while (state.status === DB.AdaptivePracticeQuizAttemptStatus.IN_PROGRESS) {
+      state = await submitAdaptivePracticeQuizResponse(
+        {
+          attemptId: state.attemptId,
+          servedItemId: state.servedItem!.poolItemId,
+          response: { choiceIndices: [0] },
+          elapsedSeconds: 1,
+        },
+        participantCtx
+      )
+    }
+
+    await expect(
+      getAdaptivePracticeQuizResult(
+        { attemptId: state.attemptId },
+        participantCtx
+      )
+    ).resolves.toMatchObject({
+      levelInterpretation: DB.AdaptiveLevelMappingRule.MASTERY,
+    })
   })
 
   it('abandons attempts and suppresses small cohort distributions', async () => {
@@ -632,10 +1215,6 @@ describe('adaptive practice quiz service', () => {
       cohortSize: null,
       suppressed: true,
       attemptSummary: {
-        total: null,
-        completed: null,
-        inProgress: null,
-        abandoned: null,
         suppressed: true,
         classified: null,
         capped: null,
@@ -729,6 +1308,15 @@ describe('adaptive practice quiz service', () => {
       insufficientDataCount: null,
       buckets: [],
     })
+    expect(cohort.attemptSummary).toMatchObject({
+      suppressed: true,
+      capped: 10,
+      insufficientData: null,
+    })
+    expect(cohort.attemptSummary.suppressions).toContainEqual({
+      field: 'INSUFFICIENT_DATA',
+      reason: 'SMALL_CELL_OR_COMPLEMENT',
+    })
   })
 
   it('publishes cohort results only at fixed five-participant boundaries', async () => {
@@ -799,11 +1387,30 @@ describe('adaptive practice quiz service', () => {
     for (let index = 0; index < 5; index++) {
       releasedParticipants.push(await addCompletedAttempt(index))
     }
-    const firstRelease = await getAdaptivePracticeQuizCohortResults(
-      { practiceQuizId: fixture.quizId },
-      lecturerCtx
+    const errorOutput = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const concurrentFirstReads = await Promise.all(
+      Array.from({ length: 6 }, () =>
+        getAdaptivePracticeQuizCohortResults(
+          { practiceQuizId: fixture.quizId },
+          lecturerCtx
+        )
+      )
+    )
+    expect(errorOutput.mock.calls.flat().join('\n')).not.toContain(
+      '"event":"adaptive_cohort_snapshot","outcome":"FAILED"'
+    )
+    errorOutput.mockRestore()
+    const firstRelease = concurrentFirstReads[0]!
+    expect(concurrentFirstReads).toEqual(
+      Array.from({ length: 6 }, () => firstRelease)
     )
     expect(firstRelease.cohortSize).toBe(5)
+    expect(
+      await prisma.adaptivePracticeQuizCohortSnapshot.findMany({
+        where: { configId: fixture.configId },
+        select: { releaseSize: true, invalidatedAt: true },
+      })
+    ).toEqual([{ releaseSize: 5, invalidatedAt: null }])
 
     await addCompletedAttempt(5, releasedParticipants[0])
     const afterRetake = await getAdaptivePracticeQuizCohortResults(
@@ -811,23 +1418,74 @@ describe('adaptive practice quiz service', () => {
       lecturerCtx
     )
     expect(afterRetake).toEqual(firstRelease)
+    expect(
+      await prisma.adaptivePracticeQuizCohortSnapshot.count({
+        where: { configId: fixture.configId },
+      })
+    ).toBe(1)
 
-    await addCompletedAttempt(6)
+    releasedParticipants.push(await addCompletedAttempt(6))
     const afterSixthParticipant = await getAdaptivePracticeQuizCohortResults(
       { practiceQuizId: fixture.quizId },
       lecturerCtx
     )
     expect(afterSixthParticipant).toEqual(firstRelease)
+    expect(
+      await prisma.adaptivePracticeQuizCohortSnapshot.count({
+        where: { configId: fixture.configId },
+      })
+    ).toBe(1)
 
     for (let index = 7; index <= 10; index++) {
-      await addCompletedAttempt(index)
+      releasedParticipants.push(await addCompletedAttempt(index))
     }
     const secondRelease = await getAdaptivePracticeQuizCohortResults(
       { practiceQuizId: fixture.quizId },
       lecturerCtx
     )
     expect(secondRelease.cohortSize).toBe(10)
-    expect(secondRelease.attemptSummary.total).toBe(10)
+    const snapshots = await prisma.adaptivePracticeQuizCohortSnapshot.findMany({
+      where: { configId: fixture.configId },
+      orderBy: { releaseSize: 'asc' },
+    })
+    expect(snapshots.map(({ releaseSize }) => releaseSize)).toEqual([5, 10])
+    const serializedSnapshots = JSON.stringify(snapshots)
+    expect(serializedSnapshots).not.toContain('participantId')
+    expect(serializedSnapshots).not.toContain('attemptId')
+    expect(serializedSnapshots).not.toContain('adaptive-release-participant')
+    expect(serializedSnapshots).not.toContain('normalizedResponse')
+
+    await prisma.participant.delete({
+      where: { id: releasedParticipants.at(-1)!.participantId },
+    })
+    expect(
+      await prisma.adaptivePracticeQuizCohortSnapshot.count({
+        where: {
+          configId: fixture.configId,
+          invalidatedAt: { not: null },
+        },
+      })
+    ).toBe(2)
+    const afterDeletion = await getAdaptivePracticeQuizCohortResults(
+      { practiceQuizId: fixture.quizId },
+      lecturerCtx
+    )
+    const afterRepeatedPolling = await getAdaptivePracticeQuizCohortResults(
+      { practiceQuizId: fixture.quizId },
+      lecturerCtx
+    )
+    expect(afterDeletion).toEqual(firstRelease)
+    expect(afterRepeatedPolling).toEqual(afterDeletion)
+    expect(
+      await prisma.adaptivePracticeQuizCohortSnapshot.findMany({
+        where: { configId: fixture.configId },
+        orderBy: { releaseSize: 'asc' },
+        select: { releaseSize: true, invalidatedAt: true },
+      })
+    ).toEqual([
+      { releaseSize: 5, invalidatedAt: null },
+      { releaseSize: 10, invalidatedAt: expect.any(Date) },
+    ])
   })
 
   it('summarizes selected outcomes and computes near-boundary counts', async () => {
@@ -890,11 +1548,8 @@ describe('adaptive practice quiz service', () => {
       contextFor(fixture.ownerId, DB.UserRole.USER)
     )
     expect(cohort.attemptSummary).toEqual({
-      total: 20,
-      completed: 20,
-      inProgress: null,
-      abandoned: null,
       suppressed: false,
+      suppressions: [],
       classified: 5,
       capped: 5,
       poolExhausted: 5,
@@ -907,12 +1562,12 @@ describe('adaptive practice quiz service', () => {
   it('computes privacy-safe pilot metrics from canonical responses', async () => {
     const fixture = await createRuntimeFixture()
     const poolItems = await prisma.practiceQuizAdaptivePoolItem.findMany({
-      where: { id: { in: fixture.poolItemIds.slice(0, 3) } },
+      where: { id: { in: fixture.poolItemIds.slice(0, 5) } },
       orderBy: { id: 'asc' },
     })
-    expect(poolItems).toHaveLength(3)
+    expect(poolItems).toHaveLength(5)
 
-    for (let index = 0; index < 38; index++) {
+    for (let index = 0; index < 43; index++) {
       const participant = await prisma.participant.create({
         data: {
           username: `adaptive-pilot-participant-${index}`,
@@ -926,7 +1581,13 @@ describe('adaptive practice quiz service', () => {
         },
       })
       const poolItem =
-        index < 30 ? poolItems[0]! : index < 35 ? poolItems[1]! : poolItems[2]!
+        index < 30
+          ? poolItems[0]!
+          : index < 35
+            ? poolItems[1]!
+            : index < 39
+              ? poolItems[2]!
+              : poolItems[3]!
       const correct = index < 21 || (index >= 30 && index < 35)
       const startedAt = new Date(
         new Date('2026-07-10T12:00:00.000Z').getTime() + index * 60_000
@@ -976,34 +1637,60 @@ describe('adaptive practice quiz service', () => {
           nodeId: null,
           theta: correct ? 0.2 : -0.2,
           standardError: 0.9,
-          responseCount: 1,
+          responseCount: index === 1 ? 2 : 1,
           levelId: fixture.levelIds[1]!,
           stopReason: DB.AdaptivePracticeQuizStopReason.TOTAL_QUESTION_CAP,
         },
       })
     }
 
+    const telemetry = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const cohort = await getAdaptivePracticeQuizCohortResults(
       { practiceQuizId: fixture.quizId },
       contextFor(fixture.ownerId, DB.UserRole.USER)
     )
+    expect(telemetry).toHaveBeenCalledWith(
+      `event=adaptive_cohort_integrity_anomaly type=response_count_mismatch practiceQuizId=${fixture.quizId}`
+    )
+    expect(JSON.stringify(telemetry.mock.calls)).not.toContain(
+      'adaptive-pilot-participant'
+    )
+    telemetry.mockRestore()
+    expect(cohort.cohortSize).toBe(40)
     expect(cohort.pilotMetrics).toMatchObject({
-      suppressed: false,
+      suppressed: true,
       medianQuestionCount: 1,
       p95QuestionCount: 1,
-      medianElapsedSeconds: 77.5,
-      p95ElapsedSeconds: 92.35,
-      responseCountMismatchDetected: false,
-      durationMissingDetected: true,
+      medianElapsedSeconds: null,
+      p95ElapsedSeconds: null,
+      responseCountMismatchDetected: null,
+      durationMissingDetected: null,
     })
+    expect(cohort.pilotMetrics.suppressions).toEqual(
+      expect.arrayContaining([
+        {
+          field: 'DURATION_PERCENTILES',
+          reason: 'SMALL_KNOWN_OR_MISSING_PARTITION',
+        },
+        {
+          field: 'RESPONSE_COUNT_MISMATCH',
+          reason: 'SMALL_CELL_OR_COMPLEMENT',
+        },
+        {
+          field: 'DURATION_MISSING',
+          reason: 'SMALL_KNOWN_OR_MISSING_PARTITION',
+        },
+      ])
+    )
 
     const diagnostic = cohort.itemDiagnostics.find(
       ({ poolItemId }) => poolItemId === poolItems[0]!.id
     )
     expect(diagnostic).toMatchObject({
       suppressed: false,
+      suppressions: [],
       responseCount: 30,
-      exposureRate: 30 / 35,
+      exposureRate: 30 / 40,
       observedCorrectRate: 0.7,
       highExposure: true,
       misfitFlag: true,
@@ -1022,7 +1709,43 @@ describe('adaptive practice quiz service', () => {
     })
     expect(
       cohort.itemDiagnostics.find(
+        ({ poolItemId }) => poolItemId === poolItems[1]!.id
+      )?.suppressions
+    ).toContainEqual({
+      field: 'ITEM_RESIDUAL',
+      reason: 'MINIMUM_RESPONSES',
+    })
+    expect(
+      cohort.itemDiagnostics.find(
         ({ poolItemId }) => poolItemId === poolItems[2]!.id
+      )
+    ).toMatchObject({
+      suppressed: true,
+      responseCount: null,
+      exposureRate: null,
+      observedCorrectRate: null,
+      expectedCorrectRate: null,
+      residual: null,
+    })
+    expect(
+      cohort.itemDiagnostics.find(
+        ({ poolItemId }) => poolItemId === poolItems[2]!.id
+      )?.suppressions
+    ).toEqual(
+      expect.arrayContaining([
+        {
+          field: 'ITEM_EXPOSURE',
+          reason: 'SMALL_CELL_OR_COMPLEMENT',
+        },
+        {
+          field: 'ITEM_ACCURACY',
+          reason: 'SMALL_CELL_OR_COMPLEMENT',
+        },
+      ])
+    )
+    expect(
+      cohort.itemDiagnostics.find(
+        ({ poolItemId }) => poolItemId === poolItems[4]!.id
       )
     ).toMatchObject({
       suppressed: false,
@@ -1121,6 +1844,17 @@ describe('adaptive practice quiz service', () => {
         },
       },
     }),
+    Object.assign(new Error('PostgreSQL deadlock'), {
+      code: 'P2010',
+      meta: {
+        driverAdapterError: {
+          cause: {
+            kind: 'TransactionWriteConflict',
+            originalCode: '40P01',
+          },
+        },
+      },
+    }),
   ])('returns a stable API error after retry exhaustion', async (error) => {
     const transaction = vi.fn().mockRejectedValue(error)
     const ctx = {
@@ -1133,6 +1867,69 @@ describe('adaptive practice quiz service', () => {
       extensions: { code: 'ADAPTIVE_ATTEMPT_CONFLICT' },
     })
     expect(transaction).toHaveBeenCalledTimes(3)
+  })
+
+  it('recovers from a transient transaction conflict', async () => {
+    const transaction = vi
+      .fn()
+      .mockRejectedValueOnce(
+        Object.assign(new Error('Prisma transaction conflict'), {
+          code: 'P2034',
+        })
+      )
+      .mockResolvedValueOnce('updated')
+    const ctx = {
+      prisma: { $transaction: transaction },
+    } as unknown as ContextWithUser
+
+    await expect(
+      withSerializableRetry(ctx, async () => 'ignored')
+    ).resolves.toBe('updated')
+    expect(transaction).toHaveBeenCalledTimes(2)
+  })
+
+  it('retries start-only uniqueness conflicts but passes them through otherwise', async () => {
+    const uniqueConflict = Object.assign(new Error('Unique conflict'), {
+      code: 'P2002',
+    })
+    const retryingTransaction = vi
+      .fn()
+      .mockRejectedValueOnce(uniqueConflict)
+      .mockResolvedValueOnce('existing-attempt')
+    const retryingCtx = {
+      prisma: { $transaction: retryingTransaction },
+    } as unknown as ContextWithUser
+
+    await expect(
+      withSerializableRetry(retryingCtx, async () => 'ignored', {
+        retryOnUniqueConstraint: true,
+      })
+    ).resolves.toBe('existing-attempt')
+    expect(retryingTransaction).toHaveBeenCalledTimes(2)
+
+    const nonRetryingTransaction = vi.fn().mockRejectedValue(uniqueConflict)
+    const nonRetryingCtx = {
+      prisma: { $transaction: nonRetryingTransaction },
+    } as unknown as ContextWithUser
+    await expect(
+      withSerializableRetry(nonRetryingCtx, async () => 'ignored')
+    ).rejects.toBe(uniqueConflict)
+    expect(nonRetryingTransaction).toHaveBeenCalledTimes(1)
+  })
+
+  it('passes non-transaction failures through without retrying', async () => {
+    const failure = Object.assign(new Error('Validation failed'), {
+      code: 'P2003',
+    })
+    const transaction = vi.fn().mockRejectedValue(failure)
+    const ctx = {
+      prisma: { $transaction: transaction },
+    } as unknown as ContextWithUser
+
+    await expect(
+      withSerializableRetry(ctx, async () => 'ignored')
+    ).rejects.toBe(failure)
+    expect(transaction).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -1244,6 +2041,13 @@ async function createRuntimeFixture({
       pointsMultiplier: 0,
       isGamificationEnabled: false,
       isAssessmentEnabled: false,
+    },
+  })
+  await prisma.derivedPermission.create({
+    data: {
+      practiceQuizId: quiz.id,
+      userId: owner.id,
+      permissionLevel: DB.PermissionLevel.OWNER,
     },
   })
   const config = await prisma.practiceQuizAdaptiveConfig.create({
@@ -1414,6 +2218,233 @@ function elementData(
     pointsMultiplier: element.pointsMultiplier,
     options: choiceOptions(0),
   } as ElementData
+}
+
+function holdConfigLock(configId: string, mode: 'SHARE' | 'UPDATE') {
+  const ready = createDeferred()
+  const release = createDeferred()
+  const done = prisma.$transaction(
+    async (tx) => {
+      if (mode === 'SHARE') {
+        await tx.$queryRaw`
+          SELECT "id"
+          FROM "PracticeQuizAdaptiveConfig"
+          WHERE "id" = ${configId}::uuid
+          FOR SHARE
+        `
+      } else {
+        await tx.$queryRaw`
+          SELECT "id"
+          FROM "PracticeQuizAdaptiveConfig"
+          WHERE "id" = ${configId}::uuid
+          FOR UPDATE
+        `
+      }
+      ready.resolve()
+      await release.promise
+    },
+    { timeout: 15_000 }
+  )
+  return {
+    ready: ready.promise,
+    done,
+    release: release.resolve,
+  }
+}
+
+function holdAttemptLock(attemptId: string) {
+  const ready = createDeferred()
+  const release = createDeferred()
+  const done = prisma.$transaction(
+    async (tx) => {
+      await tx.$queryRaw`
+        SELECT "id"
+        FROM "AdaptivePracticeQuizAttempt"
+        WHERE "id" = ${attemptId}::uuid
+        FOR UPDATE
+      `
+      ready.resolve()
+      await release.promise
+    },
+    { timeout: 15_000 }
+  )
+  return {
+    ready: ready.promise,
+    done,
+    release: release.resolve,
+  }
+}
+
+function holdPermissionRemoval(permissionId: number) {
+  const ready = createDeferred()
+  const release = createDeferred()
+  const done = prisma.$transaction(
+    async (tx) => {
+      await tx.$queryRaw`
+        SELECT "id"
+        FROM "Permission"
+        WHERE "id" = ${permissionId}
+        FOR UPDATE
+      `
+      ready.resolve()
+      await release.promise
+      await tx.permission.delete({ where: { id: permissionId } })
+    },
+    { timeout: 15_000 }
+  )
+  return {
+    ready: ready.promise,
+    done,
+    release: release.resolve,
+  }
+}
+
+function holdActivityLogTableLock() {
+  const ready = createDeferred()
+  const release = createDeferred()
+  const done = prisma.$transaction(
+    async (tx) => {
+      await tx.$executeRawUnsafe(
+        'LOCK TABLE "ActivityLogEntry" IN ACCESS EXCLUSIVE MODE'
+      )
+      ready.resolve()
+      await release.promise
+    },
+    { timeout: 15_000 }
+  )
+  return {
+    ready: ready.promise,
+    done,
+    release: release.resolve,
+  }
+}
+
+function holdAdaptiveAttemptTableLock() {
+  const ready = createDeferred()
+  const release = createDeferred()
+  const done = prisma.$transaction(
+    async (tx) => {
+      await tx.$executeRawUnsafe(
+        'LOCK TABLE "AdaptivePracticeQuizAttempt" IN ACCESS EXCLUSIVE MODE'
+      )
+      ready.resolve()
+      await release.promise
+    },
+    { timeout: 15_000 }
+  )
+  return {
+    ready: ready.promise,
+    done,
+    release: release.resolve,
+  }
+}
+
+async function waitForQuizLockConflict(
+  practiceQuizId: string,
+  probe: 'SHARE' | 'UPDATE'
+) {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    try {
+      await prisma.$transaction(async (tx) => {
+        if (probe === 'SHARE') {
+          await tx.$queryRaw`
+            SELECT "id"
+            FROM "PracticeQuiz"
+            WHERE "id" = ${practiceQuizId}::uuid
+            FOR SHARE NOWAIT
+          `
+        } else {
+          await tx.$queryRaw`
+            SELECT "id"
+            FROM "PracticeQuiz"
+            WHERE "id" = ${practiceQuizId}::uuid
+            FOR UPDATE NOWAIT
+          `
+        }
+      })
+    } catch (error) {
+      if (postgresErrorCode(error) === '55P03') return
+      throw error
+    }
+    await new Promise((resolve) => setTimeout(resolve, 10))
+  }
+  throw new Error('Timed out waiting for the practice-quiz lifecycle lock.')
+}
+
+async function waitForCourseLockConflict(
+  courseId: string,
+  probe: 'SHARE' | 'UPDATE'
+) {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    try {
+      await prisma.$transaction(async (tx) => {
+        if (probe === 'SHARE') {
+          await tx.$queryRaw`
+            SELECT "id"
+            FROM "Course"
+            WHERE "id" = ${courseId}::uuid
+            FOR SHARE NOWAIT
+          `
+        } else {
+          await tx.$queryRaw`
+            SELECT "id"
+            FROM "Course"
+            WHERE "id" = ${courseId}::uuid
+            FOR UPDATE NOWAIT
+          `
+        }
+      })
+    } catch (error) {
+      if (postgresErrorCode(error) === '55P03') return
+      throw error
+    }
+    await new Promise((resolve) => setTimeout(resolve, 10))
+  }
+  throw new Error('Timed out waiting for the course lifecycle lock.')
+}
+
+async function waitForBlockedDatabaseQuery(queryPattern: string) {
+  for (let attempt = 0; attempt < 300; attempt++) {
+    const [state] = await prisma.$queryRaw<Array<{ blocked: boolean }>>`
+      SELECT EXISTS (
+        SELECT 1
+        FROM pg_stat_activity
+        WHERE datname = current_database()
+          AND pid <> pg_backend_pid()
+          AND query LIKE ${queryPattern}
+          AND cardinality(pg_blocking_pids(pid)) > 0
+      ) AS blocked
+    `
+    if (state?.blocked) return
+    await new Promise((resolve) => setTimeout(resolve, 10))
+  }
+  throw new Error(`Timed out waiting for blocked query ${queryPattern}.`)
+}
+
+function postgresErrorCode(error: unknown): string | undefined {
+  const prismaError = error as {
+    code?: string
+    meta?: {
+      code?: string
+      driverAdapterError?: {
+        cause?: { code?: string; originalCode?: string }
+      }
+    }
+  }
+  return (
+    prismaError.meta?.code ??
+    prismaError.meta?.driverAdapterError?.cause?.originalCode ??
+    prismaError.meta?.driverAdapterError?.cause?.code ??
+    prismaError.code
+  )
+}
+
+function createDeferred() {
+  let resolve!: () => void
+  const promise = new Promise<void>((done) => {
+    resolve = done
+  })
+  return { promise, resolve }
 }
 
 function contextFor(subject: string, role: DB.UserRole): ContextWithUser {

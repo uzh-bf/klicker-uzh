@@ -4,11 +4,11 @@ query QAdaptivePracticeQuizCohortResults($practiceQuizId: String!) {
     cohortSize
     suppressed
     attemptSummary {
-      total
-      completed
-      inProgress
-      abandoned
       suppressed
+      suppressions {
+        field
+        reason
+      }
       classified
       capped
       poolExhausted
@@ -18,6 +18,10 @@ query QAdaptivePracticeQuizCohortResults($practiceQuizId: String!) {
     }
     pilotMetrics {
       suppressed
+      suppressions {
+        field
+        reason
+      }
       medianQuestionCount
       p95QuestionCount
       medianElapsedSeconds
@@ -33,6 +37,10 @@ query QAdaptivePracticeQuizCohortResults($practiceQuizId: String!) {
       nodeNamePath
       levelLabel
       suppressed
+      suppressions {
+        field
+        reason
+      }
       responseCount
       exposureRate
       observedCorrectRate
@@ -49,6 +57,10 @@ query QAdaptivePracticeQuizCohortResults($practiceQuizId: String!) {
       depth
       order
       suppressed
+      suppressions {
+        field
+        reason
+      }
       insufficientDataCount
       buckets {
         levelLabel

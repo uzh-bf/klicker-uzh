@@ -9,7 +9,7 @@ import {
 import { Badge, Button, Tooltip } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
-import { Dispatch, KeyboardEvent, SetStateAction, useState } from 'react'
+import { Dispatch, SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import AssessmentBadge from '../activities/overview/AssessmentBadge'
 import ActivityLogDialog from '../sharing/ActivityLogDialog'
@@ -73,54 +73,51 @@ function CourseListButton({
     : false
   const courseRunning = dayjs(course?.endDate).isAfter(dayjs())
   const [activityLogOpen, setActivityLogOpen] = useState(false)
-  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault()
-      onClick()
-    }
-  }
 
   return (
     <>
       <div
-        role="button"
-        tabIndex={0}
         className={twMerge(
-          'focus-visible:outline-primary-80 flex w-full cursor-pointer flex-row justify-between rounded-md border border-solid px-3 py-2 text-left shadow-sm transition-colors hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
+          'flex w-full min-w-0 flex-row items-stretch rounded-md border border-solid shadow-sm',
           typeof course?.color !== 'undefined' && 'border-b-4!'
         )}
         style={{ borderBottomColor: course?.color }}
-        onClick={onClick}
-        onKeyDown={handleKeyDown}
-        data-cy={data?.cy}
-        data-test={data?.test}
       >
-        <div>
-          <div className="ml-1 flex flex-row items-center gap-3">
-            {icon ? <FontAwesomeIcon icon={icon} /> : null}
-            <div>{label}</div>
-            {typeof course?.permissionLevel !== 'undefined' &&
-              course?.permissionLevel !== null &&
-              course.permissionLevel !== PermissionLevel.Owner && (
-                <ObjectPermissionLevel
-                  objectName={course.name}
-                  permissionLevel={course.permissionLevel}
-                />
-              )}
-          </div>
-          {course?.startDate && course?.endDate && (
-            <div className="text-uzh-grey-100 ml-1 flex flex-row items-center gap-1.5 text-sm">
-              <FontAwesomeIcon icon={faClock} />
-              <div>
-                {dayjs(course.startDate).format('DD.MM.YYYY').toString()} -{' '}
-                {dayjs(course.endDate).format('DD.MM.YYYY').toString()}
-              </div>
-            </div>
+        <button
+          type="button"
+          className={twMerge(
+            'focus-visible:outline-primary-80 flex min-w-0 flex-1 cursor-pointer flex-row items-center justify-between rounded-md px-3 py-2 text-left transition-colors hover:bg-slate-50 focus-visible:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
+            typeof course !== 'undefined' && 'rounded-r-none'
           )}
-        </div>
-        {typeof course !== 'undefined' ? (
-          <div className="flex flex-row items-center gap-2">
-            <div className="flex flex-row gap-2">
+          onClick={onClick}
+          data-cy={data?.cy}
+          data-test={data?.test}
+        >
+          <div className="min-w-0">
+            <div className="ml-1 flex min-w-0 flex-row items-center gap-3">
+              {icon ? <FontAwesomeIcon icon={icon} /> : null}
+              <div className="min-w-0 break-words">{label}</div>
+              {typeof course?.permissionLevel !== 'undefined' &&
+                course?.permissionLevel !== null &&
+                course.permissionLevel !== PermissionLevel.Owner && (
+                  <ObjectPermissionLevel
+                    objectName={course.name}
+                    permissionLevel={course.permissionLevel}
+                  />
+                )}
+            </div>
+            {course?.startDate && course?.endDate && (
+              <div className="text-uzh-grey-100 ml-1 flex flex-row items-center gap-1.5 text-sm">
+                <FontAwesomeIcon icon={faClock} />
+                <div>
+                  {dayjs(course.startDate).format('DD.MM.YYYY').toString()} -{' '}
+                  {dayjs(course.endDate).format('DD.MM.YYYY').toString()}
+                </div>
+              </div>
+            )}
+          </div>
+          {typeof course !== 'undefined' ? (
+            <div className="ml-2 flex shrink-0 flex-row gap-2">
               {isPast && (
                 <Badge className="gap-2 bg-green-700 hover:bg-green-800">
                   <FontAwesomeIcon icon={faCheck} />
@@ -132,16 +129,19 @@ function CourseListButton({
                 <Badge>{t('shared.generic.archived')}</Badge>
               )}
             </div>
-
+          ) : null}
+        </button>
+        {typeof course !== 'undefined' ? (
+          <div
+            className="flex shrink-0 flex-row items-center gap-2 px-3 py-2"
+            data-cy={`course-row-actions-${course.id}`}
+          >
             <Button
               className={{
                 root: 'h-9 w-9',
               }}
-              onClick={(e) => {
-                e?.stopPropagation()
-                e?.preventDefault()
-                setActivityLogOpen(true)
-              }}
+              onClick={() => setActivityLogOpen(true)}
+              aria-label={t('shared.comments.tooltip')}
               data={{ cy: `activity-log-course-${course?.name}` }}
             >
               <Button.Icon withoutLabel icon={faMessage} />
@@ -196,15 +196,14 @@ function CourseListButton({
                 className={{
                   root: 'h-9 w-9 border-red-600 text-red-600 hover:text-red-600',
                 }}
-                onClick={(e) => {
-                  e?.stopPropagation()
-                  e?.preventDefault()
+                onClick={() => {
                   showRemovalModal?.({
                     open: true,
                     courseId: course.id,
                     courseName: course.name,
                   })
                 }}
+                aria-label={t('manage.course.removeCourse')}
                 data={{ cy: `remove-course-${course.name}` }}
               >
                 <Button.Icon withoutLabel icon={faX} />

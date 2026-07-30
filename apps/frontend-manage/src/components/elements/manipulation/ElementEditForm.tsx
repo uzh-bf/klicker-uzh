@@ -33,7 +33,20 @@ import ElementTypeMonitor from './ElementTypeMonitor'
 import InstanceUpdateSwitch from './InstanceUpdateSwitch'
 import StudentElementPreview from './StudentElementPreview'
 import AdaptiveElementMapping from './adaptive/AdaptiveElementMapping'
-import { PendingAdaptiveMapping } from './adaptive/types'
+import type {
+  ElementAutosaveCompletion,
+  ElementAutosavePayload,
+} from './adaptive/elementMappingRecovery'
+import {
+  createElementAutosavePayload,
+  markElementSavedForMapping,
+  markMappingFailed,
+  markMappingRetry,
+  shouldPersistElement,
+  updateElementAutosaveFormValues,
+  updatePendingMapping,
+} from './adaptive/elementMappingRecovery'
+import type { PendingAdaptiveMapping } from './adaptive/types'
 import useAdaptiveMappingMutation from './adaptive/useAdaptiveMappingMutation'
 import AnswerFeedbackSetting from './options/AnswerFeedbackSetting'
 import CaseStudyOptions from './options/CaseStudyOptions'
@@ -56,6 +69,9 @@ function ElementEditForm({
   elementId,
   loading,
   initialValues,
+  autoSavePayload,
+  onAutoSavePayloadChange,
+  onRecoveryComplete,
   onSubmitElement,
   setAutoSavedElement,
   updateInstances,
@@ -78,6 +94,12 @@ function ElementEditForm({
   loading: boolean
   // form data props
   initialValues?: ElementFormTypes
+  autoSavePayload?: ElementAutosavePayload
+  onAutoSavePayloadChange?: (payload: ElementAutosavePayload | null) => void
+  onRecoveryComplete?: (
+    payload: ElementAutosavePayload,
+    completion: ElementAutosaveCompletion
+  ) => void
   onSubmitElement: (
     values: ElementFormTypes & { status: ElementStatus }
   ) => Promise<number | true | null>
@@ -91,9 +113,12 @@ function ElementEditForm({
   const t = useTranslations()
   const [activeTab, setActiveTab] = useState('preview')
   const [pendingMapping, setPendingMapping] =
-    useState<PendingAdaptiveMapping | null>(null)
+    useState<PendingAdaptiveMapping | null>(
+      autoSavePayload?.mappingRecovery.pendingMapping ?? null
+    )
   const {
     saveMapping: savePendingMapping,
+    loading: pendingMappingLoading,
     error: pendingMappingError,
     clearError: clearPendingMappingError,
   } = useAdaptiveMappingMutation()
@@ -107,6 +132,58 @@ function ElementEditForm({
     open: boolean
     id?: number
   }>({ open: false, id: undefined })
+  const recoveryActive =
+    autoSavePayload?.mappingRecovery.phase !== undefined &&
+    autoSavePayload.mappingRecovery.phase !== 'editing'
+  const elementInputsDisabled = inputsDisabled || recoveryActive
+
+  const completeRecovery = (
+    payload: ElementAutosavePayload,
+    completion: ElementAutosaveCompletion
+  ) => {
+    if (onRecoveryComplete) {
+      onRecoveryComplete(payload, completion)
+    } else {
+      onSuccess()
+    }
+  }
+
+  const retryPendingMapping = async () => {
+    if (
+      !autoSavePayload ||
+      autoSavePayload.mappingRecovery.phase === 'editing'
+    ) {
+      return
+    }
+
+    const retryPayload = markMappingRetry(autoSavePayload)
+    onAutoSavePayloadChange?.(retryPayload)
+    const recovery = retryPayload.mappingRecovery
+    if (recovery.phase === 'editing') {
+      return
+    }
+
+    const mappingSaved = await savePendingMapping({
+      treeId: recovery.pendingMapping.treeId,
+      elementId: recovery.elementId,
+      assignment: recovery.pendingMapping.assignment,
+    })
+
+    if (mappingSaved) {
+      completeRecovery(retryPayload, 'mapping-confirmed')
+    } else {
+      onAutoSavePayloadChange?.(markMappingFailed(retryPayload))
+    }
+  }
+
+  const keepElementUnmapped = () => {
+    if (
+      autoSavePayload &&
+      autoSavePayload.mappingRecovery.phase !== 'editing'
+    ) {
+      completeRecovery(autoSavePayload, 'mapping-abandoned')
+    }
+  }
 
   const questionManipulationSchema = useValidationSchema({
     numberOfAnswerOptions: answerCollectionEntries.length,
@@ -129,7 +206,11 @@ function ElementEditForm({
       escapeDisabled
       loading={loading || (!isTemplate && !initialValues)}
       title={t(`manage.elements.${mode}Title`)}
-      onClose={() => onClose()}
+      onClose={() => {
+        if (!pendingMappingLoading) {
+          onClose()
+        }
+      }}
       className={{
         title: 'text-xl',
         content: 'h-max pb-1 text-sm md:text-base 2xl:max-w-[1400px]',
@@ -145,6 +226,19 @@ function ElementEditForm({
           validationSchema={questionManipulationSchema}
           onSubmit={async (values, { setSubmitting }) => {
             setSubmitting(true)
+            const submissionPayload = updatePendingMapping(
+              updateElementAutosaveFormValues(
+                autoSavePayload ?? createElementAutosavePayload(values),
+                values
+              ),
+              pendingMapping
+            )
+
+            if (!shouldPersistElement(submissionPayload)) {
+              setSubmitting(false)
+              return
+            }
+
             const persistedElementId = await onSubmitElement(values)
 
             if (persistedElementId === null) {
@@ -158,6 +252,11 @@ function ElementEditForm({
             }
 
             if (pendingMapping && typeof persistedElementId === 'number') {
+              const recoveryPayload = markElementSavedForMapping(
+                submissionPayload,
+                persistedElementId
+              )
+              onAutoSavePayloadChange?.(recoveryPayload)
               const mappingSaved = await savePendingMapping({
                 treeId: pendingMapping.treeId,
                 elementId: persistedElementId,
@@ -165,14 +264,19 @@ function ElementEditForm({
               })
 
               if (!mappingSaved) {
+                onAutoSavePayloadChange?.(markMappingFailed(recoveryPayload))
                 setSubmitting(false)
                 return
               }
+
+              setSubmitting(false)
+              completeRecovery(recoveryPayload, 'mapping-confirmed')
+              return
             }
 
             // close modal, set success toast
             setSubmitting(false)
-            onSuccess()
+            completeRecovery(submissionPayload, 'element-saved')
           }}
         >
           {({
@@ -187,7 +291,7 @@ function ElementEditForm({
             submitForm,
           }) => (
             <>
-              {!inputsDisabled && (
+              {!inputsDisabled && !recoveryActive && (
                 <AutoSaveMonitor
                   values={values}
                   initialValuesString={JSON.stringify(initialValues)}
@@ -199,24 +303,61 @@ function ElementEditForm({
                 setElementDataTypename={setElementDataTypename}
                 validateForm={validateForm}
               />
-              <div className="flex flex-row gap-12">
-                <div className="flex-1">
+              <div className="flex min-w-0 flex-col gap-8 lg:flex-row lg:gap-12">
+                <div className="min-w-0 flex-1">
                   <Form className="w-full" id="question-manipulation-form">
                     <ElementInformationFields
                       isTemplate={isTemplate}
                       elementId={elementId}
-                      inputsDisabled={inputsDisabled}
+                      inputsDisabled={elementInputsDisabled}
                       mode={mode}
                       values={values}
                       isSubmitting={isSubmitting}
                     />
+                    {!isTemplate ? (
+                      <AdaptiveElementMapping
+                        elementId={elementId}
+                        elementType={values.type}
+                        choiceCount={
+                          values.type === ElementType.Sc ||
+                          values.type === ElementType.Mc ||
+                          values.type === ElementType.Kprim
+                            ? values.options.choices.length
+                            : undefined
+                        }
+                        editMode={mode === ElementEditMode.EDIT}
+                        inputsDisabled={inputsDisabled}
+                        formDirty={dirty}
+                        pendingMapping={pendingMapping}
+                        recoveryPhase={
+                          autoSavePayload?.mappingRecovery.phase ?? 'editing'
+                        }
+                        mappingLoading={pendingMappingLoading}
+                        onRetryPendingMapping={retryPendingMapping}
+                        onKeepElementUnmapped={keepElementUnmapped}
+                        onPendingMappingChange={(mapping) => {
+                          clearPendingMappingError()
+                          setPendingMapping(mapping)
+                          const payload = updatePendingMapping(
+                            updateElementAutosaveFormValues(
+                              autoSavePayload ??
+                                createElementAutosavePayload(values),
+                              values
+                            ),
+                            mapping
+                          )
+                          onAutoSavePayloadChange?.(payload)
+                        }}
+                        mutationError={pendingMappingError}
+                      />
+                    ) : null}
                     <ElementContentInput
-                      disabled={inputsDisabled}
+                      disabled={elementInputsDisabled}
                       values={values}
                       setFieldValue={setFieldValue}
                     />
                     <ElementExplanationField
-                      disabled={inputsDisabled}
+                      disabled={elementInputsDisabled}
                       values={values}
                       setFieldValue={setFieldValue}
                     />
@@ -227,7 +368,7 @@ function ElementEditForm({
                       values.type !== ElementType.Flashcard && (
                         <ElementformScoringSection
                           isTemplate={isTemplate}
-                          disabled={inputsDisabled}
+                          disabled={elementInputsDisabled}
                           values={values}
                           setFieldValue={setFieldValue}
                           isSubmitting={isSubmitting}
@@ -237,11 +378,11 @@ function ElementEditForm({
                     <div className="mt-4 flex flex-row gap-4">
                       <OptionsLabel type={values.type} />
                       <AnswerFeedbackSetting
-                        disabled={isTemplate || inputsDisabled}
+                        disabled={isTemplate || elementInputsDisabled}
                         values={values}
                       />
                       <DisplayModeSetting
-                        disabled={inputsDisabled}
+                        disabled={elementInputsDisabled}
                         type={values.type}
                       />
                     </div>
@@ -250,7 +391,7 @@ function ElementEditForm({
                     values.type === ElementType.Mc ||
                     values.type === ElementType.Kprim ? (
                       <ChoicesOptions
-                        inputsDisabled={inputsDisabled}
+                        inputsDisabled={elementInputsDisabled}
                         values={values}
                         setFieldValue={setFieldValue}
                       />
@@ -258,14 +399,14 @@ function ElementEditForm({
 
                     {values.type === ElementType.Numerical && (
                       <NumericalOptions
-                        inputsDisabled={inputsDisabled}
+                        inputsDisabled={elementInputsDisabled}
                         values={values}
                       />
                     )}
 
                     {values.type === ElementType.FreeText && (
                       <FreeTextOptions
-                        inputsDisabled={inputsDisabled}
+                        inputsDisabled={elementInputsDisabled}
                         values={values}
                       />
                     )}
@@ -276,7 +417,7 @@ function ElementEditForm({
                           mode === ElementEditMode.CREATE ||
                           mode === ElementEditMode.DUPLICATE
                         }
-                        inputsDisabled={inputsDisabled}
+                        inputsDisabled={elementInputsDisabled}
                         values={values}
                         collections={collections}
                         collectionsLoading={collectionsLoading}
@@ -298,7 +439,7 @@ function ElementEditForm({
                           mode === ElementEditMode.CREATE ||
                           mode === ElementEditMode.DUPLICATE
                         }
-                        inputsDisabled={inputsDisabled}
+                        inputsDisabled={elementInputsDisabled}
                         setFieldValue={setFieldValue}
                         setFieldTouched={setFieldTouched}
                         hasSampleSolution={values.options.hasSampleSolution}
@@ -316,29 +457,6 @@ function ElementEditForm({
                       />
                     )}
                   </Form>
-
-                  {!isTemplate ? (
-                    <AdaptiveElementMapping
-                      elementId={elementId}
-                      elementType={values.type}
-                      choiceCount={
-                        values.type === ElementType.Sc ||
-                        values.type === ElementType.Mc ||
-                        values.type === ElementType.Kprim
-                          ? values.options.choices.length
-                          : undefined
-                      }
-                      editMode={mode === ElementEditMode.EDIT}
-                      inputsDisabled={inputsDisabled}
-                      formDirty={dirty}
-                      pendingMapping={pendingMapping}
-                      onPendingMappingChange={(mapping) => {
-                        clearPendingMappingError()
-                        setPendingMapping(mapping)
-                      }}
-                      mutationError={pendingMappingError}
-                    />
-                  ) : null}
 
                   {Object.keys(errors).length !== 0 && (
                     <ElementFormErrors errors={errors} />
@@ -375,7 +493,10 @@ function ElementEditForm({
                         data: { cy: 'element-activity-tab' },
                       },
                     ]}
-                    className={{ root: 'w-full max-w-sm', list: 'w-sm' }}
+                    className={{
+                      root: 'w-full max-w-sm',
+                      list: 'sm:w-sm w-full',
+                    }}
                   >
                     <TabContent value="preview">
                       <StudentElementPreview
@@ -408,7 +529,8 @@ function ElementEditForm({
 
               {mode === ElementEditMode.EDIT &&
                 elementId &&
-                !inputsDisabled && (
+                !inputsDisabled &&
+                !recoveryActive && (
                   <InstanceUpdateSwitch
                     elementId={elementId}
                     hasSampleSolution={
@@ -433,6 +555,7 @@ function ElementEditForm({
                 {!isTemplate && !inputsDisabled && (
                   <Button
                     onClick={() => onClose()}
+                    disabled={pendingMappingLoading}
                     data={{ cy: 'close-element-modal-button' }}
                   >
                     {t('shared.generic.close')}
@@ -442,11 +565,13 @@ function ElementEditForm({
                   <Button
                     primary
                     onClick={() => submitForm()}
-                    disabled={!isValid}
+                    disabled={!isValid || recoveryActive}
                     loading={isSubmitting}
                     data={{ cy: 'save-new-question' }}
                   >
-                    {t('shared.generic.save')}
+                    {mode === ElementEditMode.CREATE && pendingMapping
+                      ? t('manage.elements.adaptiveMapping.createAndAssign')
+                      : t('shared.generic.save')}
                   </Button>
                 )}
               </div>

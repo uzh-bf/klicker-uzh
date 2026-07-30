@@ -222,7 +222,13 @@ function ActivityCreation({
   }
 
   return (
-    <div className="print-hidden mb-3 flex flex-col justify-center md:h-80 md:min-h-80">
+    <div
+      className={`print-hidden mb-3 flex flex-col justify-center ${
+        creationMode === ActivityType.PracticeQuiz
+          ? 'md:h-96 md:min-h-96'
+          : 'md:h-80 md:min-h-80'
+      }`}
+    >
       <div className="h-full w-full">
         {creationMode === ActivityType.LiveQuiz && (
           <LiveQuizWizard

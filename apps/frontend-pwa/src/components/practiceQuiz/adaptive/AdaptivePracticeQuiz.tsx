@@ -10,7 +10,7 @@ import {
   QAdaptivePracticeQuizAttemptStateDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { UserNotification } from '@uzh-bf/design-system'
+import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useRef, useState } from 'react'
 import PreviewMessage from '../../common/PreviewMessage'
@@ -146,6 +146,7 @@ function AdaptivePracticeQuiz({
 
   const handleRestart = async () => {
     if (!attempt) return
+    const previousAttemptId = attempt.attemptId
     setActionError(null)
     mutationStateApplied.current = true
     try {
@@ -158,6 +159,16 @@ function AdaptivePracticeQuiz({
       setShowQuestion(true)
     } catch {
       setActionError('startOver')
+      const refreshed = await refetch().catch(() => null)
+      const next = refreshed?.data.adaptivePracticeQuizAttemptState
+      if (
+        next?.status === AdaptivePracticeQuizAttemptStatus.InProgress &&
+        next.attemptId !== previousAttemptId
+      ) {
+        setAttempt(next)
+        setShowQuestion(true)
+        setActionError(null)
+      }
     }
   }
 
@@ -222,10 +233,21 @@ function AdaptivePracticeQuiz({
         {!previewOnly && loading && <Loader />}
 
         {!previewOnly && error && (
-          <UserNotification
-            type="error"
-            message={t('pwa.practiceQuiz.adaptive.unavailable.description')}
-          />
+          <div className="flex flex-col items-start gap-3">
+            <UserNotification
+              type="error"
+              message={t('pwa.practiceQuiz.adaptive.unavailable.description')}
+            />
+            <Button
+              type="button"
+              onClick={() => void refetch()}
+              disabled={loading}
+              loading={loading}
+              data={{ cy: 'retry-adaptive-practice-quiz-state' }}
+            >
+              <Button.Label>{t('shared.generic.tryAgain')}</Button.Label>
+            </Button>
+          </div>
         )}
 
         {actionError && actionError !== 'submit' && !showQuestion && (
@@ -264,7 +286,7 @@ function AdaptivePracticeQuiz({
               }
               answeredQuestions={attempt.answeredQuestions}
               maximumQuestions={attempt.maximumQuestions}
-              elapsedSeconds={attempt.elapsedSeconds}
+              elapsedSeconds={attempt.elapsedSeconds ?? null}
               showTimer={attempt.showTimer}
               submitting={submitting}
               submissionError={actionError === 'submit'}

@@ -2,10 +2,7 @@ fragment AdaptivePracticeQuizPreviewData on AdaptivePracticeQuizPreview {
   practiceQuizId
   mode
   publishedPoolSize
-  awardsPoints
-  awardsExperiencePoints
   config {
-    id
     competenceTreeId
     preset
     attemptSelectionPolicy
@@ -13,14 +10,10 @@ fragment AdaptivePracticeQuizPreviewData on AdaptivePracticeQuizPreview {
     perLeafQuestionCap
     minQuestionsPerLeaf
     classificationZ
-    standardErrorThreshold
     topInformationRatio
     defaultDiscrimination
     levelMappingRule
     showTimer
-    showFinalResult
-    showLiveEstimate
-    poolPublishedAt
   }
   competenceTree {
     id

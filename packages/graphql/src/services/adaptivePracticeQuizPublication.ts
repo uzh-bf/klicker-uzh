@@ -1,10 +1,12 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { processElementData } from '@klicker-uzh/util'
-import { lockAdaptiveLearningCourseEnabled } from './adaptiveLearningRollout.js'
+import { adaptiveServiceError } from './adaptivePracticeQuizConfigPreparation.js'
+import { loadAdaptiveConfigurationForQuiz } from './adaptivePracticeQuizConfigViews.js'
+import { emitAdaptiveOperationalEvent } from './adaptivePracticeQuizEvents.js'
 import {
-  adaptiveServiceError,
-  loadAdaptiveConfigurationForQuiz,
-} from './adaptivePracticeQuizConfig.js'
+  assertAdaptivePublicationSourceElementsAuthorized,
+  lockAdaptivePracticeQuizPublicationSources,
+} from './adaptivePracticeQuizPublicationAuthorization.js'
 import type { AdaptiveQuizReadiness } from './adaptivePracticeQuizReadiness.js'
 
 const ADAPTIVE_POOL_INSERT_BATCH_SIZE = 500
@@ -23,9 +25,10 @@ export async function materializeAdaptivePracticeQuizPool(
       'ADAPTIVE_QUIZ_NOT_FOUND'
     )
   }
-  await lockAdaptiveLearningCourseEnabled(quiz.courseId, prisma)
-  await lockAdaptivePracticeQuizConfig(practiceQuizId, prisma)
-  await lockAdaptiveSourceElements(practiceQuizId, prisma)
+  const sourceAuthorization = await lockAdaptivePracticeQuizPublicationSources(
+    practiceQuizId,
+    prisma
+  )
   const loaded = await loadAdaptiveConfigurationForQuiz(prisma, practiceQuizId)
   if (!loaded) {
     throw adaptiveServiceError(
@@ -39,13 +42,6 @@ export async function materializeAdaptivePracticeQuizPool(
       'ADAPTIVE_POOL_LOCKED'
     )
   }
-  if (!loaded.prepared.readiness.ready) {
-    throw adaptiveServiceError(
-      'Adaptive practice quiz is not ready to publish.',
-      'ADAPTIVE_QUIZ_NOT_READY'
-    )
-  }
-
   const effectivelyEnabledNodes = getEffectivelyEnabledNodes(
     loaded.prepared.nodes
   )
@@ -55,11 +51,29 @@ export async function materializeAdaptivePracticeQuizPool(
   const nodesById = new Map(
     loaded.prepared.nodes.map((node) => [node.id, node])
   )
-  const poolAssignments = loaded.prepared.assignments.filter(
+  const selectedPoolAssignments = loaded.prepared.assignments.filter(
     (assignment) =>
-      assignment.enabled &&
-      assignment.available &&
-      effectivelyEnabledNodes.has(assignment.leafNodeId)
+      assignment.enabled && effectivelyEnabledNodes.has(assignment.leafNodeId)
+  )
+  assertAdaptivePublicationSourceElementsAuthorized(
+    selectedPoolAssignments.map(({ elementId }) => elementId),
+    sourceAuthorization
+  )
+  if (!loaded.prepared.readiness.ready) {
+    emitAdaptiveOperationalEvent({
+      name: 'adaptive_publication_blocked',
+      practiceQuizId,
+      blockingIssueCount:
+        loaded.prepared.readiness.errors.length +
+        loaded.prepared.readiness.warnings.length,
+    })
+    throw adaptiveServiceError(
+      'Adaptive practice quiz is not ready to publish.',
+      'ADAPTIVE_QUIZ_NOT_READY'
+    )
+  }
+  const poolAssignments = selectedPoolAssignments.filter(
+    ({ available }) => available
   )
 
   await prisma.practiceQuizAdaptivePoolItem.deleteMany({
@@ -119,36 +133,6 @@ export async function materializeAdaptivePracticeQuizPool(
   }
 }
 
-async function lockAdaptiveSourceElements(
-  practiceQuizId: string,
-  prisma: DB.Prisma.TransactionClient
-): Promise<void> {
-  const config = await prisma.practiceQuizAdaptiveConfig.findUnique({
-    where: { practiceQuizId },
-    select: {
-      competenceTree: {
-        select: {
-          elementAssignments: { select: { elementId: true } },
-        },
-      },
-    },
-  })
-  if (!config) return
-  const elementIds = Array.from(
-    new Set(
-      config.competenceTree.elementAssignments.map(({ elementId }) => elementId)
-    )
-  )
-  if (elementIds.length === 0) return
-
-  await prisma.$queryRaw`
-    SELECT "id"
-    FROM "Element"
-    WHERE "id" IN (${DB.Prisma.join(elementIds)})
-    FOR SHARE
-  `
-}
-
 export async function assertAdaptivePublishedPool(
   practiceQuizId: string,
   prisma: DB.Prisma.TransactionClient
@@ -175,7 +159,6 @@ export async function clearAdaptivePublishedPool(
     retainWhenAttemptsExist = false,
   }: { retainWhenAttemptsExist?: boolean } = {}
 ): Promise<void> {
-  await lockAdaptivePracticeQuizConfig(practiceQuizId, prisma)
   const config = await prisma.practiceQuizAdaptiveConfig.findUnique({
     where: { practiceQuizId },
     select: {
@@ -207,32 +190,6 @@ export async function clearAdaptivePublishedPool(
     where: { id: config.id },
     data: { poolPublishedAt: null },
   })
-}
-
-export async function lockAdaptivePracticeQuizConfig(
-  practiceQuizId: string,
-  prisma: DB.Prisma.TransactionClient
-): Promise<string | null> {
-  const rows = await prisma.$queryRaw<Array<{ id: string }>>`
-    SELECT "id"
-    FROM "PracticeQuizAdaptiveConfig"
-    WHERE "practiceQuizId" = ${practiceQuizId}::uuid
-    FOR UPDATE
-  `
-  return rows[0]?.id ?? null
-}
-
-export async function lockAdaptivePracticeQuizConfigForAttempt(
-  practiceQuizId: string,
-  prisma: DB.Prisma.TransactionClient
-): Promise<string | null> {
-  const rows = await prisma.$queryRaw<Array<{ id: string }>>`
-    SELECT "id"
-    FROM "PracticeQuizAdaptiveConfig"
-    WHERE "practiceQuizId" = ${practiceQuizId}::uuid
-    FOR KEY SHARE
-  `
-  return rows[0]?.id ?? null
 }
 
 function getEffectivelyEnabledNodes(

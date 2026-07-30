@@ -2,6 +2,7 @@ import { faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { AdaptiveResultConfidence } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import { ADAPTIVE_BAND_COLORS } from './AdaptiveResultTrajectoryChart'
 
 export type AdaptiveCompetenceProfileNode = {
@@ -72,6 +73,7 @@ function ProfileNode({
   levelBands: AdaptiveCompetenceProfileProps['levelBands']
   depth: number
 }) {
+  const [open, setOpen] = useState(false)
   const children = node.children ?? []
   const hasChildren = children.length > 0
   const content = (
@@ -81,16 +83,23 @@ function ProfileNode({
   if (!hasChildren) return content
 
   return (
-    <details className="group">
+    <details
+      className="min-w-0"
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+      data-cy={`adaptive-profile-disclosure-${node.id}`}
+    >
       <summary
-        className="cursor-pointer list-none [&::-webkit-details-marker]:hidden"
+        className="focus-visible:outline-primary-80 cursor-pointer list-none rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden"
         data-cy={`adaptive-profile-node-${node.id}`}
       >
         <div className="relative">
           <FontAwesomeIcon
             icon={faChevronRight}
-            className="absolute left-1.5 top-5 h-3 w-3 text-slate-500 transition-transform group-open:rotate-90"
+            className={`absolute left-1.5 top-5 h-3 w-3 text-slate-500 transition-transform motion-reduce:transition-none ${
+              open ? 'rotate-90' : ''
+            }`}
             aria-hidden="true"
+            data-cy={`adaptive-profile-chevron-${node.id}`}
           />
           {content}
         </div>

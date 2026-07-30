@@ -64,3 +64,6 @@ output/
 .devcontainer/.hatchet.env
 playwright/playwright-report/
 playwright/test-results/
+
+# Generated adaptive-learning simulation evidence (the concise summary is tracked).
+packages/adaptive-learning/reports/simulation-report.json

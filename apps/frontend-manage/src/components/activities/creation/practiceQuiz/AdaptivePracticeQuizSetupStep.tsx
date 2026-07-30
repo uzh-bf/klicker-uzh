@@ -1,18 +1,30 @@
-import { useLazyQuery, useMutation, useQuery } from '@apollo/client'
+import {
+  NetworkStatus,
+  useLazyQuery,
+  useMutation,
+  useQuery,
+} from '@apollo/client'
 import { faLink, faRotate } from '@fortawesome/free-solid-svg-icons'
 import {
   AdaptivePracticeQuizSetupPreviewDocument,
   AdaptivePracticeQuizSetupPreviewQuery,
+  CompetenceTreeCatalogDocument,
+  CompetenceTreeCatalogOwnership,
   CompetenceTreeDocument,
-  CompetenceTreesDocument,
-  CourseCompetenceTreesDocument,
+  CourseCompetenceTreeCatalogDocument,
   LinkCompetenceTreeToCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, Select, UserNotification, toast } from '@uzh-bf/design-system'
+import {
+  Button,
+  Select,
+  TextField,
+  UserNotification,
+  toast,
+} from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import CreationFormValidator from '../CreationFormValidator'
 import { AdaptivePracticeQuizConfigFormValues } from '../WizardLayout'
 import WizardNavigation from '../WizardNavigation'
@@ -51,7 +63,10 @@ function AdaptivePracticeQuizSetupStep({
   adaptiveInitialPreview,
 }: PracticeQuizWizardStepProps) {
   const t = useTranslations()
+  const treeSelectId = useId()
   const courseId = formData.courseId
+  const [treeSearch, setTreeSearch] = useState('')
+  const [debouncedTreeSearch, setDebouncedTreeSearch] = useState('')
   const [selectedTreeId, setSelectedTreeId] = useState(
     formData.adaptiveConfig.competenceTreeId
   )
@@ -73,18 +88,47 @@ function AdaptivePracticeQuizSetupStep({
       : null
   )
 
+  useEffect(() => {
+    const timeout = window.setTimeout(
+      () => setDebouncedTreeSearch(treeSearch),
+      250
+    )
+    return () => window.clearTimeout(timeout)
+  }, [treeSearch])
+
   const {
     data: linkedTreeData,
     loading: linkedTreesLoading,
+    error: linkedTreesError,
     refetch: refetchLinkedTrees,
-  } = useQuery(CourseCompetenceTreesDocument, {
-    variables: { courseId: courseId! },
+    fetchMore: fetchMoreLinkedTrees,
+    networkStatus: linkedTreeNetworkStatus,
+  } = useQuery(CourseCompetenceTreeCatalogDocument, {
+    variables: {
+      courseId: courseId!,
+      search: debouncedTreeSearch.trim() || undefined,
+      limit: 25,
+    },
     skip: !courseId,
+    notifyOnNetworkStatusChange: true,
   })
-  const { data: allTreeData, loading: allTreesLoading } = useQuery(
-    CompetenceTreesDocument,
-    { skip: !courseId }
-  )
+  const {
+    data: ownedTreeData,
+    loading: ownedTreesLoading,
+    error: ownedTreesError,
+    refetch: refetchOwnedTrees,
+    fetchMore: fetchMoreOwnedTrees,
+    networkStatus: ownedTreeNetworkStatus,
+  } = useQuery(CompetenceTreeCatalogDocument, {
+    variables: {
+      search: debouncedTreeSearch.trim() || undefined,
+      ownership: CompetenceTreeCatalogOwnership.Owned,
+      excludeCourseId: courseId,
+      limit: 25,
+    },
+    skip: !courseId,
+    notifyOnNetworkStatusChange: true,
+  })
   const [linkTree, { loading: linkingTree }] = useMutation(
     LinkCompetenceTreeToCourseDocument
   )
@@ -94,24 +138,16 @@ function AdaptivePracticeQuizSetupStep({
   )
 
   const linkedTrees = useMemo(
-    () => linkedTreeData?.courseCompetenceTrees ?? [],
-    [linkedTreeData?.courseCompetenceTrees]
+    () => linkedTreeData?.courseCompetenceTreeCatalog.items ?? [],
+    [linkedTreeData?.courseCompetenceTreeCatalog.items]
   )
   const linkedTreeIds = useMemo(
     () => new Set(linkedTrees.map((tree) => tree.id)),
     [linkedTrees]
   )
-  const ownedUnlinkedTrees =
-    allTreeData?.competenceTrees.filter(
-      (tree) => tree.isOwner && !linkedTreeIds.has(tree.id)
-    ) ?? []
-  const availableTrees = [...linkedTrees, ...ownedUnlinkedTrees]
-  const selectedTreeSummary = availableTrees.find(
-    (tree) => tree.id === selectedTreeId
-  )
-  const selectedTreeLinked = selectedTreeId
-    ? linkedTreeIds.has(selectedTreeId)
-    : false
+  const ownedUnlinkedTrees = (
+    ownedTreeData?.competenceTreeCatalog.items ?? []
+  ).filter((tree) => !linkedTreeIds.has(tree.id))
   const { data: selectedTreeData, loading: selectedTreeLoading } = useQuery(
     CompetenceTreeDocument,
     {
@@ -120,6 +156,26 @@ function AdaptivePracticeQuizSetupStep({
     }
   )
   const selectedTree = selectedTreeData?.competenceTree
+  const selectedTreeLinked = selectedTreeId
+    ? linkedTreeIds.has(selectedTreeId) ||
+      Boolean(
+        selectedTree?.courseLinks.some((link) => link.courseId === courseId)
+      )
+    : false
+  const linkedTreeOptions =
+    selectedTree && selectedTreeLinked && !linkedTreeIds.has(selectedTree.id)
+      ? [selectedTree, ...linkedTrees]
+      : linkedTrees
+  const ownedTreeOptions =
+    selectedTree &&
+    selectedTree.isOwner &&
+    !selectedTreeLinked &&
+    !ownedUnlinkedTrees.some((tree) => tree.id === selectedTree.id)
+      ? [selectedTree, ...ownedUnlinkedTrees]
+      : ownedUnlinkedTrees
+  const selectedTreeSummary = [...linkedTreeOptions, ...ownedTreeOptions].find(
+    (tree) => tree.id === selectedTreeId
+  )
 
   return (
     <Formik
@@ -173,106 +229,212 @@ function AdaptivePracticeQuizSetupStep({
         }
 
         return (
-          <Form className="flex h-full min-h-0 w-full flex-col">
+          <Form className="flex h-full min-h-0 w-full min-w-0 max-w-full flex-col">
             <CreationFormValidator
               isValid={isValid}
               activeStep={activeStep}
               setStepValidity={setStepValidity}
             />
-            <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
+            <div className="flex min-h-0 min-w-0 max-w-full flex-1 flex-col gap-3 overflow-y-auto pr-1">
               <section
-                className="grid gap-3 md:grid-cols-[minmax(14rem,1fr)_auto] md:items-end"
+                className="min-w-0 max-w-full space-y-3"
                 data-cy="adaptive-tree-selection"
               >
-                <div>
-                  <div className="mb-1 text-sm font-bold">
-                    {t('manage.activityWizard.adaptive.setup.tree')}
-                  </div>
-                  <Select
-                    value={values.adaptiveConfig.competenceTreeId}
-                    onChange={(treeId) => {
-                      setSelectedTreeId(treeId)
-                      updateConfig({
-                        ...values.adaptiveConfig,
-                        competenceTreeId: treeId,
-                        nodeOverrides: [],
-                        elementOverrides: [],
-                      })
-                      setPreview(null)
-                      setLastPreviewFingerprint(null)
-                    }}
-                    placeholder={t(
-                      'manage.activityWizard.adaptive.setup.selectTree'
-                    )}
-                    disabled={
-                      !courseId || linkedTreesLoading || allTreesLoading
-                    }
-                    groups={[
-                      {
-                        label: t(
-                          'manage.activityWizard.adaptive.setup.linkedTrees'
-                        ),
-                        items: linkedTrees.map((tree) => ({
-                          value: tree.id,
-                          label: tree.displayName,
-                          data: { cy: `adaptive-tree-linked-${tree.id}` },
-                        })),
-                      },
-                      {
-                        label: t(
-                          'manage.activityWizard.adaptive.setup.ownedUnlinkedTrees'
-                        ),
-                        items: ownedUnlinkedTrees.map((tree) => ({
-                          value: tree.id,
-                          label: tree.displayName,
-                          data: { cy: `adaptive-tree-unlinked-${tree.id}` },
-                        })),
-                      },
-                    ]}
-                    data={{ cy: 'adaptive-tree-select' }}
-                    className={{ root: 'w-full', trigger: 'w-full' }}
-                  />
-                </div>
-                {selectedTreeSummary && !selectedTreeLinked ? (
-                  <Button
-                    primary
-                    type="button"
-                    loading={linkingTree}
-                    onClick={async () => {
-                      try {
-                        await linkTree({
-                          variables: {
-                            treeId: selectedTreeSummary.id,
-                            courseId: courseId!,
-                          },
+                <TextField
+                  label={t('manage.activityWizard.adaptive.setup.searchTrees')}
+                  value={treeSearch}
+                  onChange={setTreeSearch}
+                  placeholder={t('manage.competenceTree.searchPlaceholder')}
+                  disabled={!courseId}
+                  data={{ cy: 'adaptive-tree-search' }}
+                />
+                <div className="grid min-w-0 gap-3 md:grid-cols-[minmax(14rem,1fr)_auto] md:items-end">
+                  <div className="min-w-0">
+                    <label
+                      htmlFor={treeSelectId}
+                      className="mb-1 block text-sm font-bold"
+                    >
+                      {t('manage.activityWizard.adaptive.setup.tree')}
+                    </label>
+                    <Select
+                      id={treeSelectId}
+                      value={values.adaptiveConfig.competenceTreeId}
+                      onChange={(treeId) => {
+                        setSelectedTreeId(treeId)
+                        updateConfig({
+                          ...values.adaptiveConfig,
+                          competenceTreeId: treeId,
+                          nodeOverrides: [],
+                          elementOverrides: [],
                         })
-                        await refetchLinkedTrees()
-                        toast({
-                          type: 'success',
-                          message: t(
-                            'manage.activityWizard.adaptive.setup.linkSuccess'
+                        setPreview(null)
+                        setLastPreviewFingerprint(null)
+                      }}
+                      placeholder={t(
+                        'manage.activityWizard.adaptive.setup.selectTree'
+                      )}
+                      disabled={
+                        !courseId || linkedTreesLoading || ownedTreesLoading
+                      }
+                      groups={[
+                        {
+                          label: t(
+                            'manage.activityWizard.adaptive.setup.linkedTrees'
                           ),
-                        })
-                      } catch (error) {
-                        toast({
-                          type: 'error',
-                          message:
-                            error instanceof Error
-                              ? error.message
-                              : t(
-                                  'manage.activityWizard.adaptive.setup.linkFailed'
+                          items: linkedTreeOptions.map((tree) => ({
+                            value: tree.id,
+                            label: tree.displayName,
+                            data: { cy: `adaptive-tree-linked-${tree.id}` },
+                          })),
+                        },
+                        {
+                          label: t(
+                            'manage.activityWizard.adaptive.setup.ownedUnlinkedTrees'
+                          ),
+                          items: ownedTreeOptions.map((tree) => ({
+                            value: tree.id,
+                            label: tree.displayName,
+                            data: { cy: `adaptive-tree-unlinked-${tree.id}` },
+                          })),
+                        },
+                      ]}
+                      data={{ cy: 'adaptive-tree-select' }}
+                      className={{ root: 'w-full min-w-0', trigger: 'w-full' }}
+                    />
+                  </div>
+                  {selectedTreeSummary && !selectedTreeLinked ? (
+                    <Button
+                      primary
+                      type="button"
+                      loading={linkingTree}
+                      onClick={async () => {
+                        try {
+                          await linkTree({
+                            variables: {
+                              treeId: selectedTreeSummary.id,
+                              courseId: courseId!,
+                            },
+                          })
+                          await Promise.all([
+                            refetchLinkedTrees(),
+                            refetchOwnedTrees(),
+                          ])
+                          toast({
+                            type: 'success',
+                            message: t(
+                              'manage.activityWizard.adaptive.setup.linkSuccess'
+                            ),
+                          })
+                        } catch (error) {
+                          toast({
+                            type: 'error',
+                            message:
+                              error instanceof Error
+                                ? error.message
+                                : t(
+                                    'manage.activityWizard.adaptive.setup.linkFailed'
+                                  ),
+                          })
+                        }
+                      }}
+                      data={{ cy: 'adaptive-link-tree-to-course' }}
+                    >
+                      <Button.Icon icon={faLink} loading={linkingTree} />
+                      <Button.Label>
+                        {t('manage.activityWizard.adaptive.setup.linkTree')}
+                      </Button.Label>
+                    </Button>
+                  ) : null}
+                </div>
+                {linkedTreesError || ownedTreesError ? (
+                  <UserNotification
+                    type="error"
+                    message={
+                      linkedTreesError?.message ??
+                      ownedTreesError?.message ??
+                      ''
+                    }
+                    data={{ cy: 'adaptive-tree-catalog-error' }}
+                  />
+                ) : null}
+                <div className="flex flex-wrap justify-end gap-2">
+                  {linkedTreeData?.courseCompetenceTreeCatalog.nextCursor ? (
+                    <Button
+                      type="button"
+                      onClick={() =>
+                        void fetchMoreLinkedTrees({
+                          variables: {
+                            courseId: courseId!,
+                            search: debouncedTreeSearch.trim() || undefined,
+                            limit: 25,
+                            cursor:
+                              linkedTreeData.courseCompetenceTreeCatalog
+                                .nextCursor,
+                          },
+                          updateQuery: (previous, { fetchMoreResult }) => ({
+                            ...previous,
+                            courseCompetenceTreeCatalog: {
+                              ...fetchMoreResult.courseCompetenceTreeCatalog,
+                              items: [
+                                ...previous.courseCompetenceTreeCatalog.items,
+                                ...fetchMoreResult.courseCompetenceTreeCatalog.items.filter(
+                                  (tree) =>
+                                    !previous.courseCompetenceTreeCatalog.items.some(
+                                      (existing) => existing.id === tree.id
+                                    )
                                 ),
+                              ],
+                            },
+                          }),
                         })
                       }
-                    }}
-                    data={{ cy: 'adaptive-link-tree-to-course' }}
-                  >
-                    <Button.Icon icon={faLink} loading={linkingTree} />
-                    <Button.Label>
-                      {t('manage.activityWizard.adaptive.setup.linkTree')}
-                    </Button.Label>
-                  </Button>
-                ) : null}
+                      loading={
+                        linkedTreeNetworkStatus === NetworkStatus.fetchMore
+                      }
+                      data={{ cy: 'adaptive-tree-load-more-linked' }}
+                    >
+                      {t('manage.activityWizard.adaptive.setup.loadMoreLinked')}
+                    </Button>
+                  ) : null}
+                  {ownedTreeData?.competenceTreeCatalog.nextCursor ? (
+                    <Button
+                      type="button"
+                      onClick={() =>
+                        void fetchMoreOwnedTrees({
+                          variables: {
+                            search: debouncedTreeSearch.trim() || undefined,
+                            ownership: CompetenceTreeCatalogOwnership.Owned,
+                            excludeCourseId: courseId,
+                            limit: 25,
+                            cursor:
+                              ownedTreeData.competenceTreeCatalog.nextCursor,
+                          },
+                          updateQuery: (previous, { fetchMoreResult }) => ({
+                            ...previous,
+                            competenceTreeCatalog: {
+                              ...fetchMoreResult.competenceTreeCatalog,
+                              items: [
+                                ...previous.competenceTreeCatalog.items,
+                                ...fetchMoreResult.competenceTreeCatalog.items.filter(
+                                  (tree) =>
+                                    !previous.competenceTreeCatalog.items.some(
+                                      (existing) => existing.id === tree.id
+                                    )
+                                ),
+                              ],
+                            },
+                          }),
+                        })
+                      }
+                      loading={
+                        ownedTreeNetworkStatus === NetworkStatus.fetchMore
+                      }
+                      data={{ cy: 'adaptive-tree-load-more-owned' }}
+                    >
+                      {t('manage.activityWizard.adaptive.setup.loadMoreOwned')}
+                    </Button>
+                  ) : null}
+                </div>
               </section>
 
               {!courseId ? (
@@ -324,7 +486,11 @@ function AdaptivePracticeQuizSetupStep({
                     >
                       <Button.Icon icon={faRotate} loading={previewLoading} />
                       <Button.Label>
-                        {t('manage.activityWizard.adaptive.preview.refresh')}
+                        {t(
+                          previewError
+                            ? 'shared.generic.tryAgain'
+                            : 'manage.activityWizard.adaptive.preview.refresh'
+                        )}
                       </Button.Label>
                     </Button>
                   </div>

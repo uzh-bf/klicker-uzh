@@ -3,22 +3,6 @@ query AdaptivePracticeQuizSetupPreview(
   $input: AdaptivePracticeQuizConfigInput!
 ) {
   adaptivePracticeQuizSetupPreview(courseId: $courseId, input: $input) {
-    settings {
-      competenceTreeId
-      preset
-      attemptSelectionPolicy
-      totalQuestionCap
-      perLeafQuestionCap
-      minQuestionsPerLeaf
-      classificationZ
-      standardErrorThreshold
-      topInformationRatio
-      defaultDiscrimination
-      levelMappingRule
-      showTimer
-      showFinalResult
-      showLiveEstimate
-    }
     competenceTree {
       id
       name
@@ -73,7 +57,5 @@ query AdaptivePracticeQuizSetupPreview(
     readiness {
       ...AdaptivePracticeQuizReadinessData
     }
-    awardsPoints
-    awardsExperiencePoints
   }
 }

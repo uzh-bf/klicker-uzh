@@ -10,6 +10,7 @@ import {
   Locale,
   PermissionLevel,
   PracticeQuizMode,
+  Prisma,
   PublicationStatus,
   UserLoginScope,
   UserRole,
@@ -27,8 +28,11 @@ import {
   getAdaptivePracticeQuizSetupPreview,
   getPracticeQuizPublicationPreview,
 } from '../src/services/adaptivePracticeQuizConfig.js'
+import { lockAdaptivePracticeQuizPublicationSources } from '../src/services/adaptivePracticeQuizPublicationAuthorization.js'
 import {
+  archiveCompetenceTree,
   createCompetenceTree,
+  deleteCompetenceTree,
   linkCompetenceTreeToCourse,
   unlinkCompetenceTreeFromCourse,
   type CompetenceTreeInput,
@@ -42,6 +46,10 @@ import {
   publishPracticeQuiz,
   unpublishPracticeQuiz,
 } from '../src/services/practiceQuizzes.js'
+import {
+  removeUserFromGroup,
+  revokeObjectAccess,
+} from '../src/services/sharing.js'
 import { respondToQuestion } from '../src/services/stacks.js'
 
 const owner = {
@@ -60,6 +68,64 @@ const outsider = {
   shortname: 'adaptive-outsider',
 }
 let nextCoursePin = 4100
+
+const adaptiveConfigFieldBehavior = {
+  id: { kind: 'audit', consumer: 'attempt and pool config identity' },
+  practiceQuizId: {
+    kind: 'runtime',
+    consumer: 'one-to-one practice quiz configuration lookup',
+  },
+  competenceTreeId: {
+    kind: 'runtime',
+    consumer: 'hierarchy and immutable pool identity',
+  },
+  preset: { kind: 'audit', consumer: 'preset policy resolution' },
+  attemptSelectionPolicy: {
+    kind: 'runtime',
+    consumer: 'participant retake and cohort-attempt selection',
+  },
+  totalQuestionCap: {
+    kind: 'runtime',
+    consumer: 'global adaptive stopping cap',
+  },
+  perLeafQuestionCap: {
+    kind: 'runtime',
+    consumer: 'leaf candidate exclusion cap',
+  },
+  minQuestionsPerLeaf: {
+    kind: 'readiness',
+    consumer: 'breadth evidence requirement',
+  },
+  classificationZ: {
+    kind: 'runtime',
+    consumer: 'classification interval width',
+  },
+  topInformationRatio: {
+    kind: 'runtime',
+    consumer: 'randomesque information band',
+  },
+  defaultDiscrimination: {
+    kind: 'runtime',
+    consumer: 'immutable item-parameter publication',
+  },
+  levelMappingRule: {
+    kind: 'runtime',
+    consumer: 'level bands and result mapping',
+  },
+  showTimer: { kind: 'display', consumer: 'participant timer visibility' },
+  poolPublishedAt: {
+    kind: 'audit',
+    consumer: 'published-pool availability marker',
+  },
+  createdAt: { kind: 'audit', consumer: 'configuration creation metadata' },
+  updatedAt: { kind: 'audit', consumer: 'configuration change metadata' },
+} as const satisfies Record<
+  Prisma.PracticeQuizAdaptiveConfigScalarFieldEnum,
+  {
+    kind: 'runtime' | 'readiness' | 'display' | 'audit'
+    consumer: string
+  }
+>
 
 describe('adaptive practice quiz configuration and publication', () => {
   let ownerCtx: ContextWithUser
@@ -90,6 +156,59 @@ describe('adaptive practice quiz configuration and publication', () => {
   afterAll(async () => {
     await cleanup()
     await prisma.$disconnect()
+  })
+
+  it('ties every remaining persisted and public setting to one behavior', () => {
+    expect(Object.keys(adaptiveConfigFieldBehavior).sort()).toEqual(
+      Object.values(Prisma.PracticeQuizAdaptiveConfigScalarFieldEnum).sort()
+    )
+    expect(
+      Object.values(adaptiveConfigFieldBehavior).every(
+        ({ consumer }) => consumer.trim().length > 0
+      )
+    ).toBe(true)
+
+    expect(getSchemaFieldNames('AdaptivePracticeQuizConfig')).toEqual(
+      [
+        'attemptSelectionPolicy',
+        'classificationZ',
+        'competenceTreeId',
+        'defaultDiscrimination',
+        'levelMappingRule',
+        'minQuestionsPerLeaf',
+        'perLeafQuestionCap',
+        'preset',
+        'showTimer',
+        'topInformationRatio',
+        'totalQuestionCap',
+      ].sort()
+    )
+
+    expect(getSchemaFieldNames('AdaptivePracticeQuizConfigInput')).toEqual(
+      [
+        'competenceTreeId',
+        'elementOverrides',
+        'nodeOverrides',
+        'preset',
+        'researchSettings',
+        'showTimer',
+        'classificationZ',
+        'minQuestionsPerLeaf',
+        'perLeafQuestionCap',
+        'totalQuestionCap',
+      ].sort()
+    )
+
+    expect(
+      getSchemaFieldNames('AdaptivePracticeQuizResearchSettingsInput')
+    ).toEqual(
+      [
+        'attemptSelectionPolicy',
+        'defaultDiscrimination',
+        'levelMappingRule',
+        'topInformationRatio',
+      ].sort()
+    )
   })
 
   it('keeps the standard path isolated while exposing safe adaptive participant metadata', async () => {
@@ -189,7 +308,7 @@ describe('adaptive practice quiz configuration and publication', () => {
     ).resolves.toMatchObject({
       id: adaptive.id,
       mode: PracticeQuizMode.ADAPTIVE,
-      adaptiveMaximumQuestions: 12,
+      adaptiveMaximumQuestions: 50,
       isPreview: false,
       stacks: [],
     })
@@ -385,13 +504,11 @@ describe('adaptive practice quiz configuration and publication', () => {
       levelMappingRule: AdaptiveLevelMappingRule.MASTERY,
       attemptSelectionPolicy: AdaptiveAttemptSelectionPolicy.FIRST_COMPLETED,
       defaultDiscrimination: 1.2,
-      showFinalResult: true,
-      showLiveEstimate: false,
     })
     expect(rootWeights(preview!)).toEqual([0.8, 0.2])
     expect(preview?.assignments.every(({ a }) => a === 1.2)).toBe(true)
     expect(preview?.assignments.filter(({ enabled }) => enabled)).toHaveLength(
-      2
+      20
     )
 
     const assignmentWithDisabledCoverage =
@@ -416,8 +533,6 @@ describe('adaptive practice quiz configuration and publication', () => {
         ({ id }) => id === assignmentWithDisabledCoverage.id
       )?.enabled
     ).toBe(false)
-    expect(preview?.readiness.ready).toBe(true)
-    expect(preview?.readiness.errors).toEqual([])
     await prisma.competenceTreeLeafLevelCoverage.update({
       where: { id: disabledCoverage.id },
       data: { enabled: true },
@@ -436,7 +551,6 @@ describe('adaptive practice quiz configuration and publication', () => {
       preset: AdaptivePracticeQuizPreset.DIAGNOSTIC,
       levelMappingRule: AdaptiveLevelMappingRule.NEAREST,
       attemptSelectionPolicy: AdaptiveAttemptSelectionPolicy.LATEST_COMPLETED,
-      showLiveEstimate: false,
     })
 
     await editAdaptiveQuiz({
@@ -450,7 +564,6 @@ describe('adaptive practice quiz configuration and publication', () => {
         attemptSelectionPolicy: AdaptiveAttemptSelectionPolicy.FIRST_COMPLETED,
         defaultDiscrimination: 1.6,
         topInformationRatio: 0.6,
-        showLiveEstimate: true,
       },
       elementOverrides: fixture.assignmentIds.map((assignmentId) => ({
         assignmentId,
@@ -465,14 +578,9 @@ describe('adaptive practice quiz configuration and publication', () => {
       attemptSelectionPolicy: AdaptiveAttemptSelectionPolicy.FIRST_COMPLETED,
       defaultDiscrimination: 1.6,
       topInformationRatio: 0.6,
-      showLiveEstimate: true,
     })
     expect(preview?.assignments.every(({ a }) => a === 1.8)).toBe(true)
     expect(preview?.readiness.ready).toBe(true)
-    expect(preview).toMatchObject({
-      awardsPoints: false,
-      awardsExperiencePoints: false,
-    })
 
     await expect(
       unlinkCompetenceTreeFromCourse(
@@ -482,6 +590,28 @@ describe('adaptive practice quiz configuration and publication', () => {
     ).rejects.toMatchObject({
       extensions: { code: 'COMPETENCE_TREE_LINK_IN_USE' },
     })
+  })
+
+  it('uses the competence-tree discrimination when Research omits its override', async () => {
+    const course = await createCourse(owner.id)
+    const fixture = await createTreeFixture(course.id, ownerCtx)
+    await prisma.competenceTreeElementAssignment.updateMany({
+      where: { treeId: fixture.treeId },
+      data: { discrimination: null },
+    })
+
+    const setup = await getAdaptivePracticeQuizSetupPreview(
+      {
+        courseId: course.id,
+        input: {
+          competenceTreeId: fixture.treeId,
+          preset: AdaptivePracticeQuizPreset.RESEARCH,
+        },
+      },
+      ownerCtx
+    )
+
+    expect(setup.assignments.every(({ a }) => a === 1.7)).toBe(true)
   })
 
   it('round-trips direct overrides separately from ancestor-aware effective state', async () => {
@@ -512,7 +642,6 @@ describe('adaptive practice quiz configuration and publication', () => {
       attemptSelectionPolicy: AdaptiveAttemptSelectionPolicy.LATEST_COMPLETED,
       defaultDiscrimination: 1.6,
       topInformationRatio: 0.7,
-      showLiveEstimate: true,
     }
     const input = {
       competenceTreeId: fixture.treeId,
@@ -521,7 +650,6 @@ describe('adaptive practice quiz configuration and publication', () => {
       perLeafQuestionCap: 6,
       minQuestionsPerLeaf: 1,
       classificationZ: 1.28,
-      standardErrorThreshold: null,
       showTimer: true,
       nodeOverrides,
       elementOverrides,
@@ -532,13 +660,6 @@ describe('adaptive practice quiz configuration and publication', () => {
       { courseId: course.id, input },
       ownerCtx
     )
-    expect(setup.settings).toMatchObject({
-      competenceTreeId: fixture.treeId,
-      preset: AdaptivePracticeQuizPreset.RESEARCH,
-      defaultDiscrimination: 1.6,
-      topInformationRatio: 0.7,
-      showLiveEstimate: true,
-    })
     expect(
       setup.nodes.find(({ id }) => id === sourceAssignment.leafNodeId)
     ).toMatchObject({
@@ -675,11 +796,6 @@ describe('adaptive practice quiz configuration and publication', () => {
     const adaptiveConfig = {
       competenceTreeId: fixture.treeId,
       preset: AdaptivePracticeQuizPreset.DIAGNOSTIC,
-      totalQuestionCap: 12,
-      perLeafQuestionCap: 6,
-      minQuestionsPerLeaf: 1,
-      classificationZ: 1.28,
-      standardErrorThreshold: null,
       showTimer: true,
     }
 
@@ -840,7 +956,9 @@ describe('adaptive practice quiz configuration and publication', () => {
     )
     expect(preview?.readiness.ready).toBe(false)
     expect(preview?.readiness.errors).toContainEqual(
-      expect.objectContaining({ code: 'ADAPTIVE_COVERAGE_CELL_EMPTY' })
+      expect.objectContaining({
+        code: 'ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM',
+      })
     )
     await expect(
       getPracticeQuizPublicationPreview({ id: quiz.id }, ownerCtx)
@@ -850,6 +968,46 @@ describe('adaptive practice quiz configuration and publication', () => {
       readiness: { ready: false },
     })
 
+    await expect(
+      publishPracticeQuiz({ id: quiz.id }, ownerCtx)
+    ).rejects.toMatchObject({
+      extensions: { code: 'ADAPTIVE_QUIZ_NOT_READY' },
+    })
+    expect(
+      await prisma.practiceQuiz.findUniqueOrThrow({ where: { id: quiz.id } })
+    ).toMatchObject({ status: PublicationStatus.DRAFT })
+    expect(
+      await prisma.practiceQuizAdaptivePoolItem.count({
+        where: { config: { practiceQuizId: quiz.id } },
+      })
+    ).toBe(0)
+  })
+
+  it('keeps structurally unreachable Research quizzes editable but blocks publication', async () => {
+    const course = await createCourse(owner.id)
+    const fixture = await createTreeFixture(course.id, ownerCtx)
+    const quiz = await createAdaptiveQuiz({
+      courseId: course.id,
+      fixture,
+      ctx: ownerCtx,
+      preset: AdaptivePracticeQuizPreset.RESEARCH,
+      totalQuestionCap: 3,
+      minQuestionsPerLeaf: 2,
+    })
+
+    const preview = await getAdaptivePracticeQuizPreview(
+      { id: quiz.id },
+      ownerCtx
+    )
+    expect(preview?.readiness).toMatchObject({
+      ready: false,
+      errors: [],
+    })
+    expect(preview?.readiness.warnings).toContainEqual(
+      expect.objectContaining({
+        code: 'ADAPTIVE_GLOBAL_MINIMUM_EVIDENCE_CAPPED',
+      })
+    )
     await expect(
       publishPracticeQuiz({ id: quiz.id }, ownerCtx)
     ).rejects.toMatchObject({
@@ -879,18 +1037,19 @@ describe('adaptive practice quiz configuration and publication', () => {
       ownerCtx
     )
     expect(preview?.readiness.ready).toBe(true)
-    expect(preview?.assignments).toEqual([
-      expect.objectContaining({
-        elementType: ElementType.KPRIM,
-        controlledAnswerReady: true,
-      }),
-    ])
+    expect(preview?.assignments).toHaveLength(12)
+    expect(
+      preview?.assignments.every(
+        ({ elementType, controlledAnswerReady }) =>
+          elementType === ElementType.KPRIM && controlledAnswerReady
+      )
+    ).toBe(true)
     await publishPracticeQuiz({ id: quiz.id }, ownerCtx)
     expect(
       await prisma.practiceQuizAdaptivePoolItem.count({
         where: { config: { practiceQuizId: quiz.id } },
       })
-    ).toBe(1)
+    ).toBe(12)
   })
 
   it('materializes immutable pools, rejects scheduling, and locks republish after attempts', async () => {
@@ -934,7 +1093,7 @@ describe('adaptive practice quiz configuration and publication', () => {
     await expect(
       publishPracticeQuiz({ id: quiz.id }, ownerCtx)
     ).rejects.toMatchObject({
-      extensions: { code: 'ADAPTIVE_QUIZ_NOT_READY' },
+      extensions: { code: 'ADAPTIVE_SOURCE_ELEMENT_UNAVAILABLE' },
     })
     await prisma.element.update({
       where: { id: fixture.elementIds[0] },
@@ -962,10 +1121,15 @@ describe('adaptive practice quiz configuration and publication', () => {
       where: { config: { practiceQuizId: quiz.id } },
       orderBy: { sourceAssignmentId: 'asc' },
     })
-    expect(originalPool.map(({ elementName }) => elementName)).toEqual([
-      'Reading SC',
-      'Writing SC',
-    ])
+    expect(originalPool).toHaveLength(20)
+    expect(originalPool.map(({ elementName }) => elementName)).toEqual(
+      expect.arrayContaining([
+        'Reading basic numerical 1',
+        'Reading advanced numerical 1',
+        'Writing basic numerical 1',
+        'Writing advanced numerical 1',
+      ])
+    )
 
     await prisma.element.update({
       where: { id: fixture.elementIds[0] },
@@ -986,7 +1150,7 @@ describe('adaptive practice quiz configuration and publication', () => {
     await expect(
       publishPracticeQuiz({ id: quiz.id }, ownerCtx)
     ).rejects.toMatchObject({
-      extensions: { code: 'ADAPTIVE_QUIZ_NOT_READY' },
+      extensions: { code: 'ADAPTIVE_SOURCE_ELEMENT_UNAVAILABLE' },
     })
     expect(
       await prisma.practiceQuizAdaptivePoolItem.findMany({
@@ -1251,6 +1415,419 @@ describe('adaptive practice quiz configuration and publication', () => {
       extensions: { code: 'ADAPTIVE_CONFIG_LOCKED' },
     })
   })
+
+  it('revalidates tree-owner access and preserves an authorized snapshot after revocation', async () => {
+    const course = await createCourse(owner.id)
+    const fixture = await createTreeFixture(course.id, ownerCtx)
+    const quiz = await createAdaptiveQuiz({
+      courseId: course.id,
+      fixture,
+      ctx: ownerCtx,
+      name: 'revoked-source-adaptive-quiz',
+    })
+    const sourceElementId = fixture.elementIds[0]!
+    await prisma.element.update({
+      where: { id: sourceElementId },
+      data: { ownerId: reader.id },
+    })
+    const permission = await prisma.permission.create({
+      data: {
+        elementId: sourceElementId,
+        userId: owner.id,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+    await recomputeDerivedPermissions(
+      {
+        elementId: sourceElementId,
+        userId: owner.id,
+        updateAccessRequests: false,
+      },
+      prisma
+    )
+
+    await expect(
+      getAdaptivePracticeQuizPreview({ id: quiz.id }, ownerCtx)
+    ).resolves.toMatchObject({ readiness: { ready: true } })
+
+    await revokeObjectAccess(
+      { permissionId: permission.id, elementId: sourceElementId },
+      readerCtx
+    )
+    const preview = await getAdaptivePracticeQuizPreview(
+      { id: quiz.id },
+      ownerCtx
+    )
+    expect(preview?.assignments).toContainEqual(
+      expect.objectContaining({
+        elementId: sourceElementId,
+        available: false,
+        availabilityReason: 'OWNER_ACCESS_REVOKED',
+      })
+    )
+    expect(preview?.readiness.errors).toContainEqual(
+      expect.objectContaining({ code: 'ADAPTIVE_ITEM_ACCESS_REVOKED' })
+    )
+    await expect(
+      publishPracticeQuiz({ id: quiz.id }, ownerCtx)
+    ).rejects.toMatchObject({
+      extensions: { code: 'ADAPTIVE_SOURCE_ELEMENT_UNAVAILABLE' },
+    })
+    expect(
+      await prisma.practiceQuizAdaptivePoolItem.count({
+        where: { config: { practiceQuizId: quiz.id } },
+      })
+    ).toBe(0)
+    expect(
+      await prisma.practiceQuiz.findUniqueOrThrow({ where: { id: quiz.id } })
+    ).toMatchObject({ status: PublicationStatus.DRAFT })
+
+    const restoredPermission = await prisma.permission.create({
+      data: {
+        elementId: sourceElementId,
+        userId: owner.id,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+    await recomputeDerivedPermissions(
+      {
+        elementId: sourceElementId,
+        userId: owner.id,
+        updateAccessRequests: false,
+      },
+      prisma
+    )
+
+    let releasePublicationLock!: () => void
+    let markPublicationLocked!: () => void
+    const publicationLocked = new Promise<void>((resolve) => {
+      markPublicationLocked = resolve
+    })
+    const releasePublication = new Promise<void>((resolve) => {
+      releasePublicationLock = resolve
+    })
+    const publicationBlocker = prisma.$transaction(
+      async (tx) => {
+        await tx.$queryRaw`
+          SELECT "id"
+          FROM "Element"
+          WHERE "id" = ${sourceElementId}
+          FOR SHARE
+        `
+        markPublicationLocked()
+        await releasePublication
+      },
+      { timeout: 10_000 }
+    )
+    await publicationLocked
+
+    const postPublicationRevocation = revokeObjectAccess(
+      {
+        permissionId: restoredPermission.id,
+        elementId: sourceElementId,
+      },
+      readerCtx
+    )
+    const revocationState = await Promise.race([
+      postPublicationRevocation.then(() => 'fulfilled'),
+      new Promise<'pending'>((resolve) =>
+        setTimeout(() => resolve('pending'), 100)
+      ),
+    ])
+    try {
+      await expect(
+        publishPracticeQuiz({ id: quiz.id }, ownerCtx)
+      ).resolves.toMatchObject({ status: PublicationStatus.PUBLISHED })
+    } finally {
+      releasePublicationLock()
+    }
+    await publicationBlocker
+    await expect(postPublicationRevocation).resolves.toBe(restoredPermission.id)
+    expect(revocationState).toBe('pending')
+    const authorizedPool = await prisma.practiceQuizAdaptivePoolItem.findMany({
+      where: { config: { practiceQuizId: quiz.id } },
+      orderBy: { sourceAssignmentId: 'asc' },
+    })
+    expect(authorizedPool).toHaveLength(20)
+    await expect(
+      publishPracticeQuiz({ id: quiz.id }, ownerCtx)
+    ).rejects.toMatchObject({
+      extensions: { code: 'ADAPTIVE_SOURCE_ELEMENT_UNAVAILABLE' },
+    })
+    expect(
+      await prisma.practiceQuizAdaptivePoolItem.findMany({
+        where: { config: { practiceQuizId: quiz.id } },
+        orderBy: { sourceAssignmentId: 'asc' },
+      })
+    ).toEqual(authorizedPool)
+  })
+
+  it('serializes source-access revocation before concurrent publication', async () => {
+    const course = await createCourse(owner.id)
+    const fixture = await createTreeFixture(course.id, ownerCtx)
+    const quiz = await createAdaptiveQuiz({
+      courseId: course.id,
+      fixture,
+      ctx: ownerCtx,
+      name: 'concurrent-revocation-adaptive-quiz',
+    })
+    const sourceElementId = fixture.elementIds[0]!
+    await prisma.element.update({
+      where: { id: sourceElementId },
+      data: { ownerId: reader.id },
+    })
+    const permission = await prisma.permission.create({
+      data: {
+        elementId: sourceElementId,
+        userId: owner.id,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+    await recomputeDerivedPermissions(
+      {
+        elementId: sourceElementId,
+        userId: owner.id,
+        updateAccessRequests: false,
+      },
+      prisma
+    )
+
+    let releasePermissionLock!: () => void
+    let markPermissionLocked!: () => void
+    const permissionLocked = new Promise<void>((resolve) => {
+      markPermissionLocked = resolve
+    })
+    const releasePermission = new Promise<void>((resolve) => {
+      releasePermissionLock = resolve
+    })
+    const permissionBlocker = prisma.$transaction(
+      async (tx) => {
+        await tx.$queryRaw`
+          SELECT "id"
+          FROM "Permission"
+          WHERE "id" = ${permission.id}
+          FOR UPDATE
+        `
+        markPermissionLocked()
+        await releasePermission
+      },
+      { timeout: 10_000 }
+    )
+    await permissionLocked
+
+    const revocation = revokeObjectAccess(
+      { permissionId: permission.id, elementId: sourceElementId },
+      readerCtx
+    )
+    let publication!: ReturnType<typeof publishPracticeQuiz>
+    let publicationState = 'not-started'
+    try {
+      await waitForElementPermissionRevocationLock(sourceElementId)
+      publication = publishPracticeQuiz({ id: quiz.id }, ownerCtx)
+      publicationState = await Promise.race([
+        publication.then(
+          () => 'fulfilled',
+          () => 'rejected'
+        ),
+        new Promise<'pending'>((resolve) =>
+          setTimeout(() => resolve('pending'), 100)
+        ),
+      ])
+    } finally {
+      releasePermissionLock()
+    }
+
+    await permissionBlocker
+    await expect(revocation).resolves.toBe(permission.id)
+    await expect(publication).rejects.toMatchObject({
+      extensions: { code: 'ADAPTIVE_SOURCE_ELEMENT_UNAVAILABLE' },
+    })
+    expect(publicationState).toBe('pending')
+    expect(
+      await prisma.practiceQuizAdaptivePoolItem.count({
+        where: { config: { practiceQuizId: quiz.id } },
+      })
+    ).toBe(0)
+    expect(
+      await prisma.practiceQuiz.findUniqueOrThrow({ where: { id: quiz.id } })
+    ).toMatchObject({ status: PublicationStatus.DRAFT })
+  })
+
+  it('serializes group-based source-access removal with publication authorization', async () => {
+    const course = await createCourse(owner.id)
+    const fixture = await createTreeFixture(course.id, ownerCtx)
+    const quiz = await createAdaptiveQuiz({
+      courseId: course.id,
+      fixture,
+      ctx: ownerCtx,
+      name: 'group-revocation-adaptive-quiz',
+    })
+    const sourceElementId = fixture.elementIds[0]!
+    await prisma.element.update({
+      where: { id: sourceElementId },
+      data: { ownerId: reader.id },
+    })
+    const group = await prisma.userGroup.create({
+      data: {
+        name: `adaptive-source-group-${crypto.randomUUID()}`,
+        ownerId: reader.id,
+        members: { connect: { id: owner.id } },
+      },
+    })
+    await prisma.permission.create({
+      data: {
+        elementId: sourceElementId,
+        userGroupId: group.id,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+    await recomputeDerivedPermissions(
+      {
+        elementId: sourceElementId,
+        userId: owner.id,
+        updateAccessRequests: false,
+      },
+      prisma
+    )
+    let releasePublicationAuthorizationLock!: () => void
+    let markPublicationAuthorizationLocked!: () => void
+    const publicationAuthorizationLocked = new Promise<void>((resolve) => {
+      markPublicationAuthorizationLocked = resolve
+    })
+    const releasePublicationAuthorization = new Promise<void>((resolve) => {
+      releasePublicationAuthorizationLock = resolve
+    })
+    const publicationAuthorizationTransaction = prisma.$transaction(
+      async (tx) => {
+        await lockAdaptivePracticeQuizPublicationSources(quiz.id, tx)
+        markPublicationAuthorizationLocked()
+        await releasePublicationAuthorization
+      },
+      { timeout: 10_000 }
+    )
+    await publicationAuthorizationLocked
+
+    const groupRemoval = removeUserFromGroup(
+      { groupId: group.id, userId: owner.id },
+      readerCtx
+    )
+    const removalState = await Promise.race([
+      groupRemoval.then(() => 'fulfilled'),
+      new Promise<'pending'>((resolve) =>
+        setTimeout(() => resolve('pending'), 100)
+      ),
+    ])
+    releasePublicationAuthorizationLock()
+
+    await publicationAuthorizationTransaction
+    await expect(groupRemoval).resolves.toBe(true)
+    expect(removalState).toBe('pending')
+    await expect(
+      publishPracticeQuiz({ id: quiz.id }, ownerCtx)
+    ).rejects.toMatchObject({
+      extensions: { code: 'ADAPTIVE_SOURCE_ELEMENT_UNAVAILABLE' },
+    })
+    expect(
+      await prisma.practiceQuizAdaptivePoolItem.count({
+        where: { config: { practiceQuizId: quiz.id } },
+      })
+    ).toBe(0)
+  })
+
+  it.each(['archive', 'delete'] as const)(
+    'serializes competence-tree %s with publication authorization',
+    async (stateChange) => {
+      const course = await createCourse(owner.id)
+      const fixture = await createTreeFixture(course.id, ownerCtx)
+      const quiz = await createAdaptiveQuiz({
+        courseId: course.id,
+        fixture,
+        ctx: ownerCtx,
+        name: `${stateChange}-tree-publication-adaptive-quiz`,
+      })
+
+      let releasePublicationAuthorizationLock!: () => void
+      let markPublicationAuthorizationLocked!: () => void
+      const publicationAuthorizationLocked = new Promise<void>((resolve) => {
+        markPublicationAuthorizationLocked = resolve
+      })
+      const releasePublicationAuthorization = new Promise<void>((resolve) => {
+        releasePublicationAuthorizationLock = resolve
+      })
+      const publicationAuthorizationTransaction = prisma.$transaction(
+        async (tx) => {
+          await lockAdaptivePracticeQuizPublicationSources(quiz.id, tx)
+          markPublicationAuthorizationLocked()
+          await releasePublicationAuthorization
+        },
+        { timeout: 10_000 }
+      )
+      await publicationAuthorizationLocked
+
+      const treeStateChange =
+        stateChange === 'archive'
+          ? archiveCompetenceTree({ id: fixture.treeId }, ownerCtx)
+          : deleteCompetenceTree({ id: fixture.treeId }, ownerCtx)
+      const stateChangeResult = await Promise.race([
+        treeStateChange.then(() => 'fulfilled'),
+        new Promise<'pending'>((resolve) =>
+          setTimeout(() => resolve('pending'), 100)
+        ),
+      ])
+      releasePublicationAuthorizationLock()
+
+      await publicationAuthorizationTransaction
+      await expect(treeStateChange).resolves.toBe(true)
+      expect(stateChangeResult).toBe('pending')
+      await expect(
+        publishPracticeQuiz({ id: quiz.id }, ownerCtx)
+      ).rejects.toMatchObject({
+        extensions: { code: 'ADAPTIVE_COMPETENCE_TREE_UNAVAILABLE' },
+      })
+      expect(
+        await prisma.practiceQuizAdaptivePoolItem.count({
+          where: { config: { practiceQuizId: quiz.id } },
+        })
+      ).toBe(0)
+      expect(
+        await prisma.practiceQuiz.findUniqueOrThrow({ where: { id: quiz.id } })
+      ).toMatchObject({ status: PublicationStatus.DRAFT })
+    }
+  )
+
+  it('lets a quiz manager publish a linked tree without granting element access', async () => {
+    const course = await createCourse(owner.id)
+    const fixture = await createTreeFixture(course.id, ownerCtx)
+    const quiz = await createAdaptiveQuiz({
+      courseId: course.id,
+      fixture,
+      ctx: ownerCtx,
+      name: 'manager-publication-adaptive-quiz',
+    })
+    await prisma.derivedPermission.create({
+      data: {
+        practiceQuizId: quiz.id,
+        userId: outsider.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+    const resolver = schema.getMutationType()!.getFields().publishPracticeQuiz!
+      .resolve!
+
+    await expect(
+      resolver({}, { id: quiz.id, availableFrom: null }, outsiderCtx, {
+        fieldName: 'publishPracticeQuiz',
+      } as never)
+    ).resolves.toMatchObject({ status: PublicationStatus.PUBLISHED })
+    expect(
+      await prisma.derivedPermission.count({
+        where: {
+          userId: outsider.id,
+          elementId: { in: fixture.elementIds },
+        },
+      })
+    ).toBe(0)
+  })
 })
 
 type TreeFixture = {
@@ -1258,6 +1835,50 @@ type TreeFixture = {
   rootIds: number[]
   assignmentIds: number[]
   elementIds: number[]
+}
+
+function getSchemaFieldNames(typeName: string): string[] {
+  const type = schema.getType(typeName) as
+    | { getFields?: () => Record<string, unknown> }
+    | undefined
+  if (!type?.getFields) throw new Error(`Missing schema type ${typeName}.`)
+  return Object.keys(type.getFields()).sort()
+}
+
+async function waitForElementPermissionRevocationLock(elementId: number) {
+  for (let attempt = 0; attempt < 50; attempt++) {
+    try {
+      await prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`
+          SELECT "id"
+          FROM "Element"
+          WHERE "id" = ${elementId}
+          FOR SHARE NOWAIT
+        `
+      })
+    } catch (error) {
+      const metadata = (
+        error as {
+          meta?: {
+            code?: string
+            driverAdapterError?: {
+              cause?: { code?: string; originalCode?: string }
+            }
+          }
+        }
+      ).meta
+      const databaseCode =
+        metadata?.code ??
+        metadata?.driverAdapterError?.cause?.originalCode ??
+        metadata?.driverAdapterError?.cause?.code
+      if (databaseCode === '55P03') {
+        return
+      }
+      throw error
+    }
+    await new Promise((resolve) => setTimeout(resolve, 10))
+  }
+  throw new Error('Timed out waiting for the element revocation lock.')
 }
 
 function contextFor(
@@ -1306,16 +1927,23 @@ async function createTreeFixture(
   ctx: ContextWithUser,
   suffix = 'main'
 ): Promise<TreeFixture> {
-  const elements = await Promise.all([
-    createSingleChoiceElement(
-      `Reading SC${suffix === 'main' ? '' : ` ${suffix}`}`,
-      ctx
-    ),
-    createSingleChoiceElement(
-      `Writing SC${suffix === 'main' ? '' : ` ${suffix}`}`,
-      ctx
-    ),
-  ])
+  const elementSpecs = ['Reading', 'Writing'].flatMap((competence) =>
+    ['basic', 'advanced'].flatMap((levelKey) =>
+      Array.from({ length: 5 }, (_, index) => ({
+        competence,
+        levelKey,
+        index,
+      }))
+    )
+  )
+  const elements = await Promise.all(
+    elementSpecs.map(({ competence, levelKey, index }) =>
+      createNumericalElement(
+        `${competence} ${levelKey} numerical ${index + 1}${suffix === 'main' ? '' : ` ${suffix}`}`,
+        ctx
+      )
+    )
+  )
   const input: CompetenceTreeInput = {
     name: `adaptive-tree-${suffix}-${crypto.randomUUID()}`,
     displayName: `Adaptive tree ${suffix}`,
@@ -1362,34 +1990,39 @@ async function createTreeFixture(
       {
         leafKey: 'scanning',
         levelKey: 'basic',
-        targetItemCount: 1,
+        targetItemCount: 5,
         enabled: true,
       },
       {
         leafKey: 'structure',
         levelKey: 'basic',
-        targetItemCount: 1,
+        targetItemCount: 5,
         enabled: true,
       },
-    ],
-    assignments: [
       {
-        elementId: elements[0].id,
         leafKey: 'scanning',
-        levelKey: 'basic',
+        levelKey: 'advanced',
+        targetItemCount: 5,
         enabled: true,
-        discrimination: 2,
-        enablePercentInput: false,
       },
       {
-        elementId: elements[1].id,
         leafKey: 'structure',
-        levelKey: 'basic',
+        levelKey: 'advanced',
+        targetItemCount: 5,
         enabled: true,
-        discrimination: 2,
-        enablePercentInput: false,
       },
     ],
+    assignments: elements.map((element, index) => ({
+      elementId: element.id,
+      leafKey:
+        elementSpecs[index]!.competence === 'Reading'
+          ? 'scanning'
+          : 'structure',
+      levelKey: elementSpecs[index]!.levelKey,
+      enabled: true,
+      discrimination: 2,
+      enablePercentInput: false,
+    })),
   }
   const tree = await createCompetenceTree({ input }, ctx)
   await linkCompetenceTreeToCourse({ treeId: tree.id, courseId }, ctx)
@@ -1408,21 +2041,28 @@ async function createAllFalseKprimTreeFixture(
   courseId: string,
   ctx: ContextWithUser
 ): Promise<TreeFixture> {
-  const element = await prisma.element.create({
-    data: {
-      type: ElementType.KPRIM,
-      name: 'All-false KPRIM',
-      content: 'Select every statement that is correct.',
-      options: {
-        choices: Array.from({ length: 4 }, (_, ix) => ({
-          ix,
-          value: `Statement ${ix + 1}`,
-          correct: false,
-        })),
-      },
-      ownerId: ctx.user.sub,
-    },
-  })
+  const elementSpecs = ['basic', 'advanced'].flatMap((levelKey) =>
+    Array.from({ length: 6 }, (_, index) => ({ levelKey, index }))
+  )
+  const elements = await Promise.all(
+    elementSpecs.map(({ levelKey, index }) =>
+      prisma.element.create({
+        data: {
+          type: ElementType.KPRIM,
+          name: `All-false ${levelKey} KPRIM ${index + 1}`,
+          content: 'Select every statement that is correct.',
+          options: {
+            choices: Array.from({ length: 4 }, (_, ix) => ({
+              ix,
+              value: `Statement ${ix + 1}`,
+              correct: false,
+            })),
+          },
+          ownerId: ctx.user.sub,
+        },
+      })
+    )
+  )
   const tree = await createCompetenceTree(
     {
       input: {
@@ -1457,20 +2097,24 @@ async function createAllFalseKprimTreeFixture(
           {
             leafKey: 'classification',
             levelKey: 'basic',
-            targetItemCount: 1,
+            targetItemCount: 6,
             enabled: true,
           },
-        ],
-        assignments: [
           {
-            elementId: element.id,
             leafKey: 'classification',
-            levelKey: 'basic',
+            levelKey: 'advanced',
+            targetItemCount: 6,
             enabled: true,
-            discrimination: 1.2,
-            enablePercentInput: false,
           },
         ],
+        assignments: elements.map((element, index) => ({
+          elementId: element.id,
+          leafKey: 'classification',
+          levelKey: elementSpecs[index]!.levelKey,
+          enabled: true,
+          discrimination: 1.2,
+          enablePercentInput: false,
+        })),
       },
     },
     ctx
@@ -1482,23 +2126,18 @@ async function createAllFalseKprimTreeFixture(
       .filter(({ parentId }) => parentId === null)
       .map(({ id }) => id),
     assignmentIds: tree.elementAssignments.map(({ id }) => id),
-    elementIds: [element.id],
+    elementIds: elements.map(({ id }) => id),
   }
 }
 
-async function createSingleChoiceElement(name: string, ctx: ContextWithUser) {
+async function createNumericalElement(name: string, ctx: ContextWithUser) {
   return await prisma.element.create({
     data: {
-      type: ElementType.SC,
+      type: ElementType.NUMERICAL,
       name,
       content: 'Adaptive question',
       options: {
-        choices: [
-          { ix: 0, value: 'A', correct: true },
-          { ix: 1, value: 'B', correct: false },
-          { ix: 2, value: 'C', correct: false },
-          { ix: 3, value: 'D', correct: false },
-        ],
+        exactSolutions: [0],
       },
       ownerId: ctx.user.sub,
     },
@@ -1527,6 +2166,8 @@ async function createAdaptiveQuiz({
   nodeOverrides,
   elementOverrides,
   researchSettings,
+  totalQuestionCap,
+  minQuestionsPerLeaf,
 }: {
   courseId: string
   fixture: TreeFixture
@@ -1548,8 +2189,9 @@ async function createAdaptiveQuiz({
     attemptSelectionPolicy: AdaptiveAttemptSelectionPolicy
     defaultDiscrimination: number
     topInformationRatio: number
-    showLiveEstimate: boolean
   }
+  totalQuestionCap?: number
+  minQuestionsPerLeaf?: number
 }) {
   return await manipulatePracticeQuiz(
     {
@@ -1558,12 +2200,8 @@ async function createAdaptiveQuiz({
       adaptiveConfig: {
         competenceTreeId: fixture.treeId,
         preset,
-        totalQuestionCap: 12,
-        perLeafQuestionCap: 6,
-        minQuestionsPerLeaf: 1,
-        classificationZ: 1.28,
-        standardErrorThreshold: null,
-        showTimer: true,
+        totalQuestionCap,
+        minQuestionsPerLeaf,
         nodeOverrides,
         elementOverrides,
         researchSettings,
@@ -1588,12 +2226,6 @@ async function editAdaptiveQuiz({
       adaptiveConfig: {
         competenceTreeId: input.fixture.treeId,
         preset: input.preset ?? AdaptivePracticeQuizPreset.DIAGNOSTIC,
-        totalQuestionCap: 12,
-        perLeafQuestionCap: 6,
-        minQuestionsPerLeaf: 1,
-        classificationZ: 1.28,
-        standardErrorThreshold: null,
-        showTimer: true,
         nodeOverrides: input.nodeOverrides,
         elementOverrides: input.elementOverrides,
         researchSettings: input.researchSettings,
@@ -1622,10 +2254,10 @@ function rootWeights(
 }
 
 async function cleanup() {
+  await prisma.participant.deleteMany()
   await prisma.practiceQuiz.deleteMany()
   await prisma.competenceTree.deleteMany()
   await prisma.element.deleteMany()
   await prisma.course.deleteMany()
-  await prisma.participant.deleteMany()
   await prisma.user.deleteMany()
 }

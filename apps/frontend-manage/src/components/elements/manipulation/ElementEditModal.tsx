@@ -16,8 +16,21 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { useRouter } from 'next/router'
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import ElementEditForm from './ElementEditForm'
+import type {
+  ElementAutosaveCompletion,
+  ElementAutosavePayload,
+} from './adaptive/elementMappingRecovery'
+import {
+  completeElementAutosave,
+  createElementAutosavePayload,
+  getRecoveredElementId,
+  isElementAutosavePayload,
+  restoreElementAutosave,
+  shouldPersistElement,
+  updateElementAutosaveFormValues,
+} from './adaptive/elementMappingRecovery'
 import {
   createInlineCaseStudyCollection,
   createInlineSelectionCollection,
@@ -61,23 +74,28 @@ function ElementEditModal({
   const isDuplication = mode === ElementEditMode.DUPLICATE
   const [updateInstances, setUpdateInstances] = useState(true)
   const [includeTemplateUpdates, setIncludeTemplateUpdates] = useState(false)
-  const [persistedElementId, setPersistedElementId] = useState<
-    number | undefined
-  >()
+  const autoSaveKey =
+    typeof elementId === 'undefined' || isDuplication
+      ? 'autosave-element-creation'
+      : `autosave-element-${elementId}`
+  const [storedAutoSave, setStoredAutoSave] = useLocalStorage<unknown>(
+    autoSaveKey,
+    undefined
+  )
+  const autoSavePayload = useMemo(
+    () => restoreElementAutosave(storedAutoSave),
+    [storedAutoSave]
+  )
 
   useEffect(() => {
-    if (!isOpen) {
-      setPersistedElementId(undefined)
+    if (
+      autoSavePayload &&
+      storedAutoSave !== undefined &&
+      !isElementAutosavePayload(storedAutoSave)
+    ) {
+      setStoredAutoSave(autoSavePayload)
     }
-  }, [isOpen])
-
-  const [autoSavedElement, setAutoSavedElement] =
-    useLocalStorage<ElementFormTypes>(
-      typeof elementId === 'undefined' || isDuplication
-        ? 'autosave-element-creation'
-        : `autosave-element-${elementId}`,
-      undefined
-    )
+  }, [autoSavePayload, setStoredAutoSave, storedAutoSave])
 
   const { loading: loadingQuestion, data: dataQuestion } = useQuery(
     GetSingleElementDocument,
@@ -121,15 +139,90 @@ function ElementEditModal({
     isDuplication,
   })
 
-  // only update the form values on initial rendering in creation or edit mode (not in duplication mode)
-  // (otherwise, saving the question will directly trigger another save)
+  const shouldRestoreAutoSave =
+    !isDuplication ||
+    (autoSavePayload !== null &&
+      (autoSavePayload.mappingRecovery.phase !== 'editing' ||
+        autoSavePayload.mappingRecovery.pendingMapping !== null))
+
   const formikInitialValues = useMemo(() => {
     if (!initialValues) {
       return undefined
     }
-    return isDuplication ? initialValues : (autoSavedElement ?? initialValues)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, isDuplication, initialValues])
+    return shouldRestoreAutoSave
+      ? (autoSavePayload?.formValues ?? initialValues)
+      : initialValues
+  }, [autoSavePayload, initialValues, shouldRestoreAutoSave])
+
+  const formAutoSavePayload = useMemo(() => {
+    if (!formikInitialValues) {
+      return undefined
+    }
+
+    return shouldRestoreAutoSave && autoSavePayload
+      ? autoSavePayload
+      : createElementAutosavePayload(formikInitialValues)
+  }, [autoSavePayload, formikInitialValues, shouldRestoreAutoSave])
+
+  const setAutoSavedElement = useCallback<
+    React.Dispatch<React.SetStateAction<ElementFormTypes>>
+  >(
+    (nextFormValues) => {
+      setStoredAutoSave((currentStoredValue: unknown) => {
+        const currentPayload =
+          restoreElementAutosave(currentStoredValue) ?? formAutoSavePayload
+        if (!currentPayload) {
+          return currentStoredValue
+        }
+
+        const formValues =
+          typeof nextFormValues === 'function'
+            ? nextFormValues(currentPayload.formValues)
+            : nextFormValues
+        return updateElementAutosaveFormValues(currentPayload, formValues)
+      })
+    },
+    [formAutoSavePayload, setStoredAutoSave]
+  )
+
+  const handleSuccess = () => {
+    const { editElementId, contextActivityId, contextActivityType, ...query } =
+      router.query
+
+    if (contextActivityId && contextActivityType) {
+      router.push(
+        {
+          pathname: '/activities',
+          query: {
+            ...query,
+            openActivityDetailsId: contextActivityId,
+            openActivityDetailsType: contextActivityType,
+          },
+        },
+        undefined,
+        { shallow: true }
+      )
+    } else {
+      handleSetIsOpen(false)
+      router.push({ pathname: '/', query }, undefined, { shallow: true })
+    }
+
+    triggerSuccessToast()
+  }
+
+  const handleRecoveryComplete = (
+    payload: ElementAutosavePayload,
+    completion: ElementAutosaveCompletion
+  ) => {
+    const completedPayload = completeElementAutosave(payload, completion)
+    if (completedPayload) {
+      setStoredAutoSave(completedPayload)
+      return
+    }
+
+    setStoredAutoSave(null)
+    handleSuccess()
+  }
 
   return (
     <ElementEditForm
@@ -142,6 +235,9 @@ function ElementEditModal({
         Object.keys(formikInitialValues).length === 0
       }
       initialValues={formikInitialValues}
+      autoSavePayload={formAutoSavePayload}
+      onAutoSavePayloadChange={setStoredAutoSave}
+      onRecoveryComplete={handleRecoveryComplete}
       onClose={async () => {
         // close the modal
         handleSetIsOpen(false)
@@ -164,9 +260,15 @@ function ElementEditModal({
       setIncludeTemplateUpdates={setIncludeTemplateUpdates}
       onSubmitElement={async (values) => {
         try {
-          const submissionElementId = persistedElementId ?? elementId
-          const submissionIsDuplication =
-            isDuplication && typeof persistedElementId === 'undefined'
+          if (
+            formAutoSavePayload &&
+            !shouldPersistElement(formAutoSavePayload)
+          ) {
+            return getRecoveredElementId(formAutoSavePayload) ?? null
+          }
+
+          const submissionElementId = elementId
+          const submissionIsDuplication = isDuplication
           let savedElementId: number | null = null
 
           switch (values.type) {
@@ -391,58 +493,13 @@ function ElementEditModal({
             await flagOutdatedElementInstances({ variables: { elementId } })
           }
 
-          setPersistedElementId(savedElementId ?? undefined)
           return savedElementId
         } catch (err) {
           console.error('Error submitting element:', err)
           return null
         }
       }}
-      onSuccess={() => {
-        setPersistedElementId(undefined)
-
-        // remove local storage entry
-        if (autoSavedElement) {
-          localStorage.removeItem(
-            typeof elementId === 'undefined' || isDuplication
-              ? 'autosave-element-creation'
-              : `autosave-element-${elementId}`
-          )
-        }
-
-        // extract query parameters
-        const {
-          editElementId,
-          contextActivityId,
-          contextActivityType,
-          ...query
-        } = router.query
-
-        if (contextActivityId && contextActivityType) {
-          // if the element is edited in the context of an activity, re-open the corresponding activity details
-          router.push(
-            {
-              pathname: '/activities',
-              query: {
-                ...query,
-                openActivityDetailsId: contextActivityId,
-                openActivityDetailsType: contextActivityType,
-              },
-            },
-            undefined,
-            { shallow: true }
-          )
-        } else {
-          // close modal
-          handleSetIsOpen(false)
-
-          // unset the edit element id
-          router.push({ pathname: '/', query }, undefined, { shallow: true })
-        }
-
-        // trigger success toast
-        triggerSuccessToast()
-      }}
+      onSuccess={handleSuccess}
       setAutoSavedElement={setAutoSavedElement}
     />
   )

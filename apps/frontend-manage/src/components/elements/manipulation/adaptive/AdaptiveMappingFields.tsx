@@ -83,7 +83,7 @@ function AdaptiveMappingFields({
           />
           <Select
             id={`adaptive-mapping-leaf-${tree.id}`}
-            value={value.leafNodeId?.toString()}
+            value={value.leafNodeId?.toString() ?? ''}
             placeholder={t('manage.elements.adaptiveMapping.selectLeaf')}
             disabled={disabled}
             items={leaves.map((leaf) => ({
@@ -124,7 +124,7 @@ function AdaptiveMappingFields({
           />
           <Select
             id={`adaptive-mapping-level-${tree.id}`}
-            value={value.levelId?.toString()}
+            value={value.levelId?.toString() ?? ''}
             placeholder={t('manage.elements.adaptiveMapping.selectLevel')}
             disabled={disabled || value.leafNodeId === null}
             items={tree.levels
@@ -170,7 +170,7 @@ function AdaptiveMappingFields({
       </div>
 
       <dl
-        className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm md:grid-cols-5"
+        className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2 lg:grid-cols-5"
         data-cy={`adaptive-mapping-parameters-${tree.id}`}
       >
         <div>

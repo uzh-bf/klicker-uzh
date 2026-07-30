@@ -1,63 +1,48 @@
 import {
-  information,
-  informationAtDifficulty,
+  ADAPTIVE_PLANNING_BUDGET_MINUTES,
+  ADAPTIVE_SECONDS_PER_ITEM,
+  isAdaptiveProductPreset,
   MAX_DISCRIMINATION,
+  MIN_PRODUCT_ITEMS_PER_COVERAGE_CELL,
 } from '@klicker-uzh/adaptive-learning'
 
-export const ADAPTIVE_PLANNING_BUDGET_MINUTES = 30
-export const ADAPTIVE_SECONDS_PER_ITEM = 60
+import {
+  allocateRootQuestionBudget,
+  buildThetaGrid,
+  capAssignmentsByRoot,
+  computeMinimumEvidenceByNode,
+  itemInformation,
+  minimumDefined,
+  representativeBandTheta,
+} from './adaptivePracticeQuizReachability.js'
+import type {
+  AdaptiveConfiguredAssignment,
+  AdaptiveConfiguredCoverage,
+  AdaptiveConfiguredLevel,
+  AdaptiveConfiguredNode,
+  AdaptiveConfiguredSettings,
+} from './adaptivePracticeQuizReadinessTypes.js'
+
+export type {
+  AdaptiveConfiguredAssignment,
+  AdaptiveConfiguredCoverage,
+  AdaptiveConfiguredLevel,
+  AdaptiveConfiguredNode,
+  AdaptiveConfiguredSettings,
+} from './adaptivePracticeQuizReadinessTypes.js'
+
+export {
+  ADAPTIVE_PLANNING_BUDGET_MINUTES,
+  ADAPTIVE_SECONDS_PER_ITEM,
+} from '@klicker-uzh/adaptive-learning'
 export const MAX_ADAPTIVE_QUESTION_CAP = 1000
 
-export type AdaptiveConfiguredNode = {
-  id: number
-  parentId: number | null
-  kind: 'COMPETENCE' | 'SUBCOMPETENCE'
-  name: string
-  depth: number
-  enabled: boolean
-  weight: number | null
-  questionCap: number | null
-}
-
-export type AdaptiveConfiguredCoverage = {
-  id: number
-  leafNodeId: number
-  levelId: number
-  targetItemCount: number
-  enabled: boolean
-}
-
-export type AdaptiveConfiguredLevel = {
-  id: number
-  theta: number
-  lowerBound: number
-  upperBound: number
-}
-
-export type AdaptiveConfiguredAssignment = {
-  id: number
-  elementId: number
-  elementName: string
-  elementType: string
-  leafNodeId: number
-  levelId: number
-  enabled: boolean
-  available: boolean
-  discrimination: number
-  difficulty: number
-  guessing: number
-  controlledAnswerReady: boolean
-}
-
-export type AdaptiveConfiguredSettings = {
-  totalQuestionCap: number
-  perLeafQuestionCap: number | null
-  minQuestionsPerLeaf: number
-  classificationZ: number
-  standardErrorThreshold: number | null
-  topInformationRatio: number
-  defaultDiscrimination: number
-}
+export const ADAPTIVE_PUBLICATION_BLOCKING_WARNING_CODES = new Set([
+  'ADAPTIVE_MINIMUM_EVIDENCE_UNREACHABLE',
+  'ADAPTIVE_MINIMUM_EVIDENCE_CAPPED',
+  'ADAPTIVE_GLOBAL_MINIMUM_EVIDENCE_CAPPED',
+  'ADAPTIVE_CLASSIFICATION_BANDS_UNREACHABLE',
+])
 
 export type AdaptiveReadinessIssue = {
   code: string
@@ -84,8 +69,6 @@ export type AdaptiveReadinessIssueParameters = {
   totalQuestionCap?: number
   classifiableLevelCount?: number
   levelCount?: number
-  targetQuestionCount?: number
-  maximumQuestionCount?: number
   estimatedDurationMinutes?: number
   secondsPerItem?: number
   assignmentId?: number
@@ -106,7 +89,6 @@ export type AdaptiveRootReachability = {
   availableItemCount: number
   allocatedQuestionCount: number
   minimumReachableStandardError: number | null
-  thresholdReachable: boolean | null
   classifiableLevelCount: number
   levelCount: number
   allLevelsPotentiallyClassifiable: boolean
@@ -142,6 +124,7 @@ export function validateAdaptiveQuizReadiness({
 }): AdaptiveQuizReadiness {
   const errors: AdaptiveReadinessIssue[] = []
   const warnings: AdaptiveReadinessIssue[] = []
+  const strictProductReadiness = isAdaptiveProductPreset(settings.preset)
   const childrenByParent = new Map<number, AdaptiveConfiguredNode[]>()
 
   for (const node of nodes) {
@@ -216,9 +199,15 @@ export function validateAdaptiveQuizReadiness({
 
   for (const assignment of selectedAssignments) {
     if (!assignment.available) {
+      const accessRevoked =
+        assignment.availabilityReason === 'OWNER_ACCESS_REVOKED'
       errors.push({
-        code: 'ADAPTIVE_ITEM_UNAVAILABLE',
-        message: `Element ${assignment.elementName} has been deleted and cannot be included in a new adaptive pool.`,
+        code: accessRevoked
+          ? 'ADAPTIVE_ITEM_ACCESS_REVOKED'
+          : 'ADAPTIVE_ITEM_UNAVAILABLE',
+        message: accessRevoked
+          ? `The competence tree owner can no longer read element ${assignment.elementName}.`
+          : `Element ${assignment.elementName} has been deleted and cannot be included in a new adaptive pool.`,
         parameters: { elementName: assignment.elementName },
         path: `assignments.${assignment.id}`,
         leafNodeId: assignment.leafNodeId,
@@ -265,15 +254,16 @@ export function validateAdaptiveQuizReadiness({
   }
 
   const coverageReadiness: AdaptiveCoverageReadiness[] = []
-  let targetQuestionCount = 0
   for (const coverage of coverages) {
     if (!coverage.enabled || !enabledLeafIds.has(coverage.leafNodeId)) continue
 
     const enabledAssignmentCount =
       assignmentsByCell.get(`${coverage.leafNodeId}:${coverage.levelId}`)
         ?.length ?? 0
-    const ready = enabledAssignmentCount > 0
-    targetQuestionCount += coverage.targetItemCount
+    const requiredItemCount = strictProductReadiness
+      ? MIN_PRODUCT_ITEMS_PER_COVERAGE_CELL
+      : 1
+    const ready = enabledAssignmentCount >= requiredItemCount
     coverageReadiness.push({
       coverageId: coverage.id,
       leafNodeId: coverage.leafNodeId,
@@ -283,12 +273,24 @@ export function validateAdaptiveQuizReadiness({
       ready,
     })
 
-    if (!ready) {
+    if (enabledAssignmentCount === 0) {
       errors.push({
         code: 'ADAPTIVE_COVERAGE_CELL_EMPTY',
         message:
           'Every enabled leaf-level coverage cell needs at least one enabled element.',
         parameters: {},
+        path: `coverages.${coverage.id}`,
+        leafNodeId: coverage.leafNodeId,
+        levelId: coverage.levelId,
+      })
+    } else if (!ready) {
+      errors.push({
+        code: 'ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM',
+        message: `Production presets require at least ${MIN_PRODUCT_ITEMS_PER_COVERAGE_CELL} independent, enabled, scorable elements in every enabled leaf-level cell; this cell has ${enabledAssignmentCount}.`,
+        parameters: {
+          minimumValue: MIN_PRODUCT_ITEMS_PER_COVERAGE_CELL,
+          enabledAssignmentCount,
+        },
         path: `coverages.${coverage.id}`,
         leafNodeId: coverage.leafNodeId,
         levelId: coverage.levelId,
@@ -311,7 +313,8 @@ export function validateAdaptiveQuizReadiness({
   for (const leaf of enabledLeaves) {
     const itemCount = assignmentsByLeaf.get(leaf.id)?.length ?? 0
     if (itemCount < settings.minQuestionsPerLeaf) {
-      warnings.push({
+      const issues = strictProductReadiness ? errors : warnings
+      issues.push({
         code: 'ADAPTIVE_MINIMUM_EVIDENCE_UNREACHABLE',
         message: `Leaf ${leaf.name} requires ${settings.minQuestionsPerLeaf} questions, but only ${itemCount} enabled elements are available.`,
         parameters: {
@@ -341,7 +344,8 @@ export function validateAdaptiveQuizReadiness({
         : null,
     ])
     if (effectiveCap !== null && effectiveCap < required) {
-      warnings.push({
+      const issues = strictProductReadiness ? errors : warnings
+      issues.push({
         code: 'ADAPTIVE_MINIMUM_EVIDENCE_CAPPED',
         message: `Node ${node.name} requires ${required} minimum-evidence question${required === 1 ? '' : 's'}, but its effective cap is ${effectiveCap}.`,
         parameters: {
@@ -360,7 +364,8 @@ export function validateAdaptiveQuizReadiness({
     0
   )
   if (settings.totalQuestionCap < totalMinimumEvidence) {
-    warnings.push({
+    const issues = strictProductReadiness ? errors : warnings
+    issues.push({
       code: 'ADAPTIVE_GLOBAL_MINIMUM_EVIDENCE_CAPPED',
       message: `The enabled leaves require ${totalMinimumEvidence} minimum-evidence questions, but the total cap is ${settings.totalQuestionCap}.`,
       parameters: {
@@ -410,23 +415,6 @@ export function validateAdaptiveQuizReadiness({
     )
     const minimumReachableStandardError =
       maximumInformation > 0 ? 1 / Math.sqrt(maximumInformation) : null
-    const thresholdReachable =
-      settings.standardErrorThreshold === null ||
-      minimumReachableStandardError === null
-        ? settings.standardErrorThreshold === null
-          ? null
-          : false
-        : minimumReachableStandardError <= settings.standardErrorThreshold
-
-    if (thresholdReachable === false) {
-      warnings.push({
-        code: 'ADAPTIVE_STANDARD_ERROR_UNREACHABLE',
-        message: `The configured standard-error threshold is not reachable for competence ${root.name} with the enabled pool and caps.`,
-        parameters: { nodeName: root.name },
-        path: `nodes.${root.id}`,
-        nodeId: root.id,
-      })
-    }
 
     const classifiableLevelCount = levels.filter((level) => {
       const theta = representativeBandTheta(level, thetaRange)
@@ -444,7 +432,8 @@ export function validateAdaptiveQuizReadiness({
     const allLevelsPotentiallyClassifiable =
       classifiableLevelCount === levels.length
     if (!allLevelsPotentiallyClassifiable) {
-      warnings.push({
+      const issues = strictProductReadiness ? errors : warnings
+      issues.push({
         code: 'ADAPTIVE_CLASSIFICATION_BANDS_UNREACHABLE',
         message: `${classifiableLevelCount} of ${levels.length} level bands are potentially classifiable for competence ${root.name} under the shared question cap and configured uncertainty interval.`,
         parameters: {
@@ -462,7 +451,6 @@ export function validateAdaptiveQuizReadiness({
       availableItemCount: cappedAssignments.length,
       allocatedQuestionCount,
       minimumReachableStandardError,
-      thresholdReachable,
       classifiableLevelCount,
       levelCount: levels.length,
       allLevelsPotentiallyClassifiable,
@@ -473,18 +461,7 @@ export function validateAdaptiveQuizReadiness({
     (sum, count) => sum + count,
     0
   )
-  if (targetQuestionCount > maximumQuestionCount) {
-    warnings.push({
-      code: 'ADAPTIVE_COVERAGE_TARGETS_CAPPED',
-      message: `Enabled coverage targets request ${targetQuestionCount} questions, but the shared and nested caps allow at most ${maximumQuestionCount}.`,
-      parameters: { targetQuestionCount, maximumQuestionCount },
-      path: 'totalQuestionCap',
-    })
-  }
-  const expectedQuestionCount = Math.min(
-    targetQuestionCount,
-    maximumQuestionCount
-  )
+  const expectedQuestionCount = maximumQuestionCount
   const estimatedDurationMinutes =
     (expectedQuestionCount * ADAPTIVE_SECONDS_PER_ITEM) / 60
   if (estimatedDurationMinutes > ADAPTIVE_PLANNING_BUDGET_MINUTES) {
@@ -499,8 +476,12 @@ export function validateAdaptiveQuizReadiness({
     })
   }
 
+  const hasPublicationBlockingWarning = warnings.some(({ code }) =>
+    ADAPTIVE_PUBLICATION_BLOCKING_WARNING_CODES.has(code)
+  )
+
   return {
-    ready: errors.length === 0,
+    ready: errors.length === 0 && !hasPublicationBlockingWarning,
     errors,
     warnings,
     coverages: coverageReadiness,
@@ -576,18 +557,6 @@ export function validateAdaptiveSettings(
     })
   }
   if (
-    settings.standardErrorThreshold !== null &&
-    (!Number.isFinite(settings.standardErrorThreshold) ||
-      settings.standardErrorThreshold <= 0)
-  ) {
-    errors.push({
-      code: 'ADAPTIVE_STANDARD_ERROR_THRESHOLD_INVALID',
-      message: 'standardErrorThreshold must be a positive finite number.',
-      parameters: { minimumValue: 0 },
-      path: 'standardErrorThreshold',
-    })
-  }
-  if (
     !Number.isFinite(settings.topInformationRatio) ||
     settings.topInformationRatio <= 0 ||
     settings.topInformationRatio > 1
@@ -618,204 +587,6 @@ export function validateAdaptiveSettings(
   return errors
 }
 
-function computeMinimumEvidenceByNode({
-  nodes,
-  childrenByParent,
-  effectivelyEnabled,
-  minQuestionsPerLeaf,
-}: {
-  nodes: AdaptiveConfiguredNode[]
-  childrenByParent: Map<number, AdaptiveConfiguredNode[]>
-  effectivelyEnabled: Map<number, boolean>
-  minQuestionsPerLeaf: number
-}): Map<number, number> {
-  const minimumByNode = new Map<number, number>()
-  for (const node of nodes.slice().sort((a, b) => b.depth - a.depth)) {
-    if (!(effectivelyEnabled.get(node.id) ?? false)) continue
-    const structuralChildren = childrenByParent.get(node.id) ?? []
-    const enabledChildren = structuralChildren.filter((child) =>
-      effectivelyEnabled.get(child.id)
-    )
-    minimumByNode.set(
-      node.id,
-      structuralChildren.length === 0
-        ? minQuestionsPerLeaf
-        : enabledChildren.reduce(
-            (sum, child) => sum + (minimumByNode.get(child.id) ?? 0),
-            0
-          )
-    )
-  }
-  return minimumByNode
-}
-
-function minimumDefined(values: Array<number | null>): number | null {
-  const defined = values.filter((value): value is number => value !== null)
-  return defined.length > 0 ? Math.min(...defined) : null
-}
-
-function capAssignmentsByRoot({
-  roots,
-  assignments,
-  settings,
-  nodes,
-  childrenByParent,
-  effectivelyEnabled,
-}: {
-  roots: AdaptiveConfiguredNode[]
-  assignments: AdaptiveConfiguredAssignment[]
-  settings: AdaptiveConfiguredSettings
-  nodes: AdaptiveConfiguredNode[]
-  childrenByParent: Map<number, AdaptiveConfiguredNode[]>
-  effectivelyEnabled: Map<number, boolean>
-}): Map<number, AdaptiveConfiguredAssignment[]> {
-  const byLeaf = new Map<number, AdaptiveConfiguredAssignment[]>()
-  for (const assignment of assignments) {
-    const entries = byLeaf.get(assignment.leafNodeId) ?? []
-    entries.push(assignment)
-    byLeaf.set(assignment.leafNodeId, entries)
-  }
-
-  const selectedByNode = new Map<number, AdaptiveConfiguredAssignment[]>()
-  const nodesDeepestFirst = nodes.slice().sort((a, b) => b.depth - a.depth)
-  for (const node of nodesDeepestFirst) {
-    if (!(effectivelyEnabled.get(node.id) ?? false)) continue
-    const structuralChildren = childrenByParent.get(node.id) ?? []
-    const enabledChildren = structuralChildren.filter((child) =>
-      effectivelyEnabled.get(child.id)
-    )
-    const candidates =
-      structuralChildren.length === 0
-        ? (byLeaf.get(node.id) ?? [])
-        : enabledChildren.flatMap((child) => selectedByNode.get(child.id) ?? [])
-    const cap = minimumDefined([
-      ...(structuralChildren.length === 0 ? [settings.perLeafQuestionCap] : []),
-      node.questionCap,
-    ])
-    selectedByNode.set(
-      node.id,
-      selectWithLeafMinimums({
-        assignments: candidates,
-        minQuestionsPerLeaf: settings.minQuestionsPerLeaf,
-        cap,
-      })
-    )
-  }
-
-  return new Map(
-    roots.map((root) => [root.id, selectedByNode.get(root.id) ?? []])
-  )
-}
-
-function selectWithLeafMinimums({
-  assignments,
-  minQuestionsPerLeaf,
-  cap,
-}: {
-  assignments: AdaptiveConfiguredAssignment[]
-  minQuestionsPerLeaf: number
-  cap: number | null
-}): AdaptiveConfiguredAssignment[] {
-  const byLeaf = new Map<number, AdaptiveConfiguredAssignment[]>()
-  for (const assignment of assignments) {
-    const entries = byLeaf.get(assignment.leafNodeId) ?? []
-    entries.push(assignment)
-    byLeaf.set(assignment.leafNodeId, entries)
-  }
-  for (const entries of byLeaf.values()) {
-    entries.sort(compareItemInformationDescending)
-  }
-
-  const reserved: AdaptiveConfiguredAssignment[] = []
-  const orderedLeaves = Array.from(byLeaf.entries()).sort(
-    ([leftLeafId], [rightLeafId]) => leftLeafId - rightLeafId
-  )
-  for (let round = 0; round < minQuestionsPerLeaf; round++) {
-    for (const [, entries] of orderedLeaves) {
-      const assignment = entries[round]
-      if (assignment) reserved.push(assignment)
-    }
-  }
-
-  const reservedIds = new Set(reserved.map(({ id }) => id))
-  const remaining = assignments
-    .filter(({ id }) => !reservedIds.has(id))
-    .sort(compareItemInformationDescending)
-  const ordered = [...reserved, ...remaining]
-  return cap === null ? ordered : ordered.slice(0, cap)
-}
-
-function allocateRootQuestionBudget({
-  roots,
-  capacities,
-  minimumEvidenceByNode,
-  totalQuestionCap,
-}: {
-  roots: AdaptiveConfiguredNode[]
-  capacities: Map<number, number>
-  minimumEvidenceByNode: Map<number, number>
-  totalQuestionCap: number
-}): Map<number, number> {
-  const allocations = new Map(roots.map((root) => [root.id, 0]))
-  let remaining = Math.min(
-    totalQuestionCap,
-    roots.reduce((sum, root) => sum + (capacities.get(root.id) ?? 0), 0)
-  )
-
-  while (remaining > 0) {
-    const withCapacity = roots.filter(
-      (root) => (allocations.get(root.id) ?? 0) < (capacities.get(root.id) ?? 0)
-    )
-    if (withCapacity.length === 0) break
-    const belowMinimum = withCapacity.filter(
-      (root) =>
-        (allocations.get(root.id) ?? 0) <
-        Math.min(
-          capacities.get(root.id) ?? 0,
-          minimumEvidenceByNode.get(root.id) ?? 0
-        )
-    )
-    const candidates = belowMinimum.length > 0 ? belowMinimum : withCapacity
-    const hasPositiveWeight = candidates.some((root) => (root.weight ?? 0) > 0)
-    candidates.sort((a, b) => {
-      const score = (root: AdaptiveConfiguredNode) =>
-        (hasPositiveWeight ? (root.weight ?? 0) : 1) /
-        ((allocations.get(root.id) ?? 0) + 1)
-      return score(b) - score(a) || a.id - b.id
-    })
-    const selected = candidates[0]!
-    allocations.set(selected.id, (allocations.get(selected.id) ?? 0) + 1)
-    remaining -= 1
-  }
-
-  return allocations
-}
-
-function buildThetaGrid(
-  range: { min: number; max: number },
-  levels: AdaptiveConfiguredLevel[],
-  assignments: AdaptiveConfiguredAssignment[]
-): number[] {
-  const values = new Set<number>()
-  const steps = 60
-  for (let index = 0; index <= steps; index++) {
-    values.add(range.min + ((range.max - range.min) * index) / steps)
-  }
-  for (const level of levels) {
-    values.add(level.theta)
-    values.add(representativeBandTheta(level, range))
-  }
-  for (const assignment of assignments) {
-    if (
-      assignment.difficulty >= range.min &&
-      assignment.difficulty <= range.max
-    ) {
-      values.add(assignment.difficulty)
-    }
-  }
-  return Array.from(values).sort((a, b) => a - b)
-}
-
 function isUsableAdaptiveAssignment(assignment: AdaptiveConfiguredAssignment) {
   return (
     assignment.available &&
@@ -835,39 +606,5 @@ function hasValidAdaptiveItemParameters(
     Number.isFinite(assignment.guessing) &&
     assignment.guessing >= 0 &&
     assignment.guessing < 1
-  )
-}
-
-function representativeBandTheta(
-  level: AdaptiveConfiguredLevel,
-  range: { min: number; max: number }
-): number {
-  const lower = Number.isFinite(level.lowerBound)
-    ? Math.max(level.lowerBound, range.min)
-    : range.min
-  const upper = Number.isFinite(level.upperBound)
-    ? Math.min(level.upperBound, range.max)
-    : range.max
-  return lower + (upper - lower) / 2
-}
-
-function itemInformation(
-  theta: number,
-  assignment: AdaptiveConfiguredAssignment
-): number {
-  return information(theta, {
-    a: assignment.discrimination,
-    b: assignment.difficulty,
-    c: assignment.guessing,
-  })
-}
-
-function compareItemInformationDescending(
-  a: AdaptiveConfiguredAssignment,
-  b: AdaptiveConfiguredAssignment
-): number {
-  return (
-    informationAtDifficulty({ a: b.discrimination, c: b.guessing }) -
-    informationAtDifficulty({ a: a.discrimination, c: a.guessing })
   )
 }

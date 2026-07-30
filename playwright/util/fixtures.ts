@@ -273,7 +273,8 @@ export const test = base.extend<KlickerUZHFixtures>({
       await page.context().clearCookies()
 
       const loginUrl = process.env.URL_STUDENT_LOGIN ?? URL_STUDENT_LOGIN
-      await page.goto(loginUrl, { waitUntil: 'commit' })
+      await page.goto(loginUrl, { waitUntil: 'domcontentloaded' })
+      await expect(page.getByTestId('login-logo')).toBeVisible()
       await page.evaluate(() => {
         try {
           localStorage.clear()

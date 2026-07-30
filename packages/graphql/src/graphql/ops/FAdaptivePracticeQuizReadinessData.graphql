@@ -17,8 +17,6 @@ fragment AdaptivePracticeQuizReadinessData on AdaptivePracticeQuizReadiness {
       totalQuestionCap
       classifiableLevelCount
       levelCount
-      targetQuestionCount
-      maximumQuestionCount
       estimatedDurationMinutes
       secondsPerItem
       assignmentId
@@ -47,8 +45,6 @@ fragment AdaptivePracticeQuizReadinessData on AdaptivePracticeQuizReadiness {
       totalQuestionCap
       classifiableLevelCount
       levelCount
-      targetQuestionCount
-      maximumQuestionCount
       estimatedDurationMinutes
       secondsPerItem
       assignmentId
@@ -73,7 +69,6 @@ fragment AdaptivePracticeQuizReadinessData on AdaptivePracticeQuizReadiness {
     availableItemCount
     allocatedQuestionCount
     minimumReachableStandardError
-    thresholdReachable
     classifiableLevelCount
     levelCount
     allLevelsPotentiallyClassifiable

@@ -76,6 +76,8 @@ export async function ensureDatabaseViews() {
 export async function cleanupDatabase() {
   const prisma = await getPrisma()
   try {
+    await prisma.adaptivePracticeQuizCohortSnapshot.deleteMany()
+    await prisma.adaptivePracticeQuizAttempt.deleteMany()
     await prisma.liveQuiz.deleteMany()
     await prisma.microLearning.deleteMany()
     await prisma.practiceQuiz.deleteMany()

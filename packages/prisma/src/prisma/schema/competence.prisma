@@ -62,7 +62,7 @@ model CompetenceTree {
   defaultDiscrimination Float                    @default(1.2)
   levelMappingRule      AdaptiveLevelMappingRule @default(NEAREST)
 
-  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   ownerId String @db.Uuid
 
   courseLinks                 CompetenceTreeCourse[]
@@ -210,24 +210,21 @@ model PracticeQuizAdaptiveConfig {
   preset                 AdaptivePracticeQuizPreset     @default(DIAGNOSTIC)
   attemptSelectionPolicy AdaptiveAttemptSelectionPolicy @default(LATEST_COMPLETED)
 
-  totalQuestionCap       Int                      @default(50)
-  perLeafQuestionCap     Int?
-  minQuestionsPerLeaf    Int                      @default(2)
-  classificationZ        Float                    @default(1.28)
-  standardErrorThreshold Float?
-  topInformationRatio    Float                    @default(0.8)
-  defaultDiscrimination  Float                    @default(1.2)
-  levelMappingRule       AdaptiveLevelMappingRule @default(NEAREST)
+  totalQuestionCap      Int                      @default(50)
+  perLeafQuestionCap    Int?
+  minQuestionsPerLeaf   Int                      @default(2)
+  classificationZ       Float                    @default(1.28)
+  topInformationRatio   Float                    @default(0.8)
+  defaultDiscrimination Float                    @default(1.2)
+  levelMappingRule      AdaptiveLevelMappingRule @default(NEAREST)
 
-  showTimer                  Boolean @default(true)
-  showFinalResult            Boolean @default(true)
-  showLiveEstimate           Boolean @default(false)
-  enableSelfAssessmentWarmup Boolean @default(false)
+  showTimer Boolean @default(true)
 
   nodeOverrides    PracticeQuizAdaptiveNodeOverride[]
   elementOverrides PracticeQuizAdaptiveElementOverride[]
   publishedPool    PracticeQuizAdaptivePoolItem[]
   attempts         AdaptivePracticeQuizAttempt[]
+  cohortSnapshots  AdaptivePracticeQuizCohortSnapshot[]
 
   poolPublishedAt DateTime?
   createdAt       DateTime  @default(now())
@@ -331,13 +328,15 @@ model AdaptivePracticeQuizAttempt {
   elapsedSeconds       Int?
   nextPoolItemId       Int?
 
-  config           PracticeQuizAdaptiveConfig @relation(fields: [configId, practiceQuizId, competenceTreeId], references: [id, practiceQuizId, competenceTreeId], onDelete: Cascade, onUpdate: Cascade)
+  config           PracticeQuizAdaptiveConfig @relation(fields: [configId, practiceQuizId, competenceTreeId], references: [id, practiceQuizId, competenceTreeId], onDelete: Restrict, onUpdate: Cascade)
   configId         String                     @db.Uuid
   competenceTreeId String                     @db.Uuid
 
-  practiceQuiz   PracticeQuiz @relation(fields: [practiceQuizId, courseId], references: [id, courseId], onDelete: Cascade, onUpdate: Cascade)
+  practiceQuiz   PracticeQuiz @relation(fields: [practiceQuizId, courseId], references: [id, courseId], onDelete: Restrict, onUpdate: Cascade)
   practiceQuizId String       @db.Uuid
-  courseId       String       @db.Uuid
+
+  course   Course @relation("AdaptivePracticeQuizAttemptCourse", fields: [courseId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  courseId String @db.Uuid
 
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
@@ -364,6 +363,9 @@ model AdaptivePracticeQuizAttempt {
   @@index([finalLevelId], map: "apqa_final_level_idx")
   @@index([nextPoolItemId], map: "apqa_next_pool_item_idx")
   @@index([configId, practiceQuizId], map: "apqa_config_quiz_idx")
+  @@index([practiceQuizId, status, completedAt, id], map: "apqa_quiz_status_completed_idx")
+  @@index([practiceQuizId, participantId, status, completedAt, id], map: "apqa_quiz_participant_completed_idx")
+  @@index([courseId], map: "apqa_course_retention_idx")
   @@index([participationId, participantId, courseId], map: "apqa_participation_identity_idx")
   @@index([configId, nextPoolItemId], map: "apqa_config_next_pool_idx")
 }
@@ -401,6 +403,7 @@ model AdaptivePracticeQuizResponse {
   @@index([assignmentId], map: "apqr_assignment_idx")
   @@index([poolItemId], map: "apqr_pool_item_idx")
   @@index([configId, poolItemId], map: "apqr_config_pool_idx")
+  @@index([configId, poolItemId, attemptId], map: "apqr_config_pool_attempt_idx")
 }
 
 model AdaptivePracticeQuizEstimate {
@@ -426,6 +429,31 @@ model AdaptivePracticeQuizEstimate {
   createdAt DateTime @default(now())
 
   @@unique([attemptId, nodeKind, nodeId], map: "apqe_attempt_kind_node_key")
+  @@index([attemptId, nodeKind, nodeId, levelId], map: "apqe_attempt_node_level_idx")
   @@index([nodeKind, levelId], map: "apqe_kind_level_idx")
   @@index([configId, competenceTreeId], map: "apqe_config_tree_idx")
+}
+
+model AdaptivePracticeQuizCohortSnapshot {
+  id String @id @default(uuid()) @db.Uuid
+
+  config         PracticeQuizAdaptiveConfig @relation(fields: [configId, practiceQuizId], references: [id, practiceQuizId], onDelete: Restrict, onUpdate: Cascade)
+  configId       String                     @db.Uuid
+  practiceQuizId String                     @db.Uuid
+
+  releaseSize            Int
+  releaseWatermark       DateTime
+  policyVersion          Int                            @default(1)
+  attemptSelectionPolicy AdaptiveAttemptSelectionPolicy
+
+  /// [PrismaAdaptivePracticeQuizCohortSnapshot]
+  aggregate Json
+
+  invalidatedAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([configId, releaseSize, policyVersion, attemptSelectionPolicy], map: "apqcs_release_policy_key")
+  @@index([configId, invalidatedAt, releaseSize], map: "apqcs_config_valid_release_idx")
+  @@index([practiceQuizId], map: "apqcs_quiz_retention_idx")
 }

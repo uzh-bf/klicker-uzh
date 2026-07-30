@@ -114,13 +114,11 @@ export interface AdaptivePracticeQuizConfigFormValues {
   perLeafQuestionCap: string
   minQuestionsPerLeaf: string
   classificationZ: string
-  standardErrorThreshold: string
   showTimer: boolean
   attemptSelectionPolicy: AdaptiveAttemptSelectionPolicy
   levelMappingRule: AdaptiveLevelMappingRule
   topInformationRatio: string
   defaultDiscrimination: string
-  showLiveEstimate: boolean
   nodeOverrides: AdaptivePracticeQuizNodeOverrideFormValues[]
   elementOverrides: AdaptivePracticeQuizElementOverrideFormValues[]
 }

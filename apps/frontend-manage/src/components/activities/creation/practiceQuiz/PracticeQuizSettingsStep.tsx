@@ -86,7 +86,7 @@ function PracticeQuizSettingsStep({
           getAdaptivePracticeQuizEffectiveSettings(values.adaptiveConfig)
 
         return (
-          <Form className="h-full w-full">
+          <Form className="h-full min-h-0 w-full">
             <CreationFormValidator
               isValid={isValid}
               activeStep={activeStep}
@@ -100,7 +100,7 @@ function PracticeQuizSettingsStep({
               setTouched={setTouched}
               setValues={setValues}
             />
-            <div className="flex h-full w-full flex-col justify-between gap-1">
+            <div className="flex h-full min-h-0 w-full flex-col justify-between gap-1">
               {values.mode === PracticeQuizMode.Standard ? (
                 <div className="flex flex-col justify-center gap-4 md:flex-row">
                   <div
@@ -206,7 +206,7 @@ function PracticeQuizSettingsStep({
                 </div>
               ) : (
                 <div
-                  className="grid min-h-0 gap-4 overflow-y-auto pb-2 md:grid-cols-[18rem_minmax(0,1fr)]"
+                  className="grid min-h-0 flex-1 gap-4 overflow-y-auto pb-2 md:grid-cols-[18rem_minmax(0,1fr)]"
                   data-cy="adaptive-practice-quiz-settings"
                 >
                   <section className="border-border h-max rounded-md border border-solid p-3">
@@ -297,29 +297,13 @@ function PracticeQuizSettingsStep({
                       </div>
                     </div>
 
-                    <div className="border-uzh-grey-80 mt-4 grid gap-3 border-y py-3 text-sm sm:grid-cols-3">
+                    <div className="border-uzh-grey-80 mt-4 border-y py-3 text-sm">
                       <SettingsSummary
                         label={t(
                           'manage.activityWizard.adaptive.settings.attemptPolicy'
                         )}
                         value={t(
                           `manage.activityWizard.adaptive.attemptPolicy.${effectiveAdaptiveSettings.attemptSelectionPolicy}`
-                        )}
-                      />
-                      <SettingsSummary
-                        label={t(
-                          'manage.activityWizard.adaptive.settings.finalResult'
-                        )}
-                        value={t('shared.generic.yes')}
-                      />
-                      <SettingsSummary
-                        label={t(
-                          'manage.activityWizard.adaptive.settings.liveEstimate'
-                        )}
-                        value={t(
-                          effectiveAdaptiveSettings.showLiveEstimate
-                            ? 'shared.generic.yes'
-                            : 'shared.generic.no'
                         )}
                       />
                     </div>
@@ -347,7 +331,7 @@ function PracticeQuizSettingsStep({
                         </Button>
                       </ShadcnCollapsibleTrigger>
                       <ShadcnCollapsibleContent className="border-uzh-grey-80 mt-2 border-t pt-3">
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                           <FormikNumberField
                             name="adaptiveConfig.perLeafQuestionCap"
                             label={t(
@@ -379,15 +363,6 @@ function PracticeQuizSettingsStep({
                             max={5}
                             precision={2}
                             data={{ cy: 'adaptive-classification-z' }}
-                          />
-                          <FormikNumberField
-                            name="adaptiveConfig.standardErrorThreshold"
-                            label={t(
-                              'manage.activityWizard.adaptive.settings.standardErrorThreshold'
-                            )}
-                            min={0.01}
-                            precision={2}
-                            data={{ cy: 'adaptive-standard-error-threshold' }}
                           />
                         </div>
 
@@ -441,7 +416,6 @@ function PracticeQuizSettingsStep({
                               data={{ cy: 'adaptive-top-information-ratio' }}
                             />
                             <FormikNumberField
-                              required
                               name="adaptiveConfig.defaultDiscrimination"
                               label={t(
                                 'manage.activityWizard.adaptive.settings.defaultDiscrimination'
@@ -451,15 +425,6 @@ function PracticeQuizSettingsStep({
                               precision={2}
                               data={{ cy: 'adaptive-default-discrimination' }}
                             />
-                            <div className="flex items-end pb-1">
-                              <FormikSwitchField
-                                name="adaptiveConfig.showLiveEstimate"
-                                label={t(
-                                  'manage.activityWizard.adaptive.settings.showLiveEstimate'
-                                )}
-                                data={{ cy: 'adaptive-show-live-estimate' }}
-                              />
-                            </div>
                           </div>
                         ) : null}
                       </ShadcnCollapsibleContent>

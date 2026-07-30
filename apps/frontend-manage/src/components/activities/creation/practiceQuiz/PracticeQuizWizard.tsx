@@ -229,10 +229,6 @@ function PracticeQuizWizard({
           ADAPTIVE_MAX_CLASSIFICATION_Z,
           t('manage.activityWizard.adaptive.validation.classificationZMax')
         ),
-      standardErrorThreshold: optionalNumber().moreThan(
-        0,
-        t('manage.activityWizard.adaptive.validation.positive')
-      ),
       topInformationRatio: optionalNumber().when('preset', {
         is: AdaptivePracticeQuizPreset.Research,
         then: () =>
@@ -246,7 +242,7 @@ function PracticeQuizWizard({
       defaultDiscrimination: optionalNumber().when('preset', {
         is: AdaptivePracticeQuizPreset.Research,
         then: () =>
-          requiredNumber()
+          optionalNumber()
             .moreThan(
               0,
               t('manage.activityWizard.adaptive.validation.positive')

@@ -926,6 +926,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
             'Es liegen noch nicht genügend Daten für ein Gesamtniveau vor.',
           answeredQuestions:
             '{count, plural, one {# Frage beantwortet} other {# Fragen beantwortet}}',
+          interpretation: {
+            MASTERY: {
+              headline: 'Höchste nachgewiesene Stufe: {level}',
+              description:
+                'Die Einstufungsregel zeigt die höchste Stufenschwelle, die Ihre Schätzung erreicht. Berücksichtigen Sie bei der Interpretation die Aussagekraft und das Kompetenzprofil.',
+            },
+            NEAREST: {
+              headline: 'Geschätzte Stufe: {level}',
+              description:
+                'Die Diagnoseregel zeigt den Stufenanker, der Ihrer aktuellen Schätzung am nächsten liegt. Berücksichtigen Sie bei der Interpretation die Aussagekraft und das Kompetenzprofil.',
+            },
+          },
         },
         confidence: {
           label: 'Aussagekraft',
@@ -1889,13 +1901,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       adaptiveMapping: {
         title: 'Adaptive Zuordnung',
         description:
-          'Ordnen Sie dieses Element in einem oder mehreren Kompetenzbäumen einer Blatt-Teilkompetenz und einer Stufe zu.',
+          'Ordnen Sie dieses Element in einem oder mehreren Kompetenzbäumen einer Blatt-Teilkompetenz und einer Stufe zu. Für die adaptive Schätzung gelten nur vollständig richtige Antworten als richtig; Teilpunkte werden als falsch gewertet.',
         unsupportedType:
           'Adaptive Zuordnungen sind nur für numerische, Single-Choice-, Multiple-Choice-, KPRIM- und Freitextfragen mit kontrollierter Antwort verfügbar.',
         saveElementFirst:
           'Speichern Sie das Element, bevor Sie seine adaptiven Zuordnungen ändern.',
+        assignDuringCreation: 'Einem Kompetenzbaum zuweisen',
+        createAndAssign: 'Element erstellen und zuweisen',
         noTrees: 'Es sind keine Kompetenzbäume verfügbar.',
+        noAdditionalTrees:
+          'Keine weiteren Kompetenzbäume entsprechen der Suche.',
         tree: 'Kompetenzbaum',
+        searchTrees: 'Kompetenzbäume durchsuchen',
         selectTree: 'Kompetenzbaum auswählen...',
         noAssignableLeaves:
           'Dieser Kompetenzbaum enthält keine aktivierte Blatt-Stufen-Kombination für eine Zuordnung.',
@@ -1914,6 +1931,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         add: 'Zuordnung hinzufügen',
         remove: 'Zuordnung entfernen',
         save: 'Zuordnung speichern',
+        recovery: {
+          elementSavedMappingFailed:
+            'Element gespeichert; adaptive Zuordnung nicht gespeichert.',
+          description:
+            'Versuchen Sie die adaptive Zuordnung erneut oder behalten Sie das gespeicherte Element ohne Zuordnung.',
+          retry: 'Zuordnung erneut versuchen',
+          keepUnmapped: 'Element ohne Zuordnung behalten',
+          keepUnmappedTitle: 'Element ohne Zuordnung behalten?',
+          keepUnmappedDescription:
+            'Das Element ist bereits gespeichert. Dadurch wird die ausstehende adaptive Zuordnung verworfen.',
+        },
         states: {
           archived: 'Archiviert',
           locked: 'Struktur gesperrt',
@@ -2300,17 +2328,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
           totalQuestionCap: 'Maximale Fragenzahl',
           showTimer: 'Timer anzeigen',
           attemptPolicy: 'Versuch für die Auswertung',
-          finalResult: 'Endresultat anzeigen',
-          liveEstimate: 'Schätzung während des Quiz anzeigen',
           advanced: 'Erweiterte adaptive Einstellungen',
           perLeafQuestionCap: 'Maximale Fragen pro Blatt',
           minQuestionsPerLeaf: 'Minimale Fragen pro Blatt',
           classificationZ: 'Klassifikations-Z-Wert',
-          standardErrorThreshold: 'Grenzwert des Standardfehlers',
           levelMappingRule: 'Stufenzuordnung',
           topInformationRatio: 'Anteil der informationsreichsten Items',
           defaultDiscrimination: 'Standard-Trennschärfe (a)',
-          showLiveEstimate: 'Live-Schätzung anzeigen',
         },
         assignments: {
           title: 'Fragenpool',
@@ -2356,9 +2380,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
           tooltip:
             'Wählen Sie einen Kompetenzbaum, konfigurieren Sie den effektiven Pool und prüfen Sie die Veröffentlichungsbereitschaft.',
           tree: 'Kompetenzbaum',
+          searchTrees: 'Kompetenzbäume durchsuchen',
           selectTree: 'Kompetenzbaum auswählen...',
           linkedTrees: 'Mit diesem Kurs verknüpft',
           ownedUnlinkedTrees: 'Eigene, nicht verknüpfte Bäume',
+          loadMoreLinked: 'Weitere verknüpfte Bäume laden',
+          loadMoreOwned: 'Weitere eigene Bäume laden',
           linkSuccess: 'Der Kompetenzbaum wurde mit dem Kurs verknüpft.',
           linkFailed:
             'Der Kompetenzbaum konnte nicht mit dem Kurs verknüpft werden.',
@@ -2395,18 +2422,24 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
           issues: {
             ADAPTIVE_COURSE_DISABLED:
               'Adaptives Lernen ist für diesen Kurs nicht aktiviert.',
+            ADAPTIVE_COMPETENCE_TREE_UNAVAILABLE:
+              'Der Kompetenzbaum wurde archiviert, gelöscht oder von diesem Kurs getrennt.',
             ADAPTIVE_NO_ENABLED_COMPETENCE:
               'Aktivieren Sie mindestens eine Hauptkompetenz.',
             ADAPTIVE_COMPETENCE_WITHOUT_ENABLED_LEAF:
               'Die aktive Kompetenz "{nodeName}" hat kein aktives Blatt.',
             ADAPTIVE_ITEM_UNAVAILABLE:
               'Das Element "{elementName}" wurde gelöscht und kann keinem neuen adaptiven Pool hinzugefügt werden.',
+            ADAPTIVE_ITEM_ACCESS_REVOKED:
+              'Die Eigentümerin oder der Eigentümer des Kompetenzbaums kann nicht mehr auf das Element "{elementName}" zugreifen. Stellen Sie den Zugriff wieder her oder duplizieren Sie den Baum mit einem verfügbaren Element.',
             ADAPTIVE_ITEM_NOT_SCORABLE:
               'Das Element "{elementName}" hat keine kontrollierte Antwort, die adaptiv bewertet werden kann.',
             ADAPTIVE_ITEM_PARAMETERS_INVALID:
               'Das Element "{elementName}" hat ungültige effektive Itemparameter.',
             ADAPTIVE_COVERAGE_CELL_EMPTY:
               'Jede aktive Kombination aus Blatt und Stufe benötigt mindestens ein aktives Element.',
+            ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM:
+              'Produktive Voreinstellungen benötigen {minimumValue} unabhängige, aktive und automatisch bewertbare Elemente in dieser Blatt-Stufen-Kombination; {enabledAssignmentCount} sind verfügbar.',
             ADAPTIVE_COVERAGE_BELOW_TARGET:
               'Das Ziel sind {targetItemCount} Elemente, aber nur {enabledAssignmentCount} {enabledAssignmentCount, plural, one {Element ist} other {Elemente sind}} verfügbar.',
             ADAPTIVE_MINIMUM_EVIDENCE_UNREACHABLE:
@@ -2415,12 +2448,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
               'Der Knoten "{nodeName}" benötigt {requiredQuestionCount} Fragen, sein effektives Limit ist jedoch {effectiveQuestionCap}.',
             ADAPTIVE_GLOBAL_MINIMUM_EVIDENCE_CAPPED:
               'Die aktiven Blätter benötigen {requiredQuestionCount} Fragen, das Gesamtlimit ist jedoch {totalQuestionCap}.',
-            ADAPTIVE_STANDARD_ERROR_UNREACHABLE:
-              'Der konfigurierte Standardfehler-Grenzwert ist für "{nodeName}" mit dem aktuellen Pool und den Limits nicht erreichbar.',
             ADAPTIVE_CLASSIFICATION_BANDS_UNREACHABLE:
               '{classifiableLevelCount} von {levelCount} Stufen können für "{nodeName}" mit dem aktuellen Limit und Unsicherheitsintervall klassifiziert werden.',
-            ADAPTIVE_COVERAGE_TARGETS_CAPPED:
-              'Die Abdeckungsziele verlangen {targetQuestionCount} Fragen, die konfigurierten Limits erlauben jedoch höchstens {maximumQuestionCount}.',
             ADAPTIVE_TIME_BUDGET_EXCEEDED:
               'Die Abdeckung dauert voraussichtlich etwa {estimatedDurationMinutes} Minuten bei {secondsPerItem} Sekunden pro Item.',
             ADAPTIVE_CONFIG_INTEGER_RANGE:
@@ -2431,8 +2460,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
               'Die minimale Fragenzahl pro Blatt darf das Gesamtlimit von {totalQuestionCap} nicht überschreiten.',
             ADAPTIVE_CLASSIFICATION_Z_INVALID:
               'Der Klassifikations-Z-Wert muss grösser als 0 und höchstens {maximumValue} sein.',
-            ADAPTIVE_STANDARD_ERROR_THRESHOLD_INVALID:
-              'Der Standardfehler-Grenzwert muss eine positive endliche Zahl sein.',
             ADAPTIVE_TOP_INFORMATION_RATIO_INVALID:
               'Der Anteil der informationsreichsten Items muss grösser als 0 und höchstens {maximumValue} sein.',
             ADAPTIVE_DEFAULT_DISCRIMINATION_INVALID:
@@ -3044,16 +3071,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         },
         stopSummary: 'Beendigungsgründe',
         qualitySummary: 'Qualitätsmerkmale',
-        suppressedValue: 'Ausgeblendet',
+        suppressedValue: 'Zurückgehalten',
+        notEnoughData: 'Nicht genügend Daten',
         suppression: {
           cohort:
-            'Kohortenresultate werden in festen Gruppen von fünf abgeschlossenen Teilnehmenden freigegeben.',
+            'Einige Werte werden zurückgehalten, wenn eine nicht leere Resultatgruppe oder ihre Ergänzungsgruppe weniger als fünf freigegebene Teilnehmende enthält.',
           summary:
-            'Ergebniszahlen werden ausgeblendet, wenn eine Resultatgruppe zu klein ist.',
+            'Ergebniszahlen werden zurückgehalten, wenn die Resultatgruppe oder ihre Ergänzungsgruppe zu klein ist.',
           distribution:
             'Diese Verteilung ist ausgeblendet, weil eine oder mehrere Gruppen zu klein sind.',
           pilot:
-            'Pilotmetriken werden in festen Gruppen von fünf abgeschlossenen Teilnehmenden freigegeben.',
+            'Pilotwerte werden zurückgehalten, wenn eine bekannte, fehlende, auffällige oder ergänzende Gruppe weniger als fünf freigegebene Teilnehmende enthält.',
         },
         pilot: {
           title: 'Qualitätsmonitoring des Piloten',
@@ -3061,13 +3089,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
             'Anonyme operative Indikatoren zu Testlänge, Exposition und deskriptiver Itempassung. Sie kalibrieren keine Items neu und ersetzen nicht die didaktische Prüfung.',
           medianQuestions: 'Median der Fragenzahl',
           p95Questions: '95. Perzentil der Fragenzahl',
-          medianDuration: 'Median der Antwortzeit',
-          p95Duration: '95. Perzentil der Antwortzeit',
+          medianDuration: 'Median der Bearbeitungsdauer',
+          p95Duration: '95. Perzentil der Bearbeitungsdauer',
           nearBoundaryRate: 'Anteil nahe Stufengrenzen',
+          responseIntegrity: 'Integrität der Antwortanzahl',
+          durationCompleteness: 'Vollständigkeit der Zeitangaben',
+          issueDetected: 'Problem erkannt',
+          noIssue: 'Kein Problem',
           responseCountMismatch:
             'Gespeicherte Schätzungen und kanonische Antwortzeilen stimmen nicht überein. Prüfen Sie diese Datenwarnung vor der Interpretation des Piloten.',
           durationMissing:
-            'Mindestens ein ausgewählter Versuch hat keine clientseitig gemeldete Antwortdauer.',
+            'Mindestens ein ausgewählter Versuch hat keine vollständige clientseitig gemeldete Bearbeitungsdauer.',
           item: 'Item',
           competence: 'Kompetenzpfad',
           level: 'Stufe',
@@ -3079,6 +3111,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
           flags: 'Prüfhinweise',
           highExposure: 'Hohe Exposition',
           reviewFit: 'Passung prüfen',
+          notEnoughResponses: 'Nicht genügend Antworten',
           noFlags: 'Keine',
         },
         overallDistribution: 'Gesamte Stufenverteilung',
@@ -3202,6 +3235,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       showArchive: 'Archiv anzeigen',
       hideArchive: 'Archiv verbergen',
       deleteCourse: 'Kurs löschen',
+      deletionErrors: {
+        retainedAdaptiveHistory:
+          'Dieser Kurs enthält aufbewahrungspflichtige Daten aus adaptiven Übungs-Quizzes und kann nicht gelöscht werden. Archivieren Sie den Kurs stattdessen.',
+        generic:
+          'Der Kurs konnte nicht gelöscht werden. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      },
       courseDeletionMessage:
         'Bitte bestätigen Sie die Löschung aller mit diesem Kurs verbundenen Elemente und bestätigen Sie die unwiderrufliche Löschung des Kurses. Beachten Sie, dass alle Studierenden den Zugriff auf den Kurs sowie alle zugehörigen Kursmaterialien und Aktivitäten verlieren.',
       noParticipationsToDelete: 'Dieser Kurs enthält keine Teilnehmenden.',
@@ -3738,7 +3777,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       libraryDescription:
         'Erstellen und verwalten Sie wiederverwendbare Kompetenzbäume für adaptive Übungs-Quizzes.',
       create: 'Kompetenzbaum erstellen',
+      searchLabel: 'Kompetenzbäume durchsuchen',
       searchPlaceholder: 'Kompetenzbäume durchsuchen...',
+      loadMore: 'Weitere laden',
+      moreCourseLinks: '+{count} weitere',
       ownershipFilter: 'Nach Eigentum filtern',
       filterOwned: 'Eigene',
       filterLinked: 'Verknüpfte',
@@ -3826,6 +3868,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       hierarchyDescription:
         'Erstellen Sie Hauptkompetenzen und verschachtelte Teilkompetenzen. Elemente können nur Blatt-Teilkompetenzen zugeordnet werden.',
       selectedNode: 'Ausgewählter Knoten',
+      addRootCompetence: 'Kompetenz hinzufügen',
+      addSubcompetence: 'Teilkompetenz hinzufügen',
       addChild: 'Untergeordneten Knoten hinzufügen',
       maxDepthReached: 'Maximale Hierarchietiefe erreicht',
       duplicateBranch: 'Zweig duplizieren',
@@ -3844,6 +3888,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wählen Sie einen Knoten, um seine Details zu bearbeiten.',
       expandNode: 'Knoten aufklappen',
       collapseNode: 'Knoten zuklappen',
+      newCompetence: 'Neue Kompetenz',
       newSubcompetence: 'Neue Teilkompetenz',
       deleteBranchTitle: 'Hierarchiezweig löschen?',
       deleteBranchWarning:
@@ -3864,12 +3909,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noMatchingLeaves: 'Keine Blätter entsprechen den aktuellen Filtern.',
       assignmentsTitle: 'Elementzuordnungen',
       assignmentsDescription:
-        'Prüfen Sie die in diesem Baum gespeicherten Elementzuordnungen. Wählen Sie oben ein Abdeckungsfeld, um die Liste zu filtern.',
+        'Prüfen Sie die Zuordnungen für diesen Baum. Neue Zuordnungen werden beim Erstellen oder Bearbeiten eines Elements hinzugefügt.',
+      createElement: 'Element erstellen',
       clearCoverageFilter: 'Feldfilter aufheben',
       assignmentFilter: 'Zuordnungen für {leaf} auf Stufe {level}.',
       element: 'Element',
       elementType: 'Typ',
       level: 'Stufe',
+      discriminationParameter: 'Trennschärfe (a)',
+      difficultyParameter: 'Schwierigkeit (b)',
+      guessingParameter: 'Ratewahrscheinlichkeit (c)',
       enabled: 'Aktiviert',
       assignmentEnabledLabel: '{element} in diesem Kompetenzbaum verwenden',
       percentInput: 'Prozenteingabe',

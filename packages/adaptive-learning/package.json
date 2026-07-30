@@ -27,7 +27,7 @@
     "test:performance": "vitest run test/runtime.performance.test.ts",
     "test:run": "run-s test test:simulation",
     "test:simulation": "vitest run test/simulation.test.ts",
-    "test:simulation:report": "cross-env ADAPTIVE_SIMULATION_REPORT=1 vitest run test/simulation.test.ts"
+    "test:simulation:report": "vitest run scripts/generateSimulationReport.test.ts"
   },
   "engines": {
     "node": "=24"

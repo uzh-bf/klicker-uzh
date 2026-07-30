@@ -42,7 +42,6 @@ describe('adaptive practice quiz runtime', () => {
       attemptId: 'attempt-a',
       nodes,
       levels,
-      coverages: coveragesFor(pool),
       pool,
       responses: [],
       settings,
@@ -58,7 +57,6 @@ describe('adaptive practice quiz runtime', () => {
       attemptId: 'attempt-a',
       nodes,
       levels,
-      coverages: coveragesFor(pool),
       pool,
       responses: [firstResponse],
       settings,
@@ -268,7 +266,6 @@ describe('adaptive practice quiz runtime', () => {
       attemptId: 'attempt-cap',
       nodes,
       levels,
-      coverages: coveragesFor(pool),
       pool,
       responses: evidence,
       settings: { ...settings, totalQuestionCap: 1 },
@@ -281,7 +278,6 @@ describe('adaptive practice quiz runtime', () => {
       attemptId: 'attempt-pool',
       nodes,
       levels,
-      coverages: coveragesFor(pool),
       pool,
       responses: evidence,
       settings,
@@ -570,15 +566,6 @@ function responseFor(
   return { order, poolItemId: poolItem.id, correct, poolItem }
 }
 
-function coveragesFor(pool: AdaptiveRuntimePoolItem[]) {
-  return pool.map((item) => ({
-    leafNodeId: item.leafNodeId,
-    levelId: item.levelId,
-    targetItemCount: 1,
-    enabled: true,
-  }))
-}
-
 function guardrailRuntimeFixture() {
   const benchmarkLevels = Array.from({ length: 20 }, (_, index) => ({
     id: index + 1,
@@ -587,12 +574,6 @@ function guardrailRuntimeFixture() {
   }))
   const nodes: AdaptiveRuntimeNode[] = []
   const pool: AdaptiveRuntimeRoutingPoolItem[] = []
-  const coverages: Array<{
-    leafNodeId: number
-    levelId: number
-    targetItemCount: number
-    enabled: boolean
-  }> = []
   let nodeId = 1
   let itemId = 1
 
@@ -606,12 +587,6 @@ function guardrailRuntimeFixture() {
       const leafId = nodeId++
       nodes.push(leafNode(leafId, rootId, leafIndex))
       for (const level of benchmarkLevels) {
-        coverages.push({
-          leafNodeId: leafId,
-          levelId: level.id,
-          targetItemCount: 2,
-          enabled: true,
-        })
         for (let itemIndex = 0; itemIndex < 2; itemIndex++) {
           pool.push({
             id: itemId,
@@ -650,7 +625,6 @@ function guardrailRuntimeFixture() {
   return {
     nodes,
     levels: benchmarkLevels,
-    coverages,
     pool,
     responses,
     settings: {

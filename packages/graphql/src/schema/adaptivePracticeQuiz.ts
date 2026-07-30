@@ -1,23 +1,20 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import builder from '../builder.js'
 import type {
+  AdaptiveCoverageReadiness,
   AdaptivePracticeQuizConfigInput as AdaptivePracticeQuizConfigInputType,
   AdaptivePracticeQuizConfigView,
   AdaptivePracticeQuizElementOverrideInput as AdaptivePracticeQuizElementOverrideInputType,
   AdaptivePracticeQuizNodeOverrideInput as AdaptivePracticeQuizNodeOverrideInputType,
   AdaptivePracticeQuizPreview,
   AdaptivePracticeQuizResearchSettingsInput as AdaptivePracticeQuizResearchSettingsInputType,
-  AdaptivePracticeQuizResolvedSettingsView,
   AdaptivePracticeQuizSetupPreview,
-  PracticeQuizPublicationPreview,
-} from '../services/adaptivePracticeQuizConfig.js'
-import type {
-  AdaptiveCoverageReadiness,
   AdaptiveQuizReadiness,
   AdaptiveReadinessIssue,
   AdaptiveReadinessIssueParameters,
   AdaptiveRootReachability,
-} from '../services/adaptivePracticeQuizReadiness.js'
+  PracticeQuizPublicationPreview,
+} from '../services/adaptivePracticeQuizConfig.js'
 import { AdaptiveLevelMappingRule, AdaptiveNodeKind } from './competenceTree.js'
 import { ElementType } from './elementData.js'
 import { PracticeQuizMode } from './practiceQuiz.js'
@@ -76,7 +73,6 @@ export const AdaptivePracticeQuizResearchSettingsInput =
       }),
       topInformationRatio: t.float({ required: false }),
       defaultDiscrimination: t.float({ required: false }),
-      showLiveEstimate: t.boolean({ required: false }),
     }),
   })
 
@@ -93,7 +89,6 @@ export const AdaptivePracticeQuizConfigInput =
       perLeafQuestionCap: t.int({ required: false }),
       minQuestionsPerLeaf: t.int({ required: false }),
       classificationZ: t.float({ required: false }),
-      standardErrorThreshold: t.float({ required: false }),
       showTimer: t.boolean({ required: false }),
       nodeOverrides: t.field({
         type: [AdaptivePracticeQuizNodeOverrideInput],
@@ -117,7 +112,6 @@ const AdaptivePracticeQuizConfigRef =
 export const AdaptivePracticeQuizConfig =
   AdaptivePracticeQuizConfigRef.implement({
     fields: (t) => ({
-      id: t.exposeString('id'),
       competenceTreeId: t.exposeString('competenceTreeId'),
       preset: t.expose('preset', { type: AdaptivePracticeQuizPreset }),
       attemptSelectionPolicy: t.expose('attemptSelectionPolicy', {
@@ -129,53 +123,12 @@ export const AdaptivePracticeQuizConfig =
       }),
       minQuestionsPerLeaf: t.exposeInt('minQuestionsPerLeaf'),
       classificationZ: t.exposeFloat('classificationZ'),
-      standardErrorThreshold: t.exposeFloat('standardErrorThreshold', {
-        nullable: true,
-      }),
       topInformationRatio: t.exposeFloat('topInformationRatio'),
       defaultDiscrimination: t.exposeFloat('defaultDiscrimination'),
       levelMappingRule: t.expose('levelMappingRule', {
         type: AdaptiveLevelMappingRule,
       }),
       showTimer: t.exposeBoolean('showTimer'),
-      showFinalResult: t.exposeBoolean('showFinalResult'),
-      showLiveEstimate: t.exposeBoolean('showLiveEstimate'),
-      poolPublishedAt: t.expose('poolPublishedAt', {
-        type: 'Date',
-        nullable: true,
-      }),
-    }),
-  })
-
-const AdaptivePracticeQuizResolvedSettingsRef =
-  builder.objectRef<AdaptivePracticeQuizResolvedSettingsView>(
-    'AdaptivePracticeQuizResolvedSettings'
-  )
-export const AdaptivePracticeQuizResolvedSettings =
-  AdaptivePracticeQuizResolvedSettingsRef.implement({
-    fields: (t) => ({
-      competenceTreeId: t.exposeString('competenceTreeId'),
-      preset: t.expose('preset', { type: AdaptivePracticeQuizPreset }),
-      attemptSelectionPolicy: t.expose('attemptSelectionPolicy', {
-        type: AdaptiveAttemptSelectionPolicy,
-      }),
-      totalQuestionCap: t.exposeInt('totalQuestionCap'),
-      perLeafQuestionCap: t.exposeInt('perLeafQuestionCap', {
-        nullable: true,
-      }),
-      minQuestionsPerLeaf: t.exposeInt('minQuestionsPerLeaf'),
-      classificationZ: t.exposeFloat('classificationZ'),
-      standardErrorThreshold: t.exposeFloat('standardErrorThreshold', {
-        nullable: true,
-      }),
-      topInformationRatio: t.exposeFloat('topInformationRatio'),
-      defaultDiscrimination: t.exposeFloat('defaultDiscrimination'),
-      levelMappingRule: t.expose('levelMappingRule', {
-        type: AdaptiveLevelMappingRule,
-      }),
-      showTimer: t.exposeBoolean('showTimer'),
-      showFinalResult: t.exposeBoolean('showFinalResult'),
-      showLiveEstimate: t.exposeBoolean('showLiveEstimate'),
     }),
   })
 
@@ -310,12 +263,6 @@ export const AdaptiveReadinessIssueParametersType =
         nullable: true,
       }),
       levelCount: t.exposeInt('levelCount', { nullable: true }),
-      targetQuestionCount: t.exposeInt('targetQuestionCount', {
-        nullable: true,
-      }),
-      maximumQuestionCount: t.exposeInt('maximumQuestionCount', {
-        nullable: true,
-      }),
       estimatedDurationMinutes: t.exposeFloat('estimatedDurationMinutes', {
         nullable: true,
       }),
@@ -368,9 +315,6 @@ export const AdaptiveRootReachabilityType =
         'minimumReachableStandardError',
         { nullable: true }
       ),
-      thresholdReachable: t.exposeBoolean('thresholdReachable', {
-        nullable: true,
-      }),
       classifiableLevelCount: t.exposeInt('classifiableLevelCount'),
       levelCount: t.exposeInt('levelCount'),
       allLevelsPotentiallyClassifiable: t.exposeBoolean(
@@ -419,8 +363,6 @@ export const AdaptivePracticeQuizPreviewType =
         type: AdaptiveQuizReadinessRef,
       }),
       publishedPoolSize: t.exposeInt('publishedPoolSize'),
-      awardsPoints: t.exposeBoolean('awardsPoints'),
-      awardsExperiencePoints: t.exposeBoolean('awardsExperiencePoints'),
     }),
   })
 
@@ -431,9 +373,6 @@ export const AdaptivePracticeQuizSetupPreviewRef =
 export const AdaptivePracticeQuizSetupPreviewType =
   AdaptivePracticeQuizSetupPreviewRef.implement({
     fields: (t) => ({
-      settings: t.expose('settings', {
-        type: AdaptivePracticeQuizResolvedSettingsRef,
-      }),
       competenceTree: t.expose('competenceTree', {
         type: AdaptivePracticeQuizTreeRef,
       }),
@@ -442,8 +381,6 @@ export const AdaptivePracticeQuizSetupPreviewType =
         type: [AdaptivePracticeQuizAssignmentRef],
       }),
       readiness: t.expose('readiness', { type: AdaptiveQuizReadinessRef }),
-      awardsPoints: t.exposeBoolean('awardsPoints'),
-      awardsExperiencePoints: t.exposeBoolean('awardsExperiencePoints'),
     }),
   })
 

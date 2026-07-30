@@ -163,7 +163,7 @@ export function competenceTreeToForm(
       key: nodeKeyById.get(node.id)!,
       parentKey:
         typeof node.parentId === 'number'
-          ? (nodeKeyById.get(node.parentId) ?? null)
+          ? (nodeKeyById.get(node.parentId) ?? `node:${node.parentId}`)
           : null,
       kind: node.kind,
       name: node.name,
@@ -171,46 +171,43 @@ export function competenceTreeToForm(
       order: node.order,
       weight: node.weight,
     })),
-    coverages: tree.levelCoverages.flatMap((coverage) => {
-      const leafKey = nodeKeyById.get(coverage.leafNodeId)
-      const levelKey = levelKeyById.get(coverage.levelId)
+    coverages: tree.levelCoverages.map((coverage) => {
+      const leafKey =
+        nodeKeyById.get(coverage.leafNodeId) ?? `node:${coverage.leafNodeId}`
+      const levelKey =
+        levelKeyById.get(coverage.levelId) ?? `level:${coverage.levelId}`
 
-      return leafKey && levelKey
-        ? [
-            {
-              leafKey,
-              levelKey,
-              targetItemCount: coverage.targetItemCount,
-              enabled: coverage.enabled,
-            },
-          ]
-        : []
+      return {
+        leafKey,
+        levelKey,
+        targetItemCount: coverage.targetItemCount,
+        enabled: coverage.enabled,
+      }
     }),
-    assignments: tree.elementAssignments.flatMap((assignment) => {
-      const leafKey = nodeKeyById.get(assignment.leafNodeId)
-      const levelKey = levelKeyById.get(assignment.levelId)
+    assignments: tree.elementAssignments.map((assignment) => {
+      const leafKey =
+        nodeKeyById.get(assignment.leafNodeId) ??
+        `node:${assignment.leafNodeId}`
+      const levelKey =
+        levelKeyById.get(assignment.levelId) ?? `level:${assignment.levelId}`
 
-      return leafKey && levelKey
-        ? [
-            {
-              key: `assignment:${assignment.id}`,
-              sourceId: assignment.id,
-              elementId: assignment.elementId,
-              elementName: assignment.elementName,
-              elementType: assignment.elementType,
-              elementVersion: assignment.elementVersion,
-              leafKey,
-              levelKey,
-              enabled: assignment.enabled,
-              discrimination: assignment.discrimination ?? null,
-              enablePercentInput: assignment.enablePercentInput,
-              choiceCount: assignment.choiceCount ?? null,
-              a: assignment.a,
-              b: assignment.b,
-              c: assignment.c,
-            },
-          ]
-        : []
+      return {
+        key: `assignment:${assignment.id}`,
+        sourceId: assignment.id,
+        elementId: assignment.elementId,
+        elementName: assignment.elementName,
+        elementType: assignment.elementType,
+        elementVersion: assignment.elementVersion,
+        leafKey,
+        levelKey,
+        enabled: assignment.enabled,
+        discrimination: assignment.discrimination ?? null,
+        enablePercentInput: assignment.enablePercentInput,
+        choiceCount: assignment.choiceCount ?? null,
+        a: assignment.a,
+        b: assignment.b,
+        c: assignment.c,
+      }
     }),
   }
 }
@@ -218,9 +215,6 @@ export function competenceTreeToForm(
 export function competenceTreeFormToInput(
   form: CompetenceTreeForm
 ): CompetenceTreeInput {
-  const levelKeys = new Set(form.levels.map((level) => level.key))
-  const nodeKeys = new Set(form.nodes.map((node) => node.key))
-
   return {
     name: form.name.trim(),
     displayName: form.displayName.trim(),
@@ -247,29 +241,19 @@ export function competenceTreeFormToInput(
       order: node.order,
       weight: node.parentKey ? 1 : node.weight,
     })),
-    coverages: form.coverages
-      .filter(
-        (coverage) =>
-          nodeKeys.has(coverage.leafKey) && levelKeys.has(coverage.levelKey)
-      )
-      .map((coverage) => ({
-        leafKey: coverage.leafKey,
-        levelKey: coverage.levelKey,
-        targetItemCount: coverage.targetItemCount,
-        enabled: coverage.enabled,
-      })),
-    assignments: form.assignments
-      .filter(
-        (assignment) =>
-          nodeKeys.has(assignment.leafKey) && levelKeys.has(assignment.levelKey)
-      )
-      .map((assignment) => ({
-        elementId: assignment.elementId,
-        leafKey: assignment.leafKey,
-        levelKey: assignment.levelKey,
-        enabled: assignment.enabled,
-        discrimination: assignment.discrimination,
-        enablePercentInput: assignment.enablePercentInput,
-      })),
+    coverages: form.coverages.map((coverage) => ({
+      leafKey: coverage.leafKey,
+      levelKey: coverage.levelKey,
+      targetItemCount: coverage.targetItemCount,
+      enabled: coverage.enabled,
+    })),
+    assignments: form.assignments.map((assignment) => ({
+      elementId: assignment.elementId,
+      leafKey: assignment.leafKey,
+      levelKey: assignment.levelKey,
+      enabled: assignment.enabled,
+      discrimination: assignment.discrimination,
+      enablePercentInput: assignment.enablePercentInput,
+    })),
   }
 }

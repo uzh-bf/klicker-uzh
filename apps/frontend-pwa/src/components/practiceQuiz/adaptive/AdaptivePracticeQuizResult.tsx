@@ -23,7 +23,7 @@ function AdaptivePracticeQuizResult({
 }) {
   const t = useTranslations()
   const headingRef = useRef<HTMLHeadingElement>(null)
-  const { data, loading, error } = useQuery(
+  const { data, loading, error, refetch } = useQuery(
     QAdaptivePracticeQuizResultDocument,
     {
       variables: { attemptId },
@@ -39,10 +39,21 @@ function AdaptivePracticeQuizResult({
   if (loading) return <Loader />
   if (error || !result) {
     return (
-      <UserNotification
-        type="error"
-        message={t('pwa.practiceQuiz.adaptive.errors.result')}
-      />
+      <div className="flex flex-col items-start gap-3">
+        <UserNotification
+          type="error"
+          message={t('pwa.practiceQuiz.adaptive.errors.result')}
+        />
+        <Button
+          type="button"
+          onClick={() => void refetch()}
+          disabled={loading}
+          loading={loading}
+          data={{ cy: 'retry-adaptive-practice-quiz-result' }}
+        >
+          <Button.Label>{t('shared.generic.tryAgain')}</Button.Label>
+        </Button>
+      </div>
     )
   }
 
@@ -59,7 +70,7 @@ function AdaptivePracticeQuizResult({
         <h2
           ref={headingRef}
           tabIndex={-1}
-          className="mb-[0.2em] font-sans text-xl font-bold outline-none"
+          className="focus:outline-primary-80 mb-[0.2em] rounded-sm font-sans text-xl font-bold focus:outline focus:outline-2 focus:outline-offset-2"
         >
           {t('pwa.practiceQuiz.adaptive.result.title')}
         </h2>
@@ -76,8 +87,21 @@ function AdaptivePracticeQuizResult({
             >
               {incomplete
                 ? t('pwa.practiceQuiz.adaptive.result.incompleteHeadline')
-                : result.levelLabel}
+                : t(
+                    `pwa.practiceQuiz.adaptive.result.interpretation.${result.levelInterpretation}.headline`,
+                    { level: result.levelLabel ?? '' }
+                  )}
             </div>
+            {!incomplete && (
+              <p
+                className="mt-2 max-w-2xl text-sm text-slate-700"
+                data-cy="adaptive-result-level-interpretation"
+              >
+                {t(
+                  `pwa.practiceQuiz.adaptive.result.interpretation.${result.levelInterpretation}.description`
+                )}
+              </p>
+            )}
           </div>
           <div className="space-y-1 text-sm text-slate-700 sm:text-right">
             <div>

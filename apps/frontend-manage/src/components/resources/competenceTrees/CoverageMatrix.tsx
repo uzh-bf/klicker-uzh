@@ -119,7 +119,7 @@ function CoverageMatrix({
         />
       </div>
 
-      <div className="max-h-160 overflow-auto border border-slate-300">
+      <div className="max-h-160 overflow-auto border border-slate-300 [contain:paint]">
         <div
           className="grid min-w-max"
           style={{

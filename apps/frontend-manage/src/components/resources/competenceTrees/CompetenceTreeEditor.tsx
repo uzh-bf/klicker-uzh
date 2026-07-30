@@ -13,19 +13,24 @@ import {
   ValidateCompetenceTreeDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { useUnsavedChangesGuard } from '@lib/hooks/useUnsavedChangesGuard'
 import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import AssignmentTable from './AssignmentTable'
-import ConfirmationModal from './ConfirmationModal'
-import CoverageMatrix, { CoverageCellSelection } from './CoverageMatrix'
+import CoverageMatrix from './CoverageMatrix'
 import HierarchyEditor from './HierarchyEditor'
 import LevelEditor from './LevelEditor'
 import MetadataEditor from './MetadataEditor'
 import {
+  applyCompetenceTreeStructuralCommand,
+  CompetenceTreeStructuralCommand,
+  CompetenceTreeStructuralState,
+  getChildren,
+} from './treeHelpers'
+import {
   CompetenceTreeForm,
-  CompetenceTreeValidationView,
   competenceTreeFormToInput,
   competenceTreeToForm,
   createDefaultCompetenceTreeForm,
@@ -48,17 +53,21 @@ function CompetenceTreeEditor({ treeId }: { treeId?: string }) {
       }),
     [t]
   )
-  const [form, setForm] = useState<CompetenceTreeForm>(() => defaultForm)
+  const [editorState, setEditorState] = useState<CompetenceTreeStructuralState>(
+    () => ({
+      form: defaultForm,
+      selectedNodeKey: getChildren(defaultForm.nodes, null)[0]?.key ?? null,
+      selectedCell: null,
+      validation: null,
+    })
+  )
+  const { form, selectedNodeKey, selectedCell, validation } = editorState
   const [savedForm, setSavedForm] = useState<CompetenceTreeForm>(
     () => defaultForm
   )
   const [loadedTreeId, setLoadedTreeId] = useState<string | null>(null)
-  const [selectedCell, setSelectedCell] =
-    useState<CoverageCellSelection | null>(null)
-  const [validation, setValidation] =
-    useState<CompetenceTreeValidationView | null>(null)
   const [requestError, setRequestError] = useState<string | null>(null)
-  const [leaveConfirmationOpen, setLeaveConfirmationOpen] = useState(false)
+  const validationVersionRef = useRef(0)
   const { data, loading, error } = useQuery(CompetenceTreeDocument, {
     variables: { id: treeId ?? '' },
     skip: !treeId,
@@ -86,7 +95,7 @@ function CompetenceTreeEditor({ treeId }: { treeId?: string }) {
   const isLocked = !!tree?.isStructurallyLocked
   const metadataDisabled = !isOwner
   const structureDisabled = !isOwner || isLocked
-  const saving = creating || replacing || updatingMetadata
+  const saving = creating || replacing || updatingMetadata || validating
   const canSubmit =
     isOwner && form.name.trim().length > 0 && form.displayName.trim().length > 0
   const isDirty = useMemo(
@@ -97,40 +106,79 @@ function CompetenceTreeEditor({ treeId }: { treeId?: string }) {
   useEffect(() => {
     if (!tree || loadedTreeId === tree.id) return
     const nextForm = competenceTreeToForm(tree)
-    setForm(nextForm)
+    validationVersionRef.current += 1
+    setEditorState({
+      form: nextForm,
+      selectedNodeKey: getChildren(nextForm.nodes, null)[0]?.key ?? null,
+      selectedCell: null,
+      validation: tree.validation,
+    })
     setSavedForm(nextForm)
-    setValidation(tree.validation)
     setLoadedTreeId(tree.id)
-    setSelectedCell(null)
   }, [loadedTreeId, tree])
 
-  useEffect(() => {
-    if (!isDirty) return
+  const { allowNextNavigation, confirmNavigation } = useUnsavedChangesGuard({
+    isDirty,
+    message: t('manage.competenceTree.leaveUnsavedDescription'),
+  })
 
-    const preventUnsavedUnload = (event: BeforeUnloadEvent) => {
-      event.preventDefault()
-      event.returnValue = ''
-    }
-    window.addEventListener('beforeunload', preventUnsavedUnload)
-    return () =>
-      window.removeEventListener('beforeunload', preventUnsavedUnload)
-  }, [isDirty])
+  const handleFormChange = (nextForm: CompetenceTreeForm) => {
+    validationVersionRef.current += 1
+    setRequestError(null)
+    setEditorState((current) => {
+      const nodeKeys = new Set(nextForm.nodes.map((node) => node.key))
+      const levelKeys = new Set(nextForm.levels.map((level) => level.key))
 
-  const runValidation = async () => {
+      return {
+        form: nextForm,
+        selectedNodeKey:
+          current.selectedNodeKey && nodeKeys.has(current.selectedNodeKey)
+            ? current.selectedNodeKey
+            : (getChildren(nextForm.nodes, null)[0]?.key ?? null),
+        selectedCell:
+          current.selectedCell &&
+          nodeKeys.has(current.selectedCell.leafKey) &&
+          levelKeys.has(current.selectedCell.levelKey)
+            ? current.selectedCell
+            : null,
+        validation: null,
+      }
+    })
+  }
+
+  const handleStructuralCommand = (
+    command: CompetenceTreeStructuralCommand
+  ) => {
+    validationVersionRef.current += 1
+    setRequestError(null)
+    setEditorState((current) =>
+      applyCompetenceTreeStructuralCommand(current, command)
+    )
+  }
+
+  const runValidation = async (validatedForm = form) => {
+    const validationVersion = ++validationVersionRef.current
     setRequestError(null)
     try {
       const result = await validateTree({
-        variables: { input: competenceTreeFormToInput(form) },
+        variables: { input: competenceTreeFormToInput(validatedForm) },
       })
       const nextValidation = result.data?.validateCompetenceTree ?? null
-      setValidation(nextValidation)
+      if (validationVersionRef.current !== validationVersion) return null
+      setEditorState((current) =>
+        current.form === validatedForm
+          ? { ...current, validation: nextValidation }
+          : current
+      )
       return nextValidation
     } catch (validationError) {
-      setRequestError(
-        validationError instanceof Error
-          ? validationError.message
-          : t('manage.competenceTree.validationRequestError')
-      )
+      if (validationVersionRef.current === validationVersion) {
+        setRequestError(
+          validationError instanceof Error
+            ? validationError.message
+            : t('manage.competenceTree.validationRequestError')
+        )
+      }
       return null
     }
   }
@@ -138,6 +186,7 @@ function CompetenceTreeEditor({ treeId }: { treeId?: string }) {
   const handleSave = async () => {
     if (!canSubmit) return
     setRequestError(null)
+    const formToSave = form
 
     try {
       if (treeId && isLocked) {
@@ -145,26 +194,30 @@ function CompetenceTreeEditor({ treeId }: { treeId?: string }) {
           variables: {
             id: treeId,
             input: {
-              name: form.name.trim(),
-              displayName: form.displayName.trim(),
-              description: form.description.trim() || null,
+              name: formToSave.name.trim(),
+              displayName: formToSave.displayName.trim(),
+              description: formToSave.description.trim() || null,
             },
           },
         })
         const updated = result.data?.updateCompetenceTreeMetadata
         if (updated) {
           const nextForm = competenceTreeToForm(updated)
-          setForm(nextForm)
+          setEditorState({
+            form: nextForm,
+            selectedNodeKey: getChildren(nextForm.nodes, null)[0]?.key ?? null,
+            selectedCell: null,
+            validation: updated.validation,
+          })
           setSavedForm(nextForm)
-          setValidation(updated.validation)
         }
         return
       }
 
-      const validated = await runValidation()
+      const validated = await runValidation(formToSave)
       if (!validated || validated.errors.length > 0) return
 
-      const input = competenceTreeFormToInput(form)
+      const input = competenceTreeFormToInput(formToSave)
       if (treeId) {
         const result = await replaceTree({
           variables: { id: treeId, input },
@@ -172,16 +225,21 @@ function CompetenceTreeEditor({ treeId }: { treeId?: string }) {
         const updated = result.data?.replaceCompetenceTree
         if (updated) {
           const nextForm = competenceTreeToForm(updated)
-          setForm(nextForm)
+          setEditorState({
+            form: nextForm,
+            selectedNodeKey: getChildren(nextForm.nodes, null)[0]?.key ?? null,
+            selectedCell: null,
+            validation: updated.validation,
+          })
           setSavedForm(nextForm)
-          setValidation(updated.validation)
           setLoadedTreeId(updated.id)
         }
       } else {
         const result = await createTree({ variables: { input } })
         const created = result.data?.createCompetenceTree
         if (!created) throw new Error(t('manage.competenceTree.saveError'))
-        setSavedForm(form)
+        setSavedForm(formToSave)
+        allowNextNavigation()
         await router.replace(`/resources/competenceTrees/${created.id}`)
       }
     } catch (saveError) {
@@ -229,9 +287,7 @@ function CompetenceTreeEditor({ treeId }: { treeId?: string }) {
           <Button
             basic
             onClick={() => {
-              if (isDirty) {
-                setLeaveConfirmationOpen(true)
-              } else {
+              if (confirmNavigation()) {
                 void router.push('/resources/competenceTrees')
               }
             }}
@@ -314,33 +370,42 @@ function CompetenceTreeEditor({ treeId }: { treeId?: string }) {
 
       <MetadataEditor
         form={form}
-        onChange={setForm}
+        onChange={handleFormChange}
         metadataDisabled={metadataDisabled}
         structureDisabled={structureDisabled}
       />
       <LevelEditor
         form={form}
-        onChange={setForm}
+        onChange={handleFormChange}
         disabled={structureDisabled}
       />
       <HierarchyEditor
         form={form}
-        onChange={setForm}
+        onChange={handleFormChange}
+        onStructuralCommand={handleStructuralCommand}
+        selectedKey={selectedNodeKey}
+        onSelect={(selectedNodeKey) =>
+          setEditorState((current) => ({ ...current, selectedNodeKey }))
+        }
         disabled={structureDisabled}
       />
       <CoverageMatrix
         form={form}
-        onChange={setForm}
+        onChange={handleFormChange}
         disabled={structureDisabled}
         selectedCell={selectedCell}
-        onSelectCell={setSelectedCell}
+        onSelectCell={(selectedCell) =>
+          setEditorState((current) => ({ ...current, selectedCell }))
+        }
       />
       <AssignmentTable
         form={form}
-        onChange={setForm}
+        onChange={handleFormChange}
         disabled={structureDisabled}
         selectedCell={selectedCell}
-        onClearCell={() => setSelectedCell(null)}
+        onClearCell={() =>
+          setEditorState((current) => ({ ...current, selectedCell: null }))
+        }
       />
       <ValidationPanel
         validation={validation}
@@ -349,21 +414,6 @@ function CompetenceTreeEditor({ treeId }: { treeId?: string }) {
         onValidate={() => void runValidation()}
         disabled={!form.name.trim() || !form.displayName.trim()}
       />
-      {leaveConfirmationOpen && (
-        <ConfirmationModal
-          title={t('manage.competenceTree.leaveUnsavedTitle')}
-          message={t('manage.competenceTree.leaveUnsavedDescription')}
-          confirmLabel={t('manage.competenceTree.leaveUnsavedAction')}
-          cancelLabel={t('shared.generic.cancel')}
-          destructive
-          onConfirm={() => {
-            setLeaveConfirmationOpen(false)
-            void router.push('/resources/competenceTrees')
-          }}
-          onClose={() => setLeaveConfirmationOpen(false)}
-          dataCy="competence-tree-leave-unsaved"
-        />
-      )}
     </div>
   )
 }

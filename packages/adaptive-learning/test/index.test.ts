@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ADAPTIVE_PRESET_DEFAULTS,
   aggregateInverseVariance,
   aggregateWeightedEstimates,
   classificationIntervalWithinLevelBand,
   computeSubCompetenceCoverageWeights,
   deriveGuessingParameter,
+  getAdaptivePresetDefaults,
   information,
   informationAtDifficulty,
   isNearLevelBoundary,
@@ -20,10 +22,62 @@ import {
   probability,
   selectNextItem,
   selectSubCompetence,
-  shouldStop,
   updateTheta,
   validateEnabledStructure,
 } from '../src/index.js'
+
+describe('adaptive preset contract', () => {
+  it('defines the shipped defaults once for every preset', () => {
+    expect(ADAPTIVE_PRESET_DEFAULTS).toEqual({
+      PLACEMENT: {
+        totalQuestionCap: 50,
+        perLeafQuestionCap: null,
+        minQuestionsPerLeaf: 2,
+        classificationZ: 1.28,
+        topInformationRatio: 0.8,
+        defaultDiscrimination: 1.2,
+        levelMappingRule: 'MASTERY',
+        attemptSelectionPolicy: 'FIRST_COMPLETED',
+        showTimer: true,
+      },
+      DIAGNOSTIC: {
+        totalQuestionCap: 50,
+        perLeafQuestionCap: null,
+        minQuestionsPerLeaf: 2,
+        classificationZ: 1.28,
+        topInformationRatio: 0.8,
+        defaultDiscrimination: 1.2,
+        levelMappingRule: 'NEAREST',
+        attemptSelectionPolicy: 'LATEST_COMPLETED',
+        showTimer: true,
+      },
+      RESEARCH: {
+        totalQuestionCap: 50,
+        perLeafQuestionCap: null,
+        minQuestionsPerLeaf: 2,
+        classificationZ: 1.28,
+        topInformationRatio: 0.8,
+        defaultDiscrimination: 1.2,
+        levelMappingRule: 'NEAREST',
+        attemptSelectionPolicy: 'LATEST_COMPLETED',
+        showTimer: true,
+      },
+    })
+  })
+
+  it('uses the competence-tree discrimination as the Research default', () => {
+    expect(
+      getAdaptivePresetDefaults('RESEARCH', {
+        treeDefaultDiscrimination: 1.7,
+      }).defaultDiscrimination
+    ).toBe(1.7)
+    expect(
+      getAdaptivePresetDefaults('DIAGNOSTIC', {
+        treeDefaultDiscrimination: 1.7,
+      }).defaultDiscrimination
+    ).toBe(1.2)
+  })
+})
 
 describe('adaptive-learning core', () => {
   it('maps lecturer levels evenly across the theta range', () => {
@@ -168,25 +222,6 @@ describe('adaptive-learning core', () => {
 
     expect(Math.abs(estimate.theta)).toBeLessThan(1.5)
     expect(estimate.standardError).toBeLessThan(1)
-  })
-
-  it('stops by standard error or question threshold', () => {
-    expect(
-      shouldStop({
-        answeredQuestions: 2,
-        questionThreshold: 4,
-        standardError: 0.3,
-        standardErrorThreshold: 0.4,
-      })
-    ).toBe(true)
-    expect(
-      shouldStop({
-        answeredQuestions: 4,
-        questionThreshold: 4,
-        standardError: 0.9,
-        standardErrorThreshold: 0.4,
-      })
-    ).toBe(true)
   })
 
   it('selects subcompetences by largest coverage and randomizes ties', () => {

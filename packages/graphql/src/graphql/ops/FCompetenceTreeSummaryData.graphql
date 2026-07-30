@@ -18,6 +18,7 @@ fragment CompetenceTreeSummaryData on CompetenceTreeSummary {
   isOwner
   canEdit
   isStructurallyLocked
+  courseLinkCount
   courseLinks {
     id
     courseId

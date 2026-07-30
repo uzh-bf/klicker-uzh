@@ -5,7 +5,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Checkbox, NumberField, Select, TextField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import { AdaptivePracticeQuizConfigFormValues } from '../WizardLayout'
 import { AdaptiveCoverageReadinessData } from './AdaptiveReadinessPanel'
 
@@ -46,6 +46,10 @@ function AdaptiveAssignmentPreview({
   const [leafFilter, setLeafFilter] = useState('ALL')
   const [levelFilter, setLevelFilter] = useState('ALL')
   const [stateFilter, setStateFilter] = useState<AssignmentStateFilter>('ALL')
+  const searchId = useId()
+  const leafFilterId = useId()
+  const levelFilterId = useId()
+  const stateFilterId = useId()
   const nodeById = useMemo(
     () => new Map(nodes.map((node) => [node.id, node])),
     [nodes]
@@ -141,67 +145,99 @@ function AdaptiveAssignmentPreview({
   }
 
   return (
-    <section data-cy="adaptive-assignment-preview">
+    <section
+      className="min-w-0 max-w-full"
+      data-cy="adaptive-assignment-preview"
+    >
       <div className="mb-2 font-bold">
         {t('manage.activityWizard.adaptive.assignments.title')}
       </div>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        <TextField
-          value={search}
-          onChange={setSearch}
-          placeholder={t(
-            'manage.activityWizard.adaptive.assignments.searchPlaceholder'
-          )}
-          data={{ cy: 'adaptive-assignment-search' }}
-          className={{ input: 'h-9' }}
-        />
-        <Select
-          value={leafFilter}
-          onChange={setLeafFilter}
-          items={[
-            {
-              value: 'ALL',
-              label: t('manage.activityWizard.adaptive.assignments.allLeaves'),
-            },
-            ...leafIds.map((leafId) => ({
-              value: String(leafId),
-              label: getNodeBreadcrumb(leafId, nodeById),
-            })),
-          ]}
-          data={{ cy: 'adaptive-assignment-leaf-filter' }}
-          className={{ root: 'w-full', trigger: 'w-full' }}
-        />
-        <Select
-          value={levelFilter}
-          onChange={setLevelFilter}
-          items={[
-            {
-              value: 'ALL',
-              label: t('manage.activityWizard.adaptive.assignments.allLevels'),
-            },
-            ...sortedLevels.map((level) => ({
-              value: String(level.id),
-              label: level.label,
-            })),
-          ]}
-          data={{ cy: 'adaptive-assignment-level-filter' }}
-          className={{ root: 'w-full', trigger: 'w-full' }}
-        />
-        <Select
-          value={stateFilter}
-          onChange={(value) => setStateFilter(value as AssignmentStateFilter)}
-          items={(['ALL', 'ENABLED', 'DISABLED'] as const).map((value) => ({
-            value,
-            label: t(
-              `manage.activityWizard.adaptive.assignments.state.${value}`
-            ),
-          }))}
-          data={{ cy: 'adaptive-assignment-state-filter' }}
-          className={{ root: 'w-full', trigger: 'w-full' }}
-        />
+      <div className="grid min-w-0 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="min-w-0">
+          <label htmlFor={searchId} className="sr-only">
+            {t('manage.activityWizard.adaptive.assignments.searchPlaceholder')}
+          </label>
+          <TextField
+            id={searchId}
+            value={search}
+            onChange={setSearch}
+            placeholder={t(
+              'manage.activityWizard.adaptive.assignments.searchPlaceholder'
+            )}
+            autoComplete="off"
+            data={{ cy: 'adaptive-assignment-search' }}
+            className={{ field: 'min-w-0', input: 'h-9' }}
+          />
+        </div>
+        <div className="min-w-0">
+          <label htmlFor={leafFilterId} className="sr-only">
+            {t('manage.activityWizard.adaptive.assignments.leaf')}
+          </label>
+          <Select
+            id={leafFilterId}
+            value={leafFilter}
+            onChange={setLeafFilter}
+            items={[
+              {
+                value: 'ALL',
+                label: t(
+                  'manage.activityWizard.adaptive.assignments.allLeaves'
+                ),
+              },
+              ...leafIds.map((leafId) => ({
+                value: String(leafId),
+                label: getNodeBreadcrumb(leafId, nodeById),
+              })),
+            ]}
+            data={{ cy: 'adaptive-assignment-leaf-filter' }}
+            className={{ root: 'w-full min-w-0', trigger: 'w-full' }}
+          />
+        </div>
+        <div className="min-w-0">
+          <label htmlFor={levelFilterId} className="sr-only">
+            {t('manage.activityWizard.adaptive.assignments.level')}
+          </label>
+          <Select
+            id={levelFilterId}
+            value={levelFilter}
+            onChange={setLevelFilter}
+            items={[
+              {
+                value: 'ALL',
+                label: t(
+                  'manage.activityWizard.adaptive.assignments.allLevels'
+                ),
+              },
+              ...sortedLevels.map((level) => ({
+                value: String(level.id),
+                label: level.label,
+              })),
+            ]}
+            data={{ cy: 'adaptive-assignment-level-filter' }}
+            className={{ root: 'w-full min-w-0', trigger: 'w-full' }}
+          />
+        </div>
+        <div className="min-w-0">
+          <label htmlFor={stateFilterId} className="sr-only">
+            {t('shared.generic.status')}
+          </label>
+          <Select
+            id={stateFilterId}
+            value={stateFilter}
+            onChange={(value) => setStateFilter(value as AssignmentStateFilter)}
+            items={(['ALL', 'ENABLED', 'DISABLED'] as const).map((value) => ({
+              value,
+              label: t(
+                `manage.activityWizard.adaptive.assignments.state.${value}`
+              ),
+            }))}
+            data={{ cy: 'adaptive-assignment-state-filter' }}
+            className={{ root: 'w-full min-w-0', trigger: 'w-full' }}
+          />
+        </div>
       </div>
 
-      <div className="border-uzh-grey-80 mt-2 max-h-72 overflow-auto rounded-md border border-solid">
+      <div className="border-uzh-grey-80 mt-2 max-h-72 w-full min-w-0 max-w-full overflow-auto rounded-md border border-solid">
         <table className="w-full min-w-[52rem] table-fixed text-left text-xs">
           <thead className="bg-uzh-grey-20 sticky top-0 z-10">
             <tr>
@@ -315,6 +351,7 @@ function AdaptiveAssignmentPreview({
                   {config.preset === AdaptivePracticeQuizPreset.Research ? (
                     <td className="px-2 py-1.5">
                       <NumberField
+                        id={`adaptive-assignment-discrimination-${assignment.id}`}
                         value={override?.discrimination ?? ''}
                         onChange={(discrimination) =>
                           updateAssignment(assignment, { discrimination })
@@ -328,6 +365,9 @@ function AdaptiveAssignmentPreview({
                         data={{
                           cy: `adaptive-assignment-discrimination-${assignment.id}`,
                         }}
+                        aria-label={`${t(
+                          'manage.activityWizard.adaptive.assignments.discrimination'
+                        )}: ${assignment.elementName}`}
                         className={{ input: 'h-8' }}
                       />
                     </td>
@@ -369,11 +409,11 @@ function CoverageMatrix({
   )
 
   return (
-    <div className="mt-4" data-cy="adaptive-coverage-matrix">
+    <div className="mt-4 min-w-0 max-w-full" data-cy="adaptive-coverage-matrix">
       <div className="mb-1 font-bold">
         {t('manage.activityWizard.adaptive.coverage.title')}
       </div>
-      <div className="border-uzh-grey-80 max-h-64 overflow-auto rounded-md border border-solid">
+      <div className="border-uzh-grey-80 max-h-64 w-full min-w-0 max-w-full overflow-auto rounded-md border border-solid">
         <table className="w-full min-w-[42rem] border-collapse text-xs">
           <thead className="bg-uzh-grey-20 sticky top-0 z-20">
             <tr>

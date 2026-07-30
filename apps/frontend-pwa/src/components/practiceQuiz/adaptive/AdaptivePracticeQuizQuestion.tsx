@@ -24,7 +24,7 @@ interface AdaptivePracticeQuizQuestionProps {
   questionNumber: number
   answeredQuestions: number
   maximumQuestions: number
-  elapsedSeconds: number
+  elapsedSeconds: number | null
   showTimer: boolean
   submitting: boolean
   submissionError?: boolean
@@ -104,6 +104,8 @@ function AdaptivePracticeQuizQuestion({
   const isValid =
     response !== null &&
     (item.type !== ElementType.Numerical || numericalValidation?.valid === true)
+  const cumulativeElapsedSeconds =
+    elapsedSeconds ?? (answeredQuestions === 0 ? 0 : null)
 
   return (
     <section
@@ -114,7 +116,7 @@ function AdaptivePracticeQuizQuestion({
         <h2
           ref={headingRef}
           tabIndex={-1}
-          className="font-semibold outline-none"
+          className="focus:outline-primary-80 rounded-sm font-semibold focus:outline focus:outline-2 focus:outline-offset-2"
           data-cy="adaptive-question-progress"
         >
           {t('pwa.practiceQuiz.adaptive.question.progress', {
@@ -128,14 +130,14 @@ function AdaptivePracticeQuizQuestion({
               ? t('pwa.practiceQuiz.adaptive.question.status.building')
               : t('pwa.practiceQuiz.adaptive.question.status.refining')}
           </span>
-          {showTimer && (
+          {showTimer && cumulativeElapsedSeconds !== null && (
             <span
               className="font-medium tabular-nums"
               data-cy="adaptive-question-timer"
             >
               {t('pwa.practiceQuiz.adaptive.question.timer', {
                 time: formatElapsedSeconds(
-                  elapsedSeconds + questionElapsedSeconds
+                  cumulativeElapsedSeconds + questionElapsedSeconds
                 ),
               })}
             </span>
@@ -180,7 +182,11 @@ function AdaptivePracticeQuizQuestion({
           className={{ root: 'sm:w-auto' }}
         >
           <Button.Label>
-            {t('pwa.practiceQuiz.adaptive.actions.submit')}
+            {t(
+              submissionError
+                ? 'shared.generic.tryAgain'
+                : 'pwa.practiceQuiz.adaptive.actions.submit'
+            )}
           </Button.Label>
         </Button>
       </div>

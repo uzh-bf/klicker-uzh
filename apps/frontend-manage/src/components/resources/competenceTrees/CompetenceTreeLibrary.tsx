@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { NetworkStatus, useMutation, useQuery } from '@apollo/client'
 import {
   faArchive,
   faArrowRotateLeft,
@@ -12,9 +12,11 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ArchiveCompetenceTreeDocument,
-  CompetenceTreesDocument,
+  CompetenceTreeCatalogDocument,
+  CompetenceTreeCatalogOwnership,
   CompetenceTreeSummaryDataFragment,
   DuplicateCompetenceTreeDocument,
+  GetUserCoursesDocument,
   RestoreCompetenceTreeDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -28,7 +30,7 @@ import {
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import ConfirmationModal from './ConfirmationModal'
 import CourseLinksModal from './CourseLinksModal'
 import IconAction from './IconAction'
@@ -50,6 +52,7 @@ function CompetenceTreeLibrary() {
   const t = useTranslations()
   const router = useRouter()
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [ownershipFilter, setOwnershipFilter] =
     useState<OwnershipFilter>('owned')
   const [courseFilter, setCourseFilter] = useState('all')
@@ -60,51 +63,49 @@ function CompetenceTreeLibrary() {
     useState<CompetenceTreeSummaryDataFragment | null>(null)
   const [requestError, setRequestError] = useState<string | null>(null)
   const [pendingTreeId, setPendingTreeId] = useState<string | null>(null)
-  const { data, loading, error, refetch } = useQuery(CompetenceTreesDocument, {
-    variables: { includeArchived: showArchived },
-    fetchPolicy: 'cache-and-network',
-  })
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setDebouncedSearch(search), 250)
+    return () => window.clearTimeout(timeout)
+  }, [search])
+
+  const ownership =
+    ownershipFilter === 'owned'
+      ? CompetenceTreeCatalogOwnership.Owned
+      : ownershipFilter === 'linked'
+        ? CompetenceTreeCatalogOwnership.Linked
+        : CompetenceTreeCatalogOwnership.All
+  const catalogVariables = {
+    search: debouncedSearch.trim() || undefined,
+    includeArchived: showArchived,
+    ownership,
+    courseId: courseFilter === 'all' ? undefined : courseFilter,
+    limit: 25,
+  }
+  const { data, loading, error, refetch, fetchMore, networkStatus } = useQuery(
+    CompetenceTreeCatalogDocument,
+    {
+      variables: catalogVariables,
+      fetchPolicy: 'cache-and-network',
+      notifyOnNetworkStatusChange: true,
+    }
+  )
+  const { data: coursesData } = useQuery(GetUserCoursesDocument)
   const [duplicateTree] = useMutation(DuplicateCompetenceTreeDocument)
   const [archiveCompetenceTree] = useMutation(ArchiveCompetenceTreeDocument)
   const [restoreCompetenceTree] = useMutation(RestoreCompetenceTreeDocument)
   const trees = useMemo(
-    () => data?.competenceTrees ?? [],
-    [data?.competenceTrees]
+    () => data?.competenceTreeCatalog.items ?? [],
+    [data?.competenceTreeCatalog.items]
   )
-  const courses = useMemo(() => {
-    const byId = new Map<string, string>()
-    for (const tree of trees) {
-      for (const link of tree.courseLinks) {
-        byId.set(link.courseId, link.courseName)
-      }
-    }
-    return Array.from(byId.entries()).sort((a, b) => a[1].localeCompare(b[1]))
-  }, [trees])
-  const filteredTrees = useMemo(() => {
-    const normalizedSearch = search.trim().toLocaleLowerCase()
-    return trees.filter((tree) => {
-      if (!showArchived && tree.isArchived) return false
-      if (ownershipFilter === 'owned' && !tree.isOwner) return false
-      if (ownershipFilter === 'linked' && tree.isOwner) return false
-      if (
-        courseFilter !== 'all' &&
-        !tree.courseLinks.some((link) => link.courseId === courseFilter)
-      ) {
-        return false
-      }
-      if (!normalizedSearch) return true
-
-      return [
-        tree.name,
-        tree.displayName,
-        tree.description ?? '',
-        ...tree.courseLinks.flatMap((link) => [
-          link.courseName,
-          link.courseDisplayName,
-        ]),
-      ].some((value) => value.toLocaleLowerCase().includes(normalizedSearch))
-    })
-  }, [courseFilter, ownershipFilter, search, showArchived, trees])
+  const courses = useMemo(
+    () =>
+      (coursesData?.userCourses ?? [])
+        .filter((course) => !course.isArchived)
+        .map((course) => [course.id, course.displayName] as const)
+        .sort((a, b) => a[1].localeCompare(b[1])),
+    [coursesData?.userCourses]
+  )
+  const nextCursor = data?.competenceTreeCatalog.nextCursor
 
   const runAction = async (treeId: string, action: () => Promise<unknown>) => {
     setPendingTreeId(treeId)
@@ -155,6 +156,7 @@ function CompetenceTreeLibrary() {
 
       <div className="mb-4 grid gap-3 lg:grid-cols-[minmax(14rem,1fr)_auto_minmax(12rem,0.5fr)_auto] lg:items-center">
         <TextField
+          label={t('manage.competenceTree.searchLabel')}
           value={search}
           onChange={setSearch}
           icon={faMagnifyingGlass}
@@ -235,7 +237,7 @@ function CompetenceTreeLibrary() {
             </div>
           </div>
 
-          {filteredTrees.map((tree) => {
+          {trees.map((tree) => {
             const pending = pendingTreeId === tree.id
 
             return (
@@ -299,6 +301,13 @@ function CompetenceTreeLibrary() {
                       {t('manage.competenceTree.noLinkedCourses')}
                     </span>
                   )}
+                  {tree.courseLinkCount > tree.courseLinks.length ? (
+                    <span className="text-xs text-slate-500">
+                      {t('manage.competenceTree.moreCourseLinks', {
+                        count: tree.courseLinkCount - tree.courseLinks.length,
+                      })}
+                    </span>
+                  ) : null}
                 </div>
 
                 <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm xl:block">
@@ -397,11 +406,44 @@ function CompetenceTreeLibrary() {
             )
           })}
 
-          {filteredTrees.length === 0 && (
+          {trees.length === 0 && (
             <div className="p-8 text-center text-sm text-slate-600">
               {t('manage.competenceTree.emptyLibrary')}
             </div>
           )}
+          {nextCursor ? (
+            <div className="flex justify-center border-t border-slate-200 p-4">
+              <Button
+                onClick={() =>
+                  void fetchMore({
+                    variables: { ...catalogVariables, cursor: nextCursor },
+                    updateQuery: (previous, { fetchMoreResult }) => {
+                      const previousItems = previous.competenceTreeCatalog.items
+                      const knownIds = new Set(
+                        previousItems.map((tree) => tree.id)
+                      )
+                      return {
+                        ...previous,
+                        competenceTreeCatalog: {
+                          ...fetchMoreResult.competenceTreeCatalog,
+                          items: [
+                            ...previousItems,
+                            ...fetchMoreResult.competenceTreeCatalog.items.filter(
+                              (tree) => !knownIds.has(tree.id)
+                            ),
+                          ],
+                        },
+                      }
+                    },
+                  })
+                }
+                loading={networkStatus === NetworkStatus.fetchMore}
+                data={{ cy: 'competence-tree-load-more' }}
+              >
+                {t('manage.competenceTree.loadMore')}
+              </Button>
+            </div>
+          ) : null}
         </div>
       )}
 

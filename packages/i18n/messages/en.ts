@@ -919,6 +919,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
             'There is not enough evidence to determine your overall level.',
           answeredQuestions:
             '{count, plural, one {# question answered} other {# questions answered}}',
+          interpretation: {
+            MASTERY: {
+              headline: 'Highest demonstrated level: {level}',
+              description:
+                'The placement rule reports the highest level threshold reached by your estimate. Use the confidence and competence profile when interpreting it.',
+            },
+            NEAREST: {
+              headline: 'Estimated level: {level}',
+              description:
+                'The diagnostic rule reports the level anchor nearest your current estimate. Use the confidence and competence profile when interpreting it.',
+            },
+          },
         },
         confidence: {
           label: 'Confidence',
@@ -1875,13 +1887,17 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       adaptiveMapping: {
         title: 'Adaptive mapping',
         description:
-          'Assign this element to a leaf subcompetence and level in one or more competence trees.',
+          'Assign this element to a leaf subcompetence and level in one or more competence trees. Adaptive estimates count only fully correct answers as correct; partial scores count as incorrect.',
         unsupportedType:
           'Adaptive mapping is available only for numerical, single-choice, multiple-choice, KPRIM, and controlled-answer free-text questions.',
         saveElementFirst:
           'Save the element before changing its adaptive mappings.',
+        assignDuringCreation: 'Assign to a competence tree',
+        createAndAssign: 'Create element and assign',
         noTrees: 'No competence trees are available.',
+        noAdditionalTrees: 'No additional competence trees match the search.',
         tree: 'Competence tree',
+        searchTrees: 'Search competence trees',
         selectTree: 'Select a competence tree...',
         noAssignableLeaves:
           'This competence tree has no enabled leaf-level coverage to assign.',
@@ -1900,6 +1916,17 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         add: 'Add mapping',
         remove: 'Remove mapping',
         save: 'Save mapping',
+        recovery: {
+          elementSavedMappingFailed:
+            'Element saved; adaptive assignment not saved.',
+          description:
+            'Retry the adaptive assignment or keep the saved element unmapped.',
+          retry: 'Retry assignment',
+          keepUnmapped: 'Keep element unmapped',
+          keepUnmappedTitle: 'Keep element unmapped?',
+          keepUnmappedDescription:
+            'The element is already saved. This will discard its pending adaptive assignment.',
+        },
         states: {
           archived: 'Archived',
           locked: 'Structurally locked',
@@ -2273,17 +2300,13 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
           totalQuestionCap: 'Maximum questions',
           showTimer: 'Show timer',
           attemptPolicy: 'Attempt used for results',
-          finalResult: 'Show final result',
-          liveEstimate: 'Show estimate during quiz',
           advanced: 'Advanced adaptive settings',
           perLeafQuestionCap: 'Maximum questions per leaf',
           minQuestionsPerLeaf: 'Minimum questions per leaf',
           classificationZ: 'Classification z-value',
-          standardErrorThreshold: 'Standard error threshold',
           levelMappingRule: 'Level mapping',
           topInformationRatio: 'Top-information pool ratio',
           defaultDiscrimination: 'Default discrimination (a)',
-          showLiveEstimate: 'Show live estimate',
         },
         assignments: {
           title: 'Question pool',
@@ -2329,9 +2352,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
           tooltip:
             'Select a competence tree, configure the effective pool, and verify readiness.',
           tree: 'Competence tree',
+          searchTrees: 'Search competence trees',
           selectTree: 'Select a competence tree...',
           linkedTrees: 'Linked to this course',
           ownedUnlinkedTrees: 'Your unlinked trees',
+          loadMoreLinked: 'Load more linked trees',
+          loadMoreOwned: 'Load more owned trees',
           linkSuccess: 'The competence tree was linked to the course.',
           linkFailed: 'The competence tree could not be linked to the course.',
           linkTree: 'Link to course',
@@ -2366,18 +2392,24 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
           issues: {
             ADAPTIVE_COURSE_DISABLED:
               'Adaptive learning is not enabled for this course.',
+            ADAPTIVE_COMPETENCE_TREE_UNAVAILABLE:
+              'The competence tree was archived, deleted, or unlinked from this course.',
             ADAPTIVE_NO_ENABLED_COMPETENCE:
               'Enable at least one root competence.',
             ADAPTIVE_COMPETENCE_WITHOUT_ENABLED_LEAF:
               'The enabled competence "{nodeName}" has no enabled leaf.',
             ADAPTIVE_ITEM_UNAVAILABLE:
               'The element "{elementName}" was deleted and cannot be added to a new adaptive pool.',
+            ADAPTIVE_ITEM_ACCESS_REVOKED:
+              'The competence tree owner can no longer access the element "{elementName}". Restore access or duplicate the tree with an available element.',
             ADAPTIVE_ITEM_NOT_SCORABLE:
               'The element "{elementName}" has no controlled answer that can be graded adaptively.',
             ADAPTIVE_ITEM_PARAMETERS_INVALID:
               'The element "{elementName}" has invalid effective item parameters.',
             ADAPTIVE_COVERAGE_CELL_EMPTY:
               'Every enabled leaf and level combination needs at least one enabled element.',
+            ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM:
+              'Production presets require {minimumValue} independent, enabled, scorable elements in this leaf and level combination; {enabledAssignmentCount} are available.',
             ADAPTIVE_COVERAGE_BELOW_TARGET:
               'The target is {targetItemCount} elements, but only {enabledAssignmentCount} {enabledAssignmentCount, plural, one {element is} other {elements are}} available.',
             ADAPTIVE_MINIMUM_EVIDENCE_UNREACHABLE:
@@ -2386,12 +2418,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
               'The node "{nodeName}" requires {requiredQuestionCount} questions, but its effective cap is {effectiveQuestionCap}.',
             ADAPTIVE_GLOBAL_MINIMUM_EVIDENCE_CAPPED:
               'The enabled leaves require {requiredQuestionCount} questions, but the total cap is {totalQuestionCap}.',
-            ADAPTIVE_STANDARD_ERROR_UNREACHABLE:
-              'The configured standard-error threshold is not reachable for "{nodeName}" with the current pool and caps.',
             ADAPTIVE_CLASSIFICATION_BANDS_UNREACHABLE:
               '{classifiableLevelCount} of {levelCount} level bands can be classified for "{nodeName}" under the current cap and uncertainty interval.',
-            ADAPTIVE_COVERAGE_TARGETS_CAPPED:
-              'Coverage targets request {targetQuestionCount} questions, but the configured caps allow at most {maximumQuestionCount}.',
             ADAPTIVE_TIME_BUDGET_EXCEEDED:
               'The coverage is expected to take about {estimatedDurationMinutes} minutes using {secondsPerItem} seconds per item.',
             ADAPTIVE_CONFIG_INTEGER_RANGE:
@@ -2402,8 +2430,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
               'The minimum questions per leaf cannot exceed the total cap of {totalQuestionCap}.',
             ADAPTIVE_CLASSIFICATION_Z_INVALID:
               'The classification z-value must be greater than 0 and at most {maximumValue}.',
-            ADAPTIVE_STANDARD_ERROR_THRESHOLD_INVALID:
-              'The standard-error threshold must be a positive finite number.',
             ADAPTIVE_TOP_INFORMATION_RATIO_INVALID:
               'The top-information ratio must be greater than 0 and at most {maximumValue}.',
             ADAPTIVE_DEFAULT_DISCRIMINATION_INVALID:
@@ -2994,16 +3020,17 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         },
         stopSummary: 'Stopping outcomes',
         qualitySummary: 'Quality flags',
-        suppressedValue: 'Hidden',
+        suppressedValue: 'Withheld',
+        notEnoughData: 'Not enough data',
         suppression: {
           cohort:
-            'Cohort results are released in fixed groups of five completed participants.',
+            'Some values are withheld unless every non-empty result group and its complement contain at least five released participants.',
           summary:
-            'Outcome counts are hidden when a result group is too small.',
+            'Outcome counts are withheld when either the result group or its complement is too small.',
           distribution:
             'This distribution is hidden because one or more groups are too small.',
           pilot:
-            'Pilot metrics are released in fixed groups of five completed participants.',
+            'Pilot values are withheld when a known, missing, anomaly, or complementary group contains fewer than five released participants.',
         },
         pilot: {
           title: 'Pilot quality monitoring',
@@ -3011,13 +3038,17 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
             'Anonymous operational indicators for form length, exposure, and descriptive item fit. They do not recalibrate items or replace teaching review.',
           medianQuestions: 'Median questions',
           p95Questions: '95th percentile questions',
-          medianDuration: 'Median answer time',
-          p95Duration: '95th percentile answer time',
+          medianDuration: 'Median completion time',
+          p95Duration: '95th percentile completion time',
           nearBoundaryRate: 'Near-boundary rate',
+          responseIntegrity: 'Response-count integrity',
+          durationCompleteness: 'Duration completeness',
+          issueDetected: 'Issue detected',
+          noIssue: 'No issue',
           responseCountMismatch:
             'Stored estimates and canonical response rows do not agree. Investigate this data-integrity warning before interpreting the pilot.',
           durationMissing:
-            'At least one selected attempt has no client-reported answer duration.',
+            'At least one selected attempt has no complete client-reported duration.',
           item: 'Item',
           competence: 'Competence path',
           level: 'Level',
@@ -3029,6 +3060,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
           flags: 'Review flags',
           highExposure: 'High exposure',
           reviewFit: 'Review fit',
+          notEnoughResponses: 'Not enough responses',
           noFlags: 'None',
         },
         overallDistribution: 'Overall level distribution',
@@ -3143,6 +3175,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       showArchive: 'Show archive',
       hideArchive: 'Hide archive',
       deleteCourse: 'Delete course',
+      deletionErrors: {
+        retainedAdaptiveHistory:
+          'This course contains retained adaptive-learning history and cannot be deleted. Archive the course instead.',
+        generic:
+          'The course could not be deleted. Please try again or contact support.',
+      },
       courseDeletionMessage:
         'Please confirm the deletion of all elements associated with this course and the irreversible deletion of the course. Note that all students will lose access to the course alongside all associated course materials and activities.',
       noParticipationsToDelete: 'This course contains no participations.',
@@ -3673,7 +3711,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       libraryDescription:
         'Create and manage reusable competence trees for adaptive practice quizzes.',
       create: 'Create competence tree',
+      searchLabel: 'Search competence trees',
       searchPlaceholder: 'Search competence trees...',
+      loadMore: 'Load more',
+      moreCourseLinks: '+{count} more',
       ownershipFilter: 'Filter by ownership',
       filterOwned: 'Owned',
       filterLinked: 'Linked',
@@ -3760,6 +3801,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       hierarchyDescription:
         'Create root competences and nested subcompetences. Only leaf subcompetences can receive element assignments.',
       selectedNode: 'Selected node',
+      addRootCompetence: 'Add root competence',
+      addSubcompetence: 'Add subcompetence',
       addChild: 'Add child',
       maxDepthReached: 'Maximum hierarchy depth reached',
       duplicateBranch: 'Duplicate branch',
@@ -3777,6 +3820,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       noNodeSelected: 'Select a node to edit its details.',
       expandNode: 'Expand node',
       collapseNode: 'Collapse node',
+      newCompetence: 'New competence',
       newSubcompetence: 'New subcompetence',
       deleteBranchTitle: 'Delete hierarchy branch?',
       deleteBranchWarning:
@@ -3797,12 +3841,16 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       noMatchingLeaves: 'No leaves match the current filters.',
       assignmentsTitle: 'Element assignments',
       assignmentsDescription:
-        'Review the element mappings stored in this tree. Select a coverage cell above to filter the list.',
+        'Review mappings for this tree. Add mappings while creating or editing an element.',
+      createElement: 'Create element',
       clearCoverageFilter: 'Clear cell filter',
       assignmentFilter: 'Showing assignments for {leaf} at {level}.',
       element: 'Element',
       elementType: 'Type',
       level: 'Level',
+      discriminationParameter: 'Discrimination (a)',
+      difficultyParameter: 'Difficulty (b)',
+      guessingParameter: 'Guessing (c)',
       enabled: 'Enabled',
       assignmentEnabledLabel: 'Use {element} in this competence tree',
       percentInput: 'Percent input',

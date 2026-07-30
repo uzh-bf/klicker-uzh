@@ -3,6 +3,8 @@ import builder from '../builder.js'
 import type {
   CompetenceTreeAssignmentInput as CompetenceTreeAssignmentInputType,
   CompetenceTreeAssignmentView,
+  CompetenceTreeCatalogOwnership as CompetenceTreeCatalogOwnershipType,
+  CompetenceTreeCatalogPage,
   CompetenceTreeCourseView,
   CompetenceTreeCoverageInput as CompetenceTreeCoverageInputType,
   CompetenceTreeDetail,
@@ -30,6 +32,17 @@ export const AdaptiveLevelMappingRule = builder.enumType(
 export const AdaptiveNodeKind = builder.enumType('AdaptiveNodeKind', {
   values: Object.values(DB.AdaptiveNodeKind),
 })
+
+export const CompetenceTreeCatalogOwnership = builder.enumType(
+  'CompetenceTreeCatalogOwnership',
+  {
+    values: [
+      'OWNED',
+      'LINKED',
+      'ALL',
+    ] as const satisfies readonly CompetenceTreeCatalogOwnershipType[],
+  }
+)
 
 export const CompetenceTreeLevelInputRef =
   builder.inputRef<CompetenceTreeLevelInputType>('CompetenceTreeLevelInput')
@@ -310,10 +323,21 @@ export const CompetenceTreeSummaryType = CompetenceTreeSummaryRef.implement({
     canEdit: t.exposeBoolean('canEdit'),
     isStructurallyLocked: t.exposeBoolean('isStructurallyLocked'),
     courseLinks: t.expose('courseLinks', { type: [CompetenceTreeCourseRef] }),
+    courseLinkCount: t.exposeInt('courseLinkCount'),
     createdAt: t.expose('createdAt', { type: 'Date' }),
     updatedAt: t.expose('updatedAt', { type: 'Date' }),
   }),
 })
+
+const CompetenceTreeCatalogPageRef =
+  builder.objectRef<CompetenceTreeCatalogPage>('CompetenceTreeCatalogPage')
+export const CompetenceTreeCatalogPageType =
+  CompetenceTreeCatalogPageRef.implement({
+    fields: (t) => ({
+      items: t.expose('items', { type: [CompetenceTreeSummaryRef] }),
+      nextCursor: t.exposeString('nextCursor', { nullable: true }),
+    }),
+  })
 
 export const CompetenceTreeRef =
   builder.objectRef<CompetenceTreeDetail>('CompetenceTree')
@@ -341,6 +365,7 @@ export const CompetenceTree = CompetenceTreeRef.implement({
     canEdit: t.exposeBoolean('canEdit'),
     isStructurallyLocked: t.exposeBoolean('isStructurallyLocked'),
     courseLinks: t.expose('courseLinks', { type: [CompetenceTreeCourseRef] }),
+    courseLinkCount: t.exposeInt('courseLinkCount'),
     levels: t.expose('levels', { type: [CompetenceTreeLevelRef] }),
     nodes: t.expose('nodes', { type: [CompetenceTreeNodeRef] }),
     levelCoverages: t.expose('levelCoverages', {

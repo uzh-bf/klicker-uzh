@@ -1,6 +1,6 @@
 # Devrouter Environment Evaluation — Adaptive Learning branch (`origin/adaptive-learning` @ `2480cda80`)
 
-**Date:** 2026-07-08 · **Environment:** devcontainer via DevPod (new workspace id **`klicker-adaptive-learning`**, worktree `/Users/paldov/.codex/worktrees/be06/klicker-uzh`) fronted by devrouter over `https://*.klicker.localhost`.
+**Date:** 2026-07-08 · **Environment:** devcontainer via DevPod (workspace id **`klicker-adaptive-learning`**) fronted by devrouter over `https://*.klicker.localhost`.
 **Scope:** runtime verification of the adaptive-learning branch state against the four prior reviews. Since the remediation deleted the standalone adaptive surface and the competence-tree/adaptive-quiz runtime is not yet implemented, the testable surface is: (1) the removal is complete and unreachable through every layer, (2) the seed is clean, (3) the practice-quiz surface — adaptive v2's future home — works end-to-end, (4) general environment health.
 
 ## Setup performed

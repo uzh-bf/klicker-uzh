@@ -1,7 +1,5 @@
 export const DEFAULT_THETA_RANGE = { min: -3, max: 3 } as const
 export const DEFAULT_DISCRIMINATION = 1.2
-export const DEFAULT_STANDARD_ERROR_THRESHOLD = 0.4
-export const DEFAULT_QUESTION_THRESHOLD = 50
 export const DEFAULT_TOP_INFORMATION_RATIO = 0.8
 export const MAX_COMPETENCE_TREE_DEPTH = 5
 export const MAX_ABSOLUTE_THETA = 10
@@ -335,23 +333,6 @@ export function getKnowledgeState({
   range?: ThetaRange
 }) {
   return updateTheta({ responses, range })
-}
-
-export function shouldStop({
-  answeredQuestions,
-  questionThreshold = DEFAULT_QUESTION_THRESHOLD,
-  standardError,
-  standardErrorThreshold = DEFAULT_STANDARD_ERROR_THRESHOLD,
-}: {
-  answeredQuestions: number
-  questionThreshold?: number
-  standardError: number
-  standardErrorThreshold?: number
-}) {
-  return (
-    answeredQuestions >= questionThreshold ||
-    standardError <= standardErrorThreshold
-  )
 }
 
 export function selectSubCompetence({

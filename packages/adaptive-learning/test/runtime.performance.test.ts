@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 import {
   advanceAdaptiveRuntime,
   prepareAdaptiveRuntime,
-  type AdaptiveRuntimeCoverage,
   type AdaptiveRuntimeLevel,
   type AdaptiveRuntimeNode,
   type AdaptiveRuntimePoolItem,
@@ -67,7 +66,6 @@ function guardrailFixture() {
     (_, index) => ({ id: index + 1, label: `L${index + 1}`, order: index })
   )
   const nodes: AdaptiveRuntimeNode[] = []
-  const coverages: AdaptiveRuntimeCoverage[] = []
   const pool: AdaptiveRuntimePoolItem[] = []
   let nodeId = 1
   let itemId = 1
@@ -96,12 +94,6 @@ function guardrailFixture() {
       questionCap: null,
     })
     for (const level of levels) {
-      coverages.push({
-        leafNodeId: leafId,
-        levelId: level.id,
-        targetItemCount: 2,
-        enabled: true,
-      })
       for (let itemIndex = 0; itemIndex < 2; itemIndex++) {
         pool.push({
           id: itemId++,
@@ -119,7 +111,6 @@ function guardrailFixture() {
   return {
     nodes,
     levels,
-    coverages,
     pool,
     settings: {
       totalQuestionCap: 1_000,

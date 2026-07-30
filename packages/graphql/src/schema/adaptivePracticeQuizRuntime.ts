@@ -1,24 +1,25 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import builder from '../builder.js'
-import type {
-  AdaptiveParticipantElement,
-  AdaptivePracticeQuizResponseInput as AdaptivePracticeQuizResponseInputType,
-} from '../services/adaptivePracticeQuizRuntime.js'
-import type {
-  AdaptiveCohortAttemptSummary,
-  AdaptiveCohortLevelBucket,
-  AdaptiveCohortNodeDistribution,
-  AdaptiveCohortResults,
-  AdaptiveItemDiagnostic,
-  AdaptivePilotMetrics,
-  AdaptivePracticeQuizAttemptState,
-  AdaptiveResultConfidence,
-  AdaptiveResultLevelBand,
-  AdaptiveResultTrajectoryPoint,
-  AdaptiveStudentResult,
-  AdaptiveStudentResultNode,
+import {
+  ADAPTIVE_PRIVACY_FIELDS,
+  ADAPTIVE_PRIVACY_SUPPRESSION_REASONS,
+  type AdaptiveCohortAttemptSummary,
+  type AdaptiveCohortLevelBucket,
+  type AdaptiveCohortNodeDistribution,
+  type AdaptiveCohortResults,
+  type AdaptiveItemDiagnostic,
+  type AdaptiveParticipantElement,
+  type AdaptivePilotMetrics,
+  type AdaptivePracticeQuizAttemptState,
+  type AdaptivePracticeQuizResponseInput as AdaptivePracticeQuizResponseInputType,
+  type AdaptivePrivacySuppression,
+  type AdaptiveResultConfidence,
+  type AdaptiveResultLevelBand,
+  type AdaptiveResultTrajectoryPoint,
+  type AdaptiveStudentResult,
+  type AdaptiveStudentResultNode,
 } from '../services/adaptivePracticeQuizzes.js'
-import { AdaptiveNodeKind } from './competenceTree.js'
+import { AdaptiveLevelMappingRule, AdaptiveNodeKind } from './competenceTree.js'
 import {
   ElementDisplayMode,
   ElementType,
@@ -52,6 +53,30 @@ export const AdaptiveResultConfidenceType = builder.enumType(
     ] as const satisfies readonly AdaptiveResultConfidence[],
   }
 )
+
+export const AdaptivePrivacyFieldType = builder.enumType(
+  'AdaptivePracticeQuizPrivacyField',
+  { values: ADAPTIVE_PRIVACY_FIELDS }
+)
+
+export const AdaptivePrivacySuppressionReasonType = builder.enumType(
+  'AdaptivePracticeQuizPrivacySuppressionReason',
+  { values: ADAPTIVE_PRIVACY_SUPPRESSION_REASONS }
+)
+
+const AdaptivePrivacySuppressionRef =
+  builder.objectRef<AdaptivePrivacySuppression>(
+    'AdaptivePracticeQuizPrivacySuppression'
+  )
+export const AdaptivePrivacySuppressionType =
+  AdaptivePrivacySuppressionRef.implement({
+    fields: (t) => ({
+      field: t.expose('field', { type: AdaptivePrivacyFieldType }),
+      reason: t.expose('reason', {
+        type: AdaptivePrivacySuppressionReasonType,
+      }),
+    }),
+  })
 
 export const AdaptivePracticeQuizResponseInputRef =
   builder.inputRef<AdaptivePracticeQuizResponseInputType>(
@@ -196,7 +221,7 @@ export const AdaptivePracticeQuizAttemptStateType =
         type: 'Date',
         nullable: true,
       }),
-      elapsedSeconds: t.exposeInt('elapsedSeconds'),
+      elapsedSeconds: t.exposeInt('elapsedSeconds', { nullable: true }),
       showTimer: t.exposeBoolean('showTimer'),
       canStartNewAttempt: t.exposeBoolean('canStartNewAttempt'),
       servedItem: t.expose('servedItem', {
@@ -271,6 +296,9 @@ export const AdaptiveStudentResultType = AdaptiveStudentResultRef.implement({
     }),
     answeredQuestions: t.exposeInt('answeredQuestions'),
     completedAt: t.expose('completedAt', { type: 'Date' }),
+    levelInterpretation: t.expose('levelInterpretation', {
+      type: AdaptiveLevelMappingRule,
+    }),
     levelLabel: t.exposeString('levelLabel', { nullable: true }),
     confidence: t.expose('confidence', {
       type: AdaptiveResultConfidenceType,
@@ -316,6 +344,9 @@ export const AdaptiveCohortNodeDistributionType =
       depth: t.exposeInt('depth'),
       order: t.exposeInt('order'),
       suppressed: t.exposeBoolean('suppressed'),
+      suppressions: t.expose('suppressions', {
+        type: [AdaptivePrivacySuppressionRef],
+      }),
       insufficientDataCount: t.exposeInt('insufficientDataCount', {
         nullable: true,
       }),
@@ -330,11 +361,10 @@ const AdaptiveCohortAttemptSummaryRef =
 export const AdaptiveCohortAttemptSummaryType =
   AdaptiveCohortAttemptSummaryRef.implement({
     fields: (t) => ({
-      total: t.exposeInt('total', { nullable: true }),
-      completed: t.exposeInt('completed', { nullable: true }),
-      inProgress: t.exposeInt('inProgress', { nullable: true }),
-      abandoned: t.exposeInt('abandoned', { nullable: true }),
       suppressed: t.exposeBoolean('suppressed'),
+      suppressions: t.expose('suppressions', {
+        type: [AdaptivePrivacySuppressionRef],
+      }),
       classified: t.exposeInt('classified', { nullable: true }),
       capped: t.exposeInt('capped', { nullable: true }),
       poolExhausted: t.exposeInt('poolExhausted', { nullable: true }),
@@ -352,6 +382,9 @@ const AdaptivePilotMetricsRef = builder.objectRef<AdaptivePilotMetrics>(
 export const AdaptivePilotMetricsType = AdaptivePilotMetricsRef.implement({
   fields: (t) => ({
     suppressed: t.exposeBoolean('suppressed'),
+    suppressions: t.expose('suppressions', {
+      type: [AdaptivePrivacySuppressionRef],
+    }),
     medianQuestionCount: t.exposeFloat('medianQuestionCount', {
       nullable: true,
     }),
@@ -382,6 +415,9 @@ export const AdaptiveItemDiagnosticType = AdaptiveItemDiagnosticRef.implement({
     nodeNamePath: t.exposeStringList('nodeNamePath'),
     levelLabel: t.exposeString('levelLabel'),
     suppressed: t.exposeBoolean('suppressed'),
+    suppressions: t.expose('suppressions', {
+      type: [AdaptivePrivacySuppressionRef],
+    }),
     responseCount: t.exposeInt('responseCount', { nullable: true }),
     exposureRate: t.exposeFloat('exposureRate', { nullable: true }),
     observedCorrectRate: t.exposeFloat('observedCorrectRate', {

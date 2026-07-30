@@ -1,9 +1,10 @@
-import { useLazyQuery, useQuery } from '@apollo/client'
+import { NetworkStatus, useLazyQuery, useQuery } from '@apollo/client'
 import {
+  CompetenceTreeCatalogDocument,
+  CompetenceTreeCatalogOwnership,
   CompetenceTreeDataFragment,
   CompetenceTreeDocument,
   CompetenceTreeSummaryDataFragment,
-  CompetenceTreesDocument,
   ElementCompetenceTreesDocument,
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -13,12 +14,16 @@ import {
   FormLabel,
   H3,
   H4,
+  Modal,
   Select,
+  Switch,
+  TextField,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
 import AdaptiveMappingFields from './AdaptiveMappingFields'
+import type { ElementMappingRecovery } from './elementMappingRecovery'
 import {
   AdaptiveMappingDraft,
   PendingAdaptiveMapping,
@@ -46,6 +51,65 @@ function canEditTree(
     !tree.isStructurallyLocked &&
     !isArchived(tree)
   )
+}
+
+const TREE_CATALOG_PAGE_SIZE = 20
+
+function useOwnedTreeCatalog(enabled: boolean) {
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setDebouncedSearch(search), 250)
+    return () => window.clearTimeout(timeout)
+  }, [search])
+
+  const variables = {
+    search: debouncedSearch.trim() || undefined,
+    ownership: CompetenceTreeCatalogOwnership.Owned,
+    limit: TREE_CATALOG_PAGE_SIZE,
+  }
+  const query = useQuery(CompetenceTreeCatalogDocument, {
+    variables,
+    skip: !enabled,
+    fetchPolicy: 'network-only',
+    notifyOnNetworkStatusChange: true,
+  })
+  const trees = query.data?.competenceTreeCatalog.items ?? []
+  const nextCursor = query.data?.competenceTreeCatalog.nextCursor
+
+  const loadMore = async () => {
+    if (!nextCursor) return
+    await query.fetchMore({
+      variables: { ...variables, cursor: nextCursor },
+      updateQuery: (previous, { fetchMoreResult }) => {
+        const previousItems = previous.competenceTreeCatalog.items
+        const knownIds = new Set(previousItems.map((tree) => tree.id))
+        return {
+          ...previous,
+          competenceTreeCatalog: {
+            ...fetchMoreResult.competenceTreeCatalog,
+            items: [
+              ...previousItems,
+              ...fetchMoreResult.competenceTreeCatalog.items.filter(
+                (tree) => !knownIds.has(tree.id)
+              ),
+            ],
+          },
+        }
+      },
+    })
+  }
+
+  return {
+    ...query,
+    trees,
+    search,
+    setSearch,
+    nextCursor,
+    loadMore,
+    loadingMore: query.networkStatus === NetworkStatus.fetchMore,
+  }
 }
 
 function TreeState({
@@ -294,6 +358,7 @@ function EditAdaptiveMappings({
   formDirty: boolean
 }) {
   const t = useTranslations()
+  const [pickerOpen, setPickerOpen] = useState(false)
   const {
     data,
     loading,
@@ -303,12 +368,7 @@ function EditAdaptiveMappings({
     variables: { elementId },
     fetchPolicy: 'network-only',
   })
-  const {
-    data: summaryData,
-    loading: summariesLoading,
-    error: summariesError,
-    refetch: refetchSummaries,
-  } = useQuery(CompetenceTreesDocument, { fetchPolicy: 'network-only' })
+  const catalog = useOwnedTreeCatalog(pickerOpen)
 
   const detailedTrees = useMemo(
     () => (data?.elementCompetenceTrees ?? []) as CompetenceTreeDataFragment[],
@@ -318,40 +378,29 @@ function EditAdaptiveMappings({
     () => new Set(detailedTrees.map((tree) => tree.id)),
     [detailedTrees]
   )
-  const unassignedTrees = (
-    (summaryData?.competenceTrees ?? []) as CompetenceTreeSummaryDataFragment[]
-  ).filter((tree) => !detailedTreeIds.has(tree.id))
+  const unassignedTrees = catalog.trees.filter(
+    (tree) => !detailedTreeIds.has(tree.id)
+  )
   const onChanged = async () => {
-    await Promise.all([refetchElementTrees(), refetchSummaries()])
+    await refetchElementTrees()
+    if (pickerOpen) await catalog.refetch()
   }
 
-  if (loading || summariesLoading) {
+  if (loading) {
     return <Loader data={{ cy: 'adaptive-mapping-loading' }} />
   }
 
-  if (error || summariesError) {
+  if (error) {
     return (
       <UserNotification
         type="error"
-        message={
-          error?.message ??
-          summariesError?.message ??
-          t('shared.generic.systemError')
-        }
+        message={error.message ?? t('shared.generic.systemError')}
       />
     )
   }
 
-  if (detailedTrees.length === 0 && unassignedTrees.length === 0) {
-    return (
-      <p className="text-sm text-gray-600">
-        {t('manage.elements.adaptiveMapping.noTrees')}
-      </p>
-    )
-  }
-
   return (
-    <div>
+    <div className="space-y-4">
       {detailedTrees.map((tree) => (
         <PersistedTreeMapping
           key={tree.id}
@@ -364,18 +413,60 @@ function EditAdaptiveMappings({
           onChanged={onChanged}
         />
       ))}
-      {unassignedTrees.map((tree) => (
-        <UnassignedTreeMapping
-          key={tree.id}
-          tree={tree}
-          elementId={elementId}
-          elementType={elementType}
-          choiceCount={choiceCount}
-          inputsDisabled={inputsDisabled}
-          formDirty={formDirty}
-          onChanged={onChanged}
-        />
-      ))}
+      {!pickerOpen ? (
+        <div className="flex justify-end">
+          <Button
+            onClick={() => setPickerOpen(true)}
+            disabled={inputsDisabled}
+            data={{ cy: 'adaptive-mapping-open-picker' }}
+          >
+            {t('manage.elements.adaptiveMapping.add')}
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-3" data-cy="adaptive-mapping-picker">
+          <TextField
+            label={t('manage.elements.adaptiveMapping.searchTrees')}
+            value={catalog.search}
+            onChange={catalog.setSearch}
+            placeholder={t('manage.competenceTree.searchPlaceholder')}
+            data={{ cy: 'adaptive-mapping-search' }}
+          />
+          {catalog.loading && !catalog.data ? (
+            <Loader data={{ cy: 'adaptive-mapping-catalog-loading' }} />
+          ) : catalog.error ? (
+            <UserNotification type="error" message={catalog.error.message} />
+          ) : unassignedTrees.length === 0 ? (
+            <p className="text-sm text-gray-600">
+              {t('manage.elements.adaptiveMapping.noAdditionalTrees')}
+            </p>
+          ) : (
+            unassignedTrees.map((tree) => (
+              <UnassignedTreeMapping
+                key={tree.id}
+                tree={tree}
+                elementId={elementId}
+                elementType={elementType}
+                choiceCount={choiceCount}
+                inputsDisabled={inputsDisabled}
+                formDirty={formDirty}
+                onChanged={onChanged}
+              />
+            ))
+          )}
+          {catalog.nextCursor ? (
+            <div className="flex justify-center">
+              <Button
+                onClick={() => void catalog.loadMore()}
+                loading={catalog.loadingMore}
+                data={{ cy: 'adaptive-mapping-load-more' }}
+              >
+                {t('manage.competenceTree.loadMore')}
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      )}
     </div>
   )
 }
@@ -387,6 +478,10 @@ function PendingAdaptiveMappingEditor({
   pendingMapping,
   onPendingMappingChange,
   mutationError,
+  recoveryPhase,
+  mappingLoading,
+  onRetryPendingMapping,
+  onKeepElementUnmapped,
 }: {
   elementType: ElementType
   choiceCount?: number | null
@@ -394,11 +489,15 @@ function PendingAdaptiveMappingEditor({
   pendingMapping: PendingAdaptiveMapping | null
   onPendingMappingChange: (mapping: PendingAdaptiveMapping | null) => void
   mutationError: string | null
+  recoveryPhase: ElementMappingRecovery['phase']
+  mappingLoading: boolean
+  onRetryPendingMapping: () => Promise<void>
+  onKeepElementUnmapped: () => void
 }) {
   const t = useTranslations()
-  const { data, loading, error } = useQuery(CompetenceTreesDocument, {
-    fetchPolicy: 'network-only',
-  })
+  const [retryRequested, setRetryRequested] = useState(false)
+  const [confirmKeepUnmapped, setConfirmKeepUnmapped] = useState(false)
+  const catalog = useOwnedTreeCatalog(true)
   const [selectedTreeId, setSelectedTreeId] = useState(
     pendingMapping?.treeId ?? ''
   )
@@ -410,12 +509,35 @@ function PendingAdaptiveMappingEditor({
   const [loadTree, treeResult] = useLazyQuery(CompetenceTreeDocument, {
     fetchPolicy: 'network-only',
   })
-  const trees = (data?.competenceTrees ??
-    []) as CompetenceTreeSummaryDataFragment[]
   const selectedTree =
     treeResult.data?.competenceTree?.id === selectedTreeId
       ? treeResult.data.competenceTree
       : undefined
+  const trees = selectedTree
+    ? [
+        selectedTree,
+        ...catalog.trees.filter((tree) => tree.id !== selectedTree.id),
+      ]
+    : catalog.trees
+  const recoveryActive = recoveryPhase !== 'editing'
+  const editorDisabled = inputsDisabled || recoveryActive
+  const showRecovery =
+    recoveryPhase === 'mapping-failed' ||
+    (recoveryPhase === 'mapping-pending' && (!mappingLoading || retryRequested))
+  const retryLoading = mappingLoading || retryRequested
+
+  const retryMapping = async () => {
+    if (retryLoading) {
+      return
+    }
+
+    setRetryRequested(true)
+    try {
+      await onRetryPendingMapping()
+    } finally {
+      setRetryRequested(false)
+    }
+  }
 
   useEffect(() => {
     if (selectedTreeId) {
@@ -423,15 +545,15 @@ function PendingAdaptiveMappingEditor({
     }
   }, [loadTree, selectedTreeId])
 
-  if (loading) {
+  if (catalog.loading && !catalog.data && !recoveryActive) {
     return <Loader data={{ cy: 'adaptive-mapping-loading' }} />
   }
 
-  if (error) {
-    return <UserNotification type="error" message={error.message} />
+  if (catalog.error && !recoveryActive) {
+    return <UserNotification type="error" message={catalog.error.message} />
   }
 
-  if (trees.length === 0) {
+  if (trees.length === 0 && !recoveryActive) {
     return (
       <p className="text-sm text-gray-600">
         {t('manage.elements.adaptiveMapping.noTrees')}
@@ -441,33 +563,63 @@ function PendingAdaptiveMappingEditor({
 
   return (
     <div className="space-y-4">
-      <div className="max-w-2xl">
-        <FormLabel
-          id="adaptive-mapping-tree-select"
-          required={false}
-          label={t('manage.elements.adaptiveMapping.tree')}
-          labelType="small"
-        />
-        <Select
-          id="adaptive-mapping-tree-select"
-          value={selectedTreeId || undefined}
-          placeholder={t('manage.elements.adaptiveMapping.selectTree')}
-          disabled={inputsDisabled}
-          items={trees.map((tree) => ({
-            value: tree.id,
-            label: tree.displayName,
-            disabled: !canEditTree(tree, inputsDisabled),
-            data: { cy: `adaptive-mapping-tree-option-${tree.id}` },
-          }))}
-          onChange={(treeId) => {
-            setSelectedTreeId(treeId)
-            setDraft(createMappingDraft())
-            onPendingMappingChange(null)
-          }}
-          data={{ cy: 'adaptive-mapping-tree-select' }}
-          className={{ root: 'w-full', trigger: 'w-full' }}
-        />
-      </div>
+      {catalog.loading && !catalog.data ? (
+        <Loader data={{ cy: 'adaptive-mapping-loading' }} />
+      ) : catalog.error ? (
+        <UserNotification type="error" message={catalog.error.message} />
+      ) : trees.length === 0 ? (
+        <p className="text-sm text-gray-600">
+          {t('manage.elements.adaptiveMapping.noTrees')}
+        </p>
+      ) : (
+        <div className="max-w-2xl space-y-3">
+          <TextField
+            label={t('manage.elements.adaptiveMapping.searchTrees')}
+            value={catalog.search}
+            onChange={catalog.setSearch}
+            placeholder={t('manage.competenceTree.searchPlaceholder')}
+            disabled={editorDisabled}
+            data={{ cy: 'adaptive-mapping-search' }}
+          />
+          <FormLabel
+            id="adaptive-mapping-tree-select"
+            required={false}
+            label={t('manage.elements.adaptiveMapping.tree')}
+            labelType="small"
+          />
+          <Select
+            id="adaptive-mapping-tree-select"
+            value={selectedTreeId}
+            placeholder={t('manage.elements.adaptiveMapping.selectTree')}
+            disabled={editorDisabled}
+            items={trees.map((tree) => ({
+              value: tree.id,
+              label: tree.displayName,
+              disabled: !canEditTree(tree, inputsDisabled),
+              data: { cy: `adaptive-mapping-tree-option-${tree.id}` },
+            }))}
+            onChange={(treeId) => {
+              setSelectedTreeId(treeId)
+              setDraft(createMappingDraft())
+              onPendingMappingChange(null)
+            }}
+            data={{ cy: 'adaptive-mapping-tree-select' }}
+            className={{ root: 'w-full', trigger: 'w-full' }}
+          />
+          {catalog.nextCursor ? (
+            <div className="flex justify-end">
+              <Button
+                onClick={() => void catalog.loadMore()}
+                loading={catalog.loadingMore}
+                disabled={editorDisabled}
+                data={{ cy: 'adaptive-mapping-load-more' }}
+              >
+                {t('manage.competenceTree.loadMore')}
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      )}
 
       {treeResult.loading ? (
         <Loader data={{ cy: 'adaptive-mapping-tree-detail-loading' }} />
@@ -496,7 +648,7 @@ function PendingAdaptiveMappingEditor({
                 toPendingAdaptiveMapping(selectedTree.id, normalized)
               )
             }}
-            disabled={inputsDisabled}
+            disabled={editorDisabled}
           />
           {pendingMapping?.treeId === selectedTree.id ? (
             <div className="mt-3 flex justify-end">
@@ -506,6 +658,7 @@ function PendingAdaptiveMappingEditor({
                   setDraft(createMappingDraft())
                   onPendingMappingChange(null)
                 }}
+                disabled={editorDisabled}
                 data={{ cy: `adaptive-mapping-remove-${selectedTree.id}` }}
               >
                 {t('manage.elements.adaptiveMapping.remove')}
@@ -514,8 +667,86 @@ function PendingAdaptiveMappingEditor({
           ) : null}
         </div>
       ) : null}
-      {mutationError ? (
-        <UserNotification type="error" message={mutationError} />
+      {showRecovery ? (
+        <div
+          className="max-w-[calc(100vw-4.5rem)] space-y-3"
+          data-cy="adaptive-mapping-recovery"
+        >
+          <div data-cy="adaptive-mapping-recovery-message">
+            <UserNotification
+              type="error"
+              message={t(
+                'manage.elements.adaptiveMapping.recovery.elementSavedMappingFailed'
+              )}
+            />
+          </div>
+          <p className="text-sm text-gray-700">
+            {t('manage.elements.adaptiveMapping.recovery.description')}
+          </p>
+          {mutationError ? (
+            <p
+              className="text-sm text-red-700"
+              data-cy="adaptive-mapping-recovery-error-detail"
+            >
+              {mutationError}
+            </p>
+          ) : null}
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button
+              primary
+              onClick={retryMapping}
+              disabled={inputsDisabled || retryLoading}
+              loading={retryLoading}
+              data={{ cy: 'adaptive-mapping-retry' }}
+            >
+              {t('manage.elements.adaptiveMapping.recovery.retry')}
+            </Button>
+            <Button
+              destructive
+              onClick={() => setConfirmKeepUnmapped(true)}
+              disabled={retryLoading}
+              data={{ cy: 'adaptive-mapping-keep-unmapped' }}
+            >
+              {t('manage.elements.adaptiveMapping.recovery.keepUnmapped')}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      {confirmKeepUnmapped ? (
+        <Modal
+          open
+          title={t(
+            'manage.elements.adaptiveMapping.recovery.keepUnmappedTitle'
+          )}
+          onClose={() => setConfirmKeepUnmapped(false)}
+          data={{ cy: 'adaptive-mapping-keep-unmapped-confirmation' }}
+          className={{ content: 'max-w-xl' }}
+        >
+          <p className="mb-5 text-sm text-gray-700">
+            {t(
+              'manage.elements.adaptiveMapping.recovery.keepUnmappedDescription'
+            )}
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button
+              onClick={() => setConfirmKeepUnmapped(false)}
+              data={{ cy: 'adaptive-mapping-keep-unmapped-cancel' }}
+            >
+              {t('shared.generic.cancel')}
+            </Button>
+            <Button
+              destructive
+              onClick={() => {
+                setConfirmKeepUnmapped(false)
+                onKeepElementUnmapped()
+              }}
+              data={{ cy: 'adaptive-mapping-keep-unmapped-confirm' }}
+            >
+              {t('manage.elements.adaptiveMapping.recovery.keepUnmapped')}
+            </Button>
+          </div>
+        </Modal>
       ) : null}
     </div>
   )
@@ -529,6 +760,10 @@ function AdaptiveElementMapping({
   inputsDisabled,
   formDirty,
   pendingMapping,
+  recoveryPhase,
+  mappingLoading,
+  onRetryPendingMapping,
+  onKeepElementUnmapped,
   onPendingMappingChange,
   mutationError,
 }: {
@@ -539,17 +774,30 @@ function AdaptiveElementMapping({
   inputsDisabled: boolean
   formDirty: boolean
   pendingMapping: PendingAdaptiveMapping | null
+  recoveryPhase: ElementMappingRecovery['phase']
+  mappingLoading: boolean
+  onRetryPendingMapping: () => Promise<void>
+  onKeepElementUnmapped: () => void
   onPendingMappingChange: (mapping: PendingAdaptiveMapping | null) => void
   mutationError: string | null
 }) {
   const t = useTranslations()
   const supported = supportsAdaptiveMapping(elementType)
+  const [createAssignmentEnabled, setCreateAssignmentEnabled] = useState(
+    pendingMapping !== null || recoveryPhase !== 'editing'
+  )
 
   useEffect(() => {
     if (!supported && pendingMapping) {
       onPendingMappingChange(null)
     }
   }, [onPendingMappingChange, pendingMapping, supported])
+
+  useEffect(() => {
+    if (!editMode && (pendingMapping || recoveryPhase !== 'editing')) {
+      setCreateAssignmentEnabled(true)
+    }
+  }, [editMode, pendingMapping, recoveryPhase])
 
   return (
     <section
@@ -586,14 +834,35 @@ function AdaptiveElementMapping({
           />
         </>
       ) : (
-        <PendingAdaptiveMappingEditor
-          elementType={elementType}
-          choiceCount={choiceCount}
-          inputsDisabled={inputsDisabled}
-          pendingMapping={pendingMapping}
-          onPendingMappingChange={onPendingMappingChange}
-          mutationError={mutationError}
-        />
+        <div className="space-y-4">
+          <Switch
+            size="sm"
+            label={t('manage.elements.adaptiveMapping.assignDuringCreation')}
+            checked={createAssignmentEnabled}
+            disabled={inputsDisabled || recoveryPhase !== 'editing'}
+            onCheckedChange={(checked) => {
+              setCreateAssignmentEnabled(checked)
+              if (!checked) {
+                onPendingMappingChange(null)
+              }
+            }}
+            data={{ cy: 'adaptive-mapping-create-toggle' }}
+          />
+          {createAssignmentEnabled ? (
+            <PendingAdaptiveMappingEditor
+              elementType={elementType}
+              choiceCount={choiceCount}
+              inputsDisabled={inputsDisabled}
+              pendingMapping={pendingMapping}
+              onPendingMappingChange={onPendingMappingChange}
+              mutationError={mutationError}
+              recoveryPhase={recoveryPhase}
+              mappingLoading={mappingLoading}
+              onRetryPendingMapping={onRetryPendingMapping}
+              onKeepElementUnmapped={onKeepElementUnmapped}
+            />
+          ) : null}
+        </div>
       )}
     </section>
   )

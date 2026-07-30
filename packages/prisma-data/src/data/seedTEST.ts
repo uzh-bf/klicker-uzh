@@ -1,3 +1,4 @@
+import { getAdaptivePresetDefaults } from '@klicker-uzh/adaptive-learning'
 import { prisma } from '@klicker-uzh/prisma'
 import * as Prisma from '@klicker-uzh/prisma/client'
 import { ActivityType, type ElementOptionsCaseStudy } from '@klicker-uzh/types'
@@ -117,6 +118,13 @@ export const PARTICIPANT_GROUP_IDS = [
 const ADAPTIVE_ASSESSMENT_ID_TEST = 'f0186f1d-3ec8-48a4-bd58-5f968db52f48'
 const ADAPTIVE_COMPETENCE_TREE_ID_TEST = 'b9a9e488-cc25-4cef-bd6f-4fe18cfa9d74'
 const ADAPTIVE_PRACTICE_QUIZ_ID_TEST = '6bd53b30-77df-41c4-973b-ff1caa8c9028'
+const ADAPTIVE_DIAGNOSTIC_SEED_DEFAULTS =
+  getAdaptivePresetDefaults('DIAGNOSTIC')
+const ADAPTIVE_DIAGNOSTIC_SEED_STRESS_OVERLAY = {
+  totalQuestionCap: 12,
+  perLeafQuestionCap: 6,
+  minQuestionsPerLeaf: 1,
+} as const
 
 const ADAPTIVE_STANDING_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
 const ADAPTIVE_THETA_RANGE = { min: -3, max: 3 } as const
@@ -444,11 +452,14 @@ async function seedAdaptivePracticeQuizV2(
             preset: Prisma.AdaptivePracticeQuizPreset.DIAGNOSTIC,
             attemptSelectionPolicy:
               Prisma.AdaptiveAttemptSelectionPolicy.LATEST_COMPLETED,
-            totalQuestionCap: 12,
-            perLeafQuestionCap: 6,
-            minQuestionsPerLeaf: 1,
-            showTimer: true,
-            showFinalResult: true,
+            ...ADAPTIVE_DIAGNOSTIC_SEED_STRESS_OVERLAY,
+            classificationZ: ADAPTIVE_DIAGNOSTIC_SEED_DEFAULTS.classificationZ,
+            topInformationRatio:
+              ADAPTIVE_DIAGNOSTIC_SEED_DEFAULTS.topInformationRatio,
+            defaultDiscrimination:
+              ADAPTIVE_DIAGNOSTIC_SEED_DEFAULTS.defaultDiscrimination,
+            levelMappingRule: Prisma.AdaptiveLevelMappingRule.NEAREST,
+            showTimer: ADAPTIVE_DIAGNOSTIC_SEED_DEFAULTS.showTimer,
           },
         },
       },

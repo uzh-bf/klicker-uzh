@@ -4,178 +4,42 @@ import {
   MAX_ABSOLUTE_THETA,
   MAX_COMPETENCE_TREE_DEPTH,
   MAX_DISCRIMINATION,
-  SUPPORTED_ADAPTIVE_ITEM_TYPES,
-  deriveGuessingParameter,
-  normalizeFreeTextResponse,
-  type AdaptiveItemType,
 } from '@klicker-uzh/adaptive-learning'
 import { GraphQLError } from 'graphql'
+import { isSupportedAdaptiveElementType } from './adaptiveElementValidation.js'
+import {
+  getEnabledLeafDescendants,
+  isCompetenceTreeLeafNode,
+  isCompetenceTreeNodeEnabled,
+  toCompetenceTreeKey,
+} from './competenceTreeValidationHierarchy.js'
+import type {
+  CompetenceTreeValidationCoverage,
+  CompetenceTreeValidationInput,
+  CompetenceTreeValidationIssue,
+  CompetenceTreeValidationLevel,
+  CompetenceTreeValidationNode,
+  CompetenceTreeValidationResult,
+  NormalizedCompetenceWeight,
+} from './competenceTreeValidationTypes.js'
 
-type CompetenceTreeId = number | string
-
-export type CompetenceTreeValidationNodeKind = 'COMPETENCE' | 'SUBCOMPETENCE'
-
-export type CompetenceTreeValidationLevel = {
-  id: CompetenceTreeId
-  label: string
-  order: number
-}
-
-export type CompetenceTreeValidationNode = {
-  id: CompetenceTreeId
-  kind: CompetenceTreeValidationNodeKind
-  name?: string | null
-  parentId?: CompetenceTreeId | null
-  order: number
-  depth: number
-  weight?: number | null
-  enabled?: boolean | null
-}
-
-export type CompetenceTreeValidationCoverage = {
-  leafNodeId: CompetenceTreeId
-  levelId: CompetenceTreeId
-  targetItemCount?: number | null
-  enabled?: boolean | null
-}
-
-export type CompetenceTreeValidationAssignment = {
-  elementId: number
-  type: string
-  leafNodeId: CompetenceTreeId
-  levelId: CompetenceTreeId
-  discrimination?: number | null
-  enablePercentInput?: boolean | null
-  enabled?: boolean | null
-  controlledAnswerReady?: boolean
-}
-
-export type CompetenceTreeValidationInput = {
-  name?: string | null
-  displayName?: string | null
-  maxDepth?: number | null
-  thetaMin?: number | null
-  thetaMax?: number | null
-  defaultDiscrimination?: number | null
-  levels: CompetenceTreeValidationLevel[]
-  nodes: CompetenceTreeValidationNode[]
-  coverages?: CompetenceTreeValidationCoverage[]
-  assignments?: CompetenceTreeValidationAssignment[]
-}
-
-export type CompetenceTreeValidationIssue = {
-  code: string
-  message: string
-  path?: string
-}
-
-export type NormalizedCompetenceWeight = {
-  nodeId: CompetenceTreeId
-  weight: number
-}
-
-export type CompetenceTreeValidationResult = {
-  valid: boolean
-  effectiveMaxDepth: number
-  errors: CompetenceTreeValidationIssue[]
-  warnings: CompetenceTreeValidationIssue[]
-  normalizedRootWeights: NormalizedCompetenceWeight[]
-}
-
-export function isSupportedAdaptiveElementType(
-  type: string
-): type is AdaptiveItemType {
-  return SUPPORTED_ADAPTIVE_ITEM_TYPES.includes(type as AdaptiveItemType)
-}
-
-export function deriveAdaptiveItemParameters({
-  type,
-  choiceCount,
-  levelTheta,
-  discrimination,
-}: {
-  type: string
-  choiceCount?: number | null
-  levelTheta: number
-  discrimination?: number | null
-}) {
-  if (!isSupportedAdaptiveElementType(type)) {
-    throw new GraphQLError(`Element type ${type} is not adaptive-compatible.`, {
-      extensions: { code: 'ADAPTIVE_ITEM_TYPE_UNSUPPORTED' },
-    })
-  }
-
-  return {
-    a: discrimination ?? DEFAULT_DISCRIMINATION,
-    b: levelTheta,
-    c: deriveGuessingParameter({ type, choiceCount }),
-  }
-}
-
-export function hasControlledAdaptiveAnswer(
-  type: string,
-  options: unknown
-): boolean {
-  if (!options || typeof options !== 'object' || Array.isArray(options)) {
-    return false
-  }
-  const value = options as Record<string, unknown>
-
-  if (type === 'SC' || type === 'MC' || type === 'KPRIM') {
-    if (!Array.isArray(value.choices) || value.choices.length < 2) return false
-    if (type === 'KPRIM' && value.choices.length !== 4) return false
-    const correctness = value.choices.map((choice) =>
-      choice && typeof choice === 'object' && !Array.isArray(choice)
-        ? (choice as Record<string, unknown>).correct
-        : undefined
-    )
-    if (!correctness.every((correct) => typeof correct === 'boolean')) {
-      return false
-    }
-    const correctCount = correctness.filter(
-      (correct) => correct === true
-    ).length
-    if (type === 'SC') return correctCount === 1
-    if (type === 'MC') return correctCount >= 1
-    return true
-  }
-
-  if (type === 'NUMERICAL') {
-    const exactSolutions = Array.isArray(value.exactSolutions)
-      ? value.exactSolutions.filter(
-          (solution) =>
-            typeof solution === 'number' && Number.isFinite(solution)
-        )
-      : []
-    const ranges = Array.isArray(value.solutionRanges)
-      ? value.solutionRanges.filter((range) => {
-          if (!range || typeof range !== 'object' || Array.isArray(range)) {
-            return false
-          }
-          const { min, max } = range as Record<string, unknown>
-          return (
-            (typeof min === 'number' && Number.isFinite(min)) ||
-            (typeof max === 'number' && Number.isFinite(max))
-          )
-        })
-      : []
-    return exactSolutions.length > 0 || ranges.length > 0
-  }
-
-  if (type === 'FREE_TEXT') {
-    return (
-      Array.isArray(value.solutions) &&
-      value.solutions.length > 0 &&
-      value.solutions.every(
-        (solution) =>
-          typeof solution === 'string' &&
-          normalizeFreeTextResponse(solution).length > 0
-      )
-    )
-  }
-
-  return false
-}
+export {
+  deriveAdaptiveItemParameters,
+  hasControlledAdaptiveAnswer,
+  isSupportedAdaptiveElementType,
+} from './adaptiveElementValidation.js'
+export type {
+  CompetenceTreeId,
+  CompetenceTreeValidationAssignment,
+  CompetenceTreeValidationCoverage,
+  CompetenceTreeValidationInput,
+  CompetenceTreeValidationIssue,
+  CompetenceTreeValidationLevel,
+  CompetenceTreeValidationNode,
+  CompetenceTreeValidationNodeKind,
+  CompetenceTreeValidationResult,
+  NormalizedCompetenceWeight,
+} from './competenceTreeValidationTypes.js'
 
 export function assertValidCompetenceTreeShape(
   tree: CompetenceTreeValidationInput
@@ -287,7 +151,7 @@ export function validateCompetenceTreeShape(
   const levelOrders = new Set<number>()
 
   for (const [index, level] of tree.levels.entries()) {
-    const key = toKey(level.id)
+    const key = toCompetenceTreeKey(level.id)
 
     if (!key.trim()) {
       addError(
@@ -355,7 +219,7 @@ export function validateCompetenceTreeShape(
   const siblingOrderGroups = new Map<string, number[]>()
 
   for (const [index, node] of tree.nodes.entries()) {
-    const key = toKey(node.id)
+    const key = toCompetenceTreeKey(node.id)
 
     if (!key.trim()) {
       addError(
@@ -375,7 +239,7 @@ export function validateCompetenceTreeShape(
 
   for (const [index, node] of tree.nodes.entries()) {
     const parentId = node.parentId ?? null
-    const parentKey = parentId === null ? 'root' : toKey(parentId)
+    const parentKey = parentId === null ? 'root' : toCompetenceTreeKey(parentId)
     const siblingOrderKey = `${parentKey}:${node.order}`
 
     if (!node.name?.trim()) {
@@ -410,7 +274,7 @@ export function validateCompetenceTreeShape(
     if (parentId === null) {
       roots.push(node)
     } else {
-      const parentKey = toKey(parentId)
+      const parentKey = toCompetenceTreeKey(parentId)
       const parentChildren = childrenByParentId.get(parentKey) ?? []
       parentChildren.push(node)
       childrenByParentId.set(parentKey, parentChildren)
@@ -449,8 +313,8 @@ export function validateCompetenceTreeShape(
     const path = new Set<string>()
     let current: CompetenceTreeValidationNode | undefined = node
 
-    while (current && !visitedNodeIds.has(toKey(current.id))) {
-      const key = toKey(current.id)
+    while (current && !visitedNodeIds.has(toCompetenceTreeKey(current.id))) {
+      const key = toCompetenceTreeKey(current.id)
       if (path.has(key)) {
         addError(
           'NODE_CYCLE',
@@ -463,7 +327,7 @@ export function validateCompetenceTreeShape(
       current =
         current.parentId === null || typeof current.parentId === 'undefined'
           ? undefined
-          : nodesById.get(toKey(current.parentId))
+          : nodesById.get(toCompetenceTreeKey(current.parentId))
     }
 
     path.forEach((key) => visitedNodeIds.add(key))
@@ -473,7 +337,9 @@ export function validateCompetenceTreeShape(
     const path = `nodes.${index}`
     const isRoot =
       node.parentId === null || typeof node.parentId === 'undefined'
-    const parent = isRoot ? null : nodesById.get(toKey(node.parentId!))
+    const parent = isRoot
+      ? null
+      : nodesById.get(toCompetenceTreeKey(node.parentId!))
 
     if (!Number.isInteger(node.depth)) {
       addError(
@@ -504,7 +370,10 @@ export function validateCompetenceTreeShape(
           `${path}.depth`
         )
       }
-      if ((childrenByParentId.get(toKey(node.id)) ?? []).length === 0) {
+      if (
+        (childrenByParentId.get(toCompetenceTreeKey(node.id)) ?? []).length ===
+        0
+      ) {
         addError(
           'ROOT_WITHOUT_SUBCOMPETENCE',
           `Root competence ${node.id} must contain at least one subcompetence.`,
@@ -541,8 +410,8 @@ export function validateCompetenceTreeShape(
   const enabledCoverageCells = new Set<string>()
   for (const [index, coverage] of (tree.coverages ?? []).entries()) {
     const path = `coverages.${index}`
-    const leafKey = toKey(coverage.leafNodeId)
-    const levelKey = toKey(coverage.levelId)
+    const leafKey = toCompetenceTreeKey(coverage.leafNodeId)
+    const levelKey = toCompetenceTreeKey(coverage.levelId)
     const leaf = nodesById.get(leafKey)
     const coverageCell = `${leafKey}:${levelKey}`
 
@@ -561,7 +430,7 @@ export function validateCompetenceTreeShape(
         `Coverage references missing leaf node ${coverage.leafNodeId}.`,
         `${path}.leafNodeId`
       )
-    } else if (!isLeafNode(leaf, childrenByParentId)) {
+    } else if (!isCompetenceTreeLeafNode(leaf, childrenByParentId)) {
       addError(
         'COVERAGE_LEAF_NOT_LEAF',
         `Coverage node ${coverage.leafNodeId} is not a leaf.`,
@@ -605,7 +474,7 @@ export function validateCompetenceTreeShape(
   const assignedElementIds = new Set<number>()
   for (const [index, assignment] of (tree.assignments ?? []).entries()) {
     const path = `assignments.${index}`
-    const leaf = nodesById.get(toKey(assignment.leafNodeId))
+    const leaf = nodesById.get(toCompetenceTreeKey(assignment.leafNodeId))
 
     if (assignedElementIds.has(assignment.elementId)) {
       addError(
@@ -649,7 +518,7 @@ export function validateCompetenceTreeShape(
         `Assignment for element ${assignment.elementId} references missing leaf ${assignment.leafNodeId}.`,
         `${path}.leafNodeId`
       )
-    } else if (!isLeafNode(leaf, childrenByParentId)) {
+    } else if (!isCompetenceTreeLeafNode(leaf, childrenByParentId)) {
       addError(
         'ASSIGNMENT_LEAF_NOT_LEAF',
         `Assignment for element ${assignment.elementId} must point to a leaf node.`,
@@ -663,7 +532,7 @@ export function validateCompetenceTreeShape(
       )
     }
 
-    if (!levelsById.has(toKey(assignment.levelId))) {
+    if (!levelsById.has(toCompetenceTreeKey(assignment.levelId))) {
       addError(
         'ASSIGNMENT_LEVEL_MISSING',
         `Assignment for element ${assignment.elementId} references missing level ${assignment.levelId}.`,
@@ -673,7 +542,7 @@ export function validateCompetenceTreeShape(
 
     if (
       !coverageCells.has(
-        `${toKey(assignment.leafNodeId)}:${toKey(assignment.levelId)}`
+        `${toCompetenceTreeKey(assignment.leafNodeId)}:${toCompetenceTreeKey(assignment.levelId)}`
       )
     ) {
       addError(
@@ -684,7 +553,7 @@ export function validateCompetenceTreeShape(
     } else if (
       assignment.enabled !== false &&
       !enabledCoverageCells.has(
-        `${toKey(assignment.leafNodeId)}:${toKey(assignment.levelId)}`
+        `${toCompetenceTreeKey(assignment.leafNodeId)}:${toCompetenceTreeKey(assignment.levelId)}`
       )
     ) {
       addError(
@@ -710,7 +579,7 @@ export function validateCompetenceTreeShape(
   }
 
   for (const root of roots) {
-    if (!isEnabled(root)) continue
+    if (!isCompetenceTreeNodeEnabled(root)) continue
 
     if (getEnabledLeafDescendants(root, childrenByParentId).length === 0) {
       addError(
@@ -722,9 +591,16 @@ export function validateCompetenceTreeShape(
   }
 
   for (const node of tree.nodes) {
-    if (!isEnabled(node) || !isLeafNode(node, childrenByParentId)) continue
+    if (
+      !isCompetenceTreeNodeEnabled(node) ||
+      !isCompetenceTreeLeafNode(node, childrenByParentId)
+    ) {
+      continue
+    }
 
-    if ((coverageByLeafId.get(toKey(node.id)) ?? []).length === 0) {
+    if (
+      (coverageByLeafId.get(toCompetenceTreeKey(node.id)) ?? []).length === 0
+    ) {
       addError(
         'LEAF_WITHOUT_COVERAGE',
         `Enabled leaf ${node.id} must have at least one enabled coverage level.`,
@@ -748,7 +624,7 @@ function normalizeRootWeights(
   roots: CompetenceTreeValidationNode[],
   errors: CompetenceTreeValidationIssue[]
 ): NormalizedCompetenceWeight[] {
-  const enabledRoots = roots.filter(isEnabled)
+  const enabledRoots = roots.filter(isCompetenceTreeNodeEnabled)
 
   if (enabledRoots.length === 0) {
     errors.push({
@@ -805,46 +681,4 @@ function normalizeRootWeights(
     nodeId: node.id,
     weight: weight / scaledTotal,
   }))
-}
-
-function getEnabledLeafDescendants(
-  node: CompetenceTreeValidationNode,
-  childrenByParentId: Map<string, CompetenceTreeValidationNode[]>
-): CompetenceTreeValidationNode[] {
-  const leaves: CompetenceTreeValidationNode[] = []
-  const pending = [node]
-  const visited = new Set<string>()
-
-  while (pending.length > 0) {
-    const current = pending.pop()!
-    const key = toKey(current.id)
-    if (visited.has(key)) continue
-    visited.add(key)
-
-    const enabledChildren = (childrenByParentId.get(key) ?? []).filter(
-      isEnabled
-    )
-    if (enabledChildren.length === 0) {
-      if (isLeafNode(current, childrenByParentId)) leaves.push(current)
-    } else {
-      pending.push(...enabledChildren)
-    }
-  }
-
-  return leaves
-}
-
-function isLeafNode(
-  node: CompetenceTreeValidationNode,
-  childrenByParentId: Map<string, CompetenceTreeValidationNode[]>
-) {
-  return (childrenByParentId.get(toKey(node.id)) ?? []).length === 0
-}
-
-function isEnabled(node: { enabled?: boolean | null }) {
-  return node.enabled !== false
-}
-
-function toKey(id: CompetenceTreeId) {
-  return String(id)
 }

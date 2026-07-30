@@ -1,6 +1,6 @@
 import { ApolloError, useMutation, useQuery } from '@apollo/client'
 import { faClock } from '@fortawesome/free-regular-svg-icons'
-import { faUserGroup } from '@fortawesome/free-solid-svg-icons'
+import { faRotate, faUserGroup } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetSingleCourseDocument,
@@ -144,11 +144,26 @@ function PracticeQuizPublishingModal({
             />
           ) : null}
           {publicationPreviewError ? (
-            <UserNotification
-              type="error"
-              message={publicationPreviewError.message}
-              data={{ cy: 'adaptive-publication-preview-error' }}
-            />
+            <div className="flex flex-col items-start gap-2">
+              <UserNotification
+                type="error"
+                message={publicationPreviewError.message}
+                data={{ cy: 'adaptive-publication-preview-error' }}
+              />
+              <Button
+                type="button"
+                onClick={() => void refetchPublicationPreview()}
+                disabled={publicationPreviewLoading}
+                loading={publicationPreviewLoading}
+                data={{ cy: 'retry-adaptive-publication-preview' }}
+              >
+                <Button.Icon
+                  icon={faRotate}
+                  loading={publicationPreviewLoading}
+                />
+                <Button.Label>{t('shared.generic.tryAgain')}</Button.Label>
+              </Button>
+            </div>
           ) : null}
           <AdaptiveReadinessPanel
             readiness={publicationPreview?.readiness}

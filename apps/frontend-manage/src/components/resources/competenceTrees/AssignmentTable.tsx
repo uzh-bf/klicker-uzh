@@ -1,7 +1,8 @@
-import { faTrashCan, faXmark } from '@fortawesome/free-solid-svg-icons'
+import { faPlus, faTrashCan, faXmark } from '@fortawesome/free-solid-svg-icons'
 import { mapLevelsToTheta } from '@klicker-uzh/adaptive-learning'
 import { Button, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import { useMemo } from 'react'
 import { CoverageCellSelection } from './CoverageMatrix'
 import IconAction from './IconAction'
@@ -21,6 +22,7 @@ function AssignmentTable({
   selectedCell: CoverageCellSelection | null
   onClearCell: () => void
 }) {
+  const router = useRouter()
   const t = useTranslations()
   const levelsByKey = useMemo(
     () => new Map(form.levels.map((level) => [level.key, level])),
@@ -84,114 +86,189 @@ function AssignmentTable({
       )}
 
       <div className="overflow-x-auto border-y border-slate-200">
-        <div className="min-w-260 grid grid-cols-[minmax(13rem,1fr)_8rem_minmax(16rem,1.2fr)_10rem_5rem_5rem_5rem_7rem_6rem_3rem] gap-3 bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600">
-          <div>{t('manage.competenceTree.element')}</div>
-          <div>{t('manage.competenceTree.elementType')}</div>
-          <div>{t('manage.competenceTree.leaf')}</div>
-          <div>{t('manage.competenceTree.level')}</div>
-          <div>a</div>
-          <div>b</div>
-          <div>c</div>
-          <div>{t('manage.competenceTree.enabled')}</div>
-          <div>{t('manage.competenceTree.percentInput')}</div>
-          <div />
-        </div>
-
-        {assignments.map((assignment) => (
-          <div
-            key={assignment.key}
-            className="min-w-260 grid grid-cols-[minmax(13rem,1fr)_8rem_minmax(16rem,1.2fr)_10rem_5rem_5rem_5rem_7rem_6rem_3rem] items-center gap-3 border-t border-slate-200 px-3 py-2 first:border-t-0"
-            data-cy={`competence-tree-assignment-${assignment.sourceId}`}
-          >
-            <div className="min-w-0">
-              <div className="truncate text-sm font-medium">
-                {assignment.elementName}
-              </div>
-              <div className="text-xs text-slate-500">
-                #{assignment.elementId} v{assignment.elementVersion}
-              </div>
-            </div>
-            <div className="text-sm">
-              {t(`shared.types.${assignment.elementType}`)}
-            </div>
-            <div className="truncate text-sm">
-              {getBreadcrumb(form.nodes, assignment.leafKey)}
-            </div>
-            <div className="truncate text-sm">
-              {levelsByKey.get(assignment.levelKey)?.label ?? ''}
-            </div>
-            <div className="font-mono text-sm">
-              {(
-                assignment.discrimination ?? form.defaultDiscrimination
-              ).toFixed(2)}
-            </div>
-            <div className="font-mono text-sm">
-              {(
-                difficultyByLevelKey.get(assignment.levelKey) ?? assignment.b
-              ).toFixed(2)}
-            </div>
-            <div className="font-mono text-sm">{assignment.c.toFixed(2)}</div>
-            <label
-              htmlFor={`competence-tree-assignment-enabled-${assignment.sourceId}`}
-              className="sr-only"
-            >
-              {t('manage.competenceTree.assignmentEnabledLabel', {
-                element: assignment.elementName,
-              })}
-            </label>
-            <Switch
-              id={`competence-tree-assignment-enabled-${assignment.sourceId}`}
-              checked={assignment.enabled}
-              onCheckedChange={(enabled) =>
-                onChange({
-                  ...form,
-                  assignments: form.assignments.map((candidate) =>
-                    candidate.key === assignment.key
-                      ? { ...candidate, enabled }
-                      : candidate
-                  ),
-                })
-              }
-              disabled={disabled}
-              size="sm"
-              data={{
-                cy: `competence-tree-assignment-enabled-${assignment.sourceId}`,
-              }}
-            />
-            <div className="text-sm">
-              {t(
-                assignment.enablePercentInput
-                  ? 'manage.competenceTree.yes'
-                  : 'manage.competenceTree.no'
-              )}
-            </div>
-            <IconAction
-              icon={faTrashCan}
-              label={t('manage.competenceTree.removeAssignment')}
-              onClick={() =>
-                onChange({
-                  ...form,
-                  assignments: form.assignments.filter(
-                    (candidate) => candidate.key !== assignment.key
-                  ),
-                })
-              }
-              disabled={disabled}
-              destructive
-              dataCy={`competence-tree-assignment-remove-${assignment.sourceId}`}
-            />
-          </div>
-        ))}
-
-        {assignments.length === 0 && (
-          <div className="p-6 text-center text-sm text-slate-600">
-            {t(
-              selectedCell
-                ? 'manage.competenceTree.noFilteredAssignments'
-                : 'manage.competenceTree.noAssignments'
+        <table className="w-full min-w-[78rem] table-fixed text-left">
+          <caption className="sr-only">
+            {t('manage.competenceTree.assignmentsDescription')}
+          </caption>
+          <colgroup>
+            <col className="w-60" />
+            <col className="w-32" />
+            <col className="w-64" />
+            <col className="w-40" />
+            <col className="w-36" />
+            <col className="w-32" />
+            <col className="w-28" />
+            <col className="w-28" />
+            <col className="w-28" />
+            <col className="w-14" />
+          </colgroup>
+          <thead className="bg-slate-100 text-xs font-semibold text-slate-600">
+            <tr>
+              <th scope="col" className="px-3 py-2">
+                {t('manage.competenceTree.element')}
+              </th>
+              <th scope="col" className="px-3 py-2">
+                {t('manage.competenceTree.elementType')}
+              </th>
+              <th scope="col" className="px-3 py-2">
+                {t('manage.competenceTree.leaf')}
+              </th>
+              <th scope="col" className="px-3 py-2">
+                {t('manage.competenceTree.level')}
+              </th>
+              <th scope="col" className="px-3 py-2">
+                {t('manage.competenceTree.discriminationParameter')}
+              </th>
+              <th scope="col" className="px-3 py-2">
+                {t('manage.competenceTree.difficultyParameter')}
+              </th>
+              <th scope="col" className="px-3 py-2">
+                {t('manage.competenceTree.guessingParameter')}
+              </th>
+              <th scope="col" className="px-3 py-2">
+                {t('manage.competenceTree.enabled')}
+              </th>
+              <th scope="col" className="px-3 py-2">
+                {t('manage.competenceTree.percentInput')}
+              </th>
+              <th scope="col" className="px-3 py-2">
+                <span className="sr-only">
+                  {t('manage.competenceTree.actions')}
+                </span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {assignments.map((assignment) => (
+              <tr
+                key={assignment.key}
+                className="border-t border-slate-200"
+                data-cy={`competence-tree-assignment-${assignment.sourceId}`}
+              >
+                <th scope="row" className="min-w-0 px-3 py-2 font-normal">
+                  <div className="truncate text-sm font-medium">
+                    {assignment.elementName}
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    #{assignment.elementId} v{assignment.elementVersion}
+                  </div>
+                </th>
+                <td className="px-3 py-2 text-sm">
+                  {t(`shared.types.${assignment.elementType}`)}
+                </td>
+                <td className="truncate px-3 py-2 text-sm">
+                  {getBreadcrumb(form.nodes, assignment.leafKey)}
+                </td>
+                <td className="truncate px-3 py-2 text-sm">
+                  {levelsByKey.get(assignment.levelKey)?.label ?? ''}
+                </td>
+                <td className="px-3 py-2 font-mono text-sm">
+                  {(
+                    assignment.discrimination ?? form.defaultDiscrimination
+                  ).toFixed(2)}
+                </td>
+                <td className="px-3 py-2 font-mono text-sm">
+                  {(
+                    difficultyByLevelKey.get(assignment.levelKey) ??
+                    assignment.b
+                  ).toFixed(2)}
+                </td>
+                <td className="px-3 py-2 font-mono text-sm">
+                  {assignment.c.toFixed(2)}
+                </td>
+                <td className="px-3 py-2">
+                  <label
+                    htmlFor={`competence-tree-assignment-enabled-${assignment.sourceId}`}
+                    className="sr-only"
+                  >
+                    {t('manage.competenceTree.assignmentEnabledLabel', {
+                      element: assignment.elementName,
+                    })}
+                  </label>
+                  <Switch
+                    id={`competence-tree-assignment-enabled-${assignment.sourceId}`}
+                    checked={assignment.enabled}
+                    onCheckedChange={(enabled) =>
+                      onChange({
+                        ...form,
+                        assignments: form.assignments.map((candidate) =>
+                          candidate.key === assignment.key
+                            ? { ...candidate, enabled }
+                            : candidate
+                        ),
+                      })
+                    }
+                    disabled={disabled}
+                    size="sm"
+                    data={{
+                      cy: `competence-tree-assignment-enabled-${assignment.sourceId}`,
+                    }}
+                  />
+                </td>
+                <td className="px-3 py-2 text-sm">
+                  {t(
+                    assignment.enablePercentInput
+                      ? 'manage.competenceTree.yes'
+                      : 'manage.competenceTree.no'
+                  )}
+                </td>
+                <td className="px-3 py-2">
+                  <IconAction
+                    icon={faTrashCan}
+                    label={t('manage.competenceTree.removeAssignment')}
+                    onClick={() =>
+                      onChange({
+                        ...form,
+                        assignments: form.assignments.filter(
+                          (candidate) => candidate.key !== assignment.key
+                        ),
+                      })
+                    }
+                    disabled={disabled}
+                    destructive
+                    dataCy={`competence-tree-assignment-remove-${assignment.sourceId}`}
+                  />
+                </td>
+              </tr>
+            ))}
+            {assignments.length === 0 && (
+              <tr>
+                <td
+                  colSpan={10}
+                  className="p-6 text-center text-sm text-slate-600"
+                >
+                  <div>
+                    {t(
+                      selectedCell
+                        ? 'manage.competenceTree.noFilteredAssignments'
+                        : 'manage.competenceTree.noAssignments'
+                    )}
+                  </div>
+                  {!selectedCell &&
+                  form.assignments.length === 0 &&
+                  !disabled ? (
+                    <Button
+                      primary
+                      className={{ root: 'mt-3' }}
+                      onClick={() =>
+                        router.push({
+                          pathname: '/',
+                          query: { createElement: 'true' },
+                        })
+                      }
+                      data={{ cy: 'competence-tree-create-element' }}
+                    >
+                      <Button.Icon icon={faPlus} />
+                      <Button.Label>
+                        {t('manage.competenceTree.createElement')}
+                      </Button.Label>
+                    </Button>
+                  ) : null}
+                </td>
+              </tr>
             )}
-          </div>
-        )}
+          </tbody>
+        </table>
       </div>
     </section>
   )

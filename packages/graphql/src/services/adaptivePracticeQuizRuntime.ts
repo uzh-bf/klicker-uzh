@@ -6,7 +6,6 @@ import {
   normalizeFreeTextResponse,
   normalizeNumericalResponse,
   prepareAdaptiveRuntime,
-  type AdaptiveRuntimeCoverage as CoreAdaptiveRuntimeCoverage,
   type AdaptiveRuntimeDecision as CoreAdaptiveRuntimeDecision,
   type AdaptiveRuntimeEstimate as CoreAdaptiveRuntimeEstimate,
   type AdaptiveRuntimeEstimates as CoreAdaptiveRuntimeEstimates,
@@ -42,7 +41,6 @@ export type AdaptivePracticeQuizResponseInput = {
 export type AdaptiveRuntimeSettings = CoreAdaptiveRuntimeSettings
 export type AdaptiveRuntimeLevel = CoreAdaptiveRuntimeLevel
 export type AdaptiveRuntimeNode = CoreAdaptiveRuntimeNode
-export type AdaptiveRuntimeCoverage = CoreAdaptiveRuntimeCoverage
 
 export type AdaptiveRuntimePoolItem = CoreAdaptiveRuntimePoolItem & {
   sourceAssignmentId: number
@@ -240,7 +238,6 @@ export function selectAdaptiveNextPoolItem({
   attemptId,
   nodes,
   levels,
-  coverages,
   pool,
   responses,
   settings,
@@ -248,7 +245,6 @@ export function selectAdaptiveNextPoolItem({
   attemptId: string
   nodes: AdaptiveRuntimeNode[]
   levels: AdaptiveRuntimeLevel[]
-  coverages: AdaptiveRuntimeCoverage[]
   pool: AdaptiveRuntimeRoutingPoolItem[]
   responses: AdaptiveRuntimeResponse[]
   settings: AdaptiveRuntimeSettings
@@ -256,7 +252,6 @@ export function selectAdaptiveNextPoolItem({
   const runtime = prepareAdaptiveRuntime({
     nodes,
     levels,
-    coverages,
     pool,
     settings,
   })

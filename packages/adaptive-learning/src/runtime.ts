@@ -47,13 +47,6 @@ export type AdaptiveRuntimeNode = {
   questionCap: number | null
 }
 
-export type AdaptiveRuntimeCoverage = {
-  leafNodeId: number
-  levelId: number
-  targetItemCount: number
-  enabled: boolean
-}
-
 export type AdaptiveRuntimePoolItem = {
   id: number
   leafNodeId: number
@@ -93,7 +86,6 @@ export type PreparedAdaptiveRuntime<
 > = {
   nodes: AdaptiveRuntimeNode[]
   levels: AdaptiveRuntimeLevel[]
-  coverages: AdaptiveRuntimeCoverage[]
   pool: TPoolItem[]
   settings: AdaptiveRuntimeSettings
   enabledNodeIds: ReadonlySet<number>
@@ -102,7 +94,6 @@ export type PreparedAdaptiveRuntime<
   poolByRoot: ReadonlyMap<number, TPoolItem[]>
   poolByRootLeaf: ReadonlyMap<string, TPoolItem[]>
   leafIdsByRoot: ReadonlyMap<number, number[]>
-  coveragesByLeaf: ReadonlyMap<number, AdaptiveRuntimeCoverage[]>
 }
 
 export type AdaptiveRuntimeDecision<
@@ -128,13 +119,11 @@ export function prepareAdaptiveRuntime<
 >({
   nodes,
   levels,
-  coverages,
   pool,
   settings,
 }: {
   nodes: AdaptiveRuntimeNode[]
   levels: AdaptiveRuntimeLevel[]
-  coverages: AdaptiveRuntimeCoverage[]
   pool: TPoolItem[]
   settings: AdaptiveRuntimeSettings
 }): PreparedAdaptiveRuntime<TPoolItem> {
@@ -155,16 +144,9 @@ export function prepareAdaptiveRuntime<
     leafIdsByRoot.set(rootId, leafIds)
   }
 
-  const coveragesByLeaf = new Map<number, AdaptiveRuntimeCoverage[]>()
-  for (const coverage of coverages) {
-    if (!coverage.enabled) continue
-    appendToMap(coveragesByLeaf, coverage.leafNodeId, coverage)
-  }
-
   return {
     nodes,
     levels,
-    coverages,
     pool,
     settings,
     enabledNodeIds,
@@ -178,7 +160,6 @@ export function prepareAdaptiveRuntime<
         [...leafIds].sort((left, right) => left - right),
       ])
     ),
-    coveragesByLeaf,
   }
 }
 
@@ -311,17 +292,10 @@ export function advanceAdaptiveRuntime<
     eligibleByRootLeaf,
     responses,
     countsByLeaf,
-    coveragesByLeaf: runtime.coveragesByLeaf,
     settings: runtime.settings,
   })
-  const candidates = prioritizeCoverageCells({
-    items:
-      eligibleByRootLeaf.get(rootLeafKey(selected.rootId, selected.leafId)) ??
-      [],
-    leafId: selected.leafId,
-    coverages: runtime.coveragesByLeaf.get(selected.leafId) ?? [],
-    responses,
-  })
+  const candidates =
+    eligibleByRootLeaf.get(rootLeafKey(selected.rootId, selected.leafId)) ?? []
   const routingTheta = computeRoutingTheta(
     responses.filter(
       ({ poolItem }) => poolItem.nodePath[0] === selected.rootId
@@ -532,14 +506,12 @@ function selectRootAndLeaf<TPoolItem extends AdaptiveRuntimePoolItem>({
   eligibleByRootLeaf,
   responses,
   countsByLeaf,
-  coveragesByLeaf,
   settings,
 }: {
   activeRoots: ReturnType<typeof getRootState>[]
   eligibleByRootLeaf: Map<string, TPoolItem[]>
   responses: AdaptiveRuntimeResponse<TPoolItem>[]
   countsByLeaf: Map<number, number>
-  coveragesByLeaf: ReadonlyMap<number, AdaptiveRuntimeCoverage[]>
   settings: AdaptiveRuntimeSettings
 }) {
   const rootsWithoutEvidence = activeRoots.filter(
@@ -567,20 +539,15 @@ function selectRootAndLeaf<TPoolItem extends AdaptiveRuntimePoolItem>({
   )
   const leafIds = deficitLeaves.length > 0 ? deficitLeaves : availableLeaves
   const leafId = leafIds.slice().sort((left, right) => {
-    const leftProgress = getLeafCoverageProgress(
-      left,
-      countsByLeaf,
-      coveragesByLeaf.get(left) ?? []
-    )
-    const rightProgress = getLeafCoverageProgress(
-      right,
-      countsByLeaf,
-      coveragesByLeaf.get(right) ?? []
-    )
-    return leftProgress - rightProgress || left - right
+    const leftCount = countsByLeaf.get(left) ?? 0
+    const rightCount = countsByLeaf.get(right) ?? 0
+    return leftCount - rightCount || left - right
   })[0]!
 
-  return { rootId: root.root.id, leafId }
+  return {
+    rootId: root.root.id,
+    leafId,
+  }
 }
 
 function selectBreadthRoot(
@@ -616,46 +583,6 @@ function selectBreadthRoot(
       )
       return rightDeficit - leftDeficit || compareRootState(left, right)
     })[0]
-}
-
-function prioritizeCoverageCells<TPoolItem extends AdaptiveRuntimePoolItem>({
-  items,
-  leafId,
-  coverages,
-  responses,
-}: {
-  items: TPoolItem[]
-  leafId: number
-  coverages: AdaptiveRuntimeCoverage[]
-  responses: AdaptiveRuntimeResponse<TPoolItem>[]
-}) {
-  const counts = new Map<number, number>()
-  for (const response of responses) {
-    if (response.poolItem.leafNodeId !== leafId) continue
-    counts.set(
-      response.poolItem.levelId,
-      (counts.get(response.poolItem.levelId) ?? 0) + 1
-    )
-  }
-  const deficits = coverages
-    .map((coverage) => ({
-      levelId: coverage.levelId,
-      deficit:
-        (coverage.targetItemCount - (counts.get(coverage.levelId) ?? 0)) /
-        Math.max(coverage.targetItemCount, 1),
-    }))
-    .filter(
-      ({ deficit, levelId }) =>
-        deficit > 0 && items.some((item) => item.levelId === levelId)
-    )
-  if (deficits.length === 0) return items
-  const maximum = Math.max(...deficits.map(({ deficit }) => deficit))
-  const preferredLevels = new Set(
-    deficits
-      .filter(({ deficit }) => deficit === maximum)
-      .map(({ levelId }) => levelId)
-  )
-  return items.filter((item) => preferredLevels.has(item.levelId))
 }
 
 function selectDeterministicInformationCandidate<
@@ -821,18 +748,6 @@ function countResponsesByLeaf<TPoolItem extends AdaptiveRuntimePoolItem>(
   return counts
 }
 
-function getLeafCoverageProgress(
-  leafId: number,
-  countsByLeaf: Map<number, number>,
-  coverages: AdaptiveRuntimeCoverage[]
-) {
-  const target = coverages.reduce(
-    (sum, coverage) => sum + coverage.targetItemCount,
-    0
-  )
-  return (countsByLeaf.get(leafId) ?? 0) / Math.max(target, 1)
-}
-
 function compareRootState(
   left: ReturnType<typeof getRootState>,
   right: ReturnType<typeof getRootState>
@@ -874,5 +789,10 @@ function stableHash(value: string) {
     hash ^= value.charCodeAt(index)
     hash = Math.imul(hash, 16777619)
   }
+  hash ^= hash >>> 16
+  hash = Math.imul(hash, 0x85ebca6b)
+  hash ^= hash >>> 13
+  hash = Math.imul(hash, 0xc2b2ae35)
+  hash ^= hash >>> 16
   return hash >>> 0
 }

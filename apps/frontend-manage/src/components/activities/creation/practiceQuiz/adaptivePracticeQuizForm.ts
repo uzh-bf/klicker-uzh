@@ -1,4 +1,8 @@
 import {
+  getAdaptivePresetDefaults,
+  type AdaptivePresetName,
+} from '@klicker-uzh/adaptive-learning'
+import {
   AdaptiveAttemptSelectionPolicy,
   AdaptiveLevelMappingRule,
   AdaptivePracticeQuizConfigInput,
@@ -16,20 +20,22 @@ export const ADAPTIVE_MAX_CLASSIFICATION_Z = 5
 export const ADAPTIVE_MAX_DISCRIMINATION = 10
 
 export function createAdaptivePracticeQuizDefaultConfig(): AdaptivePracticeQuizConfigFormValues {
+  const defaults = getAdaptivePresetDefaults('DIAGNOSTIC')
+
   return {
     competenceTreeId: undefined,
     preset: AdaptivePracticeQuizPreset.Diagnostic,
-    totalQuestionCap: '50',
-    perLeafQuestionCap: '',
-    minQuestionsPerLeaf: '2',
-    classificationZ: '1.28',
-    standardErrorThreshold: '',
-    showTimer: true,
-    attemptSelectionPolicy: AdaptiveAttemptSelectionPolicy.LatestCompleted,
-    levelMappingRule: AdaptiveLevelMappingRule.Nearest,
-    topInformationRatio: '0.8',
-    defaultDiscrimination: '1.2',
-    showLiveEstimate: false,
+    totalQuestionCap: String(defaults.totalQuestionCap),
+    perLeafQuestionCap: nullableNumberToString(defaults.perLeafQuestionCap),
+    minQuestionsPerLeaf: String(defaults.minQuestionsPerLeaf),
+    classificationZ: String(defaults.classificationZ),
+    showTimer: defaults.showTimer,
+    attemptSelectionPolicy: toAttemptSelectionPolicy(
+      defaults.attemptSelectionPolicy
+    ),
+    levelMappingRule: toLevelMappingRule(defaults.levelMappingRule),
+    topInformationRatio: String(defaults.topInformationRatio),
+    defaultDiscrimination: '',
     nodeOverrides: [],
     elementOverrides: [],
   }
@@ -88,29 +94,39 @@ export function serializeAdaptivePracticeQuizConfig(
   config: AdaptivePracticeQuizConfigFormValues
 ): AdaptivePracticeQuizConfigInput | undefined {
   if (!config.competenceTreeId) return undefined
+  const defaults = getAdaptivePresetDefaults(
+    config.preset as AdaptivePresetName
+  )
 
   const researchSettings =
     config.preset === AdaptivePracticeQuizPreset.Research
       ? {
           attemptSelectionPolicy: config.attemptSelectionPolicy,
           levelMappingRule: config.levelMappingRule,
-          topInformationRatio: requiredNumber(config.topInformationRatio, 0.8),
-          defaultDiscrimination: requiredNumber(
-            config.defaultDiscrimination,
-            1.2
+          topInformationRatio: requiredNumber(
+            config.topInformationRatio,
+            defaults.topInformationRatio
           ),
-          showLiveEstimate: config.showLiveEstimate,
+          defaultDiscrimination: optionalNumber(config.defaultDiscrimination),
         }
       : undefined
 
   return {
     competenceTreeId: config.competenceTreeId,
     preset: config.preset,
-    totalQuestionCap: requiredNumber(config.totalQuestionCap, 50),
+    totalQuestionCap: requiredNumber(
+      config.totalQuestionCap,
+      defaults.totalQuestionCap
+    ),
     perLeafQuestionCap: optionalNumber(config.perLeafQuestionCap),
-    minQuestionsPerLeaf: requiredNumber(config.minQuestionsPerLeaf, 2),
-    classificationZ: requiredNumber(config.classificationZ, 1.28),
-    standardErrorThreshold: optionalNumber(config.standardErrorThreshold),
+    minQuestionsPerLeaf: requiredNumber(
+      config.minQuestionsPerLeaf,
+      defaults.minQuestionsPerLeaf
+    ),
+    classificationZ: requiredNumber(
+      config.classificationZ,
+      defaults.classificationZ
+    ),
     showTimer: config.showTimer,
     nodeOverrides: config.nodeOverrides.map((override) => ({
       nodeId: override.nodeId,
@@ -134,21 +150,17 @@ export function getAdaptivePracticeQuizEffectiveSettings(
   config: AdaptivePracticeQuizConfigFormValues
 ) {
   const research = config.preset === AdaptivePracticeQuizPreset.Research
-  const placement = config.preset === AdaptivePracticeQuizPreset.Placement
+  const defaults = getAdaptivePresetDefaults(
+    config.preset as AdaptivePresetName
+  )
 
   return {
-    attemptSelectionPolicy: placement
-      ? AdaptiveAttemptSelectionPolicy.FirstCompleted
-      : research
-        ? config.attemptSelectionPolicy
-        : AdaptiveAttemptSelectionPolicy.LatestCompleted,
-    levelMappingRule: placement
-      ? AdaptiveLevelMappingRule.Mastery
-      : research
-        ? config.levelMappingRule
-        : AdaptiveLevelMappingRule.Nearest,
-    showFinalResult: true,
-    showLiveEstimate: research && config.showLiveEstimate,
+    attemptSelectionPolicy: research
+      ? config.attemptSelectionPolicy
+      : toAttemptSelectionPolicy(defaults.attemptSelectionPolicy),
+    levelMappingRule: research
+      ? config.levelMappingRule
+      : toLevelMappingRule(defaults.levelMappingRule),
   }
 }
 
@@ -168,15 +180,11 @@ export function mapAdaptivePracticeQuizPreviewToForm(
     ),
     minQuestionsPerLeaf: String(preview.config.minQuestionsPerLeaf),
     classificationZ: String(preview.config.classificationZ),
-    standardErrorThreshold: nullableNumberToString(
-      preview.config.standardErrorThreshold
-    ),
     showTimer: preview.config.showTimer,
     attemptSelectionPolicy: preview.config.attemptSelectionPolicy,
     levelMappingRule: preview.config.levelMappingRule,
     topInformationRatio: String(preview.config.topInformationRatio),
     defaultDiscrimination: String(preview.config.defaultDiscrimination),
-    showLiveEstimate: preview.config.showLiveEstimate,
     nodeOverrides: preview.nodes.map((node) => ({
       nodeId: node.id,
       enabled: node.overrideEnabled,
@@ -205,4 +213,20 @@ function nullableNumberToString(value: number | null | undefined): string {
   return typeof value === 'number' && Number.isFinite(value)
     ? String(value)
     : ''
+}
+
+function toAttemptSelectionPolicy(
+  value: 'FIRST_COMPLETED' | 'LATEST_COMPLETED'
+): AdaptiveAttemptSelectionPolicy {
+  return value === 'FIRST_COMPLETED'
+    ? AdaptiveAttemptSelectionPolicy.FirstCompleted
+    : AdaptiveAttemptSelectionPolicy.LatestCompleted
+}
+
+function toLevelMappingRule(
+  value: 'MASTERY' | 'NEAREST'
+): AdaptiveLevelMappingRule {
+  return value === 'MASTERY'
+    ? AdaptiveLevelMappingRule.Mastery
+    : AdaptiveLevelMappingRule.Nearest
 }

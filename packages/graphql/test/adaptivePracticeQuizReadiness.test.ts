@@ -8,11 +8,11 @@ import {
 } from '../src/services/adaptivePracticeQuizReadiness.js'
 
 const settings: AdaptiveConfiguredSettings = {
+  preset: 'RESEARCH',
   totalQuestionCap: 20,
   perLeafQuestionCap: null,
   minQuestionsPerLeaf: 1,
   classificationZ: 1.28,
-  standardErrorThreshold: null,
   topInformationRatio: 0.8,
   defaultDiscrimination: 1.2,
 }
@@ -136,6 +136,61 @@ describe('adaptive practice quiz readiness', () => {
     )
   })
 
+  it.each([
+    ['PLACEMENT', 0, 'ADAPTIVE_COVERAGE_CELL_EMPTY'],
+    ['PLACEMENT', 1, 'ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM'],
+    ['PLACEMENT', 4, 'ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM'],
+    ['PLACEMENT', 5, null],
+    ['PLACEMENT', 6, null],
+    ['DIAGNOSTIC', 0, 'ADAPTIVE_COVERAGE_CELL_EMPTY'],
+    ['DIAGNOSTIC', 1, 'ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM'],
+    ['DIAGNOSTIC', 4, 'ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM'],
+    ['DIAGNOSTIC', 5, null],
+    ['DIAGNOSTIC', 6, null],
+  ] as const)(
+    '%s requires five usable items per enabled coverage cell (count: %i)',
+    (preset, itemCount, expectedErrorCode) => {
+      const result = validateAdaptiveQuizReadiness({
+        settings: { ...settings, preset },
+        nodes: nodes.slice(0, 2),
+        coverages: [{ ...coverages[0]!, targetItemCount: 5 }],
+        assignments: Array.from({ length: itemCount }, (_, index) =>
+          assignment({
+            id: 100 + index,
+            leafNodeId: 2,
+            elementName: `Reading item ${index + 1}`,
+          })
+        ),
+        levels,
+        thetaRange,
+      })
+
+      expect(result.ready).toBe(expectedErrorCode === null)
+      expect(result.coverages[0]?.ready).toBe(itemCount >= 5)
+      if (expectedErrorCode) {
+        expect(result.errors).toContainEqual(
+          expect.objectContaining({ code: expectedErrorCode })
+        )
+      }
+    }
+  )
+
+  it('keeps sparse Research coverage visible as a warning', () => {
+    const result = validateAdaptiveQuizReadiness({
+      settings,
+      nodes: nodes.slice(0, 2),
+      coverages: [{ ...coverages[0]!, targetItemCount: 5 }],
+      assignments: assignments.slice(0, 1),
+      levels,
+      thetaRange,
+    })
+
+    expect(result.ready).toBe(true)
+    expect(result.warnings).toContainEqual(
+      expect.objectContaining({ code: 'ADAPTIVE_COVERAGE_BELOW_TARGET' })
+    )
+  })
+
   it('does not count unscorable items toward coverage or reachability', () => {
     const result = validateAdaptiveQuizReadiness({
       settings,
@@ -160,12 +215,11 @@ describe('adaptive practice quiz readiness', () => {
     )
   })
 
-  it('warns for low coverage, unreachable precision, and long duration', () => {
+  it('warns for low coverage and long duration', () => {
     const result = validateAdaptiveQuizReadiness({
       settings: {
         ...settings,
         totalQuestionCap: 40,
-        standardErrorThreshold: 0.1,
       },
       nodes: nodes.slice(0, 2),
       coverages: [{ ...coverages[0]!, targetItemCount: 41 }],
@@ -186,7 +240,6 @@ describe('adaptive practice quiz readiness', () => {
     expect(result.warnings.map(({ code }) => code)).toEqual(
       expect.arrayContaining([
         'ADAPTIVE_COVERAGE_BELOW_TARGET',
-        'ADAPTIVE_STANDARD_ERROR_UNREACHABLE',
         'ADAPTIVE_TIME_BUDGET_EXCEEDED',
       ])
     )
@@ -260,15 +313,15 @@ describe('adaptive practice quiz readiness', () => {
       thetaRange,
     })
 
-    expect(result.ready).toBe(true)
+    expect(result.ready).toBe(false)
+    expect(result.warnings).toContainEqual(
+      expect.objectContaining({ code: 'ADAPTIVE_MINIMUM_EVIDENCE_CAPPED' })
+    )
     expect(result.rootReachability[0]).toMatchObject({
       nodeId: 1,
       availableItemCount: 1,
     })
     expect(result.expectedQuestionCount).toBe(1)
-    expect(result.warnings).toContainEqual(
-      expect.objectContaining({ code: 'ADAPTIVE_COVERAGE_TARGETS_CAPPED' })
-    )
   })
 
   it('shares the global question cap across weighted root competences', () => {
@@ -276,7 +329,6 @@ describe('adaptive practice quiz readiness', () => {
       settings: {
         ...settings,
         totalQuestionCap: 2,
-        standardErrorThreshold: 1.8,
       },
       nodes,
       coverages,
@@ -304,12 +356,10 @@ describe('adaptive practice quiz readiness', () => {
     ).toEqual([1, 1])
     expect(
       result.rootReachability.every(
-        ({ thresholdReachable }) => thresholdReachable === false
+        ({ minimumReachableStandardError }) =>
+          minimumReachableStandardError !== null
       )
     ).toBe(true)
-    expect(result.warnings).toContainEqual(
-      expect.objectContaining({ code: 'ADAPTIVE_STANDARD_ERROR_UNREACHABLE' })
-    )
   })
 
   it('reserves minimum evidence from every leaf before information-based fill', () => {
@@ -345,7 +395,6 @@ describe('adaptive practice quiz readiness', () => {
       settings: {
         ...settings,
         totalQuestionCap: 2,
-        standardErrorThreshold: 0.4,
       },
       nodes: [...nodes.slice(0, 2), secondLeaf],
       coverages: [
@@ -365,8 +414,10 @@ describe('adaptive practice quiz readiness', () => {
 
     expect(result.rootReachability[0]).toMatchObject({
       allocatedQuestionCount: 2,
-      thresholdReachable: false,
     })
+    expect(
+      result.rootReachability[0]?.minimumReachableStandardError
+    ).toBeGreaterThan(0)
   })
 
   it('applies caps to minimum evidence and evaluates information at a common theta', () => {
@@ -395,7 +446,6 @@ describe('adaptive practice quiz readiness', () => {
         totalQuestionCap: 2,
         perLeafQuestionCap: 1,
         minQuestionsPerLeaf: 2,
-        standardErrorThreshold: 1.8,
       },
       nodes: nodes.slice(0, 2),
       coverages: [
@@ -429,14 +479,14 @@ describe('adaptive practice quiz readiness', () => {
     expect(result.rootReachability[0]).toMatchObject({
       availableItemCount: 1,
       allocatedQuestionCount: 1,
-      thresholdReachable: false,
     })
     expect(result.warnings.map(({ code }) => code)).toEqual(
       expect.arrayContaining([
         'ADAPTIVE_MINIMUM_EVIDENCE_CAPPED',
-        'ADAPTIVE_STANDARD_ERROR_UNREACHABLE',
+        'ADAPTIVE_CLASSIFICATION_BANDS_UNREACHABLE',
       ])
     )
+    expect(result.ready).toBe(false)
   })
 
   it('handles the initial production guardrail shape in one readiness pass', () => {
@@ -521,7 +571,7 @@ describe('adaptive practice quiz readiness', () => {
       thetaRange,
     })
 
-    expect(result.ready).toBe(true)
+    expect(result.ready).toBe(false)
     expect(result.enabledRootCount).toBe(rootCount)
     expect(result.enabledAssignmentCount).toBe(10_000)
     expect(result.expectedQuestionCount).toBe(1_000)
@@ -530,6 +580,11 @@ describe('adaptive practice quiz readiness', () => {
         ({ allocatedQuestionCount }) => allocatedQuestionCount === 4
       )
     ).toBe(true)
+    expect(result.warnings).toContainEqual(
+      expect.objectContaining({
+        code: 'ADAPTIVE_CLASSIFICATION_BANDS_UNREACHABLE',
+      })
+    )
   })
 
   it('rejects non-finite and out-of-range planning settings', () => {
@@ -538,7 +593,6 @@ describe('adaptive practice quiz readiness', () => {
       totalQuestionCap: 0,
       minQuestionsPerLeaf: 21,
       classificationZ: Number.NaN,
-      standardErrorThreshold: -1,
       topInformationRatio: 2,
       defaultDiscrimination: 0,
     })
@@ -548,7 +602,6 @@ describe('adaptive practice quiz readiness', () => {
         'totalQuestionCap',
         'minQuestionsPerLeaf',
         'classificationZ',
-        'standardErrorThreshold',
         'topInformationRatio',
         'defaultDiscrimination',
       ])
@@ -572,10 +625,6 @@ describe('adaptive practice quiz readiness', () => {
         expect.objectContaining({
           code: 'ADAPTIVE_CLASSIFICATION_Z_INVALID',
           parameters: { minimumValue: 0, maximumValue: 5 },
-        }),
-        expect.objectContaining({
-          code: 'ADAPTIVE_STANDARD_ERROR_THRESHOLD_INVALID',
-          parameters: { minimumValue: 0 },
         }),
         expect.objectContaining({
           code: 'ADAPTIVE_TOP_INFORMATION_RATIO_INVALID',

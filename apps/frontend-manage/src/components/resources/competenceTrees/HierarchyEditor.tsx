@@ -8,29 +8,26 @@ import {
   faTrashCan,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { AdaptiveNodeKind } from '@klicker-uzh/graphql/dist/ops'
 import {
+  Button,
   NumberField,
   Select,
   TextareaField,
   TextField,
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import ConfirmationModal from './ConfirmationModal'
 import IconAction from './IconAction'
 import {
+  canAddChild,
   canReparentNode,
-  duplicateBranch,
+  CompetenceTreeStructuralCommand,
   getBreadcrumb,
   getChildren,
   getDescendantKeys,
-  getNextLocalKey,
   getNodeDepth,
   getNormalizedRootWeights,
-  moveNodeAmongSiblings,
-  removeBranch,
-  reparentNode,
 } from './treeHelpers'
 import { CompetenceTreeForm, CompetenceTreeNodeForm } from './types'
 
@@ -56,7 +53,7 @@ function OutlineNode({
   const collapsed = collapsedKeys.has(node.key)
 
   return (
-    <div>
+    <li>
       <div
         className={`flex min-h-9 items-center border-b border-slate-100 pr-2 ${
           selectedKey === node.key ? 'bg-sky-50' : 'hover:bg-slate-50'
@@ -68,6 +65,7 @@ function OutlineNode({
           <button
             type="button"
             onClick={() => onToggle(node.key)}
+            aria-expanded={!collapsed}
             aria-label={t(
               collapsed
                 ? 'manage.competenceTree.expandNode'
@@ -92,6 +90,7 @@ function OutlineNode({
         <button
           type="button"
           onClick={() => onSelect(node.key)}
+          aria-current={selectedKey === node.key ? 'true' : undefined}
           className="min-w-0 flex-1 truncate py-2 text-left text-sm"
           data-cy={`competence-tree-select-node-${node.key}`}
         >
@@ -105,51 +104,51 @@ function OutlineNode({
           </span>
         </button>
       </div>
-      {!collapsed &&
-        children.map((child) => (
-          <OutlineNode
-            key={child.key}
-            node={child}
-            form={form}
-            depth={depth + 1}
-            selectedKey={selectedKey}
-            collapsedKeys={collapsedKeys}
-            onSelect={onSelect}
-            onToggle={onToggle}
-          />
-        ))}
-    </div>
+      {!collapsed && children.length > 0 ? (
+        <ul>
+          {children.map((child) => (
+            <OutlineNode
+              key={child.key}
+              node={child}
+              form={form}
+              depth={depth + 1}
+              selectedKey={selectedKey}
+              collapsedKeys={collapsedKeys}
+              onSelect={onSelect}
+              onToggle={onToggle}
+            />
+          ))}
+        </ul>
+      ) : null}
+    </li>
   )
 }
 
 function HierarchyEditor({
   form,
   onChange,
+  onStructuralCommand,
+  selectedKey,
+  onSelect,
   disabled,
 }: {
   form: CompetenceTreeForm
   onChange: (form: CompetenceTreeForm) => void
+  onStructuralCommand: (command: CompetenceTreeStructuralCommand) => void
+  selectedKey: string | null
+  onSelect: (key: string) => void
   disabled: boolean
 }) {
   const t = useTranslations()
-  const [selectedKey, setSelectedKey] = useState<string | null>(
-    () => getChildren(form.nodes, null)[0]?.key ?? null
-  )
   const [collapsedKeys, setCollapsedKeys] = useState<Set<string>>(new Set())
   const [deleteKey, setDeleteKey] = useState<string | null>(null)
+  const focusNewNode = useRef(false)
   const selectedNode = form.nodes.find((node) => node.key === selectedKey)
   const roots = useMemo(() => getChildren(form.nodes, null), [form.nodes])
   const normalizedWeights = useMemo(
     () => getNormalizedRootWeights(form.nodes),
     [form.nodes]
   )
-
-  useEffect(() => {
-    if (selectedKey && form.nodes.some((node) => node.key === selectedKey)) {
-      return
-    }
-    setSelectedKey(getChildren(form.nodes, null)[0]?.key ?? null)
-  }, [form.nodes, selectedKey])
 
   const siblings = selectedNode
     ? getChildren(form.nodes, selectedNode.parentKey)
@@ -159,12 +158,13 @@ function HierarchyEditor({
     : -1
   const validParents = selectedNode
     ? form.nodes.filter((candidate) =>
-        canReparentNode({
-          nodes: form.nodes,
-          nodeKey: selectedNode.key,
-          parentKey: candidate.key,
-          maxDepth: form.maxDepth,
-        })
+        candidate.key === selectedNode.parentKey
+          ? true
+          : canReparentNode({
+              form,
+              nodeKey: selectedNode.key,
+              parentKey: candidate.key,
+            })
       )
     : []
 
@@ -180,58 +180,42 @@ function HierarchyEditor({
     })
   }
 
+  useEffect(() => {
+    if (!focusNewNode.current || !selectedKey) return
+
+    const frame = window.requestAnimationFrame(() => {
+      focusNewNode.current = false
+      document
+        .querySelector<HTMLElement>(
+          'input[data-cy="competence-tree-node-name"], [data-cy="competence-tree-node-name"] input'
+        )
+        ?.focus()
+    })
+
+    return () => window.cancelAnimationFrame(frame)
+  }, [selectedKey])
+
+  const addRoot = () => {
+    focusNewNode.current = true
+    onStructuralCommand({
+      type: 'addRoot',
+      name: t('manage.competenceTree.newCompetence'),
+    })
+  }
+
   const addChild = () => {
     if (!selectedNode) return
-    const depth = getNodeDepth(form.nodes, selectedNode.key)
-    if (depth >= form.maxDepth) return
-
-    const childKey = getNextLocalKey(
-      form.nodes.map((node) => node.key),
-      'node'
-    )
-    const wasLeaf = getChildren(form.nodes, selectedNode.key).length === 0
-    const child: CompetenceTreeNodeForm = {
-      key: childKey,
+    focusNewNode.current = true
+    onStructuralCommand({
+      type: 'addChild',
       parentKey: selectedNode.key,
-      kind: AdaptiveNodeKind.Subcompetence,
       name: t('manage.competenceTree.newSubcompetence'),
-      description: '',
-      order: getChildren(form.nodes, selectedNode.key).length,
-      weight: 1,
-    }
-
-    onChange({
-      ...form,
-      nodes: [...form.nodes, child],
-      coverages: wasLeaf
-        ? form.coverages.map((coverage) =>
-            coverage.leafKey === selectedNode.key
-              ? { ...coverage, leafKey: childKey }
-              : coverage
-          )
-        : [
-            ...form.coverages,
-            ...form.levels.map((level) => ({
-              leafKey: childKey,
-              levelKey: level.key,
-              targetItemCount: 5,
-              enabled: true,
-            })),
-          ],
-      assignments: wasLeaf
-        ? form.assignments.map((assignment) =>
-            assignment.leafKey === selectedNode.key
-              ? { ...assignment, leafKey: childKey }
-              : assignment
-          )
-        : form.assignments,
     })
     setCollapsedKeys((current) => {
       const next = new Set(current)
       next.delete(selectedNode.key)
       return next
     })
-    setSelectedKey(childKey)
   }
 
   return (
@@ -242,7 +226,10 @@ function HierarchyEditor({
       data-cy="competence-tree-hierarchy"
     >
       <div className="mb-4">
-        <h2 className="text-lg font-semibold">
+        <h2
+          id="competence-tree-hierarchy-title"
+          className="text-lg font-semibold"
+        >
           {t('manage.competenceTree.hierarchyTitle')}
         </h2>
         <p className="text-sm text-slate-600">
@@ -251,26 +238,42 @@ function HierarchyEditor({
       </div>
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(18rem,0.8fr)_minmax(24rem,1.2fr)]">
-        <div className="max-h-140 overflow-auto border border-slate-300 bg-white">
-          {roots.map((root) => (
-            <OutlineNode
-              key={root.key}
-              node={root}
-              form={form}
-              depth={0}
-              selectedKey={selectedKey}
-              collapsedKeys={collapsedKeys}
-              onSelect={setSelectedKey}
-              onToggle={(key) =>
-                setCollapsedKeys((current) => {
-                  const next = new Set(current)
-                  if (next.has(key)) next.delete(key)
-                  else next.add(key)
-                  return next
-                })
-              }
-            />
-          ))}
+        <div>
+          <div className="mb-2 flex justify-end">
+            <Button
+              onClick={addRoot}
+              disabled={disabled}
+              data={{ cy: 'competence-tree-add-root' }}
+            >
+              <Button.Icon icon={faPlus} />
+              <Button.Label>
+                {t('manage.competenceTree.addRootCompetence')}
+              </Button.Label>
+            </Button>
+          </div>
+          <div className="max-h-140 overflow-auto border border-slate-300 bg-white">
+            <ul aria-labelledby="competence-tree-hierarchy-title">
+              {roots.map((root) => (
+                <OutlineNode
+                  key={root.key}
+                  node={root}
+                  form={form}
+                  depth={0}
+                  selectedKey={selectedKey}
+                  collapsedKeys={collapsedKeys}
+                  onSelect={onSelect}
+                  onToggle={(key) =>
+                    setCollapsedKeys((current) => {
+                      const next = new Set(current)
+                      if (next.has(key)) next.delete(key)
+                      else next.add(key)
+                      return next
+                    })
+                  }
+                />
+              ))}
+            </ul>
+          </div>
         </div>
 
         <div className="border border-slate-300 p-4">
@@ -286,33 +289,31 @@ function HierarchyEditor({
                   </p>
                 </div>
                 <div className="flex gap-0.5">
-                  <IconAction
-                    icon={faPlus}
-                    label={t(
+                  <Button
+                    onClick={addChild}
+                    disabled={disabled || !canAddChild(form, selectedNode.key)}
+                    title={t(
                       getNodeDepth(form.nodes, selectedNode.key) >=
                         form.maxDepth
                         ? 'manage.competenceTree.maxDepthReached'
-                        : 'manage.competenceTree.addChild'
+                        : 'manage.competenceTree.addSubcompetence'
                     )}
-                    onClick={addChild}
-                    disabled={
-                      disabled ||
-                      getNodeDepth(form.nodes, selectedNode.key) >=
-                        form.maxDepth
-                    }
-                    dataCy="competence-tree-node-add-child"
-                  />
+                    data={{ cy: 'competence-tree-node-add-child' }}
+                    className={{ root: 'h-8' }}
+                  >
+                    <Button.Icon icon={faPlus} />
+                    <Button.Label>
+                      {t('manage.competenceTree.addSubcompetence')}
+                    </Button.Label>
+                  </Button>
                   <IconAction
                     icon={faArrowUp}
                     label={t('manage.competenceTree.moveUp')}
                     onClick={() =>
-                      onChange({
-                        ...form,
-                        nodes: moveNodeAmongSiblings(
-                          form.nodes,
-                          selectedNode.key,
-                          -1
-                        ),
+                      onStructuralCommand({
+                        type: 'move',
+                        nodeKey: selectedNode.key,
+                        direction: -1,
                       })
                     }
                     disabled={disabled || selectedIndex <= 0}
@@ -322,13 +323,10 @@ function HierarchyEditor({
                     icon={faArrowDown}
                     label={t('manage.competenceTree.moveDown')}
                     onClick={() =>
-                      onChange({
-                        ...form,
-                        nodes: moveNodeAmongSiblings(
-                          form.nodes,
-                          selectedNode.key,
-                          1
-                        ),
+                      onStructuralCommand({
+                        type: 'move',
+                        nodeKey: selectedNode.key,
+                        direction: 1,
                       })
                     }
                     disabled={
@@ -342,7 +340,10 @@ function HierarchyEditor({
                     icon={faCopy}
                     label={t('manage.competenceTree.duplicateBranch')}
                     onClick={() =>
-                      onChange(duplicateBranch(form, selectedNode.key))
+                      onStructuralCommand({
+                        type: 'duplicate',
+                        nodeKey: selectedNode.key,
+                      })
                     }
                     disabled={disabled}
                     dataCy="competence-tree-node-duplicate"
@@ -379,14 +380,10 @@ function HierarchyEditor({
                   <Select
                     value={selectedNode.parentKey ?? undefined}
                     onChange={(parentKey) =>
-                      onChange({
-                        ...form,
-                        nodes: reparentNode(
-                          form.nodes,
-                          selectedNode.key,
-                          parentKey,
-                          form.maxDepth
-                        ),
+                      onStructuralCommand({
+                        type: 'reparent',
+                        nodeKey: selectedNode.key,
+                        parentKey,
                       })
                     }
                     disabled={disabled || selectedNode.parentKey === null}
@@ -394,6 +391,9 @@ function HierarchyEditor({
                     items={validParents.map((parent) => ({
                       value: parent.key,
                       label: getBreadcrumb(form.nodes, parent.key),
+                      data: {
+                        cy: `competence-tree-node-parent-option-${parent.key}`,
+                      },
                     }))}
                     data={{ cy: 'competence-tree-node-parent' }}
                     className={{ trigger: 'h-9 w-full' }}
@@ -485,7 +485,7 @@ function HierarchyEditor({
           cancelLabel={t('manage.competenceTree.cancel')}
           destructive
           onConfirm={() => {
-            onChange(removeBranch(form, deleteKey))
+            onStructuralCommand({ type: 'delete', nodeKey: deleteKey })
             setDeleteKey(null)
           }}
           onClose={() => setDeleteKey(null)}

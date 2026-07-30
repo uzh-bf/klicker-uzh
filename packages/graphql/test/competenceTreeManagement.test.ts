@@ -17,7 +17,9 @@ import {
   deleteCompetenceTree,
   duplicateCompetenceTree,
   getCompetenceTree,
+  getCompetenceTreeCatalog,
   getCompetenceTrees,
+  getCourseCompetenceTreeCatalog,
   getCourseCompetenceTrees,
   getElementCompetenceTrees,
   linkCompetenceTreeToCourse,
@@ -176,6 +178,111 @@ describe('competence tree management', () => {
       assignmentCount: 1,
       canEdit: true,
     })
+  })
+
+  it('paginates and searches the readable tree catalog with opaque cursors', async () => {
+    const element = await createSingleChoiceElement(ownerCtx)
+    const treeIds: string[] = []
+    for (const [name, displayName] of [
+      ['catalog-alpha', 'Catalog Alpha'],
+      ['catalog-beta', 'Catalog Beta'],
+      ['catalog-gamma', 'Catalog Gamma'],
+    ] as const) {
+      treeIds.push(
+        (
+          await createCompetenceTree(
+            {
+              input: {
+                ...treeInput(element.id),
+                name,
+                displayName,
+              },
+            },
+            ownerCtx
+          )
+        ).id
+      )
+    }
+
+    const firstPage = await getCompetenceTreeCatalog(
+      { ownership: 'OWNED', limit: 2 },
+      ownerCtx
+    )
+    expect(firstPage.items).toHaveLength(2)
+    expect(firstPage.nextCursor).toEqual(expect.any(String))
+
+    const secondPage = await getCompetenceTreeCatalog(
+      {
+        ownership: 'OWNED',
+        limit: 2,
+        cursor: firstPage.nextCursor,
+      },
+      ownerCtx
+    )
+    expect(secondPage.items).toHaveLength(1)
+    expect(secondPage.nextCursor).toBeNull()
+    expect(
+      new Set([...firstPage.items, ...secondPage.items].map(({ id }) => id))
+    ).toEqual(new Set(treeIds))
+
+    const searchResult = await getCompetenceTreeCatalog(
+      { ownership: 'OWNED', search: '  beta  ' },
+      ownerCtx
+    )
+    expect(searchResult.items.map(({ displayName }) => displayName)).toEqual([
+      'Catalog Beta',
+    ])
+    await expect(
+      getCompetenceTreeCatalog({ cursor: 'not-a-cursor' }, ownerCtx)
+    ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+  })
+
+  it('bounds linked and unlinked course catalogs behind course access', async () => {
+    const element = await createSingleChoiceElement(ownerCtx)
+    const linkedTree = await createCompetenceTree(
+      {
+        input: {
+          ...treeInput(element.id),
+          name: 'linked-catalog-tree',
+          displayName: 'Linked catalog tree',
+        },
+      },
+      ownerCtx
+    )
+    const unlinkedTree = await createCompetenceTree(
+      {
+        input: {
+          ...treeInput(element.id),
+          name: 'unlinked-catalog-tree',
+          displayName: 'Unlinked catalog tree',
+        },
+      },
+      ownerCtx
+    )
+    const course = await seedCourse({}, ownerCtx)
+    await linkCompetenceTreeToCourse(
+      { treeId: linkedTree.id, courseId: course.id },
+      ownerCtx
+    )
+
+    const linked = await getCourseCompetenceTreeCatalog(
+      { courseId: course.id },
+      ownerCtx
+    )
+    expect(linked.items.map(({ id }) => id)).toEqual([linkedTree.id])
+
+    const unlinked = await getCompetenceTreeCatalog(
+      {
+        ownership: 'OWNED',
+        excludeCourseId: course.id,
+      },
+      ownerCtx
+    )
+    expect(unlinked.items.map(({ id }) => id)).toEqual([unlinkedTree.id])
+
+    await expect(
+      getCourseCompetenceTreeCatalog({ courseId: course.id }, otherCtx)
+    ).rejects.toMatchObject({ extensions: { code: 'NOT_FOUND' } })
   })
 
   it('archives trees without deleting them and hides archived links from non-owners', async () => {
@@ -543,10 +650,17 @@ describe('competence tree management', () => {
     expect(sharedTrees[0]!.courseLinks.map(({ courseId }) => courseId)).toEqual(
       [course.id]
     )
+    expect(sharedTrees[0]!.courseLinkCount).toBe(1)
+    const sharedCatalog = await getCourseCompetenceTreeCatalog(
+      { courseId: course.id },
+      otherCtx
+    )
+    expect(sharedCatalog.items[0]?.courseLinkCount).toBe(1)
     const sharedDetail = await getCompetenceTree({ id: tree.id }, otherCtx)
     expect(sharedDetail?.courseLinks.map(({ courseId }) => courseId)).toEqual([
       course.id,
     ])
+    expect(sharedDetail?.courseLinkCount).toBe(1)
     expect(sharedDetail?.elementAssignments[0]).toMatchObject({
       elementId: element.id,
       elementName: 'Adaptive SC',

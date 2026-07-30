@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   AdaptiveRuntimeConfigurationError,
+  advanceAdaptiveRuntime,
   computeAdaptiveRuntimeEstimates,
   prepareAdaptiveRuntime,
   type AdaptiveRuntimeNode,
@@ -31,7 +32,6 @@ describe('adaptive runtime core', () => {
       prepareAdaptiveRuntime({
         nodes,
         levels,
-        coverages: [],
         pool: runtimePool(),
         settings,
       })
@@ -59,6 +59,45 @@ describe('adaptive runtime core', () => {
     expect(scaled.theta).toBe(normalized.theta)
     expect(scaled.standardError).toBe(normalized.standardError)
     expect(scaled.levelId).toBe(normalized.levelId)
+  })
+
+  it('distributes equivalent sequential item ids deterministically across attempts', () => {
+    const pool = Array.from({ length: 8 }, (_, index) => ({
+      id: index + 1,
+      leafNodeId: 2,
+      nodePath: [1, 2],
+      levelId: 2,
+      discrimination: 1.2,
+      difficulty: 0,
+      guessing: 0,
+    }))
+    const runtime = prepareAdaptiveRuntime({
+      nodes: [rootNode(1, 0, 1), leafNode(2, 1)],
+      levels,
+      pool,
+      settings,
+    })
+    const select = () =>
+      Array.from(
+        { length: 1_000 },
+        (_, index) =>
+          advanceAdaptiveRuntime({
+            attemptId: `attempt-${index}`,
+            runtime,
+            responses: [],
+          }).nextPoolItem!.id
+      )
+
+    const first = select()
+    const counts = new Map<number, number>()
+    for (const itemId of first) {
+      counts.set(itemId, (counts.get(itemId) ?? 0) + 1)
+    }
+
+    expect(select()).toEqual(first)
+    expect(counts.size).toBe(pool.length)
+    expect(Math.min(...counts.values())).toBeGreaterThanOrEqual(90)
+    expect(Math.max(...counts.values())).toBeLessThanOrEqual(160)
   })
 })
 

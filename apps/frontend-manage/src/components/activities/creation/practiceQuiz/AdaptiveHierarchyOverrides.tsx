@@ -122,9 +122,9 @@ function AdaptiveHierarchyOverrides({
     const descendants = nodesByParent.get(node.id) ?? []
 
     return (
-      <div key={node.id}>
+      <div key={node.id} className="min-w-0 max-w-full">
         <div
-          className="border-uzh-grey-80 grid min-h-12 items-center gap-2 border-b py-1.5 text-sm md:grid-cols-[minmax(12rem,1fr)_8rem_8rem_7rem]"
+          className="border-uzh-grey-80 grid min-h-12 w-full min-w-0 max-w-full items-center gap-2 border-b py-1.5 text-sm md:grid-cols-[minmax(12rem,1fr)_8rem_8rem_7rem]"
           style={{ paddingLeft: `${Math.min(node.depth, 5) * 1.25}rem` }}
           data-cy={`adaptive-node-${node.id}`}
         >
@@ -159,6 +159,7 @@ function AdaptiveHierarchyOverrides({
           <div>
             {node.kind === AdaptiveNodeKind.Competence ? (
               <NumberField
+                id={`adaptive-node-weight-${node.id}`}
                 value={override?.weight || String(node.weight)}
                 onChange={(weight) => updateNode(node, { weight })}
                 min={0}
@@ -172,6 +173,7 @@ function AdaptiveHierarchyOverrides({
             ) : null}
           </div>
           <NumberField
+            id={`adaptive-node-cap-${node.id}`}
             value={override?.questionCap ?? ''}
             onChange={(questionCap) => updateNode(node, { questionCap })}
             min={1}
@@ -203,9 +205,12 @@ function AdaptiveHierarchyOverrides({
   }
 
   return (
-    <section data-cy="adaptive-hierarchy-overrides">
-      <div className="mb-2 flex items-end justify-between gap-3">
-        <div>
+    <section
+      className="min-w-0 max-w-full"
+      data-cy="adaptive-hierarchy-overrides"
+    >
+      <div className="mb-2 flex min-w-0 items-end justify-between gap-3">
+        <div className="min-w-0">
           <div className="font-bold">
             {t('manage.activityWizard.adaptive.hierarchy.title')}
           </div>
@@ -217,7 +222,7 @@ function AdaptiveHierarchyOverrides({
           {t('manage.activityWizard.adaptive.hierarchy.effectiveState')}
         </div>
       </div>
-      <div className="border-uzh-grey-80 rounded-md border border-solid">
+      <div className="border-uzh-grey-80 min-w-0 max-w-full rounded-md border border-solid">
         {roots.map(renderNode)}
       </div>
 

@@ -55,6 +55,8 @@ import {
 } from './assessment.js'
 import {
   CompetenceTree,
+  CompetenceTreeCatalogOwnership,
+  CompetenceTreeCatalogPageType,
   CompetenceTreeInput,
   CompetenceTreeSummaryType,
   CompetenceTreeValidationResultType,
@@ -193,6 +195,28 @@ export const Query = builder.queryType({
           await CompetenceTreeService.getCompetenceTrees(args, ctx),
       }),
 
+      competenceTreeCatalog: t.withAuth(asUser).field({
+        type: CompetenceTreeCatalogPageType,
+        args: {
+          search: t.arg.string({ required: false }),
+          cursor: t.arg.string({ required: false }),
+          limit: t.arg.int({ required: false, defaultValue: 25 }),
+          includeArchived: t.arg.boolean({
+            required: false,
+            defaultValue: false,
+          }),
+          ownership: t.arg({
+            type: CompetenceTreeCatalogOwnership,
+            required: false,
+            defaultValue: 'ALL',
+          }),
+          courseId: t.arg.string({ required: false }),
+          excludeCourseId: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) =>
+          await CompetenceTreeService.getCompetenceTreeCatalog(args, ctx),
+      }),
+
       competenceTree: t.withAuth(asUser).field({
         nullable: true,
         type: CompetenceTree,
@@ -206,6 +230,18 @@ export const Query = builder.queryType({
         args: { courseId: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) =>
           await CompetenceTreeService.getCourseCompetenceTrees(args, ctx),
+      }),
+
+      courseCompetenceTreeCatalog: t.withAuth(asUser).field({
+        type: CompetenceTreeCatalogPageType,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          search: t.arg.string({ required: false }),
+          cursor: t.arg.string({ required: false }),
+          limit: t.arg.int({ required: false, defaultValue: 25 }),
+        },
+        resolve: async (_, args, ctx) =>
+          await CompetenceTreeService.getCourseCompetenceTreeCatalog(args, ctx),
       }),
 
       elementCompetenceTrees: t.withAuth(asUser).field({

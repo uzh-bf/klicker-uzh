@@ -378,6 +378,7 @@ enum ObjectType {
   PRACTICE_QUIZ
   MICRO_LEARNING
   GROUP_ACTIVITY
+  COMPETENCE_TREE
 }
 
 model AuditLogEntry {
