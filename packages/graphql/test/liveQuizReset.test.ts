@@ -1758,7 +1758,7 @@ describe('live quiz reset summary', () => {
     })
   })
 
-  it('skips unsafe cache deletion when generation snapshotting fails', async () => {
+  it('schedules generation-safe cleanup when generation snapshotting fails', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
       { gamified: true, withRewardRun: true },
       userOneCtx
@@ -1776,9 +1776,64 @@ describe('live quiz reset summary', () => {
     await expect(
       resetLiveQuiz({ id: fixture.liveQuizId }, userOneCtx)
     ).resolves.toMatchObject({ outcome: 'SUCCESS' })
-    expect(cleanup).not.toHaveBeenCalled()
+    expect(cleanup).toHaveBeenCalledTimes(1)
+    const cleanupInput = cleanup.mock.calls[0]![0][0]!
+    expect(cleanupInput).toEqual({
+      liveQuizId: fixture.liveQuizId,
+      isAssessmentEnabled: false,
+      cacheGenerationSnapshot: { status: 'UNAVAILABLE' },
+      weeklyTimelineRecomputations: [
+        {
+          participationId: fixture.participationId,
+          courseId: fixture.courseId,
+          weekStart: expect.any(String),
+        },
+      ],
+    })
     await expect(
       userOneCtx.redisExec.get(`lq:${fixture.liveQuizId}:synthetic`)
     ).resolves.toBe('preserved-until-clean-start')
+
+    await handleCleanupLiveQuizResetCache(
+      cleanupInput,
+      globalHandlerContext(userOneCtx),
+      {} as never
+    )
+    await expect(
+      userOneCtx.redisExec.get(`lq:${fixture.liveQuizId}:synthetic`)
+    ).resolves.toBeNull()
+  })
+
+  it('fences unavailable-snapshot cleanup from a newly started run', async () => {
+    const quiz = await seedLiveQuiz(
+      { elements: [], status: PublicationStatus.DRAFT },
+      userOneCtx
+    )
+
+    await startLiveQuiz({ id: quiz.id }, userOneCtx)
+    const newGeneration = await userOneCtx.redisExec.hget(
+      `lq:${quiz.id}:meta`,
+      'cacheGeneration'
+    )
+    await userOneCtx.redisExec.set(`lq:${quiz.id}:new-run`, 'preserved')
+
+    await expect(
+      handleCleanupLiveQuizResetCache(
+        {
+          liveQuizId: quiz.id,
+          isAssessmentEnabled: false,
+          cacheGenerationSnapshot: { status: 'UNAVAILABLE' },
+          weeklyTimelineRecomputations: [],
+        },
+        globalHandlerContext(userOneCtx),
+        {} as never
+      )
+    ).resolves.toBe(true)
+    await expect(
+      userOneCtx.redisExec.hget(`lq:${quiz.id}:meta`, 'cacheGeneration')
+    ).resolves.toBe(newGeneration)
+    await expect(
+      userOneCtx.redisExec.get(`lq:${quiz.id}:new-run`)
+    ).resolves.toBe('preserved')
   })
 })
