@@ -20,9 +20,10 @@ import {
   prepareCorrelatedMessageProcessing,
   prepareCorrelatedResponseProcessing,
   releaseCorrelatedProcessingLock,
+  resolveAggregateResponseInstanceInfo,
   resolveCorrelatedResponseDelivery,
+  resolveCorrelatedResponseInstanceInfo,
   resolveCorrelatedResponseOwner,
-  resolveResponseInstanceInfo,
   settleCorrelatedResponseOutbox,
   validateCorrelatedRedisHashKeys,
 } from '../src/processors/correlatedResponse.js'
@@ -271,25 +272,10 @@ describe('correlated response persistence helpers', () => {
     }
 
     assert.deepEqual(
-      resolveResponseInstanceInfo({
-        cachedInstanceInfo: {
-          type: 'MC',
-          blockExecution: '4',
-          sessionBlockId: randomUUID(),
-        },
-        acceptedInstanceInfo,
-        isCorrelated: true,
-      }),
+      resolveCorrelatedResponseInstanceInfo(acceptedInstanceInfo),
       acceptedInstanceInfo
     )
-    assert.equal(
-      resolveResponseInstanceInfo({
-        cachedInstanceInfo: {},
-        acceptedInstanceInfo,
-        isCorrelated: false,
-      }),
-      undefined
-    )
+    assert.equal(resolveAggregateResponseInstanceInfo({}), undefined)
   })
 
   it('settles the pending outbox entry idempotently', async () => {

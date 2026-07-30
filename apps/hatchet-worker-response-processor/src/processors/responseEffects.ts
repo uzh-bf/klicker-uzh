@@ -478,30 +478,28 @@ function queueMutation({
   }
 }
 
-export function queueQuestionResponseEffects({
+type QueueQuestionResponseEffectsArgs = Omit<
+  PlanQuestionResponseEffectsArgs,
+  'gradeResponse'
+> & {
+  redisMulti: RedisHashMutationQueue
+}
+
+function queuePlannedQuestionResponseEffects({
   type,
   choiceCount,
   response,
   instanceInfo,
   instanceKey,
-  liveQuizKey,
-  sessionBlockId,
   firstResponseReceivedAt,
   responseTimestamp,
   basePoints,
   defaultPoints,
   pointsMultiplier,
   parsedSolutions,
-  participantData,
-  isCorrelated,
   redisMulti,
-}: Omit<PlanQuestionResponseEffectsArgs, 'gradeResponse'> & {
-  liveQuizKey: string
-  sessionBlockId: string
-  participantData: ParticipantData | null
-  isCorrelated: boolean
-  redisMulti: RedisHashMutationQueue
-}) {
+  gradeResponse,
+}: QueueQuestionResponseEffectsArgs & { gradeResponse: boolean }) {
   const plan = planQuestionResponseEffects({
     type,
     choiceCount,
@@ -514,20 +512,34 @@ export function queueQuestionResponseEffects({
     defaultPoints,
     pointsMultiplier,
     parsedSolutions,
-    gradeResponse: isCorrelated || participantData !== null,
+    gradeResponse,
   })
 
   plan.aggregateMutations.forEach((mutation) => {
     queueMutation({ redisMulti, mutation })
   })
 
-  if (
-    !isCorrelated &&
-    participantData &&
-    plan.participantResponse !== undefined
-  ) {
-    redisMulti.hset(
-      `${instanceKey}:responses`,
+  return plan
+}
+
+export function queueAggregateQuestionResponseEffects({
+  participantData,
+  liveQuizKey,
+  sessionBlockId,
+  ...args
+}: QueueQuestionResponseEffectsArgs & {
+  liveQuizKey: string
+  sessionBlockId: string
+  participantData: ParticipantData | null
+}) {
+  const plan = queuePlannedQuestionResponseEffects({
+    ...args,
+    gradeResponse: participantData !== null,
+  })
+
+  if (participantData && plan.participantResponse !== undefined) {
+    args.redisMulti.hset(
+      `${args.instanceKey}:responses`,
       participantData.role === 'TEMPORARY_PARTICIPANT'
         ? `temporary-${participantData.sub}`
         : participantData.sub,
@@ -535,22 +547,17 @@ export function queueQuestionResponseEffects({
     )
   }
 
-  if (
-    !isCorrelated &&
-    participantData &&
-    plan.grading &&
-    plan.updatesLeaderboard
-  ) {
+  if (participantData && plan.grading && plan.updatesLeaderboard) {
     if (plan.setsFirstResponseTimestamp) {
-      redisMulti.hsetnx(
-        `${instanceKey}:info`,
+      args.redisMulti.hsetnx(
+        `${args.instanceKey}:info`,
         'firstResponseReceivedAt',
-        responseTimestamp
+        args.responseTimestamp
       )
     }
 
     updateLeaderboards({
-      redisMulti,
+      redisMulti: args.redisMulti,
       participantId: participantData.sub,
       participantRole: participantData.role!,
       liveQuizKey,
@@ -558,15 +565,27 @@ export function queueQuestionResponseEffects({
       pointsAwarded: plan.grading.pointsAwarded,
       xpAwarded: plan.grading.xpAwarded,
     })
-  } else if (
-    isCorrelated &&
+  }
+
+  return plan.grading
+}
+
+export function queueCorrelatedQuestionResponseEffects(
+  args: QueueQuestionResponseEffectsArgs
+) {
+  const plan = queuePlannedQuestionResponseEffects({
+    ...args,
+    gradeResponse: true,
+  })
+
+  if (
     plan.grading?.correctnessPercentage === 1 &&
-    !firstResponseReceivedAt
+    !args.firstResponseReceivedAt
   ) {
-    redisMulti.hsetnx(
-      `${instanceKey}:info`,
+    args.redisMulti.hsetnx(
+      `${args.instanceKey}:info`,
       'firstResponseReceivedAt',
-      responseTimestamp
+      args.responseTimestamp
     )
   }
 

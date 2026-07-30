@@ -2,7 +2,8 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
   isLiveQuizQuestionType,
-  queueQuestionResponseEffects,
+  queueAggregateQuestionResponseEffects,
+  queueCorrelatedQuestionResponseEffects,
   RedisHashMutationBuffer,
 } from '../src/processors/responseEffects.js'
 
@@ -32,7 +33,7 @@ describe('live quiz response effects', () => {
 
   it('plans correlated grading and aggregate mutations together', () => {
     const redisMulti = new RedisHashMutationBuffer()
-    const grading = queueQuestionResponseEffects({
+    const grading = queueCorrelatedQuestionResponseEffects({
       type: 'SC',
       choiceCount: '2',
       response: {
@@ -43,14 +44,10 @@ describe('live quiz response effects', () => {
       },
       instanceInfo,
       instanceKey: 'lq:quiz:i:1',
-      liveQuizKey: 'lq:quiz',
-      sessionBlockId: 'block',
       responseTimestamp: 1_000,
       basePoints: 'true',
       defaultPoints: '10',
       parsedSolutions: [1],
-      participantData: null,
-      isCorrelated: true,
       redisMulti,
     })
 
@@ -86,7 +83,7 @@ describe('live quiz response effects', () => {
 
   it('queues participant response and leaderboard effects in aggregate mode', () => {
     const redisMulti = new RedisHashMutationBuffer()
-    const grading = queueQuestionResponseEffects({
+    const grading = queueAggregateQuestionResponseEffects({
       type: 'FREE_TEXT',
       response: { value: '  correct  ' },
       instanceInfo,
@@ -101,7 +98,6 @@ describe('live quiz response effects', () => {
         sub: 'participant',
         role: 'PARTICIPANT',
       },
-      isCorrelated: false,
       redisMulti,
     })
 
@@ -128,7 +124,7 @@ describe('live quiz response effects', () => {
 
   it('does not queue identity-keyed effects for correlated participants', () => {
     const redisMulti = new RedisHashMutationBuffer()
-    const grading = queueQuestionResponseEffects({
+    const grading = queueCorrelatedQuestionResponseEffects({
       type: 'SC',
       choiceCount: '2',
       response: {
@@ -139,17 +135,10 @@ describe('live quiz response effects', () => {
       },
       instanceInfo,
       instanceKey: 'lq:quiz:i:correlated',
-      liveQuizKey: 'lq:quiz',
-      sessionBlockId: 'block',
       responseTimestamp: 2_500,
       basePoints: 'true',
       defaultPoints: '10',
       parsedSolutions: [1],
-      participantData: {
-        sub: 'participant',
-        role: 'PARTICIPANT',
-      },
-      isCorrelated: true,
       redisMulti,
     })
 
@@ -167,19 +156,15 @@ describe('live quiz response effects', () => {
 
   it('does not award base points for content views', () => {
     const redisMulti = new RedisHashMutationBuffer()
-    const grading = queueQuestionResponseEffects({
+    const grading = queueCorrelatedQuestionResponseEffects({
       type: 'CONTENT',
       response: { viewed: true },
       instanceInfo,
       instanceKey: 'lq:quiz:i:3',
-      liveQuizKey: 'lq:quiz',
-      sessionBlockId: 'block',
       responseTimestamp: 3_000,
       basePoints: 'true',
       defaultPoints: '10',
       parsedSolutions: undefined,
-      participantData: null,
-      isCorrelated: true,
       redisMulti,
     })
 
@@ -207,7 +192,7 @@ describe('live quiz response effects', () => {
       { sub: 'temporary', role: 'TEMPORARY_PARTICIPANT' },
     ]) {
       const redisMulti = new RedisHashMutationBuffer()
-      queueQuestionResponseEffects({
+      queueAggregateQuestionResponseEffects({
         type: 'CONTENT',
         response: { viewed: true },
         instanceInfo,
@@ -219,7 +204,6 @@ describe('live quiz response effects', () => {
         defaultPoints: '10',
         parsedSolutions: undefined,
         participantData,
-        isCorrelated: true,
         redisMulti,
       })
 

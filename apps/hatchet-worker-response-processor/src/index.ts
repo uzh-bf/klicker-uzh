@@ -5,18 +5,19 @@ import {
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import type { LiveQuizResponseInput } from '@klicker-uzh/types'
 import { CORRELATED_RESPONSE_EVENT } from '@klicker-uzh/util'
+import { processAggregateResponseMessage } from './processors/aggregateProcessor.js'
 import {
   aggregateAssessmentResponses,
   processAssessmentResponse,
 } from './processors/assessmentProcessor.js'
-import { processResponseMessage } from './processors/processor.js'
+import { processCorrelatedResponseMessage } from './processors/correlatedProcessor.js'
 
 export const processAnonymousResponseTask = hatchetClient.task({
   name: 'process-anonymous-response',
   retries: 1,
   defaultPriority: Priority.MEDIUM,
   onEvents: ['response-received:anonymous'],
-  fn: processResponseMessage,
+  fn: processAggregateResponseMessage,
   // defaultFilters: [
   // TODO: what could we use filters for?
   //   {
@@ -31,7 +32,7 @@ export const processAuthenticatedResponseTask = hatchetClient.durableTask({
   retries: 3,
   defaultPriority: Priority.HIGH,
   onEvents: ['response-received:authenticated'],
-  fn: processResponseMessage,
+  fn: processAggregateResponseMessage,
 })
 
 export const processCorrelatedResponseTask = hatchetClient.durableTask({
@@ -39,7 +40,7 @@ export const processCorrelatedResponseTask = hatchetClient.durableTask({
   retries: 3,
   defaultPriority: Priority.HIGH,
   onEvents: [CORRELATED_RESPONSE_EVENT],
-  fn: processResponseMessage,
+  fn: processCorrelatedResponseMessage,
 })
 
 export const processAssessmentResponseWorkflow = hatchetClient.workflow<{

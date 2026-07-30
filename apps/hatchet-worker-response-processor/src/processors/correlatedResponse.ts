@@ -21,22 +21,18 @@ type CorrelatedResponseDatabase = Pick<
   'liveQuizRespondent' | 'liveQuizResponse' | 'participant'
 >
 
-export function resolveResponseInstanceInfo({
-  cachedInstanceInfo,
-  acceptedInstanceInfo,
-  isCorrelated,
-}: {
+export function resolveAggregateResponseInstanceInfo(
   cachedInstanceInfo: Record<string, string>
-  acceptedInstanceInfo?: Record<string, string>
-  isCorrelated: boolean
-}) {
-  if (isCorrelated) {
-    return acceptedInstanceInfo
-  }
-  if (Object.keys(cachedInstanceInfo).length > 0) {
-    return cachedInstanceInfo
-  }
-  return undefined
+) {
+  return Object.keys(cachedInstanceInfo).length > 0
+    ? cachedInstanceInfo
+    : undefined
+}
+
+export function resolveCorrelatedResponseInstanceInfo(
+  acceptedInstanceInfo: Record<string, string> | undefined
+) {
+  return acceptedInstanceInfo
 }
 
 interface CorrelatedProcessingRedis {
