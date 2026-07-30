@@ -13,6 +13,7 @@ import {
   createCourseDiscussionReplyResult,
   createCourseDiscussionThread,
   deleteCourseDiscussionReply,
+  deleteCourseDiscussionThread,
   toggleCourseDiscussionReplyUpvote,
   toggleCourseDiscussionThreadUpvote,
 } from '../../src/services/discussions.js'
@@ -79,6 +80,85 @@ async function holdParticipantVoteLock(
 
   return {
     release: releaseParticipantLock,
+    transaction,
+  }
+}
+
+type DiscussionTarget =
+  | { table: 'DiscussionThread'; threadId: number }
+  | { table: 'DiscussionReply'; replyId: number }
+
+async function waitForDiscussionTargetLockWaiters(
+  prisma: PrismaClient,
+  table: DiscussionTarget['table'],
+  expectedCount: number
+) {
+  const deadline = Date.now() + 5000
+  const queryPattern = `%UPDATE "public"."${table}"%`
+
+  while (Date.now() < deadline) {
+    const [result] = await prisma.$queryRaw<Array<{ count: number }>>(
+      Prisma.sql`
+        SELECT COUNT(*)::int AS "count"
+        FROM "pg_stat_activity"
+        WHERE "pid" <> pg_backend_pid()
+          AND "datname" = current_database()
+          AND "wait_event_type" = 'Lock'
+          AND "query" LIKE ${queryPattern}
+      `
+    )
+
+    if ((result?.count ?? 0) >= expectedCount) return
+
+    await new Promise((resolve) => setTimeout(resolve, 10))
+  }
+
+  throw new Error(
+    `Expected ${expectedCount} ${table} row lock waiter(s) before timeout`
+  )
+}
+
+async function holdDiscussionTargetLock(
+  prisma: PrismaClient,
+  target: DiscussionTarget
+) {
+  let signalLockAcquired!: () => void
+  const lockAcquired = new Promise<void>((resolve) => {
+    signalLockAcquired = resolve
+  })
+  let releaseTargetLock!: () => void
+  const targetLockReleased = new Promise<void>((resolve) => {
+    releaseTargetLock = resolve
+  })
+  const transaction = prisma.$transaction(async (tx) => {
+    if (target.table === 'DiscussionThread') {
+      await tx.$queryRaw(
+        Prisma.sql`
+          SELECT 1
+          FROM "DiscussionThread"
+          WHERE "id" = ${target.threadId}
+          FOR UPDATE
+        `
+      )
+    } else {
+      await tx.$queryRaw(
+        Prisma.sql`
+          SELECT 1
+          FROM "DiscussionReply"
+          WHERE "id" = ${target.replyId}
+          FOR UPDATE
+        `
+      )
+    }
+
+    signalLockAcquired()
+    await targetLockReleased
+  })
+
+  await lockAcquired
+
+  return {
+    release: releaseTargetLock,
     transaction,
   }
 }
@@ -557,6 +637,156 @@ export function registerContentAndConcurrencySuite(
         where: { replyId: reply!.id },
       })
     ).resolves.toBe(1)
+  })
+
+  it('keeps a thread counter aligned when deletion wins a race with unvote', async () => {
+    const { prisma, userOneCtx } = getContext()
+    const course = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, { courseId: course.id })
+
+    const authorId = await seedParticipantInCourse(prisma, {
+      courseId: course.id,
+    })
+    const voterId = await seedParticipantInCourse(prisma, {
+      courseId: course.id,
+    })
+    const authorCtx = createParticipantContext(userOneCtx, authorId)
+    const voterCtx = createParticipantContext(userOneCtx, voterId)
+    const thread = await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: 'A thread whose deletion races its final unvote.',
+        scope: { scopeType: DiscussionScopeType.COURSE },
+      },
+      authorCtx
+    )
+    await toggleCourseDiscussionThreadUpvote(
+      { threadId: thread!.id, upvote: true },
+      voterCtx
+    )
+
+    const targetLock = await holdDiscussionTargetLock(prisma, {
+      table: 'DiscussionThread',
+      threadId: thread!.id,
+    })
+    let threadDeletion!: ReturnType<typeof deleteCourseDiscussionThread>
+    let threadUnvote!: ReturnType<typeof toggleCourseDiscussionThreadUpvote>
+    const queuedOperations: Promise<unknown>[] = []
+    try {
+      threadDeletion = deleteCourseDiscussionThread(
+        { threadId: thread!.id },
+        authorCtx
+      )
+      queuedOperations.push(threadDeletion)
+      await waitForDiscussionTargetLockWaiters(prisma, 'DiscussionThread', 1)
+
+      threadUnvote = toggleCourseDiscussionThreadUpvote(
+        { threadId: thread!.id, upvote: false },
+        voterCtx
+      )
+      queuedOperations.push(threadUnvote)
+      await waitForDiscussionTargetLockWaiters(prisma, 'DiscussionThread', 2)
+    } finally {
+      targetLock.release()
+      const [lockResult] = await Promise.allSettled([
+        targetLock.transaction,
+        ...queuedOperations,
+      ])
+      if (lockResult?.status === 'rejected') throw lockResult.reason
+    }
+
+    const [deleted] = await Promise.all([threadDeletion, threadUnvote])
+    expect(deleted).toBe(true)
+    await expect(
+      prisma.discussionThread.findUnique({
+        where: { id: thread!.id },
+        select: { isDeleted: true, upvotes: true },
+      })
+    ).resolves.toEqual({ isDeleted: true, upvotes: 0 })
+    await expect(
+      prisma.discussionThreadVote.count({
+        where: { threadId: thread!.id },
+      })
+    ).resolves.toBe(0)
+  })
+
+  it('keeps a reply counter aligned when deletion wins a race with unvote', async () => {
+    const { prisma, userOneCtx } = getContext()
+    const course = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, { courseId: course.id })
+
+    const authorId = await seedParticipantInCourse(prisma, {
+      courseId: course.id,
+    })
+    const voterId = await seedParticipantInCourse(prisma, {
+      courseId: course.id,
+    })
+    const authorCtx = createParticipantContext(userOneCtx, authorId)
+    const voterCtx = createParticipantContext(userOneCtx, voterId)
+    const thread = await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: 'A thread whose reply deletion races its final unvote.',
+        scope: { scopeType: DiscussionScopeType.COURSE },
+      },
+      authorCtx
+    )
+    const reply = await createCourseDiscussionReply(
+      {
+        courseId: course.id,
+        threadId: thread!.id,
+        content: 'A reply whose deletion races its final unvote.',
+      },
+      authorCtx
+    )
+    await toggleCourseDiscussionReplyUpvote(
+      { replyId: reply!.id, upvote: true },
+      voterCtx
+    )
+
+    const targetLock = await holdDiscussionTargetLock(prisma, {
+      table: 'DiscussionReply',
+      replyId: reply!.id,
+    })
+    let replyDeletion!: ReturnType<typeof deleteCourseDiscussionReply>
+    let replyUnvote!: ReturnType<typeof toggleCourseDiscussionReplyUpvote>
+    const queuedOperations: Promise<unknown>[] = []
+    try {
+      replyDeletion = deleteCourseDiscussionReply(
+        { replyId: reply!.id },
+        authorCtx
+      )
+      queuedOperations.push(replyDeletion)
+      await waitForDiscussionTargetLockWaiters(prisma, 'DiscussionReply', 1)
+
+      replyUnvote = toggleCourseDiscussionReplyUpvote(
+        { replyId: reply!.id, upvote: false },
+        voterCtx
+      )
+      queuedOperations.push(replyUnvote)
+      await waitForDiscussionTargetLockWaiters(prisma, 'DiscussionReply', 2)
+    } finally {
+      targetLock.release()
+      const [lockResult] = await Promise.allSettled([
+        targetLock.transaction,
+        ...queuedOperations,
+      ])
+      if (lockResult?.status === 'rejected') throw lockResult.reason
+    }
+
+    const [deleted] = await Promise.all([replyDeletion, replyUnvote])
+    expect(deleted).toBe(true)
+    await expect(
+      prisma.discussionReply.findUnique({
+        where: { id: reply!.id },
+        select: { isDeleted: true, upvotes: true },
+      })
+    ).resolves.toEqual({ isDeleted: true, upvotes: 0 })
+    await expect(
+      prisma.discussionReplyVote.count({
+        where: { replyId: reply!.id },
+      })
+    ).resolves.toBe(0)
   })
 
   it('atomically caps visible replies at fifty per thread', async () => {

@@ -234,10 +234,9 @@ export async function toggleCourseDiscussionThreadUpvote(
 
     if (deletedVote.count === 0) return
 
-    await tx.discussionThread.updateMany({
+    const updatedThread = await tx.discussionThread.updateMany({
       where: {
         id: threadId,
-        isDeleted: false,
         upvotes: {
           gt: 0,
         },
@@ -248,6 +247,10 @@ export async function toggleCourseDiscussionThreadUpvote(
         },
       },
     })
+
+    if (updatedThread.count === 0) {
+      throw new DiscussionVoteCounterConflictError()
+    }
   })
 
   return getDiscussionThreadById({ threadId, participantId }, ctx)
@@ -331,10 +334,9 @@ export async function toggleCourseDiscussionReplyUpvote(
 
     if (deletedVote.count === 0) return
 
-    await tx.discussionReply.updateMany({
+    const updatedReply = await tx.discussionReply.updateMany({
       where: {
         id: replyId,
-        isDeleted: false,
         upvotes: {
           gt: 0,
         },
@@ -345,6 +347,10 @@ export async function toggleCourseDiscussionReplyUpvote(
         },
       },
     })
+
+    if (updatedReply.count === 0) {
+      throw new DiscussionVoteCounterConflictError()
+    }
   })
 
   const reply = await ctx.prisma.discussionReply.findUnique({
@@ -579,3 +585,4 @@ export async function deleteCourseDiscussionReply(
 }
 
 class DiscussionReplyDeleteConflictError extends Error {}
+class DiscussionVoteCounterConflictError extends Error {}
