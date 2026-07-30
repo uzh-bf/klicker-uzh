@@ -6,6 +6,7 @@ import {
   LiveQuizRewardRunStatus,
   PrismaClient,
   PublicationStatus,
+  ResponseCorrectness,
   TimelineEntryType,
 } from '@klicker-uzh/prisma/client'
 import { processElementData } from '@klicker-uzh/util'
@@ -1238,7 +1239,144 @@ describe('regular live quiz reward ledger integration', () => {
     ).resolves.toEqual({ status: 'UNAVAILABLE', plan: null })
   })
 
-  it('rejects missing daily and compacted weekly timeline evidence', async () => {
+  it('rejects a permanent inactive responder whose cache evidence is missing without writing state', async () => {
+    const fixture = await seedEndedRegularLiveQuizForReset(
+      { gamified: true, withRewardRun: false },
+      userOneCtx
+    )
+    const inactiveParticipant = await prisma.participant.create({
+      data: {
+        username: uuidv4(),
+        password: 'synthetic-test-password',
+        xp: 12,
+      },
+    })
+    const inactiveParticipation = await prisma.participation.create({
+      data: {
+        courseId: fixture.courseId!,
+        participantId: inactiveParticipant.id,
+        isActive: false,
+      },
+    })
+    await prisma.liveQuizResponse.create({
+      data: {
+        submittedAt: fixture.timelineDate,
+        response: { choices: [{ ix: 0, selected: true }] },
+        correctness: ResponseCorrectness.CORRECT,
+        basePoints: 0,
+        correctnessPoints: 0,
+        bonusPoints: 0,
+        timeSpent: 1,
+        elementBlockExecution: 0,
+        instanceId: fixture.instanceId,
+        participantId: inactiveParticipant.id,
+      },
+    })
+    await prisma.timelineEntry.create({
+      data: {
+        type: TimelineEntryType.DAILY,
+        timestamp: fixture.timelineDate,
+        collectedPoints: 0,
+        collectedXp: 12,
+        courseId: fixture.courseId!,
+        participationId: inactiveParticipation.id,
+      },
+    })
+    await userOneCtx.redisExec.hset(
+      `lq:${fixture.liveQuizId}:lb`,
+      inactiveParticipant.id,
+      0
+    )
+    await userOneCtx.redisExec.hset(
+      `lq:${fixture.liveQuizId}:xp`,
+      inactiveParticipant.id,
+      12
+    )
+    await userOneCtx.redisExec.hdel(
+      `lq:${fixture.liveQuizId}:lb`,
+      inactiveParticipant.id
+    )
+    await userOneCtx.redisExec.hdel(
+      `lq:${fixture.liveQuizId}:xp`,
+      inactiveParticipant.id
+    )
+
+    const readRewardState = async () => ({
+      activeRewardRunId: (
+        await prisma.liveQuiz.findUniqueOrThrow({
+          where: { id: fixture.liveQuizId },
+          select: { activeRewardRunId: true },
+        })
+      ).activeRewardRunId,
+      rewardRunCount: await prisma.liveQuizRewardRun.count({
+        where: { liveQuizId: fixture.liveQuizId },
+      }),
+      participantXp: (
+        await prisma.participant.findUniqueOrThrow({
+          where: { id: inactiveParticipant.id },
+          select: { xp: true },
+        })
+      ).xp,
+      responseCount: await prisma.liveQuizResponse.count({
+        where: { participantId: inactiveParticipant.id },
+      }),
+      timelineCount: await prisma.timelineEntry.count({
+        where: { participationId: inactiveParticipation.id },
+      }),
+    })
+    const stateBeforeInspection = await readRewardState()
+
+    await expect(
+      inspectLegacyRegularLiveQuizRewards(
+        { liveQuizId: fixture.liveQuizId },
+        userOneCtx
+      )
+    ).resolves.toEqual({ status: 'UNAVAILABLE', plan: null })
+    await expect(readRewardState()).resolves.toEqual(stateBeforeInspection)
+  })
+
+  it('ignores genuine temporary participants during legacy reconstruction', async () => {
+    const fixture = await seedEndedRegularLiveQuizForReset(
+      { gamified: true, withRewardRun: false },
+      userOneCtx
+    )
+    const temporaryParticipantId = uuidv4()
+    await prisma.temporaryLeaderboardEntry.create({
+      data: {
+        id: temporaryParticipantId,
+        quizId: fixture.liveQuizId,
+        username: 'Synthetic temporary participant',
+        score: 35,
+      },
+    })
+    await userOneCtx.redisExec.hset(
+      `lq:${fixture.liveQuizId}:lb`,
+      temporaryParticipantId,
+      35
+    )
+    await userOneCtx.redisExec.hset(
+      `lq:${fixture.liveQuizId}:xp`,
+      temporaryParticipantId,
+      9
+    )
+
+    const inspection = await inspectLegacyRegularLiveQuizRewards(
+      { liveQuizId: fixture.liveQuizId },
+      userOneCtx
+    )
+
+    expect(inspection).toMatchObject({
+      status: 'AVAILABLE',
+      plan: {
+        entries: [
+          expect.objectContaining({ participantId: fixture.participantId }),
+        ],
+      },
+    })
+    expect(inspection.plan?.entries).toHaveLength(1)
+  })
+
+  it('accepts missing daily and compacted weekly timeline state', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
       { gamified: true, withRewardRun: false },
       userOneCtx
@@ -1247,6 +1385,34 @@ describe('regular live quiz reward ledger integration', () => {
       where: {
         participationId: fixture.participationId!,
         courseId: fixture.courseId!,
+      },
+    })
+
+    await expect(
+      inspectLegacyRegularLiveQuizRewards(
+        { liveQuizId: fixture.liveQuizId },
+        userOneCtx
+      )
+    ).resolves.toMatchObject({ status: 'AVAILABLE' })
+  })
+
+  it('rejects an insufficient surviving timeline entry', async () => {
+    const fixture = await seedEndedRegularLiveQuizForReset(
+      { gamified: true, withRewardRun: false },
+      userOneCtx
+    )
+    await prisma.timelineEntry.update({
+      where: {
+        participationId_courseId_timestamp_type: {
+          participationId: fixture.participationId!,
+          courseId: fixture.courseId!,
+          timestamp: fixture.timelineDate,
+          type: TimelineEntryType.DAILY,
+        },
+      },
+      data: {
+        collectedPoints: fixture.awardedTimelinePoints - 1,
+        collectedXp: fixture.awardedTimelineXp - 1,
       },
     })
 

@@ -4,8 +4,10 @@ import {
   PrismaClient,
   PublicationStatus,
 } from '@klicker-uzh/prisma/client'
+import type { ElementInstanceResults } from '@klicker-uzh/types'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
+import { v4 as uuidv4 } from 'uuid'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { getLiveQuizResetSummary } from '../src/services/liveQuizReset.js'
 import {
@@ -76,6 +78,24 @@ describe('live quiz reset summary', () => {
       numOfTimelineChanges: 1,
       numOfAchievementChanges: 1,
     })
+  })
+
+  it('counts persisted responses instead of aggregate result totals', async () => {
+    const fixture = await seedEndedRegularLiveQuizForReset(
+      { gamified: false, withRewardRun: false, withCourse: false },
+      userOneCtx
+    )
+    await prisma.elementInstance.update({
+      where: { id: fixture.instanceId },
+      data: {
+        results: { total: 91 } as ElementInstanceResults,
+        anonymousResults: { total: 37 } as ElementInstanceResults,
+      },
+    })
+
+    await expect(
+      getLiveQuizResetSummary({ quizId: fixture.liveQuizId }, userOneCtx)
+    ).resolves.toMatchObject({ numOfResponses: 1 })
   })
 
   it('allows an activity administrator to inspect a regular quiz', async () => {
@@ -279,6 +299,38 @@ describe('live quiz reset summary', () => {
         { quizId: reversedFixture.liveQuizId },
         userOneCtx
       )
+    ).resolves.toMatchObject({
+      eligible: false,
+      reason: 'REWARD_DATA_UNAVAILABLE',
+      legacyReconstructionStatus: 'UNAVAILABLE',
+    })
+  })
+
+  it('rejects a ledger entry whose participation belongs to another participant', async () => {
+    const fixture = await seedEndedRegularLiveQuizForReset(
+      { gamified: true, withRewardRun: true },
+      userOneCtx
+    )
+    const otherParticipant = await prisma.participant.create({
+      data: {
+        username: uuidv4(),
+        password: 'synthetic-test-password',
+      },
+    })
+    const otherParticipation = await prisma.participation.create({
+      data: {
+        courseId: fixture.courseId!,
+        participantId: otherParticipant.id,
+        isActive: true,
+      },
+    })
+    await prisma.liveQuizRewardEntry.updateMany({
+      where: { rewardRunId: fixture.rewardRunId! },
+      data: { participationId: otherParticipation.id },
+    })
+
+    await expect(
+      getLiveQuizResetSummary({ quizId: fixture.liveQuizId }, userOneCtx)
     ).resolves.toMatchObject({
       eligible: false,
       reason: 'REWARD_DATA_UNAVAILABLE',

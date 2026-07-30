@@ -549,9 +549,9 @@ async function legacyPlanMatchesCurrentRewards({
       )
       const timeline = daily ?? weekly
       if (
-        !timeline ||
-        timeline.collectedPoints < entry.timelinePointsAwarded ||
-        timeline.collectedXp < entry.timelineXpAwarded
+        timeline &&
+        (timeline.collectedPoints < entry.timelinePointsAwarded ||
+          timeline.collectedXp < entry.timelineXpAwarded)
       ) {
         return false
       }
@@ -617,58 +617,36 @@ export async function inspectLegacyRegularLiveQuizRewards(
   }
 
   const cachedIds = [...cachedRewards.keys()]
-  if (
-    cachedIds.length === 0 ||
-    cachedIds.some((id) => !uuidValidate(id)) ||
-    !cachedIds.some((id) => cachedRewards.get(id)?.xp !== undefined)
-  ) {
+  if (cachedIds.some((id) => !uuidValidate(id))) {
     return { status: 'UNAVAILABLE', plan: null }
   }
 
-  const persistedScores = new Map<string, number>()
-  const sessionEntryByParticipant = new Map<
-    string,
-    (typeof quiz.leaderboard)[number]
-  >()
-  for (const entry of quiz.leaderboard) {
-    if (persistedScores.has(entry.participantId)) {
-      return { status: 'UNAVAILABLE', plan: null }
-    }
-    persistedScores.set(entry.participantId, entry.score)
-    sessionEntryByParticipant.set(entry.participantId, entry)
-  }
-  for (const entry of quiz.temporaryLeaderboard) {
-    if (persistedScores.has(entry.id)) {
-      return { status: 'UNAVAILABLE', plan: null }
-    }
-    persistedScores.set(entry.id, entry.score)
-  }
-
-  const cachedScoreEntries = [...cachedRewards.entries()].flatMap(
-    ([participantId, reward]) =>
-      reward.score === undefined
-        ? []
-        : ([[participantId, reward.score]] as const)
+  const responseParticipants = await prismaClient.liveQuizResponse.findMany({
+    where: { instance: { elementBlock: { liveQuizId } } },
+    select: { participantId: true },
+    distinct: ['participantId'],
+  })
+  const responseParticipantIds = new Set(
+    responseParticipants.map((response) => response.participantId)
   )
-  if (
-    cachedScoreEntries.length !== persistedScores.size ||
-    cachedScoreEntries.some(
-      ([participantId, score]) => persistedScores.get(participantId) !== score
-    )
-  ) {
-    return { status: 'UNAVAILABLE', plan: null }
-  }
-
+  const candidateParticipantIds = [
+    ...new Set([
+      ...cachedIds,
+      ...responseParticipantIds,
+      ...quiz.leaderboard.map((entry) => entry.participantId),
+      ...quiz.temporaryLeaderboard.map((entry) => entry.id),
+    ]),
+  ]
   const [participants, participations] = await Promise.all([
     prismaClient.participant.findMany({
-      where: { id: { in: cachedIds } },
+      where: { id: { in: candidateParticipantIds } },
       select: { id: true },
     }),
     quiz.courseId
       ? prismaClient.participation.findMany({
           where: {
             courseId: quiz.courseId,
-            participantId: { in: cachedIds },
+            participantId: { in: candidateParticipantIds },
           },
           select: { id: true, isActive: true, participantId: true },
         })
@@ -690,27 +668,76 @@ export async function inspectLegacyRegularLiveQuizRewards(
     )
   )
 
-  for (const participantId of cachedIds) {
-    const cachedReward = cachedRewards.get(participantId)!
+  const persistedScores = new Map<string, number>()
+  const sessionEntryByParticipant = new Map<
+    string,
+    (typeof quiz.leaderboard)[number]
+  >()
+  for (const entry of quiz.leaderboard) {
     if (
-      (cachedReward.xp !== undefined &&
-        !existingParticipantIds.has(participantId)) ||
-      (existingParticipantIds.has(participantId) &&
-        cachedReward.score !== undefined &&
-        cachedReward.xp === undefined)
+      !existingParticipantIds.has(entry.participantId) ||
+      persistedScores.has(entry.participantId)
+    ) {
+      return { status: 'UNAVAILABLE', plan: null }
+    }
+    persistedScores.set(entry.participantId, entry.score)
+    sessionEntryByParticipant.set(entry.participantId, entry)
+  }
+
+  const permanentTemporaryParticipantIds = new Set<string>()
+  const genuineTemporaryParticipantIds = new Set<string>()
+  for (const entry of quiz.temporaryLeaderboard) {
+    if (!existingParticipantIds.has(entry.id)) {
+      genuineTemporaryParticipantIds.add(entry.id)
+      continue
+    }
+    if (persistedScores.has(entry.id)) {
+      return { status: 'UNAVAILABLE', plan: null }
+    }
+    permanentTemporaryParticipantIds.add(entry.id)
+    persistedScores.set(entry.id, entry.score)
+  }
+
+  for (const participantId of cachedIds) {
+    if (
+      !existingParticipantIds.has(participantId) &&
+      !genuineTemporaryParticipantIds.has(participantId)
     ) {
       return { status: 'UNAVAILABLE', plan: null }
     }
   }
 
-  for (const [participantId, sessionEntry] of sessionEntryByParticipant) {
+  const expectedPermanentParticipantIds = new Set([
+    ...responseParticipantIds,
+    ...sessionEntryByParticipant.keys(),
+    ...permanentTemporaryParticipantIds,
+    ...cachedIds.filter((id) => existingParticipantIds.has(id)),
+  ])
+  for (const participantId of expectedPermanentParticipantIds) {
     if (
       !existingParticipantIds.has(participantId) ||
       cachedRewards.get(participantId)?.xp === undefined
     ) {
       return { status: 'UNAVAILABLE', plan: null }
     }
+  }
 
+  const cachedPermanentScoreEntries = [...cachedRewards.entries()].flatMap(
+    ([participantId, reward]) =>
+      existingParticipantIds.has(participantId) && reward.score !== undefined
+        ? ([[participantId, reward.score]] as const)
+        : []
+  )
+  if (
+    cachedPermanentScoreEntries.length !== persistedScores.size ||
+    cachedPermanentScoreEntries.some(
+      ([participantId, score]) => persistedScores.get(participantId) !== score
+    )
+  ) {
+    return { status: 'UNAVAILABLE', plan: null }
+  }
+
+  for (const [participantId, sessionEntry] of sessionEntryByParticipant) {
     if (quiz.courseId !== null) {
       const participation = participationByParticipant.get(participantId)
       if (
@@ -724,30 +751,21 @@ export async function inspectLegacyRegularLiveQuizRewards(
     }
   }
 
-  const rewardParticipants: LiveQuizRewardParticipant[] = cachedIds.flatMap(
-    (participantId) => {
-      const reward = cachedRewards.get(participantId)!
-      if (
-        reward.xp === undefined ||
-        !existingParticipantIds.has(participantId)
-      ) {
-        return []
-      }
-      const participation = participationByParticipant.get(participantId)
-      return [
-        {
-          participantId,
-          participationId: participation?.id ?? null,
-          courseId: quiz.courseId,
-          hasActiveParticipation: participation?.isActive ?? false,
-          isCourseGamificationEnabled:
-            quiz.course?.isGamificationEnabled ?? false,
-          score: reward.score,
-          xp: reward.xp,
-        },
-      ]
+  const rewardParticipants: LiveQuizRewardParticipant[] = [
+    ...expectedPermanentParticipantIds,
+  ].map((participantId) => {
+    const reward = cachedRewards.get(participantId)!
+    const participation = participationByParticipant.get(participantId)
+    return {
+      participantId,
+      participationId: participation?.id ?? null,
+      courseId: quiz.courseId,
+      hasActiveParticipation: participation?.isActive ?? false,
+      isCourseGamificationEnabled: quiz.course?.isGamificationEnabled ?? false,
+      score: reward.score,
+      xp: reward.xp,
     }
-  )
+  })
 
   let achievements: CalculateLiveQuizRewardPlanInput['achievements']
   try {

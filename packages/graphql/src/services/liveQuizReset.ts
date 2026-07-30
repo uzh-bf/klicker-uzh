@@ -76,6 +76,10 @@ function hasValidRewardEntries(
   entries: Array<{
     participantId: string | null
     participationId: number | null
+    participation: {
+      participantId: string
+      courseId: string
+    } | null
     courseId: string | null
     coursePointsAwarded: number
     participantXpAwarded: number
@@ -89,6 +93,10 @@ function hasValidRewardEntries(
   return entries.every(
     (entry) =>
       entry.participantId !== null &&
+      (entry.participationId === null ||
+        (entry.participation !== null &&
+          entry.participation.participantId === entry.participantId &&
+          entry.participation.courseId === entry.courseId)) &&
       (entry.coursePointsAwarded === 0 ||
         (entry.participationId !== null && entry.courseId !== null)) &&
       (entry.timelinePointsAwarded === 0 && entry.timelineXpAwarded === 0
@@ -119,12 +127,24 @@ export async function getLiveQuizResetSummary(
           },
         },
       },
-      activeRewardRun: { include: { entries: true } },
+      activeRewardRun: {
+        include: {
+          entries: {
+            include: {
+              participation: {
+                select: { participantId: true, courseId: true },
+              },
+            },
+          },
+        },
+      },
       rewardRuns: { select: { id: true, status: true } },
       blocks: {
         select: {
           elements: {
-            select: { results: true, anonymousResults: true },
+            select: {
+              _count: { select: { liveQuizResponses: true } },
+            },
           },
         },
       },
@@ -164,7 +184,7 @@ export async function getLiveQuizResetSummary(
       quizTotal +
       block.elements.reduce(
         (blockTotal, instance) =>
-          blockTotal + instance.results.total + instance.anonymousResults.total,
+          blockTotal + instance._count.liveQuizResponses,
         0
       ),
     0
