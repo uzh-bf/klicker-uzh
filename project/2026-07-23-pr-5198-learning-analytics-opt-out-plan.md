@@ -9,7 +9,7 @@
 - Pull request: [#5198](https://github.com/uzh-bf/klicker-uzh/pull/5198)
 - Active stack branch: `codex/la-opt-out-deidentified-output`
 - Active stack target: `codex/la-opt-out-computation-eligibility`
-- Active stack pull request: not yet published
+- Active stack pull request: [#5245](https://github.com/uzh-bf/klicker-uzh/pull/5245)
 - Change type: `feat`
 - ADRs:
   - [ADR 0001](../docs/adr/0001-separate-course-and-participant-learning-analytics-controls.md)
@@ -635,3 +635,7 @@ Commit:
   `/private/tmp/la-opt-out-slice5/`.
 - Current: Slice 5 is verified and ready to publish from
   `codex/la-opt-out-deidentified-output`.
+- 2026-07-30: Slice 5 published as draft PR #5245, stacked directly on Slice
+  4's branch. The rendered base/head metadata, draft state, and initial checks
+  were verified.
+- Current: Slice 5 is under review in draft PR #5245.
