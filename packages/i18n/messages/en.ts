@@ -950,14 +950,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'This thread has reached the maximum number of replies.',
       upvoteFailed:
         'Unable to update upvote. Sign in as a participant to vote.',
-      threadUpvoteAriaLabel:
-        'Upvote question, {count, plural, =1 {1 current upvote} other {# current upvotes}}',
-      threadRemoveUpvoteAriaLabel:
-        'Remove upvote from question, {count, plural, =1 {1 current upvote} other {# current upvotes}}',
-      replyUpvoteAriaLabel:
-        'Upvote reply, {count, plural, =1 {1 current upvote} other {# current upvotes}}',
-      replyRemoveUpvoteAriaLabel:
-        'Remove upvote from reply, {count, plural, =1 {1 current upvote} other {# current upvotes}}',
+      threadUpvoteAriaLabel: 'Upvote question',
+      replyUpvoteAriaLabel: 'Upvote reply',
       threadUpvoteCountAriaLabel:
         '{count, plural, =1 {1 upvote} other {# upvotes}}',
       replyUpvoteCountAriaLabel:

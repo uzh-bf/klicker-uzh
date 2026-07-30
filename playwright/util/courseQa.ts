@@ -21,7 +21,8 @@ export const COURSE_QA_DATA = {
     displayName: 'Course QA Practice Quiz (Display)',
   },
   threads: {
-    course1: 'This is the first course-level QA question from a student.',
+    course1:
+      'This is the first course-level QA question from a student. It includes enough context to wrap beyond the compact two-line lecturer preview, so the complete question becomes readable when the lecturer expands the thread without leaving the course workspace. The student has compared the lecture notes, the worked example, and the practice material but still cannot reconcile the final step. They want to know which assumption changes the result, why that assumption is valid in this course context, and how they should recognize the same pattern in a later exercise.',
     course2: 'A second question about the course material.',
     reply1: 'Here is a helpful reply to the first thread.',
     stack1:

@@ -206,14 +206,7 @@ function CourseDiscussionThreadCard({
             }}
             data={{ cy: `course-qa-thread-upvote-${thread.id}` }}
             aria-pressed={!!thread.hasUpvoted}
-            aria-label={t(
-              thread.hasUpvoted
-                ? 'pwa.courseQA.threadRemoveUpvoteAriaLabel'
-                : 'pwa.courseQA.threadUpvoteAriaLabel',
-              {
-                count: thread.upvotes,
-              }
-            )}
+            aria-label={t('pwa.courseQA.threadUpvoteAriaLabel')}
           >
             <Button.Icon icon={faThumbsUp} />
             <Button.Label>{String(thread.upvotes)}</Button.Label>
@@ -284,14 +277,7 @@ function CourseDiscussionThreadCard({
                   }}
                   data={{ cy: `course-qa-reply-upvote-${reply.id}` }}
                   aria-pressed={!!reply.hasUpvoted}
-                  aria-label={t(
-                    reply.hasUpvoted
-                      ? 'pwa.courseQA.replyRemoveUpvoteAriaLabel'
-                      : 'pwa.courseQA.replyUpvoteAriaLabel',
-                    {
-                      count: reply.upvotes,
-                    }
-                  )}
+                  aria-label={t('pwa.courseQA.replyUpvoteAriaLabel')}
                 >
                   <Button.Icon
                     icon={faThumbsUp}

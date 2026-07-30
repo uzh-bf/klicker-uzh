@@ -260,8 +260,8 @@ function CourseDiscussionOverview({
                         className="focus-visible:outline-primary-100 flex cursor-pointer list-none items-start gap-3 p-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                         data-cy={`course-qa-overview-thread-toggle-${thread.id}`}
                       >
-                        <div className="min-w-0 flex-1">
-                          <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-gray-600">
+                        <span className="min-w-0 flex-1">
+                          <span className="mb-1 flex flex-wrap items-center gap-2 text-xs text-gray-600">
                             <span className="max-w-full break-words rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">
                               {getDiscussionScopeDisplayLabel(
                                 thread.scope,
@@ -269,7 +269,15 @@ function CourseDiscussionOverview({
                               )}
                             </span>
                             <span>{formatDateTime(thread.lastActivityAt)}</span>
-                            <span className="flex items-center gap-1">
+                            <span
+                              className="flex items-center gap-1"
+                              aria-label={t(
+                                'pwa.courseQA.threadUpvoteCountAriaLabel',
+                                {
+                                  count: thread.upvotes,
+                                }
+                              )}
+                            >
                               <FontAwesomeIcon
                                 icon={faThumbsUp}
                                 className="text-gray-500"
@@ -282,14 +290,14 @@ function CourseDiscussionOverview({
                                 count: thread.replyCount,
                               })}
                             </span>
-                          </div>
-                          <div
+                          </span>
+                          <span
                             className="line-clamp-2 whitespace-pre-wrap break-words text-sm group-open:line-clamp-none"
                             data-cy={`course-qa-overview-thread-content-${thread.id}`}
                           >
                             {thread.content}
-                          </div>
-                        </div>
+                          </span>
+                        </span>
                         <FontAwesomeIcon
                           icon={faChevronDown}
                           className="mt-1 shrink-0 text-gray-500 group-open:rotate-180 motion-safe:transition-transform"
@@ -302,11 +310,6 @@ function CourseDiscussionOverview({
                           className="border-t border-gray-100 bg-gray-50 px-3 py-2"
                           data-cy={`course-qa-overview-thread-details-${thread.id}`}
                         >
-                          <div className="mb-1 text-xs font-semibold text-gray-700">
-                            {t('pwa.courseQA.nReply', {
-                              count: thread.replyCount,
-                            })}
-                          </div>
                           <div className="divide-y divide-gray-200">
                             {thread.replies.map((reply) => (
                               <div
@@ -319,7 +322,15 @@ function CourseDiscussionOverview({
                                 </div>
                                 <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
                                   <span>{formatDateTime(reply.createdAt)}</span>
-                                  <span className="flex items-center gap-1">
+                                  <span
+                                    className="flex items-center gap-1"
+                                    aria-label={t(
+                                      'pwa.courseQA.replyUpvoteCountAriaLabel',
+                                      {
+                                        count: reply.upvotes,
+                                      }
+                                    )}
+                                  >
                                     <FontAwesomeIcon
                                       icon={faThumbsUp}
                                       aria-hidden="true"

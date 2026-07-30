@@ -98,11 +98,11 @@ concurrency, scope behavior, pagination, and presentation metadata.
 ## Screenshot Inventory
 
 The canonical review surface is
-`project/_local/course-qa-screenshots/index.html`. It links 49 verified images:
+`project/_local/course-qa-screenshots/index.html`. It links 50 verified images:
 
 - final integrated lecturer review, embed controls, desktop side rail, accessible
   selected vote, mobile disclosure, and fallback route: `current-final-ui/01`
-  to `06`
+  to `07`
 - Manage empty/full-width/grouped overview, settings, and external embed
   generation plus current 20-to-21 pagination: screenshots `19` to `21`, `37`,
   `38`, and `41` to `43`
