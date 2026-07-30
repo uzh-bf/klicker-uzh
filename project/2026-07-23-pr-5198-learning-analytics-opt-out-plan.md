@@ -9,6 +9,8 @@
 - Pull request: [#5198](https://github.com/uzh-bf/klicker-uzh/pull/5198)
 - Active stack branch: `codex/la-opt-out-lecturer-control`
 - Active stack target: `codex/learning-analytics-opt-out-plan`
+- Active stack pull request:
+  [#5242](https://github.com/uzh-bf/klicker-uzh/pull/5242)
 - Change type: `feat`
 - ADRs:
   - [ADR 0001](../docs/adr/0001-separate-course-and-participant-learning-analytics-controls.md)
@@ -550,5 +552,8 @@ Commit:
   all 22 scheduled workspace builds.
 - Current: Slice 2 verified and ready to publish from
   `codex/la-opt-out-lecturer-control`.
-- Next: Publish the draft PR stacked on
-  `codex/learning-analytics-opt-out-plan`, then start Slice 3 from that commit.
+- 2026-07-30: Slice 2 published as draft PR #5242, stacked directly on PR
+  #5198's branch. The rendered base/head metadata and draft state were verified;
+  CI started with GitGuardian passing and repository checks queued.
+- Current: Slice 2 is under review in draft PR #5242.
+- Next: Start Slice 3 from PR #5242's head commit.
