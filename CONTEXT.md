@@ -27,7 +27,7 @@ Student-level LA rows and filtered breakdowns are available only when at least f
 _Avoid_: Small-group exception
 
 **LA participation choice**:
-A required, course-specific choice shown before a participant joins an LA-enabled course. Neither option is preselected. The explanation presents the benefits for participants and lecturers, the activity data used for LA, what lecturers can see, and what is explicitly excluded. The participant can join and use the course regardless of the choice.
+A neutral, course-specific choice shown when a participant joins or next enters an LA-enabled course. Neither option is preselected. The explanation presents the benefits for participants and lecturers, the activity data used for LA, what lecturers can see, and what is explicitly excluded. The participant can decide later and join or use the course without making a choice.
 _Avoid_: Consent checkbox, acceptance
 
 Participants can change their LA participation choice at any time within the course.
@@ -38,6 +38,11 @@ A material disclosure change requires a new choice and excludes activity until t
 
 **LA coverage**:
 Whether a participant permitted LA throughout the selected analysis period. Coverage is complete when LA was permitted for the whole period and partial when it was permitted for only part of it. Coverage does not describe whether the participant completed every activity.
+
+The current whole-course performance view uses the course start date as the
+analysis-period boundary. A participant is complete only when their current
+inclusion began no later than that boundary; missing or unfinished activities
+do not change coverage.
 _Avoid_: Partial participant, complete participant
 
 LA reports and exports can filter for complete coverage within their selected period. Every aggregate or data point reports its effective sample size after applying LA eligibility, coverage filters, and the metric's own inclusion rule. The LA disclosure threshold applies to that effective sample size.

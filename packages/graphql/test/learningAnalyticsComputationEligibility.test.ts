@@ -176,7 +176,7 @@ describe('Learning analytics computation eligibility', () => {
         ...Array.from({ length: 5 }, (_, index) => ({
           username: `la-direct-eligible-${index}-${course.id}`,
           status: LearningAnalyticsParticipationStatus.INCLUDED,
-          includedFrom: new Date('2026-07-30T09:00:00.000Z'),
+          includedFrom: new Date('2026-06-30T23:00:00.000Z'),
         })),
         {
           username: `la-direct-late-${course.id}`,

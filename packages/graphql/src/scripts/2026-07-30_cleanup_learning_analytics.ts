@@ -6,7 +6,7 @@
  * Usage:
  *   pnpm --filter @klicker-uzh/graphql script:prod:cleanup-learning-analytics
  *   DRY_RUN=false \
- *     CONFIRM_LEARNING_ANALYTICS_CLEANUP=DELETE_ALL_PRE_FEATURE_DERIVED_DATA \
+ *     CONFIRM_LEARNING_ANALYTICS_CLEANUP=<reviewed-snapshot-hash> \
  *     pnpm --filter @klicker-uzh/graphql script:prod:cleanup-learning-analytics
  */
 import { prisma } from '@klicker-uzh/prisma'
@@ -14,6 +14,7 @@ import type { PrismaTransactionClient } from '@klicker-uzh/util'
 import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import {
+  DEDICATED_LEARNING_ANALYTICS_MODELS,
   deleteAllDedicatedLearningAnalytics,
   readAllDedicatedLearningAnalyticsCounts,
   type DedicatedLearningAnalyticsCounts,
@@ -29,15 +30,16 @@ interface OperationalCounts {
 }
 
 interface CleanupSnapshot {
-  contractVersion: 1
+  contractVersion: 2
   contractHash: string
+  snapshotHash: string
   dedicatedLearningAnalytics: DedicatedLearningAnalyticsCounts
   operationalData: OperationalCounts
 }
 
 const DRY_RUN = process.env.DRY_RUN !== 'false'
 const WRITE_CONFIRMATION = process.env.CONFIRM_LEARNING_ANALYTICS_CLEANUP ?? ''
-const REQUIRED_CONFIRMATION = 'DELETE_ALL_PRE_FEATURE_DERIVED_DATA'
+const CLEANUP_RECEIPT_ID = '2026-07-30-pre-feature-derived-data'
 const cleanupDirectoryUrl = new URL('./_local/', import.meta.url)
 const beforeDumpUrl = new URL(
   'learning_analytics_cleanup_dump_before.json',
@@ -48,7 +50,7 @@ const afterDumpUrl = new URL(
   cleanupDirectoryUrl
 )
 const CONTRACT = {
-  version: 1,
+  version: 2,
   scope: 'all dedicated learning-analytics result rows',
   excludedData: [
     'courses',
@@ -60,19 +62,7 @@ const CONTRACT = {
     'grading and gamification',
     'research consent',
   ],
-  dedicatedModels: [
-    'ParticipantAnalytics',
-    'CompetencyAnalytics',
-    'AggregatedAnalytics',
-    'AggregatedCompetencyAnalytics',
-    'ParticipantCourseAnalytics',
-    'AggregatedCourseAnalytics',
-    'ParticipantPerformance',
-    'InstancePerformance',
-    'ActivityPerformance',
-    'ParticipantActivityPerformance',
-    'ActivityProgress',
-  ],
+  dedicatedModels: DEDICATED_LEARNING_ANALYTICS_MODELS,
 } as const
 const CONTRACT_HASH = createHash('sha256')
   .update(JSON.stringify(CONTRACT))
@@ -115,11 +105,17 @@ async function createSnapshot(
     readOperationalCounts(client),
   ])
 
-  return {
-    contractVersion: 1,
+  const payload = {
+    contractVersion: 2 as const,
     contractHash: CONTRACT_HASH,
     dedicatedLearningAnalytics,
     operationalData,
+  }
+  return {
+    ...payload,
+    snapshotHash: createHash('sha256')
+      .update(JSON.stringify(payload))
+      .digest('hex'),
   }
 }
 
@@ -168,9 +164,13 @@ function logCounts(label: string, counts: DedicatedLearningAnalyticsCounts) {
 }
 
 async function main() {
-  if (fs.existsSync(afterDumpUrl)) {
+  const existingReceipt =
+    await prisma.learningAnalyticsCleanupReceipt.findUnique({
+      where: { id: CLEANUP_RECEIPT_ID },
+    })
+  if (existingReceipt) {
     throw new Error(
-      'The after-state receipt exists. This one-time cleanup has completed and must not be replayed.'
+      `The durable cleanup receipt exists (${existingReceipt.completedAt.toISOString()}). This one-time cleanup has completed and must not be replayed.`
     )
   }
 
@@ -179,6 +179,7 @@ async function main() {
     `Dry Run Mode: ${DRY_RUN ? 'ENABLED (no database writes)' : 'DISABLED (database writes active)'}`
   )
   console.log(`Cleanup contract: ${CONTRACT_HASH}`)
+  console.log(`Reviewed snapshot hash: ${currentSnapshot.snapshotHash}`)
   logCounts(
     'Dedicated learning-analytics rows:',
     currentSnapshot.dedicatedLearningAnalytics
@@ -202,22 +203,23 @@ async function main() {
     return
   }
 
-  if (WRITE_CONFIRMATION !== REQUIRED_CONFIRMATION) {
+  if (WRITE_CONFIRMATION !== currentSnapshot.snapshotHash) {
     throw new Error(
-      `A write requires CONFIRM_LEARNING_ANALYTICS_CLEANUP=${REQUIRED_CONFIRMATION}.`
+      'A write requires CONFIRM_LEARNING_ANALYTICS_CLEANUP to equal the reviewed dry-run snapshot hash.'
     )
   }
-  if (!fs.existsSync(beforeDumpUrl)) {
-    throw new Error(
-      'Missing before-state dump. Run and review the dry-run command first.'
-    )
-  }
-
-  const reviewedSnapshot = readSnapshot(beforeDumpUrl)
-  assertSameSnapshot(currentSnapshot, reviewedSnapshot, 'Current state')
 
   const afterSnapshot = await prisma.$transaction(
     async (tx) => {
+      const receipt = await tx.learningAnalyticsCleanupReceipt.findUnique({
+        where: { id: CLEANUP_RECEIPT_ID },
+      })
+      if (receipt) {
+        throw new Error(
+          'The durable cleanup receipt already exists. This one-time cleanup must not be replayed.'
+        )
+      }
+
       const courses = await tx.course.findMany({
         select: { id: true },
         orderBy: { id: 'asc' },
@@ -229,7 +231,7 @@ async function main() {
       const transactionBefore = await createSnapshot(tx)
       assertSameSnapshot(
         transactionBefore,
-        reviewedSnapshot,
+        currentSnapshot,
         'Transaction starting state'
       )
 
@@ -248,6 +250,14 @@ async function main() {
         )
       }
 
+      await tx.learningAnalyticsCleanupReceipt.create({
+        data: {
+          id: CLEANUP_RECEIPT_ID,
+          contractHash: CONTRACT_HASH,
+          snapshotHash: transactionBefore.snapshotHash,
+        },
+      })
+
       return transactionAfter
     },
     {
@@ -257,12 +267,19 @@ async function main() {
     }
   )
 
-  writeSnapshot(afterDumpUrl, afterSnapshot)
+  if (!fs.existsSync(afterDumpUrl)) {
+    writeSnapshot(afterDumpUrl, afterSnapshot)
+  }
   logCounts(
     'Verified dedicated learning-analytics rows after cleanup:',
     afterSnapshot.dedicatedLearningAnalytics
   )
-  console.log(`After-state receipt: ${afterDumpUrl.pathname}`)
+  console.log(
+    `Durable database receipt: LearningAnalyticsCleanupReceipt/${CLEANUP_RECEIPT_ID}`
+  )
+  if (fs.existsSync(afterDumpUrl)) {
+    console.log(`Local after-state dump: ${afterDumpUrl.pathname}`)
+  }
 }
 
 main()

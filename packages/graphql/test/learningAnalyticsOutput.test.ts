@@ -8,6 +8,8 @@ import {
 function buildRows(count: number, partialCount = 0) {
   return Array.from({ length: count }, (_, index) => ({
     participantId: `internal-participant-${index + 1}`,
+    coverage:
+      index < partialCount ? ('PARTIAL' as const) : ('COMPLETE' as const),
     activityPerformances: [
       {
         id: index * 2 + 1,
@@ -15,16 +17,12 @@ function buildRows(count: number, partialCount = 0) {
         totalScore: 10 + index,
         completion: 1,
       },
-      ...(index < partialCount
-        ? []
-        : [
-            {
-              id: index * 2 + 2,
-              activityId: 'activity-two',
-              totalScore: 20 + index,
-              completion: 0.61,
-            },
-          ]),
+      {
+        id: index * 2 + 2,
+        activityId: 'activity-two',
+        totalScore: 20 + index,
+        completion: 0.61,
+      },
     ],
   }))
 }
@@ -74,6 +72,24 @@ describe('learning analytics output policy', () => {
     expect(report).toEqual({ effectiveN: 4, rows: [] })
   })
 
+  it('keeps coverage independent from activity completion', () => {
+    const rows = buildRows(5)
+    rows[0]!.activityPerformances = rows[0]!.activityPerformances.slice(0, 1)
+
+    const report = deidentifyLearningAnalyticsRows({
+      rows,
+      activityIds: ['activity-one', 'activity-two'],
+      includePartial: false,
+      nextRandomInt: (max) => max - 1,
+    })
+
+    expect(report.effectiveN).toBe(5)
+    expect(report.rows[0]).toMatchObject({
+      coverage: 'COMPLETE',
+      activityPerformances: [{ activityId: 'activity-one' }],
+    })
+  })
+
   it('exports only coarse summaries and coverage metadata', () => {
     const report = deidentifyLearningAnalyticsRows({
       rows: buildRows(5, 1),
@@ -91,7 +107,7 @@ describe('learning analytics output policy', () => {
       studentLabel: 'Student 1',
       coverage: 'PARTIAL',
       completedActivities: 1,
-      meanCompletion: 1,
+      meanCompletion: 0.8,
     })
     expect(csv).toContain('coverage,complete_and_partial')
     expect(csv).toContain('effectiveN,5')

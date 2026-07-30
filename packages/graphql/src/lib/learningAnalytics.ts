@@ -37,20 +37,6 @@ export function isLearningAnalyticsAvailableForCourse(
   return isLearningAnalyticsRolloutEnabled() && isCourseEnabled
 }
 
-export function assertLearningAnalyticsChoiceProvided(
-  isCourseEnabled: boolean,
-  status?: LearningAnalyticsChoiceStatus | null
-) {
-  if (
-    isLearningAnalyticsAvailableForCourse(isCourseEnabled) &&
-    (typeof status === 'undefined' || status === null)
-  ) {
-    throw new GraphQLError('LEARNING_ANALYTICS_CHOICE_REQUIRED', {
-      extensions: { code: 'LEARNING_ANALYTICS_CHOICE_REQUIRED' },
-    })
-  }
-}
-
 export function buildLearningAnalyticsChoiceData(
   status: LearningAnalyticsChoiceStatus,
   choiceAt = new Date()

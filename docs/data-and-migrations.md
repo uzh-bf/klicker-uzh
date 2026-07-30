@@ -61,16 +61,19 @@ authorizing the write:
 pnpm --filter @klicker-uzh/graphql script:prod:cleanup-learning-analytics
 
 DRY_RUN=false \
-CONFIRM_LEARNING_ANALYTICS_CLEANUP=DELETE_ALL_PRE_FEATURE_DERIVED_DATA \
+CONFIRM_LEARNING_ANALYTICS_CLEANUP=<reviewed-snapshot-hash> \
 pnpm --filter @klicker-uzh/graphql script:prod:cleanup-learning-analytics
 ```
 
-The write refuses a changed database snapshot or cleanup contract. It acquires
-the same course advisory locks as runtime LA writers, runs at `Serializable`,
-verifies every dedicated model is empty and representative operational counts
-are unchanged, then creates an after-state receipt that blocks replay. Run it
-once, before enabling the rollout, during an approved operational window. Never
-commit either local dump.
+Use the exact snapshot hash printed by the reviewed dry run; it binds approval
+to both the database counts and cleanup contract. The write refuses a changed
+snapshot or contract. It acquires the same course advisory locks as runtime LA
+writers, runs at `Serializable`, verifies every dedicated model is empty and
+representative operational counts are unchanged, then creates a durable
+`LearningAnalyticsCleanupReceipt` in the same transaction. That database
+receipt blocks replay across pods and deployments. Run it once, before enabling
+the rollout, during an approved operational window. Never commit either local
+dump.
 
 ## Migrations
 

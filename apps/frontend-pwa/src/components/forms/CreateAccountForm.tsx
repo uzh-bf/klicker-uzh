@@ -80,7 +80,7 @@ function CreateAccountForm({
       ? yup
           .mixed<LearningAnalyticsChoice>()
           .oneOf(Object.values(LearningAnalyticsChoice))
-          .required(t('pwa.learningAnalytics.choiceRequired'))
+          .notRequired()
       : yup.mixed().notRequired(),
   })
 

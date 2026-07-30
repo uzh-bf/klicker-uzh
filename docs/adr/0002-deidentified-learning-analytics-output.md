@@ -27,3 +27,8 @@ Terms must prohibit attempts to identify participants or combine LA with other d
 ## Consequences
 
 Suppression must run after every filter, including export coverage filters. Dashboards include eligible partial coverage and show the resulting sample size. LA exports default to complete coverage for the selected period and may include partial coverage only through an explicit option.
+
+For the current whole-course performance view, the selected period starts at
+`Course.startDate`. Coverage is derived from the participant's current
+`learningAnalyticsIncludedFrom` boundary and is independent of activity
+completion.

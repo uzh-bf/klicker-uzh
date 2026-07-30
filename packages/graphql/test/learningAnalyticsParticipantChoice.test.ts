@@ -10,6 +10,7 @@ import {
   UserRole,
 } from '@klicker-uzh/prisma/client'
 import { EventEmitter } from 'events'
+import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
   LEARNING_ANALYTICS_DISCLOSURE_VERSION,
@@ -17,6 +18,7 @@ import {
 } from '../src/lib/learningAnalytics.js'
 import { createParticipantAccount } from '../src/services/accounts.js'
 import { joinCourseWithPin } from '../src/services/courses.js'
+import * as EmailService from '../src/services/email.js'
 import {
   getOwnLearningAnalyticsChoice,
   setOwnLearningAnalyticsChoice,
@@ -24,6 +26,7 @@ import {
 describe('Learning analytics participant choice', () => {
   const originalRolloutFlag =
     process.env.NEXT_PUBLIC_LEARNING_ANALYTICS_ROLLOUT_ENABLED
+  const originalAppSecret = process.env.APP_SECRET
   let prisma: PrismaClient
   let emitter: EventEmitter
   let ownerCtx: ContextWithUser
@@ -41,12 +44,18 @@ describe('Learning analytics participant choice', () => {
       process.env.NEXT_PUBLIC_LEARNING_ANALYTICS_ROLLOUT_ENABLED =
         originalRolloutFlag
     }
+    if (typeof originalAppSecret === 'undefined') {
+      delete process.env.APP_SECRET
+    } else {
+      process.env.APP_SECRET = originalAppSecret
+    }
     await cleanup()
     await prisma.$disconnect()
   })
 
   beforeEach(async () => {
     process.env.NEXT_PUBLIC_LEARNING_ANALYTICS_ROLLOUT_ENABLED = 'true'
+    process.env.APP_SECRET = 'test-learning-analytics-app-secret-32-bytes'
     const owner = await prisma.user.create({
       data: {
         email: `la-choice-owner-${Date.now()}@example.com`,
@@ -66,7 +75,10 @@ describe('Learning analytics participant choice', () => {
     } as unknown as ContextWithUser
   })
 
-  afterEach(cleanup)
+  afterEach(async () => {
+    vi.restoreAllMocks()
+    await cleanup()
+  })
 
   async function cleanup() {
     await prisma.course.deleteMany()
@@ -111,7 +123,7 @@ describe('Learning analytics participant choice', () => {
     })
   }
 
-  it('requires a neutral choice for an enabled PIN join and keeps disabled joins undecided', async () => {
+  it('allows an enabled PIN join to remain undecided and records an explicit choice', async () => {
     const enabledCourse = await createCourse()
     await prisma.course.update({
       where: { id: enabledCourse.id },
@@ -122,8 +134,19 @@ describe('Learning analytics participant choice', () => {
 
     await expect(
       joinCourseWithPin({ pin: enabledCourse.pinCode! }, enabledCtx)
-    ).rejects.toMatchObject({
-      extensions: { code: 'LEARNING_ANALYTICS_CHOICE_REQUIRED' },
+    ).resolves.toMatchObject({ id: enabledParticipant.id })
+    await expect(
+      prisma.participation.findUniqueOrThrow({
+        where: {
+          courseId_participantId: {
+            courseId: enabledCourse.id,
+            participantId: enabledParticipant.id,
+          },
+        },
+      })
+    ).resolves.toMatchObject({
+      learningAnalyticsStatus: LearningAnalyticsParticipationStatus.UNDECIDED,
+      learningAnalyticsChoiceAt: null,
     })
 
     await expect(
@@ -175,12 +198,16 @@ describe('Learning analytics participant choice', () => {
     })
   })
 
-  it('requires a neutral choice before creating an account for an enabled course', async () => {
+  it('allows account creation to remain undecided for an enabled course', async () => {
     const course = await createCourse()
     await prisma.course.update({
       where: { id: course.id },
       data: { isLearningAnalyticsEnabled: true },
     })
+    vi.spyOn(EmailService, 'hydrateTemplate').mockResolvedValue(
+      '<p>Synthetic activation template</p>'
+    )
+    vi.spyOn(EmailService, 'sendEmail').mockResolvedValue(true)
 
     await expect(
       createParticipantAccount(
@@ -193,14 +220,25 @@ describe('Learning analytics participant choice', () => {
         },
         ownerCtx
       )
-    ).rejects.toMatchObject({
-      extensions: { code: 'LEARNING_ANALYTICS_CHOICE_REQUIRED' },
+    ).resolves.toMatchObject({
+      participant: { username: 'la-choice-account' },
     })
     await expect(
       prisma.participant.count({
         where: { username: 'la-choice-account' },
       })
-    ).resolves.toBe(0)
+    ).resolves.toBe(1)
+    await expect(
+      prisma.participation.findFirstOrThrow({
+        where: {
+          courseId: course.id,
+          participant: { username: 'la-choice-account' },
+        },
+      })
+    ).resolves.toMatchObject({
+      learningAnalyticsStatus: LearningAnalyticsParticipationStatus.UNDECIDED,
+      learningAnalyticsChoiceAt: null,
+    })
   })
 
   it('deletes participant-level analytics on opt-out but leaves aggregates unchanged', async () => {

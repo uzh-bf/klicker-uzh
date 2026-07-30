@@ -69,7 +69,10 @@ describe('Learning analytics course control', () => {
     otherUserCtx = initialized.userTwoCtx
   })
 
-  afterEach(async () => await testCleanup(prisma))
+  afterEach(async () => {
+    await prisma.platformSemesterAnalytics.deleteMany()
+    await testCleanup(prisma)
+  })
 
   it('fails closed when the learning analytics rollout gate is disabled', async () => {
     process.env.NEXT_PUBLIC_LEARNING_ANALYTICS_ROLLOUT_ENABLED = 'false'
@@ -357,6 +360,13 @@ describe('Learning analytics course control', () => {
         courseId: course.id,
       },
     })
+    await prisma.platformSemesterAnalytics.create({
+      data: {
+        semesterLabel: `T${course.id.slice(0, 6)}`,
+        semesterStart: timestamp,
+        semesterEnd: new Date('2026-12-31T23:59:59.999Z'),
+      },
+    })
     await prisma.participantPerformance.create({
       data: {
         firstErrorRate: 0,
@@ -497,7 +507,7 @@ describe('Learning analytics course control', () => {
       participantChatOutcomes: 1,
       participantLiveQuizAnalytics: 1,
       aggregatedLiveQuizAnalytics: 1,
-      platformSemesterAnalytics: 0,
+      platformSemesterAnalytics: 1,
     })
 
     await setCourseLearningAnalyticsEnabled(

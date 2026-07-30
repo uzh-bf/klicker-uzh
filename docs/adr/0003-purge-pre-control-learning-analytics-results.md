@@ -20,7 +20,7 @@ Dedicated learning-analytics results created before the course and participant c
 
 ## Decision
 
-Before enabling the rollout, run a one-time guarded cleanup that deletes every dedicated learning-analytics result row and preserves normal course, participation, response, feedback, grading, gamification, and research-consent data. The cleanup is dry-run by default, binds the write to an aggregate-only before-state dump and exact cleanup contract, verifies operational counts inside one serialized transaction, and writes a replay-blocking after-state receipt.
+Before enabling the rollout, run a one-time guarded cleanup that deletes every dedicated learning-analytics result row and preserves normal course, participation, response, feedback, grading, gamification, and research-consent data. The cleanup is dry-run by default, binds write approval to the hash of the aggregate-only snapshot and exact cleanup contract, verifies operational counts inside one serialized transaction, and writes a durable replay-blocking database receipt in that transaction.
 
 ## Consequences
 

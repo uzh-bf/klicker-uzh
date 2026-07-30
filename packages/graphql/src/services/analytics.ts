@@ -616,6 +616,13 @@ export async function getCoursePerformanceAnalytics(
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId, isLearningAnalyticsEnabled: true },
     include: {
+      participations: {
+        where: learningAnalyticsParticipationWhere(courseId),
+        select: {
+          participantId: true,
+          learningAnalyticsIncludedFrom: true,
+        },
+      },
       _count: {
         select: {
           participations: {
@@ -737,8 +744,28 @@ export async function getCoursePerformanceAnalytics(
     ...course.practiceQuizzes.map((activity) => activity.id),
     ...course.microLearnings.map((activity) => activity.id),
   ]
+  const inclusionByParticipantId = new Map(
+    course.participations.map((participation) => [
+      participation.participantId,
+      participation.learningAnalyticsIncludedFrom!,
+    ])
+  )
   const deidentifiedParticipantActivity = deidentifyLearningAnalyticsRows({
-    rows: participantActivityPerformances,
+    rows: participantActivityPerformances.flatMap((row) => {
+      const includedFrom = inclusionByParticipantId.get(row.participantId)
+      if (!includedFrom) {
+        return []
+      }
+      return [
+        {
+          ...row,
+          coverage:
+            includedFrom <= course.startDate
+              ? ('COMPLETE' as const)
+              : ('PARTIAL' as const),
+        },
+      ]
+    }),
     activityIds,
   })
   const isSuppressed = !meetsLearningAnalyticsMinimumSampleSize(

@@ -576,3 +576,13 @@ model PlatformSemesterAnalytics {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// Durable replay fence for the one-time pre-control LA cleanup.
+model LearningAnalyticsCleanupReceipt {
+  id String @id
+
+  contractHash String
+  snapshotHash String
+
+  completedAt DateTime @default(now())
+}

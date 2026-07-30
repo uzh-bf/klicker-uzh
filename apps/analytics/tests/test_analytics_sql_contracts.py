@@ -43,6 +43,17 @@ class AnalyticsSqlContractTests(unittest.TestCase):
         self.assertEqual(statement.count("make_timestamp("), 4)
         self.assertNotIn("make_timestamptz(", statement)
 
+    def test_platform_queries_exclude_free_text_and_require_a_course_scope(self):
+        statements = (
+            _read_sql("platform_analytics", "platform_semester_analytics.sql"),
+            _read_sql("platform_analytics", "course_modality_footprint.sql"),
+        )
+
+        for statement in statements:
+            with self.subTest(statement=statement[:40]):
+                self.assertIn("ei.\"elementType\" <> 'FREE_TEXT'", statement)
+                self.assertEqual(statement.count("/*COURSE_FILTER*/"), 2)
+
     def test_chat_distribution_extracts_naive_utc_timestamp_directly(self):
         statements = (
             _read_sql("aggregated_chat_analytics", "aggregated_chatbot_analytics.sql"),

@@ -12,6 +12,7 @@ WITH eligible_participations AS MATERIALIZED (
   FROM "Participation" p
   JOIN "Course" c ON c.id = p."courseId"
   WHERE c."isLearningAnalyticsEnabled" = true
+    /*COURSE_FILTER*/
     AND p."learningAnalyticsStatus" = 'INCLUDED'
     AND p."learningAnalyticsDisclosureVersion" = '2026-07-30-v1'
     AND p."learningAnalyticsIncludedFrom" IS NOT NULL
@@ -30,6 +31,9 @@ chat_courses AS (
 quiz_courses AS (
   SELECT DISTINCT qrd."participantId", ep."courseId"
   FROM "QuestionResponseDetail" qrd
+  JOIN "ElementInstance" ei
+    ON ei.id = qrd."elementInstanceId"
+   AND ei."elementType" <> 'FREE_TEXT'
   JOIN eligible_participations ep ON ep.id = qrd."participationId"
   WHERE qrd."createdAt" >= ep."learningAnalyticsIncludedFrom"
 ),
@@ -47,6 +51,7 @@ footprint AS (
      WHERE cc."courseId" = c.id)                                                    AS both_chat_and_quiz_count
   FROM "Course" c
   WHERE c."isLearningAnalyticsEnabled" = true
+    /*COURSE_FILTER*/
 )
 UPDATE "AggregatedCourseAnalytics" aca SET
   "chatbotCount"         = f.chatbot_count,

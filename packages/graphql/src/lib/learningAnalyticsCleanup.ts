@@ -1,5 +1,26 @@
 import type { PrismaTransactionClient } from '@klicker-uzh/util'
 
+export const DEDICATED_LEARNING_ANALYTICS_MODELS = [
+  'ParticipantAnalytics',
+  'CompetencyAnalytics',
+  'AggregatedAnalytics',
+  'AggregatedCompetencyAnalytics',
+  'ParticipantCourseAnalytics',
+  'AggregatedCourseAnalytics',
+  'ParticipantPerformance',
+  'InstancePerformance',
+  'ActivityPerformance',
+  'ParticipantActivityPerformance',
+  'ActivityProgress',
+  'ParticipantChatAnalytics',
+  'AggregatedChatbotAnalytics',
+  'ChatTopicCluster',
+  'ParticipantChatOutcome',
+  'ParticipantLiveQuizAnalytics',
+  'AggregatedLiveQuizAnalytics',
+  'PlatformSemesterAnalytics',
+] as const
+
 export interface DedicatedLearningAnalyticsCounts {
   participantAnalytics: number
   competencyAnalytics: number
@@ -103,7 +124,7 @@ async function readDedicatedLearningAnalyticsCounts(
     prisma.aggregatedLiveQuizAnalytics.count({
       where: courseId ? { courseId } : undefined,
     }),
-    courseId ? Promise.resolve(0) : prisma.platformSemesterAnalytics.count(),
+    prisma.platformSemesterAnalytics.count(),
   ])
 
   return {
@@ -145,9 +166,10 @@ async function deleteDedicatedLearningAnalytics(
   prisma: PrismaTransactionClient,
   courseId?: string
 ): Promise<void> {
-  if (!courseId) {
-    await prisma.platformSemesterAnalytics.deleteMany()
-  }
+  // Platform rows contain contributions from every enabled course but have no
+  // course key. Dropping the whole rollup is the only fail-closed response to a
+  // course disable; the native analytics run recreates it from enabled courses.
+  await prisma.platformSemesterAnalytics.deleteMany()
   await prisma.chatTopicCluster.deleteMany({
     where: courseId ? { chatbot: { courseId } } : undefined,
   })

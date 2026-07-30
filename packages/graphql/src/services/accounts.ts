@@ -14,7 +14,6 @@ import type { CookieOptions } from 'express'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import {
-  assertLearningAnalyticsChoiceProvided,
   buildLearningAnalyticsChoiceData,
   isLearningAnalyticsAvailableForCourse,
   type LearningAnalyticsChoiceStatus,
@@ -871,13 +870,6 @@ export async function createParticipantAccount(
     }
   }
 
-  if (courseForJoin) {
-    assertLearningAnalyticsChoiceProvided(
-      courseForJoin.isLearningAnalyticsEnabled,
-      learningAnalyticsStatus
-    )
-  }
-
   const normalizedEmail = normalizeEmail(email)
   if (!normalizedEmail) return null
 
@@ -903,10 +895,6 @@ export async function createParticipantAccount(
         if (!lockedCourse) {
           return null
         }
-        assertLearningAnalyticsChoiceProvided(
-          lockedCourse.isLearningAnalyticsEnabled,
-          learningAnalyticsStatus
-        )
       }
 
       const participant = await prisma.participant.create({

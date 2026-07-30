@@ -26,7 +26,6 @@ import { prop, sortBy } from 'remeda'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import convertDateToUTCDatetime from '../lib/convertDateToUTCDatetime.js'
 import {
-  assertLearningAnalyticsChoiceProvided,
   assertLearningAnalyticsRolloutEnabled,
   buildLearningAnalyticsChoiceData,
   isLearningAnalyticsAvailableForCourse,
@@ -95,11 +94,6 @@ export async function joinCourseWithPin(
     if (!course) {
       return null
     }
-
-    assertLearningAnalyticsChoiceProvided(
-      course.isLearningAnalyticsEnabled,
-      learningAnalyticsStatus
-    )
 
     const existingParticipation = await prisma.participation.findUnique({
       where: {

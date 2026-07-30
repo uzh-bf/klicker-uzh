@@ -13,6 +13,7 @@ WITH eligible_participations AS MATERIALIZED (
   FROM "Participation" p
   JOIN "Course" c ON c.id = p."courseId"
   WHERE c."isLearningAnalyticsEnabled" = true
+    /*COURSE_FILTER*/
     AND p."learningAnalyticsStatus" = 'INCLUDED'
     AND p."learningAnalyticsDisclosureVersion" = '2026-07-30-v1'
     AND p."learningAnalyticsIncludedFrom" IS NOT NULL
@@ -20,6 +21,9 @@ WITH eligible_participations AS MATERIALIZED (
 eligible_quiz_details AS MATERIALIZED (
   SELECT qrd.*, ep."courseId"
   FROM "QuestionResponseDetail" qrd
+  JOIN "ElementInstance" ei
+    ON ei.id = qrd."elementInstanceId"
+   AND ei."elementType" <> 'FREE_TEXT'
   JOIN eligible_participations ep ON ep.id = qrd."participationId"
   WHERE qrd."createdAt" >= ep."learningAnalyticsIncludedFrom"
 ),
@@ -155,6 +159,7 @@ LEFT JOIN LATERAL (
   WHERE c."startDate" <= rs.semester_end
     AND c."endDate"   >= rs.semester_start
     AND c."isLearningAnalyticsEnabled" = true
+    /*COURSE_FILTER*/
 ) c ON true
 ON CONFLICT ("semesterLabel") DO UPDATE SET
   "semesterStart"                = EXCLUDED."semesterStart",

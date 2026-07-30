@@ -13,6 +13,7 @@ export type LearningAnalyticsParticipantActivity = {
 
 export type LearningAnalyticsParticipantRow = {
   participantId: string
+  coverage: LearningAnalyticsCoverage
   activityPerformances: LearningAnalyticsParticipantActivity[]
 }
 
@@ -61,15 +62,11 @@ export function deidentifyLearningAnalyticsRows({
       return []
     }
 
-    const coverage: LearningAnalyticsCoverage =
-      activityPerformances.length === selectedActivityIds.size
-        ? 'COMPLETE'
-        : 'PARTIAL'
-    if (!includePartial && coverage === 'PARTIAL') {
+    if (!includePartial && row.coverage === 'PARTIAL') {
       return []
     }
 
-    return [{ activityPerformances, coverage }]
+    return [{ activityPerformances, coverage: row.coverage }]
   })
 
   if (!meetsLearningAnalyticsMinimumSampleSize(filteredRows.length)) {

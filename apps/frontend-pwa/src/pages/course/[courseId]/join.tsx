@@ -59,7 +59,7 @@ function JoinCourse({
     learningAnalyticsStatus: collectLearningAnalyticsChoice
       ? Yup.mixed<LearningAnalyticsChoice>()
           .oneOf(Object.values(LearningAnalyticsChoice))
-          .required(t('pwa.learningAnalytics.choiceRequired'))
+          .notRequired()
       : Yup.mixed().notRequired(),
   })
 
