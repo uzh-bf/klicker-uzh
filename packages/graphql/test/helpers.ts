@@ -41,6 +41,7 @@ import {
   handleEndExpiredGroupActivity,
   handlePublishScheduledGroupActivity,
 } from 'src/services/groups.js'
+import { handleCleanupLiveQuizResetCache } from 'src/services/liveQuizReset.js'
 import {
   handleAssessmentLiveQuizBlockClosureAggregation,
   handlePublishScheduledLiveQuiz,
@@ -158,6 +159,27 @@ export async function testInitialization(
         console.info('Audit log triggered', message)
         return { success: true }
       },
+    }),
+    cleanupLiveQuizResetCache: hatchet.task({
+      name: 'cleanup-live-quiz-reset-cache',
+      retries: 3,
+      fn: async (
+        input: {
+          liveQuizId: string
+          weeklyTimelineRecomputations: Array<{
+            participationId: number
+            courseId: string
+            weekStart: string
+          }>
+        },
+        executionCtx
+      ) => ({
+        success: await handleCleanupLiveQuizResetCache(
+          input,
+          hatchetCtx,
+          executionCtx
+        ),
+      }),
     }),
     publishScheduledMicroLearning: hatchet.task({
       name: 'publish-scheduled-micro-learning',

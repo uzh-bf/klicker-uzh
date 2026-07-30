@@ -1694,11 +1694,38 @@ type LiveQuizInfo {
   name: String!
 }
 
+enum LiveQuizLegacyReconstructionStatus {
+  AVAILABLE
+  NOT_REQUIRED
+  UNAVAILABLE
+}
+
 type LiveQuizMeta {
   availableFrom: Date
   id: ID!
   name: String!
   status: PublicationStatus!
+}
+
+enum LiveQuizResetEligibilityReason {
+  ASSESSMENT_POLICY
+  ELIGIBLE
+  INVALID_STATE
+  REWARD_DATA_UNAVAILABLE
+}
+
+type LiveQuizResetSummary {
+  coursePointsToReverse: Int!
+  eligible: Boolean!
+  legacyReconstructionStatus: LiveQuizLegacyReconstructionStatus!
+  numOfAchievementChanges: Int!
+  numOfConfusionFeedbacks: Int!
+  numOfFeedbacks: Int!
+  numOfLeaderboardEntries: Int!
+  numOfResponses: Int!
+  numOfTimelineChanges: Int!
+  reason: LiveQuizResetEligibilityReason!
+  xpToReverse: Int!
 }
 
 type LiveQuizSelectionItem {
@@ -1877,6 +1904,7 @@ type Mutation {
   requestCatalogCollection(catalogCollectionId: String!, requestedPermissionLevel: PermissionLevel): CatalogCollection
   requestCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!, requestedPermissionLevel: PermissionLevel): Boolean!
   resetAssessmentLiveQuiz(id: String!): ActivityInfo
+  resetLiveQuiz(id: String!): ResetLiveQuizPayload!
   resolveActivityLogEntry(id: Int!): ActivityLogEntry
   resolveFeedback(id: Int!, isResolved: Boolean!, liveQuizId: String!): Feedback
   respondToElementStack(courseId: String!, isOwner: Boolean!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
@@ -2374,6 +2402,7 @@ type Query {
   getInstanceUpdateActivities(elementId: Int!, hasSampleSolution: Boolean, includeTemplateInstances: Boolean!): [InstanceUpdateActivityInfo!]
   getLecturerViewLiveQuiz(id: String!): LiveQuiz
   getLiveQuizEmbeddingInfo(id: String!): LiveQuizEmbeddingInfo
+  getLiveQuizResetSummary(quizId: String!): LiveQuizResetSummary
   getLiveQuizSummary(quizId: String!): LiveQuizSummary
   getMatchingUserElementsTemplate(elementType: ElementType!, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean): [TemplateElementInformation!]
   getMicroLearningEvaluation(id: String!): ActivityEvaluation
@@ -2456,6 +2485,18 @@ type ReducedActivityInfo {
   scheduledEndAt: Date
   scheduledStartAt: Date
   status: PublicationStatus!
+}
+
+enum ResetLiveQuizOutcome {
+  CONFLICT
+  INVALID_STATE
+  REWARD_DATA_UNAVAILABLE
+  SUCCESS
+}
+
+type ResetLiveQuizPayload {
+  activity: ActivityInfo
+  outcome: ResetLiveQuizOutcome!
 }
 
 enum ResponseCorrectness {

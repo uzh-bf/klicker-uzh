@@ -1,12 +1,18 @@
 import * as DB from '@klicker-uzh/prisma/client'
+import type {
+  CleanupLiveQuizResetCacheInput,
+  HatchetHandlers,
+} from '@klicker-uzh/types'
 import { ActivityType } from '@klicker-uzh/types'
 import { getInitialInstanceResults } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
+import type { Redis } from 'ioredis'
 import type { ContextWithUser } from '../lib/context.js'
 import { getPermissionBooleans } from './activities.js'
 import {
   inspectLegacyRegularLiveQuizRewards,
   persistLiveQuizRewardRun,
+  recomputeWeeklyTimelineEntry,
   reverseLiveQuizRewardRun,
   type LiveQuizRewardPlan,
   type RewardReversalTotals,
@@ -694,7 +700,7 @@ function isRewardDataUnavailable(error: unknown): boolean {
   return errorCode(error) === 'LIVE_QUIZ_REWARD_DATA_UNAVAILABLE'
 }
 
-export async function resetLiveQuiz(
+async function executeLiveQuizReset(
   { id }: { id: string },
   ctx: ContextWithUser
 ): Promise<ResetLiveQuizServiceResult> {
@@ -765,6 +771,195 @@ export async function resetLiveQuiz(
     }
     throw error
   }
+}
+
+export async function clearLiveQuizExecutionCache({
+  liveQuizId,
+  redis,
+}: {
+  liveQuizId: string
+  redis: Redis
+}): Promise<void> {
+  const keys = await redis.keys(`lq:${liveQuizId}:*`)
+  if (keys.length > 0) {
+    await redis.del(...keys)
+  }
+}
+
+export const handleCleanupLiveQuizResetCache: HatchetHandlers['handleCleanupLiveQuizResetCache'] =
+  async ({ liveQuizId, weeklyTimelineRecomputations }, globalCtx) => {
+    const quiz = await globalCtx.prisma.liveQuiz.findUnique({
+      where: { id: liveQuizId },
+      select: { isAssessmentEnabled: true },
+    })
+    if (!quiz) return true
+
+    for (const recomputation of weeklyTimelineRecomputations) {
+      await recomputeWeeklyTimelineEntry({
+        participationId: recomputation.participationId,
+        courseId: recomputation.courseId,
+        weekStart: new Date(recomputation.weekStart),
+        prisma: globalCtx.prisma,
+      })
+    }
+    await clearLiveQuizExecutionCache({
+      liveQuizId,
+      redis: quiz.isAssessmentEnabled
+        ? globalCtx.redisAssessmentExec
+        : globalCtx.redisExec,
+    })
+    return true
+  }
+
+type LiveQuizResetAuditDetails =
+  | {
+      event: 'LIVE_QUIZ_RESET_INITIATED'
+      actorId: string
+      liveQuizId: string
+    }
+  | {
+      event: 'LIVE_QUIZ_RESET_BLOCKED'
+      actorId: string
+      liveQuizId: string
+      outcome: Exclude<LiveQuizResetOutcome, 'SUCCESS'>
+    }
+  | {
+      event: 'LIVE_QUIZ_RESET_COMPLETED'
+      actorId: string
+      liveQuizId: string
+      rewardRunId: string | null
+      outcome: 'SUCCESS'
+      coursePoints: number
+      participantXp: number
+      timelineChanges: number
+      achievementChanges: number
+    }
+  | {
+      event: 'LIVE_QUIZ_RESET_FAILED'
+      actorId: string
+      liveQuizId: string
+      failureCode: 'UNEXPECTED_RESET_FAILURE'
+    }
+
+async function enqueueLiveQuizResetAudit(
+  ctx: ContextWithUser,
+  details: LiveQuizResetAuditDetails
+): Promise<void> {
+  await ctx.tasks.createAuditLogEntry.runNoWait([
+    { message: { info: JSON.stringify(details) } },
+  ])
+}
+
+function logResetDeliveryFailure(
+  delivery: 'audit' | 'cleanup' | 'invalidation'
+): void {
+  console.error(`Failed to deliver live quiz reset ${delivery}`)
+}
+
+async function runPostCommitCleanup({
+  id,
+  result,
+  ctx,
+}: {
+  id: string
+  result: Extract<ResetLiveQuizServiceResult, { outcome: 'SUCCESS' }>
+  ctx: ContextWithUser
+}): Promise<void> {
+  const cleanupInput: CleanupLiveQuizResetCacheInput = {
+    liveQuizId: id,
+    weeklyTimelineRecomputations: result.weeklyTimelineRecomputations.map(
+      (entry) => ({
+        participationId: entry.participationId,
+        courseId: entry.courseId,
+        weekStart: entry.weekStart.toISOString(),
+      })
+    ),
+  }
+  const redis = result.activity.isAssessmentEnabled
+    ? ctx.redisAssessmentExec
+    : ctx.redisExec
+
+  try {
+    for (const recomputation of result.weeklyTimelineRecomputations) {
+      await recomputeWeeklyTimelineEntry({
+        ...recomputation,
+        prisma: ctx.prisma,
+      })
+    }
+    await clearLiveQuizExecutionCache({ liveQuizId: id, redis })
+  } catch {
+    try {
+      await ctx.tasks.cleanupLiveQuizResetCache.runNoWait([cleanupInput])
+    } catch {
+      logResetDeliveryFailure('cleanup')
+    }
+  }
+
+  try {
+    ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
+  } catch {
+    logResetDeliveryFailure('invalidation')
+  }
+}
+
+export async function resetLiveQuiz(
+  { id }: { id: string },
+  ctx: ContextWithUser
+): Promise<ResetLiveQuizServiceResult> {
+  await enqueueLiveQuizResetAudit(ctx, {
+    event: 'LIVE_QUIZ_RESET_INITIATED',
+    actorId: ctx.user.sub,
+    liveQuizId: id,
+  })
+
+  let result: ResetLiveQuizServiceResult
+  try {
+    result = await executeLiveQuizReset({ id }, ctx)
+  } catch (error) {
+    try {
+      await enqueueLiveQuizResetAudit(ctx, {
+        event: 'LIVE_QUIZ_RESET_FAILED',
+        actorId: ctx.user.sub,
+        liveQuizId: id,
+        failureCode: 'UNEXPECTED_RESET_FAILURE',
+      })
+    } catch {
+      logResetDeliveryFailure('audit')
+    }
+    throw error
+  }
+
+  if (result.outcome === 'SUCCESS') {
+    await runPostCommitCleanup({ id, result, ctx })
+    try {
+      await enqueueLiveQuizResetAudit(ctx, {
+        event: 'LIVE_QUIZ_RESET_COMPLETED',
+        actorId: ctx.user.sub,
+        liveQuizId: id,
+        rewardRunId: result.rewardRunId,
+        outcome: result.outcome,
+        coursePoints: result.totals.coursePoints,
+        participantXp: result.totals.participantXp,
+        timelineChanges: result.totals.timelineChanges,
+        achievementChanges: result.totals.achievementChanges,
+      })
+    } catch {
+      logResetDeliveryFailure('audit')
+    }
+    return result
+  }
+
+  try {
+    await enqueueLiveQuizResetAudit(ctx, {
+      event: 'LIVE_QUIZ_RESET_BLOCKED',
+      actorId: ctx.user.sub,
+      liveQuizId: id,
+      outcome: result.outcome,
+    })
+  } catch {
+    logResetDeliveryFailure('audit')
+  }
+  return result
 }
 
 export async function resetAssessmentLiveQuiz(

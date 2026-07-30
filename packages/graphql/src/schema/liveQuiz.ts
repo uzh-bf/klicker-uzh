@@ -1,5 +1,10 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import builder from '../builder.js'
+import type {
+  LiveQuizResetOutcome as LiveQuizResetOutcomeValue,
+  LiveQuizResetSummary,
+} from '../services/liveQuizReset.js'
+import { ActivityInfoRef, type IActivityInfo } from './activities.js'
 import { CourseRef } from './course.js'
 import { ElementInstanceRef } from './element.js'
 import { PublicationStatus } from './practiceQuiz.js'
@@ -10,6 +15,75 @@ export const LiveQuizAccessMode = builder.enumType('LiveQuizAccessMode', {
 
 export const ElementBlockStatus = builder.enumType('ElementBlockStatus', {
   values: Object.values(DB.ElementBlockStatus),
+})
+
+export const ResetLiveQuizOutcome = builder.enumType('ResetLiveQuizOutcome', {
+  values: [
+    'SUCCESS',
+    'INVALID_STATE',
+    'REWARD_DATA_UNAVAILABLE',
+    'CONFLICT',
+  ] as const,
+})
+
+export const LiveQuizResetEligibilityReason = builder.enumType(
+  'LiveQuizResetEligibilityReason',
+  {
+    values: [
+      'ELIGIBLE',
+      'INVALID_STATE',
+      'ASSESSMENT_POLICY',
+      'REWARD_DATA_UNAVAILABLE',
+    ] as const,
+  }
+)
+
+export const LiveQuizLegacyReconstructionStatus = builder.enumType(
+  'LiveQuizLegacyReconstructionStatus',
+  {
+    values: ['NOT_REQUIRED', 'AVAILABLE', 'UNAVAILABLE'] as const,
+  }
+)
+
+export const LiveQuizResetSummaryRef = builder.objectRef<LiveQuizResetSummary>(
+  'LiveQuizResetSummary'
+)
+
+export const LiveQuizResetSummaryType = LiveQuizResetSummaryRef.implement({
+  fields: (t) => ({
+    numOfResponses: t.exposeInt('numOfResponses'),
+    numOfFeedbacks: t.exposeInt('numOfFeedbacks'),
+    numOfConfusionFeedbacks: t.exposeInt('numOfConfusionFeedbacks'),
+    numOfLeaderboardEntries: t.exposeInt('numOfLeaderboardEntries'),
+    coursePointsToReverse: t.exposeInt('coursePointsToReverse'),
+    xpToReverse: t.exposeInt('xpToReverse'),
+    numOfTimelineChanges: t.exposeInt('numOfTimelineChanges'),
+    numOfAchievementChanges: t.exposeInt('numOfAchievementChanges'),
+    eligible: t.exposeBoolean('eligible'),
+    reason: t.expose('reason', { type: LiveQuizResetEligibilityReason }),
+    legacyReconstructionStatus: t.expose('legacyReconstructionStatus', {
+      type: LiveQuizLegacyReconstructionStatus,
+    }),
+  }),
+})
+
+export interface IResetLiveQuizPayload {
+  outcome: LiveQuizResetOutcomeValue
+  activity: IActivityInfo | null
+}
+
+export const ResetLiveQuizPayloadRef = builder.objectRef<IResetLiveQuizPayload>(
+  'ResetLiveQuizPayload'
+)
+
+export const ResetLiveQuizPayload = ResetLiveQuizPayloadRef.implement({
+  fields: (t) => ({
+    outcome: t.expose('outcome', { type: ResetLiveQuizOutcome }),
+    activity: t.expose('activity', {
+      type: ActivityInfoRef,
+      nullable: true,
+    }),
+  }),
 })
 
 // ----- AUDIENCE INTERACTION INTERFACE -----

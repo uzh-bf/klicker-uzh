@@ -9,12 +9,19 @@ import {
 import type { ElementData, ElementInstanceResults } from '@klicker-uzh/types'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
+import { graphql, print } from 'graphql/index.js'
 import { v4 as uuidv4 } from 'uuid'
+import { schema } from '../src/index.js'
 import type { ContextWithUser } from '../src/lib/context.js'
+import {
+  GetLiveQuizResetSummaryDocument,
+  ResetLiveQuizDocument,
+} from '../src/ops.js'
 import {
   getLiveQuizResetSummary,
   resetLiveQuiz,
 } from '../src/services/liveQuizReset.js'
+import { startLiveQuiz } from '../src/services/liveQuizzes.js'
 import {
   initializePrisma,
   seedCourse,
@@ -49,11 +56,20 @@ describe('live quiz reset summary', () => {
     userOneCtx = initialized.userOneCtx
     userTwoCtx = initialized.userTwoCtx
     userThreeCtx = initialized.userThreeCtx
+    vi.spyOn(
+      userOneCtx.tasks.createAuditLogEntry,
+      'runNoWait'
+    ).mockResolvedValue({} as never)
+    vi.spyOn(
+      userOneCtx.tasks.cleanupLiveQuizResetCache,
+      'runNoWait'
+    ).mockResolvedValue({} as never)
     await userOneCtx.redisExec.flushdb()
     await userOneCtx.redisAssessmentExec.flushdb()
   })
 
   afterEach(async () => {
+    vi.restoreAllMocks()
     await userOneCtx.redisExec.flushdb()
     await userOneCtx.redisAssessmentExec.flushdb()
     await testCleanup(prisma)
@@ -69,6 +85,12 @@ describe('live quiz reset summary', () => {
         } as unknown as ElementData,
       },
     })
+  }
+
+  function mockResetDelivery(ctx: ContextWithUser) {
+    const audit = vi.mocked(ctx.tasks.createAuditLogEntry.runNoWait)
+    const cleanup = vi.mocked(ctx.tasks.cleanupLiveQuizResetCache.runNoWait)
+    return { audit, cleanup }
   }
 
   it('summarizes every destructive category for an eligible regular quiz', async () => {
@@ -1044,5 +1066,355 @@ describe('live quiz reset summary', () => {
         },
       })
     ).toBe(1)
+  })
+
+  it('exposes the authenticated reset summary and canonical mutation', async () => {
+    const fixture = await seedEndedRegularLiveQuizForReset(
+      { gamified: true, withRewardRun: true },
+      userOneCtx
+    )
+    await makeFixtureInstanceResettable(fixture.instanceId)
+    await recomputeDerivedPermissions(
+      { liveQuizId: fixture.liveQuizId, userId: userOneCtx.user.sub },
+      prisma
+    )
+    await prisma.feedback.updateMany({
+      where: { liveQuizId: fixture.liveQuizId },
+      data: { content: 'synthetic response content' },
+    })
+    const { audit } = mockResetDelivery(userOneCtx)
+
+    const summaryResult = await graphql({
+      schema,
+      source: print(GetLiveQuizResetSummaryDocument),
+      variableValues: { quizId: fixture.liveQuizId },
+      contextValue: userOneCtx,
+    })
+    expect(summaryResult.errors).toBeUndefined()
+    expect(summaryResult.data?.getLiveQuizResetSummary).toMatchObject({
+      eligible: true,
+      reason: 'ELIGIBLE',
+      coursePointsToReverse: fixture.awardedCoursePoints,
+      xpToReverse: fixture.awardedParticipantXp,
+    })
+
+    const resetResult = await graphql({
+      schema,
+      source: print(ResetLiveQuizDocument),
+      variableValues: { id: fixture.liveQuizId },
+      contextValue: userOneCtx,
+    })
+    expect(resetResult.errors).toBeUndefined()
+    expect(resetResult.data?.resetLiveQuiz).toMatchObject({
+      outcome: 'SUCCESS',
+      activity: {
+        id: fixture.liveQuizId,
+        status: PublicationStatus.DRAFT,
+      },
+    })
+
+    const auditEvents = audit.mock.calls
+      .flatMap(([entries]) => entries)
+      .map((entry) => JSON.parse(entry.message.info))
+    const auditPayload = JSON.stringify(auditEvents)
+    expect(auditPayload).toContain('LIVE_QUIZ_RESET_INITIATED')
+    expect(auditPayload).toContain('LIVE_QUIZ_RESET_COMPLETED')
+    expect(auditPayload).toContain('"outcome":"SUCCESS"')
+    expect(auditPayload).not.toContain(fixture.participantId)
+    expect(auditPayload).not.toContain('synthetic response content')
+  })
+
+  it.each([
+    {
+      expectedOutcome: 'INVALID_STATE',
+      prepare: async () => {
+        const quiz = await seedLiveQuiz(
+          { elements: [], status: PublicationStatus.DRAFT },
+          userOneCtx
+        )
+        return quiz.id
+      },
+    },
+    {
+      expectedOutcome: 'REWARD_DATA_UNAVAILABLE',
+      prepare: async () => {
+        const fixture = await seedEndedRegularLiveQuizForReset(
+          { gamified: true, withRewardRun: true },
+          userOneCtx
+        )
+        await prisma.liveQuizRewardEntry.updateMany({
+          where: { rewardRunId: fixture.rewardRunId! },
+          data: { participantId: null },
+        })
+        return fixture.liveQuizId
+      },
+    },
+  ])(
+    'returns structured $expectedOutcome through the canonical mutation',
+    async ({ expectedOutcome, prepare }) => {
+      const id = await prepare()
+      await recomputeDerivedPermissions(
+        { liveQuizId: id, userId: userOneCtx.user.sub },
+        prisma
+      )
+      mockResetDelivery(userOneCtx)
+
+      const result = await graphql({
+        schema,
+        source: print(ResetLiveQuizDocument),
+        variableValues: { id },
+        contextValue: userOneCtx,
+      })
+
+      expect(result.errors).toBeUndefined()
+      expect(result.data?.resetLiveQuiz).toEqual({
+        outcome: expectedOutcome,
+        activity: null,
+      })
+    }
+  )
+
+  it('returns one SUCCESS and one CONFLICT through concurrent canonical mutations', async () => {
+    const fixture = await seedEndedRegularLiveQuizForReset(
+      { gamified: true, withRewardRun: true },
+      userOneCtx
+    )
+    await makeFixtureInstanceResettable(fixture.instanceId)
+    await prisma.permission.create({
+      data: {
+        liveQuizId: fixture.liveQuizId,
+        userId: userTwoCtx.user.sub,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+    await recomputeDerivedPermissions(
+      { liveQuizId: fixture.liveQuizId },
+      prisma
+    )
+    mockResetDelivery(userOneCtx)
+
+    const [first, second] = await Promise.all([
+      graphql({
+        schema,
+        source: print(ResetLiveQuizDocument),
+        variableValues: { id: fixture.liveQuizId },
+        contextValue: userOneCtx,
+      }),
+      graphql({
+        schema,
+        source: print(ResetLiveQuizDocument),
+        variableValues: { id: fixture.liveQuizId },
+        contextValue: userTwoCtx,
+      }),
+    ])
+
+    expect(first.errors).toBeUndefined()
+    expect(second.errors).toBeUndefined()
+    const outcomes = [first, second]
+      .map(
+        (result) =>
+          (result.data?.resetLiveQuiz as { outcome: string } | null | undefined)
+            ?.outcome
+      )
+      .sort()
+    expect(outcomes).toEqual(['CONFLICT', 'SUCCESS'])
+  })
+
+  it('rejects an unauthenticated canonical reset at the schema boundary', async () => {
+    const fixture = await seedEndedRegularLiveQuizForReset(
+      { gamified: false, withRewardRun: false, withCourse: false },
+      userOneCtx
+    )
+
+    const result = await graphql({
+      schema,
+      source: print(ResetLiveQuizDocument),
+      variableValues: { id: fixture.liveQuizId },
+      contextValue: { ...userOneCtx, user: undefined },
+    })
+
+    expect(result.errors?.[0]?.message).toBe('Unauthorized')
+    await expect(
+      prisma.liveQuiz.findUniqueOrThrow({ where: { id: fixture.liveQuizId } })
+    ).resolves.toMatchObject({ status: PublicationStatus.ENDED })
+  })
+
+  it('blocks the reset when initiation audit scheduling fails', async () => {
+    const fixture = await seedEndedRegularLiveQuizForReset(
+      { gamified: false, withRewardRun: false, withCourse: false },
+      userOneCtx
+    )
+    await userOneCtx.redisExec.set(
+      `lq:${fixture.liveQuizId}:synthetic`,
+      'preserved'
+    )
+    const { audit } = mockResetDelivery(userOneCtx)
+    audit.mockRejectedValueOnce(new Error('synthetic audit outage'))
+
+    await expect(
+      resetLiveQuiz({ id: fixture.liveQuizId }, userOneCtx)
+    ).rejects.toThrow('synthetic audit outage')
+    await expect(
+      prisma.liveQuiz.findUniqueOrThrow({ where: { id: fixture.liveQuizId } })
+    ).resolves.toMatchObject({ status: PublicationStatus.ENDED })
+    await expect(
+      userOneCtx.redisExec.get(`lq:${fixture.liveQuizId}:synthetic`)
+    ).resolves.toBe('preserved')
+  })
+
+  it('audits unexpected failures without exception or participant data', async () => {
+    const fixture = await seedEndedRegularLiveQuizForReset(
+      { gamified: false, withRewardRun: false, withCourse: false },
+      userOneCtx
+    )
+    const { audit } = mockResetDelivery(userOneCtx)
+
+    await expect(
+      resetLiveQuiz({ id: fixture.liveQuizId }, userOneCtx)
+    ).rejects.toThrow(
+      'Invalid element type encountered during result initialization'
+    )
+    const auditPayload = JSON.stringify(audit.mock.calls)
+    expect(auditPayload).toContain('LIVE_QUIZ_RESET_FAILED')
+    expect(auditPayload).toContain('UNEXPECTED_RESET_FAILURE')
+    expect(auditPayload).not.toContain(
+      'Invalid element type encountered during result initialization'
+    )
+    expect(auditPayload).not.toContain(fixture.participantId)
+  })
+
+  it('schedules idempotent cleanup after synchronous Redis cleanup fails', async () => {
+    const fixture = await seedEndedRegularLiveQuizForReset(
+      { gamified: true, withRewardRun: true },
+      userOneCtx
+    )
+    await makeFixtureInstanceResettable(fixture.instanceId)
+    await userOneCtx.redisExec.set(
+      `lq:${fixture.liveQuizId}:synthetic`,
+      'stale'
+    )
+    const { cleanup } = mockResetDelivery(userOneCtx)
+    vi.spyOn(userOneCtx.redisExec, 'del').mockRejectedValueOnce(
+      new Error('synthetic Redis outage')
+    )
+
+    await expect(
+      resetLiveQuiz({ id: fixture.liveQuizId }, userOneCtx)
+    ).resolves.toMatchObject({ outcome: 'SUCCESS' })
+    expect(cleanup).toHaveBeenCalledWith([
+      {
+        liveQuizId: fixture.liveQuizId,
+        weeklyTimelineRecomputations: [
+          expect.objectContaining({
+            participationId: fixture.participationId,
+            courseId: fixture.courseId,
+            weekStart: expect.any(String),
+          }),
+        ],
+      },
+    ])
+  })
+
+  it('schedules cleanup after historical-week recomputation fails', async () => {
+    const fixture = await seedEndedRegularLiveQuizForReset(
+      { gamified: true, withRewardRun: true },
+      userOneCtx
+    )
+    await makeFixtureInstanceResettable(fixture.instanceId)
+    const { cleanup } = mockResetDelivery(userOneCtx)
+    vi.spyOn(prisma.timelineEntry, 'aggregate').mockRejectedValueOnce(
+      new Error('synthetic historical aggregation outage')
+    )
+
+    await expect(
+      resetLiveQuiz({ id: fixture.liveQuizId }, userOneCtx)
+    ).resolves.toMatchObject({ outcome: 'SUCCESS' })
+    expect(cleanup).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps committed success when completion audit scheduling fails', async () => {
+    const fixture = await seedEndedRegularLiveQuizForReset(
+      { gamified: false, withRewardRun: false, withCourse: false },
+      userOneCtx
+    )
+    await makeFixtureInstanceResettable(fixture.instanceId)
+    const { audit } = mockResetDelivery(userOneCtx)
+    audit
+      .mockResolvedValueOnce({} as never)
+      .mockRejectedValueOnce(new Error('synthetic completion audit outage'))
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    await expect(
+      resetLiveQuiz({ id: fixture.liveQuizId }, userOneCtx)
+    ).resolves.toMatchObject({ outcome: 'SUCCESS' })
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Failed to deliver live quiz reset audit'
+    )
+  })
+
+  it('keeps committed success when cache invalidation listeners throw', async () => {
+    const fixture = await seedEndedRegularLiveQuizForReset(
+      { gamified: false, withRewardRun: false, withCourse: false },
+      userOneCtx
+    )
+    await makeFixtureInstanceResettable(fixture.instanceId)
+    mockResetDelivery(userOneCtx)
+    vi.spyOn(userOneCtx.emitter, 'emit').mockImplementationOnce(() => {
+      throw new Error('synthetic invalidation listener outage')
+    })
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    await expect(
+      resetLiveQuiz({ id: fixture.liveQuizId }, userOneCtx)
+    ).resolves.toMatchObject({ outcome: 'SUCCESS' })
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Failed to deliver live quiz reset invalidation'
+    )
+  })
+
+  it('clears stale regular draft execution keys before writing fresh metadata', async () => {
+    const quiz = await seedLiveQuiz(
+      { elements: [], status: PublicationStatus.DRAFT },
+      userOneCtx
+    )
+    await userOneCtx.redisExec.hset(`lq:${quiz.id}:meta`, {
+      namespace: 'stale-namespace',
+      startedAt: 1,
+    })
+    await userOneCtx.redisExec.set(`lq:${quiz.id}:synthetic`, 'stale')
+
+    await expect(
+      startLiveQuiz({ id: quiz.id }, userOneCtx)
+    ).resolves.toMatchObject({
+      id: quiz.id,
+      status: PublicationStatus.PUBLISHED,
+    })
+    await expect(
+      userOneCtx.redisExec.get(`lq:${quiz.id}:synthetic`)
+    ).resolves.toBeNull()
+    await expect(
+      userOneCtx.redisExec.hget(`lq:${quiz.id}:meta`, 'namespace')
+    ).resolves.toBe(quiz.namespace)
+  })
+
+  it('does not publish a regular draft when clean-start deletion fails', async () => {
+    const quiz = await seedLiveQuiz(
+      { elements: [], status: PublicationStatus.DRAFT },
+      userOneCtx
+    )
+    await userOneCtx.redisExec.set(`lq:${quiz.id}:synthetic`, 'stale')
+    vi.spyOn(userOneCtx.redisExec, 'del').mockRejectedValueOnce(
+      new Error('synthetic clean-start outage')
+    )
+
+    await expect(startLiveQuiz({ id: quiz.id }, userOneCtx)).rejects.toThrow(
+      'synthetic clean-start outage'
+    )
+    await expect(
+      prisma.liveQuiz.findUniqueOrThrow({ where: { id: quiz.id } })
+    ).resolves.toMatchObject({ status: PublicationStatus.DRAFT })
+    await expect(
+      userOneCtx.redisExec.get(`lq:${quiz.id}:synthetic`)
+    ).resolves.toBe('stale')
   })
 })

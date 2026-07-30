@@ -1,6 +1,7 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
 import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
+import { GraphQLError } from 'graphql'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
@@ -9,6 +10,7 @@ import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
+import * as LiveQuizResetService from '../services/liveQuizReset.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as NotificationService from '../services/notifications.js'
@@ -47,6 +49,7 @@ import {
   FeedbackResponse,
   LiveQuiz,
   LiveQuizMeta,
+  ResetLiveQuizPayloadRef,
 } from './liveQuiz.js'
 import { MicroLearning } from './microLearning.js'
 import {
@@ -1458,10 +1461,28 @@ export const Mutation = builder.mutationType({
         resolve: withPermission(
           (args) => ({ liveQuizId: args.id }),
           DB.PermissionLevel.ADMIN,
-          async (_, args, ctx) => {
-            return await LiveQuizService.resetAssessmentLiveQuiz(args, ctx)
-          }
+          async (_, args, ctx) =>
+            LiveQuizResetService.resetAssessmentLiveQuiz(args, ctx)
         ),
+      }),
+
+      resetLiveQuiz: t.withAuth(asUserFullAccess).field({
+        type: ResetLiveQuizPayloadRef,
+        args: { id: t.arg.string({ required: true }) },
+        resolve: async (root, args, ctx) => {
+          const result = await withPermission<
+            {},
+            { id: string },
+            LiveQuizResetService.ResetLiveQuizServiceResult
+          >(
+            (permissionArgs) => ({ liveQuizId: permissionArgs.id }),
+            DB.PermissionLevel.ADMIN,
+            async (_, permissionArgs, permissionCtx) =>
+              LiveQuizResetService.resetLiveQuiz(permissionArgs, permissionCtx)
+          )(root, args, ctx)
+          if (!result) throw new GraphQLError('Unauthorized')
+          return result
+        },
       }),
 
       correctAssessmentPointsInstance: t.withAuth(asUserFullAccess).field({

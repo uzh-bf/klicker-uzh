@@ -33,7 +33,10 @@ import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { computeRanks } from '../lib/util.js'
 import { getPermissionBooleans } from './activities.js'
-import { resetAssessmentLiveQuiz as resetAssessmentLiveQuizService } from './liveQuizReset.js'
+import {
+  clearLiveQuizExecutionCache,
+  resetAssessmentLiveQuiz as resetAssessmentLiveQuizService,
+} from './liveQuizReset.js'
 import {
   applyRegularLiveQuizRewardPlan,
   calculateLiveQuizRewardPlan,
@@ -845,6 +848,15 @@ export async function startLiveQuiz(
 
       case DB.PublicationStatus.DRAFT:
       case DB.PublicationStatus.SCHEDULED: {
+        if (
+          quiz.status === DB.PublicationStatus.DRAFT &&
+          !quiz.isAssessmentEnabled
+        ) {
+          await clearLiveQuizExecutionCache({
+            liveQuizId: quiz.id,
+            redis,
+          })
+        }
         try {
           const pipeline = redis.pipeline()
           pipeline.hmset(`lq:${quiz.id}:meta`, {

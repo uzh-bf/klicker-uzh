@@ -1,0 +1,8 @@
+mutation ResetLiveQuiz($id: String!) {
+  resetLiveQuiz(id: $id) {
+    outcome
+    activity {
+      ...ActivityInfoData
+    }
+  }
+}
