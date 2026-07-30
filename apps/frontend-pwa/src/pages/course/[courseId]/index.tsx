@@ -39,6 +39,7 @@ import { twMerge } from 'tailwind-merge'
 import Layout from '../../../components/Layout'
 import SuspendedGroupView from '../../../components/course/SuspendedGroupView'
 import SuspendedAssessmentResults from '../../../components/insights/assessmentResults/SuspendedAssessmentResults'
+import LearningAnalyticsChoiceControl from '../../../components/learningAnalytics/LearningAnalyticsChoiceControl'
 import LeaveLeaderboardModal from '../../../components/participant/LeaveLeaderboardModal'
 import ParticipantProfileModal from '../../../components/participant/ParticipantProfileModal'
 import GroupCreationActions from '../../../components/participant/groups/GroupCreationActions'
@@ -193,6 +194,11 @@ function CourseOverview({
       displayName={t('shared.generic.leaderboard')}
       course={course ?? undefined}
     >
+      {course.isLearningAnalyticsEnabled ? (
+        <div className="md:mx-auto md:w-full md:max-w-6xl">
+          <LearningAnalyticsChoiceControl courseId={courseId} />
+        </div>
+      ) : null}
       {course.isGamificationEnabled ||
       course.isAssessmentEnabled ||
       course.description ? (

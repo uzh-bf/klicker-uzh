@@ -1,0 +1,7 @@
+query GetOwnLearningAnalyticsChoice($courseId: String!) {
+  getOwnLearningAnalyticsChoice(courseId: $courseId) {
+    courseId
+    status
+    isCurrent
+  }
+}

@@ -1,6 +1,9 @@
 import { useLazyQuery } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
-import { CheckParticipantNameAvailableDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  CheckParticipantNameAvailableDocument,
+  LearningAnalyticsChoice,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
@@ -19,17 +22,20 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
+import LearningAnalyticsChoiceField from '../learningAnalytics/LearningAnalyticsChoiceField'
 
 interface Props {
   initialUsername?: string
   initialEmail?: string
   handleSubmit: (values: any, formikExtra: any) => void
+  learningAnalyticsEnabled?: boolean
 }
 
 function CreateAccountForm({
   initialUsername,
   initialEmail,
   handleSubmit,
+  learningAnalyticsEnabled = false,
 }: Props) {
   const t = useTranslations()
   const [checkParticipantNameAvailable] = useLazyQuery(
@@ -70,6 +76,12 @@ function CreateAccountForm({
       otherwise: (schema) =>
         schema.oneOf([''], t('pwa.profile.identicalPasswords')),
     }),
+    learningAnalyticsStatus: learningAnalyticsEnabled
+      ? yup
+          .mixed<LearningAnalyticsChoice>()
+          .oneOf(Object.values(LearningAnalyticsChoice))
+          .required(t('pwa.learningAnalytics.choiceRequired'))
+      : yup.mixed().notRequired(),
   })
 
   const [tosChecked, setTosChecked] = useState<boolean>(false)
@@ -87,11 +99,20 @@ function CreateAccountForm({
         password: '',
         passwordRepetition: '',
         isProfilePublic: true,
+        learningAnalyticsStatus: '',
       }}
       validationSchema={createAccountSchema}
       onSubmit={handleSubmit}
     >
-      {({ isSubmitting, isValid, values, validateField }) => (
+      {({
+        errors,
+        isSubmitting,
+        isValid,
+        setFieldValue,
+        touched,
+        values,
+        validateField,
+      }) => (
         <Form>
           <div className="flex flex-col gap-2 md:mx-auto md:grid md:w-full md:max-w-[1090px] md:grid-cols-2">
             <div className="order-3 flex flex-col items-center justify-between gap-2 rounded bg-slate-100 p-4 py-2 md:col-span-2 md:flex-row md:gap-4 md:px-4">
@@ -217,6 +238,31 @@ function CreateAccountForm({
                     </div>
                   </div>
                 </div>
+                {learningAnalyticsEnabled ? (
+                  <div className="space-y-3 border-t pt-3">
+                    <H3 className={{ root: 'mb-0' }}>
+                      {t('pwa.learningAnalytics.title')}
+                    </H3>
+                    <LearningAnalyticsChoiceField
+                      value={
+                        values.learningAnalyticsStatus as
+                          | LearningAnalyticsChoice
+                          | ''
+                      }
+                      onChange={(choice) =>
+                        setFieldValue('learningAnalyticsStatus', choice)
+                      }
+                      error={
+                        touched.learningAnalyticsStatus
+                          ? (errors.learningAnalyticsStatus as
+                              | string
+                              | undefined)
+                          : undefined
+                      }
+                      idPrefix="account-learning-analytics"
+                    />
+                  </div>
+                ) : null}
               </div>
             </div>
             <div className="order-2 space-y-2 rounded md:order-2 md:justify-between md:bg-slate-50 md:p-4">

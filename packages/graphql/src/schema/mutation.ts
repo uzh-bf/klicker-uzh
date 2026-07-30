@@ -52,6 +52,8 @@ import { MicroLearning } from './microLearning.js'
 import {
   AvatarSettingsInput,
   GroupMessage,
+  LearningAnalyticsChoice,
+  LearningAnalyticsParticipantChoice,
   LeaveCourseParticipation,
   Participant,
   ParticipantGroup,
@@ -296,6 +298,10 @@ export const Mutation = builder.mutationType({
           isProfilePublic: t.arg.boolean({ required: true }),
           courseId: t.arg.string({ required: false }),
           signedLtiData: t.arg.string({ required: false }),
+          learningAnalyticsStatus: t.arg({
+            type: LearningAnalyticsChoice,
+            required: false,
+          }),
         },
         resolve: async (_, args, ctx) => {
           return await AccountService.createParticipantAccount(args, ctx)
@@ -369,9 +375,34 @@ export const Mutation = builder.mutationType({
             required: true,
             validate: { min: 0, max: 999999999 },
           }),
+          learningAnalyticsStatus: t.arg({
+            type: LearningAnalyticsChoice,
+            required: false,
+          }),
         },
         resolve: async (_, args, ctx) => {
           return await CourseService.joinCourseWithPin(args, ctx)
+        },
+      }),
+
+      setOwnLearningAnalyticsChoice: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: LearningAnalyticsParticipantChoice,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          status: t.arg({
+            type: LearningAnalyticsChoice,
+            required: true,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ParticipantService.setOwnLearningAnalyticsChoice(
+            {
+              courseId: args.courseId,
+              status: args.status,
+            },
+            ctx
+          )
         },
       }),
 

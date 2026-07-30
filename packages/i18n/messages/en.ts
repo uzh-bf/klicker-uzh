@@ -555,6 +555,33 @@ Other participants will only see your public **participant profile**, including 
       activityPreview:
         'You are seeing an activity preview for the {activity} "{name}" (display name "{displayName}"). Please note that this preview is meant for the lecturer to test the activity from a student perspective. While most interaction functionalities are supported, no submitted responses are stored or will appear in the evaluation view.',
     },
+    learningAnalytics: {
+      title: 'Learning analytics participation',
+      explanation:
+        'Learning analytics can help you understand your learning and help lecturers improve course support. If you participate, KlickerUZH uses your interaction activity, learning progress, response performance, scores, and feedback ratings. Lecturers see only de-identified learning analytics results. They do not see your name, email address, participant identifier, free-text responses, or participation choice, and must not combine the results with other information to identify you.',
+      include: 'Participate in learning analytics',
+      includeDescription:
+        'Only activity created from the time you choose this option is eligible for learning analytics.',
+      exclude: 'Do not participate in learning analytics',
+      excludeDescription:
+        'Your normal course use is unchanged. Your data is excluded from new learning analytics calculations and your participant-level learning analytics results are removed immediately.',
+      changeDisclaimer:
+        'You can change this choice at any time while learning analytics is enabled for the course. If you stop and later participate again, only activity created after you participate again is eligible. Existing aggregate results are updated on the normal calculation schedule.',
+      choiceRequired:
+        'Please choose whether you want to participate in learning analytics.',
+      decideLater: 'Decide later',
+      reminder:
+        'You have not made a current learning analytics choice. You remain excluded until you decide.',
+      currentlyIncluded:
+        'You currently participate in learning analytics for this course.',
+      currentlyExcluded:
+        'You currently do not participate in learning analytics for this course.',
+      chooseNow: 'Choose now',
+      changeChoice: 'Change choice',
+      saveSuccess: 'Your learning analytics choice was saved.',
+      saveError:
+        'Your learning analytics choice could not be saved. Please try again.',
+    },
     chatbot: {
       loginRequiredMessage:
         'You need a KlickerUZH account to access this chatbot. Please log in or create an account first.',

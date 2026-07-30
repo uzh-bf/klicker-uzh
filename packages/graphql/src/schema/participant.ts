@@ -289,6 +289,43 @@ export const Participation = ParticipationRef.implement({
   }),
 })
 
+export const LearningAnalyticsParticipationStatus = builder.enumType(
+  'LearningAnalyticsParticipationStatus',
+  {
+    values: Object.values(DB.LearningAnalyticsParticipationStatus),
+  }
+)
+
+export const LearningAnalyticsChoice = builder.enumType(
+  'LearningAnalyticsChoice',
+  {
+    values: [
+      DB.LearningAnalyticsParticipationStatus.INCLUDED,
+      DB.LearningAnalyticsParticipationStatus.EXCLUDED,
+    ],
+  }
+)
+
+export interface ILearningAnalyticsParticipantChoice {
+  courseId: string
+  status: DB.LearningAnalyticsParticipationStatus
+  isCurrent: boolean
+}
+
+export const LearningAnalyticsParticipantChoice = builder
+  .objectRef<ILearningAnalyticsParticipantChoice>(
+    'LearningAnalyticsParticipantChoice'
+  )
+  .implement({
+    fields: (t) => ({
+      courseId: t.exposeString('courseId'),
+      status: t.expose('status', {
+        type: LearningAnalyticsParticipationStatus,
+      }),
+      isCurrent: t.exposeBoolean('isCurrent'),
+    }),
+  })
+
 export const PushSubscriptionRef =
   builder.objectRef<DB.PushSubscription>('PushSubscription')
 export const PushSubscription = PushSubscriptionRef.implement({
