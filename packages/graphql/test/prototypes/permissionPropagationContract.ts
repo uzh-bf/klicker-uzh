@@ -22,6 +22,13 @@ type WorkRow = {
   dirty_at: Date
   recover_by: Date
 }
+type WorkScope = {
+  scopeKey: string
+  objectType: string
+  objectId: string
+  mode: 'OBJECT' | 'USER'
+  userId?: string
+}
 type WorkerInput = {
   scopeKey: string
   taskGeneration: bigint
@@ -31,7 +38,8 @@ type TransactionHooks = {
   afterLock?: () => void
 }
 type WorkerHooks = TransactionHooks & {
-  afterRead?: () => Promise<void>
+  afterSourceRead?: () => Promise<void>
+  onGenerationObserved?: (generation: bigint) => void
 }
 
 function assertDisposableLocalDatabase(databaseUrl: string | undefined) {
@@ -73,6 +81,53 @@ function deferred() {
     resolve = resolvePromise
   })
   return { promise, resolve }
+}
+
+async function waitForSignalOrTask(
+  signal: Promise<void>,
+  task: Promise<unknown>,
+  label: string
+) {
+  await Promise.race([
+    signal,
+    task.then(() => {
+      throw new Error(`${label} completed before the expected signal.`)
+    }),
+  ])
+}
+
+function workScope(
+  objectType: string,
+  objectId: string,
+  mode: 'OBJECT' | 'USER' = 'OBJECT',
+  userId?: string
+): WorkScope {
+  assert.ok(objectType, 'A work scope requires an object type.')
+  assert.ok(objectId, 'A work scope requires an object ID.')
+  if (mode === 'USER') {
+    assert.ok(userId, 'A user-scoped work item requires a user ID.')
+  } else {
+    assert.equal(
+      userId,
+      undefined,
+      'Object-scoped work cannot carry a user ID.'
+    )
+  }
+
+  const encodePart = (value: string | undefined) =>
+    value === undefined ? '-:' : `${Buffer.byteLength(value, 'utf8')}:${value}`
+
+  return {
+    scopeKey:
+      encodePart(objectType) +
+      encodePart(objectId) +
+      encodePart(mode) +
+      encodePart(userId),
+    objectType,
+    objectId,
+    mode,
+    userId,
+  }
 }
 
 function contractSummary(status: 'dry-run' | 'passed') {
@@ -118,14 +173,12 @@ async function initializePrototypeSchema(
     CREATE TABLE "permission_propagation_prototype"."source_state" (
       "scope_key" TEXT PRIMARY KEY,
       "principal_key" TEXT NOT NULL,
-      "granted" BOOLEAN NOT NULL,
-      "updated_at" TIMESTAMPTZ NOT NULL
+      "granted" BOOLEAN NOT NULL
     )
   `
   await prisma.$executeRaw`
     CREATE TABLE "permission_propagation_prototype"."derived_state" (
       "principal_key" TEXT PRIMARY KEY,
-      "granted" BOOLEAN NOT NULL,
       "source_scope_key" TEXT NOT NULL,
       "generation" BIGINT NOT NULL
     )
@@ -146,6 +199,34 @@ async function initializePrototypeSchema(
       CONSTRAINT "work_generation_order" CHECK (
         "processed_generation" <= "generation"
         AND "dispatched_generation" <= "generation"
+      ),
+      CONSTRAINT "work_scope_key_matches_tuple" CHECK (
+        "scope_key" =
+          OCTET_LENGTH("object_type")::TEXT || ':' || "object_type" ||
+          OCTET_LENGTH("object_id")::TEXT || ':' || "object_id" ||
+          OCTET_LENGTH("mode")::TEXT || ':' || "mode" ||
+          CASE
+            WHEN "user_id" IS NULL THEN '-:'
+            ELSE OCTET_LENGTH("user_id")::TEXT || ':' || "user_id"
+          END
+      ),
+      CONSTRAINT "work_scope_mode_matches_user" CHECK (
+        (
+          "mode" = 'OBJECT'
+          AND "user_id" IS NULL
+        )
+        OR
+        (
+          "mode" = 'USER'
+          AND "user_id" IS NOT NULL
+          AND "user_id" <> ''
+        )
+      ),
+      CONSTRAINT "work_scope_unique" UNIQUE NULLS NOT DISTINCT (
+        "object_type",
+        "object_id",
+        "mode",
+        "user_id"
       )
     )
   `
@@ -185,12 +266,8 @@ async function acquireFence(tx: Transaction, hooks: TransactionHooks = {}) {
 async function upsertSourceAndWork(
   tx: Transaction,
   input: {
-    scopeKey: string
+    scope: WorkScope
     principalKey: string
-    objectType: string
-    objectId: string
-    mode: 'OBJECT' | 'USER'
-    userId?: string
     granted: boolean
     dirtyAt: Date
   }
@@ -201,20 +278,17 @@ async function upsertSourceAndWork(
     INSERT INTO "permission_propagation_prototype"."source_state" (
       "scope_key",
       "principal_key",
-      "granted",
-      "updated_at"
+      "granted"
     )
     VALUES (
-      ${input.scopeKey},
+      ${input.scope.scopeKey},
       ${input.principalKey},
-      ${input.granted},
-      ${input.dirtyAt}
+      ${input.granted}
     )
     ON CONFLICT ("scope_key") DO UPDATE
     SET
       "principal_key" = EXCLUDED."principal_key",
-      "granted" = EXCLUDED."granted",
-      "updated_at" = EXCLUDED."updated_at"
+      "granted" = EXCLUDED."granted"
   `
 
   const work = await tx.$queryRaw<WorkRow[]>`
@@ -230,12 +304,12 @@ async function upsertSourceAndWork(
       "recover_by"
     )
     VALUES (
-      ${input.scopeKey},
+      ${input.scope.scopeKey},
       ${input.principalKey},
-      ${input.objectType},
-      ${input.objectId},
-      ${input.mode},
-      ${input.userId ?? null},
+      ${input.scope.objectType},
+      ${input.scope.objectId},
+      ${input.scope.mode},
+      ${input.scope.userId ?? null},
       1,
       ${input.dirtyAt},
       ${recoverBy}
@@ -249,8 +323,20 @@ async function upsertSourceAndWork(
       "user_id" = EXCLUDED."user_id",
       "generation" =
         "permission_propagation_prototype"."work"."generation" + 1,
-      "dirty_at" = EXCLUDED."dirty_at",
-      "recover_by" = EXCLUDED."recover_by"
+      "dirty_at" = CASE
+        WHEN
+          "permission_propagation_prototype"."work"."processed_generation" <
+          "permission_propagation_prototype"."work"."generation"
+        THEN "permission_propagation_prototype"."work"."dirty_at"
+        ELSE EXCLUDED."dirty_at"
+      END,
+      "recover_by" = CASE
+        WHEN
+          "permission_propagation_prototype"."work"."processed_generation" <
+          "permission_propagation_prototype"."work"."generation"
+        THEN "permission_propagation_prototype"."work"."recover_by"
+        ELSE EXCLUDED."recover_by"
+      END
     RETURNING *
   `
 
@@ -261,7 +347,8 @@ async function upsertSourceAndWork(
 async function rederivePrincipal(
   tx: Transaction,
   principalKey: string,
-  generation: bigint
+  generation: bigint,
+  afterSourceRead?: () => Promise<void>
 ) {
   const activeSources = await tx.$queryRaw<{ scope_key: string }[]>`
     SELECT "scope_key"
@@ -271,6 +358,7 @@ async function rederivePrincipal(
       AND "granted" = true
     ORDER BY "scope_key" ASC
   `
+  await afterSourceRead?.()
   const sourceScopeKey = activeSources[0]?.scope_key
 
   if (!sourceScopeKey) {
@@ -284,14 +372,12 @@ async function rederivePrincipal(
   await tx.$executeRaw`
     INSERT INTO "permission_propagation_prototype"."derived_state" (
       "principal_key",
-      "granted",
       "source_scope_key",
       "generation"
     )
-    VALUES (${principalKey}, true, ${sourceScopeKey}, ${generation})
+    VALUES (${principalKey}, ${sourceScopeKey}, ${generation})
     ON CONFLICT ("principal_key") DO UPDATE
     SET
-      "granted" = EXCLUDED."granted",
       "source_scope_key" = EXCLUDED."source_scope_key",
       "generation" = EXCLUDED."generation"
   `
@@ -300,12 +386,8 @@ async function rederivePrincipal(
 async function mutateSource(
   prisma: Client,
   input: {
-    scopeKey: string
+    scope: WorkScope
     principalKey: string
-    objectType: string
-    objectId: string
-    mode?: 'OBJECT' | 'USER'
-    userId?: string
     granted: boolean
     dirtyAt?: Date
     rederiveSynchronously?: boolean
@@ -318,7 +400,6 @@ async function mutateSource(
       await acquireFence(tx, hooks)
       const work = await upsertSourceAndWork(tx, {
         ...input,
-        mode: input.mode ?? 'OBJECT',
         dirtyAt: input.dirtyAt ?? new Date(),
       })
 
@@ -338,7 +419,7 @@ async function runWorker(
   prisma: Client,
   input: WorkerInput,
   hooks: WorkerHooks = {},
-  failAfterRead = false
+  failAfterSourceRead = false
 ) {
   return prisma.$transaction(
     async (tx) => {
@@ -355,24 +436,23 @@ async function runWorker(
         input.taskGeneration <= current.generation,
         'A task cannot observe a future work generation.'
       )
+      hooks.onGenerationObserved?.(current.generation)
 
       if (current.processed_generation >= current.generation) {
         return { outcome: 'noop' as const, generation: current.generation }
       }
 
-      const sourceSnapshot = await tx.$queryRaw<{ granted: boolean }[]>`
-        SELECT "granted"
-        FROM "permission_propagation_prototype"."source_state"
-        WHERE "scope_key" = ${input.scopeKey}
-      `
-      assert.ok(sourceSnapshot[0], `Missing source "${input.scopeKey}".`)
-      await hooks.afterRead?.()
-
-      if (failAfterRead) {
-        throw new Error('synthetic_worker_failure')
-      }
-
-      await rederivePrincipal(tx, current.principal_key, current.generation)
+      await rederivePrincipal(
+        tx,
+        current.principal_key,
+        current.generation,
+        async () => {
+          await hooks.afterSourceRead?.()
+          if (failAfterSourceRead) {
+            throw new Error('synthetic_worker_failure')
+          }
+        }
+      )
       await tx.$executeRaw`
         UPDATE "permission_propagation_prototype"."work"
         SET "processed_generation" = ${current.generation}
@@ -388,8 +468,18 @@ async function runWorker(
 }
 
 async function runWorkerWithFailureSink(prisma: Client, input: WorkerInput) {
+  let attemptedGeneration = input.taskGeneration
   try {
-    return await runWorker(prisma, input, {}, true)
+    return await runWorker(
+      prisma,
+      input,
+      {
+        onGenerationObserved(generation) {
+          attemptedGeneration = generation
+        },
+      },
+      true
+    )
   } catch {
     await prisma.$executeRaw`
       INSERT INTO "permission_propagation_prototype"."failure" (
@@ -399,7 +489,7 @@ async function runWorkerWithFailureSink(prisma: Client, input: WorkerInput) {
       )
       VALUES (
         ${input.scopeKey},
-        ${input.taskGeneration},
+        ${attemptedGeneration},
         'WORKER_EXECUTION_FAILED'
       )
     `
@@ -435,7 +525,6 @@ async function getDerived(prisma: Client, principalKey: string) {
   return prisma.$queryRaw<
     {
       principal_key: string
-      granted: boolean
       source_scope_key: string
       generation: bigint
     }[]
@@ -482,11 +571,10 @@ async function waitForBlockedAdvisoryLock(
 }
 
 async function proveAtomicSourceAndDirtyWrite(prisma: Client) {
+  const scope = workScope('COURSE', 'atomic-course')
   const input = {
-    scopeKey: 'atomic-course',
+    scope,
     principalKey: 'principal-atomic',
-    objectType: 'COURSE',
-    objectId: 'atomic-course',
     granted: true,
   }
 
@@ -499,14 +587,54 @@ async function proveAtomicSourceAndDirtyWrite(prisma: Client) {
     FROM (
       SELECT "scope_key"
       FROM "permission_propagation_prototype"."source_state"
-      WHERE "scope_key" = ${input.scopeKey}
+      WHERE "scope_key" = ${scope.scopeKey}
       UNION ALL
       SELECT "scope_key"
       FROM "permission_propagation_prototype"."work"
-      WHERE "scope_key" = ${input.scopeKey}
+      WHERE "scope_key" = ${scope.scopeKey}
     ) AS "rolled_back_rows"
   `
   assert.equal(afterRollback[0]?.count, 0n)
+
+  const mismatchedScope = {
+    ...scope,
+    scopeKey: 'not-the-canonical-work-key',
+  }
+  await assert.rejects(
+    mutateSource(prisma, { ...input, scope: mismatchedScope })
+  )
+  const mismatchedRows = await prisma.$queryRaw<{ count: bigint }[]>`
+    SELECT COUNT(*) AS "count"
+    FROM "permission_propagation_prototype"."source_state"
+    WHERE "scope_key" = ${mismatchedScope.scopeKey}
+  `
+  assert.equal(mismatchedRows[0]?.count, 0n)
+
+  const firstPreviouslyAliasingScope = workScope('COURSE:ARCHIVE', 'one')
+  const secondPreviouslyAliasingScope = workScope('COURSE', 'ARCHIVE:one')
+  assert.notEqual(
+    firstPreviouslyAliasingScope.scopeKey,
+    secondPreviouslyAliasingScope.scopeKey
+  )
+  await mutateSource(prisma, {
+    scope: firstPreviouslyAliasingScope,
+    principalKey: 'principal-first-non-alias',
+    granted: true,
+  })
+  await mutateSource(prisma, {
+    scope: secondPreviouslyAliasingScope,
+    principalKey: 'principal-second-non-alias',
+    granted: true,
+  })
+  const nonAliasingRows = await prisma.$queryRaw<{ count: bigint }[]>`
+    SELECT COUNT(*) AS "count"
+    FROM "permission_propagation_prototype"."work"
+    WHERE "scope_key" IN (
+      ${firstPreviouslyAliasingScope.scopeKey},
+      ${secondPreviouslyAliasingScope.scopeKey}
+    )
+  `
+  assert.equal(nonAliasingRows[0]?.count, 2n)
 
   const committed = await mutateSource(prisma, input)
   assert.equal(committed.generation, 1n)
@@ -518,13 +646,12 @@ async function proveGrantWorkerRevokeRace(
   mutationClient: Client,
   observer: Client
 ) {
-  const scopeKey = 'race-course'
+  const scope = workScope('COURSE', 'race-course')
+  const scopeKey = scope.scopeKey
   const principalKey = 'principal-race'
   const initial = await mutateSource(workerClient, {
-    scopeKey,
+    scope,
     principalKey,
-    objectType: 'COURSE',
-    objectId: scopeKey,
     granted: true,
   })
   const workerLocked = deferred()
@@ -537,49 +664,54 @@ async function proveGrantWorkerRevokeRace(
     { scopeKey, taskGeneration: initial.generation },
     {
       afterLock: workerLocked.resolve,
-      afterRead: () => releaseWorker.promise,
+      afterSourceRead: () => releaseWorker.promise,
     }
   )
-  await workerLocked.promise
+  const inFlight: Promise<unknown>[] = [worker]
+  try {
+    await waitForSignalOrTask(workerLocked.promise, worker, 'Grant worker')
 
-  const revoke = mutateSource(
-    mutationClient,
-    {
-      scopeKey,
-      principalKey,
-      objectType: 'COURSE',
-      objectId: scopeKey,
-      granted: false,
-      rederiveSynchronously: true,
-    },
-    {
-      beforeLock(backendPid) {
-        revokeBackendPid = backendPid
-        revokeWaiting.resolve()
+    const revoke = mutateSource(
+      mutationClient,
+      {
+        scope,
+        principalKey,
+        granted: false,
+        rederiveSynchronously: true,
       },
-    }
-  )
-  await revokeWaiting.promise
-  await waitForBlockedAdvisoryLock(observer, revokeBackendPid)
+      {
+        beforeLock(backendPid) {
+          revokeBackendPid = backendPid
+          revokeWaiting.resolve()
+        },
+      }
+    )
+    inFlight.push(revoke)
+    await waitForSignalOrTask(revokeWaiting.promise, revoke, 'Revoke')
+    await waitForBlockedAdvisoryLock(observer, revokeBackendPid)
 
-  releaseWorker.resolve()
-  await worker
-  const revoked = await revoke
-  assert.equal(revoked.generation, 2n)
-  assert.deepEqual(await getDerived(observer, principalKey), [])
+    releaseWorker.resolve()
+    await worker
+    const revoked = await revoke
+    assert.equal(revoked.generation, 2n)
+    assert.deepEqual(await getDerived(observer, principalKey), [])
 
-  const coalesced = await runWorker(workerClient, {
-    scopeKey,
-    taskGeneration: initial.generation,
-  })
-  assert.deepEqual(coalesced, { outcome: 'processed', generation: 2n })
-  assert.deepEqual(await getDerived(observer, principalKey), [])
+    const coalesced = await runWorker(workerClient, {
+      scopeKey,
+      taskGeneration: initial.generation,
+    })
+    assert.deepEqual(coalesced, { outcome: 'processed', generation: 2n })
+    assert.deepEqual(await getDerived(observer, principalKey), [])
 
-  const duplicate = await runWorker(workerClient, {
-    scopeKey,
-    taskGeneration: initial.generation,
-  })
-  assert.deepEqual(duplicate, { outcome: 'noop', generation: 2n })
+    const duplicate = await runWorker(workerClient, {
+      scopeKey,
+      taskGeneration: initial.generation,
+    })
+    assert.deepEqual(duplicate, { outcome: 'noop', generation: 2n })
+  } finally {
+    releaseWorker.resolve()
+    await Promise.allSettled(inFlight)
+  }
 }
 
 async function proveOverlappingRootsSerialize(
@@ -588,18 +720,16 @@ async function proveOverlappingRootsSerialize(
   observer: Client
 ) {
   const principalKey = 'principal-overlap'
+  const courseScope = workScope('COURSE', 'overlap-course')
   const course = await mutateSource(firstWorkerClient, {
-    scopeKey: 'overlap-course',
+    scope: courseScope,
     principalKey,
-    objectType: 'COURSE',
-    objectId: 'overlap-course',
     granted: true,
   })
+  const activityScope = workScope('LIVE_QUIZ', 'overlap-activity')
   const activity = await mutateSource(firstWorkerClient, {
-    scopeKey: 'overlap-activity',
+    scope: activityScope,
     principalKey,
-    objectType: 'LIVE_QUIZ',
-    objectId: 'overlap-activity',
     granted: false,
   })
   const firstLocked = deferred()
@@ -615,34 +745,48 @@ async function proveOverlappingRootsSerialize(
     },
     {
       afterLock: firstLocked.resolve,
-      afterRead: () => releaseFirst.promise,
+      afterSourceRead: () => releaseFirst.promise,
     }
   )
-  await firstLocked.promise
+  const inFlight: Promise<unknown>[] = [firstWorker]
+  try {
+    await waitForSignalOrTask(
+      firstLocked.promise,
+      firstWorker,
+      'First overlapping worker'
+    )
 
-  const secondWorker = runWorker(
-    secondWorkerClient,
-    {
-      scopeKey: activity.scope_key,
-      taskGeneration: activity.generation,
-    },
-    {
-      beforeLock(backendPid) {
-        secondBackendPid = backendPid
-        secondWaiting.resolve()
+    const secondWorker = runWorker(
+      secondWorkerClient,
+      {
+        scopeKey: activity.scope_key,
+        taskGeneration: activity.generation,
       },
-    }
-  )
-  await secondWaiting.promise
-  await waitForBlockedAdvisoryLock(observer, secondBackendPid)
+      {
+        beforeLock(backendPid) {
+          secondBackendPid = backendPid
+          secondWaiting.resolve()
+        },
+      }
+    )
+    inFlight.push(secondWorker)
+    await waitForSignalOrTask(
+      secondWaiting.promise,
+      secondWorker,
+      'Second overlapping worker'
+    )
+    await waitForBlockedAdvisoryLock(observer, secondBackendPid)
 
-  releaseFirst.resolve()
-  await Promise.all([firstWorker, secondWorker])
+    releaseFirst.resolve()
+    await Promise.all([firstWorker, secondWorker])
 
-  const derived = await getDerived(observer, principalKey)
-  assert.equal(derived.length, 1)
-  assert.equal(derived[0]?.granted, true)
-  assert.equal(derived[0]?.source_scope_key, course.scope_key)
+    const derived = await getDerived(observer, principalKey)
+    assert.equal(derived.length, 1)
+    assert.equal(derived[0]?.source_scope_key, course.scope_key)
+  } finally {
+    releaseFirst.resolve()
+    await Promise.allSettled(inFlight)
+  }
 }
 
 async function proveCommitBeforeEnqueueRecovery(
@@ -650,18 +794,30 @@ async function proveCommitBeforeEnqueueRecovery(
   observer: Client
 ) {
   const dirtyAt = new Date(Date.now() - 2 * RECONCILIATION_CADENCE_MS)
-  const scopeKey = 'recovery-course'
+  const scope = workScope('COURSE', 'recovery-course')
+  const scopeKey = scope.scopeKey
   const principalKey = 'principal-recovery'
   const work = await mutateSource(workerClient, {
-    scopeKey,
+    scope,
     principalKey,
-    objectType: 'COURSE',
-    objectId: scopeKey,
     granted: true,
     dirtyAt,
   })
   assert.equal(work.dispatched_generation, 0n)
   assert.equal(work.processed_generation, 0n)
+
+  const coalescedWork = await mutateSource(workerClient, {
+    scope,
+    principalKey,
+    granted: true,
+    dirtyAt: new Date(dirtyAt.getTime() + 30_000),
+  })
+  assert.equal(coalescedWork.generation, 2n)
+  assert.equal(coalescedWork.dirty_at.getTime(), dirtyAt.getTime())
+  assert.equal(
+    coalescedWork.recover_by.getTime(),
+    dirtyAt.getTime() + RECOVERY_SLO_MS
+  )
 
   const observedAt = new Date(dirtyAt.getTime() + RECONCILIATION_CADENCE_MS)
   const candidates = await findReconciliationCandidates(observer, observedAt)
@@ -670,7 +826,7 @@ async function proveCommitBeforeEnqueueRecovery(
     'The first reconciliation cadence must rediscover a missed enqueue.'
   )
 
-  const input = { scopeKey, taskGeneration: work.generation }
+  const input = { scopeKey, taskGeneration: coalescedWork.generation }
   await runWorker(workerClient, input)
   await markDispatchedAfterAcceptedEnqueue(observer, input)
 
@@ -689,13 +845,12 @@ async function provePersistentFailureSink(
   observer: Client
 ) {
   const dirtyAt = new Date(Date.now() - 2 * RECONCILIATION_CADENCE_MS)
-  const scopeKey = 'failure-course'
+  const scope = workScope('COURSE', 'failure-course')
+  const scopeKey = scope.scopeKey
   const principalKey = 'principal-failure'
   const work = await mutateSource(workerClient, {
-    scopeKey,
+    scope,
     principalKey,
-    objectType: 'COURSE',
-    objectId: scopeKey,
     granted: true,
     dirtyAt,
   })
@@ -731,6 +886,37 @@ async function provePersistentFailureSink(
     taskGeneration: work.generation,
   })
   assert.equal((await getWork(observer, scopeKey)).processed_generation, 1n)
+
+  const nextWork = await mutateSource(workerClient, {
+    scope,
+    principalKey,
+    granted: true,
+  })
+  assert.equal(nextWork.generation, 2n)
+  await runWorkerWithFailureSink(workerClient, {
+    scopeKey,
+    taskGeneration: work.generation,
+  })
+  const failuresAfterStaleTask = await observer.$queryRaw<
+    { generation: bigint; failure_code: string }[]
+  >`
+    SELECT "generation", "failure_code"
+    FROM "permission_propagation_prototype"."failure"
+    WHERE "scope_key" = ${scopeKey}
+    ORDER BY "id" ASC
+  `
+  assert.deepEqual(failuresAfterStaleTask, [
+    { generation: 1n, failure_code: 'WORKER_EXECUTION_FAILED' },
+    { generation: 2n, failure_code: 'WORKER_EXECUTION_FAILED' },
+  ])
+  const unresolvedLatest = await getWork(observer, scopeKey)
+  assert.equal(unresolvedLatest.processed_generation, 1n)
+  assert.equal(unresolvedLatest.generation, 2n)
+  await runWorker(workerClient, {
+    scopeKey,
+    taskGeneration: work.generation,
+  })
+  assert.equal((await getWork(observer, scopeKey)).processed_generation, 2n)
 }
 
 async function main() {
