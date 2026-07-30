@@ -1064,14 +1064,24 @@ export async function seedEndedRegularLiveQuizForReset(
     },
   })
 
-  if (gamified) {
+  if (gamified && participation) {
     await ctx.prisma.leaderboardEntry.create({
       data: {
         type: LeaderboardType.SESSION,
         score: awardedCoursePoints,
         participantId: participant.id,
         liveQuizId: liveQuiz.id,
-        sessionParticipationId: participation?.id,
+        sessionParticipationId: participation.id,
+      },
+    })
+  } else if (gamified) {
+    await ctx.prisma.temporaryLeaderboardEntry.create({
+      data: {
+        id: participant.id,
+        quizId: liveQuiz.id,
+        username: participant.username,
+        avatar: participant.avatar,
+        score: awardedCoursePoints,
       },
     })
   }

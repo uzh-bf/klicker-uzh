@@ -668,7 +668,6 @@ export async function inspectLegacyRegularLiveQuizRewards(
     )
   )
 
-  const persistedScores = new Map<string, number>()
   const sessionEntryByParticipant = new Map<
     string,
     (typeof quiz.leaderboard)[number]
@@ -676,26 +675,27 @@ export async function inspectLegacyRegularLiveQuizRewards(
   for (const entry of quiz.leaderboard) {
     if (
       !existingParticipantIds.has(entry.participantId) ||
-      persistedScores.has(entry.participantId)
+      sessionEntryByParticipant.has(entry.participantId)
     ) {
       return { status: 'UNAVAILABLE', plan: null }
     }
-    persistedScores.set(entry.participantId, entry.score)
     sessionEntryByParticipant.set(entry.participantId, entry)
   }
 
-  const permanentTemporaryParticipantIds = new Set<string>()
+  const permanentTemporaryEntryByParticipant = new Map<
+    string,
+    (typeof quiz.temporaryLeaderboard)[number]
+  >()
   const genuineTemporaryParticipantIds = new Set<string>()
   for (const entry of quiz.temporaryLeaderboard) {
     if (!existingParticipantIds.has(entry.id)) {
       genuineTemporaryParticipantIds.add(entry.id)
       continue
     }
-    if (persistedScores.has(entry.id)) {
+    if (permanentTemporaryEntryByParticipant.has(entry.id)) {
       return { status: 'UNAVAILABLE', plan: null }
     }
-    permanentTemporaryParticipantIds.add(entry.id)
-    persistedScores.set(entry.id, entry.score)
+    permanentTemporaryEntryByParticipant.set(entry.id, entry)
   }
 
   for (const participantId of cachedIds) {
@@ -710,51 +710,63 @@ export async function inspectLegacyRegularLiveQuizRewards(
   const expectedPermanentParticipantIds = new Set([
     ...responseParticipantIds,
     ...sessionEntryByParticipant.keys(),
-    ...permanentTemporaryParticipantIds,
+    ...permanentTemporaryEntryByParticipant.keys(),
     ...cachedIds.filter((id) => existingParticipantIds.has(id)),
   ])
+  const completePermanentRewards = new Map<
+    string,
+    { score: number; xp: number }
+  >()
   for (const participantId of expectedPermanentParticipantIds) {
+    const reward = cachedRewards.get(participantId)
     if (
       !existingParticipantIds.has(participantId) ||
-      cachedRewards.get(participantId)?.xp === undefined
+      reward?.score === undefined ||
+      reward.xp === undefined
     ) {
       return { status: 'UNAVAILABLE', plan: null }
     }
-  }
 
-  const cachedPermanentScoreEntries = [...cachedRewards.entries()].flatMap(
-    ([participantId, reward]) =>
-      existingParticipantIds.has(participantId) && reward.score !== undefined
-        ? ([[participantId, reward.score]] as const)
-        : []
-  )
-  if (
-    cachedPermanentScoreEntries.length !== persistedScores.size ||
-    cachedPermanentScoreEntries.some(
-      ([participantId, score]) => persistedScores.get(participantId) !== score
-    )
-  ) {
-    return { status: 'UNAVAILABLE', plan: null }
-  }
+    const participation = participationByParticipant.get(participantId)
+    const sessionEntry = sessionEntryByParticipant.get(participantId)
+    const temporaryEntry =
+      permanentTemporaryEntryByParticipant.get(participantId)
+    const hasGamifiedCourseParticipation =
+      quiz.courseId !== null &&
+      quiz.course?.isGamificationEnabled === true &&
+      participation !== undefined
 
-  for (const [participantId, sessionEntry] of sessionEntryByParticipant) {
-    if (quiz.courseId !== null) {
-      const participation = participationByParticipant.get(participantId)
+    if (hasGamifiedCourseParticipation && participation.isActive) {
       if (
-        !participation ||
+        !sessionEntry ||
+        temporaryEntry ||
+        sessionEntry.score !== reward.score ||
         sessionEntry.sessionParticipationId !== participation.id
       ) {
         return { status: 'UNAVAILABLE', plan: null }
       }
-    } else if (sessionEntry.sessionParticipationId !== null) {
+    } else if (hasGamifiedCourseParticipation) {
+      if (sessionEntry || temporaryEntry) {
+        return { status: 'UNAVAILABLE', plan: null }
+      }
+    } else if (
+      sessionEntry ||
+      !temporaryEntry ||
+      temporaryEntry.score !== reward.score
+    ) {
       return { status: 'UNAVAILABLE', plan: null }
     }
+
+    completePermanentRewards.set(participantId, {
+      score: reward.score,
+      xp: reward.xp,
+    })
   }
 
   const rewardParticipants: LiveQuizRewardParticipant[] = [
     ...expectedPermanentParticipantIds,
   ].map((participantId) => {
-    const reward = cachedRewards.get(participantId)!
+    const reward = completePermanentRewards.get(participantId)!
     const participation = participationByParticipant.get(participantId)
     return {
       participantId,

@@ -1239,7 +1239,123 @@ describe('regular live quiz reward ledger integration', () => {
     ).resolves.toEqual({ status: 'UNAVAILABLE', plan: null })
   })
 
-  it('rejects a permanent inactive responder whose cache evidence is missing without writing state', async () => {
+  it('keeps complete inactive responder evidence in legacy rank reconstruction', async () => {
+    const fixture = await seedCompleteLegacyRankRun()
+    await prisma.participation.update({
+      where: { id: fixture.participationId! },
+      data: { isActive: false },
+    })
+    await prisma.leaderboardEntry.deleteMany({
+      where: {
+        participantId: fixture.participantId,
+        liveQuizId: fixture.liveQuizId,
+        type: 'SESSION',
+      },
+    })
+    await prisma.leaderboardEntry.deleteMany({
+      where: {
+        participantId: fixture.participantId,
+        courseId: fixture.courseId!,
+        type: 'COURSE',
+      },
+    })
+    await prisma.timelineEntry.update({
+      where: {
+        participationId_courseId_timestamp_type: {
+          participationId: fixture.participationId!,
+          courseId: fixture.courseId!,
+          timestamp: fixture.timelineDate,
+          type: TimelineEntryType.DAILY,
+        },
+      },
+      data: { collectedPoints: 0 },
+    })
+
+    const inspection = await inspectLegacyRegularLiveQuizRewards(
+      { liveQuizId: fixture.liveQuizId },
+      userOneCtx
+    )
+
+    expect(inspection).toMatchObject({
+      status: 'AVAILABLE',
+      plan: {
+        entries: expect.arrayContaining([
+          expect.objectContaining({
+            participantId: fixture.participantId,
+            coursePointsAwarded: 0,
+            participantXpAwarded: 40,
+            timelinePointsAwarded: 0,
+            timelineXpAwarded: 40,
+            achievementId: 5,
+          }),
+        ]),
+      },
+    })
+  })
+
+  it('accepts a permanent temporary leaderboard entry for a non-gamified course', async () => {
+    const fixture = await seedEndedRegularLiveQuizForReset(
+      { gamified: true, withRewardRun: false },
+      userOneCtx
+    )
+    await prisma.course.update({
+      where: { id: fixture.courseId! },
+      data: { isGamificationEnabled: false },
+    })
+    await prisma.leaderboardEntry.deleteMany({
+      where: {
+        participantId: fixture.participantId,
+        liveQuizId: fixture.liveQuizId,
+        type: 'SESSION',
+      },
+    })
+    await prisma.leaderboardEntry.deleteMany({
+      where: {
+        participantId: fixture.participantId,
+        courseId: fixture.courseId!,
+        type: 'COURSE',
+      },
+    })
+    await prisma.temporaryLeaderboardEntry.create({
+      data: {
+        id: fixture.participantId,
+        quizId: fixture.liveQuizId,
+        username: 'Synthetic permanent participant',
+        score: fixture.awardedCoursePoints,
+      },
+    })
+    await prisma.timelineEntry.update({
+      where: {
+        participationId_courseId_timestamp_type: {
+          participationId: fixture.participationId!,
+          courseId: fixture.courseId!,
+          timestamp: fixture.timelineDate,
+          type: TimelineEntryType.DAILY,
+        },
+      },
+      data: { collectedPoints: 0 },
+    })
+
+    await expect(
+      inspectLegacyRegularLiveQuizRewards(
+        { liveQuizId: fixture.liveQuizId },
+        userOneCtx
+      )
+    ).resolves.toMatchObject({
+      status: 'AVAILABLE',
+      plan: {
+        entries: [
+          expect.objectContaining({
+            participantId: fixture.participantId,
+            coursePointsAwarded: 0,
+            participantXpAwarded: fixture.awardedParticipantXp,
+          }),
+        ],
+      },
+    })
+  })
+
+  it('rejects a permanent inactive responder whose leaderboard cache evidence is missing without writing state', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
       { gamified: true, withRewardRun: false },
       userOneCtx
@@ -1294,10 +1410,6 @@ describe('regular live quiz reward ledger integration', () => {
     )
     await userOneCtx.redisExec.hdel(
       `lq:${fixture.liveQuizId}:lb`,
-      inactiveParticipant.id
-    )
-    await userOneCtx.redisExec.hdel(
-      `lq:${fixture.liveQuizId}:xp`,
       inactiveParticipant.id
     )
 
