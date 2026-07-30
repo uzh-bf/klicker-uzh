@@ -2,7 +2,7 @@
 type: Data Layer
 title: Data & Migrations
 description: Split Prisma schema, the migrate→sync→build ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-07-29'
+timestamp: '2026-07-30'
 tags:
   - backend
   - prisma
@@ -33,7 +33,7 @@ The schema is a **folder** (`prisma.config.ts` → `schema: 'src/prisma/schema'`
 
 The Python twin (`apps/analytics/prisma/schema/py.prisma`) uses `prisma-client-py` with `interface = "sync"` and **`enable_experimental_decimal = true`** — keep that flag whenever shared schema `Decimal` fields exist (chat credit fields are `@db.Decimal(18,6)`), and note the Python side still uses the older `prismaSchemaFolder` preview flag.
 
-Learning-analytics eligibility state belongs to the shared schema: the course enable flag is in `course.prisma`, while the current participation choice and append-only choice history are in `participant.prisma`. Run the full migrate → sync → build ritual after changing these fields so the TypeScript client and Analytics' Python schema expose the same eligibility boundary.
+Learning-analytics eligibility state belongs to the shared schema: the course enable flag is `packages/prisma/src/prisma/schema/course.prisma:Course.isLearningAnalyticsEnabled`, while the current participation choice and choice-event history are `packages/prisma/src/prisma/schema/participant.prisma:Participation.learningAnalyticsStatus` and `packages/prisma/src/prisma/schema/participant.prisma:LearningAnalyticsChoiceEvent`. Run the full migrate → sync → build ritual after changing these fields so the TypeScript client and Analytics' Python schema expose the same eligibility boundary (`util/sync-schema.sh`).
 
 ## Migrations
 

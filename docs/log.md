@@ -1,5 +1,9 @@
 # Log
 
+## 2026-07-30
+
+- **Update** — Clarified which learning-analytics lifecycle behavior is implemented and added source citations to [Domain Model](./domain-model.md) and [Data & Migrations](./data-and-migrations.md).
+
 ## 2026-07-29
 
 - **Update**: [domain-model](./domain-model.md) and [data-and-migrations](./data-and-migrations.md) document the independent course and participant learning-analytics controls, timestamped eligibility boundary, append-only choice history, and shared-schema synchronization requirement.

@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-07-29'
+timestamp: '2026-07-30'
 tags:
   - backend
   - prisma
@@ -29,12 +29,12 @@ They are unrelated models — never conflate them. A `Participant` joins a `Cour
 
 Optional learning analytics has two independent controls:
 
-- `Course.isLearningAnalyticsEnabled` records whether the lecturer has enabled learning analytics for the course. It is separate from `Course.areAnalyticsValid`, which remains an analytics-data validity flag.
-- Each `Participation` records the student's current `LearningAnalyticsParticipationStatus` (`UNDECIDED`, `INCLUDED`, or `EXCLUDED`), the disclosure version they acknowledged, their latest choice time, and `learningAnalyticsIncludedFrom`.
+- `Course.isLearningAnalyticsEnabled` records whether the lecturer has enabled learning analytics for the course. It is separate from `Course.areAnalyticsValid`, which remains an analytics-data validity flag (`packages/prisma/src/prisma/schema/course.prisma:Course.isLearningAnalyticsEnabled`).
+- Each `Participation` records the student's current `LearningAnalyticsParticipationStatus` (`UNDECIDED`, `INCLUDED`, or `EXCLUDED`), the disclosure version they acknowledged, their latest choice time, and `learningAnalyticsIncludedFrom` (`packages/prisma/src/prisma/schema/participant.prisma:Participation.learningAnalyticsStatus`).
 
-`Participation.isActive` still controls ordinary course participation and gamification visibility; it is not learning-analytics consent. A student's learning-analytics activity is eligible only while the course control is enabled, their status is `INCLUDED`, their acknowledged disclosure version is current, and the activity timestamp is at or after `learningAnalyticsIncludedFrom`.
+`Participation.isActive` still controls ordinary course participation and gamification visibility; it is not learning-analytics consent. The shared eligibility helper admits activity only while the course control is enabled, the status is `INCLUDED`, the acknowledged disclosure version is current, and the activity timestamp is at or after `learningAnalyticsIncludedFrom` (`packages/util/src/learningAnalytics.ts:isActivityEligibleForLearningAnalytics`).
 
-Every explicit student choice is retained as a `LearningAnalyticsChoiceEvent`. Excluding a student clears the current inclusion boundary and later re-inclusion creates a new boundary, so the disabled interval remains outside future learning-analytics calculations.
+The schema provides `LearningAnalyticsChoiceEvent` for append-only choice history (`packages/prisma/src/prisma/schema/participant.prisma:LearningAnalyticsChoiceEvent`). Choice mutations and their atomic snapshot/history transitions are not implemented yet.
 
 ## Content hierarchy
 

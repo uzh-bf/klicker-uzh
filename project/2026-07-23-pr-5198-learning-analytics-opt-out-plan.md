@@ -509,6 +509,14 @@ Commit:
 - 2026-07-29: Independent correctness/privacy and simplification reviews of
   commit `216278d69` reported no findings. Choice mutations in Slice 3 must
   atomically update the current snapshot and append the event history.
-- Current: Research and Slice 1 complete.
-- Next: Slice 2 remains gated on renewed execution authority. The draft PR stays
-  open for the remaining implementation and legal-review evidence.
+- 2026-07-30: Branch-level Standards and Spec reviews found one current-state
+  wiki wording issue, missing wiki source citations, and one explicit course
+  re-enable lifecycle test. The wording and citations were corrected, and the
+  centralized eligibility helper now passes 12 focused cases. The independent
+  simplification review found no incidental complexity to remove.
+- 2026-07-30: The user renewed execution authority and requested stacked GitHub
+  PRs for later slices. PR #5198 remains the stack base for Research and Slice 1;
+  each later slice targets the preceding slice branch for an isolated diff.
+- Current: Research and Slice 1 complete and frozen as the stack base.
+- Next: Implement Slice 2 on a branch and draft PR stacked on
+  `codex/learning-analytics-opt-out-plan`.
