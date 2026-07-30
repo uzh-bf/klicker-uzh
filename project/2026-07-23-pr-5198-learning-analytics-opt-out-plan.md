@@ -2,7 +2,7 @@
 
 ## Identity
 
-- Status: implementation complete; final re-review pending
+- Status: implementation and final re-review complete; production gates pending
 - Branch: `codex/learning-analytics-opt-out-plan`
 - Target: `analytics-stack-04-verification-privacy`
 - Pull request: [#5198](https://github.com/uzh-bf/klicker-uzh/pull/5198)
@@ -214,6 +214,6 @@ No cleanup, deployment, rollout change, or merge is authorized by this plan.
   PWA production build, and GraphQL integration tests; a fresh current-branch
   browser smoke is blocked by an unrelated non-idempotent
   catalog/derived-permission seed failure.
-- Current: final whole-branch standards, specification, privacy/security, and
-  maintainability re-review is pending. The rollout remains disabled and
-  production cleanup has not run.
+- 2026-07-30: Final whole-branch standards, specification, privacy/security,
+  and maintainability re-reviews were clean at implementation commit
+  `a0ee97ccd`. The rollout remains disabled and production cleanup has not run.
