@@ -1177,6 +1177,39 @@ describe('Live quiz response collection mode', () => {
     })
   })
 
+  it('does not clear a task from a newer publication generation', async () => {
+    const liveQuiz = await seedLiveQuiz(
+      { elements: [], status: PublicationStatus.DRAFT },
+      userOneCtx
+    )
+    const previousStartedAt = new Date(Date.now() - 1_000)
+    const currentStartedAt = new Date()
+    const scheduledPublicationTaskId = '88888888-8888-4888-8888-888888888888'
+    await prisma.liveQuiz.update({
+      where: { id: liveQuiz.id },
+      data: {
+        status: PublicationStatus.PUBLISHED,
+        startedAt: currentStartedAt,
+        scheduledPublicationTaskId,
+      },
+    })
+
+    await expect(
+      clearLiveQuizScheduledPublicationTask({
+        prisma,
+        liveQuizId: liveQuiz.id,
+        startedAt: previousStartedAt,
+        scheduledPublicationTaskId,
+      })
+    ).rejects.toThrow('changed during scheduled publication cleanup')
+    await expect(
+      prisma.liveQuiz.findUniqueOrThrow({ where: { id: liveQuiz.id } })
+    ).resolves.toMatchObject({
+      startedAt: currentStartedAt,
+      scheduledPublicationTaskId,
+    })
+  })
+
   it('repairs a published quiz without a persisted start timestamp', async () => {
     const liveQuiz = await seedLiveQuiz(
       { elements: [], status: PublicationStatus.DRAFT },
