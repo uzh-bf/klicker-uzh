@@ -66,7 +66,7 @@ CODE responses are accepted only through the dedicated asynchronous submission m
 
 The submission service checks active course participation before resolving the instance and scopes the instance query to an available published PracticeQuiz or MicroLearning in that course. Missing, wrong-type, foreign-course, unavailable, and inactive-participation inputs return the same unavailable result, so the mutation cannot be used as an instance oracle.
 
-Activity edit payloads may retain an existing instance only when it is still attached to the exact activity being edited. The service checks that scope before the transaction and repeats it in the transactional disconnect, preventing a supplied foreign instance ID from moving content or granting derived access to authoring data.
+Activity edit payloads may retain an existing instance only when it is still attached to the exact activity being edited. The service checks that scope before the transaction and repeats it in the transactional disconnect, preventing a supplied foreign instance ID from moving content or granting derived access to authoring data. Other edit-owned data must not change before that fence; group-activity clue replacement therefore runs inside the same transaction after persistent instances are rechecked.
 
 CODE JSON validation enforces depth, node, and serialized-byte bounds. Breadth checks happen before adding array/object children to the traversal worklist so invalid wide inputs cannot allocate work proportional to the entire request before the node limit rejects them.
 

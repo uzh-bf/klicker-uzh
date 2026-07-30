@@ -4,6 +4,7 @@ import {
   ElementOrderType,
   ElementStackType,
   ElementType,
+  ParameterType,
   PermissionLevel,
   PrismaClient,
   PublicationStatus,
@@ -248,6 +249,15 @@ describe('activity instance edit scopes', () => {
         scheduledEndAt: new Date(data.now.getTime() + 86_400_000),
         ownerId: data.ctx.user.sub,
         courseId: data.course.id,
+        clues: {
+          create: {
+            name: 'existing',
+            displayName: 'Existing clue',
+            type: ParameterType.NUMBER,
+            value: '1',
+            unit: null,
+          },
+        },
         stacks: { create: stack },
       },
       include: { stacks: { include: { elements: true } } },
@@ -335,6 +345,21 @@ describe('activity instance edit scopes', () => {
     )
   }
 
+  async function expectGroupCluePreserved(
+    kind: ActivityKind,
+    activityId: string
+  ) {
+    if (kind !== 'groupActivity') return
+    expect(
+      await prisma.groupActivity.findUniqueOrThrow({
+        where: { id: activityId },
+        include: { clues: true },
+      })
+    ).toMatchObject({
+      clues: [{ name: 'existing', value: '1' }],
+    })
+  }
+
   it.each<ActivityKind>([
     'practiceQuiz',
     'microLearning',
@@ -378,6 +403,7 @@ describe('activity instance edit scopes', () => {
       } else {
         expect(persisted.elementStackId).toBe(source.containerId)
       }
+      await expectGroupCluePreserved(kind, target.id)
     }
   )
 
@@ -462,6 +488,7 @@ describe('activity instance edit scopes', () => {
           order: 1,
         })
       }
+      await expectGroupCluePreserved(kind, target.id)
     }
   )
 })

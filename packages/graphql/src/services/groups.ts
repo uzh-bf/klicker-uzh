@@ -852,7 +852,7 @@ export async function manipulateGroupActivity(
   }: CreateGroupActivityArgs,
   ctx: ContextWithUser
 ) {
-  // in EDIT mode - validate that the group activity exists and is not published, remove the old clues
+  // in EDIT mode - validate that the group activity exists and is not published
   let existingActivity: DB.GroupActivity | null = null
   if (id) {
     existingActivity = await ctx.prisma.groupActivity.findUnique({
@@ -869,12 +869,6 @@ export async function manipulateGroupActivity(
     ) {
       throw new GraphQLError('Can only edit draft group activities')
     }
-
-    // remove old clues as they will be replaced through new values
-    await ctx.prisma.groupActivity.update({
-      where: { id },
-      data: { clues: { deleteMany: {} } },
-    })
   }
 
   // get the course to which the practice quiz should be assigned
@@ -1027,6 +1021,14 @@ export async function manipulateGroupActivity(
         if (updated.count !== 1) {
           throw new GraphQLError('Not all element instances could be found')
         }
+      }
+
+      // replace clues only after persistent instances passed the transaction-time activity fence
+      if (id) {
+        await prisma.groupActivity.update({
+          where: { id },
+          data: { clues: { deleteMany: {} } },
+        })
       }
 
       // delete all stacks

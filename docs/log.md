@@ -2,7 +2,7 @@
 
 ## 2026-07-30
 
-- **Security**: activity edits now accept persistent instance IDs only from the exact activity and recheck the scope transactionally; CODE submission lookup normalizes missing, wrong-type, foreign-course, unavailable, and inactive-participation cases.
+- **Security**: activity edits now accept persistent instance IDs only from the exact activity and recheck the scope transactionally; group-activity clue replacement happens after that fence in the same transaction. CODE submission lookup normalizes missing, wrong-type, foreign-course, unavailable, and inactive-participation cases.
 - **Update**: CODE authoring and runtime share test-ID and aggregate-weight constraints, provider throttling preserves the ordinary grading-attempt budget, and finalized responses carry trusted correctness for daily and course Analytics.
 - **Security**: CODE final review now binds element autosaves to the authenticated lecturer, permission-scopes template type preflights, and enforces JSON breadth before traversal expansion. The matching frontend, GraphQL, domain-model, and agent-skill contracts document those boundaries.
 - **Update**: [GraphQL API layer](./graphql-api-layer.md) and [async workers](./async-and-workers.md) document CODE rate-limit deferral, due-only recovery, transactional status fencing without an aggregate submission ledger, one shared post-grading persistence tail, and the dedicated asynchronous submission contract.
