@@ -342,9 +342,6 @@ export async function createCourseDiscussionReplyResult(
   if (!threadCourseId || threadCourseId !== courseId) {
     return replyFailure(CourseDiscussionPostFailureCode.THREAD_UNAVAILABLE)
   }
-  if (thread.replyCount >= REPLIES_PER_THREAD_MAX) {
-    return replyFailure(CourseDiscussionPostFailureCode.REPLY_LIMIT_REACHED)
-  }
 
   const anonymous = !!isAnonymous
 
@@ -363,10 +360,59 @@ export async function createCourseDiscussionReplyResult(
     )
 
     if (!validBinding) {
-      return replyFailure(CourseDiscussionPostFailureCode.INVALID_EMBED)
+      return replyFailure(CourseDiscussionPostFailureCode.THREAD_UNAVAILABLE)
     }
 
     fingerprintHash = hashAnonymousFingerprint(ctx, courseId)
+  } else {
+    const actor = await getCourseAccessActor({ courseId }, ctx)
+    if (!actor) {
+      return replyFailure(CourseDiscussionPostFailureCode.THREAD_UNAVAILABLE)
+    }
+
+    participantId = actor.participantId ?? null
+    if (!participantId) {
+      return replyFailure(CourseDiscussionPostFailureCode.THREAD_UNAVAILABLE)
+    }
+
+    if (
+      !(await canParticipantAccessDiscussionScope(
+        {
+          participantId,
+          courseId,
+          scope: thread.scope,
+        },
+        ctx
+      ))
+    ) {
+      return replyFailure(CourseDiscussionPostFailureCode.THREAD_UNAVAILABLE)
+    }
+
+    if (embedClaims) {
+      const validBinding = await verifyEmbedScopeBinding(
+        {
+          embedClaims,
+          expectedSpace: thread.scope.space,
+          expectedScopeKey: thread.scope.scopeKey,
+          requireAnonymous: false,
+        },
+        ctx
+      )
+
+      if (!validBinding) {
+        return replyFailure(CourseDiscussionPostFailureCode.THREAD_UNAVAILABLE)
+      }
+    }
+  }
+
+  if (thread.replyCount >= REPLIES_PER_THREAD_MAX) {
+    return replyFailure(CourseDiscussionPostFailureCode.REPLY_LIMIT_REACHED)
+  }
+
+  if (anonymous) {
+    if (!fingerprintHash) {
+      return replyFailure(CourseDiscussionPostFailureCode.THREAD_UNAVAILABLE)
+    }
 
     const allowedByRateLimit = await enforceAnonymousRateLimits(
       {
@@ -382,43 +428,8 @@ export async function createCourseDiscussionReplyResult(
       return replyFailure(CourseDiscussionPostFailureCode.RATE_LIMITED)
     }
   } else {
-    const actor = await getCourseAccessActor({ courseId }, ctx)
-    if (!actor) {
-      return replyFailure(CourseDiscussionPostFailureCode.ACCESS_DENIED)
-    }
-
-    participantId = actor.participantId ?? null
     if (!participantId) {
-      return replyFailure(CourseDiscussionPostFailureCode.ACCESS_DENIED)
-    }
-
-    if (
-      !(await canParticipantAccessDiscussionScope(
-        {
-          participantId,
-          courseId,
-          scope: thread.scope,
-        },
-        ctx
-      ))
-    ) {
-      return replyFailure(CourseDiscussionPostFailureCode.ACCESS_DENIED)
-    }
-
-    if (embedClaims) {
-      const validBinding = await verifyEmbedScopeBinding(
-        {
-          embedClaims,
-          expectedSpace: thread.scope.space,
-          expectedScopeKey: thread.scope.scopeKey,
-          requireAnonymous: false,
-        },
-        ctx
-      )
-
-      if (!validBinding) {
-        return replyFailure(CourseDiscussionPostFailureCode.INVALID_EMBED)
-      }
+      return replyFailure(CourseDiscussionPostFailureCode.THREAD_UNAVAILABLE)
     }
 
     const withinRateLimit = await enforceParticipantRateLimit(

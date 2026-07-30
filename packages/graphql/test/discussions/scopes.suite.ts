@@ -15,6 +15,7 @@ import {
   courseDiscussionOverview,
   courseDiscussionThreads,
   createCourseDiscussionReply,
+  createCourseDiscussionReplyResult,
   createCourseDiscussionThread,
   generateCourseDiscussionEmbeddingInfo,
   toggleCourseDiscussionThreadUpvote,
@@ -358,6 +359,105 @@ export function registerScopesSuite(getContext: () => DiscussionTestContext) {
       reply: null,
       failureCode: CourseDiscussionPostFailureCode.THREAD_UNAVAILABLE,
     })
+  })
+
+  it('keeps unauthorized reply probes indistinguishable', async () => {
+    const { prisma, userOneCtx } = getContext()
+    const course = await seedCourse({}, userOneCtx)
+    const otherCourse = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, { courseId: course.id })
+    await enableCourseDiscussion(prisma, { courseId: otherCourse.id })
+
+    const participantId = await seedParticipantInCourse(prisma, {
+      courseId: course.id,
+    })
+    const participantCtx = createParticipantContext(userOneCtx, participantId)
+    const otherParticipantId = await seedParticipantInCourse(prisma, {
+      courseId: otherCourse.id,
+    })
+    const otherParticipantCtx = createParticipantContext(
+      userOneCtx,
+      otherParticipantId
+    )
+
+    const activeThread = await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: 'Existing thread',
+        scope: { scopeType: DiscussionScopeType.COURSE },
+      },
+      participantCtx
+    )
+    const deletedThread = await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: 'Deleted thread',
+        scope: { scopeType: DiscussionScopeType.COURSE },
+      },
+      participantCtx
+    )
+    const cappedThread = await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: 'Capped thread',
+        scope: { scopeType: DiscussionScopeType.COURSE },
+      },
+      participantCtx
+    )
+    const otherCourseThread = await createCourseDiscussionThread(
+      {
+        courseId: otherCourse.id,
+        content: 'Other course thread',
+        scope: { scopeType: DiscussionScopeType.COURSE },
+      },
+      otherParticipantCtx
+    )
+
+    if (
+      !activeThread ||
+      !deletedThread ||
+      !cappedThread ||
+      !otherCourseThread
+    ) {
+      throw new Error('Reply probe fixtures could not be created')
+    }
+
+    await prisma.discussionThread.update({
+      where: { id: deletedThread.id },
+      data: { isDeleted: true },
+    })
+    await prisma.discussionThread.update({
+      where: { id: cappedThread.id },
+      data: { replyCount: 50 },
+    })
+
+    const anonymousCtx = createAnonymousContext(userOneCtx)
+    const probeThreadIds = [
+      2_147_483_647,
+      activeThread.id,
+      deletedThread.id,
+      cappedThread.id,
+      otherCourseThread.id,
+    ]
+
+    for (const isAnonymous of [false, true]) {
+      for (const threadId of probeThreadIds) {
+        await expect(
+          createCourseDiscussionReplyResult(
+            {
+              courseId: course.id,
+              threadId,
+              content: 'Unauthorized reply probe',
+              isAnonymous,
+            },
+            anonymousCtx
+          )
+        ).resolves.toEqual({
+          reply: null,
+          failureCode: CourseDiscussionPostFailureCode.THREAD_UNAVAILABLE,
+        })
+      }
+    }
   })
 
   it('rejects oversized external identifiers instead of merging truncated scopes', async () => {

@@ -41,35 +41,7 @@ export const DiscussionSort = builder.enumType('DiscussionSort', {
 export const CourseDiscussionPostFailure = builder.enumType(
   'CourseDiscussionPostFailure',
   {
-    values: {
-      INVALID_INPUT: {
-        value: CourseDiscussionPostFailureCode.INVALID_INPUT,
-      },
-      COURSE_QA_UNAVAILABLE: {
-        value: CourseDiscussionPostFailureCode.COURSE_QA_UNAVAILABLE,
-      },
-      ACCESS_DENIED: {
-        value: CourseDiscussionPostFailureCode.ACCESS_DENIED,
-      },
-      INVALID_SCOPE: {
-        value: CourseDiscussionPostFailureCode.INVALID_SCOPE,
-      },
-      INVALID_EMBED: {
-        value: CourseDiscussionPostFailureCode.INVALID_EMBED,
-      },
-      RATE_LIMITED: {
-        value: CourseDiscussionPostFailureCode.RATE_LIMITED,
-      },
-      THREAD_UNAVAILABLE: {
-        value: CourseDiscussionPostFailureCode.THREAD_UNAVAILABLE,
-      },
-      REPLY_LIMIT_REACHED: {
-        value: CourseDiscussionPostFailureCode.REPLY_LIMIT_REACHED,
-      },
-      POST_FAILED: {
-        value: CourseDiscussionPostFailureCode.POST_FAILED,
-      },
-    },
+    values: Object.values(CourseDiscussionPostFailureCode),
   }
 )
 
