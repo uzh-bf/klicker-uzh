@@ -1,11 +1,10 @@
 import type { Locator, Page } from '@playwright/test'
 import { cleanupTest } from '../util/cleanup.js'
-import { COURSE_ID_TEST, URL_MANAGE, URL_STUDENT } from '../util/constants.js'
+import { COURSE_ID_TEST, URL_MANAGE } from '../util/constants.js'
 import { COURSE_QA_DATA, setCourseQAFlags } from '../util/courseQa.js'
 import { expect, test } from '../util/fixtures.js'
 
 const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
-const studentUrl = process.env.URL_STUDENT ?? URL_STUDENT
 const courseName = COURSE_QA_DATA.course
 
 let anonymousThreadEmbedUrl = ''
@@ -29,17 +28,33 @@ function courseThread(page: Page, content: string): Locator {
     .first()
 }
 
+async function createThread(page: Page, content: string) {
+  const input = page.getByTestId('course-qa-thread-input')
+  await input.fill(content)
+  await page.getByTestId('course-qa-create-thread').click()
+  await expect(page.getByText(content, { exact: true })).toBeVisible()
+  await expect(input).toHaveValue('')
+}
+
+function parseEmbedUrl(embedInfo: { embedUrl: string; scopeKey: string }): URL {
+  const url = new URL(embedInfo.embedUrl)
+  expect(url.searchParams.get('scopeKey')).toBe(embedInfo.scopeKey)
+  expect(url.searchParams.has('embedToken')).toBe(false)
+  expect(new URLSearchParams(url.hash.slice(1)).get('embedToken')).toBeTruthy()
+  return url
+}
+
 async function generateEmbedUrl(page: Page) {
   const responsePromise = page.waitForResponse((response) => {
     const request = response.request()
-    return (
-      request.method() === 'POST' &&
-      request
-        .postData()
-        ?.includes(
-          '"operationName":"GenerateCourseDiscussionEmbeddingInfo"'
-        ) === true
-    )
+    if (request.method() !== 'POST') return false
+
+    try {
+      const body = request.postDataJSON() as { operationName?: unknown }
+      return body.operationName === 'GenerateCourseDiscussionEmbeddingInfo'
+    } catch {
+      return false
+    }
   })
 
   await page.getByTestId('course-qa-generate-embed').click()
@@ -118,6 +133,7 @@ test.describe('Course Q&A embed workflow', () => {
     await expect(page.getByTestId('course-qa-generate-embed')).toBeEnabled()
     const courseEmbed = await generateEmbedUrl(page)
     expect(courseEmbed.scopeKey).toBe(`course:${COURSE_ID_TEST}`)
+    parseEmbedUrl(courseEmbed)
 
     await page.getByTestId('course-qa-embed-scope-external').click()
     const generateButton = page.getByTestId('course-qa-generate-embed')
@@ -138,23 +154,29 @@ test.describe('Course Q&A embed workflow', () => {
 
     const anonymousThreadEmbed = await generateEmbedUrl(page)
     expect(anonymousThreadEmbed.allowAnonymous).toBe(true)
-    const anonymousThreadUrl = new URL(anonymousThreadEmbed.embedUrl)
-    expect(anonymousThreadUrl.searchParams.has('embedToken')).toBe(false)
-    expect(
-      new URLSearchParams(anonymousThreadUrl.hash.slice(1)).get('embedToken')
-    ).toBeTruthy()
+    parseEmbedUrl(anonymousThreadEmbed)
     anonymousThreadEmbedUrl = anonymousThreadEmbed.embedUrl
 
     await referenceInput.fill(`${COURSE_QA_DATA.embed.externalRef}-reply`)
     const anonymousReplyEmbed = await generateEmbedUrl(page)
     expect(anonymousReplyEmbed.allowAnonymous).toBe(true)
+    parseEmbedUrl(anonymousReplyEmbed)
     anonymousReplyEmbedUrl = anonymousReplyEmbed.embedUrl
 
     await anonymousToggle.uncheck()
     await referenceInput.fill(`${COURSE_QA_DATA.embed.externalRef}-read-only`)
     const readOnlyEmbed = await generateEmbedUrl(page)
     expect(readOnlyEmbed.allowAnonymous).toBe(false)
+    parseEmbedUrl(readOnlyEmbed)
     readOnlyEmbedUrl = readOnlyEmbed.embedUrl
+
+    expect(
+      new Set([
+        anonymousThreadEmbed.scopeKey,
+        anonymousReplyEmbed.scopeKey,
+        readOnlyEmbed.scopeKey,
+      ]).size
+    ).toBe(3)
   })
 
   test('Anonymous embed renders without app chrome and accepts a thread', async ({
@@ -172,14 +194,7 @@ test.describe('Course Q&A embed workflow', () => {
       /anonym/i
     )
 
-    await page
-      .getByTestId('course-qa-thread-input')
-      .fill(COURSE_QA_DATA.embed.anonymousThread)
-    await page.getByTestId('course-qa-create-thread').click()
-    await expect(
-      page.getByText(COURSE_QA_DATA.embed.anonymousThread, { exact: true })
-    ).toBeVisible()
-    await expect(page.getByTestId('course-qa-thread-input')).toHaveValue('')
+    await createThread(page, COURSE_QA_DATA.embed.anonymousThread)
     await expect(page.getByTestId('course-qa-thread-anonymous')).toBeVisible()
   })
 
@@ -193,23 +208,10 @@ test.describe('Course Q&A embed workflow', () => {
       requireEmbedUrl('Anonymous reply embed URL', anonymousReplyEmbedUrl)
     )
 
-    await page
-      .getByTestId('course-qa-thread-input')
-      .fill(COURSE_QA_DATA.embed.identifiedThread)
-    await page.getByTestId('course-qa-create-thread').click()
-    await expect(
-      page.getByText(COURSE_QA_DATA.embed.identifiedThread, { exact: true })
-    ).toBeVisible()
-    await expect(page.getByTestId('course-qa-thread-input')).toHaveValue('')
+    await createThread(page, COURSE_QA_DATA.embed.identifiedThread)
 
     await page.goto(requireEmbedUrl('Read-only embed URL', readOnlyEmbedUrl))
-    await page
-      .getByTestId('course-qa-thread-input')
-      .fill(COURSE_QA_DATA.embed.identifiedThread)
-    await page.getByTestId('course-qa-create-thread').click()
-    await expect(
-      page.getByText(COURSE_QA_DATA.embed.identifiedThread, { exact: true })
-    ).toBeVisible()
+    await createThread(page, COURSE_QA_DATA.embed.identifiedThread)
   })
 
   test('Anonymous visitor gets a read-only identified embed', async ({
