@@ -72,3 +72,9 @@ gamification rewards once.
   summary cases. Independent specification and quality reviews passed after
   responder-set, leaderboard-placement, timeline, response-count, cache-value,
   rank-dependency, and ledger-coherence corrections.
+- 2026-07-30: Task 4 completed in `465bd1d9b`, `645aadcba`, `10db68c49`,
+  and `9b2f298e4`. The atomic reset, reward reversal, legacy reconstruction,
+  assessment compatibility, concurrency, and underflow suites passed against
+  real PostgreSQL/Redis/Hatchet services. Independent specification and
+  quality reviews passed after aligning the standard `FORBIDDEN` error contract
+  and covering the implicit-owner activity metadata fallback.
