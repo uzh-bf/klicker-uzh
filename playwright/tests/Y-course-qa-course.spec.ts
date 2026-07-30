@@ -19,6 +19,8 @@ const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
 const studentUrl = process.env.URL_STUDENT ?? URL_STUDENT
 const courseName = COURSE_QA_DATA.course
 
+test.describe.configure({ mode: 'serial' })
+
 function courseThread(page: Page, content: string): Locator {
   return page
     .getByTestId(/^course-qa-thread-\d+$/)
@@ -35,7 +37,7 @@ test('CLEANUP', async () => {
   })
 })
 
-test.describe.serial('Course Q&A course-level workflows', () => {
+test.describe('Course Q&A course-level workflows', () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 })
   })
@@ -75,6 +77,12 @@ test.describe.serial('Course Q&A course-level workflows', () => {
     await loginFreeUser()
     await page.goto(`${manageUrl}/courses/${COURSE_ID_TEST}?tab=discussions`)
 
+    await expect(page).toHaveURL(
+      new RegExp(`/courses/${COURSE_ID_TEST}(?:\\?tab=discussions)?$`)
+    )
+    await expect(page.getByTestId('course-name-with-pin')).toContainText(
+      courseName
+    )
     await expect(page.getByTestId('tab-discussions')).toHaveCount(0)
     await expect(page.getByTestId('course-qa-overview-empty')).toHaveCount(0)
     await expect(page.getByTestId('course-qa-generate-embed')).toHaveCount(0)
