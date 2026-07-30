@@ -1196,6 +1196,9 @@ function validateCodeApiTests(tests: CodeTestCase[]): void {
       `CODE grading requires between 1 and ${CODE_TEST_MAX_COUNT} tests`
     )
   }
+  if (!areCodeTestWeightsValid(tests.map(({ weight }) => weight))) {
+    throw new CodeApiClientError('request', 'CODE test weights are invalid')
+  }
 
   const ids = new Set<string>()
   for (const test of tests) {
@@ -1208,18 +1211,12 @@ function validateCodeApiTests(tests: CodeTestCase[]): void {
       typeof test.name !== 'string' ||
       test.name.trim().length === 0 ||
       (test.visibility !== 'public' && test.visibility !== 'hidden') ||
-      typeof test.weight !== 'number' ||
-      !Number.isFinite(test.weight) ||
-      test.weight <= 0 ||
       !Array.isArray(test.args)
     ) {
       throw new CodeApiClientError('request', 'CODE test is invalid')
     }
     assertJsonValue(test.args, 'CODE test arguments', 'request')
     assertJsonValue(test.expectedOutput, 'CODE expected output', 'request')
-  }
-  if (!areCodeTestWeightsValid(tests.map(({ weight }) => weight))) {
-    throw new CodeApiClientError('request', 'CODE test weights are invalid')
   }
 }
 
