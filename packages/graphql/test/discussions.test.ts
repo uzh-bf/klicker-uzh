@@ -14,6 +14,7 @@ describe('Integration tests for the course discussion platform', () => {
   let hatchet: Hatchet
   let emitter: EventEmitter
   let userOneCtx: ContextWithUser
+  let userTwoCtx: ContextWithUser
 
   beforeAll(async () => {
     const {
@@ -33,19 +34,20 @@ describe('Integration tests for the course discussion platform', () => {
   })
 
   beforeEach(async () => {
-    const { userOneCtx: ctx1 } = await testInitialization(
+    const { userOneCtx: ctx1, userTwoCtx: ctx2 } = await testInitialization(
       prisma,
       hatchet,
       emitter
     )
     userOneCtx = ctx1
+    userTwoCtx = ctx2
   })
 
   afterEach(async () => {
     await testCleanup(prisma)
   })
 
-  const getContext = () => ({ prisma, userOneCtx })
+  const getContext = () => ({ prisma, userOneCtx, userTwoCtx })
 
   registerContentAndConcurrencySuite(getContext)
   registerAnonymousRateLimitsSuite(getContext)

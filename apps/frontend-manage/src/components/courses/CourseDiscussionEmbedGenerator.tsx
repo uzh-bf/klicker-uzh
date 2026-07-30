@@ -1,10 +1,7 @@
 import { useMutation } from '@apollo/client'
 import { faChevronDown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  GenerateCourseDiscussionCourseEmbeddingInfoDocument,
-  GenerateCourseDiscussionEmbeddingInfoDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { GenerateCourseDiscussionEmbeddingInfoDocument } from '@klicker-uzh/graphql/dist/ops'
 import {
   COURSE_QA_EXTERNAL_REF_MAX_LENGTH,
   COURSE_QA_EXTERNAL_SOURCE_MAX_LENGTH,
@@ -40,10 +37,7 @@ function CourseDiscussionEmbedGenerator({
   const [generateEmbedInfo, { loading: loadingEmbed }] = useMutation(
     GenerateCourseDiscussionEmbeddingInfoDocument
   )
-  const [generateCourseEmbedInfo, { loading: loadingCourseEmbed }] =
-    useMutation(GenerateCourseDiscussionCourseEmbeddingInfoDocument)
   const isExternalEmbed = embedScope === 'external'
-  const isGeneratingEmbed = loadingEmbed || loadingCourseEmbed
   const effectiveAllowAnonymous = isCourseQAAnonymousEnabled && allowAnonymous
   const hasValidExternalBlock =
     externalSource.trim().length > 0 &&
@@ -239,28 +233,23 @@ function CourseDiscussionEmbedGenerator({
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <Button
           primary
-          loading={isGeneratingEmbed}
-          disabled={
-            (isExternalEmbed && !hasValidExternalBlock) || isGeneratingEmbed
-          }
+          loading={loadingEmbed}
+          disabled={(isExternalEmbed && !hasValidExternalBlock) || loadingEmbed}
           onClick={async () => {
             try {
-              const variables = {
-                courseId,
-                allowAnonymous: effectiveAllowAnonymous,
-                expiresInHours,
-              }
-              const result = isExternalEmbed
-                ? await generateEmbedInfo({
-                    variables: {
-                      ...variables,
-                      externalBlock: {
+              const result = await generateEmbedInfo({
+                variables: {
+                  courseId,
+                  allowAnonymous: effectiveAllowAnonymous,
+                  expiresInHours,
+                  externalBlock: isExternalEmbed
+                    ? {
                         externalSource: externalSource.trim(),
                         externalRef: externalRef.trim(),
-                      },
-                    },
-                  })
-                : await generateCourseEmbedInfo({ variables })
+                      }
+                    : undefined,
+                },
+              })
 
               if (
                 !result.data?.generateCourseDiscussionEmbeddingInfo?.embedUrl

@@ -25,11 +25,8 @@ describe('Course Q&A embed workflow', function () {
       const operationName =
         request.body?.operationName ??
         new URL(request.url).searchParams.get('operationName')
-      if (operationName === 'GenerateCourseDiscussionCourseEmbeddingInfo') {
-        request.alias = 'courseEmbedInfo'
-      }
       if (operationName === 'GenerateCourseDiscussionEmbeddingInfo') {
-        request.alias = 'externalEmbedInfo'
+        request.alias = 'embedInfo'
       }
     })
 
@@ -41,7 +38,7 @@ describe('Course Q&A embed workflow', function () {
     cy.get('[data-cy="course-qa-embed-scope-course"]').click()
     cy.get('[data-cy="course-qa-generate-embed"]').should('not.be.disabled')
     cy.get('[data-cy="course-qa-generate-embed"]').click()
-    cy.wait('@courseEmbedInfo').its('request.method').should('equal', 'POST')
+    cy.wait('@embedInfo').its('request.method').should('equal', 'POST')
     cy.get('[data-cy="course-qa-embed-url"]')
       .invoke('text')
       .then((courseEmbedUrl) => {
@@ -65,7 +62,7 @@ describe('Course Q&A embed workflow', function () {
       .check()
     cy.get('[data-cy="course-qa-generate-embed"]').should('not.be.disabled')
     cy.get('[data-cy="course-qa-generate-embed"]').click()
-    cy.wait('@externalEmbedInfo').its('request.method').should('equal', 'POST')
+    cy.wait('@embedInfo').its('request.method').should('equal', 'POST')
 
     cy.get('[data-cy="course-qa-embed-url"]')
       .should('exist')

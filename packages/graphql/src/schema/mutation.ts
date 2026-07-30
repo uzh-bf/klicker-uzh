@@ -187,36 +187,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      generateCourseDiscussionEmbeddingInfo: t.withAuth(asUser).field({
-        nullable: true,
-        type: CourseDiscussionEmbeddingInfoRef,
-        args: {
-          courseId: t.arg.string({
-            required: true,
-            validate: { minLength: 1 },
-          }),
-          externalBlock: t.arg({
-            type: DiscussionExternalBlockInput,
-            required: false,
-          }),
-          allowAnonymous: t.arg.boolean({ required: false }),
-          expiresInHours: t.arg.int({
-            required: false,
-            validate: { min: 1, max: 24 * 14 },
-          }),
-        },
-        resolve: withPermission(
-          (args) => ({ courseId: args.courseId }),
-          DB.PermissionLevel.WRITE,
-          async (_, args, ctx) => {
-            return await DiscussionService.generateCourseDiscussionEmbeddingInfo(
-              args,
-              ctx
-            )
-          }
-        ),
-      }),
-
       createCourseDiscussionThread: t.field({
         nullable: true,
         type: DiscussionThreadRef,
@@ -736,6 +706,36 @@ export const Mutation = builder.mutationType({
         resolve: async (_, args, ctx) => {
           return await AccountService.changeUserLocale(args, ctx)
         },
+      }),
+
+      generateCourseDiscussionEmbeddingInfo: t.withAuth(asUser).field({
+        nullable: true,
+        type: CourseDiscussionEmbeddingInfoRef,
+        args: {
+          courseId: t.arg.string({
+            required: true,
+            validate: { minLength: 1 },
+          }),
+          externalBlock: t.arg({
+            type: DiscussionExternalBlockInput,
+            required: false,
+          }),
+          allowAnonymous: t.arg.boolean({ required: false }),
+          expiresInHours: t.arg.int({
+            required: false,
+            validate: { min: 1, max: 24 * 14 },
+          }),
+        },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.WRITE,
+          async (_, args, ctx) => {
+            return await DiscussionService.generateCourseDiscussionEmbeddingInfo(
+              args,
+              ctx
+            )
+          }
+        ),
       }),
 
       cancelLiveQuiz: t.withAuth(asUserSessionExec).field({

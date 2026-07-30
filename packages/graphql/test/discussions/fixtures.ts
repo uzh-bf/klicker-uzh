@@ -25,6 +25,7 @@ import { seedMicroLearning, seedPracticeQuiz } from '../helpers.js'
 export interface DiscussionTestContext {
   prisma: PrismaClient
   userOneCtx: ContextWithUser
+  userTwoCtx: ContextWithUser
 }
 
 export function createParticipantContext(

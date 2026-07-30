@@ -7,6 +7,7 @@ import {
   COURSE_QA_EXTERNAL_SOURCE_MAX_LENGTH,
 } from '@klicker-uzh/types'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
+import { readFileSync } from 'node:fs'
 import { schema } from '../../src/index.js'
 import {
   courseDiscussionOverview,
@@ -29,8 +30,41 @@ import {
 } from './fixtures.js'
 
 export function registerScopesSuite(getContext: () => DiscussionTestContext) {
+  it('publishes only the embed-generation mutation in persisted manifests', () => {
+    const clientManifest = JSON.parse(
+      readFileSync(
+        new URL('../../src/public/client.json', import.meta.url),
+        'utf8'
+      )
+    ) as Record<string, string>
+    const serverManifest = JSON.parse(
+      readFileSync(
+        new URL('../../src/public/server.json', import.meta.url),
+        'utf8'
+      )
+    ) as Record<string, string>
+    const operationHash = clientManifest.GenerateCourseDiscussionEmbeddingInfo
+
+    if (!operationHash) {
+      throw new Error('Embed-generation mutation is missing from client.json')
+    }
+    expect(serverManifest[operationHash]).toMatch(
+      /^mutation GenerateCourseDiscussionEmbeddingInfo\b/
+    )
+    expect(
+      clientManifest.GenerateCourseDiscussionCourseEmbeddingInfo
+    ).toBeUndefined()
+    expect(clientManifest.GetCourseDiscussionEmbeddingInfo).toBeUndefined()
+    expect(
+      clientManifest.GetCourseDiscussionCourseEmbeddingInfo
+    ).toBeUndefined()
+    expect(Object.values(serverManifest)).not.toContainEqual(
+      expect.stringMatching(/^query GetCourseDiscussion.*EmbeddingInfo\b/)
+    )
+  })
+
   it('exposes embed generation only as a validated mutation', async () => {
-    const { prisma, userOneCtx } = getContext()
+    const { prisma, userOneCtx, userTwoCtx } = getContext()
     const mutationFields = schema.getMutationType()?.getFields()
     const queryFields = schema.getQueryType()?.getFields()
 
@@ -104,6 +138,46 @@ export function registerScopesSuite(getContext: () => DiscussionTestContext) {
     }
 
     expect(await prisma.discussionSpace.count()).toBe(initialSpaceCount)
+
+    const course = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, { courseId: course.id })
+    await recomputeDerivedPermissions({ courseId: course.id }, prisma)
+    const validArgs = {
+      courseId: course.id,
+      allowAnonymous: false,
+      expiresInHours: 48,
+    }
+
+    await expect(
+      resolveEmbedMutation(
+        {},
+        validArgs,
+        createAnonymousContext(userOneCtx),
+        {} as never
+      )
+    ).rejects.toThrow()
+    await expect(
+      resolveEmbedMutation(
+        {},
+        validArgs,
+        createParticipantContext(userOneCtx, 'participant-auth-boundary'),
+        {} as never
+      )
+    ).rejects.toThrow()
+    await expect(
+      resolveEmbedMutation({}, validArgs, userTwoCtx, {} as never)
+    ).resolves.toBeNull()
+    await expect(
+      resolveEmbedMutation({}, validArgs, userOneCtx, {} as never)
+    ).resolves.toMatchObject({
+      courseId: course.id,
+      scopeKey: `course:${course.id}`,
+    })
+    await expect(
+      prisma.discussionSpace.count({
+        where: { courseId: course.id },
+      })
+    ).resolves.toBe(1)
   })
 
   it('rejects oversized external identifiers instead of merging truncated scopes', async () => {
