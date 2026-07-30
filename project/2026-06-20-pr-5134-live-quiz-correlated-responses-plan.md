@@ -6,7 +6,7 @@ Plan path: `project/2026-06-20-pr-5134-live-quiz-correlated-responses-plan.md`
 Branch: `codex/live-quiz-correlated-responses`
 Target: `v3`
 PR: [#5134](https://github.com/uzh-bf/klicker-uzh/pull/5134)
-Status: third release-blocker remediation implemented; verification and exact-commit reviews pending
+Status: maintainability remediation approved and in progress
 
 ## Non-Goals
 
@@ -445,6 +445,70 @@ Later research:
 - Final security review before PR/MR.
 - Final branch review before PR/MR.
 
+## Maintainability Remediation - 2026-07-30
+
+### Goal And Boundaries
+
+- Goal: resolve the final strict-review findings without changing the approved response modes, identity model, persistence semantics, CSV shape, privacy notices, or assessment separation.
+- Non-goal: no schema, endpoint, event-name, UI, or export-contract behavior change unless verification exposes a defect.
+- Decision: keep the existing PR and plan as the implementation authority; these are follow-up slices on the same feature branch.
+- Decision: preserve aggregate mode as Redis-only and correlated mode as durable outbox-backed persistence plus aggregate Redis effects.
+- Decision: keep assessment processing completely separate.
+
+### Findings And Target Shape
+
+#### Remediation 1 - Export Package Contract
+
+- Problem: `@klicker-uzh/export/correlated-live-quiz-responses` exposes only the `import` condition, while GraphQL's build resolves package subpaths through the default condition.
+- Evidence: the GraphQL CI job fails with `ERR_PACKAGE_PATH_NOT_EXPORTED`; local `require.resolve` reproduces it under Node 24.
+- Decision: expose both the package root and correlated subpath through `types` plus `default`, matching the repository's runtime package contract.
+- Check: build the export package, resolve the root and subpath from GraphQL, then run GraphQL generation/check/tests.
+- Commit: `fix(export): expose correlated response package entrypoint`
+
+#### Remediation 2 - Publication Transaction Boundary
+
+- Problem: manual and scheduled publication perform Redis writes while a PostgreSQL row lock and transaction are open. Redis cannot roll back with Prisma, failures can leave the systems inconsistent, and network waits extend the database lock.
+- Evidence: `startLiveQuiz` and `handlePublishScheduledLiveQuiz` duplicate the same lock, cache write, and state transition sequence.
+- Decision: add one database-only locked publication transition that returns the authoritative quiz snapshot and whether it started. Materialize Redis only after commit through one idempotent helper.
+- Decision: already-published retries also materialize Redis. Manual failures surface so a repeated start repairs the cache; scheduled failures throw so Hatchet retries. No publication outbox is added because the cache write is idempotent and both entry points have an explicit retry path.
+- Check: database-backed tests for concurrent/manual/scheduled transitions, an already-published cache repair test, and GraphQL check/tests.
+- Commit: `refactor(live-quiz): separate publication state and cache writes`
+
+#### Remediation 3 - Response API Endpoints
+
+- Problem: `/AddResponse` and `/AddCorrelatedResponse` route through one mode-flag handler with optional correlated identity, claim, and event state.
+- Evidence: `apps/response-api/src/index.ts` grew to more than 800 lines and branches repeatedly on `endpointMode` and `isCorrelated`.
+- Decision: keep only typed request parsing and instance lookup shared. Give aggregate and correlated endpoints dedicated handlers with mode-specific required state and event types.
+- Decision: preserve endpoint mismatch responses, durable admission ordering, duplicate status codes, cookie-only identity, and Hatchet envelopes exactly.
+- Check: response API tests, typecheck/build, and focused route-level tests proving each endpoint rejects the other mode.
+- Commit: `refactor(response-api): split aggregate and correlated handlers`
+
+#### Remediation 4 - Response Worker Orchestration
+
+- Problem: the dedicated correlated Hatchet task still enters a processor that infers mode from event shape and carries both aggregate and correlated locks, buffers, persistence, settlement, and error handling.
+- Evidence: `processor.ts` and `responseEffects.ts` retain repeated `isCorrelated` branches despite separate event names and task registrations.
+- Decision: expose explicit aggregate and correlated processors. Share response validation and the pure question-effect plan, but keep delivery resolution, durable persistence, Redis application, lock release, and outbox settlement in the owning processor.
+- Decision: remove event-shape mode inference and boolean mode arguments from the processing path.
+- Check: response-worker tests for aggregate behavior, outbox resolution/settlement, duplicates, retry after persistence, acceptance-time metadata, and atomic Redis effects; typecheck/build.
+- Commit: `refactor(response-worker): split correlated processing`
+
+#### Remediation 5 - GraphQL Response-Mode Ownership
+
+- Problem: `liveQuizResponseCollection.ts` owns only small policy helpers while courses, activities, and live quizzes reconstruct locked transitions and compatibility decisions.
+- Evidence: transition logic is spread across three large services, and the database-backed response-mode/concurrency suite is almost 1,000 lines.
+- Decision: make the response-collection service the canonical owner of locked state reads, transition derivation, and compatibility validation. Callers retain authorization and unrelated entity updates.
+- Decision: split policy and concurrency tests where shared fixtures allow it without adding a new abstraction solely for file size.
+- Check: all focused response-mode/concurrency tests, correlated-export tests, GraphQL check/build, and unchanged GraphQL error codes.
+- Commit: `refactor(graphql): centralize response collection transitions`
+
+### Execution And Finish Gate
+
+- Slice order: package contract, publication boundary, response API split, worker split, GraphQL transition ownership, final integration.
+- Baseline: current PR CI has a GraphQL package-export failure and five Playwright shard failures. The GraphQL failure is owned by Remediation 1; Playwright failures will be rerun and triaged after the branch is synchronized and static checks pass.
+- Documentation: update architecture, GraphQL, worker, and testing wiki pages only where module ownership or verification commands change; add the required `docs/log.md` entry and keep the testing skill aligned.
+- Final check: correlated boundary package tests together, database-backed GraphQL suites, `pnpm run check:all`, affected production builds, and relevant browser/e2e regression proof.
+- Final review: exact-commit security review, thermo-nuclear maintainability review, branch crosscheck, rendered draft PR readback, and CI readback.
+
 ## Progress
 
 - 2026-06-20: Codebase mapped: standard responses aggregate only; assessment persists `LiveQuizResponse`; temp leaderboard uses quiz-scoped token + `TemporaryLeaderboardEntry`.
@@ -523,6 +587,8 @@ Later research:
 - 2026-07-29: Exact-commit review of `4c0f03fbc` found two remaining release blockers: partial or non-finite numerical strings could win durable admission, and deleting a settled outbox row allowed a completed-response retry to race between the precheck and a new insert. The same review pass identified sibling-domain cookie exposure, pre-materialization export memory, and stale pre-lock course counts as hardening issues; a reciprocal cross-course batch move can still receive a PostgreSQL deadlock abort and is tracked as a non-blocking retry/lock-order follow-up.
 - 2026-07-29: The accepted fixes require finite full-string numerical parsing; retain the unique response key as a permanent settled receipt while erasing ciphertext; make anonymous respondent cookies host-only; reject exports above bounded response-count or payload-size preflight before loading rows; and recount course activities/groups after acquiring the course lock. A clean database reset applied all 179 migrations; 63 utility, 18 response API, 26 worker, 31 export, 8 GraphQL export, and 23 database-backed response-mode/concurrency tests pass; the full repository `check:all` gate and scoped response API, worker, export, GraphQL, and backend production builds pass.
 - 2026-07-29: Final exact-commit maintainability, security/privacy, and whole-branch product reviews of `10e9c6025` found no actionable findings at 80% confidence or higher and no release blocker. The reciprocal cross-course batch deadlock remains the sole documented non-blocking code follow-up; the dedicated response-api database role and migration lock budget remain rollout follow-ups.
+- 2026-07-30: A stricter whole-branch maintainability pass found five remaining structural issues: a broken export subpath runtime contract; Redis writes inside publication database transactions; mode-flag orchestration in the response API; event-shape mode inference in the response worker; and response-mode transitions distributed across large GraphQL services. The findings and concrete remediation slices are recorded above.
+- 2026-07-30: The branch was synchronized with current `v3` through commit `f424f03a16`. Remediation 1 starts with the package export contract and a runtime resolution regression check.
 
 ## Goal Prompt Requirements
 
@@ -538,7 +604,7 @@ If handed to another agent:
 
 ## Next Steps
 
-1. Commit the third remediation and run fresh security, maintainability, and independent branch reviews against the exact commit.
-2. Address any release blockers and repeat affected checks.
-3. Push the reviewed branch and update draft PR 5134 with whole-branch evidence, screenshots, rollout ordering, and documented residual privacy limits.
-4. Read back the rendered draft PR, CI, reviews, and comments; keep it draft until the repository's final CI and review gates are satisfied.
+1. Complete Remediations 1-5 in the recorded order, verifying and committing each slice independently.
+2. Run the full correlated-response boundary, repository gates, and affected production builds.
+3. Run exact-commit security, maintainability, simplification, and branch crosscheck reviews; address or explicitly defer every finding.
+4. Push the reviewed branch, refresh the draft PR description and evidence, and read back CI, reviews, and comments. Keep the PR draft until all release gates pass.
