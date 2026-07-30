@@ -20,23 +20,14 @@ class AnalyticsNotReadyError(RuntimeError):
 
 
 def assert_preconditions(db, verbose: bool = False) -> None:
-    chat_rows = db.query_raw(
-        'SELECT COUNT(*) AS n FROM "ParticipantChatAnalytics" WHERE "type" = \'COURSE\''
-    )[0]["n"]
+    chat_rows = db.query_raw('SELECT COUNT(*) AS n FROM "ParticipantChatAnalytics" WHERE "type" = \'COURSE\'')[0]["n"]
     perf_rows = db.query_raw('SELECT COUNT(*) AS n FROM "ParticipantPerformance"')[0]["n"]
     if verbose:
-        print(
-            f"[chat_quiz_correlation] preconditions: chat_course_rows={chat_rows} "
-            f"perf_rows={perf_rows}"
-        )
+        print(f"[chat_quiz_correlation] preconditions: chat_course_rows={chat_rows} perf_rows={perf_rows}")
     if chat_rows == 0:
-        raise AnalyticsNotReadyError(
-            "ParticipantChatAnalytics (type=COURSE) is empty — run script 8 first."
-        )
+        raise AnalyticsNotReadyError("ParticipantChatAnalytics (type=COURSE) is empty — run script 8 first.")
     if perf_rows == 0:
-        raise AnalyticsNotReadyError(
-            "ParticipantPerformance is empty — run script 4 first."
-        )
+        raise AnalyticsNotReadyError("ParticipantPerformance is empty — run script 4 first.")
 
 
 def compute_participant_chat_outcomes(db, verbose: bool = False):

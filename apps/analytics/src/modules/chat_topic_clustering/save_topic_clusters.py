@@ -71,11 +71,7 @@ def save_clusters(
             kept.append((cluster_labels.get(cid, f"cluster-{cid}"), msg_count, p_count))
 
     # Noise messages also fold into Other.
-    noise_messages = [
-        (cid, pid)
-        for cid, pid in zip(cluster_ids_per_message, participant_ids_per_message)
-        if cid < 0
-    ]
+    noise_messages = [(cid, pid) for cid, pid in zip(cluster_ids_per_message, participant_ids_per_message) if cid < 0]
     other_msg += len(noise_messages)
     for _, pid in noise_messages:
         other_participants.add(pid)
@@ -90,8 +86,14 @@ def save_clusters(
     written = 0
     for idx, (label, msg_count, p_count) in enumerate(kept):
         db.execute_raw(
-            INSERT_SQL, analytics_type, timestamp, chatbot_id,
-            idx, label, msg_count, p_count,
+            INSERT_SQL,
+            analytics_type,
+            timestamp,
+            chatbot_id,
+            idx,
+            label,
+            msg_count,
+            p_count,
         )
         written += 1
 
@@ -99,8 +101,14 @@ def save_clusters(
     # itself — otherwise we drop it entirely to avoid a tiny-Other row.
     if len(other_participants) >= MIN_PARTICIPANTS_PER_CLUSTER:
         db.execute_raw(
-            INSERT_SQL, analytics_type, timestamp, chatbot_id,
-            len(kept), "Other", other_msg, len(other_participants),
+            INSERT_SQL,
+            analytics_type,
+            timestamp,
+            chatbot_id,
+            len(kept),
+            "Other",
+            other_msg,
+            len(other_participants),
         )
         written += 1
 

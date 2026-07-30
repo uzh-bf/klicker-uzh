@@ -5,7 +5,6 @@ Text is read straight from Postgres into a Python list and never persisted to di
 clustering pipeline has finished with it.
 """
 
-
 # SELECT user-message text for a single chatbot in the given window.
 # Uses jsonb->0->>'text' on the content column (which is Json storing an array of
 # {type: 'text'|'reasoning'|'tool-call'} chunks). Only the first text chunk is read —

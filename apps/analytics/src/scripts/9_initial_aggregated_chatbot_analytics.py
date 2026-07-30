@@ -37,9 +37,7 @@ if compute_daily:
         win_start = specific_date + "T00:00:00.000Z"
         win_end = specific_date + "T23:59:59.999Z"
         print(f"Computing daily aggregated chatbot analytics for {specific_date}")
-        compute_aggregated_chatbot_analytics(
-            db, win_start, win_end, specific_date, "DAILY", verbose
-        )
+        compute_aggregated_chatbot_analytics(db, win_start, win_end, specific_date, "DAILY", verbose)
 
 if compute_weekly:
     for curr_date in date_range_weekly:
@@ -47,9 +45,7 @@ if compute_weekly:
         win_end = week_end + "T23:59:59.999Z"
         win_start = (curr_date - pd.DateOffset(days=6)).strftime("%Y-%m-%d") + "T00:00:00.000Z"
         print(f"Computing weekly aggregated chatbot analytics for {win_start} to {win_end}")
-        compute_aggregated_chatbot_analytics(
-            db, win_start, win_end, week_end, "WEEKLY", verbose
-        )
+        compute_aggregated_chatbot_analytics(db, win_start, win_end, week_end, "WEEKLY", verbose)
 
 if compute_monthly:
     for curr_date in date_range_monthly:
@@ -57,16 +53,12 @@ if compute_monthly:
         win_end = month_end + "T23:59:59.999Z"
         win_start = (curr_date - pd.offsets.MonthBegin(1)).strftime("%Y-%m-%d") + "T00:00:00.000Z"
         print(f"Computing monthly aggregated chatbot analytics for {win_start} to {win_end}")
-        compute_aggregated_chatbot_analytics(
-            db, win_start, win_end, month_end, "MONTHLY", verbose
-        )
+        compute_aggregated_chatbot_analytics(db, win_start, win_end, month_end, "MONTHLY", verbose)
 
 if compute_course:
     win_start = start_date + "T00:00:00.000Z"
     win_end = end_date + "T23:59:59.999Z"
     print(f"Computing course-wide aggregated chatbot analytics for {win_start} to {win_end}")
-    compute_aggregated_chatbot_analytics(
-        db, win_start, win_end, COURSE_TIMESTAMP, "COURSE", verbose
-    )
+    compute_aggregated_chatbot_analytics(db, win_start, win_end, COURSE_TIMESTAMP, "COURSE", verbose)
 
 db.disconnect()

@@ -1,8 +1,6 @@
 import os
 
-_SQL_PATH = os.path.join(
-    os.path.dirname(__file__), "aggregated_chatbot_analytics.sql"
-)
+_SQL_PATH = os.path.join(os.path.dirname(__file__), "aggregated_chatbot_analytics.sql")
 
 COURSE_TIMESTAMP = "1970-01-01"
 
@@ -29,13 +27,9 @@ def compute_aggregated_chatbot_analytics(
 
     sql = _load_sql()
     if verbose:
-        print(
-            f"[aggregated_chat_analytics] {analytics_type} {win_start}..{win_end} -> {timestamp}"
-        )
+        print(f"[aggregated_chat_analytics] {analytics_type} {win_start}..{win_end} -> {timestamp}")
 
-    rows_written = db.execute_raw(
-        sql, win_start, win_end, analytics_type, timestamp
-    )
+    rows_written = db.execute_raw(sql, win_start, win_end, analytics_type, timestamp)
     if verbose:
         print(f"[aggregated_chat_analytics] rows affected: {rows_written}")
     return rows_written
