@@ -19,6 +19,8 @@ import {
   calculateLiveQuizRewardPlan,
   inspectLegacyRegularLiveQuizRewards,
   persistLiveQuizRewardRun,
+  recomputeWeeklyTimelineEntry,
+  reverseLiveQuizRewardRun,
   type LiveQuizRewardParticipant,
 } from '../src/services/liveQuizRewards.js'
 import { endLiveQuiz } from '../src/services/liveQuizzes.js'
@@ -1948,5 +1950,163 @@ describe('regular live quiz reward ledger integration', () => {
         where: { liveQuizId: secondQuiz.id },
       })
     ).toBe(0)
+  })
+
+  it('reverses exact ledger deltas and recomputes the historical week', async () => {
+    const fixture = await seedEndedRegularLiveQuizForReset(
+      { gamified: true, withRewardRun: true },
+      userOneCtx
+    )
+    await prisma.participantAchievementInstance.update({
+      where: {
+        participantId_achievementId: {
+          participantId: fixture.participantId,
+          achievementId: fixture.achievementId!,
+        },
+      },
+      data: { achievedCount: 2 },
+    })
+
+    const reversal = await prisma.$transaction((tx) =>
+      reverseLiveQuizRewardRun({
+        rewardRunId: fixture.rewardRunId!,
+        actorId: userOneCtx.user.sub,
+        tx,
+      })
+    )
+    expect(reversal.totals).toEqual({
+      coursePoints: fixture.awardedCoursePoints,
+      participantXp: fixture.awardedParticipantXp,
+      timelineChanges: 1,
+      achievementChanges: fixture.awardedAchievementCount,
+    })
+    expect(reversal.weeklyTimelineRecomputations).toEqual([
+      {
+        participationId: fixture.participationId,
+        courseId: fixture.courseId,
+        weekStart: new Date('2026-07-27T00:00:00.000Z'),
+      },
+    ])
+
+    await recomputeWeeklyTimelineEntry({
+      ...reversal.weeklyTimelineRecomputations[0]!,
+      prisma,
+    })
+
+    await expect(
+      prisma.participant.findUniqueOrThrow({
+        where: { id: fixture.participantId },
+      })
+    ).resolves.toMatchObject({ xp: 0 })
+    await expect(
+      prisma.leaderboardEntry.findUnique({
+        where: {
+          type_participantId_courseId: {
+            type: 'COURSE',
+            participantId: fixture.participantId,
+            courseId: fixture.courseId!,
+          },
+        },
+      })
+    ).resolves.toBeNull()
+    await expect(
+      prisma.timelineEntry.findMany({
+        where: {
+          participationId: fixture.participationId!,
+          courseId: fixture.courseId!,
+        },
+      })
+    ).resolves.toEqual([])
+    await expect(
+      prisma.participantAchievementInstance.findUniqueOrThrow({
+        where: {
+          participantId_achievementId: {
+            participantId: fixture.participantId,
+            achievementId: fixture.achievementId!,
+          },
+        },
+      })
+    ).resolves.toMatchObject({ achievedCount: 1 })
+    await expect(
+      prisma.liveQuizRewardRun.findUniqueOrThrow({
+        where: { id: fixture.rewardRunId! },
+      })
+    ).resolves.toMatchObject({
+      status: LiveQuizRewardRunStatus.REVERSED,
+      reversedById: userOneCtx.user.sub,
+      reversedAt: expect.any(Date),
+    })
+  })
+
+  it('decrements an exact compacted weekly timeline when the daily row is gone', async () => {
+    const fixture = await seedEndedRegularLiveQuizForReset(
+      { gamified: true, withRewardRun: true },
+      userOneCtx
+    )
+    await prisma.timelineEntry.deleteMany({
+      where: {
+        participationId: fixture.participationId!,
+        courseId: fixture.courseId!,
+      },
+    })
+    const weekStart = new Date('2026-07-27T00:00:00.000Z')
+    await prisma.timelineEntry.create({
+      data: {
+        participationId: fixture.participationId!,
+        courseId: fixture.courseId!,
+        timestamp: weekStart,
+        type: TimelineEntryType.WEEKLY,
+        collectedPoints: fixture.awardedTimelinePoints,
+        collectedXp: fixture.awardedTimelineXp,
+      },
+    })
+
+    const reversal = await prisma.$transaction((tx) =>
+      reverseLiveQuizRewardRun({
+        rewardRunId: fixture.rewardRunId!,
+        actorId: userOneCtx.user.sub,
+        tx,
+      })
+    )
+
+    expect(reversal.weeklyTimelineRecomputations).toEqual([])
+    await expect(
+      prisma.timelineEntry.findUnique({
+        where: {
+          participationId_courseId_timestamp_type: {
+            participationId: fixture.participationId!,
+            courseId: fixture.courseId!,
+            timestamp: weekStart,
+            type: TimelineEntryType.WEEKLY,
+          },
+        },
+      })
+    ).resolves.toBeNull()
+  })
+
+  it('accepts a compacted timeline with no surviving daily or weekly row', async () => {
+    const fixture = await seedEndedRegularLiveQuizForReset(
+      { gamified: true, withRewardRun: true },
+      userOneCtx
+    )
+    await prisma.timelineEntry.deleteMany({
+      where: {
+        participationId: fixture.participationId!,
+        courseId: fixture.courseId!,
+      },
+    })
+
+    const reversal = await prisma.$transaction((tx) =>
+      reverseLiveQuizRewardRun({
+        rewardRunId: fixture.rewardRunId!,
+        actorId: userOneCtx.user.sub,
+        tx,
+      })
+    )
+
+    expect(reversal).toMatchObject({
+      totals: { timelineChanges: 1 },
+      weeklyTimelineRecomputations: [],
+    })
   })
 })

@@ -3,6 +3,7 @@ import type { ElementData } from '@klicker-uzh/types'
 import { GraphQLError } from 'graphql'
 import type { Redis } from 'ioredis'
 import { validate as uuidValidate } from 'uuid'
+import { getTimelineWeekBounds } from './participants.js'
 
 export interface RankAchievementReward {
   id: number
@@ -1008,4 +1009,509 @@ export async function applyRegularLiveQuizRewardPlan({
   }
 
   return createRewardRunRecord({ liveQuizId, plan, tx })
+}
+
+export interface RewardReversalTotals {
+  coursePoints: number
+  participantXp: number
+  timelineChanges: number
+  achievementChanges: number
+}
+
+export interface WeeklyTimelineRecomputation {
+  participationId: number
+  courseId: string
+  weekStart: Date
+}
+
+export interface RewardReversalResult {
+  totals: RewardReversalTotals
+  weeklyTimelineRecomputations: WeeklyTimelineRecomputation[]
+}
+
+function rewardReversalError(code: string, message: string): GraphQLError {
+  return new GraphQLError(message, { extensions: { code } })
+}
+
+function timelineEntryKey({
+  participationId,
+  courseId,
+  timestamp,
+  type,
+}: {
+  participationId: number
+  courseId: string
+  timestamp: Date
+  type: DB.TimelineEntryType
+}): string {
+  return `${participationId}:${courseId}:${timestamp.toISOString()}:${type}`
+}
+
+export async function recomputeWeeklyTimelineEntry({
+  participationId,
+  courseId,
+  weekStart,
+  prisma,
+}: {
+  participationId: number
+  courseId: string
+  weekStart: Date
+  prisma: DB.Prisma.TransactionClient | DB.PrismaClient
+}): Promise<void> {
+  const canonicalWeekStart = getTimelineWeekBounds(weekStart).weekStart
+  const { weekEnd } = getTimelineWeekBounds(canonicalWeekStart)
+  const daily = await prisma.timelineEntry.aggregate({
+    where: {
+      participationId,
+      courseId,
+      type: DB.TimelineEntryType.DAILY,
+      timestamp: { gte: canonicalWeekStart, lt: weekEnd },
+    },
+    _sum: { collectedPoints: true, collectedXp: true },
+  })
+  const collectedPoints = daily._sum.collectedPoints ?? 0
+  const collectedXp = daily._sum.collectedXp ?? 0
+
+  if (collectedPoints === 0 && collectedXp === 0) {
+    await prisma.timelineEntry.deleteMany({
+      where: {
+        participationId,
+        courseId,
+        type: DB.TimelineEntryType.WEEKLY,
+        timestamp: canonicalWeekStart,
+      },
+    })
+    return
+  }
+
+  await prisma.timelineEntry.upsert({
+    where: {
+      participationId_courseId_timestamp_type: {
+        participationId,
+        courseId,
+        timestamp: canonicalWeekStart,
+        type: DB.TimelineEntryType.WEEKLY,
+      },
+    },
+    create: {
+      participationId,
+      courseId,
+      type: DB.TimelineEntryType.WEEKLY,
+      timestamp: canonicalWeekStart,
+      collectedPoints,
+      collectedXp,
+      computedAt: new Date(),
+    },
+    update: {
+      collectedPoints,
+      collectedXp,
+      computedAt: new Date(),
+    },
+  })
+}
+
+export async function reverseLiveQuizRewardRun({
+  rewardRunId,
+  actorId,
+  tx,
+}: {
+  rewardRunId: string
+  actorId: string
+  tx: DB.Prisma.TransactionClient
+}): Promise<RewardReversalResult> {
+  const run = await tx.liveQuizRewardRun.findUnique({
+    where: { id: rewardRunId },
+    include: {
+      activeForLiveQuiz: {
+        select: {
+          id: true,
+          activeRewardRunId: true,
+          status: true,
+          isDeleted: true,
+          finishedAt: true,
+        },
+      },
+      entries: {
+        include: {
+          participation: {
+            select: { participantId: true, courseId: true },
+          },
+        },
+      },
+    },
+  })
+  if (
+    !run ||
+    run.status !== DB.LiveQuizRewardRunStatus.APPLIED ||
+    run.activeForLiveQuiz?.id !== run.liveQuizId ||
+    run.activeForLiveQuiz.activeRewardRunId !== run.id ||
+    run.activeForLiveQuiz.status !== DB.PublicationStatus.ENDED ||
+    run.activeForLiveQuiz.isDeleted ||
+    run.activeForLiveQuiz.finishedAt?.getTime() !== run.endedAt.getTime()
+  ) {
+    throw rewardReversalError(
+      'LIVE_QUIZ_REWARD_DATA_UNAVAILABLE',
+      'Live quiz reward run is not an exact active run'
+    )
+  }
+
+  const [appliedRunCount, participantCount] = await Promise.all([
+    tx.liveQuizRewardRun.count({
+      where: {
+        liveQuizId: run.liveQuizId,
+        status: DB.LiveQuizRewardRunStatus.APPLIED,
+      },
+    }),
+    tx.participant.count({
+      where: {
+        id: {
+          in: run.entries.flatMap((entry) =>
+            entry.participantId === null ? [] : [entry.participantId]
+          ),
+        },
+      },
+    }),
+  ])
+  const participantIds = new Set<string>()
+  const validEntries = run.entries.every((entry) => {
+    if (
+      entry.participantId === null ||
+      participantIds.has(entry.participantId)
+    ) {
+      return false
+    }
+    participantIds.add(entry.participantId)
+    return (
+      (entry.participationId === null ||
+        (entry.participation !== null &&
+          entry.participation.participantId === entry.participantId &&
+          entry.participation.courseId === entry.courseId)) &&
+      (entry.coursePointsAwarded === 0 ||
+        (entry.participationId !== null && entry.courseId !== null)) &&
+      (entry.timelinePointsAwarded === 0 && entry.timelineXpAwarded === 0
+        ? true
+        : entry.participationId !== null &&
+          entry.courseId !== null &&
+          entry.timelineDate !== null) &&
+      (entry.achievementCountAwarded === 0 || entry.achievementId !== null) &&
+      entry.coursePointsAwarded >= 0 &&
+      entry.participantXpAwarded >= 0 &&
+      entry.timelinePointsAwarded >= 0 &&
+      entry.timelineXpAwarded >= 0 &&
+      entry.achievementCountAwarded >= 0
+    )
+  })
+  if (
+    appliedRunCount !== 1 ||
+    participantCount !== participantIds.size ||
+    !validEntries
+  ) {
+    throw rewardReversalError(
+      'LIVE_QUIZ_REWARD_DATA_UNAVAILABLE',
+      'Live quiz reward entries are incomplete or inconsistent'
+    )
+  }
+
+  const transitioned = await tx.liveQuizRewardRun.updateMany({
+    where: {
+      id: rewardRunId,
+      liveQuizId: run.liveQuizId,
+      status: DB.LiveQuizRewardRunStatus.APPLIED,
+    },
+    data: {
+      status: DB.LiveQuizRewardRunStatus.REVERSED,
+      reversedAt: new Date(),
+      reversedById: actorId,
+    },
+  })
+  if (transitioned.count !== 1) {
+    throw rewardReversalError(
+      'LIVE_QUIZ_REWARD_CONFLICT',
+      'Live quiz reward run was already reversed'
+    )
+  }
+
+  const courseEntries = run.entries.filter(
+    (entry) =>
+      entry.participationId !== null &&
+      entry.courseId !== null &&
+      entry.coursePointsAwarded !== 0
+  )
+  const timelineEntries = run.entries.filter(
+    (entry) =>
+      entry.participationId !== null &&
+      entry.courseId !== null &&
+      entry.timelineDate !== null &&
+      (entry.timelinePointsAwarded !== 0 || entry.timelineXpAwarded !== 0)
+  )
+  const achievementEntries = run.entries.filter(
+    (entry) =>
+      entry.participantId !== null &&
+      entry.achievementId !== null &&
+      entry.achievementCountAwarded !== 0
+  )
+  const participantXpEntries = run.entries.filter(
+    (entry) => entry.participantId !== null && entry.participantXpAwarded !== 0
+  )
+  const timelineKeys = timelineEntries.flatMap((entry) => {
+    const { weekStart } = getTimelineWeekBounds(entry.timelineDate!)
+    return [
+      {
+        participationId: entry.participationId!,
+        courseId: entry.courseId!,
+        timestamp: entry.timelineDate!,
+        type: DB.TimelineEntryType.DAILY,
+      },
+      {
+        participationId: entry.participationId!,
+        courseId: entry.courseId!,
+        timestamp: weekStart,
+        type: DB.TimelineEntryType.WEEKLY,
+      },
+    ]
+  })
+  const [participants, courseLeaderboards, timelines, achievements] =
+    await Promise.all([
+      tx.participant.findMany({
+        where: {
+          id: {
+            in: participantXpEntries.map((entry) => entry.participantId!),
+          },
+        },
+        select: { id: true, xp: true },
+      }),
+      tx.leaderboardEntry.findMany({
+        where: {
+          OR: courseEntries.map((entry) => ({
+            type: DB.LeaderboardType.COURSE,
+            participantId: entry.participantId!,
+            courseId: entry.courseId!,
+          })),
+        },
+      }),
+      tx.timelineEntry.findMany({
+        where: {
+          OR: timelineKeys,
+        },
+      }),
+      tx.participantAchievementInstance.findMany({
+        where: {
+          OR: achievementEntries.map((entry) => ({
+            participantId: entry.participantId!,
+            achievementId: entry.achievementId!,
+          })),
+        },
+      }),
+    ])
+  const participantById = new Map(
+    participants.map((participant) => [participant.id, participant])
+  )
+  const courseLeaderboardByParticipant = new Map(
+    courseLeaderboards.map((leaderboard) => [
+      rewardPairKey(leaderboard.participantId, leaderboard.courseId!),
+      leaderboard,
+    ])
+  )
+  const timelineByKey = new Map(
+    timelines.map((entry) => [
+      timelineEntryKey({
+        participationId: entry.participationId,
+        courseId: entry.courseId!,
+        timestamp: entry.timestamp,
+        type: entry.type,
+      }),
+      entry,
+    ])
+  )
+  const achievementByParticipant = new Map(
+    achievements.map((instance) => [
+      rewardPairKey(instance.participantId, instance.achievementId),
+      instance,
+    ])
+  )
+
+  for (const entry of participantXpEntries) {
+    const participant = participantById.get(entry.participantId!)
+    if (!participant || participant.xp < entry.participantXpAwarded) {
+      throw rewardReversalError(
+        'LIVE_QUIZ_PARTICIPANT_XP_UNDERFLOW',
+        'Participant XP is lower than the recorded live quiz reward'
+      )
+    }
+  }
+  for (const entry of courseEntries) {
+    const leaderboard = courseLeaderboardByParticipant.get(
+      rewardPairKey(entry.participantId!, entry.courseId!)
+    )
+    if (!leaderboard || leaderboard.score < entry.coursePointsAwarded) {
+      throw rewardReversalError(
+        'LIVE_QUIZ_COURSE_REWARD_UNDERFLOW',
+        'Course points are lower than the recorded live quiz reward'
+      )
+    }
+  }
+  for (const entry of timelineEntries) {
+    const dailyKey = timelineEntryKey({
+      participationId: entry.participationId!,
+      courseId: entry.courseId!,
+      timestamp: entry.timelineDate!,
+      type: DB.TimelineEntryType.DAILY,
+    })
+    const { weekStart } = getTimelineWeekBounds(entry.timelineDate!)
+    const weeklyKey = timelineEntryKey({
+      participationId: entry.participationId!,
+      courseId: entry.courseId!,
+      timestamp: weekStart,
+      type: DB.TimelineEntryType.WEEKLY,
+    })
+    const timeline = timelineByKey.get(dailyKey) ?? timelineByKey.get(weeklyKey)
+    if (
+      timeline &&
+      (timeline.collectedPoints < entry.timelinePointsAwarded ||
+        timeline.collectedXp < entry.timelineXpAwarded)
+    ) {
+      throw rewardReversalError(
+        'LIVE_QUIZ_TIMELINE_REWARD_UNDERFLOW',
+        'Timeline totals are lower than the recorded live quiz reward'
+      )
+    }
+  }
+  for (const entry of achievementEntries) {
+    const achievement = achievementByParticipant.get(
+      rewardPairKey(entry.participantId!, entry.achievementId!)
+    )
+    if (
+      !achievement ||
+      achievement.achievedCount < entry.achievementCountAwarded
+    ) {
+      throw rewardReversalError(
+        'LIVE_QUIZ_ACHIEVEMENT_REWARD_UNDERFLOW',
+        'Achievement count is lower than the recorded live quiz reward'
+      )
+    }
+  }
+
+  const totals: RewardReversalTotals = {
+    coursePoints: 0,
+    participantXp: 0,
+    timelineChanges: 0,
+    achievementChanges: 0,
+  }
+  const weeklyTimelineRecomputations = new Map<
+    string,
+    WeeklyTimelineRecomputation
+  >()
+
+  for (const entry of participantXpEntries) {
+    const updated = await tx.participant.updateMany({
+      where: {
+        id: entry.participantId!,
+        xp: { gte: entry.participantXpAwarded },
+      },
+      data: { xp: { decrement: entry.participantXpAwarded } },
+    })
+    if (updated.count !== 1) {
+      throw rewardReversalError(
+        'LIVE_QUIZ_PARTICIPANT_XP_UNDERFLOW',
+        'Participant XP changed while reversing live quiz rewards'
+      )
+    }
+    totals.participantXp += entry.participantXpAwarded
+  }
+
+  for (const entry of courseEntries) {
+    const leaderboard = courseLeaderboardByParticipant.get(
+      rewardPairKey(entry.participantId!, entry.courseId!)
+    )!
+    const score = leaderboard.score - entry.coursePointsAwarded
+    if (score === 0) {
+      await tx.leaderboardEntry.delete({ where: { id: leaderboard.id } })
+    } else {
+      const updated = await tx.leaderboardEntry.updateMany({
+        where: {
+          id: leaderboard.id,
+          score: { gte: entry.coursePointsAwarded },
+        },
+        data: { score: { decrement: entry.coursePointsAwarded } },
+      })
+      if (updated.count !== 1) {
+        throw rewardReversalError(
+          'LIVE_QUIZ_COURSE_REWARD_UNDERFLOW',
+          'Course points changed while reversing live quiz rewards'
+        )
+      }
+    }
+    totals.coursePoints += entry.coursePointsAwarded
+  }
+
+  for (const entry of timelineEntries) {
+    const dailyKey = timelineEntryKey({
+      participationId: entry.participationId!,
+      courseId: entry.courseId!,
+      timestamp: entry.timelineDate!,
+      type: DB.TimelineEntryType.DAILY,
+    })
+    const { weekStart } = getTimelineWeekBounds(entry.timelineDate!)
+    const weeklyKey = timelineEntryKey({
+      participationId: entry.participationId!,
+      courseId: entry.courseId!,
+      timestamp: weekStart,
+      type: DB.TimelineEntryType.WEEKLY,
+    })
+    const daily = timelineByKey.get(dailyKey)
+    const timeline = daily ?? timelineByKey.get(weeklyKey)
+    if (timeline) {
+      const collectedPoints =
+        timeline.collectedPoints - entry.timelinePointsAwarded
+      const collectedXp = timeline.collectedXp - entry.timelineXpAwarded
+      if (collectedPoints === 0 && collectedXp === 0) {
+        await tx.timelineEntry.delete({ where: { id: timeline.id } })
+      } else {
+        await tx.timelineEntry.update({
+          where: { id: timeline.id },
+          data: { collectedPoints, collectedXp, computedAt: new Date() },
+        })
+      }
+      if (daily) {
+        const recomputation = {
+          participationId: entry.participationId!,
+          courseId: entry.courseId!,
+          weekStart,
+        }
+        weeklyTimelineRecomputations.set(
+          timelineEntryKey({
+            ...recomputation,
+            timestamp: weekStart,
+            type: DB.TimelineEntryType.WEEKLY,
+          }),
+          recomputation
+        )
+      }
+    }
+    totals.timelineChanges += 1
+  }
+
+  for (const entry of achievementEntries) {
+    const achievement = achievementByParticipant.get(
+      rewardPairKey(entry.participantId!, entry.achievementId!)
+    )!
+    const achievedCount =
+      achievement.achievedCount - entry.achievementCountAwarded
+    if (achievedCount === 0) {
+      await tx.participantAchievementInstance.delete({
+        where: { id: achievement.id },
+      })
+    } else {
+      await tx.participantAchievementInstance.update({
+        where: { id: achievement.id },
+        data: { achievedCount },
+      })
+    }
+    totals.achievementChanges += entry.achievementCountAwarded
+  }
+
+  return {
+    totals,
+    weeklyTimelineRecomputations: [...weeklyTimelineRecomputations.values()],
+  }
 }
