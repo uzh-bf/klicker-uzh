@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from '@klicker-uzh/prisma/client'
 import {
+  ElementBlockStatus,
   LiveQuizRespondentType,
   LiveQuizResponseCollectionMode,
   PublicationStatus,
@@ -22,12 +23,6 @@ type CorrelatedResponseDatabase = Pick<
   '$transaction' | 'liveQuizRespondent' | 'liveQuizResponse' | 'participant'
 >
 
-export function resolveCorrelatedResponseInstanceInfo(
-  acceptedInstanceInfo: Record<string, string> | undefined
-) {
-  return acceptedInstanceInfo
-}
-
 interface CorrelatedProcessingRedis {
   eval(
     script: string,
@@ -35,13 +30,6 @@ interface CorrelatedProcessingRedis {
     ...args: (number | string)[]
   ): Promise<unknown>
   hget(key: string, field: string): Promise<string | null>
-  set(
-    key: string,
-    value: string,
-    expiryMode: 'PX',
-    time: number,
-    setMode: 'NX'
-  ): Promise<'OK' | null>
 }
 
 export type CorrelatedResponseOwner = AcceptedCorrelatedResponseIdentity & {
@@ -51,13 +39,14 @@ export type CorrelatedResponseOwner = AcceptedCorrelatedResponseIdentity & {
 export type CorrelatedProcessingState = {
   owner: CorrelatedResponseOwner
   processedKey: string
-  processingLockKey: string
   instanceId: number
   blockExecution: number
 }
 
 export class CorrelatedResponseIdentityError extends Error {}
-export class CorrelatedResponseProcessingBusyError extends Error {}
+export class CorrelatedResponseMutationLimitError extends Error {}
+
+const MAX_CORRELATED_REDIS_MUTATIONS = 10_000
 
 export async function resolveCorrelatedResponseDelivery({
   database,
@@ -112,13 +101,6 @@ export async function settleCorrelatedResponseOutbox({
   })
 }
 
-const CORRELATED_PROCESSING_LOCK_TTL_MS = 5 * 60 * 1000
-const RELEASE_PROCESSING_LOCK_SCRIPT = `
-if redis.call('GET', KEYS[1]) == ARGV[1] then
-  return redis.call('DEL', KEYS[1])
-end
-return 0
-`
 const APPLY_CORRELATED_MUTATIONS_SCRIPT = `
 local markerType = redis.call('TYPE', KEYS[1])
 if type(markerType) == 'table' then
@@ -234,6 +216,12 @@ export async function applyCorrelatedRedisMutations({
   identityKey: LiveQuizResponseIdentityKey
   messageId: string
 }) {
+  if (mutations.length > MAX_CORRELATED_REDIS_MUTATIONS) {
+    throw new CorrelatedResponseMutationLimitError(
+      `Correlated response produced ${mutations.length} Redis mutations`
+    )
+  }
+
   const result = Number(
     await redis.eval(
       APPLY_CORRELATED_MUTATIONS_SCRIPT,
@@ -340,7 +328,7 @@ export function buildCorrelatedResponseCreateData({
   }
 }
 
-export async function persistCorrelatedResponseForPublishedQuiz({
+export async function persistAcceptedCorrelatedResponse({
   database,
   liveQuizId,
   owner,
@@ -353,7 +341,10 @@ export async function persistCorrelatedResponseForPublishedQuiz({
   correctnessPoints,
   bonusPoints,
 }: {
-  database: Pick<CorrelatedResponseDatabase, '$transaction'>
+  database: Pick<
+    CorrelatedResponseDatabase,
+    '$transaction' | 'liveQuizResponse'
+  >
   liveQuizId: string
   owner: CorrelatedResponseOwner
   instanceId: number
@@ -365,11 +356,13 @@ export async function persistCorrelatedResponseForPublishedQuiz({
   correctnessPoints: number
   bonusPoints: number
 }) {
+  let applyRedisEffects = false
   try {
     return await database.$transaction(async (prisma) => {
       const [liveQuiz] = await prisma.$queryRaw<
         {
           blockExecution: number
+          blockStatus: ElementBlockStatus
           isAssessmentEnabled: boolean
           responseCollectionMode: LiveQuizResponseCollectionMode
           status: PublicationStatus
@@ -377,6 +370,7 @@ export async function persistCorrelatedResponseForPublishedQuiz({
       >`
         SELECT
           block."execution" AS "blockExecution",
+          block."status"::text AS "blockStatus",
           "LiveQuiz"."isAssessmentEnabled",
           "LiveQuiz"."responseCollectionMode"::text AS "responseCollectionMode",
           "LiveQuiz"."status"::text AS "status"
@@ -389,49 +383,40 @@ export async function persistCorrelatedResponseForPublishedQuiz({
           "LiveQuiz"."id" = ${liveQuizId}::uuid AND
           "LiveQuiz"."isDeleted" = false AND
           instance."id" = ${instanceId}
-        FOR UPDATE OF "LiveQuiz"
+        FOR SHARE OF "LiveQuiz", block
       `
 
       if (
         !liveQuiz ||
         liveQuiz.blockExecution !== blockExecution ||
-        liveQuiz.status !== PublicationStatus.PUBLISHED ||
+        (liveQuiz.status !== PublicationStatus.PUBLISHED &&
+          liveQuiz.status !== PublicationStatus.ENDED) ||
         liveQuiz.isAssessmentEnabled ||
         liveQuiz.responseCollectionMode !==
           LiveQuizResponseCollectionMode.CORRELATED_EXPORT
       ) {
         return 'inactive' as const
       }
+      applyRedisEffects =
+        liveQuiz.status === PublicationStatus.PUBLISHED &&
+        liveQuiz.blockStatus === ElementBlockStatus.ACTIVE
 
-      const existingResponse =
-        owner.kind === 'participant'
-          ? await prisma.liveQuizResponse.findUnique({
-              where: {
-                instanceId_elementBlockExecution_participantId: {
-                  instanceId,
-                  elementBlockExecution: blockExecution,
-                  participantId: owner.id,
-                },
-              },
-              select: { submittedAt: true },
-            })
-          : await prisma.liveQuizResponse.findUnique({
-              where: {
-                instanceId_elementBlockExecution_respondentId: {
-                  instanceId,
-                  elementBlockExecution: blockExecution,
-                  respondentId: owner.id,
-                },
-              },
-              select: { submittedAt: true },
-            })
+      const existingResponse = await findPersistedCorrelatedResponse({
+        database: prisma,
+        owner,
+        instanceId,
+        blockExecution,
+      })
 
       if (existingResponse) {
         return isPersistedResponseRetry({
           existingSubmittedAt: existingResponse.submittedAt,
           responseTimestamp: submittedAt,
         })
-          ? ('persisted' as const)
+          ? ({
+              status: 'persisted' as const,
+              applyRedisEffects,
+            } as const)
           : ('duplicate' as const)
       }
 
@@ -448,7 +433,10 @@ export async function persistCorrelatedResponseForPublishedQuiz({
           bonusPoints,
         }),
       })
-      return 'created' as const
+      return {
+        status: 'created' as const,
+        applyRedisEffects,
+      }
     })
   } catch (error) {
     if (
@@ -457,7 +445,22 @@ export async function persistCorrelatedResponseForPublishedQuiz({
       'code' in error &&
       error.code === 'P2002'
     ) {
-      return 'duplicate' as const
+      const existingResponse = await findPersistedCorrelatedResponse({
+        database,
+        owner,
+        instanceId,
+        blockExecution,
+      })
+      return existingResponse &&
+        isPersistedResponseRetry({
+          existingSubmittedAt: existingResponse.submittedAt,
+          responseTimestamp: submittedAt,
+        })
+        ? ({
+            status: 'persisted' as const,
+            applyRedisEffects,
+          } as const)
+        : ('duplicate' as const)
     }
     throw error
   }
@@ -475,80 +478,24 @@ export function getCorrelatedProcessedKey({
   return `lq:${liveQuizId}:i:${instanceId}:correlatedProcessed:${blockExecution}`
 }
 
-export function getCorrelatedProcessingLockKey({
-  processedKey,
-  identityKey,
-}: {
-  processedKey: string
-  identityKey: string
-}) {
-  return `${processedKey}:processing:${identityKey}`
-}
-
-export async function releaseCorrelatedProcessingLock({
-  redis,
-  lockKey,
-  messageId,
-}: {
-  redis: Pick<CorrelatedProcessingRedis, 'eval'>
-  lockKey: string
-  messageId: string
-}) {
-  const released = await redis.eval(
-    RELEASE_PROCESSING_LOCK_SCRIPT,
-    1,
-    lockKey,
-    messageId
-  )
-  return Number(released) === 1
-}
-
 export async function prepareCorrelatedResponseProcessing({
   redis,
   processedKey,
   owner,
   messageId,
 }: {
-  redis: Pick<CorrelatedProcessingRedis, 'eval' | 'hget' | 'set'>
+  redis: Pick<CorrelatedProcessingRedis, 'hget'>
   processedKey: string
   owner: CorrelatedResponseOwner
   messageId: string
 }): Promise<
-  | { status: 'duplicate' }
-  | { status: 'processed' }
-  | { status: 'process'; lockKey: string }
+  { status: 'duplicate' } | { status: 'processed' } | { status: 'process' }
 > {
   const processedMessageId = await redis.hget(processedKey, owner.identityKey)
   if (processedMessageId === messageId) return { status: 'processed' }
   if (processedMessageId) return { status: 'duplicate' }
 
-  const lockKey = getCorrelatedProcessingLockKey({
-    processedKey,
-    identityKey: owner.identityKey,
-  })
-  const lockAcquired =
-    (await redis.set(
-      lockKey,
-      messageId,
-      'PX',
-      CORRELATED_PROCESSING_LOCK_TTL_MS,
-      'NX'
-    )) === 'OK'
-  if (!lockAcquired) {
-    throw new CorrelatedResponseProcessingBusyError(
-      'Correlated response is already being processed'
-    )
-  }
-
-  const processedAfterLock = await redis.hget(processedKey, owner.identityKey)
-  if (processedAfterLock) {
-    await releaseCorrelatedProcessingLock({ redis, lockKey, messageId })
-    return {
-      status: processedAfterLock === messageId ? 'processed' : 'duplicate',
-    }
-  }
-
-  return { status: 'process', lockKey }
+  return { status: 'process' }
 }
 
 export async function prepareCorrelatedMessageProcessing({
@@ -559,7 +506,7 @@ export async function prepareCorrelatedMessageProcessing({
   sessionBlockId,
   responseKey,
 }: {
-  redis: Pick<CorrelatedProcessingRedis, 'eval' | 'hget' | 'set'>
+  redis: Pick<CorrelatedProcessingRedis, 'hget'>
   database: CorrelatedResponseDatabase
   message: Pick<
     LiveQuizResponseEventMessage,
@@ -621,7 +568,6 @@ export async function prepareCorrelatedMessageProcessing({
     state: {
       owner,
       processedKey,
-      processingLockKey: processing.lockKey,
       instanceId,
       blockExecution: execution,
     },
@@ -636,4 +582,38 @@ export function isPersistedResponseRetry({
   responseTimestamp: number
 }) {
   return existingSubmittedAt.getTime() === responseTimestamp
+}
+
+async function findPersistedCorrelatedResponse({
+  database,
+  owner,
+  instanceId,
+  blockExecution,
+}: {
+  database: Pick<PrismaClient, 'liveQuizResponse'>
+  owner: CorrelatedResponseOwner
+  instanceId: number
+  blockExecution: number
+}) {
+  return owner.kind === 'participant'
+    ? database.liveQuizResponse.findUnique({
+        where: {
+          instanceId_elementBlockExecution_participantId: {
+            instanceId,
+            elementBlockExecution: blockExecution,
+            participantId: owner.id,
+          },
+        },
+        select: { submittedAt: true },
+      })
+    : database.liveQuizResponse.findUnique({
+        where: {
+          instanceId_elementBlockExecution_respondentId: {
+            instanceId,
+            elementBlockExecution: blockExecution,
+            respondentId: owner.id,
+          },
+        },
+        select: { submittedAt: true },
+      })
 }

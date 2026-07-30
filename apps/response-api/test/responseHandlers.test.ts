@@ -128,27 +128,28 @@ describe('standard live quiz response handlers', () => {
           status: PublicationStatus.PUBLISHED,
         }),
       },
-      liveQuizResponse: { findUnique: async () => null },
-      temporaryLeaderboardEntry: { findUnique: async () => null },
-      participant: { findUnique: async () => null },
-      liveQuizRespondent: {
-        upsert: async () => ({
-          id: respondentId,
-          liveQuizId: request.liveQuizId,
-          type: LiveQuizRespondentType.ANONYMOUS_CORRELATED,
-          verificationSecretHash: hashLiveQuizRespondentToken(token),
-        }),
-      },
       $transaction: async (callback: (prisma: any) => Promise<unknown>) =>
         callback({
           $queryRaw: async () => [
             {
+              activeBlockId: 7,
+              blockExecution: 3,
+              blockId: 7,
+              blockStatus: 'ACTIVE',
               isAssessmentEnabled: false,
               responseCollectionMode:
                 LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
               status: PublicationStatus.PUBLISHED,
             },
           ],
+          liveQuizRespondent: {
+            upsert: async () => ({
+              id: respondentId,
+              liveQuizId: request.liveQuizId,
+              type: LiveQuizRespondentType.ANONYMOUS_CORRELATED,
+              verificationSecretHash: hashLiveQuizRespondentToken(token),
+            }),
+          },
           liveQuizPendingResponse: {
             create: async ({ data }: { data: unknown }) => {
               pendingResponses.push(data)
@@ -162,7 +163,12 @@ describe('standard live quiz response handlers', () => {
         ...request,
         cookieHeader: `${getLiveQuizRespondentCookieName(request.liveQuizId)}=${token}`,
       },
-      instanceInfo: { type: 'SC', blockExecution: '3' },
+      instanceInfo: {
+        type: 'SC',
+        blockExecution: '3',
+        sessionBlockId: '7',
+        choiceCount: '1',
+      },
       responseCollectionMode: LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
       database,
       getIdentityConfig: () => ({ secret, issuer }),

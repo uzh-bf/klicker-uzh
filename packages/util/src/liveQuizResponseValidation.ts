@@ -2,14 +2,81 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
+function parsePositiveInteger(value: string | undefined) {
+  if (!value) return null
+  const parsed = Number(value)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+}
+
+function parseNumberArray(value: string | undefined): number[] | null {
+  if (!value) return null
+  try {
+    const parsed: unknown = JSON.parse(value)
+    return Array.isArray(parsed) &&
+      parsed.every((entry) => Number.isInteger(entry))
+      ? (parsed as number[])
+      : null
+  } catch {
+    return null
+  }
+}
+
+type CaseStudyResponseShape = {
+  cases: string[]
+  items: number[]
+  criteria: { id: string; min: number; max: number }[]
+}
+
+function parseCaseStudyResponseShape(
+  value: string | undefined
+): CaseStudyResponseShape | null {
+  if (!value) return null
+  try {
+    const parsed: unknown = JSON.parse(value)
+    if (
+      !isRecord(parsed) ||
+      !Array.isArray(parsed.cases) ||
+      !parsed.cases.every((entry) => typeof entry === 'string') ||
+      !Array.isArray(parsed.items) ||
+      !parsed.items.every((entry) => Number.isInteger(entry)) ||
+      !Array.isArray(parsed.criteria) ||
+      !parsed.criteria.every(
+        (entry) =>
+          isRecord(entry) &&
+          typeof entry.id === 'string' &&
+          typeof entry.min === 'number' &&
+          Number.isFinite(entry.min) &&
+          typeof entry.max === 'number' &&
+          Number.isFinite(entry.max)
+      )
+    ) {
+      return null
+    }
+
+    return parsed as CaseStudyResponseShape
+  } catch {
+    return null
+  }
+}
+
+function hasExactKeys(record: Record<string, unknown>, expected: string[]) {
+  const actual = Object.keys(record).sort()
+  return (
+    actual.length === expected.length &&
+    actual.every((key, index) => key === expected[index])
+  )
+}
+
 export function validateStudentResponse({
   type,
   response,
   restrictions,
+  instanceInfo,
 }: {
   type: string | undefined
   response: unknown
   restrictions?: unknown
+  instanceInfo?: Record<string, string>
 }): { valid: boolean; message?: string } {
   if (!isRecord(response)) {
     return {
@@ -19,16 +86,22 @@ export function validateStudentResponse({
   }
 
   if (type === 'SC' || type === 'MC' || type === 'KPRIM') {
+    const choiceCount = parsePositiveInteger(instanceInfo?.choiceCount)
     if (
       !Array.isArray(response.choices) ||
       response.choices.length === 0 ||
+      (choiceCount !== null && response.choices.length !== choiceCount) ||
       !response.choices.every(
         (choice) =>
           isRecord(choice) &&
-          typeof choice.ix === 'number' &&
+          Number.isInteger(choice.ix) &&
+          (choiceCount === null ||
+            (Number(choice.ix) >= 0 && Number(choice.ix) < choiceCount)) &&
           (typeof choice.selected === 'boolean' ||
             typeof choice.selected === 'undefined')
-      )
+      ) ||
+      new Set(response.choices.map((choice) => choice.ix)).size !==
+        response.choices.length
     ) {
       return {
         valid: false,
@@ -124,13 +197,29 @@ export function validateStudentResponse({
   }
 
   if (type === 'SELECTION') {
+    const numberOfInputs = parsePositiveInteger(instanceInfo?.numberOfInputs)
+    const answerIds = parseNumberArray(instanceInfo?.selectionAnswerIds)
     if (
       !Array.isArray(response.selection) ||
       response.selection.length === 0 ||
-      response.selection.filter(
-        (entry) =>
-          entry !== -1 && typeof entry !== 'undefined' && entry !== null
-      ).length === 0
+      (numberOfInputs !== null &&
+        response.selection.length !== numberOfInputs) ||
+      !response.selection.every((entry) => Number.isInteger(entry)) ||
+      (answerIds !== null &&
+        !response.selection.every(
+          (entry) => entry === -1 || answerIds.includes(entry)
+        ))
+    ) {
+      return {
+        valid: false,
+        message: `Invalid response submitted for selection question ${JSON.stringify(response)}`,
+      }
+    }
+
+    const selectedAnswerIds = response.selection.filter((entry) => entry !== -1)
+    if (
+      selectedAnswerIds.length === 0 ||
+      new Set(selectedAnswerIds).size !== selectedAnswerIds.length
     ) {
       return {
         valid: false,
@@ -142,6 +231,9 @@ export function validateStudentResponse({
   }
 
   if (type === 'CASE_STUDY') {
+    const responseShape = parseCaseStudyResponseShape(
+      instanceInfo?.caseStudyResponseShape
+    )
     if (
       !isRecord(response.assessment) ||
       Object.keys(response.assessment).length === 0 ||
@@ -162,6 +254,41 @@ export function validateStudentResponse({
       return {
         valid: false,
         message: `Invalid response submitted for case study question ${JSON.stringify(response)}`,
+      }
+    }
+
+    if (responseShape) {
+      const expectedCases = [...responseShape.cases].sort()
+      const expectedItems = responseShape.items.map(String).sort()
+      const expectedCriteria = responseShape.criteria
+        .map((criterion) => criterion.id)
+        .sort()
+      if (
+        !hasExactKeys(response.assessment, expectedCases) ||
+        !Object.values(response.assessment).every(
+          (caseObject) =>
+            isRecord(caseObject) &&
+            hasExactKeys(caseObject, expectedItems) &&
+            Object.values(caseObject).every(
+              (itemObject) =>
+                isRecord(itemObject) &&
+                hasExactKeys(itemObject, expectedCriteria) &&
+                responseShape.criteria.every((criterion) => {
+                  const value = itemObject[criterion.id]
+                  return (
+                    typeof value === 'number' &&
+                    Number.isFinite(value) &&
+                    value >= criterion.min &&
+                    value <= criterion.max
+                  )
+                })
+            )
+        )
+      ) {
+        return {
+          valid: false,
+          message: `Invalid response submitted for case study question ${JSON.stringify(response)}`,
+        }
       }
     }
 

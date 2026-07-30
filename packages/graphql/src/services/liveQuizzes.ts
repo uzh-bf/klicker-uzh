@@ -1286,6 +1286,11 @@ export async function activateLiveQuizBlock(
             elementData.options.answerCollectionSolutionIds
           ),
           numberOfInputs: elementData.options.numberOfInputs,
+          selectionAnswerIds: JSON.stringify(
+            elementData.options.answerCollection?.entries.map(
+              (entry) => entry.id
+            ) ?? []
+          ),
         })
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
           participants: 0,
@@ -1311,6 +1316,15 @@ export async function activateLiveQuizBlock(
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
           ...commonInfo,
           solutions: solutions ? JSON.stringify(solutions) : undefined,
+          caseStudyResponseShape: JSON.stringify({
+            cases: elementData.options.cases.map((caseItem) => caseItem.id),
+            items: (elementData.options.items ?? []).map((item) => item.id),
+            criteria: elementData.options.criteria.map(({ id, min, max }) => ({
+              id,
+              min,
+              max,
+            })),
+          }),
         })
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
           participants: 0,
@@ -2153,8 +2167,8 @@ export async function cancelLiveQuiz(
   if (!quiz) return null
 
   try {
-    const { lockedQuiz, updatedQuiz } = await ctx.prisma.$transaction(
-      async (prisma) => {
+    const { abortedStartedAt, lockedQuiz, updatedQuiz } =
+      await ctx.prisma.$transaction(async (prisma) => {
         await prisma.$queryRaw`
           SELECT "id"
           FROM "public"."LiveQuiz"
@@ -2174,6 +2188,9 @@ export async function cancelLiveQuiz(
         }
         if (lockedQuiz.status !== DB.PublicationStatus.PUBLISHED) {
           throw new Error('Live quiz is not running')
+        }
+        if (!lockedQuiz.startedAt) {
+          throw new Error('Published live quiz has no start timestamp')
         }
 
         // Assessment quizzes can only be aborted before the first block is activated.
@@ -2260,27 +2277,23 @@ export async function cancelLiveQuiz(
           })
         )
 
-        return { lockedQuiz, updatedQuiz }
-      }
-    )
+        return {
+          abortedStartedAt: lockedQuiz.startedAt,
+          lockedQuiz,
+          updatedQuiz,
+        }
+      })
 
     // depending on the quiz assessment setting, select the corresponding redis instance
     const redis = lockedQuiz.isAssessmentEnabled
       ? ctx.redisAssessmentExec
       : ctx.redisExec
 
-    // Keep namespace cleanup atomic with workers' generation-guarded Lua writes.
-    await redis.eval(
-      `
-        local keys = redis.call('KEYS', ARGV[1])
-        if #keys == 0 then
-          return 0
-        end
-        return redis.call('UNLINK', unpack(keys))
-      `,
-      0,
-      `lq:${id}:*`
-    )
+    await clearAbortedLiveQuizRedisGeneration({
+      redis,
+      liveQuizId: id,
+      startedAt: abortedStartedAt,
+    })
 
     await sendTeamsNotification({
       scope: 'graphql/abortLiveQuiz',
@@ -2295,6 +2308,35 @@ export async function cancelLiveQuiz(
     })
     throw error
   }
+}
+
+export async function clearAbortedLiveQuizRedisGeneration({
+  redis,
+  liveQuizId,
+  startedAt,
+}: {
+  redis: Pick<Redis, 'eval'>
+  liveQuizId: string
+  startedAt: Date
+}) {
+  return redis.eval(
+    `
+      local currentStartedAt = redis.call('HGET', KEYS[1], 'startedAt')
+      if currentStartedAt and currentStartedAt ~= ARGV[1] then
+        return 0
+      end
+
+      local keys = redis.call('KEYS', ARGV[2])
+      if #keys == 0 then
+        return 0
+      end
+      return redis.call('UNLINK', unpack(keys))
+    `,
+    1,
+    `lq:${liveQuizId}:meta`,
+    String(startedAt.getTime()),
+    `lq:${liveQuizId}:*`
+  )
 }
 
 export async function getLiveQuizEvaluation(

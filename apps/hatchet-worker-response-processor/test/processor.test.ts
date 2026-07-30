@@ -1,4 +1,7 @@
-import { encryptCorrelatedResponseEvent } from '@klicker-uzh/util'
+import {
+  buildCorrelatedResponseKey,
+  encryptCorrelatedResponseEvent,
+} from '@klicker-uzh/util'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { describe, it } from 'node:test'
@@ -149,5 +152,105 @@ describe('response processor orchestration', () => {
     )
 
     assert.equal(settlementCount, 0)
+  })
+
+  it('settles an excessive correlated mutation plan without calling Redis', async () => {
+    const messageId = randomUUID()
+    const liveQuizId = randomUUID()
+    const respondentId = randomUUID()
+    const selection = Array.from({ length: 10_000 }, (_, index) => index + 1)
+    const identityKey = `respondent:${respondentId}` as const
+    const eventPayload = encryptCorrelatedResponseEvent({
+      message: {
+        messageId,
+        sessionId: liveQuizId,
+        instanceId: '42',
+        response: { selection },
+        responseTimestamp: 123,
+        acceptedIdentity: {
+          kind: 'anonymous',
+          id: respondentId,
+        },
+        instanceInfo: {
+          type: 'SELECTION',
+          blockExecution: '1',
+          sessionBlockId: '7',
+          numberOfInputs: String(selection.length),
+          selectionAnswerIds: JSON.stringify(selection),
+          basePoints: 'false',
+          defaultPoints: '10',
+          defaultCorrectPoints: '5',
+          maxBonusPoints: '45',
+          timeToZeroBonus: '20',
+          pointsMultiplier: '1',
+        },
+      },
+      secret: 'test-secret',
+    })
+    let settlementCount = 0
+    let redisCalled = false
+
+    const result = await processCorrelatedResponseMessageWithDependencies(
+      { messageId },
+      createContext(),
+      {
+        database: {
+          liveQuizPendingResponse: {
+            findUnique: async () => ({
+              eventPayload,
+              responseKey: buildCorrelatedResponseKey({
+                liveQuizId,
+                instanceId: '42',
+                blockExecution: '1',
+                identityKey,
+              }),
+              settledAt: null,
+            }),
+            updateMany: async () => {
+              settlementCount += 1
+              return { count: 1 }
+            },
+          },
+          liveQuizRespondent: {
+            findUnique: async () => ({
+              id: respondentId,
+              liveQuizId,
+              type: 'ANONYMOUS_CORRELATED',
+            }),
+          },
+          liveQuizResponse: {
+            findUnique: async () => null,
+          },
+          $transaction: async (callback: (prisma: any) => Promise<unknown>) =>
+            callback({
+              $queryRaw: async () => [
+                {
+                  blockExecution: 1,
+                  blockStatus: 'ACTIVE',
+                  isAssessmentEnabled: false,
+                  responseCollectionMode: 'CORRELATED_EXPORT',
+                  status: 'PUBLISHED',
+                },
+              ],
+              liveQuizResponse: {
+                findUnique: async () => null,
+                create: async () => ({}),
+              },
+            }),
+        } as any,
+        redis: {
+          hget: async () => null,
+          eval: async () => {
+            redisCalled = true
+            return 1
+          },
+        } as any,
+        secret: 'test-secret',
+      }
+    )
+
+    assert.deepEqual(result, { status: 400 })
+    assert.equal(settlementCount, 1)
+    assert.equal(redisCalled, false)
   })
 })

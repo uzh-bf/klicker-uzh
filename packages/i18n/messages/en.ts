@@ -1088,7 +1088,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       nextCase: 'Next case',
       thisLiveQuizGamified: 'This live quiz is gamified!',
       responseCollectionAggregatedNotice:
-        'Responses are counted only in aggregate. Answers are not linked across questions.',
+        'This quiz does not create a participant-level response export. Answers contribute to aggregate result totals.',
       responseCollectionCorrelatedNotice:
         'Answers in this quiz are stored per participant and can be exported with random labels (e.g. respondent_001) instead of names.',
       loginSelectionHint:
@@ -2143,7 +2143,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       responseCollectionAggregated: 'Aggregate only',
       responseCollectionCorrelated: 'Correlated export',
       responseCollectionAggregatedSummary:
-        'Responses are counted only in aggregate and are not linked across questions.',
+        'Responses contribute to aggregate live results; no participant-level response rows are retained for export.',
       responseCollectionCorrelatedSummary:
         'Responses are stored per participant and can be exported with random labels instead of names.',
       responseCollectionAssessment:

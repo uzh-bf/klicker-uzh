@@ -130,4 +130,106 @@ describe('live quiz response validation', () => {
       }).valid
     ).toBe(true)
   })
+
+  it('requires one unique choice entry for every configured choice', () => {
+    const instanceInfo = { choiceCount: '3' }
+
+    expect(
+      validateStudentResponse({
+        type: 'MC',
+        response: {
+          choices: [
+            { ix: 0, selected: true },
+            { ix: 1, selected: false },
+          ],
+        },
+        instanceInfo,
+      }).valid
+    ).toBe(false)
+    expect(
+      validateStudentResponse({
+        type: 'MC',
+        response: {
+          choices: [
+            { ix: 0, selected: true },
+            { ix: 0, selected: false },
+            { ix: 2, selected: false },
+          ],
+        },
+        instanceInfo,
+      }).valid
+    ).toBe(false)
+    expect(
+      validateStudentResponse({
+        type: 'MC',
+        response: {
+          choices: [
+            { ix: 0, selected: true },
+            { ix: 1, selected: false },
+            { ix: 3, selected: false },
+          ],
+        },
+        instanceInfo,
+      }).valid
+    ).toBe(false)
+  })
+
+  it('bounds selection responses to configured inputs and answer ids', () => {
+    const instanceInfo = {
+      numberOfInputs: '2',
+      selectionAnswerIds: JSON.stringify([11, 12, 13]),
+    }
+
+    for (const selection of [[11], [11, 11], [11, 99], [11, 12.5]]) {
+      expect(
+        validateStudentResponse({
+          type: 'SELECTION',
+          response: { selection },
+          instanceInfo,
+        }).valid
+      ).toBe(false)
+    }
+    expect(
+      validateStudentResponse({
+        type: 'SELECTION',
+        response: { selection: [11, -1] },
+        instanceInfo,
+      }).valid
+    ).toBe(true)
+  })
+
+  it('requires the configured case-study dimensions and finite bounds', () => {
+    const instanceInfo = {
+      caseStudyResponseShape: JSON.stringify({
+        cases: ['case-1'],
+        items: [11],
+        criteria: [{ id: 'criterion-1', min: 0, max: 5 }],
+      }),
+    }
+
+    expect(
+      validateStudentResponse({
+        type: 'CASE_STUDY',
+        response: {
+          assessment: { 'case-1': { 11: { 'criterion-1': 3 } } },
+        },
+        instanceInfo,
+      }).valid
+    ).toBe(true)
+    for (const assessment of [
+      { 'case-2': { 11: { 'criterion-1': 3 } } },
+      { 'case-1': { 12: { 'criterion-1': 3 } } },
+      { 'case-1': { 11: { 'criterion-2': 3 } } },
+      { 'case-1': { 11: { 'criterion-1': 6 } } },
+      { 'case-1': { 11: { 'criterion-1': Number.POSITIVE_INFINITY } } },
+    ]) {
+      expect(
+        validateStudentResponse({
+          type: 'CASE_STUDY',
+          response: { assessment },
+          instanceInfo,
+        }).valid
+      ).toBe(false)
+    }
+  })
 })

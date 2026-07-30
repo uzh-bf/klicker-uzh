@@ -7,15 +7,12 @@ import {
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
+  admitCorrelatedResponse,
   getCorrelatedResponseAdmission,
   hasValidLiveQuizPin,
-  prepareCorrelatedResponseSubmission,
   serializeLiveQuizRespondentCookie,
 } from '../src/correlatedResponseAdmission.js'
-import {
-  dispatchPendingCorrelatedResponses,
-  registerPendingCorrelatedResponse,
-} from '../src/correlatedResponseOutbox.js'
+import { dispatchPendingCorrelatedResponses } from '../src/correlatedResponseOutbox.js'
 import {
   hasJsonContentType,
   isAllowedCorsOrigin,
@@ -100,51 +97,98 @@ describe('correlated response request safeguards', () => {
     )
   })
 
-  it('durably bridges an active temporary identity before enqueue', async () => {
+  it('atomically bridges an active temporary identity and registers its outbox event', async () => {
     const respondentId = '33333333-3333-4333-8333-333333333333'
     let respondentCreated = false
-    const result = await prepareCorrelatedResponseSubmission({
+    const createCalls: any[] = []
+    let lockQuery = ''
+    const result = await admitCorrelatedResponse({
       database: {
-        temporaryLeaderboardEntry: {
-          findUnique: async () => ({ id: respondentId }),
-        },
-        liveQuizRespondent: {
-          upsert: async () => {
-            respondentCreated = true
-            return {
-              id: respondentId,
-              liveQuizId: 'quiz-id',
-              type: LiveQuizRespondentType.TEMPORARY_PSEUDONYM,
-            }
-          },
-        },
-        participant: { findUnique: async () => null },
+        $transaction: async (callback: (prisma: any) => Promise<unknown>) =>
+          callback({
+            $queryRaw: async (strings: TemplateStringsArray) => {
+              lockQuery = strings.join('?')
+              return [
+                {
+                  activeBlockId: 7,
+                  blockExecution: 3,
+                  blockId: 7,
+                  blockStatus: 'ACTIVE',
+                  isAssessmentEnabled: false,
+                  responseCollectionMode: 'CORRELATED_EXPORT',
+                  status: 'PUBLISHED',
+                },
+              ]
+            },
+            temporaryLeaderboardEntry: {
+              findUnique: async () => ({ id: respondentId }),
+            },
+            liveQuizRespondent: {
+              upsert: async () => {
+                respondentCreated = true
+                return {
+                  id: respondentId,
+                  liveQuizId: '11111111-1111-4111-8111-111111111111',
+                  type: LiveQuizRespondentType.TEMPORARY_PSEUDONYM,
+                }
+              },
+            },
+            liveQuizPendingResponse: {
+              create: async (args: any) => {
+                createCalls.push(args)
+                return args.data
+              },
+            },
+          }),
       } as any,
       identity: {
         kind: 'temporary',
         id: respondentId,
-        liveQuizId: 'quiz-id',
+        liveQuizId: '11111111-1111-4111-8111-111111111111',
         token: 'signed-token',
         cookieName: 'temporary_participant_token',
       },
-      liveQuizId: 'quiz-id',
+      liveQuizId: '11111111-1111-4111-8111-111111111111',
       instanceId: '42',
-      blockExecution: '3',
+      messageId: '22222222-2222-4222-8222-222222222222',
+      response: { value: 'private response' },
+      responseTimestamp: 1_000,
+      instanceInfo: {
+        type: 'FREE_TEXT',
+        blockExecution: '3',
+        sessionBlockId: '7',
+      },
+      secret: 'app-secret',
+      nextDeliveryAt: new Date('2026-07-29T12:00:00.000Z'),
     })
 
-    assert.equal(result.status, 'ready')
+    assert.equal(result.status, 'registered')
     assert.equal(respondentCreated, true)
+    assert.match(lockQuery, /FOR SHARE OF quiz, block/)
+    assert.equal(createCalls.length, 1)
     assert.deepEqual(
-      result.status === 'ready' ? result.acceptedIdentity : undefined,
+      decryptCorrelatedResponseEvent({
+        encryptedPayload: createCalls[0].data.eventPayload,
+        secret: 'app-secret',
+      }),
       {
-        kind: 'temporary',
-        id: respondentId,
+        messageId: '22222222-2222-4222-8222-222222222222',
+        sessionId: '11111111-1111-4111-8111-111111111111',
+        instanceId: '42',
+        response: { value: 'private response' },
+        responseTimestamp: 1_000,
+        acceptedIdentity: { kind: 'temporary', id: respondentId },
+        instanceInfo: {
+          type: 'FREE_TEXT',
+          blockExecution: '3',
+          sessionBlockId: '7',
+        },
       }
     )
     assert.equal(
-      result.status === 'ready' ? result.responseKey : undefined,
+      createCalls[0].data.responseKey,
       buildCorrelatedResponseKey({
-        liveQuizId: 'quiz-id',
+        liveQuizId: '11111111-1111-4111-8111-111111111111',
         instanceId: '42',
         blockExecution: '3',
         identityKey: `respondent:${respondentId}`,
@@ -152,97 +196,90 @@ describe('correlated response request safeguards', () => {
     )
   })
 
-  it('registers a pending outbox entry while the correlated quiz is published', async () => {
-    const createCalls: any[] = []
-    const database = {
-      $transaction: async (callback: (prisma: any) => Promise<unknown>) =>
-        callback({
-          $queryRaw: async () => [
-            {
-              isAssessmentEnabled: false,
-              responseCollectionMode: 'CORRELATED_EXPORT',
-              status: 'PUBLISHED',
-            },
-          ],
-          liveQuizPendingResponse: {
-            create: async (args: any) => {
-              createCalls.push(args)
-              return args.data
-            },
-          },
-        }),
-    } as any
-
-    assert.equal(
-      await registerPendingCorrelatedResponse({
-        database,
-        liveQuizId: '11111111-1111-4111-8111-111111111111',
-        messageId: '22222222-2222-4222-8222-222222222222',
-        responseKey: 'claim-key',
-        eventPayload: 'encrypted-payload',
-        nextDeliveryAt: new Date('2026-07-29T12:00:00.000Z'),
-      }),
-      'registered'
-    )
-    assert.deepEqual(createCalls, [
-      {
-        data: {
-          id: '22222222-2222-4222-8222-222222222222',
-          liveQuizId: '11111111-1111-4111-8111-111111111111',
-          responseKey: 'claim-key',
-          eventPayload: 'encrypted-payload',
-          nextDeliveryAt: new Date('2026-07-29T12:00:00.000Z'),
-        },
-      },
-    ])
-  })
-
-  it('does not register an outbox entry after the quiz has ended', async () => {
+  it('does not create identities or outbox entries after the quiz has ended', async () => {
+    let respondentCreated = false
     let createCalled = false
-    const database = {
-      $transaction: async (callback: (prisma: any) => Promise<unknown>) =>
-        callback({
-          $queryRaw: async () => [
-            {
-              isAssessmentEnabled: false,
-              responseCollectionMode: 'CORRELATED_EXPORT',
-              status: 'ENDED',
+    const result = await admitCorrelatedResponse({
+      database: {
+        $transaction: async (callback: (prisma: any) => Promise<unknown>) =>
+          callback({
+            $queryRaw: async () => [
+              {
+                activeBlockId: null,
+                blockExecution: 3,
+                blockId: 7,
+                blockStatus: 'EXECUTED',
+                isAssessmentEnabled: false,
+                responseCollectionMode: 'CORRELATED_EXPORT',
+                status: 'ENDED',
+              },
+            ],
+            liveQuizRespondent: {
+              upsert: async () => {
+                respondentCreated = true
+              },
             },
-          ],
-          liveQuizPendingResponse: {
-            create: async () => {
-              createCalled = true
+            liveQuizPendingResponse: {
+              create: async () => {
+                createCalled = true
+              },
             },
-          },
-        }),
-    } as any
-
-    assert.equal(
-      await registerPendingCorrelatedResponse({
-        database,
+          }),
+      } as any,
+      identity: {
+        kind: 'anonymous',
+        id: '33333333-3333-4333-8333-333333333333',
         liveQuizId: '11111111-1111-4111-8111-111111111111',
-        messageId: '22222222-2222-4222-8222-222222222222',
-        responseKey: 'claim-key',
-        eventPayload: 'encrypted-payload',
-      }),
-      'not_found'
-    )
+        token: 'signed-token',
+        cookieName:
+          'live_quiz_respondent_token_11111111-1111-4111-8111-111111111111',
+      },
+      liveQuizId: '11111111-1111-4111-8111-111111111111',
+      instanceId: '42',
+      messageId: '22222222-2222-4222-8222-222222222222',
+      response: { value: 'private response' },
+      responseTimestamp: 1_000,
+      instanceInfo: {
+        type: 'FREE_TEXT',
+        blockExecution: '3',
+        sessionBlockId: '7',
+      },
+      secret: 'app-secret',
+    })
+
+    assert.equal(result.status, 'not_found')
+    assert.equal(respondentCreated, false)
     assert.equal(createCalled, false)
   })
 
   it('rejects a second pending response for the same respondent execution', async () => {
     assert.equal(
-      await registerPendingCorrelatedResponse({
-        database: {
-          $transaction: async () => {
-            throw { code: 'P2002' }
+      (
+        await admitCorrelatedResponse({
+          identity: {
+            kind: 'participant',
+            id: '33333333-3333-4333-8333-333333333333',
+            token: 'signed-token',
+            cookieName: 'participant_token',
           },
-        } as any,
-        liveQuizId: '11111111-1111-4111-8111-111111111111',
-        messageId: '22222222-2222-4222-8222-222222222222',
-        responseKey: 'claim-key',
-        eventPayload: 'encrypted-payload',
-      }),
+          database: {
+            $transaction: async () => {
+              throw { code: 'P2002' }
+            },
+          } as any,
+          liveQuizId: '11111111-1111-4111-8111-111111111111',
+          instanceId: '42',
+          messageId: '22222222-2222-4222-8222-222222222222',
+          response: { value: 'private response' },
+          responseTimestamp: 1_000,
+          instanceInfo: {
+            type: 'FREE_TEXT',
+            blockExecution: '3',
+            sessionBlockId: '7',
+          },
+          secret: 'app-secret',
+        })
+      ).status,
       'duplicate'
     )
   })

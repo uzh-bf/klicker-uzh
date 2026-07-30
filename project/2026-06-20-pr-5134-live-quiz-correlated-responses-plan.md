@@ -676,6 +676,108 @@ Later research:
 - The requested external `agy` crosscheck could not run in its sandbox (`operation not permitted` while opening its log/listener, followed by the requested model being unavailable). Its output was not used; the final exact-commit crosscheck remains mandatory.
 - Opengrep's two logging findings were false positives against constant event names. Its AES-GCM authentication-tag finding was reproduced against the built utility package and is accepted above.
 
+## Exact-Commit Gate Remediation - 2026-07-30
+
+The thermo-nuclear, security, simplification, and independent branch reviews of
+`f424f03a16..b5b224e619` found the following release blockers after the first
+final-remediation pass.
+
+### Accepted Findings
+
+| Priority | Finding | Concrete improvement |
+| --- | --- | --- |
+| Release blocker | A response acknowledged while the quiz is published is discarded if the quiz reaches `ENDED` before the worker persists it. The worker currently treats `ENDED` as inactive and terminally settles the outbox row, after which export cannot detect the loss. | Separate admission from settlement eligibility. Admission remains `PUBLISHED` only; an already-admitted event may persist while the exact quiz remains `PUBLISHED` or `ENDED`, correlated, non-assessment, and on the accepted block execution. Export continues to wait for every unsettled event. |
+| Release blocker | Anonymous and temporary respondent upserts happen before the locked outbox transaction. Abort can delete the correlated dataset, then a racing rejected submission can recreate an orphan respondent. | Replace preparation plus registration with one `admitCorrelatedResponse` transaction. Take a shared lifecycle lock, recheck the quiz and exact active block generation, validate or upsert identity, derive the response key, encrypt the accepted snapshot, and insert the outbox row atomically. |
+| Security blocker | Selection and other structured responses can expand attacker-controlled cardinality into a large Redis mutation plan. Repeated selection IDs also inflate displayed aggregates. | Validate choice, selection, and case-study responses against trusted acceptance metadata, including exact authored dimensions, allowed IDs, finite values, uniqueness, and bounds. Add a correlated-worker mutation ceiling and terminally settle over-limit events rather than redriving them. |
+| Release blocker | An old PWA and old response-API replica can still route a correlated quiz through the legacy aggregate endpoint during a rolling deployment. | Add a server-side correlated-publication capability gate. Deploy migration, worker, response API, and PWA with the gate disabled; enable publication only in a second backend configuration rollout after old replicas are gone. |
+| High | Abort releases the quiz row lock before deleting `lq:<quizId>:*`. A fast republish can materialize a new generation that the old abort then deletes. | Make Redis namespace cleanup conditional on the aborted publication's `startedAt` generation. Delete old or missing metadata only; leave a newer materialized generation untouched. |
+| High | Aggregate-mode participant copy claims answers are not linked across questions, but logged-in and temporary gamified processing uses a stable identity in transient Redis and leaderboard state. | Describe the durable outcome precisely: aggregate mode creates no participant-level response export, while answers still contribute to aggregate results. Use the same accurate distinction in lecturer and participant copy. |
+| High | Admission and persistence each use an exclusive quiz-row lock, serializing all respondents. | Use shared row locks for ordinary admission and persistence. Publication, end, abort, mode changes, and export retain exclusive locks, so lifecycle transitions still serialize while independent responses can proceed concurrently. |
+| Medium | The correlated processor retains a Redis processing lease in addition to the permanent outbox response key, database uniqueness, and atomic Redis processed marker. | First make a uniqueness collision re-read and classify the persisted response by accepted timestamp. Then remove the lease, release script, busy error, and lease-only branches; concurrent same-message delivery remains recoverable through database retry classification plus the atomic Redis marker. |
+| Medium | The decrypted event is runtime-validated, but the worker retains a pass-through metadata resolver and unreachable missing-envelope branches. | Remove the pass-through resolver and guards that cannot follow successful decryption. Keep validation at the encrypted-event boundary and business validation in the response preparation layer. |
+
+### Decisions and Non-Findings
+
+- Persisted respondent labels remain. Stable labels across repeated exports were
+  an explicit product decision, and the table also supports future controlled
+  export evolution without changing historical labels.
+- Export authorization remains `WRITE`. This matches the existing lecturer
+  evaluation/download authorization model; the UI continues to warn that
+  free-text responses may contain participant-entered personal data.
+- Public anonymous participation remains intentionally vulnerable to cookie
+  resets. Rate limiting and Sybil controls are deployment follow-ups, not a
+  substitute for the accepted mutation and shape bounds.
+- The acceptance transaction will verify that the addressed block is active and
+  on the accepted execution. This closes the database-to-Redis block-close
+  admission window; already-admitted pre-close responses remain eligible for
+  durable settlement.
+
+### Execution Slices
+
+1. **Bound and type the accepted response**
+   - Status: completed.
+   - Publish trusted choice counts, selection IDs/input count, and case-study
+     shape in instance metadata.
+   - Enforce exact response shape and a hard correlated mutation ceiling.
+   - Checks: utility validation, response API, response-effects, and worker
+     terminal-settlement tests.
+2. **Atomic concurrent admission**
+   - Status: completed.
+   - Consolidate identity upsert, lifecycle/block-generation checks, response-key
+     derivation, encryption, and outbox insertion into one transaction.
+   - Use shared lifecycle locks; retain exclusive transition/export locks.
+   - Checks: duplicate, abort, block-close, and concurrent-admission tests.
+3. **Settlement and abort generations**
+   - Status: completed.
+   - Persist accepted events after `ENDED`, but never after abort/mode or block
+     generation change.
+   - Guard abort Redis cleanup with the aborted `startedAt` generation.
+   - Remove the redundant processing lease after collision recovery is proven.
+   - Checks: end/worker, abort/republish, same-message concurrency, and Redis
+     generation tests.
+4. **Rollout and copy**
+   - Status: completed.
+   - Add the disabled-by-default publication capability gate and deployment
+     configuration.
+   - Correct English and German aggregate notices and refresh browser evidence.
+   - Checks: publication gate tests, Helm rendering, desktop/mobile browser proof.
+5. **Repeat release gates**
+   - Status: in progress.
+   - Clean-schema database suites, all focused tests, `check:all`, complete build,
+     Opengrep, and exact-commit thermo/security/branch/simplification reviews.
+   - Push only the reviewed commit, refresh the draft PR, and read back current
+     comments and CI.
+
+### Progress
+
+- 2026-07-30: Exact-commit remediation slices 1-4 are implemented. Structured
+  responses are bounded by authored metadata and a hard mutation ceiling;
+  acceptance is one shared-lock transaction; already accepted responses settle
+  through normal end while abort and generation changes reject them; duplicate
+  delivery relies on database uniqueness plus the Redis processed marker; and
+  abort cleanup preserves a newer publication generation.
+- 2026-07-30: Correlated publication now has a disabled-by-default deployment
+  capability gate for the required two-phase rollout. Aggregate copy states the
+  durable export outcome without claiming that all transient processing is
+  unlinkable. Helm rendering and isolated publication/abort tests pass.
+- 2026-07-30: Refreshed real-browser proof covers aggregate and correlated
+  settings at 1440x1000 and both participant notices at 390x844. The selected
+  setting, concise consequence text, quiz header, and participant notice fit
+  without overlap in each captured state.
+- 2026-07-30: A clean reset applied all 180 migrations and the subsequent Prisma
+  push completed without drift. The repeated database-backed response-mode,
+  abort, publication, and export suites passed 43/43 cases; the focused policy
+  suite passed another 7/7 cases.
+- 2026-07-30: Focused utility, response API, response worker, export, and GraphQL
+  suites pass (157 cases outside the clean-schema database run). `check:all`
+  passed every typecheck, format, lint, schema-sync, and dependency-consistency
+  task, and the complete production build passed 22/22 tasks.
+- 2026-07-30: Helm rendering confirms the publication capability gate defaults
+  to disabled for the backend and general worker. The runtime resolves both the
+  export package root and its correlated-response public subpath. Opengrep ran
+  210 rules over 42 affected source files; its six findings are on unchanged
+  legacy lines and no finding is introduced by this remediation.
+
 ## Goal Prompt Requirements
 
 If handed to another agent:

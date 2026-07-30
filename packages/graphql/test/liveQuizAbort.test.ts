@@ -8,9 +8,13 @@ import {
   ResponseCorrectness,
 } from '@klicker-uzh/prisma/client'
 import { EventEmitter } from 'events'
+import { Redis } from 'ioredis'
 import { v4 as uuid } from 'uuid'
 import type { ContextWithUser } from '../src/lib/context.js'
-import { cancelLiveQuiz } from '../src/services/liveQuizzes.js'
+import {
+  cancelLiveQuiz,
+  clearAbortedLiveQuizRedisGeneration,
+} from '../src/services/liveQuizzes.js'
 import {
   initializePrisma,
   seedLiveQuiz,
@@ -63,13 +67,14 @@ describe('Live quiz abort cleanup', () => {
       },
       userOneCtx
     )
+    const startedAt = new Date()
     await prisma.liveQuiz.update({
       where: { id: liveQuiz.id },
       data: {
         responseCollectionMode:
           LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
         exportSalt: 'test-export-salt',
-        startedAt: new Date(),
+        startedAt,
       },
     })
     const instance = await prisma.elementInstance.findFirstOrThrow({
@@ -121,10 +126,21 @@ describe('Live quiz abort cleanup', () => {
     })
 
     let cachePattern: string | undefined
+    let expectedStartedAt: string | undefined
+    let metadataKey: string | undefined
     const redis = {
-      eval: async (script: string, numberOfKeys: number, pattern: string) => {
+      eval: async (
+        script: string,
+        numberOfKeys: number,
+        receivedMetadataKey: string,
+        receivedStartedAt: string,
+        pattern: string
+      ) => {
+        expect(script).toContain('currentStartedAt')
         expect(script).toContain("redis.call('UNLINK', unpack(keys))")
-        expect(numberOfKeys).toBe(0)
+        expect(numberOfKeys).toBe(1)
+        metadataKey = receivedMetadataKey
+        expectedStartedAt = receivedStartedAt
         cachePattern = pattern
         return 0
       },
@@ -162,6 +178,40 @@ describe('Live quiz abort cleanup', () => {
         where: { liveQuizId: liveQuiz.id },
       })
     ).resolves.toBe(0)
+    expect(metadataKey).toBe(`lq:${liveQuiz.id}:meta`)
+    expect(expectedStartedAt).toBe(String(startedAt.getTime()))
     expect(cachePattern).toBe(`lq:${liveQuiz.id}:*`)
+  })
+
+  it('preserves Redis keys from a newer publication generation', async () => {
+    const liveQuizId = uuid()
+    const oldStartedAt = new Date('2026-07-30T10:00:00.000Z')
+    const newStartedAt = new Date('2026-07-30T11:00:00.000Z')
+    const metaKey = `lq:${liveQuizId}:meta`
+    const instanceKey = `lq:${liveQuizId}:i:42:info`
+
+    const redis = new Redis({
+      host: process.env.REDIS_HOST ?? 'redis_exec',
+      port: Number(process.env.REDIS_PORT ?? 6379),
+      maxRetriesPerRequest: 1,
+    })
+    await redis.hset(metaKey, {
+      startedAt: String(newStartedAt.getTime()),
+    })
+    await redis.hset(instanceKey, { type: 'CONTENT' })
+
+    try {
+      await clearAbortedLiveQuizRedisGeneration({
+        redis,
+        liveQuizId,
+        startedAt: oldStartedAt,
+      })
+
+      await expect(redis.exists(metaKey)).resolves.toBe(1)
+      await expect(redis.exists(instanceKey)).resolves.toBe(1)
+    } finally {
+      await redis.unlink(metaKey, instanceKey)
+      redis.disconnect()
+    }
   })
 })

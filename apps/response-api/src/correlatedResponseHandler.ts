@@ -2,17 +2,14 @@ import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import { LiveQuizResponseCollectionMode } from '@klicker-uzh/prisma/client'
 import {
   CORRELATED_RESPONSE_EVENT,
-  encryptCorrelatedResponseEvent,
   resolveLiveQuizResponseIdentity,
   validateStudentResponse,
   type CorrelatedResponseDeliveryMessage,
-  type CorrelatedResponseEventMessage,
 } from '@klicker-uzh/util'
 import {
+  admitCorrelatedResponse,
   getCorrelatedResponseAdmission,
-  prepareCorrelatedResponseSubmission,
 } from './correlatedResponseAdmission.js'
-import { registerPendingCorrelatedResponse } from './correlatedResponseOutbox.js'
 import type { LiveQuizResponseRequest } from './liveQuizResponseRequest.js'
 
 export async function handleCorrelatedResponse({
@@ -84,6 +81,7 @@ export async function handleCorrelatedResponse({
   const validation = validateStudentResponse({
     type: instanceInfo.type,
     response: request.response,
+    instanceInfo,
     restrictions:
       typeof restrictions === 'object' && restrictions !== null
         ? restrictions
@@ -93,45 +91,30 @@ export async function handleCorrelatedResponse({
     return { status: 400, body: { error: validation.message } }
   }
 
-  const preparation = await prepareCorrelatedResponseSubmission({
+  const registration = await admitCorrelatedResponse({
     database,
     identity,
     liveQuizId: request.liveQuizId,
     instanceId: request.instanceId,
-    blockExecution: instanceInfo.blockExecution,
+    messageId: request.messageId,
+    response: request.response,
+    responseTimestamp: request.responseTimestamp,
+    instanceInfo,
+    secret: identityConfig.secret,
   })
-  if (preparation.status === 'invalid_metadata') {
+  if (registration.status === 'invalid_metadata') {
     return {
       status: 400,
       body: { error: 'Invalid correlated response metadata' },
     }
   }
-  if (preparation.status === 'invalid_identity') {
+  if (registration.status === 'invalid_identity') {
     return {
       status: 401,
       body: { error: 'Live quiz response identity is no longer active' },
     }
   }
-  const eventMessage: CorrelatedResponseEventMessage = {
-    messageId: request.messageId,
-    sessionId: request.liveQuizId,
-    instanceId: request.instanceId,
-    response: request.response,
-    responseTimestamp: request.responseTimestamp,
-    acceptedIdentity: preparation.acceptedIdentity,
-    instanceInfo,
-  }
-  const registration = await registerPendingCorrelatedResponse({
-    database,
-    liveQuizId: request.liveQuizId,
-    messageId: request.messageId,
-    responseKey: preparation.responseKey,
-    eventPayload: encryptCorrelatedResponseEvent({
-      message: eventMessage,
-      secret: identityConfig.secret,
-    }),
-  })
-  if (registration === 'duplicate') {
+  if (registration.status === 'duplicate') {
     return {
       status: 208,
       body: {
@@ -140,7 +123,7 @@ export async function handleCorrelatedResponse({
       },
     }
   }
-  if (registration === 'not_found') {
+  if (registration.status === 'not_found') {
     return { status: 404, body: { error: 'Live quiz not found' } }
   }
 

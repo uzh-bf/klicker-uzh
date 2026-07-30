@@ -1094,7 +1094,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       nextCase: 'Nächster Fall',
       thisLiveQuizGamified: 'Diese Live-Quiz ist gamifiziert!',
       responseCollectionAggregatedNotice:
-        'Antworten werden nur aggregiert ausgewertet und nicht über Fragen hinweg verknüpft.',
+        'Dieses Quiz erstellt keinen Export von Antworten auf Personenebene. Antworten fliessen in aggregierte Ergebniswerte ein.',
       responseCollectionCorrelatedNotice:
         'Antworten in diesem Quiz werden pro Person gespeichert und können mit zufälligen Bezeichnungen (z. B. respondent_001) statt Namen exportiert werden.',
       loginSelectionHint:
@@ -2157,7 +2157,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       responseCollectionAggregated: 'Nur aggregiert',
       responseCollectionCorrelated: 'Korrelierter Export',
       responseCollectionAggregatedSummary:
-        'Antworten werden nur aggregiert ausgewertet und nicht über Fragen hinweg verknüpft.',
+        'Antworten fliessen in aggregierte Live-Ergebnisse ein; für den Export werden keine Antwortzeilen auf Personenebene gespeichert.',
       responseCollectionCorrelatedSummary:
         'Antworten werden pro Person gespeichert und können mit zufälligen Bezeichnungen statt Namen exportiert werden.',
       responseCollectionAssessment:

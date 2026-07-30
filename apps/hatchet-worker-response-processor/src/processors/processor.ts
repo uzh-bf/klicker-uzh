@@ -113,6 +113,7 @@ export function prepareQuestionResponse({
   const validation = validateStudentResponse({
     type,
     response: message.response,
+    instanceInfo,
     restrictions: parsedRestrictions,
   })
   if (!validation.valid) {

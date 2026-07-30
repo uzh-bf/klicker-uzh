@@ -1,5 +1,9 @@
 import type { Hatchet } from '@hatchet-dev/typescript-sdk/index.js'
-import { PrismaClient, PublicationStatus } from '@klicker-uzh/prisma/client'
+import {
+  LiveQuizResponseCollectionMode,
+  PrismaClient,
+  PublicationStatus,
+} from '@klicker-uzh/prisma/client'
 import { EventEmitter } from 'events'
 import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
@@ -7,6 +11,7 @@ import {
   clearLiveQuizScheduledPublicationTask,
   deleteLiveQuizScheduledPublicationTask,
   reconcileLiveQuizPublications,
+  transitionLiveQuizToPublished,
 } from '../src/services/liveQuizPublication.js'
 import {
   handlePublishScheduledLiveQuiz,
@@ -75,6 +80,50 @@ describe('Live quiz publication', () => {
 
     return { metadata, redis }
   }
+
+  it('requires the rollout capability before first correlated publication', async () => {
+    const liveQuiz = await seedLiveQuiz(
+      {
+        elements: [],
+        status: PublicationStatus.DRAFT,
+      },
+      userOneCtx
+    )
+    await prisma.liveQuiz.update({
+      where: { id: liveQuiz.id },
+      data: {
+        responseCollectionMode:
+          LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+      },
+    })
+
+    await expect(
+      transitionLiveQuizToPublished({
+        prisma,
+        liveQuizId: liveQuiz.id,
+        source: 'manual',
+        correlatedResponsesEnabled: false,
+      })
+    ).rejects.toThrow(
+      'Correlated live quiz publication is not enabled on this deployment'
+    )
+    await expect(
+      prisma.liveQuiz.findUniqueOrThrow({ where: { id: liveQuiz.id } })
+    ).resolves.toMatchObject({ status: PublicationStatus.DRAFT })
+
+    await expect(
+      transitionLiveQuizToPublished({
+        prisma,
+        liveQuizId: liveQuiz.id,
+        source: 'manual',
+        correlatedResponsesEnabled: true,
+      })
+    ).resolves.toMatchObject({
+      didStart: true,
+      quiz: { status: PublicationStatus.PUBLISHED },
+    })
+  })
+
   it('publishes a scheduled quiz from its locked current settings', async () => {
     const scheduledQuiz = await seedLiveQuiz(
       {

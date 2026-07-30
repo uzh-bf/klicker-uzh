@@ -13,11 +13,14 @@ export async function transitionLiveQuizToPublished({
   liveQuizId,
   source,
   now = new Date(),
+  correlatedResponsesEnabled = process.env
+    .LIVE_QUIZ_CORRELATED_RESPONSES_ENABLED === 'true',
 }: {
   prisma: DB.PrismaClient
   liveQuizId: string
   source: PublicationSource
   now?: Date
+  correlatedResponsesEnabled?: boolean
 }) {
   return prisma.$transaction(async (transaction) => {
     const [lockedQuiz] = await transaction.$queryRaw<Pick<DB.LiveQuiz, 'id'>[]>`
@@ -64,6 +67,15 @@ export async function transitionLiveQuizToPublished({
           (liveQuiz.status === DB.PublicationStatus.DRAFT ||
             liveQuiz.status === DB.PublicationStatus.SCHEDULED)
     if (!canPublish) return null
+    if (
+      liveQuiz.responseCollectionMode ===
+        DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT &&
+      !correlatedResponsesEnabled
+    ) {
+      throw new Error(
+        'Correlated live quiz publication is not enabled on this deployment'
+      )
+    }
 
     const publishedQuiz = await transaction.liveQuiz.update({
       where: { id: liveQuizId },

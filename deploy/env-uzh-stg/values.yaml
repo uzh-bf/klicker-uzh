@@ -467,6 +467,7 @@ frontendControl:
 
 backendGraphql:
   priorityClassName: staging-workload
+  correlatedResponsesEnabled: false
   podAnnotations:
     rollout.klicker.uzh.ch/release: '7dee0d369aef'
 

@@ -9,11 +9,10 @@ import { getRedis } from '../redis.js'
 import {
   applyCorrelatedRedisMutations,
   CorrelatedResponseIdentityError,
-  persistCorrelatedResponseForPublishedQuiz,
+  CorrelatedResponseMutationLimitError,
+  persistAcceptedCorrelatedResponse,
   prepareCorrelatedMessageProcessing,
-  releaseCorrelatedProcessingLock,
   resolveCorrelatedResponseDelivery,
-  resolveCorrelatedResponseInstanceInfo,
   settleCorrelatedResponseOutbox,
   type CorrelatedProcessingState,
 } from './correlatedResponse.js'
@@ -109,38 +108,12 @@ async function processResolvedCorrelatedResponse({
       database,
       messageId: message.messageId,
     })
-  const releaseProcessingLock = async () => {
-    if (!correlatedState) return
-    await releaseCorrelatedProcessingLock({
-      redis,
-      lockKey: correlatedState.processingLockKey,
-      messageId: message.messageId,
-    })
-  }
   const releaseInvalidResponse = async () => {
-    await releaseProcessingLock()
     await settleOutbox()
   }
 
   try {
-    if (!message.response) {
-      ctx.logger.error('Missing response', {
-        extra: responseLogContext(message),
-      })
-      await settleOutbox()
-      return { status: 400 }
-    }
-
-    const instanceInfo = resolveCorrelatedResponseInstanceInfo(
-      message.instanceInfo
-    )
-    if (!instanceInfo) {
-      ctx.logger.info('Element instance metadata not found', {
-        extra: responseLogContext(message),
-      })
-      await settleOutbox()
-      return { status: 400 }
-    }
+    const instanceInfo = message.instanceInfo
 
     const preparation = await prepareCorrelatedMessageProcessing({
       redis,
@@ -205,7 +178,7 @@ async function processResolvedCorrelatedResponse({
       throw new Error('Missing correlated response grading')
     }
 
-    const persistence = await persistCorrelatedResponseForPublishedQuiz({
+    const persistence = await persistAcceptedCorrelatedResponse({
       database,
       liveQuizId: message.sessionId,
       owner: correlatedState.owner,
@@ -226,6 +199,10 @@ async function processResolvedCorrelatedResponse({
       await releaseInvalidResponse()
       return { status: 208 }
     }
+    if (!persistence.applyRedisEffects) {
+      await settleOutbox()
+      return { status: 200 }
+    }
   } catch (error) {
     ctx.logger.error(`Error processing correlated response: ${String(error)}`, {
       extra: responseLogContext(message),
@@ -234,7 +211,6 @@ async function processResolvedCorrelatedResponse({
       await releaseInvalidResponse()
       return { status: 400 }
     }
-    await releaseProcessingLock()
     throw new Error(
       `Correlated response processing failed for message ${message.messageId}: ${String(error)}`
     )
@@ -254,12 +230,10 @@ async function processResolvedCorrelatedResponse({
       messageId: message.messageId,
     })
     if (result === 'duplicate') {
-      await releaseProcessingLock()
       await settleOutbox()
       return { status: 208 }
     }
 
-    await releaseProcessingLock()
     await settleOutbox()
     ctx.logger.info("Successfully processed participant's response", {
       extra: responseLogContext(message),
@@ -269,7 +243,10 @@ async function processResolvedCorrelatedResponse({
     ctx.logger.error(`Redis transaction failed: ${String(error)}`, {
       extra: responseLogContext(message),
     })
-    await releaseProcessingLock()
+    if (error instanceof CorrelatedResponseMutationLimitError) {
+      await settleOutbox()
+      return { status: 400 }
+    }
     throw new Error(`Redis transaction failed ${String(error)}`)
   }
 }

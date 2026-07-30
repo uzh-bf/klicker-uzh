@@ -1,8 +1,4 @@
-import {
-  LiveQuizResponseCollectionMode,
-  PublicationStatus,
-  type PrismaClient,
-} from '@klicker-uzh/prisma/client'
+import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import {
   CORRELATED_RESPONSE_EVENT,
   type CorrelatedResponseDeliveryMessage,
@@ -10,73 +6,6 @@ import {
 
 const CORRELATED_OUTBOX_RETRY_MS = 30_000
 const CORRELATED_OUTBOX_BATCH_SIZE = 50
-
-export async function registerPendingCorrelatedResponse({
-  database,
-  liveQuizId,
-  messageId,
-  responseKey,
-  eventPayload,
-  nextDeliveryAt = new Date(Date.now() + CORRELATED_OUTBOX_RETRY_MS),
-}: {
-  database: Pick<PrismaClient, '$transaction'>
-  liveQuizId: string
-  messageId: string
-  responseKey: string
-  eventPayload: string
-  nextDeliveryAt?: Date
-}) {
-  try {
-    return await database.$transaction(async (prisma) => {
-      const [liveQuiz] = await prisma.$queryRaw<
-        {
-          isAssessmentEnabled: boolean
-          responseCollectionMode: LiveQuizResponseCollectionMode
-          status: PublicationStatus
-        }[]
-      >`
-        SELECT
-          "isAssessmentEnabled",
-          "responseCollectionMode"::text AS "responseCollectionMode",
-          "status"::text AS "status"
-        FROM "public"."LiveQuiz"
-        WHERE "id" = ${liveQuizId}::uuid AND "isDeleted" = false
-        FOR UPDATE
-      `
-
-      if (
-        !liveQuiz ||
-        liveQuiz.status !== PublicationStatus.PUBLISHED ||
-        liveQuiz.isAssessmentEnabled ||
-        liveQuiz.responseCollectionMode !==
-          LiveQuizResponseCollectionMode.CORRELATED_EXPORT
-      ) {
-        return 'not_found' as const
-      }
-
-      await prisma.liveQuizPendingResponse.create({
-        data: {
-          id: messageId,
-          liveQuizId,
-          responseKey,
-          eventPayload,
-          nextDeliveryAt,
-        },
-      })
-      return 'registered' as const
-    })
-  } catch (error) {
-    if (
-      typeof error === 'object' &&
-      error !== null &&
-      'code' in error &&
-      error.code === 'P2002'
-    ) {
-      return 'duplicate' as const
-    }
-    throw error
-  }
-}
 
 export async function reservePendingCorrelatedResponses({
   database,
