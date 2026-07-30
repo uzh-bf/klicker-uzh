@@ -7,6 +7,19 @@ import { getPrisma } from '../global-setup.js'
 
 export const COURSE_QA_DATA = {
   course: 'Testkurs',
+  question: {
+    title: 'QA-Question 1 Title',
+    content: 'QA Question Content 1',
+    choices: [
+      { value: '50%', correct: true },
+      { value: '100%' },
+      { value: '75%' },
+    ],
+  },
+  practiceQuiz: {
+    name: 'Course QA Practice Quiz',
+    displayName: 'Course QA Practice Quiz (Display)',
+  },
   threads: {
     course1: 'This is the first course-level QA question from a student.',
     course2: 'A second question about the course material.',
