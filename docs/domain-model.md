@@ -90,6 +90,17 @@ re-runs both the sample-size check and label assignment
 (`packages/graphql/src/lib/learningAnalyticsOutput.ts`;
 `packages/graphql/src/services/analytics.ts:getLearningAnalyticsExport`).
 
+All dedicated result-model cleanup uses one explicit boundary in
+`packages/graphql/src/lib/learningAnalyticsCleanup.ts`. It includes the eleven
+analytics result models and deliberately excludes `TimelineEntry`,
+`Competency`, normal responses and feedback, participation and choice history,
+grades, points, XP, and research consent. Course disable applies this boundary
+to one course. The pre-rollout cleanup applies the same boundary globally under
+the guarded procedure documented in [Data & Migrations](./data-and-migrations.md).
+The rollout gate stays disabled until that cleanup has completed and the German
+privacy notice, German terms, and in-app disclosures have recorded UZH
+data-protection/legal approval.
+
 ## Content hierarchy
 
 - **`Element`** (`element.prisma`) — a question-bank item owned by a `User`; versioned via `version`/`originalId`; `type: ElementType`; options live in a typed `Json` field.

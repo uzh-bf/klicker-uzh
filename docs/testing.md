@@ -36,6 +36,14 @@ also checks that neither the lecturer query nor export contains the synthetic
 participant identifier, activity identifier, score, or free-text marker
 (`packages/graphql/test/learningAnalyticsOutput.test.ts`;
 `packages/graphql/test/learningAnalyticsComputationEligibility.test.ts`).
+The course-control integration fixture creates all eleven dedicated result
+model classes, verifies the shared cleanup inventory, disables the course
+twice, and proves that responses, response details, free-text feedback,
+participation choice history, points, and XP remain intact
+(`packages/graphql/test/learningAnalyticsCourseControl.test.ts`). Rehearse the
+global cleanup only against the branch-local disposable database: dry run,
+review aggregate counts, execute with the exact confirmation value, then verify
+that the after-state receipt rejects replay. Never use production data in tests.
 
 The Office Add-in has a separate host boundary. Its pure URL contract runs under Node, while `check`, `lint`, `build:docs`, `verify:docs`, and `validate` cover compilation, source quality, the production bundle, exact deployment parity, and manifest acceptance. A browser run with a stubbed Office API verifies UI states only. Persistence, multiple content-add-in instances, and embedded evaluation rendering require a real PowerPoint sideload before release.
 

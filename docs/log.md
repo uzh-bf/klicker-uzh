@@ -2,6 +2,13 @@
 
 ## 2026-07-30
 
+- **Update** — Documented the guarded pre-rollout purge of dedicated
+  learning-analytics results, its shared runtime cleanup boundary, legal rollout
+  gate, and mandatory LA/privacy feature-design question in
+  [ADR 0003](./adr/0003-purge-pre-control-learning-analytics-results.md),
+  [Domain Model](./domain-model.md), [Data & Migrations](./data-and-migrations.md),
+  [Testing](./testing.md), and the `klicker-feature-design` procedure.
+
 - **Update** — Documented the learning-analytics output boundary, post-filter
   effective-sample-size suppression, report-local labels, coarse participant
   summaries, and server-owned complete/partial export in

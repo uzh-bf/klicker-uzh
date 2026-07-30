@@ -42,6 +42,36 @@ enrollment count or an opt-out count. Migration
 `20260730113000_add_activity_performance_participant_count` adds the field with a
 zero default and the schema mirror exposes it to the Python client.
 
+### Pre-rollout learning-analytics cleanup
+
+`packages/graphql/src/scripts/2026-07-30_cleanup_learning_analytics.ts` removes
+only dedicated learning-analytics result rows that predate the optional course
+and participant controls. It shares its model boundary with course disable,
+never reads participant identifiers or response content, and records only
+aggregate model counts. Normal courses, participations, participants, responses,
+response details, feedback, grading, gamification, and research-consent state
+are outside the cleanup contract.
+
+Run the production command without flags first. The dry run creates a
+gitignored, owner-only before-state dump under
+`packages/graphql/src/scripts/_local/`. Review that aggregate-only dump before
+authorizing the write:
+
+```bash
+pnpm --filter @klicker-uzh/graphql script:prod:cleanup-learning-analytics
+
+DRY_RUN=false \
+CONFIRM_LEARNING_ANALYTICS_CLEANUP=DELETE_ALL_PRE_FEATURE_DERIVED_DATA \
+pnpm --filter @klicker-uzh/graphql script:prod:cleanup-learning-analytics
+```
+
+The write refuses a changed database snapshot or cleanup contract. It acquires
+the same course advisory locks as runtime LA writers, runs at `Serializable`,
+verifies every dedicated model is empty and representative operational counts
+are unchanged, then creates an after-state receipt that blocks replay. Run it
+once, before enabling the rollout, during an approved operational window. Never
+commit either local dump.
+
 ## Migrations
 
 - Prisma migrations live in `packages/prisma/src/prisma/schema/migrations/` (~170 since 2022). Migrations may contain data backfills (SQL `ROW_NUMBER()` etc.), not just DDL.

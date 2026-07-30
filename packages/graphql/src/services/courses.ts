@@ -31,6 +31,7 @@ import {
   isLearningAnalyticsChoiceCurrent,
   type LearningAnalyticsChoiceStatus,
 } from '../lib/learningAnalytics.js'
+import { deleteDedicatedLearningAnalyticsForCourse } from '../lib/learningAnalyticsCleanup.js'
 import { computeRanks, orderStacks } from '../lib/util.js'
 import {
   calculateAssessmentCourseScores,
@@ -2728,23 +2729,7 @@ export async function setCourseLearningAnalyticsEnabled(
         return course
       }
 
-      await prisma.participantActivityPerformance.deleteMany({
-        where: {
-          OR: [{ practiceQuiz: { courseId } }, { microLearning: { courseId } }],
-        },
-      })
-      await prisma.participantAnalytics.deleteMany({ where: { courseId } })
-      await prisma.aggregatedAnalytics.deleteMany({ where: { courseId } })
-      await prisma.participantCourseAnalytics.deleteMany({
-        where: { courseId },
-      })
-      await prisma.aggregatedCourseAnalytics.deleteMany({
-        where: { courseId },
-      })
-      await prisma.participantPerformance.deleteMany({ where: { courseId } })
-      await prisma.instancePerformance.deleteMany({ where: { courseId } })
-      await prisma.activityPerformance.deleteMany({ where: { courseId } })
-      await prisma.activityProgress.deleteMany({ where: { courseId } })
+      await deleteDedicatedLearningAnalyticsForCourse(prisma, courseId)
 
       return course
     },
