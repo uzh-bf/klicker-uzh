@@ -110,3 +110,11 @@ gamification rewards once.
   wiki validator was unavailable, while Prettier and `git diff --check` passed.
   Independent documentation review passed after clarifying regular versus
   assessment authorization and nullable summary-query denial behavior.
+- 2026-07-30: Final whole-branch review found and resolved two exactness and
+  cleanup gaps in `7258fda59`, `08d6cb815`, and `ae5757ea4`. Legacy reward
+  reconstruction now reverses historical timeline points independently of a
+  course's current gamification setting. An unavailable Redis generation
+  snapshot now schedules the retry worker; the worker serializes against new
+  starts and safely clears orphaned namespaces for hard- or soft-deleted
+  quizzes. The focused reward regression passed, the reset suite passed 57/57,
+  and independent re-review passed with no remaining P0-P2 findings.
