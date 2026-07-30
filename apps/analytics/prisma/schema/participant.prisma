@@ -1,0 +1,263 @@
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+}
+
+model ParticipantInvitation {
+  id Int @id @default(autoincrement())
+
+  email               String
+  matriculationNumber String?
+  status              InvitationStatus @default(PENDING)
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  participant   Participant? @relation(fields: [participantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  participantId String?      @db.Uuid
+
+  invitedAt  DateTime  @default(now())
+  acceptedAt DateTime?
+
+  @@unique([email, courseId])
+  @@index([email])
+}
+
+model ParticipantAccount {
+  id String @id @default(uuid()) @db.Uuid
+
+  ssoId    String  @unique
+  ssoType  String  @default("LTI1.1")
+  ssoEmail String?
+
+  // Add fields for affiliation support
+  type       String  @default("sso") // "sso", "affiliation"
+  isPrimary  Boolean @default(false) // Only one primary per participant
+  isVerified Boolean @default(false) // Only verified affiliations can login
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([participantId, ssoType])
+  // Performance indexes
+  @@index([ssoId, isVerified])
+  @@index([type, isVerified])
+}
+
+model Participant {
+  id String @id @default(uuid()) @db.Uuid
+
+  email        String?
+  isEmailValid Boolean @default(false)
+  username     String  @unique
+  password     String
+  avatar       String?
+  xp           Int     @default(0)
+
+  /// [PrismaAvatarSettings]
+  avatarSettings Json?
+
+  isActive        Boolean @default(true)
+  isProfilePublic Boolean @default(true)
+  isSSOAccount    Boolean @default(false)
+
+  lastLoginAt DateTime?
+
+  locale Locale @default(en)
+
+  participantGroups               ParticipantGroup[]
+  accounts                        ParticipantAccount[]
+  participations                  Participation[]
+  questionResponses               QuestionResponse[]
+  detailQuestionResponses         QuestionResponseDetail[]
+  liveQuizResponses               LiveQuizResponse[]
+  feedbacks                       Feedback[]
+  elementFeedbacks                ElementFeedback[]
+  leaderboards                    LeaderboardEntry[]
+  subscriptions                   PushSubscription[]
+  clueAssignments                 GroupActivityClueAssignment[]
+  awards                          AwardEntry[]
+  achievements                    ParticipantAchievementInstance[]
+  titles                          Title[]
+  participantAnalytics            ParticipantAnalytics[]
+  participantCourseAnalytics      ParticipantCourseAnalytics[]
+  participantActivityPerformances ParticipantActivityPerformance[]
+  coursePerformances              ParticipantPerformance[]
+  groupAssignmentPoolEntries      GroupAssignmentPoolEntry[]
+  messages                        GroupMessage[]
+  chatThreads                     ChatThread[]
+  chatUsageCredits                ChatUsageCredits[]
+  invitations                     ParticipantInvitation[]
+  pointCorrections                PointCorrection[]
+  individualPointCorrections      PointCorrection[]                @relation("PointCorrectionParticipants")
+  adaptiveAssessmentAttempts      AdaptiveAssessmentAttempt[]
+  adaptivePracticeQuizAttempts    AdaptivePracticeQuizAttempt[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([email, isSSOAccount])
+}
+
+model ParticipantGroup {
+  id String @id @default(uuid()) @db.Uuid
+
+  name String
+  code Int
+
+  groupActivityScore Int @default(0)
+  averageMemberScore Int @default(0)
+
+  participants    Participant[]
+  groupActivities GroupActivityInstance[]
+  awards          AwardEntry[]
+  achievements    GroupAchievementInstance[]
+  messages        GroupMessage[]
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  randomlyAssigned Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([courseId, code])
+}
+
+model GroupMessage {
+  id Int @id @default(autoincrement())
+
+  content String
+
+  group   ParticipantGroup @relation(fields: [groupId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupId String           @db.Uuid
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Participation {
+  id Int @id @default(autoincrement())
+
+  // enable participants to disable their participation
+  // keeps the collected points but removes them from all views
+  isActive Boolean @default(false)
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  courseLeaderboard   LeaderboardEntry? @relation(fields: [courseLeaderboardId], references: [id], onDelete: SetNull, onUpdate: SetNull)
+  courseLeaderboardId Int?              @unique
+
+  sessionLeaderboards LeaderboardEntry[] @relation("SessionLeaderboards")
+  timelineEntries     TimelineEntry[]
+
+  responses                    QuestionResponse[]
+  detailResponses              QuestionResponseDetail[]
+  subscriptions                PushSubscription[]
+  completedMicroLearnings      String[]
+  bookmarkedElementStacks      ElementStack[]
+  adaptiveAssessmentAttempts   AdaptiveAssessmentAttempt[]
+  adaptivePracticeQuizAttempts AdaptivePracticeQuizAttempt[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([courseId, participantId])
+  @@unique([id, participantId, courseId], map: "participation_identity_key")
+}
+
+model GroupAssignmentPoolEntry {
+  id Int @id @default(autoincrement())
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  createdAt DateTime @default(now())
+
+  @@unique([courseId, participantId])
+}
+
+enum LeaderboardType {
+  SESSION
+  COURSE
+}
+
+model LeaderboardEntry {
+  id Int @id @default(autoincrement())
+
+  type LeaderboardType
+
+  score Int
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  participation Participation?
+
+  sessionParticipation   Participation? @relation("SessionLeaderboards", fields: [sessionParticipationId], references: [id])
+  sessionParticipationId Int?
+
+  liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  liveQuizId String?   @db.Uuid
+
+  course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String? @db.Uuid
+
+  @@unique([type, participantId, courseId])
+  @@unique([type, participantId, liveQuizId])
+}
+
+model TemporaryLeaderboardEntry {
+  // participant id of temporary participant / participant id in case of logged-in
+  // participant without participation or in gamified live quiz without course
+  id       String  @default(uuid()) @db.Uuid
+  username String
+  score    Int
+  avatar   String?
+
+  quizId String   @db.Uuid
+  quiz   LiveQuiz @relation(fields: [quizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([id, quizId])
+  @@index(id)
+  @@index(quizId)
+}
+
+model PushSubscription {
+  id Int @id @default(autoincrement())
+
+  endpoint       String
+  expirationTime Int?
+  p256dh         String
+  auth           String
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participationId Int
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  createdAt DateTime @default(now())
+
+  @@unique([participantId, courseId, endpoint])
+}

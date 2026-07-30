@@ -1,0 +1,77 @@
+enum CourseAuthType {
+  SSO
+  PIN
+}
+
+model Course {
+  id String @id @default(uuid()) @db.Uuid
+
+  name              String
+  displayName       String
+  description       String?
+  language          Locale   @default(en)
+  color             String   @default("#eaa07d")
+  startDate         DateTime
+  endDate           DateTime
+  notificationEmail String?
+  areAnalyticsValid Boolean  @default(false)
+  isArchived        Boolean  @default(false)
+
+  authType CourseAuthType @default(PIN)
+  pinCode  Int?           @unique
+
+  isGamificationEnabled     Boolean @default(true)
+  isGroupCreationEnabled    Boolean @default(true)
+  isAssessmentEnabled       Boolean @default(false)
+  isAdaptiveLearningEnabled Boolean @default(false)
+
+  groupDeadlineDate         DateTime
+  preferredGroupSize        Int      @default(3)
+  maxGroupSize              Int      @default(5)
+  randomAssignmentFinalized Boolean  @default(false)
+
+  elementStacks                ElementStack[]
+  practiceQuizzes              PracticeQuiz[]
+  groupActivities              GroupActivity[]
+  leaderboard                  LeaderboardEntry[]
+  awards                       AwardEntry[]
+  classAchievements            ClassAchievementInstance[]
+  achievements                 Achievement[]
+  titles                       Title[]
+  participations               Participation[]
+  subscriptions                PushSubscription[]
+  participantGroups            ParticipantGroup[]
+  microLearnings               MicroLearning[]
+  liveQuizzes                  LiveQuiz[]
+  participantAnalytics         ParticipantAnalytics[]
+  aggregatedAnalytics          AggregatedAnalytics[]
+  aggregatedCourseAnalytics    AggregatedCourseAnalytics?
+  participantCourseAnalytics   ParticipantCourseAnalytics[]
+  participantPerformances      ParticipantPerformance[]
+  instancePerformances         InstancePerformance[]
+  activityPerformances         ActivityPerformance[]
+  activityProgresses           ActivityProgress[]
+  responses                    QuestionResponse[]
+  groupAssignmentPoolEntries   GroupAssignmentPoolEntry[]
+  timelineEntries              TimelineEntry[]
+  chatbots                     Chatbot[]
+  participantInvitations       ParticipantInvitation[]
+  adaptiveAssessments          AdaptiveAssessment[]
+  adaptivePracticeQuizAttempts AdaptivePracticeQuizAttempt[] @relation("AdaptivePracticeQuizAttemptCourse")
+  competenceTreeLinks          CompetenceTreeCourse[]
+
+  directPermissions  Permission[]
+  permissions        DerivedPermission[]
+  accessRequests     AccessRequest[]
+  catalogAssignments CatalogCollectionAssignment[]
+  activityLog        ActivityLogEntry[]
+
+  competencyTree   CompetencyTree? @relation(fields: [competencyTreeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  competencyTreeId Int?
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

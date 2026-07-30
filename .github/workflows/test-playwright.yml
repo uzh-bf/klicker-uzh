@@ -5,18 +5,6 @@ on:
   pull_request:
     branches: ['v3', 'v3*']
     types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - apps/**
-      - packages/**
-      - playwright/**
-      - .github/workflows/playwright-testing.yml
-      - .github/scripts/wait-for-services.sh
-      - package.json
-      - pnpm-lock.yaml
-      - playwright/package.json
-      - util/_create_hatchet_token_cypress.sh
-      - util/_with_local_test_origins.sh
-      - util/_run_with_infisical.sh
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -26,16 +14,31 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
+  filter:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Check for changes
+        id: check
+        uses: ./.github/actions/changed-paths
+        with:
+          pattern: '^(apps/|packages/|playwright/|\.github/workflows/test-playwright\.yml|\.github/actions/changed-paths/|\.github/scripts/wait-for-services\.sh|package\.json|pnpm-lock\.yaml|util/_create_hatchet_token_cypress\.sh|util/_with_local_test_origins\.sh|util/_run_with_infisical\.sh)'
+
   build-and-compile:
+    needs: filter
+    if: needs.filter.outputs.should_run == 'true'
     runs-on: ubuntu-24.04
     steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
       - name: Define node version
         uses: actions/setup-node@v4
         with:
-          node-version: 24
-
-      - name: Check out repository code
-        uses: actions/checkout@v4
+          node-version-file: package.json
 
       - uses: pnpm/action-setup@v4
         with:
@@ -131,8 +134,9 @@ jobs:
             packages/util/dist
           retention-days: 1
 
-  playwright-run:
-    needs: build-and-compile
+  test-playwright:
+    needs: [filter, build-and-compile]
+    if: needs.filter.outputs.should_run == 'true'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v1.58.2-noble
@@ -140,8 +144,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shardIndex: [1, 2, 3, 4, 5]
-        shardTotal: [5]
+        shardIndex: [1, 2, 3, 4, 5, 6, 7, 8]
+        shardTotal: [8]
     services:
       postgres:
         image: postgres:15
@@ -220,13 +224,13 @@ jobs:
     steps:
       - run: echo "Running Playwright tests (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})"
 
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
       - name: Define node version
         uses: actions/setup-node@v4
         with:
-          node-version: 24
-
-      - name: Check out repository code
-        uses: actions/checkout@v4
+          node-version-file: package.json
 
       - uses: pnpm/action-setup@v4
         with:
@@ -283,7 +287,7 @@ jobs:
         timeout-minutes: 120
         run: |
           chmod +x .github/scripts/wait-for-services.sh
-          TEST_FILES=$(node .github/scripts/get-shard-files.js ${{ matrix.shardIndex }})
+          TEST_FILES=$(node .github/scripts/get-shard-files.js ${{ matrix.shardIndex }} ${{ matrix.shardTotal }})
           echo "Running tests for shard ${{ matrix.shardIndex }}: $TEST_FILES"
           .github/scripts/wait-for-services.sh -- \
             env NODE_ENV=test \
@@ -345,3 +349,25 @@ jobs:
             service.log
           if-no-files-found: ignore
           retention-days: 1
+
+  # Always reports a status even when the tests are skipped by the path filter,
+  # so this job can be used as a required check in branch protection.
+  test-playwright-status:
+    needs: [filter, test-playwright]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check result
+        run: |
+          if [ "${{ needs.filter.result }}" != "success" ]; then
+            echo "Filter job failed: ${{ needs.filter.result }}"
+            exit 1
+          fi
+          if [ "${{ needs.filter.outputs.should_run }}" != "true" ]; then
+            echo "Tests skipped by path filter."
+            exit 0
+          fi
+          if [ "${{ needs.test-playwright.result }}" != "success" ]; then
+            echo "test-playwright result: ${{ needs.test-playwright.result }}"
+            exit 1
+          fi

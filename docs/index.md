@@ -34,6 +34,7 @@ Task-shaped procedures live in [.agents/skills/](../.agents/skills/); the wiki h
 - Reconciling adaptive-learning reviews, prototypes, and partial implementations into a production plan → `pa-adaptive-feature-planning`
 - GraphQL endpoint work (schema, service, ops, auth) → `klicker-graphql-api`
 - Prisma schema, migrations, seeds → `klicker-data-model`
+- Safe production database scripting and migrations → `df-safe-database-scripting`
 - UI in manage/pwa/control/auth → `klicker-frontend-ui`
 - Choosing test level + pre-PR verification → `klicker-testing-verification`
 - New e2e specs → `klicker-playwright-e2e` (primary suite); legacy Cypress maintenance only → `klicker-cypress-e2e`

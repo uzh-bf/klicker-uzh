@@ -46,8 +46,11 @@
     "seed:prod:achievements": "ENV=production ../../util/_run_with_infisical.sh --env prd tsx src/data/seedAchievements.ts",
     "seed:prod:flashcards": "ENV=development ../../util/_run_with_infisical.sh --env prd tsx src/data/seedFlashcards.ts",
     "seed:prod:repetitionPool": "ENV=development ../../util/_run_with_infisical.sh --env prd tsx src/data/seedRepetitionPool.ts",
+    "seed:prod:summerschool": "ENV=production ../../util/_run_with_infisical.sh --env prd tsx src/data/seedSummerSchool2026.ts",
     "seed:qa": "ENV=development ../../util/_run_with_infisical.sh --env stg tsx src/data/seedTEST.ts",
     "seed:raw": "ENV=development run-s --npm-path pnpm seed:test",
+    "seed:raw:summerschool": "tsx src/data/seedSummerSchool2026.ts",
+    "seed:summerschool": "ENV=development ../../util/_run_with_infisical.sh --env dev tsx src/data/seedSummerSchool2026.ts",
     "seed:test": "ENV=development tsx src/data/seedTEST.ts"
   },
   "engines": {

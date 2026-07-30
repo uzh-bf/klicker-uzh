@@ -2,8 +2,9 @@ const fs = require('fs')
 const path = require('path')
 
 const shardIndex = parseInt(process.argv[2], 10)
-if (isNaN(shardIndex) || shardIndex < 1 || shardIndex > 5) {
-  console.error('Invalid shard index. Must be between 1 and 5.')
+const numShards = parseInt(process.argv[3], 10) || 5
+if (isNaN(shardIndex) || shardIndex < 1 || shardIndex > numShards) {
+  console.error(`Invalid shard index. Must be between 1 and ${numShards}.`)
   process.exit(1)
 }
 
@@ -42,8 +43,7 @@ const filesWithDuration = allFiles.map((file) => {
 // Sort files by duration descending for the greedy bin-packing algorithm
 filesWithDuration.sort((a, b) => b.duration - a.duration)
 
-// Initialize 5 shards
-const numShards = 5
+// Initialize shards
 const shards = Array.from({ length: numShards }, () => ({
   files: [],
   totalDuration: 0,

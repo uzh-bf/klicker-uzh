@@ -67,3 +67,11 @@ playwright/test-results/
 
 # Generated adaptive-learning simulation evidence (the concise summary is tracked).
 packages/adaptive-learning/reports/simulation-report.json
+
+# One-off course data pulls (contain real participant data — never commit)
+packages/prisma-data/summerschool_*
+packages/prisma-data/src/data/summerschool_*
+
+# Internal PM/business artifacts — public repo, keep local only (roadmap,
+# backlog/ClickUp dumps, triage records, product strategy/vision briefs)
+project/_local/

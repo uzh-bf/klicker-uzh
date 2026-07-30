@@ -3,21 +3,30 @@ name: Test graphql package logic functionalities
 on:
   push:
     branches: ['v3', 'v3*']
-    paths:
-      - 'packages/graphql/**'
-      - '.github/workflows/test-graphql.yml'
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - 'packages/graphql/**'
-      - '.github/workflows/test-graphql.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
-  test:
+  filter:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Check for changes
+        id: check
+        uses: ./.github/actions/changed-paths
+        with:
+          pattern: '^(packages/graphql/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|apps/hatchet-worker-general/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/)'
+
+  test-graphql:
+    needs: filter
+    if: needs.filter.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -111,6 +120,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Define node version
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
 
       - uses: pnpm/action-setup@v4
         with:
@@ -224,3 +238,25 @@ jobs:
           APP_ORIGIN_CONTROL: http://control.klicker.com
           APP_ORIGIN_ASSESSMENT_API: http://assessment-api.klicker.com
           APP_ORIGIN_ASSESSMENT_PWA: http://assessment.klicker.com
+
+  # Always reports a status even when the tests are skipped by the path filter,
+  # so this job can be used as a required check in branch protection.
+  test-graphql-status:
+    needs: [filter, test-graphql]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check result
+        run: |
+          if [ "${{ needs.filter.result }}" != "success" ]; then
+            echo "Filter job failed: ${{ needs.filter.result }}"
+            exit 1
+          fi
+          if [ "${{ needs.filter.outputs.should_run }}" != "true" ]; then
+            echo "Tests skipped by path filter."
+            exit 0
+          fi
+          if [ "${{ needs.test-graphql.result }}" != "success" ]; then
+            echo "test-graphql result: ${{ needs.test-graphql.result }}"
+            exit 1
+          fi

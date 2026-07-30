@@ -5,7 +5,8 @@ services:
     ports: !reset []
     networks:
       devnet:
-        aliases: [klicker-db]
+        aliases:
+          - '${WORKSPACE:-klicker-uzh}-db'
 
   mailhog:
     ports: !reset []
@@ -25,12 +26,22 @@ services:
       - 'response-api.klicker.localhost:host-gateway'
       - 'lti.klicker.localhost:host-gateway'
       - 'chat.klicker.localhost:host-gateway'
+      - 'api.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
+      - 'auth.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
+      - 'pwa.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
+      - 'manage.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
+      - 'control.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
+      - 'olat-api.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
+      - 'response-api.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
+      - 'lti.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
+      - 'chat.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
     networks:
       devnet:
-        aliases: [klicker-app]
+        aliases:
+          - '${WORKSPACE:-klicker-uzh}-app'
     volumes:
-      # Local mkcert root CA (created by `dev tls install`) for server-side TLS trust.
-      - '${DEVROUTER_MKCERT_CAROOT:-${HOME}/Library/Application Support/mkcert}/rootCA.pem:/etc/devrouter/mkcert-rootCA.pem:ro'
+      # Local mkcert root CA (prepared by initializeCommand on host) for server-side TLS trust.
+      - '${DEVROUTER_MKCERT_CAROOT:-./certs}/rootCA.pem:/etc/devrouter/mkcert-rootCA.pem:ro'
 
   litellm:
     ports: !reset []

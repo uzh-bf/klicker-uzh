@@ -1,0 +1,74 @@
+// ----- ANSWER COLLECTIONS -----
+// #region
+
+model AnswerCollection {
+  id         Int  @id @default(autoincrement())
+  originalId Int? // id of the original answer collection after import (copy)
+
+  name        String
+  description String
+  version     Int     @default(1)
+  isDeleted   Boolean @default(false)
+
+  // link to the join table including all catalog assignments
+  catalogAssignments CatalogCollectionAssignment[]
+
+  entries AnswerCollectionEntry[]
+
+  linkedElements Element[] // elements that use this answer collection
+
+  linkedTemplates ActivityTemplate[] @relation("TemplateAnswerCollectionUsages") // templates that contain elements using this answer collection
+
+  directPermissions Permission[]
+  permissions       DerivedPermission[]
+  accessRequests    AccessRequest[]
+  activityLog       ActivityLogEntry[]
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AnswerCollectionEntry {
+  id    Int    @id @default(autoincrement())
+  value String
+
+  collection   AnswerCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  collectionId Int
+
+  // elements where this entry is used as a sample solution -> deletion not allowed
+  itemUsages     Element[]          @relation("ElementAnswerCollectionUsedItems")
+  templateUsages ActivityTemplate[] @relation("TemplateAnswerCollectionUsedItems")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([collectionId, value])
+}
+
+// #endregion
+
+// ----- MEDIA LIBRARY -----
+// #region
+model MediaFile {
+  id String @id @default(uuid()) @db.Uuid
+
+  href        String  @unique
+  name        String
+  type        String
+  description String?
+
+  originalId String?
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([ownerId, originalId])
+}
+
+// #endregion

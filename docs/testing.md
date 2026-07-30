@@ -33,7 +33,7 @@ Both frameworks click the same `data-cy` attributes ([Frontend Conventions](./fr
 | Stack scripts | root `dev:test` / `start:test`                                     | `dev:playwright` / `start:playwright`                      |
 | Infisical env | `dev-cypress`                                                      | `dev-playwright`                                           |
 | Seed          | own `seedDatabase()` task in `cypress.config.ts`                   | own `seedDatabase()` in `global-setup.ts` (once, wipes DB) |
-| CI            | 8-way `cypress-split` (draft PRs) / Cypress Cloud (non-draft + v3) | official Playwright container, 5-way shard, all PRs        |
+| CI            | 8-way `cypress-split` (draft PRs) / Cypress Cloud (non-draft + v3) | official Playwright container, 8-way shard, all PRs        |
 
 The three seed paths (dev `seedTEST.ts`, Cypress, Playwright) are **independent** — a fixture added to one does not exist in the others ([Data & Migrations](./data-and-migrations.md)). `*:raw` script variants skip Infisical on both sides. `_run_app_dependencies.sh` with no args (or `local`/`dev`/`playwright`) applies the schema with `prisma:push` without forcing a reset; the `test`/`cypress` argument is the Cypress-specific **reset** path.
 
@@ -73,6 +73,6 @@ For authoring specifics, helper patterns, and failure triage, use the skills —
 
 ## CI matrix
 
-Path-filtered unit workflows: `test-adaptive-learning`, `test-grading`, `test-util` (package-only, no services), `test-graphql` (spins Postgres ×2 + hatchet-lite + Redis), `test-olat-api` (docker compose test stack). Cypress/Playwright trigger on broad `apps/**, packages/**` paths — they run on almost every code PR. Cypress CI signal quirk: the merge-group check can show a rising failed count while `cypress-run-cloud` is still in progress — wait for cloud completion before reading logs.
+Path-filtered unit workflows: `test-adaptive-learning`, `test-grading`, `test-util` (package-only, no services), `test-graphql` (spins Postgres ×2 + hatchet-lite + Redis), `test-olat-api` (docker compose test stack). Playwright tests use a path-scoped filter and compile once in a `build-and-compile` job before running the 8 shards. All path-skipped workflows report through `-status` gates to satisfy branch protection. Cypress CI signal quirk: the merge-group check can show a rising failed count while `cypress-run-cloud` is still in progress — wait for cloud completion before reading logs.
 
 **Git hooks run no tests** (pre-commit = `check:all`, pre-push = `build`). The expectation before a PR: `check:all` + build + targeted vitest for touched logic + browser evidence for UI changes; CI is the real e2e gate.

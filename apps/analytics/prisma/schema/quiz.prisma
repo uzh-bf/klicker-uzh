@@ -1,0 +1,471 @@
+enum PublicationStatus {
+  DRAFT // acitvity draft state - allows editing and deletion
+  SCHEDULED // activity scheduled state - preparation for automated publication
+  PUBLISHED // activity published state - available for participants
+  ENDED // activity ended state - no longer available for participants
+  GRADED // activity graded state - final state for graded manually activities
+  TEMPLATE // activity template state - activity is locked from being edited / executed, deletion allowed
+}
+
+enum ReviewStatus {
+  INCOMPLETE // review is not yet started
+  REVIEWED // review is completed
+  MODIFIED_AFTER_REVIEW // review is completed, but the activity was modified after the review
+}
+
+// ----- PRACTICE QUIZZES -----
+// #region
+enum ElementOrderType {
+  SEQUENTIAL
+  SPACED_REPETITION
+}
+
+model PracticeQuiz {
+  id String @id @default(uuid()) @db.Uuid
+
+  name             String
+  displayName      String
+  description      String?
+  pointsMultiplier Int               @default(1)
+  resetTimeDays    Int               @default(6)
+  orderType        ElementOrderType  @default(SPACED_REPETITION)
+  mode             PracticeQuizMode  @default(STANDARD)
+  status           PublicationStatus @default(DRAFT)
+
+  availableFrom              DateTime?
+  scheduledPublicationTaskId String? // task id of the scheduled hatchet task (to be removed on unpublishing)
+  reviewStatus               ReviewStatus @default(INCOMPLETE)
+
+  areInstancesOutdated  Boolean @default(false) // flag to indicate if the any instances in this practice quiz are outdated due to changes in the corresponding element
+  isGamificationEnabled Boolean @default(false)
+  isAssessmentEnabled   Boolean @default(false)
+  isDeleted             Boolean @default(false)
+
+  stacks ElementStack[]
+
+  adaptiveConfig   PracticeQuizAdaptiveConfig?
+  adaptiveAttempts AdaptivePracticeQuizAttempt[]
+
+  responses               QuestionResponse[]
+  responseDetails         QuestionResponseDetail[]
+  participantPerformances ParticipantActivityPerformance[]
+  performance             ActivityPerformance?
+  progress                ActivityProgress?
+
+  directPermissions  Permission[]
+  permissions        DerivedPermission[]
+  accessRequests     AccessRequest[]
+  catalogAssignments CatalogCollectionAssignment[]
+  activityLog        ActivityLogEntry[]
+
+  startedCount   Int @default(0) // >= completedCount (at least one answer given to quiz)
+  completedCount Int @default(0) // >= repeatedCount (every instance answered at least once)
+  repeatedCount  Int @default(0) // (every instance answered at least twice)
+
+  templateInfo ActivityTemplate?
+  templateName String? // name of the template the quiz was created from
+
+  owner    User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId  String @db.Uuid
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([id, courseId], map: "practice_quiz_id_course_key")
+}
+
+// #endregion
+
+// ----- LIVE QUIZZES -----
+// #region
+enum AccessMode {
+  PUBLIC
+  RESTRICTED
+}
+
+model LiveQuiz {
+  id String @id @default(uuid()) @db.Uuid
+
+  originalId                 String?
+  isLiveQAEnabled            Boolean @default(false)
+  isConfusionFeedbackEnabled Boolean @default(true)
+  isModerationEnabled        Boolean @default(true)
+  isGamificationEnabled      Boolean @default(false)
+  isAssessmentEnabled        Boolean @default(false)
+  isDeleted                  Boolean @default(false)
+
+  areInstancesOutdated Boolean @default(false) // flag to indicate if the any instances in this live quiz are outdated due to changes in the corresponding element
+
+  availableFrom              DateTime?
+  scheduledPublicationTaskId String? // task id of the scheduled hatchet task (to be removed on unpublishing)
+
+  namespace            String    @default(uuid()) @db.Uuid
+  pinCode              String?   @unique
+  name                 String
+  displayName          String
+  description          String?
+  startedAt            DateTime?
+  finishedAt           DateTime?
+  pointsMultiplier     Int       @default(1)
+  defaultPoints        Int       @default(10)
+  defaultCorrectPoints Int       @default(5)
+  maxBonusPoints       Int       @default(45)
+  timeToZeroBonus      Int       @default(20)
+
+  accessMode   AccessMode        @default(PUBLIC)
+  status       PublicationStatus @default(DRAFT)
+  reviewStatus ReviewStatus      @default(INCOMPLETE)
+
+  activeBlock   ElementBlock? @relation(name: "ActiveElementBlock", fields: [activeBlockId], references: [id])
+  activeBlockId Int?
+
+  blocks               ElementBlock[]
+  leaderboard          LeaderboardEntry[]
+  temporaryLeaderboard TemporaryLeaderboardEntry[]
+
+  feedbacks          Feedback[]
+  confusionFeedbacks ConfusionTimestep[]
+
+  directPermissions  Permission[]
+  permissions        DerivedPermission[]
+  accessRequests     AccessRequest[]
+  catalogAssignments CatalogCollectionAssignment[]
+  activityLog        ActivityLogEntry[]
+
+  corrections PointCorrection[]
+
+  templateInfo ActivityTemplate?
+  templateName String? // name of the template the quiz was created from
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  courseId String? @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// #endregion
+
+// ----- MICROLEARNING -----
+// #region
+model MicroLearning {
+  id String @id @default(uuid()) @db.Uuid
+
+  name             String
+  displayName      String
+  pointsMultiplier Int               @default(1)
+  description      String?
+  status           PublicationStatus @default(DRAFT)
+  reviewStatus     ReviewStatus      @default(INCOMPLETE)
+
+  scheduledStartAt           DateTime
+  scheduledEndAt             DateTime
+  scheduledPublicationTaskId String? // task id of the scheduled hatchet task (to be removed on unpublishing)
+  scheduledCompletionTaskId  String? // task id of the scheduled hatchet task (to be removed on unpublishing)
+
+  arePushNotificationsSent Boolean @default(false)
+  isGamificationEnabled    Boolean @default(false)
+  isAssessmentEnabled      Boolean @default(false)
+  isDeleted                Boolean @default(false)
+
+  areInstancesOutdated Boolean @default(false) // flag to indicate if the any instances in this microlearning are outdated due to changes in the corresponding element
+
+  stacks ElementStack[]
+
+  responses               QuestionResponse[]
+  responseDetails         QuestionResponseDetail[]
+  participantPerformances ParticipantActivityPerformance[]
+  performance             ActivityPerformance?
+  progress                ActivityProgress?
+
+  directPermissions  Permission[]
+  permissions        DerivedPermission[]
+  accessRequests     AccessRequest[]
+  catalogAssignments CatalogCollectionAssignment[]
+  activityLog        ActivityLogEntry[]
+
+  startedCount   Int @default(0) // >= completedCount (at least one answer given to quiz)
+  completedCount Int @default(0) // (every instance answered at least once)
+
+  templateInfo ActivityTemplate?
+  templateName String? // name of the template the microlearning was created from
+
+  owner    User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId  String @db.Uuid
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// #endregion
+
+// ----- GROUP ACTIVITIES -----
+// #region
+enum ParameterType {
+  NUMBER
+  STRING
+}
+
+model GroupActivityParameter {
+  id Int @id @default(autoincrement())
+
+  name        String
+  displayName String
+
+  type    ParameterType
+  options String[]
+  unit    String?
+
+  groupActivity   GroupActivity @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupActivityId String        @db.Uuid
+
+  @@unique([groupActivityId, name])
+}
+
+model GroupActivityClue {
+  id Int @id @default(autoincrement())
+
+  name        String
+  displayName String
+
+  type  ParameterType
+  value String
+  unit  String?
+
+  groupActivity   GroupActivity @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupActivityId String        @db.Uuid
+
+  @@unique([groupActivityId, name])
+}
+
+model GroupActivityClueInstance {
+  id Int @id @default(autoincrement())
+
+  name        String
+  displayName String
+
+  type  ParameterType
+  value String
+  unit  String?
+
+  assignments             GroupActivityClueAssignment[]
+  groupActivityInstance   GroupActivityInstance         @relation(fields: [groupActivityInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupActivityInstanceId Int
+
+  @@unique([groupActivityInstanceId, name])
+}
+
+model GroupActivity {
+  id String @id @default(uuid()) @db.Uuid
+
+  name         String
+  displayName  String
+  description  String?
+  status       PublicationStatus @default(DRAFT)
+  reviewStatus ReviewStatus      @default(INCOMPLETE)
+
+  pointsMultiplier Int @default(1)
+
+  scheduledStartAt           DateTime
+  scheduledEndAt             DateTime
+  scheduledPublicationTaskId String? // task id of the scheduled hatchet task (to be removed on unpublishing)
+  scheduledCompletionTaskId  String? // task id of the scheduled hatchet task (to be removed on unpublishing)
+
+  areInstancesOutdated  Boolean @default(false) // flag to indicate if the any instances in this group activity are outdated due to changes in the corresponding element
+  isGamificationEnabled Boolean @default(false)
+  isAssessmentEnabled   Boolean @default(false)
+  isDeleted             Boolean @default(false)
+
+  stacks ElementStack[]
+
+  parameters        GroupActivityParameter[]
+  clues             GroupActivityClue[]
+  activityInstances GroupActivityInstance[]
+
+  directPermissions  Permission[]
+  permissions        DerivedPermission[]
+  accessRequests     AccessRequest[]
+  catalogAssignments CatalogCollectionAssignment[]
+  activityLog        ActivityLogEntry[]
+
+  templateInfo ActivityTemplate? // template information set for the corresponding publication status
+  templateName String? // name of the template the group activity was created from
+
+  owner    User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId  String @db.Uuid
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model GroupActivityClueAssignment {
+  id Int @id @default(autoincrement())
+
+  groupActivityClueInstance   GroupActivityClueInstance @relation(fields: [groupActivityClueInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupActivityClueInstanceId Int
+  groupActivityInstance       GroupActivityInstance     @relation(fields: [groupActivityInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupActivityInstanceId     Int
+  participant                 Participant               @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId               String                    @db.Uuid
+}
+
+model GroupActivityInstance {
+  id Int @id @default(autoincrement())
+
+  clues                  GroupActivityClueInstance[]
+  clueInstanceAssignment GroupActivityClueAssignment[]
+
+  /// [PrismaGroupActivityDecisions]
+  decisions            Json?
+  decisionsSubmittedAt DateTime?
+  /// [PrismaGroupActivityResults]
+  results              Json?
+  resultsComputedAt    DateTime?
+
+  groupActivity   GroupActivity @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupActivityId String        @db.Uuid
+
+  group   ParticipantGroup @relation(fields: [groupId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupId String           @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([groupActivityId, groupId])
+}
+
+// #endregion
+
+// ----- LIVE Q&A -----
+// #region
+model Feedback {
+  id Int @id @default(autoincrement())
+
+  isPublished Boolean @default(false)
+  isPinned    Boolean @default(false)
+  isResolved  Boolean @default(false)
+
+  content String
+  votes   Int    @default(0)
+
+  responses FeedbackResponse[]
+
+  resolvedAt DateTime?
+
+  liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  liveQuizId String?   @db.Uuid
+
+  participant   Participant? @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String?      @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FeedbackResponse {
+  id Int @id @default(autoincrement())
+
+  content           String
+  positiveReactions Int    @default(0)
+  negativeReactions Int    @default(0)
+
+  feedback   Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  feedbackId Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ConfusionTimestep {
+  id Int @id @default(autoincrement())
+
+  difficulty Int
+  speed      Int
+
+  liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  liveQuizId String?   @db.Uuid
+
+  createdAt DateTime @default(now())
+}
+
+// #endregion
+
+// ----- USER ACTIVITIES VIEW -----
+// #region
+/// A unified view of all user activities across different activity types
+/// This view combines data from LiveQuiz, PracticeQuiz, MicroLearning, and GroupActivity
+/// along with permission and course information for efficient querying and sorting
+view UserActivities {
+  // core activity fields
+  id           String            @db.Uuid
+  type         String // 'LIVE_QUIZ', 'PRACTICE_QUIZ', 'MICRO_LEARNING', 'GROUP_ACTIVITY'
+  typeOrder    Int // custom order for sorting by activity type (in order as listed above)
+  name         String
+  displayName  String
+  description  String?
+  status       PublicationStatus
+  reviewStatus ReviewStatus
+  isDeleted    Boolean
+
+  // activity flags
+  areInstancesOutdated  Boolean
+  isGamificationEnabled Boolean
+  isAssessmentEnabled   Boolean
+  pointsMultiplier      Int
+  pinCode               String?
+
+  // template information
+  templateId   String?
+  templateName String?
+
+  // timestamps
+  createdAt DateTime
+  updatedAt DateTime
+
+  // type-specific scheduling fields
+  availableFrom    DateTime? // practice quiz / live quiz only (scheduled publication date)
+  scheduledStartAt DateTime? // micro learning and group activity
+  scheduledEndAt   DateTime? // micro learning and group activity
+
+  // course information
+  courseId        String?   @db.Uuid
+  courseName      String?
+  courseLanguage  Locale?
+  courseStartDate DateTime?
+
+  // group activity specific
+  groupDeadlineDate      DateTime? // group activity only via course
+  numOfParticipantGroups Int? // group activity only
+
+  // content metrics
+  numOfStacks   Int
+  numOfElements Int
+
+  // user permission information on activity
+  userId          String          @db.Uuid
+  permissionLevel PermissionLevel
+  derived         Boolean
+
+  // permission information for potential direct permission linked to derived permission
+  directPermissionUserGroupId Int?
+
+  // owner information
+  ownerId String @db.Uuid
+
+  // permission counts for numSharedUsers and isActivityReviewer calculation
+  numActivityPermissions Int // total permissions on this activity
+  isUserCourseAdmin      Boolean // true if user has admin/owner permissions on the course (false if no course or no permissions)
+
+  @@unique([id, userId])
+}
+
+// #endregion
