@@ -51,9 +51,9 @@ services:
     networks: [default]
 
   # --- local Azure Blob Storage emulator for browser uploads ---
-  # The custom key is deterministic, low-entropy, and local-only. It is not a
-  # cloud credential. Path-style URLs let one workspace-safe devrouter host
-  # serve the account without per-account DNS.
+  # The custom key decodes to the literal "test". It is deterministic,
+  # low-entropy, and local-only, not a cloud credential. Path-style URLs let
+  # one workspace-safe devrouter host serve the account without per-account DNS.
   azurite:
     image: mcr.microsoft.com/azure-storage/azurite:3.36.0
     command:
@@ -67,7 +67,7 @@ services:
       - --disableProductStyleUrl
       - --disableTelemetry
     environment:
-      AZURITE_ACCOUNTS: 'klickerdev:bG9jYWwtZGV2LW9ubHk='
+      AZURITE_ACCOUNTS: 'klickerdev:dGVzdA=='
     healthcheck:
       test: ['CMD-SHELL', 'nc -z 127.0.0.1 10000']
       interval: 2s
@@ -152,7 +152,7 @@ services:
     environment:
       - WORKSPACE=${WORKSPACE:-}
       - BLOB_STORAGE_ACCOUNT_NAME=klickerdev
-      - BLOB_STORAGE_ACCESS_KEY=bG9jYWwtZGV2LW9ubHk=
+      - BLOB_STORAGE_ACCESS_KEY=dGVzdA==
       - BLOB_STORAGE_ACCOUNT_URL=http://localhost:10000/klickerdev
       - BLOB_STORAGE_INTERNAL_ACCOUNT_URL=http://azurite:10000/klickerdev
     extra_hosts:
