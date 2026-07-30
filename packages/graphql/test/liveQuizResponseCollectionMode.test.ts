@@ -18,6 +18,7 @@ import {
   enableGamification,
   updateCourseSettings,
 } from '../src/services/courses.js'
+import { reconcileLiveQuizPublications } from '../src/services/liveQuizPublication.js'
 import {
   handlePublishScheduledLiveQuiz,
   manipulateLiveQuiz,
@@ -84,26 +85,19 @@ describe('Live quiz response collection mode', () => {
   } = {}) {
     const metadata: Record<string, string> = {}
     const redis = {
-      pipeline() {
-        return {
-          hmset(_key: string, values: Record<string, unknown>) {
-            Object.assign(
-              metadata,
-              Object.fromEntries(
-                Object.entries(values).map(([key, value]) => [
-                  key,
-                  String(value),
-                ])
-              )
-            )
-            return this
-          },
-          async exec() {
-            await onExec?.()
-            if (execError) throw execError
-            return []
-          },
-        }
+      async hset(
+        _key: string,
+        values: Record<string, string | number | boolean>
+      ) {
+        Object.assign(
+          metadata,
+          Object.fromEntries(
+            Object.entries(values).map(([key, value]) => [key, String(value)])
+          )
+        )
+        await onExec?.()
+        if (execError) throw execError
+        return 1
       },
     }
 
@@ -987,6 +981,7 @@ describe('Live quiz response collection mode', () => {
     })
     expect(stored.status).toBe(PublicationStatus.PUBLISHED)
     expect(stored.scheduledPublicationTaskId).toBeNull()
+    expect(stored.publicationMetadataMaterializedAt).not.toBeNull()
     expect(materializedAfterCommit).toBe(true)
 
     expect(metadata).toMatchObject({
@@ -1019,6 +1014,7 @@ describe('Live quiz response collection mode', () => {
     })
     expect(published.status).toBe(PublicationStatus.PUBLISHED)
     expect(published.startedAt).not.toBeNull()
+    expect(published.publicationMetadataMaterializedAt).toBeNull()
 
     const { metadata, redis } = createMetadataRedis()
     await expect(
@@ -1034,6 +1030,154 @@ describe('Live quiz response collection mode', () => {
       startedAt: String(Number(published.startedAt)),
       isGamificationEnabled: String(published.isGamificationEnabled),
       isAssessmentEnabled: String(published.isAssessmentEnabled),
+    })
+    await expect(
+      prisma.liveQuiz.findUniqueOrThrow({ where: { id: liveQuiz.id } })
+    ).resolves.toMatchObject({
+      publicationMetadataMaterializedAt: expect.any(Date),
+    })
+  })
+
+  it('retains and eventually deletes a scheduled task after Redis recovers', async () => {
+    const liveQuiz = await seedLiveQuiz(
+      {
+        elements: [],
+        status: PublicationStatus.SCHEDULED,
+      },
+      userOneCtx
+    )
+    const scheduledPublicationTaskId = '33333333-3333-4333-8333-333333333333'
+    await prisma.liveQuiz.update({
+      where: { id: liveQuiz.id },
+      data: {
+        availableFrom: new Date(Date.now() + 60_000),
+        scheduledPublicationTaskId,
+      },
+    })
+    const failedRedis = createMetadataRedis({
+      execError: new Error('Redis unavailable'),
+    }).redis
+    const deletedTasks: string[] = []
+    const ctx = {
+      ...userOneCtx,
+      hatchet: {
+        scheduled: {
+          delete: async (taskId: string) => {
+            deletedTasks.push(taskId)
+          },
+        },
+      },
+    } as any
+
+    await expect(
+      startLiveQuiz(
+        { id: liveQuiz.id },
+        {
+          ...ctx,
+          redisExec: failedRedis,
+          redisAssessmentExec: failedRedis,
+        }
+      )
+    ).rejects.toThrow('Redis unavailable')
+    await expect(
+      prisma.liveQuiz.findUniqueOrThrow({ where: { id: liveQuiz.id } })
+    ).resolves.toMatchObject({
+      scheduledPublicationTaskId,
+      publicationMetadataMaterializedAt: null,
+    })
+    expect(deletedTasks).toEqual([])
+
+    const redis = createMetadataRedis().redis
+    await startLiveQuiz(
+      { id: liveQuiz.id },
+      { ...ctx, redisExec: redis, redisAssessmentExec: redis }
+    )
+
+    expect(deletedTasks).toEqual([scheduledPublicationTaskId])
+    await expect(
+      prisma.liveQuiz.findUniqueOrThrow({ where: { id: liveQuiz.id } })
+    ).resolves.toMatchObject({
+      scheduledPublicationTaskId: null,
+      publicationMetadataMaterializedAt: expect.any(Date),
+    })
+  })
+
+  it('repairs a published quiz without a persisted start timestamp', async () => {
+    const liveQuiz = await seedLiveQuiz(
+      { elements: [], status: PublicationStatus.DRAFT },
+      userOneCtx
+    )
+    await prisma.liveQuiz.update({
+      where: { id: liveQuiz.id },
+      data: {
+        status: PublicationStatus.PUBLISHED,
+        startedAt: null,
+        publicationMetadataMaterializedAt: null,
+      },
+    })
+    const { metadata, redis } = createMetadataRedis()
+
+    await startLiveQuiz({ id: liveQuiz.id }, {
+      ...userOneCtx,
+      redisExec: redis,
+      redisAssessmentExec: redis,
+    } as any)
+
+    const repaired = await prisma.liveQuiz.findUniqueOrThrow({
+      where: { id: liveQuiz.id },
+    })
+    expect(repaired.startedAt).not.toBeNull()
+    expect(repaired.publicationMetadataMaterializedAt).not.toBeNull()
+    expect(metadata.startedAt).toBe(String(Number(repaired.startedAt)))
+  })
+
+  it('durably reconciles publication metadata after Redis recovery', async () => {
+    const liveQuiz = await seedLiveQuiz(
+      { elements: [], status: PublicationStatus.DRAFT },
+      userOneCtx
+    )
+    const startedAt = new Date()
+    await prisma.liveQuiz.update({
+      where: { id: liveQuiz.id },
+      data: {
+        status: PublicationStatus.PUBLISHED,
+        startedAt,
+        publicationMetadataMaterializedAt: null,
+      },
+    })
+    const failedRedis = createMetadataRedis({
+      execError: new Error('Redis unavailable'),
+    }).redis
+
+    await expect(
+      reconcileLiveQuizPublications({
+        prisma,
+        redisExec: failedRedis,
+        redisAssessmentExec: failedRedis,
+        deleteScheduledTask: async () => {},
+      })
+    ).rejects.toThrow('Failed to reconcile 1 live quiz publication')
+    await expect(
+      prisma.liveQuiz.findUniqueOrThrow({ where: { id: liveQuiz.id } })
+    ).resolves.toMatchObject({
+      publicationMetadataMaterializedAt: null,
+    })
+
+    const { metadata, redis } = createMetadataRedis()
+    await expect(
+      reconcileLiveQuizPublications({
+        prisma,
+        redisExec: redis,
+        redisAssessmentExec: redis,
+        deleteScheduledTask: async () => {},
+      })
+    ).resolves.toBe(1)
+
+    expect(metadata.startedAt).toBe(String(Number(startedAt)))
+    await expect(
+      prisma.liveQuiz.findUniqueOrThrow({ where: { id: liveQuiz.id } })
+    ).resolves.toMatchObject({
+      publicationMetadataMaterializedAt: expect.any(Date),
     })
   })
 })

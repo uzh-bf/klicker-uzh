@@ -274,6 +274,20 @@ export function prepareHatchetTasks({
     },
   })
 
+  const reconcileLiveQuizPublications = hatchet.task({
+    name: 'reconcile-live-quiz-publications',
+    retries: 3,
+    onCrons: ['* * * * *'],
+    fn: async (_, executionContext) => {
+      const success = await handlers.handleReconcileLiveQuizPublications(
+        {},
+        globalContext,
+        executionContext
+      )
+      return { success }
+    },
+  })
+
   // ? temporarily paused workflow, since the functionality is currently not available and needs fixing
   const sendPushNotifications = hatchet.task({
     name: 'send-push-notifications',
@@ -293,6 +307,7 @@ export function prepareHatchetTasks({
     runningRandomGroupAssignments,
     finalRandomGroupAssignments,
     updateWeeklyTimelineEntries,
+    reconcileLiveQuizPublications,
     sendPushNotifications,
     publishScheduledGroupActivity,
     publishScheduledLiveQuiz,

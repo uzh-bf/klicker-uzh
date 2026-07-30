@@ -34,7 +34,10 @@ import type { Context, ContextWithUser } from '../lib/context.js'
 import { computeRanks } from '../lib/util.js'
 import { getPermissionBooleans } from './activities.js'
 import {
+  deleteLiveQuizScheduledPublicationTask,
+  markLiveQuizPublicationMaterialized,
   materializeLiveQuizPublication,
+  reconcileLiveQuizPublications,
   transitionLiveQuizToPublished,
 } from './liveQuizPublication.js'
 import {
@@ -920,20 +923,21 @@ export async function startLiveQuiz(
       redisExec: ctx.redisExec,
       redisAssessmentExec: ctx.redisAssessmentExec,
     })
+    await markLiveQuizPublicationMaterialized({
+      prisma: ctx.prisma,
+      liveQuizId: publication.quiz.id,
+    })
+
+    if (publication.scheduledPublicationTaskId) {
+      await deleteLiveQuizScheduledPublicationTask({
+        prisma: ctx.prisma,
+        liveQuizId: publication.quiz.id,
+        scheduledPublicationTaskId: publication.scheduledPublicationTaskId,
+        deleteScheduledTask: (taskId) => ctx.hatchet.scheduled.delete(taskId),
+      })
+    }
 
     if (publication.didStart) {
-      if (publication.scheduledPublicationTaskId) {
-        try {
-          await ctx.hatchet.scheduled.delete(
-            publication.scheduledPublicationTaskId
-          )
-        } catch (error) {
-          console.error(
-            `Failed to delete scheduled task for live quiz ${id}:`,
-            error
-          )
-        }
-      }
       await sendTeamsNotification({
         scope: 'graphql/startLiveQuiz',
         text: `START Live quiz ${publication.quiz.name} with id ${publication.quiz.id}.`,
@@ -3258,6 +3262,11 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
         redisExec: globalCtx.redisExec,
         redisAssessmentExec: globalCtx.redisAssessmentExec,
       })
+      await markLiveQuizPublicationMaterialized({
+        prisma: globalCtx.prisma,
+        liveQuizId: publication.quiz.id,
+        clearScheduledPublicationTask: true,
+      })
 
       if (publication.didStart) {
         await sendTeamsNotification({
@@ -3281,6 +3290,18 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
       })
       throw error // rethrow to allow Hatchet to handle retries
     }
+  }
+
+export const handleReconcileLiveQuizPublications: HatchetHandlers['handleReconcileLiveQuizPublications'] =
+  async (_, globalCtx) => {
+    await reconcileLiveQuizPublications({
+      prisma: globalCtx.prisma,
+      redisExec: globalCtx.redisExec,
+      redisAssessmentExec: globalCtx.redisAssessmentExec,
+      deleteScheduledTask: (taskId) =>
+        globalCtx.hatchet.scheduled.delete(taskId),
+    })
+    return true
   }
 
 export const handleStandardLiveQuizBlockClosureAggregation: HatchetHandlers['handleStandardLiveQuizBlockClosureAggregation'] =
