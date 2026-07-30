@@ -1067,15 +1067,15 @@ the repository script that replaces it before continuing.
   stack rebased cleanly onto `f424f03a16`; the only resulting difference from
   the safety ref was the five-line upstream `AGENTS.md` change.
 - 2026-07-30: An initial 14-layer publication was rejected as over-sliced.
-  The same implementation was consolidated into five milestone PRs:
+  The same implementation was consolidated into four milestone PRs at
+  independently valid endpoints:
 
   | Milestone | Draft PR | Review scope |
   | --- | --- | --- |
   | 1 | [#5199](https://github.com/uzh-bf/klicker-uzh/pull/5199) | Analytics domains, incremental recomputation, privacy, and deterministic verification |
-  | 2 | [#5073](https://github.com/uzh-bf/klicker-uzh/pull/5073) | Indexed DAG, SQLAlchemy runtime, and course-scoped management API |
-  | 3 | [#5230](https://github.com/uzh-bf/klicker-uzh/pull/5230) | Read-only dry-run diagnostics, grading parity, query paths, and guarded index rollout |
-  | 4 | [#5231](https://github.com/uzh-bf/klicker-uzh/pull/5231) | Native Python Hatchet, consent and finalization convergence, and model ownership |
-  | 5 | [#5232](https://github.com/uzh-bf/klicker-uzh/pull/5232) | Generated artifacts and final runtime reconciliation with current `v3` |
+  | 2 | [#5073](https://github.com/uzh-bf/klicker-uzh/pull/5073) | Indexed SQLAlchemy runtime, course API, dry-run diagnostics, correctness guards, and native Python Hatchet |
+  | 3 | [#5230](https://github.com/uzh-bf/klicker-uzh/pull/5230) | Consent and finalization convergence, dry-run decomposition, and curated model ownership |
+  | 4 | [#5231](https://github.com/uzh-bf/klicker-uzh/pull/5231) | Generated artifacts and final runtime reconciliation with current `v3` |
 
 - 2026-07-30: Fresh stack-head Analytics verification passes Ruff format and
   lint across 138 files and 184 tests with 15 PostgreSQL-only skips. The
@@ -1084,7 +1084,7 @@ the repository script that replaces it before continuing.
   implementation tree. The fresh-worktree repository check ran before
   generated workspace artifacts existed, and the pre-push build later stopped
   on `ENOSPC`; both are recorded as warnings in the draft PR descriptions.
-- Active: Read the five draft PR checks to a terminal result, update stale
+- Active: Read the four draft PR checks to a terminal result, update stale
   descriptions if GitHub reports a different branch range, and stop without
   merging or deploying.
 
