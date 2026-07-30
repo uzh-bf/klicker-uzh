@@ -640,7 +640,8 @@ describe('live quiz reset summary', () => {
     await expect(
       resetLiveQuiz({ id: fixture.liveQuizId }, userTwoCtx)
     ).rejects.toMatchObject({
-      extensions: { code: 'LIVE_QUIZ_RESET_FORBIDDEN' },
+      message: 'LIVE_QUIZ_RESET_FORBIDDEN',
+      extensions: { code: 'FORBIDDEN' },
     })
     await expect(
       prisma.liveQuiz.findUniqueOrThrow({

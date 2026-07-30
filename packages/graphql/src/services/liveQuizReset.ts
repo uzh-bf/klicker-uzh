@@ -563,10 +563,7 @@ async function loadResettableQuiz({
     (quiz.isAssessmentEnabled && !assessmentAuthorized) ||
     (!quiz.isAssessmentEnabled && !regularAuthorized)
   ) {
-    throw resetError(
-      'LIVE_QUIZ_RESET_FORBIDDEN',
-      'Only an activity owner or administrator can reset this live quiz'
-    )
+    throw resetError('FORBIDDEN', 'LIVE_QUIZ_RESET_FORBIDDEN')
   }
   return quiz
 }
