@@ -58,6 +58,8 @@ model ParticipantAnalytics {
   updatedAt DateTime @updatedAt
 
   @@unique([type, courseId, participantId, timestamp])
+  // Course-centric API reads (dashboards) — the unique above is type-leading.
+  @@index([courseId, type, timestamp])
 }
 
 // All metrics are based on logged in participant activity only
@@ -84,6 +86,8 @@ model AggregatedAnalytics {
   updatedAt DateTime @updatedAt
 
   @@unique([type, courseId, timestamp])
+  // Course-centric API reads — the unique above is type-leading.
+  @@index([courseId, type, timestamp])
 }
 
 model CompetencyAnalytics {
