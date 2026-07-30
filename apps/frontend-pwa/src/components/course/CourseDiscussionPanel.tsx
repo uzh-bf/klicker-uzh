@@ -214,6 +214,7 @@ function CourseDiscussionPanel({
               mustPostAnonymously={mustPostAnonymously}
               idPrefix={idPrefix}
               onReplyCreated={refetchThreads}
+              onContentDeleted={refetchThreads}
             />
           ))
         )}

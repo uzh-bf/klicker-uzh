@@ -97,7 +97,10 @@ export async function courseDiscussionThreads(
   const hasMore = threads.length > pageSize
   const pageThreads = hasMore ? threads.slice(0, pageSize) : threads
 
-  const mappedThreads = await mapThreads(pageThreads, ctx)
+  const mappedThreads = await mapThreads(pageThreads, ctx, {
+    participantId,
+    isModerator: false,
+  })
 
   const nextCursor = hasMore
     ? String(pageThreads[pageThreads.length - 1]!.id)
@@ -173,7 +176,12 @@ export async function courseDiscussionOverview(
 
   const grouped = new Map<string, CourseDiscussionOverviewGroup>()
 
-  const mappedThreads = await mapThreads(pageThreads, ctx)
+  // The overview is only reachable with course WRITE access, so every thread it
+  // returns is moderatable.
+  const mappedThreads = await mapThreads(pageThreads, ctx, {
+    participantId,
+    isModerator: true,
+  })
 
   mappedThreads.forEach((thread) => {
     if (!thread.sourceKey || !thread.sourceLabel) return

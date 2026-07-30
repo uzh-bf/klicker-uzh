@@ -1,8 +1,10 @@
-import { useQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import { faThumbsUp } from '@fortawesome/free-regular-svg-icons'
-import { faChevronDown } from '@fortawesome/free-solid-svg-icons'
+import { faChevronDown, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  DeleteCourseDiscussionReplyDocument,
+  DeleteCourseDiscussionThreadDocument,
   DiscussionSort,
   GetCourseDiscussionOverviewDocument,
   type GetCourseDiscussionOverviewQuery,
@@ -12,10 +14,20 @@ import {
   getDiscussionScopeDisplayLabel,
   getDiscussionSourceDisplayLabel,
 } from '@klicker-uzh/shared-components/src/discussionUtils'
-import { Button, H3, UserNotification, toast } from '@uzh-bf/design-system'
+import {
+  Button,
+  H3,
+  Modal,
+  UserNotification,
+  toast,
+} from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import CourseDiscussionEmbedGenerator from './CourseDiscussionEmbedGenerator'
+
+type PendingDeletion =
+  | { type: 'thread'; id: number }
+  | { type: 'reply'; id: number }
 
 type OverviewGroup =
   GetCourseDiscussionOverviewQuery['courseDiscussionOverview']['groups'][number]
@@ -71,7 +83,12 @@ function CourseDiscussionOverview({
   const formatter = useFormatter()
   const [loadingMore, setLoadingMore] = useState(false)
   const [pagination, setPagination] = useState<OverviewPagination | null>(null)
+  const [pendingDeletion, setPendingDeletion] =
+    useState<PendingDeletion | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const loadingMoreRef = useRef(false)
+  const [deleteThread] = useMutation(DeleteCourseDiscussionThreadDocument)
+  const [deleteReply] = useMutation(DeleteCourseDiscussionReplyDocument)
 
   const {
     data: overviewData,
@@ -177,6 +194,45 @@ function CourseDiscussionOverview({
       })
     }
   }, [refetchOverview, t])
+
+  const handleConfirmDeletion = useCallback(async () => {
+    if (!pendingDeletion) return
+
+    setDeleting(true)
+
+    try {
+      const succeeded =
+        pendingDeletion.type === 'thread'
+          ? (
+              await deleteThread({
+                variables: { threadId: pendingDeletion.id },
+              })
+            ).data?.deleteCourseDiscussionThread
+          : (await deleteReply({ variables: { replyId: pendingDeletion.id } }))
+              .data?.deleteCourseDiscussionReply
+
+      if (!succeeded) {
+        toast({
+          type: 'error',
+          message:
+            pendingDeletion.type === 'thread'
+              ? t('pwa.courseQA.deleteThreadFailed')
+              : t('pwa.courseQA.deleteReplyFailed'),
+        })
+        return
+      }
+
+      setPendingDeletion(null)
+      await handleRefresh()
+    } catch {
+      toast({
+        type: 'error',
+        message: t('pwa.courseQA.deleteError'),
+      })
+    } finally {
+      setDeleting(false)
+    }
+  }, [pendingDeletion, deleteThread, deleteReply, handleRefresh, t])
 
   if (!isCourseQAEnabled) {
     return (
@@ -304,39 +360,87 @@ function CourseDiscussionOverview({
                         />
                       </summary>
 
-                      {thread.replies.length > 0 && (
+                      {(thread.replies.length > 0 || thread.canDelete) && (
                         <div className="border-t border-gray-100 bg-gray-50 px-3 py-2">
-                          <div className="divide-y divide-gray-200">
-                            {thread.replies.map((reply) => (
-                              <div
-                                key={reply.id}
-                                className="py-2 first:pt-1 last:pb-1"
-                                data-cy={`course-qa-overview-reply-${reply.id}`}
-                              >
-                                <div className="whitespace-pre-wrap break-words text-sm">
-                                  {reply.content}
-                                </div>
-                                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                                  <span>{formatDateTime(reply.createdAt)}</span>
-                                  <span
-                                    className="flex items-center gap-1"
-                                    aria-hidden="true"
-                                  >
-                                    <FontAwesomeIcon icon={faThumbsUp} />
-                                    {reply.upvotes}
-                                  </span>
-                                  <span className="sr-only">
-                                    {t(
-                                      'pwa.courseQA.replyUpvoteCountAriaLabel',
-                                      {
-                                        count: reply.upvotes,
-                                      }
+                          {thread.replies.length > 0 && (
+                            <div className="divide-y divide-gray-200">
+                              {thread.replies.map((reply) => (
+                                <div
+                                  key={reply.id}
+                                  className="py-2 first:pt-1 last:pb-1"
+                                  data-cy={`course-qa-overview-reply-${reply.id}`}
+                                >
+                                  <div className="whitespace-pre-wrap break-words text-sm">
+                                    {reply.content}
+                                  </div>
+                                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                                    <span>
+                                      {formatDateTime(reply.createdAt)}
+                                    </span>
+                                    <span
+                                      className="flex items-center gap-1"
+                                      aria-hidden="true"
+                                    >
+                                      <FontAwesomeIcon icon={faThumbsUp} />
+                                      {reply.upvotes}
+                                    </span>
+                                    <span className="sr-only">
+                                      {t(
+                                        'pwa.courseQA.replyUpvoteCountAriaLabel',
+                                        {
+                                          count: reply.upvotes,
+                                        }
+                                      )}
+                                    </span>
+                                    {reply.canDelete && (
+                                      <Button
+                                        onClick={() =>
+                                          setPendingDeletion({
+                                            type: 'reply',
+                                            id: reply.id,
+                                          })
+                                        }
+                                        className={{ root: 'h-6 text-red-600' }}
+                                        data={{
+                                          cy: `course-qa-overview-delete-reply-${reply.id}`,
+                                        }}
+                                        aria-label={t(
+                                          'pwa.courseQA.deleteReply'
+                                        )}
+                                      >
+                                        <Button.Icon
+                                          icon={faTrash}
+                                          className={{ root: 'h-3 w-3' }}
+                                        />
+                                      </Button>
                                     )}
-                                  </span>
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
-                          </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {thread.canDelete && (
+                            <div className="flex justify-end pt-2">
+                              <Button
+                                onClick={() =>
+                                  setPendingDeletion({
+                                    type: 'thread',
+                                    id: thread.id,
+                                  })
+                                }
+                                className={{ root: 'h-7 text-red-600' }}
+                                data={{
+                                  cy: `course-qa-overview-delete-thread-${thread.id}`,
+                                }}
+                              >
+                                <Button.Icon icon={faTrash} />
+                                <Button.Label>
+                                  {t('pwa.courseQA.deleteThread')}
+                                </Button.Label>
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       )}
                     </details>
@@ -374,6 +478,34 @@ function CourseDiscussionOverview({
         courseId={courseId}
         isCourseQAAnonymousEnabled={isCourseQAAnonymousEnabled}
       />
+
+      {pendingDeletion ? (
+        <Modal
+          open
+          hideCloseButton
+          onClose={() => setPendingDeletion(null)}
+          title={
+            pendingDeletion.type === 'thread'
+              ? t('pwa.courseQA.deleteThreadTitle')
+              : t('pwa.courseQA.deleteReplyTitle')
+          }
+          secondaryLabel={t('shared.generic.cancel')}
+          onSecondaryAction={() => setPendingDeletion(null)}
+          primaryLabel={t('pwa.courseQA.deleteConfirm')}
+          primaryButtonStyle="destructive"
+          primaryLoading={deleting}
+          onPrimaryAction={handleConfirmDeletion}
+          className={{ content: 'max-w-lg' }}
+          dataPrimaryAction={{ cy: 'course-qa-overview-confirm-deletion' }}
+          dataSecondaryAction={{ cy: 'course-qa-overview-cancel-deletion' }}
+        >
+          <p className="text-base">
+            {pendingDeletion.type === 'thread'
+              ? t('pwa.courseQA.deleteThreadMessage')
+              : t('pwa.courseQA.deleteReplyMessage')}
+          </p>
+        </Modal>
+      ) : null}
     </div>
   )
 }

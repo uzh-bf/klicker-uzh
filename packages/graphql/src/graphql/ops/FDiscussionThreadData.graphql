@@ -7,6 +7,7 @@ fragment DiscussionThreadData on DiscussionThread {
   isDeleted
   upvotes
   hasUpvoted
+  canDelete
   replyCount
   lastActivityAt
   sourceKey

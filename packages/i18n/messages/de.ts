@@ -966,6 +966,20 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       accessDenied:
         'Sie haben keinen Zugriff auf diese Kurs-Q&A-Ansicht oder der Link ist ungültig.',
       loadMore: 'Mehr laden',
+      deleteThread: 'Frage löschen',
+      deleteReply: 'Antwort löschen',
+      deleteThreadTitle: 'Diese Frage löschen?',
+      deleteReplyTitle: 'Diese Antwort löschen?',
+      deleteThreadMessage:
+        'Diese Frage und alle zugehörigen Antworten werden für alle entfernt. Diese Aktion kann nicht rückgängig gemacht werden.',
+      deleteReplyMessage:
+        'Diese Antwort wird für alle entfernt. Diese Aktion kann nicht rückgängig gemacht werden.',
+      deleteConfirm: 'Löschen',
+      deleteThreadFailed:
+        'Diese Frage konnte nicht gelöscht werden. Möglicherweise wurde sie bereits entfernt.',
+      deleteReplyFailed:
+        'Diese Antwort konnte nicht gelöscht werden. Möglicherweise wurde sie bereits entfernt.',
+      deleteError: 'Löschen fehlgeschlagen. Bitte versuchen Sie es erneut.',
     },
     profile: {
       publicProfile: 'Profilsichtbarkeit',

@@ -962,6 +962,20 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       accessDenied:
         'You do not have access to this Course Q&A view or the link is invalid.',
       loadMore: 'Load more',
+      deleteThread: 'Delete question',
+      deleteReply: 'Delete reply',
+      deleteThreadTitle: 'Delete this question?',
+      deleteReplyTitle: 'Delete this reply?',
+      deleteThreadMessage:
+        'This question and all of its replies will be removed for everyone. This action cannot be undone.',
+      deleteReplyMessage:
+        'This reply will be removed for everyone. This action cannot be undone.',
+      deleteConfirm: 'Delete',
+      deleteThreadFailed:
+        'Unable to delete this question. It may already have been removed.',
+      deleteReplyFailed:
+        'Unable to delete this reply. It may already have been removed.',
+      deleteError: 'Unable to delete. Please try again.',
     },
     profile: {
       publicProfile: 'Profile Visibility',

@@ -350,6 +350,86 @@ test.describe('Course Q&A course-level workflows', () => {
     ).toBeVisible()
   })
 
+  test('A second student can only delete their own thread', async ({
+    page,
+    loginStudentPassword,
+  }) => {
+    await loginStudentPassword(STUDENT_USERNAME2)
+    await page.getByTestId(`course-button-${courseName}`).click()
+
+    const otherThread = courseThread(page, COURSE_QA_DATA.threads.course1)
+    await expect(otherThread).toBeVisible()
+    await expect(
+      otherThread.getByTestId(/^course-qa-delete-thread-\d+$/)
+    ).toHaveCount(0)
+
+    const ownThread = courseThread(page, COURSE_QA_DATA.threads.course2)
+    const deleteOwn = ownThread.getByTestId(/^course-qa-delete-thread-\d+$/)
+    await expect(deleteOwn).toBeVisible()
+    await expect(deleteOwn).toHaveAttribute('aria-label', 'Delete question')
+
+    await deleteOwn.click()
+    await page.getByTestId('course-qa-cancel-deletion').click()
+    await expect(
+      page.getByText(COURSE_QA_DATA.threads.course2, { exact: true })
+    ).toBeVisible()
+
+    await deleteOwn.click()
+    await page.getByTestId('course-qa-confirm-deletion').click()
+    await expect(
+      page.getByText(COURSE_QA_DATA.threads.course2, { exact: true })
+    ).toHaveCount(0)
+  })
+
+  test('Student deletes their own reply and the counter follows', async ({
+    page,
+    loginStudent,
+  }) => {
+    await loginStudent()
+    await page.getByTestId(`course-button-${courseName}`).click()
+
+    const thread = courseThread(page, COURSE_QA_DATA.threads.course1)
+    await expect(thread).toContainText('1 reply')
+
+    const deleteReply = thread.getByTestId(/^course-qa-delete-reply-\d+$/)
+    await expect(deleteReply).toBeVisible()
+    await expect(deleteReply).toHaveAttribute('aria-label', 'Delete reply')
+
+    await deleteReply.click()
+    await page.getByTestId('course-qa-confirm-deletion').click()
+
+    await expect(
+      thread.getByText(COURSE_QA_DATA.threads.reply1, { exact: true })
+    ).toHaveCount(0)
+    await expect(thread).toContainText('0 replies')
+  })
+
+  test('Lecturer deletes a student thread from the overview', async ({
+    page,
+    loginLecturer,
+  }) => {
+    await loginLecturer()
+    await page.goto(`${manageUrl}/courses/${COURSE_ID_TEST}`)
+    await page.getByTestId('tab-discussions').click()
+
+    const thread = page
+      .getByTestId(/^course-qa-overview-thread-\d+$/)
+      .filter({ hasText: COURSE_QA_DATA.threads.course1 })
+    await expect(thread).toHaveCount(1)
+    await thread
+      .getByTestId(/^course-qa-overview-thread-toggle-\d+$/)
+      .press('Enter')
+    await expect(thread).toHaveAttribute('open', '')
+
+    await thread.getByTestId(/^course-qa-overview-delete-thread-\d+$/).click()
+    await page.getByTestId('course-qa-overview-confirm-deletion').click()
+
+    await expect(
+      page.getByText(COURSE_QA_DATA.threads.course1, { exact: true })
+    ).toHaveCount(0)
+    await expect(page.getByTestId('course-qa-overview-empty')).toBeVisible()
+  })
+
   test('Lecturer refreshes paginated discussions without losing a boundary thread', async ({
     page,
     loginLecturer,

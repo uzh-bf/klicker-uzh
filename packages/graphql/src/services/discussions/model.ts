@@ -16,6 +16,7 @@ import type {
   DiscussionReplyWithRelations,
   DiscussionSort,
   DiscussionThreadWithRelations,
+  DiscussionViewer,
 } from './types.js'
 
 export {
@@ -97,14 +98,32 @@ export function isPrismaUniqueConstraintError(error: unknown) {
   )
 }
 
+// Mirrors canDeleteDiscussionContent without its scope-prerequisite query: the
+// viewer already passed those checks to read this content. Only an affordance
+// hint — the delete mutations re-authorize on their own.
+function canViewerDelete(
+  authorParticipantId: string | null,
+  viewer?: DiscussionViewer | null
+) {
+  if (!viewer) return false
+  if (viewer.isModerator) return true
+
+  return (
+    viewer.participantId !== null &&
+    viewer.participantId === authorParticipantId
+  )
+}
+
 export function mapReply(
   reply: DiscussionReplyWithVotes,
   {
     spaceId,
     scopeId,
+    viewer,
   }: {
     spaceId: number
     scopeId: number
+    viewer?: DiscussionViewer | null
   }
 ): DiscussionReplyWithRelations {
   return {
@@ -112,11 +131,13 @@ export function mapReply(
     spaceId,
     scopeId,
     hasUpvoted: (reply.votes?.length ?? 0) > 0,
+    canDelete: canViewerDelete(reply.authorParticipantId, viewer),
   }
 }
 
 function mapThread(
   thread: DiscussionThreadWithRelationsBase,
+  viewer: DiscussionViewer | null | undefined,
   stack?: {
     type: DB.ElementStackType
     order: number
@@ -139,10 +160,12 @@ function mapThread(
     sourceKey,
     sourceLabel,
     hasUpvoted: (thread.votes?.length ?? 0) > 0,
+    canDelete: canViewerDelete(thread.authorParticipantId, viewer),
     replies: thread.replies.map((reply) =>
       mapReply(reply, {
         spaceId: space.id,
         scopeId: thread.scopeId,
+        viewer,
       })
     ),
   }
@@ -150,7 +173,8 @@ function mapThread(
 
 export async function mapThreads(
   threads: DiscussionThreadWithRelationsBase[],
-  ctx: Context
+  ctx: Context,
+  viewer?: DiscussionViewer | null
 ) {
   const stackIds = [
     ...new Set(
@@ -178,7 +202,7 @@ export async function mapThreads(
       ? stacksById.get(thread.scope.stackId)
       : undefined
 
-    return mapThread(thread, stack)
+    return mapThread(thread, viewer, stack)
   })
 }
 
@@ -238,6 +262,9 @@ export async function getDiscussionThreadById(
     return null
   }
 
-  const [mappedThread] = await mapThreads([thread], ctx)
+  const [mappedThread] = await mapThreads([thread], ctx, {
+    participantId: participantId ?? null,
+    isModerator: false,
+  })
   return mappedThread ?? null
 }

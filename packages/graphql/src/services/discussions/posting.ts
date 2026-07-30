@@ -502,6 +502,7 @@ export async function createCourseDiscussionReplyResult(
     reply: mapReply(response, {
       spaceId: thread.scope.spaceId,
       scopeId: thread.scopeId,
+      viewer: { participantId, isModerator: false },
     }),
     failureCode: null,
   }

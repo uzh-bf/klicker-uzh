@@ -365,6 +365,7 @@ export async function toggleCourseDiscussionReplyUpvote(
   return mapReply(reply, {
     spaceId: resolved.reply.thread.scope.spaceId,
     scopeId: resolved.reply.thread.scopeId,
+    viewer: { participantId, isModerator: false },
   })
 }
 

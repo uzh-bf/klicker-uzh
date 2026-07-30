@@ -8,6 +8,7 @@ fragment DiscussionReplyData on DiscussionReply {
   isDeleted
   upvotes
   hasUpvoted
+  canDelete
   createdAt
   updatedAt
 }

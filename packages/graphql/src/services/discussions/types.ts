@@ -67,10 +67,19 @@ export interface GenerateCourseDiscussionEmbeddingInfoArgs {
   expiresInHours?: number | null
 }
 
+// Identifies the requesting viewer so mapped threads and replies can advertise
+// whether to offer a delete affordance. Server-side authorization in
+// canDeleteDiscussionContent stays the real gate.
+export interface DiscussionViewer {
+  participantId: string | null
+  isModerator: boolean
+}
+
 export type DiscussionReplyWithRelations = DiscussionReplyWithVotes & {
   spaceId: number
   scopeId: number
   hasUpvoted?: boolean
+  canDelete?: boolean
 }
 
 export type DiscussionScopeWithPresentation = Omit<
@@ -93,6 +102,7 @@ export type DiscussionThreadWithRelations = Omit<
   sourceKey?: string
   sourceLabel?: string
   hasUpvoted?: boolean
+  canDelete?: boolean
 }
 
 export interface CourseDiscussionThreadPostResult {

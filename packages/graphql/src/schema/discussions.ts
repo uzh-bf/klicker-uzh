@@ -182,6 +182,7 @@ export interface IDiscussionReply extends DB.DiscussionReply {
   spaceId: number
   scopeId: number
   hasUpvoted?: boolean
+  canDelete?: boolean
 }
 export const DiscussionReplyRef =
   builder.objectRef<IDiscussionReply>('DiscussionReply')
@@ -197,6 +198,7 @@ export const DiscussionReply = DiscussionReplyRef.implement({
     isDeleted: t.exposeBoolean('isDeleted'),
     upvotes: t.exposeInt('upvotes'),
     hasUpvoted: t.exposeBoolean('hasUpvoted', { nullable: true }),
+    canDelete: t.exposeBoolean('canDelete', { nullable: true }),
 
     createdAt: t.expose('createdAt', { type: 'Date' }),
     updatedAt: t.expose('updatedAt', { type: 'Date' }),
@@ -210,6 +212,7 @@ export interface IDiscussionThread extends DB.DiscussionThread {
   sourceKey?: string
   sourceLabel?: string
   hasUpvoted?: boolean
+  canDelete?: boolean
 }
 export const DiscussionThreadRef =
   builder.objectRef<IDiscussionThread>('DiscussionThread')
@@ -225,6 +228,7 @@ export const DiscussionThread = DiscussionThreadRef.implement({
 
     upvotes: t.exposeInt('upvotes'),
     hasUpvoted: t.exposeBoolean('hasUpvoted', { nullable: true }),
+    canDelete: t.exposeBoolean('canDelete', { nullable: true }),
     replyCount: t.exposeInt('replyCount'),
     lastActivityAt: t.expose('lastActivityAt', { type: 'Date' }),
 

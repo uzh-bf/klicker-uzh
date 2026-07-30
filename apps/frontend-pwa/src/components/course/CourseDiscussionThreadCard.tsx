@@ -1,17 +1,24 @@
 import { useMutation } from '@apollo/client'
 import { faThumbsUp } from '@fortawesome/free-regular-svg-icons'
+import { faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CourseDiscussionPostFailure,
   CreateCourseDiscussionReplyDocument,
+  DeleteCourseDiscussionReplyDocument,
+  DeleteCourseDiscussionThreadDocument,
   type GetCourseDiscussionThreadsQuery,
   ToggleCourseDiscussionReplyUpvoteDocument,
   ToggleCourseDiscussionThreadUpvoteDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, toast } from '@uzh-bf/design-system'
+import { Button, Modal, toast } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useCallback, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+
+type PendingDeletion =
+  | { type: 'thread'; id: number }
+  | { type: 'reply'; id: number }
 
 type CourseDiscussionThread =
   GetCourseDiscussionThreadsQuery['courseDiscussionThreads']['threads'][number] & {
@@ -30,6 +37,7 @@ interface CourseDiscussionThreadCardProps {
   mustPostAnonymously: boolean
   idPrefix: string
   onReplyCreated: () => Promise<unknown>
+  onContentDeleted: () => Promise<unknown>
 }
 
 function CourseDiscussionThreadCard({
@@ -43,6 +51,7 @@ function CourseDiscussionThreadCard({
   mustPostAnonymously,
   idPrefix,
   onReplyCreated,
+  onContentDeleted,
 }: CourseDiscussionThreadCardProps) {
   const t = useTranslations()
   const formatter = useFormatter()
@@ -50,7 +59,12 @@ function CourseDiscussionThreadCard({
   const [postReplyAnonymous, setPostReplyAnonymous] = useState(false)
   const [replyComposerOpen, setReplyComposerOpen] = useState(false)
   const [submittingReply, setSubmittingReply] = useState(false)
+  const [pendingDeletion, setPendingDeletion] =
+    useState<PendingDeletion | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [createReply] = useMutation(CreateCourseDiscussionReplyDocument)
+  const [deleteThread] = useMutation(DeleteCourseDiscussionThreadDocument)
+  const [deleteReply] = useMutation(DeleteCourseDiscussionReplyDocument)
   const [toggleThreadUpvote] = useMutation(
     ToggleCourseDiscussionThreadUpvoteDocument
   )
@@ -160,6 +174,48 @@ function CourseDiscussionThreadCard({
     [toggleReplyUpvote, t]
   )
 
+  const handleConfirmDeletion = useCallback(async () => {
+    if (!pendingDeletion) return
+
+    setDeleting(true)
+
+    try {
+      const succeeded =
+        pendingDeletion.type === 'thread'
+          ? (
+              await deleteThread({
+                variables: { threadId: pendingDeletion.id },
+              })
+            ).data?.deleteCourseDiscussionThread
+          : (
+              await deleteReply({
+                variables: { replyId: pendingDeletion.id },
+              })
+            ).data?.deleteCourseDiscussionReply
+
+      if (!succeeded) {
+        toast({
+          type: 'error',
+          message:
+            pendingDeletion.type === 'thread'
+              ? t('pwa.courseQA.deleteThreadFailed')
+              : t('pwa.courseQA.deleteReplyFailed'),
+        })
+        return
+      }
+
+      setPendingDeletion(null)
+      await onContentDeleted()
+    } catch {
+      toast({
+        type: 'error',
+        message: t('pwa.courseQA.deleteError'),
+      })
+    } finally {
+      setDeleting(false)
+    }
+  }, [pendingDeletion, deleteThread, deleteReply, onContentDeleted, t])
+
   const formatDateTime = (value: string) =>
     formatter.dateTime(new Date(value), {
       dateStyle: 'medium',
@@ -257,6 +313,18 @@ function CourseDiscussionThreadCard({
             </Button.Label>
           </Button>
         )}
+        {thread.canDelete && (
+          <Button
+            onClick={() =>
+              setPendingDeletion({ type: 'thread', id: thread.id })
+            }
+            className={{ root: 'h-8 text-red-600' }}
+            data={{ cy: `course-qa-delete-thread-${thread.id}` }}
+            aria-label={t('pwa.courseQA.deleteThread')}
+          >
+            <Button.Icon icon={faTrash} />
+          </Button>
+        )}
       </div>
 
       <div className="mt-3 flex flex-col gap-2 border-l border-gray-200 pl-3">
@@ -321,6 +389,18 @@ function CourseDiscussionThreadCard({
                     })}
                   </span>
                 </>
+              )}
+              {reply.canDelete && (
+                <Button
+                  onClick={() =>
+                    setPendingDeletion({ type: 'reply', id: reply.id })
+                  }
+                  className={{ root: 'h-7 text-red-600' }}
+                  data={{ cy: `course-qa-delete-reply-${reply.id}` }}
+                  aria-label={t('pwa.courseQA.deleteReply')}
+                >
+                  <Button.Icon icon={faTrash} className={{ root: 'h-3 w-3' }} />
+                </Button>
               )}
             </div>
           </div>
@@ -396,6 +476,34 @@ function CourseDiscussionThreadCard({
           </div>
         )}
       </div>
+
+      {pendingDeletion ? (
+        <Modal
+          open
+          hideCloseButton
+          onClose={() => setPendingDeletion(null)}
+          title={
+            pendingDeletion.type === 'thread'
+              ? t('pwa.courseQA.deleteThreadTitle')
+              : t('pwa.courseQA.deleteReplyTitle')
+          }
+          secondaryLabel={t('shared.generic.cancel')}
+          onSecondaryAction={() => setPendingDeletion(null)}
+          primaryLabel={t('pwa.courseQA.deleteConfirm')}
+          primaryButtonStyle="destructive"
+          primaryLoading={deleting}
+          onPrimaryAction={handleConfirmDeletion}
+          className={{ content: 'max-w-lg' }}
+          dataPrimaryAction={{ cy: 'course-qa-confirm-deletion' }}
+          dataSecondaryAction={{ cy: 'course-qa-cancel-deletion' }}
+        >
+          <p className="text-base">
+            {pendingDeletion.type === 'thread'
+              ? t('pwa.courseQA.deleteThreadMessage')
+              : t('pwa.courseQA.deleteReplyMessage')}
+          </p>
+        </Modal>
+      ) : null}
     </div>
   )
 }
