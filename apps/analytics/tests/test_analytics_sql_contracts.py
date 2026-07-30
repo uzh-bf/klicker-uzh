@@ -19,6 +19,17 @@ class AnalyticsSqlContractTests(unittest.TestCase):
         self.assertIn("attempt_asc = attempt_count", statement)
         self.assertNotIn("JOIN LATERAL", statement)
 
+    def test_live_quiz_queries_exclude_free_text(self):
+        statements = (
+            _read_sql("live_quiz_analytics", "participant_live_quiz_analytics.sql"),
+            _read_sql("live_quiz_analytics", "aggregated_live_quiz_analytics.sql"),
+            _read_sql("platform_analytics", "platform_semester_analytics.sql"),
+        )
+
+        for statement in statements:
+            with self.subTest(statement=statement[:40]):
+                self.assertIn("ei.\"elementType\" <> 'FREE_TEXT'", statement)
+
     def test_topic_clustering_uses_learning_analytics_eligibility(self):
         source = (_MODULES / "chat_topic_clustering" / "load_user_text.py").read_text(encoding="utf-8")
 

@@ -19,7 +19,9 @@ WITH assessment_responses AS (
       PARTITION BY lqr."participantId", lqr."instanceId"
     ) AS attempt_count
   FROM "LiveQuizResponse" lqr
-  JOIN "ElementInstance" ei ON ei.id = lqr."instanceId"
+  JOIN "ElementInstance" ei
+    ON ei.id = lqr."instanceId"
+   AND ei."elementType" <> 'FREE_TEXT'
   JOIN "ElementBlock"    eb ON eb.id = ei."elementBlockId"
   JOIN "LiveQuiz"        lq ON lq.id = eb."liveQuizId"
   JOIN "Course"           c ON c.id = lq."courseId"

@@ -22,6 +22,7 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
+import { normalizeLearningAnalyticsChoice } from '../../lib/learningAnalyticsValidation'
 import LearningAnalyticsChoiceField from '../learningAnalytics/LearningAnalyticsChoiceField'
 
 interface Props {
@@ -79,6 +80,7 @@ function CreateAccountForm({
     learningAnalyticsStatus: learningAnalyticsEnabled
       ? yup
           .mixed<LearningAnalyticsChoice>()
+          .transform(normalizeLearningAnalyticsChoice)
           .oneOf(Object.values(LearningAnalyticsChoice))
           .notRequired()
       : yup.mixed().notRequired(),

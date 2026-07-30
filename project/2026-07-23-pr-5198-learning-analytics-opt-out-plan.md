@@ -192,14 +192,15 @@ No cleanup, deployment, rollout change, or merge is authorized by this plan.
   acceptance grants chat access, while shared LA eligibility alone determines
   analytics inclusion.
 - 2026-07-30: The consolidated branch passed Ruff, the complete analytics suite
-  (`205 passed, 3 skipped` with PostgreSQL), focused Prisma, utility, GraphQL,
+  (`206 passed, 3 skipped` with PostgreSQL), focused Prisma, utility, GraphQL,
   and Hatchet tests, workspace type checks, schema generation and mirroring,
   and affected production builds.
 - 2026-07-30: Independent specification and privacy reviews found and closed
   gaps in decide-later access, coverage semantics, platform free-text and
-  course scoping, course-disable cleanup, and cleanup replay protection. The
-  cleanup inventory is shared across runtime and contract tests, and the
-  one-time cleanup now records a durable receipt in the same transaction.
+  course scoping, live-quiz free-text filtering, course-disable cleanup, and
+  cleanup replay protection. The cleanup inventory is shared across runtime
+  and contract tests, and the one-time cleanup now records a durable receipt in
+  the same transaction.
 - 2026-07-30: The cleanup command was rehearsed against an isolated PostgreSQL
   database: aggregate-only dry run, reviewed-snapshot-hash-bound write,
   post-write verification, durable receipt creation, and replay rejection all
@@ -209,9 +210,10 @@ No cleanup, deployment, rollout change, or merge is authorized by this plan.
   choice, de-identified export, suppression below five, and English/German
   disclosure and legal text across desktop and mobile states. The consolidated
   frontend and translation tree matches the browser-tested implementation. The
-  decide-later validation change also passes the PWA production build and
-  GraphQL integration tests; a fresh current-branch browser smoke is blocked by
-  an unrelated non-idempotent catalog/derived-permission seed failure.
+  decide-later validation change also passes two focused frontend tests, the
+  PWA production build, and GraphQL integration tests; a fresh current-branch
+  browser smoke is blocked by an unrelated non-idempotent
+  catalog/derived-permission seed failure.
 - Current: final whole-branch standards, specification, privacy/security, and
   maintainability re-review is pending. The rollout remains disabled and
   production cleanup has not run.

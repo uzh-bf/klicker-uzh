@@ -129,10 +129,44 @@ def test_platform_rollup_excludes_free_text_and_scopes_locked_courses(session):
     session.execute(
         text(
             """
-            INSERT INTO "ElementInstance" (id, "elementType")
-            VALUES (1, 'SC'), (2, 'FREE_TEXT');
+            INSERT INTO "ElementInstance" (id, "elementType", "elementBlockId")
+            VALUES (1, 'SC', NULL), (2, 'FREE_TEXT', 1);
             """
         )
+    )
+    session.execute(
+        text(
+            """
+            INSERT INTO "LiveQuiz" (id, "courseId")
+            VALUES (
+              'dddd0000-0000-0000-0000-000000000001',
+              :course_id
+            );
+            """
+        ),
+        {"course_id": COURSE_ID},
+    )
+    session.execute(
+        text(
+            """
+            INSERT INTO "ElementBlock" (id, "liveQuizId")
+            VALUES (1, 'dddd0000-0000-0000-0000-000000000001');
+            """
+        )
+    )
+    session.execute(
+        text(
+            """
+            INSERT INTO "LiveQuizResponse" (
+              id, "participantId", "instanceId", "submittedAt", "createdAt"
+            ) VALUES (
+              1, :participant_id, 2,
+              TIMESTAMPTZ '2026-07-01 10:02:00+00',
+              TIMESTAMPTZ '2026-07-01 10:02:00+00'
+            );
+            """
+        ),
+        {"participant_id": PARTICIPANT_ID},
     )
     session.execute(
         text(
@@ -165,6 +199,8 @@ def test_platform_rollup_excludes_free_text_and_scopes_locked_courses(session):
                   "quizResponseRows",
                   "quizTrials",
                   "quizDistinctParticipants",
+                  "liveQuizResponses",
+                  "liveQuizDistinctParticipants",
                   "coursesWithQuizActivity"
                 FROM "PlatformSemesterAnalytics"
                 WHERE "semesterLabel" = 'FS26'
@@ -178,5 +214,7 @@ def test_platform_rollup_excludes_free_text_and_scopes_locked_courses(session):
         "quizResponseRows": 1,
         "quizTrials": 1,
         "quizDistinctParticipants": 1,
+        "liveQuizResponses": 0,
+        "liveQuizDistinctParticipants": 0,
         "coursesWithQuizActivity": 1,
     }

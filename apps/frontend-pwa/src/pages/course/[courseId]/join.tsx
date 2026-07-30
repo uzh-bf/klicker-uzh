@@ -26,6 +26,7 @@ import Layout from '../../../components/Layout'
 import CreateAccountForm from '../../../components/forms/CreateAccountForm'
 import LearningAnalyticsChoiceField from '../../../components/learningAnalytics/LearningAnalyticsChoiceField'
 import { learningAnalyticsRolloutEnabled } from '../../../lib/learningAnalytics'
+import { normalizeLearningAnalyticsChoice } from '../../../lib/learningAnalyticsValidation'
 
 function JoinCourse({
   courseId,
@@ -58,6 +59,7 @@ function JoinCourse({
       .required(t('pwa.joinCourse.coursePinRequired')),
     learningAnalyticsStatus: collectLearningAnalyticsChoice
       ? Yup.mixed<LearningAnalyticsChoice>()
+          .transform(normalizeLearningAnalyticsChoice)
           .oneOf(Object.values(LearningAnalyticsChoice))
           .notRequired()
       : Yup.mixed().notRequired(),

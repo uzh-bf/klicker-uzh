@@ -30,7 +30,9 @@ eligible_quiz_details AS MATERIALIZED (
 eligible_live_responses AS MATERIALIZED (
   SELECT lqr.*, ep."courseId"
   FROM "LiveQuizResponse" lqr
-  JOIN "ElementInstance" ei ON ei.id = lqr."instanceId"
+  JOIN "ElementInstance" ei
+    ON ei.id = lqr."instanceId"
+   AND ei."elementType" <> 'FREE_TEXT'
   JOIN "ElementBlock" eb ON eb.id = ei."elementBlockId"
   JOIN "LiveQuiz" lq ON lq.id = eb."liveQuizId"
   JOIN eligible_participations ep
