@@ -1,8 +1,10 @@
 import {
   NetworkStatus,
+  useApolloClient,
   useLazyQuery,
   useMutation,
   useQuery,
+  type ApolloQueryResult,
 } from '@apollo/client'
 import {
   faFileLines,
@@ -18,6 +20,7 @@ import {
   KbResourceStatus,
   KbResourceType,
   type GetKbResourcesQuery,
+  type GetKbResourcesQueryVariables,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Badge,
@@ -348,12 +351,12 @@ function KnowledgeBaseResourceList({
       variables,
       notifyOnNetworkStatusChange: true,
     })
-  const [fetchResourcePoll] = useLazyQuery(GetKbResourcesDocument, {
-    fetchPolicy: 'no-cache',
-  })
+  const apolloClient = useApolloClient()
   const [ingestResource] = useMutation(IngestKbResourceDocument)
   const connection = data?.getKbResources
   const resources = connection?.items ?? []
+  const loadedResourceCountRef = useRef(resources.length)
+  loadedResourceCountRef.current = resources.length
   const polling = resources.some(isActiveResource)
   const loadingMore = networkStatus === NetworkStatus.fetchMore
   const inspectorResource = useMemo(
@@ -385,7 +388,10 @@ function KnowledgeBaseResourceList({
 
   const refreshLoadedResources = useCallback(async () => {
     const requestId = ++refreshRequestRef.current
-    const targetCount = Math.max(resources.length, PAGE_SIZE)
+    // The interval can race the render caused by fetchMore. Read the latest
+    // committed window size so a full walk cannot collapse a newly loaded
+    // page because its closure still saw the previous length.
+    const targetCount = Math.max(loadedResourceCountRef.current, PAGE_SIZE)
     const refreshedItems: KnowledgeBaseResource[] = []
     const pageCursors: (string | null)[] = [null]
     const activePageIndexes = new Set<number>()
@@ -395,12 +401,18 @@ function KnowledgeBaseResourceList({
 
     try {
       do {
-        const { data: refreshedData } = await fetchResourcePoll({
-          variables: getPageVariables(after),
-        })
+        const refreshedResult: ApolloQueryResult<GetKbResourcesQuery> =
+          await apolloClient.query<
+            GetKbResourcesQuery,
+            GetKbResourcesQueryVariables
+          >({
+            query: GetKbResourcesDocument,
+            variables: getPageVariables(after),
+            fetchPolicy: 'no-cache',
+          })
         if (requestId !== refreshRequestRef.current) return false
 
-        refreshedConnection = refreshedData?.getKbResources ?? null
+        refreshedConnection = refreshedResult.data?.getKbResources ?? null
         if (!refreshedConnection) return false
         const pageItems = refreshedConnection.items
         refreshedItems.push(...pageItems)
@@ -441,7 +453,7 @@ function KnowledgeBaseResourceList({
       }
       throw refreshError
     }
-  }, [fetchResourcePoll, getPageVariables, resources.length, updateQuery])
+  }, [apolloClient, getPageVariables, updateQuery])
 
   // Bounded poll for the 2s interval (P2-1): instead of re-walking every
   // loaded page, only refetch the first page (the entry point of the cursor
@@ -480,8 +492,13 @@ function KnowledgeBaseResourceList({
       let tailConnection: GetKbResourcesQuery['getKbResources'] | null = null
 
       for (const pageIndex of targetPages) {
-        const { data: polledData } = await fetchResourcePoll({
+        const { data: polledData } = await apolloClient.query<
+          GetKbResourcesQuery,
+          GetKbResourcesQueryVariables
+        >({
+          query: GetKbResourcesDocument,
           variables: getPageVariables(cursors[pageIndex] ?? null),
+          fetchPolicy: 'no-cache',
         })
         if (requestId !== refreshRequestRef.current) return false
 
@@ -569,7 +586,7 @@ function KnowledgeBaseResourceList({
       throw pollError
     }
   }, [
-    fetchResourcePoll,
+    apolloClient,
     getPageVariables,
     refreshLoadedResources,
     resources.length,
@@ -805,6 +822,7 @@ function KnowledgeBaseResourceList({
     if (newPageHasActive) {
       activePageIndexesRef.current.add(newPageIndex)
     }
+    bookkeepingValidRef.current = true
   }
 
   const toggleSelection = (id: string) => {
