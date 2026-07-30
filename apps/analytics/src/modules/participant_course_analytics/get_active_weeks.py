@@ -22,7 +22,9 @@ def get_active_weeks(session: Session, course):
             active_weeks = weekly_counts_by_participant.get(str(participant_id), 0)
         else:
             active_weeks = session.execute(
-                select(func.count()).select_from(ParticipantAnalytics).where(
+                select(func.count())
+                .select_from(ParticipantAnalytics)
+                .where(
                     ParticipantAnalytics.type == "WEEKLY",
                     ParticipantAnalytics.courseId == course_id,
                     ParticipantAnalytics.participantId == participant_id,

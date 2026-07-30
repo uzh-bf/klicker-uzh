@@ -21,7 +21,6 @@ from decimal import Decimal
 from typing import Any, Optional
 
 from sqlalchemy import (
-    BigInteger,
     Boolean,
     Date,
     DateTime,
@@ -30,11 +29,10 @@ from sqlalchemy import (
     Integer,
     LargeBinary,
     Numeric,
-    SmallInteger,
     String,
     Text,
 )
-from sqlalchemy.dialects.postgresql import ARRAY, ENUM, JSONB, UUID
+from sqlalchemy.dialects.postgresql import ENUM, JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 Uuid = UUID(as_uuid=False)
@@ -46,19 +44,11 @@ class Base(DeclarativeBase):
 
 # ----- Enums ---------------------------------------------------------------
 
-AnalyticsType = ENUM(
-    "DAILY", "WEEKLY", "MONTHLY", "COURSE", name="AnalyticsType", create_type=False
-)
+AnalyticsType = ENUM("DAILY", "WEEKLY", "MONTHLY", "COURSE", name="AnalyticsType", create_type=False)
 ActivityLevel = ENUM("LOW", "MEDIUM", "HIGH", name="ActivityLevel", create_type=False)
-PerformanceLevel = ENUM(
-    "LOW", "MEDIUM", "HIGH", name="PerformanceLevel", create_type=False
-)
-ChatDoseBucket = ENUM(
-    "NONE", "LOW", "MED", "HIGH", name="ChatDoseBucket", create_type=False
-)
-ResponseCorrectness = ENUM(
-    "CORRECT", "PARTIAL", "WRONG", name="ResponseCorrectness", create_type=False
-)
+PerformanceLevel = ENUM("LOW", "MEDIUM", "HIGH", name="PerformanceLevel", create_type=False)
+ChatDoseBucket = ENUM("NONE", "LOW", "MED", "HIGH", name="ChatDoseBucket", create_type=False)
+ResponseCorrectness = ENUM("CORRECT", "PARTIAL", "WRONG", name="ResponseCorrectness", create_type=False)
 Locale = ENUM("en", "de", name="Locale", create_type=False)
 CourseAuthType = ENUM("SSO", "PIN", name="CourseAuthType", create_type=False)
 ElementType = ENUM(
@@ -127,15 +117,9 @@ class Course(Base):
     endDate: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     notificationEmail: Mapped[Optional[str]] = mapped_column(String)
     areAnalyticsValid: Mapped[bool] = mapped_column(Boolean, default=False)
-    analyticsLastComputedAt: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True)
-    )
-    chatAnalyticsValidAt: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True)
-    )
-    analyticsFinalizedAt: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True)
-    )
+    analyticsLastComputedAt: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    chatAnalyticsValidAt: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    analyticsFinalizedAt: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     isArchived: Mapped[bool] = mapped_column(Boolean, default=False)
     authType: Mapped[str] = mapped_column(CourseAuthType, default="PIN")
     pinCode: Mapped[Optional[int]] = mapped_column(Integer)
@@ -169,9 +153,7 @@ class Participant(Base):
     updatedAt: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
     participations: Mapped[list["Participation"]] = relationship(back_populates="participant")
-    detailQuestionResponses: Mapped[list["QuestionResponseDetail"]] = relationship(
-        back_populates="participant"
-    )
+    detailQuestionResponses: Mapped[list["QuestionResponseDetail"]] = relationship(back_populates="participant")
 
 
 class Participation(Base):
@@ -187,12 +169,8 @@ class Participation(Base):
 
     course: Mapped[Course] = relationship(back_populates="participations")
     participant: Mapped[Participant] = relationship(back_populates="participations")
-    responses: Mapped[list["QuestionResponse"]] = relationship(
-        back_populates="participation"
-    )
-    detailResponses: Mapped[list["QuestionResponseDetail"]] = relationship(
-        back_populates="participation"
-    )
+    responses: Mapped[list["QuestionResponse"]] = relationship(back_populates="participation")
+    detailResponses: Mapped[list["QuestionResponseDetail"]] = relationship(back_populates="participation")
 
 
 # ----- Element & quiz models ------------------------------------------------
@@ -238,9 +216,7 @@ class ElementInstance(Base):
     updatedAt: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
     stack: Mapped[Optional["ElementStack"]] = relationship(back_populates="elements")
-    responses: Mapped[list["QuestionResponse"]] = relationship(
-        back_populates="elementInstance"
-    )
+    responses: Mapped[list["QuestionResponse"]] = relationship(back_populates="elementInstance")
 
 
 class ElementStack(Base):
@@ -251,22 +227,14 @@ class ElementStack(Base):
     order: Mapped[int] = mapped_column(Integer)
     displayName: Mapped[Optional[str]] = mapped_column(String)
     description: Mapped[Optional[str]] = mapped_column(String)
-    practiceQuizId: Mapped[Optional[str]] = mapped_column(
-        Uuid, ForeignKey("PracticeQuiz.id")
-    )
-    microLearningId: Mapped[Optional[str]] = mapped_column(
-        Uuid, ForeignKey("MicroLearning.id")
-    )
+    practiceQuizId: Mapped[Optional[str]] = mapped_column(Uuid, ForeignKey("PracticeQuiz.id"))
+    microLearningId: Mapped[Optional[str]] = mapped_column(Uuid, ForeignKey("MicroLearning.id"))
     groupActivityId: Mapped[Optional[str]] = mapped_column(Uuid)
     courseId: Mapped[Optional[str]] = mapped_column(Uuid, ForeignKey("Course.id"))
 
     elements: Mapped[list[ElementInstance]] = relationship(back_populates="stack")
-    practiceQuiz: Mapped[Optional["PracticeQuiz"]] = relationship(
-        back_populates="stacks"
-    )
-    microLearning: Mapped[Optional["MicroLearning"]] = relationship(
-        back_populates="stacks"
-    )
+    practiceQuiz: Mapped[Optional["PracticeQuiz"]] = relationship(back_populates="stacks")
+    microLearning: Mapped[Optional["MicroLearning"]] = relationship(back_populates="stacks")
 
 
 class PracticeQuiz(Base):
@@ -289,9 +257,7 @@ class PracticeQuiz(Base):
 
     course: Mapped[Course] = relationship(back_populates="practiceQuizzes")
     stacks: Mapped[list[ElementStack]] = relationship(back_populates="practiceQuiz")
-    responses: Mapped[list["QuestionResponse"]] = relationship(
-        back_populates="practiceQuiz"
-    )
+    responses: Mapped[list["QuestionResponse"]] = relationship(back_populates="practiceQuiz")
 
 
 class MicroLearning(Base):
@@ -315,9 +281,7 @@ class MicroLearning(Base):
 
     course: Mapped[Course] = relationship(back_populates="microLearnings")
     stacks: Mapped[list[ElementStack]] = relationship(back_populates="microLearning")
-    responses: Mapped[list["QuestionResponse"]] = relationship(
-        back_populates="microLearning"
-    )
+    responses: Mapped[list["QuestionResponse"]] = relationship(back_populates="microLearning")
 
 
 class LiveQuiz(Base):
@@ -359,9 +323,7 @@ class QuestionResponse(Base):
     correctCountStreak: Mapped[int] = mapped_column(Integer, default=0)
     lastCorrectAt: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     partialCorrectCount: Mapped[int] = mapped_column(Integer, default=0)
-    lastPartialCorrectAt: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True)
-    )
+    lastPartialCorrectAt: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     wrongCount: Mapped[int] = mapped_column(Integer, default=0)
     lastWrongAt: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     eFactor: Mapped[float] = mapped_column(Float, default=2.5)
@@ -374,15 +336,9 @@ class QuestionResponse(Base):
     aggregatedResponses: Mapped[Optional[dict]] = mapped_column(JSONB)
     participantId: Mapped[str] = mapped_column(Uuid, ForeignKey("Participant.id"))
     participationId: Mapped[int] = mapped_column(Integer, ForeignKey("Participation.id"))
-    elementInstanceId: Mapped[int] = mapped_column(
-        Integer, ForeignKey("ElementInstance.id")
-    )
-    practiceQuizId: Mapped[Optional[str]] = mapped_column(
-        Uuid, ForeignKey("PracticeQuiz.id")
-    )
-    microLearningId: Mapped[Optional[str]] = mapped_column(
-        Uuid, ForeignKey("MicroLearning.id")
-    )
+    elementInstanceId: Mapped[int] = mapped_column(Integer, ForeignKey("ElementInstance.id"))
+    practiceQuizId: Mapped[Optional[str]] = mapped_column(Uuid, ForeignKey("PracticeQuiz.id"))
+    microLearningId: Mapped[Optional[str]] = mapped_column(Uuid, ForeignKey("MicroLearning.id"))
     courseId: Mapped[str] = mapped_column(Uuid, ForeignKey("Course.id"))
     createdAt: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updatedAt: Mapped[datetime] = mapped_column(DateTime(timezone=True))
@@ -405,15 +361,9 @@ class QuestionResponseDetail(Base):
     response: Mapped[dict] = mapped_column(JSONB)
     participantId: Mapped[str] = mapped_column(Uuid, ForeignKey("Participant.id"))
     participationId: Mapped[int] = mapped_column(Integer, ForeignKey("Participation.id"))
-    elementInstanceId: Mapped[int] = mapped_column(
-        Integer, ForeignKey("ElementInstance.id")
-    )
-    practiceQuizId: Mapped[Optional[str]] = mapped_column(
-        Uuid, ForeignKey("PracticeQuiz.id")
-    )
-    microLearningId: Mapped[Optional[str]] = mapped_column(
-        Uuid, ForeignKey("MicroLearning.id")
-    )
+    elementInstanceId: Mapped[int] = mapped_column(Integer, ForeignKey("ElementInstance.id"))
+    practiceQuizId: Mapped[Optional[str]] = mapped_column(Uuid, ForeignKey("PracticeQuiz.id"))
+    microLearningId: Mapped[Optional[str]] = mapped_column(Uuid, ForeignKey("MicroLearning.id"))
     createdAt: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updatedAt: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
@@ -506,19 +456,13 @@ class ChatUsageCredits(Base):
 
     total: Mapped[Decimal] = mapped_column(Numeric(18, 6), default=0)
     current: Mapped[Decimal] = mapped_column(Numeric(18, 6), default=0)
-    participantId: Mapped[str] = mapped_column(
-        Uuid, ForeignKey("Participant.id"), primary_key=True
-    )
-    chatbotId: Mapped[str] = mapped_column(
-        Uuid, ForeignKey("Chatbot.id"), primary_key=True
-    )
+    participantId: Mapped[str] = mapped_column(Uuid, ForeignKey("Participant.id"), primary_key=True)
+    chatbotId: Mapped[str] = mapped_column(Uuid, ForeignKey("Chatbot.id"), primary_key=True)
     periodStartedAt: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     lastResetAt: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     resetCount: Mapped[int] = mapped_column(Integer, default=0)
     acceptedDisclaimerId: Mapped[Optional[str]] = mapped_column(Uuid)
-    disclaimerAcceptedAt: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True)
-    )
+    disclaimerAcceptedAt: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     disclaimerDeclined: Mapped[bool] = mapped_column(Boolean, default=False)
     createdAt: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updatedAt: Mapped[datetime] = mapped_column(DateTime(timezone=True))
@@ -604,9 +548,7 @@ class AggregatedCourseAnalytics(Base):
     chatParticipantCount: Mapped[int] = mapped_column(Integer, default=0)
     quizParticipantCount: Mapped[int] = mapped_column(Integer, default=0)
     bothChatAndQuizCount: Mapped[int] = mapped_column(Integer, default=0)
-    courseId: Mapped[str] = mapped_column(
-        Uuid, ForeignKey("Course.id"), unique=True
-    )
+    courseId: Mapped[str] = mapped_column(Uuid, ForeignKey("Course.id"), unique=True)
     createdAt: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updatedAt: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
@@ -642,9 +584,7 @@ class InstancePerformance(Base):
     totalErrorRate: Mapped[float] = mapped_column(Float)
     totalPartialRate: Mapped[float] = mapped_column(Float)
     totalCorrectRate: Mapped[float] = mapped_column(Float)
-    instanceId: Mapped[int] = mapped_column(
-        Integer, ForeignKey("ElementInstance.id"), unique=True
-    )
+    instanceId: Mapped[int] = mapped_column(Integer, ForeignKey("ElementInstance.id"), unique=True)
     courseId: Mapped[str] = mapped_column(Uuid, ForeignKey("Course.id"))
     createdAt: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updatedAt: Mapped[datetime] = mapped_column(DateTime(timezone=True))
@@ -663,12 +603,8 @@ class ActivityPerformance(Base):
     totalErrorRate: Mapped[float] = mapped_column(Float)
     totalPartialRate: Mapped[float] = mapped_column(Float)
     totalCorrectRate: Mapped[float] = mapped_column(Float)
-    practiceQuizId: Mapped[Optional[str]] = mapped_column(
-        Uuid, ForeignKey("PracticeQuiz.id"), unique=True
-    )
-    microLearningId: Mapped[Optional[str]] = mapped_column(
-        Uuid, ForeignKey("MicroLearning.id"), unique=True
-    )
+    practiceQuizId: Mapped[Optional[str]] = mapped_column(Uuid, ForeignKey("PracticeQuiz.id"), unique=True)
+    microLearningId: Mapped[Optional[str]] = mapped_column(Uuid, ForeignKey("MicroLearning.id"), unique=True)
     courseId: Mapped[str] = mapped_column(Uuid, ForeignKey("Course.id"))
     createdAt: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updatedAt: Mapped[datetime] = mapped_column(DateTime(timezone=True))
@@ -681,12 +617,8 @@ class ParticipantActivityPerformance(Base):
     totalScore: Mapped[int] = mapped_column(Integer)
     completion: Mapped[float] = mapped_column(Float)
     participantId: Mapped[str] = mapped_column(Uuid, ForeignKey("Participant.id"))
-    practiceQuizId: Mapped[Optional[str]] = mapped_column(
-        Uuid, ForeignKey("PracticeQuiz.id")
-    )
-    microLearningId: Mapped[Optional[str]] = mapped_column(
-        Uuid, ForeignKey("MicroLearning.id")
-    )
+    practiceQuizId: Mapped[Optional[str]] = mapped_column(Uuid, ForeignKey("PracticeQuiz.id"))
+    microLearningId: Mapped[Optional[str]] = mapped_column(Uuid, ForeignKey("MicroLearning.id"))
 
 
 class ActivityProgress(Base):
@@ -697,12 +629,8 @@ class ActivityProgress(Base):
     startedCount: Mapped[int] = mapped_column(Integer)
     completedCount: Mapped[int] = mapped_column(Integer)
     repeatedCount: Mapped[Optional[int]] = mapped_column(Integer)
-    practiceQuizId: Mapped[Optional[str]] = mapped_column(
-        Uuid, ForeignKey("PracticeQuiz.id"), unique=True
-    )
-    microLearningId: Mapped[Optional[str]] = mapped_column(
-        Uuid, ForeignKey("MicroLearning.id"), unique=True
-    )
+    practiceQuizId: Mapped[Optional[str]] = mapped_column(Uuid, ForeignKey("PracticeQuiz.id"), unique=True)
+    microLearningId: Mapped[Optional[str]] = mapped_column(Uuid, ForeignKey("MicroLearning.id"), unique=True)
     courseId: Mapped[str] = mapped_column(Uuid, ForeignKey("Course.id"))
     createdAt: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updatedAt: Mapped[datetime] = mapped_column(DateTime(timezone=True))
@@ -818,9 +746,7 @@ class AggregatedLiveQuizAnalytics(Base):
     __tablename__ = "AggregatedLiveQuizAnalytics"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    liveQuizId: Mapped[str] = mapped_column(
-        Uuid, ForeignKey("LiveQuiz.id"), unique=True
-    )
+    liveQuizId: Mapped[str] = mapped_column(Uuid, ForeignKey("LiveQuiz.id"), unique=True)
     courseId: Mapped[str] = mapped_column(Uuid, ForeignKey("Course.id"))
     participantCount: Mapped[int] = mapped_column(Integer, default=0)
     responseCount: Mapped[int] = mapped_column(Integer, default=0)

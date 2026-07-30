@@ -18,6 +18,7 @@ from src.modules.utils import (
     analytics_mode,
     analytics_window_since,
     check_analytics_cancellation,
+    exclusive_day_end,
     scoped_course_ids,
 )
 
@@ -37,24 +38,18 @@ def main() -> None:
         )
         if scope is not None:
             if not scope:
-                print(
-                    "[10_chat_topic_clustering] empty course scope — nothing to cluster"
-                )
+                print("[10_chat_topic_clustering] empty course scope — nothing to cluster")
                 chatbots = []
             else:
-                chatbots = session.execute(
-                    select(Chatbot).where(Chatbot.courseId.in_(scope))
-                ).scalars().all()
+                chatbots = session.execute(select(Chatbot).where(Chatbot.courseId.in_(scope))).scalars().all()
         else:
             chatbots = session.execute(select(Chatbot)).scalars().all()
 
-        scope_note = (
-            f" (scoped to {len(scope)} course ids)" if scope is not None else ""
-        )
+        scope_note = f" (scoped to {len(scope)} course ids)" if scope is not None else ""
         print(f"Found {len(chatbots)} chatbots to cluster{scope_note}")
 
         win_start = "2022-10-23T00:00:00.000Z"
-        win_end = datetime.now().strftime("%Y-%m-%d") + "T23:59:59.999Z"
+        win_end = exclusive_day_end(datetime.now().strftime("%Y-%m-%d"))
 
         total_rows = 0
         failures = []

@@ -8,8 +8,8 @@
 -- meaningful at WEEKLY granularity) — see aggregated_chatbot_analytics_weekly.sql.
 
 WITH params AS (
-  SELECT CAST(:win_start AS timestamptz) AS win_start,
-         CAST(:win_end AS timestamptz) AS win_end
+  SELECT (CAST(:win_start AS timestamptz) AT TIME ZONE 'UTC') AS win_start,
+         (CAST(:win_end AS timestamptz) AT TIME ZONE 'UTC') AS win_end
 ),
 eligible_pairs AS (
   SELECT cuc."participantId", cuc."chatbotId"
@@ -52,8 +52,8 @@ assistant_rollup AS (
 hour_of_day_raw AS (
   SELECT
     "chatbotId",
-    EXTRACT(ISODOW FROM "createdAt" AT TIME ZONE 'UTC')::int AS iso_dow,
-    EXTRACT(HOUR   FROM "createdAt" AT TIME ZONE 'UTC')::int AS hr,
+    EXTRACT(ISODOW FROM "createdAt")::int AS iso_dow,
+    EXTRACT(HOUR   FROM "createdAt")::int AS hr,
     COUNT(*) AS cnt
   FROM user_msgs GROUP BY 1, 2, 3
 ),
@@ -97,10 +97,15 @@ disclaimer_counts AS (
   -- Snapshot counts (NOT window-scoped). Overwritten on every run — reflects the
   -- current state of consent, not the state at the time the window was computed.
   SELECT
-    "chatbotId",
-    COUNT(*) FILTER (WHERE "acceptedDisclaimerId" IS NOT NULL) AS disclaimer_accepted,
-    COUNT(*) FILTER (WHERE "disclaimerDeclined" = true)        AS disclaimer_declined
-  FROM "ChatUsageCredits" GROUP BY 1
+    cuc."chatbotId",
+    COUNT(*) FILTER (
+      WHERE cuc."acceptedDisclaimerId" = cb."disclaimerId"
+        AND cuc."disclaimerDeclined" = false
+    ) AS disclaimer_accepted,
+    COUNT(*) FILTER (WHERE cuc."disclaimerDeclined" = true) AS disclaimer_declined
+  FROM "ChatUsageCredits" cuc
+  JOIN "Chatbot" cb ON cb.id = cuc."chatbotId"
+  GROUP BY 1
 ),
 credit_exhaustion AS (
   -- Snapshot of the live "current" balance, same caveat as disclaimer_counts.

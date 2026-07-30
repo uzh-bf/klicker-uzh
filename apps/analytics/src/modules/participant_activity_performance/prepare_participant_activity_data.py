@@ -13,27 +13,35 @@ from src.modules.utils import check_analytics_cancellation
 
 
 def prepare_participant_activity_data(session: Session, course_id: str):
-    practice_quizzes = session.execute(
-        select(PracticeQuiz)
-        .where(PracticeQuiz.courseId == course_id)
-        .options(
-            selectinload(PracticeQuiz.stacks)
-            .selectinload(ElementStack.elements)
-            .selectinload(ElementInstance.responses)
+    practice_quizzes = (
+        session.execute(
+            select(PracticeQuiz)
+            .where(PracticeQuiz.courseId == course_id)
+            .options(
+                selectinload(PracticeQuiz.stacks)
+                .selectinload(ElementStack.elements)
+                .selectinload(ElementInstance.responses)
+            )
         )
-    ).scalars().all()
-    micro_learnings = session.execute(
-        select(MicroLearning)
-        .where(MicroLearning.courseId == course_id)
-        .options(
-            selectinload(MicroLearning.stacks)
-            .selectinload(ElementStack.elements)
-            .selectinload(ElementInstance.responses)
+        .scalars()
+        .all()
+    )
+    micro_learnings = (
+        session.execute(
+            select(MicroLearning)
+            .where(MicroLearning.courseId == course_id)
+            .options(
+                selectinload(MicroLearning.stacks)
+                .selectinload(ElementStack.elements)
+                .selectinload(ElementInstance.responses)
+            )
         )
-    ).scalars().all()
-    participant_ids = session.execute(
-        select(Participation.participantId).where(Participation.courseId == course_id)
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
+    participant_ids = (
+        session.execute(select(Participation.participantId).where(Participation.courseId == course_id)).scalars().all()
+    )
 
     published_statuses = {"PUBLISHED", "ENDED", "GRADED"}
     practice_quizzes = [pq for pq in practice_quizzes if pq.status in published_statuses]
@@ -44,16 +52,13 @@ def prepare_participant_activity_data(session: Session, course_id: str):
             {
                 "id": activity.id,
                 "type": activity_type,
-                "instanceCount": sum(
-                    len(stack.elements) for stack in activity.stacks
-                ),
+                "instanceCount": sum(len(stack.elements) for stack in activity.stacks),
             }
             for activity in activities
         ]
 
     df_activities = pd.DataFrame(
-        _activity_rows(practice_quizzes, "practiceQuizzes")
-        + _activity_rows(micro_learnings, "microLearnings")
+        _activity_rows(practice_quizzes, "practiceQuizzes") + _activity_rows(micro_learnings, "microLearnings")
     )
 
     responses = []

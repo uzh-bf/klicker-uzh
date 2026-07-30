@@ -19,24 +19,32 @@ def _quiz_to_dict(quiz) -> dict:
 
 
 def get_course_progress_activities(session: Session, course_id: str):
-    pqs = session.execute(
-        select(PracticeQuiz)
-        .where(PracticeQuiz.courseId == course_id)
-        .options(
-            selectinload(PracticeQuiz.stacks).selectinload(ElementStack.elements),
-            selectinload(PracticeQuiz.responses),
+    pqs = (
+        session.execute(
+            select(PracticeQuiz)
+            .where(PracticeQuiz.courseId == course_id)
+            .options(
+                selectinload(PracticeQuiz.stacks).selectinload(ElementStack.elements),
+                selectinload(PracticeQuiz.responses),
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     pqs_list = [_quiz_to_dict(q) for q in pqs]
 
-    mls = session.execute(
-        select(MicroLearning)
-        .where(MicroLearning.courseId == course_id)
-        .options(
-            selectinload(MicroLearning.stacks).selectinload(ElementStack.elements),
-            selectinload(MicroLearning.responses),
+    mls = (
+        session.execute(
+            select(MicroLearning)
+            .where(MicroLearning.courseId == course_id)
+            .options(
+                selectinload(MicroLearning.stacks).selectinload(ElementStack.elements),
+                selectinload(MicroLearning.responses),
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     mls_list = [_quiz_to_dict(ml) for ml in mls]
 
     return pqs_list, mls_list

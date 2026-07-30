@@ -20,25 +20,33 @@ def _activity_to_dict(activity) -> dict:
 
 
 def get_course_activities(session: Session, course_id: str):
-    pqs = session.execute(
-        select(PracticeQuiz)
-        .where(PracticeQuiz.courseId == course_id)
-        .options(
-            selectinload(PracticeQuiz.stacks)
-            .selectinload(ElementStack.elements)
-            .selectinload(ElementInstance.responses)
+    pqs = (
+        session.execute(
+            select(PracticeQuiz)
+            .where(PracticeQuiz.courseId == course_id)
+            .options(
+                selectinload(PracticeQuiz.stacks)
+                .selectinload(ElementStack.elements)
+                .selectinload(ElementInstance.responses)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
-    mls = session.execute(
-        select(MicroLearning)
-        .where(MicroLearning.courseId == course_id)
-        .options(
-            selectinload(MicroLearning.stacks)
-            .selectinload(ElementStack.elements)
-            .selectinload(ElementInstance.responses)
+    mls = (
+        session.execute(
+            select(MicroLearning)
+            .where(MicroLearning.courseId == course_id)
+            .options(
+                selectinload(MicroLearning.stacks)
+                .selectinload(ElementStack.elements)
+                .selectinload(ElementInstance.responses)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
     return (
         [_activity_to_dict(q) for q in pqs],

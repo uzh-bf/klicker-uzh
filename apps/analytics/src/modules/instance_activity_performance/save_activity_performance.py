@@ -41,8 +41,7 @@ def save_activity_performance(
         conflict_col = "microLearningId"
     else:
         raise ValueError(
-            "Either practice_quiz_id or microlearning_id must be provided for "
-            "activity performance creation/update"
+            "Either practice_quiz_id or microlearning_id must be provided for activity performance creation/update"
         )
 
     update_cols = [c for c in values.keys() if c != conflict_col and c != "createdAt"]

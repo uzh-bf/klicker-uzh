@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import datetime
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -100,9 +100,7 @@ def test_compute_outcomes_bucket_assignment_matches_percentile_semantics():
     with intercept_writes(buffer):
         compute_participant_chat_outcomes(session=None, course_ids=["c1"])
 
-    by_participant = {
-        row["participantId"]: row for row in buffer.rows_by_table["ParticipantChatOutcome"]
-    }
+    by_participant = {row["participantId"]: row for row in buffer.rows_by_table["ParticipantChatOutcome"]}
     assert by_participant["p1"]["chatDoseBucket"] == "NONE"  # zero messages
     assert by_participant["p2"]["chatDoseBucket"] == "LOW"
     assert by_participant["p7"]["chatDoseBucket"] == "HIGH"

@@ -39,7 +39,7 @@ def main() -> None:
         for idx, base_course in df_courses.iterrows():
             check_analytics_cancellation()
             print(
-                f"Processing course",
+                "Processing course",
                 idx,
                 "of",
                 len(df_courses),
@@ -47,16 +47,12 @@ def main() -> None:
                 base_course["id"],
             )
 
-            df_activities, df_responses, participant_ids = (
-                prepare_participant_activity_data(session, base_course["id"])
-            )
+            df_activities, df_responses, participant_ids = prepare_participant_activity_data(session, base_course["id"])
 
             if df_responses.empty:
                 continue
 
-            agg_participant_activity_performance(
-                session, df_responses, df_activities, participant_ids
-            )
+            agg_participant_activity_performance(session, df_responses, df_activities, participant_ids)
 
         script_exit(script=__name__, started=started, rows_written=None)
 

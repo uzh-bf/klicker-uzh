@@ -108,12 +108,8 @@ _SCRIPT_DOMAIN: dict[str, str] = {
 }
 
 _INTENTIONAL_SKIP_REASONS: dict[str, str] = {
-    "src.scripts.13_platform_semester_analytics": (
-        "skipped: intentionally omitted for course-scoped dryrun"
-    ),
-    "src.scripts.99_mark_analytics_valid": (
-        "skipped: dryrun omits analytics validity watermark updates"
-    ),
+    "src.scripts.13_platform_semester_analytics": ("skipped: intentionally omitted for course-scoped dryrun"),
+    "src.scripts.99_mark_analytics_valid": ("skipped: dryrun omits analytics validity watermark updates"),
 }
 
 
@@ -122,10 +118,7 @@ def _detect_missing_tables(connection: Connection, names: set[str]) -> set[str]:
         return set()
     present = set(
         connection.execute(
-            text(
-                "SELECT tablename FROM pg_tables "
-                "WHERE schemaname = 'public' AND tablename = ANY(:names)"
-            ),
+            text("SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename = ANY(:names)"),
             {"names": list(names)},
         )
         .scalars()
@@ -176,14 +169,8 @@ def _rows_written_since(
     expected_tables: Sequence[str],
 ) -> int:
     if expected_tables:
-        return sum(
-            max(0, buffer.row_count(table) - before_counts.get(table, 0))
-            for table in expected_tables
-        )
-    return sum(
-        max(0, buffer.row_count(table) - before_counts.get(table, 0))
-        for table in buffer.table_status
-    )
+        return sum(max(0, buffer.row_count(table) - before_counts.get(table, 0)) for table in expected_tables)
+    return sum(max(0, buffer.row_count(table) - before_counts.get(table, 0)) for table in buffer.table_status)
 
 
 def _mark_expected_tables(
@@ -200,10 +187,7 @@ def _mark_expected_tables(
 def _intentional_skip_reason(module_name: str, *, scope_mode: str) -> str | None:
     if module_name == "src.scripts.99_mark_analytics_valid":
         return _INTENTIONAL_SKIP_REASONS[module_name]
-    if (
-        scope_mode == "course"
-        and module_name == "src.scripts.13_platform_semester_analytics"
-    ):
+    if scope_mode == "course" and module_name == "src.scripts.13_platform_semester_analytics":
         return _INTENTIONAL_SKIP_REASONS[module_name]
     return None
 
@@ -264,9 +248,7 @@ def _collect_reference_lookups(
     participants = {}
     if participant_ids:
         rows = connection.execute(
-            text(
-                'SELECT id, username, email FROM "Participant" WHERE id = ANY(:ids)'
-            ),
+            text('SELECT id, username, email FROM "Participant" WHERE id = ANY(:ids)'),
             {"ids": list(participant_ids)},
         ).all()
         participants = {
@@ -301,14 +283,10 @@ def _collect_reference_lookups(
     element_instances: dict[str, str] = {}
     if instance_ids:
         rows = connection.execute(
-            text(
-                'SELECT id, "elementData" FROM "ElementInstance" WHERE id = ANY(:ids)'
-            ),
+            text('SELECT id, "elementData" FROM "ElementInstance" WHERE id = ANY(:ids)'),
             {"ids": list(instance_ids)},
         ).all()
-        element_instances = {
-            str(row[0]): _extract_element_name(row[1]) for row in rows
-        }
+        element_instances = {str(row[0]): _extract_element_name(row[1]) for row in rows}
 
     return {
         "course_name": courses.get(course_id, ""),
@@ -396,10 +374,7 @@ def _assert_read_only_role(
     touched by ``99_mark_analytics_valid``.
     """
     row = connection.execute(
-        text(
-            'SELECT current_user AS u, '
-            'has_table_privilege(current_user, \'"Course"\', \'INSERT\') AS can_insert'
-        )
+        text("SELECT current_user AS u, has_table_privilege(current_user, '\"Course\"', 'INSERT') AS can_insert")
     ).one()
     current_user = row.u
     can_insert = bool(row.can_insert)
@@ -567,10 +542,7 @@ def run_dryrun(
                     rows_written = _rows_written_since(
                         buffer, before_counts, _SCRIPT_OUTPUT_TABLES.get(module_name, ())
                     )
-                    if (
-                        _SCRIPT_OUTPUT_TABLES.get(module_name)
-                        and rows_written == 0
-                    ):
+                    if _SCRIPT_OUTPUT_TABLES.get(module_name) and rows_written == 0:
                         status = "empty"
                         _mark_expected_tables(
                             buffer,
@@ -592,9 +564,7 @@ def run_dryrun(
                         status=status,
                         note=error,
                     )
-                rows_written = _rows_written_since(
-                    buffer, before_counts, _SCRIPT_OUTPUT_TABLES.get(module_name, ())
-                )
+                rows_written = _rows_written_since(buffer, before_counts, _SCRIPT_OUTPUT_TABLES.get(module_name, ()))
                 buffer.record_script(
                     module_name,
                     elapsed,
@@ -628,14 +598,11 @@ def run_dryrun(
         "aborted_with_error": run_error or "",
         "omitted_domains": "Platform",
         "dryrun_omissions": (
-            "Platform analytics omitted for course-scoped export; analytics validity "
-            "watermark step omitted in dryrun."
+            "Platform analytics omitted for course-scoped export; analytics validity watermark step omitted in dryrun."
         ),
         "lookups": lookups,
         "script_domains": _SCRIPT_DOMAIN,
-        "omitted_domain_notes": {
-            "Platform": "Intentionally omitted for course-scoped dry run."
-        },
+        "omitted_domain_notes": {"Platform": "Intentionally omitted for course-scoped dry run."},
     }
     write_excel(buffer, output_path, metadata)
     print(f"[dryrun] wrote {output_path}", flush=True)

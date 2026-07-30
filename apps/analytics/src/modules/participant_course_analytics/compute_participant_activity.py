@@ -8,9 +8,7 @@ from src.models import ParticipantAnalytics
 from src.modules.utils import check_analytics_cancellation
 
 
-def compute_participant_activity(
-    session: Session, df_activity, course_id, course_start, course_end
-):
+def compute_participant_activity(session: Session, df_activity, course_id, course_start, course_end):
     course_duration = (course_end - course_start).days + 1
     week_end_dates = pd.date_range(start=course_start, end=course_end, freq="W")
 
@@ -23,13 +21,17 @@ def compute_participant_activity(
         if daily_by_participant is not None:
             daily_analytics = daily_by_participant.get(str(participant_id), [])
         else:
-            daily_rows = session.execute(
-                select(ParticipantAnalytics).where(
-                    ParticipantAnalytics.type == "DAILY",
-                    ParticipantAnalytics.courseId == course_id,
-                    ParticipantAnalytics.participantId == participant_id,
+            daily_rows = (
+                session.execute(
+                    select(ParticipantAnalytics).where(
+                        ParticipantAnalytics.type == "DAILY",
+                        ParticipantAnalytics.courseId == course_id,
+                        ParticipantAnalytics.participantId == participant_id,
+                    )
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
             daily_analytics = [row_to_dict(d) for d in daily_rows]
 
         response_count = sum(d["responseCount"] for d in daily_analytics)
@@ -46,9 +48,7 @@ def compute_participant_activity(
                 week_analytics = sum_active_days_per_week(week_end, daily_analytics)
                 active_days_week.append(len(week_analytics))
 
-        df_activity.loc[idx, "activeDaysPerWeek"] = sum(active_days_week) / len(
-            active_days_week
-        )
+        df_activity.loc[idx, "activeDaysPerWeek"] = sum(active_days_week) / len(active_days_week)
 
     return df_activity
 
@@ -71,8 +71,4 @@ def _buffered_daily_by_participant(course_id) -> dict[str, list[dict]] | None:
 def sum_active_days_per_week(week_end, daily_analytics):
     week_start = pd.Timestamp(week_end) - pd.DateOffset(days=6)
     end_ts = pd.Timestamp(week_end)
-    return [
-        d
-        for d in daily_analytics
-        if week_start <= pd.Timestamp(d["timestamp"]) <= end_ts
-    ]
+    return [d for d in daily_analytics if week_start <= pd.Timestamp(d["timestamp"]) <= end_ts]

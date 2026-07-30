@@ -16,7 +16,6 @@ fabricating a fake count.
 """
 
 import json
-import sys
 import time
 from typing import Any
 

@@ -36,12 +36,6 @@ ComputeFn = Callable[..., object]
 AnalyticsMode = Literal["full", "incremental", "finalize"]
 
 
-def exclusive_day_end(day: str) -> str:
-    """Return midnight after ``day`` for use with exclusive SQL window ends."""
-    next_day = datetime.strptime(day, "%Y-%m-%d") + timedelta(days=1)
-    return next_day.strftime("%Y-%m-%dT00:00:00.000Z")
-
-
 @dataclass(frozen=True, slots=True)
 class AnalyticsRunConfig:
     """Immutable configuration for one analytics task execution."""
@@ -103,6 +97,12 @@ def analytics_run_config_from_env() -> AnalyticsRunConfig:
         window_since=analytics_window_since(),
         chat_analytics_cutoff=(os.environ.get("ANALYTICS_CHAT_CUTOFF") or "").strip() or None,
     )
+
+
+def exclusive_day_end(day: str) -> str:
+    """Return midnight after ``day`` for use with exclusive SQL window ends."""
+    next_day = datetime.strptime(day, "%Y-%m-%d") + timedelta(days=1)
+    return next_day.strftime("%Y-%m-%dT00:00:00.000Z")
 
 
 def _parse_window_since(windows_since: str | None) -> pd.Timestamp | None:
@@ -182,7 +182,7 @@ def iter_analytics_windows(
             compute_fn(
                 session,
                 day + "T00:00:00.000Z",
-                day + "T23:59:59.999Z",
+                exclusive_day_end(day),
                 day,
                 "DAILY",
                 verbose=verbose,
@@ -200,7 +200,7 @@ def iter_analytics_windows(
             compute_fn(
                 session,
                 win_start + "T00:00:00.000Z",
-                week_end + "T23:59:59.999Z",
+                exclusive_day_end(week_end),
                 week_end,
                 "WEEKLY",
                 verbose=verbose,
@@ -218,7 +218,7 @@ def iter_analytics_windows(
             compute_fn(
                 session,
                 win_start + "T00:00:00.000Z",
-                month_end + "T23:59:59.999Z",
+                exclusive_day_end(month_end),
                 month_end,
                 "MONTHLY",
                 verbose=verbose,
@@ -231,7 +231,7 @@ def iter_analytics_windows(
         compute_fn(
             session,
             start_date + "T00:00:00.000Z",
-            end_date + "T23:59:59.999Z",
+            exclusive_day_end(end_date),
             COURSE_TIMESTAMP,
             "COURSE",
             verbose=verbose,

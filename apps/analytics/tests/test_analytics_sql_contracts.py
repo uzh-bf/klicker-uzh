@@ -54,7 +54,7 @@ class AnalyticsSqlContractTests(unittest.TestCase):
                 self.assertIn("JOIN eligible_pairs ep", statement[messages_cte:disclaimer_cte])
                 self.assertIn('EXTRACT(ISODOW FROM "createdAt")', statement)
                 self.assertIn('EXTRACT(HOUR   FROM "createdAt")', statement)
-                self.assertIn("::timestamptz AT TIME ZONE 'UTC'", statement)
+                self.assertIn("CAST(:win_start AS timestamptz) AT TIME ZONE 'UTC'", statement)
                 self.assertIn('cuc."acceptedDisclaimerId" = cb."disclaimerId"', statement)
                 self.assertIn('cuc."disclaimerDeclined" = false', statement)
 

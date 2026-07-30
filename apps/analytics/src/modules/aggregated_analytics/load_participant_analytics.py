@@ -34,9 +34,7 @@ def load_participant_analytics(
         df = _filter_buffered_rows_by_timestamp(buffered_rows, timestamp_value)
         if verbose:
             print(
-                "Found {} analytics for timestamp={} type={} (buffer)".format(
-                    len(df), timestamp_value, analytics_type
-                )
+                "Found {} analytics for timestamp={} type={} (buffer)".format(len(df), timestamp_value, analytics_type)
             )
         return df
 
@@ -61,9 +59,7 @@ def load_participant_analytics(
     return pd.DataFrame([row_to_dict(item) for item in participant_analytics])
 
 
-def _filter_buffered_rows_by_timestamp(
-    rows: list[dict], timestamp_value
-) -> pd.DataFrame:
+def _filter_buffered_rows_by_timestamp(rows: list[dict], timestamp_value) -> pd.DataFrame:
     matches: list[dict] = []
     for row in rows:
         row_ts = row.get("timestamp")

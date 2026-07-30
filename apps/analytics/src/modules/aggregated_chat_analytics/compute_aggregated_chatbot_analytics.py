@@ -20,11 +20,7 @@ __all__ = ["compute_aggregated_chatbot_analytics", "COURSE_TIMESTAMP"]
 
 
 def _prepare_sql(template: str, course_ids: list[str] | None) -> str:
-    clause = (
-        ""
-        if course_ids is None
-        else render_uuid_in_clause('cb."courseId"', course_ids)
-    )
+    clause = "" if course_ids is None else render_uuid_in_clause('cb."courseId"', course_ids)
     return template.replace(_PLACEHOLDER, clause)
 
 
@@ -52,10 +48,7 @@ def compute_aggregated_chatbot_analytics(
         raise ValueError(f"Unknown analytics type: {analytics_type}")
 
     if verbose:
-        print(
-            f"[aggregated_chat_analytics] {analytics_type} "
-            f"{win_start}..{win_end} -> {timestamp}"
-        )
+        print(f"[aggregated_chat_analytics] {analytics_type} {win_start}..{win_end} -> {timestamp}")
 
     params = {"analytics_type": analytics_type, "ts": timestamp}
     session.execute(text(_prepare_delete_sql(course_ids)), params)

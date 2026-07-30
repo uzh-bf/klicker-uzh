@@ -12,8 +12,12 @@ from src.models import AggregatedCourseAnalytics, ParticipantAnalytics
 
 def compute_weekday_activity(session: Session, course):
     course_id = course["id"]
-    course_start = course["startDate"].date() if hasattr(course["startDate"], "date") else pd.Timestamp(course["startDate"]).date()
-    course_end = course["endDate"].date() if hasattr(course["endDate"], "date") else pd.Timestamp(course["endDate"]).date()
+    course_start = (
+        course["startDate"].date() if hasattr(course["startDate"], "date") else pd.Timestamp(course["startDate"]).date()
+    )
+    course_end = (
+        course["endDate"].date() if hasattr(course["endDate"], "date") else pd.Timestamp(course["endDate"]).date()
+    )
     total_course_participants = len(course["participations"])
 
     df_daily = _load_daily_participant_analytics(session, course_id)
@@ -63,9 +67,7 @@ def compute_weekday_activity(session: Session, course):
 def single_weekday_activity(weekdays, df_daily):
     collector = []
     for weekday in weekdays:
-        df_weekday = df_daily[
-            df_daily["timestamp"] == pd.Timestamp(weekday).tz_localize("UTC")
-        ]
+        df_weekday = df_daily[df_daily["timestamp"] == pd.Timestamp(weekday).tz_localize("UTC")]
         if df_weekday.empty:
             collector.append(0)
         collector.append(len(df_weekday))
@@ -90,12 +92,16 @@ def _load_daily_participant_analytics(session: Session, course_id: str) -> pd.Da
             df["timestamp"] = df["timestamp"].apply(_to_utc_timestamp)
         return df
 
-    daily_analytics = session.execute(
-        select(ParticipantAnalytics).where(
-            ParticipantAnalytics.type == "DAILY",
-            ParticipantAnalytics.courseId == course_id,
+    daily_analytics = (
+        session.execute(
+            select(ParticipantAnalytics).where(
+                ParticipantAnalytics.type == "DAILY",
+                ParticipantAnalytics.courseId == course_id,
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     return pd.DataFrame([row_to_dict(daily) for daily in daily_analytics])
 
 

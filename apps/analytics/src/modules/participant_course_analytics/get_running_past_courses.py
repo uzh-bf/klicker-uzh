@@ -13,9 +13,7 @@ def get_running_past_courses(session: Session) -> pd.DataFrame:
     curr_date = datetime.now()
     scope = scoped_course_ids(session)
 
-    stmt = select(Course.id, Course.startDate, Course.endDate).where(
-        Course.startDate <= curr_date
-    )
+    stmt = select(Course.id, Course.startDate, Course.endDate).where(Course.startDate <= curr_date)
     stmt = apply_course_scope(scope, stmt, Course.id)
     if stmt is None:
         print("[get_running_past_courses] empty scope — returning no courses")
@@ -27,14 +25,10 @@ def get_running_past_courses(session: Session) -> pd.DataFrame:
     participations_by_course: dict[str, list[dict[str, object]]] = defaultdict(list)
     if course_ids:
         participation_rows = session.execute(
-            select(Participation.courseId, Participation.participantId).where(
-                Participation.courseId.in_(course_ids)
-            )
+            select(Participation.courseId, Participation.participantId).where(Participation.courseId.in_(course_ids))
         ).mappings()
         for row in participation_rows:
-            participations_by_course[str(row["courseId"])].append(
-                {"participantId": row["participantId"]}
-            )
+            participations_by_course[str(row["courseId"])].append({"participantId": row["participantId"]})
 
     rows = []
     for course in courses:
@@ -44,7 +38,5 @@ def get_running_past_courses(session: Session) -> pd.DataFrame:
 
     df_courses = pd.DataFrame(rows)
     scope_note = f" (scoped to {len(scope)} ids)" if scope is not None else ""
-    print(
-        f"Found {len(df_courses)} courses with a start date before {curr_date}{scope_note}"
-    )
+    print(f"Found {len(df_courses)} courses with a start date before {curr_date}{scope_note}")
     return df_courses

@@ -11,7 +11,7 @@
 """
 
 from datetime import date, datetime, time, timezone
-from typing import Iterable, Mapping, Sequence
+from typing import Mapping, Sequence
 
 from sqlalchemy import Column, inspect
 from sqlalchemy.dialects.postgresql import insert as postgres_insert
@@ -49,9 +49,9 @@ def bulk_upsert(
             raise ValueError(f"bulk_upsert row {index} must have the same columns as row 0")
 
     stmt = postgres_insert(Model).values(list(rows))
-    effective_update_cols = list(update_cols) if update_cols is not None else [
-        c for c in rows[0].keys() if c not in conflict_cols
-    ]
+    effective_update_cols = (
+        list(update_cols) if update_cols is not None else [c for c in rows[0].keys() if c not in conflict_cols]
+    )
     if not effective_update_cols:
         # No columns to refresh on conflict — degrade to DO NOTHING so we still
         # honour the conflict target rather than erroring.
@@ -104,9 +104,7 @@ def coerce_timestamp(value: object) -> datetime:
         except Exception as exc:
             raise ValueError(f"invalid timestamp string: {value!r}") from exc
     else:
-        raise TypeError(
-            f"expected ISO date string, timestamp string, date, or datetime; got {type(value)!r}"
-        )
+        raise TypeError(f"expected ISO date string, timestamp string, date, or datetime; got {type(value)!r}")
 
     if ts.tzinfo is not None:
         ts = ts.tz_convert(timezone.utc).tz_localize(None)
@@ -147,8 +145,4 @@ def row_to_dict(row: object) -> dict:
         return dict(row)  # type: ignore[arg-type]
     state = inspect(row)
     unloaded = set(state.unloaded)
-    return {
-        col.key: getattr(row, col.key)
-        for col in mapper.column_attrs
-        if col.key not in unloaded
-    }
+    return {col.key: getattr(row, col.key) for col in mapper.column_attrs if col.key not in unloaded}

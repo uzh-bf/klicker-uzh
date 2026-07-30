@@ -59,6 +59,4 @@ def test_cluster_embeddings_recovers_multiple_clusters_on_separated_topics():
     )
 
     noise_fraction = (len(cluster_ids) - len(non_noise)) / len(cluster_ids)
-    assert noise_fraction < 0.5, (
-        f"noise fraction {noise_fraction:.2f} too high — clustering is degenerate"
-    )
+    assert noise_fraction < 0.5, f"noise fraction {noise_fraction:.2f} too high — clustering is degenerate"

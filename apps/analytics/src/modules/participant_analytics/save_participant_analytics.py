@@ -4,9 +4,7 @@ from src.db_helpers import bulk_upsert, coerce_date, utcnow
 from src.models import ParticipantAnalytics
 
 
-def save_participant_analytics(
-    session: Session, df_analytics, timestamp, analytics_type="DAILY"
-):
+def save_participant_analytics(session: Session, df_analytics, timestamp, analytics_type="DAILY"):
     if df_analytics is None or df_analytics.empty:
         return
 
@@ -69,7 +67,8 @@ def save_participant_analytics(
         ParticipantAnalytics,
         rows,
         conflict_cols=["type", "courseId", "participantId", "timestamp"],
-        update_cols=[c for c in rows[0].keys()
-                     if c not in ("type", "courseId", "participantId", "timestamp", "createdAt")],
+        update_cols=[
+            c for c in rows[0].keys() if c not in ("type", "courseId", "participantId", "timestamp", "createdAt")
+        ],
     )
     session.commit()

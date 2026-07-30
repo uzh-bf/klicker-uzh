@@ -47,10 +47,7 @@ def main() -> None:
     parser.add_argument(
         "--output",
         default=None,
-        help=(
-            "Path to the .xlsx file to produce. Defaults to "
-            "./analytics-dryrun-<courseId>-<YYYY-MM-DD>.xlsx"
-        ),
+        help=("Path to the .xlsx file to produce. Defaults to ./analytics-dryrun-<courseId>-<YYYY-MM-DD>.xlsx"),
     )
     parser.add_argument(
         "--scripts",
