@@ -323,6 +323,7 @@ function KnowledgeBaseResourceList({
     Record<string, number>
   >({})
   const pollInFlightRef = useRef(false)
+  const pollTickRef = useRef(0)
   const refreshRequestRef = useRef(0)
   const handledRefreshTriggerRef = useRef<string | null>(null)
   // Bounded-polling bookkeeping (P2-1): per-page cursors needed to refetch a
@@ -368,6 +369,20 @@ function KnowledgeBaseResourceList({
     bulkSelectableIds.every((id) => selectedIds.has(id))
   const selectedResources = resources.filter(({ id }) => selectedIds.has(id))
 
+  // The per-page fetch variables are identical at every poll site (full walk
+  // and bounded poll alike) bar the cursor, so build them in one place.
+  const getPageVariables = useCallback(
+    (after: string | null) => ({
+      kbId,
+      first: PAGE_SIZE,
+      after,
+      search: deferredSearch || null,
+      type: typeFilter || null,
+      status: statusFilter || null,
+    }),
+    [deferredSearch, kbId, statusFilter, typeFilter]
+  )
+
   const refreshLoadedResources = useCallback(async () => {
     const requestId = ++refreshRequestRef.current
     const targetCount = Math.max(resources.length, PAGE_SIZE)
@@ -381,14 +396,7 @@ function KnowledgeBaseResourceList({
     try {
       do {
         const { data: refreshedData } = await fetchResourcePoll({
-          variables: {
-            kbId,
-            first: PAGE_SIZE,
-            after,
-            search: deferredSearch || null,
-            type: typeFilter || null,
-            status: statusFilter || null,
-          },
+          variables: getPageVariables(after),
         })
         if (requestId !== refreshRequestRef.current) return false
 
@@ -433,29 +441,27 @@ function KnowledgeBaseResourceList({
       }
       throw refreshError
     }
-  }, [
-    deferredSearch,
-    fetchResourcePoll,
-    kbId,
-    resources.length,
-    statusFilter,
-    typeFilter,
-    updateQuery,
-  ])
+  }, [fetchResourcePoll, getPageVariables, resources.length, updateQuery])
 
   // Bounded poll for the 2s interval (P2-1): instead of re-walking every
   // loaded page, only refetch the first page (the entry point of the cursor
   // walk) plus pages already known to contain an active row, using the
   // per-page cursors captured by the last full walk. Falls back to a full
   // walk (via refreshLoadedResources) whenever that bookkeeping isn't
-  // established yet for the currently loaded pages, or whenever a refetched
-  // non-tail page comes back with a different item count than expected --
-  // a sign that a concurrent delete shifted rows across the keyset window,
-  // so the stored cursors can no longer be trusted and state must be
-  // re-established from scratch.
+  // established yet for the currently loaded pages, whenever a refetched
+  // page comes back with a different item count than expected, or whenever
+  // a non-tail page's fresh end cursor drifts from the cursor recorded for
+  // the next loaded page -- all are signs that a concurrent insert/delete
+  // shifted rows across the keyset window, so the stored cursors can no
+  // longer be trusted and state must be re-established from scratch rather
+  // than merged (a merge on a shifted window would splice stale rows back
+  // in and render duplicate resource ids/React keys). The polling effect
+  // also forces a full walk every 10th tick regardless, bounding the
+  // staleness of untracked pages and of totalCount/pageInfo to 20s.
   const pollActivePages = useCallback(async () => {
     const loadedPageCount = Math.max(1, Math.ceil(resources.length / PAGE_SIZE))
     const cursors = pageCursorsRef.current
+    const tailPageIndex = loadedPageCount - 1
 
     if (!bookkeepingValidRef.current || cursors.length < loadedPageCount) {
       return refreshLoadedResources()
@@ -470,16 +476,12 @@ function KnowledgeBaseResourceList({
 
     try {
       const fetchedByPage = new Map<number, KnowledgeBaseResource[]>()
+      let page0Connection: GetKbResourcesQuery['getKbResources'] | null = null
+      let tailConnection: GetKbResourcesQuery['getKbResources'] | null = null
+
       for (const pageIndex of targetPages) {
         const { data: polledData } = await fetchResourcePoll({
-          variables: {
-            kbId,
-            first: PAGE_SIZE,
-            after: cursors[pageIndex],
-            search: deferredSearch || null,
-            type: typeFilter || null,
-            status: statusFilter || null,
-          },
+          variables: getPageVariables(cursors[pageIndex] ?? null),
         })
         if (requestId !== refreshRequestRef.current) return false
 
@@ -489,21 +491,33 @@ function KnowledgeBaseResourceList({
           return refreshLoadedResources()
         }
 
-        const isTailPage = pageIndex === loadedPageCount - 1
+        const isTailPage = pageIndex === tailPageIndex
         const expectedLength = isTailPage
           ? resources.length - pageIndex * PAGE_SIZE
           : PAGE_SIZE
-        if (!isTailPage && polledConnection.items.length !== expectedLength) {
+        if (polledConnection.items.length !== expectedLength) {
+          bookkeepingValidRef.current = false
+          return refreshLoadedResources()
+        }
+
+        // A non-tail page's fresh end cursor is the cursor the next loaded
+        // page must resume from. If it no longer matches what the last full
+        // walk (or a prior poll) recorded, a concurrent insert/delete
+        // absorbed rows across the page boundary and the loaded window has
+        // shifted -- detected here, before any merge is applied, so a
+        // shifted page is never spliced while downstream pages stay stale.
+        if (
+          !isTailPage &&
+          (polledConnection.pageInfo.endCursor ?? null) !==
+            (cursors[pageIndex + 1] ?? null)
+        ) {
           bookkeepingValidRef.current = false
           return refreshLoadedResources()
         }
 
         fetchedByPage.set(pageIndex, polledConnection.items)
-        // Opportunistically refresh the next page's cursor in case it
-        // becomes a poll target later (e.g. its rows become active).
-        if (pageIndex + 1 < cursors.length) {
-          cursors[pageIndex + 1] = polledConnection.pageInfo.endCursor ?? null
-        }
+        if (pageIndex === 0) page0Connection = polledConnection
+        if (isTailPage) tailConnection = polledConnection
       }
 
       if (requestId !== refreshRequestRef.current) return false
@@ -515,17 +529,32 @@ function KnowledgeBaseResourceList({
           activePageIndexesRef.current.delete(pageIndex)
         }
       })
-
       updateQuery((previous) => {
         const items = previous.getKbResources.items.slice()
         fetchedByPage.forEach((pageItems, pageIndex) => {
-          items.splice(pageIndex * PAGE_SIZE, PAGE_SIZE, ...pageItems)
+          // pageItems.length was already checked against expectedLength
+          // above (both tail and non-tail); using it directly keeps the
+          // splice's deleteCount correct for a tail page shorter than
+          // PAGE_SIZE instead of over-deleting into the next page's rows.
+          items.splice(pageIndex * PAGE_SIZE, pageItems.length, ...pageItems)
         })
         return {
           ...previous,
           getKbResources: {
             ...previous.getKbResources,
             items,
+            // totalCount is connection-level and fresh on any page fetch,
+            // so page 0's connection (always fetched) always carries it.
+            totalCount:
+              page0Connection?.totalCount ?? previous.getKbResources.totalCount,
+            // pageInfo describes the window after whichever page it came
+            // from -- taking it from page 0 would corrupt loadMore's
+            // endCursor unless page 0 is also the tail page, so only take
+            // it when the tail page was actually fetched this tick;
+            // otherwise leave it as-is (the periodic full walk bounds its
+            // staleness).
+            pageInfo:
+              tailConnection?.pageInfo ?? previous.getKbResources.pageInfo,
           },
         }
       })
@@ -540,24 +569,35 @@ function KnowledgeBaseResourceList({
       throw pollError
     }
   }, [
-    deferredSearch,
     fetchResourcePoll,
-    kbId,
+    getPageVariables,
     refreshLoadedResources,
     resources.length,
-    statusFilter,
-    typeFilter,
     updateQuery,
   ])
 
   useEffect(() => {
     if (!polling) return
 
+    // Reset on every (re)start so a filter/kb change or a poll-stop/restart
+    // doesn't inherit a stale count from a previous run.
+    pollTickRef.current = 0
+
     const pollCurrentPage = async () => {
       if (pollInFlightRef.current) return
       pollInFlightRef.current = true
       try {
-        await pollActivePages()
+        pollTickRef.current += 1
+        // Every 10th tick (20s at the 2s interval below) runs a full walk
+        // instead of the bounded poll -- this is what discovers activations
+        // on pages the bounded poll doesn't track, and bounds the staleness
+        // of totalCount/pageInfo, restoring parity with polling every loaded
+        // page at a fixed bound.
+        if (pollTickRef.current % 10 === 0) {
+          await refreshLoadedResources()
+        } else {
+          await pollActivePages()
+        }
       } finally {
         pollInFlightRef.current = false
       }
@@ -573,7 +613,7 @@ function KnowledgeBaseResourceList({
       refreshRequestRef.current += 1
       pollInFlightRef.current = false
     }
-  }, [polling, pollActivePages])
+  }, [polling, pollActivePages, refreshLoadedResources])
 
   useEffect(() => {
     refreshRequestRef.current += 1
