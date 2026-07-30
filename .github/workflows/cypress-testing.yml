@@ -109,7 +109,7 @@ jobs:
       - run: echo "Running parallel Cypress tests for draft PR (container ${{ matrix.containers }})"
 
       - name: Define node version
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 24
 
@@ -322,7 +322,7 @@ jobs:
       - run: echo "Running Cypress tests with Cloud recording for non-draft PR or push to v3"
 
       - name: Define node version
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 24
 
