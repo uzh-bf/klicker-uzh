@@ -578,6 +578,36 @@ describe('live quiz reset summary', () => {
     })
   })
 
+  it('counts shared users when the implicit owner has no permission row', async () => {
+    const fixture = await seedEndedRegularLiveQuizForReset(
+      { gamified: false, withRewardRun: false, withCourse: false },
+      userOneCtx
+    )
+    await makeFixtureInstanceResettable(fixture.instanceId)
+    await prisma.permission.create({
+      data: {
+        liveQuizId: fixture.liveQuizId,
+        userId: userTwoCtx.user.sub,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+    await recomputeDerivedPermissions(
+      { liveQuizId: fixture.liveQuizId },
+      prisma
+    )
+
+    await expect(
+      resetLiveQuiz({ id: fixture.liveQuizId }, userOneCtx)
+    ).resolves.toMatchObject({
+      outcome: 'SUCCESS',
+      activity: {
+        id: fixture.liveQuizId,
+        permissionLevel: PermissionLevel.OWNER,
+        numSharedUsers: 1,
+      },
+    })
+  })
+
   it('allows an administrator derived through an activity group permission', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
       { gamified: false, withRewardRun: false, withCourse: false },

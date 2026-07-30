@@ -491,7 +491,10 @@ export function formatResetActivityInfo(activity: ResetActivityInfoSource) {
     isGamificationEnabled: activity.isGamificationEnabled,
     isAssessmentEnabled: activity.isAssessmentEnabled,
     pinCode: activity.pinCode,
-    numSharedUsers: Math.max(0, activity._count.permissions - 1),
+    numSharedUsers: Math.max(
+      0,
+      activity._count.permissions - (isImplicitOwner ? 0 : 1)
+    ),
     ...access,
     isActivityReviewer: activity.isAssessmentEnabled,
     updatedAt: activity.updatedAt,
