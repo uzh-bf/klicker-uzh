@@ -1,3 +1,4 @@
+import { SubmitCodeResponseDocument } from '@klicker-uzh/graphql/dist/ops.js'
 import {
   ElementInstanceType,
   ElementStackType,
@@ -17,7 +18,7 @@ import {
   type Route,
   type WebSocketRoute,
 } from '@playwright/test'
-import { execute, parse } from 'graphql'
+import { execute } from 'graphql'
 import { getPrisma } from '../global-setup.js'
 import { setSessionCookieForUrl } from '../util/authSession.js'
 import {
@@ -498,12 +499,7 @@ test.describe.serial('CODE participant and evaluation flow', () => {
       }
       if (operation === 'SubmitCodeResponse') {
         const request = route.request().postDataJSON() as {
-          operationName?: string
-          query?: string
           variables?: Record<string, unknown>
-        }
-        if (!request.query) {
-          throw new Error('CODE submission mutation contains no query')
         }
 
         const prisma = await getPrisma()
@@ -512,8 +508,7 @@ test.describe.serial('CODE participant and evaluation flow', () => {
         )
         const mutationResult = await execute({
           schema,
-          document: parse(request.query),
-          operationName: request.operationName,
+          document: SubmitCodeResponseDocument,
           variableValues: request.variables,
           contextValue: {
             user: {

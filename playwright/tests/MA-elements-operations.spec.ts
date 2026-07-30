@@ -30,7 +30,7 @@ import {
 } from '../util/fixtures/elements.js'
 import { getDatetimeValidationString } from '../util/helpers.js'
 import { enMessages as messages } from '../util/messages.js'
-import { acceptGamifiedLiveQuizAccountPrompt } from '../util/workflow.js'
+import { acceptGamifiedLiveQuizAccountPrompt, env } from '../util/workflow.js'
 
 type Choice = {
   value: string
@@ -770,7 +770,7 @@ test.describe('Create different types of elements (with and without sample solut
         ({ key }) => localStorage.setItem(key, '{'),
         storedDraft
       )
-      await page.goto(`/?editElementId=${elementId}`)
+      await page.goto(`${env('URL_MANAGE')}/?editElementId=${elementId}`)
       await expect(page.getByTestId('insert-question-title')).toHaveValue(
         data.autoSave.title
       )
