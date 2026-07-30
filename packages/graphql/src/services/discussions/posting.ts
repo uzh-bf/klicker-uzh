@@ -149,7 +149,6 @@ export async function createCourseDiscussionThread(
       {
         courseId,
         scopeKey: resolvedScope.scopeKey,
-        spaceId: space.id,
         scopeId: resolvedScope.id,
         fingerprintHash,
       },
@@ -197,7 +196,6 @@ export async function createCourseDiscussionThread(
   const thread = await ctx.prisma.$transaction(async (tx) => {
     const createdThread = await tx.discussionThread.create({
       data: {
-        spaceId: space.id,
         scopeId: resolvedScope.id,
         content: normalizedContent,
         isAnonymous: anonymous,
@@ -208,9 +206,8 @@ export async function createCourseDiscussionThread(
 
     await tx.discussionEvent.create({
       data: {
-        spaceId: space.id,
         scopeId: resolvedScope.id,
-        threadId: createdThread.id,
+        subjectId: createdThread.id,
         participantId,
         eventType: DB.DiscussionEventType.THREAD_CREATED,
       },
@@ -253,15 +250,18 @@ export async function createCourseDiscussionReply(
       id: threadId,
     },
     include: {
-      scope: true,
-      space: true,
+      scope: {
+        include: {
+          space: true,
+        },
+      },
     },
   })
 
   if (!thread || thread.isDeleted) return null
   if (!isActiveCourseScopeType(thread.scope.scopeType)) return null
 
-  const threadCourseId = extractCourseIdFromSpace(thread.space)
+  const threadCourseId = extractCourseIdFromSpace(thread.scope.space)
   if (!threadCourseId || threadCourseId !== courseId) return null
   if (thread.replyCount >= REPLIES_PER_THREAD_MAX) return null
 
@@ -274,7 +274,7 @@ export async function createCourseDiscussionReply(
     const validBinding = await verifyEmbedScopeBinding(
       {
         embedClaims,
-        expectedSpace: thread.space,
+        expectedSpace: thread.scope.space,
         expectedScopeKey: thread.scope.scopeKey,
         requireAnonymous: true,
       },
@@ -289,7 +289,6 @@ export async function createCourseDiscussionReply(
       {
         courseId,
         scopeKey: thread.scope.scopeKey,
-        spaceId: thread.spaceId,
         scopeId: thread.scopeId,
         fingerprintHash,
       },
@@ -321,7 +320,7 @@ export async function createCourseDiscussionReply(
       const validBinding = await verifyEmbedScopeBinding(
         {
           embedClaims,
-          expectedSpace: thread.space,
+          expectedSpace: thread.scope.space,
           expectedScopeKey: thread.scope.scopeKey,
           requireAnonymous: false,
         },
@@ -356,8 +355,6 @@ export async function createCourseDiscussionReply(
     const createdReply = await tx.discussionReply.create({
       data: {
         threadId,
-        spaceId: thread.spaceId,
-        scopeId: thread.scopeId,
         content: normalizedContent,
         isAnonymous: anonymous,
         authorFingerprintHash: fingerprintHash,
@@ -367,10 +364,8 @@ export async function createCourseDiscussionReply(
 
     await tx.discussionEvent.create({
       data: {
-        spaceId: thread.spaceId,
         scopeId: thread.scopeId,
-        threadId,
-        replyId: createdReply.id,
+        subjectId: createdReply.id,
         participantId,
         eventType: DB.DiscussionEventType.REPLY_CREATED,
       },
@@ -390,5 +385,8 @@ export async function createCourseDiscussionReply(
 
   if (!response || response.isDeleted) return null
 
-  return mapReply(response)
+  return mapReply(response, {
+    spaceId: thread.scope.spaceId,
+    scopeId: thread.scopeId,
+  })
 }

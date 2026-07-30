@@ -135,14 +135,17 @@ export const courseQATasks = {
     })
     if (replaceExisting) {
       await prisma.discussionThread.deleteMany({
-        where: { spaceId: space.id },
+        where: {
+          scope: {
+            spaceId: space.id,
+          },
+        },
       })
     }
     const createdAt = Date.now()
 
     await prisma.discussionThread.createMany({
       data: contents.map((content, index) => ({
-        spaceId: space.id,
         scopeId: scope.id,
         content,
         createdAt: new Date(createdAt - (contents.length - index) * 1000),

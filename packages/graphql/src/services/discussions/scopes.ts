@@ -197,18 +197,14 @@ export async function resolveOrCreateScope(
 
 export async function createDiscussionEvent(
   {
-    spaceId,
     scopeId,
-    threadId,
-    replyId,
+    subjectId,
     participantId,
     eventType,
     metadata,
   }: {
-    spaceId: number
-    scopeId?: number | null
-    threadId?: number | null
-    replyId?: number | null
+    scopeId: number
+    subjectId?: number | null
     participantId?: string | null
     eventType: DB.DiscussionEventType
     metadata?: Record<string, unknown> | null
@@ -217,10 +213,8 @@ export async function createDiscussionEvent(
 ) {
   return ctx.prisma.discussionEvent.create({
     data: {
-      spaceId,
-      scopeId: scopeId ?? null,
-      threadId: threadId ?? null,
-      replyId: replyId ?? null,
+      scopeId,
+      subjectId: subjectId ?? null,
       participantId: participantId ?? null,
       eventType,
       metadata: metadata ?? undefined,

@@ -427,6 +427,56 @@ export function registerScopesSuite(getContext: () => DiscussionTestContext) {
 
     expect(removedScopeColumns).toHaveLength(0)
 
+    const redundantAncestryColumns = await prisma.$queryRaw<
+      Array<{ table_name: string; column_name: string }>
+    >`
+      SELECT table_name::text, column_name::text
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND (
+          (table_name = 'DiscussionThread' AND column_name = 'spaceId')
+          OR (
+            table_name = 'DiscussionReply'
+            AND column_name IN ('spaceId', 'scopeId')
+          )
+          OR (
+            table_name = 'DiscussionEvent'
+            AND column_name IN ('spaceId', 'threadId', 'replyId')
+          )
+        )
+    `
+
+    expect(redundantAncestryColumns).toHaveLength(0)
+
+    const discussionEventColumns = await prisma.$queryRaw<
+      Array<{ column_name: string; is_nullable: string }>
+    >`
+      SELECT column_name::text, is_nullable::text
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'DiscussionEvent'
+        AND column_name IN ('scopeId', 'subjectId')
+      ORDER BY column_name
+    `
+
+    expect(discussionEventColumns).toEqual([
+      { column_name: 'scopeId', is_nullable: 'NO' },
+      { column_name: 'subjectId', is_nullable: 'YES' },
+    ])
+
+    const discussionEventSubjectConstraint = await prisma.$queryRaw<
+      Array<{ definition: string }>
+    >`
+      SELECT pg_get_constraintdef(oid)::text AS definition
+      FROM pg_constraint
+      WHERE conname = 'DiscussionEvent_subjectId_check'
+    `
+
+    expect(discussionEventSubjectConstraint).toHaveLength(1)
+    expect(discussionEventSubjectConstraint[0]?.definition).toContain(
+      "'ANON_RATE_LIMITED'"
+    )
+
     const discussionSpaceTypes = await prisma.$queryRaw<
       Array<{ label: string }>
     >`

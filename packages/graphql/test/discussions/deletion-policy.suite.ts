@@ -144,7 +144,13 @@ export function registerDeletionPolicySuite(
 
     const deleteEvents = await prisma.discussionEvent.findMany({
       where: {
-        threadId: thread!.id,
+        scopeId: thread!.scopeId,
+        eventType: {
+          in: [
+            DiscussionEventType.REPLY_DELETED,
+            DiscussionEventType.THREAD_DELETED,
+          ],
+        },
       },
       orderBy: { id: 'asc' },
     })
@@ -209,7 +215,7 @@ export function registerDeletionPolicySuite(
 
     const replyDeleteEvents = await prisma.discussionEvent.count({
       where: {
-        replyId: reply!.id,
+        subjectId: reply!.id,
         eventType: DiscussionEventType.REPLY_DELETED,
       },
     })
@@ -267,7 +273,7 @@ export function registerDeletionPolicySuite(
     expect(
       await prisma.discussionEvent.count({
         where: {
-          replyId: reply!.id,
+          subjectId: reply!.id,
           eventType: DiscussionEventType.REPLY_DELETED,
         },
       })

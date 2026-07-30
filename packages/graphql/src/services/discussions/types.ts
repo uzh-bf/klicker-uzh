@@ -60,21 +60,26 @@ export interface GetCourseDiscussionEmbeddingInfoArgs {
   expiresInHours?: number | null
 }
 
-export interface DiscussionReplyWithRelations extends DiscussionReplyWithVotes {
+export type DiscussionReplyWithRelations = DiscussionReplyWithVotes & {
+  spaceId: number
+  scopeId: number
   hasUpvoted?: boolean
 }
 
-export type DiscussionScopeWithPresentation =
-  DiscussionThreadWithRelationsBase['scope'] & {
-    stackType?: DB.ElementStackType | null
-    stackOrder?: number | null
-    stackDisplayName?: string | null
-  }
+export type DiscussionScopeWithPresentation = Omit<
+  DiscussionThreadWithRelationsBase['scope'],
+  'space'
+> & {
+  stackType?: DB.ElementStackType | null
+  stackOrder?: number | null
+  stackDisplayName?: string | null
+}
 
 export type DiscussionThreadWithRelations = Omit<
   DiscussionThreadWithRelationsBase,
   'scope' | 'replies'
 > & {
+  spaceId: number
   scope: DiscussionScopeWithPresentation
   replies: DiscussionReplyWithRelations[]
 

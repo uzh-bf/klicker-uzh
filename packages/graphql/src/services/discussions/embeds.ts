@@ -164,13 +164,11 @@ export async function enforceAnonymousRateLimits(
   {
     courseId,
     scopeKey,
-    spaceId,
     scopeId,
     fingerprintHash,
   }: {
     courseId: string
     scopeKey: string
-    spaceId: number
     scopeId: number
     fingerprintHash: string
   },
@@ -189,7 +187,6 @@ export async function enforceAnonymousRateLimits(
 
     await createDiscussionEvent(
       {
-        spaceId,
         scopeId,
         eventType: DB.DiscussionEventType.ANON_RATE_LIMITED,
         metadata: {
@@ -215,7 +212,6 @@ export async function enforceAnonymousRateLimits(
 
     await createDiscussionEvent(
       {
-        spaceId,
         scopeId,
         eventType: DB.DiscussionEventType.ANON_RATE_LIMITED,
         metadata: {
@@ -241,7 +237,6 @@ export async function enforceAnonymousRateLimits(
 
     await createDiscussionEvent(
       {
-        spaceId,
         scopeId,
         eventType: DB.DiscussionEventType.ANON_RATE_LIMITED,
         metadata: {

@@ -31,8 +31,9 @@ async function resolveThreadCourseAndActor(
   ctx: Context
 ): Promise<{
   thread: DB.DiscussionThread & {
-    scope: Pick<DB.DiscussionScope, 'scopeType' | 'stackId'>
-    space: DB.DiscussionSpace
+    scope: DB.DiscussionScope & {
+      space: DB.DiscussionSpace
+    }
   }
   courseId: string
   actor: ResolvedActor
@@ -40,15 +41,18 @@ async function resolveThreadCourseAndActor(
   const thread = await ctx.prisma.discussionThread.findUnique({
     where: { id: threadId },
     include: {
-      scope: true,
-      space: true,
+      scope: {
+        include: {
+          space: true,
+        },
+      },
     },
   })
 
   if (!thread || thread.isDeleted) return null
   if (!isActiveCourseScopeType(thread.scope.scopeType)) return null
 
-  const courseId = extractCourseIdFromSpace(thread.space)
+  const courseId = extractCourseIdFromSpace(thread.scope.space)
   if (!courseId) return null
 
   const actor = await getCourseAccessActor(
@@ -92,10 +96,11 @@ async function resolveReplyCourseAndActor(
   ctx: Context
 ): Promise<{
   reply: DB.DiscussionReply & {
-    thread: Pick<DB.DiscussionThread, 'id' | 'spaceId' | 'scopeId'> & {
-      scope: Pick<DB.DiscussionScope, 'scopeType' | 'stackId'>
+    thread: DB.DiscussionThread & {
+      scope: DB.DiscussionScope & {
+        space: DB.DiscussionSpace
+      }
     }
-    space: DB.DiscussionSpace
   }
   courseId: string
   actor: ResolvedActor
@@ -104,20 +109,12 @@ async function resolveReplyCourseAndActor(
     where: { id: replyId },
     include: {
       thread: {
-        select: {
-          id: true,
-          spaceId: true,
-          scopeId: true,
-          scope: true,
-        },
-      },
-      space: {
-        select: {
-          id: true,
-          spaceType: true,
-          courseId: true,
-          createdAt: true,
-          updatedAt: true,
+        include: {
+          scope: {
+            include: {
+              space: true,
+            },
+          },
         },
       },
     },
@@ -126,7 +123,7 @@ async function resolveReplyCourseAndActor(
   if (!reply || reply.isDeleted) return null
   if (!isActiveCourseScopeType(reply.thread.scope.scopeType)) return null
 
-  const courseId = extractCourseIdFromSpace(reply.space)
+  const courseId = extractCourseIdFromSpace(reply.thread.scope.space)
   if (!courseId) return null
 
   const actor = await getCourseAccessActor(
@@ -219,9 +216,8 @@ export async function toggleCourseDiscussionThreadUpvote(
 
       await tx.discussionEvent.create({
         data: {
-          spaceId: resolved.thread.spaceId,
           scopeId: resolved.thread.scopeId,
-          threadId,
+          subjectId: threadId,
           participantId,
           eventType: DB.DiscussionEventType.THREAD_UPVOTED,
         },
@@ -317,10 +313,8 @@ export async function toggleCourseDiscussionReplyUpvote(
 
       await tx.discussionEvent.create({
         data: {
-          spaceId: resolved.reply.spaceId,
-          scopeId: resolved.reply.scopeId,
-          threadId: resolved.reply.threadId,
-          replyId,
+          scopeId: resolved.reply.thread.scopeId,
+          subjectId: replyId,
           participantId,
           eventType: DB.DiscussionEventType.REPLY_UPVOTED,
         },
@@ -362,7 +356,10 @@ export async function toggleCourseDiscussionReplyUpvote(
 
   if (!reply || reply.isDeleted) return null
 
-  return mapReply(reply)
+  return mapReply(reply, {
+    spaceId: resolved.reply.thread.scope.spaceId,
+    scopeId: resolved.reply.thread.scopeId,
+  })
 }
 
 async function canDeleteDiscussionContent(
@@ -418,15 +415,18 @@ export async function deleteCourseDiscussionThread(
   const thread = await ctx.prisma.discussionThread.findUnique({
     where: { id: threadId },
     include: {
-      scope: true,
-      space: true,
+      scope: {
+        include: {
+          space: true,
+        },
+      },
     },
   })
 
   if (!thread || thread.isDeleted) return false
   if (!isActiveCourseScopeType(thread.scope.scopeType)) return false
 
-  const courseId = extractCourseIdFromSpace(thread.space)
+  const courseId = extractCourseIdFromSpace(thread.scope.space)
   if (!courseId) return false
 
   const course = await getCourseSettings(courseId, ctx)
@@ -474,9 +474,8 @@ export async function deleteCourseDiscussionThread(
 
     await tx.discussionEvent.create({
       data: {
-        spaceId: thread.spaceId,
         scopeId: thread.scopeId,
-        threadId,
+        subjectId: threadId,
         participantId: actor?.participantId ?? null,
         eventType: DB.DiscussionEventType.THREAD_DELETED,
       },
@@ -495,13 +494,13 @@ export async function deleteCourseDiscussionReply(
   const reply = await ctx.prisma.discussionReply.findUnique({
     where: { id: replyId },
     include: {
-      space: true,
       thread: {
-        select: {
-          id: true,
-          spaceId: true,
-          scopeId: true,
-          scope: true,
+        include: {
+          scope: {
+            include: {
+              space: true,
+            },
+          },
         },
       },
     },
@@ -510,7 +509,7 @@ export async function deleteCourseDiscussionReply(
   if (!reply || reply.isDeleted) return false
   if (!isActiveCourseScopeType(reply.thread.scope.scopeType)) return false
 
-  const courseId = extractCourseIdFromSpace(reply.space)
+  const courseId = extractCourseIdFromSpace(reply.thread.scope.space)
   if (!courseId) return false
 
   const course = await getCourseSettings(courseId, ctx)
@@ -564,10 +563,8 @@ export async function deleteCourseDiscussionReply(
 
       await tx.discussionEvent.create({
         data: {
-          spaceId: reply.thread.spaceId,
           scopeId: reply.thread.scopeId,
-          threadId: reply.thread.id,
-          replyId,
+          subjectId: replyId,
           participantId: actor?.participantId ?? null,
           eventType: DB.DiscussionEventType.REPLY_DELETED,
         },

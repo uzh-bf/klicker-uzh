@@ -185,7 +185,7 @@ export function registerAnonymousRateLimitsSuite(
     let rateLimitEvents = await prisma.discussionEvent.findMany({
       where: {
         eventType: DiscussionEventType.ANON_RATE_LIMITED,
-        space: { courseId: course.id },
+        scope: { space: { courseId: course.id } },
       },
       select: { metadata: true },
     })
@@ -210,7 +210,7 @@ export function registerAnonymousRateLimitsSuite(
     rateLimitEvents = await prisma.discussionEvent.findMany({
       where: {
         eventType: DiscussionEventType.ANON_RATE_LIMITED,
-        space: { courseId: course.id },
+        scope: { space: { courseId: course.id } },
       },
       select: { metadata: true },
     })
@@ -269,7 +269,7 @@ export function registerAnonymousRateLimitsSuite(
       await prisma.discussionEvent.findMany({
         where: {
           eventType: DiscussionEventType.ANON_RATE_LIMITED,
-          space: { courseId: courseWindowCourse.id },
+          scope: { space: { courseId: courseWindowCourse.id } },
         },
         select: { metadata: true },
       })
@@ -335,7 +335,7 @@ export function registerAnonymousRateLimitsSuite(
       await prisma.discussionEvent.findMany({
         where: {
           eventType: DiscussionEventType.ANON_RATE_LIMITED,
-          space: { courseId: ipWindowCourse.id },
+          scope: { space: { courseId: ipWindowCourse.id } },
         },
         select: { metadata: true },
       })

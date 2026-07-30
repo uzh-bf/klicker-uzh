@@ -76,9 +76,9 @@ export async function courseDiscussionThreads(
 
   const threads = await ctx.prisma.discussionThread.findMany({
     where: {
-      spaceId: space.id,
       isDeleted: false,
       scope: {
+        spaceId: space.id,
         scopeType: { in: [...ACTIVE_COURSE_SCOPE_TYPES] },
         ...(effectiveScopeKey
           ? {
@@ -149,9 +149,9 @@ export async function courseDiscussionOverview(
   }
 
   const threadWhere: DB.Prisma.DiscussionThreadWhereInput = {
-    spaceId: { in: spaces.map((space) => space.id) },
     isDeleted: false,
     scope: {
+      spaceId: { in: spaces.map((space) => space.id) },
       scopeType: { in: [...ACTIVE_COURSE_SCOPE_TYPES] },
     },
   }
@@ -187,7 +187,7 @@ export async function courseDiscussionOverview(
     grouped.set(thread.sourceKey, {
       sourceKey: thread.sourceKey,
       sourceLabel: thread.sourceLabel,
-      spaceType: thread.space.spaceType,
+      spaceType: DB.DiscussionSpaceType.COURSE,
       threads: [thread],
     })
   })

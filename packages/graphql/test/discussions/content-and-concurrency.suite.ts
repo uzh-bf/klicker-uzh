@@ -117,6 +117,7 @@ export function registerContentAndConcurrencySuite(
     expect(thread).toBeTruthy()
     expect(thread?.scope.scopeType).toBe(DiscussionScopeType.COURSE)
     expect(thread?.scope.scopeKey).toBe(`course:${course.id}`)
+    expect(thread?.spaceId).toBe(thread?.scope.spaceId)
 
     const reply = await createCourseDiscussionReply(
       {
@@ -129,6 +130,8 @@ export function registerContentAndConcurrencySuite(
 
     expect(reply).toBeTruthy()
     expect(reply?.threadId).toBe(thread?.id)
+    expect(reply?.spaceId).toBe(thread?.spaceId)
+    expect(reply?.scopeId).toBe(thread?.scopeId)
 
     const threadPage = await courseDiscussionThreads(
       {
@@ -141,6 +144,8 @@ export function registerContentAndConcurrencySuite(
 
     expect(threadPage.threads).toHaveLength(1)
     expect(threadPage.threads[0]?.replies).toHaveLength(1)
+    expect(threadPage.threads[0]?.spaceId).toBe(thread?.spaceId)
+    expect(threadPage.threads[0]?.replies[0]?.scopeId).toBe(thread?.scopeId)
 
     const upvotedThreads = await runTwiceConcurrently(() =>
       toggleCourseDiscussionThreadUpvote(
@@ -189,7 +194,7 @@ export function registerContentAndConcurrencySuite(
     expect(
       await prisma.discussionEvent.count({
         where: {
-          threadId: thread!.id,
+          subjectId: thread!.id,
           eventType: DiscussionEventType.THREAD_UPVOTED,
         },
       })
@@ -197,7 +202,7 @@ export function registerContentAndConcurrencySuite(
     expect(
       await prisma.discussionEvent.count({
         where: {
-          replyId: reply!.id,
+          subjectId: reply!.id,
           eventType: DiscussionEventType.REPLY_UPVOTED,
         },
       })
@@ -585,8 +590,6 @@ export function registerContentAndConcurrencySuite(
     await prisma.discussionReply.createMany({
       data: Array.from({ length: 49 }, (_, index) => ({
         threadId: thread!.id,
-        spaceId: thread!.spaceId,
-        scopeId: thread!.scopeId,
         content: `Existing reply ${index + 1}`,
         authorParticipantId: participantOneId,
       })),
@@ -682,7 +685,7 @@ export function registerContentAndConcurrencySuite(
     expect(
       await prisma.discussionEvent.count({
         where: {
-          threadId: thread!.id,
+          scopeId: thread!.scopeId,
           eventType: DiscussionEventType.REPLY_CREATED,
         },
       })
@@ -690,7 +693,7 @@ export function registerContentAndConcurrencySuite(
     expect(
       await prisma.discussionEvent.count({
         where: {
-          threadId: thread!.id,
+          scopeId: thread!.scopeId,
           eventType: DiscussionEventType.REPLY_DELETED,
         },
       })

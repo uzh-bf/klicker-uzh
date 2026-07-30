@@ -4,7 +4,11 @@ import {
   COURSE_QA_EXTERNAL_SOURCE_MAX_LENGTH,
 } from '@klicker-uzh/types'
 import type { Context } from '../../lib/context.js'
-import { buildThreadInclude } from './relations.js'
+import {
+  buildThreadInclude,
+  type DiscussionReplyWithVotes,
+  type DiscussionThreadWithRelationsBase,
+} from './relations.js'
 import type {
   DiscussionReplyWithRelations,
   DiscussionSort,
@@ -101,31 +105,58 @@ export function isPrismaUniqueConstraintError(error: unknown) {
 }
 
 export function mapReply(
-  reply: DiscussionReplyWithRelations
+  reply: DiscussionReplyWithVotes,
+  {
+    spaceId,
+    scopeId,
+  }: {
+    spaceId: number
+    scopeId: number
+  }
 ): DiscussionReplyWithRelations {
   return {
     ...reply,
+    spaceId,
+    scopeId,
     hasUpvoted: (reply.votes?.length ?? 0) > 0,
   }
 }
 
 function mapThread(
-  thread: DiscussionThreadWithRelations
+  thread: DiscussionThreadWithRelationsBase,
+  stack?: {
+    type: DB.ElementStackType
+    order: number
+    displayName: string | null
+  }
 ): DiscussionThreadWithRelations {
-  const sourceKey = sourceKeyForSpace(thread.space)
+  const { space, ...scope } = thread.scope
+  const sourceKey = sourceKeyForSpace(space)
   const sourceLabel = sourceLabelForSpace()
 
   return {
     ...thread,
+    spaceId: space.id,
+    scope: {
+      ...scope,
+      stackType: stack?.type ?? null,
+      stackOrder: stack?.order ?? null,
+      stackDisplayName: stack?.displayName ?? null,
+    },
     sourceKey,
     sourceLabel,
     hasUpvoted: (thread.votes?.length ?? 0) > 0,
-    replies: thread.replies.map(mapReply),
+    replies: thread.replies.map((reply) =>
+      mapReply(reply, {
+        spaceId: space.id,
+        scopeId: thread.scopeId,
+      })
+    ),
   }
 }
 
 export async function mapThreads(
-  threads: DiscussionThreadWithRelations[],
+  threads: DiscussionThreadWithRelationsBase[],
   ctx: Context
 ) {
   const stackIds = [
@@ -154,15 +185,7 @@ export async function mapThreads(
       ? stacksById.get(thread.scope.stackId)
       : undefined
 
-    return mapThread({
-      ...thread,
-      scope: {
-        ...thread.scope,
-        stackType: stack?.type ?? null,
-        stackOrder: stack?.order ?? null,
-        stackDisplayName: stack?.displayName ?? null,
-      },
-    })
+    return mapThread(thread, stack)
   })
 }
 

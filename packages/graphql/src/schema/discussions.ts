@@ -110,6 +110,8 @@ export const DiscussionScope = DiscussionScopeRef.implement({
 })
 
 export interface IDiscussionReply extends DB.DiscussionReply {
+  spaceId: number
+  scopeId: number
   hasUpvoted?: boolean
 }
 export const DiscussionReplyRef =
@@ -133,6 +135,7 @@ export const DiscussionReply = DiscussionReplyRef.implement({
 })
 
 export interface IDiscussionThread extends DB.DiscussionThread {
+  spaceId: number
   scope: DB.DiscussionScope
   replies: IDiscussionReply[]
   sourceKey?: string

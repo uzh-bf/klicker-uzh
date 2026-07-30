@@ -26,10 +26,7 @@ model DiscussionSpace {
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String @unique @db.Uuid
 
-  scopes  DiscussionScope[]
-  threads DiscussionThread[]
-  replies DiscussionReply[]
-  events  DiscussionEvent[]
+  scopes DiscussionScope[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -52,7 +49,6 @@ model DiscussionScope {
   externalRef    String?
 
   threads DiscussionThread[]
-  replies DiscussionReply[]
   events  DiscussionEvent[]
 
   createdAt DateTime @default(now())
@@ -65,8 +61,6 @@ model DiscussionScope {
 model DiscussionThread {
   id Int @id @default(autoincrement())
 
-  space   DiscussionSpace @relation(fields: [spaceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  spaceId Int
   scope   DiscussionScope @relation(fields: [scopeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   scopeId Int
 
@@ -88,12 +82,10 @@ model DiscussionThread {
 
   replies DiscussionReply[]
   votes   DiscussionThreadVote[]
-  events  DiscussionEvent[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([spaceId, scopeId, lastActivityAt])
   @@index([scopeId, lastActivityAt])
   @@index([authorParticipantId])
 }
@@ -103,11 +95,6 @@ model DiscussionReply {
 
   thread   DiscussionThread @relation(fields: [threadId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   threadId Int
-
-  space   DiscussionSpace @relation(fields: [spaceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  spaceId Int
-  scope   DiscussionScope @relation(fields: [scopeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  scopeId Int
 
   content String
 
@@ -122,14 +109,12 @@ model DiscussionReply {
   isDeleted Boolean   @default(false)
   deletedAt DateTime?
 
-  votes  DiscussionReplyVote[]
-  events DiscussionEvent[]
+  votes DiscussionReplyVote[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([threadId, createdAt])
-  @@index([spaceId, scopeId, createdAt])
   @@index([authorParticipantId])
 }
 
@@ -162,16 +147,10 @@ model DiscussionReplyVote {
 model DiscussionEvent {
   id Int @id @default(autoincrement())
 
-  space   DiscussionSpace @relation(fields: [spaceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  spaceId Int
+  scope   DiscussionScope @relation(fields: [scopeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  scopeId Int
 
-  scope   DiscussionScope? @relation(fields: [scopeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  scopeId Int?
-
-  thread   DiscussionThread? @relation(fields: [threadId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  threadId Int?
-  reply    DiscussionReply?  @relation(fields: [replyId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  replyId  Int?
+  subjectId Int?
 
   participant   Participant? @relation("DiscussionEventParticipant", fields: [participantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   participantId String?      @db.Uuid
@@ -181,8 +160,7 @@ model DiscussionEvent {
 
   createdAt DateTime @default(now())
 
-  @@index([spaceId, createdAt])
   @@index([scopeId, createdAt])
-  @@index([eventType, createdAt])
+  @@index([eventType, subjectId, createdAt])
   @@index([participantId, createdAt])
 }

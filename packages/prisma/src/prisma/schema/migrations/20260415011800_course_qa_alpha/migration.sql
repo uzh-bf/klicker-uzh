@@ -57,7 +57,6 @@ CREATE TABLE "DiscussionScope" (
 -- CreateTable
 CREATE TABLE "DiscussionThread" (
   "id" SERIAL NOT NULL,
-  "spaceId" INTEGER NOT NULL,
   "scopeId" INTEGER NOT NULL,
   "content" TEXT NOT NULL,
   "isAnonymous" BOOLEAN NOT NULL DEFAULT false,
@@ -78,8 +77,6 @@ CREATE TABLE "DiscussionThread" (
 CREATE TABLE "DiscussionReply" (
   "id" SERIAL NOT NULL,
   "threadId" INTEGER NOT NULL,
-  "spaceId" INTEGER NOT NULL,
-  "scopeId" INTEGER NOT NULL,
   "content" TEXT NOT NULL,
   "isAnonymous" BOOLEAN NOT NULL DEFAULT false,
   "authorFingerprintHash" TEXT,
@@ -114,16 +111,24 @@ CREATE TABLE "DiscussionReplyVote" (
 -- CreateTable
 CREATE TABLE "DiscussionEvent" (
   "id" SERIAL NOT NULL,
-  "spaceId" INTEGER NOT NULL,
-  "scopeId" INTEGER,
-  "threadId" INTEGER,
-  "replyId" INTEGER,
+  "scopeId" INTEGER NOT NULL,
+  "subjectId" INTEGER,
   "participantId" UUID,
   "eventType" "DiscussionEventType" NOT NULL,
   "metadata" JSONB,
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-  CONSTRAINT "DiscussionEvent_pkey" PRIMARY KEY ("id")
+  CONSTRAINT "DiscussionEvent_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "DiscussionEvent_subjectId_check" CHECK (
+    (
+      "eventType" = 'ANON_RATE_LIMITED'
+      AND "subjectId" IS NULL
+    )
+    OR (
+      "eventType" <> 'ANON_RATE_LIMITED'
+      AND "subjectId" IS NOT NULL
+    )
+  )
 );
 
 -- CreateIndex
@@ -139,9 +144,6 @@ CREATE UNIQUE INDEX "DiscussionScope_spaceId_scopeKey_key" ON "DiscussionScope"(
 CREATE INDEX "DiscussionScope_spaceId_scopeType_idx" ON "DiscussionScope"("spaceId", "scopeType");
 
 -- CreateIndex
-CREATE INDEX "DiscussionThread_spaceId_scopeId_lastActivityAt_idx" ON "DiscussionThread"("spaceId", "scopeId", "lastActivityAt");
-
--- CreateIndex
 CREATE INDEX "DiscussionThread_scopeId_lastActivityAt_idx" ON "DiscussionThread"("scopeId", "lastActivityAt");
 
 -- CreateIndex
@@ -149,9 +151,6 @@ CREATE INDEX "DiscussionThread_authorParticipantId_idx" ON "DiscussionThread"("a
 
 -- CreateIndex
 CREATE INDEX "DiscussionReply_threadId_createdAt_idx" ON "DiscussionReply"("threadId", "createdAt");
-
--- CreateIndex
-CREATE INDEX "DiscussionReply_spaceId_scopeId_createdAt_idx" ON "DiscussionReply"("spaceId", "scopeId", "createdAt");
 
 -- CreateIndex
 CREATE INDEX "DiscussionReply_authorParticipantId_idx" ON "DiscussionReply"("authorParticipantId");
@@ -163,13 +162,10 @@ CREATE INDEX "DiscussionThreadVote_participantId_createdAt_idx" ON "DiscussionTh
 CREATE INDEX "DiscussionReplyVote_participantId_createdAt_idx" ON "DiscussionReplyVote"("participantId", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "DiscussionEvent_spaceId_createdAt_idx" ON "DiscussionEvent"("spaceId", "createdAt");
-
--- CreateIndex
 CREATE INDEX "DiscussionEvent_scopeId_createdAt_idx" ON "DiscussionEvent"("scopeId", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "DiscussionEvent_eventType_createdAt_idx" ON "DiscussionEvent"("eventType", "createdAt");
+CREATE INDEX "DiscussionEvent_eventType_subjectId_createdAt_idx" ON "DiscussionEvent"("eventType", "subjectId", "createdAt");
 
 -- CreateIndex
 CREATE INDEX "DiscussionEvent_participantId_createdAt_idx" ON "DiscussionEvent"("participantId", "createdAt");
@@ -181,9 +177,6 @@ ALTER TABLE "DiscussionSpace" ADD CONSTRAINT "DiscussionSpace_courseId_fkey" FOR
 ALTER TABLE "DiscussionScope" ADD CONSTRAINT "DiscussionScope_spaceId_fkey" FOREIGN KEY ("spaceId") REFERENCES "DiscussionSpace"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "DiscussionThread" ADD CONSTRAINT "DiscussionThread_spaceId_fkey" FOREIGN KEY ("spaceId") REFERENCES "DiscussionSpace"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "DiscussionThread" ADD CONSTRAINT "DiscussionThread_scopeId_fkey" FOREIGN KEY ("scopeId") REFERENCES "DiscussionScope"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -191,12 +184,6 @@ ALTER TABLE "DiscussionThread" ADD CONSTRAINT "DiscussionThread_authorParticipan
 
 -- AddForeignKey
 ALTER TABLE "DiscussionReply" ADD CONSTRAINT "DiscussionReply_threadId_fkey" FOREIGN KEY ("threadId") REFERENCES "DiscussionThread"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "DiscussionReply" ADD CONSTRAINT "DiscussionReply_spaceId_fkey" FOREIGN KEY ("spaceId") REFERENCES "DiscussionSpace"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "DiscussionReply" ADD CONSTRAINT "DiscussionReply_scopeId_fkey" FOREIGN KEY ("scopeId") REFERENCES "DiscussionScope"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "DiscussionReply" ADD CONSTRAINT "DiscussionReply_authorParticipantId_fkey" FOREIGN KEY ("authorParticipantId") REFERENCES "Participant"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -214,16 +201,7 @@ ALTER TABLE "DiscussionReplyVote" ADD CONSTRAINT "DiscussionReplyVote_replyId_fk
 ALTER TABLE "DiscussionReplyVote" ADD CONSTRAINT "DiscussionReplyVote_participantId_fkey" FOREIGN KEY ("participantId") REFERENCES "Participant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "DiscussionEvent" ADD CONSTRAINT "DiscussionEvent_spaceId_fkey" FOREIGN KEY ("spaceId") REFERENCES "DiscussionSpace"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "DiscussionEvent" ADD CONSTRAINT "DiscussionEvent_scopeId_fkey" FOREIGN KEY ("scopeId") REFERENCES "DiscussionScope"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "DiscussionEvent" ADD CONSTRAINT "DiscussionEvent_threadId_fkey" FOREIGN KEY ("threadId") REFERENCES "DiscussionThread"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "DiscussionEvent" ADD CONSTRAINT "DiscussionEvent_replyId_fkey" FOREIGN KEY ("replyId") REFERENCES "DiscussionReply"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "DiscussionEvent" ADD CONSTRAINT "DiscussionEvent_scopeId_fkey" FOREIGN KEY ("scopeId") REFERENCES "DiscussionScope"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "DiscussionEvent" ADD CONSTRAINT "DiscussionEvent_participantId_fkey" FOREIGN KEY ("participantId") REFERENCES "Participant"("id") ON DELETE SET NULL ON UPDATE CASCADE;

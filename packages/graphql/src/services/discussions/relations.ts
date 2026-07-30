@@ -29,8 +29,11 @@ export type DiscussionReplyWithVotes = DB.Prisma.DiscussionReplyGetPayload<{
 
 export function buildThreadInclude(participantId?: string | null) {
   return {
-    scope: true,
-    space: true,
+    scope: {
+      include: {
+        space: true,
+      },
+    },
     replies: {
       where: { isDeleted: false },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],

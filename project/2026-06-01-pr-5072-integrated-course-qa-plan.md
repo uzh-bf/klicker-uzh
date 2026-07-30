@@ -16,7 +16,7 @@
 
 ## Non-Goals
 
-- No schema redesign unless required by UI.
+- No user-facing GraphQL or UX changes from the ancestry normalization.
 - No new dependencies.
 - No full Manage redesign in first slice.
 - No delete/upvote backend hardening in this UX slice; tracked as prior review finding.
@@ -36,6 +36,8 @@
 
 ## Progress
 
+- 2026-07-30: Discussion ancestry normalization active with user approval. Keep `DiscussionSpace` and `DiscussionScope`, make `DiscussionScope -> DiscussionThread -> DiscussionReply` the only relational content path, and attach immutable audit events to their owning scope with an event-type-specific scalar subject ID. Preserve the public GraphQL `spaceId` and `scopeId` fields by deriving them from canonical relations. The branch is clean and synchronized with remote `course-qa`; CI is green except for an unrelated existing microlearning Playwright login timeout in shard 3. Next: update Prisma schema, branch-local alpha migration, analytics mirror, service queries/mappers, and DB-backed tests.
+- 2026-07-30: Discussion ancestry implementation complete. Prisma and the branch-local alpha migration now store only scope-to-thread and thread-to-reply foreign keys; audit events require a scope, use a checked event-type-specific `subjectId`, and retain no mutable-content foreign keys. Service mappers derive the unchanged GraphQL ancestry fields, all reads and writes follow canonical relations, the analytics mirror is synchronized, and integration/Cypress fixtures assert the new database shape and API compatibility. Prisma validation, Prisma client generation/build, GraphQL TypeScript, Cypress TypeScript, formatting, mirror comparison, and `git diff --check` pass. Fresh-database migration, the `30/30` discussion suite, and browser smoke remain blocked because approved Docker execution hit the Codex usage limit; do not claim runtime completion until those exact gates run.
 - 2026-07-23: Takeover started in repo-local worktree `trees/course-qa-takeover`; legacy worktree preserved.
 - 2026-07-23: Slice 1 active. Reconcile remote review and seven unpublished UX commits, sync current `v3`, resolve conflicts, regenerate derived GraphQL files, and establish a fresh verification baseline.
 - 2026-07-23: Slice 1 implementation done. Preserved remote review `c389b4ee8d`, merged `v3` at `c8de9c8978`, retained the contextual Q&A rail alongside the new embedded-practice behavior, combined participant discussion and credential relations, regenerated GraphQL artifacts, and mirrored the discussion schema into analytics after the pre-commit sync guard exposed the missing generated files. Verification passed with Node `24.16.0` and pnpm `11.5.0`: Prisma check, Prisma sync guard, GraphQL check, PWA check, Manage check, and `git diff --check --cached origin/v3`. Next: commit the sync, run independent review and simplification, then integrate accepted findings before the merge-blocker slice.
@@ -211,6 +213,15 @@
 - Files: touched components only.
 - Check: focused checks, browser screenshots, final review.
 - Commit: `fix(course-qa): polish integrated discussion ux`.
+
+### Takeover Slice: Normalize Discussion Ancestry
+
+- Decision: ADR-0002. A scope owns threads, a thread owns replies, and a scope owns audit events.
+- Do: Remove redundant `spaceId` from stored threads, remove redundant `spaceId` and `scopeId` from stored replies, and replace audit-event ancestry columns with one required `scopeId` plus an immutable event-type-specific `subjectId`.
+- Compatibility: Keep GraphQL thread/reply `spaceId` and `scopeId` fields unchanged by deriving them from the canonical relations.
+- Files: Prisma discussion schema and branch-local alpha migration, analytics mirror, discussion services/schema types, Cypress seed task, and DB-backed discussion tests.
+- Check: Prisma validation/sync, GraphQL and Cypress type checks, fresh-database migration assertions, all discussion integration scenarios, focused browser regression, and exact-commit review/simplification.
+- Commit: `refactor(course-qa): normalize discussion ancestry`.
 
 ## Finish
 
