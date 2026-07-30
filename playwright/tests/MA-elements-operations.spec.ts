@@ -582,6 +582,7 @@ test.describe('Create different types of elements (with and without sample solut
       const drafts = [
         {
           typeLabel: messages.shared.CASE_STUDY.typeLabel,
+          partialCaseStudySolution: true,
           values: {
             type: ElementType.CASE_STUDY,
             name: '',
@@ -591,10 +592,21 @@ test.describe('Create different types of elements (with and without sample solut
             basePoints: true,
             pointsMultiplier: '1',
             options: {
-              hasSampleSolution: false,
+              hasSampleSolution: true,
               itemSelectionMode: 'new',
-              manuallyCreatedItems: [],
-              cases: [{ id: 'case-1', description: '' }],
+              manuallyCreatedItems: [{ id: 1, value: 'Draft item' }],
+              cases: [
+                {
+                  id: 'case-1',
+                  description: '',
+                  solutions: {
+                    'itemId-1': {
+                      'range-1': { min: '' },
+                      'steps-1': {},
+                    },
+                  },
+                },
+              ],
               criteria: [
                 { id: 'range-1', mode: 'range' },
                 {
@@ -648,6 +660,15 @@ test.describe('Create different types of elements (with and without sample solut
           draft.typeLabel
         )
         await expect(page.getByTestId('insert-question-title')).toHaveValue('')
+
+        if ('partialCaseStudySolution' in draft) {
+          await expect(
+            page.getByTestId('case-solution-0-0-0-lower')
+          ).toHaveValue('')
+          await expect(
+            page.getByTestId('case-solution-0-0-0-upper')
+          ).toHaveValue('')
+        }
 
         await page.getByTestId('close-element-modal').click()
         await page.evaluate((key) => localStorage.removeItem(key), storageKey)
