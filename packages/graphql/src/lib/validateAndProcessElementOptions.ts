@@ -1,5 +1,8 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import { ElementOptionsInput } from '@klicker-uzh/types'
+import {
+  CODE_TEST_TIMEOUT_SECONDS,
+  ElementOptionsInput,
+} from '@klicker-uzh/types'
 import validateCaseStudyOptions from './validateCaseStudyOptions.js'
 import validateCodeOptions from './validateCodeOptions.js'
 import validateFreeTextOptions from './validateFreeTextOptions.js'
@@ -135,7 +138,9 @@ function validateAndProcessElementOptions(
           : {}),
         entrypoint: options.entrypoint,
         testCases: options.testCases,
-        executionLimits: { perTestTimeoutSeconds: 5 },
+        executionLimits: {
+          perTestTimeoutSeconds: CODE_TEST_TIMEOUT_SECONDS,
+        },
         hasSampleSolution: options.hasSampleSolution ?? false,
       }
     }

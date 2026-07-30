@@ -4,48 +4,13 @@ import {
   ElementStatus,
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
+import {
+  CODE_TEST_MAX_COUNT,
+  isValidPythonEntrypoint,
+} from '@klicker-uzh/types'
 import { useTranslations } from 'next-intl'
 import * as yup from 'yup'
 import { ElementFormTypesCaseStudy } from './types'
-
-const PYTHON_IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/
-const PYTHON_KEYWORDS = new Set([
-  'False',
-  'None',
-  'True',
-  'and',
-  'as',
-  'assert',
-  'async',
-  'await',
-  'break',
-  'class',
-  'continue',
-  'def',
-  'del',
-  'elif',
-  'else',
-  'except',
-  'finally',
-  'for',
-  'from',
-  'global',
-  'if',
-  'import',
-  'in',
-  'is',
-  'lambda',
-  'nonlocal',
-  'not',
-  'or',
-  'pass',
-  'raise',
-  'return',
-  'try',
-  'while',
-  'with',
-  'yield',
-])
 
 function isValidJson(value?: string) {
   if (typeof value !== 'string') return false
@@ -468,10 +433,9 @@ function useOptionsSchemaCode() {
       .string()
       .trim()
       .required(t('manage.formErrors.COEntrypointRequired'))
-      .matches(PYTHON_IDENTIFIER, t('manage.formErrors.COEntrypointInvalid'))
       .test({
-        message: t('manage.formErrors.COEntrypointKeyword'),
-        test: (value) => !value || !PYTHON_KEYWORDS.has(value),
+        message: t('manage.formErrors.COEntrypointInvalid'),
+        test: (value) => !value || isValidPythonEntrypoint(value),
       }),
     hasSampleSolution: yup.boolean(),
     sampleSolution: yup.string().when('hasSampleSolution', {
@@ -514,7 +478,7 @@ function useOptionsSchemaCode() {
       )
       .required(t('manage.formErrors.COTestsRequired'))
       .min(1, t('manage.formErrors.COTestsRequired'))
-      .max(20, t('manage.formErrors.COTestsMax'))
+      .max(CODE_TEST_MAX_COUNT, t('manage.formErrors.COTestsMax'))
       .test({
         message: t('manage.formErrors.COTestIdsUnique'),
         test: (testCases) =>

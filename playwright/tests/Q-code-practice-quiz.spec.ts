@@ -191,7 +191,6 @@ test.describe.serial('CODE participant and evaluation flow', () => {
         'public-sum': { passed: 0, total: 0 },
         'hidden-sum': { passed: 0, total: 0 },
       },
-      submissions: {},
       total: 0,
     }
 

@@ -3,14 +3,18 @@ import type {
   CodeTestCase,
   JsonValue,
 } from '@klicker-uzh/types'
-import { isCodeJsonValue } from '@klicker-uzh/types'
+import {
+  CODE_TEST_MAX_COUNT,
+  CODE_TEST_TIMEOUT_SECONDS,
+  isCodeJsonValue,
+  isValidPythonEntrypoint,
+} from '@klicker-uzh/types'
 import { importPKCS8, SignJWT } from 'jose'
 import { createHash, randomUUID } from 'node:crypto'
 import { isDeepStrictEqual } from 'node:util'
 
 const CODEAPI_PRINCIPAL_SOURCE = 'klicker_jwt'
 const MAX_TOKEN_TTL_SECONDS = 300
-const MAX_INVOCATIONS = 20
 const MAX_RESPONSE_BYTES = 3 * 1_024 * 1_024
 const MAX_RUNNER_OUTPUT_CHARS = 4_096
 const MAX_EXCEPTION_CHARS = 2_048
@@ -22,8 +26,8 @@ import json
 import sys
 import traceback
 
-MAX_TEXT_CHARS = 4096
-MAX_EXCEPTION_CHARS = 2048
+MAX_TEXT_CHARS = ${MAX_RUNNER_OUTPUT_CHARS}
+MAX_EXCEPTION_CHARS = ${MAX_EXCEPTION_CHARS}
 
 
 class CappedTextIO(io.TextIOBase):
@@ -448,27 +452,27 @@ function validateExecutionInput(input: CodeApiExecutionRequestInput): void {
   ) {
     throw new CodeApiClientError('request', 'Student code is invalid')
   }
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(input.entrypoint)) {
+  if (!isValidPythonEntrypoint(input.entrypoint)) {
     throw new CodeApiClientError('request', 'CODE entrypoint is invalid')
   }
   if (
     !Number.isInteger(input.perTestTimeoutSeconds) ||
     input.perTestTimeoutSeconds < 1 ||
-    input.perTestTimeoutSeconds > 5
+    input.perTestTimeoutSeconds > CODE_TEST_TIMEOUT_SECONDS
   ) {
     throw new CodeApiClientError(
       'request',
-      'Per-test timeout must be between 1 and 5 seconds'
+      `Per-test timeout must be between 1 and ${CODE_TEST_TIMEOUT_SECONDS} seconds`
     )
   }
   if (
     !Array.isArray(input.invocations) ||
     input.invocations.length === 0 ||
-    input.invocations.length > MAX_INVOCATIONS
+    input.invocations.length > CODE_TEST_MAX_COUNT
   ) {
     throw new CodeApiClientError(
       'request',
-      `A CODE batch must contain between 1 and ${MAX_INVOCATIONS} invocations`
+      `A CODE batch must contain between 1 and ${CODE_TEST_MAX_COUNT} invocations`
     )
   }
 
@@ -701,14 +705,18 @@ sys.stdout.write(
   return { lang: 'python', code }
 }
 
-function asRecord(value: unknown, label: string): Record<string, unknown> {
+function asRecord(
+  value: unknown,
+  label: string,
+  kind: CodeApiClientErrorKind = 'response'
+): Record<string, unknown> {
   if (
     typeof value !== 'object' ||
     value === null ||
     Array.isArray(value) ||
     Object.getPrototypeOf(value) !== Object.prototype
   ) {
-    throw new CodeApiClientError('response', `${label} is invalid`)
+    throw new CodeApiClientError(kind, `${label} is invalid`)
   }
   return value as Record<string, unknown>
 }
@@ -716,24 +724,23 @@ function asRecord(value: unknown, label: string): Record<string, unknown> {
 function assertOnlyKeys(
   record: Record<string, unknown>,
   allowed: readonly string[],
-  label: string
+  label: string,
+  kind: CodeApiClientErrorKind = 'response'
 ): void {
   const allowedKeys = new Set(allowed)
   if (Object.keys(record).some((key) => !allowedKeys.has(key))) {
-    throw new CodeApiClientError(
-      'response',
-      `${label} contains unsupported fields`
-    )
+    throw new CodeApiClientError(kind, `${label} contains unsupported fields`)
   }
 }
 
 function cappedString(
   value: unknown,
   label: string,
-  maxLength: number
+  maxLength: number,
+  kind: CodeApiClientErrorKind = 'response'
 ): string {
   if (typeof value !== 'string') {
-    throw new CodeApiClientError('response', `${label} is invalid`)
+    throw new CodeApiClientError(kind, `${label} is invalid`)
   }
   return value.slice(0, maxLength)
 }
@@ -758,12 +765,17 @@ function parseCodeApiRunnerOutput(stdout: string): CodeApiInvocationOutcome[] {
     )
   }
 
-  const envelope = asRecord(parsed, 'CodeAPI runner output')
-  assertOnlyKeys(envelope, ['version', 'outcomes'], 'CodeAPI runner output')
+  const envelope = asRecord(parsed, 'CodeAPI runner output', 'runner')
+  assertOnlyKeys(
+    envelope,
+    ['version', 'outcomes'],
+    'CodeAPI runner output',
+    'runner'
+  )
   if (envelope.version !== 1 || !Array.isArray(envelope.outcomes)) {
     throw new CodeApiClientError('runner', 'CodeAPI runner output is invalid')
   }
-  if (envelope.outcomes.length > MAX_INVOCATIONS) {
+  if (envelope.outcomes.length > CODE_TEST_MAX_COUNT) {
     throw new CodeApiClientError(
       'runner',
       'CodeAPI runner returned too many outcomes'
@@ -772,7 +784,7 @@ function parseCodeApiRunnerOutput(stdout: string): CodeApiInvocationOutcome[] {
 
   const ids = new Set<string>()
   return envelope.outcomes.map((rawOutcome, index) => {
-    const outcome = asRecord(rawOutcome, `CodeAPI outcome ${index}`)
+    const outcome = asRecord(rawOutcome, `CodeAPI outcome ${index}`, 'runner')
     const id = validateInvocationId(outcome.id, `CodeAPI outcome ${index} id`)
     if (ids.has(id)) {
       throw new CodeApiClientError(
@@ -785,19 +797,22 @@ function parseCodeApiRunnerOutput(stdout: string): CodeApiInvocationOutcome[] {
     const stdoutValue = cappedString(
       outcome.stdout,
       `CodeAPI outcome ${index} stdout`,
-      MAX_RUNNER_OUTPUT_CHARS
+      MAX_RUNNER_OUTPUT_CHARS,
+      'runner'
     )
     const stderrValue = cappedString(
       outcome.stderr,
       `CodeAPI outcome ${index} stderr`,
-      MAX_RUNNER_OUTPUT_CHARS
+      MAX_RUNNER_OUTPUT_CHARS,
+      'runner'
     )
 
     if (outcome.status === 'ok') {
       assertOnlyKeys(
         outcome,
         ['id', 'status', 'actualOutput', 'stdout', 'stderr'],
-        `CodeAPI outcome ${index}`
+        `CodeAPI outcome ${index}`,
+        'runner'
       )
       if (!Object.hasOwn(outcome, 'actualOutput')) {
         throw new CodeApiClientError(
@@ -823,7 +838,8 @@ function parseCodeApiRunnerOutput(stdout: string): CodeApiInvocationOutcome[] {
       assertOnlyKeys(
         outcome,
         ['id', 'status', 'stdout', 'stderr', 'exception'],
-        `CodeAPI outcome ${index}`
+        `CodeAPI outcome ${index}`,
+        'runner'
       )
       const exception =
         typeof outcome.exception === 'undefined'
@@ -831,7 +847,8 @@ function parseCodeApiRunnerOutput(stdout: string): CodeApiInvocationOutcome[] {
           : cappedString(
               outcome.exception,
               `CodeAPI outcome ${index} exception`,
-              MAX_EXCEPTION_CHARS
+              MAX_EXCEPTION_CHARS,
+              'runner'
             )
       return {
         id,
@@ -846,7 +863,8 @@ function parseCodeApiRunnerOutput(stdout: string): CodeApiInvocationOutcome[] {
       assertOnlyKeys(
         outcome,
         ['id', 'status', 'stdout', 'stderr'],
-        `CodeAPI outcome ${index}`
+        `CodeAPI outcome ${index}`,
+        'runner'
       )
       return {
         id,
@@ -1160,11 +1178,11 @@ function validateCodeApiTests(tests: CodeTestCase[]): void {
   if (
     !Array.isArray(tests) ||
     tests.length === 0 ||
-    tests.length > MAX_INVOCATIONS
+    tests.length > CODE_TEST_MAX_COUNT
   ) {
     throw new CodeApiClientError(
       'request',
-      `CODE grading requires between 1 and ${MAX_INVOCATIONS} tests`
+      `CODE grading requires between 1 and ${CODE_TEST_MAX_COUNT} tests`
     )
   }
 

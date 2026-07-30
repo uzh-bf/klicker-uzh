@@ -89,7 +89,6 @@ describe('CODE participant element data', () => {
         'public-addition': { passed: 0, total: 0 },
         'hidden-zero': { passed: 0, total: 0 },
       },
-      submissions: {},
       total: 0,
     })
   })

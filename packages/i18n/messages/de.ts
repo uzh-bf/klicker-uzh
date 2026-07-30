@@ -2413,8 +2413,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       COEntrypointRequired: 'Bitte geben Sie eine Einstiegsfunktion ein.',
       COEntrypointInvalid:
         'Die Einstiegsfunktion muss ein gültiger Python-Funktionsname sein.',
-      COEntrypointKeyword:
-        'Die Einstiegsfunktion darf kein reserviertes Python-Schlüsselwort sein.',
       COSampleSolutionRequired:
         'Bitte geben Sie eine Musterlösung ein oder deaktivieren Sie diese.',
       COTestsRequired: 'Bitte definieren Sie mindestens einen Code-Test.',

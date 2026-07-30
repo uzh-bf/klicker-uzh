@@ -138,7 +138,6 @@ export const StackResponseInput = StackResponseInputRef.implement({
       type: [CaseStudyCaseResponse],
       required: false,
     }),
-    codeResponse: t.string({ required: false }),
   }),
 })
 

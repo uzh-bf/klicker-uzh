@@ -240,6 +240,52 @@ export type JsonValue =
 export type CodeLanguage = 'python'
 export type CodeTestVisibility = 'public' | 'hidden'
 
+export const CODE_TEST_MAX_COUNT = 20
+export const CODE_TEST_TIMEOUT_SECONDS = 5
+
+const PYTHON_ENTRYPOINT = /^[A-Za-z_][A-Za-z0-9_]*$/
+const PYTHON_KEYWORDS = new Set([
+  'False',
+  'None',
+  'True',
+  'and',
+  'as',
+  'assert',
+  'async',
+  'await',
+  'break',
+  'class',
+  'continue',
+  'def',
+  'del',
+  'elif',
+  'else',
+  'except',
+  'finally',
+  'for',
+  'from',
+  'global',
+  'if',
+  'import',
+  'in',
+  'is',
+  'lambda',
+  'nonlocal',
+  'not',
+  'or',
+  'pass',
+  'raise',
+  'return',
+  'try',
+  'while',
+  'with',
+  'yield',
+])
+
+export function isValidPythonEntrypoint(value: string): boolean {
+  return PYTHON_ENTRYPOINT.test(value) && !PYTHON_KEYWORDS.has(value)
+}
+
 export type CodeTestCaseInput = {
   id: string
   name: string
@@ -249,17 +295,12 @@ export type CodeTestCaseInput = {
   weight: number
 }
 
-export type CodeExecutionLimitsInput = {
-  perTestTimeoutSeconds?: number | null
-}
-
 export type OptionsCodeInput = {
   language?: CodeLanguage | null
   starterCode?: string | null
   sampleSolution?: string | null
   entrypoint?: string | null
   testCases?: CodeTestCaseInput[] | null
-  executionLimits?: CodeExecutionLimitsInput | null
   hasSampleSolution?: boolean | null
 }
 
@@ -298,7 +339,6 @@ export type ResponseInput = {
   selection?: number[] | null // SELECTION
   assessment?: CaseStudyCaseResponse[] | null // CASE_STUDY
   viewed?: boolean | null // CONTENT
-  code?: string | null // CODE
 }
 
 export type LiveQuizResponseInput = {
@@ -365,7 +405,6 @@ export type StackResponseInput = {
   freeTextResponse?: string | null
   selectionResponse?: number[] | null
   caseStudyResponse?: CaseStudyCaseResponse[] | null
-  codeResponse?: string | null
 }
 
 export type GroupActivityClueInput = {
@@ -757,7 +796,7 @@ export interface ElementOptionsCode extends BaseElementOptions {
   entrypoint: string
   testCases: CodeTestCase[]
   executionLimits: {
-    perTestTimeoutSeconds: 5
+    perTestTimeoutSeconds: typeof CODE_TEST_TIMEOUT_SECONDS
   }
 }
 
@@ -772,7 +811,7 @@ export interface PublicElementOptionsCode {
   entrypoint: string
   testCases: PublicCodeTestCase[]
   executionLimits: {
-    perTestTimeoutSeconds: 5
+    perTestTimeoutSeconds: typeof CODE_TEST_TIMEOUT_SECONDS
   }
 }
 
@@ -911,7 +950,6 @@ export type ElementResultsCaseStudy = {
 
 export type ElementResultsCode = {
   tests: Record<string, { passed: number; total: number }>
-  submissions: Record<string, true>
   total: number
 }
 
@@ -933,7 +971,6 @@ export type GroupActivityDecision = {
   contentResponse?: SingleQuestionResponseContent['viewed'] | null
   selectionResponse?: SingleQuestionResponseSelection['selection'] | null
   caseStudyResponse?: SingleQuestionResponseCaseStudy['assessment'] | null
-  codeResponse?: string | null
 }
 export type GroupActivityDecisions = GroupActivityDecision[]
 

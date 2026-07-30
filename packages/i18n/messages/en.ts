@@ -2384,8 +2384,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       COEntrypointRequired: 'Please enter an entrypoint function.',
       COEntrypointInvalid:
         'The entrypoint must be a valid Python function name.',
-      COEntrypointKeyword:
-        'The entrypoint cannot be a reserved Python keyword.',
       COSampleSolutionRequired:
         'Please enter a sample solution or deactivate the sample solution.',
       COTestsRequired: 'Please define at least one code test.',

@@ -61,6 +61,8 @@ CODE deliberately has three GraphQL projections:
 - `AuthoringCodeElementData` exposes the full snapshotted instance contract only through the authenticated `ElementInstance.codeAuthoringData` field.
 - `CodeElementData` is participant-safe activity data. It includes public tests and static `executionLimits`, but omits hidden tests and all runtime sandbox artifacts, session identifiers, output, and exception metadata.
 
+CODE responses are accepted only through the dedicated asynchronous submission mutation. Generic stack and group-response inputs do not expose CODE fields, and authoring clients cannot override the static execution limit.
+
 When a union or operation gains CODE support, update all applicable projections deliberately and keep `packages/graphql/test/codeGraphqlContract.test.ts` green. Hidden tests, their inputs, and expected outputs must be absent from participant payloads rather than nullable.
 
 Participant submission uses one receipt contract across `submitCodeResponse`, `codeSubmission(id)`, and `codeSubmissionUpdated(id)`. All three require a participant principal; the query additionally filters by `participantId`, and the subscription filters both receipt ID and the authenticated participant before resolving. `feedback` is null while pending/running or failed and contains only the public-test projection after completion. The mutation always re-enqueues the active receipt, so retrying after a lost enqueue acknowledgement is safe; database claim/finalization rules, not GraphQL or Hatchet delivery, provide idempotency.

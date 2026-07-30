@@ -1,5 +1,6 @@
 import { CodeTestVisibility } from '@klicker-uzh/graphql/dist/ops'
 import CodeEditor from '@klicker-uzh/shared-components/src/CodeEditor'
+import { CODE_TEST_MAX_COUNT } from '@klicker-uzh/types'
 import {
   Button,
   FormLabel,
@@ -253,7 +254,8 @@ function CodeOptions({
               ))}
             </div>
 
-            {!inputsDisabled && values.options.testCases.length < 20 ? (
+            {!inputsDisabled &&
+            values.options.testCases.length < CODE_TEST_MAX_COUNT ? (
               <Button
                 fluid
                 onClick={() => push(createCodeTest())}

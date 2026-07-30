@@ -6,6 +6,7 @@ import {
   ElementInstanceType,
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
+import { CODE_TEST_TIMEOUT_SECONDS } from '@klicker-uzh/types'
 import { nanoid } from 'nanoid'
 import { useMemo } from 'react'
 import { ElementFormTypes } from './types'
@@ -69,7 +70,7 @@ function useArtificialElementInstance({
                 executionLimits:
                   values.type === ElementType.Code
                     ? {
-                        perTestTimeoutSeconds: 5,
+                        perTestTimeoutSeconds: CODE_TEST_TIMEOUT_SECONDS,
                       }
                     : undefined,
                 testCases:

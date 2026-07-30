@@ -70,12 +70,17 @@ describe('CODE GraphQL contracts', () => {
     expect(Object.keys((input as GraphQLInputObjectType).getFields())).toEqual(
       expect.arrayContaining(['entrypoint', 'testCases', 'language'])
     )
-
-    const responseInput = schema.getType('StackResponseInput')
-    expect(responseInput?.constructor.name).toBe('GraphQLInputObjectType')
     expect(
-      Object.keys((responseInput as GraphQLInputObjectType).getFields())
-    ).toContain('codeResponse')
+      Object.keys((input as GraphQLInputObjectType).getFields())
+    ).not.toContain('executionLimits')
+
+    for (const typeName of ['StackResponseInput', 'ResponseInput']) {
+      const responseInput = schema.getType(typeName)
+      expect(responseInput?.constructor.name).toBe('GraphQLInputObjectType')
+      expect(
+        Object.keys((responseInput as GraphQLInputObjectType).getFields())
+      ).not.toEqual(expect.arrayContaining(['code', 'codeResponse']))
+    }
 
     expect(schema.getMutationType()?.getFields()).toHaveProperty(
       'manipulateCodeQuestion'

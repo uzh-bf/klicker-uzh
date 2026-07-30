@@ -267,7 +267,6 @@ export function getInitialInstanceResults(
 
     return {
       tests,
-      submissions: {},
       total: 0,
     }
   } else if (elementData.type === PrismaElementType.CONTENT) {

@@ -933,10 +933,6 @@ type CodeExecutionLimits {
   perTestTimeoutSeconds: Int!
 }
 
-input CodeExecutionLimitsInput {
-  perTestTimeoutSeconds: Int
-}
-
 type CodeInstanceEvaluation {
   correctness: Float
   elementType: ElementType!
@@ -2326,7 +2322,6 @@ input OptionsChoicesInput {
 
 input OptionsCodeInput {
   entrypoint: String!
-  executionLimits: CodeExecutionLimitsInput
   hasSampleSolution: Boolean!
   language: CodeLanguage!
   sampleSolution: String
@@ -2774,7 +2769,6 @@ enum ResponseCorrectnessType {
 input ResponseInput {
   assessment: [CaseStudyCaseResponse!]
   choices: [ChoicesResponse!]
-  code: String
   selection: [Int!]
   value: String
 }
@@ -3003,7 +2997,6 @@ enum StackFeedbackStatus {
 input StackResponseInput {
   caseStudyResponse: [CaseStudyCaseResponse!]
   choicesResponse: [ChoicesResponse!]
-  codeResponse: String
   contentReponse: Boolean
   flashcardResponse: FlashcardCorrectnessType
   freeTextResponse: String

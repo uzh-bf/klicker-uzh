@@ -1030,10 +1030,6 @@ export type CodeExecutionLimits = {
   perTestTimeoutSeconds: Scalars['Int']['output'];
 };
 
-export type CodeExecutionLimitsInput = {
-  perTestTimeoutSeconds?: InputMaybe<Scalars['Int']['input']>;
-};
-
 export type CodeInstanceEvaluation = {
   __typename?: 'CodeInstanceEvaluation';
   correctness?: Maybe<Scalars['Float']['output']>;
@@ -3657,7 +3653,6 @@ export type OptionsChoicesInput = {
 
 export type OptionsCodeInput = {
   entrypoint: Scalars['String']['input'];
-  executionLimits?: InputMaybe<CodeExecutionLimitsInput>;
   hasSampleSolution: Scalars['Boolean']['input'];
   language: CodeLanguage;
   sampleSolution?: InputMaybe<Scalars['String']['input']>;
@@ -4665,7 +4660,6 @@ export enum ResponseCorrectnessType {
 export type ResponseInput = {
   assessment?: InputMaybe<Array<CaseStudyCaseResponse>>;
   choices?: InputMaybe<Array<ChoicesResponse>>;
-  code?: InputMaybe<Scalars['String']['input']>;
   selection?: InputMaybe<Array<Scalars['Int']['input']>>;
   value?: InputMaybe<Scalars['String']['input']>;
 };
@@ -4919,7 +4913,6 @@ export enum StackFeedbackStatus {
 export type StackResponseInput = {
   caseStudyResponse?: InputMaybe<Array<CaseStudyCaseResponse>>;
   choicesResponse?: InputMaybe<Array<ChoicesResponse>>;
-  codeResponse?: InputMaybe<Scalars['String']['input']>;
   contentReponse?: InputMaybe<Scalars['Boolean']['input']>;
   flashcardResponse?: InputMaybe<FlashcardCorrectnessType>;
   freeTextResponse?: InputMaybe<Scalars['String']['input']>;

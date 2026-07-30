@@ -18,11 +18,10 @@ describe('CODE element option validation', () => {
         weight: 1,
       },
     ],
-    executionLimits: { perTestTimeoutSeconds: 30 },
     hasSampleSolution: true,
   } as const
 
-  it('accepts a Python function with declarative tests and fixes the timeout', () => {
+  it('accepts a Python function with declarative tests and assigns the fixed timeout', () => {
     const options = structuredClone(validOptions)
 
     expect(

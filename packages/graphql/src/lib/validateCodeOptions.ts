@@ -3,46 +3,11 @@ import type {
   ElementOptionsInput,
   OptionsCodeInput,
 } from '@klicker-uzh/types'
-import { isCodeJsonValue } from '@klicker-uzh/types'
-
-const PYTHON_ENTRYPOINT = /^[A-Za-z_][A-Za-z0-9_]*$/
-const PYTHON_KEYWORDS = new Set([
-  'False',
-  'None',
-  'True',
-  'and',
-  'as',
-  'assert',
-  'async',
-  'await',
-  'break',
-  'class',
-  'continue',
-  'def',
-  'del',
-  'elif',
-  'else',
-  'except',
-  'finally',
-  'for',
-  'from',
-  'global',
-  'if',
-  'import',
-  'in',
-  'is',
-  'lambda',
-  'nonlocal',
-  'not',
-  'or',
-  'pass',
-  'raise',
-  'return',
-  'try',
-  'while',
-  'with',
-  'yield',
-])
+import {
+  CODE_TEST_MAX_COUNT,
+  isCodeJsonValue,
+  isValidPythonEntrypoint,
+} from '@klicker-uzh/types'
 const UNSAFE_RESULT_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
 
 type ValidatedCodeOptionsInput = Omit<
@@ -68,11 +33,10 @@ function validateCodeOptions(
       (typeof options.sampleSolution !== 'string' ||
         options.sampleSolution.trim().length === 0)) ||
     typeof options.entrypoint !== 'string' ||
-    !PYTHON_ENTRYPOINT.test(options.entrypoint) ||
-    PYTHON_KEYWORDS.has(options.entrypoint) ||
+    !isValidPythonEntrypoint(options.entrypoint) ||
     !Array.isArray(options.testCases) ||
     options.testCases.length < 1 ||
-    options.testCases.length > 20
+    options.testCases.length > CODE_TEST_MAX_COUNT
   ) {
     return false
   }

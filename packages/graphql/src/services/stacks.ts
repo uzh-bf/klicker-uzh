@@ -80,6 +80,8 @@ type ExistingInstanceType = DB.ElementInstance & {
   } | null
 }
 
+type PersistedResponseInput = ResponseInput | SingleQuestionResponseCode
+
 export const POINTS_PER_INSTANCE = 10
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
 const XP_AWARD_TIMEFRAME_DAYS = 1
@@ -2367,7 +2369,7 @@ async function upsertQuestionResponse({
   id: number
   participantId: string
   courseId: string
-  response: ResponseInput
+  response: PersistedResponseInput
   correctness: number
   score: number
   pointsAwarded: number | null
@@ -2495,7 +2497,7 @@ async function createQuestionResponseDetail({
   id: number
   participantId: string
   courseId: string
-  response: ResponseInput
+  response: PersistedResponseInput
   score: number
   pointsAwarded: number | null
   xpAwarded: number
@@ -2604,6 +2606,100 @@ async function updateLeaderboardOnQuestionResponse({
   })
 }
 
+async function persistParticipantQuestionResponse({
+  prisma,
+  id,
+  participantId,
+  courseId,
+  response,
+  correctness,
+  score,
+  pointsAwarded,
+  lastAwardedAt,
+  xpAwarded,
+  lastXpAwardedAt,
+  newAverageResponseTime,
+  existingResponse,
+  newAggResponses,
+  answerTime,
+  practiceQuizId,
+  microLearningId,
+  resultSpacedRepetition,
+}: {
+  prisma: PrismaTransactionClient
+  id: number
+  participantId: string
+  courseId: string
+  response: PersistedResponseInput
+  correctness: number
+  score: number
+  pointsAwarded: number | null
+  lastAwardedAt: Date
+  xpAwarded: number
+  lastXpAwardedAt: Date
+  newAverageResponseTime: number
+  existingResponse: DB.QuestionResponse | null
+  newAggResponses: ElementInstanceResults
+  answerTime: number
+  practiceQuizId?: string
+  microLearningId?: string
+  resultSpacedRepetition: SpacedRepetitionResult
+}) {
+  await createQuestionResponseDetail({
+    prisma,
+    id,
+    participantId,
+    courseId,
+    response,
+    score,
+    pointsAwarded,
+    xpAwarded,
+    answerTime,
+    practiceQuizId,
+    microLearningId,
+  })
+  await upsertQuestionResponse({
+    prisma,
+    id,
+    participantId,
+    courseId,
+    response,
+    correctness,
+    score,
+    pointsAwarded,
+    lastAwardedAt,
+    xpAwarded,
+    lastXpAwardedAt,
+    newAverageResponseTime,
+    existingResponse,
+    newAggResponses,
+    practiceQuizId,
+    microLearningId,
+    resultSpacedRepetition,
+  })
+
+  if (xpAwarded > 0) {
+    await incrementParticipantXp({ prisma, participantId, xpAwarded })
+  }
+  if (typeof pointsAwarded === 'number') {
+    await updateLeaderboardOnQuestionResponse({
+      prisma,
+      participantId,
+      courseId,
+      pointsAwarded,
+    })
+  }
+  if (xpAwarded > 0 || typeof pointsAwarded === 'number') {
+    await upsertDailyTimelineEntry({
+      prisma,
+      participantId,
+      courseId,
+      xpAwarded,
+      pointsAwarded: pointsAwarded ?? undefined,
+    })
+  }
+}
+
 export async function recordCodeQuestionResponse({
   prisma,
   submission,
@@ -2670,9 +2766,6 @@ export async function recordCodeQuestionResponse({
   }
 
   const previousResults = existingInstance.results as ElementResultsCode
-  if (previousResults.submissions[submission.id]) {
-    return
-  }
 
   const updateCodeResults = (
     priorResults: ElementResultsCode
@@ -2693,10 +2786,6 @@ export async function recordCodeQuestionResponse({
     }
     return {
       tests,
-      submissions: {
-        ...priorResults.submissions,
-        [submission.id]: true,
-      },
       total: priorResults.total + 1,
     }
   }
@@ -2704,9 +2793,7 @@ export async function recordCodeQuestionResponse({
   const newInstanceResults = updateCodeResults(previousResults)
   const existingParticipantResults = existingResponse?.aggregatedResponses
   const previousParticipantResults: ElementResultsCode =
-    existingParticipantResults &&
-    'tests' in existingParticipantResults &&
-    'submissions' in existingParticipantResults
+    existingParticipantResults && 'tests' in existingParticipantResults
       ? existingParticipantResults
       : {
           tests: Object.fromEntries(
@@ -2715,7 +2802,6 @@ export async function recordCodeQuestionResponse({
               { passed: 0, total: 0 },
             ])
           ),
-          submissions: {},
           total: 0,
         }
   const newParticipantResults = updateCodeResults(previousParticipantResults)
@@ -2771,20 +2857,7 @@ export async function recordCodeQuestionResponse({
   })
   const response: SingleQuestionResponseCode = { code: submission.code }
 
-  await createQuestionResponseDetail({
-    prisma,
-    id: submission.elementInstanceId,
-    participantId: submission.participantId,
-    courseId: submission.courseId,
-    response,
-    score,
-    pointsAwarded,
-    xpAwarded,
-    answerTime: submission.timeSpent,
-    practiceQuizId: submission.practiceQuizId ?? undefined,
-    microLearningId: submission.microLearningId ?? undefined,
-  })
-  await upsertQuestionResponse({
+  await persistParticipantQuestionResponse({
     prisma,
     id: submission.elementInstanceId,
     participantId: submission.participantId,
@@ -2799,35 +2872,11 @@ export async function recordCodeQuestionResponse({
     newAverageResponseTime,
     existingResponse,
     newAggResponses: newParticipantResults,
+    answerTime: submission.timeSpent,
     practiceQuizId: submission.practiceQuizId ?? undefined,
     microLearningId: submission.microLearningId ?? undefined,
     resultSpacedRepetition,
   })
-
-  if (xpAwarded > 0) {
-    await incrementParticipantXp({
-      prisma,
-      participantId: submission.participantId,
-      xpAwarded,
-    })
-  }
-  if (typeof pointsAwarded === 'number') {
-    await updateLeaderboardOnQuestionResponse({
-      prisma,
-      participantId: submission.participantId,
-      courseId: submission.courseId,
-      pointsAwarded,
-    })
-  }
-  if (xpAwarded > 0 || typeof pointsAwarded === 'number') {
-    await upsertDailyTimelineEntry({
-      prisma,
-      participantId: submission.participantId,
-      courseId: submission.courseId,
-      xpAwarded,
-      pointsAwarded: pointsAwarded ?? undefined,
-    })
-  }
 }
 
 export async function respondToQuestion(
@@ -3010,24 +3059,7 @@ export async function respondToQuestion(
         grade: percentile,
       })
 
-      await createQuestionResponseDetail({
-        prisma,
-        id,
-        participantId: ctx.user.sub,
-        courseId,
-        response,
-        score: questionEval.score ?? 0,
-        pointsAwarded,
-        xpAwarded,
-        answerTime,
-        practiceQuizId:
-          updatedInstance.elementStack?.practiceQuizId ?? undefined,
-        microLearningId:
-          updatedInstance.elementStack?.microLearningId ?? undefined,
-      })
-
-      // upsert the question response
-      await upsertQuestionResponse({
+      await persistParticipantQuestionResponse({
         prisma,
         id,
         participantId: ctx.user.sub,
@@ -3042,46 +3074,13 @@ export async function respondToQuestion(
         newAverageResponseTime,
         existingResponse,
         newAggResponses,
+        answerTime,
         practiceQuizId:
           updatedInstance.elementStack?.practiceQuizId ?? undefined,
         microLearningId:
           updatedInstance.elementStack?.microLearningId ?? undefined,
         resultSpacedRepetition,
       })
-
-      // increment participant xp
-      if (xpAwarded > 0) {
-        await incrementParticipantXp({
-          prisma,
-          participantId: ctx.user.sub,
-          xpAwarded,
-        })
-      }
-
-      // create or increment the leaderboard entry, if the participant has an active participation in the course
-      // active participation has already been checked during computation of pointsAwarded
-      if (typeof pointsAwarded === 'number' && pointsAwarded !== null) {
-        await updateLeaderboardOnQuestionResponse({
-          prisma,
-          participantId: ctx.user.sub,
-          courseId,
-          pointsAwarded,
-        })
-      }
-
-      // if either XP or points are awarded, update the daily student timeline entry
-      if (
-        xpAwarded > 0 ||
-        (typeof pointsAwarded === 'number' && pointsAwarded !== null)
-      ) {
-        await upsertDailyTimelineEntry({
-          prisma,
-          participantId: ctx.user.sub,
-          courseId,
-          xpAwarded,
-          pointsAwarded: pointsAwarded ?? undefined,
-        })
-      }
     }
 
     return {
@@ -4092,8 +4091,7 @@ function computeInstanceEvaluation({
     })
   } else if (
     instanceType === DB.ElementType.CODE &&
-    'tests' in instance.results &&
-    'submissions' in instance.results
+    'tests' in instance.results
   ) {
     return computeCodeEvaluation({
       options: instance.elementData.options,

@@ -463,7 +463,6 @@ describe('CODE submission lifecycle', () => {
         public: { passed: 1, total: 1 },
         hidden: { passed: 1, total: 1 },
       },
-      submissions: { [receipt.id]: true },
     })
     expect(instance.instanceStatistics).toMatchObject({
       correctCount: 1,
@@ -537,10 +536,6 @@ describe('CODE submission lifecycle', () => {
         public: { passed: 2, total: 2 },
         hidden: { passed: 2, total: 2 },
       },
-      submissions: {
-        [first.id]: true,
-        [second.id]: true,
-      },
     })
     expect(instance.instanceStatistics).toMatchObject({
       correctCount: 2,
@@ -584,24 +579,23 @@ describe('CODE submission lifecycle', () => {
     ])
     expect(firstResponse.aggregatedResponses).toMatchObject({
       total: 2,
-      submissions: { [first.id]: true, [retry.id]: true },
+      tests: {
+        public: { passed: 2, total: 2 },
+        hidden: { passed: 2, total: 2 },
+      },
     })
-    expect(firstResponse.aggregatedResponses).not.toHaveProperty(
-      `submissions.${second.id}`
-    )
     expect(secondResponse.aggregatedResponses).toMatchObject({
       total: 1,
-      submissions: { [second.id]: true },
+      tests: {
+        public: { passed: 1, total: 1 },
+        hidden: { passed: 1, total: 1 },
+      },
     })
-    expect(secondResponse.aggregatedResponses).not.toHaveProperty(
-      `submissions.${first.id}`
-    )
     expect(retriedInstance.results).toMatchObject({
       total: 3,
-      submissions: {
-        [first.id]: true,
-        [second.id]: true,
-        [retry.id]: true,
+      tests: {
+        public: { passed: 3, total: 3 },
+        hidden: { passed: 3, total: 3 },
       },
     })
   })

@@ -249,9 +249,6 @@ export function prepareCodeArgs({
         : undefined,
       entrypoint: values.options.entrypoint.trim(),
       hasSampleSolution: values.options.hasSampleSolution,
-      executionLimits: {
-        perTestTimeoutSeconds: 5,
-      },
       testCases: values.options.testCases.map((testCase) => ({
         id: testCase.id.trim(),
         name: testCase.name.trim(),

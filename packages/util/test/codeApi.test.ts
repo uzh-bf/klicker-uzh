@@ -10,7 +10,6 @@ import { spawnSync } from 'node:child_process'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import {
   buildCodeApiExecutionRequest,
-  CodeApiClientError,
   createCodeApiClient,
   mintCodeApiJwt,
   type CodeApiClientConfig,
@@ -178,6 +177,23 @@ describe('CodeAPI JWT', () => {
 })
 
 describe('CodeAPI execution requests', () => {
+  it('rejects a Python keyword entrypoint before building the runner', () => {
+    try {
+      buildCodeApiExecutionRequest({
+        studentCode: 'def solve():\n    return 1',
+        entrypoint: 'return',
+        invocations: [{ id: 'public-1', args: [] }],
+        perTestTimeoutSeconds: 5,
+      })
+      expect.fail('Expected the Python keyword entrypoint to be rejected')
+    } catch (error) {
+      expect(error).toMatchObject({
+        name: 'CodeApiClientError',
+        kind: 'request',
+      })
+    }
+  })
+
   it('serializes invocation-only runner input without grading expectations', () => {
     const request = buildCodeApiExecutionRequest({
       studentCode: 'def solve(value):\n    return value',
@@ -771,7 +787,10 @@ describe('CodeAPI runner output', () => {
 
     await expect(
       client.executeAndGrade(submission([codeTest()]))
-    ).rejects.toBeInstanceOf(CodeApiClientError)
+    ).rejects.toMatchObject({
+      name: 'CodeApiClientError',
+      kind: 'runner',
+    })
   })
 })
 

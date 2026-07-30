@@ -101,6 +101,24 @@ function validateSubmittedCode(code: string): void {
   }
 }
 
+function claimableCodeSubmissionWhere(
+  now: Date
+): DB.Prisma.CodeSubmissionWhereInput {
+  return {
+    claimAttempts: { lt: CODE_SUBMISSION_MAX_ATTEMPTS },
+    OR: [
+      {
+        status: DB.CodeSubmissionStatus.PENDING,
+        OR: [{ retryAt: null }, { retryAt: { lte: now } }],
+      },
+      {
+        status: DB.CodeSubmissionStatus.RUNNING,
+        claimExpiresAt: { lt: now },
+      },
+    ],
+  }
+}
+
 export async function submitCodeResponse(
   {
     instanceId,
@@ -285,17 +303,7 @@ async function claimCodeSubmission({
   const claimed = await prisma.codeSubmission.updateMany({
     where: {
       id: submissionId,
-      claimAttempts: { lt: CODE_SUBMISSION_MAX_ATTEMPTS },
-      OR: [
-        {
-          status: DB.CodeSubmissionStatus.PENDING,
-          OR: [{ retryAt: null }, { retryAt: { lte: now } }],
-        },
-        {
-          status: DB.CodeSubmissionStatus.RUNNING,
-          claimExpiresAt: { lt: now },
-        },
-      ],
+      ...claimableCodeSubmissionWhere(now),
     },
     data: {
       status: DB.CodeSubmissionStatus.RUNNING,
@@ -577,19 +585,7 @@ export const handleRecoverCodeSubmissions: HatchetHandlers['handleRecoverCodeSub
     }
 
     const recoverable = await globalCtx.prisma.codeSubmission.findMany({
-      where: {
-        claimAttempts: { lt: CODE_SUBMISSION_MAX_ATTEMPTS },
-        OR: [
-          {
-            status: DB.CodeSubmissionStatus.PENDING,
-            OR: [{ retryAt: null }, { retryAt: { lte: now } }],
-          },
-          {
-            status: DB.CodeSubmissionStatus.RUNNING,
-            claimExpiresAt: { lt: now },
-          },
-        ],
-      },
+      where: claimableCodeSubmissionWhere(now),
       orderBy: { createdAt: 'asc' },
       take: 100,
       select: { id: true },

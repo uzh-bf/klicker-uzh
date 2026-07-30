@@ -10,7 +10,6 @@ import {
   type CaseStudySolution as CaseStudySolutionType,
   type ChoiceInput as ChoiceInputType,
   type ChoicesResponse as ChoicesResponseType,
-  type CodeExecutionLimitsInput as CodeExecutionLimitsInputType,
   type CodeTestCaseInput as CodeTestCaseInputType,
   type ElementManipulationInput as ElementManipulationInputType,
   type ElementOptionsCaseStudy as ElementOptionsCaseStudyType,
@@ -154,14 +153,6 @@ export const OptionsNumericalInput = OptionsNumericalInputRef.implement({
   }),
 })
 
-export const CodeExecutionLimitsInputRef =
-  builder.inputRef<CodeExecutionLimitsInputType>('CodeExecutionLimitsInput')
-export const CodeExecutionLimitsInput = CodeExecutionLimitsInputRef.implement({
-  fields: (t) => ({
-    perTestTimeoutSeconds: t.int({ required: false }),
-  }),
-})
-
 export const CodeTestCaseInputRef =
   builder.inputRef<CodeTestCaseInputType>('CodeTestCaseInput')
 export const CodeTestCaseInput = CodeTestCaseInputRef.implement({
@@ -187,10 +178,6 @@ export const OptionsCodeInput = OptionsCodeInputRef.implement({
     sampleSolution: t.string({ required: false }),
     entrypoint: t.string({ required: true }),
     testCases: t.field({ type: [CodeTestCaseInput], required: true }),
-    executionLimits: t.field({
-      type: CodeExecutionLimitsInput,
-      required: false,
-    }),
     hasSampleSolution: t.boolean({ required: true }),
   }),
 })
@@ -237,7 +224,6 @@ export const ResponseInput = ResponseInputRef.implement({
       type: [CaseStudyCaseResponse],
       required: false,
     }),
-    code: t.string({ required: false }),
   }),
 })
 
