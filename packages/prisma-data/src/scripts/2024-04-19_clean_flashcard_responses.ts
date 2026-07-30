@@ -1,4 +1,5 @@
-import { ElementType, PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
+import { ElementType } from '@klicker-uzh/prisma/client'
 import pMap from 'p-map'
 
 export enum FlashcardCorrectness {
@@ -12,8 +13,6 @@ export type QuestionResponseFlashcard = {
 }
 
 async function run() {
-  const prisma = new PrismaClient()
-
   // fetch all questionResponses and the linked element; filter for flashcards only
   const questionResponses = await prisma.questionResponse.findMany({
     include: {

@@ -1,6 +1,6 @@
 import { faExpand } from '@fortawesome/free-solid-svg-icons'
 import { Button, Modal } from '@uzh-bf/design-system'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 // IMPORTANT: keep the import with .js, otherwise docker build will fail to resolve the module

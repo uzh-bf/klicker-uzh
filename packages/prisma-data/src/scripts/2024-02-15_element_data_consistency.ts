@@ -1,9 +1,7 @@
-import { PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
 import * as R from 'remeda'
 
 async function migrate() {
-  const prisma = new PrismaClient()
-
   const elementInstances = await prisma.elementInstance.findMany({})
 
   console.log('elementInstances', elementInstances.length)

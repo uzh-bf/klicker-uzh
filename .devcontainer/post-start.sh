@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
-# Runs on every container start. Launches the core apps (turbo dev) in the
-# background so they are reachable through devrouter without a manual step.
+# devrouter:managed devcontainer
+# Invoked by host-side `devrouter ensure` after it validates the exact container.
+# Launches every routed app plus both workers through the delivered helper.
 set -euo pipefail
 cd /workspaces/klicker-uzh
 
 # Re-source the canonical env (DevPod truncates env_file values at '='), then the
 # runtime Hatchet token written by post-create (if any). (GOTCHAS #1)
 set -a
+# shellcheck source=/dev/null
 . /workspaces/klicker-uzh/.devcontainer/devcontainer.env
+# shellcheck source=/dev/null
 [ -f /workspaces/klicker-uzh/.devcontainer/.hatchet.env ] && . /workspaces/klicker-uzh/.devcontainer/.hatchet.env
 set +a
 
@@ -68,35 +71,18 @@ fi
 export CI=true
 export npm_config_verify_deps_before_run=false
 
-# Double-start guard. The dev command runs `turbo run dev`, so the supervisor
-# shows as "turbo run dev" in ps.
-if pgrep -f "turbo run dev" >/dev/null 2>&1; then
-  echo "[post-start] Dev servers already running."
-  exit 0
-fi
+: "${DEVROUTER_PROCESS_HELPER:?Run devrouter ensure to start this managed application process.}"
 
-echo "[post-start] Starting apps in the background (logs: /tmp/dev.log)..."
-# PHASE 1 core: backend + auth + frontend-pwa/manage/control.
-# PHASE 2 Tier 1: + olat-api & response-api (routed) + the two hatchet workers
-# (no port/route — they consume the hatchet event queue). Still NOT chat/lti/
-# analytics. Bypass the Infisical wrapper the root `dev` script uses — the
-# container owns its env. Fully detach so the DevPod agent pipe is released
-# (else `devpod up` hangs). (GOTCHAS #2)
-DEV_CMD='pnpm exec turbo run dev \
-  --filter=@klicker-uzh/backend-docker \
-  --filter=@klicker-uzh/auth \
-  --filter=@klicker-uzh/frontend-pwa \
-  --filter=@klicker-uzh/frontend-manage \
-  --filter=@klicker-uzh/frontend-control \
-  --filter=@klicker-uzh/olat-api \
-  --filter=@klicker-uzh/response-api \
-  --filter=@klicker-uzh/lti-service \
-  --filter=@klicker-uzh/chat \
-  --filter=@klicker-uzh/hatchet-worker-general \
-  --filter=@klicker-uzh/hatchet-worker-response-processor \
-  --concurrency 30'
-setsid bash -c "$DEV_CMD" >/tmp/dev.log 2>&1 </dev/null &
-disown 2>/dev/null || true
+export DEVROUTER_PROCESS_FINGERPRINT_ENV='APP_ORIGIN_API,APP_ORIGIN_AUTH,APP_ORIGIN_PWA,APP_ORIGIN_MANAGE,APP_ORIGIN_CONTROL,APP_ORIGIN_ASSESSMENT_API,APP_ORIGIN_ASSESSMENT_PWA,APP_ORIGIN_LTI,APP_ORIGIN_CHAT,APP_MANAGE_SUBDOMAIN,APP_STUDENT_SUBDOMAIN,APP_CONTROL_SUBDOMAIN,NEXTAUTH_URL,COOKIE_DOMAIN,NEXT_PUBLIC_API_URL,NEXT_PUBLIC_AUTH_URL,NEXT_PUBLIC_MANAGE_URL,NEXT_PUBLIC_PWA_URL,NEXT_PUBLIC_ASSESSMENT_URL,NEXT_PUBLIC_CONTROL_URL,NEXT_PUBLIC_ADD_RESPONSE_URL,NEXT_PUBLIC_CHAT_URL,CORS_ALLOWED_ORIGINS,AUTH_LECTURER_ALLOWED_HOSTS,AUTH_STUDENT_ALLOWED_HOSTS,NODE_EXTRA_CA_CERTS'
+
+# Run every routed app plus both Hatchet workers without Infisical. Devrouter
+# owns generic locking, process-group identity, and bounded replacement; this
+# repository owns only the application command and environment above.
+"$DEVROUTER_PROCESS_HELPER" ensure \
+  --name klicker-dev \
+  --match 'turbo run dev' \
+  --log /tmp/dev.log \
+  -- pnpm run dev:container
 
 if [ -s /etc/devrouter/mkcert-rootCA.pem ]; then
   cat <<EOF
@@ -111,8 +97,8 @@ if [ -s /etc/devrouter/mkcert-rootCA.pem ]; then
 [post-start]   LTI Service  -> ${APP_ORIGIN_LTI}
 [post-start]   Chat         -> ${NEXT_PUBLIC_CHAT_URL} (requires UPSTREAM_OPENAI_API_KEY)
 [post-start]   Workers      -> hatchet-worker-general + -response-processor (no URL; consume hatchet queue)
-[post-start] Routes  -> on the host: for a in api auth pwa manage control olat-api response-api lti chat db; do devrouter app run "\$a"${WORKSPACE:+ --workspace ${WORKSPACE}}; done
-[post-start] Logs    -> tail -f /tmp/dev.log
+[post-start] Lifecycle -> on the host: devrouter ensure <this-checkout>
+[post-start] Logs    -> devrouter exec <this-checkout> -- tail -f /tmp/dev.log
 EOF
 else
   cat <<'EOF'
@@ -127,6 +113,6 @@ else
 [post-start]   LTI Service  -> http://localhost:4000
 [post-start]   Chat         -> http://localhost:3004 (requires UPSTREAM_OPENAI_API_KEY)
 [post-start]   Workers      -> hatchet-worker-general + -response-processor (no URL; consume hatchet queue)
-[post-start] Logs    -> tail -f /tmp/dev.log
+[post-start] Logs    -> devrouter exec <this-checkout> -- tail -f /tmp/dev.log
 EOF
 fi

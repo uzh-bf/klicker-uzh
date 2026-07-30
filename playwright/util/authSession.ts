@@ -23,15 +23,25 @@ export async function setSessionCookieForUrl({
     .sign(secret)
 
   const url = new URL(targetUrl)
+  const cookieDomain = process.env.COOKIE_DOMAIN?.trim()
+  const cookie = {
+    name: cookieName,
+    value: token,
+    httpOnly: true,
+    sameSite: 'Lax' as const,
+    secure: url.protocol === 'https:',
+  }
+
   await context.addCookies([
-    {
-      name: cookieName,
-      value: token,
-      url: url.origin,
-      httpOnly: true,
-      sameSite: 'Lax',
-      secure: url.protocol === 'https:',
-    },
+    cookieDomain
+      ? {
+          ...cookie,
+          domain: cookieDomain.startsWith('.')
+            ? cookieDomain
+            : `.${cookieDomain}`,
+          path: '/',
+        }
+      : { ...cookie, url: url.origin },
   ])
 }
 

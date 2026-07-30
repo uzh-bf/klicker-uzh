@@ -1,7 +1,6 @@
 import { faMinus, faPlus } from '@fortawesome/free-solid-svg-icons'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import React from 'react'
 
 interface FontSizeButtonsProps {
   textSize: number

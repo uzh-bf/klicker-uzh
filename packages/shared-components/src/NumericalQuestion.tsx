@@ -2,7 +2,6 @@ import type {
   NumericalElementOptions,
   NumericalInstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
-import React from 'react'
 import NREvaluation from './evaluation/NREvaluation'
 import PracticeQuizPoints from './evaluation/PracticeQuizPoints'
 import QuestionExplanation from './evaluation/QuestionExplanation'

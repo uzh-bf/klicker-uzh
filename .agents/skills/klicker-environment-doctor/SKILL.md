@@ -7,7 +7,7 @@ description: Diagnose and repair a broken KlickerUZH development environment. Us
 
 Run the checks **in order** — later checks assume earlier ones pass. Background facts live in the wiki: [docs/getting-started.md](../../../docs/getting-started.md).
 
-Provenance: checks 1–6 were executed and verified on macOS (2026-07-07). Steps marked **config-derived** were read from config, not executed — treat their exact output as unconfirmed.
+Provenance: checks 1–5 and 7–9 were executed and verified on macOS (2026-07-07). Check 6's process reconciler was executed in the Linux devcontainer image, and its host-side devrouter lifecycle was verified from a clean linked worktree on macOS (2026-07-13). Other steps marked **config-derived** were read from config, not executed — treat their exact output as unconfirmed.
 
 ## Agent ground rules
 
@@ -32,7 +32,7 @@ Wrong major (e.g. 9.x from a stale Volta shim; `VOLTA_FEATURE_PNPM` unset) **sil
 | `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH` under `CI=true` | restore lockfile (check 1), install without `CI=true`                          |
 | ~19 packages fail `pnpm run check`                  | `pnpm run build` once (generates Prisma client, codegen, dists), then re-check |
 
-Healthy sequence from scratch: `pnpm install` → `pnpm run build` → `pnpm run check` (verified ~20s / ~1.5min / clean).
+Healthy sequence from scratch inside the devcontainer: `pnpm install` → `pnpm run build` → `pnpm run check` (verified ~20s / ~1.5min / clean). The root build script forces `NODE_ENV=production`, including when the devcontainer exports `NODE_ENV=development` for its live apps. A production build can replace Next.js dev output; run `devrouter ensure .` afterward so the exact checkout runtime is health-checked and recovered when needed.
 
 ## Check 3 — stale GraphQL codegen
 
@@ -45,7 +45,7 @@ git status   # regenerated src/ops.ts + src/public/*.json MUST be committed with
 
 ## Check 4 — stale Prisma schema sync
 
-If `apps/analytics` complains about schema drift or a schema edit isn't visible: `pnpm run prisma:sync` (mirrors schema, excludes `js.prisma`), then regenerate/build. Full ritual: [docs/data-and-migrations.md](../../../docs/data-and-migrations.md).
+If `apps/analytics` complains about schema drift or a schema edit isn't visible: `pnpm run prisma:sync` (mirrors model files while preserving Analytics-owned `py.prisma` and `datasource.prisma`), then regenerate/build. Full ritual: [docs/data-and-migrations.md](../../../docs/data-and-migrations.md).
 
 ## Check 5 — port conflicts
 
@@ -53,22 +53,25 @@ If `apps/analytics` complains about schema drift or a schema edit isn't visible:
 lsof -nP -iTCP:5432 -sTCP:LISTEN   # repeat for 6379 6380 6381 7077 8888 80 443
 ```
 
-`Bind for :::5432 failed: port is already allocated` means another stack holds the port — stop it or don't start the colliding service. Plain localhost and legacy host-based paths publish fixed ports, so only one such stack runs per machine. For parallel devcontainer worktrees, keep the base `.devcontainer/docker-compose.yml` port-free and use `.devcontainer/docker-compose.devrouter.yml`, which exposes `${WORKSPACE:-klicker-uzh}-app` / `${WORKSPACE:-klicker-uzh}-db` aliases on `devnet`. Start/register linked worktrees with the same token, e.g. `WORKSPACE=<slug> devpod up .` and `devrouter app run <app> --workspace <slug>`. Use `.devcontainer/docker-compose.localhost.yml` only for the one-at-a-time localhost fallback. If manage media uploads fail with an Azure Blob CORS error while GraphQL auth still works, check the storage account before changing app CORS. The media library uploads directly from the browser to Azure Blob Storage via SAS, so the Blob service CORS rule must allow the actual devrouter origin (`https://manage.klicker.localhost` or `https://manage.klicker.<workspace>.localhost`). Use exact origins for production/staging accounts; for a dedicated dev storage account, a dev-only `https://*.localhost` rule keeps parallel worktrees usable.
+`Bind for :::5432 failed: port is already allocated` means another stack holds the port — stop it or don't start the colliding service. Plain localhost and legacy host-based paths publish fixed ports, so only one such stack runs per machine. Parallel devcontainer worktrees use the port-free base compose file plus `.devcontainer/docker-compose.devrouter.yml`; the one-at-a-time fallback uses `.devcontainer/docker-compose.localhost.yml`. If manage media uploads fail with an Azure Blob CORS error while GraphQL auth still works, check the storage account before changing app CORS. The media library uploads directly from the browser to Azure Blob Storage via SAS, so its CORS rule must allow the actual local origin. Use exact origins for production/staging accounts and dev-only localhost rules for a dedicated dev storage account.
 
 ## Check 6 — infra bring-up / server status (headless-safe)
 
 Depending on your environment path:
 
-### Path A: Inside Devcontainer
+### Path A: Managed devcontainer
 
-The container manages infra services and app servers automatically in the background. Check logs and process status:
+Run the ownership-aware lifecycle check from the host, then inspect the exact container through devrouter:
 
 ```bash
-pgrep -f "turbo run dev" >/dev/null && echo "Dev servers running" || echo "Dev servers NOT running"
-tail -n 50 /tmp/dev.log   # inspect server startup logs
+devrouter ensure .
+devrouter exec . -- cat /tmp/devrouter-process-klicker-dev.state
+devrouter exec . -- tail -n 50 /tmp/dev.log
 ```
 
-If servers are down, restart them: `bash .devcontainer/post-start.sh`.
+`devrouter ensure` delivers its matching process helper to the exact validated container. Released `0.0.35` fingerprints the workspace, command, adapter bytes, and declared non-secret origin allowlist. The helper replaces a stale owned process group and leaves unknown processes untouched. Host-side ensure checks all routes and can recreate one stale or unhealthy exact-path DevPod once.
+
+`devrouter doctor --repo .` provides static diagnostics. `devrouter ensure .` resolves the checkout-specific overlay and is the authoritative runtime proof.
 
 ### Path B: Host-based Setup
 
@@ -88,7 +91,7 @@ Feature "does nothing" / mutation fails `workflow not found` → the Hatchet eng
 
 ## Check 8 — database state (config-derived)
 
-Seeded dev DB contains the AGENTS.md test accounts (`lecturer`, `testuser1..50` — values in AGENTS.md only). If the DB is empty or foreign: seed with `pnpm run prisma:setup` **only after confirming the volume holds no real work** (fresh volume, test course names like "Testkurs"). When in doubt, ask the user.
+Seeded dev DB contains the AGENTS.md test accounts (`lecturer`, `testuser1..50` — values in AGENTS.md only). Prisma 7 reset/migrate commands are seed-free. On the legacy host stack, `pnpm run prisma:setup` wraps the reset/push/seed composite with Infisical. In the self-contained DevPod, use `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`, then `pnpm --filter @klicker-uzh/prisma run prisma:push:raw`, then `pnpm --filter @klicker-uzh/prisma-data run seed:raw` as shown in `.devcontainer/post-create.sh`. Use either path **only after confirming the volume holds no real work** (fresh volume, test course names like "Testkurs"). When in doubt, ask the user.
 
 ## Check 9 — secrets (config-derived)
 

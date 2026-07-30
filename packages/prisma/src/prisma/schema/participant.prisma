@@ -94,6 +94,7 @@ model Participant {
   pointCorrections                PointCorrection[]
   individualPointCorrections      PointCorrection[]                @relation("PointCorrectionParticipants")
   liveQuizRewardEntries           LiveQuizRewardEntry[]
+  verificationRecords             VerifiableCredential[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
