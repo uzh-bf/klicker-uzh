@@ -1058,32 +1058,24 @@ the repository script that replaces it before continuing.
   completed without a repository failure. Existing Rollup, page-size,
   translation, and cache warnings remain non-blocking.
 - 2026-07-30: Publication was approved with an explicit request for clean
-  stacked PRs. The 94 implementation commits were replayed onto current `v3`
-  and split at 14 review boundaries. The original verified heads remain
-  available as `backup/chat-analytics-pre-restack-20260730` and
+  stacked PRs. The 94 implementation commits were replayed onto current `v3`.
+  The original verified heads remain available as
+  `backup/chat-analytics-pre-restack-20260730` and
   `backup/analytics-phase-a-pre-restack-20260730`.
 - 2026-07-30: A final tree comparison against the verified Phase 2 safety ref
   found no implementation difference. After `v3` advanced once more, the
   stack rebased cleanly onto `f424f03a16`; the only resulting difference from
   the safety ref was the five-line upstream `AGENTS.md` change.
-- 2026-07-30: The full draft stack was published and read back from GitHub:
+- 2026-07-30: An initial 14-layer publication was rejected as over-sliced.
+  The same implementation was consolidated into five milestone PRs:
 
-  | Layer | Draft PR | Review scope |
+  | Milestone | Draft PR | Review scope |
   | --- | --- | --- |
-  | 1 | [#5199](https://github.com/uzh-bf/klicker-uzh/pull/5199) | Chat, platform, live quiz, topic-cluster, and chat-to-quiz analytics domains |
-  | 2 | [#5073](https://github.com/uzh-bf/klicker-uzh/pull/5073) | Transitional Hatchet orchestration and dedicated worker |
-  | 3 | [#5230](https://github.com/uzh-bf/klicker-uzh/pull/5230) | Incremental recomputation and ended-course finalization |
-  | 4 | [#5231](https://github.com/uzh-bf/klicker-uzh/pull/5231) | Deterministic verification, consent, and reporting correctness |
-  | 5 | [#5232](https://github.com/uzh-bf/klicker-uzh/pull/5232) | Query indexes, late-data refresh, and decomposed DAG |
-  | 6 | [#5233](https://github.com/uzh-bf/klicker-uzh/pull/5233) | SQLAlchemy 2.x runtime migration |
-  | 7 | [#5234](https://github.com/uzh-bf/klicker-uzh/pull/5234) | Course scope, DAG hardening, and management API |
-  | 8 | [#5235](https://github.com/uzh-bf/klicker-uzh/pull/5235) | Read-only dry-run workbook and diagnostics |
-  | 9 | [#5236](https://github.com/uzh-bf/klicker-uzh/pull/5236) | Grading parity, query paths, and guarded index rollout |
-  | 10 | [#5237](https://github.com/uzh-bf/klicker-uzh/pull/5237) | Native Python Hatchet cutover, cancellation, and concurrency |
-  | 11 | [#5238](https://github.com/uzh-bf/klicker-uzh/pull/5238) | Consent reconciliation and finalization convergence |
-  | 12 | [#5239](https://github.com/uzh-bf/klicker-uzh/pull/5239) | Dry-run decomposition and curated model ownership |
-  | 13 | [#5240](https://github.com/uzh-bf/klicker-uzh/pull/5240) | Generated artifact reconciliation with current `v3` |
-  | 14 | [#5241](https://github.com/uzh-bf/klicker-uzh/pull/5241) | Runtime and test reconciliation with current `v3` |
+  | 1 | [#5199](https://github.com/uzh-bf/klicker-uzh/pull/5199) | Analytics domains, incremental recomputation, privacy, and deterministic verification |
+  | 2 | [#5073](https://github.com/uzh-bf/klicker-uzh/pull/5073) | Indexed DAG, SQLAlchemy runtime, and course-scoped management API |
+  | 3 | [#5230](https://github.com/uzh-bf/klicker-uzh/pull/5230) | Read-only dry-run diagnostics, grading parity, query paths, and guarded index rollout |
+  | 4 | [#5231](https://github.com/uzh-bf/klicker-uzh/pull/5231) | Native Python Hatchet, consent and finalization convergence, and model ownership |
+  | 5 | [#5232](https://github.com/uzh-bf/klicker-uzh/pull/5232) | Generated artifacts and final runtime reconciliation with current `v3` |
 
 - 2026-07-30: Fresh stack-head Analytics verification passes Ruff format and
   lint across 138 files and 184 tests with 15 PostgreSQL-only skips. The
@@ -1092,7 +1084,7 @@ the repository script that replaces it before continuing.
   implementation tree. The fresh-worktree repository check ran before
   generated workspace artifacts existed, and the pre-push build later stopped
   on `ENOSPC`; both are recorded as warnings in the draft PR descriptions.
-- Active: Read the 14 draft PR checks to a terminal result, update stale
+- Active: Read the five draft PR checks to a terminal result, update stale
   descriptions if GitHub reports a different branch range, and stop without
   merging or deploying.
 
@@ -1108,7 +1100,7 @@ the repository script that replaces it before continuing.
 
 ## Next Steps
 
-1. Read every stacked draft PR check to a terminal result. Fix only failures
+1. Read every milestone draft PR check to a terminal result. Fix only failures
    caused by the stack; leave all PRs draft and do not merge or deploy.
 2. Before staging, scan the exact image digest for CVEs, confirm the deployed
    Hatchet control-plane compatibility, and verify the owning
