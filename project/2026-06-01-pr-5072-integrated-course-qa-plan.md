@@ -172,6 +172,7 @@
 - 2026-07-30: Rollout-gate Playwright migration planned as one seven-test serial workflow: `CLEANUP`, persisted thread creation, runtime-disable student and lecturer states, runtime restoration with thread persistence, rollout-disable Manage hiding, and fail-closed student integrated/fallback views with unconditional flag restoration. The slice will remove the superseded Cypress spec and now-unused Q&A JSON/embed-file ignore entries, trim dead Course Q&A Cypress task methods, and retain `setCourseQAFlags` because the existing microlearning Cypress workflow still calls it.
 - 2026-07-30: Rollout-gate Playwright migration done. The active suite now covers `CLEANUP` plus all six persisted-thread, runtime-disable, lecturer, restoration, rollout-hide, and fail-closed scenarios in one serial retry boundary. The final Course Q&A Cypress journey and unused JSON/token-file plumbing are removed, the Cypress task module retains only the microlearning-owned flag setter, and testing documentation routes all four Q&A workflows to Playwright. Formatting, Playwright/Cypress type checks, current-source PWA/Manage loopback test builds, a seven-test Chromium listing, `git diff --check`, and the full real-stack Chromium workflow pass (`7/7` in 8.3 seconds).
 - 2026-07-30: Exact rollout correctness and simplification review closed two false-positive risks. File-level teardown now restores every Q&A flag even when serial mode skips later cases after a failure, and both hidden-panel checks prove the course destination and visible content before asserting Q&A absence. Formatting, Playwright type checking, a seven-test Chromium listing, `git diff --check`, and the review-adjusted real-stack workflow pass (`7/7` in 9.5 seconds). Six exact-head gate-state screenshots cover runtime-disabled student and lecturer views plus rollout-disabled Manage and student views.
+- 2026-07-30: Final review at `9f345d06df` reopened three implementation slices. The strict maintainability gate found a deterministic soft-delete/unvote race that can leave application-maintained upvote counters above the surviving vote-row count, a fragmented scope-key policy, and a 1,079-line catch-all scope suite. Standards review found missing raw-control `data-cy` coverage and conditional classes outside `twMerge`. UX review requires lecturer-side inline thread/reply inspection and state-correct accessible vote toggles. Minimum author/lecturer deletion controls remain an explicit product decision before rollout rather than an implementation assumption.
 - 2026-06-01: Plan committed as `a1b2df084`. Pre-commit `check:all` passed with existing Node engine warnings.
 - 2026-06-01: Slice 1 done. Extracted `CourseDiscussionPanel`; `/qa` route is wrapper. Checks: `pnpm --filter @klicker-uzh/frontend-pwa check` passed, `git diff --check` clean, browser screenshot `/private/tmp/course-qa-integrated-screenshots/01-slice1-qa-route-refactored.png`.
 - 2026-06-01: Slice 2 done. Mounted stack-scoped `CourseDiscussionPanel` as sticky desktop rail in `ElementStack`; kept stack action controls in the content column and mobile discussion link fallback. Checks: `pnpm --filter @klicker-uzh/frontend-pwa check` passed, `git diff --check` clean, screenshots `/private/tmp/course-qa-integrated-screenshots/02-slice2-practice-stack-desktop-rail.png` and `/private/tmp/course-qa-integrated-screenshots/04-slice2-practice-stack-mobile-link.png`.
@@ -295,6 +296,30 @@
 - Docs: Route the discussion testing plan and Course Q&A documentation entirely to the four active Playwright workflows.
 - Check: focused formatting, Playwright and Cypress type checks, Chromium test listing with seven rollout-gate tests, focused Chromium execution against rebuilt loopback test apps, `git diff --check`, and exact-commit correctness/simplification review.
 - Commit: `test(course-qa): migrate rollout gates to playwright`.
+
+### Takeover Slice: Preserve Vote Counters Across Soft-Delete Races
+
+- Do: Make thread and reply unvotes decrement the canonical target counter even when a concurrent authorized deletion has already soft-deleted the target.
+- Invariant: If deleting the vote row cannot update exactly one existing target with a positive counter, roll back the vote deletion instead of committing a new mismatch.
+- Proof: Add deterministic PostgreSQL row-lock tests that queue deletion before unvote for both a thread and a reply, then assert soft deletion, zero surviving votes, and a zero counter.
+- Check: DB-backed discussion suite, GraphQL typecheck, focused formatting, `git diff --check`, repository-wide pre-commit gate, and exact-commit correctness/simplification review.
+- Commit: `fix(course-qa): preserve counters across deletion races`.
+
+### Takeover Slice: Consolidate Scope Policy and Test Structure
+
+- Do: Give scope-key parsing, construction, embed requirements, course ownership, and participant access one typed policy boundary instead of independent regex and switch fragments.
+- Tests: Split the 1,079-line scope catch-all into contract, authorization, and scope-behavior suites without changing scenario coverage.
+- Check: DB-backed discussion suite, GraphQL and affected frontend typechecks, focused formatting, `git diff --check`, repository-wide pre-commit gate, and exact-commit correctness/simplification review.
+- Commit: `refactor(course-qa): consolidate discussion scope policy`.
+
+### Takeover Slice: Close Final Integrated-UX Findings
+
+- Lecturer: Keep Q&A inside the course workspace and add inline thread disclosure so lecturers can inspect the full question and replies without a separate page.
+- Accessibility: Expose selected state and state-correct action labels on thread and reply vote toggles.
+- Standards: Add raw interactive-control test hooks in the embed generator and route conditional classes through `twMerge`.
+- Boundary: Do not invent moderation states or deletion controls; minimum author/lecturer deletion remains a product decision before rollout.
+- Check: Manage/PWA typecheck and lint, focused formatting, relevant Playwright workflows, fresh desktop/mobile screenshots, `git diff --check`, repository-wide pre-commit gate, and exact-commit correctness/simplification review.
+- Commit: `enhance(course-qa): improve integrated discussion review`.
 
 ## Finish
 
