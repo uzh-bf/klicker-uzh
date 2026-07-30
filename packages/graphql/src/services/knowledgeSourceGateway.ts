@@ -83,6 +83,7 @@ export async function handleKBSourceGateway({
     where: {
       id: resourceId,
       resourceVersion,
+      deletedAt: null,
       type: KBResourceType.BLOB,
       contentSha256: { not: null },
       status: {

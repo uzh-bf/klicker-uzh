@@ -6,6 +6,7 @@ import {
   buildKBIngestionSource,
   createKBIngestionApiClient,
   prepareKBIngestionSource,
+  resolvePublicIPv4,
 } from '../src/kbIngestionApi.js'
 
 const RESOURCE_ID = '7f3e2a10-9c4b-4d8e-b1a6-5e0f9d2c7b3a'
@@ -356,5 +357,54 @@ describe('ingestion source preparation', () => {
         env
       )
     ).toThrow('KB ingestion source is invalid')
+  })
+})
+
+// The test above exercises `preparePublicUrlSource` only through injected
+// `resolvePublicIPv4`/`requestPinnedUrl` fakes, so the real DNS-rebinding
+// guard in `resolvePublicIPv4` (SSRF protection: reject loopback, private,
+// and link-local/metadata addresses even when they arrive via a normal-
+// looking hostname) never actually ran. `resolvePublicIPv4` was exported
+// (pure `export` keyword addition, no logic change) so it can be called
+// directly here. Every case below is self-contained: `dns.lookup()` never
+// performs a network round trip for an IP-literal "hostname" -- Node
+// resolves it locally regardless of family -- so this needs no external
+// DNS or network egress, verified empirically (0ms lookups) before writing
+// these tests.
+describe('resolvePublicIPv4 SSRF guard (real function, no fakes)', () => {
+  it.each([
+    ['localhost', 'loopback hostname (resolves to 127.0.0.1 locally)'],
+    ['127.0.0.1', 'loopback literal'],
+    ['10.0.0.1', 'private class A'],
+    ['192.168.1.1', 'private class C'],
+    ['169.254.169.254', 'link-local / cloud metadata address'],
+  ])('rejects %s (%s)', async (hostname) => {
+    await expect(resolvePublicIPv4(hostname)).rejects.toThrow(
+      'KB ingestion source URL is invalid'
+    )
+  })
+
+  it('rejects an IPv6 literal presented as the hostname', async () => {
+    // Node's dns.lookup(hostname, { family: 4 }) does NOT fail or filter an
+    // IP-literal "hostname" to family 4 -- for a literal address it just
+    // returns that address verbatim, family 6 and all (confirmed directly:
+    // `dns.lookup('::1', { all: true, family: 4 })` resolves to
+    // `[{ address: '::1', family: 6 }]`, not an error and not an IPv4
+    // address). The real rejection therefore has to come from the
+    // `isPublicIPv4Address` classification afterwards (it requires
+    // `isIP(value) === 4`), not from the forced-family lookup itself. This
+    // pins that the real function still rejects it end to end.
+    await expect(resolvePublicIPv4('::1')).rejects.toThrow(
+      'KB ingestion source URL is invalid'
+    )
+  })
+
+  it('accepts a public IPv4 literal, exercising the real classification logic with no DNS/network dependency', async () => {
+    // dns.lookup() short-circuits for IP literals without any I/O (0ms in a
+    // local trial), so this is not a disguised real-network test -- it
+    // proves the real success path of resolvePublicIPv4 deterministically.
+    await expect(resolvePublicIPv4('93.184.216.34')).resolves.toBe(
+      '93.184.216.34'
+    )
   })
 })

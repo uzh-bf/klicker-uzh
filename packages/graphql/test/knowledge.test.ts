@@ -1950,6 +1950,147 @@ describe('Integration tests for knowledge base CRUD', () => {
     })
   })
 
+  it('attributes the six-grouped-query metrics to each KB independently when multiple KBs share one connection page', async () => {
+    // Three KBs for the same owner, each with a deliberately distinct
+    // composition, to prove getKbMetricsMap's per-kbId groupBy attribution
+    // doesn't bleed a sibling KB's rows into another's metrics.
+    const kbA = await createKb({ name: 'Alpha KB' }, userOneCtx)
+    const kbB = await createKb({ name: 'Beta KB' }, userOneCtx)
+    const kbC = await createKb({ name: 'Gamma KB' }, userOneCtx)
+
+    await prisma.kBResource.createMany({
+      data: [
+        // Alpha: 2 visible resources (one unknown-size), 1 tombstone, 1 reservation, 1 linked consumer
+        {
+          kbId: kbA.id,
+          type: KBResourceType.BLOB,
+          title: 'Alpha visible blob',
+          sizeBytes: 100,
+        },
+        {
+          kbId: kbA.id,
+          type: KBResourceType.URL,
+          title: 'Alpha visible url (unknown size)',
+        },
+        {
+          kbId: kbA.id,
+          type: KBResourceType.BLOB,
+          title: 'Alpha tombstone',
+          sizeBytes: 30,
+          deletedAt: new Date(),
+          deletedById: userOneCtx.user.sub,
+        },
+        // Beta: 1 visible resource, 2 unknown-size tombstones, no reservation, no consumer
+        {
+          kbId: kbB.id,
+          type: KBResourceType.BLOB,
+          title: 'Beta visible blob',
+          sizeBytes: 200,
+        },
+        {
+          kbId: kbB.id,
+          type: KBResourceType.BLOB,
+          title: 'Beta tombstone (unknown size) 1',
+          deletedAt: new Date(),
+          deletedById: userOneCtx.user.sub,
+        },
+        {
+          kbId: kbB.id,
+          type: KBResourceType.BLOB,
+          title: 'Beta tombstone (unknown size) 2',
+          deletedAt: new Date(),
+          deletedById: userOneCtx.user.sub,
+        },
+        // Gamma: no resources at all, only an upload reservation
+      ],
+    })
+    await prisma.kBUploadTicket.createMany({
+      data: [
+        {
+          id: randomUUID(),
+          kbId: kbA.id,
+          blobName: `${randomUUID()}.pdf`,
+          sizeBytes: 10,
+          expiresAt: new Date(Date.now() + 60_000),
+        },
+        {
+          id: randomUUID(),
+          kbId: kbC.id,
+          blobName: `${randomUUID()}.pdf`,
+          sizeBytes: 5,
+          expiresAt: new Date(Date.now() + 60_000),
+        },
+      ],
+    })
+    const course = await seedCourse({}, userOneCtx)
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Alpha tutor',
+        ownerId: userOneCtx.user.sub,
+        courseId: course.id,
+      },
+    })
+    await prisma.kBChatbot.create({
+      data: { kbId: kbA.id, chatbotId: chatbot.id, isEnabled: true },
+    })
+
+    const page = await getUserKbsConnection({ first: 20 }, userOneCtx)
+    const byId = new Map(page.items.map((item) => [item.id, item]))
+    expect(byId.has(kbA.id)).toBe(true)
+    expect(byId.has(kbB.id)).toBe(true)
+    expect(byId.has(kbC.id)).toBe(true)
+
+    expect(byId.get(kbA.id)?.metrics).toEqual({
+      visibleResourceCount: 2,
+      visibleSizeBytes: 100,
+      unknownSizeResourceCount: 1,
+      quotaResourceCount: 4,
+      quotaSizeBytes: 25 * 1024 * 1024 + 140,
+      resourceLimit: MAX_KB_RESOURCE_COUNT,
+      storageLimitBytes: MAX_KB_TOTAL_SIZE_BYTES,
+      pendingCleanupCount: 1,
+      pendingCleanupSizeBytes: 30,
+      reservedResourceCount: 1,
+      reservedSizeBytes: 10,
+      linkedConsumerCount: 1,
+    })
+    expect(byId.get(kbB.id)?.metrics).toEqual({
+      visibleResourceCount: 1,
+      visibleSizeBytes: 200,
+      unknownSizeResourceCount: 0,
+      quotaResourceCount: 3,
+      quotaSizeBytes: 25 * 1024 * 1024 * 2 + 200,
+      resourceLimit: MAX_KB_RESOURCE_COUNT,
+      storageLimitBytes: MAX_KB_TOTAL_SIZE_BYTES,
+      pendingCleanupCount: 2,
+      pendingCleanupSizeBytes: 25 * 1024 * 1024 * 2,
+      reservedResourceCount: 0,
+      reservedSizeBytes: 0,
+      linkedConsumerCount: 0,
+    })
+    expect(byId.get(kbC.id)?.metrics).toEqual({
+      visibleResourceCount: 0,
+      visibleSizeBytes: 0,
+      unknownSizeResourceCount: 0,
+      quotaResourceCount: 1,
+      quotaSizeBytes: 5,
+      resourceLimit: MAX_KB_RESOURCE_COUNT,
+      storageLimitBytes: MAX_KB_TOTAL_SIZE_BYTES,
+      pendingCleanupCount: 0,
+      pendingCleanupSizeBytes: 0,
+      reservedResourceCount: 1,
+      reservedSizeBytes: 5,
+      linkedConsumerCount: 0,
+    })
+
+    // cross-check the single-KB detail path against the multi-KB catalog
+    // path: both call the same getKbMetricsMap, so a KB's metrics must be
+    // identical however many sibling KBs are aggregated alongside it.
+    expect((await getKb({ id: kbB.id }, userOneCtx)).metrics).toEqual(
+      byId.get(kbB.id)?.metrics
+    )
+  })
+
   it('bulk deletes a bounded selection with one independently queued attempt per resource', async () => {
     const kb = await createKb({ name: 'Bulk delete' }, userOneCtx)
     const resources = await Promise.all(

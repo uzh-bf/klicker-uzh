@@ -423,7 +423,7 @@ async function prepareBlobSource(
   )
 }
 
-async function resolvePublicIPv4(hostname: string): Promise<string> {
+export async function resolvePublicIPv4(hostname: string): Promise<string> {
   const addresses = await lookup(hostname, { all: true, family: 4 })
   if (
     addresses.length === 0 ||
