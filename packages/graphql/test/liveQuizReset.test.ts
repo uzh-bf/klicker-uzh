@@ -110,6 +110,50 @@ describe('live quiz reset summary', () => {
     }
   }
 
+  function controlLiveQuizCacheInitialization(
+    ctx: ContextWithUser,
+    liveQuizId: string
+  ) {
+    const redis = ctx.redisExec
+    const sentinelKey = `lq:${liveQuizId}:post-initialization-sentinel`
+    let initializationCount = 0
+    let markInitialized!: () => void
+    const initialized = new Promise<void>((resolve) => {
+      markInitialized = resolve
+    })
+    let allowCompletion!: () => void
+    const completionAllowed = new Promise<void>((resolve) => {
+      allowCompletion = resolve
+    })
+    const controlledEval = async (
+      script: string | Buffer,
+      numkeys: number | string,
+      ...args: (string | Buffer | number)[]
+    ) => {
+      const result = await redis.eval(script, numkeys, ...args)
+      initializationCount += 1
+      await redis.set(sentinelKey, 'preserved')
+      markInitialized()
+      await completionAllowed
+      return result
+    }
+    const controlledRedis = new Proxy(redis, {
+      get(target, property) {
+        if (property === 'eval') return controlledEval
+        const value = Reflect.get(target, property, target)
+        return typeof value === 'function' ? value.bind(target) : value
+      },
+    })
+
+    return {
+      redis: controlledRedis,
+      sentinelKey,
+      waitUntilInitialized: () => initialized,
+      allowCompletion,
+      getInitializationCount: () => initializationCount,
+    }
+  }
+
   it('summarizes every destructive category for an eligible regular quiz', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
       { gamified: true, withRewardRun: true },
@@ -1464,6 +1508,67 @@ describe('live quiz reset summary', () => {
     await expect(
       userOneCtx.redisExec.get(`lq:${quiz.id}:synthetic`)
     ).resolves.toBe('stale')
+  })
+
+  it('serializes concurrent manual starts without clearing the winning run', async () => {
+    const quiz = await seedLiveQuiz(
+      { elements: [], status: PublicationStatus.DRAFT },
+      userOneCtx
+    )
+    const control = controlLiveQuizCacheInitialization(userOneCtx, quiz.id)
+    const controlledCtx = { ...userOneCtx, redisExec: control.redis }
+
+    const winner = startLiveQuiz({ id: quiz.id }, controlledCtx)
+    await control.waitUntilInitialized()
+    const loser = startLiveQuiz({ id: quiz.id }, controlledCtx)
+    control.allowCompletion()
+
+    await expect(Promise.all([winner, loser])).resolves.toEqual([
+      expect.objectContaining({ status: PublicationStatus.PUBLISHED }),
+      expect.objectContaining({ status: PublicationStatus.PUBLISHED }),
+    ])
+    expect(control.getInitializationCount()).toBe(1)
+    await expect(
+      userOneCtx.redisExec.hget(`lq:${quiz.id}:meta`, 'cacheGeneration')
+    ).resolves.toEqual(expect.any(String))
+    await expect(userOneCtx.redisExec.get(control.sentinelKey)).resolves.toBe(
+      'preserved'
+    )
+  })
+
+  it('serializes concurrent manual and scheduled starts without clearing the winning run', async () => {
+    const quiz = await seedLiveQuiz(
+      { elements: [], status: PublicationStatus.SCHEDULED },
+      userOneCtx
+    )
+    await prisma.liveQuiz.update({
+      where: { id: quiz.id },
+      data: { availableFrom: new Date(Date.now() - 60_000) },
+    })
+    const control = controlLiveQuizCacheInitialization(userOneCtx, quiz.id)
+    const controlledCtx = { ...userOneCtx, redisExec: control.redis }
+
+    const manualWinner = startLiveQuiz({ id: quiz.id }, controlledCtx)
+    await control.waitUntilInitialized()
+    const scheduledLoser = handlePublishScheduledLiveQuiz(
+      { liveQuizId: quiz.id },
+      globalHandlerContext(controlledCtx),
+      { logger: { info: vi.fn() } } as never
+    )
+    control.allowCompletion()
+
+    await expect(manualWinner).resolves.toMatchObject({
+      status: PublicationStatus.PUBLISHED,
+      scheduledPublicationTaskId: null,
+    })
+    await expect(scheduledLoser).resolves.toBe(true)
+    expect(control.getInitializationCount()).toBe(1)
+    await expect(
+      userOneCtx.redisExec.hget(`lq:${quiz.id}:meta`, 'cacheGeneration')
+    ).resolves.toEqual(expect.any(String))
+    await expect(userOneCtx.redisExec.get(control.sentinelKey)).resolves.toBe(
+      'preserved'
+    )
   })
 
   it('fences delayed cleanup from a newly started manual run', async () => {
