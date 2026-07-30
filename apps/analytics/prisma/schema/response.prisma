@@ -71,6 +71,8 @@ model QuestionResponse {
   @@index([microLearningId])
   @@index([practiceQuizId, participantId])
   @@index([microLearningId, participantId])
+  // Covers per-course, recent-window scans done by analytics scripts 2-7.
+  @@index([courseId, createdAt])
 }
 
 model QuestionResponseDetail {
