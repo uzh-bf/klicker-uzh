@@ -33,6 +33,15 @@ import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { computeRanks } from '../lib/util.js'
 import { getPermissionBooleans } from './activities.js'
+import {
+  applyRegularLiveQuizRewardPlan,
+  calculateLiveQuizRewardPlan,
+  hasSampleSolutionQuestion,
+  loadRankAchievementRewards,
+  shouldAwardRankAchievements,
+  type LiveQuizRewardParticipant,
+  type LiveQuizRewardPlan,
+} from './liveQuizRewards.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -1635,6 +1644,176 @@ function aggregateLiveQuizResponses({
   }
 }
 
+type LiveQuizForEnding = DB.Prisma.LiveQuizGetPayload<{
+  include: {
+    course: true
+    blocks: { include: { elements: true } }
+  }
+}>
+
+async function loadRegularLiveQuizRewardParticipants({
+  liveQuiz,
+  redis,
+  ctx,
+}: {
+  liveQuiz: LiveQuizForEnding
+  redis: Redis
+  ctx: ContextWithUser
+}): Promise<LiveQuizRewardParticipant[]> {
+  const [quizLeaderboard, quizXp] = await Promise.all([
+    redis.hgetall(`lq:${liveQuiz.id}:lb`),
+    redis.hgetall(`lq:${liveQuiz.id}:xp`),
+  ])
+  const cachedRewards = new Map<string, { score?: number; xp?: number }>()
+
+  for (const [participantId, value] of Object.entries(quizXp)) {
+    const xp = Number.parseInt(value, 10)
+    if (!Number.isFinite(xp)) {
+      throw new GraphQLError('Invalid live quiz XP reward data', {
+        extensions: { code: 'LIVE_QUIZ_REWARD_DATA_INVALID' },
+      })
+    }
+    cachedRewards.set(participantId, { xp })
+  }
+
+  for (const [participantId, value] of Object.entries(quizLeaderboard)) {
+    const score = Number.parseInt(value, 10)
+    if (!Number.isFinite(score)) {
+      throw new GraphQLError('Invalid live quiz leaderboard reward data', {
+        extensions: { code: 'LIVE_QUIZ_REWARD_DATA_INVALID' },
+      })
+    }
+    cachedRewards.set(participantId, {
+      ...cachedRewards.get(participantId),
+      score,
+    })
+  }
+
+  const participants = await Promise.all(
+    Array.from(cachedRewards.entries()).map(
+      async ([participantId, { score, xp }]) => {
+        const [participant, participation] = await Promise.all([
+          ctx.prisma.participant.findUnique({
+            where: { id: participantId },
+            select: { id: true },
+          }),
+          liveQuiz.courseId
+            ? ctx.prisma.participation.findUnique({
+                where: {
+                  courseId_participantId: {
+                    courseId: liveQuiz.courseId,
+                    participantId,
+                  },
+                },
+                select: { id: true, isActive: true },
+              })
+            : null,
+        ])
+
+        if (!participant) {
+          return null
+        }
+
+        return {
+          participantId: participant.id,
+          participationId: participation?.id ?? null,
+          courseId: liveQuiz.courseId,
+          hasActiveParticipation: participation?.isActive ?? false,
+          isCourseGamificationEnabled:
+            liveQuiz.course?.isGamificationEnabled ?? false,
+          score,
+          xp,
+        }
+      }
+    )
+  )
+
+  return participants.flatMap((participant) =>
+    participant === null ? [] : [participant]
+  )
+}
+
+async function endRegularLiveQuiz(
+  liveQuiz: LiveQuizForEnding,
+  ctx: ContextWithUser
+) {
+  const endedAt = new Date()
+  let plan: LiveQuizRewardPlan
+
+  if (liveQuiz.isGamificationEnabled) {
+    const participants = await loadRegularLiveQuizRewardParticipants({
+      liveQuiz,
+      redis: ctx.redisExec,
+      ctx,
+    })
+    const achievements = await loadRankAchievementRewards(ctx.prisma)
+    plan = calculateLiveQuizRewardPlan({
+      participants,
+      achievements,
+      awardAchievements: shouldAwardRankAchievements({
+        hasSampleSolution: hasSampleSolutionQuestion(liveQuiz.blocks),
+        participants,
+      }),
+      endedAt,
+    })
+  } else {
+    plan = {
+      endedAt,
+      isLegacyReconstructed: false,
+      entries: [],
+    }
+  }
+
+  return ctx.prisma.$transaction(
+    async (tx) => {
+      const transitioned = await tx.liveQuiz.updateMany({
+        where: {
+          id: liveQuiz.id,
+          status: DB.PublicationStatus.PUBLISHED,
+          activeRewardRunId: null,
+          rewardRuns: {
+            none: { status: DB.LiveQuizRewardRunStatus.APPLIED },
+          },
+        },
+        data: {
+          status: DB.PublicationStatus.ENDED,
+          finishedAt: endedAt,
+        },
+      })
+
+      if (transitioned.count !== 1) {
+        throw new GraphQLError('Live quiz could not transition to ended', {
+          extensions: { code: 'LIVE_QUIZ_END_CONFLICT' },
+        })
+      }
+
+      await tx.temporaryLeaderboardEntry.deleteMany({
+        where: {
+          quizId: liveQuiz.id,
+          score: 0,
+          createdAt: {
+            equals: tx.temporaryLeaderboardEntry.fields.updatedAt,
+          },
+        },
+      })
+
+      await applyRegularLiveQuizRewardPlan({
+        liveQuizId: liveQuiz.id,
+        plan,
+        tx,
+      })
+
+      return tx.liveQuiz.findUniqueOrThrow({
+        where: { id: liveQuiz.id },
+      })
+    },
+    {
+      isolationLevel: DB.Prisma.TransactionIsolationLevel.Serializable,
+      timeout: 60000,
+    }
+  )
+}
+
 export async function endLiveQuiz(
   { id }: { id: string },
   ctx: ContextWithUser
@@ -1663,6 +1842,25 @@ export async function endLiveQuiz(
     quiz.status === DB.PublicationStatus.SCHEDULED
   ) {
     return null
+  }
+
+  if (!quiz.isAssessmentEnabled) {
+    try {
+      const endedLiveQuiz = await endRegularLiveQuiz(quiz, ctx)
+
+      await sendTeamsNotification({
+        scope: 'graphql/endLiveQuiz',
+        text: `END Live quiz ${quiz.name} with id ${quiz.id}.`,
+      })
+
+      return endedLiveQuiz
+    } catch (error) {
+      await sendTeamsNotification({
+        scope: 'graphql/endLiveQuiz',
+        text: `ERROR - failed to end live quiz ${quiz.name} with id ${quiz.id}: ${error}`,
+      })
+      throw error
+    }
   }
 
   // depending on the quiz assessment setting, select the corresponding redis instance
