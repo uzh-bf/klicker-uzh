@@ -714,6 +714,9 @@ test.describe.serial('Different live-quiz workflows', () => {
       'exist'
     )
     await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz1}`).click()
+    await expect(
+      page.getByTestId(`reset-live-quiz-${data.sharing.quiz1}`)
+    ).toHaveCount(0)
     await expectByAssertion(
       page.getByTestId(`edit-live-quiz-${data.sharing.quiz1}`),
       'exist'
@@ -753,6 +756,9 @@ test.describe.serial('Different live-quiz workflows', () => {
       'exist'
     )
     await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz2}`).click()
+    await expect(
+      page.getByTestId(`reset-live-quiz-${data.sharing.quiz2}`)
+    ).toHaveCount(0)
     await expectByAssertion(
       page.getByTestId(`duplicate-live-quiz-${data.sharing.quiz2}`),
       'exist'
@@ -784,6 +790,9 @@ test.describe.serial('Different live-quiz workflows', () => {
       'exist'
     )
     await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz3}`).click()
+    await expect(
+      page.getByTestId(`reset-live-quiz-${data.sharing.quiz3}`)
+    ).toHaveCount(0)
     await expectByAssertion(
       page.getByTestId(`live-quiz-evaluation-${data.sharing.quiz3}`),
       'exist'
@@ -1313,6 +1322,9 @@ test.describe.serial('Different live-quiz workflows', () => {
       'exist'
     )
     await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz1}`).click()
+    await expect(
+      page.getByTestId(`reset-live-quiz-${data.sharing.quiz1}`)
+    ).toHaveCount(0)
     await expectByAssertion(
       page.getByTestId(`edit-live-quiz-${data.sharing.quiz1}`),
       'exist'
@@ -1356,6 +1368,9 @@ test.describe.serial('Different live-quiz workflows', () => {
       'exist'
     )
     await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz2}`).click()
+    await expect(
+      page.getByTestId(`reset-live-quiz-${data.sharing.quiz2}`)
+    ).toHaveCount(0)
     await expectByAssertion(
       page.getByTestId(`duplicate-live-quiz-${data.sharing.quiz2}`),
       'exist'
@@ -1391,6 +1406,9 @@ test.describe.serial('Different live-quiz workflows', () => {
       'exist'
     )
     await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz3}`).click()
+    await expect(
+      page.getByTestId(`reset-live-quiz-${data.sharing.quiz3}`)
+    ).toHaveCount(0)
     await expectByAssertion(
       page.getByTestId(`live-quiz-evaluation-${data.sharing.quiz3}`),
       'exist'
