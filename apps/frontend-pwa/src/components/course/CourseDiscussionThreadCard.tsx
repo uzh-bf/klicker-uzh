@@ -167,6 +167,7 @@ function CourseDiscussionThreadCard({
     })
   const replyTriggerId = `${idPrefix}-reply-trigger-${thread.id}`
   const replyComposerId = `${idPrefix}-reply-composer-${thread.id}`
+  const threadUpvoteCountDescriptionId = `${idPrefix}-thread-upvote-count-${thread.id}`
 
   return (
     <div
@@ -198,33 +199,42 @@ function CourseDiscussionThreadCard({
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {canVote ? (
-          <Button
-            onClick={handleToggleThreadUpvote}
-            active={!!thread.hasUpvoted}
-            className={{
-              root: 'h-8 motion-safe:transition-transform motion-safe:hover:scale-105',
-            }}
-            data={{ cy: `course-qa-thread-upvote-${thread.id}` }}
-            aria-pressed={!!thread.hasUpvoted}
-            aria-label={t('pwa.courseQA.threadUpvoteAriaLabel')}
-          >
-            <Button.Icon icon={faThumbsUp} />
-            <Button.Label>{String(thread.upvotes)}</Button.Label>
-          </Button>
+          <>
+            <Button
+              onClick={handleToggleThreadUpvote}
+              active={!!thread.hasUpvoted}
+              className={{
+                root: 'h-8 motion-safe:transition-transform motion-safe:hover:scale-105',
+              }}
+              data={{ cy: `course-qa-thread-upvote-${thread.id}` }}
+              aria-pressed={!!thread.hasUpvoted}
+              aria-label={t('pwa.courseQA.threadUpvoteAriaLabel')}
+              aria-describedby={threadUpvoteCountDescriptionId}
+            >
+              <Button.Icon icon={faThumbsUp} />
+              <Button.Label>{String(thread.upvotes)}</Button.Label>
+            </Button>
+            <span id={threadUpvoteCountDescriptionId} className="sr-only">
+              {t('pwa.courseQA.threadUpvoteCountAriaLabel', {
+                count: thread.upvotes,
+              })}
+            </span>
+          </>
         ) : (
-          <span
-            className="inline-flex h-8 items-center gap-2 px-2 text-sm text-gray-600"
-            aria-label={t('pwa.courseQA.threadUpvoteCountAriaLabel', {
-              count: thread.upvotes,
-            })}
-          >
-            <FontAwesomeIcon
-              icon={faThumbsUp}
-              className="h-4 w-4"
-              aria-hidden
-            />
-            {thread.upvotes}
-          </span>
+          <>
+            <span
+              className="inline-flex h-8 items-center gap-2 px-2 text-sm text-gray-600"
+              aria-hidden="true"
+            >
+              <FontAwesomeIcon icon={faThumbsUp} className="h-4 w-4" />
+              {thread.upvotes}
+            </span>
+            <span className="sr-only">
+              {t('pwa.courseQA.threadUpvoteCountAriaLabel', {
+                count: thread.upvotes,
+              })}
+            </span>
+          </>
         )}
         <span className="text-xs text-gray-500">
           {t('pwa.courseQA.nReply', { count: thread.replyCount })}
@@ -267,38 +277,50 @@ function CourseDiscussionThreadCard({
                 {formatDateTime(reply.createdAt)}
               </span>
               {canVote ? (
-                <Button
-                  onClick={() =>
-                    handleToggleReplyUpvote(reply.id, reply.hasUpvoted)
-                  }
-                  active={!!reply.hasUpvoted}
-                  className={{
-                    root: 'h-7 motion-safe:transition-transform motion-safe:hover:scale-105',
-                  }}
-                  data={{ cy: `course-qa-reply-upvote-${reply.id}` }}
-                  aria-pressed={!!reply.hasUpvoted}
-                  aria-label={t('pwa.courseQA.replyUpvoteAriaLabel')}
-                >
-                  <Button.Icon
-                    icon={faThumbsUp}
-                    className={{ root: 'h-3 w-3' }}
-                  />
-                  <Button.Label>{String(reply.upvotes)}</Button.Label>
-                </Button>
+                <>
+                  <Button
+                    onClick={() =>
+                      handleToggleReplyUpvote(reply.id, reply.hasUpvoted)
+                    }
+                    active={!!reply.hasUpvoted}
+                    className={{
+                      root: 'h-7 motion-safe:transition-transform motion-safe:hover:scale-105',
+                    }}
+                    data={{ cy: `course-qa-reply-upvote-${reply.id}` }}
+                    aria-pressed={!!reply.hasUpvoted}
+                    aria-label={t('pwa.courseQA.replyUpvoteAriaLabel')}
+                    aria-describedby={`${idPrefix}-reply-upvote-count-${reply.id}`}
+                  >
+                    <Button.Icon
+                      icon={faThumbsUp}
+                      className={{ root: 'h-3 w-3' }}
+                    />
+                    <Button.Label>{String(reply.upvotes)}</Button.Label>
+                  </Button>
+                  <span
+                    id={`${idPrefix}-reply-upvote-count-${reply.id}`}
+                    className="sr-only"
+                  >
+                    {t('pwa.courseQA.replyUpvoteCountAriaLabel', {
+                      count: reply.upvotes,
+                    })}
+                  </span>
+                </>
               ) : (
-                <span
-                  className="inline-flex h-7 items-center gap-2 px-2 text-xs text-gray-600"
-                  aria-label={t('pwa.courseQA.replyUpvoteCountAriaLabel', {
-                    count: reply.upvotes,
-                  })}
-                >
-                  <FontAwesomeIcon
-                    icon={faThumbsUp}
-                    className="h-3 w-3"
-                    aria-hidden
-                  />
-                  {reply.upvotes}
-                </span>
+                <>
+                  <span
+                    className="inline-flex h-7 items-center gap-2 px-2 text-xs text-gray-600"
+                    aria-hidden="true"
+                  >
+                    <FontAwesomeIcon icon={faThumbsUp} className="h-3 w-3" />
+                    {reply.upvotes}
+                  </span>
+                  <span className="sr-only">
+                    {t('pwa.courseQA.replyUpvoteCountAriaLabel', {
+                      count: reply.upvotes,
+                    })}
+                  </span>
+                </>
               )}
             </div>
           </div>

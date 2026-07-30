@@ -271,19 +271,18 @@ function CourseDiscussionOverview({
                             <span>{formatDateTime(thread.lastActivityAt)}</span>
                             <span
                               className="flex items-center gap-1"
-                              aria-label={t(
-                                'pwa.courseQA.threadUpvoteCountAriaLabel',
-                                {
-                                  count: thread.upvotes,
-                                }
-                              )}
+                              aria-hidden="true"
                             >
                               <FontAwesomeIcon
                                 icon={faThumbsUp}
                                 className="text-gray-500"
-                                aria-hidden="true"
                               />
                               {thread.upvotes}
+                            </span>
+                            <span className="sr-only">
+                              {t('pwa.courseQA.threadUpvoteCountAriaLabel', {
+                                count: thread.upvotes,
+                              })}
                             </span>
                             <span>
                               {t('pwa.courseQA.nReply', {
@@ -306,10 +305,7 @@ function CourseDiscussionOverview({
                       </summary>
 
                       {thread.replies.length > 0 && (
-                        <div
-                          className="border-t border-gray-100 bg-gray-50 px-3 py-2"
-                          data-cy={`course-qa-overview-thread-details-${thread.id}`}
-                        >
+                        <div className="border-t border-gray-100 bg-gray-50 px-3 py-2">
                           <div className="divide-y divide-gray-200">
                             {thread.replies.map((reply) => (
                               <div
@@ -324,18 +320,18 @@ function CourseDiscussionOverview({
                                   <span>{formatDateTime(reply.createdAt)}</span>
                                   <span
                                     className="flex items-center gap-1"
-                                    aria-label={t(
+                                    aria-hidden="true"
+                                  >
+                                    <FontAwesomeIcon icon={faThumbsUp} />
+                                    {reply.upvotes}
+                                  </span>
+                                  <span className="sr-only">
+                                    {t(
                                       'pwa.courseQA.replyUpvoteCountAriaLabel',
                                       {
                                         count: reply.upvotes,
                                       }
                                     )}
-                                  >
-                                    <FontAwesomeIcon
-                                      icon={faThumbsUp}
-                                      aria-hidden="true"
-                                    />
-                                    {reply.upvotes}
                                   </span>
                                 </div>
                               </div>
