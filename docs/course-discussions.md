@@ -91,7 +91,7 @@ pnpm --filter @klicker-uzh/hatchet-worker-general build
 pnpm --filter @klicker-uzh/graphql test:local
 ```
 
-The four existing Cypress journeys cover course integration, evaluated practice scopes, embeds, and rollout gates (`cypress/cypress/e2e/Y-course-qa-course-workflow.cy.ts:Course Q&A course-level workflows`, `cypress/cypress/e2e/Y-course-qa-practice-workflow.cy.ts:Course Q&A practice workflow`, `cypress/cypress/e2e/Y-course-qa-embed-workflow.cy.ts:Course Q&A embed workflow`, `cypress/cypress/e2e/Y-course-qa-rollout-gates-workflow.cy.ts:Course Q&A rollout-gate workflow`). Cypress is legacy coverage; new end-to-end scenarios should follow the Playwright-first policy in [Testing](./testing.md).
+The Playwright journeys cover course integration and evaluated practice scopes (`playwright/tests/Y-course-qa-course.spec.ts:Course Q&A course-level workflows`, `playwright/tests/Y-course-qa-practice.spec.ts:Course Q&A practice workflows`). The remaining Cypress journeys cover embeds and rollout gates (`cypress/cypress/e2e/Y-course-qa-embed-workflow.cy.ts:Course Q&A embed workflow`, `cypress/cypress/e2e/Y-course-qa-rollout-gates-workflow.cy.ts:Course Q&A rollout-gate workflow`) until their migration slices are complete. New end-to-end scenarios should follow the Playwright-first policy in [Testing](./testing.md).
 
 Any UI change still requires real browser verification across desktop and mobile. Embed changes also require a separate unauthenticated browser session so participant cookies cannot mask capability errors.
 

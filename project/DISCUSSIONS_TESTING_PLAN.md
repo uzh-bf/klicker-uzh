@@ -64,15 +64,11 @@ The focused Course Q&A specs are independently seeded to avoid renderer memory
 exhaustion. Run each command from the repository root:
 
 ```bash
-docker exec -w /workspaces/klicker-uzh default-co-c3448-app-1 \
-  sh -lc 'APP_ORIGIN_AUTH=http://127.0.0.1:3010 \
-  pnpm --filter @klicker-uzh/cypress exec cypress run \
-  --browser chromium --spec cypress/e2e/Y-course-qa-course-workflow.cy.ts'
+pnpm --filter @klicker-uzh/playwright test:run:raw -- \
+  --project=chromium tests/Y-course-qa-course.spec.ts
 
-docker exec -w /workspaces/klicker-uzh default-co-c3448-app-1 \
-  sh -lc 'APP_ORIGIN_AUTH=http://127.0.0.1:3010 \
-  pnpm --filter @klicker-uzh/cypress exec cypress run \
-  --browser chromium --spec cypress/e2e/Y-course-qa-practice-workflow.cy.ts'
+pnpm --filter @klicker-uzh/playwright test:run:raw -- \
+  --project=chromium tests/Y-course-qa-practice.spec.ts
 
 docker exec -w /workspaces/klicker-uzh default-co-c3448-app-1 \
   sh -lc 'APP_ORIGIN_AUTH=http://127.0.0.1:3010 \
@@ -85,10 +81,11 @@ docker exec -w /workspaces/klicker-uzh default-co-c3448-app-1 \
   --browser chromium --spec cypress/e2e/Y-course-qa-rollout-gates-workflow.cy.ts'
 ```
 
-The last completed baseline was course `8/8`, practice `7/7`, embed `6/6`, and
-rollout `7/7`. The course spec gained two cases afterward. The embed baseline
-predates fragment-token transport and course-wide mode, so it is historical
-evidence rather than current-branch proof.
+The current Playwright baseline is course `13/13` and practice `7/7`. The last
+completed Cypress baseline for the remaining workflows was embed `6/6` and
+rollout `7/7`. The embed baseline predates fragment-token transport and
+course-wide mode, so it is historical evidence rather than current-branch
+proof.
 
 On 2026-07-29 the isolated devrouter runtime and delegated browser login were
 restored. Three bounded Cypress attempts still returned to Auth in the first

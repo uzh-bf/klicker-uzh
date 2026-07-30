@@ -23,16 +23,15 @@ test.describe('Course Q&A practice workflows', () => {
     await page.setViewportSize({ width: 1280, height: 900 })
   })
 
-  test('Lecturer creates the practice question', async ({ loginLecturer }) => {
-    await loginLecturer()
-    await expect(
-      createQuestionSC({
+  test('Lecturer creates the practice question', async () => {
+    expect(
+      await createQuestionSC({
         name: COURSE_QA_DATA.question.title,
         content: COURSE_QA_DATA.question.content,
         choices: [...COURSE_QA_DATA.question.choices],
         userId: LECTURER_ID,
       })
-    ).resolves.toBe(true)
+    ).toBe(true)
   })
 
   test('Lecturer creates and publishes the practice quiz', async ({
@@ -53,7 +52,29 @@ test.describe('Course Q&A practice workflows', () => {
     await page
       .getByTestId(`publish-practice-quiz-${COURSE_QA_DATA.practiceQuiz.name}`)
       .click()
+    const publication = page.waitForResponse((response) => {
+      const request = response.request()
+      return (
+        request.method() === 'POST' &&
+        request
+          .postData()
+          ?.includes('"operationName":"PublishPracticeQuiz"') === true
+      )
+    })
     await page.getByTestId('publish-practice-quiz-immediately').click()
+    const publicationResponse = await publication
+    expect(publicationResponse.ok()).toBe(true)
+    const publicationResult = (await publicationResponse.json()) as {
+      data?: { publishPracticeQuiz?: { status?: string } }
+      errors?: unknown[]
+    }
+    expect(publicationResult.errors).toBeUndefined()
+    expect(publicationResult.data?.publishPracticeQuiz?.status).toBe(
+      'PUBLISHED'
+    )
+    await expect(
+      page.getByTestId('publish-practice-quiz-immediately')
+    ).toBeHidden()
   })
 
   test('Student creates a course-level thread for scope-boundary checks', async ({
@@ -86,7 +107,12 @@ test.describe('Course Q&A practice workflows', () => {
     const rail = page.getByTestId('student-stack-discussion-rail')
     const toggle = page.getByTestId('student-stack-discussion-toggle')
     await expect(rail).toHaveCount(0)
-    await page.getByTestId('sc-0-answer-option-0').click({ force: true })
+    const answer = page.getByTestId('sc-0-answer-option-0')
+    await expect(answer).toBeVisible()
+    await expect(answer).toBeEnabled()
+    await answer.focus()
+    await expect(answer).toBeFocused()
+    await answer.press('Enter')
     const submit = page.getByTestId('student-stack-submit')
     await expect(submit).toBeEnabled()
     await submit.click()
@@ -148,11 +174,22 @@ test.describe('Course Q&A practice workflows', () => {
 
     const groups = page.getByTestId('course-qa-overview-groups')
     await expect(groups).toBeVisible()
+    const sourceGroup = groups
+      .locator('[data-cy^="course-qa-overview-group-"]')
+      .filter({ hasText: COURSE_QA_DATA.threads.course1 })
+      .filter({ hasText: COURSE_QA_DATA.threads.stack1 })
+    await expect(sourceGroup).toBeVisible()
     await expect(
-      groups.getByText(COURSE_QA_DATA.threads.course1, { exact: true })
+      sourceGroup.getByText(COURSE_QA_DATA.threads.course1, { exact: true })
     ).toBeVisible()
     await expect(
-      groups.getByText(COURSE_QA_DATA.threads.stack1, { exact: true })
+      sourceGroup.getByText(COURSE_QA_DATA.threads.stack1, { exact: true })
+    ).toBeVisible()
+    await expect(
+      sourceGroup.locator('span').filter({ hasText: /^Course$/ })
+    ).toBeVisible()
+    await expect(
+      sourceGroup.getByText('Practice stack 0', { exact: true })
     ).toBeVisible()
   })
 })
