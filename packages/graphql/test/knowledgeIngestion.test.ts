@@ -39,6 +39,10 @@ describe('Integration tests for knowledge base ingestion', () => {
     const initialized = await testInitialization(prisma, hatchet, emitter)
     userOneCtx = initialized.userOneCtx
     userTwoCtx = initialized.userTwoCtx
+    await prisma.user.updateMany({
+      where: { id: { in: [userOneCtx.user.sub, userTwoCtx.user.sub] } },
+      data: { privatePreview: true },
+    })
   })
 
   afterEach(async () => {
@@ -277,6 +281,11 @@ describe('Integration tests for knowledge base ingestion', () => {
     const abaCtx = {
       ...userOneCtx,
       prisma: {
+        user: {
+          findUnique: userOneCtx.prisma.user.findUnique.bind(
+            userOneCtx.prisma.user
+          ),
+        },
         kBResource: {
           findFirst: kbResource.findFirst.bind(kbResource),
         },
