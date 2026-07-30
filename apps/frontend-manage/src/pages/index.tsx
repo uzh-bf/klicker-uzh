@@ -384,7 +384,7 @@ function Index() {
                     if (shouldRecover) {
                       setShowRecoveryPrompt(true)
                     } else {
-                      if (value) {
+                      if (value !== null) {
                         localStorage.removeItem(autoSaveKey)
                       }
                       setIsElementCreationModalOpen(true)

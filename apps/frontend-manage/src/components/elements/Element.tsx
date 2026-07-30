@@ -109,7 +109,7 @@ function Element({
     if (recoveredElement) {
       setShowRecoveryPrompt(true)
     } else {
-      if (serializedValue) {
+      if (serializedValue !== null) {
         localStorage.removeItem(autoSaveKey)
       }
       setModificationModalOpen(true)

@@ -526,11 +526,33 @@ test.describe('Create different types of elements (with and without sample solut
         userId: LECTURER_ID,
         values: { type: ElementType.CODE },
       })
+      const malformedNestedCurrentUserDraft = JSON.stringify({
+        version: 1,
+        userId: LECTURER_ID,
+        values: {
+          type: ElementType.CASE_STUDY,
+          name: 'Malformed case study draft',
+          status: ElementStatus.READY,
+          content: '',
+          tags: [],
+          basePoints: true,
+          pointsMultiplier: '1',
+          options: {
+            hasSampleSolution: false,
+            itemSelectionMode: 'new',
+            cases: [],
+            criteria: [],
+            manuallyCreatedItems: [null],
+          },
+        },
+      })
 
       for (const serializedValue of [
+        '',
         '{',
         foreignDraft,
         incompleteCurrentUserDraft,
+        malformedNestedCurrentUserDraft,
       ]) {
         await page.evaluate(
           ({ key, value }) => localStorage.setItem(key, value),

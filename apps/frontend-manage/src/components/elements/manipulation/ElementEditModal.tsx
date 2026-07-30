@@ -17,7 +17,7 @@ import {
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useRouter } from 'next/router'
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useElementAutoSave } from './elementAutoSave'
 import ElementEditForm from './ElementEditForm'
 import {
@@ -32,7 +32,6 @@ import {
   prepareNumericalArgs,
   prepareSelectionArgs,
 } from './helpers'
-import { ElementFormTypes } from './types'
 import useElementFormInitialValues from './useElementFormInitialValues'
 
 export enum ElementEditMode {
@@ -76,16 +75,7 @@ function ElementEditModal({
     loaded: autoSaveLoaded,
     setAutoSavedElement,
   } = useElementAutoSave(autoSaveKey, userId)
-  const recoveredElement = autoSavedElement?.values
-
-  const storeAutoSavedElement = useCallback(
-    (values: ElementFormTypes) => {
-      if (userId) {
-        setAutoSavedElement({ version: 1, userId, values })
-      }
-    },
-    [setAutoSavedElement, userId]
-  )
+  const recoveredElement = autoSavedElement
 
   const { loading: loadingQuestion, data: dataQuestion } = useQuery(
     GetSingleElementDocument,
@@ -418,9 +408,7 @@ function ElementEditModal({
       }}
       onSuccess={() => {
         // remove local storage entry
-        if (autoSavedElement) {
-          setAutoSavedElement(undefined)
-        }
+        setAutoSavedElement(undefined)
 
         // extract query parameters
         const {
@@ -455,7 +443,7 @@ function ElementEditModal({
         // trigger success toast
         triggerSuccessToast()
       }}
-      setAutoSavedElement={storeAutoSavedElement}
+      setAutoSavedElement={setAutoSavedElement}
     />
   )
 }
