@@ -199,6 +199,7 @@ export const ActivityPerformanceRef =
 export const ActivityPerformance = builder.objectType(ActivityPerformanceRef, {
   fields: (t) => ({
     id: t.exposeInt('id'),
+    participantCount: t.exposeInt('participantCount'),
     activityName: t.exposeString('activityName'),
     activityType: t.expose('activityType', { type: ActivityType }),
     rates: t.expose('rates', { type: PerformanceRates }),
@@ -383,6 +384,7 @@ export const ActivityQuizAnalytics = builder.objectType(
   {
     fields: (t) => ({
       id: t.exposeInt('id'),
+      participantCount: t.exposeInt('participantCount'),
       averageTimeSpent: t.exposeFloat('averageTimeSpent'),
       numberOfAnswers: t.exposeInt('numberOfAnswers'),
       firstErrorRate: t.exposeFloat('firstErrorRate', { nullable: true }),

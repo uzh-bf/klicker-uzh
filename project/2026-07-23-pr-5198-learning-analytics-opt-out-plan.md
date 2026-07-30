@@ -7,10 +7,9 @@
 - Branch: `codex/learning-analytics-opt-out-plan`
 - Target: `v3`
 - Pull request: [#5198](https://github.com/uzh-bf/klicker-uzh/pull/5198)
-- Active stack branch: `codex/la-opt-out-lecturer-control`
-- Active stack target: `codex/learning-analytics-opt-out-plan`
-- Active stack pull request:
-  [#5242](https://github.com/uzh-bf/klicker-uzh/pull/5242)
+- Active stack branch: `codex/la-opt-out-computation-eligibility`
+- Active stack target: `codex/la-opt-out-participant-choice`
+- Active stack pull request: not yet published
 - Change type: `feat`
 - ADRs:
   - [ADR 0001](../docs/adr/0001-separate-course-and-participant-learning-analytics-controls.md)
@@ -594,5 +593,24 @@ Commit:
   2's branch. The rendered base/head metadata and draft state were verified;
   GitGuardian passed and repository checks entered the queue.
 - Current: Slice 3 is under review in draft PR #5243.
-- Next: Begin the centralized computation eligibility slice on a branch stacked
-  on `codex/la-opt-out-participant-choice`.
+- 2026-07-30: Slice 4 implementation centralizes Python computation and
+  write-time eligibility, rebuilds attempt-sensitive metrics from eligible
+  detail rows, excludes free text, filters direct GraphQL response and feedback
+  aggregations, persists activity-level effective participant counts, and
+  clears participant-level derived rows whenever a real choice transition
+  establishes a new inclusion boundary.
+- 2026-07-30: Nine standard-library Python tests passed, and six focused
+  GraphQL integration cases passed across participant-choice and direct
+  computation eligibility. A non-empty synthetic Python Prisma smoke rebuilt
+  one eligible detail row and wrote effective N through the real
+  transaction-scoped course lock; the fixture was removed afterward.
+- 2026-07-30: Repository-wide `check:all`, Prisma schema-sync and
+  migration-status checks, all 22 production builds, and a focused Opengrep
+  scan completed successfully. The build retained only the repository's
+  pre-existing Rollup/Next warnings.
+- 2026-07-30: The Slice 4 privacy and simplification audit removed active
+  notebook bypasses, replaced stale cumulative counts with eligible detail-row
+  counts, excluded free-text elements from numerator and denominator paths, and
+  found no remaining blocker.
+- Current: Slice 4 is verified and ready to publish as a draft PR stacked on
+  `codex/la-opt-out-participant-choice`.

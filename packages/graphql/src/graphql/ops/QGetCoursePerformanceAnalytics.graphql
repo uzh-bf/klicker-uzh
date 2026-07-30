@@ -12,6 +12,7 @@ query GetCoursePerformanceAnalytics($courseId: String!) {
     activityPerformances {
       __typename
       id
+      participantCount
       activityName
       activityType
       rates {

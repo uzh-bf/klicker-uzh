@@ -1,7 +1,7 @@
 import pandas as pd
 
 
-def aggregate_analytics(df_details, df_course_responses=None):
+def aggregate_analytics(df_details, include_first_last=False):
     # Aggregate the question response details for the participant and course level
     df_analytics_counts = (
         df_details.groupby(["participantId", "courseId"])
@@ -78,19 +78,27 @@ def aggregate_analytics(df_details, df_course_responses=None):
     )
 
     df_course_analytics = None
-    if df_course_responses is not None:
-        # Count entries where firstResponseCorrectness is 'CORRECT', 'WRONG' and lastResponseCorrectness is 'CORRECT', 'WRONG' into separate columns - grouped by participantId and courseId
+    if include_first_last:
+        response_boundaries = (
+            df_details.sort_values("createdAt")
+            .groupby(["participantId", "elementInstanceId", "courseId"])
+            .agg(
+                firstResponseCorrectness=("correctness", "first"),
+                lastResponseCorrectness=("correctness", "last"),
+            )
+            .reset_index()
+        )
         df_course_analytics = (
-            df_course_responses.groupby(["participantId", "courseId"])
+            response_boundaries.groupby(["participantId", "courseId"])
             .agg(
                 {
                     "firstResponseCorrectness": [
                         ("correct", lambda x: (x == "CORRECT").sum()),
-                        ("wrong", lambda x: (x == "WRONG").sum()),
+                        ("wrong", lambda x: (x == "INCORRECT").sum()),
                     ],
                     "lastResponseCorrectness": [
                         ("correct", lambda x: (x == "CORRECT").sum()),
-                        ("wrong", lambda x: (x == "WRONG").sum()),
+                        ("wrong", lambda x: (x == "INCORRECT").sum()),
                     ],
                 }
             )

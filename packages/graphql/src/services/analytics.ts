@@ -9,8 +9,112 @@ import {
   InstanceQuizAnalytics,
   ParticipantActivityPerformance,
 } from '@klicker-uzh/types'
+import { isActivityEligibleForLearningAnalytics } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
-import { isLearningAnalyticsRolloutEnabled } from '../lib/learningAnalytics.js'
+import {
+  LEARNING_ANALYTICS_DISCLOSURE_VERSION,
+  isLearningAnalyticsRolloutEnabled,
+  learningAnalyticsParticipationWhere,
+} from '../lib/learningAnalytics.js'
+
+type LearningAnalyticsFeedback = Pick<
+  DB.ElementFeedback,
+  'id' | 'upvote' | 'downvote' | 'participantId' | 'createdAt'
+>
+
+const learningAnalyticsFeedbackSelect = {
+  id: true,
+  upvote: true,
+  downvote: true,
+  participantId: true,
+  createdAt: true,
+} satisfies DB.Prisma.ElementFeedbackSelect
+
+async function filterEligibleLearningAnalyticsActivity<
+  T extends { participantId: string; createdAt: Date },
+>(records: T[], courseId: string, ctx: ContextWithUser): Promise<T[]> {
+  if (records.length === 0) {
+    return []
+  }
+
+  const participations = await ctx.prisma.participation.findMany({
+    where: {
+      ...learningAnalyticsParticipationWhere(courseId),
+      participantId: {
+        in: [...new Set(records.map((record) => record.participantId))],
+      },
+    },
+  })
+  const participationByParticipantId = new Map(
+    participations.map((participation) => [
+      participation.participantId,
+      participation,
+    ])
+  )
+
+  return records.filter((record) => {
+    const participation = participationByParticipantId.get(record.participantId)
+    return (
+      participation !== undefined &&
+      isActivityEligibleForLearningAnalytics({
+        isCourseEnabled: true,
+        participationStatus: participation.learningAnalyticsStatus,
+        acknowledgedDisclosureVersion:
+          participation.learningAnalyticsDisclosureVersion,
+        currentDisclosureVersion: LEARNING_ANALYTICS_DISCLOSURE_VERSION,
+        includedFrom: participation.learningAnalyticsIncludedFrom,
+        activityAt: record.createdAt,
+      })
+    )
+  })
+}
+
+async function filterCourseFeedbacksForLearningAnalytics<
+  T extends {
+    practiceQuizzes: {
+      stacks: {
+        elements: {
+          elementData: { type: DB.ElementType }
+          feedbacks: LearningAnalyticsFeedback[]
+        }[]
+      }[]
+    }[]
+    microLearnings: {
+      stacks: {
+        elements: {
+          elementData: { type: DB.ElementType }
+          feedbacks: LearningAnalyticsFeedback[]
+        }[]
+      }[]
+    }[]
+  },
+>(course: T, courseId: string, ctx: ContextWithUser): Promise<T> {
+  const elements = [
+    ...course.practiceQuizzes,
+    ...course.microLearnings,
+  ].flatMap((activity) => activity.stacks.flatMap((stack) => stack.elements))
+  const eligibleFeedbacks = await filterEligibleLearningAnalyticsActivity(
+    elements.flatMap((element) =>
+      element.elementData.type === DB.ElementType.FREE_TEXT
+        ? []
+        : element.feedbacks
+    ),
+    courseId,
+    ctx
+  )
+  const eligibleFeedbackIds = new Set(
+    eligibleFeedbacks.map((feedback) => feedback.id)
+  )
+  elements.forEach((element) => {
+    element.feedbacks =
+      element.elementData.type === DB.ElementType.FREE_TEXT
+        ? []
+        : element.feedbacks.filter((feedback) =>
+            eligibleFeedbackIds.has(feedback.id)
+          )
+  })
+  return course
+}
 
 export async function getCourseActivityAnalytics(
   { courseId }: { courseId: string },
@@ -23,12 +127,22 @@ export async function getCourseActivityAnalytics(
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId, isLearningAnalyticsEnabled: true },
     include: {
-      participations: true,
+      participations: {
+        where: learningAnalyticsParticipationWhere(courseId),
+      },
       aggregatedAnalytics: {
         orderBy: { timestamp: 'asc' },
       },
       aggregatedCourseAnalytics: true,
-      participantCourseAnalytics: true,
+      participantCourseAnalytics: {
+        where: {
+          participant: {
+            participations: {
+              some: learningAnalyticsParticipationWhere(courseId),
+            },
+          },
+        },
+      },
     },
   })
 
@@ -89,7 +203,9 @@ export async function getCourseWeeklyActivity(
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId, isLearningAnalyticsEnabled: true },
     include: {
-      participations: true,
+      participations: {
+        where: learningAnalyticsParticipationWhere(courseId),
+      },
       aggregatedAnalytics: {
         where: { type: 'WEEKLY' },
         orderBy: { timestamp: 'asc' },
@@ -115,7 +231,9 @@ function aggregateInstanceFeedbacks({
   activityType,
 }: {
   stacks: (DB.ElementStack & {
-    elements: (DB.ElementInstance & { feedbacks: DB.ElementFeedback[] })[]
+    elements: (DB.ElementInstance & {
+      feedbacks: LearningAnalyticsFeedback[]
+    })[]
   })[]
   activityType: ActivityType
 }): InstanceFeedback[] {
@@ -224,12 +342,16 @@ function computeActivityInstanceFeedbacks({
   course: DB.Course & {
     practiceQuizzes: (DB.PracticeQuiz & {
       stacks: (DB.ElementStack & {
-        elements: (DB.ElementInstance & { feedbacks: DB.ElementFeedback[] })[]
+        elements: (DB.ElementInstance & {
+          feedbacks: LearningAnalyticsFeedback[]
+        })[]
       })[]
     })[]
     microLearnings: (DB.MicroLearning & {
       stacks: (DB.ElementStack & {
-        elements: (DB.ElementInstance & { feedbacks: DB.ElementFeedback[] })[]
+        elements: (DB.ElementInstance & {
+          feedbacks: LearningAnalyticsFeedback[]
+        })[]
       })[]
     })[]
   }
@@ -297,7 +419,7 @@ function computeActivityInstancePerformance({
       stacks: (DB.ElementStack & {
         elements: (DB.ElementInstance & {
           instancePerformance: DB.InstancePerformance | null
-          feedbacks: DB.ElementFeedback[]
+          feedbacks: LearningAnalyticsFeedback[]
         })[]
       })[]
       progress: DB.ActivityProgress | null
@@ -310,7 +432,7 @@ function computeActivityInstancePerformance({
       stacks: (DB.ElementStack & {
         elements: (DB.ElementInstance & {
           instancePerformance: DB.InstancePerformance | null
-          feedbacks: DB.ElementFeedback[]
+          feedbacks: LearningAnalyticsFeedback[]
         })[]
       })[]
       progress: DB.ActivityProgress | null
@@ -364,6 +486,7 @@ function computeActivityInstancePerformance({
       // add the activity performance metrics to the error rates
       acc.activityPerformances.push({
         id: performance.id,
+        participantCount: performance.participantCount,
         activityName: activity.name,
         activityType,
         rates: {
@@ -388,6 +511,10 @@ function computeActivityInstancePerformance({
       // extract the desired values from the instance performance entries
       const instancePerformances = activity.stacks.flatMap((stack) =>
         stack.elements.flatMap((element) => {
+          if (element.elementData.type === DB.ElementType.FREE_TEXT) {
+            return []
+          }
+
           const iPerformance = element.instancePerformance
 
           if (!iPerformance) {
@@ -490,16 +617,34 @@ export async function getCoursePerformanceAnalytics(
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId, isLearningAnalyticsEnabled: true },
     include: {
-      _count: { select: { participations: true } },
+      _count: {
+        select: {
+          participations: {
+            where: learningAnalyticsParticipationWhere(courseId),
+          },
+        },
+      },
       practiceQuizzes: {
         include: {
           progress: true,
           performance: true,
-          participantPerformances: { include: { participant: true } },
+          participantPerformances: {
+            where: {
+              participant: {
+                participations: {
+                  some: learningAnalyticsParticipationWhere(courseId),
+                },
+              },
+            },
+            include: { participant: true },
+          },
           stacks: {
             include: {
               elements: {
-                include: { instancePerformance: true, feedbacks: true },
+                include: {
+                  instancePerformance: true,
+                  feedbacks: { select: learningAnalyticsFeedbackSelect },
+                },
               },
             },
           },
@@ -510,18 +655,38 @@ export async function getCoursePerformanceAnalytics(
         include: {
           progress: true,
           performance: true,
-          participantPerformances: { include: { participant: true } },
+          participantPerformances: {
+            where: {
+              participant: {
+                participations: {
+                  some: learningAnalyticsParticipationWhere(courseId),
+                },
+              },
+            },
+            include: { participant: true },
+          },
           stacks: {
             include: {
               elements: {
-                include: { instancePerformance: true, feedbacks: true },
+                include: {
+                  instancePerformance: true,
+                  feedbacks: { select: learningAnalyticsFeedbackSelect },
+                },
               },
             },
           },
         },
         orderBy: { scheduledStartAt: 'desc' },
       },
-      participantPerformances: true,
+      participantPerformances: {
+        where: {
+          participant: {
+            participations: {
+              some: learningAnalyticsParticipationWhere(courseId),
+            },
+          },
+        },
+      },
     },
   })
 
@@ -556,8 +721,10 @@ export async function getCoursePerformanceAnalytics(
     course,
   })
 
+  const courseWithEligibleFeedbacks =
+    await filterCourseFeedbacksForLearningAnalytics(course, courseId, ctx)
   const { instanceFeedbacks, activityFeedbacks } =
-    computeActivityInstanceFeedbacks({ course })
+    computeActivityInstanceFeedbacks({ course: courseWithEligibleFeedbacks })
 
   return {
     name: course.name,
@@ -585,10 +752,14 @@ export async function getActivityAnalytics(
       include: {
         elements: {
           include: {
-            feedbacks: true,
+            feedbacks: { select: learningAnalyticsFeedbackSelect },
             instancePerformance: true,
-            _count: {
-              select: { detailResponses: true },
+            detailResponses: {
+              select: {
+                id: true,
+                participantId: true,
+                createdAt: true,
+              },
             },
           },
         },
@@ -597,7 +768,11 @@ export async function getActivityAnalytics(
     course: {
       include: {
         _count: {
-          select: { participations: true },
+          select: {
+            participations: {
+              where: learningAnalyticsParticipationWhere(),
+            },
+          },
         },
       },
     },
@@ -630,6 +805,35 @@ export async function getActivityAnalytics(
   if (!activity) {
     return null
   }
+  const courseId = activity.courseId
+  const eligibleFeedbacks = await filterEligibleLearningAnalyticsActivity(
+    activity.stacks.flatMap((stack) =>
+      stack.elements.flatMap((element) =>
+        element.elementData.type === DB.ElementType.FREE_TEXT
+          ? []
+          : element.feedbacks
+      )
+    ),
+    courseId,
+    ctx
+  )
+  const eligibleFeedbackIds = new Set(
+    eligibleFeedbacks.map((feedback) => feedback.id)
+  )
+  const eligibleResponseDetails = await filterEligibleLearningAnalyticsActivity(
+    activity.stacks.flatMap((stack) =>
+      stack.elements.flatMap((element) =>
+        element.elementData.type === DB.ElementType.FREE_TEXT
+          ? []
+          : element.detailResponses
+      )
+    ),
+    courseId,
+    ctx
+  )
+  const eligibleResponseDetailIds = new Set(
+    eligibleResponseDetails.map((detail) => detail.id)
+  )
 
   const {
     instanceQuizAnalytics,
@@ -642,6 +846,10 @@ export async function getActivityAnalytics(
   }>(
     (acc, stack) => {
       const newInstanceStatistics = stack.elements.flatMap((element) => {
+        if (element.elementData.type === DB.ElementType.FREE_TEXT) {
+          return []
+        }
+
         // if performance has not been computed, skip this instance
         const performance = element.instancePerformance
         if (!performance) {
@@ -649,12 +857,18 @@ export async function getActivityAnalytics(
         }
 
         // number of answers = number of question response details
-        const numberOfAnswers = element._count.detailResponses
-        const uniqueParticipants = performance.responseCount
+        const eligibleDetails = element.detailResponses.filter((detail) =>
+          eligibleResponseDetailIds.has(detail.id)
+        )
+        const numberOfAnswers = eligibleDetails.length
+        const uniqueParticipants = new Set(
+          eligibleDetails.map((detail) => detail.participantId)
+        ).size
 
         // compute the upvote and downvote rates
-        const { upvoteRate, downvoteRate, totalVotes } =
-          element.feedbacks.reduce<{
+        const { upvoteRate, downvoteRate, totalVotes } = element.feedbacks
+          .filter((feedback) => eligibleFeedbackIds.has(feedback.id))
+          .reduce<{
             upvoteRate: number
             downvoteRate: number
             totalVotes: number

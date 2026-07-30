@@ -35,6 +35,13 @@ The Analytics mirror under `apps/analytics/prisma/schema/` excludes the JavaScri
 
 Learning-analytics eligibility state belongs to the shared schema: the course enable flag is `packages/prisma/src/prisma/schema/course.prisma:Course.isLearningAnalyticsEnabled`, while the current participation choice and choice-event history are `packages/prisma/src/prisma/schema/participant.prisma:Participation.learningAnalyticsStatus` and `packages/prisma/src/prisma/schema/participant.prisma:LearningAnalyticsChoiceEvent`. Run the full migrate → sync → build ritual after changing these fields so the TypeScript client and Analytics' Python schema expose the same eligibility boundary (`util/sync-schema.sh`).
 
+Learning-analytics aggregate coverage is persisted as
+`ActivityPerformance.participantCount`. It counts distinct eligible participants
+that contributed to that activity's computed metrics; it is not the course
+enrollment count or an opt-out count. Migration
+`20260730113000_add_activity_performance_participant_count` adds the field with a
+zero default and the schema mirror exposes it to the Python client.
+
 ## Migrations
 
 - Prisma migrations live in `packages/prisma/src/prisma/schema/migrations/` (~170 since 2022). Migrations may contain data backfills (SQL `ROW_NUMBER()` etc.), not just DDL.

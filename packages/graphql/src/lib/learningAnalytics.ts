@@ -88,3 +88,12 @@ export function isLearningAnalyticsChoiceCurrent({
     learningAnalyticsDisclosureVersion === LEARNING_ANALYTICS_DISCLOSURE_VERSION
   )
 }
+
+export function learningAnalyticsParticipationWhere(courseId?: string) {
+  return {
+    ...(courseId ? { courseId } : {}),
+    learningAnalyticsStatus: DB.LearningAnalyticsParticipationStatus.INCLUDED,
+    learningAnalyticsDisclosureVersion: LEARNING_ANALYTICS_DISCLOSURE_VERSION,
+    learningAnalyticsIncludedFrom: { not: null },
+  } satisfies DB.Prisma.ParticipationWhereInput
+}

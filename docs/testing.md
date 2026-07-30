@@ -21,8 +21,14 @@ tags:
 | Auth adapter against shared Prisma client                            | disposable local PostgreSQL through the guarded Auth round-trip                            | `pnpm --filter @klicker-uzh/auth test:prisma-adapter`                                              |
 | UI / user flows                                                      | Playwright e2e (new specs); Cypress only for legacy maintenance                            | see routing below                                                                                  |
 | Office Add-in URL validation                                         | Node's built-in test runner — safe without services                                        | `pnpm --filter @klicker-uzh/office-addin test`                                                     |
+| Analytics eligibility and response rebuilding                        | Python standard-library unit tests — safe without services                                 | `pnpm --filter @klicker-uzh/analytics test`                                                        |
 
 **Never run root `pnpm run test:run` blind** — the turbo fan-out includes Cypress, which needs a running, seeded stack. The graphql vitest config forces `pool: forks, singleFork: true` (serialized specs sharing DB state) — don't parallelize it.
+
+Analytics tests live in `apps/analytics/tests/` and deliberately use
+`unittest`, not another Python test dependency. The focused GraphQL computation
+eligibility test uses real PostgreSQL to prove direct response and feedback
+aggregations enforce the inclusion timestamp and exclude free-text elements.
 
 The Office Add-in has a separate host boundary. Its pure URL contract runs under Node, while `check`, `lint`, `build:docs`, `verify:docs`, and `validate` cover compilation, source quality, the production bundle, exact deployment parity, and manifest acceptance. A browser run with a stubbed Office API verifies UI states only. Persistence, multiple content-add-in instances, and embedded evaluation rendering require a real PowerPoint sideload before release.
 

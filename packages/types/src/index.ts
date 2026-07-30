@@ -878,6 +878,7 @@ export type PerformanceRates = {
 
 export type ActivityPerformance = {
   id: number
+  participantCount: number
   activityName: string
   activityType: ActivityType
   rates: PerformanceRates
@@ -956,6 +957,7 @@ export type InstanceQuizAnalytics = {
 
 export type ActivityQuizAnalytics = {
   id: number
+  participantCount: number
   numberOfAnswers: number
   averageTimeSpent: number
   firstErrorRate?: number | null

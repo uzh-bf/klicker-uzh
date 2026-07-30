@@ -28,6 +28,7 @@ query GetActivityAnalytics($activityId: String!) {
     activityQuizAnalytics {
       __typename
       id
+      participantCount
       numberOfAnswers
       averageTimeSpent
       firstErrorRate
