@@ -7,14 +7,14 @@
   },
   "scripts": {
     "analytics:dev": "../../util/_run_with_infisical.sh --env dev nodemon --exec 'uv run poe main' --watch src,prisma --ext py,prisma",
+    "dryrun:dev": "../../util/_run_with_infisical.sh --env dev uv run python -m src.scripts.export_dryrun",
+    "dryrun:prod": "../../util/_run_with_infisical.sh --env prd uv run python -m src.scripts.export_dryrun",
+    "dryrun:qa": "../../util/_run_with_infisical.sh --env stg uv run python -m src.scripts.export_dryrun",
     "generate": "../../util/_run_with_infisical.sh --env dev uv run poe generate",
     "main": "../../util/_run_with_infisical.sh --env dev uv run poe main",
     "script": "../../util/_run_with_infisical.sh --env dev uv run python -m",
     "script:prod": "../../util/_run_with_infisical.sh --env prd uv run python -m",
-    "script:qa": "../../util/_run_with_infisical.sh --env stg uv run python -m",
-    "dryrun:dev": "../../util/_run_with_infisical.sh --env dev uv run python -m src.scripts.export_dryrun",
-    "dryrun:prod": "../../util/_run_with_infisical.sh --env prd uv run python -m src.scripts.export_dryrun",
-    "dryrun:qa": "../../util/_run_with_infisical.sh --env stg uv run python -m src.scripts.export_dryrun"
+    "script:qa": "../../util/_run_with_infisical.sh --env stg uv run python -m"
   },
   "engines": {
     "node": "=20"
