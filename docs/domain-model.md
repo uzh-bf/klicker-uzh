@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-07-29'
+timestamp: '2026-07-30'
 tags:
   - backend
   - prisma
@@ -36,7 +36,7 @@ They are unrelated models — never conflate them. A `Participant` joins a `Cour
 ### CODE element boundary
 
 - A CODE element is Python-only and contains starter code, an entrypoint, and 1–20 declarative JSON input/output tests. Tests are either public or hidden; participant-facing instance data contains public tests only.
-- Each test's argument array and expected output use the same authoring/runtime JSON boundary: at most 20 levels, 2,000 nodes, and 16 KiB when serialized.
+- Each test's argument array and expected output use the same authoring/runtime JSON boundary: at most 20 levels, 2,000 nodes, and 16 KiB when serialized. Breadth is rejected before its children are added to the traversal worklist.
 - CODE is supported only as the single element in a PracticeQuiz or MicroLearning stack. LiveQuiz, GroupActivity, mixed/multi-element stacks, and activity templates reject it.
 - Async attempts use the separate `CodeSubmission` model (`code.prisma`) with `PENDING | RUNNING | COMPLETED | FAILED` status and claim/retry fields. One partial unique index permits only one active attempt per participant and element instance. The worker claims with an expiring token, executes outside the transaction, then locks the shared element instance and records participant-specific response history, instance-wide aggregates/statistics, spaced repetition, points, XP, leaderboard, timeline, and `COMPLETED` atomically. Failed attempts release the active index so a later submission can create a new receipt.
 

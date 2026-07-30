@@ -10,6 +10,7 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
 ## Build order (one endpoint, end-to-end)
 
 1. **Service function** — `packages/graphql/src/services/<area>.ts`. All logic, Prisma, Redis, pubSub here. Signature `(args, ctx: ContextWithUser) => …`. Errors: `GraphQLError` with `extensions.code` (grep `LIVE_QUIZ_PIN_INVALID` for the pattern) — not bare `Error`.
+   - Any early existence/type preflight over client-supplied object ids needs the same permission predicate as the authoritative fetch, or must run after that fetch. Keep unauthorized, absent, and wrong-type objects observationally equivalent.
 2. **Schema field** — `packages/graphql/src/schema/query.ts` / `mutation.ts` / `subscription.ts` (+ new object types in the area file). The resolver is a **one-liner** delegating to the service.
 3. **Auth on the field** — copy the existing composition exactly (real shape from `deleteCourse` in `mutation.ts`; `withPermission` WRAPS the resolver):
 
@@ -44,7 +45,7 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
 
 ## CODE contract rule
 
-CODE has three deliberate element surfaces documented in [docs/graphql-api-layer.md](../../../docs/graphql-api-layer.md): full lecturer `CodeElement`, authenticated full instance `AuthoringCodeElementData`, and participant-safe `CodeElementData`. Evaluation is also role-specific: participant `getPreviousStackEvaluation` may restore only public test outcomes from the caller's latest completed submission, while authorized activity evaluation may aggregate every authored public/hidden test without exposing individual hidden execution details. CODE responses belong only to the dedicated async mutation; do not add CODE fields to generic stack/group response inputs or configurable execution limits to authoring inputs. When changing a union, resolver, fragment, or operation, update every applicable surface and run `test/codeGraphqlContract.test.ts` plus the database-backed microlearning tracer in `test/codeSubmissions.test.ts`.
+CODE has three deliberate element surfaces documented in [docs/graphql-api-layer.md](../../../docs/graphql-api-layer.md): full lecturer `CodeElement`, authenticated full instance `AuthoringCodeElementData`, and participant-safe `CodeElementData`. Evaluation is also role-specific: participant `getPreviousStackEvaluation` may restore only public test outcomes from the caller's latest completed submission, while authorized activity evaluation may aggregate every authored public/hidden test without exposing individual hidden execution details. CODE responses belong only to the dedicated async mutation; do not add CODE fields to generic stack/group response inputs or configurable execution limits to authoring inputs. Enforce JSON breadth before expanding the traversal worklist, not only while consuming it. When changing a union, resolver, fragment, or operation, update every applicable surface and run `test/codeGraphqlContract.test.ts` plus the database-backed microlearning tracer in `test/codeSubmissions.test.ts`.
 
 ## Subscriptions (extra steps)
 

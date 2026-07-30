@@ -751,6 +751,9 @@ export function isCodeJsonValue(value: unknown): value is JsonValue {
       continue
     }
     if (Array.isArray(current.value)) {
+      if (nodes + stack.length + current.value.length > CODE_JSON_MAX_NODES) {
+        return false
+      }
       for (const item of current.value) {
         stack.push({ depth: current.depth + 1, value: item })
       }
@@ -761,8 +764,18 @@ export function isCodeJsonValue(value: unknown): value is JsonValue {
       (Object.getPrototypeOf(current.value) === Object.prototype ||
         Object.getPrototypeOf(current.value) === null)
     ) {
-      for (const item of Object.values(current.value)) {
-        stack.push({ depth: current.depth + 1, value: item })
+      const objectValue = current.value as Record<string, unknown>
+      for (const key in objectValue) {
+        if (!Object.prototype.hasOwnProperty.call(objectValue, key)) {
+          continue
+        }
+        if (nodes + stack.length >= CODE_JSON_MAX_NODES) {
+          return false
+        }
+        stack.push({
+          depth: current.depth + 1,
+          value: objectValue[key],
+        })
       }
       continue
     }

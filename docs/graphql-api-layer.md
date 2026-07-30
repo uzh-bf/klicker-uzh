@@ -2,7 +2,7 @@
 type: API Layer
 title: GraphQL API Layer
 description: Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
-timestamp: '2026-07-29'
+timestamp: '2026-07-30'
 tags:
   - backend
   - graphql
@@ -32,6 +32,7 @@ Worked examples: `deleteCourse` in `mutation.ts` (asUser + ADMIN permission on c
 
 - Arg validation via the Pothos **Zod plugin** — pass `validate:` on args (email/regex/length examples in `mutation.ts`); issues are joined into a `GraphQLError` by the shaper in `builder.ts`.
 - Service-level errors: prefer `GraphQLError` with `extensions.code` (e.g. `LIVE_QUIZ_PIN_INVALID`, `FORBIDDEN` in `services/liveQuizzes.ts`). Plain `throw new Error` exists in older code — don't add more.
+- Early existence/type preflights over client-supplied object ids must carry the same object-permission predicate as the later fetch, or run only after the permission-scoped fetch. Otherwise clean early returns versus later authorization errors become cross-object existence or type oracles.
 
 ## Client operations and codegen
 
@@ -62,6 +63,8 @@ CODE deliberately has three GraphQL projections:
 - `CodeElementData` is participant-safe activity data. It includes public tests and static `executionLimits`, but omits hidden tests and all runtime sandbox artifacts, session identifiers, output, and exception metadata.
 
 CODE responses are accepted only through the dedicated asynchronous submission mutation. Generic stack and group-response inputs do not expose CODE fields, and authoring clients cannot override the static execution limit.
+
+CODE JSON validation enforces depth, node, and serialized-byte bounds. Breadth checks happen before adding array/object children to the traversal worklist so invalid wide inputs cannot allocate work proportional to the entire request before the node limit rejects them.
 
 When a union or operation gains CODE support, update all applicable projections deliberately and keep `packages/graphql/test/codeGraphqlContract.test.ts` green. Hidden tests, their inputs, and expected outputs must be absent from participant payloads rather than nullable.
 

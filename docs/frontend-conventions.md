@@ -2,7 +2,7 @@
 type: Frontend Conventions
 title: Frontend Conventions
 description: Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.
-timestamp: '2026-07-29'
+timestamp: '2026-07-30'
 tags:
   - frontend
 ---
@@ -54,6 +54,8 @@ English and German message trees must have the same structural keys. `packages/i
 **Formik + Yup** (not react-hook-form). Design-system `Formik*` field components bind by `name`. Existing modals (e.g. `apps/frontend-manage/src/components/sharing/TransferOwnershipModal.tsx`) are the template.
 
 CODE authoring uses the shared accessible CodeMirror wrapper at `packages/shared-components/src/CodeEditor.tsx`. Keep fixed Python/timeout policy out of Formik state; the form edits starter/sample code, entrypoint, and declarative tests only. JSON argument/output editors use plain-text mode, every editor keeps its `aria-label` and `data-cy`, participant preview receives public tests only, and CODE remains unavailable in template authoring.
+
+Element-editor autosaves contain full authoring state, including CODE sample solutions and hidden tests. Persist them only in a versioned envelope bound to the authenticated lecturer id. Check that binding before offering recovery or loading Formik values, and delete legacy, malformed, or mismatched entries so browser-profile turnover cannot cross lecturer boundaries.
 
 The Manage artificial preview updates its GraphQL typename and student response through separate effects. During an element-type transition those discriminants can briefly disagree; narrow the response at strict component boundaries (for CODE, require an actual string before passing it to CodeMirror) instead of trusting the transient enum value alone.
 

@@ -32,6 +32,7 @@ Provenance: steps 2 requires a database; on a machine without one running, write
 - **Participant email uniqueness is per auth mode** (`@@unique([email, isSSOAccount])`) — cross-mode duplicate prevention lives in service logic, not the schema.
 - **CODE attempts are not `QuestionResponse`s** — `packages/prisma/src/prisma/schema/code.prisma` owns the async `CodeSubmission` lifecycle. Its active-attempt uniqueness and exactly-one-activity constraints are raw SQL in `20260723170000_add_code_element_contracts`; preserve those database fences when changing the model. Rate-limit deferral uses `retryAt` plus the `(status, retryAt, createdAt)` recovery index; pending scans must exclude future deferrals. Timing policy lives in [Async and workers](../../../docs/async-and-workers.md).
 - **CODE has two JSON projections** — full `CodeElementData` includes all tests, while `ParticipantElementData` substitutes `PublicCodeElementData`. Keep that distinction aligned across Prisma JSON typing, shared types, GraphQL, and analytics sync.
+- **CODE JSON limits bound validation work** — reject over-wide arrays/objects before adding all children to the traversal worklist; the 2,000-node limit is a work bound, not only a post-expansion validity check.
 
 ## Seeds — three independent paths
 

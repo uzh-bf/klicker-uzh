@@ -1589,6 +1589,7 @@ export async function createLiveQuizFromTemplate(
             where: {
               id: { in: existingElementIds },
               type: DB.ElementType.CODE,
+              permissions: { some: { userId: ctx.user.sub } },
             },
             select: { id: true },
           })

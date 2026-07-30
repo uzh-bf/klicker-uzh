@@ -79,7 +79,7 @@ function ElementEditForm({
   onSubmitElement: (
     values: ElementFormTypes & { status: ElementStatus }
   ) => Promise<boolean>
-  setAutoSavedElement: Dispatch<SetStateAction<ElementFormTypes>>
+  setAutoSavedElement: (values: ElementFormTypes) => void
   // instance update controls
   updateInstances: boolean
   setUpdateInstances: Dispatch<SetStateAction<boolean>>

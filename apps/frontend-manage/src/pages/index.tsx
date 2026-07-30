@@ -5,6 +5,7 @@ import {
   Element,
   GetUserElementsDocument,
   SharingType,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, toast } from '@uzh-bf/design-system'
@@ -22,6 +23,7 @@ import ElementListSorting from '../components/elements/ElementListSorting'
 import ElementBatchOperationsModal from '../components/elements/manipulation/ElementBatchOperationsModal'
 import ElementEditModal, {
   ElementEditMode,
+  getElementAutoSaveForUser,
 } from '../components/elements/manipulation/ElementEditModal'
 import RecoveryPrompt from '../components/elements/manipulation/RecoveryPrompt'
 import FilterList from '../components/elements/tags/FilterList'
@@ -34,6 +36,7 @@ import useSortingAndFiltering, {
 function Index() {
   const router = useRouter()
   const t = useTranslations()
+  const { data: dataUser } = useQuery(UserProfileDocument)
 
   // search, filter and pagination states
   const [searchString, setSearchString] = useState('')
@@ -367,14 +370,28 @@ function Index() {
                 ) : null}
                 <Button
                   primary
+                  disabled={!dataUser?.userProfile?.id}
                   onClick={() => {
-                    const value = localStorage.getItem(
-                      'autosave-element-creation'
-                    )
+                    const autoSaveKey = 'autosave-element-creation'
+                    const value = localStorage.getItem(autoSaveKey)
+                    let shouldRecover = false
+                    try {
+                      shouldRecover = Boolean(
+                        getElementAutoSaveForUser(
+                          value ? JSON.parse(value) : undefined,
+                          dataUser?.userProfile?.id
+                        )
+                      )
+                    } catch {
+                      shouldRecover = false
+                    }
 
-                    if (value) {
+                    if (shouldRecover) {
                       setShowRecoveryPrompt(true)
                     } else {
+                      if (value) {
+                        localStorage.removeItem(autoSaveKey)
+                      }
                       setIsElementCreationModalOpen(true)
                     }
                   }}

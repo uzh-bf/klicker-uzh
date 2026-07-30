@@ -2,6 +2,7 @@
 
 ## 2026-07-30
 
+- **Security**: CODE final review now binds element autosaves to the authenticated lecturer, permission-scopes template type preflights, and enforces JSON breadth before traversal expansion. The matching frontend, GraphQL, domain-model, and agent-skill contracts document those boundaries.
 - **Update**: [GraphQL API layer](./graphql-api-layer.md) and [async workers](./async-and-workers.md) document CODE rate-limit deferral, due-only recovery, transactional status fencing without an aggregate submission ledger, one shared post-grading persistence tail, and the dedicated asynchronous submission contract.
 - **Update**: the CODE implementation plan records Slice 7 hardening, bounded local concurrency evidence, contract consolidation, exact-review closure, and the remaining external CodeAPI staging/load and pilot-package gates.
 
