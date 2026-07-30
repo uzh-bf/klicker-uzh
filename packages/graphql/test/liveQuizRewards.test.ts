@@ -1344,7 +1344,7 @@ describe('regular live quiz reward ledger integration', () => {
     })
   })
 
-  it('accepts a permanent temporary leaderboard entry for a non-gamified course', async () => {
+  it('reconstructs and reverses timeline points for a legacy quiz in a non-gamified course', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
       { gamified: true, withRewardRun: false },
       userOneCtx
@@ -1375,24 +1375,12 @@ describe('regular live quiz reward ledger integration', () => {
         score: fixture.awardedCoursePoints,
       },
     })
-    await prisma.timelineEntry.update({
-      where: {
-        participationId_courseId_timestamp_type: {
-          participationId: fixture.participationId!,
-          courseId: fixture.courseId!,
-          timestamp: fixture.timelineDate,
-          type: TimelineEntryType.DAILY,
-        },
-      },
-      data: { collectedPoints: 0 },
-    })
 
-    await expect(
-      inspectLegacyRegularLiveQuizRewards(
-        { liveQuizId: fixture.liveQuizId },
-        userOneCtx
-      )
-    ).resolves.toMatchObject({
+    const inspection = await inspectLegacyRegularLiveQuizRewards(
+      { liveQuizId: fixture.liveQuizId },
+      userOneCtx
+    )
+    expect(inspection).toMatchObject({
       status: 'AVAILABLE',
       plan: {
         entries: [
@@ -1400,10 +1388,49 @@ describe('regular live quiz reward ledger integration', () => {
             participantId: fixture.participantId,
             coursePointsAwarded: 0,
             participantXpAwarded: fixture.awardedParticipantXp,
+            timelinePointsAwarded: fixture.awardedTimelinePoints,
+            timelineXpAwarded: fixture.awardedTimelineXp,
           }),
         ],
       },
     })
+    if (inspection.status !== 'AVAILABLE') {
+      throw new Error('Expected complete legacy reward evidence')
+    }
+
+    const rewardRunId = await prisma.$transaction((tx) =>
+      persistLiveQuizRewardRun({
+        liveQuizId: fixture.liveQuizId,
+        plan: inspection.plan,
+        tx,
+      })
+    )
+    const reversal = await prisma.$transaction((tx) =>
+      reverseLiveQuizRewardRun({
+        rewardRunId,
+        actorId: userOneCtx.user.sub,
+        tx,
+      })
+    )
+
+    expect(reversal.totals).toEqual({
+      coursePoints: 0,
+      participantXp: fixture.awardedParticipantXp,
+      timelineChanges: 1,
+      achievementChanges: 0,
+    })
+    await expect(
+      prisma.timelineEntry.findUnique({
+        where: {
+          participationId_courseId_timestamp_type: {
+            participationId: fixture.participationId!,
+            courseId: fixture.courseId!,
+            timestamp: fixture.timelineDate,
+            type: TimelineEntryType.DAILY,
+          },
+        },
+      })
+    ).resolves.toBeNull()
   })
 
   it('rejects a permanent inactive responder whose leaderboard cache evidence is missing without writing state', async () => {

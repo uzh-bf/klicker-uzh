@@ -211,10 +211,16 @@ export function calculateLiveQuizRewardPlan(
           : 0
       const participantXpAwarded =
         participant.xp === undefined ? 0 : participant.xp + rankXp
+      const timelinePointsAwarded =
+        isLegacyReconstructed &&
+        participant.hasActiveParticipation &&
+        participant.score !== undefined
+          ? participant.score + rankPoints
+          : coursePointsAwarded
       const timelineDate =
         participant.participationId !== null &&
         participant.courseId !== null &&
-        (coursePointsAwarded !== 0 || participantXpAwarded !== 0)
+        (timelinePointsAwarded !== 0 || participantXpAwarded !== 0)
           ? endedAt
           : null
       const achievementCountAwarded =
@@ -227,7 +233,7 @@ export function calculateLiveQuizRewardPlan(
         coursePointsAwarded,
         participantXpAwarded,
         timelineDate,
-        timelinePointsAwarded: coursePointsAwarded,
+        timelinePointsAwarded,
         timelineXpAwarded: timelineDate ? participantXpAwarded : 0,
         achievementId: achievementCountAwarded === 1 ? achievement!.id : null,
         achievementCountAwarded,
