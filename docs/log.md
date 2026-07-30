@@ -1,5 +1,10 @@
 # Log
 
+## 2026-07-30
+
+- **Update**: [GraphQL API layer](./graphql-api-layer.md) and [async workers](./async-and-workers.md) document CODE rate-limit deferral, due-only recovery, transactional status fencing without an aggregate submission ledger, one shared post-grading persistence tail, and the dedicated asynchronous submission contract.
+- **Update**: the CODE implementation plan records Slice 7 hardening, bounded local concurrency evidence, contract consolidation, exact-review closure, and the remaining external CodeAPI staging/load and pilot-package gates.
+
 ## 2026-07-29
 
 - **Creation**: [ADR 0003](./adr/0003-use-klicker-codeapi-principal-source.md) records that Klicker-minted CodeAPI tokens use a dedicated `klicker_jwt` principal source through an environment-configurable allow-list.
