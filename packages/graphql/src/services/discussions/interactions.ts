@@ -249,7 +249,7 @@ export async function toggleCourseDiscussionThreadUpvote(
     })
 
     if (updatedThread.count === 0) {
-      throw new DiscussionVoteCounterConflictError()
+      throw new Error('Discussion thread upvote counter is inconsistent')
     }
   })
 
@@ -349,7 +349,7 @@ export async function toggleCourseDiscussionReplyUpvote(
     })
 
     if (updatedReply.count === 0) {
-      throw new DiscussionVoteCounterConflictError()
+      throw new Error('Discussion reply upvote counter is inconsistent')
     }
   })
 
@@ -585,4 +585,3 @@ export async function deleteCourseDiscussionReply(
 }
 
 class DiscussionReplyDeleteConflictError extends Error {}
-class DiscussionVoteCounterConflictError extends Error {}
