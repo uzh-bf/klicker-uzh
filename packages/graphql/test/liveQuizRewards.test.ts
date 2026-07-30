@@ -166,7 +166,6 @@ describe('calculateLiveQuizRewardPlan', () => {
     expect(
       calculateLiveQuizRewardPlan({
         participants: [participant],
-        achievements,
         awardAchievements: false,
         endedAt,
       }).entries[0]
@@ -758,6 +757,8 @@ describe('regular live quiz reward ledger integration', () => {
     ['partial leaderboard data', 'lb', '100points'],
     ['decimal XP data', 'xp', '40.5'],
     ['non-canonical leaderboard data', 'lb', '0100'],
+    ['negative leaderboard data', 'lb', '-1'],
+    ['negative XP data', 'xp', '-1'],
     ['XP above the Int32 range', 'xp', '2147483648'],
     ['leaderboard data below the Int32 range', 'lb', '-2147483649'],
   ])(
@@ -783,6 +784,54 @@ describe('regular live quiz reward ledger integration', () => {
       })
     }
   )
+
+  it('ends without rank definitions when rank achievements cannot apply', async () => {
+    const course = await seedCourse(
+      { isGamificationEnabled: true, isAssessmentEnabled: false },
+      userOneCtx
+    )
+    const liveQuiz = await seedLiveQuiz(
+      {
+        elements: [],
+        status: PublicationStatus.PUBLISHED,
+        courseId: course.id,
+      },
+      userOneCtx
+    )
+    const participant = await prisma.participant.create({
+      data: {
+        username: uuidv4(),
+        password: 'synthetic-test-password',
+      },
+    })
+    const participation = await prisma.participation.create({
+      data: {
+        courseId: course.id,
+        participantId: participant.id,
+        isActive: true,
+      },
+    })
+    await userOneCtx.redisExec.hset(`lq:${liveQuiz.id}:lb`, participant.id, 100)
+    await userOneCtx.redisExec.hset(`lq:${liveQuiz.id}:xp`, participant.id, 40)
+    await prisma.achievement.deleteMany({
+      where: { id: { in: [5, 6, 7] } },
+    })
+
+    await expect(
+      endLiveQuiz({ id: liveQuiz.id }, userOneCtx)
+    ).resolves.toMatchObject({ status: PublicationStatus.ENDED })
+    await expect(
+      prisma.liveQuizRewardEntry.findFirstOrThrow({
+        where: { rewardRun: { liveQuizId: liveQuiz.id } },
+      })
+    ).resolves.toMatchObject({
+      participantId: participant.id,
+      participationId: participation.id,
+      coursePointsAwarded: 100,
+      participantXpAwarded: 40,
+      achievementId: null,
+    })
+  })
 
   it('persists an empty applied run for a non-gamified regular quiz', async () => {
     const course = await seedCourse(
@@ -1604,11 +1653,52 @@ describe('regular live quiz reward ledger integration', () => {
     ).resolves.toMatchObject({ status: 'AVAILABLE' })
   })
 
-  it('rejects legacy reconstruction when rank definitions are incomplete', async () => {
+  it('does not require rank definitions without a sample solution or three scores', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
       { gamified: true, withRewardRun: false },
       userOneCtx
     )
+    await prisma.achievement.deleteMany({
+      where: { id: { in: [5, 6, 7] } },
+    })
+
+    await expect(
+      inspectLegacyRegularLiveQuizRewards(
+        { liveQuizId: fixture.liveQuizId },
+        userOneCtx
+      )
+    ).resolves.toMatchObject({ status: 'AVAILABLE' })
+  })
+
+  it('does not require rank definitions for an empty legacy reward set', async () => {
+    const fixture = await seedEndedRegularLiveQuizForReset(
+      { gamified: true, withRewardRun: false },
+      userOneCtx
+    )
+    await prisma.participant.delete({
+      where: { id: fixture.participantId },
+    })
+    await userOneCtx.redisExec.del(
+      `lq:${fixture.liveQuizId}:lb`,
+      `lq:${fixture.liveQuizId}:xp`
+    )
+    await prisma.achievement.deleteMany({
+      where: { id: { in: [5, 6, 7] } },
+    })
+
+    await expect(
+      inspectLegacyRegularLiveQuizRewards(
+        { liveQuizId: fixture.liveQuizId },
+        userOneCtx
+      )
+    ).resolves.toMatchObject({
+      status: 'AVAILABLE',
+      plan: { entries: [] },
+    })
+  })
+
+  it('rejects missing rank definitions when rank achievements apply', async () => {
+    const fixture = await seedCompleteLegacyRankRun()
     await prisma.achievement.delete({ where: { id: 5 } })
 
     await expect(

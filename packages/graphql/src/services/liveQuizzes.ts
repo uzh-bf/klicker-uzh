@@ -1769,18 +1769,27 @@ async function endRegularLiveQuiz(
             cachedRewards,
             tx,
           })
-          const achievements = await loadRankAchievementRewards(tx)
-          plan = calculateLiveQuizRewardPlan({
+          const awardAchievements = shouldAwardRankAchievements({
+            hasSampleSolution: hasSampleSolutionQuestion(
+              authoritativeLiveQuiz.blocks
+            ),
             participants,
-            achievements,
-            awardAchievements: shouldAwardRankAchievements({
-              hasSampleSolution: hasSampleSolutionQuestion(
-                authoritativeLiveQuiz.blocks
-              ),
-              participants,
-            }),
-            endedAt,
           })
+          if (awardAchievements) {
+            const achievements = await loadRankAchievementRewards(tx)
+            plan = calculateLiveQuizRewardPlan({
+              participants,
+              achievements,
+              awardAchievements: true,
+              endedAt,
+            })
+          } else {
+            plan = calculateLiveQuizRewardPlan({
+              participants,
+              awardAchievements: false,
+              endedAt,
+            })
+          }
         } else {
           plan = {
             endedAt,

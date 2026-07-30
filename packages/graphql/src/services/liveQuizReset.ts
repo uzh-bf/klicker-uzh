@@ -143,6 +143,8 @@ export async function getLiveQuizResetSummary(
         select: {
           elements: {
             select: {
+              results: true,
+              anonymousResults: true,
               _count: { select: { liveQuizResponses: true } },
             },
           },
@@ -184,7 +186,11 @@ export async function getLiveQuizResetSummary(
       quizTotal +
       block.elements.reduce(
         (blockTotal, instance) =>
-          blockTotal + instance._count.liveQuizResponses,
+          blockTotal +
+          Math.max(
+            instance._count.liveQuizResponses,
+            instance.results.total + instance.anonymousResults.total
+          ),
         0
       ),
     0

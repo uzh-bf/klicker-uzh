@@ -80,7 +80,7 @@ describe('live quiz reset summary', () => {
     })
   })
 
-  it('counts persisted responses instead of aggregate result totals', async () => {
+  it('counts aggregate-only responses when they exceed persisted rows', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
       { gamified: false, withRewardRun: false, withCourse: false },
       userOneCtx
@@ -90,6 +90,24 @@ describe('live quiz reset summary', () => {
       data: {
         results: { total: 91 } as ElementInstanceResults,
         anonymousResults: { total: 37 } as ElementInstanceResults,
+      },
+    })
+
+    await expect(
+      getLiveQuizResetSummary({ quizId: fixture.liveQuizId }, userOneCtx)
+    ).resolves.toMatchObject({ numOfResponses: 128 })
+  })
+
+  it('counts persisted responses when they exceed aggregate totals', async () => {
+    const fixture = await seedEndedRegularLiveQuizForReset(
+      { gamified: false, withRewardRun: false, withCourse: false },
+      userOneCtx
+    )
+    await prisma.elementInstance.update({
+      where: { id: fixture.instanceId },
+      data: {
+        results: { total: 0 } as ElementInstanceResults,
+        anonymousResults: { total: 0 } as ElementInstanceResults,
       },
     })
 

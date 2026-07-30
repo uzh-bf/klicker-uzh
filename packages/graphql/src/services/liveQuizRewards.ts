@@ -39,17 +39,30 @@ export interface LiveQuizRewardPlan {
   isLegacyReconstructed: boolean
 }
 
-export interface CalculateLiveQuizRewardPlanInput {
+export interface RankAchievementRewards {
+  first: RankAchievementReward
+  second: RankAchievementReward
+  third: RankAchievementReward
+}
+
+interface CalculateLiveQuizRewardPlanBaseInput {
   participants: LiveQuizRewardParticipant[]
-  achievements: {
-    first: RankAchievementReward
-    second: RankAchievementReward
-    third: RankAchievementReward
-  }
-  awardAchievements: boolean
   endedAt: Date
   isLegacyReconstructed?: boolean
 }
+
+export type CalculateLiveQuizRewardPlanInput =
+  CalculateLiveQuizRewardPlanBaseInput &
+    (
+      | {
+          awardAchievements: true
+          achievements: RankAchievementRewards
+        }
+      | {
+          awardAchievements: false
+          achievements?: never
+        }
+    )
 
 export interface ApplyRegularLiveQuizRewardPlanInput {
   liveQuizId: string
@@ -65,7 +78,6 @@ export const RANK_ACHIEVEMENT_IDS = {
   third: 7,
 } as const
 
-const MIN_PRISMA_INT = -2147483648
 const MAX_PRISMA_INT = 2147483647
 
 function invalidLiveQuizRewardData(message: string) {
@@ -74,15 +86,18 @@ function invalidLiveQuizRewardData(message: string) {
   })
 }
 
-function parseCanonicalRewardInteger(value: string, dataName: string) {
-  if (!/^(?:0|-[1-9]\d*|[1-9]\d*)$/.test(value)) {
+function parseCanonicalNonnegativeRewardInteger(
+  value: string,
+  dataName: string
+) {
+  if (!/^(?:0|[1-9]\d*)$/.test(value)) {
     throw invalidLiveQuizRewardData(`Invalid live quiz ${dataName} reward data`)
   }
 
   const parsedValue = Number(value)
   if (
     !Number.isInteger(parsedValue) ||
-    parsedValue < MIN_PRISMA_INT ||
+    parsedValue < 0 ||
     parsedValue > MAX_PRISMA_INT
   ) {
     throw invalidLiveQuizRewardData(`Invalid live quiz ${dataName} reward data`)
@@ -129,12 +144,12 @@ export async function snapshotRegularLiveQuizRewards({
   const cachedRewards = new Map<string, { score?: number; xp?: number }>()
 
   for (const [participantId, value] of Object.entries(quizXp)) {
-    const xp = parseCanonicalRewardInteger(value, 'XP')
+    const xp = parseCanonicalNonnegativeRewardInteger(value, 'XP')
     cachedRewards.set(participantId, { xp })
   }
 
   for (const [participantId, value] of Object.entries(quizLeaderboard)) {
-    const score = parseCanonicalRewardInteger(value, 'leaderboard')
+    const score = parseCanonicalNonnegativeRewardInteger(value, 'leaderboard')
     cachedRewards.set(participantId, {
       ...cachedRewards.get(participantId),
       score,
@@ -144,13 +159,10 @@ export async function snapshotRegularLiveQuizRewards({
   return cachedRewards
 }
 
-export function calculateLiveQuizRewardPlan({
-  participants,
-  achievements,
-  awardAchievements,
-  endedAt,
-  isLegacyReconstructed = false,
-}: CalculateLiveQuizRewardPlanInput): LiveQuizRewardPlan {
+export function calculateLiveQuizRewardPlan(
+  input: CalculateLiveQuizRewardPlanInput
+): LiveQuizRewardPlan {
+  const { participants, endedAt, isLegacyReconstructed = false } = input
   const rankedScores = participants
     .flatMap((participant) =>
       participant.score === undefined ? [] : [participant.score]
@@ -169,22 +181,22 @@ export function calculateLiveQuizRewardPlan({
       let achievement: RankAchievementReward | null = null
 
       if (
-        awardAchievements &&
+        input.awardAchievements &&
         participant.score !== undefined &&
         participant.xp !== undefined
       ) {
         if (participant.score === goldScore) {
-          achievement = achievements.first
+          achievement = input.achievements.first
         } else if (
           participant.score === silverScore &&
           silverScore !== goldScore
         ) {
-          achievement = achievements.second
+          achievement = input.achievements.second
         } else if (
           participant.score === bronzeScore &&
           bronzeScore !== silverScore
         ) {
-          achievement = achievements.third
+          achievement = input.achievements.third
         }
       }
 
@@ -260,7 +272,7 @@ export function shouldAwardRankAchievements({
 
 export async function loadRankAchievementRewards(
   prisma: DB.PrismaClient | DB.Prisma.TransactionClient
-): Promise<CalculateLiveQuizRewardPlanInput['achievements']> {
+): Promise<RankAchievementRewards> {
   const [first, second, third] = await Promise.all([
     prisma.achievement.findUniqueOrThrow({
       where: { id: RANK_ACHIEVEMENT_IDS.first },
@@ -779,23 +791,32 @@ export async function inspectLegacyRegularLiveQuizRewards(
     }
   })
 
-  let achievements: CalculateLiveQuizRewardPlanInput['achievements']
-  try {
-    achievements = await loadRankAchievementRewards(prismaClient)
-  } catch {
-    return { status: 'UNAVAILABLE', plan: null }
-  }
-
-  const plan = calculateLiveQuizRewardPlan({
+  const awardAchievements = shouldAwardRankAchievements({
+    hasSampleSolution: hasSampleSolutionQuestion(quiz.blocks),
     participants: rewardParticipants,
-    achievements,
-    awardAchievements: shouldAwardRankAchievements({
-      hasSampleSolution: hasSampleSolutionQuestion(quiz.blocks),
-      participants: rewardParticipants,
-    }),
-    endedAt: quiz.finishedAt,
-    isLegacyReconstructed: true,
   })
+  let plan: LiveQuizRewardPlan
+  if (awardAchievements) {
+    try {
+      const achievements = await loadRankAchievementRewards(prismaClient)
+      plan = calculateLiveQuizRewardPlan({
+        participants: rewardParticipants,
+        achievements,
+        awardAchievements: true,
+        endedAt: quiz.finishedAt,
+        isLegacyReconstructed: true,
+      })
+    } catch {
+      return { status: 'UNAVAILABLE', plan: null }
+    }
+  } else {
+    plan = calculateLiveQuizRewardPlan({
+      participants: rewardParticipants,
+      awardAchievements: false,
+      endedAt: quiz.finishedAt,
+      isLegacyReconstructed: true,
+    })
+  }
 
   if (
     !(await legacyPlanMatchesCurrentRewards({ plan, prisma: prismaClient }))
