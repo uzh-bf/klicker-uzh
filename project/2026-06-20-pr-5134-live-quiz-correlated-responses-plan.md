@@ -589,6 +589,8 @@ Later research:
 - 2026-07-29: Final exact-commit maintainability, security/privacy, and whole-branch product reviews of `10e9c6025` found no actionable findings at 80% confidence or higher and no release blocker. The reciprocal cross-course batch deadlock remains the sole documented non-blocking code follow-up; the dedicated response-api database role and migration lock budget remain rollout follow-ups.
 - 2026-07-30: A stricter whole-branch maintainability pass found five remaining structural issues: a broken export subpath runtime contract; Redis writes inside publication database transactions; mode-flag orchestration in the response API; event-shape mode inference in the response worker; and response-mode transitions distributed across large GraphQL services. The findings and concrete remediation slices are recorded above.
 - 2026-07-30: The branch was synchronized with current `v3` through commit `f424f03a16`. Remediation 1 starts with the package export contract and a runtime resolution regression check.
+- 2026-07-30: Independent plan-review tooling did not return a bounded verdict: `agy` timed out, and the read-only Codex fallback expanded into historical branch analysis until terminated. No unverified finding was accepted; exact-commit final reviews remain required.
+- 2026-07-30: Remediation 1 exposes the export package root and correlated subpath through `types` plus `default` and adds a package-contract regression test. Verification passed 33 export tests, both runtime resolution probes from GraphQL, GraphQL code generation, and GraphQL typecheck. The GraphQL Rollup build emitted `created dist` but its wrapper stayed alive until interrupted.
 
 ## Goal Prompt Requirements
 
