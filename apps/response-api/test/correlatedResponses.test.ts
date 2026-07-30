@@ -1,7 +1,4 @@
-import {
-  LiveQuizRespondentType,
-  LiveQuizResponseCollectionMode,
-} from '@klicker-uzh/prisma/client'
+import { LiveQuizRespondentType } from '@klicker-uzh/prisma/client'
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
@@ -17,7 +14,6 @@ import {
   prepareCorrelatedResponseSubmission,
   registerPendingCorrelatedResponse,
   resolveResponseCollectionMode,
-  responseEndpointMatchesCollectionMode,
   serializeLiveQuizRespondentCookie,
 } from '../src/correlatedResponses.js'
 
@@ -67,33 +63,6 @@ describe('correlated response request safeguards', () => {
     assert.equal(hasJsonContentType('application/json; charset=utf-8'), true)
     assert.equal(hasJsonContentType('text/plain'), false)
     assert.equal(hasJsonContentType(undefined), false)
-  })
-
-  it('keeps correlated submissions off the legacy response endpoint', () => {
-    assert.equal(
-      responseEndpointMatchesCollectionMode({
-        endpointMode: 'correlated',
-        responseCollectionMode:
-          LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
-      }),
-      true
-    )
-    assert.equal(
-      responseEndpointMatchesCollectionMode({
-        endpointMode: 'aggregate',
-        responseCollectionMode:
-          LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
-      }),
-      false
-    )
-    assert.equal(
-      responseEndpointMatchesCollectionMode({
-        endpointMode: 'correlated',
-        responseCollectionMode:
-          LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS,
-      }),
-      false
-    )
   })
 
   it('centralizes correlated quiz and PIN admission', async () => {

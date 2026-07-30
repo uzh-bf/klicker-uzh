@@ -1,40 +1,31 @@
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import { prisma } from '@klicker-uzh/prisma'
+import { UserLoginScope } from '@klicker-uzh/prisma/client'
 import {
-  LiveQuizResponseCollectionMode,
-  UserLoginScope,
-} from '@klicker-uzh/prisma/client'
-import {
-  CORRELATED_RESPONSE_EVENT,
   createLiveQuizRespondentToken,
   getLiveQuizRespondentCookieName,
   resolveLiveQuizResponseIdentity,
-  validateStudentResponse,
   verifyJWT,
-  type AcceptedCorrelatedResponseIdentity,
-  type CorrelatedResponseClaim,
-  type CorrelatedResponseDeliveryMessage,
-  type CorrelatedResponseEventMessage,
   type JWTPayload,
-  type LiveQuizResponseEventMessage,
   type LiveQuizResponseIdentity,
 } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
-import { createServer, IncomingMessage, ServerResponse } from 'http'
+import { createServer, type IncomingMessage, type ServerResponse } from 'http'
 import { Redis } from 'ioredis'
 import { createHash } from 'node:crypto'
+import { handleAggregateResponse } from './aggregateResponse.js'
+import { handleCorrelatedResponse } from './correlatedResponseHandler.js'
 import {
   dispatchPendingCorrelatedResponses,
-  encryptCorrelatedResponseEvent,
   getCorrelatedResponseAdmission,
   hasJsonContentType,
   isAllowedCorsOrigin,
-  prepareCorrelatedResponseSubmission,
-  registerPendingCorrelatedResponse,
-  resolveResponseCollectionMode,
-  responseEndpointMatchesCollectionMode,
   serializeLiveQuizRespondentCookie,
 } from './correlatedResponses.js'
+import {
+  loadLiveQuizResponseInstance,
+  parseLiveQuizResponseRequest,
+} from './liveQuizResponseRequest.js'
 
 const redis = new Redis({
   family: 4,
@@ -185,24 +176,6 @@ async function ensureCorrelatedResponseIdentity({
   return identity
 }
 
-async function resolveCorrelatedResponseIdentity({
-  req,
-  liveQuizId,
-}: {
-  req: IncomingMessage
-  liveQuizId: string
-}) {
-  const { secret, issuer } = getResponseIdentityConfig()
-
-  return resolveLiveQuizResponseIdentity({
-    cookieHeader:
-      typeof req.headers.cookie === 'string' ? req.headers.cookie : undefined,
-    liveQuizId,
-    secret,
-    issuer,
-  })
-}
-
 async function handleInitializeLiveQuizResponseIdentity(
   req: IncomingMessage,
   res: ServerResponse
@@ -239,10 +212,9 @@ async function handleInitializeLiveQuizResponseIdentity(
   return sendJson(req, res, 200, { status: 'ready' })
 }
 
-async function handleAddResponse(
+async function readLiveQuizResponseRequest(
   req: IncomingMessage,
-  res: ServerResponse,
-  endpointMode: 'aggregate' | 'correlated'
+  res: ServerResponse
 ) {
   let payload: any
   try {
@@ -251,226 +223,63 @@ async function handleAddResponse(
     return badRequest(req, res, err.message)
   }
 
-  if (!payload || typeof payload !== 'object') {
-    return badRequest(req, res, 'Body must be a JSON object')
-  }
-
-  const { response, liveQuizId, instanceId } = payload
-  if (!response || !liveQuizId || typeof instanceId === 'undefined') {
-    return badRequest(
-      req,
-      res,
-      'Missing required fields: response, liveQuizId, instanceId'
-    )
-  }
-
-  const liveQuizIdString = String(liveQuizId)
-  const instanceIdString = String(instanceId)
-  const rawCookie =
-    typeof req.headers['cookie'] === 'string'
-      ? req.headers['cookie']
-      : undefined
-
-  const responseTimestamp = Date.now()
-  const messageId = randomUUID()
-  const instanceInfoKey = `lq:${liveQuizIdString}:i:${instanceIdString}:info`
-  const instanceInfo = await redis.hgetall(instanceInfoKey)
-  const responseCollectionMode = await resolveResponseCollectionMode({
-    cachedMode: instanceInfo.responseCollectionMode,
-    liveQuizId: liveQuizIdString,
-    lookupMode: async (id) =>
-      (
-        await prisma.liveQuiz.findUnique({
-          where: { id },
-          select: { responseCollectionMode: true },
-        })
-      )?.responseCollectionMode ?? null,
+  const parsed = parseLiveQuizResponseRequest({
+    payload,
+    cookieHeader:
+      typeof req.headers.cookie === 'string' ? req.headers.cookie : undefined,
   })
-  const isCorrelated =
-    responseCollectionMode === LiveQuizResponseCollectionMode.CORRELATED_EXPORT
-  if (
-    !responseEndpointMatchesCollectionMode({
-      endpointMode,
-      responseCollectionMode,
-    })
-  ) {
-    return sendJson(req, res, 409, {
-      error: 'Response endpoint does not match live quiz collection mode',
-    })
+  if (!parsed.ok) {
+    badRequest(req, res, parsed.message)
+    return null
   }
 
-  let cookie: string | undefined
-  let eventName: string
-  let acceptedIdentity: AcceptedCorrelatedResponseIdentity | undefined
-  let claim: CorrelatedResponseClaim | undefined
+  return parsed.request
+}
 
-  if (isCorrelated) {
-    const admission = await getCorrelatedResponseAdmission({
-      database: prisma,
-      liveQuizId: liveQuizIdString,
-      cookieHeader: rawCookie,
-    })
-    if (admission === 'not_found' || admission === 'not_required') {
-      return sendJson(req, res, 404, { error: 'Live quiz not found' })
-    }
-    if (admission === 'pin_required') {
-      return sendJson(req, res, 403, { error: 'Live quiz PIN required' })
-    }
-    const identity = await resolveCorrelatedResponseIdentity({
-      req,
-      liveQuizId: liveQuizIdString,
-    })
-    if (!identity) {
-      return sendJson(req, res, 401, {
-        error: 'Live quiz response identity required',
-      })
-    }
+async function handleAddAggregateResponse(
+  req: IncomingMessage,
+  res: ServerResponse
+) {
+  const request = await readLiveQuizResponseRequest(req, res)
+  if (!request) return
 
-    let restrictions: unknown
-    try {
-      restrictions = instanceInfo.restrictions
-        ? JSON.parse(instanceInfo.restrictions)
-        : undefined
-    } catch (error) {
-      throw new Error(
-        `Invalid response restrictions for live quiz ${liveQuizIdString}, instance ${instanceIdString}: ${String(error)}`
-      )
-    }
-    const validation = validateStudentResponse({
-      type: instanceInfo.type,
-      response,
-      restrictions:
-        typeof restrictions === 'object' && restrictions !== null
-          ? restrictions
-          : undefined,
-    })
-    if (!validation.valid) {
-      return badRequest(req, res, validation.message)
-    }
-
-    const preparation = await prepareCorrelatedResponseSubmission({
-      database: prisma,
-      identity,
-      liveQuizId: liveQuizIdString,
-      instanceId: instanceIdString,
-      blockExecution: instanceInfo.blockExecution,
-    })
-    if (preparation.status === 'invalid_metadata') {
-      return badRequest(req, res, 'Invalid correlated response metadata')
-    }
-    if (preparation.status === 'invalid_identity') {
-      return sendJson(req, res, 401, {
-        error: 'Live quiz response identity is no longer active',
-      })
-    }
-    if (preparation.status === 'duplicate') {
-      return sendJson(req, res, 208, {
-        status: 'response_recorded_before',
-        responseTimestamp,
-      })
-    }
-
-    acceptedIdentity = preparation.acceptedIdentity
-    claim = preparation.claim
-    eventName = CORRELATED_RESPONSE_EVENT
-  } else {
-    // Preserve aggregate-mode behavior: forward participant cookies based on
-    // their presence and let the worker validate them.
-    if (rawCookie) {
-      const parts = rawCookie.split(';').map((part) => part.trim())
-      const participantPair = parts.find((part) =>
-        part.startsWith('participant_token=')
-      )
-      const temporaryPair = parts.find((part) =>
-        part.startsWith('temporary_participant_token=')
-      )
-      const forwarded = [participantPair, temporaryPair].filter(
-        (pair): pair is string => Boolean(pair)
-      )
-      cookie = forwarded.length > 0 ? forwarded.join('; ') : undefined
-    }
-
-    const isAuthenticatedParticipant =
-      cookie &&
-      (cookie.includes('participant_token=') ||
-        cookie.includes('temporary_participant_token='))
-    eventName = isAuthenticatedParticipant
-      ? 'response-received:authenticated'
-      : 'response-received:anonymous'
-  }
-
-  const message: LiveQuizResponseEventMessage = {
-    messageId,
-    sessionId: liveQuizIdString,
-    instanceId: instanceIdString,
-    response, // pass through as-is; worker validates
-    cookie,
-    responseTimestamp,
-  }
-  let eventMessage:
-    | LiveQuizResponseEventMessage
-    | CorrelatedResponseDeliveryMessage = message
-
-  if (isCorrelated) {
-    if (!claim || !acceptedIdentity) {
-      throw new Error('Missing accepted correlated response identity')
-    }
-    const correlatedMessage: CorrelatedResponseEventMessage = {
-      messageId,
-      sessionId: liveQuizIdString,
-      instanceId: instanceIdString,
-      response,
-      responseTimestamp,
-      acceptedIdentity,
-      correlatedClaim: claim,
-      instanceInfo,
-    }
-    eventMessage = { messageId }
-    let pendingResponseRegistration: 'registered' | 'duplicate' | 'not_found'
-    pendingResponseRegistration = await registerPendingCorrelatedResponse({
-      database: prisma,
-      liveQuizId: liveQuizIdString,
-      messageId,
-      responseKey: claim.key,
-      eventPayload: encryptCorrelatedResponseEvent({
-        message: correlatedMessage,
-        secret: getResponseIdentityConfig().secret,
-      }),
-    })
-    if (pendingResponseRegistration !== 'registered') {
-      return pendingResponseRegistration === 'duplicate'
-        ? sendJson(req, res, 208, {
-            status: 'response_recorded_before',
-            responseTimestamp,
-          })
-        : sendJson(req, res, 404, { error: 'Live quiz not found' })
-    }
-  }
-
-  console.log(`Pushing event ${eventName}`, {
-    messageId,
-    sessionId: liveQuizIdString,
-    instanceId: instanceIdString,
-    responseTimestamp,
+  const { responseCollectionMode } = await loadLiveQuizResponseInstance({
+    database: prisma,
+    redis,
+    request,
   })
+  const result = await handleAggregateResponse({
+    request,
+    responseCollectionMode,
+    pushEvent: (eventName, message) =>
+      hatchetClient.events.push(eventName, message),
+  })
+  return sendJson(req, res, result.status, result.body)
+}
 
-  try {
-    await hatchetClient.events.push(eventName, eventMessage)
-  } catch (error) {
-    if (isCorrelated) {
-      console.error('Immediate correlated response delivery failed', {
-        messageId,
-        error,
-      })
-      return sendJson(req, res, 200, {
-        status: 'queued',
-        responseTimestamp,
-      })
-    }
-    throw error
-  }
+async function handleAddCorrelatedResponse(
+  req: IncomingMessage,
+  res: ServerResponse
+) {
+  const request = await readLiveQuizResponseRequest(req, res)
+  if (!request) return
 
-  return sendJson(req, res, 200, { status: 'ok', responseTimestamp })
+  const { instanceInfo, responseCollectionMode } =
+    await loadLiveQuizResponseInstance({
+      database: prisma,
+      redis,
+      request,
+    })
+  const result = await handleCorrelatedResponse({
+    request,
+    instanceInfo,
+    responseCollectionMode,
+    database: prisma,
+    getIdentityConfig: getResponseIdentityConfig,
+    pushEvent: (eventName, message) =>
+      hatchetClient.events.push(eventName, message),
+  })
+  return sendJson(req, res, result.status, result.body)
 }
 
 async function handleAddAssessmentResponse(
@@ -701,14 +510,10 @@ const server = createServer(async (req, res) => {
 
     // add response endpoint
     if (url.pathname === '/AddResponse' && req.method === 'POST') {
-      // if not in assessment mode, call standard processing logic
       if (process.env.ASSESSMENT_MODE === 'true') {
         return await handleAddAssessmentResponse(req, res)
-      } else {
-        // call the standard processing function, which will distinguish between authenticated and anonymous modes
-        // if a valid cookie exists is not relevant at this point -> otherwise answers are simply treated as anonymous
-        return await handleAddResponse(req, res, 'aggregate')
       }
+      return await handleAddAggregateResponse(req, res)
     }
 
     if (
@@ -716,7 +521,7 @@ const server = createServer(async (req, res) => {
       req.method === 'POST' &&
       process.env.ASSESSMENT_MODE !== 'true'
     ) {
-      return await handleAddResponse(req, res, 'correlated')
+      return await handleAddCorrelatedResponse(req, res)
     }
 
     if (

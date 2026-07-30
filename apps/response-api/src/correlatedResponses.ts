@@ -46,20 +46,6 @@ export function hasJsonContentType(contentType: string | undefined) {
   )
 }
 
-export function responseEndpointMatchesCollectionMode({
-  endpointMode,
-  responseCollectionMode,
-}: {
-  endpointMode: 'aggregate' | 'correlated'
-  responseCollectionMode: LiveQuizResponseCollectionMode
-}) {
-  return (
-    (endpointMode === 'correlated') ===
-    (responseCollectionMode ===
-      LiveQuizResponseCollectionMode.CORRELATED_EXPORT)
-  )
-}
-
 export async function getCorrelatedResponseAdmission({
   database,
   liveQuizId,
