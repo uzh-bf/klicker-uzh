@@ -36,6 +36,7 @@
 
 ## Progress
 
+- 2026-07-30: Embed-generation API slice active. Current `v3` is merged; its only new change is the repository rule requiring `$stacked-change` and `$gh-stack` for larger features. Those skills are not installed or callable in this session, so the bounded fallback is to keep this cohesive API cleanup on the existing draft PR and record the capability gap. Move the state-creating embed-link operation from Query to Mutation, apply the existing Pothos/Zod input bounds at the GraphQL boundary, regenerate persisted operations, migrate the Manage client and focused Cypress intercepts, and verify the real embed generator without changing its UX. Typed thread/reply posting failures remain a separate next slice.
 - 2026-07-30: Discussion ancestry normalization active with user approval. Keep `DiscussionSpace` and `DiscussionScope`, make `DiscussionScope -> DiscussionThread -> DiscussionReply` the only relational content path, and attach immutable audit events to their owning scope with an event-type-specific scalar subject ID. Preserve the public GraphQL `spaceId` and `scopeId` fields by deriving them from canonical relations. The branch is clean and synchronized with remote `course-qa`; CI is green except for an unrelated existing microlearning Playwright login timeout in shard 3. Next: update Prisma schema, branch-local alpha migration, analytics mirror, service queries/mappers, and DB-backed tests.
 - 2026-07-30: Discussion ancestry implementation complete. Prisma and the branch-local alpha migration now store only scope-to-thread and thread-to-reply foreign keys; audit events require a scope, use a checked event-type-specific `subjectId`, and retain no mutable-content foreign keys. Service mappers derive the unchanged GraphQL ancestry fields, all reads and writes follow canonical relations, the analytics mirror is synchronized, and integration/Cypress fixtures assert the new database shape and API compatibility. Prisma validation, Prisma client generation/build, GraphQL TypeScript, Cypress TypeScript, formatting, mirror comparison, and `git diff --check` pass. Fresh-database migration, the `30/30` discussion suite, and browser smoke remain blocked because approved Docker execution hit the Codex usage limit; do not claim runtime completion until those exact gates run.
 - 2026-07-30: Discussion ancestry runtime verification complete for `8325f5b752`. A new isolated PostgreSQL database accepted all 177 repository migrations, and the DB-backed discussion suite passed `30/30` with the normalized schema. Exact-head browser regression passed the course desktop rail, mobile disclosure, thread/reply creation, both upvotes, lecturer triage, and fallback route against the isolated seeded database. Seven new captures are linked from the local gallery, which now resolves all 35 images without broken references. A manual exact-commit audit found no actionable correctness or simplification issue. Native reviewers were unavailable because of the Codex usage limit, and the external reviewer was not run because repository egress was not authorized; independent final review therefore remains a draft-PR gate.
@@ -223,6 +224,15 @@
 - Files: Prisma discussion schema and branch-local alpha migration, analytics mirror, discussion services/schema types, Cypress seed task, and DB-backed discussion tests.
 - Check: Prisma validation/sync, GraphQL and Cypress type checks, fresh-database migration assertions, all discussion integration scenarios, focused browser regression, and exact-commit review/simplification.
 - Commit: `refactor(course-qa): normalize discussion ancestry`.
+
+### Takeover Slice: Make Embed Generation a Mutation
+
+- Do: Remove the state-creating Course Q&A embed field from Query, expose it as a mutation, and name the service and operations for generation rather than retrieval.
+- Validation: Bound token lifetime to 1-336 hours and external source/reference values to their shared non-empty maximums with the repository's existing Pothos/Zod plugin. Keep service-level normalization and defensive clamping.
+- Compatibility: Replace the branch-local query operations and persisted hashes with mutation operations. The alpha has not shipped, so no deprecated state-creating query remains.
+- Files: GraphQL discussion schema/service/operations/generated artifacts, Manage embed generator/Apollo routing, focused Cypress intercepts, and integration references.
+- Check: GraphQL generation/build/typecheck, Manage and Cypress typecheck, focused lint/format, persisted manifest assertions, DB-backed discussion suite, real Manage embed-generation regression, and exact-commit review/simplification.
+- Commit: `refactor(course-qa): generate embed links via mutation`.
 
 ## Finish
 
