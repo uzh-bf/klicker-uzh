@@ -44,11 +44,15 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
 
 Do not nest full history under a frequently polled parent list. The KB detail query loads only each resource's latest run; the separate owner-checked history query returns at most the five newest runs and is called on expansion.
 
+Every KB service query and mutation must start with `assertKbPreviewAccess(ctx)`, which reads the current `User.privatePreview` value instead of trusting a JWT claim. Apply the separate `assertKbIngestionEnabled()` kill switch only to upload-ticket issue, URL-resource creation, and Ingest/Retry/Re-ingest; reads, confirmation, deletion, and chatbot binding must stay available while ingestion is disabled.
+
 KB/chatbot attach and detach must lock both owner rows, replace the enabled link atomically, and reconcile only the `tutor` and `explainer` KB MCP configurations. Do not expose a configuration without the matching scoped-retrieval runtime support.
 
 KB child creation and deletion share a KB-first lock order. Upload-ticket issue, confirmation, URL creation, resource deletion, and whole-KB deletion must require a live parent under that lock. Deletion keeps hidden tombstones and queues the external operation after commit; queue failure must remain hidden and retryable.
 
-KB resource-count and byte quotas use that same parent lock. Return stable GraphQL codes for quota and ticket mismatches, and derive every ingestion `kb_id` from the persisted owner-checked KB/resource relationship rather than client-supplied scope text.
+KB resource-count and byte quotas use that same parent lock. Reserve unknown-size URL resources at the full 25 MiB source limit until the worker records their measured size. Return stable GraphQL codes for quota and ticket mismatches, and derive every ingestion `kb_id` from the persisted owner-checked KB/resource relationship rather than client-supplied scope text.
+
+The source gateway is system-to-system, not caller-owner authorization: one `KB_SOURCE_GATEWAY_KEY` may fetch any owner's exact eligible BLOB resource. Keep the non-tombstoned BLOB/digest/QUEUED-or-PROCESSING database predicate ahead of Blob Storage access, derive the container from the persisted owner relation, and never describe the shared key as tenant-scoped.
 
 For scalable KB lists, use the existing owner/filter-bound opaque keyset connections: `(updatedAt, id)` for KBs and immutable `(createdAt, id)` for resources, both descending, bounded to 50. Do not reintroduce the former unbounded `getUserKbs` or nested `KB.resources` fields. Keep exact metrics derived with grouped queries, keep full run history in its separate five-row query, filter resources by their latest ingestion-run status, and reset cursors when normalized search/type/status filters change.
 

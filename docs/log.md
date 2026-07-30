@@ -1,5 +1,9 @@
 # Log
 
+## 2026-07-30
+
+- **Update**: [graphql-api-layer](./graphql-api-layer.md), [async-and-workers](./async-and-workers.md), [frontend-conventions](./frontend-conventions.md), and [data-and-migrations](./data-and-migrations.md) document interim `privatePreview` access, the ingestion kill switch, stranded-UPSERT recovery, conservative URL quota claims, bounded loaded-window polling, mutation/refresh isolation, the tenant-wide source-gateway trust boundary, and the `KB.owner` cascade constraint. Matching `klicker-*` task skills carry the implementation and verification rules.
+
 ## 2026-07-28
 
 - **Update**: [domain-model](./domain-model.md), [data-and-migrations](./data-and-migrations.md), [graphql-api-layer](./graphql-api-layer.md), [async-and-workers](./async-and-workers.md), [frontend-conventions](./frontend-conventions.md), and [testing](./testing.md) document cursor-bound KB/resource connections, grouped exact metrics, deterministic bulk deletion, current-page polling, the resource inspector, and lecturer scale verification.

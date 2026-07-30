@@ -2,7 +2,7 @@
 type: Frontend Conventions
 title: Frontend Conventions
 description: Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.
-timestamp: '2026-07-27'
+timestamp: '2026-07-30'
 tags:
   - frontend
 ---
@@ -46,11 +46,15 @@ Apollo Client with **generated documents only** — `import { UserProfileDocumen
 
 The lecturer routes `apps/frontend-manage/src/pages/resources/knowledgeBases.tsx:KnowledgeBasesPage` and `apps/frontend-manage/src/pages/resources/knowledgeBases/[id].tsx:KnowledgeBasePage` mount the buildless `@klicker-uzh/kb-management` package inside the authenticated manage layout. The dynamic detail route uses `getServerSideProps`; its arbitrary database ids are resolved per request rather than through empty build-time paths. Keep reusable KB UI in that package rather than duplicating it in the host app.
 
-The catalog uses server search and cursor-driven “load more” rather than loading all owned KBs. The detail page keeps metadata/metrics separate from `packages/kb-management/src/components/KnowledgeBaseResourceList.tsx:KnowledgeBaseResourceList`, which owns server search/type/status filters, selection, confirmed bulk deletion, the source inspector, and contextual Ingest/Retry/Re-ingest/Delete actions. Poll only the currently loaded connection while it contains `QUEUED`/`PROCESSING` rows; show indeterminate real-operation progress and safe-to-leave messaging rather than invented percentages.
+`apps/frontend-manage/src/components/common/Header.tsx:Header` shows the KB navigation item only for `user.privatePreview`. That client gate is discoverability only: direct catalog/detail URLs rely on the service's fresh database guard and render the localized `KB_PREVIEW_ACCESS_REQUIRED` message. GrowthBook course-cohort gating remains deferred; do not treat this interim per-account flag as the final rollout model.
+
+The catalog uses server search and cursor-driven “load more” rather than loading all owned KBs. The detail page keeps metadata/metrics separate from `packages/kb-management/src/components/KnowledgeBaseResourceList.tsx:KnowledgeBaseResourceList`, which owns server search plus design-system type/status filters, selection, confirmed bulk deletion, the source inspector, and contextual Ingest/Retry/Re-ingest/Delete actions. While any loaded row is `QUEUED`/`PROCESSING`, the two-second interval fetches page zero plus pages known to contain active rows and runs a full loaded-window walk every tenth tick. Cursor or page-length drift triggers an immediate full walk. Promise-only polls use `ApolloClient.query` with `no-cache`; generation fencing, the latest loaded-count ref, and shared cache merge preserve the loaded window and remove rows from selection when they become active. Show indeterminate real-operation progress and safe-to-leave messaging rather than invented percentages.
 
 The inspector loads the owner-checked five-attempt history lazily. Full attempt history must stay outside the two-second list poll. Lecturer-facing failure detail is localized from stable status/error codes; raw platform messages are not rendered. Transport tuning is not user-controlled. Changes must preserve EN/DE messages, `data-cy` hooks, keyboard/focus behavior, and browser evidence for desktop plus 390 px mobile states, including search/filter, selection/confirmation, empty, active, ready, failed, and replacement-cutover feedback where affected.
 
 KB and resource deletion dialogs explain the two observable phases: the item disappears immediately, while stored files and the external index are removed in the background. Success toasts confirm removal from the lecturer view without claiming that external cleanup has already completed.
+
+KB mutations and their follow-up refreshes are separate outcomes (`packages/kb-management/src/refreshAfterMutation.ts:refreshAfterMutation`). Once a mutation succeeds, show its success state and close/reset the form even if a best-effort list or metrics refresh fails; log that refresh error without converting the successful mutation into an error toast or a retryable mutation.
 
 The KB file picker exposes only the production ingestion contract: PDF, TXT, and MD up to 25 MiB. Markdown is uploaded as `text/plain`; do not re-add DOCX/PPTX until the external ingestion platform supports them. Stable quota error codes are localized rather than exposing worker messages.
 
@@ -70,9 +74,9 @@ Namespaces are per-app plus `shared` (`shared`, `auth`, `pwa`, `manage`, `contro
 
 - **Feature flags gate alone.** Don't combine a flag with data-dependent counts (`flag && count > 0`) — that creates chicken-and-egg visibility problems.
   - **Active Feature Flags:**
-    - `privatePreview` (User-profile level): Gates advanced beta features such as element/activity sharing, microlearning, and administrator panels. Managed via the admin page (`apps/frontend-manage/src/pages/admin.tsx`).
+    - `privatePreview` (User-profile level): Gates advanced beta features such as knowledge-base management, element/activity sharing, microlearning, and administrator panels. Managed via the admin page (`apps/frontend-manage/src/pages/admin.tsx`). The KB service reads the database value per request, so disabling it does not require re-login.
     - `publicPreview` (User-profile level): Gates general preview features like microlearning analytics and new evaluation navigation interfaces.
-  - _Tradeoff Rationale_: We intentionally skip a dedicated feature flag platform (e.g., Unleash/GrowthBook) to avoid infra complexity for a 2-4 developer team. User-profile fields are our standard flagging mechanism.
+  - _Interim KB rollout_: GrowthBook is not yet available. `privatePreview` is the temporary per-account gate; the planned course-cohort gate resumes when GrowthBook lands.
 - **CSP `frame-ancestors` is set at the proxy, never in Next.js middleware.** Middleware CSP breaks `_next/data` routes in production builds (known Next.js bug). Production: HAProxy ingress annotations (`haproxy.org/response-set-header` in `deploy/charts/klicker-uzh-v3/templates/ingress-*.yaml`); local: Traefik `customResponseHeaders` (`util/traefik/rules_docker.yaml`).
 - **Embedded PWA messaging**: use a parent-initiated `postMessage` handshake to capture `event.origin`; no `'*'` target origins and no second per-platform allowlist in page code — embedding permission is enforced by ingress `frame-ancestors`.
 - **Local embed testing**: `util/embed-harness/` must target the branch-local PWA (`http://127.0.0.1:3101/...`), not the production PWA — production CSP blocks localhost embedding.

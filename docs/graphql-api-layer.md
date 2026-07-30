@@ -2,7 +2,7 @@
 type: API Layer
 title: GraphQL API Layer
 description: Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
-timestamp: '2026-07-27'
+timestamp: '2026-07-30'
 tags:
   - backend
   - graphql
@@ -51,11 +51,17 @@ The resource connection includes only each row's latest ingestion run. Full atte
 
 Knowledge-base/chatbot binding uses `getKbChatbotBindings`, `attachKbToChatbot`, and `detachKbFromChatbot`. The query and mutations are owner-scoped, attach/detach require full-access scope, and `packages/graphql/src/services/knowledge.ts` locks both owner rows before replacing a binding. Attach atomically enables the one selected link and reconciles exactly the `tutor` and `explainer` KB MCP configurations; detach disables those configurations when no enabled link remains.
 
+Every knowledge-base service entry point starts with `packages/graphql/src/services/knowledge.ts:assertKbPreviewAccess`, which reads the current `User.privatePreview` value by primary key on each request and returns `KB_PREVIEW_ACCESS_REQUIRED` when disabled. This is an interim per-account gate, independent of the login token. The separate `assertKbIngestionEnabled` kill switch reads `KB_INGESTION_DISABLED` at call time and blocks only upload-ticket issue, URL-resource creation, and Ingest/Retry/Re-ingest with `KB_INGESTION_DISABLED`; reads, upload confirmation, deletion, and chatbot binding remain available.
+
 Knowledge-base deletion is an immediate visibility change, not synchronous storage removal. Resource and whole-KB delete mutations lock the parent KB first, retain owner-attributed tombstones, create explicit `DELETE` runs, and queue external deletion after commit. Whole-KB deletion also disables its chatbot links and KB MCP configurations. Upload-ticket issue, confirmation, URL creation, and deletion use the same parent lock so no live child can appear beneath a tombstoned KB; queue failure records only an opaque retry state and never restores visibility.
 
 `deleteKbResources` accepts 1–50 unique resource UUIDs from one owned KB. It locks the parent and sorted child ids, rejects the whole selection when any row is missing, foreign, or active, creates one independently retryable delete run per row in a single transaction, and dispatches each operation only after commit. A post-commit dispatch failure does not roll back sibling tombstones; W5 maintenance retries the correlated failed dispatch.
 
-The same parent lock serializes quota allocation. A KB permits 100 retained-or-reserved resources and 500 MiB of retained-or-reserved bytes. Upload requests reserve count and bytes, confirmation consumes the matching reservation, and URL creation reserves a count before its byte size is measured by the worker. Mutation failures use stable `KB_RESOURCE_LIMIT_REACHED`, `KB_STORAGE_LIMIT_REACHED`, and `KB_UPLOAD_TICKET_MISMATCH` codes. Klicker derives ingestion `kb_id` only from owner-checked persisted relations; platform-side validation against a registered per-project set remains a separate deployment gate.
+The same parent lock serializes quota allocation. A KB permits 100 retained-or-reserved resources and 500 MiB of retained-or-reserved bytes. Upload requests reserve their exact count and bytes, confirmation consumes the matching reservation, and URL creation reserves one resource plus the conservative 25 MiB unknown-size claim before the worker measures its exact size. Mutation failures use stable `KB_RESOURCE_LIMIT_REACHED`, `KB_STORAGE_LIMIT_REACHED`, and `KB_UPLOAD_TICKET_MISMATCH` codes. Klicker derives ingestion `kb_id` only from owner-checked persisted relations; platform-side validation against a registered per-project set remains a separate deployment gate.
+
+The authenticated source gateway in `packages/graphql/src/services/knowledgeSourceGateway.ts:handleKBSourceGateway` intentionally uses one system-to-system `KB_SOURCE_GATEWAY_KEY`, not an end-user or per-owner credential. A caller holding that key and an exact resource id/version can read any tenant's eligible live BLOB source; the gateway derives the owner container from the persisted KB relation and requires a non-tombstoned resource with a digest in `QUEUED` or `PROCESSING` before Blob Storage access. Treat key exposure as an all-tenant source-read incident and do not describe this boundary as caller-owner authorization.
+
+`packages/prisma/src/prisma/schema/knowledge.prisma:KB.owner` still uses `onDelete: Cascade`. There is no current user hard-delete path, but a future account-deletion or GDPR workflow must drain every KB through the tombstone/external/blob cleanup lifecycle before deleting the User; relying on the database cascade would remove the reconciliation rows and orphan external or Blob state.
 
 ## Subscriptions
 
