@@ -18,6 +18,7 @@
     "redis_assessment",
     "redis_cache",
     "mailhog",
+    "azurite",
     "hatchet",
     "hatchet_token"
   ],

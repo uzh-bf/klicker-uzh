@@ -7,6 +7,7 @@ import {
   KBResourceType,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
+import { getBlobStorageAccountUrl } from '@klicker-uzh/util'
 import { createHash, timingSafeEqual } from 'node:crypto'
 
 const KB_SOURCE_GATEWAY_STORAGE_TIMEOUT_MS = 30_000
@@ -40,17 +41,19 @@ function isAuthorized(authorization: string | undefined, secret: string) {
 function getBlobClient({
   accountName,
   accessKey,
+  accountUrl,
   containerName,
   blobName,
 }: {
   accountName: string
   accessKey: string
+  accountUrl?: string
   containerName: string
   blobName: string
 }) {
   const credential = new StorageSharedKeyCredential(accountName, accessKey)
   const serviceClient = new BlobServiceClient(
-    `https://${accountName}.blob.core.windows.net`,
+    getBlobStorageAccountUrl(accountName, accountUrl),
     credential
   )
   return serviceClient.getContainerClient(containerName).getBlobClient(blobName)
@@ -109,6 +112,8 @@ export async function handleKBSourceGateway({
     const blobClient = getBlobClient({
       accountName,
       accessKey,
+      accountUrl:
+        env.BLOB_STORAGE_INTERNAL_ACCOUNT_URL ?? env.BLOB_STORAGE_ACCOUNT_URL,
       containerName: `kb-${resource.kb.ownerId}`,
       blobName: resource.blobName,
     })

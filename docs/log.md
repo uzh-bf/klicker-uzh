@@ -2,6 +2,8 @@
 
 ## 2026-07-30
 
+- **Update**: [getting-started](./getting-started.md) documents the managed DevPod's routed Azurite Blob service, exact local CORS setup, and separate browser-facing and internal account URLs. Matching environment-doctor and testing-verification procedures cover local Blob diagnosis and real KB upload proof without exposing SAS queries.
+
 - **Update**: [graphql-api-layer](./graphql-api-layer.md), [async-and-workers](./async-and-workers.md), [frontend-conventions](./frontend-conventions.md), and [data-and-migrations](./data-and-migrations.md) document interim `privatePreview` access, the ingestion kill switch, stranded-UPSERT recovery, conservative URL quota claims, bounded loaded-window polling, mutation/refresh isolation, the tenant-wide source-gateway trust boundary, and the `KB.owner` cascade constraint. Matching `klicker-*` task skills carry the implementation and verification rules.
 
 ## 2026-07-28

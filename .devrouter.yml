@@ -68,6 +68,14 @@ apps:
     runtime: proxy
     upstream: ${WORKSPACE}-app:7078
 
+  # Azurite Blob endpoint. The account name stays in the path so one
+  # workspace-namespaced host supports browser SAS uploads.
+  - name: blob
+    host: blob.klicker.localhost
+    protocol: http
+    runtime: proxy
+    upstream: ${WORKSPACE}-azurite:10000
+
   # Postgres: db.klicker.localhost:5432 -> `klicker-db` (SNI). Connect with
   # direct-SSL so the ClientHello carries the SNI (libpq 17+): psql
   # "host=db.klicker.localhost port=5432 user=klicker-prod password=klicker

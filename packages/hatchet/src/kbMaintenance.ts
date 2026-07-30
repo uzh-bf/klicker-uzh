@@ -14,6 +14,7 @@ import type {
   DeleteKBResourceInput,
   IngestKBResourceInput,
 } from '@klicker-uzh/types'
+import { getBlobStorageAccountUrl } from '@klicker-uzh/util'
 import { randomUUID } from 'node:crypto'
 import {
   dispatchKBDeletion,
@@ -107,7 +108,10 @@ async function deleteKBBlob(
   }
   const credential = new StorageSharedKeyCredential(accountName, accessKey)
   const serviceClient = new BlobServiceClient(
-    `https://${accountName}.blob.core.windows.net`,
+    getBlobStorageAccountUrl(
+      accountName,
+      env.BLOB_STORAGE_INTERNAL_ACCOUNT_URL ?? env.BLOB_STORAGE_ACCOUNT_URL
+    ),
     credential
   )
   await serviceClient

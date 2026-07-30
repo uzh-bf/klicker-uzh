@@ -7,9 +7,17 @@ services:
         aliases:
           - '${WORKSPACE:-klicker-uzh}-db'
 
+  azurite:
+    networks:
+      devnet:
+        aliases:
+          - '${WORKSPACE:-klicker-uzh}-azurite'
+
   app:
     environment:
       DEVROUTER_WORKSPACE: '${DEVROUTER_WORKSPACE:-}'
+      BLOB_STORAGE_ACCOUNT_URL: 'https://blob.klicker.${WORKSPACE:-klicker-uzh}.localhost/klickerdev'
+      BLOB_STORAGE_INTERNAL_ACCOUNT_URL: 'http://${WORKSPACE:-klicker-uzh}-azurite:10000/klickerdev'
     extra_hosts:
       - 'api.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
       - 'auth.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
@@ -20,6 +28,7 @@ services:
       - 'response-api.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
       - 'lti.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
       - 'chat.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
+      - 'blob.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
     networks:
       devnet:
         aliases:

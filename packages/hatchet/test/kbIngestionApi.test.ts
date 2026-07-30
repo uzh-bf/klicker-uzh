@@ -21,6 +21,8 @@ const env = {
   KB_SOURCE_GATEWAY_URL: 'http://klicker-backend.stg-klicker.svc:3000',
   BLOB_STORAGE_ACCOUNT_NAME: 'kbaccount',
   BLOB_STORAGE_ACCESS_KEY: Buffer.alloc(32).toString('base64'),
+  BLOB_STORAGE_ACCOUNT_URL: 'https://blob.klicker.kb-poc.localhost/kbaccount',
+  BLOB_STORAGE_INTERNAL_ACCOUNT_URL: 'http://kb-poc-azurite:10000/kbaccount',
 }
 
 const source = {
@@ -272,6 +274,7 @@ describe('ingestion source preparation', () => {
   } satisfies IngestKBResourceInput
 
   it('hashes immutable blob bytes and builds the authenticated gateway URL', async () => {
+    let blobServiceUrl = ''
     const getBlobClient = vi.fn().mockReturnValue({
       download: vi.fn().mockResolvedValue({
         contentLength: 7,
@@ -279,9 +282,13 @@ describe('ingestion source preparation', () => {
         readableStreamBody: Readable.from([Buffer.from('lecture')]),
       }),
     })
-    vi.spyOn(BlobServiceClient.prototype, 'getContainerClient').mockReturnValue(
-      { getBlobClient } as never
-    )
+    vi.spyOn(
+      BlobServiceClient.prototype,
+      'getContainerClient'
+    ).mockImplementation(function (this: BlobServiceClient) {
+      blobServiceUrl = this.url
+      return { getBlobClient } as never
+    })
 
     await expect(prepareKBIngestionSource(blobInput, env)).resolves.toEqual({
       kind: 'blob',
@@ -292,6 +299,7 @@ describe('ingestion source preparation', () => {
         '6bc636ff0103a2888fb38ca3c2bf3b1371110ceac5a104a519d85d39207732b0',
       sizeBytes: 7,
     })
+    expect(blobServiceUrl).toBe('http://kb-poc-azurite:10000/kbaccount')
   })
 
   it('pins every public URL hop and hashes only supported response bytes', async () => {

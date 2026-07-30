@@ -14,6 +14,7 @@ import {
   SortByType,
 } from '@klicker-uzh/types'
 import {
+  getBlobStorageAccountUrl,
   getInitialInstanceResults,
   PrismaTransactionClient,
   processElementData,
@@ -1115,12 +1116,20 @@ export async function getFileUploadSas(
     process.env.BLOB_STORAGE_ACCESS_KEY as string
   )
 
-  const storageAccount = `https://${
-    process.env.BLOB_STORAGE_ACCOUNT_NAME as string
-  }.blob.core.windows.net`
+  const storageAccount = getBlobStorageAccountUrl(
+    process.env.BLOB_STORAGE_ACCOUNT_NAME as string,
+    process.env.BLOB_STORAGE_ACCOUNT_URL
+  )
+  const internalStorageAccount = getBlobStorageAccountUrl(
+    process.env.BLOB_STORAGE_ACCOUNT_NAME as string,
+    process.env.BLOB_STORAGE_INTERNAL_ACCOUNT_URL ?? storageAccount
+  )
 
   // if nonexistent, create a container for the user on blob storage
-  const client = new BlobServiceClient(storageAccount, sharedKeyCredential)
+  const client = new BlobServiceClient(
+    internalStorageAccount,
+    sharedKeyCredential
+  )
   const containerClient = client.getContainerClient(ctx.user.sub)
   if (!(await containerClient.exists())) {
     client.createContainer(ctx.user.sub, {

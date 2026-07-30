@@ -154,6 +154,8 @@ describe('Integration tests for knowledge base CRUD', () => {
   let nonPreviewCtx: ContextWithUser
   let previousBlobAccountName: string | undefined
   let previousBlobAccessKey: string | undefined
+  let previousBlobAccountUrl: string | undefined
+  let previousBlobInternalAccountUrl: string | undefined
   let containerName: string
   let requestedBlobName: string
   let createIfNotExists: ReturnType<typeof vi.fn>
@@ -161,6 +163,7 @@ describe('Integration tests for knowledge base CRUD', () => {
   let getBlobProperties: ReturnType<typeof vi.fn>
   let deleteBlobIfExists: ReturnType<typeof vi.fn>
   let getBlobClient: ReturnType<typeof vi.fn>
+  let blobServiceUrl: string
 
   beforeAll(async () => {
     prisma = prismaClient
@@ -205,11 +208,17 @@ describe('Integration tests for knowledge base CRUD', () => {
 
     previousBlobAccountName = process.env.BLOB_STORAGE_ACCOUNT_NAME
     previousBlobAccessKey = process.env.BLOB_STORAGE_ACCESS_KEY
+    previousBlobAccountUrl = process.env.BLOB_STORAGE_ACCOUNT_URL
+    previousBlobInternalAccountUrl =
+      process.env.BLOB_STORAGE_INTERNAL_ACCOUNT_URL
     process.env.BLOB_STORAGE_ACCOUNT_NAME = 'kbtestaccount'
     process.env.BLOB_STORAGE_ACCESS_KEY = Buffer.alloc(32).toString('base64')
+    delete process.env.BLOB_STORAGE_ACCOUNT_URL
+    delete process.env.BLOB_STORAGE_INTERNAL_ACCOUNT_URL
 
     containerName = ''
     requestedBlobName = ''
+    blobServiceUrl = ''
     createIfNotExists = vi.fn().mockResolvedValue({ succeeded: true })
     blobExists = vi.fn().mockResolvedValue(true)
     getBlobProperties = vi.fn().mockResolvedValue({
@@ -239,7 +248,8 @@ describe('Integration tests for knowledge base CRUD', () => {
     vi.spyOn(
       BlobServiceClient.prototype,
       'getContainerClient'
-    ).mockImplementation((name: string) => {
+    ).mockImplementation(function (this: BlobServiceClient, name: string) {
+      blobServiceUrl = this.url
       containerName = name
       return containerClient as never
     })
@@ -256,6 +266,17 @@ describe('Integration tests for knowledge base CRUD', () => {
       delete process.env.BLOB_STORAGE_ACCESS_KEY
     } else {
       process.env.BLOB_STORAGE_ACCESS_KEY = previousBlobAccessKey
+    }
+    if (previousBlobAccountUrl === undefined) {
+      delete process.env.BLOB_STORAGE_ACCOUNT_URL
+    } else {
+      process.env.BLOB_STORAGE_ACCOUNT_URL = previousBlobAccountUrl
+    }
+    if (previousBlobInternalAccountUrl === undefined) {
+      delete process.env.BLOB_STORAGE_INTERNAL_ACCOUNT_URL
+    } else {
+      process.env.BLOB_STORAGE_INTERNAL_ACCOUNT_URL =
+        previousBlobInternalAccountUrl
     }
     await testCleanup(prisma)
   })
@@ -725,6 +746,10 @@ describe('Integration tests for knowledge base CRUD', () => {
 
   it('issues a private blob-scoped upload ticket without creating a resource', async () => {
     const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    process.env.BLOB_STORAGE_ACCOUNT_URL =
+      'https://blob.klicker.localhost/kbtestaccount/'
+    process.env.BLOB_STORAGE_INTERNAL_ACCOUNT_URL =
+      'http://kb-poc-azurite:10000/kbtestaccount/'
 
     const ticket = await requestKbFileUpload(
       {
@@ -737,12 +762,15 @@ describe('Integration tests for knowledge base CRUD', () => {
     )
 
     expect(containerName).toBe(`kb-${userOneCtx.user.sub}`)
+    expect(blobServiceUrl).toBe('http://kb-poc-azurite:10000/kbtestaccount')
     expect(createIfNotExists).toHaveBeenCalledWith()
     expect(ticket.containerName).toBe(containerName)
     expect(ticket.blobName).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.pdf$/
     )
     const uploadUrl = new URL(ticket.uploadSasURL)
+    expect(uploadUrl.origin).toBe('https://blob.klicker.localhost')
+    expect(uploadUrl.pathname).toBe('/kbtestaccount')
     expect(uploadUrl.searchParams.get('sp')).toBe('cw')
     expect(uploadUrl.searchParams.get('sr')).toBe('b')
     const expiry = Date.parse(uploadUrl.searchParams.get('se') ?? '')
@@ -1091,6 +1119,10 @@ describe('Integration tests for knowledge base CRUD', () => {
 
   it('confirms a matching blob idempotently', async () => {
     const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    process.env.BLOB_STORAGE_ACCOUNT_URL =
+      'https://blob.klicker.localhost/kbtestaccount'
+    process.env.BLOB_STORAGE_INTERNAL_ACCOUNT_URL =
+      'http://kb-poc-azurite:10000/kbtestaccount'
     const ticket = await requestKbFileUpload(
       {
         kbId: created.id,
@@ -1118,6 +1150,9 @@ describe('Integration tests for knowledge base CRUD', () => {
     })
 
     expect(first.id).toBe(ticket.blobName.slice(0, -4))
+    expect(first.blobHref).toBe(
+      `https://blob.klicker.localhost/kbtestaccount/${containerName}/${ticket.blobName}`
+    )
     expect(second.id).toBe(first.id)
     expect(blobExists).toHaveBeenCalledOnce()
     expect(getBlobProperties).toHaveBeenCalledOnce()

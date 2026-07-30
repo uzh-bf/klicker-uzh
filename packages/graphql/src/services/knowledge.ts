@@ -14,6 +14,7 @@ import {
   MAX_KB_SOURCE_SIZE_BYTES,
   MAX_KB_TOTAL_SIZE_BYTES,
 } from '@klicker-uzh/types'
+import { getBlobStorageAccountUrl } from '@klicker-uzh/util'
 import { normalizePublicHttpUrl } from '@klicker-uzh/util/public-url'
 import { createHash, randomUUID } from 'crypto'
 import { GraphQLError } from 'graphql'
@@ -184,8 +185,15 @@ function getKbBlobContainer(userId: string) {
   }
 
   const credential = new StorageSharedKeyCredential(accountName, accessKey)
-  const accountUrl = `https://${accountName}.blob.core.windows.net`
-  const serviceClient = new BlobServiceClient(accountUrl, credential)
+  const accountUrl = getBlobStorageAccountUrl(
+    accountName,
+    process.env.BLOB_STORAGE_ACCOUNT_URL
+  )
+  const internalAccountUrl = getBlobStorageAccountUrl(
+    accountName,
+    process.env.BLOB_STORAGE_INTERNAL_ACCOUNT_URL ?? accountUrl
+  )
+  const serviceClient = new BlobServiceClient(internalAccountUrl, credential)
 
   return {
     containerClient: serviceClient.getContainerClient(
@@ -1335,7 +1343,7 @@ export async function confirmKbFileUpload(
     return existingResource
   }
 
-  const { containerClient } = getKbBlobContainer(ctx.user.sub)
+  const { accountUrl, containerClient } = getKbBlobContainer(ctx.user.sub)
   const blobClient = containerClient.getBlobClient(blobName)
   if (!(await blobClient.exists())) {
     throw new GraphQLError('KB blob was not found')
@@ -1395,7 +1403,7 @@ export async function confirmKbFileUpload(
         mimeType: validated.contentType,
         sizeBytes,
         blobName,
-        blobHref: blobClient.url,
+        blobHref: `${accountUrl}/${containerClient.containerName}/${blobName}`,
         status: DB.KBResourceStatus.ADDED,
       },
     })

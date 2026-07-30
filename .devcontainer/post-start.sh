@@ -37,6 +37,8 @@ if [ ! -s /etc/devrouter/mkcert-rootCA.pem ]; then
   export NEXT_PUBLIC_ADD_RESPONSE_URL=http://localhost:7078
   export NEXT_PUBLIC_CHAT_URL=http://localhost:3004
   export CORS_ALLOWED_ORIGINS=http://localhost:3001
+  export BLOB_STORAGE_ACCOUNT_URL=http://localhost:10000/klickerdev
+  export BLOB_STORAGE_INTERNAL_ACCOUNT_URL=http://azurite:10000/klickerdev
   export NODE_EXTRA_CA_CERTS=""
 elif [ -n "${WORKSPACE:-}" ]; then
   echo "[post-start] Namespacing URLs for workspace: $WORKSPACE"
@@ -65,15 +67,22 @@ elif [ -n "${WORKSPACE:-}" ]; then
   export APP_ORIGIN_LTI=https://lti.klicker.${WORKSPACE}.localhost
   export NEXT_PUBLIC_CHAT_URL=https://chat.klicker.${WORKSPACE}.localhost
   export APP_ORIGIN_CHAT=https://chat.klicker.${WORKSPACE}.localhost
+  export BLOB_STORAGE_ACCOUNT_URL=https://blob.klicker.${WORKSPACE}.localhost/klickerdev
+  export BLOB_STORAGE_INTERNAL_ACCOUNT_URL=http://${WORKSPACE}-azurite:10000/klickerdev
+else
+  export BLOB_STORAGE_ACCOUNT_URL=https://blob.klicker.localhost/klickerdev
+  export BLOB_STORAGE_INTERNAL_ACCOUNT_URL=http://klicker-uzh-azurite:10000/klickerdev
 fi
 
 # No-TTY pnpm hardening (see post-create.sh). (GOTCHAS #18)
 export CI=true
 export npm_config_verify_deps_before_run=false
 
+pnpm --filter @klicker-uzh/graphql exec tsx src/scripts/setupLocalBlobStorage.ts
+
 : "${DEVROUTER_PROCESS_HELPER:?Run devrouter ensure to start this managed application process.}"
 
-export DEVROUTER_PROCESS_FINGERPRINT_ENV='APP_ORIGIN_API,APP_ORIGIN_AUTH,APP_ORIGIN_PWA,APP_ORIGIN_MANAGE,APP_ORIGIN_CONTROL,APP_ORIGIN_ASSESSMENT_API,APP_ORIGIN_ASSESSMENT_PWA,APP_ORIGIN_LTI,APP_ORIGIN_CHAT,APP_MANAGE_SUBDOMAIN,APP_STUDENT_SUBDOMAIN,APP_CONTROL_SUBDOMAIN,NEXTAUTH_URL,COOKIE_DOMAIN,NEXT_PUBLIC_API_URL,NEXT_PUBLIC_AUTH_URL,NEXT_PUBLIC_MANAGE_URL,NEXT_PUBLIC_PWA_URL,NEXT_PUBLIC_ASSESSMENT_URL,NEXT_PUBLIC_CONTROL_URL,NEXT_PUBLIC_ADD_RESPONSE_URL,NEXT_PUBLIC_CHAT_URL,CORS_ALLOWED_ORIGINS,AUTH_LECTURER_ALLOWED_HOSTS,AUTH_STUDENT_ALLOWED_HOSTS,NODE_EXTRA_CA_CERTS'
+export DEVROUTER_PROCESS_FINGERPRINT_ENV='APP_ORIGIN_API,APP_ORIGIN_AUTH,APP_ORIGIN_PWA,APP_ORIGIN_MANAGE,APP_ORIGIN_CONTROL,APP_ORIGIN_ASSESSMENT_API,APP_ORIGIN_ASSESSMENT_PWA,APP_ORIGIN_LTI,APP_ORIGIN_CHAT,APP_MANAGE_SUBDOMAIN,APP_STUDENT_SUBDOMAIN,APP_CONTROL_SUBDOMAIN,NEXTAUTH_URL,COOKIE_DOMAIN,NEXT_PUBLIC_API_URL,NEXT_PUBLIC_AUTH_URL,NEXT_PUBLIC_MANAGE_URL,NEXT_PUBLIC_PWA_URL,NEXT_PUBLIC_ASSESSMENT_URL,NEXT_PUBLIC_CONTROL_URL,NEXT_PUBLIC_ADD_RESPONSE_URL,NEXT_PUBLIC_CHAT_URL,CORS_ALLOWED_ORIGINS,AUTH_LECTURER_ALLOWED_HOSTS,AUTH_STUDENT_ALLOWED_HOSTS,BLOB_STORAGE_ACCOUNT_URL,BLOB_STORAGE_INTERNAL_ACCOUNT_URL,NODE_EXTRA_CA_CERTS'
 
 # Run every routed app plus both Hatchet workers without Infisical. Devrouter
 # owns generic locking, process-group identity, and bounded replacement; this
@@ -96,6 +105,7 @@ if [ -s /etc/devrouter/mkcert-rootCA.pem ]; then
 [post-start]   Response API -> ${NEXT_PUBLIC_ADD_RESPONSE_URL}
 [post-start]   LTI Service  -> ${APP_ORIGIN_LTI}
 [post-start]   Chat         -> ${NEXT_PUBLIC_CHAT_URL} (requires UPSTREAM_OPENAI_API_KEY)
+[post-start]   Blob Storage -> ${BLOB_STORAGE_ACCOUNT_URL} (Azurite)
 [post-start]   Workers      -> hatchet-worker-general + -response-processor (no URL; consume hatchet queue)
 [post-start] Lifecycle -> on the host: devrouter ensure <this-checkout>
 [post-start] Logs    -> devrouter exec <this-checkout> -- tail -f /tmp/dev.log
@@ -112,6 +122,7 @@ else
 [post-start]   Response API -> http://localhost:7078
 [post-start]   LTI Service  -> http://localhost:4000
 [post-start]   Chat         -> http://localhost:3004 (requires UPSTREAM_OPENAI_API_KEY)
+[post-start]   Blob Storage -> http://localhost:10000/klickerdev (Azurite)
 [post-start]   Workers      -> hatchet-worker-general + -response-processor (no URL; consume hatchet queue)
 [post-start] Logs    -> devrouter exec <this-checkout> -- tail -f /tmp/dev.log
 EOF

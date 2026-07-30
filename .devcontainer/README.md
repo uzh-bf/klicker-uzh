@@ -3,7 +3,7 @@
 Self-contained local environment for `klicker-uzh`. No Infisical/Doppler, no
 external EduID, no `/etc/hosts` edits — clone, route through devrouter, and run.
 The devcontainer owns the whole stack (toolchain, Postgres, 3× Redis, MailHog,
-Hatchet, install + build + seed, `turbo dev`);
+Azurite Blob Storage, Hatchet, install + build + seed, `turbo dev`);
 [devrouter](https://github.com/rschlaefli/devrouter) fronts it on a shared
 `:443` / `:5432`. Linked worktrees publish no host ports and can coexist;
 the primary checkout intentionally keeps fixed localhost ports and is
@@ -35,6 +35,7 @@ The primary checkout keeps fixed localhost ports and receives stable unnamespace
    - Auth Service: `http://localhost:3010`
    - MailHog UI: `http://localhost:8025`
    - Hatchet Dashboard: `http://localhost:8888`
+   - Azurite Blob Storage: `http://localhost:10000/klickerdev`
    - Postgres DB: `localhost:5432`
 
 ### Mode 2: Linked checkout
@@ -75,22 +76,30 @@ internal port. The linked-worktree overlay publishes no host ports and exposes
 stable unnamespaced aliases plus fixed localhost ports. `.devrouter.yml` uses
 the selected checkout identity in every proxy upstream.
 
-| What              | Host                                                 | Upstream (devnet)       |
-| ----------------- | ---------------------------------------------------- | ----------------------- |
-| API (GraphQL)     | `https://api.klicker.<workspace>.localhost`          | `${WORKSPACE}-app:3000` |
-| Auth              | `https://auth.klicker.<workspace>.localhost`         | `${WORKSPACE}-app:3010` |
-| PWA (student)     | `https://pwa.klicker.<workspace>.localhost`          | `${WORKSPACE}-app:3001` |
-| Manage (lecturer) | `https://manage.klicker.<workspace>.localhost`       | `${WORKSPACE}-app:3002` |
-| Control           | `https://control.klicker.<workspace>.localhost`      | `${WORKSPACE}-app:3003` |
-| OLAT API          | `https://olat-api.klicker.<workspace>.localhost`     | `${WORKSPACE}-app:3030` |
-| Response API      | `https://response-api.klicker.<workspace>.localhost` | `${WORKSPACE}-app:7078` |
-| LTI Service       | `https://lti.klicker.<workspace>.localhost`          | `${WORKSPACE}-app:4000` |
-| Chat App          | `https://chat.klicker.<workspace>.localhost`         | `${WORKSPACE}-app:3004` |
-| Postgres          | `db.klicker.<workspace>.localhost:5432`              | `${WORKSPACE}-db:5432`  |
+| What              | Host                                                 | Upstream (devnet)            |
+| ----------------- | ---------------------------------------------------- | ---------------------------- |
+| API (GraphQL)     | `https://api.klicker.<workspace>.localhost`          | `${WORKSPACE}-app:3000`      |
+| Auth              | `https://auth.klicker.<workspace>.localhost`         | `${WORKSPACE}-app:3010`      |
+| PWA (student)     | `https://pwa.klicker.<workspace>.localhost`          | `${WORKSPACE}-app:3001`      |
+| Manage (lecturer) | `https://manage.klicker.<workspace>.localhost`       | `${WORKSPACE}-app:3002`      |
+| Control           | `https://control.klicker.<workspace>.localhost`      | `${WORKSPACE}-app:3003`      |
+| OLAT API          | `https://olat-api.klicker.<workspace>.localhost`     | `${WORKSPACE}-app:3030`      |
+| Response API      | `https://response-api.klicker.<workspace>.localhost` | `${WORKSPACE}-app:7078`      |
+| Blob Storage      | `https://blob.klicker.<workspace>.localhost`         | `${WORKSPACE}-azurite:10000` |
+| LTI Service       | `https://lti.klicker.<workspace>.localhost`          | `${WORKSPACE}-app:4000`      |
+| Chat App          | `https://chat.klicker.<workspace>.localhost`         | `${WORKSPACE}-app:3004`      |
+| Postgres          | `db.klicker.<workspace>.localhost:5432`              | `${WORKSPACE}-db:5432`       |
 
 The two Hatchet workers (`hatchet-worker-general`, `hatchet-worker-response-processor`)
 also run in the `app` container but have **no port/route** — they consume the
 Hatchet event queue (responses pushed by `response-api`).
+
+Azurite's browser-facing account URL is
+`https://blob.klicker.<workspace>.localhost/klickerdev`. Server-side SDK calls
+use the workspace-specific Azurite alias over HTTP; `post-start.sh` configures
+the exact Manage origin as Blob CORS on that local emulator. This split keeps
+browser uploads production-like without making Node trust the host's routed
+certificate or requiring Azure credentials.
 
 Infra (the 3× Redis, MailHog, Hatchet) is **not** routed — the apps reach it by
 compose DNS (`redis_exec`, `redis_cache`, `redis_assessment`, `mailhog`,
@@ -129,15 +138,16 @@ hatchet DB migrations finishing. If the API is down, check
 
 ## What's inside
 
-| Service                             | Image                                      | Purpose                                                |
-| ----------------------------------- | ------------------------------------------ | ------------------------------------------------------ |
-| `app`                               | local `Dockerfile` (Node 24 + pnpm 11.5.0) | runs every routed app plus the two Hatchet workers     |
-| `postgres`                          | `postgres:15`                              | DB (klicker-prod + shadow/lti/qa/hatchet via init.sql) |
-| `redis_exec`/`_assessment`/`_cache` | `redis:7`                                  | live-quiz exec / assessment / cache + pub/sub          |
-| `mailhog`                           | `mailhog/mailhog`                          | dev SMTP sink                                          |
-| `hatchet`                           | `hatchet-lite:v0.73.1`                     | workflow engine (gRPC :7077)                           |
-| `hatchet_token`                     | `hatchet-lite:v0.73.1`                     | one-shot: mint the client token                        |
-| `litellm`                           | `ghcr.io/berriai/litellm`                  | LLM proxy for chat (port 4000 intra-net)               |
+| Service                             | Image                                            | Purpose                                                |
+| ----------------------------------- | ------------------------------------------------ | ------------------------------------------------------ |
+| `app`                               | local `Dockerfile` (Node 24 + pnpm 11.5.0)       | runs every routed app plus the two Hatchet workers     |
+| `postgres`                          | `postgres:15`                                    | DB (klicker-prod + shadow/lti/qa/hatchet via init.sql) |
+| `redis_exec`/`_assessment`/`_cache` | `redis:7`                                        | live-quiz exec / assessment / cache + pub/sub          |
+| `mailhog`                           | `mailhog/mailhog`                                | dev SMTP sink                                          |
+| `azurite`                           | `mcr.microsoft.com/azure-storage/azurite:3.36.0` | local Blob service for browser uploads                 |
+| `hatchet`                           | `hatchet-lite:v0.73.1`                           | workflow engine (gRPC :7077)                           |
+| `hatchet_token`                     | `hatchet-lite:v0.73.1`                           | one-shot: mint the client token                        |
+| `litellm`                           | `ghcr.io/berriai/litellm`                        | LLM proxy for chat (port 4000 intra-net)               |
 
 Environment lives in `devcontainer.env` (committed, dev-only). Lifecycle:
 `post-create.sh` (install + build packages + prisma reset/push/seed + token) then
