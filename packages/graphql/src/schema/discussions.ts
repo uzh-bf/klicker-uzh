@@ -1,4 +1,8 @@
 import * as DB from '@klicker-uzh/prisma/client'
+import {
+  COURSE_QA_EXTERNAL_REF_MAX_LENGTH,
+  COURSE_QA_EXTERNAL_SOURCE_MAX_LENGTH,
+} from '@klicker-uzh/types'
 import builder from '../builder.js'
 import type {
   CourseDiscussionEmbeddingInfo,
@@ -43,8 +47,22 @@ export const DiscussionExternalBlockInput = builder.inputType(
   'DiscussionExternalBlockInput',
   {
     fields: (t) => ({
-      externalSource: t.string({ required: true }),
-      externalRef: t.string({ required: true }),
+      externalSource: t.string({
+        required: true,
+        validate: {
+          minLength: 1,
+          maxLength: COURSE_QA_EXTERNAL_SOURCE_MAX_LENGTH,
+          regex: /\S/,
+        },
+      }),
+      externalRef: t.string({
+        required: true,
+        validate: {
+          minLength: 1,
+          maxLength: COURSE_QA_EXTERNAL_REF_MAX_LENGTH,
+          regex: /\S/,
+        },
+      }),
     }),
   }
 )

@@ -16,7 +16,7 @@ import {
 import type {
   CourseDiscussionEmbeddingInfo,
   CourseEmbedClaims,
-  GetCourseDiscussionEmbeddingInfoArgs,
+  GenerateCourseDiscussionEmbeddingInfoArgs,
 } from './types.js'
 
 const EMBED_SCOPE = 'COURSE_DISCUSSION_EMBED'
@@ -330,13 +330,13 @@ export async function verifyEmbedScopeBinding(
   return true
 }
 
-export async function getCourseDiscussionEmbeddingInfo(
+export async function generateCourseDiscussionEmbeddingInfo(
   {
     courseId,
     externalBlock,
     allowAnonymous,
     expiresInHours,
-  }: GetCourseDiscussionEmbeddingInfoArgs,
+  }: GenerateCourseDiscussionEmbeddingInfoArgs,
   ctx: ContextWithUser
 ): Promise<CourseDiscussionEmbeddingInfo | null> {
   const course = await getCourseSettings(courseId, ctx)

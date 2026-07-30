@@ -9,10 +9,10 @@ export type {
   DiscussionScopeInput,
   DiscussionSpaceInput,
   DiscussionThreadPage,
-  GetCourseDiscussionEmbeddingInfoArgs,
+  GenerateCourseDiscussionEmbeddingInfoArgs,
 } from './discussions/types.js'
 
-export { getCourseDiscussionEmbeddingInfo } from './discussions/embeds.js'
+export { generateCourseDiscussionEmbeddingInfo } from './discussions/embeds.js'
 export {
   deleteCourseDiscussionReply,
   deleteCourseDiscussionThread,

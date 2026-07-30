@@ -53,9 +53,7 @@ import {
   StudentCourse,
 } from './course.js'
 import {
-  CourseDiscussionEmbeddingInfoRef,
   CourseDiscussionOverviewRef,
-  DiscussionExternalBlockInput,
   DiscussionSort,
   DiscussionThreadPageRef,
 } from './discussions.js'
@@ -258,30 +256,6 @@ export const Query = builder.queryType({
         resolve: async (_, args, ctx) => {
           return await DiscussionService.courseDiscussionOverview(args, ctx)
         },
-      }),
-
-      getCourseDiscussionEmbeddingInfo: t.withAuth(asUser).field({
-        nullable: true,
-        type: CourseDiscussionEmbeddingInfoRef,
-        args: {
-          courseId: t.arg.string({ required: true }),
-          externalBlock: t.arg({
-            type: DiscussionExternalBlockInput,
-            required: false,
-          }),
-          allowAnonymous: t.arg.boolean({ required: false }),
-          expiresInHours: t.arg.int({ required: false }),
-        },
-        resolve: withPermission(
-          (args) => ({ courseId: args.courseId }),
-          DB.PermissionLevel.WRITE,
-          async (_, args, ctx) => {
-            return await DiscussionService.getCourseDiscussionEmbeddingInfo(
-              args,
-              ctx
-            )
-          }
-        ),
       }),
 
       userProfile: t.withAuth(asUser).field({

@@ -50,7 +50,7 @@ export interface CourseDiscussionOverviewArgs {
   cursor?: string | null
 }
 
-export interface GetCourseDiscussionEmbeddingInfoArgs {
+export interface GenerateCourseDiscussionEmbeddingInfoArgs {
   courseId: string
   externalBlock?: {
     externalSource: string

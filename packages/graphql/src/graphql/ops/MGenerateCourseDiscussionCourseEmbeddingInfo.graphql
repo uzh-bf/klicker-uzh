@@ -1,9 +1,9 @@
-query GetCourseDiscussionCourseEmbeddingInfo(
+mutation GenerateCourseDiscussionCourseEmbeddingInfo(
   $courseId: String!
   $allowAnonymous: Boolean
   $expiresInHours: Int
 ) {
-  getCourseDiscussionEmbeddingInfo(
+  generateCourseDiscussionEmbeddingInfo(
     courseId: $courseId
     allowAnonymous: $allowAnonymous
     expiresInHours: $expiresInHours

@@ -2047,6 +2047,7 @@ type Mutation {
   finalizeGroupActivityGrading(id: String!): GroupActivity
   flagElement(content: String!, elementId: Int!, elementInstanceId: Int!): ElementFeedback
   flagOutdatedElementInstances(elementId: Int!): Boolean
+  generateCourseDiscussionEmbeddingInfo(allowAnonymous: Boolean, courseId: String!, expiresInHours: Int, externalBlock: DiscussionExternalBlockInput): CourseDiscussionEmbeddingInfo
   getFileUploadSas(contentType: String!, fileName: String!): FileUploadSAS
   gradeGroupActivitySubmission(gradingDecisions: GroupActivityGradingInput!, groupActivityId: String!, id: Int!): GroupActivityInstance
   grantPrivatePreviewAccess(email: String!): Int
@@ -2598,7 +2599,6 @@ type Query {
   getCourseActivities(courseId: String!): Course
   getCourseActivityAnalytics(courseId: String!): CourseActivityAnalytics
   getCourseActivityIds(courseId: String): CourseActivityList
-  getCourseDiscussionEmbeddingInfo(allowAnonymous: Boolean, courseId: String!, expiresInHours: Int, externalBlock: DiscussionExternalBlockInput): CourseDiscussionEmbeddingInfo
   getCourseGroups(courseId: String!): Course
   getCourseLeaderboard(courseId: String!, courseSelection: Boolean!, customSelection: Boolean!, days: Int, endDate: String, rollingSelection: Boolean!, startDate: String, weeklySelection: Boolean!): CourseLeaderboard
   getCourseOverviewData(courseId: String!): ParticipantLearningData

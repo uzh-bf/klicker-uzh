@@ -2,13 +2,18 @@ import {
   DiscussionScopeType,
   ElementStackType,
 } from '@klicker-uzh/prisma/client'
+import {
+  COURSE_QA_EXTERNAL_REF_MAX_LENGTH,
+  COURSE_QA_EXTERNAL_SOURCE_MAX_LENGTH,
+} from '@klicker-uzh/types'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
+import { schema } from '../../src/index.js'
 import {
   courseDiscussionOverview,
   courseDiscussionThreads,
   createCourseDiscussionReply,
   createCourseDiscussionThread,
-  getCourseDiscussionEmbeddingInfo,
+  generateCourseDiscussionEmbeddingInfo,
   toggleCourseDiscussionThreadUpvote,
 } from '../../src/services/discussions.js'
 import { seedCourse } from '../helpers.js'
@@ -24,15 +29,92 @@ import {
 } from './fixtures.js'
 
 export function registerScopesSuite(getContext: () => DiscussionTestContext) {
+  it('exposes embed generation only as a validated mutation', async () => {
+    const { prisma, userOneCtx } = getContext()
+    const mutationFields = schema.getMutationType()?.getFields()
+    const queryFields = schema.getQueryType()?.getFields()
+
+    expect(queryFields?.getCourseDiscussionEmbeddingInfo).toBeUndefined()
+    expect(mutationFields?.generateCourseDiscussionEmbeddingInfo).toBeDefined()
+
+    const resolveEmbedMutation =
+      mutationFields?.generateCourseDiscussionEmbeddingInfo?.resolve
+    if (!resolveEmbedMutation) {
+      throw new Error('Embed-generation mutation resolver is missing')
+    }
+
+    const initialSpaceCount = await prisma.discussionSpace.count()
+    const invalidVariables = [
+      {
+        externalBlock: {
+          externalSource: ' ',
+          externalRef: 'block-1',
+        },
+        expiresInHours: 48,
+      },
+      {
+        externalBlock: {
+          externalSource: 'LMS',
+          externalRef: ' ',
+        },
+        expiresInHours: 48,
+      },
+      {
+        externalBlock: {
+          externalSource: 'LMS',
+          externalRef: 'x'.repeat(COURSE_QA_EXTERNAL_REF_MAX_LENGTH + 1),
+        },
+        expiresInHours: 48,
+      },
+      {
+        externalBlock: {
+          externalSource: 'x'.repeat(COURSE_QA_EXTERNAL_SOURCE_MAX_LENGTH + 1),
+          externalRef: 'block-1',
+        },
+        expiresInHours: 48,
+      },
+      {
+        externalBlock: {
+          externalSource: 'LMS',
+          externalRef: 'block-1',
+        },
+        expiresInHours: 0,
+      },
+      {
+        externalBlock: {
+          externalSource: 'LMS',
+          externalRef: 'block-1',
+        },
+        expiresInHours: 337,
+      },
+    ]
+
+    for (const variables of invalidVariables) {
+      await expect(
+        resolveEmbedMutation(
+          {},
+          {
+            courseId: 'validation-only-course',
+            ...variables,
+          },
+          userOneCtx,
+          {} as never
+        )
+      ).rejects.toThrow()
+    }
+
+    expect(await prisma.discussionSpace.count()).toBe(initialSpaceCount)
+  })
+
   it('rejects oversized external identifiers instead of merging truncated scopes', async () => {
     const { prisma, userOneCtx } = getContext()
     const course = await seedCourse({}, userOneCtx)
     await enableCourseDiscussion(prisma, { courseId: course.id })
     await recomputeDerivedPermissions({ courseId: course.id }, prisma)
 
-    const maxSource = 's'.repeat(100)
-    const maxRef = 'r'.repeat(200)
-    const collidingSource = await getCourseDiscussionEmbeddingInfo(
+    const maxSource = 's'.repeat(COURSE_QA_EXTERNAL_SOURCE_MAX_LENGTH)
+    const maxRef = 'r'.repeat(COURSE_QA_EXTERNAL_REF_MAX_LENGTH)
+    const collidingSource = await generateCourseDiscussionEmbeddingInfo(
       {
         courseId: course.id,
         externalBlock: {
@@ -42,7 +124,7 @@ export function registerScopesSuite(getContext: () => DiscussionTestContext) {
       },
       userOneCtx
     )
-    const collidingRef = await getCourseDiscussionEmbeddingInfo(
+    const collidingRef = await generateCourseDiscussionEmbeddingInfo(
       {
         courseId: course.id,
         externalBlock: {
@@ -52,7 +134,7 @@ export function registerScopesSuite(getContext: () => DiscussionTestContext) {
       },
       userOneCtx
     )
-    const malformedUnicode = await getCourseDiscussionEmbeddingInfo(
+    const malformedUnicode = await generateCourseDiscussionEmbeddingInfo(
       {
         courseId: course.id,
         externalBlock: {
@@ -72,7 +154,7 @@ export function registerScopesSuite(getContext: () => DiscussionTestContext) {
       })
     ).resolves.toBe(0)
 
-    const validEmbed = await getCourseDiscussionEmbeddingInfo(
+    const validEmbed = await generateCourseDiscussionEmbeddingInfo(
       {
         courseId: course.id,
         externalBlock: {
@@ -332,7 +414,7 @@ export function registerScopesSuite(getContext: () => DiscussionTestContext) {
       expect(upvotedThread?.scope).toMatchObject(expectedScopePresentation)
     }
 
-    const embedInfo = await getCourseDiscussionEmbeddingInfo(
+    const embedInfo = await generateCourseDiscussionEmbeddingInfo(
       {
         courseId: course.id,
         externalBlock: {
@@ -365,7 +447,7 @@ export function registerScopesSuite(getContext: () => DiscussionTestContext) {
     )
     expect(externalThread?.scope.scopeKey).toBe('ext:moodle:block-7')
 
-    const courseEmbedInfo = await getCourseDiscussionEmbeddingInfo(
+    const courseEmbedInfo = await generateCourseDiscussionEmbeddingInfo(
       {
         courseId: course.id,
         allowAnonymous: true,
@@ -560,7 +642,7 @@ export function registerScopesSuite(getContext: () => DiscussionTestContext) {
 
     expect(stackThread).toBeTruthy()
 
-    const externalEmbedInfo = await getCourseDiscussionEmbeddingInfo(
+    const externalEmbedInfo = await generateCourseDiscussionEmbeddingInfo(
       {
         courseId: course.id,
         externalBlock: {

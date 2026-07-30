@@ -57,7 +57,6 @@ function createIsomorphLink(ctx?: GetServerSidePropsContext) {
           split(
             ({ operationName, variables }) =>
               operationName === 'QGetVerifiableCredential' ||
-              operationName === 'GetCourseDiscussionEmbeddingInfo' ||
               operationUsesEmbedToken(variables),
             createPersistedQueryLink({
               useGETForHashedQueries: false,

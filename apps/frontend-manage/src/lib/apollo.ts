@@ -31,11 +31,7 @@ export const APOLLO_STATE_PROP_NAME = '__APOLLO_STATE__'
 
 let apolloClient: ApolloClient<NormalizedCacheObject>
 
-const POST_ONLY_OPERATIONS = new Set([
-  'QGetCourseVerificationRecords',
-  'GetCourseDiscussionEmbeddingInfo',
-  'GetCourseDiscussionCourseEmbeddingInfo',
-])
+const POST_ONLY_OPERATIONS = new Set(['QGetCourseVerificationRecords'])
 
 function createIsomorphLink() {
   const isBrowser = typeof window !== 'undefined'

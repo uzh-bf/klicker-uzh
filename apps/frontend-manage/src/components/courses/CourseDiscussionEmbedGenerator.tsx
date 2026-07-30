@@ -1,9 +1,9 @@
-import { useLazyQuery } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import { faChevronDown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  GetCourseDiscussionCourseEmbeddingInfoDocument,
-  GetCourseDiscussionEmbeddingInfoDocument,
+  GenerateCourseDiscussionCourseEmbeddingInfoDocument,
+  GenerateCourseDiscussionEmbeddingInfoDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   COURSE_QA_EXTERNAL_REF_MAX_LENGTH,
@@ -37,16 +37,11 @@ function CourseDiscussionEmbedGenerator({
   } | null>(null)
   const [currentTime, setCurrentTime] = useState(0)
 
-  const [generateEmbedInfo, { loading: loadingEmbed }] = useLazyQuery(
-    GetCourseDiscussionEmbeddingInfoDocument,
-    {
-      fetchPolicy: 'no-cache',
-    }
+  const [generateEmbedInfo, { loading: loadingEmbed }] = useMutation(
+    GenerateCourseDiscussionEmbeddingInfoDocument
   )
   const [generateCourseEmbedInfo, { loading: loadingCourseEmbed }] =
-    useLazyQuery(GetCourseDiscussionCourseEmbeddingInfoDocument, {
-      fetchPolicy: 'no-cache',
-    })
+    useMutation(GenerateCourseDiscussionCourseEmbeddingInfoDocument)
   const isExternalEmbed = embedScope === 'external'
   const isGeneratingEmbed = loadingEmbed || loadingCourseEmbed
   const effectiveAllowAnonymous = isCourseQAAnonymousEnabled && allowAnonymous
@@ -267,7 +262,9 @@ function CourseDiscussionEmbedGenerator({
                   })
                 : await generateCourseEmbedInfo({ variables })
 
-              if (!result.data?.getCourseDiscussionEmbeddingInfo?.embedUrl) {
+              if (
+                !result.data?.generateCourseDiscussionEmbeddingInfo?.embedUrl
+              ) {
                 toast({
                   type: 'error',
                   message: t('manage.course.embedGenFailed'),
@@ -278,9 +275,10 @@ function CourseDiscussionEmbedGenerator({
 
               setCurrentTime(Date.now())
               setGeneratedEmbedInfo({
-                embedUrl: result.data.getCourseDiscussionEmbeddingInfo.embedUrl,
+                embedUrl:
+                  result.data.generateCourseDiscussionEmbeddingInfo.embedUrl,
                 expiresAt:
-                  result.data.getCourseDiscussionEmbeddingInfo.expiresAt,
+                  result.data.generateCourseDiscussionEmbeddingInfo.expiresAt,
               })
             } catch {
               toast({

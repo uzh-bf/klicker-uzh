@@ -5,7 +5,7 @@ import {
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import {
   createCourseDiscussionThread,
-  getCourseDiscussionEmbeddingInfo,
+  generateCourseDiscussionEmbeddingInfo,
 } from '../../src/services/discussions.js'
 import { hashAnonymousFingerprint } from '../../src/services/discussions/embeds.js'
 import { seedCourse } from '../helpers.js'
@@ -47,7 +47,7 @@ export function registerAnonymousRateLimitsSuite(
     })
     await recomputeDerivedPermissions({ courseId: course.id }, prisma)
 
-    const embedInfo = await getCourseDiscussionEmbeddingInfo(
+    const embedInfo = await generateCourseDiscussionEmbeddingInfo(
       {
         courseId: course.id,
         externalBlock: {
@@ -113,7 +113,7 @@ export function registerAnonymousRateLimitsSuite(
     })
     await recomputeDerivedPermissions({ courseId: course.id }, prisma)
 
-    const embedInfo = await getCourseDiscussionEmbeddingInfo(
+    const embedInfo = await generateCourseDiscussionEmbeddingInfo(
       {
         courseId: course.id,
         externalBlock: {
@@ -234,7 +234,7 @@ export function registerAnonymousRateLimitsSuite(
       Awaited<ReturnType<typeof createCourseDiscussionThread>>
     > = []
     for (let index = 0; index < 8; index++) {
-      const embedInfo = await getCourseDiscussionEmbeddingInfo(
+      const embedInfo = await generateCourseDiscussionEmbeddingInfo(
         {
           courseId: courseWindowCourse.id,
           externalBlock: {
@@ -292,7 +292,7 @@ export function registerAnonymousRateLimitsSuite(
       allowAnonymous: true,
     })
     await recomputeDerivedPermissions({ courseId: ipWindowCourse.id }, prisma)
-    const ipWindowEmbed = await getCourseDiscussionEmbeddingInfo(
+    const ipWindowEmbed = await generateCourseDiscussionEmbeddingInfo(
       {
         courseId: ipWindowCourse.id,
         externalBlock: {

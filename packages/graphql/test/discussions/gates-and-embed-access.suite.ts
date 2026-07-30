@@ -5,7 +5,7 @@ import {
   courseDiscussionThreads,
   createCourseDiscussionReply,
   createCourseDiscussionThread,
-  getCourseDiscussionEmbeddingInfo,
+  generateCourseDiscussionEmbeddingInfo,
   toggleCourseDiscussionReplyUpvote,
   toggleCourseDiscussionThreadUpvote,
 } from '../../src/services/discussions.js'
@@ -133,7 +133,7 @@ export function registerGatesAndEmbedAccessSuite(
     expect(threadPage.canPostAnonymously).toBe(false)
     expect(threadPage.canPostIdentified).toBe(false)
 
-    const embedInfo = await getCourseDiscussionEmbeddingInfo(
+    const embedInfo = await generateCourseDiscussionEmbeddingInfo(
       {
         courseId: course.id,
         externalBlock: {
@@ -186,7 +186,7 @@ export function registerGatesAndEmbedAccessSuite(
     expect(threadPage.canPostAnonymously).toBe(false)
     expect(threadPage.isAccessible).toBe(false)
 
-    const embedInfo = await getCourseDiscussionEmbeddingInfo(
+    const embedInfo = await generateCourseDiscussionEmbeddingInfo(
       {
         courseId: course.id,
         externalBlock: {
@@ -224,7 +224,7 @@ export function registerGatesAndEmbedAccessSuite(
       participantCtx
     )
 
-    const anonymousEmbedInfo = await getCourseDiscussionEmbeddingInfo(
+    const anonymousEmbedInfo = await generateCourseDiscussionEmbeddingInfo(
       {
         courseId: course.id,
         externalBlock: {
@@ -236,7 +236,7 @@ export function registerGatesAndEmbedAccessSuite(
       userOneCtx
     )
 
-    const identifiedOnlyEmbedInfo = await getCourseDiscussionEmbeddingInfo(
+    const identifiedOnlyEmbedInfo = await generateCourseDiscussionEmbeddingInfo(
       {
         courseId: course.id,
         externalBlock: {
@@ -294,7 +294,7 @@ export function registerGatesAndEmbedAccessSuite(
     })
     await recomputeDerivedPermissions({ courseId: course.id }, prisma)
 
-    const embedInfo = await getCourseDiscussionEmbeddingInfo(
+    const embedInfo = await generateCourseDiscussionEmbeddingInfo(
       {
         courseId: course.id,
         externalBlock: {
@@ -349,7 +349,7 @@ export function registerGatesAndEmbedAccessSuite(
     })
     await recomputeDerivedPermissions({ courseId: course.id }, prisma)
 
-    const embedInfo = await getCourseDiscussionEmbeddingInfo(
+    const embedInfo = await generateCourseDiscussionEmbeddingInfo(
       {
         courseId: course.id,
         externalBlock: {
@@ -374,7 +374,7 @@ export function registerGatesAndEmbedAccessSuite(
     })
     await recomputeDerivedPermissions({ courseId: course.id }, prisma)
 
-    const embedInfo = await getCourseDiscussionEmbeddingInfo(
+    const embedInfo = await generateCourseDiscussionEmbeddingInfo(
       {
         courseId: course.id,
         externalBlock: {
@@ -418,7 +418,7 @@ export function registerGatesAndEmbedAccessSuite(
     })
     await recomputeDerivedPermissions({ courseId: course.id }, prisma)
 
-    const embedInfo = await getCourseDiscussionEmbeddingInfo(
+    const embedInfo = await generateCourseDiscussionEmbeddingInfo(
       {
         courseId: course.id,
         externalBlock: {
@@ -446,7 +446,7 @@ export function registerGatesAndEmbedAccessSuite(
     expect(stalePageWithoutSpace.isAccessible).toBe(false)
     expect(stalePageWithoutSpace.canPostAnonymously).toBe(false)
 
-    const replacementEmbedInfo = await getCourseDiscussionEmbeddingInfo(
+    const replacementEmbedInfo = await generateCourseDiscussionEmbeddingInfo(
       {
         courseId: course.id,
         externalBlock: {

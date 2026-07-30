@@ -25,10 +25,10 @@ describe('Course Q&A embed workflow', function () {
       const operationName =
         request.body?.operationName ??
         new URL(request.url).searchParams.get('operationName')
-      if (operationName === 'GetCourseDiscussionCourseEmbeddingInfo') {
+      if (operationName === 'GenerateCourseDiscussionCourseEmbeddingInfo') {
         request.alias = 'courseEmbedInfo'
       }
-      if (operationName === 'GetCourseDiscussionEmbeddingInfo') {
+      if (operationName === 'GenerateCourseDiscussionEmbeddingInfo') {
         request.alias = 'externalEmbedInfo'
       }
     })
