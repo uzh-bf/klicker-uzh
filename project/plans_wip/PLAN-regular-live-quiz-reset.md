@@ -62,3 +62,8 @@ gamification rewards once.
 - 2026-07-30: Task 1 completed in `c238ee723`; the real migration,
   generated client, analytics mirror, and repository checks passed. Independent
   specification and data-model reviews both passed with no blocking findings.
+- 2026-07-30: Task 2 completed in `8fea83955`, `b9b2a968f`, and
+  `fd938b218`. The 21-case real Postgres/Redis/Hatchet suite, GraphQL
+  check/build, and full repository checks passed. Independent specification and
+  reliability reviews passed after transaction, race, cache-snapshot,
+  validation, and batching hardening.
