@@ -78,3 +78,10 @@ gamification rewards once.
   real PostgreSQL/Redis/Hatchet services. Independent specification and
   quality reviews passed after aligning the standard `FORBIDDEN` error contract
   and covering the implicit-owner activity metadata fallback.
+- 2026-07-30: Task 5 completed in `fc17871d9`, `2b7fa9be0`, and
+  `002e79473`. The canonical GraphQL API, privacy-safe audit delivery,
+  historical-week retry, generation-fenced Redis cleanup, and fail-closed
+  manual/scheduled start initialization passed 55 real integration cases.
+  Independent specification and quality reviews passed after adding reset-time
+  realm/generation fencing and serializing concurrent starts with a database
+  row lock.
