@@ -590,8 +590,9 @@ Commit:
   review found no remaining blocker after preserving self-only choice access,
   fail-closed course-off behavior, participant-scoped deletion, unchanged
   aggregates, and a new prospective boundary on renewed inclusion.
-- Current: Slice 3 is implemented and locally verified on
-  `codex/la-opt-out-participant-choice`.
-- Next: Publish the draft PR stacked on
-  `codex/la-opt-out-lecturer-control`, then begin the centralized computation
-  eligibility slice.
+- 2026-07-30: Slice 3 published as draft PR #5243, stacked directly on Slice
+  2's branch. The rendered base/head metadata and draft state were verified;
+  GitGuardian passed and repository checks entered the queue.
+- Current: Slice 3 is under review in draft PR #5243.
+- Next: Begin the centralized computation eligibility slice on a branch stacked
+  on `codex/la-opt-out-participant-choice`.
