@@ -490,7 +490,7 @@ export default {
     delegatedAccess: 'Delegated Access',
     signedInAs: 'You are already logged in as {username}',
     tosAgreement:
-      'I consent to the KlickerUZH <tos></tos> (updated on 26.08.2023) and <privacy></privacy> (updated on 26.08.2023).',
+      'I consent to the KlickerUZH <tos></tos> (updated on 30.07.2026) and <privacy></privacy> (updated on 30.07.2026).',
     tosAgreementRequired:
       'Please accept the terms of service and privacy policy before logging in.',
     termsOfService: 'Terms of Service',
@@ -558,7 +558,7 @@ Other participants will only see your public **participant profile**, including 
     learningAnalytics: {
       title: 'Learning analytics participation',
       explanation:
-        'Learning analytics can help you understand your learning and help lecturers improve course support. If you participate, KlickerUZH uses your interaction activity, learning progress, response performance, scores, and feedback ratings. Lecturers see only de-identified learning analytics results. They do not see your name, email address, participant identifier, free-text responses, or participation choice, and must not combine the results with other information to identify you.',
+        'Learning analytics can help lecturers identify where participating groups may need support and improve course activities and feedback for students. If you participate, KlickerUZH uses your interaction activity, learning progress, response performance, scores, and feedback ratings. Results are shown only for groups of at least five, and student tables use fresh labels such as “Student 1” for each report. Lecturers do not see your name, email address, participant identifier, free-text responses, free-text feedback, or participation choice, and must not combine the results with other information to identify you.',
       include: 'Participate in learning analytics',
       includeDescription:
         'Only activity created from the time you choose this option is eligible for learning analytics.',
@@ -566,7 +566,7 @@ Other participants will only see your public **participant profile**, including 
       excludeDescription:
         'Your normal course use is unchanged. Your data is excluded from new learning analytics calculations and your participant-level learning analytics results are removed immediately.',
       changeDisclaimer:
-        'You can change this choice at any time while learning analytics is enabled for the course. If you stop and later participate again, only activity created after you participate again is eligible. Existing aggregate results are updated on the normal calculation schedule.',
+        'You can change this choice at any time while learning analytics is enabled. If a course manager disables and later re-enables learning analytics, your saved choice applies again and permitted normal course data may be recomputed. If you stop participating and later participate again, only activity created after you participate again is eligible; the period when you opted out is never backfilled. Existing aggregates are updated on the normal schedule. This choice is separate from research participation and does not provide consent for research.',
       choiceRequired:
         'Please choose whether you want to participate in learning analytics.',
       decideLater: 'Decide later',
@@ -2823,7 +2823,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       learningAnalyticsTooltip:
         'You can change this setting at any time. Only course managers can enable or disable learning analytics.',
       learningAnalyticsExplanation:
-        'Learning analytics can help students understand their learning and help lecturers improve course support. KlickerUZH uses interaction activity, progress, response performance, scores, and feedback ratings for this purpose. Lecturers see only learning-analytics results from students who choose to participate. Learning analytics does not show names, email addresses, participant identifiers, free-text responses, or students’ participation choices. Lecturers must not combine these results with other information to identify students.',
+        'Learning analytics can help identify where participating groups may need support and improve course activities and feedback for students. KlickerUZH uses interaction activity, progress, response performance, scores, and feedback ratings from students who choose to participate. Results require at least five contributing students; participant tables use fresh labels such as “Student 1” for each report and only coarse summaries. Learning analytics does not show names, email addresses, participant identifiers, free-text responses, free-text feedback, or participation choices. Do not try to identify students or combine results with other information for that purpose. Learning-analytics participation is separate from research consent.',
       learningAnalyticsDisableConfirmation:
         'Disable learning analytics for this course? The dashboards will be hidden immediately and all dedicated learning-analytics results will be deleted. Normal course activity, responses, feedback, grades, points, and XP remain available. Saved student choices are kept for a possible later reactivation.',
       groupCreationEnabled: 'Group Creation',

@@ -21,6 +21,7 @@ Non-trivial work gets a plan in `project/plans_wip/PLAN-<slug>.md` (existing fil
 6. **UI surface** — which app(s)? pages-router conventions vs chat island? New user-visible strings (de+en) and new `data-cy` hooks?
 7. **Test level + evidence** — per `klicker-testing-verification`: what will you run, what will CI cover, what browser evidence will you capture?
 8. **Seeds/fixtures** — do e2e tests need new fixtures? Then all relevant seed paths (dev/Cypress/Playwright) are in scope.
+9. **Learning-analytics and privacy impact** — does the change create, read, derive, export, or combine participant activity data? Classify each path as normal operational use, optional learning analytics, or research. If LA is in scope, specify the course and participant controls, prospective eligibility boundary, dedicated-data deletion, effective sample size after every filter, lecturer/export fields, free-text separation, and required privacy/terms/legal review. Never treat an LA choice as research consent.
 
 ## Discipline
 

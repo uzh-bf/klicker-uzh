@@ -7,13 +7,14 @@
 - Branch: `codex/learning-analytics-opt-out-plan`
 - Target: `v3`
 - Pull request: [#5198](https://github.com/uzh-bf/klicker-uzh/pull/5198)
-- Active stack branch: `codex/la-opt-out-deidentified-output`
-- Active stack target: `codex/la-opt-out-computation-eligibility`
-- Active stack pull request: [#5245](https://github.com/uzh-bf/klicker-uzh/pull/5245)
+- Active stack branch: `codex/la-opt-out-legal-cleanup`
+- Active stack target: `codex/la-opt-out-deidentified-output`
+- Active stack pull request: pending
 - Change type: `feat`
 - ADRs:
   - [ADR 0001](../docs/adr/0001-separate-course-and-participant-learning-analytics-controls.md)
   - [ADR 0002](../docs/adr/0002-deidentified-learning-analytics-output.md)
+  - [ADR 0003](../docs/adr/0003-purge-pre-control-learning-analytics-results.md)
 
 This plan and its implementation belong on the same draft pull request. Do not
 merge the plan without the implementation and finish gates.
@@ -639,3 +640,33 @@ Commit:
   4's branch. The rendered base/head metadata, draft state, and initial checks
   were verified.
 - Current: Slice 5 is under review in draft PR #5245.
+- 2026-07-30: Slice 6 started from the verified head of draft PR #5245.
+  Runtime course disable and the one-time historical cleanup now share one
+  explicit eleven-model dedicated-LA boundary. The global cleanup is dry-run by
+  default, contains no identifiers or response content, binds its write to an
+  aggregate-only before-state dump, uses the runtime course locks in one
+  serializable transaction, verifies representative operational counts, and
+  creates a replay-blocking receipt.
+- 2026-07-30: The German privacy notice and terms, English informational
+  translations, and German/English in-app explanations now distinguish normal
+  course use, optional LA, and research; explain benefits, data categories,
+  choice/re-enable lifecycle and delayed aggregate refresh; document N >= 5,
+  report-local labels, and explicit exclusions; and prohibit re-identification
+  or linking with free text.
+- 2026-07-30: Review replaced the optional course identifier on the destructive
+  cleanup helper with explicit course-scoped and global entry points. Focused
+  Opengrep ran 210 rules with zero findings. Fifteen GraphQL LA tests and nine
+  analytics-engine tests passed; the GraphQL run retained only the known local
+  Redis connection warnings.
+- 2026-07-30: Repository-wide `check:all` passed. Production builds passed for
+  GraphQL, Docs, Auth, Manage, and PWA. The first monorepo build completed 18
+  tasks before the shared macOS volume ran out of space in Chat's generated
+  standalone output; a cache-relocated cold retry became I/O-unresponsive, so
+  the changed applications were rebuilt sequentially with production settings.
+  Existing GraphQL, Docusaurus, Next, and page-size warnings remain unchanged.
+- 2026-07-30: Browser evidence covers both legal documents, English and German
+  lecturer and participant disclosures, desktop and mobile layouts, and the
+  updated legal acceptance date under `/private/tmp/la-opt-out-slice6/`.
+- Current: Slice 6 is verified and ready to publish. The rollout stays disabled,
+  the production cleanup has not run, and the legal text remains a draft until
+  recorded UZH data-protection/legal approval.

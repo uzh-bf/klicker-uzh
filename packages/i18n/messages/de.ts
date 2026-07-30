@@ -492,7 +492,7 @@ export default {
     delegatedAccess: 'Delegierter Zugriff',
     signedInAs: 'Sie sind bereits eingelogged als {username}',
     tosAgreement:
-      'Ich akzeptiere die KlickerUZH <tos></tos> (aktualisiert am 26.08.2023) und <privacy></privacy> (aktualisiert am 26.08.2023).',
+      'Ich akzeptiere die KlickerUZH <tos></tos> (aktualisiert am 30.07.2026) und <privacy></privacy> (aktualisiert am 30.07.2026).',
     tosAgreementRequired:
       'Bitte akzeptieren Sie die Nutzungsbedingungen und Datenschutzerklärung, bevor Sie sich einloggen.',
     termsOfService: 'Nutzungsbedingungen',
@@ -560,7 +560,7 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
     learningAnalytics: {
       title: 'Teilnahme an Learning Analytics',
       explanation:
-        'Learning Analytics kann Ihnen helfen, Ihr Lernen besser zu verstehen, und Dozierende dabei unterstützen, die Betreuung im Kurs zu verbessern. Wenn Sie teilnehmen, verwendet KlickerUZH Ihre Interaktionsaktivität, Ihren Lernfortschritt, Ihre Antwortleistung, Punktzahlen und Feedback-Bewertungen. Dozierende sehen nur de-identifizierte Learning-Analytics-Ergebnisse. Sie sehen weder Ihren Namen noch Ihre E-Mail-Adresse, Teilnehmenden-ID, Freitextantworten oder Teilnahmeentscheidung und dürfen die Ergebnisse nicht mit anderen Informationen kombinieren, um Sie zu identifizieren.',
+        'Learning Analytics kann Dozierenden helfen zu erkennen, wo teilnehmende Gruppen Unterstützung benötigen, und dadurch Kursaktivitäten und Rückmeldungen für Studierende zu verbessern. Wenn Sie teilnehmen, verwendet KlickerUZH Ihre Interaktionsaktivität, Ihren Lernfortschritt, Ihre Antwortleistung, Punktzahlen und Feedback-Bewertungen. Ergebnisse werden nur für Gruppen ab fünf Personen angezeigt; Tabellen verwenden für jeden Bericht neue Bezeichnungen wie «Student 1». Dozierende sehen weder Ihren Namen noch Ihre E-Mail-Adresse, Teilnehmenden-ID, Freitextantworten, Freitext-Feedback oder Teilnahmeentscheidung und dürfen die Ergebnisse nicht mit anderen Informationen kombinieren, um Sie zu identifizieren.',
       include: 'An Learning Analytics teilnehmen',
       includeDescription:
         'Nur Aktivitäten ab dem Zeitpunkt dieser Auswahl können für Learning Analytics berücksichtigt werden.',
@@ -568,7 +568,7 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
       excludeDescription:
         'Ihre normale Kursnutzung bleibt unverändert. Ihre Daten werden aus neuen Learning-Analytics-Berechnungen ausgeschlossen und Ihre teilnehmendenbezogenen Learning-Analytics-Ergebnisse sofort entfernt.',
       changeDisclaimer:
-        'Sie können diese Auswahl jederzeit ändern, solange Learning Analytics für den Kurs aktiviert ist. Wenn Sie die Teilnahme beenden und später erneut teilnehmen, können nur Aktivitäten ab der erneuten Teilnahme berücksichtigt werden. Bestehende aggregierte Ergebnisse werden im normalen Berechnungsrhythmus aktualisiert.',
+        'Sie können diese Auswahl jederzeit ändern, solange Learning Analytics aktiviert ist. Wenn Kursverantwortliche Learning Analytics deaktivieren und später erneut aktivieren, gilt Ihre gespeicherte Auswahl wieder und zulässige normale Kursdaten können neu berechnet werden. Wenn Sie Ihre Teilnahme beenden und später erneut teilnehmen, können nur Aktivitäten ab der erneuten Teilnahme berücksichtigt werden; der Zeitraum Ihrer Nichtteilnahme wird nie rückwirkend einbezogen. Bestehende Aggregate werden im normalen Rhythmus aktualisiert. Diese Auswahl ist von einer Forschungsteilnahme getrennt und stellt keine Einwilligung in Forschung dar.',
       choiceRequired:
         'Bitte wählen Sie, ob Sie an Learning Analytics teilnehmen möchten.',
       decideLater: 'Später entscheiden',
@@ -2872,7 +2872,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       learningAnalyticsTooltip:
         'Sie können diese Einstellung jederzeit ändern. Nur Kursverantwortliche können Learning Analytics aktivieren oder deaktivieren.',
       learningAnalyticsExplanation:
-        'Learning Analytics kann Studierende beim Verständnis ihres Lernens unterstützen und Dozierenden helfen, die Betreuung im Kurs zu verbessern. KlickerUZH verwendet dafür Interaktionsaktivität, Lernfortschritt, Antwortleistung, Punktzahlen und Feedback-Bewertungen. Dozierende sehen nur Learning-Analytics-Ergebnisse von Studierenden, die sich für eine Teilnahme entschieden haben. Learning Analytics zeigt keine Namen, E-Mail-Adressen, Teilnehmenden-IDs, Freitextantworten oder Teilnahmeentscheidungen. Dozierende dürfen diese Ergebnisse nicht mit anderen Informationen kombinieren, um Studierende zu identifizieren.',
+        'Learning Analytics kann zeigen, wo teilnehmende Gruppen Unterstützung benötigen, und dadurch Kursaktivitäten und Rückmeldungen für Studierende verbessern. KlickerUZH verwendet Interaktionsaktivität, Lernfortschritt, Antwortleistung, Punktzahlen und Feedback-Bewertungen von Studierenden, die teilnehmen. Ergebnisse benötigen mindestens fünf beitragende Studierende; Tabellen verwenden für jeden Bericht neue Bezeichnungen wie «Student 1» und nur grobe Zusammenfassungen. Learning Analytics zeigt keine Namen, E-Mail-Adressen, Teilnehmenden-IDs, Freitextantworten, Freitext-Feedback oder Teilnahmeentscheidungen. Versuchen Sie nicht, Studierende zu identifizieren oder Ergebnisse dafür mit anderen Informationen zu kombinieren. Die Teilnahme an Learning Analytics ist von einer Forschungseinwilligung getrennt.',
       learningAnalyticsDisableConfirmation:
         'Learning Analytics für diesen Kurs deaktivieren? Die Dashboards werden sofort ausgeblendet und alle dedizierten Learning-Analytics-Ergebnisse gelöscht. Normale Kursaktivitäten, Antworten, Feedback, Bewertungen, Punkte und XP bleiben erhalten. Gespeicherte Entscheidungen der Studierenden bleiben für eine mögliche spätere Reaktivierung bestehen.',
       groupCreationEnabled: 'Gruppenbildung möglich',

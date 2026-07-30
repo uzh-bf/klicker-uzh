@@ -97,6 +97,7 @@
     "script:invitations:prd": "CONFIG=prd ../../util/_run_with_infisical.sh --env prd tsx src/scripts/importParticipantInvitations.ts",
     "script:invitations:stg": "CONFIG=stg ../../util/_run_with_infisical.sh --env stg tsx src/scripts/importParticipantInvitations.ts",
     "script:prod": "NODE_ENV=production ../../util/_run_with_infisical.sh --env prd tsx",
+    "script:prod:cleanup-learning-analytics": "NODE_ENV=production ../../util/_run_with_infisical.sh --env prd tsx src/scripts/2026-07-30_cleanup_learning_analytics.ts",
     "script:stg": "NODE_ENV=stg ../../util/_run_with_infisical.sh --env stg tsx",
     "test": "vitest run",
     "test:local": "bash ./test/run-tests-local.sh",

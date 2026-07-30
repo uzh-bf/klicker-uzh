@@ -12,6 +12,7 @@ import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import { schema } from '../src/index.js'
 import type { ContextWithUser } from '../src/lib/context.js'
+import { readDedicatedLearningAnalyticsCountsForCourse } from '../src/lib/learningAnalyticsCleanup.js'
 import {
   getActivityAnalytics,
   getCourseActivityAnalytics,
@@ -411,6 +412,22 @@ describe('Learning analytics course control', () => {
       },
     })
 
+    await expect(
+      readDedicatedLearningAnalyticsCountsForCourse(prisma, course.id)
+    ).resolves.toEqual({
+      participantAnalytics: 1,
+      competencyAnalytics: 1,
+      aggregatedAnalytics: 1,
+      aggregatedCompetencyAnalytics: 1,
+      participantCourseAnalytics: 1,
+      aggregatedCourseAnalytics: 1,
+      participantPerformance: 1,
+      instancePerformance: 1,
+      activityPerformance: 1,
+      participantActivityPerformance: 2,
+      activityProgress: 1,
+    })
+
     await setCourseLearningAnalyticsEnabled(
       { courseId: course.id, isEnabled: false },
       ownerCtx
@@ -422,35 +439,21 @@ describe('Learning analytics course control', () => {
       )
     ).resolves.toMatchObject({ isLearningAnalyticsEnabled: false })
 
-    const dedicatedCounts = await Promise.all([
-      prisma.participantAnalytics.count({ where: { courseId: course.id } }),
-      prisma.aggregatedAnalytics.count({ where: { courseId: course.id } }),
-      prisma.competencyAnalytics.count({
-        where: { participantAnalytics: { courseId: course.id } },
-      }),
-      prisma.aggregatedCompetencyAnalytics.count({
-        where: { aggregatedAnalytics: { courseId: course.id } },
-      }),
-      prisma.participantCourseAnalytics.count({
-        where: { courseId: course.id },
-      }),
-      prisma.aggregatedCourseAnalytics.count({
-        where: { courseId: course.id },
-      }),
-      prisma.participantPerformance.count({ where: { courseId: course.id } }),
-      prisma.instancePerformance.count({ where: { courseId: course.id } }),
-      prisma.activityPerformance.count({ where: { courseId: course.id } }),
-      prisma.activityProgress.count({ where: { courseId: course.id } }),
-      prisma.participantActivityPerformance.count({
-        where: {
-          OR: [
-            { practiceQuizId: practiceQuiz.id },
-            { microLearningId: microLearning.id },
-          ],
-        },
-      }),
-    ])
-    expect(dedicatedCounts).toEqual(Array(11).fill(0))
+    await expect(
+      readDedicatedLearningAnalyticsCountsForCourse(prisma, course.id)
+    ).resolves.toEqual({
+      participantAnalytics: 0,
+      competencyAnalytics: 0,
+      aggregatedAnalytics: 0,
+      aggregatedCompetencyAnalytics: 0,
+      participantCourseAnalytics: 0,
+      aggregatedCourseAnalytics: 0,
+      participantPerformance: 0,
+      instancePerformance: 0,
+      activityPerformance: 0,
+      participantActivityPerformance: 0,
+      activityProgress: 0,
+    })
 
     await expect(
       prisma.participation.findUnique({
