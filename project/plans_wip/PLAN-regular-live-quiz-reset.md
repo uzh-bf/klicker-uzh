@@ -85,3 +85,11 @@ gamification rewards once.
   Independent specification and quality reviews passed after adding reset-time
   realm/generation fencing and serializing concurrent starts with a database
   row lock.
+- 2026-07-30: Task 6 completed in `94e0f817b` and `c93cc89af`. The
+  manage frontend now exposes ended regular Live Quiz reset only to owners and
+  administrators, uses the canonical reset summary and mutation, requires
+  explicit run-data and reward confirmations, and keeps structured failures
+  actionable in the modal. English/German copy, Prettier, the
+  `frontend-manage` typecheck and production build, and full repository checks
+  passed. Independent specification and quality reviews passed after separating
+  a successful reset from a later optional refresh failure.
