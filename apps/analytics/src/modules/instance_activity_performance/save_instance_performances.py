@@ -1,3 +1,6 @@
+from src.modules.learning_analytics_eligibility import learning_analytics_write_transaction
+
+
 def save_instance_performances(db, df_instance_performance, course_id, total_only=False):
     for _, row in df_instance_performance.iterrows():
         # extract values from dataframe
@@ -31,12 +34,15 @@ def save_instance_performances(db, df_instance_performance, course_id, total_onl
             }
         )
 
-        db.instanceperformance.upsert(
-            where={
-                "instanceId": row["instanceId"],
-            },
-            data={
-                "create": create_values,
-                "update": values,
-            },
-        )
+        with learning_analytics_write_transaction(db, course_id=course_id) as transaction:
+            if transaction is None:
+                continue
+            transaction.instanceperformance.upsert(
+                where={
+                    "instanceId": row["instanceId"],
+                },
+                data={
+                    "create": create_values,
+                    "update": values,
+                },
+            )

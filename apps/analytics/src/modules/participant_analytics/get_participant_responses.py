@@ -1,82 +1,71 @@
 import pandas as pd
-from datetime import date
-
-
-def map_details(detail, participantId):
-    courseId = detail["practiceQuiz"]["courseId"] if detail["practiceQuiz"] else detail["microLearning"]["courseId"]
-    return {**detail, "participantId": participantId, "courseId": courseId}
-
-
-def map_participants(participant):
-    participant_dict = participant.dict()
-    return list(
-        map(
-            lambda detail: map_details(detail, participant_dict["id"]),
-            participant_dict["detailQuestionResponses"],
-        )
-    )
-
-
-def convert_to_df(participants):
-    return pd.DataFrame([item for sublist in list(map(map_participants, participants)) for item in sublist])
-
-
-# Add the course start and end date to the dataframe for filtering of question response details later on
-def set_course_dates(detail):
-    if detail["practiceQuiz"] is not None:
-        course = detail["practiceQuiz"]["course"]
-        detail["course_start_date"] = course["startDate"]
-        detail["course_end_date"] = course["endDate"]
-    elif detail["microLearning"] is not None:
-        course = detail["microLearning"]["course"]
-        detail["course_start_date"] = course["startDate"]
-        detail["course_end_date"] = course["endDate"]
-    else:
-        # If the instance is not part of a practice quiz or microlearning, set the start date far into the future -> no analytics should be computed
-        detail["course_start_date"] = date(9999, 12, 31)
-        detail["course_end_date"] = date(9999, 12, 31)
-
-    return detail
+from src.modules.learning_analytics_eligibility import (
+    LEARNING_ANALYTICS_DISCLOSURE_VERSION,
+    filter_eligible_activity,
+    is_learning_analytics_rollout_enabled,
+)
 
 
 def get_participant_responses(db, start_date, end_date, verbose=False):
-    participant_response_details = db.participant.find_many(
+    if not is_learning_analytics_rollout_enabled():
+        return pd.DataFrame()
+
+    participations = db.participation.find_many(
+        where={
+            "learningAnalyticsStatus": "INCLUDED",
+            "learningAnalyticsDisclosureVersion": LEARNING_ANALYTICS_DISCLOSURE_VERSION,
+            "learningAnalyticsIncludedFrom": {"not": None},
+            "course": {"isLearningAnalyticsEnabled": True},
+        },
         include={
-            "detailQuestionResponses": {
-                "where": {"createdAt": {"gte": start_date, "lte": end_date}},
+            "course": True,
+            "detailResponses": {
+                "where": {
+                    "createdAt": {"gte": start_date, "lte": end_date},
+                    "elementInstance": {
+                        "elementType": {"not": "FREE_TEXT"},
+                    },
+                },
                 "include": {
-                    "practiceQuiz": {"include": {"course": True}},
-                    "microLearning": {"include": {"course": True}},
+                    "practiceQuiz": True,
+                    "microLearning": True,
                 },
             },
-        }
+        },
     )
 
     if verbose:
         # Print the first 5 question response details
         print(
-            "Found {} participants for the timespan from {} to {}".format(
-                len(participant_response_details), start_date, end_date
+            "Found {} eligible participations for the timespan from {} to {}".format(
+                len(participations), start_date, end_date
             )
         )
-        print(participant_response_details[0])
+        if participations:
+            print(participations[0])
 
-    # Convert the question response details to a pandas dataframe
-    df_details = convert_to_df(participant_response_details)
-
-    # Filter out the question response details that are not within the course dates and do not consider them for the analysis
-    if verbose:
-        print(
-            "Number of question response details before course date filtering:",
-            len(df_details),
+    details = []
+    for participation_model in participations:
+        participation = participation_model.dict()
+        course = participation["course"]
+        eligible_details = filter_eligible_activity(
+            participation["detailResponses"],
+            participation=participation,
+            is_course_enabled=course["isLearningAnalyticsEnabled"],
         )
+        for detail in eligible_details:
+            if detail["practiceQuiz"] is None and detail["microLearning"] is None:
+                continue
+            if not (course["startDate"] <= detail["createdAt"] <= course["endDate"]):
+                continue
+            details.append(
+                {
+                    **detail,
+                    "participantId": participation["participantId"],
+                    "courseId": participation["courseId"],
+                    "course_start_date": course["startDate"],
+                    "course_end_date": course["endDate"],
+                }
+            )
 
-    df_details = df_details.apply(set_course_dates, axis=1)
-
-    if len(df_details) > 0:
-        df_details = df_details[
-            (df_details["createdAt"] >= df_details["course_start_date"])
-            & (df_details["createdAt"] <= df_details["course_end_date"])
-        ]
-
-    return df_details
+    return pd.DataFrame(details)

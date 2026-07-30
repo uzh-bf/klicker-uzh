@@ -20,6 +20,7 @@ from src.modules.participant_performance.compute_performance_levels import (
 from src.modules.participant_performance.save_participant_performance import (
     save_participant_performance,
 )
+from src.modules.eligible_response_details import get_eligible_course_activities
 
 db = Prisma()
 db.connect()
@@ -36,9 +37,18 @@ for idx, course in df_courses.iterrows():
     course_id = course["id"]
     print("Processing course", idx, "of", len(df_courses), "with id", course_id)
 
-    # fetch all question responses linked to this course
-    question_responses = db.questionresponse.find_many(where={"courseId": course_id})
-    df_responses = pd.DataFrame(list(map(lambda x: x.dict(), question_responses)))
+    # Rebuild response-level counters from eligible response details. The
+    # cumulative QuestionResponse rows combine activity from before and after a
+    # participant's inclusion boundary and cannot be safely filtered.
+    _, practice_quizzes, microlearnings = get_eligible_course_activities(db, course_id)
+    responses = [
+        response
+        for activity in practice_quizzes + microlearnings
+        for stack in activity["stacks"]
+        for element in stack["elements"]
+        for response in element["responses"]
+    ]
+    df_responses = pd.DataFrame(responses)
 
     # if no responses are linked to the course, skip the iteration
     if df_responses.empty:

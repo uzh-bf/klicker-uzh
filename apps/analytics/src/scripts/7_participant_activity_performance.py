@@ -41,7 +41,7 @@ for idx, base_course in df_courses.iterrows():
         continue
 
     # aggregate participant activity performance data and store in the corresponding database table
-    agg_participant_activity_performance(db, df_responses, df_activities, participant_ids)
+    agg_participant_activity_performance(db, df_responses, df_activities, participant_ids, base_course["id"])
 
 
 # Disconnect from the database

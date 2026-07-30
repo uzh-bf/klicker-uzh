@@ -163,6 +163,7 @@ type ActivityPerformance {
   activityName: String!
   activityType: ActivityType!
   id: Int!
+  participantCount: Int!
   rates: PerformanceRates!
 }
 
@@ -184,6 +185,7 @@ type ActivityQuizAnalytics {
   lastErrorRate: Float
   lastPartialRate: Float
   numberOfAnswers: Int!
+  participantCount: Int!
   totalCorrectRate: Float!
   totalErrorRate: Float!
   totalPartialRate: Float!

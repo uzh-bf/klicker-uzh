@@ -1,3 +1,6 @@
+from src.modules.learning_analytics_eligibility import learning_analytics_write_transaction
+
+
 def save_microlearning_progress(
     db,
     course_participants,
@@ -15,7 +18,10 @@ def save_microlearning_progress(
     creation_values["course"] = {"connect": {"id": course_id}}
     creation_values["microLearning"] = {"connect": {"id": ml_id}}
 
-    db.activityprogress.upsert(
-        where={"microLearningId": ml_id},
-        data={"create": creation_values, "update": values},
-    )
+    with learning_analytics_write_transaction(db, course_id=course_id) as transaction:
+        if transaction is None:
+            return
+        transaction.activityprogress.upsert(
+            where={"microLearningId": ml_id},
+            data={"create": creation_values, "update": values},
+        )

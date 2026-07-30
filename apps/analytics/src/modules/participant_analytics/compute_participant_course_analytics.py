@@ -3,6 +3,10 @@ from datetime import datetime
 from .compute_correctness import compute_correctness
 from .aggregate_analytics import aggregate_analytics
 from .save_participant_analytics import save_participant_analytics
+from src.modules.learning_analytics_eligibility import (
+    LEARNING_ANALYTICS_DISCLOSURE_VERSION,
+    filter_eligible_activity,
+)
 
 
 def compute_participant_course_analytics(db, df_courses, verbose=False):
@@ -14,52 +18,53 @@ def compute_participant_course_analytics(db, df_courses, verbose=False):
         course_id = course["id"]
         course_start_date = course["startDate"]
         course_end_date = course["endDate"]
-        course_id = course["id"]
 
-        # Find all participants and corresponding linked responses through the participations
+        # Find currently included participations and filter each detail response
+        # against that participation's prospective inclusion boundary.
         participations = db.participation.find_many(
-            where={"courseId": course_id},
+            where={
+                "courseId": course_id,
+                "learningAnalyticsStatus": "INCLUDED",
+                "learningAnalyticsDisclosureVersion": LEARNING_ANALYTICS_DISCLOSURE_VERSION,
+                "learningAnalyticsIncludedFrom": {"not": None},
+            },
             include={
                 "detailResponses": {
                     "where": {
                         "createdAt": {
                             "gte": course_start_date,
                             "lte": course_end_date,
-                        }
+                        },
+                        "elementInstance": {
+                            "elementType": {"not": "FREE_TEXT"},
+                        },
                     },
                 },
-                "responses": True,
             },
         )
 
-        # Create a dataframe containing all detail responses
-        participations_dict = list(map(lambda x: x.dict(), participations))
-        details_dict = list(
-            map(
-                lambda x: x["detailResponses"],
-                participations_dict,
+        details = []
+        for participation_model in participations:
+            participation = participation_model.dict()
+            details.extend(
+                {
+                    **detail,
+                    "participantId": participation["participantId"],
+                    "courseId": course_id,
+                }
+                for detail in filter_eligible_activity(
+                    participation["detailResponses"],
+                    participation=participation,
+                    is_course_enabled=True,
+                )
             )
-        )
-        responses_dict = list(map(lambda x: x["responses"], participations_dict))
-
-        details = [item for sublist in details_dict for item in sublist]
-        responses = [item for sublist in responses_dict for item in sublist]
-        if len(details) == 0 or len(responses) == 0:
+        if len(details) == 0:
             courses_without_responses += 1
-            print("No detail responses or response entries found for course {}".format(course_id))
+            print("No eligible detail responses found for course {}".format(course_id))
             continue
 
-        # Create pandas dataframe containing all question responses and details
+        # Create a pandas dataframe containing eligible response details.
         df_details = pd.DataFrame(details)
-        df_responses = pd.DataFrame(responses)
-        df_responses = df_responses[
-            [
-                "courseId",
-                "participantId",
-                "firstResponseCorrectness",
-                "lastResponseCorrectness",
-            ]
-        ]
 
         # Add the course start and end dates to the dataframe
         df_details["course_start_date"] = course_start_date
@@ -76,7 +81,7 @@ def compute_participant_course_analytics(db, df_courses, verbose=False):
             continue
 
         # Compute participant analytics (score/xp counts and correctness statistics)
-        df_analytics = aggregate_analytics(df_details, df_responses)
+        df_analytics = aggregate_analytics(df_details, include_first_last=True)
 
         # Save the aggreagted analytics into the database
         end_curr_date = datetime.now().strftime("%Y-%m-%d") + "T23:59:59.999Z"

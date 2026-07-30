@@ -43,6 +43,15 @@ participant-level deletion
 (`packages/graphql/src/services/participants.ts:getOwnLearningAnalyticsChoice`;
 `packages/graphql/src/services/participants.ts:setOwnLearningAnalyticsChoice`).
 
+Analytics queries that aggregate operational detail rows apply the same current
+status, disclosure-version, and prospective inclusion-time boundary before
+counting responses or feedback. They select response metadata only, never the
+response body, and omit free-text elements from LA entirely. Reads of
+participant-level derived rows also require a currently eligible participation;
+activity aggregates expose their persisted effective participant count
+(`packages/graphql/src/services/analytics.ts:filterEligibleLearningAnalyticsActivity`;
+`packages/graphql/src/services/analytics.ts:getActivityAnalytics`).
+
 ## Layering contract
 
 - `schema/*.ts` — Pothos object types + root `query.ts`/`mutation.ts`/`subscription.ts`. Resolvers delegate immediately: `resolve: (_, args, ctx) => CourseService.deleteCourse(args, ctx)`.

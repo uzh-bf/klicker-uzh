@@ -1,27 +1,15 @@
 import pandas as pd
+from src.modules.eligible_response_details import get_eligible_course_activities
 
 
 def prepare_participant_activity_data(db, course_id: str):
-    # fetch all asynchronous activities in the course alongside their question responses
-    course = db.course.find_first(
-        where={
-            "id": course_id,
-        },
-        include={
-            "practiceQuizzes": {
-                "where": {"status": {"in": ["PUBLISHED", "ENDED", "GRADED"]}},
-                "include": {"stacks": {"include": {"elements": {"include": {"responses": True}}}}},
-            },
-            "microLearnings": {
-                "where": {"status": {"in": ["PUBLISHED", "ENDED", "GRADED"]}},
-                "include": {"stacks": {"include": {"elements": {"include": {"responses": True}}}}},
-            },
-            "participations": {"include": {"participant": True}},
-        },
+    course_dict, practice_quizzes, microlearnings = get_eligible_course_activities(
+        db,
+        course_id,
+        activity_statuses=["PUBLISHED", "ENDED", "GRADED"],
     )
-
-    # convert prisma object to python dictionary
-    course_dict = course.dict()
+    if course_dict is None:
+        return pd.DataFrame(), pd.DataFrame(), []
 
     # combine the activities into a single dataframe for easier processing
     df_activities = pd.concat(
@@ -46,7 +34,7 @@ def prepare_participant_activity_data(db, course_id: str):
 
     # extract a list of all responses and add the activityId as a column, drop the stackId
     responses = []
-    for activity in course_dict["practiceQuizzes"] + course_dict["microLearnings"]:
+    for activity in practice_quizzes + microlearnings:
         for stack in activity["stacks"]:
             for element in stack["elements"]:
                 for response in element["responses"]:

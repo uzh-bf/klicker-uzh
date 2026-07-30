@@ -2,7 +2,7 @@ import pandas as pd
 from .save_participant_activity_performance import save_participant_activity_performance
 
 
-def agg_participant_activity_performance(db, df_responses, df_activities, participant_ids):
+def agg_participant_activity_performance(db, df_responses, df_activities, participant_ids, course_id):
     # group the responses by participantId and activityId, sum up the totalScore and add a count for the number of responses
     df_responses_grouped = (
         df_responses.groupby(["participantId", "activityId"])
@@ -78,4 +78,4 @@ def agg_participant_activity_performance(db, df_responses, df_activities, partic
                 )
 
         # store the results in the database
-        save_participant_activity_performance(db, df_activity_performance, activity["type"])
+        save_participant_activity_performance(db, df_activity_performance, activity["type"], course_id)

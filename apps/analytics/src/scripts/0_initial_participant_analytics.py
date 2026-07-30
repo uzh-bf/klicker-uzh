@@ -16,6 +16,9 @@ from src.modules.participant_analytics.compute_participant_analytics import (
 from src.modules.participant_analytics.compute_participant_course_analytics import (
     compute_participant_course_analytics,
 )
+from src.modules.participant_course_analytics.get_running_past_courses import (
+    get_running_past_courses,
+)
 
 db = Prisma()
 db.connect()
@@ -79,17 +82,7 @@ if compute_monthly:
 # Fetch all ongoing / past courses
 if compute_course:
     curr_date = datetime.now().strftime("%Y-%m-%d")
-    courses = db.course.find_many(
-        where={
-            # Incremental scripts can add this statement to reduce the amount of required computations
-            # 'endDate': {
-            #     'gt': datetime.now().strftime('%Y-%m-%d') + 'T00:00:00.000Z'
-            # }
-            "startDate": {"lte": curr_date + "T23:59:59.999Z"},
-        }
-    )
-
-    df_courses = pd.DataFrame(list(map(lambda x: x.dict(), courses)))
+    df_courses = get_running_past_courses(db)
     print("Found {} courses with a start date before {}".format(len(df_courses), curr_date))
 
     courses_without_responses = compute_participant_course_analytics(db, df_courses, verbose)

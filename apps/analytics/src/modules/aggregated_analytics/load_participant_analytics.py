@@ -1,4 +1,8 @@
 import pandas as pd
+from src.modules.learning_analytics_eligibility import (
+    LEARNING_ANALYTICS_DISCLOSURE_VERSION,
+    is_learning_analytics_rollout_enabled,
+)
 
 
 def convert_to_df(analytics):
@@ -11,9 +15,26 @@ def convert_to_df(analytics):
 
 
 def load_participant_analytics(db, timestamp, analytics_type, verbose=False):
+    if not is_learning_analytics_rollout_enabled():
+        return pd.DataFrame()
+
     participant_analytics = db.participantanalytics.find_many(
         where={"timestamp": timestamp, "type": analytics_type},
     )
+    eligible_participations = db.participation.find_many(
+        where={
+            "learningAnalyticsStatus": "INCLUDED",
+            "learningAnalyticsDisclosureVersion": LEARNING_ANALYTICS_DISCLOSURE_VERSION,
+            "learningAnalyticsIncludedFrom": {"not": None},
+            "course": {"isLearningAnalyticsEnabled": True},
+        }
+    )
+    eligible_keys = {(participation.courseId, participation.participantId) for participation in eligible_participations}
+    participant_analytics = [
+        analytics
+        for analytics in participant_analytics
+        if (analytics.courseId, analytics.participantId) in eligible_keys
+    ]
 
     if verbose:
         # Print the first participant analytics

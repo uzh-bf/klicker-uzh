@@ -16,16 +16,19 @@ def compute_correctness_columns(df_element_instances, row):
     ]
     response = row["response"]
     options = element_instance["options"]
+    return compute_response_correctness(element_instance["type"], options, response)
 
-    if element_instance["type"] == "FLASHCARD" or element_instance["type"] == "CONTENT":
+
+def compute_response_correctness(element_type, options, response):
+    if element_type == "FLASHCARD" or element_type == "CONTENT":
         return None
 
-    elif element_instance["type"] == "SC":
+    elif element_type == "SC":
         selected_choice = response["choices"][0]
         correct_choice = next((choice["ix"] for choice in options["choices"] if choice["correct"]), None)
         return "CORRECT" if selected_choice == correct_choice else "INCORRECT"
 
-    elif element_instance["type"] == "MC" or element_instance["type"] == "KPRIM":
+    elif element_type == "MC" or element_type == "KPRIM":
         selected_choices = response["choices"]
         correct_choices = [choice["ix"] for choice in options["choices"] if choice["correct"]]
         available_choices = len(options["choices"])
@@ -36,7 +39,7 @@ def compute_correctness_columns(df_element_instances, row):
             [1 for i in range(available_choices) if selected_choices_array[i] != correct_choices_array[i]]
         )
 
-        if element_instance["type"] == "MC":
+        if element_type == "MC":
             correctness = max(-2 * hamming_distance / available_choices + 1, 0)
             if correctness == 1:
                 return "CORRECT"
@@ -44,10 +47,10 @@ def compute_correctness_columns(df_element_instances, row):
                 return "INCORRECT"
             else:
                 return "PARTIAL"
-        elif element_instance["type"] == "KPRIM":
+        elif element_type == "KPRIM":
             return "CORRECT" if hamming_distance == 0 else "PARTIAL" if hamming_distance == 1 else "INCORRECT"
 
-    elif element_instance["type"] == "NUMERICAL":
+    elif element_type == "NUMERICAL":
         response_value = float(response["value"])
 
         if "solutionRanges" in options:
@@ -77,21 +80,12 @@ def compute_correctness_columns(df_element_instances, row):
 
         return "INCORRECT"
 
-    elif element_instance["type"] == "FREE_TEXT":
-        # if no sample solution is specified, automatically grade as correct
-        if "solutions" not in options:
-            return "CORRECT"
-
-        # otherwise, check if the response (ignoring capitalization) is included in the list of solutions
-        response_value = response["value"]
-        solutions = list(map(lambda solution: solution.strip().lower(), options["solutions"]))
-        if response_value.strip().lower() in solutions:
-            return "CORRECT"
-
-        return "INCORRECT"
+    elif element_type == "FREE_TEXT":
+        # Free-text content must not enter learning-analytics computation.
+        return None
 
     else:
-        raise ValueError("Unknown element type: {}".format(element_instance["type"]))
+        raise ValueError("Unknown element type: {}".format(element_type))
 
 
 def compute_correctness(db, df_details, verbose=False):
@@ -123,6 +117,7 @@ def compute_correctness(db, df_details, verbose=False):
             "elementInstanceId",
             "participantId",
             "courseId",
+            "createdAt",
         ]
     ]
 

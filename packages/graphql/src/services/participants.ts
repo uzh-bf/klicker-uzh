@@ -367,9 +367,11 @@ export async function setOwnLearningAnalyticsChoice(
         data: buildLearningAnalyticsChoiceData(status),
       })
 
-      if (status === DB.LearningAnalyticsParticipationStatus.EXCLUDED) {
-        await deleteParticipantLearningAnalytics(prisma, courseId, ctx.user.sub)
-      }
+      // A real choice transition establishes a new eligibility boundary.
+      // Remove participant-level results from the previous boundary even when
+      // the participant renews inclusion after a disclosure change. Aggregate
+      // rows intentionally remain until the next normal calculation.
+      await deleteParticipantLearningAnalytics(prisma, courseId, ctx.user.sub)
 
       return {
         courseId,

@@ -1,5 +1,6 @@
 import pandas as pd
 import statistics
+from src.modules.learning_analytics_eligibility import learning_analytics_write_transaction
 
 
 def compute_weekday_activity(db, course):
@@ -66,32 +67,35 @@ def compute_weekday_activity(db, course):
     activity_sunday = single_weekday_activity(sundays, df_daily)
 
     # save the result to the database
-    db.aggregatedcourseanalytics.upsert(
-        where={"courseId": course_id},
-        data={
-            "create": {
-                "courseParticipantCount": total_course_participants,
-                "activityMonday": activity_monday,
-                "activityTuesday": activity_tuesday,
-                "activityWednesday": activity_wednesday,
-                "activityThursday": activity_thursday,
-                "activityFriday": activity_friday,
-                "activitySaturday": activity_saturday,
-                "activitySunday": activity_sunday,
-                "course": {"connect": {"id": course_id}},
+    with learning_analytics_write_transaction(db, course_id=course_id) as transaction:
+        if transaction is None:
+            return None
+        transaction.aggregatedcourseanalytics.upsert(
+            where={"courseId": course_id},
+            data={
+                "create": {
+                    "courseParticipantCount": total_course_participants,
+                    "activityMonday": activity_monday,
+                    "activityTuesday": activity_tuesday,
+                    "activityWednesday": activity_wednesday,
+                    "activityThursday": activity_thursday,
+                    "activityFriday": activity_friday,
+                    "activitySaturday": activity_saturday,
+                    "activitySunday": activity_sunday,
+                    "course": {"connect": {"id": course_id}},
+                },
+                "update": {
+                    "courseParticipantCount": total_course_participants,
+                    "activityMonday": activity_monday,
+                    "activityTuesday": activity_tuesday,
+                    "activityWednesday": activity_wednesday,
+                    "activityThursday": activity_thursday,
+                    "activityFriday": activity_friday,
+                    "activitySaturday": activity_saturday,
+                    "activitySunday": activity_sunday,
+                },
             },
-            "update": {
-                "courseParticipantCount": total_course_participants,
-                "activityMonday": activity_monday,
-                "activityTuesday": activity_tuesday,
-                "activityWednesday": activity_wednesday,
-                "activityThursday": activity_thursday,
-                "activityFriday": activity_friday,
-                "activitySaturday": activity_saturday,
-                "activitySunday": activity_sunday,
-            },
-        },
-    )
+        )
 
 
 def single_weekday_activity(weekdays, df_daily):

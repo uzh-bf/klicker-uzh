@@ -2,6 +2,12 @@
 
 ## 2026-07-30
 
+- **Update** — Documented learning-analytics computation eligibility,
+  prospective detail-row rebuilding, free-text exclusion, write-time rechecks,
+  and effective participant counts in [Domain Model](./domain-model.md),
+  [Data & Migrations](./data-and-migrations.md),
+  [GraphQL API Layer](./graphql-api-layer.md), and [Testing](./testing.md).
+
 - **Update** — Documented the ADMIN-only learning-analytics course control,
   immediate read gate, and dedicated-data cleanup in [Domain Model](./domain-model.md)
   and [GraphQL API Layer](./graphql-api-layer.md).

@@ -223,6 +223,8 @@ model InstancePerformance {
 model ActivityPerformance {
   id Int @id @default(autoincrement())
 
+  participantCount Int @default(0)
+
   firstErrorRate   Float? @db.Real // fraction of wrong answers to instances in this activity (first attempt, PQ only)
   firstPartialRate Float? @db.Real // fraction of partially correct answers to instances in this activity (first attempt, PQ only)
   firstCorrectRate Float? @db.Real // fraction of correct answers to instances in this activity (first attempt, PQ only)

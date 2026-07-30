@@ -484,6 +484,36 @@ describe('Learning analytics participant choice', () => {
       },
     })
     const ctx = participantContext(participant.id)
+    const timestamp = new Date('2026-07-01T00:00:00.000Z')
+    await prisma.participantAnalytics.create({
+      data: {
+        type: AnalyticsType.DAILY,
+        timestamp,
+        trialsCount: 1,
+        responseCount: 1,
+        totalScore: 1,
+        totalPoints: 1,
+        totalXp: 1,
+        meanCorrectCount: 1,
+        meanPartialCorrectCount: 0,
+        meanWrongCount: 0,
+        participantId: participant.id,
+        courseId: course.id,
+      },
+    })
+    await prisma.aggregatedAnalytics.create({
+      data: {
+        type: AnalyticsType.DAILY,
+        timestamp,
+        responseCount: 1,
+        participantCount: 1,
+        totalScore: 1,
+        totalPoints: 1,
+        totalXp: 1,
+        totalElementsAvailable: 1,
+        courseId: course.id,
+      },
+    })
 
     await expect(
       getOwnLearningAnalyticsChoice({ courseId: course.id }, ctx)
@@ -515,5 +545,13 @@ describe('Learning analytics participant choice', () => {
       LEARNING_ANALYTICS_DISCLOSURE_VERSION
     )
     expect(renewed.learningAnalyticsChoiceEvents).toHaveLength(2)
+    await expect(
+      prisma.participantAnalytics.count({
+        where: { courseId: course.id, participantId: participant.id },
+      })
+    ).resolves.toBe(0)
+    await expect(
+      prisma.aggregatedAnalytics.count({ where: { courseId: course.id } })
+    ).resolves.toBe(1)
   })
 })

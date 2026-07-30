@@ -13,7 +13,8 @@
     "main": "../../util/_run_with_infisical.sh --env dev uv run python -m src.main",
     "script": "../../util/_run_with_infisical.sh --env dev uv run python -m",
     "script:prod": "../../util/_run_with_infisical.sh --env prd uv run python -m",
-    "script:qa": "../../util/_run_with_infisical.sh --env stg uv run python -m"
+    "script:qa": "../../util/_run_with_infisical.sh --env stg uv run python -m",
+    "test": "uv run python -m unittest discover -s tests"
   },
   "engines": {
     "node": "=24"

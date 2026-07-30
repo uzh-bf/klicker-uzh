@@ -52,7 +52,8 @@ for idx, course in df_courses.iterrows():
             continue
 
         # compute the activity performance by aggregating the all instance performances
-        activity_performance = agg_activity_performance(df_instance_performance)
+        participant_count = len({response["participantId"] for response in quiz["responses"]})
+        activity_performance = agg_activity_performance(df_instance_performance, participant_count)
 
         # save instance performance data
         save_instance_performances(db, df_instance_performance, course_id)
@@ -69,7 +70,8 @@ for idx, course in df_courses.iterrows():
             continue
 
         # compute the activity performance by aggregating the all instance performances
-        activity_performance = agg_activity_performance(df_instance_performance)
+        participant_count = len({response["participantId"] for response in ml["responses"]})
+        activity_performance = agg_activity_performance(df_instance_performance, participant_count)
 
         # save instance performance data
         save_instance_performances(db, df_instance_performance, course_id, total_only=True)

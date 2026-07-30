@@ -1,5 +1,9 @@
+from src.modules.learning_analytics_eligibility import learning_analytics_write_transaction
+
+
 def save_activity_performance(db, activity_performance, course_id, practice_quiz_id=None, microlearning_id=None):
     values = {
+        "participantCount": activity_performance.participantCount,
         "totalErrorRate": activity_performance.totalErrorRate,
         "totalPartialRate": activity_performance.totalPartialRate,
         "totalCorrectRate": activity_performance.totalCorrectRate,
@@ -33,7 +37,10 @@ def save_activity_performance(db, activity_performance, course_id, practice_quiz
             "Either practice_quiz_id or microlearning_id must be provided for activity performance creation/update"
         )
 
-    db.activityperformance.upsert(
-        where=where_clause,
-        data={"create": create_values, "update": values},
-    )
+    with learning_analytics_write_transaction(db, course_id=course_id) as transaction:
+        if transaction is None:
+            return
+        transaction.activityperformance.upsert(
+            where=where_clause,
+            data={"create": create_values, "update": values},
+        )
