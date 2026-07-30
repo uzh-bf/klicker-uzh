@@ -5,6 +5,7 @@ import {
   PermissionLevel,
   PrismaClient,
   PublicationStatus,
+  TimelineEntryType,
 } from '@klicker-uzh/prisma/client'
 import type { ElementData, ElementInstanceResults } from '@klicker-uzh/types'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
@@ -18,10 +19,15 @@ import {
   ResetLiveQuizDocument,
 } from '../src/ops.js'
 import {
+  clearLiveQuizExecutionCache,
   getLiveQuizResetSummary,
+  handleCleanupLiveQuizResetCache,
   resetLiveQuiz,
 } from '../src/services/liveQuizReset.js'
-import { startLiveQuiz } from '../src/services/liveQuizzes.js'
+import {
+  handlePublishScheduledLiveQuiz,
+  startLiveQuiz,
+} from '../src/services/liveQuizzes.js'
 import {
   initializePrisma,
   seedCourse,
@@ -91,6 +97,17 @@ describe('live quiz reset summary', () => {
     const audit = vi.mocked(ctx.tasks.createAuditLogEntry.runNoWait)
     const cleanup = vi.mocked(ctx.tasks.cleanupLiveQuizResetCache.runNoWait)
     return { audit, cleanup }
+  }
+
+  function globalHandlerContext(ctx: ContextWithUser) {
+    return {
+      hatchet: ctx.hatchet,
+      pubSub: ctx.pubSub,
+      emitter: ctx.emitter,
+      redisExec: ctx.redisExec,
+      redisAssessmentExec: ctx.redisAssessmentExec,
+      prisma: ctx.prisma,
+    }
   }
 
   it('summarizes every destructive category for an eligible regular quiz', async () => {
@@ -1122,6 +1139,23 @@ describe('live quiz reset summary', () => {
     expect(auditPayload).toContain('"outcome":"SUCCESS"')
     expect(auditPayload).not.toContain(fixture.participantId)
     expect(auditPayload).not.toContain('synthetic response content')
+    expect(auditEvents).toEqual([
+      expect.objectContaining({
+        event: 'LIVE_QUIZ_RESET_INITIATED',
+        operationId: expect.any(String),
+        occurredAt: expect.any(String),
+        sequence: 1,
+      }),
+      expect.objectContaining({
+        event: 'LIVE_QUIZ_RESET_COMPLETED',
+        operationId: expect.any(String),
+        occurredAt: expect.any(String),
+        sequence: 2,
+      }),
+    ])
+    expect(auditEvents[1]!.operationId).toBe(auditEvents[0]!.operationId)
+    expect(Date.parse(auditEvents[0]!.occurredAt)).not.toBeNaN()
+    expect(Date.parse(auditEvents[1]!.occurredAt)).not.toBeNaN()
   })
 
   it.each([
@@ -1294,7 +1328,7 @@ describe('live quiz reset summary', () => {
       'stale'
     )
     const { cleanup } = mockResetDelivery(userOneCtx)
-    vi.spyOn(userOneCtx.redisExec, 'del').mockRejectedValueOnce(
+    vi.spyOn(userOneCtx.redisExec, 'scan').mockRejectedValueOnce(
       new Error('synthetic Redis outage')
     )
 
@@ -1304,6 +1338,11 @@ describe('live quiz reset summary', () => {
     expect(cleanup).toHaveBeenCalledWith([
       {
         liveQuizId: fixture.liveQuizId,
+        isAssessmentEnabled: false,
+        cacheGenerationSnapshot: {
+          status: 'AVAILABLE',
+          generation: null,
+        },
         weeklyTimelineRecomputations: [
           expect.objectContaining({
             participationId: fixture.participationId,
@@ -1322,12 +1361,21 @@ describe('live quiz reset summary', () => {
     )
     await makeFixtureInstanceResettable(fixture.instanceId)
     const { cleanup } = mockResetDelivery(userOneCtx)
-    vi.spyOn(prisma.timelineEntry, 'aggregate').mockRejectedValueOnce(
-      new Error('synthetic historical aggregation outage')
-    )
+    const failingPrisma = prisma.$extends({
+      query: {
+        timelineEntry: {
+          aggregate() {
+            throw new Error('synthetic historical aggregation outage')
+          },
+        },
+      },
+    })
 
     await expect(
-      resetLiveQuiz({ id: fixture.liveQuizId }, userOneCtx)
+      resetLiveQuiz(
+        { id: fixture.liveQuizId },
+        { ...userOneCtx, prisma: failingPrisma as unknown as PrismaClient }
+      )
     ).resolves.toMatchObject({ outcome: 'SUCCESS' })
     expect(cleanup).toHaveBeenCalledTimes(1)
   })
@@ -1403,7 +1451,7 @@ describe('live quiz reset summary', () => {
       userOneCtx
     )
     await userOneCtx.redisExec.set(`lq:${quiz.id}:synthetic`, 'stale')
-    vi.spyOn(userOneCtx.redisExec, 'del').mockRejectedValueOnce(
+    vi.spyOn(userOneCtx.redisExec, 'scan').mockRejectedValueOnce(
       new Error('synthetic clean-start outage')
     )
 
@@ -1416,5 +1464,216 @@ describe('live quiz reset summary', () => {
     await expect(
       userOneCtx.redisExec.get(`lq:${quiz.id}:synthetic`)
     ).resolves.toBe('stale')
+  })
+
+  it('fences delayed cleanup from a newly started manual run', async () => {
+    const quiz = await seedLiveQuiz(
+      { elements: [], status: PublicationStatus.DRAFT },
+      userOneCtx
+    )
+    const previousGeneration = uuidv4()
+    await userOneCtx.redisExec.hset(`lq:${quiz.id}:meta`, {
+      namespace: quiz.namespace,
+      cacheGeneration: previousGeneration,
+    })
+
+    await startLiveQuiz({ id: quiz.id }, userOneCtx)
+    const newGeneration = await userOneCtx.redisExec.hget(
+      `lq:${quiz.id}:meta`,
+      'cacheGeneration'
+    )
+    expect(newGeneration).toEqual(expect.any(String))
+    expect(newGeneration).not.toBe(previousGeneration)
+    await userOneCtx.redisExec.set(`lq:${quiz.id}:new-run`, 'preserved')
+
+    await clearLiveQuizExecutionCache({
+      liveQuizId: quiz.id,
+      redis: userOneCtx.redisExec,
+      cacheGenerationSnapshot: {
+        status: 'AVAILABLE',
+        generation: previousGeneration,
+      },
+    })
+
+    await expect(
+      userOneCtx.redisExec.hget(`lq:${quiz.id}:meta`, 'cacheGeneration')
+    ).resolves.toBe(newGeneration)
+    await expect(
+      userOneCtx.redisExec.get(`lq:${quiz.id}:new-run`)
+    ).resolves.toBe('preserved')
+  })
+
+  it('initializes scheduled starts with a fresh generation after stale cleanup', async () => {
+    const quiz = await seedLiveQuiz(
+      { elements: [], status: PublicationStatus.SCHEDULED },
+      userOneCtx
+    )
+    await prisma.liveQuiz.update({
+      where: { id: quiz.id },
+      data: { availableFrom: new Date(Date.now() - 60_000) },
+    })
+    await userOneCtx.redisExec.set(`lq:${quiz.id}:synthetic`, 'stale')
+
+    await expect(
+      handlePublishScheduledLiveQuiz(
+        { liveQuizId: quiz.id },
+        globalHandlerContext(userOneCtx),
+        { logger: { info: vi.fn() } } as never
+      )
+    ).resolves.toBe(true)
+    await expect(
+      prisma.liveQuiz.findUniqueOrThrow({ where: { id: quiz.id } })
+    ).resolves.toMatchObject({ status: PublicationStatus.PUBLISHED })
+    await expect(
+      userOneCtx.redisExec.get(`lq:${quiz.id}:synthetic`)
+    ).resolves.toBeNull()
+    await expect(
+      userOneCtx.redisExec.hget(`lq:${quiz.id}:meta`, 'cacheGeneration')
+    ).resolves.toEqual(expect.any(String))
+  })
+
+  it('does not publish a scheduled quiz when stale cleanup fails', async () => {
+    const quiz = await seedLiveQuiz(
+      { elements: [], status: PublicationStatus.SCHEDULED },
+      userOneCtx
+    )
+    await prisma.liveQuiz.update({
+      where: { id: quiz.id },
+      data: { availableFrom: new Date(Date.now() - 60_000) },
+    })
+    vi.spyOn(userOneCtx.redisExec, 'scan').mockRejectedValueOnce(
+      new Error('synthetic scheduled clean-start outage')
+    )
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    await expect(
+      handlePublishScheduledLiveQuiz(
+        { liveQuizId: quiz.id },
+        globalHandlerContext(userOneCtx),
+        { logger: { info: vi.fn() } } as never
+      )
+    ).rejects.toThrow('synthetic scheduled clean-start outage')
+    await expect(
+      prisma.liveQuiz.findUniqueOrThrow({ where: { id: quiz.id } })
+    ).resolves.toMatchObject({ status: PublicationStatus.SCHEDULED })
+  })
+
+  it('cleans a legacy generation in the reset-time realm idempotently', async () => {
+    const liveQuizId = uuidv4()
+    for (const redis of [
+      userOneCtx.redisExec,
+      userOneCtx.redisAssessmentExec,
+    ]) {
+      await redis.hset(`lq:${liveQuizId}:meta`, {
+        namespace: 'legacy-namespace',
+      })
+      await redis.set(`lq:${liveQuizId}:synthetic`, 'stale')
+    }
+    const input = {
+      liveQuizId,
+      isAssessmentEnabled: true,
+      cacheGenerationSnapshot: {
+        status: 'AVAILABLE' as const,
+        generation: null,
+      },
+      weeklyTimelineRecomputations: [],
+    }
+
+    await expect(
+      handleCleanupLiveQuizResetCache(
+        input,
+        globalHandlerContext(userOneCtx),
+        {} as never
+      )
+    ).resolves.toBe(true)
+    await expect(
+      handleCleanupLiveQuizResetCache(
+        input,
+        globalHandlerContext(userOneCtx),
+        {} as never
+      )
+    ).resolves.toBe(true)
+    await expect(
+      userOneCtx.redisAssessmentExec.get(`lq:${liveQuizId}:synthetic`)
+    ).resolves.toBeNull()
+    await expect(
+      userOneCtx.redisExec.get(`lq:${liveQuizId}:synthetic`)
+    ).resolves.toBe('stale')
+  })
+
+  it('recomputes historical weeks even after the quiz has been deleted', async () => {
+    const fixture = await seedEndedRegularLiveQuizForReset(
+      { gamified: true, withRewardRun: true },
+      userOneCtx
+    )
+    const weekStart = new Date('2026-07-27T00:00:00.000Z')
+    await prisma.timelineEntry.create({
+      data: {
+        participationId: fixture.participationId!,
+        courseId: fixture.courseId!,
+        type: TimelineEntryType.WEEKLY,
+        timestamp: weekStart,
+        collectedPoints: 999,
+        collectedXp: 999,
+      },
+    })
+    await prisma.liveQuiz.delete({ where: { id: fixture.liveQuizId } })
+
+    await handleCleanupLiveQuizResetCache(
+      {
+        liveQuizId: fixture.liveQuizId,
+        isAssessmentEnabled: false,
+        cacheGenerationSnapshot: { status: 'UNAVAILABLE' },
+        weeklyTimelineRecomputations: [
+          {
+            participationId: fixture.participationId!,
+            courseId: fixture.courseId!,
+            weekStart: fixture.timelineDate.toISOString(),
+          },
+        ],
+      },
+      globalHandlerContext(userOneCtx),
+      {} as never
+    )
+
+    await expect(
+      prisma.timelineEntry.findUniqueOrThrow({
+        where: {
+          participationId_courseId_timestamp_type: {
+            participationId: fixture.participationId!,
+            courseId: fixture.courseId!,
+            timestamp: weekStart,
+            type: TimelineEntryType.WEEKLY,
+          },
+        },
+      })
+    ).resolves.toMatchObject({
+      collectedPoints: fixture.awardedTimelinePoints,
+      collectedXp: fixture.awardedTimelineXp,
+    })
+  })
+
+  it('skips unsafe cache deletion when generation snapshotting fails', async () => {
+    const fixture = await seedEndedRegularLiveQuizForReset(
+      { gamified: true, withRewardRun: true },
+      userOneCtx
+    )
+    await makeFixtureInstanceResettable(fixture.instanceId)
+    await userOneCtx.redisExec.set(
+      `lq:${fixture.liveQuizId}:synthetic`,
+      'preserved-until-clean-start'
+    )
+    const { cleanup } = mockResetDelivery(userOneCtx)
+    vi.spyOn(userOneCtx.redisExec, 'hget').mockRejectedValueOnce(
+      new Error('synthetic generation snapshot outage')
+    )
+
+    await expect(
+      resetLiveQuiz({ id: fixture.liveQuizId }, userOneCtx)
+    ).resolves.toMatchObject({ outcome: 'SUCCESS' })
+    expect(cleanup).not.toHaveBeenCalled()
+    await expect(
+      userOneCtx.redisExec.get(`lq:${fixture.liveQuizId}:synthetic`)
+    ).resolves.toBe('preserved-until-clean-start')
   })
 })

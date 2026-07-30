@@ -26,6 +26,7 @@ import {
   ElementData,
   ElementInstanceOptions,
   ElementInstanceResults,
+  type CleanupLiveQuizResetCacheInput,
 } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
@@ -163,17 +164,7 @@ export async function testInitialization(
     cleanupLiveQuizResetCache: hatchet.task({
       name: 'cleanup-live-quiz-reset-cache',
       retries: 3,
-      fn: async (
-        input: {
-          liveQuizId: string
-          weeklyTimelineRecomputations: Array<{
-            participationId: number
-            courseId: string
-            weekStart: string
-          }>
-        },
-        executionCtx
-      ) => ({
+      fn: async (input: CleanupLiveQuizResetCacheInput, executionCtx) => ({
         success: await handleCleanupLiveQuizResetCache(
           input,
           hatchetCtx,

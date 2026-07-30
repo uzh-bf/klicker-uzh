@@ -18,8 +18,19 @@ export interface HatchetHandlerGlobalContext {
   prisma: PrismaClient
 }
 
+export type LiveQuizResetCacheGenerationSnapshot =
+  | {
+      status: 'AVAILABLE'
+      generation: string | null
+    }
+  | {
+      status: 'UNAVAILABLE'
+    }
+
 export type CleanupLiveQuizResetCacheInput = {
   liveQuizId: string
+  isAssessmentEnabled: boolean
+  cacheGenerationSnapshot: LiveQuizResetCacheGenerationSnapshot
   weeklyTimelineRecomputations: Array<{
     participationId: number
     courseId: string

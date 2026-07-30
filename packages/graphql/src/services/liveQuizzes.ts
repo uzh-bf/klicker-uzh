@@ -34,7 +34,7 @@ import type { Context, ContextWithUser } from '../lib/context.js'
 import { computeRanks } from '../lib/util.js'
 import { getPermissionBooleans } from './activities.js'
 import {
-  clearLiveQuizExecutionCache,
+  initializeLiveQuizExecutionCache,
   resetAssessmentLiveQuiz as resetAssessmentLiveQuizService,
 } from './liveQuizReset.js'
 import {
@@ -848,28 +848,15 @@ export async function startLiveQuiz(
 
       case DB.PublicationStatus.DRAFT:
       case DB.PublicationStatus.SCHEDULED: {
-        if (
-          quiz.status === DB.PublicationStatus.DRAFT &&
-          !quiz.isAssessmentEnabled
-        ) {
-          await clearLiveQuizExecutionCache({
-            liveQuizId: quiz.id,
-            redis,
-          })
-        }
-        try {
-          const pipeline = redis.pipeline()
-          pipeline.hmset(`lq:${quiz.id}:meta`, {
-            namespace: quiz.namespace,
-            startedAt: Number(new Date()),
-            isGamificationEnabled: quiz.isGamificationEnabled,
-            isAssessmentEnabled: quiz.isAssessmentEnabled,
-          })
-
-          await pipeline.exec()
-        } catch (e) {
-          console.error(e)
-        }
+        const startedAt = new Date()
+        await initializeLiveQuizExecutionCache({
+          liveQuizId: quiz.id,
+          namespace: quiz.namespace,
+          isGamificationEnabled: quiz.isGamificationEnabled,
+          isAssessmentEnabled: quiz.isAssessmentEnabled,
+          redis,
+          startedAt,
+        })
 
         // remove the scheduled hatchet publication task, if it exists
         if (quiz.scheduledPublicationTaskId) {
@@ -888,7 +875,7 @@ export async function startLiveQuiz(
           where: { id },
           data: {
             status: DB.PublicationStatus.PUBLISHED,
-            startedAt: new Date(),
+            startedAt,
             scheduledPublicationTaskId: null,
           },
         })
@@ -3253,19 +3240,21 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
         : globalCtx.redisExec
 
       // start the live quiz
-      await redis
-        .pipeline()
-        .hmset(`lq:${liveQuiz.id}:meta`, {
-          namespace: liveQuiz.namespace,
-          startedAt: Number(new Date()),
-        })
-        .exec()
+      const startedAt = new Date()
+      await initializeLiveQuizExecutionCache({
+        liveQuizId: liveQuiz.id,
+        namespace: liveQuiz.namespace,
+        isGamificationEnabled: liveQuiz.isGamificationEnabled,
+        isAssessmentEnabled: liveQuiz.isAssessmentEnabled,
+        redis,
+        startedAt,
+      })
 
       const startedLiveQuiz = await globalCtx.prisma.liveQuiz.update({
         where: { id: liveQuizId },
         data: {
           status: DB.PublicationStatus.PUBLISHED,
-          startedAt: new Date(),
+          startedAt,
         },
       })
 
