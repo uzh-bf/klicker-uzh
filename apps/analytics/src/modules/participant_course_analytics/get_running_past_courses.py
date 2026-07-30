@@ -18,7 +18,5 @@ def get_running_past_courses(db):
     courses = db.course.find_many(where=where, include={"participations": True})
     df_courses = pd.DataFrame(list(map(lambda x: x.dict(), courses)))
     scope_note = f" (scoped to {len(scope)} ids)" if scope is not None else ""
-    print(
-        f"Found {len(df_courses)} courses with a start date before {curr_date}{scope_note}"
-    )
+    print(f"Found {len(df_courses)} courses with a start date before {curr_date}{scope_note}")
     return df_courses

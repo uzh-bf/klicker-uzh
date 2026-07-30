@@ -14,9 +14,7 @@ def _prepare_sql(template: str, course_ids: list[str] | None) -> str:
     return template.replace(_PLACEHOLDER, clause)
 
 
-def compute_participant_live_quiz_analytics(
-    db, course_ids: list[str] | None = None, verbose: bool = False
-):
+def compute_participant_live_quiz_analytics(db, course_ids: list[str] | None = None, verbose: bool = False):
     if verbose:
         print("[live_quiz_analytics] running participant_live_quiz_analytics.sql")
     rows = db.execute_raw(_prepare_sql(_PARTICIPANT_SQL, course_ids))
@@ -25,9 +23,7 @@ def compute_participant_live_quiz_analytics(
     return rows
 
 
-def compute_aggregated_live_quiz_analytics(
-    db, course_ids: list[str] | None = None, verbose: bool = False
-):
+def compute_aggregated_live_quiz_analytics(db, course_ids: list[str] | None = None, verbose: bool = False):
     if verbose:
         print("[live_quiz_analytics] running aggregated_live_quiz_analytics.sql")
     rows = db.execute_raw(_prepare_sql(_AGGREGATED_SQL, course_ids))

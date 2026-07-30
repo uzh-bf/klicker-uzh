@@ -18,9 +18,7 @@ db.connect()
 
 scope = scoped_course_ids(db)
 if scope is not None and not scope:
-    print(
-        "[14_live_quiz_assessment_analytics] empty course scope — skipping live quiz analytics"
-    )
+    print("[14_live_quiz_assessment_analytics] empty course scope — skipping live quiz analytics")
 else:
     print("Computing ParticipantLiveQuizAnalytics (assessment-mode only)")
     compute_participant_live_quiz_analytics(db, course_ids=scope, verbose=True)

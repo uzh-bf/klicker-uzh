@@ -79,9 +79,7 @@ class AnalyticsWindowSinceTests(unittest.TestCase):
 class ScopedCourseIdsTests(unittest.TestCase):
     def setUp(self):
         self.active = _course("aaaa0000-0000-0000-0000-000000000001", None)
-        self.finalized = _course(
-            "aaaa0000-0000-0000-0000-000000000002", "2026-03-01T00:00:00Z"
-        )
+        self.finalized = _course("aaaa0000-0000-0000-0000-000000000002", "2026-03-01T00:00:00Z")
         self.db = FakeDb([self.active, self.finalized])
 
     def test_no_env_returns_none(self):
@@ -105,9 +103,7 @@ class ScopedCourseIdsTests(unittest.TestCase):
             os.environ.pop("ANALYTICS_COURSE_IDS", None)
             result = scoped_course_ids(self.db)
             self.assertEqual(result, [self.active.id])
-            self.assertEqual(
-                self.db.course.last_where, {"analyticsFinalizedAt": None}
-            )
+            self.assertEqual(self.db.course.last_where, {"analyticsFinalizedAt": None})
 
     def test_full_returns_none(self):
         with mock.patch.dict(os.environ, {"ANALYTICS_MODE": "full"}):

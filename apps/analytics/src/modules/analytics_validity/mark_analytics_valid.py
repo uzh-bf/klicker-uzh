@@ -49,10 +49,7 @@ def mark_analytics_valid(db, verbose: bool = False):
     finalize = mode == "finalize" and bool(course_ids)
 
     if verbose:
-        print(
-            f"[analytics_validity] mode={mode} finalize={finalize} "
-            f"course_ids={len(course_ids) if course_ids else 0}"
-        )
+        print(f"[analytics_validity] mode={mode} finalize={finalize} course_ids={len(course_ids) if course_ids else 0}")
     rows = db.execute_raw(_render_sql(finalize, course_ids))
     if verbose:
         print(f"[analytics_validity] rows affected: {rows}")
