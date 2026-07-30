@@ -47,7 +47,7 @@ def main() -> None:
         for idx, course in df_courses.iterrows():
             check_analytics_cancellation()
             course_id = course["id"]
-            print(f"Processing course", idx, "of", len(df_courses), "with id", course_id)
+            print("Processing course", idx, "of", len(df_courses), "with id", course_id)
 
             responses = (
                 session.execute(select(QuestionResponse).where(QuestionResponse.courseId == course_id)).scalars().all()

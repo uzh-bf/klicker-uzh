@@ -20,7 +20,6 @@ from decimal import Decimal
 from typing import Any, Optional
 
 from sqlalchemy import (
-    BigInteger,
     Boolean,
     Date,
     DateTime,
@@ -29,11 +28,10 @@ from sqlalchemy import (
     Integer,
     LargeBinary,
     Numeric,
-    SmallInteger,
     String,
     Text,
 )
-from sqlalchemy.dialects.postgresql import ARRAY, ENUM, JSONB, UUID
+from sqlalchemy.dialects.postgresql import ENUM, JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 Uuid = UUID(as_uuid=False)

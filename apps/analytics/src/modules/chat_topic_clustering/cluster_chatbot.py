@@ -35,7 +35,7 @@ def cluster_chatbot(
                 f"{MIN_MESSAGES} messages, got {len(rows)}"
             )
         return save_clusters(
-            db,
+            session,
             chatbot_id,
             analytics_type,
             timestamp,

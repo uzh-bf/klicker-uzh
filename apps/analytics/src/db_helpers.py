@@ -11,7 +11,7 @@
 """
 
 from datetime import date, datetime, time, timezone
-from typing import Iterable, Mapping, Sequence
+from typing import Mapping, Sequence
 
 from sqlalchemy import Column, inspect
 from sqlalchemy.dialects.postgresql import insert as postgres_insert

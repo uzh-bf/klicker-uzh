@@ -39,7 +39,7 @@ def main() -> None:
         for idx, base_course in df_courses.iterrows():
             check_analytics_cancellation()
             print(
-                f"Processing course",
+                "Processing course",
                 idx,
                 "of",
                 len(df_courses),
