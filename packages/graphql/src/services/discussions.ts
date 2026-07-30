@@ -10,7 +10,6 @@ export type {
   CreateCourseDiscussionReplyArgs,
   CreateCourseDiscussionThreadArgs,
   DiscussionScopeInput,
-  DiscussionSpaceInput,
   DiscussionThreadPage,
   GenerateCourseDiscussionEmbeddingInfoArgs,
 } from './discussions/types.js'

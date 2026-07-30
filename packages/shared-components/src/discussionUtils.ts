@@ -4,6 +4,10 @@ import {
   type DiscussionScope,
   type DiscussionScopeInput,
 } from '@klicker-uzh/graphql/dist/ops'
+import {
+  buildCourseDiscussionScopeKey,
+  parseCourseDiscussionScopeKey,
+} from '@klicker-uzh/types'
 
 type DiscussionScopeLabels = {
   course: string
@@ -15,31 +19,30 @@ export function parseScopeKeyToInput(
   courseId: string,
   scopeKey?: string | null
 ): DiscussionScopeInput | null {
-  if (!scopeKey || scopeKey === `course:${courseId}`) {
+  if (!scopeKey || scopeKey === buildCourseDiscussionScopeKey(courseId)) {
     return { scopeType: DiscussionScopeType.Course }
   }
 
-  const practiceStackMatch = scopeKey.match(/^stack:(\d+)$/)
-  if (practiceStackMatch) {
-    return {
-      scopeType: DiscussionScopeType.PracticeStack,
-      stackId: Number.parseInt(practiceStackMatch[1] ?? '', 10),
-    }
-  }
+  const parsedScope = parseCourseDiscussionScopeKey(scopeKey)
+  if (!parsedScope) return null
 
-  const externalMatch = scopeKey.match(/^ext:([^:]+):(.+)$/)
-  if (externalMatch) {
-    try {
+  switch (parsedScope.kind) {
+    case 'course':
+      return parsedScope.courseId === courseId
+        ? { scopeType: DiscussionScopeType.Course }
+        : null
+    case 'practiceStack':
+      return {
+        scopeType: DiscussionScopeType.PracticeStack,
+        stackId: parsedScope.stackId,
+      }
+    case 'externalBlock':
       return {
         scopeType: DiscussionScopeType.ExternalBlock,
-        externalSource: decodeURIComponent(externalMatch[1] ?? ''),
-        externalRef: decodeURIComponent(externalMatch[2] ?? ''),
+        externalSource: parsedScope.externalSource,
+        externalRef: parsedScope.externalRef,
       }
-    } catch {
-      return null
-    }
   }
-  return null
 }
 
 export function getDiscussionScopeDisplayLabel(
@@ -82,5 +85,8 @@ export function getDiscussionSourceDisplayLabel({
   sourceLabel?: string | null
   courseLabel: string
 }) {
-  return sourceKey?.startsWith('course:') ? courseLabel : sourceLabel
+  return sourceKey &&
+    parseCourseDiscussionScopeKey(sourceKey)?.kind === 'course'
+    ? courseLabel
+    : sourceLabel
 }

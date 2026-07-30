@@ -1,5 +1,7 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
+  buildCourseDiscussionScopeKey,
+  buildExternalBlockDiscussionScopeKey,
   COURSE_QA_CONTENT_MAX_LENGTH,
   COURSE_QA_EXTERNAL_REF_MAX_LENGTH,
   COURSE_QA_EXTERNAL_SOURCE_MAX_LENGTH,
@@ -73,7 +75,7 @@ export function getThreadOrderBy(
 }
 
 function sourceKeyForSpace(space: DB.DiscussionSpace) {
-  return `course:${space.courseId}`
+  return buildCourseDiscussionScopeKey(space.courseId)
 }
 
 function sourceLabelForSpace() {
@@ -83,14 +85,6 @@ function sourceLabelForSpace() {
 export function isActiveCourseScopeType(scopeType: DB.DiscussionScopeType) {
   return ACTIVE_COURSE_SCOPE_TYPES.includes(
     scopeType as (typeof ACTIVE_COURSE_SCOPE_TYPES)[number]
-  )
-}
-
-export function isSupportedCourseScopeKey(courseId: string, scopeKey: string) {
-  return (
-    scopeKey === `course:${courseId}` ||
-    /^stack:\d+$/.test(scopeKey) ||
-    /^ext:[^:]+:.+$/.test(scopeKey)
   )
 }
 
@@ -188,10 +182,6 @@ export async function mapThreads(
   })
 }
 
-export function encodeScopePart(value: string) {
-  return encodeURIComponent(value.trim()).replace(/:/g, '%3A')
-}
-
 export function normalizeExternalScopeIdentifiers(
   externalSource: string,
   externalRef: string
@@ -209,8 +199,7 @@ export function normalizeExternalScopeIdentifiers(
   }
 
   try {
-    encodeScopePart(normalizedSource)
-    encodeScopePart(normalizedRef)
+    buildExternalBlockDiscussionScopeKey(normalizedSource, normalizedRef)
   } catch {
     return null
   }

@@ -6,11 +6,6 @@ import type {
 
 export type DiscussionSort = 'ACTIVITY_DESC' | 'NEWEST_DESC' | 'UPVOTES_DESC'
 
-export interface DiscussionSpaceInput {
-  spaceType: DB.DiscussionSpaceType
-  courseId: string
-}
-
 export interface DiscussionScopeInput {
   scopeType: DB.DiscussionScopeType
   stackId?: number | null

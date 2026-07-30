@@ -1,7 +1,7 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import type { Context } from '../../lib/context.js'
 import {
-  canParticipantAccessDiscussionScope,
+  canAccessCourseDiscussionScope,
   getCourseAccessActor,
   getCourseSettings,
   isCourseDiscussionEnabled,
@@ -66,7 +66,7 @@ async function resolveThreadCourseAndActor(
   if (!actor) return null
 
   if (
-    !(await canParticipantAccessDiscussionScope(
+    !(await canAccessCourseDiscussionScope(
       {
         participantId: actor.participantId,
         courseId,
@@ -137,7 +137,7 @@ async function resolveReplyCourseAndActor(
   if (!actor) return null
 
   if (
-    !(await canParticipantAccessDiscussionScope(
+    !(await canAccessCourseDiscussionScope(
       {
         participantId: actor.participantId,
         courseId,
@@ -399,7 +399,7 @@ async function canDeleteDiscussionContent(
 
   if (
     !allowed ||
-    !(await canParticipantAccessDiscussionScope(
+    !(await canAccessCourseDiscussionScope(
       {
         participantId: actor.participantId,
         courseId,

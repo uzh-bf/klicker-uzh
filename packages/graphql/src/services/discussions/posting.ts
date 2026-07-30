@@ -1,7 +1,7 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import type { Context } from '../../lib/context.js'
 import {
-  canParticipantAccessDiscussionScope,
+  canAccessCourseDiscussionScope,
   getCourseAccessActor,
   getCourseSettings,
   isCourseDiscussionEnabled,
@@ -112,7 +112,7 @@ export async function createCourseDiscussionThreadResult(
     return threadFailure(CourseDiscussionPostFailureCode.ACCESS_DENIED)
   }
   if (
-    !(await canParticipantAccessDiscussionScope(
+    !(await canAccessCourseDiscussionScope(
       {
         participantId: authorizedParticipantId,
         courseId,
@@ -128,13 +128,7 @@ export async function createCourseDiscussionThreadResult(
     ? await ctx.prisma.discussionSpace.findUnique({
         where: { courseId },
       })
-    : await resolveOrCreateSpace(
-        {
-          spaceType: DB.DiscussionSpaceType.COURSE,
-          courseId,
-        },
-        ctx
-      )
+    : await resolveOrCreateSpace(courseId, ctx)
 
   if (!space) {
     return threadFailure(CourseDiscussionPostFailureCode.INVALID_EMBED)
@@ -376,7 +370,7 @@ export async function createCourseDiscussionReplyResult(
     }
 
     if (
-      !(await canParticipantAccessDiscussionScope(
+      !(await canAccessCourseDiscussionScope(
         {
           participantId,
           courseId,

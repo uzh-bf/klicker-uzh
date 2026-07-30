@@ -77,7 +77,7 @@ export async function getCourseAccessActor(
   return null
 }
 
-export async function canParticipantAccessDiscussionScope(
+export async function canAccessCourseDiscussionScope(
   {
     participantId,
     courseId,
@@ -92,16 +92,13 @@ export async function canParticipantAccessDiscussionScope(
   },
   ctx: Context
 ) {
-  if (
-    !participantId ||
-    scope.scopeType !== DB.DiscussionScopeType.PRACTICE_STACK
-  ) {
+  if (scope.scopeType !== DB.DiscussionScopeType.PRACTICE_STACK) {
     return true
   }
 
   if (!scope.stackId) return false
 
-  const evaluatedStack = await ctx.prisma.elementStack.findFirst({
+  const accessibleStack = await ctx.prisma.elementStack.findFirst({
     where: {
       id: scope.stackId,
       OR: [
@@ -109,20 +106,24 @@ export async function canParticipantAccessDiscussionScope(
         { practiceQuiz: { courseId } },
         { microLearning: { courseId } },
       ],
-      elements: {
-        some: {},
-        every: {
-          responses: {
-            some: {
-              participantId,
-              courseId,
+      ...(participantId
+        ? {
+            elements: {
+              some: {},
+              every: {
+                responses: {
+                  some: {
+                    participantId,
+                    courseId,
+                  },
+                },
+              },
             },
-          },
-        },
-      },
+          }
+        : {}),
     },
     select: { id: true },
   })
 
-  return Boolean(evaluatedStack)
+  return Boolean(accessibleStack)
 }

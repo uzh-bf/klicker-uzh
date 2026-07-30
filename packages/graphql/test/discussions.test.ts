@@ -6,6 +6,8 @@ import { registerAnonymousRateLimitsSuite } from './discussions/anonymous-rate-l
 import { registerContentAndConcurrencySuite } from './discussions/content-and-concurrency.suite.js'
 import { registerDeletionPolicySuite } from './discussions/deletion-policy.suite.js'
 import { registerGatesAndEmbedAccessSuite } from './discussions/gates-and-embed-access.suite.js'
+import { registerScopeAuthorizationSuite } from './discussions/scope-authorization.suite.js'
+import { registerScopeContractsSuite } from './discussions/scope-contracts.suite.js'
 import { registerScopesSuite } from './discussions/scopes.suite.js'
 import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
 
@@ -53,5 +55,7 @@ describe('Integration tests for the course discussion platform', () => {
   registerAnonymousRateLimitsSuite(getContext)
   registerGatesAndEmbedAccessSuite(getContext)
   registerDeletionPolicySuite(getContext)
+  registerScopeAuthorizationSuite(getContext)
+  registerScopeContractsSuite(getContext)
   registerScopesSuite(getContext)
 })

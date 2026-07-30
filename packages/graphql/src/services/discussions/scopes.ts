@@ -1,26 +1,22 @@
 import * as DB from '@klicker-uzh/prisma/client'
+import {
+  buildCourseDiscussionScopeKey,
+  buildExternalBlockDiscussionScopeKey,
+  buildPracticeStackDiscussionScopeKey,
+} from '@klicker-uzh/types'
 import type { Context } from '../../lib/context.js'
 import {
-  encodeScopePart,
   isPrismaUniqueConstraintError,
   normalizeExternalScopeIdentifiers,
 } from './model.js'
-import type {
-  CanonicalScope,
-  DiscussionScopeInput,
-  DiscussionSpaceInput,
-} from './types.js'
+import type { CanonicalScope, DiscussionScopeInput } from './types.js'
 
 export async function resolveOrCreateSpace(
-  input: DiscussionSpaceInput,
+  courseId: string,
   ctx: Context
 ): Promise<DB.DiscussionSpace | null> {
-  if (input.spaceType !== DB.DiscussionSpaceType.COURSE) {
-    return null
-  }
-
   const existingSpace = await ctx.prisma.discussionSpace.findUnique({
-    where: { courseId: input.courseId },
+    where: { courseId },
   })
   if (existingSpace) return existingSpace
 
@@ -29,7 +25,7 @@ export async function resolveOrCreateSpace(
       data: {
         spaceType: DB.DiscussionSpaceType.COURSE,
         course: {
-          connect: { id: input.courseId },
+          connect: { id: courseId },
         },
       },
     })
@@ -37,7 +33,7 @@ export async function resolveOrCreateSpace(
     if (!isPrismaUniqueConstraintError(error)) throw error
 
     return ctx.prisma.discussionSpace.findUnique({
-      where: { courseId: input.courseId },
+      where: { courseId },
     })
   }
 }
@@ -57,7 +53,7 @@ export async function canonicalizeScope(
       case DB.DiscussionScopeType.COURSE: {
         return {
           scopeType: scope.scopeType,
-          scopeKey: `course:${space.courseId}`,
+          scopeKey: buildCourseDiscussionScopeKey(space.courseId),
           scopeLabel: 'Course',
         }
       }
@@ -86,7 +82,7 @@ export async function canonicalizeScope(
 
         return {
           scopeType: scope.scopeType,
-          scopeKey: `stack:${stack.id}`,
+          scopeKey: buildPracticeStackDiscussionScopeKey(stack.id),
           scopeLabel:
             stack.displayName ||
             `${stack.type === DB.ElementStackType.MICROLEARNING ? 'Microlearning' : 'Practice'} Stack ${stack.order}`,
@@ -106,7 +102,10 @@ export async function canonicalizeScope(
 
         return {
           scopeType: scope.scopeType,
-          scopeKey: `ext:${encodeScopePart(externalSource)}:${encodeScopePart(externalRef)}`,
+          scopeKey: buildExternalBlockDiscussionScopeKey(
+            externalSource,
+            externalRef
+          ),
           scopeLabel: `${externalSource}:${externalRef}`,
           externalSource,
           externalRef,

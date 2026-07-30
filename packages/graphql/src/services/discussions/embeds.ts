@@ -362,13 +362,7 @@ export async function generateCourseDiscussionEmbeddingInfo(
     : null
   if (externalBlock && !externalIdentifiers) return null
 
-  const space = await resolveOrCreateSpace(
-    {
-      spaceType: DB.DiscussionSpaceType.COURSE,
-      courseId,
-    },
-    ctx
-  )
+  const space = await resolveOrCreateSpace(courseId, ctx)
 
   if (!space) return null
 

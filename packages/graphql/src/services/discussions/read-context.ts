@@ -1,7 +1,11 @@
 import * as DB from '@klicker-uzh/prisma/client'
+import {
+  buildCourseDiscussionScopeKey,
+  parseCourseDiscussionScopeKey,
+} from '@klicker-uzh/types'
 import type { Context } from '../../lib/context.js'
 import {
-  canParticipantAccessDiscussionScope,
+  canAccessCourseDiscussionScope,
   getCourseAccessActor,
   getCourseSettings,
   isCourseDiscussionEnabled,
@@ -11,7 +15,6 @@ import {
   verifyEmbedScopeBinding,
   verifyEmbedToken,
 } from './embeds.js'
-import { isSupportedCourseScopeKey } from './model.js'
 import type { CourseDiscussionThreadsArgs, ResolvedActor } from './types.js'
 
 interface CourseDiscussionReadContext {
@@ -58,43 +61,32 @@ export async function resolveCourseDiscussionReadContext(
   const canPostAnonymously =
     !!embedClaims?.allowAnonymous && !!course.isCourseQAAnonymousEnabled
   const effectiveScopeKey =
-    embedClaims?.scopeKey ?? scopeKey ?? `course:${courseId}`
+    embedClaims?.scopeKey ?? scopeKey ?? buildCourseDiscussionScopeKey(courseId)
+  const parsedScope = parseCourseDiscussionScopeKey(effectiveScopeKey)
 
   if (
-    !isSupportedCourseScopeKey(courseId, effectiveScopeKey) ||
+    !parsedScope ||
+    (parsedScope.kind === 'course' && parsedScope.courseId !== courseId) ||
     (embedClaims && scopeKey && scopeKey !== embedClaims.scopeKey) ||
-    (effectiveScopeKey.startsWith('ext:') && !embedClaims)
+    (parsedScope.kind === 'externalBlock' && !embedClaims)
   ) {
     return null
   }
 
-  const stackScopeMatch = effectiveScopeKey.match(/^stack:(\d+)$/)
-  if (stackScopeMatch) {
-    const stackId = Number.parseInt(stackScopeMatch[1] ?? '', 10)
-    const stack = await ctx.prisma.elementStack.findFirst({
-      where: {
-        id: stackId,
-        OR: [
-          { courseId },
-          { practiceQuiz: { courseId } },
-          { microLearning: { courseId } },
-        ],
-      },
-      select: { id: true },
-    })
-    const participantCanAccess = await canParticipantAccessDiscussionScope(
+  if (parsedScope.kind === 'practiceStack') {
+    const participantCanAccess = await canAccessCourseDiscussionScope(
       {
         participantId,
         courseId,
         scope: {
           scopeType: DB.DiscussionScopeType.PRACTICE_STACK,
-          stackId,
+          stackId: parsedScope.stackId,
         },
       },
       ctx
     )
 
-    if (!stack || !participantCanAccess) {
+    if (!participantCanAccess) {
       return null
     }
   }
