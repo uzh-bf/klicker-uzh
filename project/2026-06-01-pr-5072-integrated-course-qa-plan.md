@@ -257,6 +257,16 @@
 - Check: focused formatting, Playwright and Cypress type checks, Chromium test listing with 13 course-Q&A tests, focused Chromium execution, `git diff --check`, and exact-commit correctness/simplification review.
 - Commit: `test(course-qa): migrate course workflow to playwright`.
 
+### Takeover Slice: Migrate Practice Q&A Journeys to Playwright
+
+- Do: Translate the complete practice workflow from frozen Cypress coverage to the active Playwright suite without merging, skipping, or weakening its six functional scenarios or `CLEANUP` seed test.
+- Isolation: Keep all seven tests in one file-level serial retry boundary because question/quiz creation, publication, course and stack posts, and lecturer grouping intentionally build on prior state.
+- Reuse: Use the existing Playwright SC-question and practice-quiz fixtures, login fixtures, Course Q&A flags, and shared fixture constants. Do not add another database setup layer.
+- UX proof: Preserve the evaluated-stack gate, collapsed mobile disclosure, in-page posting without `/qa` navigation, course-versus-stack scope boundary, and lecturer grouping. Also assert that the evaluated desktop discussion rail is beside the practice content.
+- Removal: Delete only `Y-course-qa-practice-workflow.cy.ts` after Playwright parity passes; keep embed, rollout-gate, and the Cypress task registry until their own migration slices.
+- Check: focused formatting, Playwright and Cypress type checks, Chromium test listing with seven practice-Q&A tests, focused Chromium execution, `git diff --check`, and exact-commit correctness/simplification review.
+- Commit: `test(course-qa): migrate practice workflow to playwright`.
+
 ## Finish
 
 - Run final focused checks.
