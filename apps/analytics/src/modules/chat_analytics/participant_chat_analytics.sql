@@ -4,16 +4,18 @@
 --   :win_end         timestamptz — window end (exclusive)
 --   :analytics_type  text        — AnalyticsType ('DAILY' | 'WEEKLY' | 'MONTHLY' | 'COURSE')
 --   :ts              date        — timestamp column value (for COURSE use the sentinel 1970-01-01)
--- Only participants with acceptedDisclaimerId IS NOT NULL are included (§3.9 privacy gate).
+-- Only participants who accepted the chatbot's current disclaimer are included (§3.9 privacy gate).
 
 WITH params AS (
-  SELECT CAST(:win_start AS timestamptz) AS win_start,
-         CAST(:win_end AS timestamptz) AS win_end
+  SELECT (CAST(:win_start AS timestamptz) AT TIME ZONE 'UTC') AS win_start,
+         (CAST(:win_end AS timestamptz) AT TIME ZONE 'UTC') AS win_end
 ),
 eligible_pairs AS (
-  SELECT "participantId", "chatbotId"
-  FROM "ChatUsageCredits"
-  WHERE "acceptedDisclaimerId" IS NOT NULL
+  SELECT cuc."participantId", cuc."chatbotId"
+  FROM "ChatUsageCredits" cuc
+  JOIN "Chatbot" cb ON cb.id = cuc."chatbotId"
+  WHERE cuc."acceptedDisclaimerId" = cb."disclaimerId"
+    AND cuc."disclaimerDeclined" = false
 ),
 messages AS (
   SELECT

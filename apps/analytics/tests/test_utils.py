@@ -25,6 +25,7 @@ from src.modules.utils import (  # noqa: E402
     analytics_run_config_from_env,
     analytics_window_since,
     apply_course_scope,
+    exclusive_day_end,
     iter_analytics_windows,
     render_uuid_in_clause,
     scoped_course_ids,
@@ -74,6 +75,31 @@ def test_cli_run_config_reads_immutable_chat_cutoff():
 
 
 # --- should_skip_window ----------------------------------------------------
+
+
+def test_exclusive_end_is_next_midnight():
+    assert exclusive_day_end("2026-07-23") == "2026-07-24T00:00:00.000Z"
+
+
+def test_daily_and_course_windows_use_exclusive_next_midnight():
+    calls: list[tuple[object, ...]] = []
+
+    def capture(*args: object, **_kwargs: object) -> object:
+        calls.append(args)
+        return None
+
+    iter_analytics_windows(
+        cast(Session, object()),
+        capture,
+        start_date="2026-07-23",
+        end_date="2026-07-23",
+        compute_weekly=False,
+        compute_monthly=False,
+    )
+
+    assert len(calls) == 2
+    assert calls[0][2] == "2026-07-24T00:00:00.000Z"
+    assert calls[1][2] == "2026-07-24T00:00:00.000Z"
 
 
 def test_skip_window_no_cutoff_keeps_every_window():
