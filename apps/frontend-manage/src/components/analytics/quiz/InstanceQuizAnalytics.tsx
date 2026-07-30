@@ -1,7 +1,7 @@
 import { faThumbsDown, faThumbsUp } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { InstanceQuizAnalytics as InstanceQuizAnalyticsType } from '@klicker-uzh/graphql/dist/ops'
-import { Collapsible } from '@uzh-bf/design-system'
+import { Collapsible, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import PerformanceRatesBarChart from '../performance/PerformanceRatesBarChart'
@@ -69,31 +69,40 @@ function InstanceQuizAnalytics({
           </div>
         </div>
         <div className="w-full md:w-1/2 md:pl-4">
-          <div className="font-bold">
-            {t('manage.analytics.studentFeedback', {
-              numOfVotes: analytics.feedbackCount,
-            })}
-          </div>
-          <div className="flex flex-row">
-            <div
-              className="flex h-20 w-1/2 flex-row items-center gap-4"
-              style={{ color: colors.correct }}
-            >
-              <FontAwesomeIcon icon={faThumbsUp} className="h-14" />
-              <div className="text-2xl">
-                {`${Math.round(analytics.upvoteRate * 100)} %`}
+          {analytics.feedbackSuppressed ? (
+            <UserNotification
+              type="info"
+              message={t('manage.analytics.feedbackSuppressed')}
+            />
+          ) : (
+            <>
+              <div className="font-bold">
+                {t('manage.analytics.studentFeedback', {
+                  numOfVotes: analytics.feedbackCount,
+                })}
               </div>
-            </div>
-            <div
-              className="flex h-20 w-1/2 flex-row items-center gap-4"
-              style={{ color: colors.incorrect }}
-            >
-              <FontAwesomeIcon icon={faThumbsDown} className="h-14" />
-              <div className="text-2xl">
-                {`${Math.round(analytics.downvoteRate * 100)} %`}
+              <div className="flex flex-row">
+                <div
+                  className="flex h-20 w-1/2 flex-row items-center gap-4"
+                  style={{ color: colors.correct }}
+                >
+                  <FontAwesomeIcon icon={faThumbsUp} className="h-14" />
+                  <div className="text-2xl">
+                    {`${Math.round(analytics.upvoteRate * 100)} %`}
+                  </div>
+                </div>
+                <div
+                  className="flex h-20 w-1/2 flex-row items-center gap-4"
+                  style={{ color: colors.incorrect }}
+                >
+                  <FontAwesomeIcon icon={faThumbsDown} className="h-14" />
+                  <div className="text-2xl">
+                    {`${Math.round(analytics.downvoteRate * 100)} %`}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            </>
+          )}
         </div>
       </div>
     </Collapsible>

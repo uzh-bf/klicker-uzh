@@ -2,6 +2,12 @@
 
 ## 2026-07-30
 
+- **Update** — Documented the learning-analytics output boundary, post-filter
+  effective-sample-size suppression, report-local labels, coarse participant
+  summaries, and server-owned complete/partial export in
+  [Domain Model](./domain-model.md), [GraphQL API Layer](./graphql-api-layer.md),
+  and [Testing](./testing.md).
+
 - **Update** — Documented learning-analytics computation eligibility,
   prospective detail-row rebuilding, free-text exclusion, write-time rechecks,
   and effective participant counts in [Domain Model](./domain-model.md),

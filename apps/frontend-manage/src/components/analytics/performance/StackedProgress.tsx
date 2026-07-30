@@ -99,6 +99,11 @@ function StackedProgress({
           </BarChart>
         </ResponsiveContainer>
       </div>
+      <div
+        className={twMerge('mr-2.5 text-sm text-gray-500', showScale && 'mb-8')}
+      >
+        (N = {progress.startedCount})
+      </div>
     </div>
   )
 }

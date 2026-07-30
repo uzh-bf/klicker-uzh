@@ -5,7 +5,7 @@ import {
   GetActivityAnalyticsDocument,
   GetSingleCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H1 } from '@uzh-bf/design-system'
+import { Button, H1, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -77,6 +77,21 @@ function QuizAnalytics() {
         title={t('manage.analytics.quizDashboard')}
         navigation={navigation}
       />
+    )
+  }
+
+  if (analytics.isSuppressed) {
+    return (
+      <Layout displayName={t('manage.analytics.quizDashboard')}>
+        {navigation}
+        <H1>
+          {t('manage.analytics.quizAnalytics')}: {analytics.activityName}
+        </H1>
+        <UserNotification
+          type="info"
+          message={t('manage.analytics.learningAnalyticsSuppressed')}
+        />
+      </Layout>
     )
   }
 

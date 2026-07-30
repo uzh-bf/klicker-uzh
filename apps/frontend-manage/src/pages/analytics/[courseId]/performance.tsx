@@ -3,7 +3,7 @@ import {
   GetCoursePerformanceAnalyticsDocument,
   GetSingleCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { H1, TabContent, Tabs } from '@uzh-bf/design-system'
+import { H1, TabContent, Tabs, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -16,7 +16,6 @@ import ActivityProgressPlot from '../../../components/analytics/performance/Acti
 import PerformanceAnalyticsNavigation from '../../../components/analytics/performance/PerformanceAnalyticsNavigation'
 import PerformanceRates from '../../../components/analytics/performance/PerformanceRates'
 import StudentActivityPerformance from '../../../components/analytics/performance/StudentActivityPerformance'
-import TotalStudentPerformancePlot from '../../../components/analytics/performance/TotalStudentPerformancePlot'
 import PreviewTag from '../../../components/common/PreviewTag'
 import Layout from '../../../components/Layout'
 import { learningAnalyticsRolloutEnabled } from '../../../lib/learningAnalytics'
@@ -83,6 +82,21 @@ function PerformanceDashboard() {
     )
   }
 
+  if (course.isSuppressed) {
+    return (
+      <Layout displayName={t('manage.analytics.performanceDashboard')}>
+        {navigation}
+        <H1>
+          {t('manage.analytics.performanceDashboard')}: {course.name}
+        </H1>
+        <UserNotification
+          type="info"
+          message={t('manage.analytics.learningAnalyticsSuppressed')}
+        />
+      </Layout>
+    )
+  }
+
   return (
     <Layout displayName={t('manage.analytics.performanceDashboard')}>
       {navigation}
@@ -96,7 +110,7 @@ function PerformanceDashboard() {
           </div>
           <div>
             {t('manage.analytics.totalParticipants', {
-              number: course.totalParticipants,
+              number: course.totalParticipants ?? 0,
             })}
           </div>
         </div>
@@ -156,7 +170,7 @@ function PerformanceDashboard() {
           >
             <ActivityProgressPlot
               activityProgresses={course.activityProgresses}
-              participants={course.totalParticipants}
+              participants={course.totalParticipants ?? 0}
             />
           </TabContent>
           <TabContent
@@ -166,12 +180,9 @@ function PerformanceDashboard() {
               root: 'flex flex-col gap-3 overflow-y-auto px-0 py-2',
             }}
           >
-            <TotalStudentPerformancePlot
-              courseName={course.name}
-              participantPerformance={course.participantPerformances}
-            />
             <StudentActivityPerformance
               courseId={courseId}
+              effectiveN={course.participantActivityPerformanceN ?? null}
               performances={course.participantActivityPerformances}
             />
           </TabContent>

@@ -3,14 +3,12 @@ import {
   GetCourseActivityAnalyticsDocument,
   GetSingleCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { H1 } from '@uzh-bf/design-system'
+import { H1, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import ActivityAnalyticsNavigation from '../../../components/analytics/activity/ActivityAnalyticsNavigation'
-import DailyActivityPlot from '../../../components/analytics/activity/DailyActivityPlot'
 import DailyActivityTimeSeries from '../../../components/analytics/activity/DailyActivityTimeSeries'
-import TotalStudentActivityPlot from '../../../components/analytics/activity/TotalStudentActivityPlot'
 import WeeklyActivityTimeSeries from '../../../components/analytics/activity/WeeklyActivityTimeSeries'
 import AnalyticsDisabledView from '../../../components/analytics/AnalyticsDisabledView'
 import AnalyticsErrorView from '../../../components/analytics/AnalyticsErrorView'
@@ -75,6 +73,21 @@ function ActivityDashboard() {
     )
   }
 
+  if (course.isSuppressed) {
+    return (
+      <Layout displayName={t('manage.analytics.activityDashboard')}>
+        {navigation}
+        <H1>
+          {t('manage.analytics.activityDashboard')}: {course.name}
+        </H1>
+        <UserNotification
+          type="info"
+          message={t('manage.analytics.learningAnalyticsSuppressed')}
+        />
+      </Layout>
+    )
+  }
+
   return (
     <Layout displayName={t('manage.analytics.activityDashboard')}>
       {navigation}
@@ -87,7 +100,7 @@ function ActivityDashboard() {
         </div>
         <div>
           {t('manage.analytics.totalParticipants', {
-            number: course.totalParticipants,
+            number: course.totalParticipants ?? 0,
           })}
         </div>
       </div>
@@ -95,26 +108,11 @@ function ActivityDashboard() {
         <WeeklyActivityTimeSeries
           activity={course.weeklyActivity}
           courseName={course.name}
-          courseParticipants={course.totalParticipants}
+          courseParticipants={course.totalParticipants ?? 0}
         />
-        <div className="flex w-full flex-col gap-3 lg:flex-row">
-          <div className="w-full lg:w-2/3">
-            <DailyActivityTimeSeries
-              activity={course.dailyActivity}
-              courseParticipants={course.totalParticipants}
-            />
-          </div>
-          <div className="w-full lg:w-1/3">
-            <DailyActivityPlot
-              courseParticipants={course.totalParticipants}
-              activeDays={course.activeDays}
-            />
-          </div>
-        </div>
-        <TotalStudentActivityPlot
-          courseName={course.name}
-          courseWeeks={course.courseWeeks}
-          participantActivity={course.participantCourseAnalytics}
+        <DailyActivityTimeSeries
+          activity={course.dailyActivity}
+          courseParticipants={course.totalParticipants ?? 0}
         />
       </div>
     </Layout>

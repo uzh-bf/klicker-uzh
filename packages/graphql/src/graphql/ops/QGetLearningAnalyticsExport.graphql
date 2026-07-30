@@ -1,0 +1,15 @@
+query GetLearningAnalyticsExport(
+  $courseId: String!
+  $includePartial: Boolean = false
+) {
+  getLearningAnalyticsExport(
+    courseId: $courseId
+    includePartial: $includePartial
+  ) {
+    filename
+    content
+    mimeType
+    effectiveN
+    includesPartial
+  }
+}

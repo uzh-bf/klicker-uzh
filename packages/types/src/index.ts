@@ -7,7 +7,6 @@ import type {
   ObjectAccess,
   ObjectType,
   ParameterType,
-  PerformanceLevel,
   PointCorrection,
   ResponseCorrectness as PrismaResponseCorrectness,
 } from '@klicker-uzh/prisma/client'
@@ -885,10 +884,10 @@ export type ActivityPerformance = {
 }
 
 export type ParticipantActivityPerformances = {
-  participantId: string
-  participantUsername: string
-  participantEmail: string | null
-  activityPerformances: ParticipantActivityPerformance[]
+  studentLabel: string
+  coverage: 'COMPLETE' | 'PARTIAL'
+  completedActivities: number
+  meanCompletion: number
 }
 
 export type ParticipantActivityPerformance = {
@@ -900,19 +899,10 @@ export type ParticipantActivityPerformance = {
 
 export type InstancePerformance = {
   id: number
+  participantCount: number
   elementName: string
   elementType: ElementType
   rates: PerformanceRates
-}
-
-export type ParticipantPerformance = {
-  id: number
-  firstErrorRate: number
-  firstPerformance: PerformanceLevel
-  lastErrorRate: number
-  lastPerformance: PerformanceLevel
-  totalErrorRate: number
-  totalPerformance: PerformanceLevel
 }
 
 export type InstanceFeedback = {
@@ -920,6 +910,7 @@ export type InstanceFeedback = {
   activityType: ActivityType
   instanceName: string
   instanceType: ElementType
+  participantCount: number
   upvoteRate: number
   downvoteRate: number
   feedbackCount: number
@@ -929,6 +920,7 @@ export type ActivityFeedback = {
   id: string
   activityType: ActivityType
   activityName: string
+  participantCount: number
   upvoteRate: number
   downvoteRate: number
   feedbackCount: number
@@ -953,6 +945,7 @@ export type InstanceQuizAnalytics = {
   upvoteRate: number
   downvoteRate: number
   feedbackCount: number
+  feedbackSuppressed: boolean
 }
 
 export type ActivityQuizAnalytics = {

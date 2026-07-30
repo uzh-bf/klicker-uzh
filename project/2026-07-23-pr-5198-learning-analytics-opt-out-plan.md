@@ -7,9 +7,9 @@
 - Branch: `codex/learning-analytics-opt-out-plan`
 - Target: `v3`
 - Pull request: [#5198](https://github.com/uzh-bf/klicker-uzh/pull/5198)
-- Active stack branch: `codex/la-opt-out-computation-eligibility`
-- Active stack target: `codex/la-opt-out-participant-choice`
-- Active stack pull request: [#5244](https://github.com/uzh-bf/klicker-uzh/pull/5244)
+- Active stack branch: `codex/la-opt-out-deidentified-output`
+- Active stack target: `codex/la-opt-out-computation-eligibility`
+- Active stack pull request: not yet published
 - Change type: `feat`
 - ADRs:
   - [ADR 0001](../docs/adr/0001-separate-course-and-participant-learning-analytics-controls.md)
@@ -616,3 +616,22 @@ Commit:
   3's branch. The rendered base/head metadata and draft state were verified;
   GitGuardian passed and repository checks entered the queue.
 - Current: Slice 4 is under review in draft PR #5244.
+- 2026-07-30: Slice 5 started from the verified head of draft PR #5244.
+  The implementation is consolidating N >= 5 suppression, report-local labels,
+  coarse row summaries, and complete/partial CSV coverage in one server policy.
+- 2026-07-30: Slice 5 removed stable participant fields and the legacy
+  high-dimensional participant charts from the public LA API. The replacement
+  table and export contain fresh `Student N` labels, coverage, completed
+  activity count, and completion rounded to ten-percentage-point steps.
+- 2026-07-30: Every retained chart point, aggregate, and filtered row table now
+  enforces N >= 5 after its own filters. Review removed the weekday activity
+  distribution because it had no point-level effective N; daily and weekly
+  time-series points retain their own thresholded N.
+- 2026-07-30: Ten focused GraphQL tests, GraphQL generation, both affected
+  package typechecks, repository-wide checks, focused Opengrep, and the
+  production GraphQL and Manage builds passed. Browser evidence covers the
+  de-identified table/export, complete/partial coverage, German, mobile,
+  suppression, and the simplified activity dashboard under
+  `/private/tmp/la-opt-out-slice5/`.
+- Current: Slice 5 is verified and ready to publish from
+  `codex/la-opt-out-deidentified-output`.

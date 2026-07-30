@@ -52,6 +52,22 @@ activity aggregates expose their persisted effective participant count
 (`packages/graphql/src/services/analytics.ts:filterEligibleLearningAnalyticsActivity`;
 `packages/graphql/src/services/analytics.ts:getActivityAnalytics`).
 
+Lecturer output applies one shared privacy policy after eligibility and coverage
+filters. Any course view, metric, filtered breakdown, or row table with fewer
+than five contributing participants is suppressed; low counts are returned as
+`null`, not exposed to explain why a view is hidden. The remaining row table
+contains only a fresh report-local `Student N` label, complete/partial coverage,
+completed-activity count, and completion rounded to ten-percentage-point steps.
+It has no stable participant identifier, activity identifier, score, response
+content, or free text. The dedicated `getLearningAnalyticsExport` query reuses
+that service policy, defaults to complete coverage, re-applies the threshold
+after coverage filtering, and assigns fresh labels for the CSV
+(`packages/graphql/src/lib/learningAnalyticsOutput.ts`;
+`packages/graphql/src/services/analytics.ts:getLearningAnalyticsExport`).
+Legacy breakdowns without a report-local effective N are not part of this
+boundary; the weekday activity distribution was removed instead of exposing a
+course-level aggregate as though its N applied to every point.
+
 ## Layering contract
 
 - `schema/*.ts` — Pothos object types + root `query.ts`/`mutation.ts`/`subscription.ts`. Resolvers delegate immediately: `resolve: (_, args, ctx) => CourseService.deleteCourse(args, ctx)`.

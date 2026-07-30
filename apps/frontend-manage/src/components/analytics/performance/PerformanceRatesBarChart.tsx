@@ -4,6 +4,7 @@ import StackedBarChartLabel from '../StackedBarChartLabel'
 
 interface PerformanceRatesBarChartProps {
   title: string
+  effectiveN?: number
   rates: { incorrectRate: number; partialRate: number; correctRate: number }
   colors: {
     incorrect: string
@@ -17,6 +18,7 @@ interface PerformanceRatesBarChartProps {
 
 function PerformanceRatesBarChart({
   title,
+  effectiveN,
   rates,
   colors,
   className,
@@ -73,6 +75,9 @@ function PerformanceRatesBarChart({
           </BarChart>
         </ResponsiveContainer>
       </div>
+      {typeof effectiveN === 'number' ? (
+        <div className="mr-2.5 text-sm text-gray-500">(N = {effectiveN})</div>
+      ) : null}
     </div>
   )
 }

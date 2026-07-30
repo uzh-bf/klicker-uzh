@@ -9,6 +9,7 @@ import { useMemo } from 'react'
 interface PerformanceEntry {
   id: number
   name: string
+  participantCount: number
   incorrectRate: number
   partialRate: number
   correctRate: number
@@ -62,6 +63,7 @@ function usePerformanceRates(
 
       return {
         id: entry.id,
+        participantCount: entry.participantCount,
         name:
           entry.__typename === 'ActivityPerformance'
             ? entry.activityName
