@@ -21,6 +21,7 @@ import {
 import {
   handlePublishScheduledLiveQuiz,
   manipulateLiveQuiz,
+  startLiveQuiz,
 } from '../src/services/liveQuizzes.js'
 import {
   initializePrisma,
@@ -72,6 +73,41 @@ describe('Live quiz response collection mode', () => {
       isModerationEnabled: false,
       courseId: null,
     }
+  }
+
+  function createMetadataRedis({
+    onExec,
+    execError,
+  }: {
+    onExec?: () => Promise<void>
+    execError?: Error
+  } = {}) {
+    const metadata: Record<string, string> = {}
+    const redis = {
+      pipeline() {
+        return {
+          hmset(_key: string, values: Record<string, unknown>) {
+            Object.assign(
+              metadata,
+              Object.fromEntries(
+                Object.entries(values).map(([key, value]) => [
+                  key,
+                  String(value),
+                ])
+              )
+            )
+            return this
+          },
+          async exec() {
+            await onExec?.()
+            if (execError) throw execError
+            return []
+          },
+        }
+      },
+    }
+
+    return { metadata, redis }
   }
 
   function withCourseFindUnique(
@@ -923,28 +959,17 @@ describe('Live quiz response collection mode', () => {
       },
     })
 
-    const metadata: Record<string, string> = {}
-    const redis = {
-      pipeline() {
-        return {
-          hmset(_key: string, values: Record<string, unknown>) {
-            Object.assign(
-              metadata,
-              Object.fromEntries(
-                Object.entries(values).map(([key, value]) => [
-                  key,
-                  String(value),
-                ])
-              )
-            )
-            return this
-          },
-          async exec() {
-            return []
-          },
-        }
+    let materializedAfterCommit = false
+    const { metadata, redis } = createMetadataRedis({
+      onExec: async () => {
+        const stored = await prisma.liveQuiz.findUniqueOrThrow({
+          where: { id: scheduledQuiz.id },
+        })
+        materializedAfterCommit =
+          stored.status === PublicationStatus.PUBLISHED &&
+          stored.startedAt !== null
       },
-    }
+    })
     await expect(
       handlePublishScheduledLiveQuiz(
         { liveQuizId: scheduledQuiz.id },
@@ -962,11 +987,53 @@ describe('Live quiz response collection mode', () => {
     })
     expect(stored.status).toBe(PublicationStatus.PUBLISHED)
     expect(stored.scheduledPublicationTaskId).toBeNull()
+    expect(materializedAfterCommit).toBe(true)
 
     expect(metadata).toMatchObject({
       namespace: stored.namespace,
+      startedAt: String(Number(stored.startedAt)),
       isGamificationEnabled: 'false',
       isAssessmentEnabled: 'false',
+    })
+  })
+
+  it('repairs publication metadata when a manual start is retried', async () => {
+    const liveQuiz = await seedLiveQuiz(
+      { elements: [], status: PublicationStatus.DRAFT },
+      userOneCtx
+    )
+    const failedRedis = createMetadataRedis({
+      execError: new Error('Redis unavailable'),
+    }).redis
+
+    await expect(
+      startLiveQuiz({ id: liveQuiz.id }, {
+        ...userOneCtx,
+        redisExec: failedRedis,
+        redisAssessmentExec: failedRedis,
+      } as any)
+    ).rejects.toThrow('Redis unavailable')
+
+    const published = await prisma.liveQuiz.findUniqueOrThrow({
+      where: { id: liveQuiz.id },
+    })
+    expect(published.status).toBe(PublicationStatus.PUBLISHED)
+    expect(published.startedAt).not.toBeNull()
+
+    const { metadata, redis } = createMetadataRedis()
+    await expect(
+      startLiveQuiz({ id: liveQuiz.id }, {
+        ...userOneCtx,
+        redisExec: redis,
+        redisAssessmentExec: redis,
+      } as any)
+    ).resolves.toMatchObject({ id: liveQuiz.id })
+
+    expect(metadata).toMatchObject({
+      namespace: published.namespace,
+      startedAt: String(Number(published.startedAt)),
+      isGamificationEnabled: String(published.isGamificationEnabled),
+      isAssessmentEnabled: String(published.isAssessmentEnabled),
     })
   })
 })

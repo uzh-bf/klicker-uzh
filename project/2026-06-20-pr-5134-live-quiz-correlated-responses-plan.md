@@ -591,6 +591,7 @@ Later research:
 - 2026-07-30: The branch was synchronized with current `v3` through commit `f424f03a16`. Remediation 1 starts with the package export contract and a runtime resolution regression check.
 - 2026-07-30: Independent plan-review tooling did not return a bounded verdict: `agy` timed out, and the read-only Codex fallback expanded into historical branch analysis until terminated. No unverified finding was accepted; exact-commit final reviews remain required.
 - 2026-07-30: Remediation 1 exposes the export package root and correlated subpath through `types` plus `default` and adds a package-contract regression test. Verification passed 33 export tests, both runtime resolution probes from GraphQL, GraphQL code generation, and GraphQL typecheck. The GraphQL Rollup build emitted `created dist` but its wrapper stayed alive until interrupted.
+- 2026-07-30: Remediation 2 moves the locked publication transition into one PostgreSQL-only service and materializes Redis metadata only after commit. Manual and scheduled retries rebuild metadata from the persisted `startedAt`; aborted pipelines and Redis command errors surface instead of silently leaving a published quiz without cache state. The focused PostgreSQL-backed suite passed all 24 response-mode/publication cases in the managed DevPod, including after-commit ordering and retry repair, and the GraphQL typecheck passed. The suite emitted existing non-fatal loopback Redis warnings from imported global clients; its publication assertions use injected Redis fakes.
 
 ## Goal Prompt Requirements
 

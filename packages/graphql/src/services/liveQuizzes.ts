@@ -34,6 +34,10 @@ import type { Context, ContextWithUser } from '../lib/context.js'
 import { computeRanks } from '../lib/util.js'
 import { getPermissionBooleans } from './activities.js'
 import {
+  materializeLiveQuizPublication,
+  transitionLiveQuizToPublished,
+} from './liveQuizPublication.js'
+import {
   assertLiveQuizResponseCollectionCompatibility,
   resolveLiveQuizResponseCollectionMode,
 } from './liveQuizResponseCollection.js'
@@ -904,93 +908,19 @@ export async function startLiveQuiz(
   ctx: ContextWithUser
 ) {
   try {
-    const quiz = await ctx.prisma.liveQuiz.findFirst({
-      where: {
-        id,
-        status: {
-          in: [
-            DB.PublicationStatus.DRAFT,
-            DB.PublicationStatus.SCHEDULED,
-            DB.PublicationStatus.PUBLISHED,
-          ],
-        },
-      },
-      include: { blocks: { orderBy: { id: 'asc' } } },
-    })
-
-    // if there is no live quiz matching the current user and quiz id, exit early
-    if (!quiz) {
-      return null
-    }
-
-    if (quiz.status === DB.PublicationStatus.PUBLISHED) {
-      return quiz
-    }
-
-    const publication = await ctx.prisma.$transaction(async (prisma) => {
-      const [lockedQuiz] = await prisma.$queryRaw<
-        Pick<DB.LiveQuiz, 'status'>[]
-      >`
-        SELECT "status"::text AS "status"
-        FROM "public"."LiveQuiz"
-        WHERE
-          "id" = ${id}::uuid
-          AND "isDeleted" = false
-          AND "status" IN (
-            'DRAFT'::"PublicationStatus",
-            'SCHEDULED'::"PublicationStatus",
-            'PUBLISHED'::"PublicationStatus"
-          )
-        FOR UPDATE
-      `
-      if (!lockedQuiz) return null
-
-      const currentQuiz = await prisma.liveQuiz.findUnique({
-        where: { id },
-      })
-      if (!currentQuiz) return null
-      if (currentQuiz.status === DB.PublicationStatus.PUBLISHED) {
-        return {
-          quiz: currentQuiz,
-          didStart: false,
-          scheduledPublicationTaskId: null,
-        }
-      }
-
-      const redis = currentQuiz.isAssessmentEnabled
-        ? ctx.redisAssessmentExec
-        : ctx.redisExec
-      try {
-        const pipeline = redis.pipeline()
-        pipeline.hmset(`lq:${currentQuiz.id}:meta`, {
-          namespace: currentQuiz.namespace,
-          startedAt: Number(new Date()),
-          isGamificationEnabled: currentQuiz.isGamificationEnabled,
-          isAssessmentEnabled: currentQuiz.isAssessmentEnabled,
-        })
-
-        await pipeline.exec()
-      } catch (e) {
-        console.error(e)
-      }
-
-      const startedLiveQuiz = await prisma.liveQuiz.update({
-        where: { id },
-        data: {
-          status: DB.PublicationStatus.PUBLISHED,
-          startedAt: new Date(),
-          scheduledPublicationTaskId: null,
-        },
-      })
-
-      return {
-        quiz: startedLiveQuiz,
-        didStart: true,
-        scheduledPublicationTaskId: currentQuiz.scheduledPublicationTaskId,
-      }
+    const publication = await transitionLiveQuizToPublished({
+      prisma: ctx.prisma,
+      liveQuizId: id,
+      source: 'manual',
     })
 
     if (!publication) return null
+    await materializeLiveQuizPublication({
+      quiz: publication.quiz,
+      redisExec: ctx.redisExec,
+      redisAssessmentExec: ctx.redisAssessmentExec,
+    })
+
     if (publication.didStart) {
       if (publication.scheduledPublicationTaskId) {
         try {
@@ -3307,59 +3237,11 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
     )
 
     try {
-      const publication = await globalCtx.prisma.$transaction(
-        async (prisma) => {
-          const [lockedQuiz] = await prisma.$queryRaw<
-            Pick<DB.LiveQuiz, 'id' | 'status'>[]
-          >`
-            SELECT "id", "status"::text AS "status"
-            FROM "public"."LiveQuiz"
-            WHERE
-              "id" = ${liveQuizId}::uuid
-              AND "isDeleted" = false
-              AND "status" IN (
-                'SCHEDULED'::"PublicationStatus",
-                'PUBLISHED'::"PublicationStatus"
-              )
-            FOR UPDATE
-          `
-          if (!lockedQuiz) return null
-
-          const liveQuiz = await prisma.liveQuiz.findUnique({
-            where: { id: lockedQuiz.id },
-          })
-          if (!liveQuiz) return null
-          if (liveQuiz.status === DB.PublicationStatus.PUBLISHED) {
-            return { quiz: liveQuiz, didStart: false }
-          }
-          if (!liveQuiz.availableFrom || liveQuiz.availableFrom > new Date()) {
-            return null
-          }
-
-          const redis = liveQuiz.isAssessmentEnabled
-            ? globalCtx.redisAssessmentExec
-            : globalCtx.redisExec
-          await redis
-            .pipeline()
-            .hmset(`lq:${liveQuiz.id}:meta`, {
-              namespace: liveQuiz.namespace,
-              startedAt: Number(new Date()),
-              isGamificationEnabled: liveQuiz.isGamificationEnabled,
-              isAssessmentEnabled: liveQuiz.isAssessmentEnabled,
-            })
-            .exec()
-
-          const startedLiveQuiz = await prisma.liveQuiz.update({
-            where: { id: liveQuizId },
-            data: {
-              status: DB.PublicationStatus.PUBLISHED,
-              startedAt: new Date(),
-              scheduledPublicationTaskId: null,
-            },
-          })
-          return { quiz: startedLiveQuiz, didStart: true }
-        }
-      )
+      const publication = await transitionLiveQuizToPublished({
+        prisma: globalCtx.prisma,
+        liveQuizId,
+        source: 'scheduled',
+      })
 
       if (!publication) {
         await sendTeamsNotification({
@@ -3370,6 +3252,12 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
           `Live quiz with ID ${liveQuizId} not found or scheduled start time is not in the past yet.`
         )
       }
+
+      await materializeLiveQuizPublication({
+        quiz: publication.quiz,
+        redisExec: globalCtx.redisExec,
+        redisAssessmentExec: globalCtx.redisAssessmentExec,
+      })
 
       if (publication.didStart) {
         await sendTeamsNotification({
