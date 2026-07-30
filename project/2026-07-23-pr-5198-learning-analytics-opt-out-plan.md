@@ -9,7 +9,7 @@
 - Pull request: [#5198](https://github.com/uzh-bf/klicker-uzh/pull/5198)
 - Active stack branch: `codex/la-opt-out-legal-cleanup`
 - Active stack target: `codex/la-opt-out-deidentified-output`
-- Active stack pull request: pending
+- Active stack pull request: [#5246](https://github.com/uzh-bf/klicker-uzh/pull/5246)
 - Change type: `feat`
 - ADRs:
   - [ADR 0001](../docs/adr/0001-separate-course-and-participant-learning-analytics-controls.md)
@@ -670,3 +670,6 @@ Commit:
 - Current: Slice 6 is verified and ready to publish. The rollout stays disabled,
   the production cleanup has not run, and the legal text remains a draft until
   recorded UZH data-protection/legal approval.
+- 2026-07-30: Slice 6 published as draft PR #5246, stacked directly on Slice
+  5's branch. The rollout and production cleanup remain explicitly unexecuted.
+- Current: Slice 6 is under review in draft PR #5246.
