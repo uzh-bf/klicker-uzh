@@ -161,8 +161,6 @@ describe('KB source gateway', () => {
 // the end documents this system-to-system gateway-key trust model explicitly.
 describe('KB source gateway authz filter (real database)', () => {
   let prisma: PrismaClient
-  let hatchet: Hatchet
-  let emitter: EventEmitter
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
   let kbId: string
@@ -172,11 +170,14 @@ describe('KB source gateway authz filter (real database)', () => {
   beforeAll(async () => {
     prisma = prismaClient
     await testCleanup(prisma)
-    hatchet = {
+    const hatchet = {
       task: vi.fn(() => ({ runNoWait: vi.fn() })),
     } as unknown as Hatchet
-    emitter = new EventEmitter()
-    const initialized = await testInitialization(prisma, hatchet, emitter)
+    const initialized = await testInitialization(
+      prisma,
+      hatchet,
+      new EventEmitter()
+    )
     userOneCtx = initialized.userOneCtx
     userTwoCtx = initialized.userTwoCtx
     const kb = await prisma.kB.create({
@@ -188,10 +189,6 @@ describe('KB source gateway authz filter (real database)', () => {
   afterAll(async () => {
     await testCleanup(prisma)
     await prisma.$disconnect()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   function mockBlobDownload(bytes: string, mimeType: string) {
@@ -214,18 +211,12 @@ describe('KB source gateway authz filter (real database)', () => {
     type = KBResourceType.BLOB,
     resourceVersion = 3,
     contentSha256 = 'f'.repeat(64),
-    blobName = `${randomUUID()}.pdf`,
-    mimeType = 'application/pdf',
-    sizeBytes = 7,
     kbId: kbIdOverride,
   }: {
     status?: KBResourceStatus
     type?: KBResourceType
     resourceVersion?: number
     contentSha256?: string | null
-    blobName?: string
-    mimeType?: string | null
-    sizeBytes?: number | null
     kbId?: string
   } = {}) {
     return prisma.kBResource.create({
@@ -233,9 +224,9 @@ describe('KB source gateway authz filter (real database)', () => {
         kbId: kbIdOverride ?? kbId,
         type,
         title: 'Lecture',
-        blobName,
-        mimeType,
-        sizeBytes,
+        blobName: `${randomUUID()}.pdf`,
+        mimeType: 'application/pdf',
+        sizeBytes: 7,
         contentSha256,
         status,
         resourceVersion,
