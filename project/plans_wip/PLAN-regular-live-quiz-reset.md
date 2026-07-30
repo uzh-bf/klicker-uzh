@@ -32,9 +32,10 @@ gamification rewards once.
   an idempotent three-retry Hatchet fallback.
 - **UI:** `frontend-manage` ended-quiz action and destructive confirmation with
   stable `data-cy` selectors and de/en copy.
-- **Evidence:** real PostgreSQL/Redis GraphQL tests, targeted Playwright,
-  delegated-login browser screenshots in both locales and a narrow viewport,
-  typecheck/lint/format/static analysis, and affected production builds.
+- **Evidence:** real PostgreSQL/Redis GraphQL tests, the full serial Live Quiz
+  Playwright workflow, delegated-login browser screenshots in both locales and
+  a narrow viewport, typecheck/lint/format/static analysis, and affected
+  production builds.
 - **Fixtures:** focused GraphQL synthetic fixtures and Playwright workflow
   tasks; no real participant or response data.
 
@@ -93,3 +94,19 @@ gamification rewards once.
   `frontend-manage` typecheck and production build, and full repository checks
   passed. Independent specification and quality reviews passed after separating
   a successful reset from a later optional refresh failure.
+- 2026-07-30: Task 7 completed in `d59898ed3` and `36a4a9cdc`. The
+  serial Live Quiz workflow covers owner and administrator visibility,
+  non-admin and non-ended-state exclusion, successful same-ID/PIN reset,
+  explicit confirmation, deterministic `INVALID_STATE`, and legacy gamified
+  rejection. Prettier, Playwright typechecking, 84-test discovery, and
+  independent specification and quality reviews passed. Delegated-login
+  browser verification passed in English, German, and a 390-by-844 viewport,
+  including a successful ended-to-draft reset. A full serial container run
+  passed its setup and first 13 legacy scenarios, then stopped before the new
+  reset cases on the older student-answer assertion that an initially empty
+  answer must disable the submit button; the current UI rendered it enabled.
+- 2026-07-30: Task 8 documentation updated the domain, GraphQL, async-worker,
+  testing, Playwright-skill, and engineering-log guidance. The optional external
+  wiki validator was unavailable, while Prettier and `git diff --check` passed.
+  Independent documentation review passed after clarifying regular versus
+  assessment authorization and nullable summary-query denial behavior.

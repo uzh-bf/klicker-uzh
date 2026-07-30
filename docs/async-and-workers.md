@@ -2,7 +2,7 @@
 type: Async Architecture
 title: Async & Workers
 description: The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
-timestamp: '2026-07-07'
+timestamp: '2026-07-30'
 tags:
   - backend
   - hatchet
@@ -42,7 +42,16 @@ Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. No
 - `create-audit-log-entry` (event-driven)
 - `publish-scheduled-*` / `end-expired-*` — activity lifecycle
 - `aggregate-block-closure-*` — live-quiz block aggregation
+- `cleanup-live-quiz-reset-cache` — generation-fenced execution-cache cleanup plus historical weekly-timeline recomputation, three retries
 - Daily crons (`0 0 * * *`): `updateGroupAverageScores`, `runningRandomGroupAssignments`, `finalRandomGroupAssignments`, `updateWeeklyTimelineEntries`
+
+## Live Quiz reset cache cleanup
+
+Before resetting, GraphQL snapshots the quiz execution cache generation. After the database transaction commits, `packages/graphql/src/services/liveQuizReset.ts:runPostCommitCleanup` synchronously recomputes affected historical weekly timeline entries and deletes `lq:<quizId>:*` keys from the correct standard or assessment Redis only when they still belong to that captured generation. This fence prevents a delayed cleanup from deleting a newly started run.
+
+If synchronous recomputation or Redis cleanup throws, GraphQL schedules `cleanup-live-quiz-reset-cache`, an idempotent Hatchet task with three retries (`packages/hatchet/src/index.ts:cleanupLiveQuizResetCache`). The serialized input contains the captured cache generation and exact historical weeks, so the fallback repeats the same fenced operations. Cleanup or fallback-delivery failures do not turn an already committed reset into a mutation failure.
+
+Starting an eligible draft or scheduled quiz calls `packages/graphql/src/services/liveQuizReset.ts:initializeLiveQuizExecutionCache` before the status transition: one Redis script removes stale execution keys, writes new metadata, and assigns a fresh generation. If that initialization fails, the quiz does not transition to `PUBLISHED`.
 
 ## Running locally (config-derived — verify on your machine)
 

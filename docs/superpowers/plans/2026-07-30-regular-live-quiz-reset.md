@@ -3373,16 +3373,16 @@ await expect(page.getByTestId('confirmation-modal-confirm')).toBeDisabled()
 
 For an `INVALID_STATE` test, open the summary, change the quiz to draft through `runTask('changeActivityStatus', ...)`, confirm, and assert the modal remains open with `resetInvalidState`. For `CONFLICT`, issue two direct GraphQL reset requests from the test fixture and assert one `SUCCESS`, one `CONFLICT`, and only one reward reversal.
 
-- [ ] **Step 4: Run targeted GraphQL and Playwright tests**
+- [ ] **Step 4: Run targeted GraphQL tests and the full serial Playwright workflow**
 
 Run:
 
 ```bash
 pnpm --filter @klicker-uzh/graphql test:local -- liveQuizReset.test.ts
-pnpm --filter @klicker-uzh/playwright test:run:raw -- tests/O-live-quiz.spec.ts --project=chromium --grep "Reset an ended regular live quiz|permissions on all activities|legacy gamified live quiz"
+pnpm --filter @klicker-uzh/playwright test:run:raw -- tests/O-live-quiz.spec.ts --project=chromium
 ```
 
-Expected: targeted GraphQL tests PASS; selected Playwright cases PASS in Chromium against the real local stack.
+Expected: targeted GraphQL tests PASS; the full serial Playwright workflow passes in Chromium against the real local stack. The reset scenarios intentionally reuse quizzes and permission states established by preceding tests in this workflow, so a focused `--grep` run does not provision their prerequisites.
 
 - [ ] **Step 5: Perform mandatory browser verification**
 
@@ -3492,7 +3492,7 @@ Record the two targeted test commands from Task 7 in `docs/testing.md`.
 Run:
 
 ```bash
-pnpm exec prettier --write packages/prisma/src/prisma/schema apps/analytics/prisma/schema packages/graphql/src packages/graphql/test packages/types/src/hatchet.ts packages/hatchet/src/index.ts apps/frontend-manage/src playwright/tests/O-live-quiz.spec.ts packages/i18n/messages docs
+pnpm exec prettier --write packages/prisma/src/prisma/schema apps/analytics/prisma/schema packages/graphql/src packages/graphql/test packages/types/src/hatchet.ts packages/hatchet/src/index.ts apps/frontend-manage/src playwright/tests/O-live-quiz.spec.ts packages/i18n/messages docs .agents/skills/klicker-playwright-e2e/SKILL.md project/plans_wip/PLAN-regular-live-quiz-reset.md
 git diff --check
 git status --short
 git diff --stat
@@ -3516,7 +3516,7 @@ opengrep scan --config auto
 
 Expected: schema sync and GraphQL generation produce no unexpected diff; TypeScript, formatting, lint, and static analysis exit 0.
 
-- [ ] **Step 5: Run targeted integration and E2E verification**
+- [ ] **Step 5: Run targeted integration and full serial E2E verification**
 
 Run:
 
@@ -3524,10 +3524,10 @@ Run:
 pnpm --filter @klicker-uzh/graphql test:local -- liveQuizRewards.test.ts
 pnpm --filter @klicker-uzh/graphql test:local -- liveQuizReset.test.ts
 pnpm --filter @klicker-uzh/graphql test:local -- assessmentRestrictions.test.ts
-pnpm --filter @klicker-uzh/playwright test:run:raw -- tests/O-live-quiz.spec.ts --project=chromium --grep "Reset an ended regular live quiz|permissions on all activities|legacy gamified live quiz"
+pnpm --filter @klicker-uzh/playwright test:run:raw -- tests/O-live-quiz.spec.ts --project=chromium
 ```
 
-Expected: all targeted tests PASS; no assessment authorization or behavior regression appears.
+Expected: all targeted integration tests and the full serial Playwright workflow PASS; no assessment authorization or behavior regression appears.
 
 - [ ] **Step 6: Run production builds**
 
@@ -3565,7 +3565,7 @@ Expected: each line maps to a passing test or browser screenshot and a specific 
 - [ ] **Step 8: Commit documentation and final formatting**
 
 ```bash
-git add docs packages apps playwright
+git add docs packages apps playwright .agents/skills/klicker-playwright-e2e/SKILL.md project/plans_wip/PLAN-regular-live-quiz-reset.md
 git diff --cached --check
 git diff --cached --stat
 git commit -m "docs: describe regular live quiz reset"

@@ -2,7 +2,7 @@
 type: API Layer
 title: GraphQL API Layer
 description: Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
-timestamp: '2026-07-07'
+timestamp: '2026-07-30'
 tags:
   - backend
   - graphql
@@ -44,6 +44,12 @@ pnpm --filter @klicker-uzh/graphql generate
 ```
 
 and **commit the regenerated outputs** (`src/ops.ts`, `src/ops.schema.json`, `src/public/schema.graphql`, `src/public/client.json`, `src/public/server.json`) in the same change. They are git-tracked and load-bearing: frontends import typed documents from `@klicker-uzh/graphql/dist/ops`, and outside dev/test the backend only executes hashes present in `server.json` (see [Architecture Overview](./architecture-overview.md)). Stale artifacts fail in two distinct ways: typecheck errors (missing document) or runtime persisted-query rejection (unknown hash).
+
+## Resetting an ended Live Quiz
+
+For regular quizzes, `getLiveQuizResetSummary` and `resetLiveQuiz` require full lecturer access and activity `ADMIN` authorization (`packages/graphql/src/schema/query.ts:getLiveQuizResetSummary`, `packages/graphql/src/schema/mutation.ts:resetLiveQuiz`). That admits the activity owner and users or administrators with the derived activity-admin permission; `READ`, `EXECUTE`, and `WRITE` grants are insufficient. Assessment summaries and resets additionally require course `OWNER` or `ADMIN` access. The regular reset action is available only for `ENDED` quizzes in the manage UI.
+
+The summary is informational and reports execution-data counts, exact reward deltas, eligibility, and legacy reconstruction status. An authorization miss on this nullable query returns `null`. The mutation reloads authorization, state, and reward data inside its serializable transaction and returns one structured outcome: `SUCCESS`, `INVALID_STATE`, `REWARD_DATA_UNAVAILABLE`, or `CONFLICT` (`packages/graphql/src/services/liveQuizReset.ts:resetLiveQuiz`); outer mutation authorization failures use the standard GraphQL error path. Its audit events carry the actor, activity, operation identifier, outcome, and aggregate reversal totals but no participant-level data (`packages/graphql/src/services/liveQuizReset.ts:enqueueLiveQuizResetAudit`). `resetAssessmentLiveQuiz` remains the assessment compatibility field and keeps the additional assessment-reviewer UI policy.
 
 ## Subscriptions
 

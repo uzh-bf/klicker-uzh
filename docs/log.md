@@ -1,5 +1,11 @@
 # Log
 
+## 2026-07-30
+
+- **Update**: [domain-model](./domain-model.md), [graphql-api-layer](./graphql-api-layer.md), and [async-and-workers](./async-and-workers.md) now document exact regular Live Quiz reward ledgers, owner/activity-admin reset authorization, structured reset outcomes, legacy exact-or-reject behavior, and generation-fenced cache cleanup.
+
+- **Update**: [testing](./testing.md) and the `klicker-playwright-e2e` skill record that the regular Live Quiz reset scenarios depend on the complete serial `O-live-quiz.spec.ts` workflow rather than a focused `--grep` selection.
+
 ## 2026-07-07
 
 - **Update**: migration-in-flight banners added to [graphql-api-layer](./graphql-api-layer.md), [architecture-overview](./architecture-overview.md) (GraphQL→tRPC, PR #5132), and [chat-platform](./chat-platform.md) (AI-SDK→Mastra, PRs #5126/#5129) — pages stay authoritative until those PRs merge.
