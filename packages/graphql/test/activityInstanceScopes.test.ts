@@ -346,17 +346,30 @@ describe('activity instance edit scopes', () => {
       const data = await fixture()
       const target = await createActivity(kind, data)
       const source = await createActivity(kind, data)
+      const transaction = vi
+        .fn()
+        .mockRejectedValue(new Error('Transaction should not be entered'))
+      const preflightCtx = {
+        ...data.ctx,
+        prisma: new Proxy(prisma, {
+          get(target, property) {
+            if (property === '$transaction') return transaction
+            return Reflect.get(target, property, target)
+          },
+        }),
+      } as unknown as ContextWithUser
 
       await expect(
         editActivity({
           activityId: target.id,
-          ctx: data.ctx,
+          ctx: preflightCtx,
           data,
           instanceId: source.instance.id,
           kind,
         })
       ).rejects.toThrow('Not all element instances could be found')
 
+      expect(transaction).not.toHaveBeenCalled()
       const persisted = await prisma.elementInstance.findUniqueOrThrow({
         where: { id: source.instance.id },
       })
@@ -368,57 +381,87 @@ describe('activity instance edit scopes', () => {
     }
   )
 
-  it('rejects a practice-quiz edit if the instance moves after preflight', async () => {
-    const data = await fixture()
-    const target = await createActivity('practiceQuiz', data)
-    const source = await createActivity('practiceQuiz', data)
-    let raced = false
-    const racedPrisma = prisma.$extends({
-      query: {
-        elementInstance: {
-          async findMany({ args, query }) {
-            const instances = await query(args)
-            if (
-              !raced &&
-              instances.some((instance) => instance.id === target.instance.id)
-            ) {
-              raced = true
-              await prisma.elementInstance.update({
-                where: { id: target.instance.id },
-                data: {
-                  elementStackId: source.containerId,
-                  order: 1,
-                },
-              })
+  it.each<ActivityKind>([
+    'practiceQuiz',
+    'microLearning',
+    'liveQuiz',
+    'groupActivity',
+  ])(
+    'rejects a %s edit if the instance moves after preflight',
+    async (kind) => {
+      const data = await fixture()
+      const target = await createActivity(kind, data)
+      const source = await createActivity(kind, data)
+      let raced = false
+      const racedElementInstances = new Proxy(prisma.elementInstance, {
+        get(delegate, property) {
+          if (property === 'findMany') {
+            return async (
+              args: Parameters<typeof prisma.elementInstance.findMany>[0]
+            ) => {
+              const instances = await prisma.elementInstance.findMany(args)
+              if (
+                !raced &&
+                instances.some((instance) => instance.id === target.instance.id)
+              ) {
+                raced = true
+                await prisma.elementInstance.update({
+                  where: { id: target.instance.id },
+                  data:
+                    kind === 'liveQuiz'
+                      ? {
+                          elementBlockId: source.containerId,
+                          order: 1,
+                        }
+                      : {
+                          elementStackId: source.containerId,
+                          order: 1,
+                        },
+                })
+              }
+              return instances
             }
-            return instances
-          },
+          }
+          return Reflect.get(delegate, property, delegate)
         },
-      },
-    })
-    const racedCtx = {
-      ...data.ctx,
-      prisma: racedPrisma,
-    } as unknown as ContextWithUser
-
-    await expect(
-      editActivity({
-        activityId: target.id,
-        ctx: racedCtx,
-        data,
-        instanceId: target.instance.id,
-        kind: 'practiceQuiz',
       })
-    ).rejects.toThrow('Not all element instances could be found')
+      const racedPrisma = new Proxy(prisma, {
+        get(target, property) {
+          if (property === 'elementInstance') return racedElementInstances
+          const value = Reflect.get(target, property, target)
+          return typeof value === 'function' ? value.bind(target) : value
+        },
+      })
+      const racedCtx = {
+        ...data.ctx,
+        prisma: racedPrisma,
+      } as unknown as ContextWithUser
 
-    expect(raced).toBe(true)
-    expect(
-      await prisma.elementInstance.findUniqueOrThrow({
+      await expect(
+        editActivity({
+          activityId: target.id,
+          ctx: racedCtx,
+          data,
+          instanceId: target.instance.id,
+          kind,
+        })
+      ).rejects.toThrow('Not all element instances could be found')
+
+      expect(raced).toBe(true)
+      const persisted = await prisma.elementInstance.findUniqueOrThrow({
         where: { id: target.instance.id },
       })
-    ).toMatchObject({
-      elementStackId: source.containerId,
-      order: 1,
-    })
-  })
+      if (kind === 'liveQuiz') {
+        expect(persisted).toMatchObject({
+          elementBlockId: source.containerId,
+          order: 1,
+        })
+      } else {
+        expect(persisted).toMatchObject({
+          elementStackId: source.containerId,
+          order: 1,
+        })
+      }
+    }
+  )
 })
