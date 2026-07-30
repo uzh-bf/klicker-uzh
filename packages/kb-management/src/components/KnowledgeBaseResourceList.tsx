@@ -822,7 +822,6 @@ function KnowledgeBaseResourceList({
     if (newPageHasActive) {
       activePageIndexesRef.current.add(newPageIndex)
     }
-    bookkeepingValidRef.current = true
   }
 
   const toggleSelection = (id: string) => {
