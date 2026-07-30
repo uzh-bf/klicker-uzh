@@ -17,6 +17,7 @@ model Course {
   areAnalyticsValid       Boolean   @default(false)
   analyticsLastComputedAt DateTime?
   chatAnalyticsValidAt    DateTime?
+  analyticsFinalizedAt    DateTime?
   isArchived              Boolean   @default(false)
 
   authType CourseAuthType @default(PIN)
