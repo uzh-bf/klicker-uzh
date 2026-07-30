@@ -1061,6 +1061,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       started: 'Started',
       submitted: 'Submitted',
       past: 'Past',
+      passed: 'Passed',
+      failed: 'Failed',
       groupActivityPassed:
         'Congratulations! Your group has passed the group activity.',
       groupActivityFailed:

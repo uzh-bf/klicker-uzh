@@ -13,6 +13,9 @@
   "peerDependencies": {
     "next-intl": "^4.13.0"
   },
+  "scripts": {
+    "check": "tsc --noEmit"
+  },
   "engines": {
     "node": "=24"
   },

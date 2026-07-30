@@ -30,7 +30,7 @@ Provenance: steps 2 requires a database; on a machine without one running, write
 - **Decimal fields**: Python client needs `enable_experimental_decimal = true` in `apps/analytics/prisma/schema/py.prisma` (already set — don't remove); TS side never truthy-checks Decimals.
 - **Don't touch synced Analytics model files by hand** — `prisma:sync` overwrites them while preserving Analytics-owned `py.prisma` and `datasource.prisma`.
 - **Participant email uniqueness is per auth mode** (`@@unique([email, isSSOAccount])`) — cross-mode duplicate prevention lives in service logic, not the schema.
-- **CODE attempts are not `QuestionResponse`s** — `packages/prisma/src/prisma/schema/code.prisma` owns the async `CodeSubmission` lifecycle. Its active-attempt uniqueness and exactly-one-activity constraints are raw SQL in `20260723170000_add_code_element_contracts`; preserve those database fences when changing the model.
+- **CODE attempts are not `QuestionResponse`s** — `packages/prisma/src/prisma/schema/code.prisma` owns the async `CodeSubmission` lifecycle. Its active-attempt uniqueness and exactly-one-activity constraints are raw SQL in `20260723170000_add_code_element_contracts`; preserve those database fences when changing the model. Rate-limit deferral uses `retryAt` plus the `(status, retryAt, createdAt)` recovery index; pending scans must exclude future deferrals.
 - **CODE has two JSON projections** — full `CodeElementData` includes all tests, while `ParticipantElementData` substitutes `PublicCodeElementData`. Keep that distinction aligned across Prisma JSON typing, shared types, GraphQL, and analytics sync.
 
 ## Seeds — three independent paths

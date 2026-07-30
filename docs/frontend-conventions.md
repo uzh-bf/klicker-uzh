@@ -47,6 +47,8 @@ Apollo Client with **generated documents only** — `import { UserProfileDocumen
 
 Namespaces are per-app plus `shared` (`shared`, `auth`, `pwa`, `manage`, `control`). Usage: `useTranslations()` without a namespace argument and full-path keys — `t('manage.settings.userSettings')`, `t('shared.generic.cancel')`; `t.rich` for markup. Messages load per page via `getStaticProps`; the plugin is wired in each `next.config.mjs` (`createNextIntlPlugin`).
 
+English and German message trees must have the same structural keys. `packages/i18n/parity.ts` enforces both directions at compile time, and the `@klicker-uzh/i18n` `check` script is included in the root verification.
+
 ## Forms
 
 **Formik + Yup** (not react-hook-form). Design-system `Formik*` field components bind by `name`. Existing modals (e.g. `apps/frontend-manage/src/components/sharing/TransferOwnershipModal.tsx`) are the template.

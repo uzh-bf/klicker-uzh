@@ -19,6 +19,8 @@ const CODE_SUBMISSION_MAX_ATTEMPTS = 3
 const CODE_SUBMISSION_CLAIM_MS = 7 * 60 * 1_000
 const CODE_SUBMISSION_FINALIZE_MS = 60 * 1_000
 const CODE_SUBMISSION_FAILURE_DETAILS_CHARS = 2_048
+const CODE_SUBMISSION_RATE_LIMIT_DEFAULT_SECONDS = 30
+const CODE_SUBMISSION_RATE_LIMIT_MAX_SECONDS = 5 * 60
 
 type SubmissionRow = DB.CodeSubmission
 type CodeSubmissionReader = Pick<DB.Prisma.TransactionClient, 'codeSubmission'>
@@ -285,7 +287,10 @@ async function claimCodeSubmission({
       id: submissionId,
       claimAttempts: { lt: CODE_SUBMISSION_MAX_ATTEMPTS },
       OR: [
-        { status: DB.CodeSubmissionStatus.PENDING },
+        {
+          status: DB.CodeSubmissionStatus.PENDING,
+          OR: [{ retryAt: null }, { retryAt: { lte: now } }],
+        },
         {
           status: DB.CodeSubmissionStatus.RUNNING,
           claimExpiresAt: { lt: now },
@@ -300,6 +305,7 @@ async function claimCodeSubmission({
       failureCode: null,
       failureDetails: null,
       failedAt: null,
+      retryAt: null,
     },
   })
   if (claimed.count !== 1) return null
@@ -359,6 +365,7 @@ async function finalizeCodeSubmission({
         failureCode: null,
         failureDetails: null,
         failedAt: null,
+        retryAt: null,
       },
     })
     if (completed.count !== 1) {
@@ -383,19 +390,36 @@ function failureMetadata(error: unknown) {
   }
 }
 
+function rateLimitRetryAt(error: unknown, now: Date): Date | null {
+  if (!(error instanceof CodeApiClientError) || error.kind !== 'rate_limit') {
+    return null
+  }
+  const delaySeconds = Math.min(
+    Math.max(
+      error.retryAfterSeconds ?? CODE_SUBMISSION_RATE_LIMIT_DEFAULT_SECONDS,
+      1
+    ),
+    CODE_SUBMISSION_RATE_LIMIT_MAX_SECONDS
+  )
+  return new Date(now.getTime() + delaySeconds * 1_000)
+}
+
 async function releaseOrFailCodeSubmission({
   submission,
   claimToken,
   error,
+  now,
   prisma,
 }: {
   submission: SubmissionRow
   claimToken: string
   error: unknown
+  now: Date
   prisma: DB.PrismaClient
 }) {
   const exhausted = submission.claimAttempts >= CODE_SUBMISSION_MAX_ATTEMPTS
   const failure = failureMetadata(error)
+  const retryAt = rateLimitRetryAt(error, now)
   const updated = await prisma.codeSubmission.updateMany({
     where: {
       id: submission.id,
@@ -407,9 +431,10 @@ async function releaseOrFailCodeSubmission({
           status: DB.CodeSubmissionStatus.FAILED,
           failureCode: failure.code,
           failureDetails: failure.details,
-          failedAt: new Date(),
+          failedAt: now,
           claimToken: null,
           claimExpiresAt: null,
+          retryAt: null,
         }
       : {
           status: DB.CodeSubmissionStatus.PENDING,
@@ -417,14 +442,20 @@ async function releaseOrFailCodeSubmission({
           failureDetails: failure.details,
           claimToken: null,
           claimExpiresAt: null,
+          retryAt,
         },
   })
-  if (updated.count !== 1) return null
-  return exhausted
-    ? await prisma.codeSubmission.findUniqueOrThrow({
-        where: { id: submission.id },
-      })
-    : null
+  if (updated.count !== 1) {
+    return { deferred: false, failed: null }
+  }
+  return {
+    deferred: !exhausted && retryAt !== null,
+    failed: exhausted
+      ? await prisma.codeSubmission.findUniqueOrThrow({
+          where: { id: submission.id },
+        })
+      : null,
+  }
 }
 
 export async function processCodeSubmission(
@@ -476,15 +507,17 @@ export async function processCodeSubmission(
       submission: claimed,
       claimToken: claimed.claimToken,
       error,
+      now: new Date(),
       prisma: globalCtx.prisma,
     })
-    if (failed) {
+    if (failed.failed) {
       globalCtx.pubSub.publish('codeSubmissionUpdated', {
-        participantId: failed.participantId,
-        receipt: toReceipt(failed),
+        participantId: failed.failed.participantId,
+        receipt: toReceipt(failed.failed),
       })
       return false
     }
+    if (failed.deferred) return false
     throw error
   }
 }
@@ -526,6 +559,7 @@ export const handleRecoverCodeSubmissions: HatchetHandlers['handleRecoverCodeSub
           failedAt: now,
           claimToken: null,
           claimExpiresAt: null,
+          retryAt: null,
         },
       })
       if (updated.count === 1) {
@@ -544,7 +578,10 @@ export const handleRecoverCodeSubmissions: HatchetHandlers['handleRecoverCodeSub
       where: {
         claimAttempts: { lt: CODE_SUBMISSION_MAX_ATTEMPTS },
         OR: [
-          { status: DB.CodeSubmissionStatus.PENDING },
+          {
+            status: DB.CodeSubmissionStatus.PENDING,
+            OR: [{ retryAt: null }, { retryAt: { lte: now } }],
+          },
           {
             status: DB.CodeSubmissionStatus.RUNNING,
             claimExpiresAt: { lt: now },

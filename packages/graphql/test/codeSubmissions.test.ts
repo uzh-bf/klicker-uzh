@@ -4,6 +4,7 @@ import {
   ElementInstanceType,
   ElementStackType,
   ElementType,
+  PermissionLevel,
   PrismaClient,
   PublicationStatus,
   UserLoginScope,
@@ -19,6 +20,7 @@ import {
   getInitialInstanceResults,
   processElementData,
 } from '@klicker-uzh/util'
+import { CodeApiClientError } from '@klicker-uzh/util/code-api'
 import { randomUUID } from 'node:crypto'
 import {
   afterAll,
@@ -36,6 +38,7 @@ import {
   processCodeSubmission,
   submitCodeResponse,
 } from '../src/services/codeSubmissions.js'
+import { getSingleElement } from '../src/services/elements.js'
 import {
   computeStackEvaluation,
   getPreviousStackEvaluation,
@@ -148,6 +151,12 @@ describe('CODE submission lifecycle', () => {
         explanation: 'Use addition.',
         options: codeOptions,
         ownerId: owner.id,
+        permissions: {
+          create: {
+            userId: owner.id,
+            permissionLevel: PermissionLevel.OWNER,
+          },
+        },
       },
     })
     const codeElementData = processElementData(element) as Extract<
@@ -233,6 +242,8 @@ describe('CODE submission lifecycle', () => {
 
     return {
       course,
+      element,
+      owner,
       participant,
       instance,
       ctx,
@@ -328,6 +339,48 @@ describe('CODE submission lifecycle', () => {
       extensions: { code: 'FORBIDDEN' },
     })
     expect(data.runNoWait).not.toHaveBeenCalled()
+  })
+
+  it('keeps full authoring snapshots behind instructor permission', async () => {
+    const data = await fixture()
+    const ownerContext = {
+      ...data.ctx,
+      user: {
+        ...data.ctx.user,
+        sub: data.owner.id,
+        role: UserRole.USER,
+      },
+    } as ContextWithUser
+    const authorized = await getSingleElement(
+      { id: data.element.id },
+      ownerContext
+    )
+    expect(authorized).toMatchObject({
+      options: {
+        testCases: [
+          {
+            name: 'Public example',
+            expectedOutput: 3,
+            visibility: 'public',
+          },
+          {
+            name: 'Hidden example',
+            expectedOutput: 5,
+            visibility: 'hidden',
+          },
+        ],
+      },
+    })
+
+    const unauthorized = await getSingleElement(
+      { id: data.element.id },
+      {
+        ...ownerContext,
+        user: { ...ownerContext.user, sub: randomUUID() },
+      }
+    )
+    expect(unauthorized).toBeNull()
+    expect(await getSingleElement({ id: data.element.id }, data.ctx)).toBeNull()
   })
 
   it('finalizes all response side effects exactly once', async () => {
@@ -553,6 +606,63 @@ describe('CODE submission lifecycle', () => {
     })
   })
 
+  it('converges a bounded burst of 20 concurrent submissions', async () => {
+    const data = await fixture()
+    const additionalParticipants = await Promise.all(
+      Array.from({ length: 19 }, () => addParticipant(data))
+    )
+    const contexts = [data.ctx, ...additionalParticipants.map(({ ctx }) => ctx)]
+    const receipts = await Promise.all(
+      contexts.map((ctx) =>
+        submitCodeResponse(
+          {
+            instanceId: data.instance.id,
+            courseId: data.course.id,
+            code: 'def solve(a, b):\n    return a + b',
+            timeSpent: 12,
+          },
+          ctx
+        )
+      )
+    )
+
+    await expect(
+      Promise.all(
+        receipts.map(({ id }) =>
+          processCodeSubmission(
+            { submissionId: id },
+            data.globalCtx,
+            vi.fn().mockResolvedValue(executorResult)
+          )
+        )
+      )
+    ).resolves.toEqual(Array.from({ length: 20 }, () => true))
+
+    const [completed, responses, details, instance] = await Promise.all([
+      prisma.codeSubmission.count({
+        where: {
+          id: { in: receipts.map(({ id }) => id) },
+          status: CodeSubmissionStatus.COMPLETED,
+        },
+      }),
+      prisma.questionResponse.count({
+        where: { elementInstanceId: data.instance.id },
+      }),
+      prisma.questionResponseDetail.count({
+        where: { elementInstanceId: data.instance.id },
+      }),
+      prisma.elementInstance.findUniqueOrThrow({
+        where: { id: data.instance.id },
+      }),
+    ])
+    expect({ completed, responses, details }).toEqual({
+      completed: 20,
+      responses: 20,
+      details: 20,
+    })
+    expect(instance.results).toMatchObject({ total: 20 })
+  })
+
   it('retries a failed attempt without leaking partial side effects', async () => {
     const data = await fixture()
     const receipt = await submit(data)
@@ -582,6 +692,115 @@ describe('CODE submission lifecycle', () => {
       )
     ).toBe(true)
     expect(await prisma.questionResponseDetail.count()).toBe(1)
+  })
+
+  it('defers a rate-limited receipt until Retry-After expires', async () => {
+    const data = await fixture()
+    const receipt = await submit(data)
+    const before = Date.now()
+    const rateLimitError = new CodeApiClientError(
+      'rate_limit',
+      'CodeAPI request failed with status 429',
+      { status: 429, retryAfterSeconds: 17 }
+    )
+
+    expect(
+      await processCodeSubmission(
+        { submissionId: receipt.id },
+        data.globalCtx,
+        vi.fn().mockRejectedValue(rateLimitError)
+      )
+    ).toBe(false)
+    const deferred = await prisma.codeSubmission.findUniqueOrThrow({
+      where: { id: receipt.id },
+    })
+    expect(deferred).toMatchObject({
+      status: CodeSubmissionStatus.PENDING,
+      claimAttempts: 1,
+      failureCode: 'CODEAPI_RATE_LIMIT',
+    })
+    expect(deferred.retryAt).not.toBeNull()
+    expect(deferred.retryAt!.getTime()).toBeGreaterThanOrEqual(before + 17_000)
+    expect(deferred.retryAt!.getTime()).toBeLessThan(before + 18_000)
+
+    const prematureExecutor = vi.fn().mockResolvedValue(executorResult)
+    expect(
+      await processCodeSubmission(
+        { submissionId: receipt.id },
+        data.globalCtx,
+        prematureExecutor
+      )
+    ).toBe(false)
+    expect(prematureExecutor).not.toHaveBeenCalled()
+    expect(
+      await handleRecoverCodeSubmissions(
+        {},
+        data.globalCtx,
+        {} as Parameters<typeof handleRecoverCodeSubmissions>[2]
+      )
+    ).not.toContain(receipt.id)
+
+    await prisma.codeSubmission.update({
+      where: { id: receipt.id },
+      data: { retryAt: new Date(Date.now() - 1_000) },
+    })
+    expect(
+      await handleRecoverCodeSubmissions(
+        {},
+        data.globalCtx,
+        {} as Parameters<typeof handleRecoverCodeSubmissions>[2]
+      )
+    ).toContain(receipt.id)
+    expect(
+      await processCodeSubmission(
+        { submissionId: receipt.id },
+        data.globalCtx,
+        vi.fn().mockResolvedValue(executorResult)
+      )
+    ).toBe(true)
+  })
+
+  it.each([
+    {
+      label: 'uses the default delay without Retry-After',
+      retryAfterSeconds: undefined,
+      expectedDelaySeconds: 30,
+    },
+    {
+      label: 'caps an excessive Retry-After delay',
+      retryAfterSeconds: 3_600,
+      expectedDelaySeconds: 300,
+    },
+  ])('$label', async ({ retryAfterSeconds, expectedDelaySeconds }) => {
+    const data = await fixture()
+    const receipt = await submit(data)
+    const before = Date.now()
+    const rateLimitError = new CodeApiClientError(
+      'rate_limit',
+      'CodeAPI request failed with status 429',
+      {
+        status: 429,
+        ...(retryAfterSeconds === undefined ? {} : { retryAfterSeconds }),
+      }
+    )
+
+    expect(
+      await processCodeSubmission(
+        { submissionId: receipt.id },
+        data.globalCtx,
+        vi.fn().mockRejectedValue(rateLimitError)
+      )
+    ).toBe(false)
+    const deferred = await prisma.codeSubmission.findUniqueOrThrow({
+      where: { id: receipt.id },
+    })
+    expect(deferred.retryAt).not.toBeNull()
+    expect(deferred.retryAt!.getTime()).toBeGreaterThanOrEqual(
+      before + expectedDelaySeconds * 1_000
+    )
+    expect(deferred.retryAt!.getTime()).toBeLessThan(
+      before + (expectedDelaySeconds + 1) * 1_000
+    )
   })
 
   it('reclaims an expired worker claim', async () => {
