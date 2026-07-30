@@ -175,8 +175,9 @@ function LiveQuizActions({
                 liveQuiz.status === PublicationStatus.Scheduled)
             ? ['deleteLiveQuiz']
             : []),
-        // completed assessment live quizzes can be reset by assessment course admins
-        ...(liveQuiz.isAssessmentEnabled && liveQuiz.isActivityReviewer
+        // regular live quizzes can be reset by managers; completed assessment
+        // live quizzes retain the additional assessment reviewer restriction
+        ...(!liveQuiz.isAssessmentEnabled || liveQuiz.isActivityReviewer
           ? ['resetLiveQuiz']
           : []),
         'deleteTemplate',
@@ -272,7 +273,6 @@ function LiveQuizActions({
           <LiveQuizResetModal
             quizId={liveQuiz.id}
             courseId={liveQuiz.courseId}
-            isGamificationEnabled={liveQuiz.isGamificationEnabled}
             onClose={() => setResetModal(false)}
             onSuccess={async () => {
               await refetchActivities?.()

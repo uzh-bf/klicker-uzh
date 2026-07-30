@@ -241,7 +241,7 @@ function useLiveQuizActions({
         label: t('manage.liveQuizzes.resetLiveQuiz'),
         icon: faArrowsRotate,
         onClick: () => setResetModal(true),
-        data: { cy: `reset-assessment-live-quiz-${quiz.name}` },
+        data: { cy: `reset-live-quiz-${quiz.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },
       {

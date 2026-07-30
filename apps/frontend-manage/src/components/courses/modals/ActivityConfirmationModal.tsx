@@ -7,10 +7,11 @@ interface ActivityConfirmationModalProps {
   title: string
   message: string | React.ReactNode
   loading?: boolean
-  onSubmit: () => Promise<any>
+  onSubmit: () => Promise<boolean | void>
   submitting: boolean
   confirmations: Record<string, boolean>
   confirmationsInitializing: boolean
+  primaryDisabled?: boolean
   confirmationType?: 'confirm' | 'delete'
   children: React.ReactNode
 }
@@ -24,11 +25,13 @@ function ActivityConfirmationModal({
   submitting,
   confirmations,
   confirmationsInitializing,
+  primaryDisabled,
   confirmationType = 'confirm',
   children,
 }: ActivityConfirmationModalProps) {
   const t = useTranslations()
   const disabled =
+    primaryDisabled ||
     confirmationsInitializing ||
     Object.values(confirmations).some((confirmation) => !confirmation)
 
@@ -50,8 +53,8 @@ function ActivityConfirmationModal({
             : undefined
       }
       onPrimaryAction={async () => {
-        await onSubmit()
-        onClose()
+        const success = await onSubmit()
+        if (success !== false) onClose()
       }}
       dataPrimaryAction={{ cy: 'confirmation-modal-confirm' }}
       secondaryLabel={t('shared.generic.cancel')}
