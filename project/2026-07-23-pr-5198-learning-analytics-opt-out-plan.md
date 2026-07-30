@@ -9,7 +9,7 @@
 - Pull request: [#5198](https://github.com/uzh-bf/klicker-uzh/pull/5198)
 - Active stack branch: `codex/la-opt-out-computation-eligibility`
 - Active stack target: `codex/la-opt-out-participant-choice`
-- Active stack pull request: not yet published
+- Active stack pull request: [#5244](https://github.com/uzh-bf/klicker-uzh/pull/5244)
 - Change type: `feat`
 - ADRs:
   - [ADR 0001](../docs/adr/0001-separate-course-and-participant-learning-analytics-controls.md)
@@ -612,5 +612,7 @@ Commit:
   notebook bypasses, replaced stale cumulative counts with eligible detail-row
   counts, excluded free-text elements from numerator and denominator paths, and
   found no remaining blocker.
-- Current: Slice 4 is verified and ready to publish as a draft PR stacked on
-  `codex/la-opt-out-participant-choice`.
+- 2026-07-30: Slice 4 published as draft PR #5244, stacked directly on Slice
+  3's branch. The rendered base/head metadata and draft state were verified;
+  GitGuardian passed and repository checks entered the queue.
+- Current: Slice 4 is under review in draft PR #5244.
