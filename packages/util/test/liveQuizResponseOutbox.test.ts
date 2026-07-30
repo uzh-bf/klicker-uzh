@@ -59,6 +59,27 @@ describe('correlated live quiz outbox contract', () => {
     ).toThrow('Invalid correlated response outbox message')
   })
 
+  it('rejects incomplete question-specific metadata', () => {
+    const encryptedPayload = encryptCorrelatedResponseEvent({
+      message: {
+        ...message,
+        instanceInfo: {
+          type: 'SC',
+          blockExecution: '1',
+          sessionBlockId: '7',
+        },
+      } as unknown as CorrelatedResponseEventMessage,
+      secret: 'test-secret',
+    })
+
+    expect(() =>
+      decryptCorrelatedResponseEvent({
+        encryptedPayload,
+        secret: 'test-secret',
+      })
+    ).toThrow('Invalid correlated response outbox message')
+  })
+
   it('rejects a truncated authentication tag', () => {
     const encryptedPayload = encryptCorrelatedResponseEvent({
       message,

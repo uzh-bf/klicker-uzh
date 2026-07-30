@@ -19,7 +19,6 @@ import {
   isPersistedResponseRetry,
   persistAcceptedCorrelatedResponse,
   prepareCorrelatedMessageProcessing,
-  prepareCorrelatedResponseProcessing,
   resolveCorrelatedResponseDelivery,
   resolveCorrelatedResponseOwner,
   settleCorrelatedResponseOutbox,
@@ -396,74 +395,6 @@ describe('correlated response persistence helpers', () => {
     )
   })
 
-  it('allows overlapping processing to converge on durable idempotency', async () => {
-    const redis = new MemoryProcessingRedis()
-    const params = {
-      redis,
-      processedKey: 'processed-key',
-      owner: {
-        kind: 'anonymous' as const,
-        id: 'respondent-id',
-        identityKey: 'respondent:respondent-id',
-      },
-      messageId: 'message-1',
-    }
-
-    const first = await prepareCorrelatedResponseProcessing(params)
-    assert.equal(first.status, 'process')
-    assert.deepEqual(await prepareCorrelatedResponseProcessing(params), {
-      status: 'process',
-    })
-  })
-
-  it('recognizes a response persisted by the same accepted event', async () => {
-    const timestamp = Date.now()
-    const result = await persistAcceptedCorrelatedResponse({
-      database: {
-        $transaction: async (callback: (prisma: any) => Promise<unknown>) =>
-          callback({
-            $queryRaw: async () => [
-              {
-                blockExecution: 3,
-                blockStatus: 'ACTIVE',
-                isAssessmentEnabled: false,
-                responseCollectionMode: 'CORRELATED_EXPORT',
-                status: 'PUBLISHED',
-              },
-            ],
-            liveQuizResponse: {
-              findUnique: async () => ({
-                submittedAt: new Date(timestamp),
-              }),
-              create: async () => assert.fail('must not create a retry'),
-            },
-          }),
-        liveQuizResponse: {
-          findUnique: async () => null,
-        },
-      } as any,
-      liveQuizId: randomUUID(),
-      owner: {
-        kind: 'participant',
-        id: 'participant-id',
-        identityKey: 'participant:participant-id',
-      },
-      instanceId: 42,
-      blockExecution: 3,
-      response: { value: 'answer' },
-      submittedAt: timestamp,
-      correctnessPercentage: 1,
-      basePoints: 1,
-      correctnessPoints: 2,
-      bonusPoints: 3,
-    })
-
-    assert.deepEqual(result, {
-      status: 'persisted',
-      applyRedisEffects: true,
-    })
-  })
-
   it('persists an accepted response after normal quiz end without late Redis effects', async () => {
     let created = false
     const result = await persistAcceptedCorrelatedResponse({
@@ -628,24 +559,6 @@ describe('correlated response persistence helpers', () => {
       status: 'persisted',
       applyRedisEffects: false,
     })
-  })
-
-  it('returns a completed response without acquiring a processing lock', async () => {
-    const redis = new MemoryProcessingRedis()
-    redis.setHashValue('processed-key', 'respondent:respondent-id', 'message-1')
-
-    const result = await prepareCorrelatedResponseProcessing({
-      redis,
-      processedKey: 'processed-key',
-      owner: {
-        kind: 'anonymous',
-        id: 'respondent-id',
-        identityKey: 'respondent:respondent-id',
-      },
-      messageId: 'message-1',
-    })
-
-    assert.deepEqual(result, { status: 'processed' })
   })
 
   it('processes an admitted identity without revalidating its browser token', async () => {

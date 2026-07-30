@@ -116,24 +116,14 @@ async function processResolvedCorrelatedResponse({
     const instanceInfo = message.instanceInfo
 
     const preparation = await prepareCorrelatedMessageProcessing({
-      redis,
       database,
       message,
       blockExecution: instanceInfo.blockExecution,
-      sessionBlockId: instanceInfo.sessionBlockId,
       responseKey,
     })
     if (preparation.status === 'invalid') {
       await settleOutbox()
       return { status: 400 }
-    }
-    if (preparation.status === 'processed') {
-      await settleOutbox()
-      return { status: 200 }
-    }
-    if (preparation.status === 'duplicate') {
-      await settleOutbox()
-      return { status: 208 }
     }
     correlatedState = preparation.state
 
@@ -160,7 +150,8 @@ async function processResolvedCorrelatedResponse({
 
     const effectPlan = planCorrelatedQuestionResponseEffects({
       type: prepared.type,
-      choiceCount: instanceInfo.choiceCount,
+      choiceCount:
+        'choiceCount' in instanceInfo ? instanceInfo.choiceCount : undefined,
       response: message.response,
       instanceInfo,
       instanceKey,

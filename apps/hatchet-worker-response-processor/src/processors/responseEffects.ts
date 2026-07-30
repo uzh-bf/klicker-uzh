@@ -1,4 +1,8 @@
 import type { LiveQuizResponseInput } from '@klicker-uzh/types'
+import {
+  isLiveQuizQuestionType,
+  type LiveQuizQuestionType,
+} from '@klicker-uzh/util'
 import { createHash } from 'crypto'
 import { DEFAULT_POINTS } from '../constants.js'
 import {
@@ -23,15 +27,7 @@ export interface RedisHashMutationQueue {
   hsetnx(key: string, field: string, value: string | number): unknown
 }
 
-export type LiveQuizQuestionType =
-  | 'SC'
-  | 'MC'
-  | 'KPRIM'
-  | 'NUMERICAL'
-  | 'FREE_TEXT'
-  | 'SELECTION'
-  | 'CASE_STUDY'
-  | 'CONTENT'
+export { isLiveQuizQuestionType, type LiveQuizQuestionType }
 
 export type QuestionGrading = {
   basePoints: number
@@ -68,21 +64,6 @@ export type PlanQuestionResponseEffectsArgs = {
   pointsMultiplier?: string
   parsedSolutions: any
   gradeResponse: boolean
-}
-
-export function isLiveQuizQuestionType(
-  type: string
-): type is LiveQuizQuestionType {
-  return [
-    'SC',
-    'MC',
-    'KPRIM',
-    'NUMERICAL',
-    'FREE_TEXT',
-    'SELECTION',
-    'CASE_STUDY',
-    'CONTENT',
-  ].includes(type)
 }
 
 function createHashMutation(

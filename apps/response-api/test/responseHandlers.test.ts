@@ -137,6 +137,7 @@ describe('standard live quiz response handlers', () => {
               blockId: 7,
               blockStatus: 'ACTIVE',
               isAssessmentEnabled: false,
+              pinCode: null,
               responseCollectionMode:
                 LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
               status: PublicationStatus.PUBLISHED,

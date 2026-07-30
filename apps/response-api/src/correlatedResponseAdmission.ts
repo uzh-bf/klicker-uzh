@@ -14,6 +14,7 @@ import {
   LIVE_QUIZ_RESPONDENT_TOKEN_MAX_AGE_SECONDS,
   parseCookiesHeader,
   type CorrelatedResponseEventMessage,
+  type CorrelatedResponseInstanceInfo,
   type LiveQuizResponseIdentity,
 } from '@klicker-uzh/util'
 
@@ -69,6 +70,7 @@ export async function admitCorrelatedResponse({
   response,
   responseTimestamp,
   instanceInfo,
+  cookieHeader,
   secret,
   nextDeliveryAt = new Date(Date.now() + CORRELATED_OUTBOX_RETRY_MS),
 }: {
@@ -79,17 +81,12 @@ export async function admitCorrelatedResponse({
   messageId: string
   response: CorrelatedResponseEventMessage['response']
   responseTimestamp: number
-  instanceInfo: Record<string, string>
+  instanceInfo: CorrelatedResponseInstanceInfo
+  cookieHeader: string | undefined
   secret: string
   nextDeliveryAt?: Date
 }) {
   const blockExecution = instanceInfo.blockExecution
-  if (!blockExecution) {
-    throw new Error(
-      `Missing block execution in correlated response metadata for lq:${liveQuizId}:i:${instanceId}:info`
-    )
-  }
-
   const parsedInstanceId = Number(instanceId)
   const parsedBlockExecution = Number(blockExecution)
   const parsedSessionBlockId = Number(instanceInfo.sessionBlockId)
@@ -110,6 +107,7 @@ export async function admitCorrelatedResponse({
           blockId: number
           blockStatus: ElementBlockStatus
           isAssessmentEnabled: boolean
+          pinCode: string | null
           responseCollectionMode: LiveQuizResponseCollectionMode
           status: PublicationStatus
         }[]
@@ -120,6 +118,7 @@ export async function admitCorrelatedResponse({
           block."id" AS "blockId",
           block."status"::text AS "blockStatus",
           quiz."isAssessmentEnabled",
+          quiz."pinCode",
           quiz."responseCollectionMode"::text AS "responseCollectionMode",
           quiz."status"::text AS "status"
         FROM "public"."LiveQuiz" AS quiz
@@ -146,6 +145,15 @@ export async function admitCorrelatedResponse({
         admission.blockExecution !== parsedBlockExecution
       ) {
         return { status: 'not_found' as const }
+      }
+      if (
+        !hasValidLiveQuizPin({
+          cookieHeader,
+          liveQuizId,
+          pinCode: admission.pinCode,
+        })
+      ) {
+        return { status: 'pin_required' as const }
       }
 
       if (identity.kind === 'participant') {

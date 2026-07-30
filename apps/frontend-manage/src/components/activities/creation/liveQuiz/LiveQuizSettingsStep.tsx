@@ -157,6 +157,16 @@ function LiveQuizSettingsStep({
     nonGamifiedCourses: nonGamifiedCourses ?? [],
     assessmentCourses: assessmentCourses ?? [],
   })
+  const availableCourses = [
+    ...(gamifiedCourses ?? []),
+    ...(nonGamifiedCourses ?? []),
+    ...(assessmentCourses ?? []),
+  ]
+  const correlatedIncompatibleCourseIds = new Set(
+    [...(gamifiedCourses ?? []), ...(assessmentCourses ?? [])].map(
+      (course) => course.value
+    )
+  )
 
   return (
     <Formik
@@ -174,11 +184,9 @@ function LiveQuizSettingsStep({
         setFieldValue,
         setValues,
       }) => {
-        const selectedCourse = [
-          ...(gamifiedCourses ?? []),
-          ...(nonGamifiedCourses ?? []),
-          ...(assessmentCourses ?? []),
-        ].find((course) => course.value === values.courseId)
+        const selectedCourse = availableCourses.find(
+          (course) => course.value === values.courseId
+        )
         const customizedGradingEnabled =
           parseInt(String(values.defaultPoints)) !== LQ_DEFAULT_POINTS ||
           parseInt(String(values.defaultCorrectPoints)) !==
@@ -203,10 +211,9 @@ function LiveQuizSettingsStep({
           ? groupedCourses.map((group) => ({
               ...group,
               items: group.items.map((item) => {
-                const incompatibleCourse = [
-                  ...(gamifiedCourses ?? []),
-                  ...(assessmentCourses ?? []),
-                ].some((course) => course.value === item.value)
+                const incompatibleCourse = correlatedIncompatibleCourseIds.has(
+                  item.value
+                )
 
                 return incompatibleCourse
                   ? {
@@ -249,20 +256,11 @@ function LiveQuizSettingsStep({
                         value={values.courseId}
                         onChange={(value) => {
                           const prevCourse = values.courseId
-                            ? [
-                                ...(gamifiedCourses ?? []),
-                                ...(nonGamifiedCourses ?? []),
-                                ...(assessmentCourses ?? []),
-                              ].find(
-                                (course) => course.value === values.courseId
-                              )
+                            ? selectedCourse
                             : undefined
-
-                          const nextCourse = [
-                            ...(gamifiedCourses ?? []),
-                            ...(nonGamifiedCourses ?? []),
-                            ...(assessmentCourses ?? []),
-                          ].find((course) => course.value === value)
+                          const nextCourse = availableCourses.find(
+                            (course) => course.value === value
+                          )
 
                           void setValues(
                             applyCourseSelection(

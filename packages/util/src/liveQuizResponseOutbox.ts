@@ -8,6 +8,7 @@ import type {
   AcceptedCorrelatedResponseIdentity,
   CorrelatedResponseEventMessage,
 } from './liveQuizResponseIdentity.js'
+import { parseCorrelatedResponseInstanceInfo } from './liveQuizResponseMetadata.js'
 
 const CORRELATED_OUTBOX_ENCRYPTION_CONTEXT =
   'klicker-live-quiz-correlated-outbox-v1'
@@ -52,10 +53,7 @@ function isCorrelatedResponseEventMessage(
     typeof value.responseTimestamp === 'number' &&
     Number.isFinite(value.responseTimestamp) &&
     !('cookie' in value) &&
-    isRecord(value.instanceInfo) &&
-    Object.values(value.instanceInfo).every(
-      (entry) => typeof entry === 'string'
-    ) &&
+    parseCorrelatedResponseInstanceInfo(value.instanceInfo) !== null &&
     isAcceptedIdentity(value.acceptedIdentity)
   )
 }

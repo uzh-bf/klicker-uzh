@@ -22,7 +22,6 @@ import {
   updateLiveQuizBlockResultsFromCache,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
-import generatePassword from 'generate-password'
 import { GraphQLError } from 'graphql'
 import type { Redis } from 'ioredis'
 import { min } from 'mathjs'
@@ -33,6 +32,7 @@ import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { computeRanks } from '../lib/util.js'
 import { getPermissionBooleans } from './activities.js'
+import { allocateLiveQuizPin } from './liveQuizPin.js'
 import {
   clearLiveQuizScheduledPublicationTask,
   deleteLiveQuizScheduledPublicationTask,
@@ -345,32 +345,7 @@ export async function manipulateLiveQuiz(
   // find a new pin code that is still available, if required
   let newPinCode: string | undefined | null = existingActivity?.pinCode
   if (requiresNewPin) {
-    let pinValid = false
-
-    for (let attempt = 0; attempt < 10; attempt++) {
-      // generate a new pin code
-      newPinCode = generatePassword.generate({
-        uppercase: true,
-        lowercase: false,
-        numbers: true,
-        symbols: false,
-        length: 6,
-      })
-
-      // check if the pin code is still available
-      const existingLiveQuiz = await ctx.prisma.liveQuiz.findUnique({
-        where: { pinCode: newPinCode },
-      })
-      if (!existingLiveQuiz) {
-        pinValid = true
-        break
-      }
-    }
-
-    // if the pin is still invalid, return null and abort the transaction
-    if (!pinValid) {
-      throw new Error('Could not find available pin code for live quiz')
-    }
+    newPinCode = await allocateLiveQuizPin({ database: ctx.prisma })
   }
 
   // re-create blocks and link existing instance / create new instances (depending on mode and novelty of the included element)

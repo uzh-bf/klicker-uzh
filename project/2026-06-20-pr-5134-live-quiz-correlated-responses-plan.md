@@ -6,7 +6,9 @@ Plan path: `project/2026-06-20-pr-5134-live-quiz-correlated-responses-plan.md`
 Branch: `codex/live-quiz-correlated-responses`
 Target: `v3`
 PR: [#5134](https://github.com/uzh-bf/klicker-uzh/pull/5134)
-Status: maintainability remediation implemented; final verification and review in progress
+Status: exact-review improvement implementation and verification complete; exact-commit review and PR publication in progress
+
+Authority: [ADR 0001](../docs/adr/0001-correlated-live-quiz-response-boundary.md) and the engineering wiki define the current architecture. Dated sections in this plan preserve execution and review history; where an older design mentions Redis claims, leases, unlocked preflight, or non-concurrent indexing, the latest remediation section and ADR supersede it.
 
 ## Non-Goals
 
@@ -15,6 +17,21 @@ Status: maintainability remediation implemented; final verification and review i
 - No research / DP export in this slice. Later admin workflow.
 - No PII removal from free-text responses yet.
 - No per-respondent live UI. Live/evaluation UI stays aggregate-only.
+
+## Code Quality Review Improvement Plan - 2026-07-30
+
+Exact-commit thermo-nuclear, security, simplification, and branch crosscheck reviews of `f424f03a16..829c53b3fe` produced the following concrete work. Security found no qualifying vulnerability; every actionable maintainability, correctness, rollout, and simplification finding is included here.
+
+| Priority | Finding | Improvement | Proof | Status |
+| --- | --- | --- | --- | --- |
+| High | The long execution plan still described obsolete lease and preflight architectures, making it an unsafe implementation authority. | Make ADR 0001 and the wiki authoritative; mark dated plan text historical and update the current target architecture. | Documentation review plus exact-commit maintainability review. | Implemented |
+| High | Accepted instance metadata crossed GraphQL, Redis, response API, encrypted outbox, and worker as an untyped string record with duplicated question-type lists. | Add one discriminated `CorrelatedResponseInstanceInfo` contract and canonical question-type tuple in `@klicker-uzh/util`; parse at admission and decryption boundaries and consume the canonical guard in the worker. | Utility contract tests, response API tests, worker tests, and package typechecks. | Implemented |
+| High | Correlated submission performed a non-authoritative readiness/PIN lookup before atomic admission, allowing state to change between checks. | Keep the lightweight lookup only for identity initialization; verify the current PIN together with mode, lifecycle, block generation, identity, and outbox insertion inside the shared-lock transaction. | Response API test proving a wrong locked PIN creates neither identity nor outbox row; database-backed concurrency tests. | Implemented |
+| High | Worker delivery checked Redis and PostgreSQL before attempting the authoritative unique insert, duplicating retry classification and adding reads to every response. | Insert directly under the lifecycle transaction; on `P2002`, re-read once and distinguish same-event retry by accepted timestamp from a true duplicate. Let the atomic Lua marker own Redis idempotency. | Worker direct-insert, collision-recovery, duplicate, and Redis-marker tests. | Implemented |
+| High | The new respondent uniqueness index used ordinary `CREATE UNIQUE INDEX`, which could block writes on the shared `LiveQuizResponse` table during rollout. | Build it with `CREATE UNIQUE INDEX CONCURRENTLY`; add the respondent foreign key `NOT VALID` and validate it separately. Keep correlated publication disabled until migration and all consumers are upgraded. | Clean migration run, schema drift check, and disabled Helm gate rendering. | Implemented |
+| Medium | Three services independently generated live-quiz PINs with the same bounded retry loop. | Centralize six-character uppercase/numeric allocation and collision retry in `liveQuizPin.ts`. | GraphQL policy/database suites and typecheck. | Implemented |
+| Medium | `LiveQuizSettingsStep` rebuilt the same filtered course list and incompatibility lookup in several render paths. | Compute the available course list, selected course, and incompatible ID set once per render. | Manage typecheck and browser regression proof. | Implemented |
+| Deferred | Production currently gives the response API the broad backend database credential. | Introduce a dedicated least-privilege response-ingest role after this feature, before treating the credential boundary as hardened. | Deployment-role review and production rollout test. | Explicit follow-up |
 
 ## Current Evidence
 
@@ -55,11 +72,11 @@ Status: maintainability remediation implemented; final verification and review i
 
 Aggregated mode:
 
-> Responses are counted only in aggregate. Answers are not linked across questions.
+> This quiz does not create a participant-level response export. Answers contribute to aggregate result totals.
 
 German:
 
-> Antworten werden nur aggregiert ausgewertet und nicht über Fragen hinweg verknüpft.
+> Dieses Quiz erstellt keinen Export von Antworten auf Personenebene. Antworten fliessen in aggregierte Ergebniswerte ein.
 
 Correlated mode:
 
@@ -147,9 +164,9 @@ In `CORRELATED_EXPORT`:
 
 - standard response worker persists `LiveQuizResponse` for all respondents.
 - still updates Redis aggregate path for live/evaluation UI.
-- response-api checks durable duplicates and uses a five-minute, per-identity Redis lease so duplicate submissions synchronously return recorded-before without permanently blocking a retry after an abandoned enqueue.
-- worker-side lookup remains the authoritative first-response-wins gate before insert.
-- worker applies preflighted Redis aggregate mutations and the processed marker in one Lua operation, so ambiguous delivery retries cannot double-count a committed response.
+- response API atomically rechecks current PIN, lifecycle, mode, active block generation, and identity under shared locks before inserting the encrypted outbox receipt.
+- the permanent unique response key is the admission duplicate gate; the worker writes the durable response directly and classifies `P2002` collisions by accepted timestamp.
+- worker applies bounded Redis aggregate mutations and the processed marker in one Lua operation, so ambiguous delivery retries cannot double-count a committed response.
 
 In `AGGREGATED_ANONYMOUS`:
 
@@ -451,7 +468,7 @@ Later research:
 
 - Goal: resolve the final strict-review findings without changing the approved response modes, identity model, persistence semantics, CSV shape, privacy notices, or assessment separation.
 - Non-goal: no schema, endpoint, event-name, UI, or export-contract behavior change unless verification exposes a defect.
-- Decision: keep the existing PR and plan as the implementation authority; these are follow-up slices on the same feature branch.
+- Decision: keep the existing PR and plan for execution history; ADR 0001 and the affected wiki pages are the current architecture authority.
 - Decision: preserve aggregate mode as Redis-only and correlated mode as durable outbox-backed persistence plus aggregate Redis effects.
 - Decision: keep assessment processing completely separate.
 
@@ -777,6 +794,23 @@ final-remediation pass.
   export package root and its correlated-response public subpath. Opengrep ran
   210 rules over 42 affected source files; its six findings are on unchanged
   legacy lines and no finding is introduced by this remediation.
+- 2026-07-30: The code-quality improvement pass replaced the cross-process
+  string record with one discriminated metadata contract, made PIN validation
+  part of atomic admission, removed the worker's Redis and database pre-reads,
+  centralized live-quiz PIN allocation, switched the respondent index to a
+  concurrent build, and removed repeated course-list derivation. ADR 0001 and
+  the engineering wiki now own the current architecture.
+- 2026-07-30: Post-improvement verification passed 68 utility, 20 response API,
+  28 response-worker, and 50 database-backed GraphQL cases. A clean database
+  replay applied all 180 migrations and Prisma reported no drift; `check:all`
+  and the full 22-task build passed. Helm still renders the publication gate
+  disabled. Opengrep's three findings are unchanged legacy format-string
+  findings outside the changed hunks.
+- 2026-07-30: Desktop browser evidence at 1440x1000 confirms the aggregate-only
+  state disables correlated export for a gamified course and explains why,
+  while the correlated state uses no course and communicates random-label
+  export without identifiable respondent fields. Existing 390x844 participant
+  notice evidence remains valid because this pass did not change PWA behavior.
 
 ## Goal Prompt Requirements
 

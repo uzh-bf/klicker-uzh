@@ -19,7 +19,6 @@ import {
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat.js'
-import generatePassword from 'generate-password'
 import { random } from 'mathjs'
 import { prop, sortBy } from 'remeda'
 import type { Context, ContextWithUser } from '../lib/context.js'
@@ -29,6 +28,7 @@ import {
   calculateAssessmentCourseScores,
   getInstanceAvailablePoints,
 } from './assessmentScores.js'
+import { allocateLiveQuizPin } from './liveQuizPin.js'
 import {
   deriveCourseLiveQuizResponseCollectionTransition,
   lockCourseLiveQuizResponseCollectionState,
@@ -2903,26 +2903,7 @@ export async function updateCourseSettings(
 
         let pinCode = liveQuiz.pinCode
         if (!pinCode) {
-          for (let attempt = 0; attempt < 10; attempt++) {
-            const candidate = generatePassword.generate({
-              uppercase: true,
-              lowercase: false,
-              numbers: true,
-              symbols: false,
-              length: 6,
-            })
-            const existing = await prisma.liveQuiz.findUnique({
-              where: { pinCode: candidate },
-              select: { id: true },
-            })
-            if (!existing) {
-              pinCode = candidate
-              break
-            }
-          }
-        }
-        if (!pinCode) {
-          throw new Error('Could not find available pin code for live quiz')
+          pinCode = await allocateLiveQuizPin({ database: prisma })
         }
 
         await prisma.liveQuiz.update({

@@ -5,8 +5,8 @@ import {
   PrismaTransactionClient,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
-import generatePassword from 'generate-password'
 import { POINTS_PER_GROUP_ACTIVITY_ELEMENT } from './groups.js'
+import { allocateLiveQuizPin } from './liveQuizPin.js'
 import {
   deriveLiveQuizResponseCollectionMode,
   lockCourseLiveQuizResponseCollectionSettings,
@@ -748,32 +748,7 @@ export async function applyActivityBatchOperations(
       // if required, find a new pin code for the live quiz that is still available
       let newPinCode: string | null = null
       if (isCourseChanged && targetCourse?.isAssessmentEnabled) {
-        let pinValid = false
-
-        for (let attempt = 0; attempt < 10; attempt++) {
-          // generate a new pin code
-          newPinCode = generatePassword.generate({
-            uppercase: true,
-            lowercase: false,
-            numbers: true,
-            symbols: false,
-            length: 6,
-          })
-
-          // check if the pin code is still available
-          const existingLiveQuiz = await tx.liveQuiz.findUnique({
-            where: { pinCode: newPinCode },
-          })
-          if (!existingLiveQuiz) {
-            pinValid = true
-            break
-          }
-        }
-
-        // if the pin is still invalid, return null and abort the transaction
-        if (!pinValid) {
-          throw new Error('Could not find available pin code for live quiz')
-        }
+        newPinCode = await allocateLiveQuizPin({ database: tx })
       }
 
       const modifiedLiveQuiz = await tx.liveQuiz.update({

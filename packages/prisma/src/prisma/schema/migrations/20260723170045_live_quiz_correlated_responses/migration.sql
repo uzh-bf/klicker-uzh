@@ -40,10 +40,13 @@ ALTER TABLE "public"."LiveQuizResponse" VALIDATE CONSTRAINT "LiveQuizResponse_id
 CREATE INDEX "LiveQuizRespondent_liveQuizId_idx" ON "public"."LiveQuizRespondent"("liveQuizId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "LiveQuizResponse_instanceId_elementBlockExecution_responden_key" ON "public"."LiveQuizResponse"("instanceId", "elementBlockExecution", "respondentId");
+CREATE UNIQUE INDEX CONCURRENTLY "LiveQuizResponse_instanceId_elementBlockExecution_responden_key" ON "public"."LiveQuizResponse"("instanceId", "elementBlockExecution", "respondentId");
 
 -- AddForeignKey
 ALTER TABLE "public"."LiveQuizRespondent" ADD CONSTRAINT "LiveQuizRespondent_liveQuizId_fkey" FOREIGN KEY ("liveQuizId") REFERENCES "public"."LiveQuiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."LiveQuizResponse" ADD CONSTRAINT "LiveQuizResponse_respondentId_fkey" FOREIGN KEY ("respondentId") REFERENCES "public"."LiveQuizRespondent"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."LiveQuizResponse" ADD CONSTRAINT "LiveQuizResponse_respondentId_fkey" FOREIGN KEY ("respondentId") REFERENCES "public"."LiveQuizRespondent"("id") ON DELETE CASCADE ON UPDATE CASCADE NOT VALID;
+
+-- ValidateForeignKey
+ALTER TABLE "public"."LiveQuizResponse" VALIDATE CONSTRAINT "LiveQuizResponse_respondentId_fkey";

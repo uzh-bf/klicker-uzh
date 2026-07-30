@@ -2,14 +2,12 @@ import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import { LiveQuizResponseCollectionMode } from '@klicker-uzh/prisma/client'
 import {
   CORRELATED_RESPONSE_EVENT,
+  parseCorrelatedResponseInstanceInfo,
   resolveLiveQuizResponseIdentity,
   validateStudentResponse,
   type CorrelatedResponseDeliveryMessage,
 } from '@klicker-uzh/util'
-import {
-  admitCorrelatedResponse,
-  getCorrelatedResponseAdmission,
-} from './correlatedResponseAdmission.js'
+import { admitCorrelatedResponse } from './correlatedResponseAdmission.js'
 import type { LiveQuizResponseRequest } from './liveQuizResponseRequest.js'
 
 export async function handleCorrelatedResponse({
@@ -41,18 +39,6 @@ export async function handleCorrelatedResponse({
     }
   }
 
-  const admission = await getCorrelatedResponseAdmission({
-    database,
-    liveQuizId: request.liveQuizId,
-    cookieHeader: request.cookieHeader,
-  })
-  if (admission === 'not_found' || admission === 'not_required') {
-    return { status: 404, body: { error: 'Live quiz not found' } }
-  }
-  if (admission === 'pin_required') {
-    return { status: 403, body: { error: 'Live quiz PIN required' } }
-  }
-
   const identityConfig = getIdentityConfig()
   const identity = await resolveLiveQuizResponseIdentity({
     cookieHeader: request.cookieHeader,
@@ -67,10 +53,18 @@ export async function handleCorrelatedResponse({
     }
   }
 
+  const acceptedInstanceInfo = parseCorrelatedResponseInstanceInfo(instanceInfo)
+  if (!acceptedInstanceInfo) {
+    return {
+      status: 400,
+      body: { error: 'Invalid correlated response metadata' },
+    }
+  }
+
   let restrictions: unknown
   try {
-    restrictions = instanceInfo.restrictions
-      ? JSON.parse(instanceInfo.restrictions)
+    restrictions = acceptedInstanceInfo.restrictions
+      ? JSON.parse(acceptedInstanceInfo.restrictions)
       : undefined
   } catch (error) {
     throw new Error(
@@ -79,9 +73,9 @@ export async function handleCorrelatedResponse({
   }
 
   const validation = validateStudentResponse({
-    type: instanceInfo.type,
+    type: acceptedInstanceInfo.type,
     response: request.response,
-    instanceInfo,
+    instanceInfo: acceptedInstanceInfo,
     restrictions:
       typeof restrictions === 'object' && restrictions !== null
         ? restrictions
@@ -99,7 +93,8 @@ export async function handleCorrelatedResponse({
     messageId: request.messageId,
     response: request.response,
     responseTimestamp: request.responseTimestamp,
-    instanceInfo,
+    instanceInfo: acceptedInstanceInfo,
+    cookieHeader: request.cookieHeader,
     secret: identityConfig.secret,
   })
   if (registration.status === 'invalid_metadata') {
@@ -113,6 +108,9 @@ export async function handleCorrelatedResponse({
       status: 401,
       body: { error: 'Live quiz response identity is no longer active' },
     }
+  }
+  if (registration.status === 'pin_required') {
+    return { status: 403, body: { error: 'Live quiz PIN required' } }
   }
   if (registration.status === 'duplicate') {
     return {

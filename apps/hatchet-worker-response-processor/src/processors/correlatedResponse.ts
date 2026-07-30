@@ -13,7 +13,6 @@ import {
   decryptCorrelatedResponseEvent,
   type AcceptedCorrelatedResponseIdentity,
   type CorrelatedResponseEventMessage,
-  type LiveQuizResponseEventMessage,
   type LiveQuizResponseIdentityKey,
 } from '@klicker-uzh/util'
 import type { RedisHashMutation } from './responseEffects.js'
@@ -29,7 +28,6 @@ interface CorrelatedProcessingRedis {
     numberOfKeys: number,
     ...args: (number | string)[]
   ): Promise<unknown>
-  hget(key: string, field: string): Promise<string | null>
 }
 
 export type CorrelatedResponseOwner = AcceptedCorrelatedResponseIdentity & {
@@ -401,25 +399,6 @@ export async function persistAcceptedCorrelatedResponse({
         liveQuiz.status === PublicationStatus.PUBLISHED &&
         liveQuiz.blockStatus === ElementBlockStatus.ACTIVE
 
-      const existingResponse = await findPersistedCorrelatedResponse({
-        database: prisma,
-        owner,
-        instanceId,
-        blockExecution,
-      })
-
-      if (existingResponse) {
-        return isPersistedResponseRetry({
-          existingSubmittedAt: existingResponse.submittedAt,
-          responseTimestamp: submittedAt,
-        })
-          ? ({
-              status: 'persisted' as const,
-              applyRedisEffects,
-            } as const)
-          : ('duplicate' as const)
-      }
-
       await prisma.liveQuizResponse.create({
         data: buildCorrelatedResponseCreateData({
           owner,
@@ -478,55 +457,23 @@ export function getCorrelatedProcessedKey({
   return `lq:${liveQuizId}:i:${instanceId}:correlatedProcessed:${blockExecution}`
 }
 
-export async function prepareCorrelatedResponseProcessing({
-  redis,
-  processedKey,
-  owner,
-  messageId,
-}: {
-  redis: Pick<CorrelatedProcessingRedis, 'hget'>
-  processedKey: string
-  owner: CorrelatedResponseOwner
-  messageId: string
-}): Promise<
-  { status: 'duplicate' } | { status: 'processed' } | { status: 'process' }
-> {
-  const processedMessageId = await redis.hget(processedKey, owner.identityKey)
-  if (processedMessageId === messageId) return { status: 'processed' }
-  if (processedMessageId) return { status: 'duplicate' }
-
-  return { status: 'process' }
-}
-
 export async function prepareCorrelatedMessageProcessing({
-  redis,
   database,
   message,
   blockExecution,
-  sessionBlockId,
   responseKey,
 }: {
-  redis: Pick<CorrelatedProcessingRedis, 'hget'>
   database: CorrelatedResponseDatabase
   message: Pick<
-    LiveQuizResponseEventMessage,
-    'messageId' | 'sessionId' | 'instanceId' | 'responseTimestamp'
-  > & {
-    acceptedIdentity?: AcceptedCorrelatedResponseIdentity
-  }
-  blockExecution: string | undefined
-  sessionBlockId: string | undefined
+    CorrelatedResponseEventMessage,
+    'acceptedIdentity' | 'sessionId' | 'instanceId'
+  >
+  blockExecution: string
   responseKey: string
 }): Promise<
   | { status: 'invalid' }
-  | { status: 'processed' }
-  | { status: 'duplicate' }
   | { status: 'process'; state: CorrelatedProcessingState }
 > {
-  if (!message.acceptedIdentity || !blockExecution || !sessionBlockId) {
-    return { status: 'invalid' }
-  }
-
   const instanceId = Number(message.instanceId)
   const execution = Number(blockExecution)
   if (!Number.isInteger(instanceId) || !Number.isInteger(execution)) {
@@ -553,15 +500,6 @@ export async function prepareCorrelatedMessageProcessing({
     instanceId: message.instanceId,
     blockExecution: execution,
   })
-  const processing = await prepareCorrelatedResponseProcessing({
-    redis,
-    processedKey,
-    owner,
-    messageId: message.messageId,
-  })
-  if (processing.status !== 'process') {
-    return processing
-  }
 
   return {
     status: 'process',

@@ -59,14 +59,18 @@ describe('response processor orchestration', () => {
       message: {
         messageId,
         sessionId: randomUUID(),
-        instanceId: '42',
+        instanceId: 'invalid',
         response: { value: 'response' },
         responseTimestamp: 123,
         acceptedIdentity: {
           kind: 'anonymous',
           id: respondentId,
         },
-        instanceInfo: {},
+        instanceInfo: {
+          type: 'FREE_TEXT',
+          blockExecution: '1',
+          sessionBlockId: '7',
+        },
       },
       secret: 'test-secret',
     })

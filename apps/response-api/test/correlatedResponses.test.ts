@@ -115,6 +115,7 @@ describe('correlated response request safeguards', () => {
                   blockId: 7,
                   blockStatus: 'ACTIVE',
                   isAssessmentEnabled: false,
+                  pinCode: null,
                   responseCollectionMode: 'CORRELATED_EXPORT',
                   status: 'PUBLISHED',
                 },
@@ -158,6 +159,7 @@ describe('correlated response request safeguards', () => {
         blockExecution: '3',
         sessionBlockId: '7',
       },
+      cookieHeader: undefined,
       secret: 'app-secret',
       nextDeliveryAt: new Date('2026-07-29T12:00:00.000Z'),
     })
@@ -210,6 +212,7 @@ describe('correlated response request safeguards', () => {
                 blockId: 7,
                 blockStatus: 'EXECUTED',
                 isAssessmentEnabled: false,
+                pinCode: null,
                 responseCollectionMode: 'CORRELATED_EXPORT',
                 status: 'ENDED',
               },
@@ -244,6 +247,7 @@ describe('correlated response request safeguards', () => {
         blockExecution: '3',
         sessionBlockId: '7',
       },
+      cookieHeader: undefined,
       secret: 'app-secret',
     })
 
@@ -277,11 +281,70 @@ describe('correlated response request safeguards', () => {
             blockExecution: '3',
             sessionBlockId: '7',
           },
+          cookieHeader: undefined,
           secret: 'app-secret',
         })
       ).status,
       'duplicate'
     )
+  })
+
+  it('checks PIN access inside the locked admission transaction', async () => {
+    let identityCreated = false
+    let outboxCreated = false
+    const result = await admitCorrelatedResponse({
+      database: {
+        $transaction: async (callback: (prisma: any) => Promise<unknown>) =>
+          callback({
+            $queryRaw: async () => [
+              {
+                activeBlockId: 7,
+                blockExecution: 3,
+                blockId: 7,
+                blockStatus: 'ACTIVE',
+                isAssessmentEnabled: false,
+                pinCode: 'ABC123',
+                responseCollectionMode: 'CORRELATED_EXPORT',
+                status: 'PUBLISHED',
+              },
+            ],
+            liveQuizRespondent: {
+              upsert: async () => {
+                identityCreated = true
+              },
+            },
+            liveQuizPendingResponse: {
+              create: async () => {
+                outboxCreated = true
+              },
+            },
+          }),
+      } as any,
+      identity: {
+        kind: 'anonymous',
+        id: '33333333-3333-4333-8333-333333333333',
+        liveQuizId: '11111111-1111-4111-8111-111111111111',
+        token: 'signed-token',
+        cookieName:
+          'live_quiz_respondent_token_11111111-1111-4111-8111-111111111111',
+      },
+      liveQuizId: '11111111-1111-4111-8111-111111111111',
+      instanceId: '42',
+      messageId: '22222222-2222-4222-8222-222222222222',
+      response: { value: 'private response' },
+      responseTimestamp: 1_000,
+      instanceInfo: {
+        type: 'FREE_TEXT',
+        blockExecution: '3',
+        sessionBlockId: '7',
+      },
+      cookieHeader: 'live-quiz-pin-11111111-1111-4111-8111-111111111111=WRONG',
+      secret: 'app-secret',
+    })
+
+    assert.deepEqual(result, { status: 'pin_required' })
+    assert.equal(identityCreated, false)
+    assert.equal(outboxCreated, false)
   })
 
   it('encrypts outbox events and rejects tampering', () => {
@@ -291,7 +354,11 @@ describe('correlated response request safeguards', () => {
       instanceId: '42',
       response: { value: 'private response' },
       responseTimestamp: 1_000,
-      instanceInfo: { blockExecution: '1', sessionBlockId: 'block-1' },
+      instanceInfo: {
+        type: 'FREE_TEXT' as const,
+        blockExecution: '1',
+        sessionBlockId: '7',
+      },
       acceptedIdentity: {
         kind: 'anonymous' as const,
         id: '33333333-3333-4333-8333-333333333333',
@@ -340,7 +407,11 @@ describe('correlated response request safeguards', () => {
       instanceId: '42',
       response: { value: 'response' },
       responseTimestamp: 1_000,
-      instanceInfo: { blockExecution: '1', sessionBlockId: 'block-1' },
+      instanceInfo: {
+        type: 'FREE_TEXT' as const,
+        blockExecution: '1',
+        sessionBlockId: '7',
+      },
       acceptedIdentity: {
         kind: 'participant' as const,
         id: '33333333-3333-4333-8333-333333333333',

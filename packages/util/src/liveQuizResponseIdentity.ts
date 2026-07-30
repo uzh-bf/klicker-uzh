@@ -3,6 +3,7 @@ import type { LiveQuizResponseInput } from '@klicker-uzh/types'
 import { createHash } from 'node:crypto'
 import { parseCookiesHeader } from './auth.js'
 import { signJWT, verifyJWT, type JWTPayload } from './jwt.js'
+import type { CorrelatedResponseInstanceInfo } from './liveQuizResponseMetadata.js'
 
 export const PARTICIPANT_COOKIE_NAME = 'participant_token'
 export const TEMPORARY_PARTICIPANT_COOKIE_NAME = 'temporary_participant_token'
@@ -194,7 +195,7 @@ export type CorrelatedResponseEventMessage = Omit<
   'cookie'
 > & {
   acceptedIdentity: AcceptedCorrelatedResponseIdentity
-  instanceInfo: Record<string, string>
+  instanceInfo: CorrelatedResponseInstanceInfo
 }
 
 export type CorrelatedResponseDeliveryMessage = {
