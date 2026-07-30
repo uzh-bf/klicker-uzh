@@ -78,6 +78,7 @@ import {
 } from './liveQuiz.js'
 import { MicroLearning } from './microLearning.js'
 import {
+  LearningAnalyticsParticipantChoice,
   Participant,
   ParticipantGroup,
   ParticipantLearningData,
@@ -1002,6 +1003,20 @@ export const Query = builder.queryType({
         },
         resolve: async (_, args, ctx) => {
           return await ParticipantService.getParticipation(args, ctx)
+        },
+      }),
+
+      getOwnLearningAnalyticsChoice: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: LearningAnalyticsParticipantChoice,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ParticipantService.getOwnLearningAnalyticsChoice(
+            args,
+            ctx
+          )
         },
       }),
 

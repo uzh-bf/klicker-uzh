@@ -1,5 +1,11 @@
-mutation JoinCourseWithPin($pin: Int!) {
-  joinCourseWithPin(pin: $pin) {
+mutation JoinCourseWithPin(
+  $pin: Int!
+  $learningAnalyticsStatus: LearningAnalyticsChoice
+) {
+  joinCourseWithPin(
+    pin: $pin
+    learningAnalyticsStatus: $learningAnalyticsStatus
+  ) {
     id
   }
 }

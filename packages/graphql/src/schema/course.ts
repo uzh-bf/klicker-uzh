@@ -332,6 +332,7 @@ export const StudentCourse = builder.objectType(StudentCourseRef, {
     pinCode: t.exposeInt('pinCode', { nullable: true }),
     color: t.exposeString('color'),
     description: t.exposeString('description', { nullable: true }),
+    isLearningAnalyticsEnabled: t.exposeBoolean('isLearningAnalyticsEnabled'),
 
     owner: t.expose('owner', {
       type: UserRef,

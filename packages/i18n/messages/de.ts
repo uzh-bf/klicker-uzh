@@ -557,6 +557,33 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
       activityPreview:
         'Sie sehen eine Vorschau der Aktivität {activity} "{name}" (Anzeigename "{displayName}"). Bitte beachten Sie, dass diese Vorschau als Test-Ansicht für Dozierende konzipiert wurde. Während die meisten Interaktionsfunktionalitäten unterstützt werden, werden keine eingereichten Antworten gespeichert oder in der Auswertungsansicht angezeigt.',
     },
+    learningAnalytics: {
+      title: 'Teilnahme an Learning Analytics',
+      explanation:
+        'Learning Analytics kann Ihnen helfen, Ihr Lernen besser zu verstehen, und Dozierende dabei unterstützen, die Betreuung im Kurs zu verbessern. Wenn Sie teilnehmen, verwendet KlickerUZH Ihre Interaktionsaktivität, Ihren Lernfortschritt, Ihre Antwortleistung, Punktzahlen und Feedback-Bewertungen. Dozierende sehen nur de-identifizierte Learning-Analytics-Ergebnisse. Sie sehen weder Ihren Namen noch Ihre E-Mail-Adresse, Teilnehmenden-ID, Freitextantworten oder Teilnahmeentscheidung und dürfen die Ergebnisse nicht mit anderen Informationen kombinieren, um Sie zu identifizieren.',
+      include: 'An Learning Analytics teilnehmen',
+      includeDescription:
+        'Nur Aktivitäten ab dem Zeitpunkt dieser Auswahl können für Learning Analytics berücksichtigt werden.',
+      exclude: 'Nicht an Learning Analytics teilnehmen',
+      excludeDescription:
+        'Ihre normale Kursnutzung bleibt unverändert. Ihre Daten werden aus neuen Learning-Analytics-Berechnungen ausgeschlossen und Ihre teilnehmendenbezogenen Learning-Analytics-Ergebnisse sofort entfernt.',
+      changeDisclaimer:
+        'Sie können diese Auswahl jederzeit ändern, solange Learning Analytics für den Kurs aktiviert ist. Wenn Sie die Teilnahme beenden und später erneut teilnehmen, können nur Aktivitäten ab der erneuten Teilnahme berücksichtigt werden. Bestehende aggregierte Ergebnisse werden im normalen Berechnungsrhythmus aktualisiert.',
+      choiceRequired:
+        'Bitte wählen Sie, ob Sie an Learning Analytics teilnehmen möchten.',
+      decideLater: 'Später entscheiden',
+      reminder:
+        'Sie haben noch keine aktuelle Auswahl zu Learning Analytics getroffen. Bis zu Ihrer Entscheidung bleiben Sie ausgeschlossen.',
+      currentlyIncluded:
+        'Sie nehmen derzeit in diesem Kurs an Learning Analytics teil.',
+      currentlyExcluded:
+        'Sie nehmen derzeit in diesem Kurs nicht an Learning Analytics teil.',
+      chooseNow: 'Jetzt auswählen',
+      changeChoice: 'Auswahl ändern',
+      saveSuccess: 'Ihre Auswahl zu Learning Analytics wurde gespeichert.',
+      saveError:
+        'Ihre Auswahl zu Learning Analytics konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.',
+    },
     chatbot: {
       loginRequiredMessage:
         'Für diesen Chatbot benötigen Sie ein KlickerUZH-Konto. Bitte melden Sie sich an oder erstellen Sie zuerst ein Konto.',

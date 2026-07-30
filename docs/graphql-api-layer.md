@@ -31,6 +31,18 @@ reading derived analytics or operational response/feedback data
 Keep this service-level gate when adding a new analytics query so another API
 surface cannot bypass it.
 
+Participant choice uses a separate self-only API surface:
+`getOwnLearningAnalyticsChoice` and `setOwnLearningAnalyticsChoice` both require
+the exact `PARTICIPANT` role and derive the participant ID from the authenticated
+context. They return a dedicated object containing only course ID, status, and
+whether the disclosure is current; LA choice fields are not exposed on the
+general `Participation` GraphQL type. The service query returns `null` while the
+rollout or course control is disabled, and the mutation serializes choice
+changes with the course toggle before updating the snapshot/history and applying
+participant-level deletion
+(`packages/graphql/src/services/participants.ts:getOwnLearningAnalyticsChoice`;
+`packages/graphql/src/services/participants.ts:setOwnLearningAnalyticsChoice`).
+
 ## Layering contract
 
 - `schema/*.ts` — Pothos object types + root `query.ts`/`mutation.ts`/`subscription.ts`. Resolvers delegate immediately: `resolve: (_, args, ctx) => CourseService.deleteCourse(args, ctx)`.

@@ -1717,6 +1717,23 @@ type LeaderboardStatistics {
   participantCount: Int!
 }
 
+enum LearningAnalyticsChoice {
+  EXCLUDED
+  INCLUDED
+}
+
+type LearningAnalyticsParticipantChoice {
+  courseId: String!
+  isCurrent: Boolean!
+  status: LearningAnalyticsParticipationStatus!
+}
+
+enum LearningAnalyticsParticipationStatus {
+  EXCLUDED
+  INCLUDED
+  UNDECIDED
+}
+
 type LeaveCourseParticipation {
   id: String!
   participation: Participation!
@@ -1886,7 +1903,7 @@ type Mutation {
   createLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, defaultCorrectPoints: Int, defaultPoints: Int, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, isPinProtected: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): ActivityInfo
   createLiveQuizFromTemplate(blocks: [TemplateBlockInput!]!, courseId: String, description: String, displayName: String!, isGamificationEnabled: Boolean!, name: String!, templateId: String!): String
   createMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): ActivityInfo
-  createParticipantAccount(courseId: String, email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
+  createParticipantAccount(courseId: String, email: String!, isProfilePublic: Boolean!, learningAnalyticsStatus: LearningAnalyticsChoice, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
   createPracticeQuiz(courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): ActivityInfo
   createUserGroup(members: [UserGroupMembersInput!]!, name: String!): UserGroup
@@ -1935,7 +1952,7 @@ type Mutation {
   importCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!): Boolean!
   issueAssessmentReport(courseId: String!): IssuedAssessmentReport!
   joinCourseLeaderboard(courseId: String!): ParticipantLearningData
-  joinCourseWithPin(pin: Int!): Participant
+  joinCourseWithPin(learningAnalyticsStatus: LearningAnalyticsChoice, pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: String!): String
   joinRandomCourseGroupPool(courseId: String!): Boolean!
   leaveCourseLeaderboard(courseId: String!): LeaveCourseParticipation
@@ -1986,6 +2003,7 @@ type Mutation {
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
   setCourseLearningAnalyticsEnabled(courseId: String!, isEnabled: Boolean!): Course
   setLiveQuizPin(liveQuizId: String!, pin: String!): Boolean!
+  setOwnLearningAnalyticsChoice(courseId: String!, status: LearningAnalyticsChoice!): LearningAnalyticsParticipantChoice
   shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startLiveQuiz(id: String!): LiveQuizMeta
@@ -2503,6 +2521,7 @@ type Query {
   getObjectActivity(objectId: String!, objectType: ObjectType!): [ActivityLogEntry!]
   getObjectPermissions(objectId: String!, objectType: ObjectType!): PermissionsList
   getOutdatedElementInstances(instanceIds: [Int!]!): [ElementInstanceVersionInfo!]
+  getOwnLearningAnalyticsChoice(courseId: String!): LearningAnalyticsParticipantChoice
   getParticipation(courseId: String!): Participation
   getPracticeCourses: [Course!]
   getPracticeQuizEvaluation(id: String!): ActivityEvaluation
@@ -2873,6 +2892,7 @@ type StudentCourse {
   description: String
   displayName: String!
   id: ID!
+  isLearningAnalyticsEnabled: Boolean!
   owner: User!
   pinCode: Int
 }

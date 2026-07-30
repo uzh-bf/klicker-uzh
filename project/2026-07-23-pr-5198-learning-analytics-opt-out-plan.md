@@ -556,4 +556,42 @@ Commit:
   #5198's branch. The rendered base/head metadata and draft state were verified;
   CI started with GitGuardian passing and repository checks queued.
 - Current: Slice 2 is under review in draft PR #5242.
-- Next: Start Slice 3 from PR #5242's head commit.
+- 2026-07-30: Slice 3 implementation added the participant-only current-choice
+  query and mutation, server-owned disclosure version, neutral interactive
+  PIN/account join choice, first-entry prompt with decide-later reminder, and
+  later course-level choice changes. Course-off API and PWA states hide the
+  choice while preserving its history; opt-out removes participant-level
+  dedicated analytics without touching existing aggregates or operational
+  data; renewed inclusion starts at a new prospective boundary.
+- 2026-07-30: Interactive joins, participant choice changes, and lecturer course
+  toggles now share a transaction-scoped course advisory lock. The generic PIN
+  page resolves the course before enrollment, and the course-specific join
+  adopts the URL PIN and navigates directly to the joined course to avoid stale
+  home-cache redirects.
+- 2026-07-30: Five focused GraphQL integration cases passed in an isolated
+  disposable database: enabled-course PIN and account gating, disabled-course
+  undecided creation, opt-out deletion with preserved aggregates, course
+  disable/re-enable preservation, no-op choice updates, renewed opt-in, and
+  material disclosure renewal. GraphQL generation, GraphQL typecheck, and PWA
+  typecheck passed.
+- 2026-07-30: Browser verification covered English neutral first entry,
+  decide-later reminder, include/exclude changes, immediate course-off hiding,
+  saved choice after re-enable, enabled and disabled PIN/account joins, German
+  disclosure, and 390x844 mobile action reachability. The verified browser
+  sessions reported no application errors; screenshots are stored locally
+  under `/private/tmp/la-opt-out-slice3/`.
+- 2026-07-30: The repository-wide typecheck, formatting, and JavaScript lint
+  gates passed. The Analytics lint also passed with its virtual environment
+  pinned to Python 3.12, avoiding the container's unsupported Python 3.14
+  pandas source build. All 22 production build tasks succeeded; Turborepo then
+  emitted a post-run crash report despite exiting successfully, so the anomaly
+  remains recorded as tooling evidence rather than a product failure.
+- 2026-07-30: The isolated Slice 3 Standards, Spec, privacy, and simplification
+  review found no remaining blocker after preserving self-only choice access,
+  fail-closed course-off behavior, participant-scoped deletion, unchanged
+  aggregates, and a new prospective boundary on renewed inclusion.
+- Current: Slice 3 is implemented and locally verified on
+  `codex/la-opt-out-participant-choice`.
+- Next: Publish the draft PR stacked on
+  `codex/la-opt-out-lecturer-control`, then begin the centralized computation
+  eligibility slice.

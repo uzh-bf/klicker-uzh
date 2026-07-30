@@ -48,7 +48,19 @@ approval have all landed. The committed devcontainer enables it only for
 synthetic local verification (`turbo.json`;
 `.devcontainer/devcontainer.env`).
 
-The schema provides `LearningAnalyticsChoiceEvent` for append-only choice history (`packages/prisma/src/prisma/schema/participant.prisma:LearningAnalyticsChoiceEvent`). Choice mutations and their atomic snapshot/history transitions are not implemented yet.
+`LearningAnalyticsChoiceEvent` keeps the append-only choice history
+(`packages/prisma/src/prisma/schema/participant.prisma:LearningAnalyticsChoiceEvent`).
+Interactive PIN joins and course-specific account creation require an explicit,
+neutral choice when course LA is enabled. LTI, invitation, and other automatic
+joins remain `UNDECIDED` and prompt on the next course entry. The participant-only
+choice mutation atomically updates the current snapshot and appends the event;
+opting out also deletes participant-level dedicated analytics immediately while
+leaving operational data and existing aggregates unchanged. Re-inclusion and
+renewal after a disclosure change set a new prospective inclusion time
+(`packages/graphql/src/services/participants.ts:setOwnLearningAnalyticsChoice`;
+`packages/graphql/src/lib/learningAnalytics.ts:LEARNING_ANALYTICS_DISCLOSURE_VERSION`).
+The choice API and PWA control are hidden while course LA is disabled, but the
+stored choice and history remain available if the lecturer enables it again.
 
 ## Content hierarchy
 

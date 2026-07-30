@@ -25,7 +25,14 @@ import { random } from 'mathjs'
 import { prop, sortBy } from 'remeda'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import convertDateToUTCDatetime from '../lib/convertDateToUTCDatetime.js'
-import { assertLearningAnalyticsRolloutEnabled } from '../lib/learningAnalytics.js'
+import {
+  assertLearningAnalyticsChoiceProvided,
+  assertLearningAnalyticsRolloutEnabled,
+  buildLearningAnalyticsChoiceData,
+  isLearningAnalyticsAvailableForCourse,
+  isLearningAnalyticsChoiceCurrent,
+  type LearningAnalyticsChoiceStatus,
+} from '../lib/learningAnalytics.js'
 import { computeRanks, orderStacks } from '../lib/util.js'
 import {
   calculateAssessmentCourseScores,
@@ -53,48 +60,91 @@ export async function getBasicCourseInformation(
 }
 
 export async function joinCourseWithPin(
-  { pin }: { pin: number },
+  {
+    pin,
+    learningAnalyticsStatus,
+  }: {
+    pin: number
+    learningAnalyticsStatus?: LearningAnalyticsChoiceStatus | null
+  },
   ctx: ContextWithUser
 ) {
-  const course = await ctx.prisma.course.findUnique({
-    where: { pinCode: pin, isAssessmentEnabled: false },
-  })
+  const updatedParticipant = await ctx.prisma.$transaction(async (prisma) => {
+    const courseCandidate = await prisma.course.findUnique({
+      where: { pinCode: pin, isAssessmentEnabled: false },
+    })
 
-  if (
-    !course ||
-    course.pinCode !== pin ||
-    ctx.user.role !== DB.UserRole.PARTICIPANT
-  ) {
-    return null
-  }
+    if (
+      !courseCandidate ||
+      courseCandidate.pinCode !== pin ||
+      ctx.user.role !== DB.UserRole.PARTICIPANT
+    ) {
+      return null
+    }
 
-  // Assessment courses can only be joined via invitation, not PIN
-  if (course.isAssessmentEnabled) {
-    throw new Error('Assessment courses can only be joined via invitation')
-  }
+    await prisma.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${courseCandidate.id}))::text`
 
-  // update the participants participations and set the newest one to be active
-  const updatedParticipant = await ctx.prisma.participant.update({
-    where: { id: ctx.user.sub },
-    data: {
-      participations: {
-        connectOrCreate: {
-          where: {
-            courseId_participantId: {
-              courseId: course.id,
-              participantId: ctx.user.sub,
-            },
-          },
-          create: { course: { connect: { id: course.id } } },
+    const course = await prisma.course.findUnique({
+      where: {
+        id: courseCandidate.id,
+        pinCode: pin,
+        isAssessmentEnabled: false,
+      },
+    })
+    if (!course) {
+      return null
+    }
+
+    assertLearningAnalyticsChoiceProvided(
+      course.isLearningAnalyticsEnabled,
+      learningAnalyticsStatus
+    )
+
+    const existingParticipation = await prisma.participation.findUnique({
+      where: {
+        courseId_participantId: {
+          courseId: course.id,
+          participantId: ctx.user.sub,
         },
       },
-    },
+    })
+    const shouldSetChoice =
+      isLearningAnalyticsAvailableForCourse(
+        course.isLearningAnalyticsEnabled
+      ) &&
+      learningAnalyticsStatus &&
+      (!existingParticipation ||
+        !isLearningAnalyticsChoiceCurrent(existingParticipation))
+    const choiceData = shouldSetChoice
+      ? buildLearningAnalyticsChoiceData(learningAnalyticsStatus)
+      : {}
+
+    await prisma.participation.upsert({
+      where: {
+        courseId_participantId: {
+          courseId: course.id,
+          participantId: ctx.user.sub,
+        },
+      },
+      create: {
+        courseId: course.id,
+        participantId: ctx.user.sub,
+        ...choiceData,
+      },
+      update: choiceData,
+    })
+
+    return prisma.participant.findUnique({
+      where: { id: ctx.user.sub },
+    })
   })
 
-  ctx.emitter.emit('invalidate', {
-    typename: 'Participant',
-    id: updatedParticipant.id,
-  })
+  if (updatedParticipant) {
+    ctx.emitter.emit('invalidate', {
+      typename: 'Participant',
+      id: updatedParticipant.id,
+    })
+  }
 
   return updatedParticipant
 }
