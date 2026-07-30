@@ -39,6 +39,7 @@ import {
   hasSampleSolutionQuestion,
   loadRankAchievementRewards,
   shouldAwardRankAchievements,
+  snapshotRegularLiveQuizRewards,
   type LiveQuizRewardParticipant,
   type LiveQuizRewardPlan,
 } from './liveQuizRewards.js'
@@ -1650,85 +1651,6 @@ type LiveQuizForEnding = DB.Prisma.LiveQuizGetPayload<{
     blocks: { include: { elements: true } }
   }
 }>
-
-const MIN_PRISMA_INT = -2147483648
-const MAX_PRISMA_INT = 2147483647
-
-function invalidLiveQuizRewardData(message: string) {
-  return new GraphQLError(message, {
-    extensions: { code: 'LIVE_QUIZ_REWARD_DATA_INVALID' },
-  })
-}
-
-function parseCanonicalRewardInteger(value: string, dataName: string) {
-  if (!/^(?:0|-[1-9]\d*|[1-9]\d*)$/.test(value)) {
-    throw invalidLiveQuizRewardData(`Invalid live quiz ${dataName} reward data`)
-  }
-
-  const parsedValue = Number(value)
-  if (
-    !Number.isInteger(parsedValue) ||
-    parsedValue < MIN_PRISMA_INT ||
-    parsedValue > MAX_PRISMA_INT
-  ) {
-    throw invalidLiveQuizRewardData(`Invalid live quiz ${dataName} reward data`)
-  }
-
-  return parsedValue
-}
-
-function parseRedisHashResult(result: unknown, dataName: string) {
-  if (
-    !Array.isArray(result) ||
-    result.length !== 2 ||
-    result[0] !== null ||
-    typeof result[1] !== 'object' ||
-    result[1] === null ||
-    Array.isArray(result[1]) ||
-    ![Object.prototype, null].includes(Object.getPrototypeOf(result[1])) ||
-    !Object.values(result[1]).every((value) => typeof value === 'string')
-  ) {
-    throw invalidLiveQuizRewardData(`Invalid live quiz ${dataName} snapshot`)
-  }
-
-  return result[1] as Record<string, string>
-}
-
-async function snapshotRegularLiveQuizRewards({
-  liveQuizId,
-  redis,
-}: {
-  liveQuizId: string
-  redis: Redis
-}): Promise<Map<string, { score?: number; xp?: number }>> {
-  const snapshot = redis.multi()
-  snapshot.hgetall(`lq:${liveQuizId}:lb`)
-  snapshot.hgetall(`lq:${liveQuizId}:xp`)
-  const snapshotResult = await snapshot.exec()
-
-  if (!Array.isArray(snapshotResult) || snapshotResult.length !== 2) {
-    throw invalidLiveQuizRewardData('Invalid live quiz reward snapshot')
-  }
-
-  const quizLeaderboard = parseRedisHashResult(snapshotResult[0], 'leaderboard')
-  const quizXp = parseRedisHashResult(snapshotResult[1], 'XP')
-  const cachedRewards = new Map<string, { score?: number; xp?: number }>()
-
-  for (const [participantId, value] of Object.entries(quizXp)) {
-    const xp = parseCanonicalRewardInteger(value, 'XP')
-    cachedRewards.set(participantId, { xp })
-  }
-
-  for (const [participantId, value] of Object.entries(quizLeaderboard)) {
-    const score = parseCanonicalRewardInteger(value, 'leaderboard')
-    cachedRewards.set(participantId, {
-      ...cachedRewards.get(participantId),
-      score,
-    })
-  }
-
-  return cachedRewards
-}
 
 async function loadRegularLiveQuizRewardParticipants({
   liveQuiz,
