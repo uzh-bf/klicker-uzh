@@ -2,7 +2,7 @@
 type: Data Layer
 title: Data & Migrations
 description: Split Prisma schema, the migrate→sync→build ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-07-29'
+timestamp: '2026-07-30'
 tags:
   - backend
   - prisma
@@ -33,7 +33,7 @@ The schema is a **folder** (`prisma.config.ts` → `schema: 'src/prisma/schema'`
 
 The Analytics mirror under `apps/analytics/prisma/schema/` excludes the JavaScript generator and keeps an Analytics-owned datasource so the copied model files remain readable as a complete schema. It does not generate a Python Prisma client. `apps/analytics/src/models.py` is the curated runtime model surface. `sqlacodegen` writes an ignored `src/models.generated.py` reference from the migrated live development database; it must not overwrite the curated module.
 
-Learning-analytics eligibility state belongs to the shared schema: the course enable flag is in `course.prisma`, while the current participation choice and append-only choice history are in `participant.prisma`. Run the full migrate → sync → build ritual after changing these fields so the TypeScript client and Analytics' Python schema expose the same eligibility boundary.
+Learning-analytics eligibility state belongs to the shared schema: the course enable flag is `packages/prisma/src/prisma/schema/course.prisma:Course.isLearningAnalyticsEnabled`, while the current participation choice and choice-event history are `packages/prisma/src/prisma/schema/participant.prisma:Participation.learningAnalyticsStatus` and `packages/prisma/src/prisma/schema/participant.prisma:LearningAnalyticsChoiceEvent`. Run the full migrate → sync → build ritual after changing these fields so the TypeScript client and Analytics' Python schema expose the same eligibility boundary (`util/sync-schema.sh`).
 
 ## Migrations
 

@@ -38,6 +38,14 @@ describe('learning analytics eligibility', () => {
       expected: false,
     },
     {
+      name: 'includes activity from a former course-disabled interval after course re-enable',
+      input: {
+        ...eligibleInput,
+        activityAt: new Date('2026-07-29T09:00:00.000Z'),
+      },
+      expected: true,
+    },
+    {
       name: 'excludes an undecided participation',
       input: { ...eligibleInput, participationStatus: 'UNDECIDED' },
       expected: false,
