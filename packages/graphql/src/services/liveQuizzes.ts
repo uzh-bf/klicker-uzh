@@ -34,6 +34,7 @@ import type { Context, ContextWithUser } from '../lib/context.js'
 import { computeRanks } from '../lib/util.js'
 import { getPermissionBooleans } from './activities.js'
 import {
+  clearLiveQuizScheduledPublicationTask,
   deleteLiveQuizScheduledPublicationTask,
   markLiveQuizPublicationMaterialized,
   materializeLiveQuizPublication,
@@ -923,15 +924,20 @@ export async function startLiveQuiz(
       redisExec: ctx.redisExec,
       redisAssessmentExec: ctx.redisAssessmentExec,
     })
+    if (!publication.quiz.startedAt) {
+      throw new Error(`Published live quiz ${publication.quiz.id} has no start`)
+    }
     await markLiveQuizPublicationMaterialized({
       prisma: ctx.prisma,
       liveQuizId: publication.quiz.id,
+      startedAt: publication.quiz.startedAt,
     })
 
     if (publication.scheduledPublicationTaskId) {
       await deleteLiveQuizScheduledPublicationTask({
         prisma: ctx.prisma,
         liveQuizId: publication.quiz.id,
+        startedAt: publication.quiz.startedAt,
         scheduledPublicationTaskId: publication.scheduledPublicationTaskId,
         deleteScheduledTask: (taskId) => ctx.hatchet.scheduled.delete(taskId),
       })
@@ -3262,11 +3268,24 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
         redisExec: globalCtx.redisExec,
         redisAssessmentExec: globalCtx.redisAssessmentExec,
       })
+      if (!publication.quiz.startedAt) {
+        throw new Error(
+          `Published live quiz ${publication.quiz.id} has no start`
+        )
+      }
       await markLiveQuizPublicationMaterialized({
         prisma: globalCtx.prisma,
         liveQuizId: publication.quiz.id,
-        clearScheduledPublicationTask: true,
+        startedAt: publication.quiz.startedAt,
       })
+      if (publication.scheduledPublicationTaskId) {
+        await clearLiveQuizScheduledPublicationTask({
+          prisma: globalCtx.prisma,
+          liveQuizId: publication.quiz.id,
+          startedAt: publication.quiz.startedAt,
+          scheduledPublicationTaskId: publication.scheduledPublicationTaskId,
+        })
+      }
 
       if (publication.didStart) {
         await sendTeamsNotification({

@@ -41,6 +41,7 @@ export async function transitionLiveQuizToPublished({
               data: {
                 startedAt: now,
                 publicationMetadataMaterializedAt: null,
+                publicationMetadataRetryAt: null,
               },
             })
           : liveQuiz
@@ -68,6 +69,7 @@ export async function transitionLiveQuizToPublished({
         status: DB.PublicationStatus.PUBLISHED,
         startedAt: now,
         publicationMetadataMaterializedAt: null,
+        publicationMetadataRetryAt: null,
       },
     })
 
@@ -113,49 +115,67 @@ export async function materializeLiveQuizPublication({
 export async function markLiveQuizPublicationMaterialized({
   prisma,
   liveQuizId,
-  clearScheduledPublicationTask = false,
+  startedAt,
 }: {
   prisma: DB.PrismaClient
   liveQuizId: string
-  clearScheduledPublicationTask?: boolean
+  startedAt: Date
 }) {
-  await prisma.liveQuiz.update({
-    where: { id: liveQuizId },
+  const result = await prisma.liveQuiz.updateMany({
+    where: {
+      id: liveQuizId,
+      status: DB.PublicationStatus.PUBLISHED,
+      startedAt,
+    },
     data: {
       publicationMetadataMaterializedAt: new Date(),
-      ...(clearScheduledPublicationTask
-        ? { scheduledPublicationTaskId: null }
-        : {}),
+      publicationMetadataRetryAt: null,
     },
   })
+  if (result.count !== 1) {
+    throw new Error(
+      `Live quiz ${liveQuizId} changed during publication materialization`
+    )
+  }
 }
 
 export async function clearLiveQuizScheduledPublicationTask({
   prisma,
   liveQuizId,
+  startedAt,
   scheduledPublicationTaskId,
 }: {
   prisma: DB.PrismaClient
   liveQuizId: string
+  startedAt: Date
   scheduledPublicationTaskId: string
 }) {
-  await prisma.liveQuiz.updateMany({
+  const result = await prisma.liveQuiz.updateMany({
     where: {
       id: liveQuizId,
+      status: DB.PublicationStatus.PUBLISHED,
+      startedAt,
       scheduledPublicationTaskId,
     },
     data: { scheduledPublicationTaskId: null },
   })
+  if (result.count !== 1) {
+    throw new Error(
+      `Live quiz ${liveQuizId} changed during scheduled publication cleanup`
+    )
+  }
 }
 
 export async function deleteLiveQuizScheduledPublicationTask({
   prisma,
   liveQuizId,
+  startedAt,
   scheduledPublicationTaskId,
   deleteScheduledTask,
 }: {
   prisma: DB.PrismaClient
   liveQuizId: string
+  startedAt: Date
   scheduledPublicationTaskId: string
   deleteScheduledTask: (taskId: string) => Promise<void>
 }) {
@@ -168,6 +188,7 @@ export async function deleteLiveQuizScheduledPublicationTask({
   await clearLiveQuizScheduledPublicationTask({
     prisma,
     liveQuizId,
+    startedAt,
     scheduledPublicationTaskId,
   })
 }
@@ -178,19 +199,33 @@ export async function reconcileLiveQuizPublications({
   redisAssessmentExec,
   deleteScheduledTask,
   batchSize = 50,
+  now = new Date(),
+  retryDelayMs = 5 * 60_000,
 }: {
   prisma: DB.PrismaClient
   redisExec: PublicationRedis
   redisAssessmentExec: PublicationRedis
   deleteScheduledTask: (taskId: string) => Promise<void>
   batchSize?: number
+  now?: Date
+  retryDelayMs?: number
 }) {
   const pendingQuizzes = await prisma.liveQuiz.findMany({
     where: {
       status: DB.PublicationStatus.PUBLISHED,
-      OR: [
-        { publicationMetadataMaterializedAt: null },
-        { scheduledPublicationTaskId: { not: null } },
+      AND: [
+        {
+          OR: [
+            { publicationMetadataMaterializedAt: null },
+            { scheduledPublicationTaskId: { not: null } },
+          ],
+        },
+        {
+          OR: [
+            { publicationMetadataRetryAt: null },
+            { publicationMetadataRetryAt: { lte: now } },
+          ],
+        },
       ],
     },
     orderBy: { updatedAt: 'asc' },
@@ -199,13 +234,21 @@ export async function reconcileLiveQuizPublications({
   const failures: unknown[] = []
 
   for (const pendingQuiz of pendingQuizzes) {
+    let expectedStartedAt = pendingQuiz.startedAt
     try {
       const publication = await transitionLiveQuizToPublished({
         prisma,
         liveQuizId: pendingQuiz.id,
         source: 'reconcile',
+        now,
       })
       if (!publication) continue
+      expectedStartedAt = publication.quiz.startedAt
+      if (!expectedStartedAt) {
+        throw new Error(
+          `Published live quiz ${publication.quiz.id} has no start timestamp`
+        )
+      }
 
       if (publication.quiz.publicationMetadataMaterializedAt === null) {
         await materializeLiveQuizPublication({
@@ -216,6 +259,7 @@ export async function reconcileLiveQuizPublications({
         await markLiveQuizPublicationMaterialized({
           prisma,
           liveQuizId: publication.quiz.id,
+          startedAt: expectedStartedAt,
         })
       }
 
@@ -223,11 +267,24 @@ export async function reconcileLiveQuizPublications({
         await deleteLiveQuizScheduledPublicationTask({
           prisma,
           liveQuizId: publication.quiz.id,
+          startedAt: expectedStartedAt,
           scheduledPublicationTaskId: publication.scheduledPublicationTaskId,
           deleteScheduledTask,
         })
       }
     } catch (error) {
+      if (expectedStartedAt) {
+        await prisma.liveQuiz.updateMany({
+          where: {
+            id: pendingQuiz.id,
+            status: DB.PublicationStatus.PUBLISHED,
+            startedAt: expectedStartedAt,
+          },
+          data: {
+            publicationMetadataRetryAt: new Date(now.getTime() + retryDelayMs),
+          },
+        })
+      }
       failures.push(error)
     }
   }

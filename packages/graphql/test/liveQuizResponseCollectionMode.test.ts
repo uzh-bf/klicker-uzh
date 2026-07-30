@@ -1137,6 +1137,7 @@ describe('Live quiz response collection mode', () => {
       userOneCtx
     )
     const startedAt = new Date()
+    const firstAttemptAt = new Date('2026-07-30T12:00:00.000Z')
     await prisma.liveQuiz.update({
       where: { id: liveQuiz.id },
       data: {
@@ -1155,12 +1156,14 @@ describe('Live quiz response collection mode', () => {
         redisExec: failedRedis,
         redisAssessmentExec: failedRedis,
         deleteScheduledTask: async () => {},
+        now: firstAttemptAt,
       })
     ).rejects.toThrow('Failed to reconcile 1 live quiz publication')
     await expect(
       prisma.liveQuiz.findUniqueOrThrow({ where: { id: liveQuiz.id } })
     ).resolves.toMatchObject({
       publicationMetadataMaterializedAt: null,
+      publicationMetadataRetryAt: expect.any(Date),
     })
 
     const { metadata, redis } = createMetadataRedis()
@@ -1170,6 +1173,7 @@ describe('Live quiz response collection mode', () => {
         redisExec: redis,
         redisAssessmentExec: redis,
         deleteScheduledTask: async () => {},
+        now: new Date(firstAttemptAt.getTime() + 5 * 60_000),
       })
     ).resolves.toBe(1)
 
@@ -1178,6 +1182,116 @@ describe('Live quiz response collection mode', () => {
       prisma.liveQuiz.findUniqueOrThrow({ where: { id: liveQuiz.id } })
     ).resolves.toMatchObject({
       publicationMetadataMaterializedAt: expect.any(Date),
+    })
+  })
+
+  it('does not acknowledge a newer publication generation', async () => {
+    const liveQuiz = await seedLiveQuiz(
+      { elements: [], status: PublicationStatus.DRAFT },
+      userOneCtx
+    )
+    const replacementTaskId = '44444444-4444-4444-8444-444444444444'
+    const redis = createMetadataRedis({
+      onExec: async () => {
+        const current = await prisma.liveQuiz.findUniqueOrThrow({
+          where: { id: liveQuiz.id },
+        })
+        await prisma.liveQuiz.update({
+          where: { id: liveQuiz.id },
+          data: {
+            startedAt: new Date(current.startedAt!.getTime() + 1_000),
+            publicationMetadataMaterializedAt: null,
+            publicationMetadataRetryAt: null,
+            scheduledPublicationTaskId: replacementTaskId,
+          },
+        })
+      },
+    }).redis
+
+    await expect(
+      startLiveQuiz({ id: liveQuiz.id }, {
+        ...userOneCtx,
+        redisExec: redis,
+        redisAssessmentExec: redis,
+      } as any)
+    ).rejects.toThrow('changed during publication materialization')
+
+    await expect(
+      prisma.liveQuiz.findUniqueOrThrow({ where: { id: liveQuiz.id } })
+    ).resolves.toMatchObject({
+      publicationMetadataMaterializedAt: null,
+      scheduledPublicationTaskId: replacementTaskId,
+    })
+  })
+
+  it('backs off a failed reconciliation so a healthy row can proceed', async () => {
+    const retryNow = new Date('2026-07-30T12:00:00.000Z')
+    const poisonQuiz = await seedLiveQuiz(
+      { elements: [], status: PublicationStatus.DRAFT },
+      userOneCtx
+    )
+    const healthyQuiz = await seedLiveQuiz(
+      { elements: [], status: PublicationStatus.DRAFT },
+      userOneCtx
+    )
+    await prisma.liveQuiz.update({
+      where: { id: poisonQuiz.id },
+      data: {
+        status: PublicationStatus.PUBLISHED,
+        startedAt: retryNow,
+        publicationMetadataMaterializedAt: null,
+        publicationMetadataRetryAt: null,
+        updatedAt: new Date('2026-07-30T10:00:00.000Z'),
+      },
+    })
+    await prisma.liveQuiz.update({
+      where: { id: healthyQuiz.id },
+      data: {
+        status: PublicationStatus.PUBLISHED,
+        startedAt: retryNow,
+        publicationMetadataMaterializedAt: null,
+        publicationMetadataRetryAt: null,
+        updatedAt: new Date('2026-07-30T11:00:00.000Z'),
+      },
+    })
+
+    const failedRedis = createMetadataRedis({
+      execError: new Error('Permanent Redis failure'),
+    }).redis
+    await expect(
+      reconcileLiveQuizPublications({
+        prisma,
+        redisExec: failedRedis,
+        redisAssessmentExec: failedRedis,
+        deleteScheduledTask: async () => {},
+        batchSize: 1,
+        now: retryNow,
+      })
+    ).rejects.toThrow('Failed to reconcile 1 live quiz publication')
+
+    const redis = createMetadataRedis().redis
+    await expect(
+      reconcileLiveQuizPublications({
+        prisma,
+        redisExec: redis,
+        redisAssessmentExec: redis,
+        deleteScheduledTask: async () => {},
+        batchSize: 1,
+        now: retryNow,
+      })
+    ).resolves.toBe(1)
+
+    await expect(
+      prisma.liveQuiz.findUniqueOrThrow({ where: { id: poisonQuiz.id } })
+    ).resolves.toMatchObject({
+      publicationMetadataMaterializedAt: null,
+      publicationMetadataRetryAt: new Date(retryNow.getTime() + 5 * 60_000),
+    })
+    await expect(
+      prisma.liveQuiz.findUniqueOrThrow({ where: { id: healthyQuiz.id } })
+    ).resolves.toMatchObject({
+      publicationMetadataMaterializedAt: expect.any(Date),
+      publicationMetadataRetryAt: null,
     })
   })
 })

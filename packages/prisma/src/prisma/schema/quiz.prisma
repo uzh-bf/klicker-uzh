@@ -109,6 +109,7 @@ model LiveQuiz {
   description          String?
   startedAt            DateTime?
   publicationMetadataMaterializedAt DateTime?
+  publicationMetadataRetryAt DateTime?
   finishedAt           DateTime?
   pointsMultiplier     Int       @default(1)
   defaultPoints        Int       @default(10)
@@ -153,7 +154,7 @@ model LiveQuiz {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([status, publicationMetadataMaterializedAt])
+  @@index([status, publicationMetadataRetryAt, publicationMetadataMaterializedAt])
 }
 
 // #endregion
