@@ -51,7 +51,6 @@ describe('response processor orchestration', () => {
   it('settles a terminal correlated delivery', async () => {
     const messageId = randomUUID()
     const respondentId = randomUUID()
-    const identityKey = `respondent:${respondentId}` as const
     const settledMessageIds: string[] = []
     const eventPayload = encryptCorrelatedResponseEvent({
       message: {
@@ -63,18 +62,8 @@ describe('response processor orchestration', () => {
         acceptedIdentity: {
           kind: 'anonymous',
           id: respondentId,
-          identityKey,
         },
-        correlatedClaim: {
-          key: 'claim',
-          identityKey,
-        },
-        instanceInfo: {
-          type: 'FREE_TEXT',
-          blockExecution: '1',
-          sessionBlockId: randomUUID(),
-          responseCollectionMode: 'AGGREGATED_ANONYMOUS',
-        },
+        instanceInfo: {},
       },
       secret: 'test-secret',
     })
@@ -85,7 +74,11 @@ describe('response processor orchestration', () => {
       {
         database: {
           liveQuizPendingResponse: {
-            findUnique: async () => ({ eventPayload, settledAt: null }),
+            findUnique: async () => ({
+              eventPayload,
+              responseKey: 'claim',
+              settledAt: null,
+            }),
             updateMany: async ({ where }: any) => {
               settledMessageIds.push(where.id)
               return { count: 1 }
@@ -104,7 +97,6 @@ describe('response processor orchestration', () => {
   it('leaves a correlated delivery unsettled for an operational retry', async () => {
     const messageId = randomUUID()
     const respondentId = randomUUID()
-    const identityKey = `respondent:${respondentId}` as const
     let settlementCount = 0
     const eventPayload = encryptCorrelatedResponseEvent({
       message: {
@@ -116,11 +108,6 @@ describe('response processor orchestration', () => {
         acceptedIdentity: {
           kind: 'anonymous',
           id: respondentId,
-          identityKey,
-        },
-        correlatedClaim: {
-          key: 'claim',
-          identityKey,
         },
         instanceInfo: {
           type: 'FREE_TEXT',
@@ -138,13 +125,17 @@ describe('response processor orchestration', () => {
         {
           database: {
             liveQuizPendingResponse: {
-              findUnique: async () => ({ eventPayload, settledAt: null }),
+              findUnique: async () => ({
+                eventPayload,
+                responseKey: 'claim',
+                settledAt: null,
+              }),
               updateMany: async () => {
                 settlementCount += 1
                 return { count: 1 }
               },
             },
-            liveQuiz: {
+            liveQuizRespondent: {
               findUnique: async () => {
                 throw new Error('Database unavailable')
               },

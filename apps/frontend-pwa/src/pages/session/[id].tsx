@@ -56,10 +56,7 @@ function getResponseApiEndpoint(endpoint: string) {
   return url.toString()
 }
 
-function ensureLiveQuizResponseIdentity(
-  liveQuizId: string,
-  correlatedIdentityRequired: boolean
-) {
+function ensureCorrelatedResponseIdentity(liveQuizId: string) {
   const existing = responseIdentityInitializations.get(liveQuizId)
   if (existing) return existing
 
@@ -73,10 +70,7 @@ function ensureLiveQuizResponseIdentity(
         body: JSON.stringify({ liveQuizId }),
       }
     )
-    if (
-      !response.ok &&
-      !(response.status === 404 && !correlatedIdentityRequired)
-    ) {
+    if (!response.ok) {
       throw new Error('Live quiz response identity initialization failed')
     }
   })().catch((error) => {
@@ -104,13 +98,14 @@ async function handleNewResponse({
   responseCollectionMode: LiveQuizResponseCollectionMode
 }): // statusCode: 0 = client-side invalid input / general error; otherwise HTTP status codes 200, 208, 400, 401, 404, 500
 Promise<{ statusCode: number; responseTimestamp?: number }> {
-  try {
-    await ensureLiveQuizResponseIdentity(
-      liveQuizId,
-      responseCollectionMode === LiveQuizResponseCollectionMode.CorrelatedExport
-    )
-  } catch {
-    return { statusCode: 1 }
+  if (
+    responseCollectionMode === LiveQuizResponseCollectionMode.CorrelatedExport
+  ) {
+    try {
+      await ensureCorrelatedResponseIdentity(liveQuizId)
+    } catch {
+      return { statusCode: 1 }
+    }
   }
 
   let requestOptions: RequestInit = {
@@ -225,18 +220,6 @@ function Index({ id }: { id: string }) {
   const { data: selfData } = useQuery(SelfDocument, {
     variables: { liveQuizId: id },
   })
-
-  const currentResponseCollectionMode =
-    data?.studentLiveQuiz?.responseCollectionMode
-  useEffect(() => {
-    if (!currentResponseCollectionMode) return
-
-    void ensureLiveQuizResponseIdentity(
-      id,
-      currentResponseCollectionMode ===
-        LiveQuizResponseCollectionMode.CorrelatedExport
-    ).catch(() => undefined)
-  }, [currentResponseCollectionMode, id])
 
   // if a block is active when the page is loaded or a new block is activated, switch to the corresponding block
   useEffect(() => {

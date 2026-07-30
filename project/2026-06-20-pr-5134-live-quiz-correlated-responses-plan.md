@@ -602,6 +602,79 @@ Later research:
 - 2026-07-30: Final Remediation 2 re-review found a same-generation cleanup race: after one caller cleared the scheduled task, another treated the already-achieved state as a conflict. Cleanup now rereads on a zero-row guarded update, accepts only the same published `startedAt` generation with an already-null task, and still rejects replacement tasks or generations. The publication transition now returns a type with non-null `startedAt`. All 32 database-backed response-mode/publication cases pass, including repeated cleanup with Hatchet 404, same-generation task replacement, and changed-generation cleanup.
 - 2026-07-30: Exact-commit review of Remediation 5 found no response-mode behavior or error-code regression. The accepted follow-up removes the target course's all-live-quiz lock from batch assignment; the locked course settings row already serializes assessment/gamification changes, and avoiding the broader lock removes the known reciprocal cross-course deadlock mechanism. Unused lock projections and a repeated transition lookup were also removed. Seven focused policy tests and all 32 database-backed response-mode/concurrency/publication cases pass, including unchanged published edits and mixed draft/scheduled/published course state.
 - 2026-07-30: A fresh database reset applied all 180 migrations, including the publication materialization marker/retry migration. On that clean schema, the combined GraphQL policy, response-mode/publication, and correlated-export suites passed all 47 cases; the normal development fixtures were then restored.
+- 2026-07-30: Final Review Remediation slices 1-4 are implemented. The durable response key is the sole admission identifier; aggregate mode never initializes correlated identity; GCM uses a 12-byte IV and 16-byte tag; Redis consumes the pure effect plan; response API admission/outbox/request ownership is split; correlated persistence and abort serialize on the live-quiz row; abort removes the temporary correlated dataset transactionally; publication has one materialization operation; and CSV formatting receives labels rather than internal identity keys.
+- 2026-07-30: The final clean-schema verification passed all 180 migrations and 48 combined GraphQL lifecycle/export tests. Focused verification passed 64 utility, 20 response API, 28 response-worker, and 33 export tests. Full `check:all` passed across 30 workspaces with Python 3.12 selected for the existing analytics environment, and the complete 22-target production build passed after cleaning a stale generated TypeScript build-info file in the unchanged general worker.
+- 2026-07-30: Runtime package probes resolved both the export package root and correlated subpath from GraphQL. Opengrep scanned 82 relevant files with 210 rules; the new dynamic event log was fixed. Remaining findings are pre-existing dynamic logs, an exact-allowlist CORS assignment, and the older generic `packages/util/src/crypto.ts` GCM helper; the correlated outbox path explicitly validates its IV and full authentication tag.
+- 2026-07-30: Fresh real-browser proof used lecturer-owned aggregate and correlated quizzes. The settings UI selected and explained each mode at 1440x1000, and participant notices fit at 390x844. Aggregate page load and submission called only `/AddResponse`. Correlated page load made no identity call; submission called `/InitializeLiveQuizResponseIdentity` immediately before `/AddCorrelatedResponse`. The correlated response produced one respondent and one durable pending outbox row. The local Hatchet SDK workers are independently blocked by their existing heartbeat logger crash (`this.logger[message.type] is not a function`), so live worker settlement is not claimed; the 28 passing worker tests cover persistence and settlement.
+- 2026-07-30: The final lifecycle audit closed a second abort race. Worker persistence now locks and verifies the exact element-block execution generation, Redis effect application rejects a missing or changed instance generation inside the atomic Lua script, and abort removes the live-quiz Redis namespace in one atomic Lua operation. An old event therefore cannot recreate PostgreSQL or Redis state after abort followed by a fast republish. The clean-schema 48-case GraphQL suite and all 28 worker cases pass after this hardening.
+
+## Final Review Remediation - 2026-07-30
+
+### Accepted Findings
+
+| Priority | Finding | Concrete improvement |
+| --- | --- | --- |
+| Release blocker | Aborting a published correlated quiz returns it to draft without deleting durable correlated responses, respondent labels, or pending outbox rows. A subsequent mode change could expose previously correlated logged-in rows through the identifiable legacy export, and a worker racing the abort could recreate data after cleanup. | Serialize worker persistence and abort on the live-quiz row. The worker must persist only while the locked quiz is `PUBLISHED` in `CORRELATED_EXPORT`; abort must delete every correlated response, respondent, label, and pending row in the same transaction that resets the quiz. |
+| High | Aggregate PWA submissions initialize the correlated anonymous identity and therefore depend on the database-backed correlated endpoint even though aggregate mode is intentionally Redis-only. | Initialize the anonymous respondent cookie only immediately before a correlated submission. Aggregate submissions must never call the correlated identity endpoint. |
+| High | Durable admission is represented by a response key, a claim object, a duplicated identity key in the event, and a non-authoritative persisted-response precheck. | Make the unique durable outbox `responseKey` the sole admission identifier. Carry only the accepted identity in the encrypted event, derive its identity key in the worker, and verify the derived response key against the outbox row once. Remove the pre-admission response lookup. |
+| High | `liveQuizResponseCollectionMode.test.ts` is 1,405 lines and mixes policy/concurrency with publication recovery. | Move publication lifecycle and reconciliation cases into a dedicated `liveQuizPublication.test.ts` suite, leaving both files below 1,000 lines and organized around one owner. |
+| Medium | Correlated Redis effects are encoded into an in-memory mutation buffer and then manually preflighted against a hand-maintained key list before Lua validates the same keys again. | Expose the pure question-effect plan directly to the correlated processor and pass its mutations to the atomic Lua script. Remove the mutation buffer and duplicate preflight key inventory; Lua remains the authoritative key validator. |
+| Medium | Correlated response admission, HTTP helpers, outbox dispatch, validation, and crypto pass-through exports share one 450-line response API module. | Split request/mode helpers, correlated admission, and outbox delivery into focused modules. Import outbox crypto directly from the utility package and move response validation to its own utility module. |
+| Medium | Manual start, scheduled start, and reconciliation repeat publication materialization plus acknowledgement as separate operations. | Add one post-commit publication materialization operation that writes Redis and acknowledges the exact database generation, then use it in all three callers. |
+| Medium | The export formatter receives raw stable identity keys even though GraphQL has already resolved public respondent labels. | Make the export package accept only public respondent labels and response values. Raw identity keys stay inside the authorized GraphQL query layer. |
+| Security hardening | AES-GCM decryption accepts truncated authentication tags when no tag length is specified. | Require a 12-byte IV and 16-byte authentication tag during encryption and decryption and add a regression test that rejects truncated tags. |
+
+### Architectural Decisions
+
+- The durable outbox `responseKey` remains unique and permanent after settlement; ciphertext is still erased on terminal settlement.
+- The worker keeps an authoritative current-state check, contrary to the simplification review's suggestion to remove mode lookup. It performs that check under a PostgreSQL row lock in the same transaction as response persistence so that abort and processing have a deterministic order.
+- The worker also verifies the accepted element-block execution generation in PostgreSQL and Redis. Quiz status and response mode alone are insufficient after abort followed by a fast republish of the same quiz.
+- Redis does not decide whether a correlated response is durable. PostgreSQL admission and active-quiz persistence remain authoritative; Lua applies the derived aggregate effects atomically after persistence.
+- Abort cleanup applies only to correlated-export quizzes and deliberately removes their temporary research-response dataset. Assessment remains completely separate and always identifiable.
+- The legacy identifiable export continues to exclude quizzes currently in correlated mode. Transactional abort cleanup is the invariant that prevents correlated rows from surviving a later mode transition.
+- Public anonymous participation remains intentionally susceptible to cookie clearing and identity farming. This PR does not add application-level Sybil detection.
+- The export remains pseudonymized, not anonymous or differentially private. Differential-privacy and free-text PII treatment remain research follow-ups.
+- APP_SECRET key rotation still requires draining unsettled outbox rows because this slice does not add key versioning.
+
+### Implementation Slices
+
+1. **Canonical admission and browser boundary**
+   - Status: completed.
+   - Use `responseKey` as the sole durable admission identifier.
+   - Remove the claim contract and duplicated event identity key.
+   - Initialize anonymous respondent identity only for correlated submissions.
+   - Enforce full-length AES-GCM tags and move response validation to its canonical utility module.
+   - Checks: utility, response API, PWA, worker typechecks and focused tests.
+2. **Direct Redis effect plan**
+   - Status: completed.
+   - Return the pure effect mutation plan directly to the correlated processor.
+   - Delete the correlated mutation buffer and manual Redis-key preflight.
+   - Checks: effect-plan and correlated processor tests, worker typecheck/build.
+3. **Lifecycle safety and decomposition**
+   - Status: completed.
+   - Lock the live quiz during correlated persistence and reject terminally when it is no longer published/correlated.
+   - Require the accepted block execution generation during durable persistence and atomic Redis effect application.
+   - Delete correlated durable state transactionally on abort.
+   - Delete the Redis quiz namespace atomically so cleanup serializes with correlated effect scripts.
+   - Split response API ownership modules and the oversized GraphQL test suite.
+   - Checks: abort/worker race coverage, response API tests, database-backed GraphQL suites.
+4. **Publication and export boundaries**
+   - Status: completed.
+   - Use one post-commit publication materialization operation in manual, scheduled, and reconciliation paths.
+   - Pass only respondent labels into the CSV formatter.
+   - Checks: publication recovery/concurrency tests and export/GraphQL export tests.
+5. **Release proof**
+   - Status: in progress; implementation, clean-schema, full static/build, Opengrep, and browser gates pass. Exact-commit reviews, push, and PR readback remain.
+   - Reset through every migration and run focused database-backed suites, then restore fixtures.
+   - Run `check:all`, runtime package-resolution probes, affected production builds, Opengrep, browser verification, and exact-commit security, thermo-nuclear, simplification, and branch crosscheck reviews.
+   - Address every qualifying finding, push, refresh the draft PR description/evidence, and read back comments and CI.
+
+### Review Notes
+
+- The security review found no high-confidence vulnerability beyond the accepted public-anonymous Sybil limitation, shared response-API database credential, APP_SECRET rotation constraint, and pseudonymized-not-DP export boundary.
+- The independent branch crosscheck found the abort lifecycle defect above and no other defect in authorization, assessment separation, gamification compatibility, CSV semantics, or participant notices.
+- The requested external `agy` crosscheck could not run in its sandbox (`operation not permitted` while opening its log/listener, followed by the requested model being unavailable). Its output was not used; the final exact-commit crosscheck remains mandatory.
+- Opengrep's two logging findings were false positives against constant event names. Its AES-GCM authentication-tag finding was reproduced against the built utility package and is accepted above.
 
 ## Goal Prompt Requirements
 
@@ -617,7 +690,7 @@ If handed to another agent:
 
 ## Next Steps
 
-1. Commit the final publication-generation regression test and the aligned plan/wiki updates.
-2. Run the full correlated-response boundary, repository gate, runtime export-resolution probes, and affected production builds.
-3. Run exact-commit security, thermo-nuclear maintainability, simplification, and branch crosscheck reviews; address or explicitly defer every finding.
+1. Commit the complete remediation scope after staged data-hygiene review.
+2. Run exact-commit thermo-nuclear maintainability, security, simplification, and branch crosscheck reviews.
+3. Address every qualifying review finding and rerun affected verification.
 4. Push the reviewed branch, refresh the draft PR description and evidence, and read back CI, reviews, and comments. Keep the PR draft until all release gates pass.

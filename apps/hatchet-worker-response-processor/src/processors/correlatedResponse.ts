@@ -1,15 +1,16 @@
 import type { Prisma, PrismaClient } from '@klicker-uzh/prisma/client'
 import {
   LiveQuizRespondentType,
+  LiveQuizResponseCollectionMode,
+  PublicationStatus,
   ResponseCorrectness,
 } from '@klicker-uzh/prisma/client'
 import type { LiveQuizResponseInput } from '@klicker-uzh/types'
 import {
-  buildCorrelatedVoteKey,
+  buildCorrelatedResponseKey,
   buildLiveQuizResponseIdentityKey,
   decryptCorrelatedResponseEvent,
   type AcceptedCorrelatedResponseIdentity,
-  type CorrelatedResponseClaim,
   type CorrelatedResponseEventMessage,
   type LiveQuizResponseEventMessage,
   type LiveQuizResponseIdentityKey,
@@ -18,7 +19,7 @@ import type { RedisHashMutation } from './responseEffects.js'
 
 type CorrelatedResponseDatabase = Pick<
   PrismaClient,
-  'liveQuizRespondent' | 'liveQuizResponse' | 'participant'
+  '$transaction' | 'liveQuizRespondent' | 'liveQuizResponse' | 'participant'
 >
 
 export function resolveCorrelatedResponseInstanceInfo(
@@ -41,10 +42,11 @@ interface CorrelatedProcessingRedis {
     time: number,
     setMode: 'NX'
   ): Promise<'OK' | null>
-  type(key: string): Promise<string>
 }
 
-export type CorrelatedResponseOwner = AcceptedCorrelatedResponseIdentity
+export type CorrelatedResponseOwner = AcceptedCorrelatedResponseIdentity & {
+  identityKey: LiveQuizResponseIdentityKey
+}
 
 export type CorrelatedProcessingState = {
   owner: CorrelatedResponseOwner
@@ -52,7 +54,6 @@ export type CorrelatedProcessingState = {
   processingLockKey: string
   instanceId: number
   blockExecution: number
-  responsePersisted: boolean
 }
 
 export class CorrelatedResponseIdentityError extends Error {}
@@ -66,10 +67,13 @@ export async function resolveCorrelatedResponseDelivery({
   database: Pick<PrismaClient, 'liveQuizPendingResponse'>
   messageId: string
   secret: string
-}): Promise<CorrelatedResponseEventMessage | null> {
+}): Promise<{
+  message: CorrelatedResponseEventMessage
+  responseKey: string
+} | null> {
   const pendingResponse = await database.liveQuizPendingResponse.findUnique({
     where: { id: messageId },
-    select: { eventPayload: true, settledAt: true },
+    select: { eventPayload: true, responseKey: true, settledAt: true },
   })
   if (
     !pendingResponse ||
@@ -88,7 +92,7 @@ export async function resolveCorrelatedResponseDelivery({
       `Correlated response outbox message id mismatch for ${messageId}`
     )
   }
-  return message
+  return { message, responseKey: pendingResponse.responseKey }
 }
 
 export async function settleCorrelatedResponseOutbox({
@@ -132,6 +136,23 @@ if existingMarker then
     return 2
   end
   return 3
+end
+
+local infoType = redis.call('TYPE', KEYS[2])
+if type(infoType) == 'table' then
+  infoType = infoType['ok']
+end
+if infoType ~= 'hash' then
+  return redis.error_reply(
+    'Expected current instance info hash at ' .. KEYS[2] .. ', found ' .. infoType
+  )
+end
+
+local currentBlockExecution = redis.call('HGET', KEYS[2], 'blockExecution')
+if currentBlockExecution ~= ARGV[4] then
+  return redis.error_reply(
+    'Correlated response belongs to stale block execution'
+  )
 end
 
 local mutations = cjson.decode(ARGV[1])
@@ -200,23 +221,29 @@ export async function applyCorrelatedRedisMutations({
   redis,
   mutations,
   processedKey,
+  instanceInfoKey,
+  blockExecution,
   identityKey,
   messageId,
 }: {
   redis: Pick<CorrelatedProcessingRedis, 'eval'>
   mutations: RedisHashMutation[]
   processedKey: string
+  instanceInfoKey: string
+  blockExecution: number
   identityKey: LiveQuizResponseIdentityKey
   messageId: string
 }) {
   const result = Number(
     await redis.eval(
       APPLY_CORRELATED_MUTATIONS_SCRIPT,
-      1,
+      2,
       processedKey,
+      instanceInfoKey,
       JSON.stringify(mutations),
       identityKey,
-      messageId
+      messageId,
+      String(blockExecution)
     )
   )
 
@@ -235,12 +262,7 @@ export async function resolveCorrelatedResponseOwner({
   liveQuizId: string
   database: CorrelatedResponseDatabase
 }): Promise<CorrelatedResponseOwner> {
-  const expectedIdentityKey = buildLiveQuizResponseIdentityKey(acceptedIdentity)
-  if (acceptedIdentity.identityKey !== expectedIdentityKey) {
-    throw new CorrelatedResponseIdentityError(
-      'Accepted correlated response identity key is invalid'
-    )
-  }
+  const identityKey = buildLiveQuizResponseIdentityKey(acceptedIdentity)
 
   if (acceptedIdentity.kind === 'participant') {
     const participant = await database.participant.findUnique({
@@ -253,7 +275,7 @@ export async function resolveCorrelatedResponseOwner({
       )
     }
 
-    return acceptedIdentity
+    return { ...acceptedIdentity, identityKey }
   }
 
   const respondent = await database.liveQuizRespondent.findUnique({
@@ -273,7 +295,7 @@ export async function resolveCorrelatedResponseOwner({
     )
   }
 
-  return acceptedIdentity
+  return { ...acceptedIdentity, identityKey }
 }
 
 export function buildCorrelatedResponseCreateData({
@@ -318,6 +340,129 @@ export function buildCorrelatedResponseCreateData({
   }
 }
 
+export async function persistCorrelatedResponseForPublishedQuiz({
+  database,
+  liveQuizId,
+  owner,
+  instanceId,
+  blockExecution,
+  response,
+  submittedAt,
+  correctnessPercentage,
+  basePoints,
+  correctnessPoints,
+  bonusPoints,
+}: {
+  database: Pick<CorrelatedResponseDatabase, '$transaction'>
+  liveQuizId: string
+  owner: CorrelatedResponseOwner
+  instanceId: number
+  blockExecution: number
+  response: LiveQuizResponseInput
+  submittedAt: number
+  correctnessPercentage: number | null
+  basePoints: number
+  correctnessPoints: number
+  bonusPoints: number
+}) {
+  try {
+    return await database.$transaction(async (prisma) => {
+      const [liveQuiz] = await prisma.$queryRaw<
+        {
+          blockExecution: number
+          isAssessmentEnabled: boolean
+          responseCollectionMode: LiveQuizResponseCollectionMode
+          status: PublicationStatus
+        }[]
+      >`
+        SELECT
+          block."execution" AS "blockExecution",
+          "LiveQuiz"."isAssessmentEnabled",
+          "LiveQuiz"."responseCollectionMode"::text AS "responseCollectionMode",
+          "LiveQuiz"."status"::text AS "status"
+        FROM "public"."LiveQuiz"
+        JOIN "public"."ElementBlock" AS block
+          ON block."liveQuizId" = "LiveQuiz"."id"
+        JOIN "public"."ElementInstance" AS instance
+          ON instance."elementBlockId" = block."id"
+        WHERE
+          "LiveQuiz"."id" = ${liveQuizId}::uuid AND
+          "LiveQuiz"."isDeleted" = false AND
+          instance."id" = ${instanceId}
+        FOR UPDATE OF "LiveQuiz"
+      `
+
+      if (
+        !liveQuiz ||
+        liveQuiz.blockExecution !== blockExecution ||
+        liveQuiz.status !== PublicationStatus.PUBLISHED ||
+        liveQuiz.isAssessmentEnabled ||
+        liveQuiz.responseCollectionMode !==
+          LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+      ) {
+        return 'inactive' as const
+      }
+
+      const existingResponse =
+        owner.kind === 'participant'
+          ? await prisma.liveQuizResponse.findUnique({
+              where: {
+                instanceId_elementBlockExecution_participantId: {
+                  instanceId,
+                  elementBlockExecution: blockExecution,
+                  participantId: owner.id,
+                },
+              },
+              select: { submittedAt: true },
+            })
+          : await prisma.liveQuizResponse.findUnique({
+              where: {
+                instanceId_elementBlockExecution_respondentId: {
+                  instanceId,
+                  elementBlockExecution: blockExecution,
+                  respondentId: owner.id,
+                },
+              },
+              select: { submittedAt: true },
+            })
+
+      if (existingResponse) {
+        return isPersistedResponseRetry({
+          existingSubmittedAt: existingResponse.submittedAt,
+          responseTimestamp: submittedAt,
+        })
+          ? ('persisted' as const)
+          : ('duplicate' as const)
+      }
+
+      await prisma.liveQuizResponse.create({
+        data: buildCorrelatedResponseCreateData({
+          owner,
+          instanceId,
+          blockExecution,
+          response,
+          submittedAt,
+          correctnessPercentage,
+          basePoints,
+          correctnessPoints,
+          bonusPoints,
+        }),
+      })
+      return 'created' as const
+    })
+  } catch (error) {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === 'P2002'
+    ) {
+      return 'duplicate' as const
+    }
+    throw error
+  }
+}
+
 export function getCorrelatedProcessedKey({
   liveQuizId,
   instanceId,
@@ -358,51 +503,20 @@ export async function releaseCorrelatedProcessingLock({
   return Number(released) === 1
 }
 
-export async function validateCorrelatedRedisHashKeys({
-  redis,
-  keys,
-}: {
-  redis: Pick<CorrelatedProcessingRedis, 'type'>
-  keys: string[]
-}) {
-  const uniqueKeys = [...new Set(keys)]
-  const keyTypes = await Promise.all(
-    uniqueKeys.map(async (key) => ({ key, type: await redis.type(key) }))
-  )
-  const invalidKey = keyTypes.find(
-    ({ type }) => type !== 'none' && type !== 'hash'
-  )
-  if (invalidKey) {
-    throw new Error(
-      `Expected Redis hash at ${invalidKey.key}, found ${invalidKey.type}`
-    )
-  }
-}
-
 export async function prepareCorrelatedResponseProcessing({
   redis,
-  database,
   processedKey,
   owner,
-  instanceId,
-  blockExecution,
-  responseTimestamp,
-  claimOwnerMessageId,
   messageId,
 }: {
   redis: Pick<CorrelatedProcessingRedis, 'eval' | 'hget' | 'set'>
-  database: Pick<CorrelatedResponseDatabase, 'liveQuizResponse'>
   processedKey: string
   owner: CorrelatedResponseOwner
-  instanceId: number
-  blockExecution: number
-  responseTimestamp: number
-  claimOwnerMessageId: string
   messageId: string
 }): Promise<
   | { status: 'duplicate' }
   | { status: 'processed' }
-  | { status: 'process'; lockKey: string; responsePersisted: boolean }
+  | { status: 'process'; lockKey: string }
 > {
   const processedMessageId = await redis.hget(processedKey, owner.identityKey)
   if (processedMessageId === messageId) return { status: 'processed' }
@@ -434,45 +548,7 @@ export async function prepareCorrelatedResponseProcessing({
     }
   }
 
-  const existingResponse =
-    owner.kind === 'participant'
-      ? await database.liveQuizResponse.findUnique({
-          where: {
-            instanceId_elementBlockExecution_participantId: {
-              instanceId,
-              elementBlockExecution: blockExecution,
-              participantId: owner.id,
-            },
-          },
-        })
-      : await database.liveQuizResponse.findUnique({
-          where: {
-            instanceId_elementBlockExecution_respondentId: {
-              instanceId,
-              elementBlockExecution: blockExecution,
-              respondentId: owner.id,
-            },
-          },
-        })
-
-  if (
-    existingResponse &&
-    !isPersistedResponseRetry({
-      existingSubmittedAt: existingResponse.submittedAt,
-      responseTimestamp,
-      claimOwnerMessageId,
-      messageId,
-    })
-  ) {
-    await releaseCorrelatedProcessingLock({ redis, lockKey, messageId })
-    return { status: 'duplicate' }
-  }
-
-  return {
-    status: 'process',
-    lockKey,
-    responsePersisted: Boolean(existingResponse),
-  }
+  return { status: 'process', lockKey }
 }
 
 export async function prepareCorrelatedMessageProcessing({
@@ -481,6 +557,7 @@ export async function prepareCorrelatedMessageProcessing({
   message,
   blockExecution,
   sessionBlockId,
+  responseKey,
 }: {
   redis: Pick<CorrelatedProcessingRedis, 'eval' | 'hget' | 'set'>
   database: CorrelatedResponseDatabase
@@ -489,22 +566,17 @@ export async function prepareCorrelatedMessageProcessing({
     'messageId' | 'sessionId' | 'instanceId' | 'responseTimestamp'
   > & {
     acceptedIdentity?: AcceptedCorrelatedResponseIdentity
-    correlatedClaim?: CorrelatedResponseClaim
   }
   blockExecution: string | undefined
   sessionBlockId: string | undefined
+  responseKey: string
 }): Promise<
   | { status: 'invalid' }
   | { status: 'processed' }
   | { status: 'duplicate' }
   | { status: 'process'; state: CorrelatedProcessingState }
 > {
-  if (
-    !message.acceptedIdentity ||
-    !message.correlatedClaim ||
-    !blockExecution ||
-    !sessionBlockId
-  ) {
+  if (!message.acceptedIdentity || !blockExecution || !sessionBlockId) {
     return { status: 'invalid' }
   }
 
@@ -519,16 +591,13 @@ export async function prepareCorrelatedMessageProcessing({
     liveQuizId: message.sessionId,
     database,
   })
-  const expectedClaimKey = buildCorrelatedVoteKey({
+  const expectedResponseKey = buildCorrelatedResponseKey({
     liveQuizId: message.sessionId,
     instanceId: message.instanceId,
     blockExecution,
     identityKey: owner.identityKey,
   })
-  if (
-    message.correlatedClaim.key !== expectedClaimKey ||
-    message.correlatedClaim.identityKey !== owner.identityKey
-  ) {
+  if (responseKey !== expectedResponseKey) {
     return { status: 'invalid' }
   }
 
@@ -539,13 +608,8 @@ export async function prepareCorrelatedMessageProcessing({
   })
   const processing = await prepareCorrelatedResponseProcessing({
     redis,
-    database,
     processedKey,
     owner,
-    instanceId,
-    blockExecution: execution,
-    responseTimestamp: message.responseTimestamp,
-    claimOwnerMessageId: message.messageId,
     messageId: message.messageId,
   })
   if (processing.status !== 'process') {
@@ -560,7 +624,6 @@ export async function prepareCorrelatedMessageProcessing({
       processingLockKey: processing.lockKey,
       instanceId,
       blockExecution: execution,
-      responsePersisted: processing.responsePersisted,
     },
   }
 }
@@ -568,16 +631,9 @@ export async function prepareCorrelatedMessageProcessing({
 export function isPersistedResponseRetry({
   existingSubmittedAt,
   responseTimestamp,
-  claimOwnerMessageId,
-  messageId,
 }: {
   existingSubmittedAt: Date
   responseTimestamp: number
-  claimOwnerMessageId: string | null
-  messageId: string
 }) {
-  return (
-    existingSubmittedAt.getTime() === responseTimestamp &&
-    claimOwnerMessageId === messageId
-  )
+  return existingSubmittedAt.getTime() === responseTimestamp
 }

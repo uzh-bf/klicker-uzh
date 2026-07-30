@@ -1,8 +1,60 @@
-import type { PrismaClient } from '@klicker-uzh/prisma/client'
+import {
+  LiveQuizResponseCollectionMode,
+  type PrismaClient,
+} from '@klicker-uzh/prisma/client'
 import type { LiveQuizResponseInput } from '@klicker-uzh/types'
 import type { Redis } from 'ioredis'
 import { randomUUID } from 'node:crypto'
-import { resolveResponseCollectionMode } from './correlatedResponses.js'
+
+export function isAllowedCorsOrigin({
+  origin,
+  allowedOrigins,
+}: {
+  origin: string | undefined
+  allowedOrigins: string[]
+}) {
+  return (
+    origin === undefined ||
+    (origin !== 'null' && allowedOrigins.includes(origin))
+  )
+}
+
+export function hasJsonContentType(contentType: string | undefined) {
+  return (
+    contentType?.split(';', 1)[0]?.trim().toLowerCase() === 'application/json'
+  )
+}
+
+export async function resolveResponseCollectionMode({
+  cachedMode,
+  liveQuizId,
+  lookupMode,
+}: {
+  cachedMode: string | undefined
+  liveQuizId: string
+  lookupMode: (
+    liveQuizId: string
+  ) => Promise<LiveQuizResponseCollectionMode | string | null>
+}) {
+  if (
+    cachedMode === LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS ||
+    cachedMode === LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+  ) {
+    return cachedMode
+  }
+
+  const storedMode = await lookupMode(liveQuizId)
+  if (
+    storedMode === LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS ||
+    storedMode === LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+  ) {
+    return storedMode
+  }
+
+  throw new Error(
+    `Response collection mode for live quiz ${liveQuizId} is unavailable`
+  )
+}
 
 export type LiveQuizResponseRequest = {
   messageId: string

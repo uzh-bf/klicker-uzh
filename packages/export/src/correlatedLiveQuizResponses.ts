@@ -13,7 +13,6 @@ export interface CorrelatedLiveQuizExportQuestion {
 }
 
 export interface CorrelatedLiveQuizExportResponse {
-  identityKey: string
   respondentLabel: number
   instanceId: number
   blockExecution: number
@@ -110,27 +109,18 @@ export function createCorrelatedLiveQuizResponseCsv({
         left.execution - right.execution
     )
 
-  const orderedRespondents = [
-    ...new Map(
-      responses.map(({ identityKey, respondentLabel }) => [
-        identityKey,
-        { identityKey, label: respondentLabel },
-      ])
-    ).values(),
-  ].sort(
-    (left, right) =>
-      left.label - right.label ||
-      left.identityKey.localeCompare(right.identityKey)
-  )
+  const orderedRespondentLabels = [
+    ...new Set(responses.map(({ respondentLabel }) => respondentLabel)),
+  ].sort((left, right) => left - right)
 
-  const responseByIdentityAndColumn = new Map<
+  const responseByRespondentAndColumn = new Map<
     string,
     CorrelatedLiveQuizExportResponse
   >()
   for (const response of responses) {
-    const key = `${response.identityKey}:${response.instanceId}:${response.blockExecution}`
-    if (!responseByIdentityAndColumn.has(key)) {
-      responseByIdentityAndColumn.set(key, response)
+    const key = `${response.respondentLabel}:${response.instanceId}:${response.blockExecution}`
+    if (!responseByRespondentAndColumn.has(key)) {
+      responseByRespondentAndColumn.set(key, response)
     }
   }
 
@@ -151,13 +141,11 @@ export function createCorrelatedLiveQuizResponseCsv({
     )
   }
 
-  for (const { identityKey, label } of orderedRespondents) {
+  for (const label of orderedRespondentLabels) {
     const row = [
       `respondent_${String(label).padStart(3, '0')}`,
       ...columns.flatMap(({ key }) => {
-        const response = responseByIdentityAndColumn.get(
-          `${identityKey}:${key}`
-        )
+        const response = responseByRespondentAndColumn.get(`${label}:${key}`)
         if (!response) return ['', '', '']
 
         const totalPoints =

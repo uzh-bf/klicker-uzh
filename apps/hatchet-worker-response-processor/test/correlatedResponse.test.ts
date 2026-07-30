@@ -3,7 +3,7 @@ import {
   ResponseCorrectness,
 } from '@klicker-uzh/prisma/client'
 import {
-  buildCorrelatedVoteKey,
+  buildCorrelatedResponseKey,
   encryptCorrelatedResponseEvent,
   type CorrelatedResponseEventMessage,
 } from '@klicker-uzh/util'
@@ -17,6 +17,7 @@ import {
   CorrelatedResponseProcessingBusyError,
   getCorrelatedProcessedKey,
   isPersistedResponseRetry,
+  persistCorrelatedResponseForPublishedQuiz,
   prepareCorrelatedMessageProcessing,
   prepareCorrelatedResponseProcessing,
   releaseCorrelatedProcessingLock,
@@ -24,9 +25,7 @@ import {
   resolveCorrelatedResponseInstanceInfo,
   resolveCorrelatedResponseOwner,
   settleCorrelatedResponseOutbox,
-  validateCorrelatedRedisHashKeys,
 } from '../src/processors/correlatedResponse.js'
-import { RedisHashMutationBuffer } from '../src/processors/responseEffects.js'
 
 type RespondentRow = {
   id: string
@@ -38,7 +37,6 @@ type RespondentRow = {
 class MemoryProcessingRedis {
   private readonly hashes = new Map<string, Map<string, string>>()
   private readonly strings = new Map<string, string>()
-  private readonly forcedTypes = new Map<string, string>()
 
   async hget(key: string, field: string) {
     return this.hashes.get(key)?.get(field) ?? null
@@ -70,25 +68,10 @@ class MemoryProcessingRedis {
     return this.strings.delete(key) ? 1 : 0
   }
 
-  async type(key: string) {
-    return (
-      this.forcedTypes.get(key) ??
-      (this.hashes.has(key)
-        ? 'hash'
-        : this.strings.has(key)
-          ? 'string'
-          : 'none')
-    )
-  }
-
   setHashValue(key: string, field: string, value: string) {
     const hash = this.hashes.get(key) ?? new Map<string, string>()
     hash.set(field, value)
     this.hashes.set(key, hash)
-  }
-
-  forceType(key: string, type: string) {
-    this.forcedTypes.set(key, type)
   }
 }
 
@@ -126,7 +109,6 @@ describe('resolveCorrelatedResponseOwner', () => {
       acceptedIdentity: {
         kind: 'participant',
         id: participantId,
-        identityKey: `participant:${participantId}`,
       },
       liveQuizId,
       database,
@@ -157,7 +139,6 @@ describe('resolveCorrelatedResponseOwner', () => {
       acceptedIdentity: {
         kind: 'temporary',
         id: respondentId,
-        identityKey: `respondent:${respondentId}`,
       },
       liveQuizId,
       database,
@@ -177,7 +158,6 @@ describe('resolveCorrelatedResponseOwner', () => {
         acceptedIdentity: {
           kind: 'temporary',
           id: respondentId,
-          identityKey: `respondent:${respondentId}`,
         },
         liveQuizId,
         database,
@@ -204,7 +184,6 @@ describe('resolveCorrelatedResponseOwner', () => {
       acceptedIdentity: {
         kind: 'anonymous',
         id: respondentId,
-        identityKey: `respondent:${respondentId}`,
       },
       liveQuizId,
       database,
@@ -233,26 +212,6 @@ describe('resolveCorrelatedResponseOwner', () => {
         acceptedIdentity: {
           kind: 'anonymous',
           id: respondentId,
-          identityKey: `respondent:${respondentId}`,
-        },
-        liveQuizId,
-        database,
-      }),
-      CorrelatedResponseIdentityError
-    )
-  })
-
-  it('rejects an acceptance identity with a mismatched key', async () => {
-    const liveQuizId = randomUUID()
-    const respondentId = randomUUID()
-    const { database } = createDatabase()
-
-    await assert.rejects(
-      resolveCorrelatedResponseOwner({
-        acceptedIdentity: {
-          kind: 'anonymous',
-          id: respondentId,
-          identityKey: `respondent:${randomUUID()}`,
         },
         liveQuizId,
         database,
@@ -317,16 +276,6 @@ describe('correlated response persistence helpers', () => {
       acceptedIdentity: {
         kind: 'anonymous',
         id: respondentId,
-        identityKey,
-      },
-      correlatedClaim: {
-        key: buildCorrelatedVoteKey({
-          liveQuizId,
-          instanceId: '42',
-          blockExecution: '3',
-          identityKey,
-        }),
-        identityKey,
       },
       instanceInfo: {
         type: 'FREE_TEXT',
@@ -353,19 +302,40 @@ describe('correlated response persistence helpers', () => {
       await resolveCorrelatedResponseDelivery({
         database: {
           liveQuizPendingResponse: {
-            findUnique: async () => ({ eventPayload, settledAt: null }),
+            findUnique: async () => ({
+              eventPayload,
+              responseKey: buildCorrelatedResponseKey({
+                liveQuizId,
+                instanceId: '42',
+                blockExecution: '3',
+                identityKey,
+              }),
+              settledAt: null,
+            }),
           },
         } as any,
         messageId,
         secret: 'test-secret',
       }),
-      message
+      {
+        message,
+        responseKey: buildCorrelatedResponseKey({
+          liveQuizId,
+          instanceId: '42',
+          blockExecution: '3',
+          identityKey,
+        }),
+      }
     )
     await assert.rejects(
       resolveCorrelatedResponseDelivery({
         database: {
           liveQuizPendingResponse: {
-            findUnique: async () => ({ eventPayload, settledAt: null }),
+            findUnique: async () => ({
+              eventPayload,
+              responseKey: 'response-key',
+              settledAt: null,
+            }),
           },
         } as any,
         messageId: randomUUID(),
@@ -379,6 +349,7 @@ describe('correlated response persistence helpers', () => {
           liveQuizPendingResponse: {
             findUnique: async () => ({
               eventPayload: null,
+              responseKey: 'response-key',
               settledAt: new Date(),
             }),
           },
@@ -438,14 +409,12 @@ describe('correlated response persistence helpers', () => {
     assert.equal('participant' in data, false)
   })
 
-  it('recognizes only the owning event as a persisted retry', () => {
+  it('recognizes a persisted retry by its accepted timestamp', () => {
     const timestamp = Date.now()
     assert.equal(
       isPersistedResponseRetry({
         existingSubmittedAt: new Date(timestamp),
         responseTimestamp: timestamp,
-        claimOwnerMessageId: 'message-1',
-        messageId: 'message-1',
       }),
       true
     )
@@ -453,8 +422,6 @@ describe('correlated response persistence helpers', () => {
       isPersistedResponseRetry({
         existingSubmittedAt: new Date(timestamp),
         responseTimestamp: timestamp + 1,
-        claimOwnerMessageId: 'message-1',
-        messageId: 'message-1',
       }),
       false
     )
@@ -473,22 +440,14 @@ describe('correlated response persistence helpers', () => {
 
   it('serializes overlapping processing of the same response', async () => {
     const redis = new MemoryProcessingRedis()
-    const database = {
-      liveQuizResponse: { findUnique: async () => null },
-    } as any
     const params = {
       redis,
-      database,
       processedKey: 'processed-key',
       owner: {
         kind: 'anonymous' as const,
         id: 'respondent-id',
         identityKey: 'respondent:respondent-id',
       },
-      instanceId: 42,
-      blockExecution: 3,
-      responseTimestamp: 123,
-      claimOwnerMessageId: 'message-1',
       messageId: 'message-1',
     }
 
@@ -511,16 +470,29 @@ describe('correlated response persistence helpers', () => {
     }
   })
 
-  it('resumes aggregation after the response row was persisted', async () => {
+  it('recognizes a response persisted by the same accepted event', async () => {
     const timestamp = Date.now()
-    const result = await prepareCorrelatedResponseProcessing({
-      redis: new MemoryProcessingRedis(),
+    const result = await persistCorrelatedResponseForPublishedQuiz({
       database: {
-        liveQuizResponse: {
-          findUnique: async () => ({ submittedAt: new Date(timestamp) }),
-        },
+        $transaction: async (callback: (prisma: any) => Promise<unknown>) =>
+          callback({
+            $queryRaw: async () => [
+              {
+                blockExecution: 3,
+                isAssessmentEnabled: false,
+                responseCollectionMode: 'CORRELATED_EXPORT',
+                status: 'PUBLISHED',
+              },
+            ],
+            liveQuizResponse: {
+              findUnique: async () => ({
+                submittedAt: new Date(timestamp),
+              }),
+              create: async () => assert.fail('must not create a retry'),
+            },
+          }),
       } as any,
-      processedKey: 'processed-key',
+      liveQuizId: randomUUID(),
       owner: {
         kind: 'participant',
         id: 'participant-id',
@@ -528,26 +500,37 @@ describe('correlated response persistence helpers', () => {
       },
       instanceId: 42,
       blockExecution: 3,
-      responseTimestamp: timestamp,
-      claimOwnerMessageId: 'message-1',
-      messageId: 'message-1',
+      response: { value: 'answer' },
+      submittedAt: timestamp,
+      correctnessPercentage: 1,
+      basePoints: 1,
+      correctnessPoints: 2,
+      bonusPoints: 3,
     })
 
-    assert.equal(result.status, 'process')
-    if (result.status === 'process') {
-      assert.equal(result.responsePersisted, true)
-    }
+    assert.equal(result, 'persisted')
   })
 
-  it('rejects a different event when a response row already exists', async () => {
-    const result = await prepareCorrelatedResponseProcessing({
-      redis: new MemoryProcessingRedis(),
+  it('does not persist after the correlated quiz is no longer published', async () => {
+    const result = await persistCorrelatedResponseForPublishedQuiz({
       database: {
-        liveQuizResponse: {
-          findUnique: async () => ({ submittedAt: new Date(123) }),
-        },
+        $transaction: async (callback: (prisma: any) => Promise<unknown>) =>
+          callback({
+            $queryRaw: async () => [
+              {
+                blockExecution: 3,
+                isAssessmentEnabled: false,
+                responseCollectionMode: 'CORRELATED_EXPORT',
+                status: 'DRAFT',
+              },
+            ],
+            liveQuizResponse: {
+              findUnique: async () => assert.fail('must not inspect responses'),
+              create: async () => assert.fail('must not create a response'),
+            },
+          }),
       } as any,
-      processedKey: 'processed-key',
+      liveQuizId: randomUUID(),
       owner: {
         kind: 'anonymous',
         id: 'respondent-id',
@@ -555,12 +538,53 @@ describe('correlated response persistence helpers', () => {
       },
       instanceId: 42,
       blockExecution: 3,
-      responseTimestamp: 456,
-      claimOwnerMessageId: 'message-2',
-      messageId: 'message-2',
+      response: { value: 'answer' },
+      submittedAt: 456,
+      correctnessPercentage: 1,
+      basePoints: 1,
+      correctnessPoints: 2,
+      bonusPoints: 3,
     })
 
-    assert.deepEqual(result, { status: 'duplicate' })
+    assert.equal(result, 'inactive')
+  })
+
+  it('does not persist an event from an earlier block execution', async () => {
+    const result = await persistCorrelatedResponseForPublishedQuiz({
+      database: {
+        $transaction: async (callback: (prisma: any) => Promise<unknown>) =>
+          callback({
+            $queryRaw: async () => [
+              {
+                blockExecution: 4,
+                isAssessmentEnabled: false,
+                responseCollectionMode: 'CORRELATED_EXPORT',
+                status: 'PUBLISHED',
+              },
+            ],
+            liveQuizResponse: {
+              findUnique: async () => assert.fail('must not inspect responses'),
+              create: async () => assert.fail('must not create a response'),
+            },
+          }),
+      } as any,
+      liveQuizId: randomUUID(),
+      owner: {
+        kind: 'anonymous',
+        id: 'respondent-id',
+        identityKey: 'respondent:respondent-id',
+      },
+      instanceId: 42,
+      blockExecution: 3,
+      response: { value: 'answer' },
+      submittedAt: 456,
+      correctnessPercentage: 1,
+      basePoints: 1,
+      correctnessPoints: 2,
+      bonusPoints: 3,
+    })
+
+    assert.equal(result, 'inactive')
   })
 
   it('returns a completed response without acquiring a processing lock', async () => {
@@ -569,36 +593,16 @@ describe('correlated response persistence helpers', () => {
 
     const result = await prepareCorrelatedResponseProcessing({
       redis,
-      database: {
-        liveQuizResponse: { findUnique: async () => null },
-      } as any,
       processedKey: 'processed-key',
       owner: {
         kind: 'anonymous',
         id: 'respondent-id',
         identityKey: 'respondent:respondent-id',
       },
-      instanceId: 42,
-      blockExecution: 3,
-      responseTimestamp: 123,
-      claimOwnerMessageId: 'message-1',
       messageId: 'message-1',
     })
 
     assert.deepEqual(result, { status: 'processed' })
-  })
-
-  it('rejects non-hash aggregate keys before writes are executed', async () => {
-    const redis = new MemoryProcessingRedis()
-    redis.forceType('invalid-key', 'string')
-
-    await assert.rejects(
-      validateCorrelatedRedisHashKeys({
-        redis,
-        keys: ['valid-key', 'invalid-key'],
-      }),
-      /Expected Redis hash/
-    )
   })
 
   it('processes an admitted identity without revalidating its browser token', async () => {
@@ -606,7 +610,7 @@ describe('correlated response persistence helpers', () => {
     const respondentId = randomUUID()
     const messageId = randomUUID()
     const identityKey = `respondent:${respondentId}` as const
-    const claimKey = buildCorrelatedVoteKey({
+    const responseKey = buildCorrelatedResponseKey({
       liveQuizId,
       instanceId: '42',
       blockExecution: '3',
@@ -638,12 +642,11 @@ describe('correlated response persistence helpers', () => {
         acceptedIdentity: {
           kind: 'anonymous',
           id: respondentId,
-          identityKey,
         },
-        correlatedClaim: { key: claimKey, identityKey },
       },
       blockExecution: '3',
       sessionBlockId: randomUUID(),
+      responseKey,
     })
 
     assert.equal(result.status, 'process')
@@ -653,32 +656,52 @@ describe('correlated response persistence helpers', () => {
     }
   })
 
-  it('buffers typed Redis mutations for one atomic apply operation', async () => {
-    const buffer = new RedisHashMutationBuffer()
-    buffer.hincrby('results', 'participants', 1)
-    buffer.hset('responses', 'respondent', 'answer')
-    buffer.hsetnx('info', 'firstResponseReceivedAt', 123)
-
+  it('applies a typed Redis effect plan atomically', async () => {
+    const mutations = [
+      {
+        command: 'hincrby' as const,
+        key: 'results',
+        field: 'participants',
+        value: '1',
+      },
+      {
+        command: 'hset' as const,
+        key: 'responses',
+        field: 'respondent',
+        value: 'answer',
+      },
+      {
+        command: 'hsetnx' as const,
+        key: 'info',
+        field: 'firstResponseReceivedAt',
+        value: '123',
+      },
+    ]
     let args: Array<number | string> = []
     const result = await applyCorrelatedRedisMutations({
       redis: {
         eval: async (
-          _script: string,
-          _numberOfKeys: number,
+          script: string,
+          numberOfKeys: number,
           ...received: Array<number | string>
         ) => {
+          assert.match(script, /currentBlockExecution/)
+          assert.equal(numberOfKeys, 2)
           args = received
           return 1
         },
       },
-      mutations: buffer.mutations,
+      mutations,
       processedKey: 'processed',
+      instanceInfoKey: 'instance-info',
+      blockExecution: 3,
       identityKey: 'respondent:abc',
       messageId: 'message-1',
     })
 
     assert.equal(result, 'applied')
-    assert.deepEqual(JSON.parse(String(args[1])), buffer.mutations)
-    assert.deepEqual(args.slice(2), ['respondent:abc', 'message-1'])
+    assert.deepEqual(args.slice(0, 2), ['processed', 'instance-info'])
+    assert.deepEqual(JSON.parse(String(args[2])), mutations)
+    assert.deepEqual(args.slice(3), ['respondent:abc', 'message-1', '3'])
   })
 })

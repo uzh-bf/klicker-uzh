@@ -23,40 +23,6 @@ export interface RedisHashMutationQueue {
   hsetnx(key: string, field: string, value: string | number): unknown
 }
 
-export class RedisHashMutationBuffer implements RedisHashMutationQueue {
-  readonly mutations: RedisHashMutation[] = []
-
-  hincrby(key: string, field: string, increment: number) {
-    this.mutations.push({
-      command: 'hincrby',
-      key,
-      field,
-      value: String(increment),
-    })
-    return this
-  }
-
-  hset(key: string, field: string, value: string | number) {
-    this.mutations.push({
-      command: 'hset',
-      key,
-      field,
-      value: String(value),
-    })
-    return this
-  }
-
-  hsetnx(key: string, field: string, value: string | number) {
-    this.mutations.push({
-      command: 'hsetnx',
-      key,
-      field,
-      value: String(value),
-    })
-    return this
-  }
-}
-
 export type LiveQuizQuestionType =
   | 'SC'
   | 'MC'
@@ -76,7 +42,7 @@ export type QuestionGrading = {
   xpAwarded: number
 }
 
-type QuestionEffectPlan = {
+export type QuestionEffectPlan = {
   aggregateMutations: RedisHashMutation[]
   participantResponse?: string
   grading?: QuestionGrading
@@ -89,7 +55,7 @@ type ParticipantData = {
   role?: string
 }
 
-type PlanQuestionResponseEffectsArgs = {
+export type PlanQuestionResponseEffectsArgs = {
   type: LiveQuizQuestionType
   choiceCount?: string
   response: LiveQuizResponseInput
@@ -170,7 +136,7 @@ function buildGrading({
   }
 }
 
-function planQuestionResponseEffects({
+export function planQuestionResponseEffects({
   type,
   choiceCount,
   response,
@@ -570,10 +536,10 @@ export function queueAggregateQuestionResponseEffects({
   return plan.grading
 }
 
-export function queueCorrelatedQuestionResponseEffects(
-  args: QueueQuestionResponseEffectsArgs
+export function planCorrelatedQuestionResponseEffects(
+  args: Omit<PlanQuestionResponseEffectsArgs, 'gradeResponse'>
 ) {
-  const plan = queuePlannedQuestionResponseEffects({
+  const plan = planQuestionResponseEffects({
     ...args,
     gradeResponse: true,
   })
@@ -582,12 +548,15 @@ export function queueCorrelatedQuestionResponseEffects(
     plan.grading?.correctnessPercentage === 1 &&
     !args.firstResponseReceivedAt
   ) {
-    args.redisMulti.hsetnx(
-      `${args.instanceKey}:info`,
-      'firstResponseReceivedAt',
-      args.responseTimestamp
+    plan.aggregateMutations.push(
+      createHashMutation(
+        'hsetnx',
+        `${args.instanceKey}:info`,
+        'firstResponseReceivedAt',
+        args.responseTimestamp
+      )
     )
   }
 
-  return plan.grading
+  return plan
 }

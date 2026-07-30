@@ -84,7 +84,7 @@ export async function transitionLiveQuizToPublished({
   })
 }
 
-export async function materializeLiveQuizPublication({
+async function writeLiveQuizPublicationMetadata({
   quiz,
   redisExec,
   redisAssessmentExec,
@@ -115,7 +115,7 @@ export async function materializeLiveQuizPublication({
   })
 }
 
-export async function markLiveQuizPublicationMaterialized({
+async function markLiveQuizPublicationMaterialized({
   prisma,
   liveQuizId,
   startedAt,
@@ -140,6 +140,41 @@ export async function markLiveQuizPublicationMaterialized({
       `Live quiz ${liveQuizId} changed during publication materialization`
     )
   }
+}
+
+export async function materializeLiveQuizPublication({
+  prisma,
+  quiz,
+  redisExec,
+  redisAssessmentExec,
+}: {
+  prisma: DB.PrismaClient
+  quiz: Pick<
+    DB.LiveQuiz,
+    | 'id'
+    | 'namespace'
+    | 'startedAt'
+    | 'isGamificationEnabled'
+    | 'isAssessmentEnabled'
+  >
+  redisExec: PublicationRedis
+  redisAssessmentExec: PublicationRedis
+}) {
+  await writeLiveQuizPublicationMetadata({
+    quiz,
+    redisExec,
+    redisAssessmentExec,
+  })
+  if (quiz.startedAt === null) {
+    throw new Error(
+      `Published live quiz ${quiz.id} has no persisted start timestamp`
+    )
+  }
+  await markLiveQuizPublicationMaterialized({
+    prisma,
+    liveQuizId: quiz.id,
+    startedAt: quiz.startedAt,
+  })
 }
 
 export async function clearLiveQuizScheduledPublicationTask({
@@ -264,14 +299,10 @@ export async function reconcileLiveQuizPublications({
 
       if (publication.quiz.publicationMetadataMaterializedAt === null) {
         await materializeLiveQuizPublication({
+          prisma,
           quiz: publication.quiz,
           redisExec,
           redisAssessmentExec,
-        })
-        await markLiveQuizPublicationMaterialized({
-          prisma,
-          liveQuizId: publication.quiz.id,
-          startedAt: expectedStartedAt,
         })
       }
 

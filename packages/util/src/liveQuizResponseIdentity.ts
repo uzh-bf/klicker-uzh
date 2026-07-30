@@ -175,15 +175,9 @@ export function hashLiveQuizRespondentToken(token: string) {
   return createHash('sha256').update(token).digest('hex')
 }
 
-export type CorrelatedResponseClaim = {
-  key: string
-  identityKey: LiveQuizResponseIdentityKey
-}
-
 export type AcceptedCorrelatedResponseIdentity = {
   kind: LiveQuizResponseIdentity['kind']
   id: string
-  identityKey: LiveQuizResponseIdentityKey
 }
 
 export type LiveQuizResponseEventMessage = {
@@ -200,7 +194,6 @@ export type CorrelatedResponseEventMessage = Omit<
   'cookie'
 > & {
   acceptedIdentity: AcceptedCorrelatedResponseIdentity
-  correlatedClaim: CorrelatedResponseClaim
   instanceInfo: Record<string, string>
 }
 
@@ -208,7 +201,7 @@ export type CorrelatedResponseDeliveryMessage = {
   messageId: string
 }
 
-export function buildCorrelatedVoteKey({
+export function buildCorrelatedResponseKey({
   liveQuizId,
   instanceId,
   blockExecution,

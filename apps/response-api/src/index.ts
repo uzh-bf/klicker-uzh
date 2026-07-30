@@ -14,15 +14,15 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'http'
 import { Redis } from 'ioredis'
 import { createHash } from 'node:crypto'
 import { handleAggregateResponse } from './aggregateResponse.js'
-import { handleCorrelatedResponse } from './correlatedResponseHandler.js'
 import {
-  dispatchPendingCorrelatedResponses,
   getCorrelatedResponseAdmission,
+  serializeLiveQuizRespondentCookie,
+} from './correlatedResponseAdmission.js'
+import { handleCorrelatedResponse } from './correlatedResponseHandler.js'
+import { dispatchPendingCorrelatedResponses } from './correlatedResponseOutbox.js'
+import {
   hasJsonContentType,
   isAllowedCorsOrigin,
-  serializeLiveQuizRespondentCookie,
-} from './correlatedResponses.js'
-import {
   loadLiveQuizResponseInstance,
   parseLiveQuizResponseRequest,
 } from './liveQuizResponseRequest.js'

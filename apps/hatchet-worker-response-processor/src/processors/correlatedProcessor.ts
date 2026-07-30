@@ -1,8 +1,5 @@
 import { prisma } from '@klicker-uzh/prisma'
-import {
-  LiveQuizResponseCollectionMode,
-  type PrismaClient,
-} from '@klicker-uzh/prisma/client'
+import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import type {
   CorrelatedResponseDeliveryMessage,
   CorrelatedResponseEventMessage,
@@ -11,30 +8,28 @@ import type { Redis } from 'ioredis'
 import { getRedis } from '../redis.js'
 import {
   applyCorrelatedRedisMutations,
-  buildCorrelatedResponseCreateData,
   CorrelatedResponseIdentityError,
+  persistCorrelatedResponseForPublishedQuiz,
   prepareCorrelatedMessageProcessing,
   releaseCorrelatedProcessingLock,
   resolveCorrelatedResponseDelivery,
   resolveCorrelatedResponseInstanceInfo,
   settleCorrelatedResponseOutbox,
-  validateCorrelatedRedisHashKeys,
   type CorrelatedProcessingState,
 } from './correlatedResponse.js'
 import {
   prepareQuestionResponse,
-  resolveLiveQuizResponseCollectionMode,
   responseLogContext,
   type ResponseProcessorContext,
 } from './processor.js'
 import {
-  queueCorrelatedQuestionResponseEffects,
-  RedisHashMutationBuffer,
+  planCorrelatedQuestionResponseEffects,
+  type RedisHashMutation,
 } from './responseEffects.js'
 
 type CorrelatedProcessorDatabase = Pick<
   PrismaClient,
-  | 'liveQuiz'
+  | '$transaction'
   | 'liveQuizPendingResponse'
   | 'liveQuizRespondent'
   | 'liveQuizResponse'
@@ -75,17 +70,17 @@ export async function processCorrelatedResponseMessageWithDependencies(
     )
   }
 
-  const message = await resolveCorrelatedResponseDelivery({
+  const deliveryMessage = await resolveCorrelatedResponseDelivery({
     database,
     messageId: delivery.messageId,
     secret,
   })
-  if (!message) {
+  if (!deliveryMessage) {
     return { status: 200 }
   }
 
   return processResolvedCorrelatedResponse({
-    message,
+    ...deliveryMessage,
     ctx,
     database,
     redis,
@@ -94,17 +89,20 @@ export async function processCorrelatedResponseMessageWithDependencies(
 
 async function processResolvedCorrelatedResponse({
   message,
+  responseKey,
   ctx,
   database,
   redis,
 }: {
   message: CorrelatedResponseEventMessage
+  responseKey: string
   ctx: ResponseProcessorContext
   database: CorrelatedProcessorDatabase
   redis: Redis
 }) {
   let correlatedState: CorrelatedProcessingState | undefined
-  const mutationBuffer = new RedisHashMutationBuffer()
+  let redisMutations: RedisHashMutation[] | undefined
+  const instanceKey = `lq:${message.sessionId}:i:${message.instanceId}`
 
   const settleOutbox = () =>
     settleCorrelatedResponseOutbox({
@@ -133,8 +131,6 @@ async function processResolvedCorrelatedResponse({
       return { status: 400 }
     }
 
-    const liveQuizKey = `lq:${message.sessionId}`
-    const instanceKey = `${liveQuizKey}:i:${message.instanceId}`
     const instanceInfo = resolveCorrelatedResponseInstanceInfo(
       message.instanceInfo
     )
@@ -146,28 +142,13 @@ async function processResolvedCorrelatedResponse({
       return { status: 400 }
     }
 
-    const responseCollectionMode = await resolveLiveQuizResponseCollectionMode({
-      database,
-      liveQuizId: message.sessionId,
-      instanceInfo,
-    })
-    if (
-      responseCollectionMode !==
-      LiveQuizResponseCollectionMode.CORRELATED_EXPORT
-    ) {
-      ctx.logger.error(
-        'Correlated response event does not match response collection mode'
-      )
-      await settleOutbox()
-      return { status: 400 }
-    }
-
     const preparation = await prepareCorrelatedMessageProcessing({
       redis,
       database,
       message,
       blockExecution: instanceInfo.blockExecution,
       sessionBlockId: instanceInfo.sessionBlockId,
+      responseKey,
     })
     if (preparation.status === 'invalid') {
       await settleOutbox()
@@ -204,7 +185,7 @@ async function processResolvedCorrelatedResponse({
       return { status: 400 }
     }
 
-    const grading = queueCorrelatedQuestionResponseEffects({
+    const effectPlan = planCorrelatedQuestionResponseEffects({
       type: prepared.type,
       choiceCount: instanceInfo.choiceCount,
       response: message.response,
@@ -216,58 +197,34 @@ async function processResolvedCorrelatedResponse({
       defaultPoints: instanceInfo.defaultPoints,
       pointsMultiplier: instanceInfo.pointsMultiplier,
       parsedSolutions: prepared.parsedSolutions,
-      redisMulti: mutationBuffer,
     })
+    const grading = effectPlan.grading
+    redisMutations = effectPlan.aggregateMutations
 
     if (!grading) {
       throw new Error('Missing correlated response grading')
     }
 
-    await validateCorrelatedRedisHashKeys({
-      redis,
-      keys: [
-        `${instanceKey}:info`,
-        `${instanceKey}:results`,
-        `${instanceKey}:responseHashes`,
-        `${instanceKey}:responses`,
-        `${liveQuizKey}:b:${instanceInfo.sessionBlockId}:lb`,
-        `${liveQuizKey}:b:${instanceInfo.sessionBlockId}:lbTemporary`,
-        `${liveQuizKey}:lb`,
-        `${liveQuizKey}:lbTemporary`,
-        `${liveQuizKey}:xp`,
-        correlatedState.processedKey,
-      ],
+    const persistence = await persistCorrelatedResponseForPublishedQuiz({
+      database,
+      liveQuizId: message.sessionId,
+      owner: correlatedState.owner,
+      instanceId: correlatedState.instanceId,
+      blockExecution: correlatedState.blockExecution,
+      response: message.response,
+      submittedAt: message.responseTimestamp,
+      correctnessPercentage: grading.correctnessPercentage,
+      basePoints: grading.basePoints,
+      correctnessPoints: grading.correctnessPoints,
+      bonusPoints: grading.bonusPoints,
     })
-
-    if (!correlatedState.responsePersisted) {
-      try {
-        await database.liveQuizResponse.create({
-          data: buildCorrelatedResponseCreateData({
-            owner: correlatedState.owner,
-            instanceId: correlatedState.instanceId,
-            blockExecution: correlatedState.blockExecution,
-            response: message.response,
-            submittedAt: message.responseTimestamp,
-            correctnessPercentage: grading.correctnessPercentage,
-            basePoints: grading.basePoints,
-            correctnessPoints: grading.correctnessPoints,
-            bonusPoints: grading.bonusPoints,
-          }),
-        })
-        correlatedState.responsePersisted = true
-      } catch (error) {
-        if (
-          typeof error === 'object' &&
-          error !== null &&
-          'code' in error &&
-          error.code === 'P2002'
-        ) {
-          await releaseProcessingLock()
-          await settleOutbox()
-          return { status: 208 }
-        }
-        throw error
-      }
+    if (persistence === 'inactive') {
+      await releaseInvalidResponse()
+      return { status: 200 }
+    }
+    if (persistence === 'duplicate') {
+      await releaseInvalidResponse()
+      return { status: 208 }
     }
   } catch (error) {
     ctx.logger.error(`Error processing correlated response: ${String(error)}`, {
@@ -284,13 +241,15 @@ async function processResolvedCorrelatedResponse({
   }
 
   try {
-    if (!correlatedState) {
+    if (!correlatedState || !redisMutations) {
       throw new Error('Missing correlated response processing state')
     }
     const result = await applyCorrelatedRedisMutations({
       redis,
-      mutations: mutationBuffer.mutations,
+      mutations: redisMutations,
       processedKey: correlatedState.processedKey,
+      instanceInfoKey: `${instanceKey}:info`,
+      blockExecution: correlatedState.blockExecution,
       identityKey: correlatedState.owner.identityKey,
       messageId: message.messageId,
     })

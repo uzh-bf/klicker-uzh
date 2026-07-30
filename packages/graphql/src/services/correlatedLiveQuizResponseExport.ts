@@ -230,9 +230,10 @@ export async function getCorrelatedLiveQuizResponseExport(
             const identityHash = identityHashByIdentityKey.get(
               response.identityKey
             )!
+            const { identityKey: _, ...exportResponse } = response
 
             return {
-              ...response,
+              ...exportResponse,
               respondentLabel: labelByIdentityHash.get(identityHash)!,
             }
           }),

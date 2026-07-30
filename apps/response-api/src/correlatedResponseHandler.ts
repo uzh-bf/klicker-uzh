@@ -2,17 +2,17 @@ import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import { LiveQuizResponseCollectionMode } from '@klicker-uzh/prisma/client'
 import {
   CORRELATED_RESPONSE_EVENT,
+  encryptCorrelatedResponseEvent,
   resolveLiveQuizResponseIdentity,
   validateStudentResponse,
   type CorrelatedResponseDeliveryMessage,
   type CorrelatedResponseEventMessage,
 } from '@klicker-uzh/util'
 import {
-  encryptCorrelatedResponseEvent,
   getCorrelatedResponseAdmission,
   prepareCorrelatedResponseSubmission,
-  registerPendingCorrelatedResponse,
-} from './correlatedResponses.js'
+} from './correlatedResponseAdmission.js'
+import { registerPendingCorrelatedResponse } from './correlatedResponseOutbox.js'
 import type { LiveQuizResponseRequest } from './liveQuizResponseRequest.js'
 
 export async function handleCorrelatedResponse({
@@ -112,16 +112,6 @@ export async function handleCorrelatedResponse({
       body: { error: 'Live quiz response identity is no longer active' },
     }
   }
-  if (preparation.status === 'duplicate') {
-    return {
-      status: 208,
-      body: {
-        status: 'response_recorded_before',
-        responseTimestamp: request.responseTimestamp,
-      },
-    }
-  }
-
   const eventMessage: CorrelatedResponseEventMessage = {
     messageId: request.messageId,
     sessionId: request.liveQuizId,
@@ -129,14 +119,13 @@ export async function handleCorrelatedResponse({
     response: request.response,
     responseTimestamp: request.responseTimestamp,
     acceptedIdentity: preparation.acceptedIdentity,
-    correlatedClaim: preparation.claim,
     instanceInfo,
   }
   const registration = await registerPendingCorrelatedResponse({
     database,
     liveQuizId: request.liveQuizId,
     messageId: request.messageId,
-    responseKey: preparation.claim.key,
+    responseKey: preparation.responseKey,
     eventPayload: encryptCorrelatedResponseEvent({
       message: eventMessage,
       secret: identityConfig.secret,
@@ -155,7 +144,8 @@ export async function handleCorrelatedResponse({
     return { status: 404, body: { error: 'Live quiz not found' } }
   }
 
-  console.log(`Pushing event ${CORRELATED_RESPONSE_EVENT}`, {
+  console.log('Pushing correlated response event', {
+    event: CORRELATED_RESPONSE_EVENT,
     messageId: request.messageId,
     sessionId: request.liveQuizId,
     instanceId: request.instanceId,

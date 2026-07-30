@@ -1,25 +1,30 @@
 import { LiveQuizRespondentType } from '@klicker-uzh/prisma/client'
+import {
+  buildCorrelatedResponseKey,
+  decryptCorrelatedResponseEvent,
+  encryptCorrelatedResponseEvent,
+} from '@klicker-uzh/util'
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
-  buildCorrelatedVoteKey,
-  decryptCorrelatedResponseEvent,
-  dispatchPendingCorrelatedResponses,
-  encryptCorrelatedResponseEvent,
   getCorrelatedResponseAdmission,
-  hasJsonContentType,
-  hasPersistedCorrelatedResponse,
   hasValidLiveQuizPin,
-  isAllowedCorsOrigin,
   prepareCorrelatedResponseSubmission,
-  registerPendingCorrelatedResponse,
-  resolveResponseCollectionMode,
   serializeLiveQuizRespondentCookie,
-} from '../src/correlatedResponses.js'
+} from '../src/correlatedResponseAdmission.js'
+import {
+  dispatchPendingCorrelatedResponses,
+  registerPendingCorrelatedResponse,
+} from '../src/correlatedResponseOutbox.js'
+import {
+  hasJsonContentType,
+  isAllowedCorsOrigin,
+  resolveResponseCollectionMode,
+} from '../src/liveQuizResponseRequest.js'
 
 describe('correlated response key', () => {
   it('is stable for one identity and block execution', () => {
-    const key = buildCorrelatedVoteKey({
+    const key = buildCorrelatedResponseKey({
       liveQuizId: 'quiz-1',
       instanceId: '42',
       blockExecution: '3',
@@ -95,55 +100,11 @@ describe('correlated response request safeguards', () => {
     )
   })
 
-  it('detects an existing response for either owner type', async () => {
-    const calls: any[] = []
-    const database = {
-      liveQuizResponse: {
-        findUnique: async (args: any) => {
-          calls.push(args)
-          return { id: 'response-id' }
-        },
-      },
-    } as any
-
-    assert.equal(
-      await hasPersistedCorrelatedResponse({
-        database,
-        identity: {
-          kind: 'participant',
-          id: 'participant-id',
-          token: 'token',
-          cookieName: 'participant_token',
-        },
-        instanceId: 42,
-        blockExecution: 3,
-      }),
-      true
-    )
-    assert.equal(
-      await hasPersistedCorrelatedResponse({
-        database,
-        identity: {
-          kind: 'anonymous',
-          id: 'respondent-id',
-          liveQuizId: 'quiz-id',
-          token: 'token',
-          cookieName: 'cookie',
-        },
-        instanceId: 42,
-        blockExecution: 3,
-      }),
-      true
-    )
-    assert.equal(calls.length, 2)
-  })
-
   it('durably bridges an active temporary identity before enqueue', async () => {
     const respondentId = '33333333-3333-4333-8333-333333333333'
     let respondentCreated = false
     const result = await prepareCorrelatedResponseSubmission({
       database: {
-        liveQuizResponse: { findUnique: async () => null },
         temporaryLeaderboardEntry: {
           findUnique: async () => ({ id: respondentId }),
         },
@@ -178,8 +139,16 @@ describe('correlated response request safeguards', () => {
       {
         kind: 'temporary',
         id: respondentId,
-        identityKey: `respondent:${respondentId}`,
       }
+    )
+    assert.equal(
+      result.status === 'ready' ? result.responseKey : undefined,
+      buildCorrelatedResponseKey({
+        liveQuizId: 'quiz-id',
+        instanceId: '42',
+        blockExecution: '3',
+        identityKey: `respondent:${respondentId}`,
+      })
     )
   })
 
@@ -289,11 +258,6 @@ describe('correlated response request safeguards', () => {
       acceptedIdentity: {
         kind: 'anonymous' as const,
         id: '33333333-3333-4333-8333-333333333333',
-        identityKey: 'respondent:33333333-3333-4333-8333-333333333333' as const,
-      },
-      correlatedClaim: {
-        key: 'claim-key',
-        identityKey: 'respondent:33333333-3333-4333-8333-333333333333' as const,
       },
     }
     const eventPayload = encryptCorrelatedResponseEvent({
@@ -343,13 +307,6 @@ describe('correlated response request safeguards', () => {
       acceptedIdentity: {
         kind: 'participant' as const,
         id: '33333333-3333-4333-8333-333333333333',
-        identityKey:
-          'participant:33333333-3333-4333-8333-333333333333' as const,
-      },
-      correlatedClaim: {
-        key: 'claim-key',
-        identityKey:
-          'participant:33333333-3333-4333-8333-333333333333' as const,
       },
     }
     const pushes: unknown[] = []

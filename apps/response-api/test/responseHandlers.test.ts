@@ -6,6 +6,7 @@ import {
 import {
   CORRELATED_RESPONSE_EVENT,
   createLiveQuizRespondentToken,
+  decryptCorrelatedResponseEvent,
   getLiveQuizRespondentCookieName,
   hashLiveQuizRespondentToken,
 } from '@klicker-uzh/util'
@@ -13,7 +14,6 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { handleAggregateResponse } from '../src/aggregateResponse.js'
 import { handleCorrelatedResponse } from '../src/correlatedResponseHandler.js'
-import { decryptCorrelatedResponseEvent } from '../src/correlatedResponses.js'
 import type { LiveQuizResponseRequest } from '../src/liveQuizResponseRequest.js'
 
 const request: LiveQuizResponseRequest = {

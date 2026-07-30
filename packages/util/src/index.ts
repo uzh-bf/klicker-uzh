@@ -19,6 +19,7 @@ export * from './jwt.js'
 // export live quiz response identity helpers
 export * from './liveQuizResponseIdentity.js'
 export * from './liveQuizResponseOutbox.js'
+export * from './liveQuizResponseValidation.js'
 
 // export everything from the email module
 export * from './email.js'

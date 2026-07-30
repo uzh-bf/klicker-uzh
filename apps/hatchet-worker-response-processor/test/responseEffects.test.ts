@@ -2,9 +2,9 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
   isLiveQuizQuestionType,
+  planCorrelatedQuestionResponseEffects,
   queueAggregateQuestionResponseEffects,
-  queueCorrelatedQuestionResponseEffects,
-  RedisHashMutationBuffer,
+  type RedisHashMutation,
 } from '../src/processors/responseEffects.js'
 
 const instanceInfo = {
@@ -12,6 +12,37 @@ const instanceInfo = {
   defaultCorrectPoints: '5',
   maxBonusPoints: '45',
   timeToZeroBonus: '20',
+}
+
+class RecordingRedisQueue {
+  readonly mutations: RedisHashMutation[] = []
+
+  hincrby(key: string, field: string, increment: number) {
+    this.mutations.push({
+      command: 'hincrby',
+      key,
+      field,
+      value: String(increment),
+    })
+  }
+
+  hset(key: string, field: string, value: string | number) {
+    this.mutations.push({
+      command: 'hset',
+      key,
+      field,
+      value: String(value),
+    })
+  }
+
+  hsetnx(key: string, field: string, value: string | number) {
+    this.mutations.push({
+      command: 'hsetnx',
+      key,
+      field,
+      value: String(value),
+    })
+  }
 }
 
 describe('live quiz response effects', () => {
@@ -32,8 +63,7 @@ describe('live quiz response effects', () => {
   })
 
   it('plans correlated grading and aggregate mutations together', () => {
-    const redisMulti = new RedisHashMutationBuffer()
-    const grading = queueCorrelatedQuestionResponseEffects({
+    const plan = planCorrelatedQuestionResponseEffects({
       type: 'SC',
       choiceCount: '2',
       response: {
@@ -48,10 +78,9 @@ describe('live quiz response effects', () => {
       basePoints: 'true',
       defaultPoints: '10',
       parsedSolutions: [1],
-      redisMulti,
     })
 
-    assert.deepEqual(grading, {
+    assert.deepEqual(plan.grading, {
       basePoints: 10,
       correctnessPoints: 5,
       bonusPoints: 45,
@@ -59,7 +88,7 @@ describe('live quiz response effects', () => {
       pointsAwarded: 60,
       xpAwarded: 10,
     })
-    assert.deepEqual(redisMulti.mutations, [
+    assert.deepEqual(plan.aggregateMutations, [
       {
         command: 'hincrby',
         key: 'lq:quiz:i:1:results',
@@ -82,7 +111,7 @@ describe('live quiz response effects', () => {
   })
 
   it('queues participant response and leaderboard effects in aggregate mode', () => {
-    const redisMulti = new RedisHashMutationBuffer()
+    const redisMulti = new RecordingRedisQueue()
     const grading = queueAggregateQuestionResponseEffects({
       type: 'FREE_TEXT',
       response: { value: '  correct  ' },
@@ -123,8 +152,7 @@ describe('live quiz response effects', () => {
   })
 
   it('does not queue identity-keyed effects for correlated participants', () => {
-    const redisMulti = new RedisHashMutationBuffer()
-    const grading = queueCorrelatedQuestionResponseEffects({
+    const plan = planCorrelatedQuestionResponseEffects({
       type: 'SC',
       choiceCount: '2',
       response: {
@@ -139,12 +167,11 @@ describe('live quiz response effects', () => {
       basePoints: 'true',
       defaultPoints: '10',
       parsedSolutions: [1],
-      redisMulti,
     })
 
-    assert.equal(grading?.pointsAwarded, 60)
+    assert.equal(plan.grading?.pointsAwarded, 60)
     assert.equal(
-      redisMulti.mutations.some(
+      plan.aggregateMutations.some(
         (mutation) =>
           mutation.key.endsWith(':responses') ||
           mutation.key.includes(':lb') ||
@@ -155,8 +182,7 @@ describe('live quiz response effects', () => {
   })
 
   it('does not award base points for content views', () => {
-    const redisMulti = new RedisHashMutationBuffer()
-    const grading = queueCorrelatedQuestionResponseEffects({
+    const plan = planCorrelatedQuestionResponseEffects({
       type: 'CONTENT',
       response: { viewed: true },
       instanceInfo,
@@ -165,10 +191,9 @@ describe('live quiz response effects', () => {
       basePoints: 'true',
       defaultPoints: '10',
       parsedSolutions: undefined,
-      redisMulti,
     })
 
-    assert.deepEqual(grading, {
+    assert.deepEqual(plan.grading, {
       basePoints: 0,
       correctnessPoints: 0,
       bonusPoints: 0,
@@ -176,7 +201,7 @@ describe('live quiz response effects', () => {
       pointsAwarded: 0,
       xpAwarded: 0,
     })
-    assert.deepEqual(redisMulti.mutations, [
+    assert.deepEqual(plan.aggregateMutations, [
       {
         command: 'hincrby',
         key: 'lq:quiz:i:3:results',
@@ -191,7 +216,7 @@ describe('live quiz response effects', () => {
       { sub: 'participant', role: 'PARTICIPANT' },
       { sub: 'temporary', role: 'TEMPORARY_PARTICIPANT' },
     ]) {
-      const redisMulti = new RedisHashMutationBuffer()
+      const redisMulti = new RecordingRedisQueue()
       queueAggregateQuestionResponseEffects({
         type: 'CONTENT',
         response: { viewed: true },

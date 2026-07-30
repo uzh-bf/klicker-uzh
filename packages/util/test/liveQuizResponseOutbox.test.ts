@@ -3,8 +3,8 @@ import type { CorrelatedResponseEventMessage } from '../src/liveQuizResponseIden
 import {
   decryptCorrelatedResponseEvent,
   encryptCorrelatedResponseEvent,
-  validateStudentResponse,
 } from '../src/liveQuizResponseOutbox.js'
+import { validateStudentResponse } from '../src/liveQuizResponseValidation.js'
 
 const message: CorrelatedResponseEventMessage = {
   messageId: '22222222-2222-4222-8222-222222222222',
@@ -20,11 +20,6 @@ const message: CorrelatedResponseEventMessage = {
   acceptedIdentity: {
     kind: 'anonymous',
     id: '44444444-4444-4444-8444-444444444444',
-    identityKey: 'respondent:44444444-4444-4444-8444-444444444444',
-  },
-  correlatedClaim: {
-    key: 'claim-key',
-    identityKey: 'respondent:44444444-4444-4444-8444-444444444444',
   },
 }
 
@@ -44,15 +39,15 @@ describe('correlated live quiz outbox contract', () => {
     ).toEqual(message)
   })
 
-  it('rejects an identity key that does not match the admitted identity', () => {
+  it('rejects an unsupported admitted identity kind', () => {
     const encryptedPayload = encryptCorrelatedResponseEvent({
       message: {
         ...message,
         acceptedIdentity: {
           ...message.acceptedIdentity,
-          identityKey: 'respondent:55555555-5555-4555-8555-555555555555',
+          kind: 'unsupported',
         },
-      },
+      } as unknown as CorrelatedResponseEventMessage,
       secret: 'test-secret',
     })
 
@@ -62,6 +57,23 @@ describe('correlated live quiz outbox contract', () => {
         secret: 'test-secret',
       })
     ).toThrow('Invalid correlated response outbox message')
+  })
+
+  it('rejects a truncated authentication tag', () => {
+    const encryptedPayload = encryptCorrelatedResponseEvent({
+      message,
+      secret: 'test-secret',
+    })
+    const parts = encryptedPayload.split('.')
+    const tag = Buffer.from(parts[2]!, 'base64url')
+    parts[2] = tag.subarray(0, tag.length - 1).toString('base64url')
+
+    expect(() =>
+      decryptCorrelatedResponseEvent({
+        encryptedPayload: parts.join('.'),
+        secret: 'test-secret',
+      })
+    ).toThrow('Invalid correlated response outbox payload')
   })
 })
 

@@ -35,7 +35,7 @@ Worked examples: `deleteCourse` in `mutation.ts` (asUser + ADMIN permission on c
 
 Live quiz response-mode policy is centralized in `services/liveQuizResponseCollection.ts`. It owns locked course/quiz state reads, assessment-aware mode derivation, editability after publication, course transition validation, and the correlated-export/gamification conflict code. `liveQuizzes.ts`, `courses.ts`, and `activities.ts` retain authorization and unrelated writes but must consume these decisions rather than rebuilding the policy.
 
-Live quiz publication uses a separate boundary in `services/liveQuizPublication.ts`: transition the locked PostgreSQL row, commit, materialize Redis metadata, then acknowledge the matching `startedAt` generation. Manual, scheduled, and reconciliation callers share that sequence.
+Live quiz publication uses a separate boundary in `services/liveQuizPublication.ts`: transition the locked PostgreSQL row, commit, then call the single public `materializeLiveQuizPublication` operation that writes Redis metadata and acknowledges the matching `startedAt` generation. Manual, scheduled, and reconciliation callers cannot invoke either half independently.
 
 ## Client operations and codegen
 
@@ -57,4 +57,4 @@ Field filters over the shared pubSub: `schema/subscription.ts:feedbackCreated` p
 
 Read-only feature end-to-end: commit `ff61d9bc7` (#4951) — new object type, two query fields, service function, ops + committed codegen, manage page, i18n. Schema-change + mutation + heavy vitest variant: `38c92d035` (#4958). Step-by-step walkthrough: [Developing a Feature](./developing-a-feature.md).
 
-The correlated live-quiz CSV is a current example of a heavier query boundary: `schema/query.ts:correlatedLiveQuizResponseExport` requires `WRITE` permission and delegates to the dedicated `services/correlatedLiveQuizResponseExport.ts:getCorrelatedLiveQuizResponseExport`. The service locks the quiz while checking that no acknowledged response remains pending and assigning stable pseudonymous row labels. It returns CSV content only after the quiz has ended; correlated quizzes are excluded from the legacy identifiable course export.
+The correlated live-quiz CSV is a current example of a heavier query boundary: `schema/query.ts:correlatedLiveQuizResponseExport` requires `WRITE` permission and delegates to the dedicated `services/correlatedLiveQuizResponseExport.ts:getCorrelatedLiveQuizResponseExport`. The service locks the quiz while checking that no acknowledged response remains pending and assigning stable pseudonymous row labels. It strips database identity keys before calling `packages/export`, returns CSV content only after the quiz has ended, and keeps correlated quizzes out of the legacy identifiable course export.

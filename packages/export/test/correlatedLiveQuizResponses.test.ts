@@ -23,7 +23,6 @@ const questions = [
 
 const responses = [
   {
-    identityKey: 'participant:account-id',
     respondentLabel: 2,
     instanceId: 10,
     blockExecution: 0,
@@ -34,7 +33,6 @@ const responses = [
     bonusPoints: 1.5,
   },
   {
-    identityKey: 'respondent:anonymous-id',
     respondentLabel: 1,
     instanceId: 11,
     blockExecution: 1,

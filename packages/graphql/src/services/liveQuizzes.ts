@@ -36,7 +36,6 @@ import { getPermissionBooleans } from './activities.js'
 import {
   clearLiveQuizScheduledPublicationTask,
   deleteLiveQuizScheduledPublicationTask,
-  markLiveQuizPublicationMaterialized,
   materializeLiveQuizPublication,
   reconcileLiveQuizPublications,
   transitionLiveQuizToPublished,
@@ -885,14 +884,10 @@ export async function startLiveQuiz(
 
     if (!publication) return null
     await materializeLiveQuizPublication({
+      prisma: ctx.prisma,
       quiz: publication.quiz,
       redisExec: ctx.redisExec,
       redisAssessmentExec: ctx.redisAssessmentExec,
-    })
-    await markLiveQuizPublicationMaterialized({
-      prisma: ctx.prisma,
-      liveQuizId: publication.quiz.id,
-      startedAt: publication.quiz.startedAt,
     })
 
     if (publication.scheduledPublicationTaskId) {
@@ -2158,83 +2153,134 @@ export async function cancelLiveQuiz(
   if (!quiz) return null
 
   try {
-    if (quiz.status !== DB.PublicationStatus.PUBLISHED) {
-      throw new Error('Live quiz is not running')
-    }
+    const { lockedQuiz, updatedQuiz } = await ctx.prisma.$transaction(
+      async (prisma) => {
+        await prisma.$queryRaw`
+          SELECT "id"
+          FROM "public"."LiveQuiz"
+          WHERE "id" = ${id}::uuid AND "isDeleted" = false
+          FOR UPDATE
+        `
+        const lockedQuiz = await prisma.liveQuiz.findUnique({
+          where: { id, isDeleted: false },
+          include: {
+            activeBlock: true,
+            blocks: { include: { elements: true, activeInLiveQuiz: true } },
+            leaderboard: true,
+          },
+        })
+        if (!lockedQuiz) {
+          throw new Error('Live quiz not found')
+        }
+        if (lockedQuiz.status !== DB.PublicationStatus.PUBLISHED) {
+          throw new Error('Live quiz is not running')
+        }
 
-    // if the quiz is an assessment quiz, it can only be aborted before the first block is activated
-    if (
-      quiz.isAssessmentEnabled &&
-      (quiz.activeBlock ||
-        quiz.blocks.some(
-          (block) => block.status !== DB.ElementBlockStatus.SCHEDULED
-        ))
-    ) {
-      throw new Error(
-        'Assessment quizzes can only be aborted before the first block is activated'
-      )
-    }
+        // Assessment quizzes can only be aborted before the first block is activated.
+        if (
+          lockedQuiz.isAssessmentEnabled &&
+          (lockedQuiz.activeBlock ||
+            lockedQuiz.blocks.some(
+              (block) => block.status !== DB.ElementBlockStatus.SCHEDULED
+            ))
+        ) {
+          throw new Error(
+            'Assessment quizzes can only be aborted before the first block is activated'
+          )
+        }
 
-    const instances = quiz.blocks.flatMap((block) => block.elements)
-    const [updatedQuiz] = await ctx.prisma.$transaction([
-      ctx.prisma.liveQuiz.update({
-        where: { id },
-        data: {
-          status: DB.PublicationStatus.DRAFT,
-          startedAt: null,
-          activeBlock: { disconnect: true },
-          leaderboard: { deleteMany: {} },
-          temporaryLeaderboard: { deleteMany: {} },
-          feedbacks: { deleteMany: {} },
-          confusionFeedbacks: { deleteMany: {} },
-          blocks: {
-            updateMany: {
-              where: {
-                status: {
-                  in: [
-                    DB.ElementBlockStatus.EXECUTED,
-                    DB.ElementBlockStatus.ACTIVE,
-                  ],
+        const instances = lockedQuiz.blocks.flatMap((block) => block.elements)
+        if (
+          lockedQuiz.responseCollectionMode ===
+          DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+        ) {
+          const instanceIds = instances.map((instance) => instance.id)
+          await prisma.liveQuizPendingResponse.deleteMany({
+            where: { liveQuizId: id },
+          })
+          await prisma.liveQuizResponseExportLabel.deleteMany({
+            where: { liveQuizId: id },
+          })
+          await prisma.liveQuizResponse.deleteMany({
+            where: { instanceId: { in: instanceIds } },
+          })
+          await prisma.liveQuizRespondent.deleteMany({
+            where: { liveQuizId: id },
+          })
+        }
+
+        const updatedQuiz = await prisma.liveQuiz.update({
+          where: { id },
+          data: {
+            status: DB.PublicationStatus.DRAFT,
+            startedAt: null,
+            activeBlock: { disconnect: true },
+            leaderboard: { deleteMany: {} },
+            temporaryLeaderboard: { deleteMany: {} },
+            feedbacks: { deleteMany: {} },
+            confusionFeedbacks: { deleteMany: {} },
+            blocks: {
+              updateMany: {
+                where: {
+                  status: {
+                    in: [
+                      DB.ElementBlockStatus.EXECUTED,
+                      DB.ElementBlockStatus.ACTIVE,
+                    ],
+                  },
                 },
-              },
-              data: {
-                status: DB.ElementBlockStatus.SCHEDULED,
-                startedAt: null,
-                closedAt: null,
-                expiresAt: null,
-                execution: { increment: 1 },
+                data: {
+                  status: DB.ElementBlockStatus.SCHEDULED,
+                  startedAt: null,
+                  closedAt: null,
+                  expiresAt: null,
+                  execution: { increment: 1 },
+                },
               },
             },
           },
-        },
-        include: {
-          activeBlock: true,
-          blocks: { include: { elements: true, activeInLiveQuiz: true } },
-        },
-      }),
-
-      ...instances.map((instance) => {
-        const initialResults = getInitialInstanceResults(instance.elementData)
-
-        return ctx.prisma.elementInstance.update({
-          where: { id: instance.id },
-          data: { results: initialResults, anonymousResults: initialResults },
+          include: {
+            activeBlock: true,
+            blocks: { include: { elements: true, activeInLiveQuiz: true } },
+          },
         })
-      }),
-    ])
+
+        await Promise.all(
+          instances.map((instance) => {
+            const initialResults = getInitialInstanceResults(
+              instance.elementData
+            )
+            return prisma.elementInstance.update({
+              where: { id: instance.id },
+              data: {
+                results: initialResults,
+                anonymousResults: initialResults,
+              },
+            })
+          })
+        )
+
+        return { lockedQuiz, updatedQuiz }
+      }
+    )
 
     // depending on the quiz assessment setting, select the corresponding redis instance
-    const redis = quiz.isAssessmentEnabled
+    const redis = lockedQuiz.isAssessmentEnabled
       ? ctx.redisAssessmentExec
       : ctx.redisExec
 
-    // unlink all cache keys from the redis cache
-    const keys = await redis.keys(`lq:${id}:*`)
-    const pipe = redis.multi()
-    for (const key of keys) {
-      pipe.unlink(key)
-    }
-    await pipe.exec()
+    // Keep namespace cleanup atomic with workers' generation-guarded Lua writes.
+    await redis.eval(
+      `
+        local keys = redis.call('KEYS', ARGV[1])
+        if #keys == 0 then
+          return 0
+        end
+        return redis.call('UNLINK', unpack(keys))
+      `,
+      0,
+      `lq:${id}:*`
+    )
 
     await sendTeamsNotification({
       scope: 'graphql/abortLiveQuiz',
@@ -3226,14 +3272,10 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
       }
 
       await materializeLiveQuizPublication({
+        prisma: globalCtx.prisma,
         quiz: publication.quiz,
         redisExec: globalCtx.redisExec,
         redisAssessmentExec: globalCtx.redisAssessmentExec,
-      })
-      await markLiveQuizPublicationMaterialized({
-        prisma: globalCtx.prisma,
-        liveQuizId: publication.quiz.id,
-        startedAt: publication.quiz.startedAt,
       })
       if (publication.scheduledPublicationTaskId) {
         await clearLiveQuizScheduledPublicationTask({
