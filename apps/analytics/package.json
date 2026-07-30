@@ -3,7 +3,7 @@
   "version": "3.3.0-alpha.12",
   "license": "AGPL-3.0",
   "devDependencies": {
-    "nodemon": "~3.1.10"
+    "nodemon": "~3.1.14"
   },
   "scripts": {
     "analytics:dev": "../../util/_run_with_infisical.sh --env dev nodemon --exec 'uv run poe main' --watch src,prisma --ext py,prisma",
