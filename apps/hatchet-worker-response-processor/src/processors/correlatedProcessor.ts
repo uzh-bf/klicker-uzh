@@ -1,9 +1,13 @@
 import { prisma } from '@klicker-uzh/prisma'
-import { LiveQuizResponseCollectionMode } from '@klicker-uzh/prisma/client'
+import {
+  LiveQuizResponseCollectionMode,
+  type PrismaClient,
+} from '@klicker-uzh/prisma/client'
 import type {
   CorrelatedResponseDeliveryMessage,
   CorrelatedResponseEventMessage,
 } from '@klicker-uzh/util'
+import type { Redis } from 'ioredis'
 import { getRedis } from '../redis.js'
 import {
   applyCorrelatedRedisMutations,
@@ -18,7 +22,6 @@ import {
   type CorrelatedProcessingState,
 } from './correlatedResponse.js'
 import {
-  assertResponseRedis,
   prepareQuestionResponse,
   resolveLiveQuizResponseCollectionMode,
   responseLogContext,
@@ -29,18 +32,43 @@ import {
   RedisHashMutationBuffer,
 } from './responseEffects.js'
 
-const redisExec = getRedis()
+type CorrelatedProcessorDatabase = Pick<
+  PrismaClient,
+  | 'liveQuiz'
+  | 'liveQuizPendingResponse'
+  | 'liveQuizRespondent'
+  | 'liveQuizResponse'
+  | 'participant'
+>
 
 export async function processCorrelatedResponseMessage(
   delivery: CorrelatedResponseDeliveryMessage,
   ctx: ResponseProcessorContext
 ) {
+  return processCorrelatedResponseMessageWithDependencies(delivery, ctx, {
+    database: prisma,
+    redis: getRedis(),
+    secret: process.env.APP_SECRET,
+  })
+}
+
+export async function processCorrelatedResponseMessageWithDependencies(
+  delivery: CorrelatedResponseDeliveryMessage,
+  ctx: ResponseProcessorContext,
+  {
+    database,
+    redis,
+    secret,
+  }: {
+    database: CorrelatedProcessorDatabase
+    redis: Redis
+    secret: string | undefined
+  }
+) {
   ctx.logger.info('ProcessCorrelatedResponse: received message', {
     messageId: delivery.messageId,
   })
-  assertResponseRedis(redisExec, ctx)
 
-  const secret = process.env.APP_SECRET
   if (!secret) {
     throw new Error(
       'APP_SECRET is required to process correlated live quiz responses'
@@ -48,7 +76,7 @@ export async function processCorrelatedResponseMessage(
   }
 
   const message = await resolveCorrelatedResponseDelivery({
-    database: prisma,
+    database,
     messageId: delivery.messageId,
     secret,
   })
@@ -56,28 +84,37 @@ export async function processCorrelatedResponseMessage(
     return { status: 200 }
   }
 
-  return processResolvedCorrelatedResponse({ message, ctx })
+  return processResolvedCorrelatedResponse({
+    message,
+    ctx,
+    database,
+    redis,
+  })
 }
 
 async function processResolvedCorrelatedResponse({
   message,
   ctx,
+  database,
+  redis,
 }: {
   message: CorrelatedResponseEventMessage
   ctx: ResponseProcessorContext
+  database: CorrelatedProcessorDatabase
+  redis: Redis
 }) {
   let correlatedState: CorrelatedProcessingState | undefined
   const mutationBuffer = new RedisHashMutationBuffer()
 
   const settleOutbox = () =>
     settleCorrelatedResponseOutbox({
-      database: prisma,
+      database,
       messageId: message.messageId,
     })
   const releaseProcessingLock = async () => {
     if (!correlatedState) return
     await releaseCorrelatedProcessingLock({
-      redis: redisExec,
+      redis,
       lockKey: correlatedState.processingLockKey,
       messageId: message.messageId,
     })
@@ -110,7 +147,7 @@ async function processResolvedCorrelatedResponse({
     }
 
     const responseCollectionMode = await resolveLiveQuizResponseCollectionMode({
-      database: prisma,
+      database,
       liveQuizId: message.sessionId,
       instanceInfo,
     })
@@ -126,8 +163,8 @@ async function processResolvedCorrelatedResponse({
     }
 
     const preparation = await prepareCorrelatedMessageProcessing({
-      redis: redisExec,
-      database: prisma,
+      redis,
+      database,
       message,
       blockExecution: instanceInfo.blockExecution,
       sessionBlockId: instanceInfo.sessionBlockId,
@@ -187,7 +224,7 @@ async function processResolvedCorrelatedResponse({
     }
 
     await validateCorrelatedRedisHashKeys({
-      redis: redisExec,
+      redis,
       keys: [
         `${instanceKey}:info`,
         `${instanceKey}:results`,
@@ -204,7 +241,7 @@ async function processResolvedCorrelatedResponse({
 
     if (!correlatedState.responsePersisted) {
       try {
-        await prisma.liveQuizResponse.create({
+        await database.liveQuizResponse.create({
           data: buildCorrelatedResponseCreateData({
             owner: correlatedState.owner,
             instanceId: correlatedState.instanceId,
@@ -251,7 +288,7 @@ async function processResolvedCorrelatedResponse({
       throw new Error('Missing correlated response processing state')
     }
     const result = await applyCorrelatedRedisMutations({
-      redis: redisExec,
+      redis,
       mutations: mutationBuffer.mutations,
       processedKey: correlatedState.processedKey,
       identityKey: correlatedState.owner.identityKey,

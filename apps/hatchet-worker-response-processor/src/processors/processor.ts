@@ -12,8 +12,6 @@ import type {
   NumericalRestrictions,
 } from '@klicker-uzh/types'
 import type { LiveQuizResponseEventMessage } from '@klicker-uzh/util'
-import type { Redis } from 'ioredis'
-import { strict as assert } from 'node:assert'
 import { validateStudentResponse } from './helpers.js'
 import {
   isLiveQuizQuestionType,
@@ -23,18 +21,6 @@ import {
 export type ResponseProcessorContext =
   | Context<JsonObject, {}>
   | DurableContext<JsonObject, {}>
-
-export function assertResponseRedis(
-  redis: Redis,
-  ctx: ResponseProcessorContext
-) {
-  try {
-    assert(redis)
-  } catch (error) {
-    ctx.logger.error(`Redis connection error: ${JSON.stringify(error)}`)
-    throw new Error(`Redis connection error ${String(error)}`)
-  }
-}
 
 export async function handleResponseHeartbeat(
   message: LiveQuizResponseEventMessage

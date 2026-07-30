@@ -21,14 +21,6 @@ type CorrelatedResponseDatabase = Pick<
   'liveQuizRespondent' | 'liveQuizResponse' | 'participant'
 >
 
-export function resolveAggregateResponseInstanceInfo(
-  cachedInstanceInfo: Record<string, string>
-) {
-  return Object.keys(cachedInstanceInfo).length > 0
-    ? cachedInstanceInfo
-    : undefined
-}
-
 export function resolveCorrelatedResponseInstanceInfo(
   acceptedInstanceInfo: Record<string, string> | undefined
 ) {

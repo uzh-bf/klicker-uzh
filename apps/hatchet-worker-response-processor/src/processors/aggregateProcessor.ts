@@ -1,14 +1,16 @@
 import { prisma } from '@klicker-uzh/prisma'
-import { LiveQuizResponseCollectionMode } from '@klicker-uzh/prisma/client'
+import {
+  LiveQuizResponseCollectionMode,
+  type PrismaClient,
+} from '@klicker-uzh/prisma/client'
 import {
   verifyJWT,
   type JWTPayload,
   type LiveQuizResponseEventMessage,
 } from '@klicker-uzh/util'
+import type { Redis } from 'ioredis'
 import { getRedis } from '../redis.js'
-import { resolveAggregateResponseInstanceInfo } from './correlatedResponse.js'
 import {
-  assertResponseRedis,
   handleResponseHeartbeat,
   prepareQuestionResponse,
   resolveLiveQuizResponseCollectionMode,
@@ -17,22 +19,36 @@ import {
 } from './processor.js'
 import { queueAggregateQuestionResponseEffects } from './responseEffects.js'
 
-const redisExec = getRedis()
-
 export async function processAggregateResponseMessage(
   message: LiveQuizResponseEventMessage,
   ctx: ResponseProcessorContext
 ) {
+  return processAggregateResponseMessageWithDependencies(message, ctx, {
+    database: prisma,
+    redis: getRedis(),
+  })
+}
+
+export async function processAggregateResponseMessageWithDependencies(
+  message: LiveQuizResponseEventMessage,
+  ctx: ResponseProcessorContext,
+  {
+    database,
+    redis,
+  }: {
+    database: Pick<PrismaClient, 'liveQuiz'>
+    redis: Redis
+  }
+) {
   ctx.logger.info('ProcessAggregateResponse: received message', {
     messageId: message.messageId,
   })
-  assertResponseRedis(redisExec, ctx)
 
   if (await handleResponseHeartbeat(message)) {
     return { status: 200 }
   }
 
-  let aggregatePipeline = redisExec.pipeline()
+  let aggregatePipeline = redis.pipeline()
 
   try {
     if (!message.response) {
@@ -44,10 +60,8 @@ export async function processAggregateResponseMessage(
 
     const liveQuizKey = `lq:${message.sessionId}`
     const instanceKey = `${liveQuizKey}:i:${message.instanceId}`
-    const instanceInfo = resolveAggregateResponseInstanceInfo(
-      await redisExec.hgetall(`${instanceKey}:info`)
-    )
-    if (!instanceInfo) {
+    const instanceInfo = await redis.hgetall(`${instanceKey}:info`)
+    if (Object.keys(instanceInfo).length === 0) {
       ctx.logger.info('Element instance metadata not found', {
         extra: responseLogContext(message),
       })
@@ -55,7 +69,7 @@ export async function processAggregateResponseMessage(
     }
 
     const responseCollectionMode = await resolveLiveQuizResponseCollectionMode({
-      database: prisma,
+      database,
       liveQuizId: message.sessionId,
       instanceInfo,
     })
@@ -69,11 +83,12 @@ export async function processAggregateResponseMessage(
       return { status: 400 }
     }
 
-    aggregatePipeline = redisExec.pipeline()
+    aggregatePipeline = redis.pipeline()
     const participantData = await resolveAggregateParticipant({
       message,
       instanceKey,
       ctx,
+      redis,
     })
     if (participantData?.alreadyResponded) {
       return { status: 200 }
@@ -142,10 +157,12 @@ async function resolveAggregateParticipant({
   message,
   instanceKey,
   ctx,
+  redis,
 }: {
   message: LiveQuizResponseEventMessage
   instanceKey: string
   ctx: ResponseProcessorContext
+  redis: Pick<Redis, 'hexists'>
 }) {
   if (typeof message.cookie !== 'string') return null
 
@@ -188,7 +205,7 @@ async function resolveAggregateParticipant({
 
   if (!payload) return null
 
-  const alreadyResponded = await redisExec.hexists(
+  const alreadyResponded = await redis.hexists(
     `${instanceKey}:responses`,
     payload.role === 'TEMPORARY_PARTICIPANT'
       ? `temporary-${payload.sub}`

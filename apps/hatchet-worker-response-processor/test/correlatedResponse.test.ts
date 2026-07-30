@@ -20,7 +20,6 @@ import {
   prepareCorrelatedMessageProcessing,
   prepareCorrelatedResponseProcessing,
   releaseCorrelatedProcessingLock,
-  resolveAggregateResponseInstanceInfo,
   resolveCorrelatedResponseDelivery,
   resolveCorrelatedResponseInstanceInfo,
   resolveCorrelatedResponseOwner,
@@ -275,7 +274,6 @@ describe('correlated response persistence helpers', () => {
       resolveCorrelatedResponseInstanceInfo(acceptedInstanceInfo),
       acceptedInstanceInfo
     )
-    assert.equal(resolveAggregateResponseInstanceInfo({}), undefined)
   })
 
   it('settles the pending outbox entry idempotently', async () => {
