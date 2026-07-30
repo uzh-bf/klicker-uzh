@@ -1722,6 +1722,13 @@ describe('live quiz reset summary', () => {
         collectedXp: 999,
       },
     })
+    await userOneCtx.redisExec.hset(`lq:${fixture.liveQuizId}:meta`, {
+      cacheGeneration: uuidv4(),
+    })
+    await userOneCtx.redisExec.set(
+      `lq:${fixture.liveQuizId}:synthetic`,
+      'orphaned'
+    )
     await prisma.liveQuiz.delete({ where: { id: fixture.liveQuizId } })
 
     await handleCleanupLiveQuizResetCache(
@@ -1756,6 +1763,49 @@ describe('live quiz reset summary', () => {
       collectedPoints: fixture.awardedTimelinePoints,
       collectedXp: fixture.awardedTimelineXp,
     })
+    await expect(
+      userOneCtx.redisExec.hget(
+        `lq:${fixture.liveQuizId}:meta`,
+        'cacheGeneration'
+      )
+    ).resolves.toBeNull()
+    await expect(
+      userOneCtx.redisExec.get(`lq:${fixture.liveQuizId}:synthetic`)
+    ).resolves.toBeNull()
+  })
+
+  it('clears orphaned cache for a soft-deleted quiz', async () => {
+    const quiz = await seedLiveQuiz(
+      { elements: [], status: PublicationStatus.ENDED },
+      userOneCtx
+    )
+    await userOneCtx.redisExec.hset(`lq:${quiz.id}:meta`, {
+      cacheGeneration: uuidv4(),
+    })
+    await userOneCtx.redisExec.set(`lq:${quiz.id}:synthetic`, 'orphaned')
+    await prisma.liveQuiz.update({
+      where: { id: quiz.id },
+      data: { isDeleted: true },
+    })
+
+    await expect(
+      handleCleanupLiveQuizResetCache(
+        {
+          liveQuizId: quiz.id,
+          isAssessmentEnabled: false,
+          cacheGenerationSnapshot: { status: 'UNAVAILABLE' },
+          weeklyTimelineRecomputations: [],
+        },
+        globalHandlerContext(userOneCtx),
+        {} as never
+      )
+    ).resolves.toBe(true)
+    await expect(
+      userOneCtx.redisExec.hget(`lq:${quiz.id}:meta`, 'cacheGeneration')
+    ).resolves.toBeNull()
+    await expect(
+      userOneCtx.redisExec.get(`lq:${quiz.id}:synthetic`)
+    ).resolves.toBeNull()
   })
 
   it('schedules generation-safe cleanup when generation snapshotting fails', async () => {

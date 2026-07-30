@@ -834,6 +834,20 @@ function includeMetaKey(liveQuizId: string, keys: string[]): string[] {
   return [metaKey, ...keys.filter((key) => key !== metaKey)]
 }
 
+async function clearAllLiveQuizExecutionCache({
+  liveQuizId,
+  redis,
+}: {
+  liveQuizId: string
+  redis: Redis
+}): Promise<void> {
+  const keys = includeMetaKey(
+    liveQuizId,
+    await scanLiveQuizExecutionKeys({ liveQuizId, redis })
+  )
+  await redis.unlink(...keys)
+}
+
 export async function clearLiveQuizExecutionCache({
   liveQuizId,
   redis,
@@ -877,17 +891,22 @@ async function recoverAndClearUnavailableLiveQuizExecutionCache({
       WHERE "id" = ${liveQuizId}::uuid
       FOR UPDATE
     `
-    if (lockedRows.length === 0) return
+    if (lockedRows.length === 0) {
+      await clearAllLiveQuizExecutionCache({ liveQuizId, redis })
+      return
+    }
 
     const quiz = await tx.liveQuiz.findUnique({
       where: { id: liveQuizId },
       select: { status: true, isDeleted: true },
     })
+    if (!quiz || quiz.isDeleted) {
+      await clearAllLiveQuizExecutionCache({ liveQuizId, redis })
+      return
+    }
     if (
-      !quiz ||
-      quiz.isDeleted ||
-      (quiz.status !== DB.PublicationStatus.DRAFT &&
-        quiz.status !== DB.PublicationStatus.SCHEDULED)
+      quiz.status !== DB.PublicationStatus.DRAFT &&
+      quiz.status !== DB.PublicationStatus.SCHEDULED
     ) {
       return
     }
