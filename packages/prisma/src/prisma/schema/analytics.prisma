@@ -358,7 +358,7 @@ enum ChatDoseBucket {
 }
 
 // Per-participant x per-chatbot engagement + cost rollup over a DAILY/WEEKLY/MONTHLY/COURSE window.
-// Only populated for participants with an accepted disclaimer on the chatbot.
+// Chat access requires the disclaimer; analytics inclusion follows the shared LA eligibility boundary.
 model ParticipantChatAnalytics {
   id   Int           @id @default(autoincrement())
   type AnalyticsType

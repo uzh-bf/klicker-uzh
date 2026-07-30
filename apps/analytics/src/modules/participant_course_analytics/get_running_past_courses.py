@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from src.models import Course, Participation
+from src.modules.learning_analytics_eligibility import current_participation_predicates
 from src.modules.utils import apply_course_scope, scoped_course_ids
 
 
@@ -25,7 +26,10 @@ def get_running_past_courses(session: Session) -> pd.DataFrame:
     participations_by_course: dict[str, list[dict[str, object]]] = defaultdict(list)
     if course_ids:
         participation_rows = session.execute(
-            select(Participation.courseId, Participation.participantId).where(Participation.courseId.in_(course_ids))
+            select(Participation.courseId, Participation.participantId).where(
+                Participation.courseId.in_(course_ids),
+                *current_participation_predicates(),
+            )
         ).mappings()
         for row in participation_rows:
             participations_by_course[str(row["courseId"])].append({"participantId": row["participantId"]})

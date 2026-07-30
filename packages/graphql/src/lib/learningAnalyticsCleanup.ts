@@ -12,6 +12,13 @@ export interface DedicatedLearningAnalyticsCounts {
   activityPerformance: number
   participantActivityPerformance: number
   activityProgress: number
+  participantChatAnalytics: number
+  aggregatedChatbotAnalytics: number
+  chatTopicClusters: number
+  participantChatOutcomes: number
+  participantLiveQuizAnalytics: number
+  aggregatedLiveQuizAnalytics: number
+  platformSemesterAnalytics: number
 }
 
 async function readDedicatedLearningAnalyticsCounts(
@@ -30,6 +37,13 @@ async function readDedicatedLearningAnalyticsCounts(
     activityPerformance,
     participantActivityPerformance,
     activityProgress,
+    participantChatAnalytics,
+    aggregatedChatbotAnalytics,
+    chatTopicClusters,
+    participantChatOutcomes,
+    participantLiveQuizAnalytics,
+    aggregatedLiveQuizAnalytics,
+    platformSemesterAnalytics,
   ] = await Promise.all([
     prisma.participantAnalytics.count({
       where: courseId ? { courseId } : undefined,
@@ -71,6 +85,25 @@ async function readDedicatedLearningAnalyticsCounts(
     prisma.activityProgress.count({
       where: courseId ? { courseId } : undefined,
     }),
+    prisma.participantChatAnalytics.count({
+      where: courseId ? { courseId } : undefined,
+    }),
+    prisma.aggregatedChatbotAnalytics.count({
+      where: courseId ? { courseId } : undefined,
+    }),
+    prisma.chatTopicCluster.count({
+      where: courseId ? { chatbot: { courseId } } : undefined,
+    }),
+    prisma.participantChatOutcome.count({
+      where: courseId ? { courseId } : undefined,
+    }),
+    prisma.participantLiveQuizAnalytics.count({
+      where: courseId ? { courseId } : undefined,
+    }),
+    prisma.aggregatedLiveQuizAnalytics.count({
+      where: courseId ? { courseId } : undefined,
+    }),
+    courseId ? Promise.resolve(0) : prisma.platformSemesterAnalytics.count(),
   ])
 
   return {
@@ -85,6 +118,13 @@ async function readDedicatedLearningAnalyticsCounts(
     activityPerformance,
     participantActivityPerformance,
     activityProgress,
+    participantChatAnalytics,
+    aggregatedChatbotAnalytics,
+    chatTopicClusters,
+    participantChatOutcomes,
+    participantLiveQuizAnalytics,
+    aggregatedLiveQuizAnalytics,
+    platformSemesterAnalytics,
   }
 }
 
@@ -105,6 +145,27 @@ async function deleteDedicatedLearningAnalytics(
   prisma: PrismaTransactionClient,
   courseId?: string
 ): Promise<void> {
+  if (!courseId) {
+    await prisma.platformSemesterAnalytics.deleteMany()
+  }
+  await prisma.chatTopicCluster.deleteMany({
+    where: courseId ? { chatbot: { courseId } } : undefined,
+  })
+  await prisma.participantChatOutcome.deleteMany({
+    where: courseId ? { courseId } : undefined,
+  })
+  await prisma.participantChatAnalytics.deleteMany({
+    where: courseId ? { courseId } : undefined,
+  })
+  await prisma.aggregatedChatbotAnalytics.deleteMany({
+    where: courseId ? { courseId } : undefined,
+  })
+  await prisma.participantLiveQuizAnalytics.deleteMany({
+    where: courseId ? { courseId } : undefined,
+  })
+  await prisma.aggregatedLiveQuizAnalytics.deleteMany({
+    where: courseId ? { courseId } : undefined,
+  })
   await prisma.participantActivityPerformance.deleteMany({
     where: courseId
       ? {

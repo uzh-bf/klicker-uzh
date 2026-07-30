@@ -4,14 +4,12 @@
 import sys
 
 import pandas as pd
-from sqlalchemy import select
 
 sys.path.append("../../")
 
 from src.db import SessionLocal
-from src.db_helpers import row_to_dict
 from src.log import script_entry, script_exit
-from src.models import QuestionResponse
+from src.modules.eligible_response_details import get_eligible_course_activities
 from src.modules.participant_course_analytics.get_running_past_courses import (
     get_running_past_courses,
 )
@@ -49,10 +47,13 @@ def main() -> None:
             course_id = course["id"]
             print("Processing course", idx, "of", len(df_courses), "with id", course_id)
 
-            responses = (
-                session.execute(select(QuestionResponse).where(QuestionResponse.courseId == course_id)).scalars().all()
+            _, practice_quizzes, micro_learnings = get_eligible_course_activities(
+                session,
+                course_id,
             )
-            df_responses = pd.DataFrame([row_to_dict(r) for r in responses])
+            df_responses = pd.DataFrame(
+                response for activity in practice_quizzes + micro_learnings for response in activity["responses"]
+            )
 
             if df_responses.empty:
                 print("No responses linked to course", course_id)

@@ -2,6 +2,9 @@ from sqlalchemy.orm import Session
 
 from src.db_helpers import bulk_upsert, coerce_date, utcnow
 from src.models import ParticipantAnalytics
+from src.modules.learning_analytics_eligibility import (
+    filter_learning_analytics_rows_for_write,
+)
 
 
 def save_participant_analytics(session: Session, df_analytics, timestamp, analytics_type="DAILY"):
@@ -61,6 +64,15 @@ def save_participant_analytics(session: Session, df_analytics, timestamp, analyt
         ]
     else:
         raise ValueError("Unknown analytics type: {}".format(analytics_type))
+
+    rows = filter_learning_analytics_rows_for_write(
+        session,
+        rows,
+        participant_id_key="participantId",
+    )
+    if not rows:
+        session.rollback()
+        return
 
     bulk_upsert(
         session,

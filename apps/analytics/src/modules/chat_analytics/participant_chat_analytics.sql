@@ -4,18 +4,25 @@
 --   :win_end         timestamptz — window end (exclusive)
 --   :analytics_type  text        — AnalyticsType ('DAILY' | 'WEEKLY' | 'MONTHLY' | 'COURSE')
 --   :ts              date        — timestamp column value (for COURSE use the sentinel 1970-01-01)
--- Only participants who accepted the chatbot's current disclaimer are included (§3.9 privacy gate).
+-- Chat access already requires the disclaimer. Analytics inclusion is governed
+-- only by the course and participant learning-analytics choice.
 
 WITH params AS (
   SELECT (CAST(:win_start AS timestamptz) AT TIME ZONE 'UTC') AS win_start,
          (CAST(:win_end AS timestamptz) AT TIME ZONE 'UTC') AS win_end
 ),
 eligible_pairs AS (
-  SELECT cuc."participantId", cuc."chatbotId"
-  FROM "ChatUsageCredits" cuc
-  JOIN "Chatbot" cb ON cb.id = cuc."chatbotId"
-  WHERE cuc."acceptedDisclaimerId" = cb."disclaimerId"
-    AND cuc."disclaimerDeclined" = false
+  SELECT
+    p."participantId",
+    cb.id AS "chatbotId",
+    p."learningAnalyticsIncludedFrom" AS included_from
+  FROM "Participation" p
+  JOIN "Course" c ON c.id = p."courseId"
+  JOIN "Chatbot" cb ON cb."courseId" = c.id
+  WHERE c."isLearningAnalyticsEnabled" = true
+    AND p."learningAnalyticsStatus" = 'INCLUDED'
+    AND p."learningAnalyticsDisclosureVersion" = '2026-07-30-v1'
+    AND p."learningAnalyticsIncludedFrom" IS NOT NULL
 ),
 messages AS (
   SELECT
@@ -38,6 +45,7 @@ messages AS (
     ON ep."participantId" = ct."participantId" AND ep."chatbotId" = ct."chatbotId"
   CROSS JOIN params
   WHERE m."createdAt" >= params.win_start AND m."createdAt" < params.win_end
+    AND m."createdAt" >= ep.included_from
     /*COURSE_FILTER*/
 ),
 user_msgs AS (

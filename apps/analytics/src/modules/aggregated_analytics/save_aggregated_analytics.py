@@ -8,6 +8,9 @@ from src.models import (
     MicroLearning,
     PracticeQuiz,
 )
+from src.modules.learning_analytics_eligibility import (
+    filter_learning_analytics_rows_for_write,
+)
 
 
 def _count_elements_for_course(session: Session, course_id: str) -> int:
@@ -94,6 +97,11 @@ def save_aggregated_analytics(session: Session, df_analytics, timestamp, analyti
             )
     else:
         raise ValueError("Unknown analytics type: {}".format(analytics_type))
+
+    rows = filter_learning_analytics_rows_for_write(session, rows)
+    if not rows:
+        session.rollback()
+        return
 
     bulk_upsert(
         session,

@@ -8,8 +8,13 @@ from src.db_helpers import coerce_timestamp, row_to_dict
 from src.models import (
     Course,
     MicroLearning,
+    Participation,
     PracticeQuiz,
     QuestionResponseDetail,
+)
+from src.modules.learning_analytics_eligibility import (
+    current_participation_predicates,
+    is_learning_analytics_rollout_enabled,
 )
 
 _MISSING_COURSE_START = datetime(1900, 1, 1, 0, 0, 0)
@@ -83,18 +88,32 @@ def get_participant_responses(
     The time predicate stays in Postgres so the ``createdAt`` BRIN index can
     prune the append-mostly detail table before relationships are loaded.
     """
+    if not is_learning_analytics_rollout_enabled():
+        return pd.DataFrame()
+
     start_ts, end_ts = _coerce_window_bounds(start_date, end_date)
-    statement = select(QuestionResponseDetail).where(
-        QuestionResponseDetail.createdAt >= start_ts,
-        QuestionResponseDetail.createdAt <= end_ts,
+    statement = (
+        select(QuestionResponseDetail)
+        .join(Participation, Participation.id == QuestionResponseDetail.participationId)
+        .join(Course, Course.id == Participation.courseId)
+        .where(
+            Course.isLearningAnalyticsEnabled.is_(True),
+            *current_participation_predicates(),
+            QuestionResponseDetail.createdAt >= Participation.learningAnalyticsIncludedFrom,
+            QuestionResponseDetail.createdAt >= start_ts,
+            QuestionResponseDetail.createdAt <= end_ts,
+        )
     )
     if course_ids is not None:
-        statement = statement.where(
-            or_(
-                QuestionResponseDetail.practiceQuiz.has(PracticeQuiz.courseId.in_(course_ids)),
-                QuestionResponseDetail.microLearning.has(MicroLearning.courseId.in_(course_ids)),
-            )
+        if not course_ids:
+            return pd.DataFrame()
+        statement = statement.where(Participation.courseId.in_(course_ids))
+    statement = statement.where(
+        or_(
+            QuestionResponseDetail.practiceQuiz.has(PracticeQuiz.courseId == Participation.courseId),
+            QuestionResponseDetail.microLearning.has(MicroLearning.courseId == Participation.courseId),
         )
+    )
 
     details = (
         session.execute(

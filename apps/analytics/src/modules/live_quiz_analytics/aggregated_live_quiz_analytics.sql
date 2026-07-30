@@ -22,9 +22,18 @@ WITH assessment_responses AS (
   JOIN "ElementInstance" ei ON ei.id = lqr."instanceId"
   JOIN "ElementBlock"    eb ON eb.id = ei."elementBlockId"
   JOIN "LiveQuiz"        lq ON lq.id = eb."liveQuizId"
+  JOIN "Course"           c ON c.id = lq."courseId"
+  JOIN "Participation"    p
+    ON p."participantId" = lqr."participantId"
+   AND p."courseId" = lq."courseId"
   WHERE lq."isAssessmentEnabled" = true
     AND lq."courseId" IS NOT NULL
     AND lqr."correctionOnly" = false
+    AND c."isLearningAnalyticsEnabled" = true
+    AND p."learningAnalyticsStatus" = 'INCLUDED'
+    AND p."learningAnalyticsDisclosureVersion" = '2026-07-30-v1'
+    AND p."learningAnalyticsIncludedFrom" IS NOT NULL
+    AND lqr."submittedAt" >= p."learningAnalyticsIncludedFrom"
     /*COURSE_FILTER*/
 ),
 participant_firsts AS (

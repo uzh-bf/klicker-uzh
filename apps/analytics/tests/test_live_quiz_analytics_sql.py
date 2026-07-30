@@ -28,9 +28,21 @@ def test_aggregated_query_computes_first_and_last_per_participant(session):
             """
             CREATE TEMP TABLE "LiveQuiz" (
               id text PRIMARY KEY,
-              "courseId" text,
+              "courseId" uuid,
               "finishedAt" timestamptz,
               "isAssessmentEnabled" boolean NOT NULL
+            );
+            CREATE TEMP TABLE "Course" (
+              id uuid PRIMARY KEY,
+              "isLearningAnalyticsEnabled" boolean NOT NULL
+            );
+            CREATE TEMP TABLE "Participation" (
+              id integer PRIMARY KEY,
+              "participantId" text NOT NULL,
+              "courseId" uuid NOT NULL,
+              "learningAnalyticsStatus" text NOT NULL,
+              "learningAnalyticsIncludedFrom" timestamptz,
+              "learningAnalyticsDisclosureVersion" text
             );
             CREATE TEMP TABLE "ElementBlock" (
               id integer PRIMARY KEY,
@@ -68,10 +80,30 @@ def test_aggregated_query_computes_first_and_last_per_participant(session):
             INSERT INTO "LiveQuiz"
               (id, "courseId", "finishedAt", "isAssessmentEnabled")
             VALUES
-              ('quiz-1', 'course-1', :finished_at, true)
+              ('quiz-1', 'aaaa0000-0000-0000-0000-000000000001', :finished_at, true)
             """
         ),
         {"finished_at": datetime(2026, 7, 23, 10, 5, tzinfo=UTC)},
+    )
+    session.execute(
+        text(
+            """
+            INSERT INTO "Course" (id, "isLearningAnalyticsEnabled")
+            VALUES ('aaaa0000-0000-0000-0000-000000000001', true);
+            INSERT INTO "Participation" (
+              id, "participantId", "courseId", "learningAnalyticsStatus",
+              "learningAnalyticsIncludedFrom", "learningAnalyticsDisclosureVersion"
+            ) VALUES
+              (
+                1, 'participant-1', 'aaaa0000-0000-0000-0000-000000000001', 'INCLUDED',
+                TIMESTAMPTZ '2026-07-23 10:00:00+00', '2026-07-30-v1'
+              ),
+              (
+                2, 'participant-2', 'aaaa0000-0000-0000-0000-000000000001', 'INCLUDED',
+                TIMESTAMPTZ '2026-07-23 10:00:00+00', '2026-07-30-v1'
+              );
+            """
+        )
     )
     session.execute(
         text(

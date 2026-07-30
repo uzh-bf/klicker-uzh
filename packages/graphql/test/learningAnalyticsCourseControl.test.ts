@@ -2,6 +2,7 @@ import type { Hatchet } from '@hatchet-dev/typescript-sdk/index.js'
 import {
   ActivityLevel,
   AnalyticsType,
+  ChatDoseBucket,
   LearningAnalyticsParticipationStatus,
   Locale,
   PerformanceLevel,
@@ -205,6 +206,21 @@ describe('Learning analytics course control', () => {
     })
     const participation = participant.participations[0]!
     const timestamp = new Date('2026-07-01T00:00:00.000Z')
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: `LA test chatbot ${course.id}`,
+        ownerId: ownerCtx.user.sub,
+        courseId: course.id,
+      },
+    })
+    const liveQuiz = await prisma.liveQuiz.create({
+      data: {
+        name: `la-test-live-quiz-${course.id}`,
+        displayName: 'LA test live quiz',
+        ownerId: ownerCtx.user.sub,
+        courseId: course.id,
+      },
+    })
 
     const participantAnalytics = await prisma.participantAnalytics.create({
       data: {
@@ -289,6 +305,55 @@ describe('Learning analytics course control', () => {
         activityFriday: 0,
         activitySaturday: 0,
         activitySunday: 0,
+        courseId: course.id,
+      },
+    })
+    await prisma.participantChatAnalytics.create({
+      data: {
+        type: AnalyticsType.DAILY,
+        timestamp,
+        participantId: participant.id,
+        chatbotId: chatbot.id,
+        courseId: course.id,
+      },
+    })
+    await prisma.aggregatedChatbotAnalytics.create({
+      data: {
+        type: AnalyticsType.DAILY,
+        timestamp,
+        chatbotId: chatbot.id,
+        courseId: course.id,
+      },
+    })
+    await prisma.chatTopicCluster.create({
+      data: {
+        type: AnalyticsType.COURSE,
+        timestamp,
+        clusterIndex: 0,
+        clusterLabel: 'Synthetic topic',
+        messageCount: 5,
+        participantCount: 5,
+        chatbotId: chatbot.id,
+      },
+    })
+    await prisma.participantChatOutcome.create({
+      data: {
+        chatDoseBucket: ChatDoseBucket.LOW,
+        participantId: participant.id,
+        courseId: course.id,
+      },
+    })
+    await prisma.participantLiveQuizAnalytics.create({
+      data: {
+        participantId: participant.id,
+        liveQuizId: liveQuiz.id,
+        courseId: course.id,
+      },
+    })
+    await prisma.aggregatedLiveQuizAnalytics.create({
+      data: {
+        participantCount: 1,
+        liveQuizId: liveQuiz.id,
         courseId: course.id,
       },
     })
@@ -426,6 +491,13 @@ describe('Learning analytics course control', () => {
       activityPerformance: 1,
       participantActivityPerformance: 2,
       activityProgress: 1,
+      participantChatAnalytics: 1,
+      aggregatedChatbotAnalytics: 1,
+      chatTopicClusters: 1,
+      participantChatOutcomes: 1,
+      participantLiveQuizAnalytics: 1,
+      aggregatedLiveQuizAnalytics: 1,
+      platformSemesterAnalytics: 0,
     })
 
     await setCourseLearningAnalyticsEnabled(
@@ -453,6 +525,13 @@ describe('Learning analytics course control', () => {
       activityPerformance: 0,
       participantActivityPerformance: 0,
       activityProgress: 0,
+      participantChatAnalytics: 0,
+      aggregatedChatbotAnalytics: 0,
+      chatTopicClusters: 0,
+      participantChatOutcomes: 0,
+      participantLiveQuizAnalytics: 0,
+      aggregatedLiveQuizAnalytics: 0,
+      platformSemesterAnalytics: 0,
     })
 
     await expect(

@@ -4,6 +4,9 @@ from sqlalchemy.orm import Session
 
 from src.db_helpers import bulk_upsert
 from src.models import InstancePerformance
+from src.modules.learning_analytics_eligibility import (
+    filter_learning_analytics_rows_for_write,
+)
 
 
 def save_instance_performances(session: Session, df_instance_performance, course_id: str, total_only: bool = False):
@@ -37,6 +40,10 @@ def save_instance_performances(session: Session, df_instance_performance, course
             )
         rows.append(values)
 
+    rows = filter_learning_analytics_rows_for_write(session, rows)
+    if not rows:
+        session.rollback()
+        return
     update_cols = [c for c in rows[0].keys() if c not in ("instanceId", "createdAt")]
     bulk_upsert(
         session,

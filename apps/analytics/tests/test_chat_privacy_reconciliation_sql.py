@@ -3,7 +3,6 @@ from sqlalchemy import text
 
 from tests.chat_privacy_sql_helpers import (
     ACCEPTED,
-    CHATBOT_A,
     CHATBOT_B,
     COURSE_A,
     COURSE_B,
@@ -15,7 +14,7 @@ from tests.chat_privacy_sql_helpers import (
 
 
 @pytest.mark.integration
-def test_consent_revocation_reconciles_scoped_chat_and_downstream_state(session):
+def test_la_opt_out_reconciles_scoped_chat_and_downstream_state(session):
     from src.modules.aggregated_chat_analytics.compute_aggregated_chatbot_analytics import (
         compute_aggregated_chatbot_analytics,
     )
@@ -123,8 +122,10 @@ def test_consent_revocation_reconciles_scoped_chat_and_downstream_state(session)
     session.execute(
         text(
             """
-            UPDATE "ChatUsageCredits"
-            SET "disclaimerDeclined" = true
+            UPDATE "Participation"
+            SET "learningAnalyticsStatus" = 'EXCLUDED',
+                "learningAnalyticsIncludedFrom" = NULL,
+                "updatedAt" = TIMESTAMP '2026-07-10 00:00:00'
             WHERE "participantId" = :participant
             """
         ),
@@ -177,18 +178,6 @@ def test_consent_revocation_reconciles_scoped_chat_and_downstream_state(session)
     session.execute(
         text(
             """
-            INSERT INTO "Participation" ("participantId", "courseId")
-            VALUES (:accepted, :course_a)
-            """
-        ),
-        {
-            "accepted": ACCEPTED,
-            "course_a": COURSE_A,
-        },
-    )
-    session.execute(
-        text(
-            """
             INSERT INTO "ParticipantChatOutcome" (
               "participantId", "courseId", "chatMessagesInCourse",
               "chatDoseBucket", "hasBothModalities", "createdAt", "updatedAt"
@@ -238,11 +227,6 @@ def test_consent_revocation_reconciles_scoped_chat_and_downstream_state(session)
     ).mappings()
     assert [dict(row) for row in outcomes] == [
         {
-            "participantId": ACCEPTED,
-            "courseId": COURSE_A,
-            "chatMessagesInCourse": 0,
-        },
-        {
             "participantId": COURSE_B_PARTICIPANT,
             "courseId": COURSE_B,
             "chatMessagesInCourse": 3,
@@ -278,7 +262,7 @@ def test_consent_revocation_reconciles_scoped_chat_and_downstream_state(session)
 
 
 @pytest.mark.integration
-def test_incremental_revocation_rebuilds_old_and_recent_chat_windows(session):
+def test_incremental_opt_out_rebuilds_old_and_recent_chat_windows(session):
     from src.modules.aggregated_chat_analytics.compute_aggregated_chatbot_analytics import (
         compute_aggregated_chatbot_analytics,
     )
@@ -330,16 +314,25 @@ def test_incremental_revocation_rebuilds_old_and_recent_chat_windows(session):
     session.execute(
         text(
             """
-            UPDATE "ChatUsageCredits"
-            SET "acceptedDisclaimerId" = NULL,
-                "disclaimerAcceptedAt" = NULL,
-                "disclaimerDeclined" = true,
+            UPDATE "Participation"
+            SET "learningAnalyticsStatus" = 'EXCLUDED',
+                "learningAnalyticsIncludedFrom" = NULL,
                 "updatedAt" = TIMESTAMP '2026-07-10 00:00:00'
             WHERE "participantId" = :participant
-              AND "chatbotId" = :chatbot
             """
         ),
-        {"participant": ACCEPTED, "chatbot": CHATBOT_A},
+        {"participant": ACCEPTED},
+    )
+    session.execute(
+        text(
+            """
+            UPDATE "Course"
+            SET "areAnalyticsValid" = false,
+                "chatAnalyticsValidAt" = NULL
+            WHERE id = :course
+            """
+        ),
+        {"course": COURSE_A},
     )
 
     runs = plan_chat_analytics_runs(
@@ -347,7 +340,7 @@ def test_incremental_revocation_rebuilds_old_and_recent_chat_windows(session):
         [str(COURSE_A)],
         "2026-07-09",
     )
-    assert [(run.course_ids, run.window_since) for run in runs] == [([str(COURSE_A)], "2026-07-01")]
+    assert [(run.course_ids, run.window_since) for run in runs] == [([str(COURSE_A)], "2022-10-23")]
 
     purge_ineligible_participant_chat_analytics(session, [str(COURSE_A)])
     assert (
@@ -384,7 +377,7 @@ def test_incremental_revocation_rebuilds_old_and_recent_chat_windows(session):
         [str(COURSE_A)],
         "2026-07-09",
     )
-    assert [(run.course_ids, run.window_since) for run in aggregate_runs] == [([str(COURSE_A)], "2026-07-01")]
+    assert [(run.course_ids, run.window_since) for run in aggregate_runs] == [([str(COURSE_A)], "2022-10-23")]
     iter_analytics_windows(
         session,
         compute_aggregated_chatbot_analytics,

@@ -5,6 +5,9 @@ from sqlalchemy.orm import Session
 
 from src.db_helpers import bulk_upsert
 from src.models import ParticipantCourseAnalytics
+from src.modules.learning_analytics_eligibility import (
+    filter_learning_analytics_rows_for_write,
+)
 
 
 def save_participant_course_analytics(session: Session, df_activity):
@@ -25,6 +28,14 @@ def save_participant_course_analytics(session: Session, df_activity):
         }
         for _, row in df_activity.iterrows()
     ]
+    rows = filter_learning_analytics_rows_for_write(
+        session,
+        rows,
+        participant_id_key="participantId",
+    )
+    if not rows:
+        session.rollback()
+        return
 
     # Drop-out cleanup: remove stale (courseId, participantId) pairs within the
     # courses in scope that are not part of the fresh target set, then upsert.

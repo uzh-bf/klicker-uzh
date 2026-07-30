@@ -1,63 +1,18 @@
 from datetime import datetime, timedelta, timezone
 import os
-from types import SimpleNamespace
 import unittest
+from unittest.mock import MagicMock, patch
 
 from src.modules.learning_analytics_eligibility import (
     LEARNING_ANALYTICS_DISCLOSURE_VERSION,
+    eligible_course_ids,
     filter_eligible_activity,
+    filter_learning_analytics_rows_for_write,
     is_activity_eligible_for_learning_analytics,
     is_learning_analytics_rollout_enabled,
     is_participation_currently_included,
-    learning_analytics_write_transaction,
+    lock_learning_analytics_courses,
 )
-
-
-class FakeDelegate:
-    def __init__(self, result) -> None:
-        self.result = result
-
-    def find_unique(self, **_kwargs):
-        return self.result
-
-
-class FakeTransaction:
-    def __init__(self, *, course_enabled: bool, participation_status: str = "INCLUDED") -> None:
-        self.course = FakeDelegate(SimpleNamespace(isLearningAnalyticsEnabled=course_enabled))
-        self.participation = FakeDelegate(
-            SimpleNamespace(
-                dict=lambda: {
-                    "learningAnalyticsStatus": participation_status,
-                    "learningAnalyticsDisclosureVersion": LEARNING_ANALYTICS_DISCLOSURE_VERSION,
-                    "learningAnalyticsIncludedFrom": datetime(2026, 7, 30, tzinfo=timezone.utc),
-                }
-            )
-        )
-        self.lock_queries = []
-
-    def query_raw(self, query, *args):
-        self.lock_queries.append((query, args))
-
-
-class FakeTransactionManager:
-    def __init__(self, transaction) -> None:
-        self.transaction = transaction
-
-    def __enter__(self):
-        return self.transaction
-
-    def __exit__(self, *_args):
-        return None
-
-
-class FakeDb:
-    def __init__(self, transaction) -> None:
-        self.transaction = transaction
-        self.tx_calls = 0
-
-    def tx(self, **_kwargs):
-        self.tx_calls += 1
-        return FakeTransactionManager(self.transaction)
 
 
 class LearningAnalyticsEligibilityTest(unittest.TestCase):
@@ -158,67 +113,76 @@ class LearningAnalyticsEligibilityTest(unittest.TestCase):
             [2, 3],
         )
 
-    def test_write_transaction_fails_closed_and_uses_the_course_lock(self) -> None:
+    def test_course_scope_defaults_closed_and_intersects_requested_ids(self) -> None:
         previous = os.environ.get("NEXT_PUBLIC_LEARNING_ANALYTICS_ROLLOUT_ENABLED")
-        os.environ["NEXT_PUBLIC_LEARNING_ANALYTICS_ROLLOUT_ENABLED"] = "true"
+        session = MagicMock()
+        session.execute.return_value.scalars.return_value.all.return_value = ["enabled-course"]
         try:
-            enabled_transaction = FakeTransaction(course_enabled=True)
-            enabled_db = FakeDb(enabled_transaction)
-            with learning_analytics_write_transaction(
-                enabled_db,
-                course_id="course-id",
-                participant_id="participant-id",
-            ) as transaction:
-                self.assertIs(transaction, enabled_transaction)
-            self.assertEqual(enabled_db.tx_calls, 1)
+            os.environ.pop("NEXT_PUBLIC_LEARNING_ANALYTICS_ROLLOUT_ENABLED", None)
+            self.assertEqual(eligible_course_ids(session, ["enabled-course"]), [])
+            session.execute.assert_not_called()
+
+            os.environ["NEXT_PUBLIC_LEARNING_ANALYTICS_ROLLOUT_ENABLED"] = "true"
             self.assertEqual(
-                enabled_transaction.lock_queries,
-                [
-                    (
-                        "SELECT pg_advisory_xact_lock(hashtext($1))::text",
-                        ("course-id",),
-                    )
-                ],
+                eligible_course_ids(session, ["enabled-course", "disabled-course"]),
+                ["enabled-course"],
             )
-
-            disabled_db = FakeDb(FakeTransaction(course_enabled=False))
-            with learning_analytics_write_transaction(
-                disabled_db,
-                course_id="course-id",
-            ) as transaction:
-                self.assertIsNone(transaction)
-
-            excluded_db = FakeDb(
-                FakeTransaction(
-                    course_enabled=True,
-                    participation_status="EXCLUDED",
-                )
-            )
-            with learning_analytics_write_transaction(
-                excluded_db,
-                course_id="course-id",
-                participant_id="participant-id",
-            ) as transaction:
-                self.assertIsNone(transaction)
+            session.execute.assert_called_once()
         finally:
             if previous is None:
                 os.environ.pop("NEXT_PUBLIC_LEARNING_ANALYTICS_ROLLOUT_ENABLED", None)
             else:
                 os.environ["NEXT_PUBLIC_LEARNING_ANALYTICS_ROLLOUT_ENABLED"] = previous
 
-    def test_write_transaction_does_not_open_when_rollout_is_disabled(self) -> None:
-        previous = os.environ.pop("NEXT_PUBLIC_LEARNING_ANALYTICS_ROLLOUT_ENABLED", None)
-        db = FakeDb(FakeTransaction(course_enabled=True))
+    @patch(
+        "src.modules.learning_analytics_eligibility.eligible_course_ids",
+        return_value=["course-a"],
+    )
+    def test_write_lock_is_sorted_and_course_rows_are_rechecked(
+        self,
+        _eligible_course_ids,
+    ) -> None:
+        previous = os.environ.get("NEXT_PUBLIC_LEARNING_ANALYTICS_ROLLOUT_ENABLED")
+        os.environ["NEXT_PUBLIC_LEARNING_ANALYTICS_ROLLOUT_ENABLED"] = "true"
+        session = MagicMock()
         try:
-            with learning_analytics_write_transaction(
-                db,
-                course_id="course-id",
-            ) as transaction:
-                self.assertIsNone(transaction)
-            self.assertEqual(db.tx_calls, 0)
+            self.assertEqual(
+                lock_learning_analytics_courses(
+                    session,
+                    ["course-b", "course-a", "course-b"],
+                ),
+                {"course-a"},
+            )
+            self.assertEqual(
+                [call.args[0].text for call in session.execute.call_args_list],
+                [
+                    "SELECT pg_advisory_xact_lock(hashtext(:course_id))::text",
+                    "SELECT pg_advisory_xact_lock(hashtext(:course_id))::text",
+                ],
+            )
+            self.assertEqual(
+                [call.args[1] for call in session.execute.call_args_list],
+                [{"course_id": "course-a"}, {"course_id": "course-b"}],
+            )
         finally:
-            if previous is not None:
+            if previous is None:
+                os.environ.pop("NEXT_PUBLIC_LEARNING_ANALYTICS_ROLLOUT_ENABLED", None)
+            else:
                 os.environ["NEXT_PUBLIC_LEARNING_ANALYTICS_ROLLOUT_ENABLED"] = previous
+
+    @patch(
+        "src.modules.learning_analytics_eligibility.lock_learning_analytics_courses",
+        return_value={"course-a"},
+    )
+    def test_course_level_write_rows_fail_closed_after_lock(self, _lock) -> None:
+        rows = [
+            {"courseId": "course-a", "value": 1},
+            {"courseId": "course-b", "value": 2},
+        ]
+        self.assertEqual(
+            filter_learning_analytics_rows_for_write(MagicMock(), rows),
+            [{"courseId": "course-a", "value": 1}],
+        )
 
 
 if __name__ == "__main__":

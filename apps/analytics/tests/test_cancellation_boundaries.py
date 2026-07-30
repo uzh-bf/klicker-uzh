@@ -1,4 +1,4 @@
-from types import SimpleNamespace
+import importlib
 from typing import Any, cast
 
 import pandas as pd
@@ -118,12 +118,27 @@ class FakeSession:
         return FakeScalarResult(next(self.results))
 
 
-def test_activity_response_expansion_stops_between_activities() -> None:
+def test_activity_response_expansion_stops_between_activities(monkeypatch) -> None:
     activities = [
-        SimpleNamespace(id="activity-1", status="PUBLISHED", stacks=[]),
-        SimpleNamespace(id="activity-2", status="PUBLISHED", stacks=[]),
+        {
+            "id": "activity-1",
+            "stacks": [],
+        },
+        {
+            "id": "activity-2",
+            "stacks": [],
+        },
     ]
-    session = FakeSession([activities, [], ["participant-1"]])
+    module = importlib.import_module("src.modules.participant_activity_performance.prepare_participant_activity_data")
+    monkeypatch.setattr(
+        module,
+        "get_eligible_course_activities",
+        lambda _session, _course_id, **_kwargs: (
+            {"participations": [{"participantId": "participant-1"}]},
+            activities,
+            [],
+        ),
+    )
 
     with (
         analytics_run_context(
@@ -132,4 +147,4 @@ def test_activity_response_expansion_stops_between_activities() -> None:
         ),
         pytest.raises(AnalyticsRunCancelled),
     ):
-        prepare_participant_activity_data(cast(Session, session), "course-1")
+        prepare_participant_activity_data(cast(Session, object()), "course-1")

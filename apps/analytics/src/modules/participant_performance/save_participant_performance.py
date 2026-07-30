@@ -5,6 +5,9 @@ from sqlalchemy.orm import Session
 
 from src.db_helpers import bulk_upsert
 from src.models import ParticipantPerformance
+from src.modules.learning_analytics_eligibility import (
+    filter_learning_analytics_rows_for_write,
+)
 
 
 def save_participant_performance(session: Session, df_performance, course_id: str):
@@ -27,6 +30,14 @@ def save_participant_performance(session: Session, df_performance, course_id: st
         }
         for _, row in df_performance.iterrows()
     ]
+    rows = filter_learning_analytics_rows_for_write(
+        session,
+        rows,
+        participant_id_key="participantId",
+    )
+    if not rows:
+        session.rollback()
+        return
 
     target_pairs = {(r["participantId"], r["courseId"]) for r in rows}
     if target_pairs:

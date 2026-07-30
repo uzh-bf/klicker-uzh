@@ -135,6 +135,11 @@ def test_save_aggregated_analytics_uses_date_objects_for_course_timestamp(monkey
         "bulk_upsert",
         lambda session, Model, rows, **kwargs: captured.setdefault("rows", rows),
     )
+    monkeypatch.setattr(
+        module,
+        "filter_learning_analytics_rows_for_write",
+        lambda session, rows: rows,
+    )
 
     class _FakeSession:
         def execute(self, stmt):
@@ -176,6 +181,11 @@ def test_save_aggregated_analytics_uses_date_objects_for_daily_iso_timestamp(
         module,
         "bulk_upsert",
         lambda session, Model, rows, **kwargs: captured.setdefault("rows", rows),
+    )
+    monkeypatch.setattr(
+        module,
+        "filter_learning_analytics_rows_for_write",
+        lambda session, rows: rows,
     )
 
     class _FakeSession:

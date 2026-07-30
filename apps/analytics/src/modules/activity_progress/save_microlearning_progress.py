@@ -4,6 +4,9 @@ from sqlalchemy.orm import Session
 
 from src.db_helpers import bulk_upsert
 from src.models import ActivityProgress
+from src.modules.learning_analytics_eligibility import (
+    filter_learning_analytics_rows_for_write,
+)
 
 
 def save_microlearning_progress(
@@ -24,10 +27,14 @@ def save_microlearning_progress(
         "createdAt": now,
         "updatedAt": now,
     }
+    rows = filter_learning_analytics_rows_for_write(session, [row])
+    if not rows:
+        session.rollback()
+        return
     bulk_upsert(
         session,
         ActivityProgress,
-        [row],
+        rows,
         conflict_cols=["microLearningId"],
         update_cols=[
             "totalCourseParticipants",

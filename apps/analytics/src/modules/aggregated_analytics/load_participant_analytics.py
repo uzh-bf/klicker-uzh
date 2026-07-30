@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 
 from src.db_helpers import coerce_date, row_to_dict
 from src.dryrun import buffer_registry
-from src.models import ParticipantAnalytics
+from src.models import ParticipantAnalytics, Participation
+from src.modules.learning_analytics_eligibility import current_participation_predicates
 
 
 def load_participant_analytics(
@@ -38,9 +39,18 @@ def load_participant_analytics(
             )
         return df
 
-    stmt = select(ParticipantAnalytics).where(
-        ParticipantAnalytics.timestamp == timestamp_value,
-        ParticipantAnalytics.type == analytics_type,
+    stmt = (
+        select(ParticipantAnalytics)
+        .join(
+            Participation,
+            (Participation.courseId == ParticipantAnalytics.courseId)
+            & (Participation.participantId == ParticipantAnalytics.participantId),
+        )
+        .where(
+            ParticipantAnalytics.timestamp == timestamp_value,
+            ParticipantAnalytics.type == analytics_type,
+            *current_participation_predicates(),
+        )
     )
     if course_ids is not None:
         stmt = stmt.where(ParticipantAnalytics.courseId.in_(course_ids))

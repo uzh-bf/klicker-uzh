@@ -106,12 +106,14 @@ For the first staging rollout, run the non-mutating
 a known low-volume course. Confirm task completion, expected analytics rows,
 and the course status before increasing scope.
 
-Before enabling the production cron, run one guarded `FULL` rebuild in a
-reviewed maintenance window. This establishes a consent-correct baseline for
-analytics rows created before the native worker tracked consent changes. After
-that baseline, incremental runs retain the 14-day fast path for unaffected
-courses and automatically rebuild older chat windows only where current
-disclaimer consent changed.
+Before enabling the production cron, run the guarded dedicated-LA cleanup and
+then one guarded `FULL` rebuild in a reviewed maintenance window. This
+establishes an eligibility-correct baseline for analytics rows created before
+the course and participant controls. After that baseline, incremental runs
+retain the 14-day fast path for unaffected courses and automatically rebuild
+older chat windows when a participant LA choice changes. Accepting the chatbot
+disclaimer controls chat access; it is not an additional analytics-eligibility
+condition.
 
 ## Trigger modes
 

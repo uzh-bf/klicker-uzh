@@ -26,6 +26,12 @@ A participant choice applies prospectively when LA is first enabled or re-enable
 
 Only a material disclosure change invalidates the acknowledged disclosure version. Until the participant chooses again, their activity is excluded from LA; renewed inclusion resets the effective inclusion time to the new acknowledgement, while editorial disclosure changes do not require another choice.
 
+The chatbot disclaimer controls access to chat. A participant who has not
+accepted it cannot use chat, so no chat activity exists to consider. Once chat
+activity exists, its inclusion in LA is determined only by the same course and
+participant LA eligibility rule as other activity; disclaimer state is not a
+second analytics consent.
+
 ## Consequences
 
-The system needs a current participant eligibility state, an effective inclusion time, a versioned disclosure acknowledgement, and enough audit history to explain the active choice. Every LA computation and read path must enforce both controls; ordinary teaching, feedback, grading, and gamification must not depend on them.
+The system needs a current participant eligibility state, an effective inclusion time, a versioned disclosure acknowledgement, and enough audit history to explain the active choice. Every LA computation and read path must enforce both controls; ordinary teaching, chat access, feedback, grading, and gamification retain their own product rules and must not depend on LA choice.

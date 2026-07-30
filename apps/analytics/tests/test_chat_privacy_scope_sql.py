@@ -34,6 +34,29 @@ def test_participant_response_scope_excludes_other_course_in_database(session):
     session.execute(
         text(
             """
+            INSERT INTO "Participation" (
+              id, "participantId", "courseId", "learningAnalyticsStatus",
+              "learningAnalyticsIncludedFrom", "learningAnalyticsDisclosureVersion"
+            ) VALUES
+              (
+                1, :participant, :course_a, 'INCLUDED',
+                TIMESTAMP '2026-07-01 09:00:00', '2026-07-30-v1'
+              ),
+              (
+                2, :participant, :course_b, 'INCLUDED',
+                TIMESTAMP '2026-07-01 09:00:00', '2026-07-30-v1'
+              )
+            """
+        ),
+        {
+            "participant": participant,
+            "course_a": COURSE_A,
+            "course_b": COURSE_B,
+        },
+    )
+    session.execute(
+        text(
+            """
             INSERT INTO "PracticeQuiz" (
               id, name, "displayName", "pointsMultiplier", "resetTimeDays",
               status, "isGamificationEnabled", "isAssessmentEnabled",
@@ -105,12 +128,22 @@ def test_incremental_validity_marks_only_current_course_scope(session, monkeypat
             CREATE TEMP TABLE "Course" (
               id uuid PRIMARY KEY,
               "areAnalyticsValid" boolean NOT NULL,
+              "isLearningAnalyticsEnabled" boolean NOT NULL DEFAULT true,
               "analyticsLastComputedAt" timestamp,
               "analyticsFinalizedAt" timestamp,
-              "chatAnalyticsValidAt" timestamp
+              "chatAnalyticsValidAt" timestamp,
+              "updatedAt" timestamp NOT NULL DEFAULT TIMESTAMP '2026-01-01'
             );
             CREATE TEMP TABLE "ParticipantAnalytics" ("courseId" uuid NOT NULL);
             CREATE TEMP TABLE "ParticipantChatAnalytics" ("courseId" uuid NOT NULL);
+            CREATE TEMP TABLE "Participation" (
+              id integer PRIMARY KEY,
+              "courseId" uuid NOT NULL
+            );
+            CREATE TEMP TABLE "LearningAnalyticsChoiceEvent" (
+              "participationId" integer NOT NULL,
+              "createdAt" timestamp NOT NULL
+            );
             """
         )
     )

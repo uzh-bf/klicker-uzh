@@ -3,6 +3,10 @@ import os
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from src.modules.learning_analytics_eligibility import (
+    eligible_course_ids,
+    lock_learning_analytics_courses,
+)
 from src.modules.utils import load_sql
 
 _DIR = os.path.dirname(__file__)
@@ -14,6 +18,13 @@ def compute_platform_semester_analytics(session: Session, verbose: bool = False)
     """Populate PlatformSemesterAnalytics — one row per UZH semester that has any activity."""
     if verbose:
         print("[platform_analytics] running platform_semester_analytics.sql")
+    locked_ids = lock_learning_analytics_courses(
+        session,
+        eligible_course_ids(session, None),
+    )
+    if not locked_ids:
+        session.rollback()
+        return 0
     result = session.execute(text(_PLATFORM_SQL))
     session.commit()
     rows = result.rowcount or 0
@@ -26,6 +37,13 @@ def compute_course_modality_footprint(session: Session, verbose: bool = False):
     """Update AggregatedCourseAnalytics modality-footprint columns for all courses."""
     if verbose:
         print("[platform_analytics] running course_modality_footprint.sql")
+    locked_ids = lock_learning_analytics_courses(
+        session,
+        eligible_course_ids(session, None),
+    )
+    if not locked_ids:
+        session.rollback()
+        return 0
     result = session.execute(text(_FOOTPRINT_SQL))
     session.commit()
     rows = result.rowcount or 0

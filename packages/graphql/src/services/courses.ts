@@ -2724,6 +2724,7 @@ export async function setCourseLearningAnalyticsEnabled(
         data: {
           isLearningAnalyticsEnabled: isEnabled,
           areAnalyticsValid: false,
+          chatAnalyticsValidAt: null,
         },
       })
 

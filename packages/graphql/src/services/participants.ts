@@ -291,6 +291,15 @@ async function deleteParticipantLearningAnalytics(
   courseId: string,
   participantId: string
 ) {
+  await prisma.participantChatOutcome.deleteMany({
+    where: { courseId, participantId },
+  })
+  await prisma.participantChatAnalytics.deleteMany({
+    where: { courseId, participantId },
+  })
+  await prisma.participantLiveQuizAnalytics.deleteMany({
+    where: { courseId, participantId },
+  })
   await prisma.participantActivityPerformance.deleteMany({
     where: {
       participantId,
@@ -355,6 +364,10 @@ export async function setOwnLearningAnalyticsChoice(
             ctx.user.sub
           )
         }
+        await prisma.course.update({
+          where: { id: courseId },
+          data: { areAnalyticsValid: false, chatAnalyticsValidAt: null },
+        })
         return {
           courseId,
           status,
@@ -372,6 +385,10 @@ export async function setOwnLearningAnalyticsChoice(
       // the participant renews inclusion after a disclosure change. Aggregate
       // rows intentionally remain until the next normal calculation.
       await deleteParticipantLearningAnalytics(prisma, courseId, ctx.user.sub)
+      await prisma.course.update({
+        where: { id: courseId },
+        data: { areAnalyticsValid: false, chatAnalyticsValidAt: null },
+      })
 
       return {
         courseId,

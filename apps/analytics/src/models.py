@@ -49,6 +49,13 @@ ActivityLevel = ENUM("LOW", "MEDIUM", "HIGH", name="ActivityLevel", create_type=
 PerformanceLevel = ENUM("LOW", "MEDIUM", "HIGH", name="PerformanceLevel", create_type=False)
 ChatDoseBucket = ENUM("NONE", "LOW", "MED", "HIGH", name="ChatDoseBucket", create_type=False)
 ResponseCorrectness = ENUM("CORRECT", "PARTIAL", "WRONG", name="ResponseCorrectness", create_type=False)
+LearningAnalyticsParticipationStatus = ENUM(
+    "UNDECIDED",
+    "INCLUDED",
+    "EXCLUDED",
+    name="LearningAnalyticsParticipationStatus",
+    create_type=False,
+)
 Locale = ENUM("en", "de", name="Locale", create_type=False)
 CourseAuthType = ENUM("SSO", "PIN", name="CourseAuthType", create_type=False)
 ElementType = ENUM(
@@ -120,6 +127,7 @@ class Course(Base):
     analyticsLastComputedAt: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     chatAnalyticsValidAt: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     analyticsFinalizedAt: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    isLearningAnalyticsEnabled: Mapped[bool] = mapped_column(Boolean, default=False)
     isArchived: Mapped[bool] = mapped_column(Boolean, default=False)
     authType: Mapped[str] = mapped_column(CourseAuthType, default="PIN")
     pinCode: Mapped[Optional[int]] = mapped_column(Integer)
@@ -161,6 +169,13 @@ class Participation(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     isActive: Mapped[bool] = mapped_column(Boolean, default=False)
+    learningAnalyticsStatus: Mapped[str] = mapped_column(
+        LearningAnalyticsParticipationStatus,
+        default="UNDECIDED",
+    )
+    learningAnalyticsIncludedFrom: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    learningAnalyticsChoiceAt: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    learningAnalyticsDisclosureVersion: Mapped[Optional[str]] = mapped_column(String)
     courseId: Mapped[str] = mapped_column(Uuid, ForeignKey("Course.id"))
     participantId: Mapped[str] = mapped_column(Uuid, ForeignKey("Participant.id"))
     courseLeaderboardId: Mapped[Optional[int]] = mapped_column(Integer)
@@ -594,6 +609,7 @@ class ActivityPerformance(Base):
     __tablename__ = "ActivityPerformance"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    participantCount: Mapped[int] = mapped_column(Integer, default=0)
     firstErrorRate: Mapped[Optional[float]] = mapped_column(Float)
     firstPartialRate: Mapped[Optional[float]] = mapped_column(Float)
     firstCorrectRate: Mapped[Optional[float]] = mapped_column(Float)

@@ -12,11 +12,17 @@ WITH params AS (
          (CAST(:win_end AS timestamptz) AT TIME ZONE 'UTC') AS win_end
 ),
 eligible_pairs AS (
-  SELECT cuc."participantId", cuc."chatbotId"
-  FROM "ChatUsageCredits" cuc
-  JOIN "Chatbot" cb ON cb.id = cuc."chatbotId"
-  WHERE cuc."acceptedDisclaimerId" = cb."disclaimerId"
-    AND cuc."disclaimerDeclined" = false
+  SELECT
+    p."participantId",
+    cb.id AS "chatbotId",
+    p."learningAnalyticsIncludedFrom" AS included_from
+  FROM "Participation" p
+  JOIN "Course" c ON c.id = p."courseId"
+  JOIN "Chatbot" cb ON cb."courseId" = c.id
+  WHERE c."isLearningAnalyticsEnabled" = true
+    AND p."learningAnalyticsStatus" = 'INCLUDED'
+    AND p."learningAnalyticsDisclosureVersion" = '2026-07-30-v1'
+    AND p."learningAnalyticsIncludedFrom" IS NOT NULL
 ),
 messages AS (
   SELECT
@@ -30,6 +36,7 @@ messages AS (
     ON ep."participantId" = ct."participantId" AND ep."chatbotId" = ct."chatbotId"
   CROSS JOIN params
   WHERE m."createdAt" >= params.win_start AND m."createdAt" < params.win_end
+    AND m."createdAt" >= ep.included_from
     /*COURSE_FILTER*/
 ),
 user_msgs AS (SELECT * FROM messages WHERE role = 'user'),
@@ -105,14 +112,21 @@ disclaimer_counts AS (
     COUNT(*) FILTER (WHERE cuc."disclaimerDeclined" = true) AS disclaimer_declined
   FROM "ChatUsageCredits" cuc
   JOIN "Chatbot" cb ON cb.id = cuc."chatbotId"
+  JOIN eligible_pairs ep
+    ON ep."participantId" = cuc."participantId"
+   AND ep."chatbotId" = cuc."chatbotId"
   GROUP BY 1
 ),
 credit_exhaustion AS (
   -- Snapshot of the live "current" balance, same caveat as disclaimer_counts.
   SELECT
-    "chatbotId",
-    SUM(CASE WHEN "current" = 0 THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*), 0) AS credit_exhaustion_rate
-  FROM "ChatUsageCredits" GROUP BY 1
+    cuc."chatbotId",
+    SUM(CASE WHEN cuc."current" = 0 THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*), 0) AS credit_exhaustion_rate
+  FROM "ChatUsageCredits" cuc
+  JOIN eligible_pairs ep
+    ON ep."participantId" = cuc."participantId"
+   AND ep."chatbotId" = cuc."chatbotId"
+  GROUP BY 1
 )
 INSERT INTO "AggregatedChatbotAnalytics" (
   "type", "timestamp", "chatbotId", "courseId",

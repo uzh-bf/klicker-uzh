@@ -3,6 +3,10 @@ import os
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from src.modules.learning_analytics_eligibility import (
+    eligible_course_ids,
+    lock_learning_analytics_courses,
+)
 from src.modules.utils import COURSE_TIMESTAMP, load_sql, render_uuid_in_clause
 
 _SQL = load_sql(os.path.join(os.path.dirname(__file__), "participant_chat_analytics.sql"))
@@ -34,6 +38,7 @@ attachment_rollup AS (
   CROSS JOIN params
   WHERE m.role = 'user'
     AND m."createdAt" >= params.win_start AND m."createdAt" < params.win_end
+    AND m."createdAt" >= ep.included_from
   GROUP BY 1, 2
 ),
 """.strip()
@@ -107,16 +112,22 @@ def compute_participant_chat_analytics(
     if verbose and not include_attachments:
         print("[chat_analytics] ChatAttachment missing; defaulting attachmentCount to 0")
 
+    enabled_ids = eligible_course_ids(session, course_ids)
+    locked_ids = sorted(lock_learning_analytics_courses(session, enabled_ids))
+    if not locked_ids:
+        session.rollback()
+        return 0
+
     params = {
         "analytics_type": analytics_type,
         "ts": timestamp,
     }
-    session.execute(text(_prepare_delete_sql(course_ids)), params)
+    session.execute(text(_prepare_delete_sql(locked_ids)), params)
     result = session.execute(
         text(
             _prepare_sql(
                 _SQL,
-                course_ids,
+                locked_ids,
                 include_attachments=include_attachments,
             )
         ),

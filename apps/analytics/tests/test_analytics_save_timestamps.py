@@ -18,6 +18,11 @@ def _capture_rows(monkeypatch, module):
         "bulk_upsert",
         lambda _session, _model, rows, **_kwargs: captured.setdefault("rows", rows),
     )
+    monkeypatch.setattr(
+        module,
+        "filter_learning_analytics_rows_for_write",
+        lambda _session, rows, **_kwargs: rows,
+    )
     return captured
 
 

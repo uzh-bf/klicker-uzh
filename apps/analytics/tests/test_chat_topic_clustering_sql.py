@@ -7,10 +7,11 @@ from sqlalchemy import text
 
 
 @pytest.mark.integration
-def test_load_user_text_enforces_current_consent_and_utc_window(session):
+def test_load_user_text_enforces_la_eligibility_not_disclaimer_state(session):
     from src.modules.chat_topic_clustering.load_user_text import load_user_text
 
     chatbot_id = UUID("00000000-0000-0000-0000-000000000001")
+    course_id = UUID("10000000-0000-0000-0000-000000000001")
     disclaimer_id = UUID("00000000-0000-0000-0000-000000000002")
     stale_disclaimer_id = UUID("00000000-0000-0000-0000-000000000003")
     current_participant_id = UUID("00000000-0000-0000-0000-000000000004")
@@ -27,7 +28,19 @@ def test_load_user_text_enforces_current_consent_and_utc_window(session):
             """
             CREATE TEMP TABLE "Chatbot" (
               id uuid PRIMARY KEY,
+              "courseId" uuid NOT NULL,
               "disclaimerId" uuid
+            );
+            CREATE TEMP TABLE "Course" (
+              id uuid PRIMARY KEY,
+              "isLearningAnalyticsEnabled" boolean NOT NULL
+            );
+            CREATE TEMP TABLE "Participation" (
+              "participantId" uuid NOT NULL,
+              "courseId" uuid NOT NULL,
+              "learningAnalyticsStatus" text NOT NULL,
+              "learningAnalyticsIncludedFrom" timestamp,
+              "learningAnalyticsDisclosureVersion" text
             );
             CREATE TEMP TABLE "ChatThread" (
               id uuid PRIMARY KEY,
@@ -53,11 +66,24 @@ def test_load_user_text_enforces_current_consent_and_utc_window(session):
     session.execute(
         text(
             """
-            INSERT INTO "Chatbot" (id, "disclaimerId")
-            VALUES (:chatbot_id, :disclaimer_id)
+            INSERT INTO "Course" (id, "isLearningAnalyticsEnabled")
+            VALUES (:course_id, true)
             """
         ),
-        {"chatbot_id": chatbot_id, "disclaimer_id": disclaimer_id},
+        {"course_id": course_id},
+    )
+    session.execute(
+        text(
+            """
+            INSERT INTO "Chatbot" (id, "courseId", "disclaimerId")
+            VALUES (:chatbot_id, :course_id, :disclaimer_id)
+            """
+        ),
+        {
+            "chatbot_id": chatbot_id,
+            "course_id": course_id,
+            "disclaimer_id": disclaimer_id,
+        },
     )
     session.execute(
         text(
@@ -77,6 +103,34 @@ def test_load_user_text_enforces_current_consent_and_utc_window(session):
             "current_thread_id": current_thread_id,
             "stale_thread_id": stale_thread_id,
             "declined_thread_id": declined_thread_id,
+        },
+    )
+    session.execute(
+        text(
+            """
+            INSERT INTO "Participation" (
+              "participantId", "courseId", "learningAnalyticsStatus",
+              "learningAnalyticsIncludedFrom", "learningAnalyticsDisclosureVersion"
+            ) VALUES
+              (
+                :current_participant_id, :course_id, 'INCLUDED',
+                TIMESTAMP '2026-07-23 10:15:00', '2026-07-30-v1'
+              ),
+              (
+                :stale_participant_id, :course_id, 'EXCLUDED',
+                NULL, '2026-07-30-v1'
+              ),
+              (
+                :declined_participant_id, :course_id, 'INCLUDED',
+                TIMESTAMP '2026-07-23 10:15:00', '2026-07-30-v1'
+              )
+            """
+        ),
+        {
+            "course_id": course_id,
+            "current_participant_id": current_participant_id,
+            "stale_participant_id": stale_participant_id,
+            "declined_participant_id": declined_participant_id,
         },
     )
     session.execute(
@@ -154,5 +208,10 @@ def test_load_user_text_enforces_current_consent_and_utc_window(session):
             "message_id": str(included_message_id),
             "participant_id": current_participant_id,
             "text": "included",
-        }
+        },
+        {
+            "message_id": "00000000-0000-0000-0000-000000000013",
+            "participant_id": declined_participant_id,
+            "text": "declined",
+        },
     ]

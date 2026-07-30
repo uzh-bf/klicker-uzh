@@ -3,6 +3,10 @@ import os
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from src.modules.learning_analytics_eligibility import (
+    eligible_course_ids,
+    lock_learning_analytics_courses,
+)
 from src.modules.utils import load_sql, render_uuid_in_clause
 
 _DIR = os.path.dirname(__file__)
@@ -22,7 +26,12 @@ def compute_participant_live_quiz_analytics(
 ):
     if verbose:
         print("[live_quiz_analytics] running participant_live_quiz_analytics.sql")
-    result = session.execute(text(_prepare_sql(_PARTICIPANT_SQL, course_ids)))
+    enabled_ids = eligible_course_ids(session, course_ids)
+    locked_ids = sorted(lock_learning_analytics_courses(session, enabled_ids))
+    if not locked_ids:
+        session.rollback()
+        return 0
+    result = session.execute(text(_prepare_sql(_PARTICIPANT_SQL, locked_ids)))
     session.commit()
     rows = result.rowcount or 0
     if verbose:
@@ -35,7 +44,12 @@ def compute_aggregated_live_quiz_analytics(
 ):
     if verbose:
         print("[live_quiz_analytics] running aggregated_live_quiz_analytics.sql")
-    result = session.execute(text(_prepare_sql(_AGGREGATED_SQL, course_ids)))
+    enabled_ids = eligible_course_ids(session, course_ids)
+    locked_ids = sorted(lock_learning_analytics_courses(session, enabled_ids))
+    if not locked_ids:
+        session.rollback()
+        return 0
+    result = session.execute(text(_prepare_sql(_AGGREGATED_SQL, locked_ids)))
     session.commit()
     rows = result.rowcount or 0
     if verbose:
