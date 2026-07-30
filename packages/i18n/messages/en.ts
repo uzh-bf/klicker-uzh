@@ -3837,24 +3837,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       weeklyStudentActivity: 'Weekly Student Activity',
       dailyStudentActivity: 'Daily Student Activity',
       totalParticipants: 'Course participants: {number}',
-      dailyActivity: 'Daily Activity',
       activeStudents: 'Active Students',
-      percentageOfStudents: 'Percentage of students',
       courseComparison: 'Course Comparison',
       courseComparisonDescription:
         'Select a second course to compare the corresponding data directly.',
       selectCourse: 'Select course...',
       weekN: 'Week {number}',
-      studentN: 'Student {number}',
-      overallStudentActivity: 'Overall Student Activity',
-      numberOfStudents: 'Number of Students',
-      activeWeeks: 'Active Weeks',
-      activeDaysPerWeek: 'Active Days per Week',
-      meanElementsPerDay: 'Mean Elements per Day',
-      activityLevel: 'Activity Level',
-      levelHigh: 'HIGH',
-      levelMedium: 'MEDIUM',
-      levelLow: 'LOW',
       asynchronousActivityProgress: 'Asynchronous Activity Progress',
       started: 'Started',
       completed: 'Completed',
@@ -3879,18 +3867,14 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       searchPlaceholder: 'Search...',
       activityNameLabel: 'Activity Name',
       elementNameLabel: 'Element Name',
-      overallStudentPerformance: 'Overall Student Performance (Error Rates)',
-      totalErrorRate: 'Total Error Rate',
       total: 'Total',
       firstAttempt: 'First Attempt',
       lastAttempt: 'Last Attempt',
-      performanceLevel: 'Performance Level',
       feedbackOverviewActivityInstances:
         'Overview of Activity and Element Ratings',
       upvotes: 'Upvotes',
       downvotes: 'Downvotes',
       performanceRates: 'Performance Rates',
-      totalScore: 'Total Score',
       activityProgress: 'Activity Progress',
       studentPerformance: 'Student Performance',
       feedbackOverview: 'Feedback Overview',
@@ -3919,28 +3903,25 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Until now, no weekly activity data is available for this course.',
       noDailyActivityData:
         'Until now, no daily activity data is available for this course.',
-      noActivityDistributionData:
-        'No activity distribution data is available for this course yet.',
-      noStudentActivity:
-        'No student activity has been calculated for this course yet.',
       noAsynchronousActivityProgressData:
         'No asynchronous activity progress data is available for this course yet.',
-      noStudentPerformanceData:
-        'No student performance data is available for this course yet.',
-      noStudentActivityPerformanceData:
-        'No student performance data is available for activities in this course yet.',
       studentActivityPerformance: 'Student Activity Performance',
-      studentUsername: 'Username',
-      studentEmail: 'E-Mail Address',
-      emailMissing: 'n/a',
-      selectAllActivities: 'Select all activities',
-      deselectAllActivities: 'Deselect all activities',
-      noActivitySelected:
-        'Please select at least one activity to display the collected points and the progress of the students.',
-      participantActivityPerformanceDescription:
-        'This table illustrates the progress and collected points of the participants in the selected activities. It displays all calculated points (including repetitions of practice quizzes). This number may differ from the number of collected points on the course leaderboard due to the scoring logic for repetitions. The percentage progress corresponds to the number of elements in the activity that have been answered at least once. An activity is counted towards the completed activities if the percentage progress equals 100%.',
-      completedActivitiesExplanation:
-        'Completed Activities (with 100% Progress)',
+      studentLabel: 'Student',
+      coverage: 'Coverage',
+      completeCoverage: 'Complete',
+      partialCoverage: 'Partial',
+      meanCompletion: 'Mean completion',
+      includePartialCoverage: 'Include partial coverage',
+      exportLearningAnalytics: 'Export learning analytics',
+      effectiveSampleSize: 'Effective sample size: <b>N = {effectiveN}</b>',
+      learningAnalyticsSuppressed:
+        'Learning analytics are hidden because fewer than five eligible students contribute to this view.',
+      feedbackSuppressed:
+        'Feedback is hidden because fewer than five eligible students contributed.',
+      exportSuppressed:
+        'No export was created because the selected coverage contains fewer than five eligible students.',
+      deidentifiedPerformanceDescription:
+        'This report contains de-identified, coarse progress summaries for {effectiveN} eligible students. Labels are assigned afresh for this report and cannot be linked to another report.',
       completedActivities: 'Completed Activities',
     },
   },

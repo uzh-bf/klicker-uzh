@@ -58,6 +58,7 @@ type ActivityFeedback {
   downvoteRate: Float!
   feedbackCount: Int!
   id: String!
+  participantCount: Int!
   upvoteRate: Float!
 }
 
@@ -117,12 +118,6 @@ type ActivityInfoStack {
   stackPoints: Int
   stackTitle: String
   timeLimit: Int
-}
-
-enum ActivityLevel {
-  HIGH
-  LOW
-  MEDIUM
 }
 
 type ActivityLogEntry {
@@ -986,12 +981,10 @@ type Course {
 }
 
 type CourseActivityAnalytics {
-  activeDays: WeekdayActivityAnalytics!
-  courseWeeks: Int!
   dailyActivity: [ParticipantActivityTimestamp!]!
+  isSuppressed: Boolean!
   name: String!
-  participantCourseAnalytics: [ParticipantCourseActivity!]!
-  totalParticipants: Int!
+  totalParticipants: Int
   weeklyActivity: [ParticipantActivityTimestamp!]!
 }
 
@@ -1052,10 +1045,11 @@ type CoursePerformanceAnalytics {
   activityProgresses: [ActivityProgress!]!
   instanceFeedbacks: [InstanceFeedback!]!
   instancePerformances: [InstancePerformance!]!
+  isSuppressed: Boolean!
   name: String!
+  participantActivityPerformanceN: Int
   participantActivityPerformances: [ParticipantActivityPerformances!]!
-  participantPerformances: [ParticipantPerformance!]!
-  totalParticipants: Int!
+  totalParticipants: Int
 }
 
 type CourseStudentTimeline {
@@ -1635,6 +1629,7 @@ type InstanceFeedback {
   id: Int!
   instanceName: String!
   instanceType: ElementType!
+  participantCount: Int!
   upvoteRate: Float!
 }
 
@@ -1642,6 +1637,7 @@ type InstancePerformance {
   elementName: String!
   elementType: ElementType!
   id: Int!
+  participantCount: Int!
   rates: PerformanceRates!
 }
 
@@ -1651,6 +1647,7 @@ type InstanceQuizAnalytics {
   elementName: String!
   elementType: ElementType!
   feedbackCount: Int!
+  feedbackSuppressed: Boolean!
   firstCorrectRate: Float
   firstErrorRate: Float
   firstPartialRate: Float
@@ -1708,6 +1705,19 @@ type LeaderboardStatistics {
 enum LearningAnalyticsChoice {
   EXCLUDED
   INCLUDED
+}
+
+enum LearningAnalyticsCoverage {
+  COMPLETE
+  PARTIAL
+}
+
+type LearningAnalyticsExport {
+  content: String!
+  effectiveN: Int!
+  filename: String!
+  includesPartial: Boolean!
+  mimeType: String!
 }
 
 type LearningAnalyticsParticipantChoice {
@@ -2240,30 +2250,16 @@ type ParticipantAchievementInstance {
   id: Int!
 }
 
-type ParticipantActivityPerformance {
-  activityId: String!
-  completion: Float!
-  id: Int!
-  totalScore: Int!
-}
-
 type ParticipantActivityPerformances {
-  participantEmail: String
-  participantId: String!
-  participantUsername: String!
-  performances: [ParticipantActivityPerformance!]!
+  completedActivities: Int!
+  coverage: LearningAnalyticsCoverage!
+  meanCompletion: Float!
+  studentLabel: String!
 }
 
 type ParticipantActivityTimestamp {
   activeParticipants: Int!
   date: Date!
-}
-
-type ParticipantCourseActivity {
-  activeDaysPerWeek: Float!
-  activeWeeks: Int!
-  activityLevel: ActivityLevel!
-  meanElementsPerDay: Float!
 }
 
 type ParticipantGroup {
@@ -2289,16 +2285,6 @@ type ParticipantLearningData {
   participation: Participation
 }
 
-type ParticipantPerformance {
-  firstErrorRate: Float!
-  firstPerformance: PerformanceLevel!
-  id: Int!
-  lastErrorRate: Float!
-  lastPerformance: PerformanceLevel!
-  totalErrorRate: Float!
-  totalPerformance: PerformanceLevel!
-}
-
 type ParticipantTokenData {
   participant: Participant
   participantToken: String
@@ -2316,12 +2302,6 @@ type Participation {
   isActive: Boolean!
   participant: Participant
   subscriptions: [PushSubscription!]
-}
-
-enum PerformanceLevel {
-  HIGH
-  LOW
-  MEDIUM
 }
 
 type PerformanceRates {
@@ -2499,6 +2479,7 @@ type Query {
   getGradingGroupActivity(id: String!): GroupActivity
   getGroupActivitySummary(id: String!): GroupActivitySummary
   getInstanceUpdateActivities(elementId: Int!, hasSampleSolution: Boolean, includeTemplateInstances: Boolean!): [InstanceUpdateActivityInfo!]
+  getLearningAnalyticsExport(courseId: String!, includePartial: Boolean = false): LearningAnalyticsExport
   getLecturerViewLiveQuiz(id: String!): LiveQuiz
   getLiveQuizEmbeddingInfo(id: String!): LiveQuizEmbeddingInfo
   getLiveQuizSummary(quizId: String!): LiveQuizSummary
@@ -2571,8 +2552,9 @@ type QuizAnalytics {
   activityName: String!
   activityQuizAnalytics: ActivityQuizAnalytics
   activityType: ActivityType!
-  courseParticipants: Int!
+  courseParticipants: Int
   instanceQuizAnalytics: [InstanceQuizAnalytics!]!
+  isSuppressed: Boolean!
 }
 
 type ReducedActivityInfo {
@@ -3048,17 +3030,8 @@ enum UserRole {
   USER
 }
 
-type WeekdayActivityAnalytics {
-  friday: Float!
-  monday: Float!
-  saturday: Float!
-  sunday: Float!
-  thursday: Float!
-  tuesday: Float!
-  wednesday: Float!
-}
-
 type WeeklyCourseActivities {
-  totalParticipants: Int!
+  isSuppressed: Boolean!
+  totalParticipants: Int
   weeklyActivity: [ParticipantActivityTimestamp!]!
 }

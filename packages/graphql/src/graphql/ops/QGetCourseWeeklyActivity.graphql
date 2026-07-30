@@ -1,6 +1,7 @@
 query GetCourseWeeklyActivity($courseId: String) {
   getCourseWeeklyActivity(courseId: $courseId) {
     totalParticipants
+    isSuppressed
     weeklyActivity {
       date
       activeParticipants

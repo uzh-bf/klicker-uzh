@@ -3902,24 +3902,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       weeklyStudentActivity: 'Wöchentliche Aktivität der Studierenden',
       dailyStudentActivity: 'Tägliche Aktivität der Studierenden',
       totalParticipants: 'Kurs-Teilnehmende: {number}',
-      dailyActivity: 'Tagesabhängige Aktivität',
       activeStudents: 'Aktive Studierende',
-      percentageOfStudents: 'Prozentuale Verteilung der Studierenden',
       courseComparison: 'Kursvergleich',
       courseComparisonDescription:
         'Wählen Sie einen zweiten Kurs aus, um die entsprechenden Daten direkt zu vergleichen.',
       selectCourse: 'Kurs auswählen...',
       weekN: 'Woche {number}',
-      studentN: 'Studierende(r) {number}',
-      overallStudentActivity: 'Gesamte Studierendenaktivität',
-      numberOfStudents: 'Anzahl Studierende',
-      activeWeeks: 'Aktive Wochen',
-      activeDaysPerWeek: 'Aktive Tage pro Woche',
-      meanElementsPerDay: 'Durchschnittliche Elemente pro Tag',
-      activityLevel: 'Aktivitätslevel',
-      levelHigh: 'HOCH',
-      levelMedium: 'MITTEL',
-      levelLow: 'TIEF',
       asynchronousActivityProgress: 'Fortschritt in asynchronen Aktivitäten',
       started: 'Gestartet',
       completed: 'Abgeschlossen',
@@ -3945,19 +3933,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       searchPlaceholder: 'Suche...',
       activityNameLabel: 'Aktivitätsname',
       elementNameLabel: 'Elementname',
-      overallStudentPerformance:
-        'Gesamtleistung der Studierenden (Fehlerraten)',
-      totalErrorRate: 'Totale Fehlerrate',
       total: 'Total',
       firstAttempt: 'Erster Lösungsversuch',
       lastAttempt: 'Letzter Lösungsversuch',
-      performanceLevel: 'Leistungslevel',
       feedbackOverviewActivityInstances:
         'Übersicht für Aktivitäts- und Element-Bewertungen',
       upvotes: 'Positive Bewertungen',
       downvotes: 'Negative Bewertungen',
       performanceRates: 'Performance-Raten',
-      totalScore: 'Gesamtpunktzahl',
       activityProgress: 'Aktivitätsfortschritt',
       studentPerformance: 'Studierendenleistung',
       feedbackOverview: 'Feedback-Übersicht',
@@ -3987,28 +3970,25 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bisher sind keine wöchentlichen Aktivitätsdaten für diesen Kurs verfügbar.',
       noDailyActivityData:
         'Bisher sind keine täglichen Aktivitätsdaten für diesen Kurs verfügbar.',
-      noActivityDistributionData:
-        'Bisher sind keine Aktivitätsverteilungsdaten für diesen Kurs verfügbar.',
-      noStudentActivity:
-        'Bisher wurde keine Studierendenaktivität für diesen Kurs berechnet.',
       noAsynchronousActivityProgressData:
         'Bisher sind keine Daten zum Fortschritt in asynchronen Aktivitäten für diesen Kurs verfügbar.',
-      noStudentPerformanceData:
-        'Bisher sind keine Daten zur Studierendenleistung für diesen Kurs verfügbar.',
-      noStudentActivityPerformanceData:
-        'Bisher sind keine Daten zur Studierendenleistung für Aktivitäten in diesem Kurs verfügbar.',
       studentActivityPerformance: 'Leistung der Studierenden in Aktivitäten',
-      studentUsername: 'Nutzername',
-      studentEmail: 'E-Mail Adresse',
-      emailMissing: 'n/a',
-      selectAllActivities: 'Alle Aktivitäten auswählen',
-      deselectAllActivities: 'Alle Aktivitäten abwählen',
-      noActivitySelected:
-        'Bitte wählen Sie mindestens eine Aktivität aus, um die gesammelten Punkte und den Fortschritt der Studierenden anzuzeigen.',
-      participantActivityPerformanceDescription:
-        'Diese Tabelle stellt den Fortschritt und die gesammelten Punkte der Studierenden in den ausgewählten Aktivitäten dar. Es werden alle berechneten Punkte (inkl. Repetitionen bei Übungs-Quizzes) dargestellt. Diese Zahl kann aufgrund der Bepunktungslogik bei Repetitionen von der Anzahl gesammelter Punkte auf dem Kurs-Leaderboard abweichen. Der prozentuale Fortschritt entspricht der Anzahl Elemente in der Aktivität, welche mindestens einmal beantwortet wurden. Eine Aktivität wird zu den abgeschlossenen Aktivitäten gezählt, wenn der prozentuale Fortschritt 100% beträgt.',
-      completedActivitiesExplanation:
-        'Abgeschlossene Aktivitäten (mit 100% Fortschritt)',
+      studentLabel: 'Studierende Person',
+      coverage: 'Abdeckung',
+      completeCoverage: 'Vollständig',
+      partialCoverage: 'Teilweise',
+      meanCompletion: 'Mittlerer Fortschritt',
+      includePartialCoverage: 'Teilweise Abdeckung einschliessen',
+      exportLearningAnalytics: 'Learning Analytics exportieren',
+      effectiveSampleSize: 'Effektive Stichprobe: <b>N = {effectiveN}</b>',
+      learningAnalyticsSuppressed:
+        'Learning Analytics werden ausgeblendet, weil weniger als fünf teilnahmeberechtigte Studierende zu dieser Ansicht beitragen.',
+      feedbackSuppressed:
+        'Das Feedback wird ausgeblendet, weil weniger als fünf teilnahmeberechtigte Studierende beigetragen haben.',
+      exportSuppressed:
+        'Es wurde kein Export erstellt, weil die gewählte Abdeckung weniger als fünf teilnahmeberechtigte Studierende enthält.',
+      deidentifiedPerformanceDescription:
+        'Dieser Bericht enthält de-identifizierte, grobe Fortschrittsübersichten für {effectiveN} teilnahmeberechtigte Studierende. Die Bezeichnungen werden für jeden Bericht neu vergeben und können nicht mit einem anderen Bericht verknüpft werden.',
       completedActivities: 'Abgeschlossene Aktivitäten',
     },
   },

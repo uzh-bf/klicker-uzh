@@ -59,7 +59,7 @@ function ElementFeedbackBarChart({
         </ResponsiveContainer>
       </div>
       <div className="mr-2.5 text-sm text-gray-500">
-        (N = {feedback.feedbackCount})
+        (N = {feedback.participantCount})
       </div>
     </div>
   )

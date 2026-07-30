@@ -1,6 +1,5 @@
 import { prisma as prismaClient } from '@klicker-uzh/prisma'
 import {
-  ActivityLevel,
   CourseAuthType,
   ElementInstanceType,
   ElementStackType,
@@ -19,6 +18,7 @@ import {
   getActivityAnalytics,
   getCourseActivityAnalytics,
   getCoursePerformanceAnalytics,
+  getLearningAnalyticsExport,
 } from '../src/services/analytics.js'
 
 describe('Learning analytics computation eligibility', () => {
@@ -173,11 +173,11 @@ describe('Learning analytics computation eligibility', () => {
 
     const participants = await Promise.all(
       [
-        {
-          username: `la-direct-eligible-${course.id}`,
+        ...Array.from({ length: 5 }, (_, index) => ({
+          username: `la-direct-eligible-${index}-${course.id}`,
           status: LearningAnalyticsParticipationStatus.INCLUDED,
           includedFrom: new Date('2026-07-30T09:00:00.000Z'),
-        },
+        })),
         {
           username: `la-direct-late-${course.id}`,
           status: LearningAnalyticsParticipationStatus.INCLUDED,
@@ -209,15 +209,13 @@ describe('Learning analytics computation eligibility', () => {
       )
     )
     await Promise.all(
-      participants.map((participant) =>
-        prisma.participantCourseAnalytics.create({
+      participants.slice(0, 5).map((participant, index) =>
+        prisma.participantActivityPerformance.create({
           data: {
-            activeWeeks: 1,
-            activeDaysPerWeek: 1,
-            meanElementsPerDay: 1,
-            activityLevel: ActivityLevel.MEDIUM,
+            totalScore: 10 + index,
+            completion: index === 0 ? 0.6 : 1,
             participantId: participant.id,
-            courseId: course.id,
+            practiceQuizId: practiceQuiz.id,
           },
         })
       )
@@ -275,7 +273,7 @@ describe('Learning analytics computation eligibility', () => {
     )
     await prisma.instancePerformance.create({
       data: {
-        responseCount: 99,
+        responseCount: 5,
         averageTimeSpent: 1,
         totalErrorRate: 0,
         totalPartialRate: 0,
@@ -297,7 +295,7 @@ describe('Learning analytics computation eligibility', () => {
     })
     await prisma.activityPerformance.create({
       data: {
-        participantCount: 1,
+        participantCount: 5,
         totalErrorRate: 0,
         totalPartialRate: 0,
         totalCorrectRate: 1,
@@ -311,40 +309,65 @@ describe('Learning analytics computation eligibility', () => {
       ownerCtx
     )
     expect(activityAnalytics).toMatchObject({
-      courseParticipants: 2,
+      courseParticipants: 6,
+      isSuppressed: false,
       activityQuizAnalytics: {
-        participantCount: 1,
-        numberOfAnswers: 1,
+        participantCount: 5,
+        numberOfAnswers: 5,
       },
       instanceQuizAnalytics: [
         {
-          numberOfAnswers: 1,
-          uniqueParticipants: 1,
-          feedbackCount: 1,
+          numberOfAnswers: 5,
+          uniqueParticipants: 5,
+          feedbackCount: 5,
+          feedbackSuppressed: false,
         },
       ],
     })
-    expect(activityAnalytics?.instanceQuizAnalytics).toHaveLength(1)
 
     const coursePerformance = await getCoursePerformanceAnalytics(
       { courseId: course.id },
       ownerCtx
     )
     expect(coursePerformance).toMatchObject({
-      totalParticipants: 2,
-      instanceFeedbacks: [{ feedbackCount: 1 }],
+      totalParticipants: 6,
+      isSuppressed: false,
+      participantActivityPerformanceN: 5,
+      instanceFeedbacks: [{ feedbackCount: 5, participantCount: 5 }],
     })
-    expect(coursePerformance?.instanceFeedbacks).toHaveLength(1)
+    expect(coursePerformance?.participantActivityPerformances).toHaveLength(5)
+    expect(
+      coursePerformance?.participantActivityPerformances.every(
+        (row) =>
+          /^Student [1-5]$/.test(row.studentLabel) &&
+          row.coverage === 'COMPLETE'
+      )
+    ).toBe(true)
+    expect(JSON.stringify(coursePerformance)).not.toMatch(
+      /participantUsername|participantEmail|la-direct-eligible/i
+    )
+
+    const exportData = await getLearningAnalyticsExport(
+      { courseId: course.id },
+      ownerCtx
+    )
+    expect(exportData).toMatchObject({
+      filename: 'learning-analytics.csv',
+      effectiveN: 5,
+      includesPartial: false,
+    })
+    expect(exportData?.content).toContain('coverage,complete_only')
+    expect(exportData?.content).not.toMatch(
+      /participantId|username|email|activityId|totalScore|sensitive/i
+    )
 
     const courseActivity = await getCourseActivityAnalytics(
       { courseId: course.id },
       ownerCtx
     )
-    expect(courseActivity?.participantCourseAnalytics).toHaveLength(2)
-    expect(
-      courseActivity?.participantCourseAnalytics.map(
-        (analytics) => analytics.participantId
-      )
-    ).not.toContain(participants[2]!.id)
+    expect(courseActivity).toMatchObject({
+      totalParticipants: 6,
+      isSuppressed: false,
+    })
   })
 })

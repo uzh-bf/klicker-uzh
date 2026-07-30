@@ -4,6 +4,7 @@ query GetActivityAnalytics($activityId: String!) {
     activityName
     activityType
     courseParticipants
+    isSuppressed
     instanceQuizAnalytics {
       __typename
       id
@@ -24,6 +25,7 @@ query GetActivityAnalytics($activityId: String!) {
       upvoteRate
       downvoteRate
       feedbackCount
+      feedbackSuppressed
     }
     activityQuizAnalytics {
       __typename

@@ -79,6 +79,17 @@ number of currently eligible course participants and from the number of
 response attempts
 (`packages/prisma/src/prisma/schema/analytics.prisma:ActivityPerformance`).
 
+Lecturer-facing LA is a separate output boundary. Participant rows are first
+filtered for the requested coverage, then suppressed below an effective sample
+size of five, shuffled, and labelled afresh as `Student 1`, `Student 2`, and so
+on. Only coarse completion summaries survive that boundary. Labels and ordering
+are not persisted, and the public LA API contains no participant ID, username,
+email, exact score, activity-level sequence, response content, or free text.
+Exports default to complete coverage; explicitly including partial coverage
+re-runs both the sample-size check and label assignment
+(`packages/graphql/src/lib/learningAnalyticsOutput.ts`;
+`packages/graphql/src/services/analytics.ts:getLearningAnalyticsExport`).
+
 ## Content hierarchy
 
 - **`Element`** (`element.prisma`) — a question-bank item owned by a `User`; versioned via `version`/`originalId`; `type: ElementType`; options live in a typed `Json` field.

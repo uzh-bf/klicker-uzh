@@ -7,25 +7,22 @@ import {
   InstanceFeedback as InstanceFeedbackType,
   InstancePerformance as InstancePerformanceType,
   InstanceQuizAnalytics as InstanceQuizAnalyticsType,
-  ParticipantActivityPerformance as ParticipantActivityPerformanceType,
   ParticipantActivityPerformances as ParticipantActivityPerformancesType,
-  ParticipantPerformance as ParticipantPerformanceType,
   PerformanceRates as PerformanceRatesType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { ElementType } from './elementData.js'
 
-export const ActivityLevel = builder.enumType('ActivityLevel', {
-  values: Object.values(DB.ActivityLevel),
-})
-
 export const ActivityType = builder.enumType('ActivityType', {
   values: Object.values(ActivityTypeEnum),
 })
 
-export const PerformanceLevel = builder.enumType('PerformanceLevel', {
-  values: Object.values(DB.PerformanceLevel),
-})
+export const LearningAnalyticsCoverage = builder.enumType(
+  'LearningAnalyticsCoverage',
+  {
+    values: ['COMPLETE', 'PARTIAL'] as const,
+  }
+)
 
 // ------ Activity Analytics ------
 // #region
@@ -59,61 +56,12 @@ export const ParticipantActivityTimestamp = builder.objectType(
   }
 )
 
-interface IWeekdayActivityAnalytics {
-  monday: number
-  tuesday: number
-  wednesday: number
-  thursday: number
-  friday: number
-  saturday: number
-  sunday: number
-}
-export const WeekdayActivityAnalyticsRef =
-  builder.objectRef<IWeekdayActivityAnalytics>('WeekdayActivityAnalytics')
-export const WeekdayActivityAnalytics = builder.objectType(
-  WeekdayActivityAnalyticsRef,
-  {
-    fields: (t) => ({
-      monday: t.exposeFloat('monday'),
-      tuesday: t.exposeFloat('tuesday'),
-      wednesday: t.exposeFloat('wednesday'),
-      thursday: t.exposeFloat('thursday'),
-      friday: t.exposeFloat('friday'),
-      saturday: t.exposeFloat('saturday'),
-      sunday: t.exposeFloat('sunday'),
-    }),
-  }
-)
-
-interface IParticipantCourseActivity {
-  activeWeeks: number
-  activeDaysPerWeek: number
-  meanElementsPerDay: number
-  activityLevel: DB.ActivityLevel
-}
-
-export const ParticipantCourseActivityRef =
-  builder.objectRef<IParticipantCourseActivity>('ParticipantCourseActivity')
-export const ParticipantCourseActivity = builder.objectType(
-  ParticipantCourseActivityRef,
-  {
-    fields: (t) => ({
-      activeWeeks: t.exposeInt('activeWeeks'),
-      activeDaysPerWeek: t.exposeFloat('activeDaysPerWeek'),
-      meanElementsPerDay: t.exposeFloat('meanElementsPerDay'),
-      activityLevel: t.expose('activityLevel', { type: ActivityLevel }),
-    }),
-  }
-)
-
 interface ICourseActivityAnalytics {
   name: string
-  courseWeeks: number
-  totalParticipants: number
+  totalParticipants: number | null
+  isSuppressed: boolean
   dailyActivity: IParticipantActivityTimestamp[]
   weeklyActivity: IParticipantActivityTimestamp[]
-  activeDays: IWeekdayActivityAnalytics
-  participantCourseAnalytics: IParticipantCourseActivity[]
 }
 export const CourseActivityAnalyticsRef =
   builder.objectRef<ICourseActivityAnalytics>('CourseActivityAnalytics')
@@ -122,24 +70,21 @@ export const CourseActivityAnalytics = builder.objectType(
   {
     fields: (t) => ({
       name: t.exposeString('name'),
-      courseWeeks: t.exposeInt('courseWeeks'),
-      totalParticipants: t.exposeInt('totalParticipants'),
+      totalParticipants: t.exposeInt('totalParticipants', { nullable: true }),
+      isSuppressed: t.exposeBoolean('isSuppressed'),
       dailyActivity: t.expose('dailyActivity', {
         type: [ParticipantActivityTimestamp],
       }),
       weeklyActivity: t.expose('weeklyActivity', {
         type: [ParticipantActivityTimestamp],
       }),
-      activeDays: t.expose('activeDays', { type: WeekdayActivityAnalytics }),
-      participantCourseAnalytics: t.expose('participantCourseAnalytics', {
-        type: [ParticipantCourseActivity],
-      }),
     }),
   }
 )
 
 interface IWeeklyCourseActivities {
-  totalParticipants: number
+  totalParticipants: number | null
+  isSuppressed: boolean
   weeklyActivity: IParticipantActivityTimestamp[]
 }
 export const WeeklyCourseActivitiesRef =
@@ -148,7 +93,8 @@ export const WeeklyCourseActivities = builder.objectType(
   WeeklyCourseActivitiesRef,
   {
     fields: (t) => ({
-      totalParticipants: t.exposeInt('totalParticipants'),
+      totalParticipants: t.exposeInt('totalParticipants', { nullable: true }),
+      isSuppressed: t.exposeBoolean('isSuppressed'),
       weeklyActivity: t.expose('weeklyActivity', {
         type: [ParticipantActivityTimestamp],
       }),
@@ -211,48 +157,12 @@ export const InstancePerformanceRef =
 export const InstancePerformance = builder.objectType(InstancePerformanceRef, {
   fields: (t) => ({
     id: t.exposeInt('id'),
+    participantCount: t.exposeInt('participantCount'),
     elementName: t.exposeString('elementName'),
     elementType: t.expose('elementType', { type: ElementType }),
     rates: t.expose('rates', { type: PerformanceRates }),
   }),
 })
-
-export const ParticipantPerformanceRef =
-  builder.objectRef<ParticipantPerformanceType>('ParticipantPerformance')
-export const ParticipantPerformance = builder.objectType(
-  ParticipantPerformanceRef,
-  {
-    fields: (t) => ({
-      id: t.exposeInt('id'),
-      firstErrorRate: t.exposeFloat('firstErrorRate'),
-      firstPerformance: t.expose('firstPerformance', {
-        type: PerformanceLevel,
-      }),
-      lastErrorRate: t.exposeFloat('lastErrorRate'),
-      lastPerformance: t.expose('lastPerformance', { type: PerformanceLevel }),
-      totalErrorRate: t.exposeFloat('totalErrorRate'),
-      totalPerformance: t.expose('totalPerformance', {
-        type: PerformanceLevel,
-      }),
-    }),
-  }
-)
-
-export const ParticipantActivityPerformanceRef =
-  builder.objectRef<ParticipantActivityPerformanceType>(
-    'ParticipantActivityPerformance'
-  )
-export const ParticipantActivityPerformance = builder.objectType(
-  ParticipantActivityPerformanceRef,
-  {
-    fields: (t) => ({
-      id: t.exposeInt('id'),
-      activityId: t.exposeString('activityId'),
-      totalScore: t.exposeInt('totalScore'),
-      completion: t.exposeFloat('completion'),
-    }),
-  }
-)
 
 export const ParticipantActivityPerformancesRef =
   builder.objectRef<ParticipantActivityPerformancesType>(
@@ -262,12 +172,10 @@ export const ParticipantActivityPerformances = builder.objectType(
   ParticipantActivityPerformancesRef,
   {
     fields: (t) => ({
-      participantId: t.exposeString('participantId'),
-      participantUsername: t.exposeString('participantUsername'),
-      participantEmail: t.exposeString('participantEmail', { nullable: true }),
-      performances: t.expose('activityPerformances', {
-        type: [ParticipantActivityPerformance],
-      }),
+      studentLabel: t.exposeString('studentLabel'),
+      coverage: t.expose('coverage', { type: LearningAnalyticsCoverage }),
+      completedActivities: t.exposeInt('completedActivities'),
+      meanCompletion: t.exposeFloat('meanCompletion'),
     }),
   }
 )
@@ -280,6 +188,7 @@ export const InstanceFeedback = builder.objectType(InstanceFeedbackRef, {
     activityType: t.expose('activityType', { type: ActivityType }),
     instanceName: t.exposeString('instanceName'),
     instanceType: t.expose('instanceType', { type: ElementType }),
+    participantCount: t.exposeInt('participantCount'),
     upvoteRate: t.exposeFloat('upvoteRate'),
     downvoteRate: t.exposeFloat('downvoteRate'),
     feedbackCount: t.exposeInt('feedbackCount'),
@@ -293,6 +202,7 @@ export const ActivityFeedback = builder.objectType(ActivityFeedbackRef, {
     id: t.exposeString('id'),
     activityType: t.expose('activityType', { type: ActivityType }),
     activityName: t.exposeString('activityName'),
+    participantCount: t.exposeInt('participantCount'),
     upvoteRate: t.exposeFloat('upvoteRate'),
     downvoteRate: t.exposeFloat('downvoteRate'),
     feedbackCount: t.exposeInt('feedbackCount'),
@@ -301,11 +211,12 @@ export const ActivityFeedback = builder.objectType(ActivityFeedbackRef, {
 
 interface ICoursePerformanceAnalytics {
   name: string
-  totalParticipants: number
+  totalParticipants: number | null
+  isSuppressed: boolean
+  participantActivityPerformanceN: number | null
   activityProgresses: IActivityProgress[]
   activityPerformances: ActivityPerformanceType[]
   instancePerformances: InstancePerformanceType[]
-  participantPerformances: ParticipantPerformanceType[]
   participantActivityPerformances: ParticipantActivityPerformancesType[]
   instanceFeedbacks: InstanceFeedbackType[]
   activityFeedbacks: ActivityFeedbackType[]
@@ -317,7 +228,12 @@ export const CoursePerformanceAnalytics = builder.objectType(
   {
     fields: (t) => ({
       name: t.exposeString('name'),
-      totalParticipants: t.exposeInt('totalParticipants'),
+      totalParticipants: t.exposeInt('totalParticipants', { nullable: true }),
+      isSuppressed: t.exposeBoolean('isSuppressed'),
+      participantActivityPerformanceN: t.exposeInt(
+        'participantActivityPerformanceN',
+        { nullable: true }
+      ),
       activityProgresses: t.expose('activityProgresses', {
         type: [ActivityProgress],
       }),
@@ -326,9 +242,6 @@ export const CoursePerformanceAnalytics = builder.objectType(
       }),
       instancePerformances: t.expose('instancePerformances', {
         type: [InstancePerformance],
-      }),
-      participantPerformances: t.expose('participantPerformances', {
-        type: [ParticipantPerformance],
       }),
       participantActivityPerformances: t.expose(
         'participantActivityPerformances',
@@ -342,6 +255,28 @@ export const CoursePerformanceAnalytics = builder.objectType(
       activityFeedbacks: t.expose('activityFeedbacks', {
         type: [ActivityFeedback],
       }),
+    }),
+  }
+)
+
+interface ILearningAnalyticsExport {
+  filename: string
+  content: string
+  mimeType: string
+  effectiveN: number
+  includesPartial: boolean
+}
+export const LearningAnalyticsExportRef =
+  builder.objectRef<ILearningAnalyticsExport>('LearningAnalyticsExport')
+export const LearningAnalyticsExport = builder.objectType(
+  LearningAnalyticsExportRef,
+  {
+    fields: (t) => ({
+      filename: t.exposeString('filename'),
+      content: t.exposeString('content'),
+      mimeType: t.exposeString('mimeType'),
+      effectiveN: t.exposeInt('effectiveN'),
+      includesPartial: t.exposeBoolean('includesPartial'),
     }),
   }
 )
@@ -373,6 +308,7 @@ export const InstanceQuizAnalytics = builder.objectType(
       upvoteRate: t.exposeFloat('upvoteRate'),
       downvoteRate: t.exposeFloat('downvoteRate'),
       feedbackCount: t.exposeInt('feedbackCount'),
+      feedbackSuppressed: t.exposeBoolean('feedbackSuppressed'),
     }),
   }
 )
@@ -403,7 +339,8 @@ export const ActivityQuizAnalytics = builder.objectType(
 interface IQuizAnalytics {
   activityName: string
   activityType: ActivityTypeEnum
-  courseParticipants: number
+  courseParticipants: number | null
+  isSuppressed: boolean
   activityQuizAnalytics?: ActivityQuizAnalyticsType | null
   instanceQuizAnalytics: InstanceQuizAnalyticsType[]
 }
@@ -413,7 +350,8 @@ export const QuizAnalytics = builder.objectType(QuizAnalyticsRef, {
   fields: (t) => ({
     activityName: t.exposeString('activityName'),
     activityType: t.expose('activityType', { type: ActivityType }),
-    courseParticipants: t.exposeInt('courseParticipants'),
+    courseParticipants: t.exposeInt('courseParticipants', { nullable: true }),
+    isSuppressed: t.exposeBoolean('isSuppressed'),
     activityQuizAnalytics: t.expose('activityQuizAnalytics', {
       type: ActivityQuizAnalytics,
       nullable: true,

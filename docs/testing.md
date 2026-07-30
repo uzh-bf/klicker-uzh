@@ -29,6 +29,13 @@ Analytics tests live in `apps/analytics/tests/` and deliberately use
 `unittest`, not another Python test dependency. The focused GraphQL computation
 eligibility test uses real PostgreSQL to prove direct response and feedback
 aggregations enforce the inclusion timestamp and exclude free-text elements.
+The output-policy tests then prove suppression is applied after coverage
+filtering, report-local labels change with a fresh ordering, and the CSV contains
+only coarse summaries and coverage metadata. The GraphQL integration fixture
+also checks that neither the lecturer query nor export contains the synthetic
+participant identifier, activity identifier, score, or free-text marker
+(`packages/graphql/test/learningAnalyticsOutput.test.ts`;
+`packages/graphql/test/learningAnalyticsComputationEligibility.test.ts`).
 
 The Office Add-in has a separate host boundary. Its pure URL contract runs under Node, while `check`, `lint`, `build:docs`, `verify:docs`, and `validate` cover compilation, source quality, the production bundle, exact deployment parity, and manifest acceptance. A browser run with a stubbed Office API verifies UI states only. Persistence, multiple content-add-in instances, and embedded evaluation rendering require a real PowerPoint sideload before release.
 

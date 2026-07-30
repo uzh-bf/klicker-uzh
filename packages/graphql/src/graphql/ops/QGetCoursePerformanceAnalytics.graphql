@@ -2,6 +2,8 @@ query GetCoursePerformanceAnalytics($courseId: String!) {
   getCoursePerformanceAnalytics(courseId: $courseId) {
     name
     totalParticipants
+    isSuppressed
+    participantActivityPerformanceN
     activityProgresses {
       activityName
       activityType
@@ -30,6 +32,7 @@ query GetCoursePerformanceAnalytics($courseId: String!) {
     instancePerformances {
       __typename
       id
+      participantCount
       elementName
       elementType
       rates {
@@ -44,27 +47,12 @@ query GetCoursePerformanceAnalytics($courseId: String!) {
         correctRate
       }
     }
-    participantPerformances {
-      __typename
-      id
-      firstErrorRate
-      firstPerformance
-      lastErrorRate
-      lastPerformance
-      totalErrorRate
-      totalPerformance
-    }
     participantActivityPerformances {
       __typename
-      participantId
-      participantUsername
-      participantEmail
-      performances {
-        id
-        activityId
-        totalScore
-        completion
-      }
+      studentLabel
+      coverage
+      completedActivities
+      meanCompletion
     }
     instanceFeedbacks {
       __typename
@@ -72,6 +60,7 @@ query GetCoursePerformanceAnalytics($courseId: String!) {
       activityType
       instanceName
       instanceType
+      participantCount
       upvoteRate
       downvoteRate
       feedbackCount
@@ -81,6 +70,7 @@ query GetCoursePerformanceAnalytics($courseId: String!) {
       id
       activityType
       activityName
+      participantCount
       upvoteRate
       downvoteRate
       feedbackCount

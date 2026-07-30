@@ -10,12 +10,18 @@ import {
   ParticipantActivityPerformance,
 } from '@klicker-uzh/types'
 import { isActivityEligibleForLearningAnalytics } from '@klicker-uzh/util'
-import dayjs from 'dayjs'
 import {
   LEARNING_ANALYTICS_DISCLOSURE_VERSION,
   isLearningAnalyticsRolloutEnabled,
   learningAnalyticsParticipationWhere,
 } from '../lib/learningAnalytics.js'
+import {
+  assignLearningAnalyticsStudentLabels,
+  buildLearningAnalyticsCsv,
+  deidentifyLearningAnalyticsRows,
+  meetsLearningAnalyticsMinimumSampleSize,
+  summarizeLearningAnalyticsRows,
+} from '../lib/learningAnalyticsOutput.js'
 
 type LearningAnalyticsFeedback = Pick<
   DB.ElementFeedback,
@@ -133,16 +139,6 @@ export async function getCourseActivityAnalytics(
       aggregatedAnalytics: {
         orderBy: { timestamp: 'asc' },
       },
-      aggregatedCourseAnalytics: true,
-      participantCourseAnalytics: {
-        where: {
-          participant: {
-            participations: {
-              some: learningAnalyticsParticipationWhere(courseId),
-            },
-          },
-        },
-      },
     },
   })
 
@@ -152,43 +148,36 @@ export async function getCourseActivityAnalytics(
 
   // map daily and weekly student activity into the format required by the frontend
   const dailyActivity = course.aggregatedAnalytics
-    .filter((analytics) => analytics.type === 'DAILY')
+    .filter(
+      (analytics) =>
+        analytics.type === 'DAILY' &&
+        meetsLearningAnalyticsMinimumSampleSize(analytics.participantCount)
+    )
     .map((analytics) => ({
       date: analytics.timestamp,
       activeParticipants: analytics.participantCount,
     }))
   const weeklyActivity = course.aggregatedAnalytics
-    .filter((analytics) => analytics.type === 'WEEKLY')
+    .filter(
+      (analytics) =>
+        analytics.type === 'WEEKLY' &&
+        meetsLearningAnalyticsMinimumSampleSize(analytics.participantCount)
+    )
     .map((analytics) => ({
       date: analytics.timestamp,
       activeParticipants: analytics.participantCount,
     }))
 
-  // compute the duration of the course in weeks (until current date, if course is still running)
-  const courseWeeks = Math.ceil(
-    dayjs(
-      course.endDate && dayjs(course.endDate).isBefore(dayjs())
-        ? course.endDate
-        : dayjs()
-    ).diff(dayjs(course.startDate), 'week', true)
+  const isSuppressed = !meetsLearningAnalyticsMinimumSampleSize(
+    course.participations.length
   )
 
   return {
     name: course.name,
-    courseWeeks,
-    totalParticipants: course.participations.length,
-    dailyActivity,
-    weeklyActivity,
-    activeDays: {
-      monday: course.aggregatedCourseAnalytics?.activityMonday ?? 0,
-      tuesday: course.aggregatedCourseAnalytics?.activityTuesday ?? 0,
-      wednesday: course.aggregatedCourseAnalytics?.activityWednesday ?? 0,
-      thursday: course.aggregatedCourseAnalytics?.activityThursday ?? 0,
-      friday: course.aggregatedCourseAnalytics?.activityFriday ?? 0,
-      saturday: course.aggregatedCourseAnalytics?.activitySaturday ?? 0,
-      sunday: course.aggregatedCourseAnalytics?.activitySunday ?? 0,
-    },
-    participantCourseAnalytics: course.participantCourseAnalytics,
+    totalParticipants: isSuppressed ? null : course.participations.length,
+    isSuppressed,
+    dailyActivity: isSuppressed ? [] : dailyActivity,
+    weeklyActivity: isSuppressed ? [] : weeklyActivity,
   }
 }
 
@@ -217,12 +206,23 @@ export async function getCourseWeeklyActivity(
     return null
   }
 
-  const weeklyActivity = course.aggregatedAnalytics.map((analytics) => ({
-    date: analytics.timestamp,
-    activeParticipants: analytics.participantCount,
-  }))
+  const isSuppressed = !meetsLearningAnalyticsMinimumSampleSize(
+    course.participations.length
+  )
+  const weeklyActivity = course.aggregatedAnalytics
+    .filter((analytics) =>
+      meetsLearningAnalyticsMinimumSampleSize(analytics.participantCount)
+    )
+    .map((analytics) => ({
+      date: analytics.timestamp,
+      activeParticipants: analytics.participantCount,
+    }))
 
-  return { totalParticipants: course.participations.length, weeklyActivity }
+  return {
+    totalParticipants: isSuppressed ? null : course.participations.length,
+    isSuppressed,
+    weeklyActivity: isSuppressed ? [] : weeklyActivity,
+  }
 }
 
 // this function compute the upvote and downvote rates based on the element responses linked to instances in the course
@@ -244,6 +244,7 @@ function aggregateInstanceFeedbacks({
           id: number
           instanceName: string
           instanceType: DB.ElementType
+          participantIds: Set<string>
           upvotes: number
           downvotes: number
           totalVotes: number
@@ -257,6 +258,7 @@ function aggregateInstanceFeedbacks({
               acc.downvotes++
               acc.totalVotes++
             }
+            acc.participantIds.add(feedback.participantId)
 
             return acc
           },
@@ -264,6 +266,7 @@ function aggregateInstanceFeedbacks({
             id: element.id,
             instanceName: element.elementData.name,
             instanceType: element.elementData.type,
+            participantIds: new Set(),
             upvotes: 0,
             downvotes: 0,
             totalVotes: 0,
@@ -277,9 +280,11 @@ function aggregateInstanceFeedbacks({
         return []
       }
 
+      const { participantIds, ...feedback } = instanceFeedback
       return {
-        ...instanceFeedback,
+        ...feedback,
         activityType,
+        participantCount: participantIds.size,
         upvoteRate: instanceFeedback.upvotes / instanceFeedback.totalVotes,
         downvoteRate: instanceFeedback.downvotes / instanceFeedback.totalVotes,
         feedbackCount: instanceFeedback.totalVotes,
@@ -293,47 +298,54 @@ function aggregateActivityFeedbacks({
   activityType,
   activityId,
   activityName,
+  participantCount,
 }: {
   instanceFeedbacks: InstanceFeedback[]
   activityType: ActivityType
   activityId: string
   activityName: string
+  participantCount: number
 }) {
   // if no instance feedbacks were provided, do not return statistics for this activity
   if (instanceFeedbacks.length === 0) {
     return undefined
   }
 
-  return instanceFeedbacks.reduce<ActivityFeedback>(
-    (acc, instanceFeedback) => {
-      // if no votes were submitted for the instance, skip it
-      if (
-        instanceFeedback.upvoteRate === 0 &&
-        instanceFeedback.downvoteRate === 0
-      ) {
-        return acc
-      }
-
-      // combine the upvotes and downvote rates over all instances
-      acc.upvoteRate =
-        (acc.upvoteRate * acc.feedbackCount + instanceFeedback.upvoteRate) /
-        (acc.feedbackCount + 1)
-      acc.downvoteRate =
-        (acc.downvoteRate * acc.feedbackCount + instanceFeedback.downvoteRate) /
-        (acc.feedbackCount + 1)
-      acc.feedbackCount++
-
-      return acc
-    },
-    {
-      id: activityId,
-      activityType,
-      activityName,
-      upvoteRate: 0,
-      downvoteRate: 0,
-      feedbackCount: 0,
-    }
+  const feedbackCount = instanceFeedbacks.reduce(
+    (count, feedback) => count + feedback.feedbackCount,
+    0
   )
+  return {
+    id: activityId,
+    activityType,
+    activityName,
+    participantCount,
+    upvoteRate:
+      instanceFeedbacks.reduce(
+        (sum, feedback) => sum + feedback.upvoteRate * feedback.feedbackCount,
+        0
+      ) / feedbackCount,
+    downvoteRate:
+      instanceFeedbacks.reduce(
+        (sum, feedback) => sum + feedback.downvoteRate * feedback.feedbackCount,
+        0
+      ) / feedbackCount,
+    feedbackCount,
+  }
+}
+
+function countFeedbackParticipants(
+  stacks: {
+    elements: { feedbacks: LearningAnalyticsFeedback[] }[]
+  }[]
+) {
+  return new Set(
+    stacks.flatMap((stack) =>
+      stack.elements.flatMap((element) =>
+        element.feedbacks.map((feedback) => feedback.participantId)
+      )
+    )
+  ).size
 }
 
 function computeActivityInstanceFeedbacks({
@@ -374,6 +386,7 @@ function computeActivityInstanceFeedbacks({
       activityType: ActivityType.PRACTICE_QUIZ,
       activityId: quiz.id,
       activityName: quiz.name,
+      participantCount: countFeedbackParticipants(quiz.stacks),
     })
 
     if (activityFeedback) {
@@ -394,6 +407,7 @@ function computeActivityInstanceFeedbacks({
       activityType: ActivityType.MICRO_LEARNING,
       activityId: micro.id,
       activityName: micro.name,
+      participantCount: countFeedbackParticipants(micro.stacks),
     })
 
     if (activityFeedback) {
@@ -424,9 +438,7 @@ function computeActivityInstancePerformance({
       })[]
       progress: DB.ActivityProgress | null
       performance: DB.ActivityPerformance | null
-      participantPerformances: (DB.ParticipantActivityPerformance & {
-        participant: DB.Participant
-      })[]
+      participantPerformances: DB.ParticipantActivityPerformance[]
     })[]
     microLearnings: (DB.MicroLearning & {
       stacks: (DB.ElementStack & {
@@ -437,9 +449,7 @@ function computeActivityInstancePerformance({
       })[]
       progress: DB.ActivityProgress | null
       performance: DB.ActivityPerformance | null
-      participantPerformances: (DB.ParticipantActivityPerformance & {
-        participant: DB.Participant
-      })[]
+      participantPerformances: DB.ParticipantActivityPerformance[]
     })[]
   }
 }) {
@@ -523,6 +533,7 @@ function computeActivityInstancePerformance({
 
           return {
             id: iPerformance.id,
+            participantCount: iPerformance.responseCount,
             elementName: element.elementData.name,
             elementType: element.elementData.type,
             rates: {
@@ -560,14 +571,7 @@ function computeActivityInstancePerformance({
     ...course.practiceQuizzes,
     ...course.microLearnings,
   ].reduce<
-    Record<
-      string,
-      {
-        participantUsername: string
-        participantEmail: string | null
-        activityPerformances: ParticipantActivityPerformance[]
-      }
-    >
+    Record<string, { activityPerformances: ParticipantActivityPerformance[] }>
   >((acc, activity) => {
     activity.participantPerformances.forEach((performance) => {
       // extract performance data that should be tracked (table cell value)
@@ -579,14 +583,12 @@ function computeActivityInstancePerformance({
       }
 
       // create a new entry in the accumulator or update it with the corresponding activity performance data
-      if (!acc[performance.participant.id]) {
-        acc[performance.participant.id] = {
-          participantUsername: performance.participant.username,
-          participantEmail: performance.participant.email,
+      if (!acc[performance.participantId]) {
+        acc[performance.participantId] = {
           activityPerformances: [performanceEntry],
         }
       } else {
-        acc[performance.participant.id]!.activityPerformances.push(
+        acc[performance.participantId]!.activityPerformances.push(
           performanceEntry
         )
       }
@@ -598,10 +600,7 @@ function computeActivityInstancePerformance({
   // transfer the data into a list format before returning it
   const participantActivityPerformances = Object.entries(
     participantActivityObject
-  ).map(([participantId, entry]) => ({
-    participantId,
-    ...entry,
-  }))
+  ).map(([participantId, entry]) => ({ participantId, ...entry }))
 
   return { ...activityInstanceAnalytics, participantActivityPerformances }
 }
@@ -636,7 +635,14 @@ export async function getCoursePerformanceAnalytics(
                 },
               },
             },
-            include: { participant: true },
+            select: {
+              id: true,
+              participantId: true,
+              totalScore: true,
+              completion: true,
+              practiceQuizId: true,
+              microLearningId: true,
+            },
           },
           stacks: {
             include: {
@@ -663,7 +669,14 @@ export async function getCoursePerformanceAnalytics(
                 },
               },
             },
-            include: { participant: true },
+            select: {
+              id: true,
+              participantId: true,
+              totalScore: true,
+              completion: true,
+              practiceQuizId: true,
+              microLearningId: true,
+            },
           },
           stacks: {
             include: {
@@ -678,15 +691,6 @@ export async function getCoursePerformanceAnalytics(
         },
         orderBy: { scheduledStartAt: 'desc' },
       },
-      participantPerformances: {
-        where: {
-          participant: {
-            participations: {
-              some: learningAnalyticsParticipationWhere(courseId),
-            },
-          },
-        },
-      },
     },
   })
 
@@ -698,14 +702,18 @@ export async function getCoursePerformanceAnalytics(
     course.practiceQuizzes.length === 0 &&
     course.microLearnings.length === 0
   ) {
+    const isSuppressed = !meetsLearningAnalyticsMinimumSampleSize(
+      course._count.participations
+    )
     return {
       name: course.name,
-      totalParticipants: course._count.participations,
+      totalParticipants: isSuppressed ? null : course._count.participations,
+      isSuppressed,
+      participantActivityPerformanceN: null,
       activityProgresses: [],
       activityPerformances: [],
       participantActivityPerformances: [],
       instancePerformances: [],
-      participantPerformances: course.participantPerformances,
       instanceFeedbacks: [],
       activityFeedbacks: [],
     }
@@ -725,17 +733,90 @@ export async function getCoursePerformanceAnalytics(
     await filterCourseFeedbacksForLearningAnalytics(course, courseId, ctx)
   const { instanceFeedbacks, activityFeedbacks } =
     computeActivityInstanceFeedbacks({ course: courseWithEligibleFeedbacks })
+  const activityIds = [
+    ...course.practiceQuizzes.map((activity) => activity.id),
+    ...course.microLearnings.map((activity) => activity.id),
+  ]
+  const deidentifiedParticipantActivity = deidentifyLearningAnalyticsRows({
+    rows: participantActivityPerformances,
+    activityIds,
+  })
+  const isSuppressed = !meetsLearningAnalyticsMinimumSampleSize(
+    course._count.participations
+  )
 
   return {
     name: course.name,
-    totalParticipants: course._count.participations,
-    activityProgresses,
-    activityPerformances,
-    participantActivityPerformances,
-    instancePerformances,
-    participantPerformances: course.participantPerformances,
-    instanceFeedbacks,
-    activityFeedbacks,
+    totalParticipants: isSuppressed ? null : course._count.participations,
+    isSuppressed,
+    participantActivityPerformanceN:
+      deidentifiedParticipantActivity.rows.length === 0
+        ? null
+        : deidentifiedParticipantActivity.effectiveN,
+    activityProgresses: isSuppressed
+      ? []
+      : activityProgresses.filter((progress) =>
+          meetsLearningAnalyticsMinimumSampleSize(progress.startedCount)
+        ),
+    activityPerformances: isSuppressed
+      ? []
+      : activityPerformances.filter((performance) =>
+          meetsLearningAnalyticsMinimumSampleSize(performance.participantCount)
+        ),
+    participantActivityPerformances: isSuppressed
+      ? []
+      : summarizeLearningAnalyticsRows(deidentifiedParticipantActivity.rows),
+    instancePerformances: isSuppressed
+      ? []
+      : instancePerformances.filter((performance) =>
+          meetsLearningAnalyticsMinimumSampleSize(performance.participantCount)
+        ),
+    instanceFeedbacks: isSuppressed
+      ? []
+      : instanceFeedbacks.filter((feedback) =>
+          meetsLearningAnalyticsMinimumSampleSize(feedback.participantCount)
+        ),
+    activityFeedbacks: isSuppressed
+      ? []
+      : activityFeedbacks.filter((feedback) =>
+          meetsLearningAnalyticsMinimumSampleSize(feedback.participantCount)
+        ),
+  }
+}
+
+export async function getLearningAnalyticsExport(
+  {
+    courseId,
+    includePartial = false,
+  }: { courseId: string; includePartial?: boolean | null },
+  ctx: ContextWithUser
+) {
+  const analytics = await getCoursePerformanceAnalytics({ courseId }, ctx)
+  if (!analytics || analytics.isSuppressed) {
+    return null
+  }
+
+  const selectedRows = analytics.participantActivityPerformances.filter(
+    (row) => includePartial || row.coverage === 'COMPLETE'
+  )
+  if (!meetsLearningAnalyticsMinimumSampleSize(selectedRows.length)) {
+    return null
+  }
+
+  const relabelledRows = assignLearningAnalyticsStudentLabels(
+    selectedRows.map(({ studentLabel: _, ...row }) => row)
+  )
+
+  return {
+    filename: 'learning-analytics.csv',
+    content: buildLearningAnalyticsCsv({
+      rows: relabelledRows,
+      effectiveN: relabelledRows.length,
+      includesPartial: includePartial ?? false,
+    }),
+    mimeType: 'text/csv;charset=utf-8',
+    effectiveN: relabelledRows.length,
+    includesPartial: includePartial ?? false,
   }
 }
 
@@ -866,44 +947,54 @@ export async function getActivityAnalytics(
         ).size
 
         // compute the upvote and downvote rates
-        const { upvoteRate, downvoteRate, totalVotes } = element.feedbacks
-          .filter((feedback) => eligibleFeedbackIds.has(feedback.id))
-          .reduce<{
-            upvoteRate: number
-            downvoteRate: number
-            totalVotes: number
-          }>(
-            (acc, feedback) => {
-              if (feedback.upvote) {
-                acc.upvoteRate =
-                  (acc.upvoteRate * acc.totalVotes + 1) / (acc.totalVotes + 1)
-                acc.totalVotes++
-              } else if (feedback.downvote) {
-                acc.downvoteRate =
-                  (acc.downvoteRate * acc.totalVotes + 1) / (acc.totalVotes + 1)
-                acc.totalVotes++
-              }
-
-              return acc
-            },
-            {
-              upvoteRate: 0,
-              downvoteRate: 0,
-              totalVotes: 0,
-            }
+        const eligibleFeedback = element.feedbacks.filter((feedback) =>
+          eligibleFeedbackIds.has(feedback.id)
+        )
+        const feedbackParticipantCount = new Set(
+          eligibleFeedback.flatMap((feedback) =>
+            feedback.upvote || feedback.downvote ? [feedback.participantId] : []
           )
+        ).size
+        const { upvoteRate, downvoteRate } = eligibleFeedback.reduce<{
+          upvoteRate: number
+          downvoteRate: number
+          totalVotes: number
+        }>(
+          (acc, feedback) => {
+            if (feedback.upvote) {
+              acc.upvoteRate =
+                (acc.upvoteRate * acc.totalVotes + 1) / (acc.totalVotes + 1)
+              acc.totalVotes++
+            } else if (feedback.downvote) {
+              acc.downvoteRate =
+                (acc.downvoteRate * acc.totalVotes + 1) / (acc.totalVotes + 1)
+              acc.totalVotes++
+            }
+
+            return acc
+          },
+          {
+            upvoteRate: 0,
+            downvoteRate: 0,
+            totalVotes: 0,
+          }
+        )
 
         // increment number of answers on activity
         acc.numberOfAnswersActivity += numberOfAnswers
 
         // increment total average instance times
         acc.totalAverageInstanceTimes += performance.averageTimeSpent
+        const feedbackSuppressed = !meetsLearningAnalyticsMinimumSampleSize(
+          feedbackParticipantCount
+        )
 
         return {
           ...performance,
-          upvoteRate,
-          downvoteRate,
-          feedbackCount: totalVotes,
+          upvoteRate: feedbackSuppressed ? 0 : upvoteRate,
+          downvoteRate: feedbackSuppressed ? 0 : downvoteRate,
+          feedbackCount: feedbackSuppressed ? 0 : feedbackParticipantCount,
+          feedbackSuppressed,
           elementName: element.elementData.name,
           elementType: element.elementData.type,
           numberOfAnswers,
@@ -921,18 +1012,33 @@ export async function getActivityAnalytics(
     }
   )
 
+  const isSuppressed = !meetsLearningAnalyticsMinimumSampleSize(
+    activity.course._count.participations
+  )
+  const activityParticipantCount = activity.performance?.participantCount ?? 0
+
   return {
     activityName: activity.name,
     activityType,
-    courseParticipants: activity.course._count.participations,
-    activityQuizAnalytics: activity.performance
-      ? {
-          ...activity.performance,
-          id: activity.performance?.id ?? 0,
-          numberOfAnswers: numberOfAnswersActivity,
-          averageTimeSpent: totalAverageInstanceTimes,
-        }
-      : null,
-    instanceQuizAnalytics,
+    courseParticipants: isSuppressed
+      ? null
+      : activity.course._count.participations,
+    isSuppressed,
+    activityQuizAnalytics:
+      !isSuppressed &&
+      activity.performance &&
+      meetsLearningAnalyticsMinimumSampleSize(activityParticipantCount)
+        ? {
+            ...activity.performance,
+            id: activity.performance?.id ?? 0,
+            numberOfAnswers: numberOfAnswersActivity,
+            averageTimeSpent: totalAverageInstanceTimes,
+          }
+        : null,
+    instanceQuizAnalytics: isSuppressed
+      ? []
+      : instanceQuizAnalytics.filter((instance) =>
+          meetsLearningAnalyticsMinimumSampleSize(instance.uniqueParticipants)
+        ),
   }
 }
