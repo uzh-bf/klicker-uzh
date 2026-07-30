@@ -436,7 +436,7 @@ function assertJsonValue(
 function validateInvocationId(
   value: unknown,
   label: string,
-  kind: CodeApiClientErrorKind = 'response'
+  kind: CodeApiClientErrorKind
 ): string {
   if (typeof value !== 'string' || value.length === 0 || value.length > 128) {
     throw new CodeApiClientError(kind, `${label} is invalid`)
@@ -785,7 +785,11 @@ function parseCodeApiRunnerOutput(stdout: string): CodeApiInvocationOutcome[] {
   const ids = new Set<string>()
   return envelope.outcomes.map((rawOutcome, index) => {
     const outcome = asRecord(rawOutcome, `CodeAPI outcome ${index}`, 'runner')
-    const id = validateInvocationId(outcome.id, `CodeAPI outcome ${index} id`)
+    const id = validateInvocationId(
+      outcome.id,
+      `CodeAPI outcome ${index} id`,
+      'runner'
+    )
     if (ids.has(id)) {
       throw new CodeApiClientError(
         'runner',
@@ -905,7 +909,8 @@ function parseExecuteResponse(value: unknown): ParsedExecuteResponse {
   )
   const sessionId = validateInvocationId(
     response.session_id,
-    'CodeAPI session id'
+    'CodeAPI session id',
+    'response'
   )
   if (!Array.isArray(response.files) || response.files.length > 50) {
     throw new CodeApiClientError('response', 'CodeAPI files are invalid')

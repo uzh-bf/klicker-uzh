@@ -768,6 +768,13 @@ describe('CodeAPI runner output', () => {
       }),
     ],
     [
+      'missing id',
+      JSON.stringify({
+        version: 1,
+        outcomes: [{ status: 'timeout', stdout: '', stderr: '' }],
+      }),
+    ],
+    [
       'invalid status',
       JSON.stringify({
         version: 1,
