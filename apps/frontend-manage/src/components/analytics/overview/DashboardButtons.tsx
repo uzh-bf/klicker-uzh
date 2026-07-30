@@ -1,11 +1,16 @@
 import { Course } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
+import { learningAnalyticsRolloutEnabled } from '../../../lib/learningAnalytics'
 import ActivityDashboardLabel from './ActivityDashboardLabel'
 import PerformanceDashboardLabel from './PerformanceDashboardLabel'
 import QuizDashboardLabel from './QuizDashboardLabel'
 
-function DashboardButtons({ course }: { course: Pick<Course, 'id' | 'name'> }) {
+function DashboardButtons({
+  course,
+}: {
+  course: Pick<Course, 'id' | 'name' | 'isLearningAnalyticsEnabled'>
+}) {
   const router = useRouter()
 
   return (
@@ -31,6 +36,10 @@ function DashboardButtons({ course }: { course: Pick<Course, 'id' | 'name'> }) {
         },
       ].map((button, ix) => (
         <Button
+          disabled={
+            !learningAnalyticsRolloutEnabled ||
+            !course.isLearningAnalyticsEnabled
+          }
           className={{
             root: 'h-8 py-0',
           }}

@@ -34,6 +34,20 @@ Optional learning analytics has two independent controls:
 
 `Participation.isActive` still controls ordinary course participation and gamification visibility; it is not learning-analytics consent. The shared eligibility helper admits activity only while the course control is enabled, the status is `INCLUDED`, the acknowledged disclosure version is current, and the activity timestamp is at or after `learningAnalyticsIncludedFrom` (`packages/util/src/learningAnalytics.ts:isActivityEligibleForLearningAnalytics`).
 
+Course owners and administrators can change the course control through the
+ADMIN-protected `setCourseLearningAnalyticsEnabled` mutation. A serialized
+transaction atomically disables lecturer reads and idempotently deletes the
+dedicated analytics models. It deliberately keeps participations, choice
+history, responses, feedback, grades, points, and XP
+(`packages/graphql/src/services/courses.ts:setCourseLearningAnalyticsEnabled`;
+`packages/graphql/src/lib/learningAnalytics.ts:isLearningAnalyticsRolloutEnabled`).
+The deployment gate `NEXT_PUBLIC_LEARNING_ANALYTICS_ROLLOUT_ENABLED` fails
+closed in both the API and Manage UI and must stay off until participant
+eligibility, computation filtering, de-identification/suppression, and legal
+approval have all landed. The committed devcontainer enables it only for
+synthetic local verification (`turbo.json`;
+`.devcontainer/devcontainer.env`).
+
 The schema provides `LearningAnalyticsChoiceEvent` for append-only choice history (`packages/prisma/src/prisma/schema/participant.prisma:LearningAnalyticsChoiceEvent`). Choice mutations and their atomic snapshot/history transitions are not implemented yet.
 
 ## Content hierarchy

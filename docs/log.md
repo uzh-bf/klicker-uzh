@@ -2,6 +2,10 @@
 
 ## 2026-07-30
 
+- **Update** — Documented the ADMIN-only learning-analytics course control,
+  immediate read gate, and dedicated-data cleanup in [Domain Model](./domain-model.md)
+  and [GraphQL API Layer](./graphql-api-layer.md).
+
 - **Update** — Clarified which learning-analytics lifecycle behavior is implemented and added source citations to [Domain Model](./domain-model.md) and [Data & Migrations](./data-and-migrations.md).
 
 ## 2026-07-29

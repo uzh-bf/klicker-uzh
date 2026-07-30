@@ -23,6 +23,7 @@ import { random } from 'mathjs'
 import { prop, sortBy } from 'remeda'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import convertDateToUTCDatetime from '../lib/convertDateToUTCDatetime.js'
+import { assertLearningAnalyticsRolloutEnabled } from '../lib/learningAnalytics.js'
 import { computeRanks, orderStacks } from '../lib/util.js'
 import {
   calculateAssessmentCourseScores,
@@ -2559,6 +2560,7 @@ interface CreateCourseArgs {
   language: DB.Locale
   notificationEmail?: string | null
   isGamificationEnabled: boolean
+  isLearningAnalyticsEnabled?: boolean | null
   isAssessmentEnabled?: boolean | null
 }
 
@@ -2577,10 +2579,15 @@ export async function createCourse(
     language,
     notificationEmail,
     isGamificationEnabled,
+    isLearningAnalyticsEnabled,
     isAssessmentEnabled,
   }: CreateCourseArgs,
   ctx: ContextWithUser
 ) {
+  if (isLearningAnalyticsEnabled) {
+    assertLearningAnalyticsRolloutEnabled()
+  }
+
   // TODO: ensure that PINs are unique
   // Assessment courses don't get PINs - they use invitations instead
   const randomPin = isAssessmentEnabled
@@ -2610,6 +2617,7 @@ export async function createCourse(
           preferredGroupSize: preferredGroupSize ?? defaultPreferredGroupSize,
           notificationEmail: notificationEmail,
           isGamificationEnabled: isGamificationEnabled,
+          isLearningAnalyticsEnabled: isLearningAnalyticsEnabled ?? false,
           isAssessmentEnabled: isAssessmentEnabled ?? false,
           pinCode: randomPin,
           owner: {
@@ -2644,6 +2652,57 @@ export async function createCourse(
   )
 
   return course
+}
+
+export async function setCourseLearningAnalyticsEnabled(
+  { courseId, isEnabled }: { courseId: string; isEnabled: boolean },
+  ctx: ContextWithUser
+) {
+  if (isEnabled) {
+    assertLearningAnalyticsRolloutEnabled()
+  }
+
+  return ctx.prisma.$transaction(
+    async (prisma) => {
+      await prisma.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${courseId}))::text`
+
+      const course = await prisma.course.update({
+        where: { id: courseId },
+        data: {
+          isLearningAnalyticsEnabled: isEnabled,
+          areAnalyticsValid: false,
+        },
+      })
+
+      if (isEnabled) {
+        return course
+      }
+
+      await prisma.participantActivityPerformance.deleteMany({
+        where: {
+          OR: [{ practiceQuiz: { courseId } }, { microLearning: { courseId } }],
+        },
+      })
+      await prisma.participantAnalytics.deleteMany({ where: { courseId } })
+      await prisma.aggregatedAnalytics.deleteMany({ where: { courseId } })
+      await prisma.participantCourseAnalytics.deleteMany({
+        where: { courseId },
+      })
+      await prisma.aggregatedCourseAnalytics.deleteMany({
+        where: { courseId },
+      })
+      await prisma.participantPerformance.deleteMany({ where: { courseId } })
+      await prisma.instancePerformance.deleteMany({ where: { courseId } })
+      await prisma.activityPerformance.deleteMany({ where: { courseId } })
+      await prisma.activityProgress.deleteMany({ where: { courseId } })
+
+      return course
+    },
+    {
+      maxWait: 10000,
+      timeout: 60000,
+    }
+  )
 }
 
 export async function toggleArchiveCourse(

@@ -1,5 +1,8 @@
 import { useQuery } from '@apollo/client'
-import { GetCourseActivityAnalyticsDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  GetCourseActivityAnalyticsDocument,
+  GetSingleCourseDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { H1 } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -9,10 +12,12 @@ import DailyActivityPlot from '../../../components/analytics/activity/DailyActiv
 import DailyActivityTimeSeries from '../../../components/analytics/activity/DailyActivityTimeSeries'
 import TotalStudentActivityPlot from '../../../components/analytics/activity/TotalStudentActivityPlot'
 import WeeklyActivityTimeSeries from '../../../components/analytics/activity/WeeklyActivityTimeSeries'
+import AnalyticsDisabledView from '../../../components/analytics/AnalyticsDisabledView'
 import AnalyticsErrorView from '../../../components/analytics/AnalyticsErrorView'
 import AnalyticsLoadingView from '../../../components/analytics/AnalyticsLoadingView'
 import PreviewTag from '../../../components/common/PreviewTag'
 import Layout from '../../../components/Layout'
+import { learningAnalyticsRolloutEnabled } from '../../../lib/learningAnalytics'
 
 function ActivityDashboard() {
   const t = useTranslations()
@@ -23,7 +28,14 @@ function ActivityDashboard() {
     GetCourseActivityAnalyticsDocument,
     {
       variables: { courseId: courseId as string },
-      skip: !courseId,
+      skip: !courseId || !learningAnalyticsRolloutEnabled,
+    }
+  )
+  const { data: courseData, loading: courseLoading } = useQuery(
+    GetSingleCourseDocument,
+    {
+      variables: { courseId: courseId as string },
+      skip: !courseId || !learningAnalyticsRolloutEnabled,
     }
   )
   const course = data?.getCourseActivityAnalytics
@@ -32,9 +44,21 @@ function ActivityDashboard() {
   )
 
   // loading state
-  if (loading || !courseId) {
+  if (loading || courseLoading || !courseId) {
     return (
       <AnalyticsLoadingView
+        title={t('manage.analytics.activityDashboard')}
+        navigation={navigation}
+      />
+    )
+  }
+
+  if (
+    !learningAnalyticsRolloutEnabled ||
+    courseData?.course?.isLearningAnalyticsEnabled === false
+  ) {
+    return (
+      <AnalyticsDisabledView
         title={t('manage.analytics.activityDashboard')}
         navigation={navigation}
       />

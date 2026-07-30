@@ -22,6 +22,7 @@ import { Form, Formik, FormikProps } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useRef } from 'react'
 import * as yup from 'yup'
+import { learningAnalyticsRolloutEnabled } from '../../../lib/learningAnalytics'
 import EditorField from '../../activities/creation/EditorField'
 import CourseDateChangeMonitor from './CourseDateChangeMonitor'
 import GamificationSettingMonitor from './GamificationSettingMonitor'
@@ -51,6 +52,7 @@ export interface CourseManipulationFormData {
   language: LocaleType
   notificationEmail: string
   isGamificationEnabled: boolean
+  isLearningAnalyticsEnabled: boolean
   isGroupCreationEnabled: boolean
   groupCreationDeadline: Date
   maxGroupSize?: number
@@ -138,6 +140,7 @@ function CourseManipulationModal({
       .required(t('manage.courseList.notificationEmailReq')),
     // gamification settings
     isGamificationEnabled: yup.boolean(),
+    isLearningAnalyticsEnabled: yup.boolean(),
     isGroupCreationEnabled: yup.boolean(),
     groupCreationDeadline: initialValues?.groupDeadlineDate
       ? yup
@@ -247,6 +250,8 @@ function CourseManipulationModal({
           startDate: startDateInit,
           endDate: endDateInit,
           isGamificationEnabled: initialValues?.isGamificationEnabled ?? true,
+          isLearningAnalyticsEnabled:
+            initialValues?.isLearningAnalyticsEnabled ?? false,
           isGroupCreationEnabled: initialValues?.isGroupCreationEnabled ?? true,
           groupCreationDeadline: groupDeadlineDateInit,
           maxGroupSize: initialValues?.maxGroupSize ?? undefined,
@@ -383,6 +388,33 @@ function CourseManipulationModal({
                     data={{ cy: 'course-notification-email' }}
                   />
                 </div>
+
+                {learningAnalyticsRolloutEnabled &&
+                  (!initialValues || initialValues.isManager) && (
+                    <div>
+                      <H3>{t('manage.courseList.learningAnalytics')}</H3>
+                      <UserNotification
+                        type="info"
+                        message={t(
+                          'manage.courseList.learningAnalyticsExplanation'
+                        )}
+                        className={{ root: 'mb-3' }}
+                      />
+                      <FormikSwitchField
+                        required
+                        labelLeft
+                        name="isLearningAnalyticsEnabled"
+                        label={t('manage.courseList.learningAnalyticsEnabled')}
+                        tooltip={t(
+                          'manage.courseList.learningAnalyticsTooltip'
+                        )}
+                        className={{
+                          label: 'font-bold text-gray-600',
+                        }}
+                        data={{ cy: 'course-learning-analytics' }}
+                      />
+                    </div>
+                  )}
 
                 <div>
                   <H3>{`${t('shared.generic.gamification')} & ${t('shared.generic.groups')}`}</H3>

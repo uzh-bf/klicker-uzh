@@ -955,6 +955,7 @@ type Course {
   isGamificationEnabled: Boolean!
   isGroupCreationEnabled: Boolean!
   isGroupDeadlinePassed: Boolean
+  isLearningAnalyticsEnabled: Boolean!
   isManager: Boolean
   isOwner: Boolean
   isRemovable: Boolean
@@ -1865,7 +1866,7 @@ type Mutation {
   createActivityTemplate(activityId: String!, activityType: ActivityType!, copyBeforeConversion: Boolean!, templateDescription: String!, templateInstructions: String!, templateName: String!): Boolean
   createAnswerCollection(answers: [String!]!, description: String!, name: String!): AnswerCollection
   createCatalogCollection(access: ObjectAccess!, name: String!): CatalogCollection
-  createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, startDate: Date!): Course
+  createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, isLearningAnalyticsEnabled: Boolean, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, startDate: Date!): Course
   createFeedback(content: String!, quizId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): ActivityInfo
   createLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, defaultCorrectPoints: Int, defaultPoints: Int, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, isPinProtected: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): ActivityInfo
@@ -1968,6 +1969,7 @@ type Mutation {
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
   sendMagicLink(usernameOrEmail: String!): Boolean
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
+  setCourseLearningAnalyticsEnabled(courseId: String!, isEnabled: Boolean!): Course
   setLiveQuizPin(liveQuizId: String!, pin: String!): Boolean!
   shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails

@@ -2791,6 +2791,14 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       preferredGroupSizeReq: 'Please specify a valid preferred group size.',
       gamificationTooltip:
         'Gamification can only be activated (not deactivated) after the course has been created.',
+      learningAnalytics: 'Learning analytics',
+      learningAnalyticsEnabled: 'Use learning analytics',
+      learningAnalyticsTooltip:
+        'You can change this setting at any time. Only course managers can enable or disable learning analytics.',
+      learningAnalyticsExplanation:
+        'Learning analytics can help students understand their learning and help lecturers improve course support. KlickerUZH uses interaction activity, progress, response performance, scores, and feedback ratings for this purpose. Lecturers see only learning-analytics results from students who choose to participate. Learning analytics does not show names, email addresses, participant identifiers, free-text responses, or students’ participation choices. Lecturers must not combine these results with other information to identify students.',
+      learningAnalyticsDisableConfirmation:
+        'Disable learning analytics for this course? The dashboards will be hidden immediately and all dedicated learning-analytics results will be deleted. Normal course activity, responses, feedback, grades, points, and XP remain available. Saved student choices are kept for a possible later reactivation.',
       groupCreationEnabled: 'Group Creation',
       groupCreationDisabledTooltip:
         'To enable group creation for your students, please first activate gamification for this course.',
@@ -2856,6 +2864,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       modifyCourse: 'Modify course',
       shareCourse: 'Share course',
       learningAnalytics: 'Learning Analytics',
+      learningAnalyticsDisabled: 'Learning Analytics disabled',
       pointCorrections: 'Point Corrections',
       assessmentResults: 'Assessment Results',
       appliedCorrections: 'Applied Point Corrections',
@@ -3796,6 +3805,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       analyticsLoadingWait: 'Loading analytics data. Please wait...',
       analyticsLoadingFailed:
         'An error occurred while loading the analytics data. Please try again later or contact the support.',
+      learningAnalyticsDisabled:
+        'Learning analytics is disabled for this course. A course manager can enable it in the course settings.',
       weeklyStudentActivity: 'Weekly Student Activity',
       dailyStudentActivity: 'Daily Student Activity',
       totalParticipants: 'Course participants: {number}',
