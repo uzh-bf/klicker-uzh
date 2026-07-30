@@ -2,6 +2,8 @@
 
 ## 2026-07-30
 
+- **Security**: activity edits now accept persistent instance IDs only from the exact activity and recheck the scope transactionally; CODE submission lookup normalizes missing, wrong-type, foreign-course, unavailable, and inactive-participation cases.
+- **Update**: CODE authoring and runtime share test-ID and aggregate-weight constraints, provider throttling preserves the ordinary grading-attempt budget, and finalized responses carry trusted correctness for daily and course Analytics.
 - **Security**: CODE final review now binds element autosaves to the authenticated lecturer, permission-scopes template type preflights, and enforces JSON breadth before traversal expansion. The matching frontend, GraphQL, domain-model, and agent-skill contracts document those boundaries.
 - **Update**: [GraphQL API layer](./graphql-api-layer.md) and [async workers](./async-and-workers.md) document CODE rate-limit deferral, due-only recovery, transactional status fencing without an aggregate submission ledger, one shared post-grading persistence tail, and the dedicated asynchronous submission contract.
 - **Update**: the CODE implementation plan records Slice 7 hardening, bounded local concurrency evidence, contract consolidation, exact-review closure, and the remaining external CodeAPI staging/load and pilot-package gates.
@@ -14,6 +16,11 @@
 - **Update**: [domain model](./domain-model.md), [GraphQL API layer](./graphql-api-layer.md), [async workers](./async-and-workers.md), and [testing](./testing.md) document the participant-owned CODE receipt, expiring worker claims, recovery task, transactional exactly-once response side effects, subscription/poll fallback, and database-backed lifecycle tracer.
 - **Update**: [frontend conventions](./frontend-conventions.md) and [testing](./testing.md) document the PWA CODE receipt state machine, participant-scoped recovery, terminal-state monotonicity, practice-quiz-only submission gate, completion-only advancement, failed retry, participant-safe feedback, and its real-app Playwright tracer.
 - **Update**: [GraphQL API layer](./graphql-api-layer.md), [frontend conventions](./frontend-conventions.md), and [testing](./testing.md) document CODE microlearning submission, finalized participant readback, participant-scoped evaluation storage, public-only participant results, authorized public/hidden instructor aggregates, and the routed Playwright/agent-browser proof.
+
+## 2026-07-23
+
+- **Creation**: [ADR 0001](./adr/0001-separate-code-submission-lifecycle.md) records the separate CODE receipt lifecycle and idempotent finalization into the normal graded response.
+- **Creation**: [ADR 0002](./adr/0002-keep-grading-assertions-outside-the-sandbox.md) records that expected outputs and grading decisions remain in Klicker rather than entering the untrusted sandbox.
 
 ## 2026-07-20
 

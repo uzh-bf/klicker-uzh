@@ -64,6 +64,10 @@ CODE deliberately has three GraphQL projections:
 
 CODE responses are accepted only through the dedicated asynchronous submission mutation. Generic stack and group-response inputs do not expose CODE fields, and authoring clients cannot override the static execution limit.
 
+The submission service checks active course participation before resolving the instance and scopes the instance query to an available published PracticeQuiz or MicroLearning in that course. Missing, wrong-type, foreign-course, unavailable, and inactive-participation inputs return the same unavailable result, so the mutation cannot be used as an instance oracle.
+
+Activity edit payloads may retain an existing instance only when it is still attached to the exact activity being edited. The service checks that scope before the transaction and repeats it in the transactional disconnect, preventing a supplied foreign instance ID from moving content or granting derived access to authoring data.
+
 CODE JSON validation enforces depth, node, and serialized-byte bounds. Breadth checks happen before adding array/object children to the traversal worklist so invalid wide inputs cannot allocate work proportional to the entire request before the node limit rejects them.
 
 When a union or operation gains CODE support, update all applicable projections deliberately and keep `packages/graphql/test/codeGraphqlContract.test.ts` green. Hidden tests, their inputs, and expected outputs must be absent from participant payloads rather than nullable.

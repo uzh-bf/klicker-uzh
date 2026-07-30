@@ -2855,7 +2855,10 @@ export async function recordCodeQuestionResponse({
       (existingResponse?.correctCountStreak ?? 0) + (correctness === 1 ? 1 : 0),
     grade: correctness,
   })
-  const response: SingleQuestionResponseCode = { code: submission.code }
+  const response: SingleQuestionResponseCode = {
+    code: submission.code,
+    correctness,
+  }
 
   await persistParticipantQuestionResponse({
     prisma,

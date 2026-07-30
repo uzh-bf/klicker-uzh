@@ -1,3 +1,5 @@
+import math
+
 import pandas as pd
 
 
@@ -89,6 +91,21 @@ def compute_correctness_columns(df_element_instances, row):
             return "CORRECT"
 
         return "INCORRECT"
+
+    elif element_instance["type"] == "CODE":
+        correctness = response.get("correctness")
+        if (
+            isinstance(correctness, bool)
+            or not isinstance(correctness, (int, float))
+            or not math.isfinite(correctness)
+            or not 0 <= correctness <= 1
+        ):
+            raise ValueError("Invalid CODE correctness")
+        if correctness == 1:
+            return "CORRECT"
+        if correctness == 0:
+            return "INCORRECT"
+        return "PARTIAL"
 
     else:
         raise ValueError("Unknown element type: {}".format(element_instance["type"]))

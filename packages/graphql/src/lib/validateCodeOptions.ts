@@ -4,6 +4,8 @@ import type {
   OptionsCodeInput,
 } from '@klicker-uzh/types'
 import {
+  areCodeTestWeightsValid,
+  CODE_TEST_ID_MAX_LENGTH,
   CODE_TEST_MAX_COUNT,
   isCodeJsonValue,
   isValidPythonEntrypoint,
@@ -42,10 +44,11 @@ function validateCodeOptions(
   }
 
   const testIds = new Set<string>()
-  return options.testCases.every((testCase) => {
+  const testsValid = options.testCases.every((testCase) => {
     if (
       typeof testCase.id !== 'string' ||
       testCase.id.trim().length === 0 ||
+      testCase.id.length > CODE_TEST_ID_MAX_LENGTH ||
       UNSAFE_RESULT_KEYS.has(testCase.id) ||
       testIds.has(testCase.id) ||
       typeof testCase.name !== 'string' ||
@@ -53,10 +56,7 @@ function validateCodeOptions(
       !Array.isArray(testCase.args) ||
       !isCodeJsonValue(testCase.args) ||
       !isCodeJsonValue(testCase.expectedOutput) ||
-      (testCase.visibility !== 'public' && testCase.visibility !== 'hidden') ||
-      typeof testCase.weight !== 'number' ||
-      !Number.isFinite(testCase.weight) ||
-      testCase.weight <= 0
+      (testCase.visibility !== 'public' && testCase.visibility !== 'hidden')
     ) {
       return false
     }
@@ -64,6 +64,10 @@ function validateCodeOptions(
     testIds.add(testCase.id)
     return true
   })
+  return (
+    testsValid &&
+    areCodeTestWeightsValid(options.testCases.map(({ weight }) => weight))
+  )
 }
 
 export default validateCodeOptions

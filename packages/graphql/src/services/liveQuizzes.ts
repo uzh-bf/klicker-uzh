@@ -51,9 +51,11 @@ export async function splitActivityInstances(
   {
     stacksOrBlocks,
     allowCodeElements = false,
+    persistentInstanceScope,
   }: {
     stacksOrBlocks: ElementStackInput[] | ElementBlockInput[]
     allowCodeElements?: boolean
+    persistentInstanceScope?: DB.Prisma.ElementInstanceWhereInput
   },
   ctx: ContextWithUser
 ) {
@@ -78,10 +80,22 @@ export async function splitActivityInstances(
   )
 
   // fetch instances that should be kept in the activity
-  const persistentInstances = await ctx.prisma.elementInstance.findMany({
-    where: { id: { in: persistentInstanceIds } },
-    include: { element: true },
-  })
+  if (persistentInstanceIds.length > 0 && !persistentInstanceScope) {
+    throw new GraphQLError('Not all element instances could be found')
+  }
+  const persistentInstances =
+    persistentInstanceIds.length === 0
+      ? []
+      : await ctx.prisma.elementInstance.findMany({
+          where: {
+            id: { in: persistentInstanceIds },
+            AND: [persistentInstanceScope!],
+          },
+          include: { element: true },
+        })
+  if (persistentInstances.length !== new Set(persistentInstanceIds).size) {
+    throw new GraphQLError('Not all element instances could be found')
+  }
 
   // in DUPLICATION mode - instances that should be duplicated in the activity
   const duplicateInstanceIds = stacksOrBlocks.flatMap(
@@ -113,6 +127,9 @@ export async function splitActivityInstances(
     },
     include: { element: true },
   })
+  if (duplicationInstances.length !== new Set(duplicateInstanceIds).size) {
+    throw new GraphQLError('Not all element instances could be found')
+  }
 
   // check if any of the persistent / duplication instances are outdated (w.r.t. the element version)
   // -> only persistent and duplicated instances can be outdated, other instances are created from the current element
@@ -152,8 +169,7 @@ export async function splitActivityInstances(
   })
 
   // make sure that every element could be found and create a map for efficient access
-  const uniqueElements = new Set(dbElements.map((q) => q.id))
-  if (dbElements.length !== uniqueElements.size) {
+  if (dbElements.length !== new Set(requiredElementsIds).size) {
     throw new GraphQLError('Not all elements could be found')
   }
   const elementMap = dbElements.reduce<Record<number, DB.Element>>(
@@ -290,7 +306,15 @@ export async function manipulateLiveQuiz(
     duplicationInstances,
     elementMap,
     anyInstanceOutdated,
-  } = await splitActivityInstances({ stacksOrBlocks: blocks }, ctx)
+  } = await splitActivityInstances(
+    {
+      stacksOrBlocks: blocks,
+      ...(id
+        ? { persistentInstanceScope: { elementBlock: { liveQuizId: id } } }
+        : {}),
+    },
+    ctx
+  )
 
   // in EDIT mode - check which instances and blocks should be removed
   let instancesToDelete: number[] = []
@@ -449,13 +473,19 @@ export async function manipulateLiveQuiz(
 
       // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
       for (const instance of persistentInstances) {
+        if (!id) {
+          throw new GraphQLError('Not all element instances could be found')
+        }
         const elementMultiplier =
           'pointsMultiplier' in instance.elementData
             ? ((instance.elementData.pointsMultiplier as number) ?? 1)
             : 1
 
-        await prisma.elementInstance.update({
-          where: { id: instance.id },
+        const updated = await prisma.elementInstance.updateMany({
+          where: {
+            id: instance.id,
+            elementBlock: { liveQuizId: id },
+          },
           data: {
             elementBlockId: null,
             order: persistentInstanceOrderMap[instance.id],
@@ -465,6 +495,9 @@ export async function manipulateLiveQuiz(
             },
           },
         })
+        if (updated.count !== 1) {
+          throw new GraphQLError('Not all element instances could be found')
+        }
       }
 
       // delete all blocks

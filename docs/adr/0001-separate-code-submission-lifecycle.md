@@ -1,4 +1,8 @@
 ---
+type: Decision Record
+title: Track code submissions separately from question responses
+description: CODE attempts remain separate until an idempotent finalization writes the normal graded response.
+timestamp: '2026-07-23'
 status: accepted
 ---
 

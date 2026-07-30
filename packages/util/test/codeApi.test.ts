@@ -414,6 +414,28 @@ describe('CodeAPI execution requests', () => {
     })
   })
 
+  it.each([
+    ['an overlong test id', [codeTest({ id: 'x'.repeat(129) })]],
+    [
+      'a non-finite total test weight',
+      [
+        codeTest({ id: 'first', weight: Number.MAX_VALUE }),
+        codeTest({ id: 'second', weight: Number.MAX_VALUE }),
+      ],
+    ],
+  ])('rejects %s before calling CodeAPI', async (_label, tests) => {
+    const fetchMock = vi.fn<typeof fetch>()
+    await expect(
+      createCodeApiClient(config(), { fetch: fetchMock }).executeAndGrade(
+        submission(tests)
+      )
+    ).rejects.toMatchObject({
+      name: 'CodeApiClientError',
+      kind: 'request',
+    })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
   it('keeps the request timeout active while consuming the response body', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockImplementation(
       async (_input, init) =>

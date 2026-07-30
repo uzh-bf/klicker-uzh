@@ -215,7 +215,13 @@ export async function manipulatePracticeQuiz(
     elementMap,
     anyInstanceOutdated,
   } = await splitActivityInstances(
-    { stacksOrBlocks: stacks, allowCodeElements: true },
+    {
+      stacksOrBlocks: stacks,
+      allowCodeElements: true,
+      ...(id
+        ? { persistentInstanceScope: { elementStack: { practiceQuizId: id } } }
+        : {}),
+    },
     ctx
   )
 
@@ -290,13 +296,19 @@ export async function manipulatePracticeQuiz(
 
       // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
       for (const instance of persistentInstances) {
+        if (!id) {
+          throw new GraphQLError('Not all element instances could be found')
+        }
         const elementMultiplier =
           'pointsMultiplier' in instance.elementData
             ? ((instance.elementData.pointsMultiplier as number) ?? 1)
             : 1
 
-        await prisma.elementInstance.update({
-          where: { id: instance.id },
+        const updated = await prisma.elementInstance.updateMany({
+          where: {
+            id: instance.id,
+            elementStack: { practiceQuizId: id },
+          },
           data: {
             elementStackId: null,
             order: persistentInstanceOrderMap[instance.id],
@@ -307,6 +319,9 @@ export async function manipulatePracticeQuiz(
             },
           },
         })
+        if (updated.count !== 1) {
+          throw new GraphQLError('Not all element instances could be found')
+        }
       }
 
       // delete all stacks

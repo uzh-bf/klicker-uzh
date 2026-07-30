@@ -86,6 +86,13 @@ describe('CODE element option validation', () => {
       },
     ],
     [
+      'a test id longer than the runtime limit',
+      {
+        ...validOptions,
+        testCases: [{ ...validOptions.testCases[0], id: 'x'.repeat(129) }],
+      },
+    ],
+    [
       'a non-JSON argument',
       {
         ...validOptions,
@@ -128,6 +135,24 @@ describe('CODE element option validation', () => {
       {
         ...validOptions,
         testCases: [{ ...validOptions.testCases[0], weight: 0 }],
+      },
+    ],
+    [
+      'weights with a non-finite total',
+      {
+        ...validOptions,
+        testCases: [
+          {
+            ...validOptions.testCases[0],
+            id: 'first',
+            weight: Number.MAX_VALUE,
+          },
+          {
+            ...validOptions.testCases[0],
+            id: 'second',
+            weight: Number.MAX_VALUE,
+          },
+        ],
       },
     ],
     [

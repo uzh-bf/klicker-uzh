@@ -34,7 +34,7 @@ pnpm --filter @klicker-uzh/graphql exec vitest run \
   test/validateCodeOptions.test.ts
 ```
 
-These protect public-versus-hidden projection, option validation, shared JSON limits, supported activity types, CODE-only stack rules, asymmetric CodeAPI claims, invocation-only public/hidden requests, hostile response parsing, output caps, one shared public/hidden grading deadline, and exact JSON grading. When `python3` is available, `codeApi.test.ts` also executes the generated runner and verifies pass/error/timeout behavior, direct file-descriptor flooding, descendant cleanup, and process-group termination; Vitest marks those two tests skipped when Python is absent. These checks do not replace the database-backed submission lifecycle tests, the gated live CodeAPI smoke, or browser/e2e flows required by later slices.
+These protect public-versus-hidden projection, option validation, the shared 128-character test-ID and finite-total-weight constraints, shared JSON limits, supported activity types, CODE-only stack rules, asymmetric CodeAPI claims, invocation-only public/hidden requests, hostile response parsing, output caps, one shared public/hidden grading deadline, and exact JSON grading. When `python3` is available, `codeApi.test.ts` also executes the generated runner and verifies pass/error/timeout behavior, direct file-descriptor flooding, descendant cleanup, and process-group termination; Vitest marks those two tests skipped when Python is absent. These checks do not replace the database-backed submission lifecycle tests, the gated live CodeAPI smoke, or browser/e2e flows required by later slices.
 
 The CODE receipt and finalization integration suite needs the GraphQL test database but not a live CodeAPI because it injects the already-sanitized grading result at the server boundary:
 
@@ -43,7 +43,16 @@ pnpm --filter @klicker-uzh/graphql exec vitest run \
   test/codeSubmissions.test.ts
 ```
 
-It covers active-receipt convergence, durable pending state after an enqueue failure, participant authorization, duplicate delivery, retry after failure and commit, deferred `429` recovery only after `retryAt`, expired and unexpired claim behavior, exhausted retries, a new attempt after `FAILED`, microlearning closure, a bounded 20-submission concurrent burst, separate global/participant aggregates, and exactly-once response, statistics, spaced-repetition, points, XP, leaderboard, and timeline writes. It also asserts that participant readback contains only public tests while an instructor-authorized full element snapshot and aggregate contain public and hidden tests; an unrelated user receives neither. Keep the executor mocked in this suite; the service-free CodeAPI tests own runner, output caps, and hostile-response behavior, while the gated live smoke owns the deployed integration.
+It covers active-receipt convergence, durable pending state after an enqueue failure, observationally equivalent rejection of absent/wrong-type/foreign/unavailable instances, foreign persistent-instance rejection without movement, duplicate delivery, retry after failure and commit, repeated `429` deferral without attempt-budget consumption, expired and unexpired claim behavior, exhausted retries, a new attempt after `FAILED`, microlearning closure, a bounded 20-submission concurrent burst, separate global/participant aggregates, and exactly-once response, statistics, spaced-repetition, points, XP, leaderboard, and timeline writes. It also asserts that participant readback contains only public tests while an instructor-authorized full element snapshot and aggregate contain public and hidden tests; an unrelated user receives neither. Keep the executor mocked in this suite; the service-free CodeAPI tests own runner, output caps, and hostile-response behavior, while the gated live smoke owns the deployed integration.
+
+The shared Analytics correctness mapping for persisted CODE details has a service-free Python regression:
+
+```bash
+cd apps/analytics
+uv run python -m unittest discover -s tests -v
+```
+
+This mapping is used by both daily and course participant analytics. It reads only the server-computed correctness persisted during finalization; it does not execute or inspect the submitted code.
 
 For Manage CODE browser proof, exercise the type transition itself: select CODE through `select-question-type`, require `code-options` to render without a CodeMirror console error, and verify `student-element-preview` contains public test names but no hidden test names. In the practice-quiz or microlearning wizard, a mixed CODE selection must disable the combined-stack action while leaving the separate-stack action enabled.
 

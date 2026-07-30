@@ -241,7 +241,20 @@ export type CodeLanguage = 'python'
 export type CodeTestVisibility = 'public' | 'hidden'
 
 export const CODE_TEST_MAX_COUNT = 20
+export const CODE_TEST_ID_MAX_LENGTH = 128
 export const CODE_TEST_TIMEOUT_SECONDS = 5
+
+export function areCodeTestWeightsValid(weights: readonly unknown[]): boolean {
+  let totalWeight = 0
+  for (const weight of weights) {
+    if (typeof weight !== 'number' || !Number.isFinite(weight) || weight <= 0) {
+      return false
+    }
+    totalWeight += weight
+    if (!Number.isFinite(totalWeight)) return false
+  }
+  return totalWeight > 0
+}
 
 const PYTHON_ENTRYPOINT = /^[A-Za-z_][A-Za-z0-9_]*$/
 const PYTHON_KEYWORDS = new Set([
@@ -596,6 +609,7 @@ export type SingleQuestionResponseContent = {
 
 export type SingleQuestionResponseCode = {
   code: string
+  correctness: number
 }
 
 export type SingleQuestionResponse =

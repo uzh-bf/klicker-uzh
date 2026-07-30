@@ -101,6 +101,12 @@ function validateSubmittedCode(code: string): void {
   }
 }
 
+function codeSubmissionUnavailable(): GraphQLError {
+  return new GraphQLError('CODE element instance is unavailable', {
+    extensions: { code: 'NOT_FOUND' },
+  })
+}
+
 function claimableCodeSubmissionWhere(
   now: Date
 ): DB.Prisma.CodeSubmissionWhereInput {
@@ -143,55 +149,6 @@ export async function submitCodeResponse(
   let receipt: CodeSubmissionReceipt
   try {
     receipt = await ctx.prisma.$transaction(async (prisma) => {
-      const instance = await prisma.elementInstance.findUnique({
-        where: { id: instanceId },
-        include: {
-          elementStack: {
-            include: {
-              practiceQuiz: true,
-              microLearning: true,
-            },
-          },
-        },
-      })
-      if (
-        !instance ||
-        instance.elementType !== DB.ElementType.CODE ||
-        instance.elementData.type !== DB.ElementType.CODE
-      ) {
-        throw new GraphQLError('CODE element instance not found', {
-          extensions: { code: 'NOT_FOUND' },
-        })
-      }
-
-      const practiceQuiz = instance.elementStack?.practiceQuiz
-      const microLearning = instance.elementStack?.microLearning
-      const activityCount = Number(!!practiceQuiz) + Number(!!microLearning)
-      const activityCourseId = practiceQuiz?.courseId ?? microLearning?.courseId
-      if (activityCount !== 1 || activityCourseId !== courseId) {
-        throw new GraphQLError(
-          'CODE element instance is not part of this course',
-          { extensions: { code: 'FORBIDDEN' } }
-        )
-      }
-      const now = Date.now()
-      if (
-        (practiceQuiz &&
-          (practiceQuiz.isDeleted ||
-            practiceQuiz.status !== DB.PublicationStatus.PUBLISHED ||
-            (practiceQuiz.availableFrom &&
-              now < practiceQuiz.availableFrom.getTime()))) ||
-        (microLearning &&
-          (microLearning.isDeleted ||
-            microLearning.status !== DB.PublicationStatus.PUBLISHED ||
-            now < microLearning.scheduledStartAt.getTime() ||
-            now > microLearning.scheduledEndAt.getTime()))
-      ) {
-        throw new GraphQLError('This CODE question is not available', {
-          extensions: { code: 'BAD_USER_INPUT' },
-        })
-      }
-
       const participation = await prisma.participation.findUnique({
         where: {
           courseId_participantId: {
@@ -201,9 +158,60 @@ export async function submitCodeResponse(
         },
       })
       if (!participation?.isActive) {
-        throw new GraphQLError('Participant is not enrolled in this course', {
-          extensions: { code: 'FORBIDDEN' },
-        })
+        throw codeSubmissionUnavailable()
+      }
+
+      const now = new Date()
+      const instance = await prisma.elementInstance.findFirst({
+        where: {
+          id: instanceId,
+          elementType: DB.ElementType.CODE,
+          OR: [
+            {
+              elementStack: {
+                practiceQuiz: {
+                  courseId,
+                  isDeleted: false,
+                  status: DB.PublicationStatus.PUBLISHED,
+                  OR: [
+                    { availableFrom: null },
+                    { availableFrom: { lte: now } },
+                  ],
+                },
+              },
+            },
+            {
+              elementStack: {
+                microLearning: {
+                  courseId,
+                  isDeleted: false,
+                  status: DB.PublicationStatus.PUBLISHED,
+                  scheduledStartAt: { lte: now },
+                  scheduledEndAt: { gte: now },
+                },
+              },
+            },
+          ],
+        },
+        include: {
+          elementStack: {
+            include: {
+              practiceQuiz: true,
+              microLearning: true,
+            },
+          },
+        },
+      })
+      if (!instance || instance.elementData.type !== DB.ElementType.CODE) {
+        throw codeSubmissionUnavailable()
+      }
+
+      const practiceQuiz = instance.elementStack?.practiceQuiz
+      const microLearning = instance.elementStack?.microLearning
+      const activityCount = Number(!!practiceQuiz) + Number(!!microLearning)
+      const activityCourseId = practiceQuiz?.courseId ?? microLearning?.courseId
+      if (activityCount !== 1 || activityCourseId !== courseId) {
+        throw codeSubmissionUnavailable()
       }
 
       if (microLearning) {
@@ -425,40 +433,50 @@ async function releaseOrFailCodeSubmission({
   now: Date
   prisma: DB.PrismaClient
 }) {
-  const exhausted = submission.claimAttempts >= CODE_SUBMISSION_MAX_ATTEMPTS
   const failure = failureMetadata(error)
   const retryAt = rateLimitRetryAt(error, now)
+  const deferred = retryAt !== null
+  const exhausted =
+    !deferred && submission.claimAttempts >= CODE_SUBMISSION_MAX_ATTEMPTS
   const updated = await prisma.codeSubmission.updateMany({
     where: {
       id: submission.id,
       status: DB.CodeSubmissionStatus.RUNNING,
       claimToken,
     },
-    data: exhausted
+    data: deferred
       ? {
-          status: DB.CodeSubmissionStatus.FAILED,
-          failureCode: failure.code,
-          failureDetails: failure.details,
-          failedAt: now,
-          claimToken: null,
-          claimExpiresAt: null,
-          retryAt: null,
-        }
-      : {
           status: DB.CodeSubmissionStatus.PENDING,
+          claimAttempts: { decrement: 1 },
           failureCode: failure.code,
           failureDetails: failure.details,
           claimToken: null,
           claimExpiresAt: null,
           retryAt,
-        },
+        }
+      : exhausted
+        ? {
+            status: DB.CodeSubmissionStatus.FAILED,
+            failureCode: failure.code,
+            failureDetails: failure.details,
+            failedAt: now,
+            claimToken: null,
+            claimExpiresAt: null,
+            retryAt: null,
+          }
+        : {
+            status: DB.CodeSubmissionStatus.PENDING,
+            failureCode: failure.code,
+            failureDetails: failure.details,
+            claimToken: null,
+            claimExpiresAt: null,
+            retryAt,
+          },
   })
   if (updated.count !== 1) {
     return { kind: 'retry' } as const
   }
-  if (!exhausted && retryAt) {
-    return { kind: 'deferred' } as const
-  }
+  if (deferred) return { kind: 'deferred' } as const
   if (!exhausted) return { kind: 'retry' } as const
   return {
     kind: 'failed',

@@ -2,6 +2,7 @@ import { prisma as prismaClient } from '@klicker-uzh/prisma'
 import {
   CodeSubmissionStatus,
   ElementInstanceType,
+  ElementOrderType,
   ElementStackType,
   ElementType,
   PermissionLevel,
@@ -39,6 +40,7 @@ import {
   submitCodeResponse,
 } from '../src/services/codeSubmissions.js'
 import { getSingleElement } from '../src/services/elements.js'
+import { manipulatePracticeQuiz } from '../src/services/practiceQuizzes.js'
 import {
   computeStackEvaluation,
   getPreviousStackEvaluation,
@@ -242,6 +244,7 @@ describe('CODE submission lifecycle', () => {
 
     return {
       course,
+      activity,
       element,
       owner,
       participant,
@@ -336,9 +339,157 @@ describe('CODE submission lifecycle', () => {
     })
 
     await expect(submit(data)).rejects.toMatchObject({
-      extensions: { code: 'FORBIDDEN' },
+      message: 'CODE element instance is unavailable',
+      extensions: { code: 'NOT_FOUND' },
     })
     expect(data.runNoWait).not.toHaveBeenCalled()
+  })
+
+  it('normalizes absent, non-CODE, foreign-course, and unavailable instances', async () => {
+    const data = await fixture()
+    const foreign = await fixture()
+    const contentElement = await prisma.element.create({
+      data: {
+        type: ElementType.CONTENT,
+        name: 'Content',
+        content: 'Not executable',
+        options: {},
+        ownerId: data.owner.id,
+      },
+    })
+    const contentData = processElementData(contentElement)
+    const contentStack = await prisma.elementStack.create({
+      data: {
+        type: ElementStackType.PRACTICE_QUIZ,
+        order: 1,
+        practiceQuizId: data.activity.id,
+        elements: {
+          create: {
+            type: ElementInstanceType.PRACTICE_QUIZ,
+            elementType: ElementType.CONTENT,
+            order: 0,
+            options: { pointsMultiplier: 1 },
+            elementData: contentData,
+            results: getInitialInstanceResults(contentData),
+            anonymousResults: getInitialInstanceResults(contentData),
+            elementId: contentElement.id,
+            ownerId: data.owner.id,
+          },
+        },
+      },
+      include: { elements: true },
+    })
+
+    const submitInstance = (instanceId: number) =>
+      submitCodeResponse(
+        {
+          instanceId,
+          courseId: data.course.id,
+          code: 'def solve():\n    return 1',
+          timeSpent: 1,
+        },
+        data.ctx
+      )
+    const expectedError = {
+      message: 'CODE element instance is unavailable',
+      extensions: { code: 'NOT_FOUND' },
+    }
+
+    await expect(submitInstance(2_147_483_647)).rejects.toMatchObject(
+      expectedError
+    )
+    await expect(
+      submitInstance(contentStack.elements[0]!.id)
+    ).rejects.toMatchObject(expectedError)
+    await expect(submitInstance(foreign.instance.id)).rejects.toMatchObject(
+      expectedError
+    )
+
+    await prisma.practiceQuiz.update({
+      where: { id: data.activity.id },
+      data: { status: PublicationStatus.DRAFT },
+    })
+    await expect(submitInstance(data.instance.id)).rejects.toMatchObject(
+      expectedError
+    )
+    expect(data.runNoWait).not.toHaveBeenCalled()
+  })
+
+  it('rejects foreign persistent instances without moving them', async () => {
+    const data = await fixture()
+    const attackerId = randomUUID()
+    ownerIds.push(attackerId)
+    const attacker = await prisma.user.create({
+      data: {
+        id: attackerId,
+        email: `${attackerId}@example.test`,
+        shortname: `attacker-${attackerId.slice(0, 8)}`,
+      },
+    })
+    const now = new Date()
+    const attackerCourse = await prisma.course.create({
+      data: {
+        name: `course-${attackerId}`,
+        displayName: 'Attacker course',
+        startDate: new Date(now.getTime() - 86_400_000),
+        endDate: new Date(now.getTime() + 86_400_000),
+        groupDeadlineDate: new Date(now.getTime() + 86_400_000),
+        pinCode:
+          (Number.parseInt(attackerId.replaceAll('-', '').slice(0, 8), 16) %
+            9_000) +
+          10_000,
+        ownerId: attacker.id,
+      },
+    })
+    const attackerCtx = {
+      ...data.ctx,
+      user: {
+        ...data.ctx.user,
+        sub: attacker.id,
+        role: UserRole.USER,
+      },
+      emitter: { emit: vi.fn() },
+    } as unknown as ContextWithUser
+    const originalStackId = data.instance.elementStackId
+
+    await expect(
+      manipulatePracticeQuiz(
+        {
+          name: 'stolen-code',
+          displayName: 'Stolen CODE',
+          stacks: [
+            {
+              order: 0,
+              elements: [
+                {
+                  elementId: data.element.id,
+                  order: 0,
+                  existingInstanceId: data.instance.id,
+                  duplicateInstance: false,
+                },
+              ],
+            },
+          ],
+          courseId: attackerCourse.id,
+          multiplier: 1,
+          order: ElementOrderType.SEQUENTIAL,
+          resetTimeDays: 1,
+        },
+        attackerCtx
+      )
+    ).rejects.toThrow('Not all element instances could be found')
+
+    expect(
+      await prisma.elementInstance.findUniqueOrThrow({
+        where: { id: data.instance.id },
+      })
+    ).toMatchObject({
+      elementStackId: originalStackId,
+      ownerId: data.owner.id,
+    })
+    expect(
+      await prisma.practiceQuiz.count({ where: { ownerId: attacker.id } })
+    ).toBe(0)
   })
 
   it('keeps full authoring snapshots behind instructor permission', async () => {
@@ -406,7 +557,7 @@ describe('CODE submission lifecycle', () => {
     const [
       submission,
       response,
-      details,
+      detail,
       instance,
       participant,
       leaderboard,
@@ -423,7 +574,7 @@ describe('CODE submission lifecycle', () => {
           },
         },
       }),
-      prisma.questionResponseDetail.count({
+      prisma.questionResponseDetail.findFirstOrThrow({
         where: { elementInstanceId: data.instance.id },
       }),
       prisma.elementInstance.findUniqueOrThrow({
@@ -456,7 +607,10 @@ describe('CODE submission lifecycle', () => {
     expect(response.totalXpAwarded).toBe(10)
     expect(response.interval).toBe(2)
     expect(response.nextDueAt).not.toBeNull()
-    expect(details).toBe(1)
+    expect(detail.response).toEqual({
+      code: 'def solve(a, b):\n    return a + b',
+      correctness: 1,
+    })
     expect(instance.results).toMatchObject({
       total: 1,
       tests: {
@@ -711,7 +865,7 @@ describe('CODE submission lifecycle', () => {
     })
     expect(deferred).toMatchObject({
       status: CodeSubmissionStatus.PENDING,
-      claimAttempts: 1,
+      claimAttempts: 0,
       failureCode: 'CODEAPI_RATE_LIMIT',
     })
     expect(deferred.retryAt).not.toBeNull()
@@ -753,6 +907,53 @@ describe('CODE submission lifecycle', () => {
         vi.fn().mockResolvedValue(executorResult)
       )
     ).toBe(true)
+  })
+
+  it('does not exhaust the grading budget on repeated rate limits', async () => {
+    const data = await fixture()
+    const receipt = await submit(data)
+    const rateLimitError = new CodeApiClientError(
+      'rate_limit',
+      'CodeAPI request failed with status 429',
+      { status: 429, retryAfterSeconds: 1 }
+    )
+
+    for (let index = 0; index < 3; index++) {
+      expect(
+        await processCodeSubmission(
+          { submissionId: receipt.id },
+          data.globalCtx,
+          vi.fn().mockRejectedValue(rateLimitError)
+        )
+      ).toBe(false)
+      const deferred = await prisma.codeSubmission.findUniqueOrThrow({
+        where: { id: receipt.id },
+      })
+      expect(deferred).toMatchObject({
+        status: CodeSubmissionStatus.PENDING,
+        claimAttempts: 0,
+      })
+      await prisma.codeSubmission.update({
+        where: { id: receipt.id },
+        data: { retryAt: new Date(Date.now() - 1_000) },
+      })
+    }
+
+    expect(
+      await processCodeSubmission(
+        { submissionId: receipt.id },
+        data.globalCtx,
+        vi.fn().mockResolvedValue(executorResult)
+      )
+    ).toBe(true)
+    expect(
+      await prisma.codeSubmission.findUniqueOrThrow({
+        where: { id: receipt.id },
+      })
+    ).toMatchObject({
+      status: CodeSubmissionStatus.COMPLETED,
+      claimAttempts: 1,
+    })
   })
 
   it.each([

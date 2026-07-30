@@ -1,4 +1,8 @@
 ---
+type: Decision Record
+title: Keep grading assertions outside the sandbox
+description: The sandbox runs student code while Klicker retains expected outputs and grading decisions.
+timestamp: '2026-07-23'
 status: accepted
 ---
 

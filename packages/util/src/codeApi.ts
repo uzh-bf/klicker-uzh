@@ -4,6 +4,8 @@ import type {
   JsonValue,
 } from '@klicker-uzh/types'
 import {
+  areCodeTestWeightsValid,
+  CODE_TEST_ID_MAX_LENGTH,
   CODE_TEST_MAX_COUNT,
   CODE_TEST_TIMEOUT_SECONDS,
   isCodeJsonValue,
@@ -438,7 +440,11 @@ function validateInvocationId(
   label: string,
   kind: CodeApiClientErrorKind
 ): string {
-  if (typeof value !== 'string' || value.length === 0 || value.length > 128) {
+  if (
+    typeof value !== 'string' ||
+    value.length === 0 ||
+    value.length > CODE_TEST_ID_MAX_LENGTH
+  ) {
     throw new CodeApiClientError(kind, `${label} is invalid`)
   }
   return value
@@ -1211,6 +1217,9 @@ function validateCodeApiTests(tests: CodeTestCase[]): void {
     }
     assertJsonValue(test.args, 'CODE test arguments', 'request')
     assertJsonValue(test.expectedOutput, 'CODE expected output', 'request')
+  }
+  if (!areCodeTestWeightsValid(tests.map(({ weight }) => weight))) {
+    throw new CodeApiClientError('request', 'CODE test weights are invalid')
   }
 }
 
