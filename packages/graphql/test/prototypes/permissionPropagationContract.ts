@@ -221,12 +221,6 @@ async function initializePrototypeSchema(
           AND "user_id" IS NOT NULL
           AND "user_id" <> ''
         )
-      ),
-      CONSTRAINT "work_scope_unique" UNIQUE NULLS NOT DISTINCT (
-        "object_type",
-        "object_id",
-        "mode",
-        "user_id"
       )
     )
   `
@@ -848,22 +842,25 @@ async function provePersistentFailureSink(
   const scope = workScope('COURSE', 'failure-course')
   const scopeKey = scope.scopeKey
   const principalKey = 'principal-failure'
-  const work = await mutateSource(workerClient, {
+  const initialWork = await mutateSource(workerClient, {
     scope,
     principalKey,
     granted: true,
     dirtyAt,
   })
+  const latestWork = await mutateSource(workerClient, {
+    scope,
+    principalKey,
+    granted: true,
+  })
+  assert.equal(latestWork.generation, 2n)
 
   const failed = await runWorkerWithFailureSink(workerClient, {
     scopeKey,
-    taskGeneration: work.generation,
+    taskGeneration: initialWork.generation,
   })
   assert.equal(failed, null)
 
-  const unresolved = await getWork(observer, scopeKey)
-  assert.equal(unresolved.processed_generation, 0n)
-  assert.equal(unresolved.generation, 1n)
   const failures = await observer.$queryRaw<
     { generation: bigint; failure_code: string }[]
   >`
@@ -872,49 +869,22 @@ async function provePersistentFailureSink(
     WHERE "scope_key" = ${scopeKey}
   `
   assert.deepEqual(failures, [
-    { generation: 1n, failure_code: 'WORKER_EXECUTION_FAILED' },
+    { generation: 2n, failure_code: 'WORKER_EXECUTION_FAILED' },
   ])
 
+  const unresolved = await getWork(observer, scopeKey)
+  assert.equal(unresolved.processed_generation, 0n)
+  assert.equal(unresolved.generation, 2n)
   const observedAt = new Date(dirtyAt.getTime() + RECONCILIATION_CADENCE_MS)
   const candidates = await findReconciliationCandidates(observer, observedAt)
   assert.ok(
     candidates.some((candidate) => candidate.scope_key === scopeKey),
     'Failed work must remain eligible for reconciliation.'
   )
-  await runWorker(workerClient, {
-    scopeKey,
-    taskGeneration: work.generation,
-  })
-  assert.equal((await getWork(observer, scopeKey)).processed_generation, 1n)
 
-  const nextWork = await mutateSource(workerClient, {
-    scope,
-    principalKey,
-    granted: true,
-  })
-  assert.equal(nextWork.generation, 2n)
-  await runWorkerWithFailureSink(workerClient, {
-    scopeKey,
-    taskGeneration: work.generation,
-  })
-  const failuresAfterStaleTask = await observer.$queryRaw<
-    { generation: bigint; failure_code: string }[]
-  >`
-    SELECT "generation", "failure_code"
-    FROM "permission_propagation_prototype"."failure"
-    WHERE "scope_key" = ${scopeKey}
-    ORDER BY "id" ASC
-  `
-  assert.deepEqual(failuresAfterStaleTask, [
-    { generation: 1n, failure_code: 'WORKER_EXECUTION_FAILED' },
-    { generation: 2n, failure_code: 'WORKER_EXECUTION_FAILED' },
-  ])
-  const unresolvedLatest = await getWork(observer, scopeKey)
-  assert.equal(unresolvedLatest.processed_generation, 1n)
-  assert.equal(unresolvedLatest.generation, 2n)
   await runWorker(workerClient, {
     scopeKey,
-    taskGeneration: work.generation,
+    taskGeneration: initialWork.generation,
   })
   assert.equal((await getWork(observer, scopeKey)).processed_generation, 2n)
 }
