@@ -575,6 +575,85 @@ test.describe('Create different types of elements (with and without sample solut
       }
     })
 
+    test('Recover render-safe partial current-user drafts', async ({
+      page,
+    }) => {
+      const storageKey = 'autosave-element-creation'
+      const drafts = [
+        {
+          typeLabel: messages.shared.CASE_STUDY.typeLabel,
+          values: {
+            type: ElementType.CASE_STUDY,
+            name: '',
+            status: ElementStatus.DRAFT,
+            content: '',
+            tags: [],
+            basePoints: true,
+            pointsMultiplier: '1',
+            options: {
+              hasSampleSolution: false,
+              itemSelectionMode: 'new',
+              manuallyCreatedItems: [],
+              cases: [{ id: 'case-1', description: '' }],
+              criteria: [
+                { id: 'range-1', mode: 'range' },
+                {
+                  id: 'steps-1',
+                  mode: 'steps',
+                  min: 1,
+                  max: 5,
+                  step: 1,
+                  labels: {},
+                },
+              ],
+            },
+          },
+        },
+        {
+          typeLabel: messages.shared.NUMERICAL.typeLabel,
+          values: {
+            type: ElementType.NUMERICAL,
+            name: '',
+            status: ElementStatus.DRAFT,
+            content: '',
+            tags: [],
+            basePoints: true,
+            pointsMultiplier: '1',
+            options: {
+              hasSampleSolution: true,
+              accuracy: '2',
+              solutionType: 'exact',
+              exactSolutions: [null],
+            },
+          },
+        },
+      ]
+
+      for (const draft of drafts) {
+        await page.evaluate(
+          ({ key, value }) => localStorage.setItem(key, value),
+          {
+            key: storageKey,
+            value: JSON.stringify({
+              version: 1,
+              userId: LECTURER_ID,
+              values: draft.values,
+            }),
+          }
+        )
+
+        await page.getByTestId('create-question').click()
+        await page.getByTestId('load-recovered-element-data').click()
+        await expect(page.getByTestId('select-question-type')).toContainText(
+          draft.typeLabel
+        )
+        await expect(page.getByTestId('insert-question-title')).toHaveValue('')
+
+        await page.getByTestId('close-element-modal').click()
+        await page.evaluate((key) => localStorage.removeItem(key), storageKey)
+      }
+    })
+
     test('Verify that non-empty questions are stored and loaded correctly on demand (creation)', async ({
       page,
     }) => {

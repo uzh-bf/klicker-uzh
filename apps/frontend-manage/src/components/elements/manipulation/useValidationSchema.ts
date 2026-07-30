@@ -764,8 +764,8 @@ function useOptionsSchemaCaseStudy() {
 
                 for (const criterion of criteria) {
                   const solution = criterionSolutions[criterion.id]
-                  const minValue = parseFloat(solution?.min)
-                  const maxValue = parseFloat(solution?.max)
+                  const minValue = parseFloat(String(solution?.min))
+                  const maxValue = parseFloat(String(solution?.max))
 
                   if (
                     !solution ||
@@ -779,7 +779,7 @@ function useOptionsSchemaCaseStudy() {
                         'manage.formErrors.CSSolutionsMinMaxRequired',
                         {
                           itemNumber: itemIx + 1,
-                          criterionName: criterion.name,
+                          criterionName: criterion.name ?? '',
                         }
                       ),
                     })
@@ -789,14 +789,14 @@ function useOptionsSchemaCaseStudy() {
                     return this.createError({
                       message: t('manage.formErrors.CSSolutionsMinMaxOrder', {
                         itemNumber: itemIx + 1,
-                        criterionName: criterion.name,
+                        criterionName: criterion.name ?? '',
                       }),
                     })
                   }
 
                   const criterionMin = parseFloat(String(criterion.min))
                   const criterionMax = parseFloat(String(criterion.max))
-                  const stepValue = parseFloat(criterion.step)
+                  const stepValue = parseFloat(String(criterion.step))
 
                   if (
                     !Number.isNaN(criterionMin) &&
@@ -809,7 +809,7 @@ function useOptionsSchemaCaseStudy() {
                           'manage.formErrors.CSSolutionsMinMaxBounds',
                           {
                             itemNumber: itemIx + 1,
-                            criterionName: criterion.name,
+                            criterionName: criterion.name ?? '',
                           }
                         ),
                       })
@@ -823,7 +823,7 @@ function useOptionsSchemaCaseStudy() {
                       return this.createError({
                         message: t('manage.formErrors.CSSolutionsMinMaxStep', {
                           itemNumber: itemIx + 1,
-                          criterionName: criterion.name,
+                          criterionName: criterion.name ?? '',
                         }),
                       })
                     }
@@ -839,7 +839,7 @@ function useOptionsSchemaCaseStudy() {
                             'manage.formErrors.CSSolutionsMinMaxIntegers',
                             {
                               itemNumber: itemIx + 1,
-                              criterionName: criterion.name,
+                              criterionName: criterion.name ?? '',
                             }
                           ),
                         })

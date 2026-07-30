@@ -38,7 +38,7 @@ export interface ElementFormTypesNumerical extends SharedQuestionFormProps {
   explanation?: string | null
   options: {
     hasSampleSolution: boolean
-    accuracy?: number | null
+    accuracy?: number | string | null
     unit?: string | null
     restrictions?: {
       min?: number | string | null
@@ -51,7 +51,7 @@ export interface ElementFormTypesNumerical extends SharedQuestionFormProps {
           max?: number | string | null
         }[]
       | null
-    exactSolutions?: (number | string)[] | null
+    exactSolutions?: (number | string | null | undefined)[] | null
   }
 }
 
@@ -102,7 +102,10 @@ export interface ElementFormTypesSelection extends SharedQuestionFormProps {
 // key of top level record is `itemId-${item.id}`, key of nested record is criterion id
 export type ElementFormTypesCaseStudySolution = Record<
   string, // criterion id
-  { min: string; max: string }
+  {
+    min?: number | string | null
+    max?: number | string | null
+  }
 >
 export type ElementFormTypesCaseStudySolutions = Record<
   string, // `itemId-${item.id}`
@@ -112,15 +115,15 @@ export type ElementFormTypesCaseStudySolutions = Record<
 export type ElementFormTypesCaseStudyCriterion = {
   id: string // short id
   mode: 'range' | 'steps'
-  name: string
-  min?: number
-  max?: number
-  step: string
+  name?: string
+  min?: number | string | null
+  max?: number | string | null
+  step?: number | string | null
   unit?: string | null
   labels?: {
-    min: string
+    min?: string | null
     mid?: string | null
-    max: string
+    max?: string | null
   } | null
 }
 
@@ -135,7 +138,7 @@ export interface ElementFormTypesCaseStudy extends SharedQuestionFormProps {
     manuallyCreatedItems?: { id: number; value: string }[] // new implicit AC: items that should be evaluated with respect to the defined criteria
     cases: {
       id: string // short id
-      title: string
+      title?: string
       description: string
       solutions?: ElementFormTypesCaseStudySolutions
     }[]

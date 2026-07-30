@@ -177,7 +177,7 @@ function useArtificialElementInstance({
                         ...criterion,
                         min: parseFloat(String(criterion.min)),
                         max: parseFloat(String(criterion.max)),
-                        step: parseFloat(criterion.step),
+                        step: parseFloat(String(criterion.step)),
                         order: criterionIx,
                       }))
                     : [],

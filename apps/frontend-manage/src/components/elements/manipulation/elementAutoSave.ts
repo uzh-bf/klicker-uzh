@@ -105,9 +105,7 @@ function hasNumericalOptions(value: unknown): boolean {
   return (
     isRecord(value) &&
     typeof value.hasSampleSolution === 'boolean' &&
-    (value.accuracy === undefined ||
-      value.accuracy === null ||
-      typeof value.accuracy === 'number') &&
+    (value.accuracy === undefined || isNumberOrStringOrNull(value.accuracy)) &&
     (value.unit === undefined ||
       value.unit === null ||
       typeof value.unit === 'string') &&
@@ -135,7 +133,9 @@ function hasNumericalOptions(value: unknown): boolean {
       (Array.isArray(value.exactSolutions) &&
         value.exactSolutions.every(
           (solution) =>
-            typeof solution === 'number' || typeof solution === 'string'
+            solution === null ||
+            typeof solution === 'number' ||
+            typeof solution === 'string'
         )))
   )
 }
@@ -207,8 +207,8 @@ function hasCaseStudySolutionsShape(value: unknown): boolean {
         Object.values(solution).every(
           (range) =>
             isRecord(range) &&
-            typeof range.min === 'string' &&
-            typeof range.max === 'string'
+            (range.min === undefined || isNumberOrStringOrNull(range.min)) &&
+            (range.max === undefined || isNumberOrStringOrNull(range.max))
         )
     )
   )
@@ -228,7 +228,7 @@ function hasCaseStudyOptions(value: unknown): boolean {
       (caseItem) =>
         isRecord(caseItem) &&
         typeof caseItem.id === 'string' &&
-        typeof caseItem.title === 'string' &&
+        (caseItem.title === undefined || typeof caseItem.title === 'string') &&
         typeof caseItem.description === 'string' &&
         (caseItem.solutions === undefined ||
           hasCaseStudySolutionsShape(caseItem.solutions))
@@ -239,21 +239,28 @@ function hasCaseStudyOptions(value: unknown): boolean {
         isRecord(criterion) &&
         typeof criterion.id === 'string' &&
         (criterion.mode === 'range' || criterion.mode === 'steps') &&
-        typeof criterion.name === 'string' &&
-        (criterion.min === undefined || typeof criterion.min === 'number') &&
-        (criterion.max === undefined || typeof criterion.max === 'number') &&
-        typeof criterion.step === 'string' &&
+        (criterion.name === undefined || typeof criterion.name === 'string') &&
+        (criterion.min === undefined ||
+          isNumberOrStringOrNull(criterion.min)) &&
+        (criterion.max === undefined ||
+          isNumberOrStringOrNull(criterion.max)) &&
+        (criterion.step === undefined ||
+          isNumberOrStringOrNull(criterion.step)) &&
         (criterion.unit === undefined ||
           criterion.unit === null ||
           typeof criterion.unit === 'string') &&
         (criterion.labels === undefined ||
           criterion.labels === null ||
           (isRecord(criterion.labels) &&
-            typeof criterion.labels.min === 'string' &&
+            (criterion.labels.min === undefined ||
+              criterion.labels.min === null ||
+              typeof criterion.labels.min === 'string') &&
             (criterion.labels.mid === undefined ||
               criterion.labels.mid === null ||
               typeof criterion.labels.mid === 'string') &&
-            typeof criterion.labels.max === 'string'))
+            (criterion.labels.max === undefined ||
+              criterion.labels.max === null ||
+              typeof criterion.labels.max === 'string')))
     ) &&
     (value.selectedItems === undefined || isNumberArray(value.selectedItems)) &&
     (value.manuallyCreatedItems === undefined ||
