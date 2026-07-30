@@ -121,21 +121,21 @@ test.describe('Course Q&A embed workflow', () => {
     await loginLecturer()
     await page.goto(`${manageUrl}/courses/${COURSE_ID_TEST}`)
     await page.getByTestId('tab-discussions').click()
-    await page
-      .locator('details')
-      .filter({
-        has: page.getByTestId('course-qa-generate-embed'),
-      })
-      .locator('summary')
-      .click()
+    await page.getByTestId('course-qa-embed-toggle').click()
 
     await page.getByTestId('course-qa-embed-scope-course').click()
+    await expect(
+      page.getByTestId('course-qa-embed-scope-course-input')
+    ).toBeChecked()
     await expect(page.getByTestId('course-qa-generate-embed')).toBeEnabled()
     const courseEmbed = await generateEmbedUrl(page)
     expect(courseEmbed.scopeKey).toBe(`course:${COURSE_ID_TEST}`)
     parseEmbedUrl(courseEmbed)
 
     await page.getByTestId('course-qa-embed-scope-external').click()
+    await expect(
+      page.getByTestId('course-qa-embed-scope-external-input')
+    ).toBeChecked()
     const generateButton = page.getByTestId('course-qa-generate-embed')
     await expect(generateButton).toBeDisabled()
 

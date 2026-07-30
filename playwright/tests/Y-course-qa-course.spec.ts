@@ -232,10 +232,19 @@ test.describe('Course Q&A course-level workflows', () => {
     const thread = courseThread(page, COURSE_QA_DATA.threads.course1)
     await expect(thread).toBeVisible()
     const upvote = thread.getByTestId(/^course-qa-thread-upvote-\d+$/)
+    await expect(upvote).toHaveAttribute('aria-pressed', 'false')
+    await expect(upvote).toHaveAttribute('aria-label', /^Upvote question,/)
     await upvote.click()
     await expect(upvote).toContainText('1')
+    await expect(upvote).toHaveAttribute('aria-pressed', 'true')
+    await expect(upvote).toHaveAttribute(
+      'aria-label',
+      /^Remove upvote from question,/
+    )
     await upvote.click()
     await expect(upvote).toContainText('0')
+    await expect(upvote).toHaveAttribute('aria-pressed', 'false')
+    await expect(upvote).toHaveAttribute('aria-label', /^Upvote question,/)
   })
 
   test('Student replies to the thread and upvotes the reply', async ({
@@ -267,8 +276,42 @@ test.describe('Course Q&A course-level workflows', () => {
     ).toBeVisible()
 
     const replyUpvote = thread.getByTestId(/^course-qa-reply-upvote-\d+$/)
+    await expect(replyUpvote).toHaveAttribute('aria-pressed', 'false')
+    await expect(replyUpvote).toHaveAttribute('aria-label', /^Upvote reply,/)
     await replyUpvote.click()
     await expect(replyUpvote).toContainText('1')
+    await expect(replyUpvote).toHaveAttribute('aria-pressed', 'true')
+    await expect(replyUpvote).toHaveAttribute(
+      'aria-label',
+      /^Remove upvote from reply,/
+    )
+  })
+
+  test('Lecturer reviews a complete thread and its replies inline', async ({
+    page,
+    loginLecturer,
+  }) => {
+    await loginLecturer()
+    await page.goto(`${manageUrl}/courses/${COURSE_ID_TEST}`)
+    await page.getByTestId('tab-discussions').click()
+
+    const thread = page
+      .getByTestId(/^course-qa-overview-thread-\d+$/)
+      .filter({ hasText: COURSE_QA_DATA.threads.course1 })
+      .first()
+    const toggle = thread.getByTestId(/^course-qa-overview-thread-toggle-\d+$/)
+    await expect(thread).toBeVisible()
+    await expect(thread).not.toHaveAttribute('open', '')
+
+    await toggle.click()
+
+    await expect(thread).toHaveAttribute('open', '')
+    await expect(
+      thread.getByText(COURSE_QA_DATA.threads.course1, { exact: true })
+    ).toBeVisible()
+    await expect(
+      thread.getByText(COURSE_QA_DATA.threads.reply1, { exact: true })
+    ).toBeVisible()
   })
 
   test('A second student can see the first thread and post their own', async ({

@@ -956,8 +956,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Upvote konnte nicht aktualisiert werden. Melden Sie sich als Teilnehmer an, um abzustimmen.',
       threadUpvoteAriaLabel:
         'Frage positiv bewerten, {count, plural, =1 {aktuell 1 Upvote} other {aktuell # Upvotes}}',
+      threadRemoveUpvoteAriaLabel:
+        'Positive Bewertung der Frage entfernen, {count, plural, =1 {aktuell 1 Upvote} other {aktuell # Upvotes}}',
       replyUpvoteAriaLabel:
         'Antwort positiv bewerten, {count, plural, =1 {aktuell 1 Upvote} other {aktuell # Upvotes}}',
+      replyRemoveUpvoteAriaLabel:
+        'Positive Bewertung der Antwort entfernen, {count, plural, =1 {aktuell 1 Upvote} other {aktuell # Upvotes}}',
       threadUpvoteCountAriaLabel:
         '{count, plural, =1 {1 Upvote} other {# Upvotes}}',
       replyUpvoteCountAriaLabel:

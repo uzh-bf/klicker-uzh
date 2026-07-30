@@ -191,5 +191,14 @@ test.describe('Course Q&A practice workflows', () => {
     await expect(
       sourceGroup.getByText('Practice stack 0', { exact: true })
     ).toBeVisible()
+
+    const stackThread = sourceGroup
+      .getByTestId(/^course-qa-overview-thread-\d+$/)
+      .filter({ hasText: COURSE_QA_DATA.threads.stack1 })
+    await expect(stackThread).not.toHaveAttribute('open', '')
+    await stackThread
+      .getByTestId(/^course-qa-overview-thread-toggle-\d+$/)
+      .click()
+    await expect(stackThread).toHaveAttribute('open', '')
   })
 })

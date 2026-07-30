@@ -9,6 +9,7 @@ import {
 import { Button, H3, toast } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 interface CourseDiscussionEmbedGeneratorProps {
   courseId: string
@@ -80,7 +81,10 @@ function CourseDiscussionEmbedGenerator({
 
   return (
     <details className="group rounded-lg border border-gray-200 bg-white p-4">
-      <summary className="focus-visible:outline-primary-100 flex cursor-pointer list-none items-start justify-between gap-4 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
+      <summary
+        className="focus-visible:outline-primary-100 flex cursor-pointer list-none items-start justify-between gap-4 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+        data-cy="course-qa-embed-toggle"
+      >
         <div className="min-w-0">
           <H3 className={{ root: 'm-0' }}>
             {t('manage.course.embedLinkGenerator')}
@@ -106,11 +110,12 @@ function CourseDiscussionEmbedGenerator({
           {(['external', 'course'] as const).map((scope) => (
             <label
               key={scope}
-              className={`focus-within:ring-primary-100 cursor-pointer rounded px-3 py-1.5 text-sm focus-within:ring-2 ${
+              className={twMerge(
+                'focus-within:ring-primary-100 cursor-pointer rounded px-3 py-1.5 text-sm focus-within:ring-2',
                 embedScope === scope
                   ? 'bg-white font-semibold text-gray-900 shadow-sm'
                   : 'text-gray-600'
-              }`}
+              )}
               data-cy={`course-qa-embed-scope-${scope}`}
             >
               <input
@@ -120,6 +125,7 @@ function CourseDiscussionEmbedGenerator({
                 checked={embedScope === scope}
                 onChange={() => setEmbedScope(scope)}
                 className="sr-only"
+                data-cy={`course-qa-embed-scope-${scope}-input`}
               />
               {scope === 'course'
                 ? t('manage.course.embedScopeCourse')

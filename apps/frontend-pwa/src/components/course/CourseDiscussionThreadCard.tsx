@@ -205,9 +205,15 @@ function CourseDiscussionThreadCard({
               root: 'h-8 motion-safe:transition-transform motion-safe:hover:scale-105',
             }}
             data={{ cy: `course-qa-thread-upvote-${thread.id}` }}
-            aria-label={t('pwa.courseQA.threadUpvoteAriaLabel', {
-              count: thread.upvotes,
-            })}
+            aria-pressed={!!thread.hasUpvoted}
+            aria-label={t(
+              thread.hasUpvoted
+                ? 'pwa.courseQA.threadRemoveUpvoteAriaLabel'
+                : 'pwa.courseQA.threadUpvoteAriaLabel',
+              {
+                count: thread.upvotes,
+              }
+            )}
           >
             <Button.Icon icon={faThumbsUp} />
             <Button.Label>{String(thread.upvotes)}</Button.Label>
@@ -277,9 +283,15 @@ function CourseDiscussionThreadCard({
                     root: 'h-7 motion-safe:transition-transform motion-safe:hover:scale-105',
                   }}
                   data={{ cy: `course-qa-reply-upvote-${reply.id}` }}
-                  aria-label={t('pwa.courseQA.replyUpvoteAriaLabel', {
-                    count: reply.upvotes,
-                  })}
+                  aria-pressed={!!reply.hasUpvoted}
+                  aria-label={t(
+                    reply.hasUpvoted
+                      ? 'pwa.courseQA.replyRemoveUpvoteAriaLabel'
+                      : 'pwa.courseQA.replyUpvoteAriaLabel',
+                    {
+                      count: reply.upvotes,
+                    }
+                  )}
                 >
                   <Button.Icon
                     icon={faThumbsUp}

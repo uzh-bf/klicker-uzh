@@ -1,5 +1,6 @@
 import { useQuery } from '@apollo/client'
 import { faThumbsUp } from '@fortawesome/free-regular-svg-icons'
+import { faChevronDown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   DiscussionSort,
@@ -204,7 +205,7 @@ function CourseDiscussionOverview({
     })
   return (
     <div className="flex flex-col gap-4 px-1 py-2">
-      <div className="rounded-lg border border-gray-200 bg-white p-4">
+      <section>
         <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <H3 className={{ root: 'm-0' }}>
             {t('manage.course.discussionOverview')}
@@ -248,39 +249,90 @@ function CourseDiscussionOverview({
                     courseLabel: courseDisplayLabel,
                   })}
                 </div>
-                <div className="flex flex-col gap-2 p-3">
+                <div className="divide-y divide-gray-100">
                   {group.threads.map((thread) => (
-                    <div
+                    <details
                       key={thread.id}
-                      className="rounded-md border border-gray-100 p-2"
+                      className="group"
                       data-cy={`course-qa-overview-thread-${thread.id}`}
                     >
-                      <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-gray-600">
-                        <span className="max-w-full break-words rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">
-                          {getDiscussionScopeDisplayLabel(
-                            thread.scope,
-                            scopeDisplayLabels
-                          )}
-                        </span>
-                        <span>{formatDateTime(thread.lastActivityAt)}</span>
-                        <span className="flex items-center gap-1">
-                          <FontAwesomeIcon
-                            icon={faThumbsUp}
-                            className="text-gray-500"
-                            aria-hidden="true"
-                          />
-                          {thread.upvotes}
-                        </span>
-                        <span>
-                          {t('pwa.courseQA.nReply', {
-                            count: thread.replyCount,
-                          })}
-                        </span>
-                      </div>
-                      <div className="line-clamp-2 whitespace-pre-wrap break-words text-sm">
-                        {thread.content}
-                      </div>
-                    </div>
+                      <summary
+                        className="focus-visible:outline-primary-100 flex cursor-pointer list-none items-start gap-3 p-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                        data-cy={`course-qa-overview-thread-toggle-${thread.id}`}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-gray-600">
+                            <span className="max-w-full break-words rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">
+                              {getDiscussionScopeDisplayLabel(
+                                thread.scope,
+                                scopeDisplayLabels
+                              )}
+                            </span>
+                            <span>{formatDateTime(thread.lastActivityAt)}</span>
+                            <span className="flex items-center gap-1">
+                              <FontAwesomeIcon
+                                icon={faThumbsUp}
+                                className="text-gray-500"
+                                aria-hidden="true"
+                              />
+                              {thread.upvotes}
+                            </span>
+                            <span>
+                              {t('pwa.courseQA.nReply', {
+                                count: thread.replyCount,
+                              })}
+                            </span>
+                          </div>
+                          <div
+                            className="line-clamp-2 whitespace-pre-wrap break-words text-sm group-open:line-clamp-none"
+                            data-cy={`course-qa-overview-thread-content-${thread.id}`}
+                          >
+                            {thread.content}
+                          </div>
+                        </div>
+                        <FontAwesomeIcon
+                          icon={faChevronDown}
+                          className="mt-1 shrink-0 text-gray-500 group-open:rotate-180 motion-safe:transition-transform"
+                          aria-hidden="true"
+                        />
+                      </summary>
+
+                      {thread.replies.length > 0 && (
+                        <div
+                          className="border-t border-gray-100 bg-gray-50 px-3 py-2"
+                          data-cy={`course-qa-overview-thread-details-${thread.id}`}
+                        >
+                          <div className="mb-1 text-xs font-semibold text-gray-700">
+                            {t('pwa.courseQA.nReply', {
+                              count: thread.replyCount,
+                            })}
+                          </div>
+                          <div className="divide-y divide-gray-200">
+                            {thread.replies.map((reply) => (
+                              <div
+                                key={reply.id}
+                                className="py-2 first:pt-1 last:pb-1"
+                                data-cy={`course-qa-overview-reply-${reply.id}`}
+                              >
+                                <div className="whitespace-pre-wrap break-words text-sm">
+                                  {reply.content}
+                                </div>
+                                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                                  <span>{formatDateTime(reply.createdAt)}</span>
+                                  <span className="flex items-center gap-1">
+                                    <FontAwesomeIcon
+                                      icon={faThumbsUp}
+                                      aria-hidden="true"
+                                    />
+                                    {reply.upvotes}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </details>
                   ))}
                 </div>
               </div>
@@ -309,7 +361,7 @@ function CourseDiscussionOverview({
             )}
           </div>
         )}
-      </div>
+      </section>
 
       <CourseDiscussionEmbedGenerator
         courseId={courseId}
