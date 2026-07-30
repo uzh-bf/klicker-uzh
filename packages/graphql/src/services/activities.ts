@@ -8,9 +8,9 @@ import {
 import generatePassword from 'generate-password'
 import { POINTS_PER_GROUP_ACTIVITY_ELEMENT } from './groups.js'
 import {
-  assertLiveQuizResponseCollectionCompatibility,
+  deriveLiveQuizResponseCollectionMode,
   lockCourseLiveQuizResponseCollectionState,
-  resolveLiveQuizResponseCollectionMode,
+  lockLiveQuizResponseCollectionState,
 } from './liveQuizResponseCollection.js'
 import { POINTS_PER_INSTANCE } from './stacks.js'
 
@@ -497,12 +497,10 @@ export async function applyActivityBatchOperations(
 
   if (newCourse) {
     for (const liveQuiz of liveQuizzes) {
-      assertLiveQuizResponseCollectionCompatibility({
+      deriveLiveQuizResponseCollectionMode({
+        isAssessmentEnabled: newCourse.isAssessmentEnabled,
         isGamificationEnabled: newCourse.isGamificationEnabled,
-        responseCollectionMode: resolveLiveQuizResponseCollectionMode({
-          isAssessmentEnabled: newCourse.isAssessmentEnabled,
-          requestedMode: liveQuiz.responseCollectionMode,
-        }),
+        requestedMode: liveQuiz.responseCollectionMode,
       })
     }
   }
@@ -711,21 +709,17 @@ export async function applyActivityBatchOperations(
         throw new Error('Target course no longer exists')
       }
 
-      const [lockedLiveQuiz] = await tx.$queryRaw<
-        Pick<DB.LiveQuiz, 'id' | 'status'>[]
-      >`
-        SELECT "id", "status"::text AS "status"
-        FROM "public"."LiveQuiz"
-        WHERE
-          "id" = ${liveQuiz.id}::uuid
-          AND "isDeleted" = false
-          AND "status" IN (
-            'DRAFT'::"PublicationStatus",
-            'SCHEDULED'::"PublicationStatus"
-          )
-        FOR UPDATE
-      `
-      if (!lockedLiveQuiz) return null
+      const lockedLiveQuiz = await lockLiveQuizResponseCollectionState({
+        prisma: tx,
+        liveQuizId: liveQuiz.id,
+      })
+      if (
+        !lockedLiveQuiz ||
+        (lockedLiveQuiz.status !== DB.PublicationStatus.DRAFT &&
+          lockedLiveQuiz.status !== DB.PublicationStatus.SCHEDULED)
+      ) {
+        return null
+      }
 
       const currentLiveQuiz = await tx.liveQuiz.findUnique({
         where: { id: lockedLiveQuiz.id },
@@ -742,15 +736,14 @@ export async function applyActivityBatchOperations(
       const isCourseChanged =
         !!newCourse && currentLiveQuiz.courseId !== newCourse.id
       const targetCourse = lockedCourseState?.course ?? newCourse
-      if (isCourseChanged && targetCourse) {
-        assertLiveQuizResponseCollectionCompatibility({
-          isGamificationEnabled: targetCourse.isGamificationEnabled,
-          responseCollectionMode: resolveLiveQuizResponseCollectionMode({
-            isAssessmentEnabled: targetCourse.isAssessmentEnabled,
-            requestedMode: currentLiveQuiz.responseCollectionMode,
-          }),
-        })
-      }
+      const targetResponseCollectionMode =
+        isCourseChanged && targetCourse
+          ? deriveLiveQuizResponseCollectionMode({
+              isGamificationEnabled: targetCourse.isGamificationEnabled,
+              isAssessmentEnabled: targetCourse.isAssessmentEnabled,
+              requestedMode: currentLiveQuiz.responseCollectionMode,
+            })
+          : currentLiveQuiz.responseCollectionMode
 
       // if required, find a new pin code for the live quiz that is still available
       let newPinCode: string | null = null
@@ -796,12 +789,9 @@ export async function applyActivityBatchOperations(
           isAssessmentEnabled: isCourseChanged
             ? { set: targetCourse!.isAssessmentEnabled }
             : undefined,
-          responseCollectionMode:
-            isCourseChanged && targetCourse!.isAssessmentEnabled
-              ? {
-                  set: DB.LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS,
-                }
-              : undefined,
+          responseCollectionMode: isCourseChanged
+            ? { set: targetResponseCollectionMode }
+            : undefined,
           // if the course is changed to an assessment course, assign a pin
           pinCode: isCourseChanged ? newPinCode : undefined,
           // multiplier updates

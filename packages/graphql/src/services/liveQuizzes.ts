@@ -42,8 +42,10 @@ import {
   transitionLiveQuizToPublished,
 } from './liveQuizPublication.js'
 import {
-  assertLiveQuizResponseCollectionCompatibility,
-  resolveLiveQuizResponseCollectionMode,
+  assertLiveQuizResponseCollectionModeEditable,
+  deriveLiveQuizResponseCollectionMode,
+  lockCourseLiveQuizResponseCollectionSettings,
+  lockLiveQuizResponseCollectionState,
 } from './liveQuizResponseCollection.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
@@ -201,29 +203,6 @@ interface ManipulateLiveQuizArgs {
   responseCollectionMode?: DB.LiveQuizResponseCollectionMode | null
 }
 
-function assertLiveQuizModeEditable({
-  activity,
-  responseCollectionMode,
-}: {
-  activity: Pick<DB.LiveQuiz, 'status' | 'responseCollectionMode'>
-  responseCollectionMode: DB.LiveQuizResponseCollectionMode
-}) {
-  if (
-    responseCollectionMode !== activity.responseCollectionMode &&
-    activity.status !== DB.PublicationStatus.DRAFT &&
-    activity.status !== DB.PublicationStatus.SCHEDULED
-  ) {
-    throw new GraphQLError(
-      'Response collection mode cannot be changed after publication',
-      { extensions: { code: 'LIVE_QUIZ_RESPONSE_MODE_LOCKED' } }
-    )
-  }
-
-  if (activity.status === DB.PublicationStatus.PUBLISHED) {
-    throw new GraphQLError('Cannot edit a published live quiz')
-  }
-}
-
 export async function manipulateLiveQuiz(
   {
     id,
@@ -327,20 +306,16 @@ export async function manipulateLiveQuiz(
   // only activities in assessment courses will be marked as being part of assessment
   const assessmentSetting = course?.isAssessmentEnabled ?? false
 
-  const responseCollectionModeSetting = resolveLiveQuizResponseCollectionMode({
+  const responseCollectionModeSetting = deriveLiveQuizResponseCollectionMode({
     isAssessmentEnabled: assessmentSetting,
+    isGamificationEnabled: gamificationSetting,
     requestedMode: responseCollectionMode,
     existingMode: existingActivity?.responseCollectionMode,
   })
 
-  assertLiveQuizResponseCollectionCompatibility({
-    isGamificationEnabled: gamificationSetting,
-    responseCollectionMode: responseCollectionModeSetting,
-  })
-
   if (existingActivity) {
-    assertLiveQuizModeEditable({
-      activity: existingActivity,
+    assertLiveQuizResponseCollectionModeEditable({
+      liveQuiz: existingActivity,
       responseCollectionMode: responseCollectionModeSetting,
     })
   }
@@ -466,16 +441,12 @@ export async function manipulateLiveQuiz(
   const activity = await ctx.prisma.$transaction(
     async (prisma) => {
       if (targetCourseId) {
-        const [lockedCourse] = await prisma.$queryRaw<
-          Pick<DB.Course, 'isAssessmentEnabled' | 'isGamificationEnabled'>[]
-        >`
-          SELECT
-            "isAssessmentEnabled",
-            "isGamificationEnabled"
-          FROM "public"."Course"
-          WHERE "id" = ${targetCourseId}::uuid
-          FOR UPDATE
-        `
+        const lockedCourse = await lockCourseLiveQuizResponseCollectionSettings(
+          {
+            prisma,
+            courseId: targetCourseId,
+          }
+        )
         if (!lockedCourse) {
           throw new GraphQLError('Course not found')
         }
@@ -491,23 +462,17 @@ export async function manipulateLiveQuiz(
       }
 
       if (id) {
-        const [lockedActivity] = await prisma.$queryRaw<
-          Pick<DB.LiveQuiz, 'status' | 'responseCollectionMode'>[]
-        >`
-          SELECT
-            "status"::text AS "status",
-            "responseCollectionMode"::text AS "responseCollectionMode"
-          FROM "public"."LiveQuiz"
-          WHERE "id" = ${id}::uuid AND "isDeleted" = false
-          FOR UPDATE
-        `
+        const lockedActivity = await lockLiveQuizResponseCollectionState({
+          prisma,
+          liveQuizId: id,
+        })
 
         if (!lockedActivity) {
           throw new GraphQLError('Live quiz not found')
         }
 
-        assertLiveQuizModeEditable({
-          activity: lockedActivity,
+        assertLiveQuizResponseCollectionModeEditable({
+          liveQuiz: lockedActivity,
           responseCollectionMode: responseCollectionModeSetting,
         })
       }

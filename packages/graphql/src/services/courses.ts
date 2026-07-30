@@ -20,7 +20,6 @@ import {
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat.js'
 import generatePassword from 'generate-password'
-import { GraphQLError } from 'graphql'
 import { random } from 'mathjs'
 import { prop, sortBy } from 'remeda'
 import type { Context, ContextWithUser } from '../lib/context.js'
@@ -31,9 +30,8 @@ import {
   getInstanceAvailablePoints,
 } from './assessmentScores.js'
 import {
-  assertLiveQuizResponseCollectionCompatibility,
+  deriveCourseLiveQuizResponseCollectionTransition,
   lockCourseLiveQuizResponseCollectionState,
-  resolveLiveQuizResponseCollectionMode,
 } from './liveQuizResponseCollection.js'
 import { checkAccess } from './sharing.js'
 
@@ -2764,38 +2762,14 @@ export async function updateCourseSettings(
         ? (isAssessmentEnabled ?? undefined)
         : undefined
 
-    if (
-      newAssessmentSetting !== undefined &&
-      lockedState.liveQuizzes.some(
-        (liveQuiz) => liveQuiz.status === DB.PublicationStatus.PUBLISHED
-      )
-    ) {
-      throw new GraphQLError(
-        'Running live quizzes must end before the course assessment setting can be changed',
-        {
-          extensions: {
-            code: 'LIVE_QUIZ_ASSESSMENT_TRANSITION_CONFLICT',
-          },
-        }
-      )
-    }
-
-    const correlatedLiveQuizzes = lockedState.liveQuizzes.filter(
-      (liveQuiz) =>
-        liveQuiz.responseCollectionMode ===
-        DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
-    )
-    if (correlatedLiveQuizzes.length > 0) {
-      assertLiveQuizResponseCollectionCompatibility({
+    const liveQuizResponseCollectionUpdates =
+      deriveCourseLiveQuizResponseCollectionTransition({
+        state: lockedState,
         isGamificationEnabled:
           newGamificationSetting ?? lockedState.course.isGamificationEnabled,
-        responseCollectionMode: resolveLiveQuizResponseCollectionMode({
-          isAssessmentEnabled:
-            newAssessmentSetting ?? lockedState.course.isAssessmentEnabled,
-          requestedMode: DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
-        }),
+        isAssessmentEnabled:
+          newAssessmentSetting ?? lockedState.course.isAssessmentEnabled,
       })
-    }
 
     const updated = await prisma.course.update({
       where: { id },
@@ -2941,8 +2915,9 @@ export async function updateCourseSettings(
           data: {
             isGamificationEnabled: newGamificationSetting,
             isAssessmentEnabled: true,
-            responseCollectionMode:
-              DB.LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS,
+            responseCollectionMode: liveQuizResponseCollectionUpdates.find(
+              (update) => update.id === liveQuiz.id
+            )!.responseCollectionMode,
             pinCode,
           },
         })
@@ -4155,19 +4130,11 @@ export async function enableGamification(
     })
     if (!lockedState) return null
 
-    if (
-      lockedState.liveQuizzes.some(
-        (liveQuiz) =>
-          liveQuiz.responseCollectionMode ===
-          DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
-      )
-    ) {
-      assertLiveQuizResponseCollectionCompatibility({
-        isGamificationEnabled: true,
-        responseCollectionMode:
-          DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
-      })
-    }
+    deriveCourseLiveQuizResponseCollectionTransition({
+      state: lockedState,
+      isAssessmentEnabled: lockedState.course.isAssessmentEnabled,
+      isGamificationEnabled: true,
+    })
 
     return prisma.course.update({
       where: { id: courseId },
