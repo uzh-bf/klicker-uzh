@@ -3,6 +3,7 @@
 Goal: remove participant email as a global identifier, keep non-assessment participation pseudonymous, and store assessment identity only where it is legally/functionally required.
 
 Date: 2026-06-16
+Last updated: 2026-07-30
 Branch/PR: `codex/participant-privacy-auth-plan` / GitHub PR #5128
 Target branch: `v3`
 
@@ -16,6 +17,19 @@ Use this target model:
 - **Existing participants**: run a time-boxed migration. Keep legacy email login/claim only long enough to help users who do not remember usernames, then purge legacy emails.
 
 Important caveat: this makes participant data pseudonymous, not mathematically anonymous. Responses, usernames, course participation, IP/proxy logs, and stable login identifiers can still link activity over time. The concrete improvement is removing email as a global identifier and making assessment identity course-scoped, encrypted, and access-controlled.
+
+## Consolidated Review Status
+
+This is the single source-of-truth plan for PR #5128. The former standalone review note (`project/2026-07-06-pr5128-review-participant-privacy-plan.md`) has been folded into this document and should not be maintained separately.
+
+The 2026-07-06 review verdict was: the observed codebase facts are accurate and the migration sequence is directionally sound, but behavior-changing implementation must wait until the product/DPO decisions in [Risks and Decisions](#risks-and-decisions) are assigned and closed. The review findings are represented here as follows:
+
+- schema issues are incorporated in [Target Data Model](#target-data-model), including unique recovery-code hashes, recovery file public ids, lookup-hash key ids, and separate keyrings for assessment lookup hashes and external identities;
+- UX concerns are incorporated in [Target Flows](#target-flows), especially deferred recovery setup during live lectures, no random username prefill, shared-device passkey warnings, and no email reset once email is not retained;
+- operational gaps are incorporated in [Migration Plan](#migration-plan) and [Verification Plan](#verification-plan), including login-method telemetry first, Cypress/Playwright and seed updates, analytics schema sync, DPO/privacy-copy work, and backup/cache purge alignment;
+- unresolved choices are kept explicit in the open decision table rather than hidden inside slice text.
+
+Production-readiness gate: do not start behavior-changing implementation until Slice 0 telemetry/inventory is planned and the open decision table has owners, target dates, and decision records. The first implementation PR may still be behavior-neutral telemetry/inventory work.
 
 ## External Guidance Checked
 
@@ -74,6 +88,24 @@ Current broad communication channels are weaker than the product goal implies:
 Product implication: build a small in-app migration notice/checklist surface or notification table before relying on in-app notices for existing students.
 
 ## Current Codebase Findings
+
+The original review spot-checked the load-bearing codebase claims on 2026-07-06 against `v3` (`d6c7772f8`). Re-verify before implementation because the codebase has moved since then; the table records why this plan was accepted as a credible starting point, not a permanent proof.
+
+| Claim area | Evidence path | Review result |
+| --- | --- | --- |
+| Participant email fields and uniqueness | `packages/prisma/src/prisma/schema/participant.prisma` | Current schema stores participant email and validates email state globally |
+| Participant SSO account email | `packages/prisma/src/prisma/schema/participant.prisma` | Current schema stores `ParticipantAccount.ssoEmail` |
+| Participant invitations | `packages/prisma/src/prisma/schema/participant.prisma` | Current invitations store raw email and matriculation values |
+| Magic-link login | `packages/graphql/src/services/accounts.ts` | Current magic-link login depends on stored participant email |
+| Participant signup | `packages/graphql/src/services/accounts.ts` | Current account creation requires and stores email |
+| LTI participant linking | `packages/graphql/src/services/accounts.ts` | Current LTI path writes email and `ssoEmail` and links by email fallback |
+| LTI launch payloads | `apps/lti/src/index.ts`, `apps/frontend-pwa/src/lib/getParticipantToken.ts` | Current LTI paths carry email; LTI 1.1 still has a verification TODO |
+| Assessment Edu-ID linking | `apps/auth/src/lib/helpers.ts` | Current assessment auth writes global email fields and matches invitations by raw email |
+| GraphQL email exposure | `packages/graphql/src/schema/participant.ts`, `packages/graphql/src/schema/course.ts`, `packages/graphql/src/schema/assessment.ts` | Current API exposes participant/leaderboard/assessment emails |
+| Push communication | `packages/graphql/src/services/notifications.ts` | Push delivery is not a reliable migration channel today |
+| Export PII | `packages/export/src` | Export can pseudonymize artifacts, but source PII remains in the database |
+| Passkey dependencies | `pnpm-lock.yaml`, package manifests | SimpleWebAuthn appears transitively only; implementation needs direct pinned dependencies |
+| Username generation | `apps/frontend-pwa/src/pages/createAccount.tsx` | Current create-account flow can prefill random usernames |
 
 ### Data Model
 
