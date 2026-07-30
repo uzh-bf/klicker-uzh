@@ -1,10 +1,14 @@
 import { useQuery } from '@apollo/client'
-import { GetCoursePerformanceAnalyticsDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  GetCoursePerformanceAnalyticsDocument,
+  GetSingleCourseDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { H1, TabContent, Tabs } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import AnalyticsDisabledView from '../../../components/analytics/AnalyticsDisabledView'
 import AnalyticsErrorView from '../../../components/analytics/AnalyticsErrorView'
 import AnalyticsLoadingView from '../../../components/analytics/AnalyticsLoadingView'
 import ActivityInstanceFeedbacksPlot from '../../../components/analytics/performance/ActivityInstanceFeedbacksPlot'
@@ -15,6 +19,7 @@ import StudentActivityPerformance from '../../../components/analytics/performanc
 import TotalStudentPerformancePlot from '../../../components/analytics/performance/TotalStudentPerformancePlot'
 import PreviewTag from '../../../components/common/PreviewTag'
 import Layout from '../../../components/Layout'
+import { learningAnalyticsRolloutEnabled } from '../../../lib/learningAnalytics'
 
 function PerformanceDashboard() {
   const t = useTranslations()
@@ -30,16 +35,38 @@ function PerformanceDashboard() {
 
   const { data, loading, error } = useQuery(
     GetCoursePerformanceAnalyticsDocument,
-    { variables: { courseId }, skip: !courseId }
+    {
+      variables: { courseId },
+      skip: !courseId || !learningAnalyticsRolloutEnabled,
+    }
+  )
+  const { data: courseData, loading: courseLoading } = useQuery(
+    GetSingleCourseDocument,
+    {
+      variables: { courseId },
+      skip: !courseId || !learningAnalyticsRolloutEnabled,
+    }
   )
 
   const navigation = <PerformanceAnalyticsNavigation courseId={courseId} />
   const course = data?.getCoursePerformanceAnalytics
 
   // loading state
-  if (loading || !courseId) {
+  if (loading || courseLoading || !courseId) {
     return (
       <AnalyticsLoadingView
+        title={t('manage.analytics.performanceDashboard')}
+        navigation={navigation}
+      />
+    )
+  }
+
+  if (
+    !learningAnalyticsRolloutEnabled ||
+    courseData?.course?.isLearningAnalyticsEnabled === false
+  ) {
+    return (
+      <AnalyticsDisabledView
         title={t('manage.analytics.performanceDashboard')}
         navigation={navigation}
       />

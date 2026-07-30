@@ -22,6 +22,15 @@ tags:
 
 Worked examples: `deleteCourse` in `mutation.ts` (asUser + ADMIN permission on courseId), `controlCourse` in `query.ts` (EXECUTE), `getLiveQuizSummary` (READ). Existing fields use `t.withAuth(...)` exclusively — follow them rather than inventing `authScopes` variants.
 
+Learning analytics adds a second boundary after normal object authorization:
+`setCourseLearningAnalyticsEnabled` requires course `ADMIN`, while all four
+lecturer analytics services check `Course.isLearningAnalyticsEnabled` before
+reading derived analytics or operational response/feedback data
+(`packages/graphql/src/schema/mutation.ts:setCourseLearningAnalyticsEnabled`;
+`packages/graphql/src/lib/learningAnalytics.ts:isLearningAnalyticsRolloutEnabled`).
+Keep this service-level gate when adding a new analytics query so another API
+surface cannot bypass it.
+
 ## Layering contract
 
 - `schema/*.ts` — Pothos object types + root `query.ts`/`mutation.ts`/`subscription.ts`. Resolvers delegate immediately: `resolve: (_, args, ctx) => CourseService.deleteCourse(args, ctx)`.

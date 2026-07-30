@@ -12,6 +12,7 @@ mutation CreateCourse(
   $language: LocaleType!
   $notificationEmail: String
   $isGamificationEnabled: Boolean!
+  $isLearningAnalyticsEnabled: Boolean!
 ) {
   createCourse(
     name: $name
@@ -27,6 +28,7 @@ mutation CreateCourse(
     language: $language
     notificationEmail: $notificationEmail
     isGamificationEnabled: $isGamificationEnabled
+    isLearningAnalyticsEnabled: $isLearningAnalyticsEnabled
   ) {
     id
     name
@@ -43,6 +45,7 @@ mutation CreateCourse(
     isArchived
     isGamificationEnabled
     isAssessmentEnabled
+    isLearningAnalyticsEnabled
     isGroupCreationEnabled
     randomAssignmentFinalized
     createdAt

@@ -2840,6 +2840,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte geben Sie eine gültige bevorzugte Gruppengrösse an.',
       gamificationTooltip:
         'Gamifizierung kann nach Erstellung des Kurses nur noch aktiviert (nicht mehr deaktiviert) werden.',
+      learningAnalytics: 'Learning Analytics',
+      learningAnalyticsEnabled: 'Learning Analytics verwenden',
+      learningAnalyticsTooltip:
+        'Sie können diese Einstellung jederzeit ändern. Nur Kursverantwortliche können Learning Analytics aktivieren oder deaktivieren.',
+      learningAnalyticsExplanation:
+        'Learning Analytics kann Studierende beim Verständnis ihres Lernens unterstützen und Dozierenden helfen, die Betreuung im Kurs zu verbessern. KlickerUZH verwendet dafür Interaktionsaktivität, Lernfortschritt, Antwortleistung, Punktzahlen und Feedback-Bewertungen. Dozierende sehen nur Learning-Analytics-Ergebnisse von Studierenden, die sich für eine Teilnahme entschieden haben. Learning Analytics zeigt keine Namen, E-Mail-Adressen, Teilnehmenden-IDs, Freitextantworten oder Teilnahmeentscheidungen. Dozierende dürfen diese Ergebnisse nicht mit anderen Informationen kombinieren, um Studierende zu identifizieren.',
+      learningAnalyticsDisableConfirmation:
+        'Learning Analytics für diesen Kurs deaktivieren? Die Dashboards werden sofort ausgeblendet und alle dedizierten Learning-Analytics-Ergebnisse gelöscht. Normale Kursaktivitäten, Antworten, Feedback, Bewertungen, Punkte und XP bleiben erhalten. Gespeicherte Entscheidungen der Studierenden bleiben für eine mögliche spätere Reaktivierung bestehen.',
       groupCreationEnabled: 'Gruppenbildung möglich',
       groupCreationDisabledTooltip:
         'Um die Gruppenbildung für Ihre Studierenden zu aktivieren, aktivieren Sie bitte zuerst die Gamifizierung für diesen Kurs.',
@@ -2907,6 +2915,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       modifyCourse: 'Kurs bearbeiten',
       shareCourse: 'Kurs teilen',
       learningAnalytics: 'Learning Analytics',
+      learningAnalyticsDisabled: 'Learning Analytics deaktiviert',
       pointCorrections: 'Punktekorrekturen',
       assessmentResults: 'Assessment Resultate',
       appliedCorrections: 'Angewendete Punktkorrekturen',
@@ -3861,6 +3870,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       analyticsLoadingWait: 'Lade Analyse-Daten. Bitte warten...',
       analyticsLoadingFailed:
         'Beim Laden der Analyse-Daten ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut oder kontaktieren Sie den Support.',
+      learningAnalyticsDisabled:
+        'Learning Analytics ist für diesen Kurs deaktiviert. Kursverantwortliche können die Funktion in den Kurseinstellungen aktivieren.',
       weeklyStudentActivity: 'Wöchentliche Aktivität der Studierenden',
       dailyStudentActivity: 'Tägliche Aktivität der Studierenden',
       totalParticipants: 'Kurs-Teilnehmende: {number}',

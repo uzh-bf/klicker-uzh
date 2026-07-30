@@ -8,7 +8,12 @@ import DashboardButtons from './DashboardButtons'
 function CourseDashboardList({
   courses,
 }: {
-  courses?: Pick<Course, 'id' | 'name' | 'startDate' | 'endDate'>[] | null
+  courses?:
+    | Pick<
+        Course,
+        'id' | 'name' | 'startDate' | 'endDate' | 'isLearningAnalyticsEnabled'
+      >[]
+    | null
 }) {
   const t = useTranslations()
 

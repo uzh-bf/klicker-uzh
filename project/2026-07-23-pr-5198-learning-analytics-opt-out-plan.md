@@ -7,6 +7,8 @@
 - Branch: `codex/learning-analytics-opt-out-plan`
 - Target: `v3`
 - Pull request: [#5198](https://github.com/uzh-bf/klicker-uzh/pull/5198)
+- Active stack branch: `codex/la-opt-out-lecturer-control`
+- Active stack target: `codex/learning-analytics-opt-out-plan`
 - Change type: `feat`
 - ADRs:
   - [ADR 0001](../docs/adr/0001-separate-course-and-participant-learning-analytics-controls.md)
@@ -243,6 +245,10 @@ Do:
   bounded, add the smallest tracked Hatchet cleanup workflow and retry state.
 - Add the Manage creation/settings UI, explanation, confirmation, and disabled
   analytics state in English and German.
+- Keep `NEXT_PUBLIC_LEARNING_ANALYTICS_ROLLOUT_ENABLED` false outside synthetic
+  development until participant eligibility, computation filtering,
+  de-identification, suppression, and legal approval are complete. The backend
+  and UI must both fail closed while this release gate is off.
 
 Likely files:
 
@@ -517,6 +523,32 @@ Commit:
 - 2026-07-30: The user renewed execution authority and requested stacked GitHub
   PRs for later slices. PR #5198 remains the stack base for Research and Slice 1;
   each later slice targets the preceding slice branch for an isolated diff.
-- Current: Research and Slice 1 complete and frozen as the stack base.
-- Next: Implement Slice 2 on a branch and draft PR stacked on
-  `codex/learning-analytics-opt-out-plan`.
+- 2026-07-30: Slice 2 implementation added the default-off creation control,
+  ADMIN-only course toggle, immediate read denial, idempotent dedicated-data
+  cleanup, and the English/German lecturer UI and disabled dashboard state.
+  GraphQL generation, GraphQL and Manage typechecks, the GraphQL build, and all
+  five focused course-control integration cases passed in the branch-local
+  devcontainer.
+- 2026-07-30: Spec/privacy review found that an independently deployed Slice 2
+  could expose pre-enforcement identified analytics. The implementation now
+  fails closed behind `NEXT_PUBLIC_LEARNING_ANALYTICS_ROLLOUT_ENABLED`; this
+  deployment gate must remain false until the complete stack and legal approval
+  are ready. Course toggles are serialized with a transaction-scoped advisory
+  lock so disable and re-enable cannot interleave.
+- 2026-07-30: Follow-up correctness/privacy review found no remaining code
+  blocker after the fail-closed release gate and serialized cleanup changes.
+  The cleanup fixture now covers every dedicated model class, both
+  participant-activity relation paths, cascade-owned competency rows, and
+  representative preserved operational state. Aggregate-only production sizing
+  remains a release-gate prerequisite.
+- 2026-07-30: Browser verification covered default-off creation, enable,
+  confirmation cancellation, accepted disable, immediate overview hiding, and
+  direct-URL denial in English and German. The repository-wide check completed
+  every TypeScript and formatting gate; only the unchanged Analytics Python
+  lint workspace could not install pandas because the container has no C
+  compiler for its Python 3.14 source build. The full production build passed
+  all 22 scheduled workspace builds.
+- Current: Slice 2 verified and ready to publish from
+  `codex/la-opt-out-lecturer-control`.
+- Next: Publish the draft PR stacked on
+  `codex/learning-analytics-opt-out-plan`, then start Slice 3 from that commit.
