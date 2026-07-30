@@ -356,6 +356,28 @@ describe('regular live quiz reward ledger integration', () => {
           achievementId: 5,
           achievementCountAwarded: 1,
         }),
+        expect.objectContaining({
+          participantId: participants[1]!.participant.id,
+          participationId: participants[1]!.participation.id,
+          courseId: course.id,
+          coursePointsAwarded: 100,
+          participantXpAwarded: 40,
+          timelinePointsAwarded: 100,
+          timelineXpAwarded: 40,
+          achievementId: 6,
+          achievementCountAwarded: 1,
+        }),
+        expect.objectContaining({
+          participantId: participants[2]!.participant.id,
+          participationId: participants[2]!.participation.id,
+          courseId: course.id,
+          coursePointsAwarded: 70,
+          participantXpAwarded: 25,
+          timelinePointsAwarded: 70,
+          timelineXpAwarded: 25,
+          achievementId: 7,
+          achievementCountAwarded: 1,
+        }),
       ])
     )
     expect(
@@ -465,21 +487,100 @@ describe('regular live quiz reward ledger integration', () => {
     ).toBe(10)
   })
 
+  it('awards XP and timeline XP but no course points when the linked course is not gamified', async () => {
+    const course = await seedCourse(
+      { isGamificationEnabled: false, isAssessmentEnabled: false },
+      userOneCtx
+    )
+    const seededLiveQuiz = await seedLiveQuiz(
+      {
+        elements: [],
+        status: PublicationStatus.PUBLISHED,
+        courseId: course.id,
+      },
+      userOneCtx
+    )
+    const liveQuiz = await prisma.liveQuiz.update({
+      where: { id: seededLiveQuiz.id },
+      data: { isGamificationEnabled: true },
+    })
+    const participant = await prisma.participant.create({
+      data: {
+        username: uuidv4(),
+        password: 'synthetic-test-password',
+      },
+    })
+    const participation = await prisma.participation.create({
+      data: {
+        courseId: course.id,
+        participantId: participant.id,
+        isActive: true,
+      },
+    })
+    await userOneCtx.redisExec.hset(`lq:${liveQuiz.id}:lb`, participant.id, 100)
+    await userOneCtx.redisExec.hset(`lq:${liveQuiz.id}:xp`, participant.id, 40)
+
+    await endLiveQuiz({ id: liveQuiz.id }, userOneCtx)
+
+    const persistedQuiz = await prisma.liveQuiz.findUniqueOrThrow({
+      where: { id: liveQuiz.id },
+      include: { activeRewardRun: { include: { entries: true } } },
+    })
+    expect(persistedQuiz.activeRewardRun?.entries).toEqual([
+      expect.objectContaining({
+        participantId: participant.id,
+        participationId: participation.id,
+        courseId: course.id,
+        coursePointsAwarded: 0,
+        participantXpAwarded: 40,
+        timelinePointsAwarded: 0,
+        timelineXpAwarded: 40,
+        achievementId: null,
+        achievementCountAwarded: 0,
+      }),
+    ])
+    expect(
+      (
+        await prisma.participant.findUniqueOrThrow({
+          where: { id: participant.id },
+        })
+      ).xp
+    ).toBe(40)
+    expect(
+      await prisma.leaderboardEntry.count({
+        where: {
+          type: 'COURSE',
+          participantId: participant.id,
+          courseId: course.id,
+        },
+      })
+    ).toBe(0)
+    expect(
+      await prisma.timelineEntry.findUniqueOrThrow({
+        where: {
+          participationId_courseId_timestamp_type: {
+            participationId: participation.id,
+            courseId: course.id,
+            timestamp: persistedQuiz.finishedAt!,
+            type: TimelineEntryType.DAILY,
+          },
+        },
+      })
+    ).toMatchObject({ collectedPoints: 0, collectedXp: 40 })
+  })
+
   it('does not duplicate rewards or runs when ending concurrently', async () => {
     const { liveQuiz, participants } = await seedGamifiedRunningQuiz()
 
-    const results = await Promise.allSettled([
+    const results = await Promise.all([
       endLiveQuiz({ id: liveQuiz.id }, userOneCtx),
       endLiveQuiz({ id: liveQuiz.id }, userOneCtx),
     ])
 
-    expect(
-      results.some(
-        (result) =>
-          result.status === 'fulfilled' &&
-          result.value?.status === PublicationStatus.ENDED
-      )
-    ).toBe(true)
+    expect(results.map((result) => result?.status)).toEqual([
+      PublicationStatus.ENDED,
+      PublicationStatus.ENDED,
+    ])
     expect(
       await prisma.liveQuizRewardRun.count({
         where: {
@@ -498,6 +599,10 @@ describe('regular live quiz reward ledger integration', () => {
   })
 
   it('persists legacy deltas without applying them again', async () => {
+    const course = await seedCourse(
+      { isGamificationEnabled: true, isAssessmentEnabled: false },
+      userOneCtx
+    )
     const participant = await prisma.participant.create({
       data: {
         username: uuidv4(),
@@ -505,11 +610,49 @@ describe('regular live quiz reward ledger integration', () => {
         xp: 75,
       },
     })
+    const participation = await prisma.participation.create({
+      data: {
+        courseId: course.id,
+        participantId: participant.id,
+        isActive: true,
+      },
+    })
     const liveQuiz = await seedLiveQuiz(
-      { elements: [], status: PublicationStatus.ENDED },
+      {
+        elements: [],
+        status: PublicationStatus.ENDED,
+        courseId: course.id,
+      },
       userOneCtx
     )
     const endedAt = new Date('2026-07-30T10:00:00.000Z')
+    await prisma.leaderboardEntry.create({
+      data: {
+        type: 'COURSE',
+        participantId: participant.id,
+        courseId: course.id,
+        participation: { connect: { id: participation.id } },
+        score: 200,
+      },
+    })
+    await prisma.timelineEntry.create({
+      data: {
+        type: TimelineEntryType.DAILY,
+        timestamp: endedAt,
+        collectedPoints: 150,
+        collectedXp: 75,
+        courseId: course.id,
+        participationId: participation.id,
+      },
+    })
+    await prisma.participantAchievementInstance.create({
+      data: {
+        participantId: participant.id,
+        achievementId: 5,
+        achievedAt: endedAt,
+        achievedCount: 3,
+      },
+    })
 
     const rewardRunId = await prisma.$transaction((tx) =>
       persistLiveQuizRewardRun({
@@ -520,15 +663,15 @@ describe('regular live quiz reward ledger integration', () => {
           entries: [
             {
               participantId: participant.id,
-              participationId: null,
-              courseId: null,
-              coursePointsAwarded: 0,
+              participationId: participation.id,
+              courseId: course.id,
+              coursePointsAwarded: 30,
               participantXpAwarded: 25,
-              timelineDate: null,
-              timelinePointsAwarded: 0,
-              timelineXpAwarded: 0,
-              achievementId: null,
-              achievementCountAwarded: 0,
+              timelineDate: endedAt,
+              timelinePointsAwarded: 30,
+              timelineXpAwarded: 25,
+              achievementId: 5,
+              achievementCountAwarded: 1,
             },
           ],
         },
@@ -544,6 +687,39 @@ describe('regular live quiz reward ledger integration', () => {
       ).xp
     ).toBe(75)
     expect(
+      await prisma.leaderboardEntry.findUniqueOrThrow({
+        where: {
+          type_participantId_courseId: {
+            type: 'COURSE',
+            participantId: participant.id,
+            courseId: course.id,
+          },
+        },
+      })
+    ).toMatchObject({ score: 200 })
+    expect(
+      await prisma.timelineEntry.findUniqueOrThrow({
+        where: {
+          participationId_courseId_timestamp_type: {
+            participationId: participation.id,
+            courseId: course.id,
+            timestamp: endedAt,
+            type: TimelineEntryType.DAILY,
+          },
+        },
+      })
+    ).toMatchObject({ collectedPoints: 150, collectedXp: 75 })
+    expect(
+      await prisma.participantAchievementInstance.findUniqueOrThrow({
+        where: {
+          participantId_achievementId: {
+            participantId: participant.id,
+            achievementId: 5,
+          },
+        },
+      })
+    ).toMatchObject({ achievedCount: 3 })
+    expect(
       await prisma.liveQuizRewardRun.findUniqueOrThrow({
         where: { id: rewardRunId },
         include: { entries: true },
@@ -554,7 +730,12 @@ describe('regular live quiz reward ledger integration', () => {
       entries: [
         expect.objectContaining({
           participantId: participant.id,
+          coursePointsAwarded: 30,
           participantXpAwarded: 25,
+          timelinePointsAwarded: 30,
+          timelineXpAwarded: 25,
+          achievementId: 5,
+          achievementCountAwarded: 1,
         }),
       ],
     })
@@ -597,6 +778,46 @@ describe('regular live quiz reward ledger integration', () => {
         select: { id: true },
       })
     ).toEqual([{ id: existingRun.id }])
+  })
+
+  it('does not treat an invalid active reward pointer as a completed end race', async () => {
+    const { liveQuiz, participants } = await seedGamifiedRunningQuiz()
+    const otherQuiz = await seedLiveQuiz(
+      { elements: [], status: PublicationStatus.ENDED },
+      userOneCtx
+    )
+    const otherRun = await prisma.liveQuizRewardRun.create({
+      data: {
+        liveQuizId: otherQuiz.id,
+        endedAt: new Date(),
+      },
+    })
+    await prisma.liveQuiz.update({
+      where: { id: liveQuiz.id },
+      data: { activeRewardRunId: otherRun.id },
+    })
+
+    await expect(
+      endLiveQuiz({ id: liveQuiz.id }, userOneCtx)
+    ).rejects.toMatchObject({
+      extensions: { code: 'LIVE_QUIZ_END_CONFLICT' },
+    })
+    expect(
+      await prisma.liveQuiz.findUniqueOrThrow({
+        where: { id: liveQuiz.id },
+        select: { status: true, activeRewardRunId: true },
+      })
+    ).toEqual({
+      status: PublicationStatus.PUBLISHED,
+      activeRewardRunId: otherRun.id,
+    })
+    expect(
+      (
+        await prisma.participant.findUniqueOrThrow({
+          where: { id: participants[0]!.participant.id },
+        })
+      ).xp
+    ).toBe(0)
   })
 
   it('preserves assessment ending without creating a reward run', async () => {

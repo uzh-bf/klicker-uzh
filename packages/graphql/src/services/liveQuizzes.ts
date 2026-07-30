@@ -1651,18 +1651,16 @@ type LiveQuizForEnding = DB.Prisma.LiveQuizGetPayload<{
   }
 }>
 
-async function loadRegularLiveQuizRewardParticipants({
-  liveQuiz,
+async function snapshotRegularLiveQuizRewards({
+  liveQuizId,
   redis,
-  ctx,
 }: {
-  liveQuiz: LiveQuizForEnding
+  liveQuizId: string
   redis: Redis
-  ctx: ContextWithUser
-}): Promise<LiveQuizRewardParticipant[]> {
+}): Promise<Map<string, { score?: number; xp?: number }>> {
   const [quizLeaderboard, quizXp] = await Promise.all([
-    redis.hgetall(`lq:${liveQuiz.id}:lb`),
-    redis.hgetall(`lq:${liveQuiz.id}:xp`),
+    redis.hgetall(`lq:${liveQuizId}:lb`),
+    redis.hgetall(`lq:${liveQuizId}:xp`),
   ])
   const cachedRewards = new Map<string, { score?: number; xp?: number }>()
 
@@ -1689,16 +1687,28 @@ async function loadRegularLiveQuizRewardParticipants({
     })
   }
 
+  return cachedRewards
+}
+
+async function loadRegularLiveQuizRewardParticipants({
+  liveQuiz,
+  cachedRewards,
+  tx,
+}: {
+  liveQuiz: LiveQuizForEnding
+  cachedRewards: Map<string, { score?: number; xp?: number }>
+  tx: DB.Prisma.TransactionClient
+}): Promise<LiveQuizRewardParticipant[]> {
   const participants = await Promise.all(
     Array.from(cachedRewards.entries()).map(
       async ([participantId, { score, xp }]) => {
         const [participant, participation] = await Promise.all([
-          ctx.prisma.participant.findUnique({
+          tx.participant.findUnique({
             where: { id: participantId },
             select: { id: true },
           }),
           liveQuiz.courseId
-            ? ctx.prisma.participation.findUnique({
+            ? tx.participation.findUnique({
                 where: {
                   courseId_participantId: {
                     courseId: liveQuiz.courseId,
@@ -1738,80 +1748,130 @@ async function endRegularLiveQuiz(
   ctx: ContextWithUser
 ) {
   const endedAt = new Date()
-  let plan: LiveQuizRewardPlan
+  const cachedRewards = await snapshotRegularLiveQuizRewards({
+    liveQuizId: liveQuiz.id,
+    redis: ctx.redisExec,
+  })
 
-  if (liveQuiz.isGamificationEnabled) {
-    const participants = await loadRegularLiveQuizRewardParticipants({
-      liveQuiz,
-      redis: ctx.redisExec,
-      ctx,
-    })
-    const achievements = await loadRankAchievementRewards(ctx.prisma)
-    plan = calculateLiveQuizRewardPlan({
-      participants,
-      achievements,
-      awardAchievements: shouldAwardRankAchievements({
-        hasSampleSolution: hasSampleSolutionQuestion(liveQuiz.blocks),
-        participants,
-      }),
-      endedAt,
-    })
-  } else {
-    plan = {
-      endedAt,
-      isLegacyReconstructed: false,
-      entries: [],
-    }
-  }
-
-  return ctx.prisma.$transaction(
-    async (tx) => {
-      const transitioned = await tx.liveQuiz.updateMany({
-        where: {
-          id: liveQuiz.id,
-          status: DB.PublicationStatus.PUBLISHED,
-          activeRewardRunId: null,
-          rewardRuns: {
-            none: { status: DB.LiveQuizRewardRunStatus.APPLIED },
+  try {
+    return await ctx.prisma.$transaction(
+      async (tx) => {
+        const transitioned = await tx.liveQuiz.updateMany({
+          where: {
+            id: liveQuiz.id,
+            status: DB.PublicationStatus.PUBLISHED,
+            activeRewardRunId: null,
+            rewardRuns: {
+              none: { status: DB.LiveQuizRewardRunStatus.APPLIED },
+            },
           },
-        },
-        data: {
-          status: DB.PublicationStatus.ENDED,
-          finishedAt: endedAt,
-        },
-      })
-
-      if (transitioned.count !== 1) {
-        throw new GraphQLError('Live quiz could not transition to ended', {
-          extensions: { code: 'LIVE_QUIZ_END_CONFLICT' },
+          data: {
+            status: DB.PublicationStatus.ENDED,
+            finishedAt: endedAt,
+          },
         })
-      }
 
-      await tx.temporaryLeaderboardEntry.deleteMany({
-        where: {
-          quizId: liveQuiz.id,
-          score: 0,
-          createdAt: {
-            equals: tx.temporaryLeaderboardEntry.fields.updatedAt,
+        if (transitioned.count !== 1) {
+          throw new GraphQLError('Live quiz could not transition to ended', {
+            extensions: { code: 'LIVE_QUIZ_END_CONFLICT' },
+          })
+        }
+
+        const authoritativeLiveQuiz = await tx.liveQuiz.findUniqueOrThrow({
+          where: { id: liveQuiz.id },
+          include: {
+            course: true,
+            blocks: {
+              include: { elements: { orderBy: { order: 'asc' } } },
+              orderBy: { id: 'asc' },
+            },
           },
-        },
-      })
+        })
+        let plan: LiveQuizRewardPlan
 
-      await applyRegularLiveQuizRewardPlan({
-        liveQuizId: liveQuiz.id,
-        plan,
-        tx,
-      })
+        if (authoritativeLiveQuiz.isGamificationEnabled) {
+          const participants = await loadRegularLiveQuizRewardParticipants({
+            liveQuiz: authoritativeLiveQuiz,
+            cachedRewards,
+            tx,
+          })
+          const achievements = await loadRankAchievementRewards(tx)
+          plan = calculateLiveQuizRewardPlan({
+            participants,
+            achievements,
+            awardAchievements: shouldAwardRankAchievements({
+              hasSampleSolution: hasSampleSolutionQuestion(
+                authoritativeLiveQuiz.blocks
+              ),
+              participants,
+            }),
+            endedAt,
+          })
+        } else {
+          plan = {
+            endedAt,
+            isLegacyReconstructed: false,
+            entries: [],
+          }
+        }
 
-      return tx.liveQuiz.findUniqueOrThrow({
-        where: { id: liveQuiz.id },
-      })
-    },
-    {
-      isolationLevel: DB.Prisma.TransactionIsolationLevel.Serializable,
-      timeout: 60000,
+        await tx.temporaryLeaderboardEntry.deleteMany({
+          where: {
+            quizId: liveQuiz.id,
+            score: 0,
+            createdAt: {
+              equals: tx.temporaryLeaderboardEntry.fields.updatedAt,
+            },
+          },
+        })
+
+        await applyRegularLiveQuizRewardPlan({
+          liveQuizId: liveQuiz.id,
+          plan,
+          tx,
+        })
+
+        return tx.liveQuiz.findUniqueOrThrow({
+          where: { id: liveQuiz.id },
+        })
+      },
+      {
+        isolationLevel: DB.Prisma.TransactionIsolationLevel.Serializable,
+        timeout: 60000,
+      }
+    )
+  } catch (error) {
+    const isTransitionConflict =
+      error instanceof GraphQLError &&
+      error.extensions.code === 'LIVE_QUIZ_END_CONFLICT'
+    const isSerializableConflict =
+      error instanceof DB.Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2034'
+
+    if (!isTransitionConflict && !isSerializableConflict) {
+      throw error
     }
-  )
+
+    const endedLiveQuiz = await ctx.prisma.liveQuiz.findUnique({
+      where: { id: liveQuiz.id },
+      include: {
+        activeRewardRun: {
+          select: { liveQuizId: true, status: true },
+        },
+      },
+    })
+
+    if (
+      endedLiveQuiz?.status === DB.PublicationStatus.ENDED &&
+      endedLiveQuiz.activeRewardRun?.liveQuizId === liveQuiz.id &&
+      endedLiveQuiz.activeRewardRun.status ===
+        DB.LiveQuizRewardRunStatus.APPLIED
+    ) {
+      return endedLiveQuiz
+    }
+
+    throw error
+  }
 }
 
 export async function endLiveQuiz(
