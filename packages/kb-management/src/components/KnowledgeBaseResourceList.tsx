@@ -327,6 +327,7 @@ function KnowledgeBaseResourceList({
   >({})
   const pollInFlightRef = useRef(false)
   const loadMoreInFlightRef = useRef(false)
+  const refreshAfterLoadMoreRef = useRef(false)
   const pollTickRef = useRef(0)
   const refreshRequestRef = useRef(0)
   const handledRefreshTriggerRef = useRef<string | null>(null)
@@ -391,7 +392,10 @@ function KnowledgeBaseResourceList({
     // A load-more request owns the result window until fetchMore has appended
     // its page and updated the cursor bookkeeping. Skipping a concurrent
     // refresh prevents an older target window from replacing the new page.
-    if (loadMoreInFlightRef.current) return false
+    if (loadMoreInFlightRef.current) {
+      refreshAfterLoadMoreRef.current = true
+      return false
+    }
     const requestId = ++refreshRequestRef.current
     // The interval can race the render caused by fetchMore. Read the latest
     // committed window size so a full walk cannot collapse a newly loaded
@@ -805,7 +809,10 @@ function KnowledgeBaseResourceList({
     loadMoreInFlightRef.current = true
     // Fence any poll/full refresh that captured the old loaded window before
     // this request started. Polling also observes loadMoreInFlightRef and
-    // cannot start another refresh until the appended page is committed.
+    // cannot start another refresh until the appended page is committed. A
+    // single queued full refresh then reconciles any explicit refresh that
+    // overlapped this request instead of silently dropping it.
+    refreshAfterLoadMoreRef.current = true
     refreshRequestRef.current += 1
     const newPageIndex = Math.ceil(resources.length / PAGE_SIZE)
     const cursorUsed = connection.pageInfo.endCursor ?? null
@@ -845,6 +852,16 @@ function KnowledgeBaseResourceList({
       }
     } finally {
       loadMoreInFlightRef.current = false
+      if (refreshAfterLoadMoreRef.current) {
+        refreshAfterLoadMoreRef.current = false
+        void refreshLoadedResources().catch((refreshError) => {
+          console.error(
+            'Failed to refresh KB resources after loading more',
+            refreshError
+          )
+          toast({ type: 'error', message: t('kb.resourcesLoadError') })
+        })
+      }
     }
   }
 
