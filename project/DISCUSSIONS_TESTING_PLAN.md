@@ -53,9 +53,9 @@ Last reconciled: 2026-07-29.
 | `QA-006` | PASS | Lecturer overview groups and paginates course and stack threads | Fresh grouped overview screenshot `37`; current 20-to-21 pagination screenshots `42`, `43` | None |
 | `QA-007` | PASS | Lecturer generates external-block and course-wide embed links | Fresh generator and both embed modes, screenshots `21`, `40` | None |
 | `QA-008` | PASS | Anonymous embed posting requires a valid token and enabled course policy | Fresh fragment-token thread and reply flow, screenshots `22`, `23` | None |
-| `QA-009` | PASS | Tampered or stale embed scope/token fails closed without persistent side effects | Backend suite `30/30`; fallback/deep-link browser proof | Current Cypress history assertion blocked by auth harness |
+| `QA-009` | PASS | Tampered or stale embed scope/token fails closed without persistent side effects | Backend suite `30/30`; embed Playwright fragment/history and tampered-token proof | None |
 | `QA-010` | PASS | Anonymous rate limits reject repeated posting and bound audit writes | Backend suite plus fresh mobile browser rejection, screenshot `24` | Improve generic error copy |
-| `QA-011` | PASS | Non-participants and unevaluated stack participants cannot read/write protected scopes | Rollout Chromium baseline; current backend proof | Current-spec rerun |
+| `QA-011` | PASS | Non-participants and unevaluated stack participants cannot read/write protected scopes | Rollout Playwright `7/7`; current backend proof | None |
 | `QA-012` | PASS | Existing v1 live-feedback create/read/upvote flow remains unchanged | Fresh student and lecturer browser flow plus exact counter checks, screenshots `44`, `45` | None |
 
 ## Runtime Commands
@@ -70,30 +70,16 @@ pnpm --filter @klicker-uzh/playwright test:run:raw -- \
 pnpm --filter @klicker-uzh/playwright test:run:raw -- \
   --project=chromium tests/Y-course-qa-practice.spec.ts
 
-docker exec -w /workspaces/klicker-uzh default-co-c3448-app-1 \
-  sh -lc 'APP_ORIGIN_AUTH=http://127.0.0.1:3010 \
-  pnpm --filter @klicker-uzh/cypress exec cypress run \
-  --browser chromium --spec cypress/e2e/Y-course-qa-embed-workflow.cy.ts'
+pnpm --filter @klicker-uzh/playwright test:run:raw -- \
+  --project=chromium tests/Y-course-qa-embed.spec.ts
 
-docker exec -w /workspaces/klicker-uzh default-co-c3448-app-1 \
-  sh -lc 'APP_ORIGIN_AUTH=http://127.0.0.1:3010 \
-  pnpm --filter @klicker-uzh/cypress exec cypress run \
-  --browser chromium --spec cypress/e2e/Y-course-qa-rollout-gates-workflow.cy.ts'
+pnpm --filter @klicker-uzh/playwright test:run:raw -- \
+  --project=chromium tests/Y-course-qa-rollout-gates.spec.ts
 ```
 
-The current Playwright baseline is course `13/13` and practice `7/7`. The last
-completed Cypress baseline for the remaining workflows was embed `6/6` and
-rollout `7/7`. The embed baseline predates fragment-token transport and
-course-wide mode, so it is historical evidence rather than current-branch
-proof.
-
-On 2026-07-29 the isolated devrouter runtime and delegated browser login were
-restored. Three bounded Cypress attempts still returned to Auth in the first
-lecturer case before any Q&A assertion: the Cypress login helper and cookie
-origins use localhost semantics while the runtime uses devrouter hostnames.
-Treat the focused Cypress rerun as blocked by the test harness, not as a Course
-Q&A assertion failure. The equivalent product routes and interactions pass
-through `agent-browser`.
+The current Playwright baseline is course `13/13`, practice `7/7`, embed `7/7`,
+and rollout gates `7/7`. Each spec resets and seeds its own database state and
+runs serially because later cases intentionally depend on earlier setup.
 
 Run the current DB-backed service suite with:
 

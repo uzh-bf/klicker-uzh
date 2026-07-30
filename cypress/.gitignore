@@ -1,4 +1,2 @@
 cypress/videos/*
 cypress/screenshots/*
-cypress/fixtures/_qa-embed-url.txt
-cypress/fixtures/_qa-embed-*-url.txt
