@@ -150,9 +150,6 @@ function LiveQuizResetModal({
             })
             return false
           }
-
-          await onSuccess?.()
-          return true
         } catch {
           toast({
             type: 'error',
@@ -161,6 +158,14 @@ function LiveQuizResetModal({
           })
           return false
         }
+
+        try {
+          await onSuccess?.()
+        } catch {
+          // The reset already succeeded and the cache was updated. A failed
+          // optional refresh must not leave the destructive action retryable.
+        }
+        return true
       }}
       submitting={resetting}
       confirmations={confirmations}
