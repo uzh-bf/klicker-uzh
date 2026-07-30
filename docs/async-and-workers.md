@@ -2,7 +2,7 @@
 type: Async Architecture
 title: Async & Workers
 description: The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
-timestamp: '2026-07-23'
+timestamp: '2026-07-30'
 tags:
   - backend
   - hatchet
@@ -17,22 +17,30 @@ tags:
 ```
 student answer → apps/response-api (HTTP) → Hatchet event
                                               ↓
-        apps/hatchet-worker-response-processor (consume + re-emit)
-                                              ↓
-        apps/hatchet-worker-general (aggregation + scheduled jobs)
+        apps/hatchet-worker-response-processor
+                     ↓                 ↓
+                 Postgres           Redis aggregates
+
+        apps/hatchet-worker-general (lifecycle + block closure + scheduled jobs)
 ```
 
 Task definitions are centralized in `packages/hatchet/src/index.ts:prepareHatchetTasks`; the actual handlers are service functions exported from `@klicker-uzh/graphql` as the `HatchetHandlers` map — workers and the GraphQL backend share one business-logic codebase. The backend itself also constructs the tasks at startup and exposes them on the GraphQL context as `ctx.tasks`.
 
 ## Response ingest (`apps/response-api`)
 
-Bare `http.createServer`, with `GET /healthz`, `POST /InitializeLiveQuizResponseIdentity`, `POST /AddResponse`, and `POST /AddCorrelatedResponse`. POST requests require JSON; browser origins must be explicitly allowed. Aggregate non-assessment responses emit `response-received:authenticated|anonymous`; correlated responses use the versioned durable event `response-received:correlated-v1`. The assessment path (`handleAddAssessmentResponse`) verifies a JWT correlation key, dedupes via `hget` on the assessment Redis, then emits `response-received:assessment`; audit-log events (`create-audit-log-entry`) are emitted throughout. Live-quiz vs assessment behavior switches on the `ASSESSMENT_MODE` env var.
+Bare `http.createServer`, with `GET /healthz`, `POST /InitializeLiveQuizResponseIdentity`, `POST /AddResponse`, and `POST /AddCorrelatedResponse`. POST requests require JSON; browser origins must be explicitly allowed. The two standard response endpoints share typed parsing and instance lookup only: `aggregateResponse.ts` owns cookie forwarding and legacy events, while `correlatedResponseHandler.ts` owns admission, identity validation, durable outbox registration, and the versioned `response-received:correlated-v1` envelope. The assessment path (`handleAddAssessmentResponse`) verifies a JWT correlation key, dedupes via `hget` on the assessment Redis, then emits `response-received:assessment`; audit-log events (`create-audit-log-entry`) are emitted throughout. Live-quiz vs assessment behavior switches on the `ASSESSMENT_MODE` env var.
 
 For `CORRELATED_EXPORT`, initialization is the only route that may mint an anonymous quiz-scoped token. The token stays in a host-only HttpOnly cookie on the response API; neither the initialization response nor the PWA exposes it to JavaScript or sibling applications. Submission uses the dedicated `/AddCorrelatedResponse` endpoint, validates the complete response against the acceptance-time question type and restrictions, admits the signed identity into durable storage, and checks for an existing response before enqueueing. Old response API replicas do not implement the dedicated endpoint and therefore cannot silently accept a new correlated submission through the legacy aggregate path.
 
 Before enqueue acknowledgement, the response API locks the `LiveQuiz` row, rechecks that it is still published in correlated mode, and creates a `LiveQuizPendingResponse` outbox row keyed by the event message id. Its unique response key is the authoritative first-response gate, so a synchronous duplicate acknowledgement always corresponds to a durable pending or completed response. The encrypted payload contains the validated response, admitted identity, and acceptance-time instance metadata snapshot, but no browser token or cookie. Quiz ending and export therefore serialize against ingress. Hatchet receives only `{messageId}`; a non-overlapping dispatcher reserves due unsettled rows with `FOR UPDATE SKIP LOCKED` and republishes that envelope until terminal worker settlement sets `settledAt` and erases the ciphertext. The receipt and unique response key remain until the quiz is deleted, closing the completed-response admission race. An ambiguous immediate Hatchet push is acknowledged as queued and left for that dispatcher rather than discarded.
 
-The worker loads and decrypts the matching outbox row instead of trusting Hatchet event contents. It validates the admitted owner's current database scope without rechecking acceptance-time JWT expiry, always uses the acceptance snapshot rather than current Redis metadata, serializes duplicate processing with a lease, writes the `LiveQuizResponse`, then applies all aggregate Redis hash mutations plus the processed marker in one Lua operation. It deliberately skips participant response hashes, leaderboard scores, and XP for correlated quizzes so those identity-bearing surfaces cannot be matched back to exported rows. Export holds the quiz lock and returns `LIVE_QUIZ_CORRELATED_EXPORT_NOT_READY` while unsettled outbox rows remain, and performs a bounded count/payload-size preflight before materializing response rows.
+The worker binds aggregate and correlated events to separate processors. The aggregate processor owns participant-cookie verification, legacy duplicate handling, Redis pipelines, and leaderboard effects. The correlated processor loads and decrypts the matching outbox row instead of trusting Hatchet event contents. It validates the admitted owner's current database scope without rechecking acceptance-time JWT expiry, always uses the acceptance snapshot rather than current Redis metadata, serializes duplicate processing with a lease, writes the `LiveQuizResponse`, then applies all aggregate Redis hash mutations plus the processed marker in one Lua operation. It deliberately skips participant response hashes, leaderboard scores, and XP for correlated quizzes so those identity-bearing surfaces cannot be matched back to exported rows. Export holds the quiz lock and returns `LIVE_QUIZ_CORRELATED_EXPORT_NOT_READY` while unsettled outbox rows remain, and performs a bounded count/payload-size preflight before materializing response rows.
+
+## Live quiz publication
+
+Manual and scheduled publication share `packages/graphql/src/services/liveQuizPublication.ts`. The service locks and transitions PostgreSQL state first, commits, and only then materializes execution metadata in Redis from the persisted `startedAt`; no Redis network call runs inside the database transaction. Materialization acknowledgement and scheduled-task cleanup are conditional on that `startedAt` publication generation.
+
+`reconcile-live-quiz-publications` runs every minute in the general worker. It repairs published rows whose Redis metadata has not been acknowledged and cleans retained scheduled-task ids. Failed rows receive a durable five-minute retry timestamp, so one permanently failing quiz cannot occupy every bounded batch. Reconciliation is a recovery path, not a substitute for surfacing manual or scheduled publication failures.
 
 ## Worker task catalog
 
@@ -50,6 +58,7 @@ The worker loads and decrypts the matching outbox row instead of trusting Hatche
 - `publish-scheduled-*` / `end-expired-*` — activity lifecycle
 - `aggregate-block-closure-*` — live-quiz block aggregation
 - Daily crons (`0 0 * * *`): `updateGroupAverageScores`, `runningRandomGroupAssignments`, `finalRandomGroupAssignments`, `updateWeeklyTimelineEntries`
+- Minute cron (`* * * * *`): `reconcile-live-quiz-publications`
 
 ## Running locally (config-derived — verify on your machine)
 

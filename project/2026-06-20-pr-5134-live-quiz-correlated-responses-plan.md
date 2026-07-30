@@ -6,7 +6,7 @@ Plan path: `project/2026-06-20-pr-5134-live-quiz-correlated-responses-plan.md`
 Branch: `codex/live-quiz-correlated-responses`
 Target: `v3`
 PR: [#5134](https://github.com/uzh-bf/klicker-uzh/pull/5134)
-Status: maintainability remediation approved and in progress
+Status: maintainability remediation implemented; final verification and review in progress
 
 ## Non-Goals
 
@@ -597,7 +597,11 @@ Later research:
 - 2026-07-30: Exact-commit review of Remediation 3 found no qualifying behavioral or simplification issue. Remediation 4 binds aggregate and correlated Hatchet events to separate processors: aggregate processing owns participant-cookie verification, legacy duplicate handling, pipelines, and leaderboard effects; correlated processing owns outbox resolution, accepted metadata, durable persistence, locks, atomic mutation application, and settlement. Shared code is limited to response parsing/validation, mode lookup, logging context, and the pure effect planner. The `isCorrelated` and event-shape inference paths are removed. All 26 response-worker tests, typecheck, and production build pass.
 - 2026-07-30: Re-review of Remediation 2 found that a stale publication attempt could acknowledge or clear state belonging to a newer `startedAt` generation, and that a permanently failing row could monopolize the oldest bounded reconciliation batch. Materialization acknowledgement and task cleanup now require the expected published `startedAt`; failed rows receive a five-minute durable retry timestamp so later healthy rows remain eligible. The revised migration adds the retry timestamp and matching reconciliation index. All 29 database-backed response-mode/publication tests pass, including generation replacement, retry recovery, and poison-row backoff.
 - 2026-07-30: Exact-commit review of Remediation 4 found no behavioral defect. Its simplification pass removed the redundant Redis assertion and the aggregate metadata helper from the correlated module. Explicit processor dependency boundaries now allow direct orchestration tests without real infrastructure; 29 worker tests cover absent aggregate metadata, correlated terminal settlement, and operational retry without settlement. Worker typecheck and production build pass.
-- 2026-07-30: Remediation 5 makes `liveQuizResponseCollection.ts` the owner of locked course/quiz state reads, effective mode derivation, editability, assessment-transition guards, and gamification compatibility. Live quiz, course, and batch-activity services retain authorization, PIN generation, and unrelated writes while consuming the centralized decisions. Five focused policy tests, all 29 database-backed response-mode/concurrency cases, 8 correlated-export tests, GraphQL typecheck, and the production Rollup build pass; the build retains the branch's existing non-fatal Pothos/schema typing warnings.
+- 2026-07-30: Remediation 5 makes `liveQuizResponseCollection.ts` the owner of locked course/quiz state reads, effective mode derivation, editability, assessment-transition guards, and gamification compatibility. Live quiz, course, and batch-activity services retain authorization, PIN generation, and unrelated writes while consuming the centralized decisions. Seven focused policy tests, all 32 database-backed response-mode/concurrency/publication cases, 8 correlated-export tests, GraphQL typecheck, and the production Rollup build pass; the build retains the branch's existing non-fatal Pothos/schema typing warnings.
+- 2026-07-30: The engineering wiki and testing procedure now match the remediated architecture: dedicated standard response handlers and worker processors, database-first publication plus minute-level durable reconciliation, centralized GraphQL response-mode policy, and the focused recovery/orchestration verification matrix. The worker topology no longer incorrectly shows the response processor re-emitting aggregation work to the general worker.
+- 2026-07-30: Final Remediation 2 re-review found a same-generation cleanup race: after one caller cleared the scheduled task, another treated the already-achieved state as a conflict. Cleanup now rereads on a zero-row guarded update, accepts only the same published `startedAt` generation with an already-null task, and still rejects replacement tasks or generations. The publication transition now returns a type with non-null `startedAt`. All 32 database-backed response-mode/publication cases pass, including repeated cleanup with Hatchet 404, same-generation task replacement, and changed-generation cleanup.
+- 2026-07-30: Exact-commit review of Remediation 5 found no response-mode behavior or error-code regression. The accepted follow-up removes the target course's all-live-quiz lock from batch assignment; the locked course settings row already serializes assessment/gamification changes, and avoiding the broader lock removes the known reciprocal cross-course deadlock mechanism. Unused lock projections and a repeated transition lookup were also removed. Seven focused policy tests and all 32 database-backed response-mode/concurrency/publication cases pass, including unchanged published edits and mixed draft/scheduled/published course state.
+- 2026-07-30: A fresh database reset applied all 180 migrations, including the publication materialization marker/retry migration. On that clean schema, the combined GraphQL policy, response-mode/publication, and correlated-export suites passed all 47 cases; the normal development fixtures were then restored.
 
 ## Goal Prompt Requirements
 
@@ -613,7 +617,7 @@ If handed to another agent:
 
 ## Next Steps
 
-1. Complete Remediations 1-5 in the recorded order, verifying and committing each slice independently.
-2. Run the full correlated-response boundary, repository gates, and affected production builds.
-3. Run exact-commit security, maintainability, simplification, and branch crosscheck reviews; address or explicitly defer every finding.
+1. Commit the final publication-generation regression test and the aligned plan/wiki updates.
+2. Run the full correlated-response boundary, repository gate, runtime export-resolution probes, and affected production builds.
+3. Run exact-commit security, thermo-nuclear maintainability, simplification, and branch crosscheck reviews; address or explicitly defer every finding.
 4. Push the reviewed branch, refresh the draft PR description and evidence, and read back CI, reviews, and comments. Keep the PR draft until all release gates pass.

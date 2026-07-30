@@ -2,7 +2,7 @@
 type: API Layer
 title: GraphQL API Layer
 description: Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
-timestamp: '2026-07-23'
+timestamp: '2026-07-30'
 tags:
   - backend
   - graphql
@@ -32,6 +32,10 @@ Worked examples: `deleteCourse` in `mutation.ts` (asUser + ADMIN permission on c
 
 - Arg validation via the Pothos **Zod plugin** — pass `validate:` on args (email/regex/length examples in `mutation.ts`); issues are joined into a `GraphQLError` by the shaper in `builder.ts`.
 - Service-level errors: prefer `GraphQLError` with `extensions.code` (e.g. `LIVE_QUIZ_PIN_INVALID`, `FORBIDDEN` in `services/liveQuizzes.ts`). Plain `throw new Error` exists in older code — don't add more.
+
+Live quiz response-mode policy is centralized in `services/liveQuizResponseCollection.ts`. It owns locked course/quiz state reads, assessment-aware mode derivation, editability after publication, course transition validation, and the correlated-export/gamification conflict code. `liveQuizzes.ts`, `courses.ts`, and `activities.ts` retain authorization and unrelated writes but must consume these decisions rather than rebuilding the policy.
+
+Live quiz publication uses a separate boundary in `services/liveQuizPublication.ts`: transition the locked PostgreSQL row, commit, materialize Redis metadata, then acknowledge the matching `startedAt` generation. Manual, scheduled, and reconciliation callers share that sequence.
 
 ## Client operations and codegen
 
