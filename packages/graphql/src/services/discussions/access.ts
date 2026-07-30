@@ -77,7 +77,7 @@ export async function getCourseAccessActor(
   return null
 }
 
-export async function canAccessCourseDiscussionScope(
+export async function meetsCourseDiscussionScopePrerequisites(
   {
     participantId,
     courseId,

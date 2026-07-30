@@ -249,6 +249,77 @@ export function registerScopeAuthorizationSuite(
     )
   })
 
+  it('limits participantless staff stack reads to the owning course', async () => {
+    const { prisma, userOneCtx } = getContext()
+    const course = await seedCourse({}, userOneCtx)
+    const otherCourse = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, { courseId: course.id })
+    await enableCourseDiscussion(prisma, { courseId: otherCourse.id })
+    await recomputeDerivedPermissions({ courseId: course.id }, prisma)
+    await recomputeDerivedPermissions({ courseId: otherCourse.id }, prisma)
+
+    const participantId = await seedParticipantInCourse(prisma, {
+      courseId: course.id,
+    })
+    const participantCtx = createParticipantContext(userOneCtx, participantId)
+    const sameCourseStack = await seedDiscussionStack(
+      prisma,
+      {
+        courseId: course.id,
+        stackType: ElementStackType.PRACTICE_QUIZ,
+      },
+      userOneCtx
+    )
+    const otherCourseStack = await seedDiscussionStack(
+      prisma,
+      {
+        courseId: otherCourse.id,
+        stackType: ElementStackType.PRACTICE_QUIZ,
+      },
+      userOneCtx
+    )
+    await seedStackEvaluation(prisma, {
+      courseId: course.id,
+      participantId,
+      ...sameCourseStack,
+    })
+
+    const thread = await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: 'Staff-visible stack thread',
+        scope: {
+          scopeType: DiscussionScopeType.PRACTICE_STACK,
+          stackId: sameCourseStack.stack.id,
+        },
+      },
+      participantCtx
+    )
+    expect(thread).toBeTruthy()
+
+    const sameCoursePage = await courseDiscussionThreads(
+      {
+        courseId: course.id,
+        scopeKey: `stack:${sameCourseStack.stack.id}`,
+      },
+      userOneCtx
+    )
+    expect(sameCoursePage.isAccessible).toBe(true)
+    expect(sameCoursePage.threads.map(({ content }) => content)).toContain(
+      'Staff-visible stack thread'
+    )
+
+    const foreignCoursePage = await courseDiscussionThreads(
+      {
+        courseId: course.id,
+        scopeKey: `stack:${otherCourseStack.stack.id}`,
+      },
+      userOneCtx
+    )
+    expect(foreignCoursePage.isAccessible).toBe(false)
+    expect(foreignCoursePage.threads).toHaveLength(0)
+  })
+
   it('keeps default thread listing course-only even when other scopes exist', async () => {
     const { prisma, userOneCtx } = getContext()
     const course = await seedCourse({}, userOneCtx)

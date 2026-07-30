@@ -48,76 +48,74 @@ export async function canonicalizeScope(
   },
   ctx: Context
 ): Promise<CanonicalScope | null> {
-  if (space.spaceType === DB.DiscussionSpaceType.COURSE) {
-    switch (scope.scopeType) {
-      case DB.DiscussionScopeType.COURSE: {
-        return {
-          scopeType: scope.scopeType,
-          scopeKey: buildCourseDiscussionScopeKey(space.courseId),
-          scopeLabel: 'Course',
-        }
+  if (space.spaceType !== DB.DiscussionSpaceType.COURSE) return null
+
+  switch (scope.scopeType) {
+    case DB.DiscussionScopeType.COURSE: {
+      return {
+        scopeType: scope.scopeType,
+        scopeKey: buildCourseDiscussionScopeKey(space.courseId),
+        scopeLabel: 'Course',
       }
-
-      case DB.DiscussionScopeType.PRACTICE_STACK: {
-        if (!scope.stackId) return null
-
-        const stack = await ctx.prisma.elementStack.findFirst({
-          where: {
-            id: scope.stackId,
-            OR: [
-              { courseId: space.courseId },
-              { practiceQuiz: { courseId: space.courseId } },
-              { microLearning: { courseId: space.courseId } },
-            ],
-          },
-          select: {
-            id: true,
-            order: true,
-            displayName: true,
-            type: true,
-          },
-        })
-
-        if (!stack) return null
-
-        return {
-          scopeType: scope.scopeType,
-          scopeKey: buildPracticeStackDiscussionScopeKey(stack.id),
-          scopeLabel:
-            stack.displayName ||
-            `${stack.type === DB.ElementStackType.MICROLEARNING ? 'Microlearning' : 'Practice'} Stack ${stack.order}`,
-          stackId: stack.id,
-        }
-      }
-
-      case DB.DiscussionScopeType.EXTERNAL_BLOCK: {
-        if (!scope.externalSource || !scope.externalRef) return null
-
-        const externalIdentifiers = normalizeExternalScopeIdentifiers(
-          scope.externalSource,
-          scope.externalRef
-        )
-        if (!externalIdentifiers) return null
-        const { externalSource, externalRef } = externalIdentifiers
-
-        return {
-          scopeType: scope.scopeType,
-          scopeKey: buildExternalBlockDiscussionScopeKey(
-            externalSource,
-            externalRef
-          ),
-          scopeLabel: `${externalSource}:${externalRef}`,
-          externalSource,
-          externalRef,
-        }
-      }
-
-      default:
-        return null
     }
-  }
 
-  return null
+    case DB.DiscussionScopeType.PRACTICE_STACK: {
+      if (!scope.stackId) return null
+
+      const stack = await ctx.prisma.elementStack.findFirst({
+        where: {
+          id: scope.stackId,
+          OR: [
+            { courseId: space.courseId },
+            { practiceQuiz: { courseId: space.courseId } },
+            { microLearning: { courseId: space.courseId } },
+          ],
+        },
+        select: {
+          id: true,
+          order: true,
+          displayName: true,
+          type: true,
+        },
+      })
+
+      if (!stack) return null
+
+      return {
+        scopeType: scope.scopeType,
+        scopeKey: buildPracticeStackDiscussionScopeKey(stack.id),
+        scopeLabel:
+          stack.displayName ||
+          `${stack.type === DB.ElementStackType.MICROLEARNING ? 'Microlearning' : 'Practice'} Stack ${stack.order}`,
+        stackId: stack.id,
+      }
+    }
+
+    case DB.DiscussionScopeType.EXTERNAL_BLOCK: {
+      if (!scope.externalSource || !scope.externalRef) return null
+
+      const externalIdentifiers = normalizeExternalScopeIdentifiers(
+        scope.externalSource,
+        scope.externalRef
+      )
+      if (!externalIdentifiers) return null
+      const { externalSource, externalRef } = externalIdentifiers
+
+      return {
+        scopeType: scope.scopeType,
+        scopeKey: buildExternalBlockDiscussionScopeKey(
+          externalSource,
+          externalRef
+        ),
+        scopeLabel: `${externalSource}:${externalRef}`,
+        externalSource,
+        externalRef,
+      }
+    }
+
+    default:
+      return null
+  }
 }
 
 export async function resolveOrCreateScope(

@@ -5,10 +5,10 @@ import {
 } from '@klicker-uzh/types'
 import type { Context } from '../../lib/context.js'
 import {
-  canAccessCourseDiscussionScope,
   getCourseAccessActor,
   getCourseSettings,
   isCourseDiscussionEnabled,
+  meetsCourseDiscussionScopePrerequisites,
 } from './access.js'
 import {
   rejectEmbedCourseMismatch,
@@ -74,7 +74,7 @@ export async function resolveCourseDiscussionReadContext(
   }
 
   if (parsedScope.kind === 'practiceStack') {
-    const participantCanAccess = await canAccessCourseDiscussionScope(
+    const participantCanAccess = await meetsCourseDiscussionScopePrerequisites(
       {
         participantId,
         courseId,

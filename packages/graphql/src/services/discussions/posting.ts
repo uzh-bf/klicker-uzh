@@ -1,10 +1,10 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import type { Context } from '../../lib/context.js'
 import {
-  canAccessCourseDiscussionScope,
   getCourseAccessActor,
   getCourseSettings,
   isCourseDiscussionEnabled,
+  meetsCourseDiscussionScopePrerequisites,
 } from './access.js'
 import {
   enforceAnonymousRateLimits,
@@ -112,7 +112,7 @@ export async function createCourseDiscussionThreadResult(
     return threadFailure(CourseDiscussionPostFailureCode.ACCESS_DENIED)
   }
   if (
-    !(await canAccessCourseDiscussionScope(
+    !(await meetsCourseDiscussionScopePrerequisites(
       {
         participantId: authorizedParticipantId,
         courseId,
@@ -370,7 +370,7 @@ export async function createCourseDiscussionReplyResult(
     }
 
     if (
-      !(await canAccessCourseDiscussionScope(
+      !(await meetsCourseDiscussionScopePrerequisites(
         {
           participantId,
           courseId,
