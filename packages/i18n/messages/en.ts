@@ -978,10 +978,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Deleting your KlickerUZH account will irreversibly delete all associated data.',
       deleteProfileConfirmation:
         'Are you sure you want to delete your account? All data related to your account will be deleted. This action cannot be undone.',
-      privacyDataCollection: '',
-      privacyDataSharing: '',
-      privacyDataUsage: '',
-      privacyDataStorage: '',
       emailMissing:
         'Your KlickerUZH account is missing an email address, which is required to ensure complete functionality. Please provide a valid address below and save your changes.',
       forgotPasswordInfo:
@@ -1061,8 +1057,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       started: 'Started',
       submitted: 'Submitted',
       past: 'Past',
-      passed: 'Passed',
-      failed: 'Failed',
       groupActivityPassed:
         'Congratulations! Your group has passed the group activity.',
       groupActivityFailed:
@@ -3568,7 +3562,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       removeGROUP_ACTIVITYtitle: '',
       removeCOURSE: 'Remove Course',
       removeCOURSEtitle: '',
-      removeObjectTitle: 'Remove Object from Catalog Collection',
       removeObjectDescription:
         'Are you sure you want to remove the {objectType} "{objectName}" from the catalog collection? Users will then no longer be able to import it or request access to it.',
       createCatalogCollection: 'Create Collection',
@@ -3596,7 +3589,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       modifyPermissions: 'Modify Permissions',
       revokeAccess: 'Revoke Access',
       deleteCollection: 'Delete Collection',
-      removeObject: 'Remove Object',
       deleteCatalogCollectionTitle: 'Delete Catalog Collection',
       deleteCatalogCollectionDescription:
         'Are you sure you want to delete the catalog collection "{name}"? This will remove all objects from the catalog collection and prevent users from accessing these objects through the catalog collection.',

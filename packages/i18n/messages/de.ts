@@ -980,10 +980,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Das Löschen Deines KlickerUZH-Kontos wird alle verbundenen Informationen irreversibel löschen.',
       deleteProfileConfirmation:
         'Bist Du sicher, dass Du Dein Konto löschen möchtest? Alle Daten, die mit Deinem Konto assoziiert sind, werden gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.',
-      privacyDataCollection: '',
-      privacyDataSharing: '',
-      privacyDataUsage: '',
-      privacyDataStorage: '',
       emailMissing:
         'Die E-Mail-Adresse in Ihrem Konto ist ungültig oder fehlt. Bitte ergänzen Sie diese und speichern Sie Ihre Änderungen, um alle Funktionalitäten von KlickerUZH nutzen zu können.',
       forgotPasswordInfo:
@@ -1063,8 +1059,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       started: 'Gestartet',
       submitted: 'Abgegeben',
       past: 'Abgeschlossen',
-      passed: 'Bestanden',
-      failed: 'Nicht bestanden',
       groupActivityPassed:
         'Gratulation! Deine Gruppe hat die Gruppenaktivität bestanden.',
       groupActivityFailed:
@@ -3633,7 +3627,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       removeGROUP_ACTIVITYtitle: '',
       removeCOURSE: 'Kurs entfernen',
       removeCOURSEtitle: '',
-      removeObjectTitle: 'Objekt aus Katalogsammlung entfernen',
       removeObjectDescription:
         'Sind Sie sicher, dass Sie {objectType} "{objectName}" aus der Katalogsammlung entfernen möchten? Nutzer verlieren dadurch die Möglichkeit, das Objekt aus dem Katalog zu importieren bzw. Zugriff darauf zu beantragen.',
       createCatalogCollection: 'Sammlung erstellen',
@@ -3662,7 +3655,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       modifyPermissions: 'Berechtigungen bearbeiten',
       revokeAccess: 'Zugriff entziehen',
       deleteCollection: 'Sammlung löschen',
-      removeObject: 'Objekt entfernen',
       deleteCatalogCollectionTitle: 'Katalogsammlung löschen',
       deleteCatalogCollectionDescription:
         'Sind Sie sicher, dass Sie die Katalogsammlung "{name}" löschen möchten? Dies entfernt alle Objekte aus der Katalogsammlung und verhindert, dass Benutzer über die Katalogsammlung auf diese Objekte zugreifen können.',

@@ -80,7 +80,7 @@ Json columns are typed via `prisma-json-types-generator`: a `/// [TypeName]` doc
 
 - **Prisma `Decimal` is an object, never truthy-check it** — `Decimal(0)` is truthy. Convert with a `toNumber()` helper and compare with `!= null` (pattern in `packages/graphql/src/services/chatbots.ts`).
 - **`Participant` email is unique per auth mode**: `@@unique([email, isSSOAccount])` means the same normalized email can exist once as manual and once as SSO. Queries by email alone can return the wrong account; blocking new cross-mode duplicates must happen in service logic (`packages/graphql/src/services/accounts.ts`).
-- **CODE rate-limit deferral is durable**: `CodeSubmission.retryAt` holds the earliest recovery time after a CodeAPI `429`. Keep the `(status, retryAt, createdAt)` index and due-time predicate aligned so the minutely recovery scan does not hot-loop deferred work.
+- **CODE rate-limit deferral is durable**: `CodeSubmission.retryAt` holds the earliest recovery time after a CodeAPI `429`. Keep the `(status, retryAt, createdAt)` index and due-time predicate aligned so recovery cannot hot-loop deferred work; timing policy lives in [Async and workers](./async-and-workers.md).
 
 ## Adjacent: export package (`packages/export`)
 

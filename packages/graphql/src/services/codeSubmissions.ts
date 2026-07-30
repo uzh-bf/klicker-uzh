@@ -446,16 +446,18 @@ async function releaseOrFailCodeSubmission({
         },
   })
   if (updated.count !== 1) {
-    return { deferred: false, failed: null }
+    return { kind: 'retry' } as const
   }
+  if (!exhausted && retryAt) {
+    return { kind: 'deferred' } as const
+  }
+  if (!exhausted) return { kind: 'retry' } as const
   return {
-    deferred: !exhausted && retryAt !== null,
-    failed: exhausted
-      ? await prisma.codeSubmission.findUniqueOrThrow({
-          where: { id: submission.id },
-        })
-      : null,
-  }
+    kind: 'failed',
+    submission: await prisma.codeSubmission.findUniqueOrThrow({
+      where: { id: submission.id },
+    }),
+  } as const
 }
 
 export async function processCodeSubmission(
@@ -503,21 +505,21 @@ export async function processCodeSubmission(
     })
     return true
   } catch (error) {
-    const failed = await releaseOrFailCodeSubmission({
+    const outcome = await releaseOrFailCodeSubmission({
       submission: claimed,
       claimToken: claimed.claimToken,
       error,
       now: new Date(),
       prisma: globalCtx.prisma,
     })
-    if (failed.failed) {
+    if (outcome.kind === 'failed') {
       globalCtx.pubSub.publish('codeSubmissionUpdated', {
-        participantId: failed.failed.participantId,
-        receipt: toReceipt(failed.failed),
+        participantId: outcome.submission.participantId,
+        receipt: toReceipt(outcome.submission),
       })
       return false
     }
-    if (failed.deferred) return false
+    if (outcome.kind === 'deferred') return false
     throw error
   }
 }

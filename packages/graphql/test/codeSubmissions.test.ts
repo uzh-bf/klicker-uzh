@@ -711,6 +711,7 @@ describe('CODE submission lifecycle', () => {
         vi.fn().mockRejectedValue(rateLimitError)
       )
     ).toBe(false)
+    const after = Date.now()
     const deferred = await prisma.codeSubmission.findUniqueOrThrow({
       where: { id: receipt.id },
     })
@@ -721,7 +722,7 @@ describe('CODE submission lifecycle', () => {
     })
     expect(deferred.retryAt).not.toBeNull()
     expect(deferred.retryAt!.getTime()).toBeGreaterThanOrEqual(before + 17_000)
-    expect(deferred.retryAt!.getTime()).toBeLessThan(before + 18_000)
+    expect(deferred.retryAt!.getTime()).toBeLessThanOrEqual(after + 17_000)
 
     const prematureExecutor = vi.fn().mockResolvedValue(executorResult)
     expect(
@@ -791,6 +792,7 @@ describe('CODE submission lifecycle', () => {
         vi.fn().mockRejectedValue(rateLimitError)
       )
     ).toBe(false)
+    const after = Date.now()
     const deferred = await prisma.codeSubmission.findUniqueOrThrow({
       where: { id: receipt.id },
     })
@@ -798,8 +800,8 @@ describe('CODE submission lifecycle', () => {
     expect(deferred.retryAt!.getTime()).toBeGreaterThanOrEqual(
       before + expectedDelaySeconds * 1_000
     )
-    expect(deferred.retryAt!.getTime()).toBeLessThan(
-      before + (expectedDelaySeconds + 1) * 1_000
+    expect(deferred.retryAt!.getTime()).toBeLessThanOrEqual(
+      after + expectedDelaySeconds * 1_000
     )
   })
 
