@@ -13,9 +13,11 @@ model Course {
   color             String   @default("#eaa07d")
   startDate         DateTime
   endDate           DateTime
-  notificationEmail String?
-  areAnalyticsValid Boolean  @default(false)
-  isArchived        Boolean  @default(false)
+  notificationEmail       String?
+  areAnalyticsValid       Boolean   @default(false)
+  analyticsLastComputedAt DateTime?
+  chatAnalyticsValidAt    DateTime?
+  isArchived              Boolean   @default(false)
 
   authType CourseAuthType @default(PIN)
   pinCode  Int?           @unique
@@ -55,6 +57,11 @@ model Course {
   timelineEntries            TimelineEntry[]
   chatbots                   Chatbot[]
   participantInvitations     ParticipantInvitation[]
+  participantChatAnalytics   ParticipantChatAnalytics[]
+  aggregatedChatbotAnalytics AggregatedChatbotAnalytics[]
+  participantChatOutcomes    ParticipantChatOutcome[]
+  participantLiveQuizAnalytics   ParticipantLiveQuizAnalytics[]
+  aggregatedLiveQuizAnalytics    AggregatedLiveQuizAnalytics[]
 
   directPermissions  Permission[]
   permissions        DerivedPermission[]

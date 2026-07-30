@@ -90,6 +90,9 @@ model Participant {
   messages                        GroupMessage[]
   chatThreads                     ChatThread[]
   chatUsageCredits                ChatUsageCredits[]
+  participantChatAnalytics        ParticipantChatAnalytics[]
+  participantChatOutcomes         ParticipantChatOutcome[]
+  participantLiveQuizAnalytics    ParticipantLiveQuizAnalytics[]
   invitations                     ParticipantInvitation[]
   pointCorrections                PointCorrection[]
   individualPointCorrections      PointCorrection[]                @relation("PointCorrectionParticipants")
