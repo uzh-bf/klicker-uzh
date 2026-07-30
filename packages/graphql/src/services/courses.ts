@@ -2770,6 +2770,12 @@ export async function updateCourseSettings(
         isAssessmentEnabled:
           newAssessmentSetting ?? lockedState.course.isAssessmentEnabled,
       })
+    const liveQuizResponseCollectionModeById = new Map(
+      liveQuizResponseCollectionUpdates.map((update) => [
+        update.id,
+        update.responseCollectionMode,
+      ])
+    )
 
     const updated = await prisma.course.update({
       where: { id },
@@ -2886,6 +2892,15 @@ export async function updateCourseSettings(
 
     if (newAssessmentSetting === true) {
       for (const liveQuiz of lockedState.liveQuizzes) {
+        const responseCollectionMode = liveQuizResponseCollectionModeById.get(
+          liveQuiz.id
+        )
+        if (!responseCollectionMode) {
+          throw new Error(
+            `Missing response collection transition for live quiz ${liveQuiz.id}`
+          )
+        }
+
         let pinCode = liveQuiz.pinCode
         if (!pinCode) {
           for (let attempt = 0; attempt < 10; attempt++) {
@@ -2915,9 +2930,7 @@ export async function updateCourseSettings(
           data: {
             isGamificationEnabled: newGamificationSetting,
             isAssessmentEnabled: true,
-            responseCollectionMode: liveQuizResponseCollectionUpdates.find(
-              (update) => update.id === liveQuiz.id
-            )!.responseCollectionMode,
+            responseCollectionMode,
             pinCode,
           },
         })

@@ -13,11 +13,10 @@ export async function lockLiveQuizResponseCollectionState({
   liveQuizId: string
 }) {
   const [liveQuiz] = await prisma.$queryRaw<
-    Pick<DB.LiveQuiz, 'id' | 'courseId' | 'responseCollectionMode' | 'status'>[]
+    Pick<DB.LiveQuiz, 'id' | 'responseCollectionMode' | 'status'>[]
   >`
     SELECT
       "id",
-      "courseId",
       "responseCollectionMode"::text AS "responseCollectionMode",
       "status"::text AS "status"
     FROM "public"."LiveQuiz"
@@ -42,17 +41,13 @@ export async function lockCourseLiveQuizResponseCollectionState({
   if (!course) return null
 
   const liveQuizzes = await prisma.$queryRaw<
-    Pick<
-      DB.LiveQuiz,
-      'id' | 'pinCode' | 'responseCollectionMode' | 'status' | 'isDeleted'
-    >[]
+    Pick<DB.LiveQuiz, 'id' | 'pinCode' | 'responseCollectionMode' | 'status'>[]
   >`
     SELECT
       "id",
       "pinCode",
       "responseCollectionMode"::text AS "responseCollectionMode",
-      "status"::text AS "status",
-      "isDeleted"
+      "status"::text AS "status"
     FROM "public"."LiveQuiz"
     WHERE
       "courseId" = ${courseId}::uuid

@@ -9,7 +9,7 @@ import generatePassword from 'generate-password'
 import { POINTS_PER_GROUP_ACTIVITY_ELEMENT } from './groups.js'
 import {
   deriveLiveQuizResponseCollectionMode,
-  lockCourseLiveQuizResponseCollectionState,
+  lockCourseLiveQuizResponseCollectionSettings,
   lockLiveQuizResponseCollectionState,
 } from './liveQuizResponseCollection.js'
 import { POINTS_PER_INSTANCE } from './stacks.js'
@@ -699,13 +699,13 @@ export async function applyActivityBatchOperations(
   // update live quizzes (including gamification / assessment flags & all instances - depending on the required updates)
   for (const liveQuiz of liveQuizzes) {
     const updatedLiveQuiz = await ctx.prisma.$transaction(async (tx) => {
-      const lockedCourseState = newCourse
-        ? await lockCourseLiveQuizResponseCollectionState({
+      const lockedCourseSettings = newCourse
+        ? await lockCourseLiveQuizResponseCollectionSettings({
             prisma: tx,
             courseId: newCourse.id,
           })
         : null
-      if (newCourse && !lockedCourseState) {
+      if (newCourse && !lockedCourseSettings) {
         throw new Error('Target course no longer exists')
       }
 
@@ -735,7 +735,7 @@ export async function applyActivityBatchOperations(
 
       const isCourseChanged =
         !!newCourse && currentLiveQuiz.courseId !== newCourse.id
-      const targetCourse = lockedCourseState?.course ?? newCourse
+      const targetCourse = lockedCourseSettings ?? newCourse
       const targetResponseCollectionMode =
         isCourseChanged && targetCourse
           ? deriveLiveQuizResponseCollectionMode({

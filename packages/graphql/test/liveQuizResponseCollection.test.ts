@@ -85,6 +85,20 @@ describe('live quiz response collection policy', () => {
     )
   })
 
+  it('preserves the generic published edit error when the mode is unchanged', () => {
+    expect(() =>
+      assertLiveQuizResponseCollectionModeEditable({
+        liveQuiz: {
+          status: PublicationStatus.PUBLISHED,
+          responseCollectionMode:
+            LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS,
+        },
+        responseCollectionMode:
+          LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS,
+      })
+    ).toThrow('Cannot edit a published live quiz')
+  })
+
   it('rejects assessment transitions while a live quiz is running', () => {
     expect(() =>
       deriveCourseLiveQuizResponseCollectionTransition({
@@ -113,6 +127,48 @@ describe('live quiz response collection policy', () => {
     ).toEqual([
       {
         id: 'live-quiz-id',
+        responseCollectionMode:
+          LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS,
+      },
+    ])
+  })
+
+  it('preserves mixed locked modes when course settings do not change', () => {
+    const state = courseState()
+    state.liveQuizzes.push(
+      {
+        ...state.liveQuizzes[0]!,
+        id: 'scheduled-live-quiz-id',
+        responseCollectionMode:
+          LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+        status: PublicationStatus.SCHEDULED,
+      },
+      {
+        ...state.liveQuizzes[0]!,
+        id: 'published-live-quiz-id',
+        status: PublicationStatus.PUBLISHED,
+      }
+    )
+
+    expect(
+      deriveCourseLiveQuizResponseCollectionTransition({
+        state,
+        isAssessmentEnabled: false,
+        isGamificationEnabled: false,
+      })
+    ).toEqual([
+      {
+        id: 'live-quiz-id',
+        responseCollectionMode:
+          LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS,
+      },
+      {
+        id: 'scheduled-live-quiz-id',
+        responseCollectionMode:
+          LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+      },
+      {
+        id: 'published-live-quiz-id',
         responseCollectionMode:
           LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS,
       },
