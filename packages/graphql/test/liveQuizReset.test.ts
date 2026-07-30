@@ -595,6 +595,25 @@ describe('live quiz reset summary', () => {
       { liveQuizId: fixture.liveQuizId },
       prisma
     )
+    await prisma.derivedPermission.deleteMany({
+      where: {
+        liveQuizId: fixture.liveQuizId,
+        userId: userOneCtx.user.sub,
+      },
+    })
+    expect(
+      await prisma.derivedPermission.count({
+        where: {
+          liveQuizId: fixture.liveQuizId,
+          userId: userOneCtx.user.sub,
+        },
+      })
+    ).toBe(0)
+    expect(
+      await prisma.derivedPermission.count({
+        where: { liveQuizId: fixture.liveQuizId },
+      })
+    ).toBe(1)
 
     await expect(
       resetLiveQuiz({ id: fixture.liveQuizId }, userOneCtx)
