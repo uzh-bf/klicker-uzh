@@ -42,6 +42,7 @@ model Course {
   participantGroups          ParticipantGroup[]
   microLearnings             MicroLearning[]
   liveQuizzes                LiveQuiz[]
+  liveQuizRewardEntries      LiveQuizRewardEntry[]
   participantAnalytics       ParticipantAnalytics[]
   aggregatedAnalytics        AggregatedAnalytics[]
   aggregatedCourseAnalytics  AggregatedCourseAnalytics?

@@ -52,9 +52,10 @@ model Achievement {
   course   Course? @relation(fields: [courseId], references: [id])
   courseId String? @db.Uuid
 
-  participantInstances ParticipantAchievementInstance[]
-  groupInstances       GroupAchievementInstance[]
-  classInstances       ClassAchievementInstance[]
+  participantInstances  ParticipantAchievementInstance[]
+  groupInstances        GroupAchievementInstance[]
+  classInstances        ClassAchievementInstance[]
+  liveQuizRewardEntries LiveQuizRewardEntry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
