@@ -1651,6 +1651,49 @@ type LiveQuizForEnding = DB.Prisma.LiveQuizGetPayload<{
   }
 }>
 
+const MIN_PRISMA_INT = -2147483648
+const MAX_PRISMA_INT = 2147483647
+
+function invalidLiveQuizRewardData(message: string) {
+  return new GraphQLError(message, {
+    extensions: { code: 'LIVE_QUIZ_REWARD_DATA_INVALID' },
+  })
+}
+
+function parseCanonicalRewardInteger(value: string, dataName: string) {
+  if (!/^(?:0|-[1-9]\d*|[1-9]\d*)$/.test(value)) {
+    throw invalidLiveQuizRewardData(`Invalid live quiz ${dataName} reward data`)
+  }
+
+  const parsedValue = Number(value)
+  if (
+    !Number.isInteger(parsedValue) ||
+    parsedValue < MIN_PRISMA_INT ||
+    parsedValue > MAX_PRISMA_INT
+  ) {
+    throw invalidLiveQuizRewardData(`Invalid live quiz ${dataName} reward data`)
+  }
+
+  return parsedValue
+}
+
+function parseRedisHashResult(result: unknown, dataName: string) {
+  if (
+    !Array.isArray(result) ||
+    result.length !== 2 ||
+    result[0] !== null ||
+    typeof result[1] !== 'object' ||
+    result[1] === null ||
+    Array.isArray(result[1]) ||
+    ![Object.prototype, null].includes(Object.getPrototypeOf(result[1])) ||
+    !Object.values(result[1]).every((value) => typeof value === 'string')
+  ) {
+    throw invalidLiveQuizRewardData(`Invalid live quiz ${dataName} snapshot`)
+  }
+
+  return result[1] as Record<string, string>
+}
+
 async function snapshotRegularLiveQuizRewards({
   liveQuizId,
   redis,
@@ -1658,29 +1701,26 @@ async function snapshotRegularLiveQuizRewards({
   liveQuizId: string
   redis: Redis
 }): Promise<Map<string, { score?: number; xp?: number }>> {
-  const [quizLeaderboard, quizXp] = await Promise.all([
-    redis.hgetall(`lq:${liveQuizId}:lb`),
-    redis.hgetall(`lq:${liveQuizId}:xp`),
-  ])
+  const snapshot = redis.multi()
+  snapshot.hgetall(`lq:${liveQuizId}:lb`)
+  snapshot.hgetall(`lq:${liveQuizId}:xp`)
+  const snapshotResult = await snapshot.exec()
+
+  if (!Array.isArray(snapshotResult) || snapshotResult.length !== 2) {
+    throw invalidLiveQuizRewardData('Invalid live quiz reward snapshot')
+  }
+
+  const quizLeaderboard = parseRedisHashResult(snapshotResult[0], 'leaderboard')
+  const quizXp = parseRedisHashResult(snapshotResult[1], 'XP')
   const cachedRewards = new Map<string, { score?: number; xp?: number }>()
 
   for (const [participantId, value] of Object.entries(quizXp)) {
-    const xp = Number.parseInt(value, 10)
-    if (!Number.isFinite(xp)) {
-      throw new GraphQLError('Invalid live quiz XP reward data', {
-        extensions: { code: 'LIVE_QUIZ_REWARD_DATA_INVALID' },
-      })
-    }
+    const xp = parseCanonicalRewardInteger(value, 'XP')
     cachedRewards.set(participantId, { xp })
   }
 
   for (const [participantId, value] of Object.entries(quizLeaderboard)) {
-    const score = Number.parseInt(value, 10)
-    if (!Number.isFinite(score)) {
-      throw new GraphQLError('Invalid live quiz leaderboard reward data', {
-        extensions: { code: 'LIVE_QUIZ_REWARD_DATA_INVALID' },
-      })
-    }
+    const score = parseCanonicalRewardInteger(value, 'leaderboard')
     cachedRewards.set(participantId, {
       ...cachedRewards.get(participantId),
       score,
@@ -1699,33 +1739,49 @@ async function loadRegularLiveQuizRewardParticipants({
   cachedRewards: Map<string, { score?: number; xp?: number }>
   tx: DB.Prisma.TransactionClient
 }): Promise<LiveQuizRewardParticipant[]> {
-  const participants = await Promise.all(
-    Array.from(cachedRewards.entries()).map(
-      async ([participantId, { score, xp }]) => {
-        const [participant, participation] = await Promise.all([
-          tx.participant.findUnique({
-            where: { id: participantId },
-            select: { id: true },
-          }),
-          liveQuiz.courseId
-            ? tx.participation.findUnique({
-                where: {
-                  courseId_participantId: {
-                    courseId: liveQuiz.courseId,
-                    participantId,
-                  },
-                },
-                select: { id: true, isActive: true },
-              })
-            : null,
-        ])
+  const participantIds = Array.from(cachedRewards.keys())
+  if (participantIds.length === 0) {
+    return []
+  }
 
-        if (!participant) {
-          return null
-        }
+  const participationsQuery: Promise<
+    { id: number; isActive: boolean; participantId: string }[]
+  > = liveQuiz.courseId
+    ? tx.participation.findMany({
+        where: {
+          courseId: liveQuiz.courseId,
+          participantId: { in: participantIds },
+        },
+        select: { id: true, isActive: true, participantId: true },
+      })
+    : Promise.resolve([])
+  const [participants, participations] = await Promise.all([
+    tx.participant.findMany({
+      where: { id: { in: participantIds } },
+      select: { id: true },
+    }),
+    participationsQuery,
+  ])
+  const existingParticipantIds = new Set(
+    participants.map((participant) => participant.id)
+  )
+  const participationByParticipantId = new Map(
+    participations.map((participation) => [
+      participation.participantId,
+      participation,
+    ])
+  )
 
-        return {
-          participantId: participant.id,
+  return Array.from(cachedRewards.entries()).flatMap(
+    ([participantId, { score, xp }]) => {
+      if (!existingParticipantIds.has(participantId)) {
+        return []
+      }
+
+      const participation = participationByParticipantId.get(participantId)
+      return [
+        {
+          participantId,
           participationId: participation?.id ?? null,
           courseId: liveQuiz.courseId,
           hasActiveParticipation: participation?.isActive ?? false,
@@ -1733,13 +1789,9 @@ async function loadRegularLiveQuizRewardParticipants({
             liveQuiz.course?.isGamificationEnabled ?? false,
           score,
           xp,
-        }
-      }
-    )
-  )
-
-  return participants.flatMap((participant) =>
-    participant === null ? [] : [participant]
+        },
+      ]
+    }
   )
 }
 
@@ -1831,9 +1883,12 @@ async function endRegularLiveQuiz(
           tx,
         })
 
-        return tx.liveQuiz.findUniqueOrThrow({
-          where: { id: liveQuiz.id },
-        })
+        return {
+          liveQuiz: await tx.liveQuiz.findUniqueOrThrow({
+            where: { id: liveQuiz.id },
+          }),
+          didTransition: true,
+        }
       },
       {
         isolationLevel: DB.Prisma.TransactionIsolationLevel.Serializable,
@@ -1867,7 +1922,13 @@ async function endRegularLiveQuiz(
       endedLiveQuiz.activeRewardRun.status ===
         DB.LiveQuizRewardRunStatus.APPLIED
     ) {
-      return endedLiveQuiz
+      return { liveQuiz: endedLiveQuiz, didTransition: false }
+    }
+
+    if (isSerializableConflict) {
+      throw new GraphQLError('Live quiz could not transition to ended', {
+        extensions: { code: 'LIVE_QUIZ_END_CONFLICT' },
+      })
     }
 
     throw error
@@ -1906,12 +1967,15 @@ export async function endLiveQuiz(
 
   if (!quiz.isAssessmentEnabled) {
     try {
-      const endedLiveQuiz = await endRegularLiveQuiz(quiz, ctx)
+      const { liveQuiz: endedLiveQuiz, didTransition } =
+        await endRegularLiveQuiz(quiz, ctx)
 
-      await sendTeamsNotification({
-        scope: 'graphql/endLiveQuiz',
-        text: `END Live quiz ${quiz.name} with id ${quiz.id}.`,
-      })
+      if (didTransition) {
+        await sendTeamsNotification({
+          scope: 'graphql/endLiveQuiz',
+          text: `END Live quiz ${quiz.name} with id ${quiz.id}.`,
+        })
+      }
 
       return endedLiveQuiz
     } catch (error) {

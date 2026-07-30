@@ -10,7 +10,9 @@ import {
 } from '@klicker-uzh/prisma/client'
 import { processElementData } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
+import type { Redis } from 'ioredis'
 import { v4 as uuidv4 } from 'uuid'
+import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
   calculateLiveQuizRewardPlan,
@@ -322,6 +324,77 @@ describe('regular live quiz reward ledger integration', () => {
     return { course, liveQuiz, participants }
   }
 
+  function createSnapshotRedis(snapshotResult: unknown) {
+    const queuedKeys: string[] = []
+    const redisMulti = {
+      hgetall(key: string) {
+        queuedKeys.push(key)
+        return redisMulti
+      },
+      exec: vi.fn(async () => snapshotResult),
+    }
+    const directHgetall = vi.fn(async () => ({}))
+    const multi = vi.fn(() => redisMulti)
+
+    return {
+      redis: { hgetall: directHgetall, multi } as unknown as Redis,
+      directHgetall,
+      multi,
+      redisMulti,
+      queuedKeys,
+    }
+  }
+
+  async function expectRegularQuizRewardsUntouched({
+    liveQuizId,
+    participantIds,
+  }: {
+    liveQuizId: string
+    participantIds: string[]
+  }) {
+    expect(
+      await prisma.liveQuiz.findUniqueOrThrow({
+        where: { id: liveQuizId },
+        select: {
+          status: true,
+          finishedAt: true,
+          activeRewardRunId: true,
+        },
+      })
+    ).toEqual({
+      status: PublicationStatus.PUBLISHED,
+      finishedAt: null,
+      activeRewardRunId: null,
+    })
+    expect(
+      await prisma.liveQuizRewardRun.count({
+        where: { liveQuizId },
+      })
+    ).toBe(0)
+    expect(
+      await prisma.participant.findMany({
+        where: { id: { in: participantIds } },
+        orderBy: { id: 'asc' },
+        select: { xp: true },
+      })
+    ).toEqual(participantIds.map(() => ({ xp: 0 })))
+    expect(
+      await prisma.leaderboardEntry.count({
+        where: { participantId: { in: participantIds } },
+      })
+    ).toBe(0)
+    expect(
+      await prisma.timelineEntry.count({
+        where: { participation: { participantId: { in: participantIds } } },
+      })
+    ).toBe(0)
+    expect(
+      await prisma.participantAchievementInstance.count({
+        where: { participantId: { in: participantIds } },
+      })
+    ).toBe(0)
+  }
+
   it('applies exact rewards and persists one active run atomically', async () => {
     const { course, liveQuiz, participants } = await seedGamifiedRunningQuiz()
 
@@ -343,6 +416,7 @@ describe('regular live quiz reward ledger integration', () => {
     expect(persistedQuiz.activeRewardRun?.endedAt).toEqual(
       persistedQuiz.finishedAt
     )
+    expect(persistedQuiz.activeRewardRun?.entries).toHaveLength(3)
     expect(persistedQuiz.activeRewardRun?.entries).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -443,6 +517,106 @@ describe('regular live quiz reward ledger integration', () => {
       ).xp
     ).toBe(55)
   })
+
+  it('reads leaderboard and XP through one Redis transaction', async () => {
+    const { liveQuiz, participants } = await seedGamifiedRunningQuiz()
+    const quizLeaderboard = await userOneCtx.redisExec.hgetall(
+      `lq:${liveQuiz.id}:lb`
+    )
+    const quizXp = await userOneCtx.redisExec.hgetall(`lq:${liveQuiz.id}:xp`)
+    const snapshotRedis = createSnapshotRedis([
+      [null, quizLeaderboard],
+      [null, quizXp],
+    ])
+    const snapshotCtx = {
+      ...userOneCtx,
+      redisExec: snapshotRedis.redis,
+    }
+
+    const endedQuiz = await endLiveQuiz({ id: liveQuiz.id }, snapshotCtx)
+
+    expect(endedQuiz?.status).toBe(PublicationStatus.ENDED)
+    expect(snapshotRedis.multi).toHaveBeenCalledTimes(1)
+    expect(snapshotRedis.queuedKeys).toEqual([
+      `lq:${liveQuiz.id}:lb`,
+      `lq:${liveQuiz.id}:xp`,
+    ])
+    expect(snapshotRedis.redisMulti.exec).toHaveBeenCalledTimes(1)
+    expect(snapshotRedis.directHgetall).not.toHaveBeenCalled()
+    expect(
+      (
+        await prisma.participant.findUniqueOrThrow({
+          where: { id: participants[0]!.participant.id },
+        })
+      ).xp
+    ).toBe(55)
+  })
+
+  it.each([
+    [
+      'a command-level Redis error',
+      [
+        [new Error('synthetic Redis command failure'), null],
+        [null, {}],
+      ],
+    ],
+    [
+      'a malformed Redis result',
+      [
+        [null, []],
+        [null, {}],
+      ],
+    ],
+  ])('rejects %s without ending or applying rewards', async (_, result) => {
+    const { liveQuiz, participants } = await seedGamifiedRunningQuiz()
+    const snapshotRedis = createSnapshotRedis(result)
+    const snapshotCtx = {
+      ...userOneCtx,
+      redisExec: snapshotRedis.redis,
+    }
+
+    await expect(
+      endLiveQuiz({ id: liveQuiz.id }, snapshotCtx)
+    ).rejects.toMatchObject({
+      extensions: { code: 'LIVE_QUIZ_REWARD_DATA_INVALID' },
+    })
+    await expectRegularQuizRewardsUntouched({
+      liveQuizId: liveQuiz.id,
+      participantIds: participants.map(
+        (participant) => participant.participant.id
+      ),
+    })
+  })
+
+  it.each([
+    ['partial leaderboard data', 'lb', '100points'],
+    ['decimal XP data', 'xp', '40.5'],
+    ['non-canonical leaderboard data', 'lb', '0100'],
+    ['XP above the Int32 range', 'xp', '2147483648'],
+    ['leaderboard data below the Int32 range', 'lb', '-2147483649'],
+  ])(
+    'rejects %s without ending or applying rewards',
+    async (_, rewardType, value) => {
+      const { liveQuiz, participants } = await seedGamifiedRunningQuiz()
+      await userOneCtx.redisExec.hset(
+        `lq:${liveQuiz.id}:${rewardType}`,
+        participants[0]!.participant.id,
+        value
+      )
+
+      await expect(
+        endLiveQuiz({ id: liveQuiz.id }, userOneCtx)
+      ).rejects.toMatchObject({
+        extensions: { code: 'LIVE_QUIZ_REWARD_DATA_INVALID' },
+      })
+      await expectRegularQuizRewardsUntouched({
+        liveQuizId: liveQuiz.id,
+        participantIds: participants.map(
+          (participant) => participant.participant.id
+        ),
+      })
+    }
+  )
 
   it('persists an empty applied run for a non-gamified regular quiz', async () => {
     const course = await seedCourse(
