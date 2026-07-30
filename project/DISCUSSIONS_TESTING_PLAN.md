@@ -79,7 +79,9 @@ pnpm --filter @klicker-uzh/playwright test:run:raw -- \
 
 The current Playwright baseline is course `13/13`, practice `7/7`, embed `7/7`,
 and rollout gates `7/7`. Each spec resets and seeds its own database state and
-runs serially because later cases intentionally depend on earlier setup.
+runs serially because later cases intentionally depend on earlier setup. The
+rollout suite also restores all Q&A flags in file-level teardown so a terminal
+failure cannot leak disabled state.
 
 Run the current DB-backed service suite with:
 
@@ -96,7 +98,7 @@ concurrency, scope behavior, pagination, and presentation metadata.
 ## Screenshot Inventory
 
 The canonical review surface is
-`project/_local/course-qa-screenshots/index.html`. It contains 26 fresh images:
+`project/_local/course-qa-screenshots/index.html`. It links 43 verified images:
 
 - Manage empty/full-width/grouped overview, settings, and external embed
   generation plus current 20-to-21 pagination: screenshots `19` to `21`, `37`,

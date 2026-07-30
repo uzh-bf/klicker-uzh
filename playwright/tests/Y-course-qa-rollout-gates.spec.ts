@@ -6,16 +6,21 @@ import { expect, test } from '../util/fixtures.js'
 const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
 const studentUrl = process.env.URL_STUDENT ?? URL_STUDENT
 const courseName = COURSE_QA_DATA.course
+const enabledFlags = {
+  isCourseQARolloutEnabled: true,
+  isCourseQAEnabled: true,
+  isCourseQAAnonymousEnabled: true,
+}
 
 test.describe.configure({ mode: 'serial' })
 
 test('CLEANUP', async () => {
   await cleanupTest()
-  await setCourseQAFlags(courseName, {
-    isCourseQARolloutEnabled: true,
-    isCourseQAEnabled: true,
-    isCourseQAAnonymousEnabled: true,
-  })
+  await setCourseQAFlags(courseName, enabledFlags)
+})
+
+test.afterAll(async () => {
+  await setCourseQAFlags(courseName, enabledFlags)
 })
 
 test.describe('Course Q&A rollout-gate workflow', () => {
@@ -48,6 +53,10 @@ test.describe('Course Q&A rollout-gate workflow', () => {
 
     await loginStudent()
     await page.getByTestId(`course-button-${courseName}`).click()
+    await expect(page).toHaveURL(
+      new RegExp(`/course/${COURSE_ID_TEST}(?:[/?#]|$)`)
+    )
+    await expect(page.getByTestId('course-overview-content')).toBeVisible()
     await expect(page.getByTestId('course-overview-qa-panel')).toHaveCount(0)
 
     await page.goto(`${studentUrl}/course/${COURSE_ID_TEST}/qa`)
@@ -103,20 +112,16 @@ test.describe('Course Q&A rollout-gate workflow', () => {
     page,
     loginStudent,
   }) => {
-    try {
-      await loginStudent()
-      await page.getByTestId(`course-button-${courseName}`).click()
-      await expect(page.getByTestId('course-overview-qa-panel')).toHaveCount(0)
+    await loginStudent()
+    await page.getByTestId(`course-button-${courseName}`).click()
+    await expect(page).toHaveURL(
+      new RegExp(`/course/${COURSE_ID_TEST}(?:[/?#]|$)`)
+    )
+    await expect(page.getByTestId('course-overview-content')).toBeVisible()
+    await expect(page.getByTestId('course-overview-qa-panel')).toHaveCount(0)
 
-      await page.goto(`${studentUrl}/course/${COURSE_ID_TEST}/qa`)
-      await expect(page.getByTestId('course-qa-access-denied')).toBeVisible()
-      await expect(page.getByTestId('course-qa-thread-input')).toHaveCount(0)
-    } finally {
-      await setCourseQAFlags(courseName, {
-        isCourseQARolloutEnabled: true,
-        isCourseQAEnabled: true,
-        isCourseQAAnonymousEnabled: true,
-      })
-    }
+    await page.goto(`${studentUrl}/course/${COURSE_ID_TEST}/qa`)
+    await expect(page.getByTestId('course-qa-access-denied')).toBeVisible()
+    await expect(page.getByTestId('course-qa-thread-input')).toHaveCount(0)
   })
 })
