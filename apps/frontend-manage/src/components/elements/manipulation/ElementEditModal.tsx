@@ -16,9 +16,9 @@ import {
   UpdateElementInstancesDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { useLocalStorage } from '@uidotdev/usehooks'
 import { useRouter } from 'next/router'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
+import { useElementAutoSave } from './elementAutoSave'
 import ElementEditForm from './ElementEditForm'
 import {
   createInlineCaseStudyCollection,
@@ -51,37 +51,6 @@ interface ElementEditModalProps {
   refetchElements: () => Promise<void>
 }
 
-type ElementAutoSave = {
-  version: 1
-  userId: string
-  values: ElementFormTypes
-}
-
-export function getElementAutoSaveForUser(
-  value: unknown,
-  userId: string | undefined
-): ElementFormTypes | undefined {
-  if (
-    !userId ||
-    typeof value !== 'object' ||
-    value === null ||
-    !('version' in value) ||
-    value.version !== 1 ||
-    !('userId' in value) ||
-    value.userId !== userId ||
-    !('values' in value) ||
-    typeof value.values !== 'object' ||
-    value.values === null ||
-    Array.isArray(value.values) ||
-    !('type' in value.values) ||
-    !Object.values(ElementType).includes(value.values.type as ElementType)
-  ) {
-    return undefined
-  }
-
-  return value.values as ElementFormTypes
-}
-
 function ElementEditModal({
   inputsDisabled = false,
   isOpen,
@@ -100,17 +69,14 @@ function ElementEditModal({
     typeof elementId === 'undefined' || isDuplication
       ? 'autosave-element-creation'
       : `autosave-element-${elementId}`
-  const [autoSavedElement, setAutoSavedElement] =
-    useLocalStorage<ElementAutoSave>(autoSaveKey, undefined)
   const { loading: loadingUser, data: dataUser } = useQuery(UserProfileDocument)
   const userId = dataUser?.userProfile?.id
-  const recoveredElement = getElementAutoSaveForUser(autoSavedElement, userId)
-
-  useEffect(() => {
-    if (userId && autoSavedElement && !recoveredElement) {
-      localStorage.removeItem(autoSaveKey)
-    }
-  }, [autoSaveKey, autoSavedElement, recoveredElement, userId])
+  const {
+    autoSavedElement,
+    loaded: autoSaveLoaded,
+    setAutoSavedElement,
+  } = useElementAutoSave(autoSaveKey, userId)
+  const recoveredElement = autoSavedElement?.values
 
   const storeAutoSavedElement = useCallback(
     (values: ElementFormTypes) => {
@@ -167,12 +133,12 @@ function ElementEditModal({
   // only update the form values on initial rendering in creation or edit mode (not in duplication mode)
   // (otherwise, saving the question will directly trigger another save)
   const formikInitialValues = useMemo(() => {
-    if (!initialValues || !userId) {
+    if (!initialValues || !userId || !autoSaveLoaded) {
       return undefined
     }
     return isDuplication ? initialValues : (recoveredElement ?? initialValues)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, isDuplication, initialValues, userId])
+  }, [isOpen, isDuplication, initialValues, userId, autoSaveLoaded])
 
   return (
     <ElementEditForm
@@ -453,11 +419,7 @@ function ElementEditModal({
       onSuccess={() => {
         // remove local storage entry
         if (autoSavedElement) {
-          localStorage.removeItem(
-            typeof elementId === 'undefined' || isDuplication
-              ? 'autosave-element-creation'
-              : `autosave-element-${elementId}`
-          )
+          setAutoSavedElement(undefined)
         }
 
         // extract query parameters

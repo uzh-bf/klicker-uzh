@@ -17,7 +17,7 @@ import { Ellipsis } from '@klicker-uzh/markdown'
 import { Badge, Button, Checkbox, Dropdown } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
-import React, { useState } from 'react'
+import React, { useCallback, useState } from 'react'
 import { useDrag } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
 import ActivityLogDialog from '../sharing/ActivityLogDialog'
@@ -25,6 +25,7 @@ import ObjectPermissionLevel from '../sharing/ObjectPermissionLevel'
 import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
 import SharingTypeBadge from '../sharing/SharingTypeBadge'
 import ElementTags from './ElementTags'
+import { parseElementAutoSaveForUser } from './manipulation/elementAutoSave'
 import ElementDeletionModal from './manipulation/ElementDeletionModal'
 import ElementEditModal, {
   ElementEditMode,
@@ -90,6 +91,30 @@ function Element({
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
   })
+  const userId = dataUser?.userProfile?.id
+  const editDisabled = disabled || !userId
+
+  const openElementEdit = useCallback(() => {
+    if (editDisabled) {
+      return
+    }
+
+    const autoSaveKey = `autosave-element-${element.id}`
+    const serializedValue = localStorage.getItem(autoSaveKey)
+    const recoveredElement = parseElementAutoSaveForUser(
+      serializedValue,
+      userId
+    )
+
+    if (recoveredElement) {
+      setShowRecoveryPrompt(true)
+    } else {
+      if (serializedValue) {
+        localStorage.removeItem(autoSaveKey)
+      }
+      setModificationModalOpen(true)
+    }
+  }, [editDisabled, element.id, userId])
 
   const [collectedProps, drag] = useDrag({
     item: {
@@ -111,8 +136,8 @@ function Element({
   const actions = useElementActions({
     element,
     disabled,
-    setShowRecoveryPrompt,
-    setModificationModalOpen,
+    editDisabled,
+    onEdit: openElementEdit,
     setDuplicationModalOpen,
     setDeletionModalOpen,
     setRemovalModalOpen,
@@ -161,23 +186,13 @@ function Element({
                 <a
                   className={twMerge(
                     'hover:text-uzh-blue-100 inline-flex flex-1 cursor-pointer items-center text-lg font-bold',
-                    disabled && 'hover:cursor-not-allowed hover:text-black'
+                    editDisabled && 'hover:cursor-not-allowed hover:text-black'
                   )}
                   role="button"
                   tabIndex={0}
                   type="button"
                   onClick={() => {
-                    if (!disabled) {
-                      const value = localStorage.getItem(
-                        `autosave-element-${element.id}`
-                      )
-
-                      if (value) {
-                        setShowRecoveryPrompt(true)
-                      } else {
-                        setModificationModalOpen(true)
-                      }
-                    }
+                    openElementEdit()
                   }}
                   data-cy={`element-title-${element.name}`}
                 >

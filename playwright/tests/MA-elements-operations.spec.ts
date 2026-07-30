@@ -1,3 +1,4 @@
+import { ElementStatus, ElementType } from '@klicker-uzh/prisma/client'
 import { Page } from '@playwright/test'
 import dmQuestionsData from '../../cypress/cypress/fixtures/DM-questions.json' with { type: 'json' }
 import questionsData from '../../cypress/cypress/fixtures/questions.json' with { type: 'json' }
@@ -496,6 +497,62 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(page.getByTestId('insert-question-title')).toHaveValue('')
     })
 
+    test('Reject invalid, foreign, and structurally incomplete creation drafts', async ({
+      page,
+    }) => {
+      const storageKey = 'autosave-element-creation'
+      const foreignDraft = JSON.stringify({
+        version: 1,
+        userId: 'foreign-user',
+        values: {
+          type: ElementType.SC,
+          name: 'Foreign draft',
+          status: ElementStatus.READY,
+          content: '',
+          explanation: '',
+          tags: [],
+          basePoints: true,
+          pointsMultiplier: '1',
+          options: {
+            choices: [{ id: 'choice-1' }],
+            displayMode: 'LIST',
+            hasAnswerFeedbacks: false,
+            hasSampleSolution: false,
+          },
+        },
+      })
+      const incompleteCurrentUserDraft = JSON.stringify({
+        version: 1,
+        userId: LECTURER_ID,
+        values: { type: ElementType.CODE },
+      })
+
+      for (const serializedValue of [
+        '{',
+        foreignDraft,
+        incompleteCurrentUserDraft,
+      ]) {
+        await page.evaluate(
+          ({ key, value }) => localStorage.setItem(key, value),
+          { key: storageKey, value: serializedValue }
+        )
+        await page.getByTestId('create-question').click()
+
+        await expectNotAttached(page.getByTestId('load-recovered-element-data'))
+        await expectNotAttached(
+          page.getByTestId('discard-recovered-element-data')
+        )
+        await expect(page.getByTestId('insert-question-title')).toHaveValue('')
+        await expect
+          .poll(() =>
+            page.evaluate((key) => localStorage.getItem(key), storageKey)
+          )
+          .toBeNull()
+
+        await page.getByTestId('close-element-modal').click()
+      }
+    })
+
     test('Verify that non-empty questions are stored and loaded correctly on demand (creation)', async ({
       page,
     }) => {
@@ -544,6 +601,93 @@ test.describe('Create different types of elements (with and without sample solut
       await page.getByTestId('create-question').click()
       await expectNotAttached(page.getByTestId('load-recovered-element-data'))
       await expect(page.getByTestId('insert-question-title')).toHaveValue('')
+    })
+
+    test('Reject invalid and foreign edit drafts before offering recovery', async ({
+      page,
+    }) => {
+      await searchAndEdit(page, data.autoSave.title)
+      await page
+        .getByTestId('insert-question-title')
+        .fill(`${data.autoSave.title} unsafe draft`)
+
+      await expect
+        .poll(() =>
+          page.evaluate(() => {
+            const key = Object.keys(localStorage).find((candidate) =>
+              candidate.startsWith('autosave-element-')
+            )
+            return key ? { key, value: localStorage.getItem(key) } : null
+          })
+        )
+        .not.toBeNull()
+
+      const storedDraft = await page.evaluate(() => {
+        const key = Object.keys(localStorage).find((candidate) =>
+          candidate.startsWith('autosave-element-')
+        )
+        if (!key) {
+          throw new Error('Expected an edit autosave key')
+        }
+
+        const value = localStorage.getItem(key)
+        if (!value) {
+          throw new Error('Expected a serialized edit autosave')
+        }
+
+        return { key, value }
+      })
+      const elementId = storedDraft.key.replace('autosave-element-', '')
+      const currentEnvelope = JSON.parse(storedDraft.value) as {
+        userId: string
+      }
+
+      await page.getByTestId('close-element-modal').click()
+
+      await page.evaluate(
+        ({ key }) => localStorage.setItem(key, '{'),
+        storedDraft
+      )
+      await page.goto(`/?editElementId=${elementId}`)
+      await expect(page.getByTestId('insert-question-title')).toHaveValue(
+        data.autoSave.title
+      )
+      await expect
+        .poll(() =>
+          page.evaluate((key) => localStorage.getItem(key), storedDraft.key)
+        )
+        .toBeNull()
+      await page.getByTestId('close-element-modal').click()
+
+      await page.evaluate(({ key, value }) => {
+        const envelope = JSON.parse(value)
+        envelope.userId = 'foreign-user'
+        localStorage.setItem(key, JSON.stringify(envelope))
+      }, storedDraft)
+      await searchAndEdit(page, data.autoSave.title)
+      await expectNotAttached(page.getByTestId('load-recovered-element-data'))
+      await expect(page.getByTestId('insert-question-title')).toHaveValue(
+        data.autoSave.title
+      )
+      await page.getByTestId('close-element-modal').click()
+
+      await page.evaluate(
+        ({ key, userId }) =>
+          localStorage.setItem(
+            key,
+            JSON.stringify({
+              version: 1,
+              userId,
+              values: { type: 'CODE' },
+            })
+          ),
+        { key: storedDraft.key, userId: currentEnvelope.userId }
+      )
+      await searchAndEdit(page, data.autoSave.title)
+      await expectNotAttached(page.getByTestId('load-recovered-element-data'))
+      await expect(page.getByTestId('insert-question-title')).toHaveValue(
+        data.autoSave.title
+      )
     })
 
     test('Verify that opening the edit modal and closing without modifications does not trigger prompt', async ({

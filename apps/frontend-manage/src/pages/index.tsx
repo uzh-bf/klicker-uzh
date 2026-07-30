@@ -20,10 +20,10 @@ import ElementList from '../components/elements/ElementList'
 import ElementListSearch from '../components/elements/ElementListSearch'
 import ElementListSelectAllCheckbox from '../components/elements/ElementListSelectAllCheckbox'
 import ElementListSorting from '../components/elements/ElementListSorting'
+import { parseElementAutoSaveForUser } from '../components/elements/manipulation/elementAutoSave'
 import ElementBatchOperationsModal from '../components/elements/manipulation/ElementBatchOperationsModal'
 import ElementEditModal, {
   ElementEditMode,
-  getElementAutoSaveForUser,
 } from '../components/elements/manipulation/ElementEditModal'
 import RecoveryPrompt from '../components/elements/manipulation/RecoveryPrompt'
 import FilterList from '../components/elements/tags/FilterList'
@@ -374,17 +374,12 @@ function Index() {
                   onClick={() => {
                     const autoSaveKey = 'autosave-element-creation'
                     const value = localStorage.getItem(autoSaveKey)
-                    let shouldRecover = false
-                    try {
-                      shouldRecover = Boolean(
-                        getElementAutoSaveForUser(
-                          value ? JSON.parse(value) : undefined,
-                          dataUser?.userProfile?.id
-                        )
+                    const shouldRecover = Boolean(
+                      parseElementAutoSaveForUser(
+                        value,
+                        dataUser?.userProfile?.id
                       )
-                    } catch {
-                      shouldRecover = false
-                    }
+                    )
 
                     if (shouldRecover) {
                       setShowRecoveryPrompt(true)
