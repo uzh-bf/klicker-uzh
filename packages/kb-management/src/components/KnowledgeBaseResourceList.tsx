@@ -326,6 +326,7 @@ function KnowledgeBaseResourceList({
     Record<string, number>
   >({})
   const pollInFlightRef = useRef(false)
+  const loadMoreInFlightRef = useRef(false)
   const pollTickRef = useRef(0)
   const refreshRequestRef = useRef(0)
   const handledRefreshTriggerRef = useRef<string | null>(null)
@@ -387,6 +388,10 @@ function KnowledgeBaseResourceList({
   )
 
   const refreshLoadedResources = useCallback(async () => {
+    // A load-more request owns the result window until fetchMore has appended
+    // its page and updated the cursor bookkeeping. Skipping a concurrent
+    // refresh prevents an older target window from replacing the new page.
+    if (loadMoreInFlightRef.current) return false
     const requestId = ++refreshRequestRef.current
     // The interval can race the render caused by fetchMore. Read the latest
     // committed window size so a full walk cannot collapse a newly loaded
@@ -471,7 +476,12 @@ function KnowledgeBaseResourceList({
   // also forces a full walk every 10th tick regardless, bounding the
   // staleness of untracked pages and of totalCount/pageInfo to 20s.
   const pollActivePages = useCallback(async () => {
-    const loadedPageCount = Math.max(1, Math.ceil(resources.length / PAGE_SIZE))
+    if (loadMoreInFlightRef.current) return false
+    const loadedResourceCount = loadedResourceCountRef.current
+    const loadedPageCount = Math.max(
+      1,
+      Math.ceil(loadedResourceCount / PAGE_SIZE)
+    )
     const cursors = pageCursorsRef.current
     const tailPageIndex = loadedPageCount - 1
 
@@ -510,7 +520,7 @@ function KnowledgeBaseResourceList({
 
         const isTailPage = pageIndex === tailPageIndex
         const expectedLength = isTailPage
-          ? resources.length - pageIndex * PAGE_SIZE
+          ? loadedResourceCount - pageIndex * PAGE_SIZE
           : PAGE_SIZE
         if (polledConnection.items.length !== expectedLength) {
           bookkeepingValidRef.current = false
@@ -585,13 +595,7 @@ function KnowledgeBaseResourceList({
       }
       throw pollError
     }
-  }, [
-    apolloClient,
-    getPageVariables,
-    refreshLoadedResources,
-    resources.length,
-    updateQuery,
-  ])
+  }, [apolloClient, getPageVariables, refreshLoadedResources, updateQuery])
 
   useEffect(() => {
     if (!polling) return
@@ -601,7 +605,7 @@ function KnowledgeBaseResourceList({
     pollTickRef.current = 0
 
     const pollCurrentPage = async () => {
-      if (pollInFlightRef.current) return
+      if (pollInFlightRef.current || loadMoreInFlightRef.current) return
       pollInFlightRef.current = true
       try {
         pollTickRef.current += 1
@@ -791,36 +795,56 @@ function KnowledgeBaseResourceList({
   }
 
   const loadMore = async () => {
-    if (!connection?.pageInfo.hasNextPage || loadingMore) return
+    if (
+      !connection?.pageInfo.hasNextPage ||
+      loadingMore ||
+      loadMoreInFlightRef.current
+    ) {
+      return
+    }
+    loadMoreInFlightRef.current = true
+    // Fence any poll/full refresh that captured the old loaded window before
+    // this request started. Polling also observes loadMoreInFlightRef and
+    // cannot start another refresh until the appended page is committed.
+    refreshRequestRef.current += 1
     const newPageIndex = Math.ceil(resources.length / PAGE_SIZE)
     const cursorUsed = connection.pageInfo.endCursor ?? null
     let newPageEndCursor: string | null = null
     let newPageHasActive = false
-    await fetchMore({
-      variables: { after: connection.pageInfo.endCursor },
-      updateQuery: (previous, { fetchMoreResult }) => {
-        newPageEndCursor =
-          fetchMoreResult.getKbResources.pageInfo.endCursor ?? null
-        newPageHasActive =
-          fetchMoreResult.getKbResources.items.some(isActiveResource)
-        return {
-          ...fetchMoreResult,
-          getKbResources: {
-            ...fetchMoreResult.getKbResources,
-            items: [
-              ...previous.getKbResources.items,
-              ...fetchMoreResult.getKbResources.items,
-            ],
-          },
-        }
-      },
-    })
-    // Keep the bounded-poll bookkeeping in sync with the newly loaded page so
-    // an active row on it is picked up by the next poll without a full walk.
-    pageCursorsRef.current[newPageIndex] = cursorUsed
-    pageCursorsRef.current[newPageIndex + 1] = newPageEndCursor
-    if (newPageHasActive) {
-      activePageIndexesRef.current.add(newPageIndex)
+    try {
+      await fetchMore({
+        variables: { after: connection.pageInfo.endCursor },
+        updateQuery: (previous, { fetchMoreResult }) => {
+          newPageEndCursor =
+            fetchMoreResult.getKbResources.pageInfo.endCursor ?? null
+          newPageHasActive =
+            fetchMoreResult.getKbResources.items.some(isActiveResource)
+          const items = [
+            ...previous.getKbResources.items,
+            ...fetchMoreResult.getKbResources.items,
+          ]
+          // Keep promise-only refreshes correct even if an interval fires
+          // before React renders the appended Apollo result.
+          loadedResourceCountRef.current = items.length
+          return {
+            ...fetchMoreResult,
+            getKbResources: {
+              ...fetchMoreResult.getKbResources,
+              items,
+            },
+          }
+        },
+      })
+      // Keep the bounded-poll bookkeeping in sync with the newly loaded page
+      // so an active row on it is picked up by the next poll without a full
+      // walk.
+      pageCursorsRef.current[newPageIndex] = cursorUsed
+      pageCursorsRef.current[newPageIndex + 1] = newPageEndCursor
+      if (newPageHasActive) {
+        activePageIndexesRef.current.add(newPageIndex)
+      }
+    } finally {
+      loadMoreInFlightRef.current = false
     }
   }
 

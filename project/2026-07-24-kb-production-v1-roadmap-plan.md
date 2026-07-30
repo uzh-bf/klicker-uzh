@@ -275,7 +275,7 @@ Scope: the 2026-07-29 [senior-review](2026-07-29-kb-w1-w7-senior-review.md) reme
    - Check: browser proof that a later-page active row still refreshes and loaded rows are preserved; package typechecks.
    - Commit: `enhance(kb): bound active polling and align filter controls`.
 7. **Test hardening (P2-2 + P2-3 + P3-4 remainder)**
-   - Do: convert the source-gateway suite's happy path to real-PostgreSQL (prove the authz filter rejects READY/FAILED, missing sha, foreign owner); add real `resolvePublicIPv4` unit coverage using locally resolvable names (`localhost` → rejected) without external network; add a multi-KB metrics attribution test.
+   - Do: convert the source-gateway suite's happy path to real-PostgreSQL (prove the filter rejects READY/FAILED, missing sha, tombstoned, non-BLOB, and mismatched-version resources; prove that the shared gateway key intentionally remains tenant-wide and can resolve a valid source across KB owners because the request carries no caller-owner identity); add real `resolvePublicIPv4` unit coverage using locally resolvable names (`localhost` → rejected) without external network; add a multi-KB metrics attribution test.
    - Commit: `test(kb): harden gateway, SSRF, and metrics coverage`.
 8. **Wiki + finish gate**
    - Do: update affected wiki pages (`docs/graphql-api-layer.md`, `docs/async-and-workers.md`, `docs/frontend-conventions.md`, `docs/data-and-migrations.md`, `docs/log.md`) and `klicker-*` skills for the gate, kill switch, and recovery sweep; document the `KB.owner` cascade constraint (P2-5) and the gateway-key trust model (P3-3) in the data/API pages.
