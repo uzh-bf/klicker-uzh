@@ -413,7 +413,7 @@ const Composer: FC = () => {
             autoFocus
             placeholder={t('chat.composer.placeholder')}
             className={twMerge(
-              'placeholder:text-muted-foreground text-base flex-grow cursor-text resize-none border-none bg-transparent px-2 outline-none focus:ring-0 disabled:cursor-not-allowed',
+              'placeholder:text-muted-foreground flex-grow cursor-text resize-none border-none bg-transparent px-2 text-base outline-none focus:ring-0 disabled:cursor-not-allowed',
               embedded ? 'max-h-20 py-2' : 'max-h-40 py-4'
             )}
           />
@@ -499,7 +499,7 @@ const ComposerDropOverlay: FC<{ roundedClass: string }> = ({
   return (
     <div
       className={twMerge(
-        'border-primary/60 text-primary pointer-events-none absolute inset-0 z-10 hidden items-center justify-center border-2 border-dashed bg-background/85 px-4 text-center text-sm font-medium shadow-inner backdrop-blur-sm group-data-[dragging]:flex',
+        'border-primary/60 text-primary bg-background/85 pointer-events-none absolute inset-0 z-10 hidden items-center justify-center border-2 border-dashed px-4 text-center text-sm font-medium shadow-inner backdrop-blur-sm group-data-[dragging]:flex',
         roundedClass
       )}
     >
