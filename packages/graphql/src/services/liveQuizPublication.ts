@@ -45,11 +45,13 @@ export async function transitionLiveQuizToPublished({
               },
             })
           : liveQuiz
+      const publishedQuizWithStart = requirePublishedStart(publishedQuiz)
 
       return {
-        quiz: publishedQuiz,
+        quiz: publishedQuizWithStart,
         didStart: false,
-        scheduledPublicationTaskId: publishedQuiz.scheduledPublicationTaskId,
+        scheduledPublicationTaskId:
+          publishedQuizWithStart.scheduledPublicationTaskId,
       }
     }
 
@@ -72,9 +74,10 @@ export async function transitionLiveQuizToPublished({
         publicationMetadataRetryAt: null,
       },
     })
+    const publishedQuizWithStart = requirePublishedStart(publishedQuiz)
 
     return {
-      quiz: publishedQuiz,
+      quiz: publishedQuizWithStart,
       didStart: true,
       scheduledPublicationTaskId: liveQuiz.scheduledPublicationTaskId,
     }
@@ -160,9 +163,23 @@ export async function clearLiveQuizScheduledPublicationTask({
     data: { scheduledPublicationTaskId: null },
   })
   if (result.count !== 1) {
-    throw new Error(
-      `Live quiz ${liveQuizId} changed during scheduled publication cleanup`
-    )
+    const liveQuiz = await prisma.liveQuiz.findUniqueOrThrow({
+      where: { id: liveQuizId },
+      select: {
+        status: true,
+        startedAt: true,
+        scheduledPublicationTaskId: true,
+      },
+    })
+    const alreadyCleaned =
+      liveQuiz.status === DB.PublicationStatus.PUBLISHED &&
+      liveQuiz.startedAt?.getTime() === startedAt.getTime() &&
+      liveQuiz.scheduledPublicationTaskId === null
+    if (!alreadyCleaned) {
+      throw new Error(
+        `Live quiz ${liveQuizId} changed during scheduled publication cleanup`
+      )
+    }
   }
 }
 
@@ -244,11 +261,6 @@ export async function reconcileLiveQuizPublications({
       })
       if (!publication) continue
       expectedStartedAt = publication.quiz.startedAt
-      if (!expectedStartedAt) {
-        throw new Error(
-          `Published live quiz ${publication.quiz.id} has no start timestamp`
-        )
-      }
 
       if (publication.quiz.publicationMetadataMaterializedAt === null) {
         await materializeLiveQuizPublication({
@@ -309,4 +321,13 @@ function isScheduledTaskNotFound(error: unknown) {
     'status' in error.response &&
     error.response.status === 404
   )
+}
+
+function requirePublishedStart<T extends Pick<DB.LiveQuiz, 'id' | 'startedAt'>>(
+  liveQuiz: T
+): T & { startedAt: Date } {
+  if (!liveQuiz.startedAt) {
+    throw new Error(`Published live quiz ${liveQuiz.id} has no start timestamp`)
+  }
+  return liveQuiz as T & { startedAt: Date }
 }

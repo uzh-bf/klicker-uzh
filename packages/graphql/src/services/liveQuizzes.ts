@@ -889,9 +889,6 @@ export async function startLiveQuiz(
       redisExec: ctx.redisExec,
       redisAssessmentExec: ctx.redisAssessmentExec,
     })
-    if (!publication.quiz.startedAt) {
-      throw new Error(`Published live quiz ${publication.quiz.id} has no start`)
-    }
     await markLiveQuizPublicationMaterialized({
       prisma: ctx.prisma,
       liveQuizId: publication.quiz.id,
@@ -3233,11 +3230,6 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
         redisExec: globalCtx.redisExec,
         redisAssessmentExec: globalCtx.redisAssessmentExec,
       })
-      if (!publication.quiz.startedAt) {
-        throw new Error(
-          `Published live quiz ${publication.quiz.id} has no start`
-        )
-      }
       await markLiveQuizPublicationMaterialized({
         prisma: globalCtx.prisma,
         liveQuizId: publication.quiz.id,

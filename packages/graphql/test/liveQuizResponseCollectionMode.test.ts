@@ -18,7 +18,11 @@ import {
   enableGamification,
   updateCourseSettings,
 } from '../src/services/courses.js'
-import { reconcileLiveQuizPublications } from '../src/services/liveQuizPublication.js'
+import {
+  clearLiveQuizScheduledPublicationTask,
+  deleteLiveQuizScheduledPublicationTask,
+  reconcileLiveQuizPublications,
+} from '../src/services/liveQuizPublication.js'
 import {
   handlePublishScheduledLiveQuiz,
   manipulateLiveQuiz,
@@ -1099,6 +1103,77 @@ describe('Live quiz response collection mode', () => {
     ).resolves.toMatchObject({
       scheduledPublicationTaskId: null,
       publicationMetadataMaterializedAt: expect.any(Date),
+    })
+  })
+
+  it('treats repeated same-generation task cleanup as successful', async () => {
+    const liveQuiz = await seedLiveQuiz(
+      { elements: [], status: PublicationStatus.DRAFT },
+      userOneCtx
+    )
+    const startedAt = new Date()
+    const scheduledPublicationTaskId = '55555555-5555-4555-8555-555555555555'
+    await prisma.liveQuiz.update({
+      where: { id: liveQuiz.id },
+      data: {
+        status: PublicationStatus.PUBLISHED,
+        startedAt,
+        scheduledPublicationTaskId,
+      },
+    })
+
+    let deletionCount = 0
+    const deleteScheduledTask = async () => {
+      deletionCount += 1
+      if (deletionCount === 2) {
+        throw { response: { status: 404 } }
+      }
+    }
+    const cleanup = () =>
+      deleteLiveQuizScheduledPublicationTask({
+        prisma,
+        liveQuizId: liveQuiz.id,
+        startedAt,
+        scheduledPublicationTaskId,
+        deleteScheduledTask,
+      })
+
+    await expect(cleanup()).resolves.toBeUndefined()
+    await expect(cleanup()).resolves.toBeUndefined()
+    expect(deletionCount).toBe(2)
+    await expect(
+      prisma.liveQuiz.findUniqueOrThrow({ where: { id: liveQuiz.id } })
+    ).resolves.toMatchObject({ scheduledPublicationTaskId: null })
+  })
+
+  it('does not clear a replacement task from the same publication generation', async () => {
+    const liveQuiz = await seedLiveQuiz(
+      { elements: [], status: PublicationStatus.DRAFT },
+      userOneCtx
+    )
+    const startedAt = new Date()
+    const replacementTaskId = '66666666-6666-4666-8666-666666666666'
+    await prisma.liveQuiz.update({
+      where: { id: liveQuiz.id },
+      data: {
+        status: PublicationStatus.PUBLISHED,
+        startedAt,
+        scheduledPublicationTaskId: replacementTaskId,
+      },
+    })
+
+    await expect(
+      clearLiveQuizScheduledPublicationTask({
+        prisma,
+        liveQuizId: liveQuiz.id,
+        startedAt,
+        scheduledPublicationTaskId: '77777777-7777-4777-8777-777777777777',
+      })
+    ).rejects.toThrow('changed during scheduled publication cleanup')
+    await expect(
+      prisma.liveQuiz.findUniqueOrThrow({ where: { id: liveQuiz.id } })
+    ).resolves.toMatchObject({
+      scheduledPublicationTaskId: replacementTaskId,
     })
   })
 
