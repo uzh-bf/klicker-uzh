@@ -60,3 +60,12 @@ jobs:
         run: pnpm --filter @klicker-uzh/adaptive-learning check
       - name: Test adaptive-learning package
         run: pnpm --filter @klicker-uzh/adaptive-learning test:run
+      - name: Generate adaptive-learning simulation report
+        run: pnpm --filter @klicker-uzh/adaptive-learning test:simulation:report
+      - name: Upload adaptive-learning simulation report
+        uses: actions/upload-artifact@v4
+        with:
+          name: adaptive-learning-simulation-report-${{ github.sha }}
+          path: packages/adaptive-learning/reports/simulation-report.json
+          if-no-files-found: error
+          retention-days: 30
