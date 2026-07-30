@@ -7,8 +7,10 @@ import {
 import type { ContextWithUser } from '../../src/lib/context.js'
 import { deleteParticipantAccount } from '../../src/services/accounts.js'
 import {
+  CourseDiscussionPostFailureCode,
   courseDiscussionThreads,
   createCourseDiscussionReply,
+  createCourseDiscussionReplyResult,
   createCourseDiscussionThread,
   deleteCourseDiscussionReply,
   toggleCourseDiscussionReplyUpvote,
@@ -636,7 +638,7 @@ export function registerContentAndConcurrencySuite(
       })
     ).toEqual({ replyCount: 50 })
 
-    const overflowReply = await createCourseDiscussionReply(
+    const overflowReply = await createCourseDiscussionReplyResult(
       {
         courseId: course.id,
         threadId: thread!.id,
@@ -644,7 +646,10 @@ export function registerContentAndConcurrencySuite(
       },
       participantOneCtx
     )
-    expect(overflowReply).toBeNull()
+    expect(overflowReply).toEqual({
+      reply: null,
+      failureCode: CourseDiscussionPostFailureCode.REPLY_LIMIT_REACHED,
+    })
 
     expect(
       await deleteCourseDiscussionReply(

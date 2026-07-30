@@ -1,5 +1,6 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
+  COURSE_QA_CONTENT_MAX_LENGTH,
   COURSE_QA_EXTERNAL_REF_MAX_LENGTH,
   COURSE_QA_EXTERNAL_SOURCE_MAX_LENGTH,
 } from '@klicker-uzh/types'
@@ -25,8 +26,6 @@ const LIMIT_DEFAULT = 20
 
 const LIMIT_MAX = 50
 
-const DISCUSSION_CONTENT_MAX_LENGTH = 4000
-
 export const ACTIVE_COURSE_SCOPE_TYPES = [
   DB.DiscussionScopeType.COURSE,
   DB.DiscussionScopeType.PRACTICE_STACK,
@@ -37,7 +36,7 @@ export function normalizeContent(content: string) {
   const normalized = content.trim()
   if (
     normalized.length === 0 ||
-    normalized.length > DISCUSSION_CONTENT_MAX_LENGTH
+    normalized.length > COURSE_QA_CONTENT_MAX_LENGTH
   ) {
     return null
   }

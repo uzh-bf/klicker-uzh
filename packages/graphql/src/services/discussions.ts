@@ -1,8 +1,11 @@
+export { CourseDiscussionPostFailureCode } from './discussions/types.js'
 export type {
   CourseDiscussionEmbeddingInfo,
   CourseDiscussionOverview,
   CourseDiscussionOverviewArgs,
   CourseDiscussionOverviewGroup,
+  CourseDiscussionReplyPostResult,
+  CourseDiscussionThreadPostResult,
   CourseDiscussionThreadsArgs,
   CreateCourseDiscussionReplyArgs,
   CreateCourseDiscussionThreadArgs,
@@ -21,7 +24,9 @@ export {
 } from './discussions/interactions.js'
 export {
   createCourseDiscussionReply,
+  createCourseDiscussionReplyResult,
   createCourseDiscussionThread,
+  createCourseDiscussionThreadResult,
 } from './discussions/posting.js'
 export {
   courseDiscussionOverview,

@@ -1,5 +1,6 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
+  COURSE_QA_CONTENT_MAX_LENGTH,
   COURSE_QA_EXTERNAL_REF_MAX_LENGTH,
   COURSE_QA_EXTERNAL_SOURCE_MAX_LENGTH,
 } from '@klicker-uzh/types'
@@ -8,8 +9,11 @@ import type {
   CourseDiscussionEmbeddingInfo,
   CourseDiscussionOverview,
   CourseDiscussionOverviewGroup,
+  CourseDiscussionReplyPostResult,
+  CourseDiscussionThreadPostResult,
   DiscussionThreadPage,
 } from '../services/discussions.js'
+import { CourseDiscussionPostFailureCode } from '../services/discussions.js'
 import { ElementStackType } from './practiceQuiz.js'
 
 export const DiscussionSpaceType = builder.enumType('DiscussionSpaceType', {
@@ -34,12 +38,61 @@ export const DiscussionSort = builder.enumType('DiscussionSort', {
   },
 })
 
+export const CourseDiscussionPostFailure = builder.enumType(
+  'CourseDiscussionPostFailure',
+  {
+    values: {
+      INVALID_INPUT: {
+        value: CourseDiscussionPostFailureCode.INVALID_INPUT,
+      },
+      COURSE_QA_UNAVAILABLE: {
+        value: CourseDiscussionPostFailureCode.COURSE_QA_UNAVAILABLE,
+      },
+      ACCESS_DENIED: {
+        value: CourseDiscussionPostFailureCode.ACCESS_DENIED,
+      },
+      INVALID_SCOPE: {
+        value: CourseDiscussionPostFailureCode.INVALID_SCOPE,
+      },
+      INVALID_EMBED: {
+        value: CourseDiscussionPostFailureCode.INVALID_EMBED,
+      },
+      RATE_LIMITED: {
+        value: CourseDiscussionPostFailureCode.RATE_LIMITED,
+      },
+      THREAD_UNAVAILABLE: {
+        value: CourseDiscussionPostFailureCode.THREAD_UNAVAILABLE,
+      },
+      REPLY_LIMIT_REACHED: {
+        value: CourseDiscussionPostFailureCode.REPLY_LIMIT_REACHED,
+      },
+      POST_FAILED: {
+        value: CourseDiscussionPostFailureCode.POST_FAILED,
+      },
+    },
+  }
+)
+
 export const DiscussionScopeInput = builder.inputType('DiscussionScopeInput', {
   fields: (t) => ({
     scopeType: t.field({ type: DiscussionScopeType, required: true }),
-    stackId: t.int({ required: false }),
-    externalSource: t.string({ required: false }),
-    externalRef: t.string({ required: false }),
+    stackId: t.int({ required: false, validate: { min: 1 } }),
+    externalSource: t.string({
+      required: false,
+      validate: {
+        minLength: 1,
+        maxLength: COURSE_QA_EXTERNAL_SOURCE_MAX_LENGTH,
+        regex: /\S/,
+      },
+    }),
+    externalRef: t.string({
+      required: false,
+      validate: {
+        minLength: 1,
+        maxLength: COURSE_QA_EXTERNAL_REF_MAX_LENGTH,
+        regex: /\S/,
+      },
+    }),
   }),
 })
 
@@ -71,11 +124,24 @@ export const CreateCourseDiscussionThreadInput = builder.inputType(
   'CreateCourseDiscussionThreadInput',
   {
     fields: (t) => ({
-      courseId: t.string({ required: true }),
-      content: t.string({ required: true }),
+      courseId: t.string({
+        required: true,
+        validate: { minLength: 1, regex: /\S/ },
+      }),
+      content: t.string({
+        required: true,
+        validate: {
+          minLength: 1,
+          maxLength: COURSE_QA_CONTENT_MAX_LENGTH,
+          regex: /\S/,
+        },
+      }),
       scope: t.field({ type: DiscussionScopeInput, required: true }),
       isAnonymous: t.boolean({ required: false }),
-      embedToken: t.string({ required: false }),
+      embedToken: t.string({
+        required: false,
+        validate: { minLength: 1, regex: /\S/ },
+      }),
     }),
   }
 )
@@ -84,11 +150,24 @@ export const CreateCourseDiscussionReplyInput = builder.inputType(
   'CreateCourseDiscussionReplyInput',
   {
     fields: (t) => ({
-      courseId: t.string({ required: true }),
-      threadId: t.int({ required: true }),
-      content: t.string({ required: true }),
+      courseId: t.string({
+        required: true,
+        validate: { minLength: 1, regex: /\S/ },
+      }),
+      threadId: t.int({ required: true, validate: { min: 1 } }),
+      content: t.string({
+        required: true,
+        validate: {
+          minLength: 1,
+          maxLength: COURSE_QA_CONTENT_MAX_LENGTH,
+          regex: /\S/,
+        },
+      }),
       isAnonymous: t.boolean({ required: false }),
-      embedToken: t.string({ required: false }),
+      embedToken: t.string({
+        required: false,
+        validate: { minLength: 1, regex: /\S/ },
+      }),
     }),
   }
 )
@@ -191,6 +270,42 @@ export const DiscussionThread = DiscussionThreadRef.implement({
     updatedAt: t.expose('updatedAt', { type: 'Date' }),
   }),
 })
+
+export const CourseDiscussionThreadPostResultRef =
+  builder.objectRef<CourseDiscussionThreadPostResult>(
+    'CourseDiscussionThreadPostResult'
+  )
+export const CourseDiscussionThreadPostResultObject =
+  CourseDiscussionThreadPostResultRef.implement({
+    fields: (t) => ({
+      thread: t.expose('thread', {
+        type: DiscussionThreadRef,
+        nullable: true,
+      }),
+      failureCode: t.expose('failureCode', {
+        type: CourseDiscussionPostFailure,
+        nullable: true,
+      }),
+    }),
+  })
+
+export const CourseDiscussionReplyPostResultRef =
+  builder.objectRef<CourseDiscussionReplyPostResult>(
+    'CourseDiscussionReplyPostResult'
+  )
+export const CourseDiscussionReplyPostResultObject =
+  CourseDiscussionReplyPostResultRef.implement({
+    fields: (t) => ({
+      reply: t.expose('reply', {
+        type: DiscussionReplyRef,
+        nullable: true,
+      }),
+      failureCode: t.expose('failureCode', {
+        type: CourseDiscussionPostFailure,
+        nullable: true,
+      }),
+    }),
+  })
 
 export const DiscussionThreadPageRef = builder.objectRef<DiscussionThreadPage>(
   'DiscussionThreadPage'

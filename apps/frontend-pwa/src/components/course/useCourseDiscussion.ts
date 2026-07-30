@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
+  CourseDiscussionPostFailure,
   CreateCourseDiscussionThreadDocument,
   DiscussionSort,
   GetCourseDiscussionThreadsDocument,
@@ -143,10 +144,14 @@ function useCourseDiscussion({
         },
       })
 
-      if (!result.data?.createCourseDiscussionThread) {
+      const postResult = result.data?.createCourseDiscussionThread
+      if (!postResult?.thread) {
         toast({
           type: 'error',
-          message: t('pwa.courseQA.threadPostFailed'),
+          message:
+            postResult?.failureCode === CourseDiscussionPostFailure.RateLimited
+              ? t('pwa.courseQA.postRateLimited')
+              : t('pwa.courseQA.threadPostFailed'),
         })
         return
       }

@@ -941,9 +941,13 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       threadPostFailed:
         'Unable to post thread. Check permissions or embed settings.',
       threadPostError: 'Unable to post thread. Please try again.',
+      postRateLimited:
+        "You're posting too quickly. Wait a moment and try again.",
       replyPostFailed:
         'Unable to post reply. Check permissions or embed settings.',
       replyPostError: 'Unable to post reply. Please try again.',
+      replyLimitReached:
+        'This thread has reached the maximum number of replies.',
       upvoteFailed:
         'Unable to update upvote. Sign in as a participant to vote.',
       threadUpvoteAriaLabel:

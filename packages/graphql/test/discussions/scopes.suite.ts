@@ -3,6 +3,7 @@ import {
   ElementStackType,
 } from '@klicker-uzh/prisma/client'
 import {
+  COURSE_QA_CONTENT_MAX_LENGTH,
   COURSE_QA_EXTERNAL_REF_MAX_LENGTH,
   COURSE_QA_EXTERNAL_SOURCE_MAX_LENGTH,
 } from '@klicker-uzh/types'
@@ -10,6 +11,7 @@ import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { readFileSync } from 'node:fs'
 import { schema } from '../../src/index.js'
 import {
+  CourseDiscussionPostFailureCode,
   courseDiscussionOverview,
   courseDiscussionThreads,
   createCourseDiscussionReply,
@@ -21,6 +23,7 @@ import { seedCourse } from '../helpers.js'
 import type { DiscussionTestContext } from './fixtures.js'
 import {
   createAnonymousContext,
+  createInvalidEmbedToken,
   createParticipantContext,
   enableCourseDiscussion,
   expectStackOperationsDenied,
@@ -61,6 +64,24 @@ export function registerScopesSuite(getContext: () => DiscussionTestContext) {
     expect(Object.values(serverManifest)).not.toContainEqual(
       expect.stringMatching(/^query GetCourseDiscussion.*EmbeddingInfo\b/)
     )
+
+    const postingOperations = [
+      {
+        name: 'CreateCourseDiscussionThread',
+        itemField: 'thread',
+      },
+      {
+        name: 'CreateCourseDiscussionReply',
+        itemField: 'reply',
+      },
+    ]
+    for (const { name, itemField } of postingOperations) {
+      const hash = clientManifest[name]
+      if (!hash) throw new Error(`${name} is missing from client.json`)
+
+      expect(serverManifest[hash]).toContain(`${itemField} {`)
+      expect(serverManifest[hash]).toContain('failureCode')
+    }
   })
 
   it('exposes embed generation only as a validated mutation', async () => {
@@ -178,6 +199,165 @@ export function registerScopesSuite(getContext: () => DiscussionTestContext) {
         where: { courseId: course.id },
       })
     ).resolves.toBe(1)
+  })
+
+  it('validates discussion posting inputs before service side effects', async () => {
+    const { prisma, userOneCtx } = getContext()
+    const mutationFields = schema.getMutationType()?.getFields()
+    const resolveThreadMutation =
+      mutationFields?.createCourseDiscussionThread?.resolve
+    const resolveReplyMutation =
+      mutationFields?.createCourseDiscussionReply?.resolve
+
+    if (!resolveThreadMutation || !resolveReplyMutation) {
+      throw new Error('Discussion posting mutation resolvers are missing')
+    }
+
+    const validThreadInput = {
+      courseId: 'validation-only-course',
+      content: 'Valid content',
+      scope: { scopeType: DiscussionScopeType.COURSE },
+    }
+    const invalidThreadInputs = [
+      { ...validThreadInput, courseId: ' ' },
+      { ...validThreadInput, content: ' ' },
+      {
+        ...validThreadInput,
+        content: 'x'.repeat(COURSE_QA_CONTENT_MAX_LENGTH + 1),
+      },
+      {
+        ...validThreadInput,
+        scope: {
+          scopeType: DiscussionScopeType.PRACTICE_STACK,
+          stackId: 0,
+        },
+      },
+      {
+        ...validThreadInput,
+        scope: {
+          scopeType: DiscussionScopeType.EXTERNAL_BLOCK,
+          externalSource: ' ',
+          externalRef: 'block-1',
+        },
+      },
+      {
+        ...validThreadInput,
+        scope: {
+          scopeType: DiscussionScopeType.EXTERNAL_BLOCK,
+          externalSource: 'lms',
+          externalRef: 'x'.repeat(COURSE_QA_EXTERNAL_REF_MAX_LENGTH + 1),
+        },
+      },
+      { ...validThreadInput, embedToken: ' ' },
+    ]
+
+    for (const input of invalidThreadInputs) {
+      await expect(
+        resolveThreadMutation({}, { input }, userOneCtx, {} as never)
+      ).rejects.toThrow()
+    }
+
+    const validReplyInput = {
+      courseId: 'validation-only-course',
+      threadId: 1,
+      content: 'Valid reply',
+    }
+    const invalidReplyInputs = [
+      { ...validReplyInput, courseId: ' ' },
+      { ...validReplyInput, threadId: 0 },
+      { ...validReplyInput, content: ' ' },
+      {
+        ...validReplyInput,
+        content: 'x'.repeat(COURSE_QA_CONTENT_MAX_LENGTH + 1),
+      },
+      { ...validReplyInput, embedToken: ' ' },
+    ]
+
+    for (const input of invalidReplyInputs) {
+      await expect(
+        resolveReplyMutation({}, { input }, userOneCtx, {} as never)
+      ).rejects.toThrow()
+    }
+
+    await expect(prisma.discussionSpace.count()).resolves.toBe(0)
+    await expect(prisma.discussionThread.count()).resolves.toBe(0)
+    await expect(prisma.discussionReply.count()).resolves.toBe(0)
+  })
+
+  it('returns typed posting results without exposing unavailable threads', async () => {
+    const { prisma, userOneCtx } = getContext()
+    const course = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, { courseId: course.id })
+    const participantId = await seedParticipantInCourse(prisma, {
+      courseId: course.id,
+    })
+    const participantCtx = createParticipantContext(userOneCtx, participantId)
+    const mutationFields = schema.getMutationType()?.getFields()
+    const resolveThreadMutation =
+      mutationFields?.createCourseDiscussionThread?.resolve
+    const resolveReplyMutation =
+      mutationFields?.createCourseDiscussionReply?.resolve
+
+    if (!resolveThreadMutation || !resolveReplyMutation) {
+      throw new Error('Discussion posting mutation resolvers are missing')
+    }
+
+    await expect(
+      resolveThreadMutation(
+        {},
+        {
+          input: {
+            courseId: course.id,
+            content: 'Typed posting result',
+            scope: { scopeType: DiscussionScopeType.COURSE },
+          },
+        },
+        participantCtx,
+        {} as never
+      )
+    ).resolves.toMatchObject({
+      thread: {
+        content: 'Typed posting result',
+      },
+      failureCode: null,
+    })
+
+    await expect(
+      resolveThreadMutation(
+        {},
+        {
+          input: {
+            courseId: course.id,
+            content: 'Invalid embed token',
+            scope: { scopeType: DiscussionScopeType.COURSE },
+            embedToken: await createInvalidEmbedToken(),
+          },
+        },
+        participantCtx,
+        {} as never
+      )
+    ).resolves.toEqual({
+      thread: null,
+      failureCode: CourseDiscussionPostFailureCode.INVALID_EMBED,
+    })
+
+    await expect(
+      resolveReplyMutation(
+        {},
+        {
+          input: {
+            courseId: course.id,
+            threadId: 2_147_483_647,
+            content: 'Unavailable thread reply',
+          },
+        },
+        participantCtx,
+        {} as never
+      )
+    ).resolves.toEqual({
+      reply: null,
+      failureCode: CourseDiscussionPostFailureCode.THREAD_UNAVAILABLE,
+    })
   })
 
   it('rejects oversized external identifiers instead of merging truncated scopes', async () => {

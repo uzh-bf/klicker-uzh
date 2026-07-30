@@ -9,6 +9,7 @@ import {
   UserRole,
 } from '@klicker-uzh/prisma/client'
 import type { ElementData, ElementInstanceResults } from '@klicker-uzh/types'
+import { signJWT } from '@klicker-uzh/util'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../../src/lib/context.js'
 import {
@@ -74,6 +75,20 @@ export function createAnonymousContext(
 
 export function runTwiceConcurrently<T>(operation: () => Promise<T>) {
   return Promise.all([operation(), operation()])
+}
+
+export function createInvalidEmbedToken() {
+  const secret = process.env.APP_SECRET
+  if (!secret) throw new Error('APP_SECRET is required for discussion tests')
+
+  return signJWT(
+    {
+      sub: 'invalid-discussion-embed',
+      scope: 'INVALID_DISCUSSION_SCOPE',
+    },
+    secret,
+    { issuer: process.env.APP_ORIGIN_API }
+  )
 }
 
 export async function enableCourseDiscussion(

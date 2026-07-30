@@ -30,13 +30,35 @@ import {
   resolveOrCreateSpace,
 } from './scopes.js'
 import type {
+  CourseDiscussionReplyPostResult,
+  CourseDiscussionThreadPostResult,
   CreateCourseDiscussionReplyArgs,
   CreateCourseDiscussionThreadArgs,
   DiscussionReplyWithRelations,
   DiscussionThreadWithRelations,
 } from './types.js'
+import { CourseDiscussionPostFailureCode } from './types.js'
+
+function threadFailure(
+  failureCode: CourseDiscussionPostFailureCode
+): CourseDiscussionThreadPostResult {
+  return { thread: null, failureCode }
+}
+
+function replyFailure(
+  failureCode: CourseDiscussionPostFailureCode
+): CourseDiscussionReplyPostResult {
+  return { reply: null, failureCode }
+}
 
 export async function createCourseDiscussionThread(
+  args: CreateCourseDiscussionThreadArgs,
+  ctx: Context
+): Promise<DiscussionThreadWithRelations | null> {
+  return (await createCourseDiscussionThreadResult(args, ctx)).thread
+}
+
+export async function createCourseDiscussionThreadResult(
   {
     courseId,
     content,
@@ -45,22 +67,31 @@ export async function createCourseDiscussionThread(
     embedToken,
   }: CreateCourseDiscussionThreadArgs,
   ctx: Context
-): Promise<DiscussionThreadWithRelations | null> {
+): Promise<CourseDiscussionThreadPostResult> {
   const normalizedContent = normalizeContent(content)
-  if (!normalizedContent) return null
+  if (!normalizedContent) {
+    return threadFailure(CourseDiscussionPostFailureCode.INVALID_INPUT)
+  }
 
   const course = await getCourseSettings(courseId, ctx)
-  if (!isCourseDiscussionEnabled(course)) return null
+  if (!isCourseDiscussionEnabled(course)) {
+    return threadFailure(CourseDiscussionPostFailureCode.COURSE_QA_UNAVAILABLE)
+  }
 
   // Verify embed token early to reject courseId mismatches before creating
   // spaces or scopes as a side effect
   const embedClaims = await verifyEmbedToken(embedToken)
-  if (rejectEmbedCourseMismatch(embedClaims, courseId)) return null
+  if (embedToken?.trim() && !embedClaims) {
+    return threadFailure(CourseDiscussionPostFailureCode.INVALID_EMBED)
+  }
+  if (rejectEmbedCourseMismatch(embedClaims, courseId)) {
+    return threadFailure(CourseDiscussionPostFailureCode.INVALID_EMBED)
+  }
   if (
     scope.scopeType === DB.DiscussionScopeType.EXTERNAL_BLOCK &&
     !embedClaims
   ) {
-    return null
+    return threadFailure(CourseDiscussionPostFailureCode.INVALID_EMBED)
   }
   if (
     scope.scopeType === DB.DiscussionScopeType.EXTERNAL_BLOCK &&
@@ -69,7 +100,7 @@ export async function createCourseDiscussionThread(
       scope.externalRef ?? ''
     )
   ) {
-    return null
+    return threadFailure(CourseDiscussionPostFailureCode.INVALID_SCOPE)
   }
 
   const anonymous = !!isAnonymous
@@ -77,7 +108,9 @@ export async function createCourseDiscussionThread(
     ? null
     : ((await getCourseAccessActor({ courseId }, ctx))?.participantId ?? null)
 
-  if (!anonymous && !authorizedParticipantId) return null
+  if (!anonymous && !authorizedParticipantId) {
+    return threadFailure(CourseDiscussionPostFailureCode.ACCESS_DENIED)
+  }
   if (
     !(await canParticipantAccessDiscussionScope(
       {
@@ -88,7 +121,7 @@ export async function createCourseDiscussionThread(
       ctx
     ))
   ) {
-    return null
+    return threadFailure(CourseDiscussionPostFailureCode.ACCESS_DENIED)
   }
 
   const space = anonymous
@@ -103,7 +136,9 @@ export async function createCourseDiscussionThread(
         ctx
       )
 
-  if (!space) return null
+  if (!space) {
+    return threadFailure(CourseDiscussionPostFailureCode.INVALID_EMBED)
+  }
 
   const canonicalScope = await canonicalizeScope(
     {
@@ -113,7 +148,9 @@ export async function createCourseDiscussionThread(
     ctx
   )
 
-  if (!canonicalScope) return null
+  if (!canonicalScope) {
+    return threadFailure(CourseDiscussionPostFailureCode.INVALID_SCOPE)
+  }
 
   let participantId: string | null = null
   let fingerprintHash: string | null = null
@@ -130,7 +167,9 @@ export async function createCourseDiscussionThread(
       ctx
     )
 
-    if (!validBinding) return null
+    if (!validBinding) {
+      return threadFailure(CourseDiscussionPostFailureCode.INVALID_EMBED)
+    }
 
     resolvedScope = await ctx.prisma.discussionScope.findUnique({
       where: {
@@ -141,7 +180,9 @@ export async function createCourseDiscussionThread(
       },
     })
 
-    if (!resolvedScope) return null
+    if (!resolvedScope) {
+      return threadFailure(CourseDiscussionPostFailureCode.INVALID_EMBED)
+    }
 
     fingerprintHash = hashAnonymousFingerprint(ctx, courseId)
 
@@ -155,10 +196,14 @@ export async function createCourseDiscussionThread(
       ctx
     )
 
-    if (!allowedByRateLimit) return null
+    if (!allowedByRateLimit) {
+      return threadFailure(CourseDiscussionPostFailureCode.RATE_LIMITED)
+    }
   } else {
     participantId = authorizedParticipantId
-    if (!participantId) return null
+    if (!participantId) {
+      return threadFailure(CourseDiscussionPostFailureCode.ACCESS_DENIED)
+    }
 
     if (embedClaims) {
       const validBinding = await verifyEmbedScopeBinding(
@@ -171,14 +216,18 @@ export async function createCourseDiscussionThread(
         ctx
       )
 
-      if (!validBinding) return null
+      if (!validBinding) {
+        return threadFailure(CourseDiscussionPostFailureCode.INVALID_EMBED)
+      }
     }
 
     const withinRateLimit = await enforceParticipantRateLimit(
       { courseId, participantId },
       ctx
     )
-    if (!withinRateLimit) return null
+    if (!withinRateLimit) {
+      return threadFailure(CourseDiscussionPostFailureCode.RATE_LIMITED)
+    }
   }
 
   if (!resolvedScope) {
@@ -191,7 +240,9 @@ export async function createCourseDiscussionThread(
     )
   }
 
-  if (!resolvedScope) return null
+  if (!resolvedScope) {
+    return threadFailure(CourseDiscussionPostFailureCode.INVALID_SCOPE)
+  }
 
   const thread = await ctx.prisma.$transaction(async (tx) => {
     const createdThread = await tx.discussionThread.create({
@@ -216,16 +267,29 @@ export async function createCourseDiscussionThread(
     return createdThread
   })
 
-  return getDiscussionThreadById(
+  const response = await getDiscussionThreadById(
     {
       threadId: thread.id,
       participantId,
     },
     ctx
   )
+
+  if (!response) {
+    return threadFailure(CourseDiscussionPostFailureCode.POST_FAILED)
+  }
+
+  return { thread: response, failureCode: null }
 }
 
 export async function createCourseDiscussionReply(
+  args: CreateCourseDiscussionReplyArgs,
+  ctx: Context
+): Promise<DiscussionReplyWithRelations | null> {
+  return (await createCourseDiscussionReplyResult(args, ctx)).reply
+}
+
+export async function createCourseDiscussionReplyResult(
   {
     courseId,
     threadId,
@@ -234,16 +298,25 @@ export async function createCourseDiscussionReply(
     embedToken,
   }: CreateCourseDiscussionReplyArgs,
   ctx: Context
-): Promise<DiscussionReplyWithRelations | null> {
+): Promise<CourseDiscussionReplyPostResult> {
   const normalizedContent = normalizeContent(content)
-  if (!normalizedContent) return null
+  if (!normalizedContent) {
+    return replyFailure(CourseDiscussionPostFailureCode.INVALID_INPUT)
+  }
 
   const course = await getCourseSettings(courseId, ctx)
-  if (!isCourseDiscussionEnabled(course)) return null
+  if (!isCourseDiscussionEnabled(course)) {
+    return replyFailure(CourseDiscussionPostFailureCode.COURSE_QA_UNAVAILABLE)
+  }
 
   // Verify embed token early to reject courseId mismatches before any lookups
   const embedClaims = await verifyEmbedToken(embedToken)
-  if (rejectEmbedCourseMismatch(embedClaims, courseId)) return null
+  if (embedToken?.trim() && !embedClaims) {
+    return replyFailure(CourseDiscussionPostFailureCode.INVALID_EMBED)
+  }
+  if (rejectEmbedCourseMismatch(embedClaims, courseId)) {
+    return replyFailure(CourseDiscussionPostFailureCode.INVALID_EMBED)
+  }
 
   const thread = await ctx.prisma.discussionThread.findUnique({
     where: {
@@ -258,12 +331,20 @@ export async function createCourseDiscussionReply(
     },
   })
 
-  if (!thread || thread.isDeleted) return null
-  if (!isActiveCourseScopeType(thread.scope.scopeType)) return null
+  if (!thread || thread.isDeleted) {
+    return replyFailure(CourseDiscussionPostFailureCode.THREAD_UNAVAILABLE)
+  }
+  if (!isActiveCourseScopeType(thread.scope.scopeType)) {
+    return replyFailure(CourseDiscussionPostFailureCode.THREAD_UNAVAILABLE)
+  }
 
   const threadCourseId = extractCourseIdFromSpace(thread.scope.space)
-  if (!threadCourseId || threadCourseId !== courseId) return null
-  if (thread.replyCount >= REPLIES_PER_THREAD_MAX) return null
+  if (!threadCourseId || threadCourseId !== courseId) {
+    return replyFailure(CourseDiscussionPostFailureCode.THREAD_UNAVAILABLE)
+  }
+  if (thread.replyCount >= REPLIES_PER_THREAD_MAX) {
+    return replyFailure(CourseDiscussionPostFailureCode.REPLY_LIMIT_REACHED)
+  }
 
   const anonymous = !!isAnonymous
 
@@ -281,7 +362,9 @@ export async function createCourseDiscussionReply(
       ctx
     )
 
-    if (!validBinding) return null
+    if (!validBinding) {
+      return replyFailure(CourseDiscussionPostFailureCode.INVALID_EMBED)
+    }
 
     fingerprintHash = hashAnonymousFingerprint(ctx, courseId)
 
@@ -295,13 +378,19 @@ export async function createCourseDiscussionReply(
       ctx
     )
 
-    if (!allowedByRateLimit) return null
+    if (!allowedByRateLimit) {
+      return replyFailure(CourseDiscussionPostFailureCode.RATE_LIMITED)
+    }
   } else {
     const actor = await getCourseAccessActor({ courseId }, ctx)
-    if (!actor) return null
+    if (!actor) {
+      return replyFailure(CourseDiscussionPostFailureCode.ACCESS_DENIED)
+    }
 
     participantId = actor.participantId ?? null
-    if (!participantId) return null
+    if (!participantId) {
+      return replyFailure(CourseDiscussionPostFailureCode.ACCESS_DENIED)
+    }
 
     if (
       !(await canParticipantAccessDiscussionScope(
@@ -313,7 +402,7 @@ export async function createCourseDiscussionReply(
         ctx
       ))
     ) {
-      return null
+      return replyFailure(CourseDiscussionPostFailureCode.ACCESS_DENIED)
     }
 
     if (embedClaims) {
@@ -327,14 +416,18 @@ export async function createCourseDiscussionReply(
         ctx
       )
 
-      if (!validBinding) return null
+      if (!validBinding) {
+        return replyFailure(CourseDiscussionPostFailureCode.INVALID_EMBED)
+      }
     }
 
     const withinRateLimit = await enforceParticipantRateLimit(
       { courseId, participantId },
       ctx
     )
-    if (!withinRateLimit) return null
+    if (!withinRateLimit) {
+      return replyFailure(CourseDiscussionPostFailureCode.RATE_LIMITED)
+    }
   }
 
   const reply = await ctx.prisma.$transaction(async (tx) => {
@@ -374,7 +467,20 @@ export async function createCourseDiscussionReply(
     return createdReply
   })
 
-  if (!reply) return null
+  if (!reply) {
+    const currentThread = await ctx.prisma.discussionThread.findUnique({
+      where: { id: threadId },
+      select: { isDeleted: true, replyCount: true },
+    })
+
+    return replyFailure(
+      currentThread &&
+        !currentThread.isDeleted &&
+        currentThread.replyCount >= REPLIES_PER_THREAD_MAX
+        ? CourseDiscussionPostFailureCode.REPLY_LIMIT_REACHED
+        : CourseDiscussionPostFailureCode.THREAD_UNAVAILABLE
+    )
+  }
 
   const response = await ctx.prisma.discussionReply.findUnique({
     where: {
@@ -383,10 +489,15 @@ export async function createCourseDiscussionReply(
     include: buildReplyInclude(participantId),
   })
 
-  if (!response || response.isDeleted) return null
+  if (!response || response.isDeleted) {
+    return replyFailure(CourseDiscussionPostFailureCode.POST_FAILED)
+  }
 
-  return mapReply(response, {
-    spaceId: thread.scope.spaceId,
-    scopeId: thread.scopeId,
-  })
+  return {
+    reply: mapReply(response, {
+      spaceId: thread.scope.spaceId,
+      scopeId: thread.scopeId,
+    }),
+    failureCode: null,
+  }
 }

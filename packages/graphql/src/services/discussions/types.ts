@@ -34,6 +34,18 @@ export interface CreateCourseDiscussionReplyArgs {
   embedToken?: string | null
 }
 
+export enum CourseDiscussionPostFailureCode {
+  INVALID_INPUT = 'INVALID_INPUT',
+  COURSE_QA_UNAVAILABLE = 'COURSE_QA_UNAVAILABLE',
+  ACCESS_DENIED = 'ACCESS_DENIED',
+  INVALID_SCOPE = 'INVALID_SCOPE',
+  INVALID_EMBED = 'INVALID_EMBED',
+  RATE_LIMITED = 'RATE_LIMITED',
+  THREAD_UNAVAILABLE = 'THREAD_UNAVAILABLE',
+  REPLY_LIMIT_REACHED = 'REPLY_LIMIT_REACHED',
+  POST_FAILED = 'POST_FAILED',
+}
+
 export interface CourseDiscussionThreadsArgs {
   courseId: string
   scopeKey?: string | null
@@ -86,6 +98,16 @@ export type DiscussionThreadWithRelations = Omit<
   sourceKey?: string
   sourceLabel?: string
   hasUpvoted?: boolean
+}
+
+export interface CourseDiscussionThreadPostResult {
+  thread: DiscussionThreadWithRelations | null
+  failureCode: CourseDiscussionPostFailureCode | null
+}
+
+export interface CourseDiscussionReplyPostResult {
+  reply: DiscussionReplyWithRelations | null
+  failureCode: CourseDiscussionPostFailureCode | null
 }
 
 export interface DiscussionThreadPage {

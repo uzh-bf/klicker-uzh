@@ -25,6 +25,8 @@ import { PointCorrection, PointCorrectionType } from './assessment.js'
 import { Course } from './course.js'
 import {
   CourseDiscussionEmbeddingInfoRef,
+  CourseDiscussionReplyPostResultRef,
+  CourseDiscussionThreadPostResultRef,
   CreateCourseDiscussionReplyInput,
   CreateCourseDiscussionThreadInput,
   DiscussionExternalBlockInput,
@@ -188,8 +190,7 @@ export const Mutation = builder.mutationType({
       }),
 
       createCourseDiscussionThread: t.field({
-        nullable: true,
-        type: DiscussionThreadRef,
+        type: CourseDiscussionThreadPostResultRef,
         args: {
           input: t.arg({
             type: CreateCourseDiscussionThreadInput,
@@ -197,7 +198,7 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve: async (_, args, ctx) => {
-          return await DiscussionService.createCourseDiscussionThread(
+          return await DiscussionService.createCourseDiscussionThreadResult(
             args.input,
             ctx
           )
@@ -205,8 +206,7 @@ export const Mutation = builder.mutationType({
       }),
 
       createCourseDiscussionReply: t.field({
-        nullable: true,
-        type: DiscussionReplyRef,
+        type: CourseDiscussionReplyPostResultRef,
         args: {
           input: t.arg({
             type: CreateCourseDiscussionReplyInput,
@@ -214,7 +214,7 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve: async (_, args, ctx) => {
-          return await DiscussionService.createCourseDiscussionReply(
+          return await DiscussionService.createCourseDiscussionReplyResult(
             args.input,
             ctx
           )

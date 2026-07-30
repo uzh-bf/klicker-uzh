@@ -2,6 +2,7 @@ import { useMutation } from '@apollo/client'
 import { faThumbsUp } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  CourseDiscussionPostFailure,
   CreateCourseDiscussionReplyDocument,
   type GetCourseDiscussionThreadsQuery,
   ToggleCourseDiscussionReplyUpvoteDocument,
@@ -83,10 +84,19 @@ function CourseDiscussionThreadCard({
         },
       })
 
-      if (!result.data?.createCourseDiscussionReply) {
+      const postResult = result.data?.createCourseDiscussionReply
+      if (!postResult?.reply) {
+        const message =
+          postResult?.failureCode === CourseDiscussionPostFailure.RateLimited
+            ? t('pwa.courseQA.postRateLimited')
+            : postResult?.failureCode ===
+                CourseDiscussionPostFailure.ReplyLimitReached
+              ? t('pwa.courseQA.replyLimitReached')
+              : t('pwa.courseQA.replyPostFailed')
+
         toast({
           type: 'error',
-          message: t('pwa.courseQA.replyPostFailed'),
+          message,
         })
         return
       }

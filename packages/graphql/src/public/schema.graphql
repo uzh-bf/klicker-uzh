@@ -1046,6 +1046,28 @@ type CourseDiscussionOverviewGroup {
   threads: [DiscussionThread!]!
 }
 
+enum CourseDiscussionPostFailure {
+  ACCESS_DENIED
+  COURSE_QA_UNAVAILABLE
+  INVALID_EMBED
+  INVALID_INPUT
+  INVALID_SCOPE
+  POST_FAILED
+  RATE_LIMITED
+  REPLY_LIMIT_REACHED
+  THREAD_UNAVAILABLE
+}
+
+type CourseDiscussionReplyPostResult {
+  failureCode: CourseDiscussionPostFailure
+  reply: DiscussionReply
+}
+
+type CourseDiscussionThreadPostResult {
+  failureCode: CourseDiscussionPostFailure
+  thread: DiscussionThread
+}
+
 type CourseLeaderboard {
   averageActiveScore: Float!
   computedAt: Date
@@ -1995,8 +2017,8 @@ type Mutation {
   createAnswerCollection(answers: [String!]!, description: String!, name: String!): AnswerCollection
   createCatalogCollection(access: ObjectAccess!, name: String!): CatalogCollection
   createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, startDate: Date!): Course
-  createCourseDiscussionReply(input: CreateCourseDiscussionReplyInput!): DiscussionReply
-  createCourseDiscussionThread(input: CreateCourseDiscussionThreadInput!): DiscussionThread
+  createCourseDiscussionReply(input: CreateCourseDiscussionReplyInput!): CourseDiscussionReplyPostResult!
+  createCourseDiscussionThread(input: CreateCourseDiscussionThreadInput!): CourseDiscussionThreadPostResult!
   createFeedback(content: String!, quizId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): ActivityInfo
   createLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, defaultCorrectPoints: Int, defaultPoints: Int, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, isPinProtected: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): ActivityInfo

@@ -4,13 +4,19 @@ import {
 } from '@klicker-uzh/prisma/client'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import {
+  CourseDiscussionPostFailureCode,
   createCourseDiscussionThread,
+  createCourseDiscussionThreadResult,
   generateCourseDiscussionEmbeddingInfo,
 } from '../../src/services/discussions.js'
 import { hashAnonymousFingerprint } from '../../src/services/discussions/embeds.js'
 import { seedCourse } from '../helpers.js'
 import type { DiscussionTestContext } from './fixtures.js'
-import { createAnonymousContext, enableCourseDiscussion } from './fixtures.js'
+import {
+  createAnonymousContext,
+  createInvalidEmbedToken,
+  enableCourseDiscussion,
+} from './fixtures.js'
 
 export function registerAnonymousRateLimitsSuite(
   getContext: () => DiscussionTestContext
@@ -67,6 +73,26 @@ export function registerAnonymousRateLimitsSuite(
     )
 
     const anonymousCtx = createAnonymousContext(userOneCtx)
+
+    await expect(
+      createCourseDiscussionThreadResult(
+        {
+          courseId: course.id,
+          content: 'Anonymous question with invalid token',
+          scope: {
+            scopeType: DiscussionScopeType.EXTERNAL_BLOCK,
+            externalSource: 'lms',
+            externalRef: 'chapter-3',
+          },
+          isAnonymous: true,
+          embedToken: await createInvalidEmbedToken(),
+        },
+        anonymousCtx
+      )
+    ).resolves.toEqual({
+      thread: null,
+      failureCode: CourseDiscussionPostFailureCode.INVALID_EMBED,
+    })
 
     const deniedThread = await createCourseDiscussionThread(
       {
@@ -127,21 +153,21 @@ export function registerAnonymousRateLimitsSuite(
     expect(embedInfo).toBeTruthy()
 
     const anonymousCtx = createAnonymousContext(userOneCtx)
+    const threadArgs = {
+      courseId: course.id,
+      content: 'Anonymous question',
+      scope: {
+        scopeType: DiscussionScopeType.EXTERNAL_BLOCK,
+        externalSource: 'lms',
+        externalRef: 'rate-limited-block',
+      },
+      isAnonymous: true,
+      embedToken: embedInfo!.embedToken,
+    }
     const createAnonymousThread = () =>
-      createCourseDiscussionThread(
-        {
-          courseId: course.id,
-          content: 'Anonymous question',
-          scope: {
-            scopeType: DiscussionScopeType.EXTERNAL_BLOCK,
-            externalSource: 'lms',
-            externalRef: 'rate-limited-block',
-          },
-          isAnonymous: true,
-          embedToken: embedInfo!.embedToken,
-        },
-        anonymousCtx
-      )
+      createCourseDiscussionThread(threadArgs, anonymousCtx)
+    const createAnonymousThreadResult = () =>
+      createCourseDiscussionThreadResult(threadArgs, anonymousCtx)
 
     const staleCounterKey = `discussion:anon:course:${course.id}:${hashAnonymousFingerprint(anonymousCtx, course.id)}`
     await anonymousCtx.redisExec.set(staleCounterKey, '1')
@@ -167,7 +193,10 @@ export function registerAnonymousRateLimitsSuite(
         space: { select: { updatedAt: true } },
       },
     })
-    expect(await createAnonymousThread()).toBeNull()
+    await expect(createAnonymousThreadResult()).resolves.toEqual({
+      thread: null,
+      failureCode: CourseDiscussionPostFailureCode.RATE_LIMITED,
+    })
     expect(await createAnonymousThread()).toBeNull()
 
     const unchangedScope = await prisma.discussionScope.findFirstOrThrow({
