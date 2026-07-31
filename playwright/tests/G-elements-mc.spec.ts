@@ -50,8 +50,13 @@ test.describe('Test creation and editing functionalities for Multiple Choice ele
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
 
     // Clearing an answer disables save
-    await page.getByTestId('insert-answer-field-1').click()
-    await page.getByTestId('insert-answer-field-1').clear()
+    const secondAnswer = page.getByTestId('insert-answer-field-1')
+    await secondAnswer.click()
+    await secondAnswer.press('ControlOrMeta+A')
+    await secondAnswer.press('Backspace')
+    // an emptied Slate field renders its placeholder, so assert on the removed
+    // value instead of on empty text
+    await expect(secondAnswer).not.toContainText(MC.choices[1])
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
     await fillAnswerField(page, 1, MC.choices[1])
     await page.getByTestId('insert-question-title').click()

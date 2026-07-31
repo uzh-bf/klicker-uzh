@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   CaseStudyCaseResponse,
+  CodeSubmissionStatus,
   ElementStack as ElementStackType,
   ElementType,
   FlashcardCorrectness,
@@ -19,11 +20,20 @@ import { ChoicesResponse } from '@klicker-uzh/types'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import useComponentVisibleCounter from '../hooks/useComponentVisibleCounter'
 import useStackElementFeedbacks from '../hooks/useStackElementFeedbacks'
 import Bookmark from './Bookmark'
+import CodeSubmissionStatusPanel from './CodeSubmissionStatus'
 import InstanceHeader from './InstanceHeader'
+import useCodeSubmission from './useCodeSubmission'
 
 interface ElementStackProps {
   parentId: string
@@ -48,6 +58,8 @@ interface ElementStackProps {
   activityExpired?: boolean
   activityExpiredMessage?: string
   previewOnly?: boolean
+  participantId?: string
+  codeSubmissionEnabled?: boolean
 }
 
 function ElementStack({
@@ -67,9 +79,12 @@ function ElementStack({
   activityExpired = false,
   activityExpiredMessage,
   previewOnly = false,
+  participantId,
+  codeSubmissionEnabled = false,
 }: ElementStackProps) {
   const t = useTranslations()
   const timeRef = useRef(0)
+  const evaluationReadbackReceiptRef = useRef<string | null>(null)
   useComponentVisibleCounter({ timeRef })
 
   const embeddedButtonClass = embedded ? 'shadow-lg' : 'float-right mt-4'
@@ -88,14 +103,33 @@ function ElementStack({
     withParticipant: withParticipant,
   })
 
+  const codeElement = stack.elements?.find(
+    (element) => element.elementType === ElementType.Code
+  )
+  const codeSubmissionAvailable =
+    !!codeElement && codeSubmissionEnabled && !!participantId
   const [stackStorage, setStackStorage] =
     useLocalStorage<StackStudentResponseType>(
-      `qi-${parentId}-${stack.id}`,
+      codeElement
+        ? `qi-code-${parentId}-${stack.id}-${participantId ?? 'unresolved'}`
+        : `qi-${parentId}-${stack.id}`,
       undefined
     )
 
   const [studentResponse, setStudentResponse] =
     useState<StackStudentResponseType>({})
+  const {
+    submission: codeSubmission,
+    submit: submitCodeResponse,
+    submitting: submittingCodeResponse,
+    submissionError: codeSubmissionError,
+    pollingError: codePollingError,
+    active: codeSubmissionActive,
+  } = useCodeSubmission({
+    storageKey: `code-submission-${parentId}-${stack.id}`,
+    enabled: codeSubmissionAvailable,
+    participantId,
+  })
 
   const [openEvaluations, setOpenEvaluations] = useState<Set<number>>(new Set())
 
@@ -122,16 +156,95 @@ function ElementStack({
     setStudentResponse,
   })
 
-  // if single submission is enabled, fetch the previous answer & evaluation and do not submit again
-  const { data: evaluationData } = useQuery(
-    GetPreviousStackEvaluationDocument,
-    {
-      skip: previewOnly || !singleSubmission || !!stackStorage,
-      variables: {
-        stackId: stack.id,
+  useEffect(() => {
+    if (!codeElement || !codeSubmission?.code || stackStorage) return
+
+    setStudentResponse((current) => ({
+      ...current,
+      [codeElement.id]: {
+        type: ElementType.Code,
+        response: codeSubmission.code,
+        valid: codeSubmission.code.length > 0,
       },
+    }))
+  }, [codeElement, codeSubmission?.code, stackStorage])
+
+  // if single submission is enabled, fetch the previous answer & evaluation and do not submit again
+  const {
+    data: evaluationData,
+    error: evaluationError,
+    loading: evaluationLoading,
+    refetch: refetchEvaluation,
+  } = useQuery(GetPreviousStackEvaluationDocument, {
+    skip: previewOnly || !singleSubmission || !!stackStorage,
+    variables: {
+      stackId: stack.id,
+    },
+  })
+  const [evaluationReadbackFailed, setEvaluationReadbackFailed] =
+    useState(false)
+  const retryEvaluationReadback = useCallback(async () => {
+    setEvaluationReadbackFailed(false)
+    try {
+      const result = await refetchEvaluation()
+      if (result.errors?.length) {
+        setEvaluationReadbackFailed(true)
+      }
+    } catch {
+      setEvaluationReadbackFailed(true)
     }
-  )
+  }, [refetchEvaluation])
+
+  useEffect(() => {
+    if (
+      !codeElement ||
+      !codeSubmission ||
+      codeSubmission.gradingStatus !== CodeSubmissionStatus.Completed ||
+      stackStorage
+    ) {
+      return
+    }
+
+    if (singleSubmission) {
+      if (evaluationReadbackReceiptRef.current === codeSubmission.receiptId) {
+        return
+      }
+      evaluationReadbackReceiptRef.current = codeSubmission.receiptId
+      void retryEvaluationReadback()
+      return
+    }
+
+    setStackStorage({
+      [codeElement.id]: {
+        type: ElementType.Code,
+        response: codeSubmission.code,
+        valid: true,
+      },
+    })
+    setStudentResponse({})
+
+    const pointsPercentage =
+      codeSubmission.feedback?.pointsPercentage ?? undefined
+    if (typeof setStepStatus !== 'undefined') {
+      setStepStatus({
+        status:
+          pointsPercentage === 1
+            ? StackFeedbackStatus.Correct
+            : pointsPercentage === 0
+              ? StackFeedbackStatus.Incorrect
+              : StackFeedbackStatus.Partial,
+        score: null,
+      })
+    }
+  }, [
+    codeElement,
+    codeSubmission,
+    retryEvaluationReadback,
+    setStackStorage,
+    setStepStatus,
+    singleSubmission,
+    stackStorage,
+  ])
 
   // if single submission is enabled, fetch the previous answer & evaluation from the database (if available)
   useEffect(() => {
@@ -275,6 +388,17 @@ function ElementStack({
               }
 
               return acc
+            } else if (
+              elementType === ElementType.Code &&
+              evaluation.__typename === 'CodeInstanceEvaluation'
+            ) {
+              acc[evaluation.instanceId] = {
+                ...commonAttributes,
+                type: elementType,
+                response: evaluation.lastResponse.code,
+              }
+
+              return acc
             }
 
             return acc
@@ -382,11 +506,54 @@ function ElementStack({
                     setStudentResponse={setStudentResponse}
                     stackStorage={stackStorage}
                     preview={embedded && !openEvaluations.has(element.id)}
+                    disabledInput={
+                      element.elementType === ElementType.Code &&
+                      (!codeSubmissionAvailable ||
+                        codeSubmissionActive ||
+                        codeSubmission?.gradingStatus ===
+                          CodeSubmissionStatus.Completed)
+                    }
                   />
                 </div>
               )
             })}
         </div>
+
+        {codeElement && codeSubmission && (
+          <CodeSubmissionStatusPanel
+            submission={codeSubmission}
+            pollingUnavailable={!!codePollingError}
+          />
+        )}
+        {codeElement && codeSubmissionError && !codeSubmission && (
+          <div className="mt-4" data-cy="code-submission-failed">
+            <UserNotification
+              type="error"
+              message={t('pwa.practiceQuiz.codeSubmissionFailed')}
+            />
+          </div>
+        )}
+        {codeElement &&
+          singleSubmission &&
+          (evaluationError || evaluationReadbackFailed) &&
+          codeSubmission?.gradingStatus === CodeSubmissionStatus.Completed && (
+            <div className="mt-4" data-cy="code-evaluation-readback-failed">
+              <UserNotification
+                type="error"
+                message={t('shared.generic.systemError')}
+              />
+              <Button
+                className={{ root: 'mt-2' }}
+                data={{ cy: 'code-evaluation-readback-retry' }}
+                loading={evaluationLoading}
+                onClick={() => {
+                  void retryEvaluationReadback()
+                }}
+              >
+                <Button.Label>{t('shared.generic.tryAgain')}</Button.Label>
+              </Button>
+            </div>
+          )}
       </div>
 
       {/* display continue button if question was already answered */}
@@ -461,15 +628,41 @@ function ElementStack({
         wrapEmbedded(
           <Button
             primary
-            loading={submittingResponse}
+            loading={submittingResponse || submittingCodeResponse}
             disabled={
               (!previewOnly && activityExpired) ||
-              Object.values(studentResponse).some((response) => !response.valid)
+              Object.values(studentResponse).some(
+                (response) => !response.valid
+              ) ||
+              (!!codeElement && !codeSubmissionAvailable) ||
+              (!!codeElement && codeSubmissionActive) ||
+              (!!codeElement &&
+                codeSubmission?.gradingStatus ===
+                  CodeSubmissionStatus.Completed) ||
+              (!!codeElement && previewOnly)
             }
             className={{
               root: embeddedButtonClass,
             }}
             onClick={async () => {
+              if (codeElement && codeSubmissionAvailable && !previewOnly) {
+                const response = studentResponse[codeElement.id]
+                if (
+                  response?.type !== ElementType.Code ||
+                  typeof response.response !== 'string'
+                ) {
+                  return
+                }
+
+                await submitCodeResponse({
+                  instanceId: codeElement.id,
+                  courseId,
+                  code: response.response,
+                  timeSpent: timeRef.current,
+                })
+                return
+              }
+
               const result = await respondToElementStack({
                 variables: {
                   isOwner: previewOnly,

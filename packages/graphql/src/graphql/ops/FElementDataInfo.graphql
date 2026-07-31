@@ -60,6 +60,18 @@ fragment ElementDataInfo on ElementInstance {
       pointsMultiplier
     }
 
+    ... on CodeElementData {
+      __typename
+      id
+      elementId
+      name
+      type
+      content
+      explanation
+      basePoints
+      pointsMultiplier
+    }
+
     ... on FlashcardElementData {
       __typename
       id

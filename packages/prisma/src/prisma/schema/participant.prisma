@@ -73,6 +73,7 @@ model Participant {
   participations                  Participation[]
   questionResponses               QuestionResponse[]
   detailQuestionResponses         QuestionResponseDetail[]
+  codeSubmissions                 CodeSubmission[]
   liveQuizResponses               LiveQuizResponse[]
   feedbacks                       Feedback[]
   elementFeedbacks                ElementFeedback[]
@@ -163,6 +164,7 @@ model Participation {
 
   responses               QuestionResponse[]
   detailResponses         QuestionResponseDetail[]
+  codeSubmissions         CodeSubmission[]
   subscriptions           PushSubscription[]
   completedMicroLearnings String[]
   bookmarkedElementStacks ElementStack[]

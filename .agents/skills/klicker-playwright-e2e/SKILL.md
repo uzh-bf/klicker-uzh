@@ -76,6 +76,7 @@ Ensure the response processor is not running with `ASSESSMENT_MODE=true` when va
 - Sudden Firefox/WebKit execution: Playwright is running all configured projects. Pass `--project=chromium` or keep non-Chromium projects commented in config if Chromium-only is desired.
 - UI mode does not automatically mean tests execute; prefer CLI runs for verification and use UI mode only for interactive debugging.
 - A passing `CLEANUP` followed by immediate failures often means frontend apps or auth URLs are unavailable after setup.
+- In the self-contained devcontainer, a PWA loaded from `127.0.0.1` can still have `NEXT_PUBLIC_API_URL=https://api.klicker.localhost/api/graphql` baked into its bundle. Chromium inside that container cannot reach the host-side TLS router. For a focused spec, route only `**/api/graphql*` and forward otherwise-unmocked operations to `http://127.0.0.1:3000/api/graphql`; keep real activity data and mock only the intended external boundary.
 
 Before blaming a test, probe the apps:
 

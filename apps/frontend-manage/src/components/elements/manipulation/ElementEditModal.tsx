@@ -7,29 +7,31 @@ import {
   GetUserTagsDocument,
   ManipulateCaseStudyQuestionDocument,
   ManipulateChoicesQuestionDocument,
+  ManipulateCodeQuestionDocument,
   ManipulateContentElementDocument,
   ManipulateFlashcardElementDocument,
   ManipulateFreeTextQuestionDocument,
   ManipulateNumericalQuestionDocument,
   ManipulateSelectionQuestionDocument,
   UpdateElementInstancesDocument,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { useLocalStorage } from '@uidotdev/usehooks'
 import { useRouter } from 'next/router'
 import React, { useMemo, useState } from 'react'
+import { useElementAutoSave } from './elementAutoSave'
 import ElementEditForm from './ElementEditForm'
 import {
   createInlineCaseStudyCollection,
   createInlineSelectionCollection,
   prepareCaseStudyArgs,
   prepareChoicesArgs,
+  prepareCodeArgs,
   prepareContentArgs,
   prepareFlashcardArgs,
   prepareFreeTextArgs,
   prepareNumericalArgs,
   prepareSelectionArgs,
 } from './helpers'
-import { ElementFormTypes } from './types'
 import useElementFormInitialValues from './useElementFormInitialValues'
 
 export enum ElementEditMode {
@@ -62,13 +64,18 @@ function ElementEditModal({
   const [updateInstances, setUpdateInstances] = useState(true)
   const [includeTemplateUpdates, setIncludeTemplateUpdates] = useState(false)
 
-  const [autoSavedElement, setAutoSavedElement] =
-    useLocalStorage<ElementFormTypes>(
-      typeof elementId === 'undefined' || isDuplication
-        ? 'autosave-element-creation'
-        : `autosave-element-${elementId}`,
-      undefined
-    )
+  const autoSaveKey =
+    typeof elementId === 'undefined' || isDuplication
+      ? 'autosave-element-creation'
+      : `autosave-element-${elementId}`
+  const { loading: loadingUser, data: dataUser } = useQuery(UserProfileDocument)
+  const userId = dataUser?.userProfile?.id
+  const {
+    autoSavedElement,
+    loaded: autoSaveLoaded,
+    setAutoSavedElement,
+  } = useElementAutoSave(autoSaveKey, userId)
+  const recoveredElement = autoSavedElement
 
   const { loading: loadingQuestion, data: dataQuestion } = useQuery(
     GetSingleElementDocument,
@@ -94,6 +101,7 @@ function ElementEditModal({
   const [manipulateFreeTextQuestion] = useMutation(
     ManipulateFreeTextQuestionDocument
   )
+  const [manipulateCodeQuestion] = useMutation(ManipulateCodeQuestionDocument)
   const [manipulateSelectionQuestion] = useMutation(
     ManipulateSelectionQuestionDocument
   )
@@ -115,12 +123,12 @@ function ElementEditModal({
   // only update the form values on initial rendering in creation or edit mode (not in duplication mode)
   // (otherwise, saving the question will directly trigger another save)
   const formikInitialValues = useMemo(() => {
-    if (!initialValues) {
+    if (!initialValues || !userId || !autoSaveLoaded) {
       return undefined
     }
-    return isDuplication ? initialValues : (autoSavedElement ?? initialValues)
+    return isDuplication ? initialValues : (recoveredElement ?? initialValues)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, isDuplication, initialValues])
+  }, [isOpen, isDuplication, initialValues, userId, autoSaveLoaded])
 
   return (
     <ElementEditForm
@@ -128,6 +136,7 @@ function ElementEditModal({
       elementId={elementId}
       inputsDisabled={inputsDisabled}
       loading={
+        loadingUser ||
         loadingQuestion ||
         !formikInitialValues ||
         Object.keys(formikInitialValues).length === 0
@@ -263,6 +272,27 @@ function ElementEditModal({
               break
             }
 
+            case ElementType.Code: {
+              const args = prepareCodeArgs({
+                elementId,
+                isDuplication,
+                values,
+              })
+
+              const result = await manipulateCodeQuestion({
+                variables: args,
+                refetchQueries: [{ query: GetUserTagsDocument }],
+              })
+              await refetchElements()
+
+              const data = result.data?.manipulateCodeQuestion
+              if (data?.__typename !== 'CodeElement' || !data.id) {
+                return false
+              }
+
+              break
+            }
+
             case ElementType.Selection: {
               // if the items for the selection question were defined inline, create a new answer collection from them
               const innerValues =
@@ -378,13 +408,7 @@ function ElementEditModal({
       }}
       onSuccess={() => {
         // remove local storage entry
-        if (autoSavedElement) {
-          localStorage.removeItem(
-            typeof elementId === 'undefined' || isDuplication
-              ? 'autosave-element-creation'
-              : `autosave-element-${elementId}`
-          )
-        }
+        setAutoSavedElement(undefined)
 
         // extract query parameters
         const {

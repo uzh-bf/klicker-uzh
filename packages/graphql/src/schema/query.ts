@@ -6,6 +6,7 @@ import * as AccountService from '../services/accounts.js'
 import * as ActivityService from '../services/activities.js'
 import * as AnalyticsService from '../services/analytics.js'
 import * as ChatbotsService from '../services/chatbots.js'
+import * as CodeSubmissionService from '../services/codeSubmissions.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
@@ -39,6 +40,7 @@ import {
   StudentAssessmentBlockResponse,
   StudentAssessmentResults,
 } from './assessment.js'
+import { CodeSubmissionReceipt } from './code.js'
 import {
   AssessmentParticipant,
   Course,
@@ -143,6 +145,18 @@ export const Query = builder.queryType({
         resolve: async (_, __, ctx) => {
           if (!ctx.user?.sub) return null
           return await ParticipantService.getParticipantWithAchievements(ctx)
+        },
+      }),
+
+      codeSubmission: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: CodeSubmissionReceipt,
+        args: { id: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await CodeSubmissionService.getCodeSubmission(
+            { id: String(args.id) },
+            ctx
+          )
         },
       }),
 

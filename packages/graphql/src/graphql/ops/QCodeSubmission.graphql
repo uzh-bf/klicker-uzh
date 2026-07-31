@@ -1,0 +1,5 @@
+query CodeSubmission($id: ID!) {
+  codeSubmission(id: $id) {
+    ...CodeSubmissionReceiptData
+  }
+}

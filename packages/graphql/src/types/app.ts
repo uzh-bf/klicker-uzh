@@ -3,6 +3,7 @@ import type {
   ActivityLogModificationDetails,
   AssessmentReportSnapshotV1,
   AvatarSettings,
+  CodeSubmissionResult,
   ElementData,
   ElementInstanceOptions,
   ElementInstanceResults,
@@ -43,6 +44,7 @@ declare global {
     type PrismaGroupActivityResults = GroupActivityResults
     type PrismaActivityLogModificationDetails = ActivityLogModificationDetails
     type PrismaAssessmentReportSnapshot = AssessmentReportSnapshotV1
+    type PrismaCodeSubmissionResult = CodeSubmissionResult
   }
 }
 // #endregion

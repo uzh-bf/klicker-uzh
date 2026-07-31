@@ -5,6 +5,7 @@ import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
 import * as ChatbotsService from '../services/chatbots.js'
+import * as CodeSubmissionService from '../services/codeSubmissions.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
@@ -21,12 +22,14 @@ import * as TemplateService from '../services/templates.js'
 import { ActivityInfo } from './activities.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
 import { PointCorrection, PointCorrectionType } from './assessment.js'
+import { CodeSubmissionReceipt } from './code.js'
 import { Course } from './course.js'
 import {
   Element,
   ElementInstance,
   OptionsCaseStudyInput,
   OptionsChoicesInput,
+  OptionsCodeInput,
   OptionsFreeTextInput,
   OptionsNumericalInput,
   OptionsSelectionInput,
@@ -475,6 +478,23 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await NotificationService.unsubscribeFromPush(args, ctx)
+        },
+      }),
+
+      submitCodeResponse: t.withAuth(asParticipant).field({
+        nullable: false,
+        type: CodeSubmissionReceipt,
+        args: {
+          instanceId: t.arg.int({ required: true }),
+          courseId: t.arg.string({ required: true }),
+          code: t.arg.string({ required: true }),
+          timeSpent: t.arg.int({
+            required: true,
+            validate: { min: 0, max: 86_400 },
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await CodeSubmissionService.submitCodeResponse(args, ctx)
         },
       }),
 
@@ -1117,6 +1137,45 @@ export const Mutation = builder.mutationType({
 
           return await ElementService.manipulateElement(
             { ...args, type: DB.ElementType.NUMERICAL },
+            ctx
+          )
+        },
+      }),
+
+      manipulateCodeQuestion: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: Element,
+        args: {
+          id: t.arg.int({ required: false }),
+          status: t.arg({ type: ElementStatus, required: false }),
+          name: t.arg.string({ required: false }),
+          content: t.arg.string({ required: false }),
+          explanation: t.arg.string({ required: false }),
+          basePoints: t.arg.boolean({ required: false }),
+          pointsMultiplier: t.arg.int({ required: false }),
+          tags: t.arg.stringList({ required: false }),
+          options: t.arg({
+            type: OptionsCodeInput,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          if (typeof args.id !== 'undefined' && args.id !== null) {
+            const validAccess = await checkAccess(
+              [
+                {
+                  elementId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+          }
+
+          return await ElementService.manipulateElement(
+            { ...args, type: DB.ElementType.CODE },
             ctx
           )
         },

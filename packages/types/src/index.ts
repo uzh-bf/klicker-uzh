@@ -9,6 +9,7 @@ import type {
   ParameterType,
   PerformanceLevel,
   PointCorrection,
+  CodeSubmissionStatus as PrismaCodeSubmissionStatus,
   ResponseCorrectness as PrismaResponseCorrectness,
 } from '@klicker-uzh/prisma/client'
 
@@ -52,6 +53,25 @@ export enum ActivityType {
   PRACTICE_QUIZ = 'PRACTICE_QUIZ',
   MICRO_LEARNING = 'MICRO_LEARNING',
   GROUP_ACTIVITY = 'GROUP_ACTIVITY',
+}
+
+export type CodeActivityStackViolation =
+  | 'UNSUPPORTED_ACTIVITY'
+  | 'CODE_MUST_BE_ONLY_ELEMENT'
+
+export function getCodeActivityStackViolation(
+  elementTypes: readonly string[],
+  allowCodeElements: boolean
+): CodeActivityStackViolation | null {
+  if (!elementTypes.includes('CODE')) {
+    return null
+  }
+
+  if (!allowCodeElements) {
+    return 'UNSUPPORTED_ACTIVITY'
+  }
+
+  return elementTypes.length === 1 ? null : 'CODE_MUST_BE_ONLY_ELEMENT'
 }
 
 export enum SharingType {
@@ -209,6 +229,123 @@ export type OptionsSelectionInput = {
   correctAnswers?: number[] | null
 }
 
+export type JsonValue =
+  | boolean
+  | number
+  | string
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue }
+
+export type CodeLanguage = 'python'
+export type CodeTestVisibility = 'public' | 'hidden'
+
+export const CODE_TEST_MAX_COUNT = 20
+export const CODE_TEST_ID_MAX_LENGTH = 128
+export const CODE_TEST_TIMEOUT_SECONDS = 5
+
+export function areCodeTestWeightsValid(weights: readonly unknown[]): boolean {
+  let totalWeight = 0
+  for (const weight of weights) {
+    if (typeof weight !== 'number' || !Number.isFinite(weight) || weight <= 0) {
+      return false
+    }
+    totalWeight += weight
+    if (!Number.isFinite(totalWeight)) return false
+  }
+  return totalWeight > 0
+}
+
+const PYTHON_ENTRYPOINT = /^[A-Za-z_][A-Za-z0-9_]*$/
+const PYTHON_KEYWORDS = new Set([
+  'False',
+  'None',
+  'True',
+  'and',
+  'as',
+  'assert',
+  'async',
+  'await',
+  'break',
+  'class',
+  'continue',
+  'def',
+  'del',
+  'elif',
+  'else',
+  'except',
+  'finally',
+  'for',
+  'from',
+  'global',
+  'if',
+  'import',
+  'in',
+  'is',
+  'lambda',
+  'nonlocal',
+  'not',
+  'or',
+  'pass',
+  'raise',
+  'return',
+  'try',
+  'while',
+  'with',
+  'yield',
+])
+
+export function isValidPythonEntrypoint(value: string): boolean {
+  return PYTHON_ENTRYPOINT.test(value) && !PYTHON_KEYWORDS.has(value)
+}
+
+export type CodeTestCaseInput = {
+  id: string
+  name: string
+  args?: unknown[] | null
+  expectedOutput?: unknown
+  visibility: CodeTestVisibility
+  weight: number
+}
+
+export type OptionsCodeInput = {
+  language?: CodeLanguage | null
+  starterCode?: string | null
+  sampleSolution?: string | null
+  entrypoint?: string | null
+  testCases?: CodeTestCaseInput[] | null
+  hasSampleSolution?: boolean | null
+}
+
+export type CodeTestResult = {
+  id: string
+  passed: boolean
+}
+
+export type CodePublicTestResult = CodeTestResult & {
+  name: string
+  actualOutput?: JsonValue
+  stdout?: string
+  stderr?: string
+}
+
+export type CodeSubmissionFeedback = {
+  pointsPercentage: number
+  publicTestResults: CodePublicTestResult[]
+}
+
+export type CodeSubmissionResult = CodeSubmissionFeedback & {
+  hiddenTestResults: CodeTestResult[]
+}
+
+export type CodeSubmissionStatus = PrismaCodeSubmissionStatus
+
+export type CodeSubmissionReceipt = {
+  id: string
+  gradingStatus: CodeSubmissionStatus
+  feedback?: CodeSubmissionFeedback | null
+}
+
 export type ResponseInput = {
   choices?: ChoicesResponse[] | null // SC / MC / KPRIM
   value?: string | null // FREE_TEXT / NUMERICAL
@@ -229,7 +366,8 @@ export type ElementOptionsInput = OptionsChoicesInput &
   OptionsNumericalInput &
   OptionsFreeTextInput &
   OptionsSelectionInput &
-  OptionsCaseStudyInput
+  OptionsCaseStudyInput &
+  OptionsCodeInput
 
 export type ElementManipulationInput = {
   id?: number | null
@@ -469,6 +607,11 @@ export type SingleQuestionResponseContent = {
   viewed: boolean
 }
 
+export type SingleQuestionResponseCode = {
+  code: string
+  correctness: number
+}
+
 export type SingleQuestionResponse =
   | SingleQuestionResponseChoices
   | SingleQuestionResponseValue
@@ -476,6 +619,7 @@ export type SingleQuestionResponse =
   | SingleQuestionResponseContent
   | SingleQuestionResponseSelection
   | SingleQuestionResponseCaseStudy
+  | SingleQuestionResponseCode
 
 export type SingleQuestionResponseLiveQuizCaseStudy = {
   assessment: CaseStudyResponseObject
@@ -594,6 +738,110 @@ export interface ElementOptionsCaseStudy extends BaseElementOptions {
   cases: CaseStudyCase[]
 }
 
+export const CODE_JSON_MAX_DEPTH = 20
+export const CODE_JSON_MAX_NODES = 2_000
+export const CODE_JSON_MAX_BYTES = 16 * 1_024
+
+export function isCodeJsonValue(value: unknown): value is JsonValue {
+  const stack: Array<{ depth: number; value: unknown }> = [{ depth: 0, value }]
+  let nodes = 0
+
+  while (stack.length > 0) {
+    const current = stack.pop()!
+    nodes += 1
+    if (nodes > CODE_JSON_MAX_NODES || current.depth > CODE_JSON_MAX_DEPTH) {
+      return false
+    }
+
+    if (
+      current.value === null ||
+      typeof current.value === 'string' ||
+      typeof current.value === 'boolean'
+    ) {
+      continue
+    }
+    if (typeof current.value === 'number') {
+      if (!Number.isFinite(current.value)) return false
+      continue
+    }
+    if (Array.isArray(current.value)) {
+      if (nodes + stack.length + current.value.length > CODE_JSON_MAX_NODES) {
+        return false
+      }
+      for (const item of current.value) {
+        stack.push({ depth: current.depth + 1, value: item })
+      }
+      continue
+    }
+    if (
+      typeof current.value === 'object' &&
+      (Object.getPrototypeOf(current.value) === Object.prototype ||
+        Object.getPrototypeOf(current.value) === null)
+    ) {
+      const objectValue = current.value as Record<string, unknown>
+      for (const key in objectValue) {
+        if (!Object.prototype.hasOwnProperty.call(objectValue, key)) {
+          continue
+        }
+        if (nodes + stack.length >= CODE_JSON_MAX_NODES) {
+          return false
+        }
+        stack.push({
+          depth: current.depth + 1,
+          value: objectValue[key],
+        })
+      }
+      continue
+    }
+    return false
+  }
+
+  try {
+    const serialized = JSON.stringify(value)
+    return (
+      typeof serialized === 'string' &&
+      new TextEncoder().encode(serialized).byteLength <= CODE_JSON_MAX_BYTES
+    )
+  } catch {
+    return false
+  }
+}
+
+export type CodeTestCase = {
+  id: string
+  name: string
+  args: JsonValue[]
+  expectedOutput: JsonValue
+  visibility: CodeTestVisibility
+  weight: number
+}
+
+export interface ElementOptionsCode extends BaseElementOptions {
+  language: CodeLanguage
+  starterCode?: string
+  sampleSolution?: string
+  entrypoint: string
+  testCases: CodeTestCase[]
+  executionLimits: {
+    perTestTimeoutSeconds: typeof CODE_TEST_TIMEOUT_SECONDS
+  }
+}
+
+export type PublicCodeTestCase = Pick<
+  CodeTestCase,
+  'id' | 'name' | 'args' | 'expectedOutput'
+>
+
+export interface PublicElementOptionsCode {
+  language: CodeLanguage
+  starterCode?: string
+  entrypoint: string
+  testCases: PublicCodeTestCase[]
+  executionLimits: {
+    perTestTimeoutSeconds: typeof CODE_TEST_TIMEOUT_SECONDS
+  }
+}
+
 export interface ElementOptionsFlashcard {}
 export interface ElementOptionsContent {}
 
@@ -605,6 +853,7 @@ export type ElementOptions =
   | ElementOptionsContent
   | ElementOptionsSelection
   | ElementOptionsCaseStudy
+  | ElementOptionsCode
 
 export interface BaseElementData {
   id: string
@@ -650,6 +899,11 @@ export type CaseStudyElementData = IElementData<
   'CASE_STUDY',
   ElementOptionsCaseStudy
 >
+export type CodeElementData = IElementData<'CODE', ElementOptionsCode>
+
+export type PublicCodeElementData = Omit<CodeElementData, 'options'> & {
+  options: PublicElementOptionsCode
+}
 
 export type ElementData =
   | ChoicesElementData
@@ -659,6 +913,11 @@ export type ElementData =
   | ContentElementData
   | SelectionElementData
   | CaseStudyElementData
+  | CodeElementData
+
+export type ParticipantElementData =
+  | Exclude<ElementData, CodeElementData>
+  | PublicCodeElementData
 
 export type ElementInstanceOptions = {
   basePoints?: boolean
@@ -716,6 +975,11 @@ export type ElementResultsCaseStudy = {
   total: number
 }
 
+export type ElementResultsCode = {
+  tests: Record<string, { passed: number; total: number }>
+  total: number
+}
+
 export type ElementInstanceResults =
   | ElementResultsChoices
   | ElementResultsOpen
@@ -723,6 +987,7 @@ export type ElementInstanceResults =
   | ElementResultsContent
   | ElementResultsSelection
   | ElementResultsCaseStudy
+  | ElementResultsCode
 
 export type GroupActivityDecision = {
   instanceId: number
@@ -852,6 +1117,19 @@ export interface IInstanceEvaluationContent extends IBaseInstanceEvaluation {
 }
 export type InstanceEvaluationContent = IInstanceEvaluationContent
 
+export type CodeTestEvaluation = {
+  id: string
+  name: string
+  passedCount: number
+  totalCount: number
+}
+
+export interface IInstanceEvaluationCode extends IBaseInstanceEvaluation {
+  testResults?: CodeTestEvaluation[]
+  lastResponse?: SingleQuestionResponseCode | null
+}
+export type InstanceEvaluationCode = IInstanceEvaluationCode
+
 export type InstanceEvaluation =
   | IInstanceEvaluationChoices
   | IInstanceEvaluationNumerical
@@ -860,6 +1138,7 @@ export type InstanceEvaluation =
   | IInstanceEvaluationContent
   | IInstanceEvaluationSelection
   | IInstanceEvaluationCaseStudy
+  | IInstanceEvaluationCode
 // #endregion
 
 // ----- LEARNING ANALYTICS -----

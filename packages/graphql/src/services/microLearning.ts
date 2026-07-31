@@ -235,7 +235,16 @@ export async function manipulateMicroLearning(
     duplicationInstances,
     elementMap,
     anyInstanceOutdated,
-  } = await splitActivityInstances({ stacksOrBlocks: stacks }, ctx)
+  } = await splitActivityInstances(
+    {
+      stacksOrBlocks: stacks,
+      allowCodeElements: true,
+      ...(id
+        ? { persistentInstanceScope: { elementStack: { microLearningId: id } } }
+        : {}),
+    },
+    ctx
+  )
 
   // in EDIT mode - check which instances and stacks should be removed
   let instancesToDelete: number[] = []
@@ -315,14 +324,18 @@ export async function manipulateMicroLearning(
 
       // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
       for (const instance of persistentInstances) {
+        if (!id) {
+          throw new GraphQLError('Not all element instances could be found')
+        }
         const elementMultiplier =
           'pointsMultiplier' in instance.elementData
             ? ((instance.elementData.pointsMultiplier as number) ?? 1)
             : 1
 
-        await prisma.elementInstance.update({
+        const updated = await prisma.elementInstance.updateMany({
           where: {
             id: instance.id,
+            elementStack: { microLearningId: id },
           },
           data: {
             elementStackId: null,
@@ -333,6 +346,9 @@ export async function manipulateMicroLearning(
             },
           },
         })
+        if (updated.count !== 1) {
+          throw new GraphQLError('Not all element instances could be found')
+        }
       }
 
       // delete all stacks

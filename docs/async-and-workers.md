@@ -24,6 +24,8 @@ student answer → apps/response-api (HTTP) → Hatchet event
 
 Task definitions are centralized in `packages/hatchet/src/index.ts:prepareHatchetTasks`; the actual handlers are service functions exported from `@klicker-uzh/graphql` as the `HatchetHandlers` map — workers and the GraphQL backend share one business-logic codebase. The backend itself also constructs the tasks at startup and exposes them on the GraphQL context as `ctx.tasks`.
 
+CODE questions use a separate receipt-backed path. The participant mutation creates or returns the one active `CodeSubmission`, then enqueues `grade-code-submission` on the general worker. An enqueue error leaves the accepted receipt pending instead of deleting it; `recover-code-submissions` runs every minute in bounded batches to enqueue due pending or expired work and closes expired receipts that exhausted three claims. A CodeAPI `429` releases the claim to `PENDING` with a database-held `retryAt` derived from `Retry-After` (30-second default, bounded to 1 second through 5 minutes), and the current Hatchet attempt returns successfully; recovery will not re-enqueue it before that timestamp. The worker claims the receipt for seven minutes, while CodeAPI applies one configurable deadline (at most five minutes) across the public and hidden batches and Hatchet permits six minutes. Finalization locks both the matching claim and the shared element-instance aggregate row, then records the normal response detail, participant aggregate response, instance aggregate/statistics, spaced-repetition, points, XP, leaderboard, timeline, and completion in one transaction. The claim/status transition is the idempotency authority; aggregate JSON stores counters rather than an ever-growing submission-ID ledger. A duplicate, overlapping, or stale worker cannot finalize after losing its claim. Completion is published through Redis-backed GraphQL pub/sub; participant-owned polling remains the durable fallback if an event is missed.
+
 ## Response ingest (`apps/response-api`)
 
 Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. Non-assessment responses (`handleAddResponse`) emit `response-received:authenticated|anonymous`. The assessment path (`handleAddAssessmentResponse`) verifies a JWT correlation key, dedupes via `hget` on the assessment Redis, then emits `response-received:assessment`; audit-log events (`create-audit-log-entry`) are emitted throughout. Live-quiz vs assessment behavior switches on the `ASSESSMENT_MODE` env var.
@@ -39,6 +41,8 @@ Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. No
 
 `apps/hatchet-worker-general` (`src/index.ts`) — selects workflows via the `HATCHET_WORKFLOWS` env var (default all; unknown keys are rejected at startup):
 
+- `grade-code-submission` — claims, executes, and transactionally finalizes one CODE receipt
+- `recover-code-submissions` — minutely recovery for pending, expired, and exhausted CODE receipts
 - `create-audit-log-entry` (event-driven)
 - `publish-scheduled-*` / `end-expired-*` — activity lifecycle
 - `aggregate-block-closure-*` — live-quiz block aggregation

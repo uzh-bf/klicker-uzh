@@ -36,6 +36,7 @@ function ElementContentInput({
     [ElementType.FreeText]: 'shared.generic.question',
     [ElementType.Selection]: 'shared.generic.question',
     [ElementType.CaseStudy]: 'shared.generic.instructions',
+    [ElementType.Code]: 'shared.generic.question',
   }
 
   const tooltipMap: Record<
@@ -53,6 +54,7 @@ function ElementContentInput({
     [ElementType.FreeText]: 'manage.elements.questionTooltip',
     [ElementType.Selection]: 'manage.elements.questionTooltip',
     [ElementType.CaseStudy]: 'manage.elements.instructionsTooltip',
+    [ElementType.Code]: 'manage.elements.questionTooltip',
   }
 
   const placeholderMap: Record<
@@ -70,6 +72,7 @@ function ElementContentInput({
     [ElementType.FreeText]: 'manage.elements.questionPlaceholder',
     [ElementType.Selection]: 'manage.elements.questionPlaceholder',
     [ElementType.CaseStudy]: 'manage.elements.instructionsPlaceholder',
+    [ElementType.Code]: 'manage.elements.questionPlaceholder',
   }
 
   return (

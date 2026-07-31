@@ -2,7 +2,7 @@
 type: Architecture Overview
 title: Architecture Overview
 description: System map of apps and packages, the request path from browser to resolver, the async response pipeline, and where business logic lives.
-timestamp: '2026-07-07'
+timestamp: '2026-07-29'
 tags:
   - architecture
 ---
@@ -31,7 +31,7 @@ Apps (dev ports in [Getting Started](./getting-started.md)):
 | `apps/olat-api`, `apps/lti`, `apps/office-addin`      | LMS/Office integrations                                                             |
 | `apps/docs`                                           | User-facing Docusaurus site (not this wiki)                                         |
 
-Packages: `graphql` (schema + services + ops — the heart), `prisma` (schema + migrations), `prisma-data` (seeds), `grading` (pure scoring math), `hatchet` (task definitions), `types`, `util` (JWT/cookie helpers), `i18n`, `shared-components`, `markdown`, `export`, `word-cloud`, `next-config`, `transactional` (react-email).
+Packages: `graphql` (schema + services + ops — the heart), `prisma` (schema + migrations), `prisma-data` (seeds), `grading` (pure scoring math), `hatchet` (task definitions), `types`, `util` (JWT/cookie and CodeAPI helpers), `i18n`, `shared-components`, `markdown`, `export`, `word-cloud`, `next-config`, `transactional` (react-email).
 
 ## Request flow (query/mutation)
 
@@ -51,6 +51,18 @@ Redis has three roles, one client each (`apps/backend-docker/src/index.ts`): **e
 - `graphql/ops/*.graphql` — hand-written client operations, prefixed `Q`/`M`/`S`/`F` → codegen → `src/ops.ts` + `src/public/{client,server}.json`.
 
 Frontends import generated documents from `@klicker-uzh/graphql/dist/ops` — never write inline gql.
+
+## CODE sandbox grading boundary
+
+The server-only `@klicker-uzh/util/code-api` entry (`packages/util/src/codeApi.ts`) owns the hostile boundary to CodeAPI; it is deliberately absent from the browser-used util root. It loads the `CODEAPI_*` endpoint and asymmetric JWT settings, mints short-lived `klicker_jwt` tokens, and sends only student code plus test invocation arguments. Expected values, weights, and pass/fail decisions remain in Klicker.
+
+Public and hidden tests are derived from the authored visibility and sent in separate `/v1/exec` requests that must return distinct session IDs. Each generated Python batch runner starts a fresh child process group per test, drains its pipes under a byte cap, and kills the full group on timeout or overflow. Authoring and execution share depth, node, and serialized-byte limits for JSON inputs and outputs. The client accepts only the verified flat CodeAPI response, rejects artifacts and unsupported fields, parses a versioned result envelope, compares exact JSON, and returns only the sanitized `CodeSubmissionResult`; raw sessions and hidden diagnostics cannot cross its public boundary.
+
+Participant CODE answers create a participant-owned `CodeSubmissionReceipt` through GraphQL. A partial unique database index permits only one `PENDING` or `RUNNING` receipt for a participant and element instance, so an active resubmission returns the existing receipt. The general Hatchet worker uses expiring claim tokens and a three-attempt execution budget; CodeAPI execution happens outside the database transaction. A provider `429` releases the current claim, restores its attempt increment, and delays recovery until `retryAt`. Finalization first locks the matching claim and shared `ElementInstance` aggregate row, then applies `QuestionResponseDetail`, the participant-specific `QuestionResponse` aggregate, instance-wide results/statistics, spaced repetition, points, XP, leaderboard, timeline, and `COMPLETED` together. The detail stores the server-computed correctness so daily and course Analytics can classify CODE responses without re-running untrusted code. Retry after commit and duplicate or concurrent delivery therefore produce no lost or repeated side effects. Completion events contain only the participant receipt; the participant-owned query is the durable polling fallback.
+
+CodeAPI rate limits are deferred in the receipt itself. A `429` releases the active claim back to `PENDING`, records a bounded `retryAt`, and completes the current Hatchet attempt successfully so it cannot spin. Recovery re-enqueues only receipts whose deferral is due; other transient failures still use Hatchet retry behavior, while the database claim budget remains the final fence. The operational timing policy is canonical in [Async and workers](./async-and-workers.md).
+
+The live integration remains gated on the separate CodeAPI deployment accepting the `klicker_jwt` principal source selected in [ADR 0003](./adr/0003-use-klicker-codeapi-principal-source.md). Service-free contract tests cover the client until that gate is open.
 
 ## Async response pipeline
 

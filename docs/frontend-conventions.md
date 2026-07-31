@@ -2,7 +2,7 @@
 type: Frontend Conventions
 title: Frontend Conventions
 description: Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.
-timestamp: '2026-07-19'
+timestamp: '2026-07-30'
 tags:
   - frontend
 ---
@@ -47,9 +47,21 @@ Apollo Client with **generated documents only** — `import { UserProfileDocumen
 
 Namespaces are per-app plus `shared` (`shared`, `auth`, `pwa`, `manage`, `control`). Usage: `useTranslations()` without a namespace argument and full-path keys — `t('manage.settings.userSettings')`, `t('shared.generic.cancel')`; `t.rich` for markup. Messages load per page via `getStaticProps`; the plugin is wired in each `next.config.mjs` (`createNextIntlPlugin`).
 
+English and German message trees must have the same structural keys. `packages/i18n/parity.ts` enforces both directions at compile time, and the `@klicker-uzh/i18n` `check` script is included in the root verification.
+
 ## Forms
 
 **Formik + Yup** (not react-hook-form). Design-system `Formik*` field components bind by `name`. Existing modals (e.g. `apps/frontend-manage/src/components/sharing/TransferOwnershipModal.tsx`) are the template.
+
+CODE authoring uses the shared accessible CodeMirror wrapper at `packages/shared-components/src/CodeEditor.tsx`. Keep fixed Python/timeout policy out of Formik state; the form edits starter/sample code, entrypoint, and declarative tests only. JSON argument/output editors use plain-text mode, every editor keeps its `aria-label` and `data-cy`, participant preview receives public tests only, and CODE remains unavailable in template authoring.
+
+Element-editor autosaves contain full authoring state, including CODE sample solutions and hidden tests. Persist them only in a versioned envelope bound to the authenticated lecturer id. Check that binding before offering recovery or loading Formik values, and delete legacy, malformed, or mismatched entries so browser-profile turnover cannot cross lecturer boundaries. The recovery decoder must validate nested members for render safety while preserving Formik's safe intermediate values, such as unset Case Study fields, string-backed number inputs, and null serialized array slots; update its positive and rejection coverage whenever an element form shape changes.
+
+The Manage artificial preview updates its GraphQL typename and student response through separate effects. During an element-type transition those discriminants can briefly disagree; narrow the response at strict component boundaries (for CODE, require an actual string before passing it to CodeMirror) instead of trusting the transient enum value alone.
+
+In the participant PWA, CODE stacks use the asynchronous receipt lifecycle instead of the synchronous stack-response mutation. Persist the submitted code and receipt id under a separate activity-and-stack-scoped local-storage key, include and verify the authenticated participant id before restoring either receipt or completion state, recover it after reload, and subscribe with polling fallback while it is active. Terminal receipts are monotonic: a stale active poll or subscription result must not regress `COMPLETED` or `FAILED`, and a `FAILED` receipt must leave the editor enabled for a new attempt.
+
+Practice quizzes derive their local completion directly from the completed receipt. Microlearning is single-submission, so `COMPLETED` instead triggers one fresh `getPreviousStackEvaluation` readback and writes the finalized database evaluation into a participant-scoped `qi-code-*` key before enabling Continue. A failed readback is visible, offers an explicit retry, and never fabricates local points. Participant rendering and readback may show public test inputs, expectations, and results only; hidden test metadata and execution output never cross the participant GraphQL boundary. Manage evaluation uses a plain per-test aggregate table, including hidden test names and counts for authorized lecturers; CODE deliberately does not enter the generic chart selector.
 
 ## Gotchas absorbed from experience
 

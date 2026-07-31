@@ -2,7 +2,7 @@
 type: API Layer
 title: GraphQL API Layer
 description: Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
-timestamp: '2026-07-07'
+timestamp: '2026-07-30'
 tags:
   - backend
   - graphql
@@ -32,6 +32,7 @@ Worked examples: `deleteCourse` in `mutation.ts` (asUser + ADMIN permission on c
 
 - Arg validation via the Pothos **Zod plugin** — pass `validate:` on args (email/regex/length examples in `mutation.ts`); issues are joined into a `GraphQLError` by the shaper in `builder.ts`.
 - Service-level errors: prefer `GraphQLError` with `extensions.code` (e.g. `LIVE_QUIZ_PIN_INVALID`, `FORBIDDEN` in `services/liveQuizzes.ts`). Plain `throw new Error` exists in older code — don't add more.
+- Early existence/type preflights over client-supplied object ids must carry the same object-permission predicate as the later fetch, or run only after the permission-scoped fetch. Otherwise clean early returns versus later authorization errors become cross-object existence or type oracles.
 
 ## Client operations and codegen
 
@@ -52,3 +53,25 @@ Field filters over the shared pubSub: `schema/subscription.ts:feedbackCreated` p
 ## Worked feature traces
 
 Read-only feature end-to-end: commit `ff61d9bc7` (#4951) — new object type, two query fields, service function, ops + committed codegen, manage page, i18n. Schema-change + mutation + heavy vitest variant: `38c92d035` (#4958). Step-by-step walkthrough: [Developing a Feature](./developing-a-feature.md).
+
+### CODE projection boundary
+
+CODE deliberately has three GraphQL projections:
+
+- `CodeElement` is the full lecturer-owned element used by authoring queries and `manipulateCodeQuestion` / `MManipulateCodeQuestion`.
+- `AuthoringCodeElementData` exposes the full snapshotted instance contract only through the authenticated `ElementInstance.codeAuthoringData` field.
+- `CodeElementData` is participant-safe activity data. It includes public tests and static `executionLimits`, but omits hidden tests and all runtime sandbox artifacts, session identifiers, output, and exception metadata.
+
+CODE responses are accepted only through the dedicated asynchronous submission mutation. Generic stack and group-response inputs do not expose CODE fields, and authoring clients cannot override the static execution limit.
+
+The submission service checks active course participation before resolving the instance and scopes the instance query to an available published PracticeQuiz or MicroLearning in that course. Missing, wrong-type, foreign-course, unavailable, and inactive-participation inputs return the same unavailable result, so the mutation cannot be used as an instance oracle.
+
+Activity edit payloads may retain an existing instance only when it is still attached to the exact activity being edited. The service checks that scope before the transaction and repeats it in the transactional disconnect, preventing a supplied foreign instance ID from moving content or granting derived access to authoring data. Other edit-owned data must not change before that fence; group-activity clue replacement therefore runs inside the same transaction after persistent instances are rechecked.
+
+CODE JSON validation enforces depth, node, and serialized-byte bounds. Breadth checks happen before adding array/object children to the traversal worklist so invalid wide inputs cannot allocate work proportional to the entire request before the node limit rejects them.
+
+When a union or operation gains CODE support, update all applicable projections deliberately and keep `packages/graphql/test/codeGraphqlContract.test.ts` green. Hidden tests, their inputs, and expected outputs must be absent from participant payloads rather than nullable.
+
+Participant submission uses one receipt contract across `submitCodeResponse`, `codeSubmission(id)`, and `codeSubmissionUpdated(id)`. All three require a participant principal; the query additionally filters by `participantId`, and the subscription filters both receipt ID and the authenticated participant before resolving. `feedback` is null while pending/running or failed and contains only the public-test projection after completion. The mutation always re-enqueues the active receipt, so retrying after a lost enqueue acknowledgement is safe; database claim/finalization rules, not GraphQL or Hatchet delivery, provide idempotency.
+
+Microlearning evaluation deliberately has two projections over the same finalized submission. `getPreviousStackEvaluation` joins the authenticated participant's response with only their latest completed CODE submission and returns the restored code, score/awards, and public-test outcomes. The authorized activity evaluation computes per-test aggregate pass/total counts from `ElementInstance.results` for every authored test, including hidden tests, so Manage can render instructor analytics without exposing individual hidden execution details to participants.

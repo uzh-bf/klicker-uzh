@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the two e2e stacks and their seeds, and the CI test matrix.
-timestamp: '2026-07-20'
+timestamp: '2026-07-29'
 tags:
   - testing
   - ci
@@ -21,6 +21,44 @@ tags:
 | Auth adapter against shared Prisma client                            | disposable local PostgreSQL through the guarded Auth round-trip                            | `pnpm --filter @klicker-uzh/auth test:prisma-adapter`                                              |
 | UI / user flows                                                      | Playwright e2e (new specs); Cypress only for legacy maintenance                            | see routing below                                                                                  |
 | Office Add-in URL validation                                         | Node's built-in test runner — safe without services                                        | `pnpm --filter @klicker-uzh/office-addin test`                                                     |
+
+CODE contract, policy, and sandbox-client stabilization have three fast service-free suites:
+
+```bash
+pnpm --filter @klicker-uzh/util exec vitest run \
+  test/codeElements.test.ts \
+  test/codeApi.test.ts
+pnpm --filter @klicker-uzh/graphql exec vitest run \
+  test/codeElementPolicy.test.ts \
+  test/codeGraphqlContract.test.ts \
+  test/validateCodeOptions.test.ts
+```
+
+These protect public-versus-hidden projection, option validation, the shared 128-character test-ID and finite-total-weight constraints, shared JSON limits, supported activity types, CODE-only stack rules, asymmetric CodeAPI claims, invocation-only public/hidden requests, hostile response parsing, output caps, one shared public/hidden grading deadline, and exact JSON grading. When `python3` is available, `codeApi.test.ts` also executes the generated runner and verifies pass/error/timeout behavior, direct file-descriptor flooding, descendant cleanup, and process-group termination; Vitest marks those two tests skipped when Python is absent. These checks do not replace the database-backed submission lifecycle tests, the gated live CodeAPI smoke, or browser/e2e flows required by later slices.
+
+The CODE receipt and finalization integration suite needs the GraphQL test database but not a live CodeAPI because it injects the already-sanitized grading result at the server boundary:
+
+```bash
+pnpm --filter @klicker-uzh/graphql exec vitest run \
+  test/codeSubmissions.test.ts
+```
+
+It covers active-receipt convergence, durable pending state after an enqueue failure, observationally equivalent rejection of absent/wrong-type/foreign/unavailable instances, foreign persistent-instance rejection without movement, duplicate delivery, retry after failure and commit, repeated `429` deferral without attempt-budget consumption, expired and unexpired claim behavior, exhausted retries, a new attempt after `FAILED`, microlearning closure, a bounded 20-submission concurrent burst, separate global/participant aggregates, and exactly-once response, statistics, spaced-repetition, points, XP, leaderboard, and timeline writes. It also asserts that participant readback contains only public tests while an instructor-authorized full element snapshot and aggregate contain public and hidden tests; an unrelated user receives neither. Keep the executor mocked in this suite; the service-free CodeAPI tests own runner, output caps, and hostile-response behavior, while the gated live smoke owns the deployed integration.
+
+The shared Analytics correctness mapping for persisted CODE details has a service-free Python regression:
+
+```bash
+cd apps/analytics
+uv run python -m unittest discover -s tests -v
+```
+
+This mapping is used by both daily and course participant analytics. It reads only the server-computed correctness persisted during finalization; it does not execute or inspect the submitted code.
+
+For Manage CODE browser proof, exercise the type transition itself: select CODE through `select-question-type`, require `code-options` to render without a CodeMirror console error, and verify `student-element-preview` contains public test names but no hidden test names. In the practice-quiz or microlearning wizard, a mixed CODE selection must disable the combined-stack action while leaving the separate-stack action enabled.
+
+For participant CODE browser proof, `playwright/tests/Q-code-practice-quiz.spec.ts` seeds real published practice-quiz and microlearning activities and uses the real PWA activity queries. Practice-quiz cases replace the external grading receipt transition so pending, reload recovery, completion, stale-active-result rejection, submitted-code recovery, cross-participant isolation, hidden-test omission, failure, and retry are deterministic. The microlearning case executes the real GraphQL mutation in-process with only Hatchet enqueueing replaced, runs the production finalizer against a deterministic sanitized executor result, and then requires the real `getPreviousStackEvaluation` readback and participant-scoped evaluation storage before advancing. It also forces one readback error and proves the explicit retry. Its separate lecturer scenario uses the real Manage GraphQL evaluation and asserts exact public/hidden pass and total cells, including a failed hidden test.
+
+When Playwright runs inside the self-contained devcontainer, Chromium reaches linked-worktree routes through `PLAYWRIGHT_HOST_RESOLVER_RULES` mapped to `host.docker.internal`, while unmatched GraphQL operations are forwarded to the container-local backend with the original query string, method, body, and headers. Set `COOKIE_DOMAIN` to the linked-worktree suffix for lecturer fixtures. Do not broaden these transport workarounds into mocked activity data or instructor evaluation.
 
 **Never run root `pnpm run test:run` blind** — the turbo fan-out includes Cypress, which needs a running, seeded stack. The graphql vitest config forces `pool: forks, singleFork: true` (serialized specs sharing DB state) — don't parallelize it.
 
@@ -61,3 +99,5 @@ Root typecheck includes the Cypress and Playwright compiler surfaces through the
 Check-only configs must state their no-output role with `noEmit`. When they extend a declaration-emitting config, `noEmit` alone does not disable declaration portability analysis: GraphQL and Prisma therefore also set `declaration: false` and `declarationMap: false`. Incremental checks use `tsconfig.check.tsbuildinfo` rather than overwriting the emitting compiler's state. The full compiler-role matrix lives in [Getting Started](./getting-started.md#toolchain-verified-2026-07-07).
 
 For framework upgrades, run both bundler paths: `pnpm run build:test` must exercise Turbopack in all five Next apps, while `pnpm run build` must exercise production Turbopack for auth/chat and production Webpack for control/manage/PWA. All five Next builds use their canonical `tsconfig.json`; the three PWA apps reserve `tsconfig.check.json` for raw package checks that must exclude stale development validators. Inspect `.next/standalone` for all five apps and the service worker, Workbox, and custom worker outputs for control/manage/PWA. Treat configuration inspection as **config-derived**; call the artifacts verified only when the command, date, and tested SHA are recorded.
+
+Inside the devcontainer, prefer the root build because it forces `NODE_ENV=production`. If a direct Next package build is needed while the background dev process is stopped, set `NODE_ENV=production` explicitly and remove only that app's generated `.next/dev` cache before retrying; otherwise live dev validators can collide with production validators. A Google Fonts fetch failure is an external build dependency and must be reported separately from compilation results.

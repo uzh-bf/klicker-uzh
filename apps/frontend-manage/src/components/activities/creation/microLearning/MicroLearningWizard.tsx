@@ -6,6 +6,7 @@ import {
   ElementType,
   MicroLearning,
 } from '@klicker-uzh/graphql/dist/ops'
+import { getCodeActivityStackViolation } from '@klicker-uzh/types'
 import useCoursesGamificationSplit from '@lib/hooks/useCoursesGamificationSplit'
 import { toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -51,6 +52,7 @@ const acceptedTypes = [
   ElementType.Content,
   ElementType.Selection,
   ElementType.CaseStudy,
+  ElementType.Code,
 ]
 
 interface MicroLearningWizardProps {
@@ -160,13 +162,25 @@ function MicroLearningWizard({
                     t('manage.activityWizard.microlearningTypes')
                   ),
                 hasSampleSolution: yup.boolean().when('type', {
-                  is: (type: ElementType) => type !== ElementType.FreeText,
+                  is: (type: ElementType) =>
+                    type !== ElementType.FreeText && type !== ElementType.Code,
                   then: (schema) =>
                     schema.isTrue(
                       t('manage.activityWizard.elementSolutionReq')
                     ),
                 }),
               })
+            )
+            .test(
+              'code-only-stack',
+              t('manage.activityWizard.codeOnlyStack'),
+              (elements) =>
+                getCodeActivityStackViolation(
+                  (elements ?? []).flatMap((element) =>
+                    element?.type ? [element.type] : []
+                  ),
+                  true
+                ) === null
             ),
         })
       )
@@ -243,7 +257,8 @@ function MicroLearningWizard({
               title: instance.elementData.name,
               type: instance.elementData.type,
               hasSampleSolution:
-                'options' in instance.elementData
+                'options' in instance.elementData &&
+                'hasSampleSolution' in instance.elementData.options
                   ? (instance.elementData.options.hasSampleSolution ?? false)
                   : true,
               existingInstanceId: instance.id,

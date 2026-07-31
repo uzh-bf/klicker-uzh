@@ -44,6 +44,7 @@ model PracticeQuiz {
 
   responses               QuestionResponse[]
   responseDetails         QuestionResponseDetail[]
+  codeSubmissions         CodeSubmission[]
   participantPerformances ParticipantActivityPerformance[]
   performance             ActivityPerformance?
   progress                ActivityProgress?
@@ -173,6 +174,7 @@ model MicroLearning {
 
   responses               QuestionResponse[]
   responseDetails         QuestionResponseDetail[]
+  codeSubmissions         CodeSubmission[]
   participantPerformances ParticipantActivityPerformance[]
   performance             ActivityPerformance?
   progress                ActivityProgress?

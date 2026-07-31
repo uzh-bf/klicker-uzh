@@ -30,6 +30,7 @@ import schedule from 'node-schedule'
 import { createHash, createHmac } from 'node:crypto'
 import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
+import { getCodeActivityStackViolation } from '../lib/codeElementPolicy.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { computeRanks } from '../lib/util.js'
 import { getPermissionBooleans } from './activities.js'
@@ -49,7 +50,13 @@ const THIRD_ACHIEVEMENT_ID = 7
 export async function splitActivityInstances(
   {
     stacksOrBlocks,
-  }: { stacksOrBlocks: ElementStackInput[] | ElementBlockInput[] },
+    allowCodeElements = false,
+    persistentInstanceScope,
+  }: {
+    stacksOrBlocks: ElementStackInput[] | ElementBlockInput[]
+    allowCodeElements?: boolean
+    persistentInstanceScope?: DB.Prisma.ElementInstanceWhereInput
+  },
   ctx: ContextWithUser
 ) {
   // in EDIT mode - compute map between id of instance that is kept and the new order attribute
@@ -73,10 +80,22 @@ export async function splitActivityInstances(
   )
 
   // fetch instances that should be kept in the activity
-  const persistentInstances = await ctx.prisma.elementInstance.findMany({
-    where: { id: { in: persistentInstanceIds } },
-    include: { element: true },
-  })
+  if (persistentInstanceIds.length > 0 && !persistentInstanceScope) {
+    throw new GraphQLError('Not all element instances could be found')
+  }
+  const persistentInstances =
+    persistentInstanceIds.length === 0
+      ? []
+      : await ctx.prisma.elementInstance.findMany({
+          where: {
+            id: { in: persistentInstanceIds },
+            AND: [persistentInstanceScope!],
+          },
+          include: { element: true },
+        })
+  if (persistentInstances.length !== new Set(persistentInstanceIds).size) {
+    throw new GraphQLError('Not all element instances could be found')
+  }
 
   // in DUPLICATION mode - instances that should be duplicated in the activity
   const duplicateInstanceIds = stacksOrBlocks.flatMap(
@@ -108,6 +127,9 @@ export async function splitActivityInstances(
     },
     include: { element: true },
   })
+  if (duplicationInstances.length !== new Set(duplicateInstanceIds).size) {
+    throw new GraphQLError('Not all element instances could be found')
+  }
 
   // check if any of the persistent / duplication instances are outdated (w.r.t. the element version)
   // -> only persistent and duplicated instances can be outdated, other instances are created from the current element
@@ -147,8 +169,7 @@ export async function splitActivityInstances(
   })
 
   // make sure that every element could be found and create a map for efficient access
-  const uniqueElements = new Set(dbElements.map((q) => q.id))
-  if (dbElements.length !== uniqueElements.size) {
+  if (dbElements.length !== new Set(requiredElementsIds).size) {
     throw new GraphQLError('Not all elements could be found')
   }
   const elementMap = dbElements.reduce<Record<number, DB.Element>>(
@@ -158,6 +179,39 @@ export async function splitActivityInstances(
     },
     {}
   )
+
+  const instanceElementTypeMap = allInstances.reduce<
+    Record<number, DB.ElementType>
+  >((acc, instance) => {
+    acc[instance.id] = instance.element.type
+    return acc
+  }, {})
+
+  for (const stackOrBlock of stacksOrBlocks) {
+    const elementTypes = stackOrBlock.elements
+      .map((element) =>
+        element.existingInstanceId === null ||
+        typeof element.existingInstanceId === 'undefined'
+          ? elementMap[element.elementId]?.type
+          : instanceElementTypeMap[element.existingInstanceId]
+      )
+      .filter((type): type is DB.ElementType => typeof type !== 'undefined')
+
+    const violation = getCodeActivityStackViolation(
+      elementTypes,
+      allowCodeElements
+    )
+    if (violation === 'UNSUPPORTED_ACTIVITY') {
+      throw new GraphQLError(
+        'CODE elements are not supported in this activity type'
+      )
+    }
+    if (violation === 'CODE_MUST_BE_ONLY_ELEMENT') {
+      throw new GraphQLError(
+        'CODE elements must be the only element in their stack'
+      )
+    }
+  }
 
   return {
     persistentInstanceIds,
@@ -252,7 +306,15 @@ export async function manipulateLiveQuiz(
     duplicationInstances,
     elementMap,
     anyInstanceOutdated,
-  } = await splitActivityInstances({ stacksOrBlocks: blocks }, ctx)
+  } = await splitActivityInstances(
+    {
+      stacksOrBlocks: blocks,
+      ...(id
+        ? { persistentInstanceScope: { elementBlock: { liveQuizId: id } } }
+        : {}),
+    },
+    ctx
+  )
 
   // in EDIT mode - check which instances and blocks should be removed
   let instancesToDelete: number[] = []
@@ -411,13 +473,19 @@ export async function manipulateLiveQuiz(
 
       // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
       for (const instance of persistentInstances) {
+        if (!id) {
+          throw new GraphQLError('Not all element instances could be found')
+        }
         const elementMultiplier =
           'pointsMultiplier' in instance.elementData
             ? ((instance.elementData.pointsMultiplier as number) ?? 1)
             : 1
 
-        await prisma.elementInstance.update({
-          where: { id: instance.id },
+        const updated = await prisma.elementInstance.updateMany({
+          where: {
+            id: instance.id,
+            elementBlock: { liveQuizId: id },
+          },
           data: {
             elementBlockId: null,
             order: persistentInstanceOrderMap[instance.id],
@@ -427,6 +495,9 @@ export async function manipulateLiveQuiz(
             },
           },
         })
+        if (updated.count !== 1) {
+          throw new GraphQLError('Not all element instances could be found')
+        }
       }
 
       // delete all blocks

@@ -51,16 +51,17 @@ model Course {
   activityPerformances       ActivityPerformance[]
   activityProgresses         ActivityProgress[]
   responses                  QuestionResponse[]
+  codeSubmissions            CodeSubmission[]
   groupAssignmentPoolEntries GroupAssignmentPoolEntry[]
   timelineEntries            TimelineEntry[]
   chatbots                   Chatbot[]
   participantInvitations     ParticipantInvitation[]
 
-  directPermissions  Permission[]
-  permissions        DerivedPermission[]
-  accessRequests     AccessRequest[]
-  catalogAssignments CatalogCollectionAssignment[]
-  activityLog        ActivityLogEntry[]
+  directPermissions   Permission[]
+  permissions         DerivedPermission[]
+  accessRequests      AccessRequest[]
+  catalogAssignments  CatalogCollectionAssignment[]
+  activityLog         ActivityLogEntry[]
   verificationRecords VerifiableCredential[]
 
   competencyTree   CompetencyTree? @relation(fields: [competencyTreeId], references: [id], onDelete: SetNull, onUpdate: Cascade)

@@ -1,9 +1,9 @@
 import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 
-function useElementTypeOptions() {
+function useElementTypeOptions({ includeCode = true } = {}) {
   const t = useTranslations()
-  return [
+  const options = [
     {
       value: ElementType.Sc,
       label: t(`shared.${ElementType.Sc}.typeLabel`),
@@ -46,6 +46,13 @@ function useElementTypeOptions() {
       },
     },
     {
+      value: ElementType.Code,
+      label: t(`shared.${ElementType.Code}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(`shared.${ElementType.Code}.typeLabel`)}`,
+      },
+    },
+    {
       value: ElementType.Selection,
       label: t(`shared.${ElementType.Selection}.typeLabel`),
       data: {
@@ -82,6 +89,10 @@ function useElementTypeOptions() {
       },
     },
   ]
+
+  return includeCode
+    ? options
+    : options.filter((option) => option.value !== ElementType.Code)
 }
 
 export default useElementTypeOptions

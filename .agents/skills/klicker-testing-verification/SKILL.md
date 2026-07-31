@@ -22,6 +22,40 @@ Never run root `pnpm run test:run` blind — its turbo fan-out includes Cypress,
 
 Direct checks for `auth`, `chat`, `frontend-control`, `frontend-manage`, and `frontend-pwa` generate ignored Next route types first through each app's `check` script. Do not hand-edit or commit `next-env.d.ts`; keep it ignored and included by `tsconfig.json`. The three PWA apps use `tsconfig.check.json` only for raw package checks so stale `.next/dev/types` cannot duplicate fresh Pages Router validators. Next builds use the canonical `tsconfig.json`; Next 16 filters development validators on its production typecheck path. Auth and Chat use their main config for both checks and builds.
 
+For CODE contract, policy, or sandbox-client work, the fast service-free baseline is:
+
+```bash
+pnpm --filter @klicker-uzh/util exec vitest run \
+  test/codeElements.test.ts \
+  test/codeApi.test.ts
+pnpm --filter @klicker-uzh/graphql exec vitest run \
+  test/codeElementPolicy.test.ts \
+  test/codeGraphqlContract.test.ts \
+  test/validateCodeOptions.test.ts
+```
+
+For `codeApi.ts`, ensure the two generated-runner tests did not skip. If the devcontainer has no Python, run the focused suite from `packages/util` with an isolated interpreter:
+
+```bash
+uv run --no-project --python 3.12 -- \
+  node node_modules/vitest/vitest.mjs run test/codeApi.test.ts
+```
+
+The runner tests cover pass/error/timeout behavior plus direct file-descriptor flooding and descendant-process cleanup. Do not send a live request until the CodeAPI deployment accepts `klicker_jwt`; once enabled, require distinct public/hidden sessions and retain no hidden output or session identifiers.
+
+For CODE receipt, worker, or finalization changes, run the serialized database-backed lifecycle tracer:
+
+```bash
+pnpm --filter @klicker-uzh/graphql exec vitest run \
+  test/codeSubmissions.test.ts
+```
+
+Require active-receipt convergence, durable pending state after enqueue failure, observationally equivalent rejection of absent/wrong-type/foreign/unavailable instances, foreign persistent-instance rejection without movement, participant-scoped readback, duplicate delivery, retry after failure and commit, repeated `429` deferral without attempt-budget consumption, expired and unexpired claims, exhausted retries, `FAILED` retry, a bounded 20-submission burst, separate instance/participant aggregates, microlearning closure, public-only participant test results, an instructor-authorized full element snapshot and public/hidden aggregates, and exactly-once response/statistics/spaced-repetition/points/XP/leaderboard/timeline assertions. Mock only the sanitized CodeAPI executor result at this seam; runner, output caps, and hostile-response behavior belongs to the service-free client suite. For Analytics correctness changes, run `cd apps/analytics && uv run python -m unittest discover -s tests -v`; both daily and course computation consume that shared mapping. UI slices still require routed browser/e2e proof.
+
+Manage CODE browser proof must select CODE through `select-question-type`, assert `code-options` renders without a CodeMirror console error, and confirm `student-element-preview` includes public test names but no hidden test names. In a practice-quiz or microlearning wizard, mixed CODE selection must disable the combined-stack action while the separate-stack action remains enabled.
+
+Participant CODE browser proof must exercise published practice-quiz and microlearning activities with real activity queries. Cover active receipt persistence, pending reload, completion with public-only results, stale-active rejection, submitted-code recovery, cross-participant isolation, editable failure/new receipt retry, real microlearning `getPreviousStackEvaluation` readback, explicit readback-error retry, participant-scoped evaluation storage, and the authorized Manage public/hidden aggregate table with an actual failed-test count. Use `playwright/tests/Q-code-practice-quiz.spec.ts` for deterministic receipt transitions. For microlearning, execute the real schema mutation with only Hatchet enqueueing replaced, then run the production finalizer with a deterministic sanitized executor result; do not insert terminal response rows directly. In the self-contained devcontainer, preserve the real backend by forwarding unmatched GraphQL operations to its container-local port with the original URL query string. For linked-worktree TLS routes, map Chromium with `PLAYWRIGHT_HOST_RESOLVER_RULES` to `host.docker.internal` and set the matching `COOKIE_DOMAIN`; mock only external grading or subscription timing, not activity data or evaluation queries.
+
 For Next framework or bundler changes, verify both repository-supported paths. `pnpm run build:test` uses Turbopack in all five Next apps. `pnpm run build` uses Turbopack for auth/chat and Webpack for control/manage/PWA until their service-worker integration moves to Serwist. Confirm standalone server paths for all five apps and `sw.js`, Workbox, and custom worker outputs for the three PWA apps.
 
 The Playwright build job must tar the five `.next` trees before artifact upload and extract them in each shard. Direct artifact upload dereferences Turbopack's `.next/node_modules` symlinks and can omit transitive runtime links, producing HTTP 500 before the suite starts.
@@ -44,6 +78,8 @@ Every item, in order; paste evidence (command + tail of output, screenshots) int
 4. **Codegen artifacts committed** if any `.graphql` op or schema changed (`git status` must be clean after `pnpm --filter @klicker-uzh/graphql generate`).
 5. **i18n pair check** if UI text changed: the key exists in BOTH `packages/i18n/messages/de.ts` and `en.ts`.
 6. **Browser evidence for UI changes** — open the changed pages with `npx agent-browser@0.32.2` (never bare `agent-browser`), log in with delegated/test credentials (AGENTS.md), capture before/after screenshots. "The logic looks correct" does not count.
+
+The root build forces `NODE_ENV=production`; direct Next package builds inside the devcontainer must set it explicitly. Stop the managed background dev process and remove only the target app's generated `.next/dev` cache before retrying a direct production build, or development validators can collide with production validators. Report Google Fonts network failures separately from compile/typecheck results.
 
 For TypeScript or other compiler/toolchain upgrades, root `check:all` includes the Cypress and Playwright compilers through their package `check` scripts. Also run `pnpm run build:test` and the Docs production build; those surfaces remain outside the root check. Use direct package `tsc --noEmit -p tsconfig.json` commands only to isolate a Cypress or Playwright failure. When a check config extends a declaration-emitting config, verify the resolved compiler options: `noEmit` does not disable declaration portability analysis, so the check may also need explicit `declaration: false` and `declarationMap: false`. Incremental checks must use a different `tsBuildInfoFile` from the emitting build.
 

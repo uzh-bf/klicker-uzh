@@ -226,6 +226,28 @@ fragment EvaluationResults on ActivityEvaluation {
           anonymousAnswers
         }
       }
+
+      ... on CodeActivityEvaluationData {
+        __typename
+        id
+        type
+        name
+        content
+        explanation
+
+        hasSampleSolution
+        hasAnswerFeedbacks
+
+        results {
+          totalAnswers
+          testResults {
+            id
+            name
+            passedCount
+            totalCount
+          }
+        }
+      }
     }
   }
 }

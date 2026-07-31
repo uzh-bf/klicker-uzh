@@ -20,6 +20,16 @@ export interface HatchetHandlerGlobalContext {
 
 // Shared contract for Hatchet task handler injections.
 export interface HatchetHandlers {
+  handleGradeCodeSubmission: (
+    { submissionId }: { submissionId: string },
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
+  handleRecoverCodeSubmissions: (
+    {},
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<string[]>
   handleSendTeamsNotification: (
     { scope, text }: { scope: string; text: string },
     globalCtx: HatchetHandlerGlobalContext,
@@ -94,6 +104,11 @@ export interface HatchetHandlers {
 
 // Contract for the tasks that are passed into the GraphQL context.
 export interface PreparedHatchetTasks {
+  gradeCodeSubmission: TaskWorkflowDeclaration<
+    { submissionId: string },
+    { success: boolean }
+  >
+  recoverCodeSubmissions: TaskWorkflowDeclaration<{}, { recovered: number }>
   createAuditLogEntry: TaskWorkflowDeclaration<
     {
       message: Record<string, string | undefined> & {

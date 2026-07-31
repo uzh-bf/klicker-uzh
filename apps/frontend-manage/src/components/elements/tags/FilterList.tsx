@@ -17,6 +17,7 @@ import {
   fa3,
   fa4,
   faCheckCircle as faCheckCircleSolid,
+  faCode,
   faCommentDots as faCommentDotsSolid,
   faComment as faCommentSolid,
   faEye as faEyeSolid,
@@ -126,6 +127,7 @@ function FilterList({
     NUMERICAL: [faQuestionRegular, faQuestionSolid],
     SELECTION: [faSquareCheckRegular, faSquareCheckSolid],
     CASE_STUDY: [faListCheck, faListCheck],
+    CODE: [faCode, faCode],
   }
 
   return (

@@ -13,8 +13,8 @@ import { ActivityAction } from '../activities/actions/useAvailableActions'
 function useElementActions({
   element,
   disabled,
-  setShowRecoveryPrompt,
-  setModificationModalOpen,
+  editDisabled,
+  onEdit,
   setDuplicationModalOpen,
   setDeletionModalOpen,
   setRemovalModalOpen,
@@ -23,8 +23,8 @@ function useElementActions({
 }: {
   element: Element
   disabled: boolean
-  setShowRecoveryPrompt: Dispatch<SetStateAction<boolean>>
-  setModificationModalOpen: Dispatch<SetStateAction<boolean>>
+  editDisabled: boolean
+  onEdit: () => void
   setDuplicationModalOpen: Dispatch<SetStateAction<boolean>>
   setDeletionModalOpen: Dispatch<SetStateAction<boolean>>
   setRemovalModalOpen: Dispatch<SetStateAction<boolean>>
@@ -39,16 +39,8 @@ function useElementActions({
         id: 'editElement',
         label: t('manage.elements.EDITTitle'),
         icon: faPencil,
-        onClick: async () => {
-          const value = localStorage.getItem(`autosave-element-${element.id}`)
-
-          if (value) {
-            setShowRecoveryPrompt(true)
-          } else {
-            setModificationModalOpen(true)
-          }
-        },
-        disabled,
+        onClick: onEdit,
+        disabled: editDisabled,
         data: { cy: `edit-element-${element.name}` },
       },
       {
@@ -98,8 +90,8 @@ function useElementActions({
       t,
       element,
       disabled,
-      setShowRecoveryPrompt,
-      setModificationModalOpen,
+      editDisabled,
+      onEdit,
       setDuplicationModalOpen,
       setDeletionModalOpen,
       setRemovalModalOpen,

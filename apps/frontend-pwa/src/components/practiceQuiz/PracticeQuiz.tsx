@@ -192,6 +192,8 @@ function PracticeQuiz({
             onAllStacksCompletion={handleAllStacksCompletion}
             bookmarks={bookmarksData?.getBookmarksPracticeQuiz}
             previewOnly={previewOnly}
+            participantId={dataParticipant?.self?.id}
+            codeSubmissionEnabled
           />
         )}
       </div>

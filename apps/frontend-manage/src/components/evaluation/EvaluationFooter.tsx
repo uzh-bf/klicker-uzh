@@ -60,17 +60,20 @@ function EvaluationFooter({
     currentInstance?.explanation !== '' &&
     !currentInstance?.explanation.match(/^(<br>(\n)*)$/g)
   const hasSolutionAndExplanation = hasSolution && hasExplanation
+  const anonymousAnswers =
+    currentInstance && 'anonymousAnswers' in currentInstance.results
+      ? currentInstance.results.anonymousAnswers
+      : 0
 
   return (
     <Footer>
       {typeof activeStack === 'number' && (
         <div className="m-0 flex flex-row items-center justify-between py-2.5">
           <div className="text-lg" data-cy="live-quiz-total-participants">
-            {(currentInstance?.results.anonymousAnswers ?? 0) > 0 &&
-            type === 'Asynchronous'
+            {anonymousAnswers > 0 && type === 'Asynchronous'
               ? t('manage.evaluation.totalParticipantsInclAnon', {
                   number: currentInstance?.results.totalAnswers ?? 0,
-                  anonymous: currentInstance?.results.anonymousAnswers ?? 0,
+                  anonymous: anonymousAnswers,
                 })
               : t('manage.evaluation.totalParticipants', {
                   number: currentInstance?.results.totalAnswers ?? 0,

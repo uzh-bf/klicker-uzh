@@ -17,17 +17,21 @@ import type {
   Choice,
   ChoicesElementData,
   ChoicesResponse,
+  CodeElementData,
+  CodeSubmissionResult,
   ContentElementData,
   ElementData,
   ElementInstanceResults,
   ElementOptionsAnswerCollection,
   ElementOptionsCaseStudy,
   ElementOptionsChoices,
+  ElementOptionsCode,
   ElementOptionsFreeText,
   ElementOptionsNumerical,
   ElementOptionsSelection,
   ElementResultsCaseStudy,
   ElementResultsChoices,
+  ElementResultsCode,
   ElementResultsContent,
   ElementResultsFlashcard,
   ElementResultsOpen,
@@ -46,6 +50,7 @@ import type {
   SingleQuestionResponse,
   SingleQuestionResponseCaseStudy,
   SingleQuestionResponseChoices,
+  SingleQuestionResponseCode,
   SingleQuestionResponseContent,
   SingleQuestionResponseFlashcard,
   SingleQuestionResponseSelection,
@@ -74,6 +79,8 @@ type ExistingInstanceType = DB.ElementInstance & {
     microLearningId?: string | null
   } | null
 }
+
+type PersistedResponseInput = ResponseInput | SingleQuestionResponseCode
 
 export const POINTS_PER_INSTANCE = 10
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
@@ -2362,7 +2369,7 @@ async function upsertQuestionResponse({
   id: number
   participantId: string
   courseId: string
-  response: ResponseInput
+  response: PersistedResponseInput
   correctness: number
   score: number
   pointsAwarded: number | null
@@ -2490,7 +2497,7 @@ async function createQuestionResponseDetail({
   id: number
   participantId: string
   courseId: string
-  response: ResponseInput
+  response: PersistedResponseInput
   score: number
   pointsAwarded: number | null
   xpAwarded: number
@@ -2596,6 +2603,282 @@ async function updateLeaderboardOnQuestionResponse({
         increment: pointsAwarded,
       },
     },
+  })
+}
+
+async function persistParticipantQuestionResponse({
+  prisma,
+  id,
+  participantId,
+  courseId,
+  response,
+  correctness,
+  score,
+  pointsAwarded,
+  lastAwardedAt,
+  xpAwarded,
+  lastXpAwardedAt,
+  newAverageResponseTime,
+  existingResponse,
+  newAggResponses,
+  answerTime,
+  practiceQuizId,
+  microLearningId,
+  resultSpacedRepetition,
+}: {
+  prisma: PrismaTransactionClient
+  id: number
+  participantId: string
+  courseId: string
+  response: PersistedResponseInput
+  correctness: number
+  score: number
+  pointsAwarded: number | null
+  lastAwardedAt: Date
+  xpAwarded: number
+  lastXpAwardedAt: Date
+  newAverageResponseTime: number
+  existingResponse: DB.QuestionResponse | null
+  newAggResponses: ElementInstanceResults
+  answerTime: number
+  practiceQuizId?: string
+  microLearningId?: string
+  resultSpacedRepetition: SpacedRepetitionResult
+}) {
+  await createQuestionResponseDetail({
+    prisma,
+    id,
+    participantId,
+    courseId,
+    response,
+    score,
+    pointsAwarded,
+    xpAwarded,
+    answerTime,
+    practiceQuizId,
+    microLearningId,
+  })
+  await upsertQuestionResponse({
+    prisma,
+    id,
+    participantId,
+    courseId,
+    response,
+    correctness,
+    score,
+    pointsAwarded,
+    lastAwardedAt,
+    xpAwarded,
+    lastXpAwardedAt,
+    newAverageResponseTime,
+    existingResponse,
+    newAggResponses,
+    practiceQuizId,
+    microLearningId,
+    resultSpacedRepetition,
+  })
+
+  if (xpAwarded > 0) {
+    await incrementParticipantXp({ prisma, participantId, xpAwarded })
+  }
+  if (typeof pointsAwarded === 'number') {
+    await updateLeaderboardOnQuestionResponse({
+      prisma,
+      participantId,
+      courseId,
+      pointsAwarded,
+    })
+  }
+  if (xpAwarded > 0 || typeof pointsAwarded === 'number') {
+    await upsertDailyTimelineEntry({
+      prisma,
+      participantId,
+      courseId,
+      xpAwarded,
+      pointsAwarded: pointsAwarded ?? undefined,
+    })
+  }
+}
+
+export async function recordCodeQuestionResponse({
+  prisma,
+  submission,
+  result,
+}: {
+  prisma: PrismaTransactionClient
+  submission: {
+    id: string
+    participantId: string
+    participationId: number
+    elementInstanceId: number
+    practiceQuizId: string | null
+    microLearningId: string | null
+    courseId: string
+    code: string
+    timeSpent: number
+  }
+  result: CodeSubmissionResult
+}) {
+  const participation = await prisma.participation.findUnique({
+    where: { id: submission.participationId },
+    include: { participant: true },
+  })
+  if (
+    !participation ||
+    participation.participantId !== submission.participantId ||
+    participation.courseId !== submission.courseId
+  ) {
+    throw new Error('CODE submission participation is invalid')
+  }
+
+  const existingInstance = await getValidateElementInstance({
+    prisma,
+    id: submission.elementInstanceId,
+    participantId: submission.participantId,
+  })
+  if (
+    !existingInstance ||
+    existingInstance.elementType !== DB.ElementType.CODE ||
+    existingInstance.elementData.type !== DB.ElementType.CODE ||
+    !('tests' in existingInstance.results)
+  ) {
+    throw new Error('CODE submission element instance is invalid')
+  }
+
+  const existingResponse = existingInstance.responses[0] ?? null
+  const allTestResults = [
+    ...result.publicTestResults,
+    ...result.hiddenTestResults,
+  ]
+  const configuredTestIds = new Set(
+    existingInstance.elementData.options.testCases.map(({ id }) => id)
+  )
+  const resultTestIds = new Set(allTestResults.map(({ id }) => id))
+  if (
+    allTestResults.length !== configuredTestIds.size ||
+    resultTestIds.size !== configuredTestIds.size ||
+    allTestResults.some(({ id }) => !configuredTestIds.has(id)) ||
+    !Number.isFinite(result.pointsPercentage) ||
+    result.pointsPercentage < 0 ||
+    result.pointsPercentage > 1
+  ) {
+    throw new Error('CODE submission results do not match configured tests')
+  }
+
+  const previousResults = existingInstance.results as ElementResultsCode
+
+  const updateCodeResults = (
+    priorResults: ElementResultsCode
+  ): ElementResultsCode => {
+    const tests = Object.fromEntries(
+      Object.entries(priorResults.tests).map(([id, counts]) => [
+        id,
+        { ...counts },
+      ])
+    )
+    for (const testResult of allTestResults) {
+      const counts = tests[testResult.id]
+      if (!counts) {
+        throw new Error('CODE submission result references an unknown test')
+      }
+      counts.total += 1
+      if (testResult.passed) counts.passed += 1
+    }
+    return {
+      tests,
+      total: priorResults.total + 1,
+    }
+  }
+
+  const newInstanceResults = updateCodeResults(previousResults)
+  const existingParticipantResults = existingResponse?.aggregatedResponses
+  const previousParticipantResults: ElementResultsCode =
+    existingParticipantResults && 'tests' in existingParticipantResults
+      ? existingParticipantResults
+      : {
+          tests: Object.fromEntries(
+            Object.keys(previousResults.tests).map((id) => [
+              id,
+              { passed: 0, total: 0 },
+            ])
+          ),
+          total: 0,
+        }
+  const newParticipantResults = updateCodeResults(previousParticipantResults)
+
+  if (
+    Object.keys(newParticipantResults.tests).length !== configuredTestIds.size
+  ) {
+    throw new Error('CODE participant results do not match configured tests')
+  }
+
+  const { newAverageResponseTime, newAverageInstanceTime } =
+    computeNewAverageTimes({
+      existingInstance,
+      existingResponse,
+      answerTime: submission.timeSpent,
+    })
+  const correctness = result.pointsPercentage
+  const statisticsUpdate = computeUpdatedInstanceStatistics({
+    participation,
+    existingResponse,
+    newAverageInstanceTime,
+    answerCorrect: correctness === 1,
+    answerPartial: correctness > 0 && correctness < 1,
+    answerIncorrect: correctness === 0,
+    instanceInPracticeQuiz: !!submission.practiceQuizId,
+  })
+  const updatedInstance = await prisma.elementInstance.update({
+    where: { id: submission.elementInstanceId },
+    data: {
+      results: newInstanceResults,
+      instanceStatistics: statisticsUpdate,
+    },
+  })
+
+  const { score, xp } = computeCodeScoreAndXp({
+    correctness,
+    pointsMultiplier: updatedInstance.options.pointsMultiplier,
+  })
+  const { pointsAwarded, lastAwardedAt, lastXpAwardedAt, xpAwarded } =
+    computeAwardedPointsAndXP({
+      score,
+      xp,
+      existingResponse,
+      participation,
+      instance: updatedInstance,
+    })
+  const resultSpacedRepetition = updateSpacedRepetition({
+    eFactor: existingResponse?.eFactor ?? 2.5,
+    interval: existingResponse?.interval ?? 1,
+    streak:
+      (existingResponse?.correctCountStreak ?? 0) + (correctness === 1 ? 1 : 0),
+    grade: correctness,
+  })
+  const response: SingleQuestionResponseCode = {
+    code: submission.code,
+    correctness,
+  }
+
+  await persistParticipantQuestionResponse({
+    prisma,
+    id: submission.elementInstanceId,
+    participantId: submission.participantId,
+    courseId: submission.courseId,
+    response,
+    correctness,
+    score,
+    pointsAwarded,
+    lastAwardedAt: lastAwardedAt ?? new Date(),
+    xpAwarded,
+    lastXpAwardedAt: lastXpAwardedAt ?? new Date(),
+    newAverageResponseTime,
+    existingResponse,
+    newAggResponses: newParticipantResults,
+    answerTime: submission.timeSpent,
+    practiceQuizId: submission.practiceQuizId ?? undefined,
+    microLearningId: submission.microLearningId ?? undefined,
+    resultSpacedRepetition,
   })
 }
 
@@ -2779,24 +3062,7 @@ export async function respondToQuestion(
         grade: percentile,
       })
 
-      await createQuestionResponseDetail({
-        prisma,
-        id,
-        participantId: ctx.user.sub,
-        courseId,
-        response,
-        score: questionEval.score ?? 0,
-        pointsAwarded,
-        xpAwarded,
-        answerTime,
-        practiceQuizId:
-          updatedInstance.elementStack?.practiceQuizId ?? undefined,
-        microLearningId:
-          updatedInstance.elementStack?.microLearningId ?? undefined,
-      })
-
-      // upsert the question response
-      await upsertQuestionResponse({
+      await persistParticipantQuestionResponse({
         prisma,
         id,
         participantId: ctx.user.sub,
@@ -2811,46 +3077,13 @@ export async function respondToQuestion(
         newAverageResponseTime,
         existingResponse,
         newAggResponses,
+        answerTime,
         practiceQuizId:
           updatedInstance.elementStack?.practiceQuizId ?? undefined,
         microLearningId:
           updatedInstance.elementStack?.microLearningId ?? undefined,
         resultSpacedRepetition,
       })
-
-      // increment participant xp
-      if (xpAwarded > 0) {
-        await incrementParticipantXp({
-          prisma,
-          participantId: ctx.user.sub,
-          xpAwarded,
-        })
-      }
-
-      // create or increment the leaderboard entry, if the participant has an active participation in the course
-      // active participation has already been checked during computation of pointsAwarded
-      if (typeof pointsAwarded === 'number' && pointsAwarded !== null) {
-        await updateLeaderboardOnQuestionResponse({
-          prisma,
-          participantId: ctx.user.sub,
-          courseId,
-          pointsAwarded,
-        })
-      }
-
-      // if either XP or points are awarded, update the daily student timeline entry
-      if (
-        xpAwarded > 0 ||
-        (typeof pointsAwarded === 'number' && pointsAwarded !== null)
-      ) {
-        await upsertDailyTimelineEntry({
-          prisma,
-          participantId: ctx.user.sub,
-          courseId,
-          xpAwarded,
-          pointsAwarded: pointsAwarded ?? undefined,
-        })
-      }
     }
 
     return {
@@ -3719,6 +3952,46 @@ function computeContentEvaluation({
   }
 }
 
+function computeCodeEvaluation({
+  options,
+  results,
+  common,
+}: {
+  options: ElementOptionsCode
+  results: ElementResultsCode
+  common: CommonEvaluationProps
+}) {
+  return {
+    ...common,
+    results: {
+      totalAnswers: results.total,
+      testResults: options.testCases.map((testCase) => ({
+        id: testCase.id,
+        name: testCase.name,
+        passedCount: results.tests[testCase.id]?.passed ?? 0,
+        totalCount: results.tests[testCase.id]?.total ?? 0,
+      })),
+    },
+  }
+}
+
+function computeCodeScoreAndXp({
+  correctness,
+  pointsMultiplier,
+}: {
+  correctness: number
+  pointsMultiplier: number | undefined
+}) {
+  return {
+    score: computeSimpleAwardedPoints({
+      points: POINTS_PER_INSTANCE,
+      pointsPercentage: correctness,
+      pointsMultiplier,
+    }),
+    xp: computeAwardedXp({ pointsPercentage: correctness }),
+  }
+}
+
 function computeInstanceEvaluation({
   instance,
 }: {
@@ -3817,6 +4090,15 @@ function computeInstanceEvaluation({
     return computeContentEvaluation({
       results: instance.results,
       anonymousResults: instance.anonymousResults,
+      common: commonInstanceData,
+    })
+  } else if (
+    instanceType === DB.ElementType.CODE &&
+    'tests' in instance.results
+  ) {
+    return computeCodeEvaluation({
+      options: instance.elementData.options,
+      results: instance.results,
       common: commonInstanceData,
     })
   }
@@ -4196,6 +4478,61 @@ function getPreviousEvaluationCaseStudy({
   }
 }
 
+function getPreviousEvaluationCode({
+  instanceId,
+  elementData,
+  multiplier,
+  response,
+  submissionResult,
+  lastResponse,
+}: {
+  instanceId: number
+  elementData: CodeElementData
+  multiplier: number | undefined
+  response: DB.QuestionResponse
+  submissionResult: CodeSubmissionResult
+  lastResponse: SingleQuestionResponseCode
+}): EvaluationAggregationReturn {
+  const correctness = submissionResult.pointsPercentage
+  const { score, xp } = computeCodeScoreAndXp({
+    correctness,
+    pointsMultiplier: multiplier,
+  })
+  const publicResults = new Map(
+    submissionResult.publicTestResults.map((result) => [result.id, result])
+  )
+
+  return {
+    evaluation: {
+      ...elementData,
+      instanceId,
+      elementType: DB.ElementType.CODE,
+      pointsMultiplier: multiplier ?? 1,
+      score,
+      xp,
+      pointsAwarded: response.totalPointsAwarded,
+      xpAwarded: response.totalXpAwarded,
+      correctness,
+      lastResponse,
+      testResults: elementData.options.testCases
+        .filter((testCase) => testCase.visibility === 'public')
+        .map((testCase) => ({
+          id: testCase.id,
+          name: testCase.name,
+          passedCount: publicResults.get(testCase.id)?.passed ? 1 : 0,
+          totalCount: 1,
+        })),
+    },
+    newStatus:
+      correctness === 1
+        ? StackFeedbackStatus.CORRECT
+        : correctness === 0
+          ? StackFeedbackStatus.INCORRECT
+          : StackFeedbackStatus.PARTIAL,
+    stackScore: score,
+  }
+}
+
 export async function getPreviousStackEvaluation(
   { stackId }: { stackId: number },
   ctx: Context
@@ -4214,6 +4551,15 @@ export async function getPreviousStackEvaluation(
             where: {
               participantId: ctx.user.sub,
             },
+          },
+          codeSubmissions: {
+            where: {
+              participantId: ctx.user.sub,
+              status: DB.CodeSubmissionStatus.COMPLETED,
+            },
+            orderBy: { completedAt: 'desc' },
+            take: 1,
+            select: { result: true },
           },
         },
       },
@@ -4389,6 +4735,30 @@ export async function getPreviousStackEvaluation(
             lastResponse: element.responses[0]
               .lastResponse as SingleQuestionResponseCaseStudy,
           })
+
+        if (evaluation) {
+          acc.evaluations.push(evaluation)
+          acc.stackFeedback = combineStackStatus({
+            prevStatus: acc.stackFeedback,
+            newStatus,
+          })
+          acc.stackScore = (acc.stackScore ?? 0) + (stackScore ?? 0)
+        }
+      } else if (
+        element.elementData.type === DB.ElementType.CODE &&
+        element.codeSubmissions[0]?.result
+      ) {
+        const { evaluation, newStatus, stackScore } = getPreviousEvaluationCode(
+          {
+            instanceId: element.id,
+            elementData: element.elementData,
+            multiplier: element.options.pointsMultiplier,
+            response: element.responses[0],
+            submissionResult: element.codeSubmissions[0].result,
+            lastResponse: element.responses[0]
+              .lastResponse as SingleQuestionResponseCode,
+          }
+        )
 
         if (evaluation) {
           acc.evaluations.push(evaluation)

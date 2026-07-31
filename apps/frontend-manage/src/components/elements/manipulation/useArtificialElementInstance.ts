@@ -1,11 +1,23 @@
 import {
+  CodeLanguage,
+  CodeTestVisibility,
   ElementData,
   ElementInstance,
   ElementInstanceType,
+  ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
+import { CODE_TEST_TIMEOUT_SECONDS } from '@klicker-uzh/types'
 import { nanoid } from 'nanoid'
 import { useMemo } from 'react'
 import { ElementFormTypes } from './types'
+
+function parseJson(value: string, fallback: unknown) {
+  try {
+    return JSON.parse(value)
+  } catch {
+    return fallback
+  }
+}
 
 function useArtificialElementInstance({
   values,
@@ -42,6 +54,41 @@ function useArtificialElementInstance({
                 hasSampleSolution:
                   'hasSampleSolution' in values.options
                     ? values.options.hasSampleSolution
+                    : undefined,
+                language:
+                  values.type === ElementType.Code
+                    ? CodeLanguage.Python
+                    : undefined,
+                starterCode:
+                  'starterCode' in values.options
+                    ? values.options.starterCode || undefined
+                    : undefined,
+                entrypoint:
+                  'entrypoint' in values.options
+                    ? values.options.entrypoint
+                    : undefined,
+                executionLimits:
+                  values.type === ElementType.Code
+                    ? {
+                        perTestTimeoutSeconds: CODE_TEST_TIMEOUT_SECONDS,
+                      }
+                    : undefined,
+                testCases:
+                  'testCases' in values.options
+                    ? values.options.testCases
+                        .filter(
+                          (testCase) =>
+                            testCase.visibility === CodeTestVisibility.Public
+                        )
+                        .map((testCase) => ({
+                          id: testCase.id,
+                          name: testCase.name,
+                          args: parseJson(testCase.args, []),
+                          expectedOutput: parseJson(
+                            testCase.expectedOutput,
+                            null
+                          ),
+                        }))
                     : undefined,
                 hasAnswerFeedbacks:
                   'hasAnswerFeedbacks' in values.options
@@ -130,7 +177,7 @@ function useArtificialElementInstance({
                         ...criterion,
                         min: parseFloat(String(criterion.min)),
                         max: parseFloat(String(criterion.max)),
-                        step: parseFloat(criterion.step),
+                        step: parseFloat(String(criterion.step)),
                         order: criterionIx,
                       }))
                     : [],

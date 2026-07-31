@@ -202,6 +202,7 @@ function LiveQuizCreationBlock({
           resetSelection={resetSelection}
           stack={block}
           replace={replace}
+          acceptedTypes={acceptedTypes}
         />
       )}
       <DropElementsStack

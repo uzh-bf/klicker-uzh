@@ -2,12 +2,14 @@
   "private": true,
   "name": "@klicker-uzh/playwright",
   "devDependencies": {
+    "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
     "@playwright/test": "~1.58.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^24.10.1",
     "bcryptjs": "~2.4.3",
+    "graphql": "~16.11.0",
     "jose": "~5.9.4",
     "typescript": "~6.0.3"
   },

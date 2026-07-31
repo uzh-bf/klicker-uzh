@@ -1,11 +1,32 @@
 import {
+  CodeTestVisibility,
   ElementDisplayMode,
   ElementStatus,
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
+import {
+  CODE_TEST_MAX_COUNT,
+  isValidPythonEntrypoint,
+} from '@klicker-uzh/types'
 import { useTranslations } from 'next-intl'
 import * as yup from 'yup'
 import { ElementFormTypesCaseStudy } from './types'
+
+function isValidJson(value?: string) {
+  if (typeof value !== 'string') return false
+
+  try {
+    JSON.parse(value)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function isJsonArray(value?: string) {
+  if (!isValidJson(value)) return false
+  return Array.isArray(JSON.parse(value!))
+}
 
 function useSharedValidationSchema() {
   const t = useTranslations()
@@ -403,6 +424,71 @@ function useOptionsSchemaFreeText() {
   }
 }
 
+function useOptionsSchemaCode() {
+  const t = useTranslations()
+
+  return {
+    starterCode: yup.string(),
+    entrypoint: yup
+      .string()
+      .trim()
+      .required(t('manage.formErrors.COEntrypointRequired'))
+      .test({
+        message: t('manage.formErrors.COEntrypointInvalid'),
+        test: (value) => !value || isValidPythonEntrypoint(value),
+      }),
+    hasSampleSolution: yup.boolean(),
+    sampleSolution: yup.string().when('hasSampleSolution', {
+      is: true,
+      then: (schema) =>
+        schema.required(t('manage.formErrors.COSampleSolutionRequired')),
+    }),
+    testCases: yup
+      .array()
+      .of(
+        yup.object().shape({
+          id: yup.string().required(),
+          name: yup
+            .string()
+            .trim()
+            .required(t('manage.formErrors.COTestNameRequired')),
+          args: yup
+            .string()
+            .required(t('manage.formErrors.COTestArgsInvalid'))
+            .test({
+              message: t('manage.formErrors.COTestArgsInvalid'),
+              test: isJsonArray,
+            }),
+          expectedOutput: yup
+            .string()
+            .required(t('manage.formErrors.COTestExpectedOutputInvalid'))
+            .test({
+              message: t('manage.formErrors.COTestExpectedOutputInvalid'),
+              test: isValidJson,
+            }),
+          visibility: yup
+            .string()
+            .oneOf(Object.values(CodeTestVisibility))
+            .required(),
+          weight: yup
+            .number()
+            .required(t('manage.formErrors.COTestWeightPositive'))
+            .moreThan(0, t('manage.formErrors.COTestWeightPositive')),
+        })
+      )
+      .required(t('manage.formErrors.COTestsRequired'))
+      .min(1, t('manage.formErrors.COTestsRequired'))
+      .max(CODE_TEST_MAX_COUNT, t('manage.formErrors.COTestsMax'))
+      .test({
+        message: t('manage.formErrors.COTestIdsUnique'),
+        test: (testCases) =>
+          !testCases ||
+          new Set(testCases.map((testCase) => testCase.id)).size ===
+            testCases.length,
+      }),
+  }
+}
+
 function useOptionsSchemaSelection({
   numberOfAnswerOptions,
 }: {
@@ -678,8 +764,8 @@ function useOptionsSchemaCaseStudy() {
 
                 for (const criterion of criteria) {
                   const solution = criterionSolutions[criterion.id]
-                  const minValue = parseFloat(solution?.min)
-                  const maxValue = parseFloat(solution?.max)
+                  const minValue = parseFloat(String(solution?.min))
+                  const maxValue = parseFloat(String(solution?.max))
 
                   if (
                     !solution ||
@@ -693,7 +779,7 @@ function useOptionsSchemaCaseStudy() {
                         'manage.formErrors.CSSolutionsMinMaxRequired',
                         {
                           itemNumber: itemIx + 1,
-                          criterionName: criterion.name,
+                          criterionName: criterion.name ?? '',
                         }
                       ),
                     })
@@ -703,14 +789,14 @@ function useOptionsSchemaCaseStudy() {
                     return this.createError({
                       message: t('manage.formErrors.CSSolutionsMinMaxOrder', {
                         itemNumber: itemIx + 1,
-                        criterionName: criterion.name,
+                        criterionName: criterion.name ?? '',
                       }),
                     })
                   }
 
                   const criterionMin = parseFloat(String(criterion.min))
                   const criterionMax = parseFloat(String(criterion.max))
-                  const stepValue = parseFloat(criterion.step)
+                  const stepValue = parseFloat(String(criterion.step))
 
                   if (
                     !Number.isNaN(criterionMin) &&
@@ -723,7 +809,7 @@ function useOptionsSchemaCaseStudy() {
                           'manage.formErrors.CSSolutionsMinMaxBounds',
                           {
                             itemNumber: itemIx + 1,
-                            criterionName: criterion.name,
+                            criterionName: criterion.name ?? '',
                           }
                         ),
                       })
@@ -737,7 +823,7 @@ function useOptionsSchemaCaseStudy() {
                       return this.createError({
                         message: t('manage.formErrors.CSSolutionsMinMaxStep', {
                           itemNumber: itemIx + 1,
-                          criterionName: criterion.name,
+                          criterionName: criterion.name ?? '',
                         }),
                       })
                     }
@@ -753,7 +839,7 @@ function useOptionsSchemaCaseStudy() {
                             'manage.formErrors.CSSolutionsMinMaxIntegers',
                             {
                               itemNumber: itemIx + 1,
-                              criterionName: criterion.name,
+                              criterionName: criterion.name ?? '',
                             }
                           ),
                         })
@@ -783,6 +869,7 @@ function useValidationSchema({
   const optionsSchemaKPRIM = useOptionsSchemaKPRIM()
   const optionsSchemaNumerical = useOptionsSchemaNumerical()
   const optionsSchemaFreeText = useOptionsSchemaFreeText()
+  const optionsSchemaCode = useOptionsSchemaCode()
   const optionsSchemaSelection = useOptionsSchemaSelection({
     numberOfAnswerOptions,
   })
@@ -810,6 +897,10 @@ function useValidationSchema({
 
         case ElementType.FreeText: {
           return schema.shape(optionsSchemaFreeText)
+        }
+
+        case ElementType.Code: {
+          return schema.shape(optionsSchemaCode)
         }
 
         case ElementType.Selection: {

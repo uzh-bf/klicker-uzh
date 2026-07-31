@@ -16,6 +16,7 @@ import {
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { validate as uuidValidate } from 'uuid'
+import { isTemplateElementTypeSupported } from '../lib/codeElementPolicy.js'
 import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
@@ -451,15 +452,24 @@ export async function createActivityTemplate(
     ctx.prisma
   )
 
-  if (error || noInstances) {
+  if (error || noInstances || !activity) {
+    return false
+  }
+
+  const activitySections =
+    'blocks' in activity ? activity.blocks : activity.stacks
+  if (
+    activitySections.some((section) =>
+      section.elements.some(
+        (element) => !isTemplateElementTypeSupported(element.elementType)
+      )
+    )
+  ) {
     return false
   }
 
   if (copyBeforeConversion) {
     if (activityType === ActivityType.LIVE_QUIZ) {
-      if (!activity) {
-        return false
-      }
       const liveQuiz = activity as DB.LiveQuiz & {
         blocks: (DB.ElementBlock & { elements: DB.ElementInstance[] })[]
       }
@@ -550,9 +560,6 @@ export async function createActivityTemplate(
 
       return true
     } else if (activityType === ActivityType.PRACTICE_QUIZ) {
-      if (!activity) {
-        return false
-      }
       const practiceQuiz = activity as DB.PracticeQuiz & {
         stacks: (DB.ElementStack & { elements: DB.ElementInstance[] })[]
       }
@@ -641,9 +648,6 @@ export async function createActivityTemplate(
 
       return true
     } else if (activityType === ActivityType.MICRO_LEARNING) {
-      if (!activity) {
-        return false
-      }
       const microLearning = activity as DB.MicroLearning & {
         stacks: (DB.ElementStack & { elements: DB.ElementInstance[] })[]
       }
@@ -732,9 +736,6 @@ export async function createActivityTemplate(
 
       return true
     } else if (activityType === ActivityType.GROUP_ACTIVITY) {
-      if (!activity) {
-        return false
-      }
       const groupActivity = activity as DB.GroupActivity & {
         stacks: (DB.ElementStack & { elements: DB.ElementInstance[] })[]
         parameters: DB.GroupActivityParameter[]
@@ -1545,6 +1546,18 @@ export async function createLiveQuizFromTemplate(
     return null
   }
 
+  if (
+    blocks.some((block) =>
+      block.elements.some(
+        (element) =>
+          element.newElement &&
+          !isTemplateElementTypeSupported(element.newElement.type)
+      )
+    )
+  ) {
+    return null
+  }
+
   // get the available answer collection ids for the activity linked to the template
   const availableAnswerCollections = template.answerCollections.map(
     (collection) => collection.id
@@ -1559,6 +1572,38 @@ export async function createLiveQuizFromTemplate(
   })
 
   if (!templateLiveQuiz) {
+    return null
+  }
+
+  const existingElementIds = blocks.flatMap((block) =>
+    block.elements.flatMap((element) =>
+      element.useExistingElement && element.existingElementId
+        ? [element.existingElementId]
+        : []
+    )
+  )
+  const [unsupportedExistingElement, unsupportedTemplateInstance] =
+    await Promise.all([
+      existingElementIds.length > 0
+        ? ctx.prisma.element.findFirst({
+            where: {
+              id: { in: existingElementIds },
+              type: DB.ElementType.CODE,
+              permissions: { some: { userId: ctx.user.sub } },
+            },
+            select: { id: true },
+          })
+        : null,
+      ctx.prisma.elementInstance.findFirst({
+        where: {
+          elementBlock: { liveQuizId: template.liveQuizId },
+          elementType: DB.ElementType.CODE,
+        },
+        select: { id: true },
+      }),
+    ])
+
+  if (unsupportedExistingElement || unsupportedTemplateInstance) {
     return null
   }
 

@@ -97,6 +97,18 @@ export default {
       richtext:
         'Bitte bewerten Sie alle Möglichkeiten auf die vorgegebenen Kriterien.',
     },
+    CODE: {
+      short: 'CODE',
+      typeLabel: 'Programmierfrage (CODE)',
+      text: 'Bitte geben Sie Ihr Programm ein.',
+      richtext: 'Bitte geben Sie Ihr <b>Programm</b> ein.',
+      entrypoint: 'Einstiegsfunktion',
+      responseEditor: 'Programmantwort',
+      responsePlaceholder: 'Python-Programm eingeben…',
+      publicTests: 'Öffentliche Tests',
+      arguments: 'Argumente',
+      expectedOutput: 'Erwartete Ausgabe',
+    },
     login: {
       installButton: 'Jetzt installieren',
     },
@@ -425,6 +437,7 @@ export default {
       FREE_TEXT: 'Freitext Frage',
       SELECTION: 'Auswahl Frage',
       CASE_STUDY: 'Fallstudie',
+      CODE: 'Programmierfrage',
       FLASHCARD: 'Lernkarte',
       CONTENT: 'Inhaltselement',
     },
@@ -806,6 +819,19 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       flashcardYesResponse: 'Ja',
       resetAnswers: 'Antworten zurücksetzen',
       markAllAsRead: 'Alle als gelesen markieren',
+      codeSubmissionPending:
+        'Ihr Programm wird bewertet. Sie können diese Seite sicher verlassen oder neu laden.',
+      codePollingUnavailable:
+        'Ihr Programm wird weiterhin bewertet. Statusaktualisierungen sind vorübergehend nicht verfügbar; diese Seite versucht es weiter.',
+      codeSubmissionFailed:
+        'Die Bewertung konnte nicht abgeschlossen werden. Überprüfen Sie Ihr Programm und reichen Sie es erneut ein.',
+      codeSubmissionCompleted:
+        'Die Bewertung wurde mit {percentage}% der verfügbaren Punkte abgeschlossen.',
+      codeTestPassed: 'bestanden',
+      codeTestFailed: 'nicht bestanden',
+      codeActualOutput: 'Tatsächliche Ausgabe',
+      codeStandardOutput: 'Programmausgabe',
+      codeStandardError: 'Fehlerausgabe des Programms',
       read: 'Gelesen',
       feedbackTransmitted: 'Ihr Feedback wurde erfolgreich übermittelt.',
       feedbackRequired: 'Bitte fügen Sie einen Inhalt zu Ihrem Feedback hinzu',
@@ -1033,8 +1059,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       started: 'Gestartet',
       submitted: 'Abgegeben',
       past: 'Abgeschlossen',
-      passed: 'Bestanden',
-      failed: 'Nicht bestanden',
       groupActivityPassed:
         'Gratulation! Deine Gruppe hat die Gruppenaktivität bestanden.',
       groupActivityFailed:
@@ -1863,6 +1887,23 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       possibleSolutionN: 'Mögliche Lösung {number}',
       possibleSolutions: 'Mögliche Lösungen',
       addSolution: 'Neue Lösung hinzufügen',
+      codeConfiguration: 'Programmeinstellungen',
+      codeEntrypoint: 'Einstiegsfunktion',
+      codeEntrypointTooltip:
+        'Name der Python-Funktion, die für jeden Test aufgerufen wird.',
+      codeStarterCode: 'Startcode',
+      codeSampleSolution: 'Musterlösung',
+      codeTests: 'Tests',
+      codeDefaultTestName: 'Beispiel {number}',
+      codeTestName: 'Testname',
+      codeVisibility: 'Sichtbarkeit',
+      codeVisibilityPublic: 'Öffentlich',
+      codeVisibilityHidden: 'Versteckt',
+      codeWeight: 'Gewicht',
+      codeArguments: 'Argumente (JSON-Array)',
+      codeExpectedOutput: 'Erwartete Ausgabe (JSON)',
+      addCodeTest: 'Test hinzufügen',
+      removeCodeTest: 'Test entfernen',
       noFeedbackDefined: 'Kein Feedback definiert',
       createElement: '{element} erstellen',
       editElement: '{element} bearbeiten',
@@ -1996,6 +2037,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         '<link>Microlearnings</link> können durch Studierende in einem zeitlich limitierten Rahmen bearbeitet werden. Sie eignen sich besonders für die Wiederholung von Lerninhalten und die Vorbereitung auf Prüfungen.',
       minOneElementPerStack:
         'Jeder Stack muss mindestens ein Element enthalten.',
+      codeOnlyStack:
+        'Eine Programmierfrage muss das einzige Element in ihrem Stack sein.',
       minOneElementPerBlock:
         'Jeder Block muss mindestens ein Element enthalten.',
       minOneQuestionGroupActivity:
@@ -2367,6 +2410,20 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bei MC-Fragen muss mindestens eine Antwort korrekt sein.',
       enterSolution: 'Bitte geben Sie eine Lösung ein.',
       FTMaxLength: 'Die maximale Länge der Lösung muss mindestens 1 betragen.',
+      COEntrypointRequired: 'Bitte geben Sie eine Einstiegsfunktion ein.',
+      COEntrypointInvalid:
+        'Die Einstiegsfunktion muss ein gültiger Python-Funktionsname sein.',
+      COSampleSolutionRequired:
+        'Bitte geben Sie eine Musterlösung ein oder deaktivieren Sie diese.',
+      COTestsRequired: 'Bitte definieren Sie mindestens einen Code-Test.',
+      COTestsMax: 'Eine Programmierfrage darf höchstens 20 Tests enthalten.',
+      COTestNameRequired: 'Bitte geben Sie für jeden Test einen Namen ein.',
+      COTestArgsInvalid:
+        'Testargumente müssen ein gültiges JSON-Array sein, zum Beispiel [1, 2].',
+      COTestExpectedOutputInvalid:
+        'Die erwartete Ausgabe muss gültiges JSON sein.',
+      COTestWeightPositive: 'Das Testgewicht muss grösser als 0 sein.',
+      COTestIdsUnique: 'Jeder Code-Test benötigt eine eindeutige Kennung.',
       solutionRequired:
         'Bitte geben Sie mindestens eine Lösung an oder deaktivieren Sie die Musterlösung.',
       NRMinLessThanMaxSol:
@@ -2654,6 +2711,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       totalParticipants: 'Total Teilnehmende: {number}',
       totalParticipantsInclAnon:
         'Total Teilnehmende: {number} ({anonymous} anonym)',
+      codeTotalSubmissions: 'Eingaben insgesamt: {number}',
+      codeTest: 'Test',
+      codePassedSubmissions: 'Bestandene Eingaben',
+      codeSubmissions: 'Eingaben',
       showSolution: 'Lösung anzeigen',
       showExplanation: 'Erklärung anzeigen',
       showSolutionInfo:

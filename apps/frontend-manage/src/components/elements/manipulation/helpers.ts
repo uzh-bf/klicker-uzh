@@ -5,6 +5,7 @@ import {
   MutationFunctionOptions,
 } from '@apollo/client'
 import {
+  CodeLanguage,
   CreateAnswerCollectionMutation,
   ElementStatus,
   Exact,
@@ -15,6 +16,7 @@ import {
   ElementFormTypesCaseStudy,
   ElementFormTypesCaseStudySolutions,
   ElementFormTypesChoices,
+  ElementFormTypesCode,
   ElementFormTypesContent,
   ElementFormTypesFlashcard,
   ElementFormTypesFreeText,
@@ -169,7 +171,7 @@ export function prepareNumericalArgs({
               }
 
               const precision = parseInt(String(values.options.accuracy))
-              return parseFloat(parseFloat(solution).toFixed(precision))
+              return parseFloat(parseFloat(String(solution)).toFixed(precision))
             })
           : undefined,
     },
@@ -214,6 +216,48 @@ export function prepareFreeTextArgs({
       solutions: values.options.solutions,
     },
 
+    tags: values.tags,
+  }
+}
+
+interface PrepareCodeArgsProps {
+  elementId?: number
+  isDuplication: boolean
+  values: ElementFormTypesCode & { status: ElementStatus }
+}
+export function prepareCodeArgs({
+  elementId,
+  isDuplication,
+  values,
+}: PrepareCodeArgsProps) {
+  return {
+    id: isDuplication ? undefined : elementId,
+    name: values.name,
+    status: values.status,
+    content: values.content,
+    explanation:
+      !values.explanation?.match(/^(<br>(\n)*)$/g) && values.explanation !== ''
+        ? values.explanation
+        : null,
+    basePoints: values.basePoints,
+    pointsMultiplier: parseInt(values.pointsMultiplier),
+    options: {
+      language: CodeLanguage.Python,
+      starterCode: values.options.starterCode || undefined,
+      sampleSolution: values.options.hasSampleSolution
+        ? values.options.sampleSolution
+        : undefined,
+      entrypoint: values.options.entrypoint.trim(),
+      hasSampleSolution: values.options.hasSampleSolution,
+      testCases: values.options.testCases.map((testCase) => ({
+        id: testCase.id.trim(),
+        name: testCase.name.trim(),
+        args: JSON.parse(testCase.args),
+        expectedOutput: JSON.parse(testCase.expectedOutput),
+        visibility: testCase.visibility,
+        weight: Number(testCase.weight),
+      })),
+    },
     tags: values.tags,
   }
 }
@@ -470,25 +514,25 @@ export function prepareCaseStudyArgs({
       collectionItemIds: values.options.selectedItems,
       criteria: values.options.criteria.map((criterion, index) => ({
         id: criterion.id,
-        name: criterion.name,
+        name: criterion.name!,
         order: index,
         min: parseFloat(String(criterion.min)),
         max: parseFloat(String(criterion.max)),
-        step: parseFloat(criterion.step),
+        step: parseFloat(String(criterion.step)),
         unit:
           criterion.unit && criterion.unit !== '' ? criterion.unit : undefined,
         labels: criterion.labels
           ? {
-              min: criterion.labels.min,
+              min: criterion.labels.min!,
               mid: criterion.labels.mid,
-              max: criterion.labels.max,
+              max: criterion.labels.max!,
             }
           : undefined,
       })),
 
       cases: values.options.cases.map((c, index) => ({
         id: c.id,
-        title: c.title,
+        title: c.title!,
         description: c.description,
         order: index,
         solutions: Object.entries(c.solutions ?? {}).map(([key, value]) => ({
@@ -496,8 +540,8 @@ export function prepareCaseStudyArgs({
           criteriaSolutions: Object.entries(value).map(
             ([criterionId, criterionValue]) => ({
               criterionId,
-              min: parseFloat(criterionValue.min),
-              max: parseFloat(criterionValue.max),
+              min: parseFloat(String(criterionValue.min)),
+              max: parseFloat(String(criterionValue.max)),
             })
           ),
         })),

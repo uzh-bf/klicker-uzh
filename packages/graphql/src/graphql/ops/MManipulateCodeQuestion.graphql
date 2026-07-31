@@ -1,0 +1,57 @@
+mutation ManipulateCodeQuestion(
+  $id: Int
+  $status: ElementStatus
+  $name: String
+  $content: String
+  $explanation: String
+  $options: OptionsCodeInput
+  $basePoints: Boolean
+  $pointsMultiplier: Int
+  $tags: [String!]
+) {
+  manipulateCodeQuestion(
+    id: $id
+    status: $status
+    name: $name
+    content: $content
+    explanation: $explanation
+    options: $options
+    basePoints: $basePoints
+    pointsMultiplier: $pointsMultiplier
+    tags: $tags
+  ) {
+    __typename
+    ... on CodeElement {
+      id
+      name
+      status
+      type
+      content
+      explanation
+      basePoints
+      pointsMultiplier
+      options {
+        language
+        starterCode
+        sampleSolution
+        entrypoint
+        hasSampleSolution
+        executionLimits {
+          perTestTimeoutSeconds
+        }
+        testCases {
+          id
+          name
+          args
+          expectedOutput
+          visibility
+          weight
+        }
+      }
+      tags {
+        id
+        name
+      }
+    }
+  }
+}

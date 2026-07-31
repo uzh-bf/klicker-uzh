@@ -285,6 +285,59 @@ query GetUserElements(
         }
       }
 
+      ... on CodeElement {
+        id
+        name
+        status
+        type
+        content
+
+        basePoints
+        pointsMultiplier
+        version
+
+        isArchived
+        isDeleted
+        createdAt
+        updatedAt
+
+        derivedAccess
+        numSharedUsers
+        permissionLevel
+        isOwner
+        isManager
+        isEditor
+        isImported
+        isShared
+        isRemovable
+        sharingType
+
+        options {
+          language
+          starterCode
+          sampleSolution
+          entrypoint
+          hasSampleSolution
+          executionLimits {
+            perTestTimeoutSeconds
+          }
+          testCases {
+            id
+            name
+            args
+            expectedOutput
+            visibility
+            weight
+          }
+        }
+
+        tags {
+          id
+          name
+          order
+        }
+      }
+
       ... on FlashcardElement {
         id
         name

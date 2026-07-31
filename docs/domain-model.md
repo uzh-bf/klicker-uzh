@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-07-07'
+timestamp: '2026-07-30'
 tags:
   - backend
   - prisma
@@ -31,7 +31,15 @@ They are unrelated models — never conflate them. A `Participant` joins a `Cour
 - **`ElementInstance`** — a _placement_ of an Element inside an activity. `type: ElementInstanceType` = `LIVE_QUIZ | PRACTICE_QUIZ | MICROLEARNING | GROUP_ACTIVITY`. It **snapshots** `elementData`/`options` at publication time and accumulates `results` — editing the source Element does not change published instances.
 - Grouping differs by activity: **`ElementStack`** (ordered instance group) for PracticeQuiz/MicroLearning/GroupActivity; **`ElementBlock`** (with scheduling status) for LiveQuiz only.
 
-`ElementType`: `SC, MC, KPRIM, FREE_TEXT, NUMERICAL, CONTENT, FLASHCARD, SELECTION, CASE_STUDY`. Type-specific behavior is dispatched in `packages/graphql/src/services/stacks.ts` (correctness: `evaluateChoicesAnswerCorrectness`; per-type grading and response-format branches). Pure scoring math is in `packages/grading/src/index.ts`: `gradeQuestionSC`, `gradeQuestionMC` (hamming-distance partial credit), `gradeQuestionKPRIM` (0 wrong → full, 1 wrong → half, else 0), `gradeQuestionNumerical`.
+`ElementType`: `SC, MC, KPRIM, FREE_TEXT, NUMERICAL, CONTENT, FLASHCARD, SELECTION, CASE_STUDY, CODE`. Type-specific behavior is dispatched in `packages/graphql/src/services/stacks.ts` (correctness: `evaluateChoicesAnswerCorrectness`; per-type grading and response-format branches). Pure scoring math is in `packages/grading/src/index.ts`: `gradeQuestionSC`, `gradeQuestionMC` (hamming-distance partial credit), `gradeQuestionKPRIM` (0 wrong → full, 1 wrong → half, else 0), `gradeQuestionNumerical`.
+
+### CODE element boundary
+
+- A CODE element is Python-only and contains starter code, an entrypoint, and 1–20 declarative JSON input/output tests. Test IDs are non-empty, unique, and at most 128 characters; the positive weights must also have a finite total. Tests are either public or hidden; participant-facing instance data contains public tests only.
+- Each test's argument array and expected output use the same authoring/runtime JSON boundary: at most 20 levels, 2,000 nodes, and 16 KiB when serialized. Breadth is rejected before its children are added to the traversal worklist.
+- CODE is supported only as the single element in a PracticeQuiz or MicroLearning stack. LiveQuiz, GroupActivity, mixed/multi-element stacks, and activity templates reject it.
+- Async attempts use the separate `CodeSubmission` model (`code.prisma`) with `PENDING | RUNNING | COMPLETED | FAILED` status and claim/retry fields. One partial unique index permits only one active attempt per participant and element instance. The worker claims with an expiring token, executes outside the transaction, then locks the shared element instance and records participant-specific response history, instance-wide aggregates/statistics, spaced repetition, points, XP, leaderboard, timeline, and `COMPLETED` atomically. Provider rate-limit deferrals set `retryAt` without consuming the three-attempt execution budget. Failed attempts release the active index so a later submission can create a new receipt.
+- A finalized CODE `QuestionResponseDetail` stores the submitted code plus the server-computed numeric correctness. The Analytics service maps `0` to incorrect, `1` to correct, and intermediate values to partial; it never tries to re-grade student code.
 
 ## Activities
 

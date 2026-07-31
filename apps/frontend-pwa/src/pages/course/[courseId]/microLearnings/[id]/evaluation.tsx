@@ -38,6 +38,7 @@ function MicrolearningEvaluation() {
   const microlearning = data?.microLearning
   const aggregatedResults = useStackEvaluationAggregation({
     microlearning: microlearning,
+    participantId: participant?.self?.id,
   })
 
   if (loading || !microlearning) {

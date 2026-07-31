@@ -7,6 +7,7 @@ import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import type { Dispatch, SetStateAction } from 'react'
 import CaseStudyQuestion from './CaseStudyQuestion'
 import ChoicesQuestion from './ChoicesQuestion'
+import CodeQuestion from './CodeQuestion'
 import ContentElement from './ContentElement'
 import Flashcard from './Flashcard'
 import FreeTextQuestion from './FreeTextQuestion'
@@ -60,7 +61,7 @@ export type InstanceStackStudentResponseType =
       evaluation?: InstanceEvaluation
     }
   | {
-      type: ElementType.FreeText
+      type: ElementType.FreeText | ElementType.Code
       response?: string
       valid?: boolean
       evaluation?: InstanceEvaluation
@@ -281,6 +282,46 @@ function StudentElement({
           !element.elementData.options.hasSampleSolution
         }
         disabled={disabledInput}
+      />
+    )
+  } else if (element.elementData.__typename === 'CodeElementData') {
+    const response =
+      typeof studentResponse !== 'undefined'
+        ? (studentResponse[element.id]?.response as string | undefined)
+        : (singleStudentResponse.response as string | undefined)
+
+    return (
+      <CodeQuestion
+        key={element.id}
+        content={element.elementData.content}
+        options={element.elementData.options}
+        response={
+          (stackStorage?.[element.id]?.response as string | undefined) ??
+          response ??
+          element.elementData.options.starterCode ??
+          ''
+        }
+        setResponse={(newValue) => {
+          const valid = newValue.length > 0
+          typeof setStudentResponse !== 'undefined'
+            ? setStudentResponse((response) => ({
+                ...response,
+                [element.id]: {
+                  ...response[element.id],
+                  type: ElementType.Code,
+                  response: newValue,
+                  valid,
+                },
+              }))
+            : setSingleStudentResponse((response) => ({
+                ...response,
+                type: ElementType.Code,
+                response: newValue,
+                valid,
+              }))
+        }}
+        noPoints={element.elementData.basePoints === false}
+        disabled={disabledInput || typeof stackStorage !== 'undefined'}
       />
     )
   } else if (element.elementData.__typename === 'SelectionElementData') {

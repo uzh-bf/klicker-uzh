@@ -852,7 +852,7 @@ export async function manipulateGroupActivity(
   }: CreateGroupActivityArgs,
   ctx: ContextWithUser
 ) {
-  // in EDIT mode - validate that the group activity exists and is not published, remove the old clues
+  // in EDIT mode - validate that the group activity exists and is not published
   let existingActivity: DB.GroupActivity | null = null
   if (id) {
     existingActivity = await ctx.prisma.groupActivity.findUnique({
@@ -869,12 +869,6 @@ export async function manipulateGroupActivity(
     ) {
       throw new GraphQLError('Can only edit draft group activities')
     }
-
-    // remove old clues as they will be replaced through new values
-    await ctx.prisma.groupActivity.update({
-      where: { id },
-      data: { clues: { deleteMany: {} } },
-    })
   }
 
   // get the course to which the practice quiz should be assigned
@@ -895,7 +889,19 @@ export async function manipulateGroupActivity(
     duplicationInstances,
     elementMap,
     anyInstanceOutdated,
-  } = await splitActivityInstances({ stacksOrBlocks: [stack] }, ctx)
+  } = await splitActivityInstances(
+    {
+      stacksOrBlocks: [stack],
+      ...(id
+        ? {
+            persistentInstanceScope: {
+              elementStack: { groupActivityId: id },
+            },
+          }
+        : {}),
+    },
+    ctx
+  )
 
   // in EDIT mode - check which instances and stacks should be removed
   let instancesToDelete: number[] = []
@@ -990,14 +996,18 @@ export async function manipulateGroupActivity(
 
       // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
       for (const instance of persistentInstances) {
+        if (!id) {
+          throw new GraphQLError('Not all element instances could be found')
+        }
         const elementMultiplier =
           'pointsMultiplier' in instance.elementData
             ? ((instance.elementData.pointsMultiplier as number) ?? 1)
             : 1
 
-        await prisma.elementInstance.update({
+        const updated = await prisma.elementInstance.updateMany({
           where: {
             id: instance.id,
+            elementStack: { groupActivityId: id },
           },
           data: {
             elementStackId: null,
@@ -1007,6 +1017,17 @@ export async function manipulateGroupActivity(
               pointsMultiplier: multiplier * elementMultiplier,
             },
           },
+        })
+        if (updated.count !== 1) {
+          throw new GraphQLError('Not all element instances could be found')
+        }
+      }
+
+      // replace clues only after persistent instances passed the transaction-time activity fence
+      if (id) {
+        await prisma.groupActivity.update({
+          where: { id },
+          data: { clues: { deleteMany: {} } },
         })
       }
 

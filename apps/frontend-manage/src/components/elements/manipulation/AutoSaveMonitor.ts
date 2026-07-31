@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction, useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { ElementFormTypes } from './types'
 
 function AutoSaveMonitor({
@@ -8,7 +8,7 @@ function AutoSaveMonitor({
 }: {
   values: ElementFormTypes
   initialValuesString: string
-  setAutoSavedElement: Dispatch<SetStateAction<ElementFormTypes>>
+  setAutoSavedElement: (values: ElementFormTypes) => void
 }) {
   // create a call-back function that will save the editor's content every 2 seconds
   // (if not actively typing -> do not disturb other state updates)

@@ -7,6 +7,7 @@ import builder from './builder.js'
 import './schema/achievement.js'
 import './schema/activities.js'
 import './schema/assessment.js'
+import './schema/code.js'
 import './schema/course.js'
 import './schema/element.js'
 import './schema/elementData.js'
@@ -39,6 +40,11 @@ import './schema/subscription.js'
 // }
 
 import {
+  handleGradeCodeSubmission,
+  handleRecoverCodeSubmissions,
+  processCodeSubmission,
+} from './services/codeSubmissions.js'
+import {
   handleEndExpiredGroupActivity,
   handleFinalRandomGroupAssignments,
   handlePublishScheduledGroupActivity,
@@ -68,6 +74,8 @@ export const schema = builder.toSchema({
 })
 
 export const handlers: HatchetHandlers = {
+  handleGradeCodeSubmission,
+  handleRecoverCodeSubmissions,
   handleFinalRandomGroupAssignments,
   handleRunningRandomGroupAssignments,
   handleUpdateGroupAverageScores,
@@ -83,3 +91,5 @@ export const handlers: HatchetHandlers = {
   handleStandardLiveQuizBlockClosureAggregation,
   handleAssessmentLiveQuizBlockClosureAggregation,
 }
+
+export { processCodeSubmission }

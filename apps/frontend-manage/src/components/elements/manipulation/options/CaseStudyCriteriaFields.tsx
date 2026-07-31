@@ -245,9 +245,9 @@ function CaseStudyCriteriaFields({ disabled }: { disabled: boolean }) {
                         value={
                           criteriaField.value[index].max &&
                           criteriaField.value[index].min
-                            ? criteriaField.value[index].max +
+                            ? Number(criteriaField.value[index].max) +
                               1 -
-                              criteriaField.value[index].min
+                              Number(criteriaField.value[index].min)
                             : ''
                         }
                         label={t('shared.generic.steps')}

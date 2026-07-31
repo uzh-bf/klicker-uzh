@@ -96,6 +96,18 @@ export default {
       richtext:
         'Please evaluate all options with respect to the given criteria.',
     },
+    CODE: {
+      short: 'CODE',
+      typeLabel: 'Programming Question (CODE)',
+      text: 'Please enter your program.',
+      richtext: 'Please enter your <b>program</b>.',
+      entrypoint: 'Entrypoint',
+      responseEditor: 'Program response',
+      responsePlaceholder: 'Enter your Python program…',
+      publicTests: 'Public tests',
+      arguments: 'Arguments',
+      expectedOutput: 'Expected output',
+    },
     login: {
       installButton: 'Install Now',
     },
@@ -423,6 +435,7 @@ export default {
       FREE_TEXT: 'Free Text Question',
       SELECTION: 'Selection Question',
       CASE_STUDY: 'Case Study',
+      CODE: 'Programming Question',
       FLASHCARD: 'Flashcard',
       CONTENT: 'Content Element',
     },
@@ -803,6 +816,19 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       flashcardYesResponse: 'Yes',
       resetAnswers: 'Reset answers',
       markAllAsRead: 'Mark all as read',
+      codeSubmissionPending:
+        'Your program is being graded. You can safely leave or reload this page.',
+      codePollingUnavailable:
+        'Your program is still being graded. Status updates are temporarily unavailable; this page will keep trying.',
+      codeSubmissionFailed:
+        'Grading could not be completed. Review your program and submit it again.',
+      codeSubmissionCompleted:
+        'Grading completed with {percentage}% of the available points.',
+      codeTestPassed: 'passed',
+      codeTestFailed: 'failed',
+      codeActualOutput: 'Actual output',
+      codeStandardOutput: 'Program output',
+      codeStandardError: 'Program error output',
       read: 'Read',
       feedbackTransmitted: 'Your feedback has been transmitted successfully.',
       feedbackRequired: 'Please add a text to your feedback.',
@@ -952,10 +978,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Deleting your KlickerUZH account will irreversibly delete all associated data.',
       deleteProfileConfirmation:
         'Are you sure you want to delete your account? All data related to your account will be deleted. This action cannot be undone.',
-      privacyDataCollection: '',
-      privacyDataSharing: '',
-      privacyDataUsage: '',
-      privacyDataStorage: '',
       emailMissing:
         'Your KlickerUZH account is missing an email address, which is required to ensure complete functionality. Please provide a valid address below and save your changes.',
       forgotPasswordInfo:
@@ -1854,6 +1876,23 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       possibleSolutionN: 'Possible solution {number}',
       possibleSolutions: 'Possible solutions',
       addSolution: 'Add new solution',
+      codeConfiguration: 'Programming settings',
+      codeEntrypoint: 'Entrypoint function',
+      codeEntrypointTooltip:
+        'Name of the Python function that will be called for every test.',
+      codeStarterCode: 'Starter code',
+      codeSampleSolution: 'Sample solution',
+      codeTests: 'Tests',
+      codeDefaultTestName: 'Example {number}',
+      codeTestName: 'Test name',
+      codeVisibility: 'Visibility',
+      codeVisibilityPublic: 'Public',
+      codeVisibilityHidden: 'Hidden',
+      codeWeight: 'Weight',
+      codeArguments: 'Arguments (JSON array)',
+      codeExpectedOutput: 'Expected output (JSON)',
+      addCodeTest: 'Add test',
+      removeCodeTest: 'Remove test',
       noFeedbackDefined: 'No feedback defined',
       createElement: 'Create {element}',
       editElement: 'Edit {element}',
@@ -1983,6 +2022,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       microlearningUseCase:
         '<link>Microlearnings</link> can be solved by students within a specified timespan. They are particularly suitable for reviewing learning content and preparing for exams.',
       minOneElementPerStack: 'Every stack must contain at least one element.',
+      codeOnlyStack:
+        'A programming question must be the only element in its stack.',
       minOneElementPerBlock: 'Every block must contain at least one element.',
       minOneQuestionGroupActivity:
         'A group activity must contain at least one question.',
@@ -2340,6 +2381,19 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       enterSolution: 'Please enter a solution.',
       FTMaxLength:
         'The maximum length of a free text question response has to be at least 1.',
+      COEntrypointRequired: 'Please enter an entrypoint function.',
+      COEntrypointInvalid:
+        'The entrypoint must be a valid Python function name.',
+      COSampleSolutionRequired:
+        'Please enter a sample solution or deactivate the sample solution.',
+      COTestsRequired: 'Please define at least one code test.',
+      COTestsMax: 'A programming question can contain at most 20 tests.',
+      COTestNameRequired: 'Please enter a name for every code test.',
+      COTestArgsInvalid:
+        'Test arguments must be a valid JSON array, for example [1, 2].',
+      COTestExpectedOutputInvalid: 'The expected output must be valid JSON.',
+      COTestWeightPositive: 'The test weight must be greater than 0.',
+      COTestIdsUnique: 'Every code test must have a unique identifier.',
       solutionRequired:
         'Please enter at least one solution or deactivate the sample solution.',
       NRMinLessThanMaxSol:
@@ -2614,6 +2668,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       totalParticipants: 'Total participants: {number}',
       totalParticipantsInclAnon:
         'Total participants: {number} ({anonymous} anonymous)',
+      codeTotalSubmissions: 'Total submissions: {number}',
+      codeTest: 'Test',
+      codePassedSubmissions: 'Passed submissions',
+      codeSubmissions: 'Submissions',
       showSolution: 'Show solution',
       showExplanation: 'Show explanation',
       showSolutionInfo:
@@ -3502,7 +3560,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       removeGROUP_ACTIVITYtitle: '',
       removeCOURSE: 'Remove Course',
       removeCOURSEtitle: '',
-      removeObjectTitle: 'Remove Object from Catalog Collection',
       removeObjectDescription:
         'Are you sure you want to remove the {objectType} "{objectName}" from the catalog collection? Users will then no longer be able to import it or request access to it.',
       createCatalogCollection: 'Create Collection',
@@ -3530,7 +3587,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       modifyPermissions: 'Modify Permissions',
       revokeAccess: 'Revoke Access',
       deleteCollection: 'Delete Collection',
-      removeObject: 'Remove Object',
       deleteCatalogCollectionTitle: 'Delete Catalog Collection',
       deleteCatalogCollectionDescription:
         'Are you sure you want to delete the catalog collection "{name}"? This will remove all objects from the catalog collection and prevent users from accessing these objects through the catalog collection.',

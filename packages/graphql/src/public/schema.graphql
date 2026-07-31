@@ -370,6 +370,18 @@ type AssessmentResultsLiveQuiz {
   studentResults: [StudentAssessmentResultsItem!]!
 }
 
+type AuthoringCodeElementData {
+  basePoints: Boolean!
+  content: String!
+  elementId: Int!
+  explanation: String
+  id: ID!
+  name: String!
+  options: CodeElementOptions!
+  pointsMultiplier: Int!
+  type: ElementType!
+}
+
 type AvatarSettings {
   accessory: String!
   clothing: String!
@@ -851,6 +863,156 @@ type ClassAchievementInstance {
   id: Int!
 }
 
+type CodeActivityEvaluationData {
+  content: String!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  name: String!
+  results: CodeElementResults!
+  type: ElementType!
+}
+
+type CodeElement {
+  basePoints: Boolean!
+  content: String!
+  createdAt: Date
+  derivedAccess: Boolean
+  explanation: String
+  id: Int!
+  isArchived: Boolean
+  isDeleted: Boolean
+  isEditor: Boolean
+  isImported: Boolean
+  isManager: Boolean
+  isOwner: Boolean
+  isRemovable: Boolean
+  isShared: Boolean
+  name: String!
+  numSharedUsers: Int
+  options: CodeElementOptions!
+  permissionLevel: PermissionLevel
+  pointsMultiplier: Int!
+  sharingType: SharingType
+  status: ElementStatus!
+  tags: [Tag!]
+  type: ElementType!
+  updatedAt: Date
+  version: Int!
+}
+
+type CodeElementData {
+  basePoints: Boolean!
+  content: String!
+  elementId: Int!
+  explanation: String
+  id: ID!
+  name: String!
+  options: PublicCodeElementOptions!
+  pointsMultiplier: Int!
+  type: ElementType!
+}
+
+type CodeElementOptions {
+  entrypoint: String!
+  executionLimits: CodeExecutionLimits!
+  hasSampleSolution: Boolean
+  language: CodeLanguage!
+  sampleSolution: String
+  starterCode: String
+  testCases: [CodeTestCase!]!
+}
+
+type CodeElementResults {
+  testResults: [CodeTestEvaluation!]!
+  totalAnswers: Int!
+}
+
+type CodeExecutionLimits {
+  perTestTimeoutSeconds: Int!
+}
+
+type CodeInstanceEvaluation {
+  correctness: Float
+  elementType: ElementType!
+  explanation: String
+  feedbacks: [QuestionFeedback!]
+  instanceId: Int!
+  lastResponse: SingleQuestionResponseCode
+  newPointsFrom: Date
+  newXpFrom: Date
+  numAnswers: Int
+  percentile: Float
+  pointsAwarded: Float
+  pointsMultiplier: Int!
+  score: Float!
+  testResults: [CodeTestEvaluation!]
+  xp: Int
+  xpAwarded: Int
+}
+
+enum CodeLanguage {
+  PYTHON
+}
+
+type CodePublicTestResult {
+  actualOutput: Json
+  id: String!
+  name: String!
+  passed: Boolean!
+  stderr: String
+  stdout: String
+}
+
+type CodeSubmissionFeedback {
+  pointsPercentage: Float!
+  publicTestResults: [CodePublicTestResult!]!
+}
+
+type CodeSubmissionReceipt {
+  feedback: CodeSubmissionFeedback
+  gradingStatus: CodeSubmissionStatus!
+  id: ID!
+}
+
+enum CodeSubmissionStatus {
+  COMPLETED
+  FAILED
+  PENDING
+  RUNNING
+}
+
+type CodeTestCase {
+  args: [Json]!
+  expectedOutput: Json
+  id: String!
+  name: String!
+  visibility: CodeTestVisibility!
+  weight: Float!
+}
+
+input CodeTestCaseInput {
+  args: [Json]!
+  expectedOutput: Json
+  id: String!
+  name: String!
+  visibility: CodeTestVisibility!
+  weight: Float!
+}
+
+type CodeTestEvaluation {
+  id: String!
+  name: String!
+  passedCount: Int!
+  totalCount: Int!
+}
+
+enum CodeTestVisibility {
+  HIDDEN
+  PUBLIC
+}
+
 type ConfusionSummary {
   difficulty: Float!
   numberOfParticipants: Int
@@ -1114,7 +1276,7 @@ type DerivedPermissionOriginInformation {
   permissionUser: String!
 }
 
-union Element = CaseStudyElement | ChoicesElement | ContentElement | FlashcardElement | FreeTextElement | NumericalElement | SelectionElement
+union Element = CaseStudyElement | ChoicesElement | CodeElement | ContentElement | FlashcardElement | FreeTextElement | NumericalElement | SelectionElement
 
 type ElementBlock {
   elements: [ElementInstance!]
@@ -1140,7 +1302,7 @@ enum ElementBlockStatus {
   SCHEDULED
 }
 
-union ElementData = CaseStudyElementData | ChoicesElementData | ContentElementData | FlashcardElementData | FreeTextElementData | NumericalElementData | SelectionElementData
+union ElementData = CaseStudyElementData | ChoicesElementData | CodeElementData | ContentElementData | FlashcardElementData | FreeTextElementData | NumericalElementData | SelectionElementData
 
 enum ElementDisplayMode {
   GRID
@@ -1156,6 +1318,7 @@ type ElementFeedback {
 }
 
 type ElementInstance {
+  codeAuthoringData: AuthoringCodeElementData
   correlationKey: String
   elementData: ElementData!
   elementType: ElementType!
@@ -1165,7 +1328,7 @@ type ElementInstance {
   type: ElementInstanceType!
 }
 
-union ElementInstanceEvaluation = CaseStudyActivityEvaluationData | ChoicesActivityEvaluationData | ContentActivityEvaluationData | FlashcardActivityEvaluationData | FreeTextActivityEvaluationData | NumericalActivityEvaluationData | SelectionActivityEvaluationData
+union ElementInstanceEvaluation = CaseStudyActivityEvaluationData | ChoicesActivityEvaluationData | CodeActivityEvaluationData | ContentActivityEvaluationData | FlashcardActivityEvaluationData | FreeTextActivityEvaluationData | NumericalActivityEvaluationData | SelectionActivityEvaluationData
 
 input ElementInstanceInput {
   duplicateInstance: Boolean!
@@ -1249,6 +1412,7 @@ type ElementSummary {
 
 enum ElementType {
   CASE_STUDY
+  CODE
   CONTENT
   FLASHCARD
   FREE_TEXT
@@ -1623,7 +1787,7 @@ type GroupMessage {
   updatedAt: Date!
 }
 
-union InstanceEvaluation = CaseStudyInstanceEvaluation | ChoicesInstanceEvaluation | ContentInstanceEvaluation | FlashcardInstanceEvaluation | FreeTextInstanceEvaluation | NumericalInstanceEvaluation | SelectionInstanceEvaluation
+union InstanceEvaluation = CaseStudyInstanceEvaluation | ChoicesInstanceEvaluation | CodeInstanceEvaluation | ContentInstanceEvaluation | FlashcardInstanceEvaluation | FreeTextInstanceEvaluation | NumericalInstanceEvaluation | SelectionInstanceEvaluation
 
 type InstanceFeedback {
   activityType: ActivityType!
@@ -1936,6 +2100,7 @@ type Mutation {
   logoutUser: ID
   manipulateCaseStudyQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsCaseStudyInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateChoicesQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsChoicesInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!], type: ElementType!): Element
+  manipulateCodeQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsCodeInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateContentElement(basePoints: Boolean, content: String, id: Int, name: String, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateFlashcardElement(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateFreeTextQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsFreeTextInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
@@ -1972,6 +2137,7 @@ type Mutation {
   shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startLiveQuiz(id: String!): LiveQuizMeta
+  submitCodeResponse(code: String!, courseId: String!, instanceId: Int!, timeSpent: Int!): CodeSubmissionReceipt!
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
   toggleArchiveCourse(id: String!, isArchived: Boolean!): Course
@@ -2152,6 +2318,15 @@ input OptionsChoicesInput {
   displayMode: ElementDisplayMode
   hasAnswerFeedbacks: Boolean
   hasSampleSolution: Boolean
+}
+
+input OptionsCodeInput {
+  entrypoint: String!
+  hasSampleSolution: Boolean!
+  language: CodeLanguage!
+  sampleSolution: String
+  starterCode: String
+  testCases: [CodeTestCaseInput!]!
 }
 
 input OptionsFreeTextInput {
@@ -2402,6 +2577,21 @@ type PublicAssessmentReportVerification {
   status: AssessmentReportVerificationStatus!
 }
 
+type PublicCodeElementOptions {
+  entrypoint: String!
+  executionLimits: CodeExecutionLimits!
+  language: CodeLanguage!
+  starterCode: String
+  testCases: [PublicCodeTestCase!]!
+}
+
+type PublicCodeTestCase {
+  args: [Json]!
+  expectedOutput: Json
+  id: String!
+  name: String!
+}
+
 enum PublicationStatus {
   DRAFT
   ENDED
@@ -2430,6 +2620,7 @@ type Query {
   checkTemplateInfoAvailable(activityId: String!, activityType: ActivityType!): ActivityTemplateInfo
   checkValidCoursePin(pin: Int!): String
   cockpitQuiz(id: String!): LiveQuiz
+  codeSubmission(id: ID!): CodeSubmissionReceipt
   controlCourse(id: String!): Course
   controlCourses: [Course!]
   controlLiveQuiz(id: String!): LiveQuiz
@@ -2737,6 +2928,10 @@ type SingleQuestionResponseChoices {
   choices: [ChoicesResponseObject!]!
 }
 
+type SingleQuestionResponseCode {
+  code: String!
+}
+
 type SingleQuestionResponseContent {
   viewed: Boolean!
 }
@@ -2878,6 +3073,7 @@ type StudentPointCorrection {
 }
 
 type Subscription {
+  codeSubmissionUpdated(id: ID!): CodeSubmissionReceipt!
   feedbackAdded(quizId: String!): Feedback!
   feedbackCreated(quizId: String!): Feedback!
   feedbackPinned(quizId: String!): Feedback!

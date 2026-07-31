@@ -8,18 +8,24 @@ import {
   type CaseStudyCriterionLabels as CaseStudyCriterionLabelsType,
   type CaseStudyCriterion as CaseStudyCriterionType,
   type Choice as ChoiceType,
+  type CodeElementData as CodeElementDataType,
+  type CodeTestCase as CodeTestCaseType,
   type ElementInstanceOptions as ElementInstanceOptionsType,
   type ElementOptionsAnswerCollectionEntry as ElementOptionsAnswerCollectionEntryType,
   type ElementOptionsAnswerCollection as ElementOptionsAnswerCollectionType,
   type ElementOptionsCaseStudy as ElementOptionsCaseStudyType,
   type ElementOptionsChoices as ElementOptionsChoicesType,
+  type ElementOptionsCode as ElementOptionsCodeType,
   type ElementOptionsFreeText as ElementOptionsFreeTextType,
   type ElementOptionsNumerical as ElementOptionsNumericalType,
   type ElementOptionsSelection as ElementOptionsSelectionType,
   type FreeTextRestrictions as FreeTextRestrictionsType,
   type NumericalRestrictions as NumericalRestrictionsType,
   type NumericalSolutionRange as NumericalSolutionRangeType,
+  type PublicCodeTestCase as PublicCodeTestCaseType,
+  type PublicElementOptionsCode as PublicElementOptionsCodeType,
 } from '@klicker-uzh/types'
+import { sanitizeElementDataForParticipant } from '@klicker-uzh/util'
 import builder from '../builder.js'
 
 export const ElementType = builder.enumType('ElementType', {
@@ -36,6 +42,19 @@ export const ElementInstanceType = builder.enumType('ElementInstanceType', {
 
 export const ElementDisplayMode = builder.enumType('ElementDisplayMode', {
   values: Object.values(DisplayMode),
+})
+
+export const CodeLanguage = builder.enumType('CodeLanguage', {
+  values: {
+    PYTHON: { value: 'python' },
+  } as const,
+})
+
+export const CodeTestVisibility = builder.enumType('CodeTestVisibility', {
+  values: {
+    PUBLIC: { value: 'public' },
+    HIDDEN: { value: 'hidden' },
+  } as const,
 })
 
 // ----- ELEMENT OPTIONS -----
@@ -130,6 +149,82 @@ export const FreeTextElementOptions = builder
         nullable: true,
       }),
       solutions: t.exposeStringList('solutions', { nullable: true }),
+    }),
+  })
+
+export const CodeExecutionLimits = builder
+  .objectRef<ElementOptionsCodeType['executionLimits']>('CodeExecutionLimits')
+  .implement({
+    fields: (t) => ({
+      perTestTimeoutSeconds: t.exposeInt('perTestTimeoutSeconds'),
+    }),
+  })
+
+export const CodeTestCase = builder
+  .objectRef<CodeTestCaseType>('CodeTestCase')
+  .implement({
+    fields: (t) => ({
+      id: t.exposeString('id'),
+      name: t.exposeString('name'),
+      args: t.expose('args', {
+        type: ['Json'],
+        nullable: { list: false, items: true },
+      }),
+      expectedOutput: t.expose('expectedOutput', {
+        type: 'Json',
+        nullable: true,
+      }),
+      visibility: t.expose('visibility', { type: CodeTestVisibility }),
+      weight: t.exposeFloat('weight'),
+    }),
+  })
+
+export const CodeElementOptions = builder
+  .objectRef<ElementOptionsCodeType>('CodeElementOptions')
+  .implement({
+    fields: (t) => ({
+      language: t.expose('language', { type: CodeLanguage }),
+      starterCode: t.exposeString('starterCode', { nullable: true }),
+      sampleSolution: t.exposeString('sampleSolution', { nullable: true }),
+      entrypoint: t.exposeString('entrypoint'),
+      testCases: t.expose('testCases', { type: [CodeTestCase] }),
+      executionLimits: t.expose('executionLimits', {
+        type: CodeExecutionLimits,
+      }),
+      hasSampleSolution: t.exposeBoolean('hasSampleSolution', {
+        nullable: true,
+      }),
+    }),
+  })
+
+export const PublicCodeTestCase = builder
+  .objectRef<PublicCodeTestCaseType>('PublicCodeTestCase')
+  .implement({
+    fields: (t) => ({
+      id: t.exposeString('id'),
+      name: t.exposeString('name'),
+      args: t.expose('args', {
+        type: ['Json'],
+        nullable: { list: false, items: true },
+      }),
+      expectedOutput: t.expose('expectedOutput', {
+        type: 'Json',
+        nullable: true,
+      }),
+    }),
+  })
+
+export const PublicCodeElementOptions = builder
+  .objectRef<PublicElementOptionsCodeType>('PublicCodeElementOptions')
+  .implement({
+    fields: (t) => ({
+      language: t.expose('language', { type: CodeLanguage }),
+      starterCode: t.exposeString('starterCode', { nullable: true }),
+      entrypoint: t.exposeString('entrypoint'),
+      testCases: t.expose('testCases', { type: [PublicCodeTestCase] }),
+      executionLimits: t.expose('executionLimits', {
+        type: CodeExecutionLimits,
+      }),
     }),
   })
 
@@ -354,6 +449,29 @@ export const CaseStudyElementData = builder
     }),
   })
 
+export const CodeElementData = builder
+  .objectRef<CodeElementDataType>('CodeElementData')
+  .implement({
+    fields: (t) => ({
+      ...sharedElementData(t),
+      options: t.field({
+        type: PublicCodeElementOptions,
+        resolve: (elementData) =>
+          sanitizeElementDataForParticipant(elementData as CodeElementDataType)
+            .options,
+      }),
+    }),
+  })
+
+export const AuthoringCodeElementData = builder
+  .objectRef<CodeElementDataType>('AuthoringCodeElementData')
+  .implement({
+    fields: (t) => ({
+      ...sharedElementData(t),
+      options: t.expose('options', { type: CodeElementOptions }),
+    }),
+  })
+
 export interface IFlashcardElementData extends BaseElementData {}
 export const FlashcardElementData = builder
   .objectRef<IFlashcardElementData>('FlashcardElementData')
@@ -381,6 +499,7 @@ export const ElementData = builder.unionType('ElementData', {
     ContentElementData,
     SelectionElementData,
     CaseStudyElementData,
+    CodeElementData,
   ],
   resolveType: (element) => {
     switch (element.type) {
@@ -396,6 +515,8 @@ export const ElementData = builder.unionType('ElementData', {
         return SelectionElementData
       case DB.ElementType.CASE_STUDY:
         return CaseStudyElementData
+      case DB.ElementType.CODE:
+        return CodeElementData
       case DB.ElementType.FLASHCARD:
         return FlashcardElementData
       case DB.ElementType.CONTENT:

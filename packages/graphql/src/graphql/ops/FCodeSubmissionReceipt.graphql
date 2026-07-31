@@ -1,0 +1,15 @@
+fragment CodeSubmissionReceiptData on CodeSubmissionReceipt {
+  id
+  gradingStatus
+  feedback {
+    pointsPercentage
+    publicTestResults {
+      id
+      name
+      passed
+      actualOutput
+      stdout
+      stderr
+    }
+  }
+}

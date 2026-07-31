@@ -1,0 +1,5 @@
+subscription CodeSubmissionUpdated($id: ID!) {
+  codeSubmissionUpdated(id: $id) {
+    ...CodeSubmissionReceiptData
+  }
+}

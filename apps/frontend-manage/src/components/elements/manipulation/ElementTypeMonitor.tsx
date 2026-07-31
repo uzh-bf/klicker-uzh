@@ -25,6 +25,8 @@ function ElementTypeMonitor({
       setElementDataTypename('NumericalElementData')
     } else if (elementType === ElementType.FreeText) {
       setElementDataTypename('FreeTextElementData')
+    } else if (elementType === ElementType.Code) {
+      setElementDataTypename('CodeElementData')
     } else if (elementType === ElementType.Flashcard) {
       setElementDataTypename('FlashcardElementData')
     } else if (elementType === ElementType.Selection) {

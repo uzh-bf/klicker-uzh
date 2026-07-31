@@ -48,6 +48,7 @@ export const QUESTION_GROUPS: Record<string, ElementType[]> = {
     ElementType.Kprim,
     ElementType.FreeText,
     ElementType.Numerical,
+    ElementType.Code,
     ElementType.Selection,
     ElementType.CaseStudy,
   ],
@@ -135,6 +136,9 @@ export const ACTIVE_CHART_TYPES: Record<
     { label: 'manage.evaluation.table', value: ChartType.TABLE },
   ],
   [ElementType.Content]: [
+    { label: 'manage.evaluation.unset', value: ChartType.UNSET },
+  ],
+  [ElementType.Code]: [
     { label: 'manage.evaluation.unset', value: ChartType.UNSET },
   ],
 }

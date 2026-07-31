@@ -1,6 +1,10 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import { ElementOptionsInput } from '@klicker-uzh/types'
+import {
+  CODE_TEST_TIMEOUT_SECONDS,
+  ElementOptionsInput,
+} from '@klicker-uzh/types'
 import validateCaseStudyOptions from './validateCaseStudyOptions.js'
+import validateCodeOptions from './validateCodeOptions.js'
 import validateFreeTextOptions from './validateFreeTextOptions.js'
 import validateKPRIMOptions from './validateKPRIMOptions.js'
 import validateMCOptions from './validateMCOptions.js'
@@ -119,6 +123,25 @@ function validateAndProcessElementOptions(
           order: caseItem.order,
           solutions: options.hasSampleSolution ? caseItem.solutions : undefined,
         })),
+      }
+    }
+
+    case DB.ElementType.CODE: {
+      const valid = validateCodeOptions(options)
+      if (!valid || !options) return null
+
+      return {
+        language: options.language,
+        starterCode: options.starterCode ?? undefined,
+        ...(options.hasSampleSolution && options.sampleSolution
+          ? { sampleSolution: options.sampleSolution }
+          : {}),
+        entrypoint: options.entrypoint,
+        testCases: options.testCases,
+        executionLimits: {
+          perTestTimeoutSeconds: CODE_TEST_TIMEOUT_SECONDS,
+        },
+        hasSampleSolution: options.hasSampleSolution ?? false,
       }
     }
 

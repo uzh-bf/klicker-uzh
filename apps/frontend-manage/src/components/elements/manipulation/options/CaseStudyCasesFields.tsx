@@ -169,7 +169,7 @@ function CaseStudyCasesFields({
                                           {
                                             lower: criterion.min ?? 0,
                                             upper: criterion.max ?? 0,
-                                            step: criterion.step,
+                                            step: criterion.step ?? '',
                                           }
                                         )}
                                         )

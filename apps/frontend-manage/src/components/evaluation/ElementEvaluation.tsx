@@ -18,6 +18,7 @@ import { ActivityEvaluationType } from './ActivityEvaluation'
 import CSEvaluation from './elements/CSEvaluation'
 import CTEvaluation from './elements/CTEvaluation'
 import ChoicesEvaluation from './elements/ChoicesEvaluation'
+import CodeEvaluation from './elements/CodeEvaluation'
 import FCEvaluation from './elements/FCEvaluation'
 import FTEvaluation from './elements/FTEvaluation'
 import NREvaluation from './elements/NREvaluation'
@@ -235,6 +236,20 @@ function ElementEvaluation({
             textSize={textSize}
             // TODO: word cloud for content?
           />
+        )}
+
+        {currentInstance.__typename === 'CodeActivityEvaluationData' && (
+          <div className="flex h-full w-full flex-col" key={currentInstance.id}>
+            <div className="flex-none">
+              <QuestionCollapsible
+                content={currentInstance.content}
+                proseSize={textSize.prose}
+              />
+            </div>
+            <div className="min-h-0 flex-1">
+              <CodeEvaluation evaluation={currentInstance} />
+            </div>
+          </div>
         )}
       </div>
     </div>
