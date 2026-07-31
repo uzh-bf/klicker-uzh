@@ -1,6 +1,9 @@
 import { Priority, type HatchetClient } from '@hatchet-dev/typescript-sdk'
 import { prisma } from '@klicker-uzh/prisma'
-import type { HatchetHandlers } from '@klicker-uzh/types'
+import type {
+  HatchetHandlers,
+  PermissionPropagationTaskInput,
+} from '@klicker-uzh/types'
 import type EventEmitter from 'events'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
@@ -208,6 +211,34 @@ export function prepareHatchetTasks({
   })
   // #endregion
 
+  // ! PERMISSION PROPAGATION
+  // #region
+  // registered but never scheduled: nothing in this layer enqueues work, so the
+  // workflow stays idle until reconciliation arrives and is explicitly enabled
+  const permissionPropagationWorkflow =
+    hatchet.workflow<PermissionPropagationTaskInput>({
+      name: 'permission-propagation',
+    })
+  permissionPropagationWorkflow.task({
+    name: 'recompute-derived-permissions',
+    retries: 3,
+    fn: (input, executionContext) =>
+      handlers.handlePermissionPropagationWork(
+        input,
+        globalContext,
+        executionContext
+      ),
+  })
+  permissionPropagationWorkflow.onFailure({
+    name: 'log-permission-propagation-failure',
+    fn: (_, executionContext) => {
+      executionContext.logger.error(
+        'Permission propagation workflow failed; inspect durable failure state.'
+      )
+    },
+  })
+  // #endregion
+
   // ! CRONJOBS
   // #region
   const updateGroupAverageScores = hatchet.task({
@@ -302,6 +333,7 @@ export function prepareHatchetTasks({
     endExpiredMicroLearning,
     aggregateLiveQuizBlockResultsStandard,
     aggregateLiveQuizBlockResultsAssessment,
+    permissionPropagationWorkflow,
     createAuditLogEntry,
   }
 }
