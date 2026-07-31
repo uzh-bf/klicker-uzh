@@ -54,7 +54,9 @@ test.describe('Test creation and editing functionalities for Multiple Choice ele
     await secondAnswer.click()
     await secondAnswer.press('ControlOrMeta+A')
     await secondAnswer.press('Backspace')
-    await expect(secondAnswer).toHaveText('')
+    // an emptied Slate field renders its placeholder, so assert on the removed
+    // value instead of on empty text
+    await expect(secondAnswer).not.toContainText(MC.choices[1])
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
     await fillAnswerField(page, 1, MC.choices[1])
     await page.getByTestId('insert-question-title').click()
