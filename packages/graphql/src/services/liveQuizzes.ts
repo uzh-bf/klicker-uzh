@@ -2164,11 +2164,9 @@ export async function cancelLiveQuiz(
         if (lockedQuiz.status !== DB.PublicationStatus.PUBLISHED) {
           throw new Error('Live quiz is not running')
         }
-        if (!lockedQuiz.startedAt) {
-          throw new Error('Published live quiz has no start timestamp')
-        }
-
         // Assessment quizzes can only be aborted before the first block is activated.
+        // Keep this ahead of the startedAt check so the assessment restriction still
+        // reports its own error instead of a generic missing-timestamp error.
         if (
           lockedQuiz.isAssessmentEnabled &&
           (lockedQuiz.activeBlock ||
@@ -2179,6 +2177,10 @@ export async function cancelLiveQuiz(
           throw new Error(
             'Assessment quizzes can only be aborted before the first block is activated'
           )
+        }
+
+        if (!lockedQuiz.startedAt) {
+          throw new Error('Published live quiz has no start timestamp')
         }
 
         const instances = lockedQuiz.blocks.flatMap((block) => block.elements)

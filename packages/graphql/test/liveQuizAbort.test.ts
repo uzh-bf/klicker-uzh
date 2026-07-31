@@ -191,7 +191,7 @@ describe('Live quiz abort cleanup', () => {
     const instanceKey = `lq:${liveQuizId}:i:42:info`
 
     const redis = new Redis({
-      host: process.env.REDIS_HOST ?? 'redis_exec',
+      host: process.env.REDIS_HOST ?? 'localhost',
       port: Number(process.env.REDIS_PORT ?? 6379),
       maxRetriesPerRequest: 1,
     })

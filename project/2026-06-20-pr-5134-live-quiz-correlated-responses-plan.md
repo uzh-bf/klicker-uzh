@@ -856,6 +856,21 @@ final-remediation pass.
   `packages/export` first made `generate` succeed. Added `packages/export` to the
   workflow's build list ahead of `graphql`. `pnpm run build` from a cold cache
   passed 22/22 locally, which is why this only appeared in CI.
+- 2026-07-31: With codegen unblocked, `test-graphql` ran for the first time on
+  this branch and surfaced two further defects that local runs had not caught
+  (30 of 32 test files passed). First, the new `startedAt` guard in
+  `abortLiveQuiz` was inserted ahead of the pre-existing assessment restriction,
+  so a published assessment quiz with no start timestamp reported
+  "Published live quiz has no start timestamp" instead of
+  "Assessment quizzes can only be aborted before the first block is activated",
+  breaking the pre-existing `assessmentRestrictions` case. The assessment guard
+  now runs first, which restores the base behaviour; the `startedAt` value is
+  only needed later for Redis generation cleanup. Second, the new
+  `liveQuizAbort` test defaulted its Redis host to the Compose service name
+  `redis_exec`, which does not resolve on GitHub runners, so it failed with
+  `getaddrinfo EAI_AGAIN redis_exec`. The default is now `localhost`, matching
+  both the workflow's `REDIS_HOST` and the convention in
+  `packages/graphql/src/scripts`.
 - 2026-07-30: Desktop browser evidence at 1440x1000 confirms the aggregate-only
   state disables correlated export for a gamified course and explains why,
   while the correlated state uses no course and communicates random-label
