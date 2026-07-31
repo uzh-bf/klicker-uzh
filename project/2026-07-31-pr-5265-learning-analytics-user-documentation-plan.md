@@ -2,10 +2,10 @@
 
 ## Plan identity
 
-- Plan path: `project/2026-07-31-learning-analytics-user-documentation-plan.md`
+- Plan path: `project/2026-07-31-pr-5265-learning-analytics-user-documentation-plan.md`
 - Branch: `claude/la-user-documentation`
 - Target branch: `codex/learning-analytics-opt-out-plan` (head of [PR #5198](https://github.com/uzh-bf/klicker-uzh/pull/5198))
-- PR ID: not yet created — sixth PR on the learning analytics stack
+- PR ID: [PR #5265](https://github.com/uzh-bf/klicker-uzh/pull/5265) — sixth PR on the learning analytics stack, kept as draft
 - Worktree: `trees/la-user-docs`
 - History: continues the LA portfolio governed by
   `project/2026-07-23-pr-5198-learning-analytics-opt-out-plan.md` and
@@ -238,7 +238,21 @@ rather than a rollout detail.
 - `Evidence:` browser verification of S2 in the running PWA. Both documentation
   links render inside the disclosure notice with the correct absolute URLs, in
   English and German, at 1280px and 390px.
-- Next action: S5 — review gates and PR.
+- `Evidence:` base re-verified before publishing. `origin/codex/learning-analytics-opt-out-plan`
+  and the GitHub head of PR #5198 are both `d5a21f3b90`, which is this branch's
+  base, so R4 (stack rebase beneath the branch) did not materialise. The local
+  `codex/learning-analytics-opt-out-plan` ref sits on the abandoned parallel
+  session's line at `1c38238539`; every file that line touches is already present
+  at this branch's HEAD, so nothing needs integrating.
+- S5 done except the review gates. Branch pushed; pre-push `pnpm run build`
+  passed (22/22 tasks). Draft [PR #5265](https://github.com/uzh-bf/klicker-uzh/pull/5265)
+  opened against `codex/learning-analytics-opt-out-plan`.
+- `Risk:` the finish-gate reviews (`$security-review`,
+  `$thermo-nuclear-code-quality-review`, independent whole-branch review) were
+  **not** run. The session forbids agent delegation without an explicit user
+  request. Deferred pending the user's go-ahead; the PR stays draft until then.
+- Next action: run the three review gates once authorised, then mark the PR
+  ready together with the rest of the stack.
 
 ## Next steps
 
