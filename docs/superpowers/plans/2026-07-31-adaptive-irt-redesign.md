@@ -33,6 +33,10 @@
 - Cut scores require independent standard-setting approval; synthetic
   simulations cannot approve a scale, and cross-version trends require an
   approved anchor-based linking/equating artifact.
+- Simulation is an internal engineering verification harness only. It runs in
+  package tests and CI/release workflows; it has no Manage/PWA UI, public
+  GraphQL operation, user-triggered worker, runtime endpoint, or user-visible
+  report/status. Users cannot start simulations or inspect their artifacts.
 - V2 reporting and routing both use the same EAP posterior; no unregularized final MLE is used.
 - V2 Diagnostic scoring uses calibrated Numerical/Free Text 2PL and SC/MC/KPRIM fixed-`c` 3PL items.
 - MC/KPRIM partial scores remain feedback data but do not update the first dichotomous v2 theta model.
@@ -715,13 +719,13 @@ runtime test budget for a 60-item, depth-5 fixture.
 
 ---
 
-### Task 4: Versioned Simulation And V2 Release Gates
+### Task 4: Internal Versioned Simulation And V2 Release Gates
 
 **Files:**
 
-- Create: `packages/adaptive-learning/src/validation.ts`
+- Create: `packages/adaptive-learning/scripts/internalSimulation.ts`
 - Modify: `packages/adaptive-learning/test/simulationHarness.ts`
-- Create: `packages/adaptive-learning/test/validation.test.ts`
+- Create: `packages/adaptive-learning/test/internalSimulation.test.ts`
 - Create: `packages/adaptive-learning/test/irtV2Simulation.test.ts`
 - Create: `packages/adaptive-learning/scripts/simulationV2Scenarios.ts`
 - Create: `packages/adaptive-learning/scripts/simulationV2Gates.ts`
@@ -798,7 +802,7 @@ export type AdaptiveV2ReleasePolicy = {
   maximumP95DurationSeconds: number
 }
 
-export type AdaptiveBankValidationResult = {
+export type AdaptiveV2SimulationReport = {
   schemaVersion: 1
   inputFingerprint: string
   estimatorVersion: 'IRT_V2_EAP_GRID_1'
@@ -819,8 +823,8 @@ export type AdaptiveBankValidationResult = {
   passed: boolean
 }
 
-export function fingerprintAdaptiveBankValidationInput(...)
-export function runAdaptiveBankValidation(...): AdaptiveBankValidationResult
+export function fingerprintAdaptiveSimulationInput(...)
+export function runAdaptiveV2Simulation(...): AdaptiveV2SimulationReport
 
 export function evaluateV2ReleaseGates(
   metrics: AdaptiveV2SimulationMetrics,
@@ -833,15 +837,24 @@ export function evaluateEmpiricalReleaseGates(
 ): Array<{ name: string; passed: boolean; actual: number; required: string }>
 ```
 
+This module is developer-facing validation code. Only package tests, report
+scripts, and CI/release commands may import the scenario runner. Production
+GraphQL services, Next.js applications, Hatchet workers, and participant
+runtime code must not import or expose it. `scripts/internalSimulation.ts`
+contains the fingerprint, metric reduction, gate predicates, and scenario
+runner and is not exported from the package entry point or production bundle.
+It must not register a runtime endpoint or persist simulated learner data.
+
 - [ ] **Step 1: Port the seed-shaped model-recovery scenarios**
 
 Reproduce the current two-root, 3:2-weight, depth-5, mixed-type, 60-item seed
 fixture and theta grid from the psychometric review. Extend the existing
 harness with estimator version, explicit scale, per-root/per-leaf abilities,
 and response-profile strategy; do not create a second incompatible harness.
-Move the production-safe deterministic fingerprint, scenario runner, metric
-reduction, and gate evaluation into `src/validation.ts`; tests/report scripts
-may add richer trace formatting around that shared kernel.
+Move the deterministic fingerprint, scenario runner, metric reduction, and
+gate evaluation into `scripts/internalSimulation.ts`; tests/report scripts may
+add richer trace formatting around that internal kernel. Do not export it from
+`src/index.ts` or import it from production code.
 
 - [ ] **Step 2: Add misspecification and boundary scenarios**
 
@@ -924,8 +937,10 @@ exposure, and duration gates.
 
 Evaluate all code-owned candidate thresholds and set
 `approvedProbabilityThreshold` to the lowest candidate at or above the policy
-minimum whose complete gate set passes. If none passes, the bank validation
-fails. A course author cannot override this result.
+minimum whose complete gate set passes. If none passes, the internal release
+suite fails and v2 cannot be released. The selected threshold becomes part of
+the reviewed, code-owned classification-policy version; no course author or
+other user can run the suite, inspect its traces, or override the result.
 
 - [ ] **Step 4: Run the failing v2 simulation**
 
@@ -933,9 +948,9 @@ fails. A course author cannot override this result.
 pnpm --filter @klicker-uzh/adaptive-learning exec vitest run test/irtV2Simulation.test.ts
 ```
 
-Expected: failures identify parameter, pool, or threshold combinations that do
+Expected: local/CI failures identify parameter, pool, or threshold combinations that do
 not meet the approved gates. Do not weaken gates to make the initial synthetic
-bank pass; mark non-shipping profiles explicitly.
+suite pass; mark non-shipping profiles explicitly.
 
 - [ ] **Step 5: Generate deterministic report artifacts**
 
@@ -944,11 +959,12 @@ add v2 resolved scenarios, nullable learner traces, metrics, and gates. The
 Markdown summarizes model recovery, cut neighborhoods, classification accuracy
 conditional on classification, abstention, exposure, and length.
 
-The input fingerprint includes the exact scale/cuts/grid/prior, estimator and
-policy versions, calibrated item identities and parameters, enabled node/item
-set, effective hierarchical weights, evidence minima, caps, exposure policy,
-scenario set, and deterministic seed. Any change makes an earlier validation
-ineligible for publication.
+The input fingerprint includes the fixture scale/cuts/grid/prior, estimator and
+policy versions, simulated item identities and parameters, hierarchy/weights,
+evidence minima, caps, exposure policy, scenario set, and deterministic seed.
+Any change invalidates the earlier internal report and CI regenerates it. This
+fingerprint is release evidence for the estimator/policy implementation, not a
+user-visible or per-quiz publication record.
 
 Add package scripts:
 
@@ -1039,14 +1055,6 @@ enum AdaptiveCalibrationExportStatus {
   EXPIRED
 }
 
-enum AdaptiveBankValidationStatus {
-  REQUESTED
-  RUNNING
-  PASSED
-  FAILED
-  STALE
-}
-
 enum AdaptiveEmpiricalValidationStatus {
   SUBMITTED
   APPROVED
@@ -1066,7 +1074,7 @@ enum AdaptiveResultStatus {
 Add models `CompetenceTreeScaleVersion`, `CompetenceTreeScaleLevel`,
 `CompetenceTreeScaleApproval`, `CompetenceTreeScaleLink`,
 `AdaptiveItemCalibration`, `PracticeQuizAdaptivePublication`,
-`AdaptiveCalibrationExportRequest`, `AdaptivePracticeQuizBankValidation`, and
+`AdaptiveCalibrationExportRequest`, and
 `AdaptivePracticeQuizEmpiricalValidation`.
 
 - [ ] **Step 1: Write the schema models**
@@ -1148,21 +1156,14 @@ opaque artifact key, checksum, row count, creation/expiry timestamps, and a
 non-sensitive failure code. The artifact key is worker-only and is never
 returned by GraphQL.
 
-`AdaptivePracticeQuizBankValidation` stores config/tree/scale identity, exact
-input fingerprint, estimator/policy versions, deterministic seed, scenario
-schema version, status, aggregate metrics/gates JSON, report checksum,
-approved classification threshold, request/approval actors, and
-request/start/completion/expiry timestamps. A publication references the
-matching `PASSED` row; no participant data or learner traces are persisted in
-this record.
-
 `AdaptivePracticeQuizEmpiricalValidation` stores the exact bank/config
 fingerprint, scale/estimator/policy identity, predeclared calibration and
 holdout dataset versions/checksums, disjoint-split proof, aggregate and
 per-stratum holdout metrics/confidence bounds, status, artifact checksum,
 submitter, independent approver, and timestamps. It stores no participant rows
 or learner traces. Diagnostic publication references one matching `APPROVED`
-record in addition to the synthetic bank validation.
+record. Internal synthetic simulation artifacts are not database records and
+are not exposed to users.
 
 Add `AdaptivePracticeQuizItemExposure` as a mutable operational counter
 separate from immutable pool rows. It is keyed by publication and pool item,
@@ -1249,7 +1250,9 @@ increasing grid, an approved validation threshold in `[0.8,1)`, finite positive
 and one active publication per config through partial unique indexes. Add
 same-tree/from-to ordering constraints for links, creator-reviewer separation,
 disjoint calibration/holdout dataset identities, and composite foreign keys
-from publication to its exact synthetic and empirical validations.
+from publication to its exact empirical validation. The internal simulation
+suite remains code/CI evidence and has no Prisma model or publication foreign
+key.
 
 - [ ] **Step 6: Sync, replay, and verify**
 
@@ -1553,18 +1556,15 @@ git commit -m "feat(adaptive): manage IRT scales and calibrations"
 - Modify: `packages/graphql/src/services/adaptivePracticeQuizReadinessTypes.ts`
 - Modify: `packages/graphql/src/services/adaptivePracticeQuizReadiness.ts`
 - Modify: `packages/graphql/src/services/adaptivePracticeQuizReachability.ts`
-- Create: `packages/graphql/src/services/adaptivePracticeQuizBankValidation.ts`
 - Modify: `packages/graphql/src/services/adaptivePracticeQuizPublication.ts`
 - Modify: `packages/graphql/src/services/adaptivePracticeQuizPublicationAuthorization.ts`
 - Modify: `packages/graphql/src/schema/adaptivePracticeQuiz.ts`
 - Modify: `packages/graphql/src/schema/mutation.ts`
 - Modify: `packages/graphql/src/index.ts`
-- Modify: `packages/types/src/hatchet.ts`
-- Modify: `packages/hatchet/src/index.ts`
-- Create: `packages/graphql/src/graphql/ops/MRequestAdaptivePracticeQuizBankValidation.graphql`
 - Modify: `packages/graphql/test/adaptivePracticeQuizConfig.test.ts`
 - Modify: `packages/graphql/test/adaptivePracticeQuizReadiness.test.ts`
 - Modify: `packages/graphql/test/adaptivePracticeQuizzes.test.ts`
+- Create: `packages/graphql/test/adaptivePracticeQuizSimulationBoundary.test.ts`
 
 **Interfaces:**
 
@@ -1591,10 +1591,6 @@ ADAPTIVE_V2_RESEARCH_ANCHORS_REQUIRED
 ADAPTIVE_V2_RESEARCH_DESIGN_DISCONNECTED
 ADAPTIVE_V2_INFORMATION_GAP
 ADAPTIVE_V2_CUT_SCORE_UNREACHABLE
-ADAPTIVE_V2_BANK_VALIDATION_REQUIRED
-ADAPTIVE_V2_BANK_VALIDATION_IN_PROGRESS
-ADAPTIVE_V2_BANK_VALIDATION_STALE
-ADAPTIVE_V2_SIMULATION_GATE_FAILED
 ADAPTIVE_V2_EMPIRICAL_VALIDATION_REQUIRED
 ADAPTIVE_V2_EMPIRICAL_VALIDATION_STALE
 ADAPTIVE_V2_EMPIRICAL_VALIDATION_FAILED
@@ -1649,11 +1645,10 @@ treated as psychometric readiness.
 - [ ] **Step 4: Implement readiness gates**
 
 Diagnostic `ready` requires every effective scoring item to be calibrated and
-all approved information gates to pass. It also requires a non-expired
-`PASSED` bank validation whose fingerprint exactly matches the current scale,
-pool, versions, weights, minima, caps, exposure policy, and scenario policy.
-Missing, running, failed, expired, or fingerprint-mismatched validation rows
-produce distinct readiness codes.
+all approved deterministic information/reachability gates to pass. The
+classification threshold comes from the immutable code-owned policy version
+that passed the internal simulation suite before deployment; there is no
+per-quiz simulation state, trigger, report, or readiness code.
 
 Diagnostic also requires an independently `APPROVED` empirical validation with
 the same fingerprint/policy, predeclared disjoint calibration/holdout data, and
@@ -1668,19 +1663,16 @@ root/leaf and scale band, plus a versioned randomized field-test design with
 bounded inclusion probabilities. Research cannot collect a publishable
 calibration dataset from provisional-only or disconnected pools.
 
-- [ ] **Step 5: Add asynchronous bank validation**
+- [ ] **Step 5: Enforce the internal-only simulation boundary**
 
-`requestAdaptivePracticeQuizBankValidation` requires quiz write access and an
-approved tree scale, computes the canonical input fingerprint, creates or
-reuses an idempotent request, and enqueues `adaptive-practice-quiz-bank-validation`.
-The Hatchet handler loads only immutable item/scale/config facts, calls
-`runAdaptiveBankValidation`, stores aggregate metrics/gates/checksum, and marks
-the row `PASSED` with the lowest passing code-owned candidate classification
-threshold, or `FAILED` when no candidate passes. It stores no simulated learner
-traces and no participant records.
-
-Add tests for authorization, idempotent duplicate requests, stale completion
-after config mutation, retry safety, deterministic output, and worker failure.
+Do not add a simulation/bank-validation GraphQL query or mutation, Hatchet task,
+Prisma request model, frontend operation, readiness field, or runtime import.
+Add `adaptivePracticeQuizSimulationBoundary.test.ts` to inspect the public
+schema and package imports and assert that it contains no simulation trigger,
+status, seed, trace, metric, report checksum, or bank-validation operation.
+Also assert that ordinary authors, tree owners, course owners, participants,
+and admins cannot invoke simulation through GraphQL because no such operation
+exists. Internal engineers run Task 4's package scripts or CI workflow only.
 
 - [ ] **Step 6: Snapshot v2 publication identity**
 
@@ -1690,8 +1682,8 @@ header, then create its pool rows. Copy:
 
 - scale version and explicit cuts,
 - measurement implementation version,
-- classification threshold selected by the referenced passed validation plus
-  its policy version/credible mass,
+- classification threshold fixed by the internally simulation-gated,
+  code-owned classification policy plus its version/credible mass,
 - calibration id/model/`a/b/c`,
 - anchor/field-test role and planned administration probability,
 - item and element versions,
@@ -2106,11 +2098,9 @@ The adaptive wizard must:
 
 - default new v2 quizzes to Diagnostic,
 - require an active scale,
-- show standard-setting and empirical holdout approval separately from
-  synthetic bank validation,
+- show standard-setting and empirical holdout approval alongside deterministic
+  calibration and information-coverage readiness,
 - show calibrated/provisional/flagged counts,
-- request/retry the asynchronous exact-bank validation and show
-  queued/running/passed/failed/stale states without polling forever,
 - remove Placement from selectable presets and render it as unavailable in
   legacy/edit contexts,
 - explain Research non-classification, and
@@ -2121,8 +2111,10 @@ and approved presets, not z thresholds, mapping rules, default `a`, or raw
 parameters. `PracticeQuizPublishingModal` re-fetches mode-specific readiness,
 blocks stale Diagnostic publication, and requires an explicit Research
 non-classifying/data-collection confirmation.
-Use `data-cy="adaptive-bank-validation"` for the validation status/action and
-disable publication while it is absent, running, failed, or stale.
+No simulation action, status, metrics, report, seed, or trace appears anywhere
+in Manage. Disable publication only for user-actionable calibration,
+information-coverage, standard-setting, empirical-validation, or configuration
+readiness failures.
 
 - [ ] **Step 6: Verify Manage**
 
@@ -2319,10 +2311,11 @@ dataset links, or calibration history.
 Document and emit counters for starts, completions, abstention, classification,
 length, exposure, estimator failures, stale calibration, and shadow
 differences, plus calibration export queue age/failure/expiry. Add alert
-conditions from the design specification. Include bank-validation queue age,
-failure, runtime, stale-fingerprint, and gate-regression metrics. Document the v2 start kill switch,
-the separate course calibration-collection flag, the dedicated export-storage
-secrets, rollback without historical rewrites, and the owner/admin audit trail.
+conditions from the design specification. The internal simulation suite reports
+gate regressions only in CI/release tooling; it emits no user-visible runtime
+status or queue metrics. Document the v2 start kill switch, the separate course
+calibration-collection flag, the dedicated export-storage secrets, rollback
+without historical rewrites, and the owner/admin audit trail.
 
 - [ ] **Step 5: Verify and commit**
 
@@ -2367,8 +2360,8 @@ health, English/German, and mobile/desktop.
 Create:
 
 - an active three-band scale version,
-- deterministic test-only standard-setting, synthetic-validation, and
-  empirical-holdout approval records,
+- deterministic test-only standard-setting and empirical-holdout approval
+  records,
 - calibrated exact-version pool items spanning interiors and both cut scores,
 - provisional Research field-test items,
 - one legacy v1 published quiz,
@@ -2393,13 +2386,15 @@ Cover:
 - inspect calibration state,
 - reject provisional Diagnostic publication,
 - import/activate fixture calibration,
-- run exact-bank validation and reject a stale fingerprint after changing a
-  weight or cap,
+- reject a stale empirical-validation fingerprint after changing a weight or
+  cap,
 - require a matching approved empirical holdout artifact,
 - require the course calibration-collection gate for Research,
 - publish calibrated Diagnostic,
 - block Placement, and
-- publish Research as non-classifying.
+- publish Research as non-classifying, and
+- verify that no simulation trigger, status, report, seed, metrics, or traces
+  are present in the authoring or publication UI.
 
 - [ ] **Step 3: Add Playwright participant journeys**
 
@@ -2609,7 +2604,7 @@ migration evidence or the signed quarantine/retention decision.
 | Owner/admin/course/participant permission boundaries           | Tasks 6, 7, 9, 12                     |
 | Calibration privacy and safe export                            | Tasks 5, 6, 8                         |
 | Versioned publication, resume, rollback, legacy compatibility  | Tasks 5, 7, 8, 13                     |
-| Simulation-backed readiness and exposure checks                | Tasks 4, 5, 7, 10                     |
+| Internal-only simulation and exposure verification             | Global constraint; Tasks 4, 7, 13     |
 | Disjoint pilot holdout validation with confidence-bound gates  | Tasks 4, 5, 6, 7                      |
 | Identifiable randomized Research collection and retake policy  | Tasks 3, 6, 7, 8, 9                   |
 | Placement withheld; Research non-classifying                   | Global constraint; Tasks 7, 8, 10, 11 |
@@ -2643,18 +2638,18 @@ GraphQL contract is stable. Task 12 may begin after Tasks 7 and 9.
 
 ## Verification Matrix
 
-| Change                   | Required evidence                                                       |
-| ------------------------ | ----------------------------------------------------------------------- |
-| Pure IRT computation     | Focused Vitest, external EAP fixture, property/extreme tests            |
-| Runtime routing/stopping | V1 regression, v2 hierarchy, caps, probability classification           |
-| Simulation               | Deterministic replay, gate report, boundary and misspecification strata |
-| Standard-setting/holdout | Independent approvals, disjoint split, confidence-bound stratum gates   |
-| Prisma                   | Clean replay, populated upgrade, schema sync, no drift                  |
-| Permissions/privacy      | Positive and negative GraphQL service tests, schema redaction           |
-| Publication              | Immutable exact-version scale/calibration snapshot tests                |
-| Participant flow         | Playwright live submit/resume/result plus browser screenshots           |
-| Lecturer flow            | Fixed-release suppression tests and owner-only calibration diagnostics  |
-| Rollout                  | Shadow comparison, monitoring, rollback rehearsal, strict final review  |
+| Change                   | Required evidence                                                      |
+| ------------------------ | ---------------------------------------------------------------------- |
+| Pure IRT computation     | Focused Vitest, external EAP fixture, property/extreme tests           |
+| Runtime routing/stopping | V1 regression, v2 hierarchy, caps, probability classification          |
+| Internal simulation      | CI-only deterministic replay/report; no public API or product surface  |
+| Standard-setting/holdout | Independent approvals, disjoint split, confidence-bound stratum gates  |
+| Prisma                   | Clean replay, populated upgrade, schema sync, no drift                 |
+| Permissions/privacy      | Positive and negative GraphQL service tests, schema redaction          |
+| Publication              | Immutable exact-version scale/calibration snapshot tests               |
+| Participant flow         | Playwright live submit/resume/result plus browser screenshots          |
+| Lecturer flow            | Fixed-release suppression tests and owner-only calibration diagnostics |
+| Rollout                  | Shadow comparison, monitoring, rollback rehearsal, strict final review |
 
 ## Production Rollout Sequence
 
@@ -2665,8 +2660,9 @@ GraphQL contract is stable. Task 12 may begin after Tasks 7 and 9.
    `IRT_V2_EAP_GRID_1` in shadow, and publish no student proficiency labels.
 2. **Independent validation:** preserve the predeclared calibration/holdout
    split, import externally reviewed calibrations, approve any required scale
-   link, run synthetic and sealed-holdout gates, and record independent
-   psychometric decisions.
+   link, run the internal synthetic suite in CI plus sealed-holdout gates, and
+   record independent psychometric decisions. No simulation control or report
+   is exposed in the product.
 3. **Calibrated Diagnostic pilot:** complete privacy and rollback rehearsals,
    then enable selected courses. Monitor
    abstention, classification rates/accuracy proxies, exposure, drift, errors,

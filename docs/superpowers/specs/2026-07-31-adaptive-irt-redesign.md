@@ -68,6 +68,9 @@ The following decisions are locked:
 - No multidimensional IRT model in the initial implementation.
 - No online recalibration that changes item parameters during an attempt.
 - No student-facing raw theta, item curves, or calibration diagnostics.
+- No user-facing simulation. Synthetic scenarios and reports are internal
+  engineering/CI evidence only, with no product UI, public GraphQL operation,
+  user-triggered worker, or runtime report endpoint.
 - No polytomous IRT model in the first validated runtime. Partial scores are
   retained for future calibration work but do not yet update theta.
 
@@ -490,9 +493,10 @@ Diagnostic publication is blocked unless:
 - each required leaf satisfies content minimums,
 - test information is adequate across each reportable band and around each cut
   score,
-- all enabled roots are classifiable under the configured cap in simulation,
-- expected duration remains within the product budget,
-- item exposure simulation passes,
+- the configured caps and pool satisfy deterministic information/reachability
+  checks,
+- the configured duration and exposure ceilings satisfy the approved runtime
+  policy that passed the internal release simulation suite,
 - no calibration is flagged or stale, and
 - all existing structural, permission, grading, and snapshot checks pass.
 
@@ -650,7 +654,7 @@ published quiz to the new estimator.
 - Provisional items never update validated Diagnostic estimates.
 - Estimator/version immutability across resume and deployment.
 
-### 22.2 Simulation Matrix
+### 22.2 Internal Simulation Matrix
 
 The deterministic production-shaped matrix covers:
 
@@ -667,10 +671,15 @@ The deterministic production-shaped matrix covers:
 - repeated attempts and retake policies, and
 - provisional field-test contamination rejection.
 
+This matrix is executable only through package tests and CI/release scripts.
+It is not part of Manage or PWA, is not callable through public GraphQL or a
+user-triggered worker, and does not expose reports, traces, metrics, seeds, or
+statuses to any product user.
+
 ### 22.3 Initial Release Gates
 
-The v2 Diagnostic candidate must satisfy all of these in deterministic
-simulation and pilot holdout data:
+The v2 Diagnostic candidate must satisfy all of these in the internal
+deterministic simulation suite and separately in pilot holdout data:
 
 - absolute theta bias no greater than `0.10` in band interiors,
 - RMSE no greater than `0.50` in band interiors,
@@ -740,7 +749,8 @@ Alerts fire for:
 
 - Enable selected courses with calibrated banks.
 - Use formative language and explicit uncertainty.
-- Run holdout simulation and operational monitoring.
+- Run internal synthetic checks, sealed-holdout validation, and operational
+  monitoring without exposing simulation controls or artifacts in the product.
 
 ### Phase C: Validated Diagnostic
 
