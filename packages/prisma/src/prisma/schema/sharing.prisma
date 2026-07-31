@@ -234,6 +234,51 @@ model DerivedPermission {
     @@index([groupActivityId, permissionLevel])
 }
 
+enum PermissionPropagationMode {
+    OBJECT
+    USER
+}
+
+enum PermissionPropagationFailureCode {
+    WORKER_EXECUTION_FAILED
+    DISPATCH_FAILED
+    RECOVERY_SLO_BREACHED
+}
+
+model PermissionPropagationWork {
+    key        String                    @id
+    objectType ObjectType
+    objectId   String
+    mode       PermissionPropagationMode
+    userId     String?                   @db.Uuid
+
+    generation           BigInt    @default(1)
+    processedGeneration  BigInt    @default(0)
+    dispatchedGeneration BigInt    @default(0)
+    updateAccessRequests Boolean   @default(false)
+    lastDispatchedAt     DateTime?
+
+    dirtyAt   DateTime
+    recoverBy DateTime
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    failures PermissionPropagationFailure[]
+
+    @@index([objectType, objectId])
+}
+
+model PermissionPropagationFailure {
+    work       PermissionPropagationWork        @relation(fields: [workKey], references: [key], onDelete: Restrict, onUpdate: Cascade)
+    workKey    String
+    generation BigInt
+    code       PermissionPropagationFailureCode
+    failedAt   DateTime                         @default(now())
+
+    @@id([workKey, generation, code])
+    @@index([failedAt])
+}
+
 // #endregion
 
 // ----- ACTIVITY TEMPLATES -----
