@@ -141,6 +141,8 @@ jobs:
           pnpm run build
           cd ../util
           pnpm run build
+          cd ../export
+          pnpm run build
           cd ../graphql
           pnpm run build
           cd ../hatchet

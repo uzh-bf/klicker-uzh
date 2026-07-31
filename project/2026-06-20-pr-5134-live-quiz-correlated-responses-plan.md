@@ -843,6 +843,19 @@ final-remediation pass.
   they are cosmetic, behaviour-preserving, and would add churn to an already
   large branch. A copy-only change cannot affect the maintainability, security,
   or correctness gates, so those were not re-run.
+- 2026-07-31: Current-head CI read-back found a real defect that local builds
+  could not surface. `test-graphql.yml` hand-maintains its "Build dependency
+  packages" list (prisma, types, grading, util, graphql, hatchet,
+  hatchet-worker-general) and never built `packages/export`. This branch is the
+  first to make `packages/graphql` import `@klicker-uzh/export`
+  (`services/correlatedLiveQuizResponseExport.ts`), which `git grep` confirms did
+  not exist at base `f424f03a16`, so codegen failed with
+  `Cannot find module .../@klicker-uzh/export/dist/correlatedLiveQuizResponses.js`.
+  Reproduced locally by removing `packages/export/dist` and running the graphql
+  `generate` script, which produced the identical error; building
+  `packages/export` first made `generate` succeed. Added `packages/export` to the
+  workflow's build list ahead of `graphql`. `pnpm run build` from a cold cache
+  passed 22/22 locally, which is why this only appeared in CI.
 - 2026-07-30: Desktop browser evidence at 1440x1000 confirms the aggregate-only
   state disables correlated export for a gamified course and explains why,
   while the correlated state uses no course and communicates random-label
