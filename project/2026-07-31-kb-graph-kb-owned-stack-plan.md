@@ -1,0 +1,81 @@
+# W9 — KB-owned knowledge graph (stacked)
+
+Roadmap: [2026-07-24-kb-production-v1-roadmap-plan.md](2026-07-24-kb-production-v1-roadmap-plan.md), package W9.
+Decision record: [ADR 0001](../docs/adr/0001-kb-owns-two-derived-projections.md).
+Base: `kb-poc` @ `38625cbbf`. Worktree: `trees/kb-graph-stack`. Gate 1 approved 2026-07-31.
+
+## Provenance
+
+- Parked [PR #5206](https://github.com/uzh-bf/klicker-uzh/pull/5206) (`feat/kb-knowledge-graph-parked` @ `9b5fc7af2`) is **Patrick Louis Aldover's** work — all 25 commits in `b4a99893c..9b5fc7af2`, 2026-07-20 to 2026-07-22. It is the base to evolve, not to rebuild. Preserve the branch and PR untouched until the stack validates against it.
+- [PR #5116](https://github.com/uzh-bf/klicker-uzh/pull/5116) (`codex/falkordb-chatbot-graphs`, `packages/falkordb`, React Flow drawer) stays open as a reference for its visuals and package patterns. Not merged, not closed.
+- The branch forked at `6b86f9ec7`; `kb-poc` has since advanced 75 commits (W1–W8), rewriting the ingestion ledger, serving identity, deletion fencing, quota, and upload tickets underneath the KG code.
+
+## Rulings (2026-07-31 grill)
+
+- R1 One active build per KB, conditional-update claim. Repeat request for the building revision returns it. KB advancing mid-build: build finishes and publishes for its own revision; no cancel, no auto-follow-up, no blocked edits.
+- R2 KB revision = digest over active serving set (`resourceId` + `activeContentSha256`), computed on demand, stamped per build. No column on `KB`.
+- R3 New platform-initiated refresh event; handler creates a ledger row from the platform operation id and advances serving identity. Existing attempt-scoped guards untouched.
+- R4 Build request pins `buildId`, `kbId`, digest, per-resource hashes. External service resolves to **processed documents** and fails on hash mismatch.
+- R5 Webhook-primary + cron poll backstop. Configurable generous timeout fails a wedged build and releases the slot. Late success accepted only if digest still matches.
+- R6 No scheduled rebuilds. Explicit lecturer request only — builds spend the lecturer's AI budget.
+- R7 Named quality tier, mapped to models in server config, never in source.
+- R8 Build controls in a dedicated card in `KnowledgeBaseDetail`.
+- R9 Stale label is **lecturer-only**, on KB and graph views. Students get no staleness signal. (Narrows the 2026-07-30 "every graph-backed feature" ruling.)
+- R10 One ADR, establishing `docs/adr/`.
+- R11 Nothing lands in FalkorDB until complete; finished graph written in one step. Versioning via GraphML export to Blob.
+- R12 GraphML under a reserved prefix in the owner's KB container, excluded from resource quota, bounded retention swept by `kbMaintenance`.
+- R13 Lecturer viewer in KB workspace **and** student viewer in chat, both KB-owned.
+- R14 Carry Patrick's 25 commits by squashing to ~5 layer-aligned commits (him as author), rebased onto `kb-poc`, then refactor forward.
+
+## Porting Patrick's 25 commits (R14)
+
+His commits interleave layers rather than arriving in layer order, so contiguous squashing cannot produce layer-aligned groups. Group by file path instead. The range splits into **56 added** files and **44 modified** files:
+
+- **Added files port verbatim** as Patrick-authored commits, one per layer — his code arrives as his commits, and the adaptation to the KB-owned design lands as separate commits on top, so the two are never conflated.
+- **Modified files are hand-merged inside each layer's refactor.** Taking his versions verbatim would revert W1–W8: `packages/prisma/src/prisma/schema/knowledge.prisma`, `packages/hatchet/src/kbIngestion.ts`, `packages/graphql/src/services/knowledge.ts`, and `packages/types/src/hatchet.ts` all evolved substantially after the fork. Generated artifacts (`ops.ts`, `ops.schema.json`, `public/*.json`, `public/schema.graphql`, `pnpm-lock.yaml`) are regenerated, never ported.
+
+| Layer | Added files ported |
+| --- | --- |
+| L2 | `packages/knowledge-graph/**` (15), `packages/types/src/knowledgeGraph.ts` |
+| L3 | `packages/hatchet/src/kbGraphIngestion.ts` + test, `packages/graphql/src/schema/chatbotKnowledgeGraph.ts`, `services/chatbotKnowledgeGraphs.ts` + test, 6 `.graphql` ops |
+| L4 | `packages/shared-components/src/knowledgeGraph/**` (6), `ChatbotKnowledgeGraphPanel.tsx`, `ChatbotKnowledgeGraphPreview.tsx` |
+| L5 | `apps/chat/**` knowledge-graph route, page, components, server lib, 3 tests (10) |
+
+Deliberately **not** ported (11 files), each explained at union validation:
+
+- `docs/superpowers/**` (6) — design docs for the rejected chatbot-owned architecture, superseded by ADR 0001 and preserved in PR #5206.
+- `project/screenshots/*chatbot-knowledge-graph*` (4) — verification screenshots of the chatbot-owned UI, replaced by fresh ones at L4/L5.
+- `packages/prisma/.../20260720150000_chatbot_knowledge_graph/migration.sql` — creates `ChatbotKnowledgeGraph`; the KB-owned migration is written fresh at L2 rather than created and then dropped.
+
+## Layers
+
+Each layer is independently functional, independently reviewable, green at its own tip. Drafts until actionable. No merge, un-draft, or deploy without explicit authority.
+
+**L1 `feat/kb-ingestion-refresh-event`** — new platform-initiated refresh event type in `packages/graphql/src/services/knowledgeWebhooks.ts`; ledger row from the platform operation id; serving-identity advance; attempt-scoped guards preserved for lecturer-initiated runs. Carries this plan, ADR 0001, and the roadmap W9 revision. No parked equivalent — new work. Ships value alone: keeps RAG current regardless of graph work.
+
+**L2 `feat/kb-graph-model`** — re-home `packages/knowledge-graph` and its schema from chatbot to KB: `kb:<kbId>` graph identity, KB-owned build state and published-build record replacing `ChatbotKnowledgeGraph`, digest computation (R2), publication rule changed so a stale graph keeps serving (R11 — the parked rule returned `DIRTY` = not published). Migration. `docs/domain-model.md` KB section lands here.
+
+**L3 `feat/kb-graph-lifecycle`** — replace the direct Hatchet generation bridge with external-service dispatch on the pinned manifest (R4), reconciliation (R5), timeout release, GraphML export recording and retention sweep in `kbMaintenance` (R12), quality-tier config mapping (R7); GraphQL status/rebuild/read ops re-pointed at the KB with KB-edit authorization.
+
+**L4 `feat/kb-graph-manage-ui`** — move build controls from `ChatbotKnowledgeGraphPanel` to a dedicated card in `KnowledgeBaseDetail` (R8): status, stale label (R9), tier selector, rebuild with cost stated; lecturer viewer keeping Patrick's Cytoscape presentation and accessible DOM fallback.
+
+**L5 `feat/kb-graph-chat-viewer`** — Patrick's chat graph workspace and viewer, re-owned by the KB binding (R13). No staleness surface here (R9).
+
+## Verification
+
+- Per layer: `pnpm run check`, `pnpm run lint`, focused vitest, in-container per [klicker-verification-loop](../docs/index.md). Never run host-side `pnpm install`/`build`.
+- L1/L3: webhook and reconciliation unit coverage including the refresh event, timeout release, and late-success digest mismatch.
+- L4/L5: `agent-browser` against the stack's own devcontainer with before/after screenshots; delegated login (`lecturer`/`abcd`).
+- Local FalkorDB: harvest the docker-compose service and env wiring from PR #5116 rather than inventing one.
+- Union validation before any layer leaves draft: compare the stack against `b4a99893c..9b5fc7af2` and explain every deliberate difference.
+
+## Boundaries
+
+- Graph generation stays outside this repository. Do not reimplement it here.
+- PRs #5174, #5206, #5116 stay untouched drafts. No merge, un-draft, deploy, or external-platform mutation.
+- The W8 security review was skipped by explicit user choice; that is not authority for a broad W9 security assessment. Ask first.
+- Public repo: no credentials, no real lecturer or student data.
+
+## Progress
+
+- 2026-07-31: Design grill complete (14 rulings). Gate 1 approved. Worktree `trees/kb-graph-stack` created from `kb-poc` @ `38625cbbf` on `feat/kb-ingestion-refresh-event`. ADR 0001 written, `docs/domain-model.md` KB section rewritten to the rulings, roadmap W9 row revised. Nothing committed yet.
