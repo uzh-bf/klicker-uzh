@@ -1,0 +1,47 @@
+name: Test Helm deployment manifests
+
+on:
+  push:
+    branches: ['v3', 'v3*']
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  filter:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Check for changes
+        id: check
+        uses: ./.github/actions/changed-paths
+        with:
+          pattern: '^(deploy/charts/klicker-uzh-v3/|deploy/env-uzh-(prd|stg)/values\.yaml|\.github/workflows/test-helm\.yml|\.github/actions/changed-paths/)'
+
+  test-helm:
+    needs: filter
+    if: needs.filter.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v4.2.3
+
+      - name: Lint production values
+        run: helm lint deploy/charts/klicker-uzh-v3 --values deploy/env-uzh-prd/values.yaml
+
+      - name: Lint staging values
+        run: helm lint deploy/charts/klicker-uzh-v3 --values deploy/env-uzh-stg/values.yaml
+
+      - name: Verify request address manifests
+        run: bash deploy/charts/klicker-uzh-v3/test/request-address.sh
