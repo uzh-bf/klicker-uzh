@@ -296,6 +296,65 @@ type AssessmentParticipant {
   id: String!
 }
 
+type AssessmentReportComparison {
+  cohortSize: Int!
+  histogram: [AssessmentReportHistogramBin!]!
+  percentile: Int!
+}
+
+type AssessmentReportCourse {
+  displayName: String!
+  id: String!
+  name: String!
+}
+
+enum AssessmentReportCredentialStatus {
+  ACTIVE
+  REVOKED
+  SUPERSEDED
+}
+
+type AssessmentReportHistogramBin {
+  binEnd: Float!
+  binStart: Float!
+  count: Int!
+}
+
+enum AssessmentReportIdentitySource {
+  COURSE_INVITATION
+}
+
+type AssessmentReportResults {
+  availableBasePoints: Float!
+  availableBonusPoints: Float!
+  availableCorrectnessPoints: Float!
+  availableTotalPoints: Float!
+  basePoints: Float!
+  bonusPoints: Float!
+  correctnessPoints: Float!
+  totalPoints: Float!
+}
+
+type AssessmentReportSnapshot {
+  comparison: AssessmentReportComparison
+  course: AssessmentReportCourse!
+  results: AssessmentReportResults!
+  subject: AssessmentReportSubject!
+  version: Int!
+}
+
+type AssessmentReportSubject {
+  email: String!
+  source: AssessmentReportIdentitySource!
+}
+
+enum AssessmentReportVerificationStatus {
+  ACTIVE
+  DATA_UNAVAILABLE
+  REVOKED
+  SUPERSEDED
+}
+
 type AssessmentResultsCourse {
   availableBasePoints: Float!
   availableBonusPoints: Float!
@@ -615,7 +674,7 @@ type ChatModelCapability {
   fallback: Boolean!
   id: String!
   name: String!
-  supportedReasoningEfforts: [ReasoningEffort!]!
+  supportedReasoningEfforts: [String!]!
   supportsReasoning: Boolean!
 }
 
@@ -660,12 +719,12 @@ type ChatbotMcpConfigurationSummary {
 }
 
 type ChatbotReasoningConfig {
-  efforts: [ReasoningEffort!]!
+  efforts: [String!]!
   modelId: String!
 }
 
 input ChatbotReasoningConfigInput {
-  efforts: [ReasoningEffort!]!
+  efforts: [String!]!
   modelId: String!
 }
 
@@ -957,6 +1016,21 @@ type CourseAnalyticsStatus {
   analyticsLastComputedAt: Date
   areAnalyticsValid: Boolean!
   chatAnalyticsValidAt: Date
+}
+
+type CourseAssessmentReportRecord {
+  id: ID!
+  issuedAt: Date!
+  revokedAt: Date
+  status: AssessmentReportCredentialStatus!
+  subjectEmail: String!
+  supersededAt: Date
+  verificationToken: String!
+}
+
+type CourseAssessmentReportRecordPage {
+  records: [CourseAssessmentReportRecord!]!
+  totalCount: Int!
 }
 
 type CourseLeaderboard {
@@ -1609,6 +1683,13 @@ type InstanceUpdateActivityInfo {
   status: PublicationStatus!
 }
 
+type IssuedAssessmentReport {
+  issuedAt: Date!
+  snapshot: AssessmentReportSnapshot!
+  status: AssessmentReportCredentialStatus!
+  token: String!
+}
+
 """
 The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
@@ -1851,6 +1932,7 @@ type Mutation {
   gradeGroupActivitySubmission(gradingDecisions: GroupActivityGradingInput!, groupActivityId: String!, id: Int!): GroupActivityInstance
   grantPrivatePreviewAccess(email: String!): Int
   importCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!): Boolean!
+  issueAssessmentReport(courseId: String!): IssuedAssessmentReport!
   joinCourseLeaderboard(courseId: String!): ParticipantLearningData
   joinCourseWithPin(pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: String!): String
@@ -1896,6 +1978,7 @@ type Mutation {
   resolveFeedback(id: Int!, isResolved: Boolean!, liveQuizId: String!): Feedback
   respondToElementStack(courseId: String!, isOwner: Boolean!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, liveQuizId: String!, responseContent: String!): Feedback
+  revokeAssessmentReport(id: String!): CourseAssessmentReportRecord!
   revokeObjectAccess(objectId: String!, objectType: ObjectType!, permissionId: Int!): Int
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
   sendMagicLink(usernameOrEmail: String!): Boolean
@@ -2315,6 +2398,25 @@ type PracticeQuiz {
   updatedAt: Date
 }
 
+type PublicAssessmentReportCourse {
+  displayName: String!
+  name: String!
+}
+
+type PublicAssessmentReportSnapshot {
+  comparison: AssessmentReportComparison
+  course: PublicAssessmentReportCourse!
+  results: AssessmentReportResults!
+  subject: AssessmentReportSubject!
+  version: Int!
+}
+
+type PublicAssessmentReportVerification {
+  issuedAt: Date!
+  snapshot: PublicAssessmentReportSnapshot
+  status: AssessmentReportVerificationStatus!
+}
+
 enum PublicationStatus {
   DRAFT
   ENDED
@@ -2333,6 +2435,7 @@ type Query {
   activityDetails(activityId: String!, activityType: ActivityType!): ActivityDetails
   artificialInstance(elementId: Int!): ElementInstance
   assessmentCourseParticipants(courseId: String!): [AssessmentParticipant!]
+  assessmentReportVerification(token: String!): PublicAssessmentReportVerification
   assessmentResultsCourse(courseId: String!): AssessmentResultsCourse
   assessmentResultsLiveQuiz(liveQuizId: String!): AssessmentResultsLiveQuiz
   basicCourseInformation(courseId: String!): StudentCourse
@@ -2347,6 +2450,8 @@ type Query {
   controlLiveQuiz(id: String!): LiveQuiz
   countCatalogSharingRequests: Int!
   course(id: String!): Course
+  courseAssessmentReportRecordCount(courseId: String!): Int!
+  courseAssessmentReportRecords(courseId: String!, numEntries: Int, offset: Int, searchString: String, statusFilter: [AssessmentReportCredentialStatus!]): CourseAssessmentReportRecordPage!
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   element(id: Int!): Element
   endedLiveQuizzesCourse(courseId: String!): [LiveQuizSelectionItem!]
@@ -2460,14 +2565,6 @@ type QuizAnalytics {
   activityType: ActivityType!
   courseParticipants: Int!
   instanceQuizAnalytics: [InstanceQuizAnalytics!]!
-}
-
-enum ReasoningEffort {
-  high
-  low
-  medium
-  minimal
-  none
 }
 
 type ReducedActivityInfo {

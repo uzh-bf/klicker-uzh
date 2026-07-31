@@ -18,6 +18,7 @@ from src.modules.utils import (
     analytics_mode,
     analytics_window_since,
     check_analytics_cancellation,
+    exclusive_day_end,
     scoped_course_ids,
 )
 
@@ -48,7 +49,7 @@ def main() -> None:
         print(f"Found {len(chatbots)} chatbots to cluster{scope_note}")
 
         win_start = "2022-10-23T00:00:00.000Z"
-        win_end = datetime.now().strftime("%Y-%m-%d") + "T23:59:59.999Z"
+        win_end = exclusive_day_end(datetime.now().strftime("%Y-%m-%d"))
 
         total_rows = 0
         failures = []

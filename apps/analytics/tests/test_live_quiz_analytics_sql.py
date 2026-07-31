@@ -13,7 +13,7 @@ def test_aggregated_query_ranks_attempts_per_participant_and_instance():
 
     assert 'PARTITION BY lqr."participantId", lqr."instanceId"' in _AGGREGATED_SQL
     assert "attempt_asc = 1" in _AGGREGATED_SQL
-    assert "attempt_desc = 1" in _AGGREGATED_SQL
+    assert "attempt_asc = attempt_count" in _AGGREGATED_SQL
     assert "JOIN LATERAL" not in _AGGREGATED_SQL
 
 

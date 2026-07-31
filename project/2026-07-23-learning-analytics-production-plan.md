@@ -1057,9 +1057,36 @@ the repository script that replaces it before continuing.
   frontend builds but could not resolve Google Fonts; the allowed rerun
   completed without a repository failure. Existing Rollup, page-size,
   translation, and cache warnings remain non-blocking.
-- Active: Request explicit publication confirmation for the verified stacked
-  heads. After publication, update both PR descriptions and read CI to a
-  terminal result without merging or deploying.
+- 2026-07-30: Publication was approved with an explicit request for clean
+  stacked PRs. The 94 implementation commits were replayed onto current `v3`.
+  The original verified heads remain available as
+  `backup/chat-analytics-pre-restack-20260730` and
+  `backup/analytics-phase-a-pre-restack-20260730`.
+- 2026-07-30: A final tree comparison against the verified Phase 2 safety ref
+  found no implementation difference. After `v3` advanced once more, the
+  stack rebased cleanly onto `f424f03a16`; the only resulting difference from
+  the safety ref was the five-line upstream `AGENTS.md` change.
+- 2026-07-30: An initial 14-layer publication was rejected as over-sliced.
+  The same implementation was consolidated into four milestone PRs at
+  independently valid endpoints:
+
+  | Milestone | Draft PR | Review scope |
+  | --- | --- | --- |
+  | 1 | [#5199](https://github.com/uzh-bf/klicker-uzh/pull/5199) | Analytics domains, incremental recomputation, privacy, and deterministic verification |
+  | 2 | [#5073](https://github.com/uzh-bf/klicker-uzh/pull/5073) | Indexed SQLAlchemy runtime, course API, dry-run diagnostics, correctness guards, and native Python Hatchet |
+  | 3 | [#5230](https://github.com/uzh-bf/klicker-uzh/pull/5230) | Consent and finalization convergence, dry-run decomposition, and curated model ownership |
+  | 4 | [#5231](https://github.com/uzh-bf/klicker-uzh/pull/5231) | Generated artifacts and final runtime reconciliation with current `v3` |
+
+- 2026-07-30: Fresh stack-head Analytics verification passes Ruff format and
+  lint across 138 files and 184 tests with 15 PostgreSQL-only skips. The
+  database-enabled 199-test result, repository `check:all`, and 22-task Node 24
+  production build remain earlier verification of the identical
+  implementation tree. The fresh-worktree repository check ran before
+  generated workspace artifacts existed, and the pre-push build later stopped
+  on `ENOSPC`; both are recorded as warnings in the draft PR descriptions.
+- Active: Read the four draft PR checks to a terminal result, update stale
+  descriptions if GitHub reports a different branch range, and stop without
+  merging or deploying.
 
 ## Finish evidence
 
@@ -1073,9 +1100,8 @@ the repository script that replaces it before continuing.
 
 ## Next Steps
 
-1. After explicit publication confirmation, push `chat-analytics` and
-   `analytics-phase-a`, update both stacked draft PR descriptions, and read CI
-   to a terminal result without merging or deploying.
+1. Read every milestone draft PR check to a terminal result. Fix only failures
+   caused by the stack; leave all PRs draft and do not merge or deploy.
 2. Before staging, scan the exact image digest for CVEs, confirm the deployed
    Hatchet control-plane compatibility, and verify the owning
    ExternalSecret/Infisical sync is ready.
