@@ -388,6 +388,8 @@ export type AdaptivePosterior = {
 
 export type AdaptiveScoredItem = {
   id: number | string
+  itemType: AdaptiveItemType
+  choiceCount: number | null
   model: AdaptiveItemModel
   calibrationId: string
   discrimination: number
@@ -419,6 +421,7 @@ export function combineWeightedPosteriors(input: {
 export function classifyPosterior(input: {
   posterior: AdaptivePosterior
   scale: AdaptiveScaleDefinition
+  credibleMass: number
   probabilityThreshold: number
   evidenceSatisfied: boolean
   evidenceReachable: boolean
@@ -437,7 +440,7 @@ export function classifyPosterior(input: {
 }
 ```
 
-- [ ] **Step 1: Add EAP recovery and extreme-string tests**
+- [x] **Step 1: Add EAP recovery and extreme-string tests**
 
 ```ts
 it('recovers the trusted reference posterior', () => {
@@ -477,7 +480,7 @@ generator command, Node/pnpm versions, tolerances, fixture SHA-256, and
 generator-source SHA-256. CI verifies both checksums without regenerating the
 fixture implicitly.
 
-- [ ] **Step 2: Add probability-classification tests**
+- [x] **Step 2: Add probability-classification tests**
 
 ```ts
 it('abstains when no band reaches the approved probability', () => {
@@ -500,7 +503,7 @@ it('abstains when no band reaches the approved probability', () => {
 })
 ```
 
-- [ ] **Step 3: Add composite tests**
+- [x] **Step 3: Add composite tests**
 
 ```ts
 it('combines root posteriors without counting descendants again', () => {
@@ -517,7 +520,7 @@ it('combines root posteriors without counting descendants again', () => {
 })
 ```
 
-- [ ] **Step 4: Run the failing tests**
+- [x] **Step 4: Run the failing tests**
 
 ```bash
 pnpm --filter @klicker-uzh/adaptive-learning exec vitest run test/posterior.test.ts test/composite.test.ts test/classification.test.ts
@@ -525,7 +528,7 @@ pnpm --filter @klicker-uzh/adaptive-learning exec vitest run test/posterior.test
 
 Expected: failure because the posterior and composite modules do not exist.
 
-- [ ] **Step 5: Implement log-space EAP**
+- [x] **Step 5: Implement log-space EAP**
 
 Build grid points from `gridMin` through `gridMax`, including both endpoints.
 For each point:
@@ -552,18 +555,22 @@ the explicit `credibleMass`. Point-level mapping remains lower-inclusive and
 maps an exact cut to the higher level, while posterior probability on a grid
 atom exactly equal to a cut is split equally between its adjacent bands to
 avoid grid-alignment bias. All band probabilities must sum to one.
+Reject duplicate item or calibration identities so the same evidence cannot be
+counted twice.
 
-- [ ] **Step 6: Implement deterministic weighted convolution**
+- [x] **Step 6: Implement deterministic weighted convolution**
 
 Validate every posterior and weight before filtering zero-weight entries.
 Reject empty input, duplicate keys, all-zero/negative/non-finite weights,
 mismatched point/probability lengths, non-canonical grids, negative/non-finite
 probabilities, and zero probability totals. Normalize weights using
-maximum-weight scaling, sort entries by stable root key, map weighted root mass
-onto adjacent composite bins while preserving the first moment, and convolve
-probability masses. Renormalize after each convolution and derive summary
-fields through the same posterior summarizer used by EAP with the explicitly
-passed `credibleMass`. Do not use `Math.random`.
+maximum-weight scaling and sort entries by stable root key. Combine roots as
+sequential convex averages on the canonical grid, map every weighted pair sum
+onto adjacent bins while preserving the first moment, and renormalize after
+each convolution. This keeps intermediate values inside valid one-sided and
+offset scale domains. Derive summary fields through the same posterior
+summarizer used by EAP with the explicitly passed `credibleMass`. Do not use
+`Math.random`.
 
 Test every input permutation, proportional weight scaling, normalization,
 single-root exact identity, and mean preservation within `1e-12`. The expected
@@ -571,12 +578,17 @@ independent-root variance is `sum(normalizedWeight^2 * posterior.variance)`;
 the accepted discretization difference is bounded by
 `positiveEntryCount * maximumGridInterval^2 / 4 + 1e-12`.
 
-- [ ] **Step 7: Implement classification precedence**
+- [x] **Step 7: Implement classification precedence**
 
 Reject invalid thresholds/posteriors and throw an integrity error when
 `integritySatisfied` is false; integrity failures never become a result label.
+Runtime-validate every evidence, reachability, coverage, and integrity guard as
+a boolean. Recompute the posterior summary and band masses from canonical grid
+points with the explicit `credibleMass`, and reject contradictory caller-
+supplied summary fields before classification.
 `ABANDONED` never classifies. Both `CLASSIFIED` and `BETWEEN_LEVELS` require
-minimum evidence. With those guards:
+minimum evidence and calibrated coverage. Missing calibrated coverage returns
+`POOL_LIMITED` before posterior mass is considered. With those guards:
 
 1. return `CLASSIFIED` when one band reaches the snapshotted threshold,
 2. return `BETWEEN_LEVELS` when exactly two unambiguously leading adjacent
@@ -600,7 +612,7 @@ winning-band mass for `CLASSIFIED`, combined adjacent-band mass for
 `BETWEEN_LEVELS`, and zero for the remaining internal decisions; GraphQL maps
 non-classifying zero to `null`.
 
-- [ ] **Step 8: Verify and commit**
+- [x] **Step 8: Verify and commit**
 
 ```bash
 pnpm --filter @klicker-uzh/adaptive-learning test
