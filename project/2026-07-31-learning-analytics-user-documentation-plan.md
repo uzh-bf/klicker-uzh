@@ -115,11 +115,17 @@ rather than a rollout detail.
 
 - `Do:` Add documentation links to the `learningAnalytics` block in
   `packages/i18n/messages/en.ts` and `de.ts`, both pointing at the English
-  lecturer and student pages. Bump `LEARNING_ANALYTICS_DISCLOSURE_VERSION`.
-- `Check:` Update the tests asserting the version constant; run the focused
-  GraphQL LA suite and the PWA validation tests.
-- `Risk:` Missing a version-asserting test leaves the suite red. Enumerate all
-  references to the constant before editing.
+  lecturer and student pages.
+- `Decision:` Do **not** bump `LEARNING_ANALYTICS_DISCLOSURE_VERSION`, reversing
+  the planned bump. The addition is a pointer to supplementary documentation; it
+  changes nothing about which data is used, who sees it, or what participants
+  may do, so it does not warrant invalidating consent.
+- `Evidence:` The version literal is additionally hardcoded in ten analytics
+  SQL and Python files plus their fixtures, so a bump is a coordinated
+  multi-file edit across the reviewed milestone-4 computation code. Reserve that
+  churn for a substantive disclosure change, such as one required by legal
+  review.
+- `Check:` Typecheck the PWA and run its unit tests.
 - `Commit:` `feat(i18n): link learning analytics documentation from the disclosure`
 
 ### S3 — Lecturer documentation page
@@ -185,7 +191,14 @@ rather than a rollout detail.
 - `Risk:` The database-backed check (pipeline run against the seeded data)
   is outstanding and is batched into S5 with the browser verification so the
   environment is started once.
-- Next action: S2 — disclosure links and version bump.
+- S2 implemented. The participant disclosure now carries a sentence linking the
+  student and lecturer documentation pages, in both locales, rendered as
+  external links inside the existing info notification. The German string names
+  the documentation as English. The disclosure version was deliberately not
+  bumped; see the S2 decision.
+- `Evidence:` `pnpm --filter @klicker-uzh/frontend-pwa check` and its unit
+  tests pass; prettier clean.
+- Next action: S3 — lecturer documentation page.
 
 ## Next steps
 
