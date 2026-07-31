@@ -871,6 +871,23 @@ final-remediation pass.
   `getaddrinfo EAI_AGAIN redis_exec`. The default is now `localhost`, matching
   both the workflow's `REDIS_HOST` and the convention in
   `packages/graphql/src/scripts`.
+- 2026-07-31: The Playwright shards that had been failing since `654fa2c10b`
+  turned out to be caused by this branch rather than the shard flakiness seen on
+  unrelated PRs; the merge-base run on `v3` was green. Four shards failed, and
+  every failing spec bottomed out in one interaction: a timed-out click on
+  `next-or-submit` in the Live Quiz wizard, with the element library's
+  "Create Element" button intercepting the pointer event. The new response
+  storage control made the settings step taller than the wrapper's `min-h-96`
+  floor in `ActivityCreation`, and because that wrapper is a shrinkable item in
+  the `Layout` flex column, the column shrank it back to exactly 384 px (the
+  height measured in the CI failure screenshot) and the step navigation
+  overflowed onto the library toolbar underneath. The `W-activity-log` and
+  `C-control` assertion failures were downstream, since those specs never got
+  their live quiz created. Adding `shrink-0` to the live quiz branch of that
+  wrapper keeps it at content height and lets the page scroll instead. All eight
+  shards, `test-graphql`, `check-types`, and `build-and-compile` pass on
+  `a95e399708`. This fix has no local browser evidence: no dev stack was running
+  for this worktree, so CI is the verification.
 - 2026-07-30: Desktop browser evidence at 1440x1000 confirms the aggregate-only
   state disables correlated export for a gamified course and explains why,
   while the correlated state uses no course and communicates random-label
