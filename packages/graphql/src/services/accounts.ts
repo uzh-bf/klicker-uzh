@@ -1229,6 +1229,235 @@ export async function changeInitialSettings(
   return user
 }
 
+async function seedDemoSelectionAndCaseStudyElements(ctx: ContextWithUser) {
+  return ctx.prisma.$transaction(async (prisma) => {
+    const answerCollection = await prisma.answerCollection.create({
+      data: {
+        name: 'Demo Teaching Activities',
+        description:
+          'Reusable teaching activities used by the demo selection and case study questions.',
+        entries: {
+          create: [
+            'Live poll',
+            'Think-pair-share',
+            'Small-group case discussion',
+            'One-minute paper',
+            'Mini-lecture',
+            'Instructor demonstration',
+          ].map((value) => ({ value })),
+        },
+        owner: { connect: { id: ctx.user.sub } },
+      },
+      include: { entries: true },
+    })
+
+    const getEntryId = (value: string) => {
+      const entry = answerCollection.entries.find(
+        (candidate) => candidate.value === value
+      )
+      if (!entry) {
+        throw new Error(`Demo answer collection entry missing: ${value}`)
+      }
+      return entry.id
+    }
+
+    const questionSE = await prisma.element.create({
+      data: {
+        name: 'Demoquestion SE',
+        type: DB.ElementType.SELECTION,
+        content:
+          'You are teaching a large lecture and want to collect an individual response from every student. Select the two activities that meet this requirement.',
+        explanation:
+          'Live polls and one-minute papers collect an individual response from each student. Other activities can be highly interactive, but do not necessarily capture a response from everyone.',
+        basePoints: true,
+        pointsMultiplier: 1,
+        options: {
+          hasSampleSolution: true,
+          numberOfInputs: 2,
+        },
+        owner: { connect: { id: ctx.user.sub } },
+        tags: {
+          connect: {
+            ownerId_name: { ownerId: ctx.user.sub, name: 'Demo Tag' },
+          },
+        },
+        answerCollection: { connect: { id: answerCollection.id } },
+        answerCollectionItems: {
+          connect: [
+            { id: getEntryId('Live poll') },
+            { id: getEntryId('One-minute paper') },
+          ],
+        },
+      },
+      include: {
+        answerCollection: { include: { entries: true } },
+        answerCollectionItems: true,
+      },
+    })
+
+    const questionCS = await prisma.element.create({
+      data: {
+        name: 'Demoquestion CS',
+        type: DB.ElementType.CASE_STUDY,
+        content:
+          'Compare four teaching activities in two teaching settings. For each case, rate every activity by expected student engagement, preparation effort, and in-class time.',
+        explanation:
+          'The sample ranges are illustrative rather than universally correct. Appropriate ratings depend on how each activity is designed and facilitated.',
+        basePoints: true,
+        pointsMultiplier: 1,
+        options: {
+          hasSampleSolution: true,
+          criteria: [
+            {
+              id: 'demo-engagement',
+              name: 'Expected engagement',
+              order: 0,
+              min: 1,
+              max: 5,
+              step: 1,
+            },
+            {
+              id: 'demo-preparation',
+              name: 'Preparation effort',
+              order: 1,
+              min: 1,
+              max: 5,
+              step: 1,
+            },
+            {
+              id: 'demo-time',
+              name: 'In-class time',
+              order: 2,
+              min: 1,
+              max: 20,
+              step: 1,
+              unit: 'min',
+            },
+          ],
+          cases: [
+            {
+              id: 'demo-large-lecture',
+              title: 'Large introductory lecture',
+              description:
+                'You are teaching an introductory lecture with 300 students in fixed seating. You have at most 20 minutes for an activity and need an approach that works at scale.',
+              order: 0,
+              solutions: [
+                {
+                  itemId: getEntryId('Live poll'),
+                  criteriaSolutions: [
+                    { criterionId: 'demo-engagement', min: 3, max: 5 },
+                    { criterionId: 'demo-preparation', min: 2, max: 3 },
+                    { criterionId: 'demo-time', min: 3, max: 7 },
+                  ],
+                },
+                {
+                  itemId: getEntryId('Think-pair-share'),
+                  criteriaSolutions: [
+                    { criterionId: 'demo-engagement', min: 4, max: 5 },
+                    { criterionId: 'demo-preparation', min: 1, max: 2 },
+                    { criterionId: 'demo-time', min: 6, max: 10 },
+                  ],
+                },
+                {
+                  itemId: getEntryId('Small-group case discussion'),
+                  criteriaSolutions: [
+                    { criterionId: 'demo-engagement', min: 3, max: 4 },
+                    { criterionId: 'demo-preparation', min: 3, max: 5 },
+                    { criterionId: 'demo-time', min: 12, max: 20 },
+                  ],
+                },
+                {
+                  itemId: getEntryId('Mini-lecture'),
+                  criteriaSolutions: [
+                    { criterionId: 'demo-engagement', min: 1, max: 2 },
+                    { criterionId: 'demo-preparation', min: 2, max: 4 },
+                    { criterionId: 'demo-time', min: 10, max: 20 },
+                  ],
+                },
+              ],
+            },
+            {
+              id: 'demo-small-seminar',
+              title: 'Small advanced seminar',
+              description:
+                'You are teaching an advanced seminar with 20 students in a room with flexible seating. You can devote up to 20 minutes to an activity and want students to engage deeply with the material.',
+              order: 1,
+              solutions: [
+                {
+                  itemId: getEntryId('Live poll'),
+                  criteriaSolutions: [
+                    { criterionId: 'demo-engagement', min: 2, max: 4 },
+                    { criterionId: 'demo-preparation', min: 2, max: 3 },
+                    { criterionId: 'demo-time', min: 3, max: 7 },
+                  ],
+                },
+                {
+                  itemId: getEntryId('Think-pair-share'),
+                  criteriaSolutions: [
+                    { criterionId: 'demo-engagement', min: 4, max: 5 },
+                    { criterionId: 'demo-preparation', min: 1, max: 2 },
+                    { criterionId: 'demo-time', min: 6, max: 10 },
+                  ],
+                },
+                {
+                  itemId: getEntryId('Small-group case discussion'),
+                  criteriaSolutions: [
+                    { criterionId: 'demo-engagement', min: 4, max: 5 },
+                    { criterionId: 'demo-preparation', min: 3, max: 5 },
+                    { criterionId: 'demo-time', min: 12, max: 20 },
+                  ],
+                },
+                {
+                  itemId: getEntryId('Mini-lecture'),
+                  criteriaSolutions: [
+                    { criterionId: 'demo-engagement', min: 1, max: 3 },
+                    { criterionId: 'demo-preparation', min: 2, max: 4 },
+                    { criterionId: 'demo-time', min: 10, max: 20 },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        owner: { connect: { id: ctx.user.sub } },
+        tags: {
+          connect: {
+            ownerId_name: { ownerId: ctx.user.sub, name: 'Demo Tag' },
+          },
+        },
+        answerCollection: { connect: { id: answerCollection.id } },
+        answerCollectionItems: {
+          connect: [
+            { id: getEntryId('Live poll') },
+            { id: getEntryId('Think-pair-share') },
+            { id: getEntryId('Small-group case discussion') },
+            { id: getEntryId('Mini-lecture') },
+          ],
+        },
+      },
+      include: {
+        answerCollection: { include: { entries: true } },
+        answerCollectionItems: true,
+      },
+    })
+
+    await recomputeDerivedPermissions(
+      { answerCollectionId: answerCollection.id, userId: ctx.user.sub },
+      prisma
+    )
+    await recomputeDerivedPermissions(
+      { elementId: questionSE.id, userId: ctx.user.sub },
+      prisma
+    )
+    await recomputeDerivedPermissions(
+      { elementId: questionCS.id, userId: ctx.user.sub },
+      prisma
+    )
+
+    return { questionSE, questionCS }
+  })
+}
+
 async function seedDemoQuestions(ctx: ContextWithUser) {
   // create single choice demo question
   const questionSC = await ctx.prisma.element.create({
@@ -1542,6 +1771,8 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
     { elementId: contentElement.id, userId: ctx.user.sub },
     ctx.prisma
   )
+
+  await seedDemoSelectionAndCaseStudyElements(ctx)
 
   const blockData = [
     {
