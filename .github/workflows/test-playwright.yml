@@ -78,6 +78,10 @@ jobs:
           APP_SECRET: abcd
           DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
           NODE_ENV: test
+          # Inlined into the Next builds at compile time. The Playwright suite
+          # asserts the learning analytics navigation is present, so CI must
+          # build with the rollout enabled.
+          NEXT_PUBLIC_LEARNING_ANALYTICS_ROLLOUT_ENABLED: 'true'
           REDIS_HOST: localhost
           REDIS_PASS: ''
           REDIS_PORT: 6379
@@ -304,6 +308,7 @@ jobs:
           APP_SECRET: abcd
           DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
           NODE_ENV: production
+          NEXT_PUBLIC_LEARNING_ANALYTICS_ROLLOUT_ENABLED: 'true'
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:3001
           URL_AUTH: http://127.0.0.1:3010
           URL_CONTROL: http://127.0.0.1:3003
