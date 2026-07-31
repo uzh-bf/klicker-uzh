@@ -29,6 +29,17 @@ If the devcontainer cannot host a working WebAuthn relying party, say so plainly
 constrains how passkey work can be verified later and is worth knowing now rather than
 mid-slice.
 
+[The claim re-verification](T01-reverify-codebase-claims.md) sharpened the second bullet
+and part of the first. SimpleWebAuthn is not installed at all — not transitively, not
+anywhere. It appears in `pnpm-lock.yaml:2893-2899` solely as an **optional unmet peer**
+of `@auth/core@0.41.2`, the Auth.js core behind `apps/auth`, pinned there to
+`@simplewebauthn/browser ^9.0.1` and `@simplewebauthn/server ^9.0.2`.
+
+That turns one of the questions into a fork worth answering explicitly: adopting Auth.js's
+own WebAuthn provider means accepting its v9 pin, while a standalone integration is free
+to take a current SimpleWebAuthn release. Say which the plan's flows actually need, and
+whether the two can coexist given `apps/auth` already owns the assessment login path.
+
 ## Resolution
 
 <!-- filled in on close -->

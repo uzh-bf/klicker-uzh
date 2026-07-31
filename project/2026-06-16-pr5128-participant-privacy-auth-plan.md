@@ -91,7 +91,9 @@ Product implication: build a small in-app migration notice/checklist surface or 
 
 ## Current Codebase Findings
 
-The original review spot-checked the load-bearing codebase claims on 2026-07-06 against `v3` (`d6c7772f8`). Re-verify before implementation because the codebase has moved since then; the table records why this plan was accepted as a credible starting point, not a permanent proof.
+The original review spot-checked the load-bearing codebase claims on 2026-07-06 against `v3` (`d6c7772f8`). The table records why this plan was accepted as a credible starting point, not a permanent proof.
+
+Re-verified on 2026-07-31 against `v3` (`7812fa71ce`): 11 rows fresh, 2 changed, 1 stale, and one personal-data store missing from the table entirely. Per-row verdicts with `file:line` evidence are in [the re-verification ticket](wayfinder-participant-privacy/tickets/T01-reverify-codebase-claims.md); the two rows below carry the corrections inline because they are actively misleading as written.
 
 | Claim area | Evidence path | Review result |
 | --- | --- | --- |
@@ -101,12 +103,12 @@ The original review spot-checked the load-bearing codebase claims on 2026-07-06 
 | Magic-link login | `packages/graphql/src/services/accounts.ts` | Current magic-link login depends on stored participant email |
 | Participant signup | `packages/graphql/src/services/accounts.ts` | Current account creation requires and stores email |
 | LTI participant linking | `packages/graphql/src/services/accounts.ts` | Current LTI path writes email and `ssoEmail` and links by email fallback |
-| LTI launch payloads | `apps/lti/src/index.ts`, `apps/frontend-pwa/src/lib/getParticipantToken.ts` | Current LTI paths carry email; LTI 1.1 still has a verification TODO |
+| LTI launch payloads | `apps/lti/src/index.ts`, `apps/frontend-pwa/src/lib/getParticipantToken.ts` | **Stale as written.** LTI 1.3 still carries email in the launch JWT and exposes it from `/info`; the LTI 1.1 path and its TODO were removed in PR #5260 |
 | Assessment Edu-ID linking | `apps/auth/src/lib/helpers.ts` | Current assessment auth writes global email fields and matches invitations by raw email |
 | GraphQL email exposure | `packages/graphql/src/schema/participant.ts`, `packages/graphql/src/schema/course.ts`, `packages/graphql/src/schema/assessment.ts` | Current API exposes participant/leaderboard/assessment emails |
 | Push communication | `packages/graphql/src/services/notifications.ts` | Push delivery is not a reliable migration channel today |
 | Export PII | `packages/export/src` | Export can pseudonymize artifacts, but source PII remains in the database |
-| Passkey dependencies | `pnpm-lock.yaml`, package manifests | SimpleWebAuthn appears transitively only; implementation needs direct pinned dependencies |
+| Passkey dependencies | `pnpm-lock.yaml`, package manifests | **Understated.** SimpleWebAuthn is not installed at all — it appears only as an optional unmet peer of `@auth/core`, pinned there to `browser ^9.0.1` / `server ^9.0.2` |
 | Username generation | `apps/frontend-pwa/src/pages/createAccount.tsx` | Current create-account flow can prefill random usernames |
 
 ### Data Model

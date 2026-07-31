@@ -49,13 +49,13 @@ below. `Blocked by:` lists ticket ids; a ticket is takeable when all of them are
 
 Open, unblocked, unclaimed — takeable right now:
 
-- [Re-verify the plan's 13 codebase claims against current v3](tickets/T01-reverify-codebase-claims.md) — research, AFK
+- [Fold the verifiable-credential email surface into the plan](tickets/T10-verifiable-credential-emails.md) — research, AFK
 - [Measure participant login-method composition](tickets/T02-login-method-composition.md) — task
+- [Decide the ParticipantAccount migration shape](tickets/T05-participantaccount-shape.md) — grilling, HITL
 - [Assess passkey viability and pin SimpleWebAuthn](tickets/T04-passkey-viability.md) — research, AFK
 - [Identify which surfaces need a prototype](tickets/T09-prototype-surfaces.md) — grilling, HITL
 
 Blocked: [Confirm the target data model holds under Prisma 7](tickets/T03-target-model-prisma7.md),
-[Decide the ParticipantAccount migration shape](tickets/T05-participantaccount-shape.md),
 [Decide recovery setup timing](tickets/T06-recovery-setup-timing.md),
 [Decide cutover date and grace windows](tickets/T07-cutover-windows.md),
 [Assemble the DPO decision package](tickets/T08-dpo-package.md).
@@ -64,7 +64,9 @@ Blocked: [Confirm the target data model holds under Prisma 7](tickets/T03-target
 
 <!-- one line per closed ticket: enough to judge relevance, then open the link for detail -->
 
-_None yet — map just charted._
+- [Re-verify the plan's 13 codebase claims against current v3](tickets/T01-reverify-codebase-claims.md)
+  — 11 rows fresh, 2 changed, 1 stale, and the table is missing a row: `VerifiableCredential`
+  now stores participant emails raw, which the plan predates entirely.
 
 ## Not yet specified
 
@@ -79,9 +81,12 @@ _None yet — map just charted._
   graduates from here with a much narrower question than "four weeks of everything".
 - **Student communication plan specifics.** The plan has a section for it, but its
   content depends on the cutover shape, which is not decided yet.
-- **Slice 3 rework beyond the LTI 1.1 note.** The email-fallback link branch still needs
-  migration handling for participants who link by email today; how much is unclear until
-  the target model is confirmed.
+- **Slice 3 rework beyond the LTI 1.1 note.** Now scoped precisely, though still not
+  sharp enough to ticket: LTI 1.3 remains untouched, so `apps/lti/src/index.ts` still
+  puts `email` in the launch JWT and still exposes it from `/info`, and
+  `resolveOrCreateParticipantForLti` still links by email fallback before creating. What
+  replaces that fallback, and what happens to participants linked by email today, waits
+  on the target model.
 - **Knock-on sequencing changes.** If the target model or passkey approach needs
   revision, some slices may reorder. Cannot be specified before those tickets land.
 

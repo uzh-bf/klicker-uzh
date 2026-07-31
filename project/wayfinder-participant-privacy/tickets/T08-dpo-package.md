@@ -4,7 +4,7 @@ Label: `wayfinder:task`
 Parent: [MAP.md](../MAP.md)
 Status: open
 Assignee:
-Blocked by: T03
+Blocked by: T03, T10
 
 ## Question
 
@@ -23,7 +23,11 @@ current placeholders; what the proposed concrete durations are and why; and whic
 plausibly require re-consent rather than a policy update.
 
 Depends on [Confirm the target data model holds under Prisma 7](T03-target-model-prisma7.md)
-because the data categories can only be enumerated once the target model is confirmed.
+because the data categories can only be enumerated once the target model is confirmed,
+and on [Fold the verifiable-credential email surface into the plan](T10-verifiable-credential-emails.md),
+which adds a category the plan never listed: an email retained inside an
+issued-and-hashed credential, with its own retention shape (`revokedAt`, `supersededAt`,
+and no expiry) and its own mirror in the analytics database.
 
 **The DPO's ruling is out of scope for this map** — this ticket closes when the package is
 ready to send, not when it comes back. Because the ruling has the longest external lead
