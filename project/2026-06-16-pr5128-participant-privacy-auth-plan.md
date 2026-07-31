@@ -3,7 +3,7 @@
 Goal: remove participant email as a global identifier, keep non-assessment participation pseudonymous, and store assessment identity only where it is legally/functionally required.
 
 Date: 2026-06-16
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 Branch/PR: `codex/participant-privacy-auth-plan` / GitHub PR #5128
 Target branch: `v3`
 
@@ -30,6 +30,8 @@ The 2026-07-06 review verdict was: the observed codebase facts are accurate and 
 - unresolved choices are kept explicit in the open decision table rather than hidden inside slice text.
 
 Production-readiness gate: do not start behavior-changing implementation until Slice 0 telemetry/inventory is planned and the open decision table has owners, target dates, and decision records. The first implementation PR may still be behavior-neutral telemetry/inventory work.
+
+Exception already taken: LTI 1.1 retirement shipped ahead of this gate on branch `fix/remove-lti-1-1`, because the path it removed was an active unauthenticated account-takeover vector rather than a planning item. See [Resolved: LTI 1.1 Retirement](#resolved-lti-11-retirement).
 
 ## External Guidance Checked
 
@@ -429,10 +431,7 @@ Why no email reset: without storing at least an email hash linked to the partici
    - do not prefill email.
 6. If user sets password from an LTI session, mark password recovery policy as `LTI_OR_RECOVERY_ONLY`.
 
-LTI 1.1 needs a hard decision:
-
-- Preferred: route all LTI 1.1 launches through a verifier equivalent to `apps/lti` or retire LTI 1.1 account creation.
-- Minimum acceptable: implement signature validation before trusting `lis_person_sourcedid`. Current TODO is not acceptable for the new trust model.
+LTI 1.1 is retired — see [Resolved: LTI 1.1 Retirement](#resolved-lti-11-retirement). No LTI 1.1 launch path remains, so this plan assumes LTI 1.3 is the only LMS entry point.
 
 ### Assessment Login
 
@@ -811,7 +810,7 @@ Implementation details:
   - remove link-by-email logic for new launches;
   - create/link `ParticipantExternalIdentity`;
   - do not write `Participant.email` or `ParticipantAccount.ssoEmail`.
-- Decide and implement LTI 1.1 validation/retirement.
+- LTI 1.1 retirement is already done outside this plan (branch `fix/remove-lti-1-1`); this slice only has to avoid reintroducing an unverified launch path.
 
 ### Slice 4 - Assessment Identity Encryption
 
@@ -1085,12 +1084,24 @@ These decisions must be closed with product owner / DPO input before behavior-ch
 
 | Decision | Data Needed | Recommendation | Owner | Status |
 | --- | --- | --- | --- | --- |
-| LTI 1.1 verification vs retirement | Count active `ParticipantAccount.ssoType` values and last-login usage over 12 months | Retire LTI 1.1 if usage is negligible; otherwise implement signature validation before email removal | Product + Engineering | Open |
+| LTI 1.1 verification vs retirement | None — resolved by product decision, not telemetry | Retire LTI 1.1 outright. LTI 1.1 is no longer a supported integration, and the existing path was an unauthenticated account-takeover primitive (see [Resolved: LTI 1.1 Retirement](#resolved-lti-11-retirement)) | Product + Engineering | **Closed 2026-07-31** — retired on branch `fix/remove-lti-1-1` |
 | Recovery setup timing | Four weeks of login-method telemetry and signup funnel drop-off | Defer recovery setup during running live activities; require it on next non-live login or after grace period | Product | Open |
 | Cutover date and grace windows | Semester calendar, assessment windows, login-method telemetry | Use a semester boundary; avoid mid-semester and assessment windows | Product + Support | Open |
 | Privacy policy and re-consent | DPO review of changed data categories and retention | Update policy before first notice; re-consent if DPO requires it | DPO + Product | Open |
 | `ParticipantAccount` migration shape | Count references and code paths depending on `ParticipantAccount` | Keep facade during migration, remove in cleanup slice | Engineering | Open |
 | Retention durations | Legal/DPO input for assessment identity, challenges, claim contacts, backups | Replace placeholder ranges with concrete values before rollout | DPO + Product | Open |
+
+### Resolved: LTI 1.1 Retirement
+
+Closed 2026-07-31. LTI 1.1 is no longer a supported integration, so it is retired outright rather than hardened. Telemetry was not needed: the decision was a product call, and the code path could not be left running while telemetry was collected.
+
+The path was not merely an unhardened legacy boundary: it derived a login identity from an unauthenticated request, with no signature verification anywhere in the chain. That made it a live authentication-bypass risk for non-assessment courses rather than a planning item, so it was fixed immediately instead of waiting for telemetry. Mechanism details are deliberately kept out of this public repository — see the fix commit on `fix/remove-lti-1-1`, and raise anything further through the internal security channel.
+
+Consequences for the rest of this plan:
+
+- The email-fallback link branch in `resolveOrCreateParticipantForLti` is retained for now. With LTI 1.1 gone it is only reachable from a genuine LTI 1.3 launch, where the email comes from the verified platform rather than the caller. Removing it is still required, and stays in Slice 3, because it needs migration handling for participants who link by email today. Note for that slice: resolution by `ssoId` and by email both run **before** the `allowCreate` gate, so `allowCreate: false` limits account creation only — any future launch path must be verified before reaching this resolver.
+- `ssoType` is a free-form `String` defaulting to `"LTI1.1"`, not an enum. Any count based on it needs a provenance spot-check before being used as evidence; historical rows may read `"LTI1.1"` regardless of origin. Changing the default requires a migration and is left to the schema slices.
+- The plan's [Current Codebase Findings](#current-codebase-findings) were verified against `d6c7772f8`. `v3` has since moved to Prisma 7, Next.js 16, pnpm 11 / Node 24, a devcontainer-based dev setup, and an engineering wiki under `docs/`. Re-verify the table against current `v3` before implementation, and note that behavior-changing PRs must now update `docs/` in the same PR.
 
 ### Decision: Email Reset Without Storing Email
 
