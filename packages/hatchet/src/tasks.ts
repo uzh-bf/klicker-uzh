@@ -287,27 +287,6 @@ export function prepareHatchetTasks({
     },
   })
 
-  const recomputeLearningAnalytics = hatchet.task({
-    name: 'recompute-learning-analytics',
-    // no retries — the pipeline is expensive and scripts are designed to be
-    // re-run idempotently from the cron, not retried mid-run on transient errors
-    onCrons: [
-      '0 2 * * 1', // Mondays at 02:00 UTC — after weekend data settles (incremental)
-    ],
-    onEvents: [
-      HATCHET_EVENTS.courseEnded, // emitted by scan-ended-courses — triggers finalize for one course
-      HATCHET_EVENTS.adminRecomputeAnalytics, // manual dispatch via Hatchet dashboard for now
-    ],
-    fn: async (input: RecomputeLearningAnalyticsInput, executionContext) => {
-      const success = await handlers.handleRecomputeLearningAnalytics(
-        input ?? {},
-        globalContext,
-        executionContext
-      )
-      return { success }
-    },
-  })
-
   const scanEndedCourses = hatchet.task({
     name: 'scan-ended-courses',
     retries: 3,
@@ -338,12 +317,22 @@ export function prepareHatchetTasks({
         `[scanEndedCourses] graceDays=${effectiveGrace} cutoff=${cutoff.toISOString()} candidates=${candidates.length}`
       )
 
+      // Day-bucketed dashboard metadata makes scanner emissions identifiable.
+      // It does not deduplicate events; workflow concurrency cancels an
+      // in-progress older run when another event targets the same course.
+      const today = new Date().toISOString().slice(0, 10)
       await Promise.all(
         candidates.map(({ id }) =>
-          hatchet.events.push(HATCHET_EVENTS.courseEnded, {
-            mode: 'finalize',
-            courseId: id,
-          } satisfies RecomputeLearningAnalyticsInput)
+          hatchet.events.push(
+            HATCHET_EVENTS.courseEnded,
+            {
+              mode: 'finalize',
+              courseId: id,
+            } satisfies RecomputeLearningAnalyticsInput,
+            {
+              additionalMetadata: { idempotencyKey: `finalize-${id}-${today}` },
+            }
+          )
         )
       )
 
@@ -367,7 +356,6 @@ export function prepareHatchetTasks({
     aggregateLiveQuizBlockResultsStandard,
     aggregateLiveQuizBlockResultsAssessment,
     createAuditLogEntry,
-    recomputeLearningAnalytics,
     scanEndedCourses,
   }
 }

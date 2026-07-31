@@ -17,10 +17,14 @@ type CourseActivity = {
 
 type Outcome = 'CORRECT' | 'PARTIAL' | 'WRONG'
 
-// Element types the analytics compute_correctness handles. NUMERICAL is
-// technically supported but the existing Testkurs seed uses one-sided
-// solutionRanges like {max: 5}, which the pipeline can't score.
-const SCORABLE_ELEMENT_TYPES = new Set(['SC', 'MC', 'KPRIM', 'FREE_TEXT'])
+// Element types for which this seeder emits payloads analytics can score.
+const SCORABLE_ELEMENT_TYPES = new Set([
+  'SC',
+  'MC',
+  'KPRIM',
+  'NUMERICAL',
+  'FREE_TEXT',
+])
 
 const OUTCOME_VALUES: Record<
   Outcome,
@@ -81,10 +85,7 @@ async function loadCourseActivities(
   return activities
 }
 
-// Build the JSON payloads QuestionResponse stores in firstResponse /
-// lastResponse. Shape matches what live code produces; the exact content
-// doesn't matter for the analytics pipeline, but well-formed JSON avoids
-// downstream surprises if we later expand what the pipeline reads.
+// Build valid response payloads consumed by analytics correctness computation.
 function responsePayload(elementType: string, rng: Rng): object {
   switch (elementType) {
     case 'SC':

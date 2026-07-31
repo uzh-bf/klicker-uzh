@@ -5,6 +5,10 @@ Text is read straight from Postgres into a Python list and never persisted to di
 clustering pipeline has finished with it.
 """
 
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
+
 # SELECT user-message text for a single chatbot in the given window.
 # Uses jsonb->0->>'text' on the content column (which is Json storing an array of
 # {type: 'text'|'reasoning'|'tool-call'} chunks). Only the first text chunk is read —
@@ -16,23 +20,24 @@ SELECT
   COALESCE(m.content::jsonb->0->>'text', '') AS text
 FROM "ChatMessage" m
 JOIN "ChatThread" ct ON ct.id = m."threadId"
-JOIN "Chatbot" cb ON cb.id = ct."chatbotId"
-JOIN "ChatUsageCredits" cuc
-  ON cuc."participantId" = ct."participantId"
-  AND cuc."chatbotId" = ct."chatbotId"
-  AND cuc."acceptedDisclaimerId" = cb."disclaimerId"
-  AND cuc."disclaimerDeclined" = false
 WHERE m.role = 'user'
-  AND ct."chatbotId" = $1::uuid
-  AND m."createdAt" >= ($2::timestamptz AT TIME ZONE 'UTC')
-  AND m."createdAt" <  ($3::timestamptz AT TIME ZONE 'UTC')
+  AND ct."chatbotId" = CAST(:chatbot_id AS uuid)
+  AND m."createdAt" >= CAST(:win_start AS timestamptz)
+  AND m."createdAt" <  CAST(:win_end AS timestamptz)
 """
 
 
-def load_user_text(db, chatbot_id: str, win_start: str, win_end: str):
+def load_user_text(session: Session, chatbot_id: str, win_start: str, win_end: str):
     """Return list of dicts with keys: message_id, participant_id, text.
 
     Rows with an empty text field (e.g. tool-only messages) are filtered out.
     """
-    rows = db.query_raw(LOAD_SQL, chatbot_id, win_start, win_end)
-    return [r for r in rows if r.get("text") and r["text"].strip()]
+    rows = (
+        session.execute(
+            text(LOAD_SQL),
+            {"chatbot_id": chatbot_id, "win_start": win_start, "win_end": win_end},
+        )
+        .mappings()
+        .all()
+    )
+    return [dict(r) for r in rows if r.get("text") and r["text"].strip()]

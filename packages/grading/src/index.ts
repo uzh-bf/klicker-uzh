@@ -99,6 +99,7 @@ export function gradeQuestionNumerical({
   solutionRanges,
   exactSolutions,
 }: GradeQuestionNumericalArgs): number | null {
+  if (!Number.isFinite(response)) return null
   if (!solutionRanges?.length && !exactSolutions?.length) return null
 
   if (solutionRanges && solutionRanges.length > 0) {
@@ -110,8 +111,10 @@ export function gradeQuestionNumerical({
     if (definedSolutionRanges.length === 0) return null
 
     const withinRanges = definedSolutionRanges.map(({ min, max }) => {
-      if (min && response < min - Number.EPSILON) return false
-      if (max && response > max + Number.EPSILON) return false
+      if (typeof min === 'number' && response < min - Number.EPSILON)
+        return false
+      if (typeof max === 'number' && response > max + Number.EPSILON)
+        return false
       return true
     })
 

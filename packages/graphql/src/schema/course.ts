@@ -51,6 +51,38 @@ export interface ICourse extends DB.Course {
   isShared?: boolean // flag to signal whether the object is owned or shared
   isRemovable?: boolean // = derived from other object / direct user group permission => removal disabled
 }
+
+export interface ICourseAnalyticsStatus {
+  areAnalyticsValid: boolean
+  analyticsLastComputedAt?: Date | null
+  analyticsFinalizedAt?: Date | null
+  chatAnalyticsValidAt?: Date | null
+}
+export const CourseAnalyticsStatusRef =
+  builder.objectRef<ICourseAnalyticsStatus>('CourseAnalyticsStatus')
+export const CourseAnalyticsStatus = CourseAnalyticsStatusRef.implement({
+  fields: (t) => ({
+    areAnalyticsValid: t.exposeBoolean('areAnalyticsValid'),
+    analyticsLastComputedAt: t.expose('analyticsLastComputedAt', {
+      type: 'Date',
+      nullable: true,
+    }),
+    analyticsFinalizedAt: t.expose('analyticsFinalizedAt', {
+      type: 'Date',
+      nullable: true,
+    }),
+    chatAnalyticsValidAt: t.expose('chatAnalyticsValidAt', {
+      type: 'Date',
+      nullable: true,
+    }),
+  }),
+})
+
+// Enum exposed to the manage UI for the admin recompute mutation. Kept in
+// lockstep with `RecomputeAnalyticsMode` in services/courses.ts.
+export const AnalyticsMode = builder.enumType('AnalyticsMode', {
+  values: ['INCREMENTAL', 'FINALIZE', 'FULL'] as const,
+})
 export const CourseRef = builder.objectRef<ICourse>('Course')
 export const Course = builder.objectType(CourseRef, {
   fields: (t) => ({
@@ -177,6 +209,21 @@ export const Course = builder.objectType(CourseRef, {
     owner: t.expose('owner', {
       type: UserRef,
       nullable: true,
+    }),
+
+    // Analytics-pipeline progress surface for the manage UI. Null return is
+    // reserved for "course no longer exists" — the default for a course that
+    // has never been processed is `areAnalyticsValid=false` with all
+    // timestamps null.
+    analyticsStatus: t.field({
+      type: CourseAnalyticsStatusRef,
+      nullable: true,
+      resolve: (course: ICourse) => ({
+        areAnalyticsValid: course.areAnalyticsValid ?? false,
+        analyticsLastComputedAt: course.analyticsLastComputedAt,
+        analyticsFinalizedAt: course.analyticsFinalizedAt,
+        chatAnalyticsValidAt: course.chatAnalyticsValidAt,
+      }),
     }),
   }),
 })

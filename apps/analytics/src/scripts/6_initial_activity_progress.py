@@ -1,77 +1,82 @@
 # This script computes the activity progress analytics
 # ! This script is a copy of the corresponding notebook content and needs to be kept in sync with it
 
-from prisma import Prisma
 import sys
 
-# set the python path correctly for module imports to work
 sys.path.append("../../")
 
-from src.modules.participant_course_analytics.get_running_past_courses import (
-    get_running_past_courses,
+from src.db import SessionLocal
+from src.log import script_entry, script_exit
+from src.modules.activity_progress.compute_progress_counts import (
+    compute_progress_counts,
 )
 from src.modules.activity_progress.get_course_progress_activities import (
     get_course_progress_activities,
 )
-from src.modules.activity_progress.compute_progress_counts import (
-    compute_progress_counts,
+from src.modules.activity_progress.save_microlearning_progress import (
+    save_microlearning_progress,
 )
 from src.modules.activity_progress.save_practice_quiz_progress import (
     save_practice_quiz_progress,
 )
-from src.modules.activity_progress.save_microlearning_progress import (
-    save_microlearning_progress,
+from src.modules.participant_course_analytics.get_running_past_courses import (
+    get_running_past_courses,
+)
+from src.modules.utils import (
+    analytics_mode,
+    analytics_window_since,
+    check_analytics_cancellation,
+    scoped_course_ids,
 )
 
 
-db = Prisma()
-db.connect()
-
-# Script settings
-verbose = False
-
-
-# Fetch all courses from the database
-df_courses = get_running_past_courses(db)
-
-# Iterate over the course and fetch all question responses linked to it
-for idx, course in df_courses.iterrows():
-    course_id = course["id"]
-    print("Processing course", idx, "of", len(df_courses), "with id", course_id)
-
-    # extract number of participants
-    course_participants = len(course["participations"])
-
-    # fetch all practice quizzes and microlearnings linked to the course
-    pqs, mls = get_course_progress_activities(db, course_id)
-
-    for quiz in pqs:
-        started_count, completed_count, repeated_count = compute_progress_counts(quiz)
-
-        # store results in database table
-        save_practice_quiz_progress(
-            db,
-            course_participants,
-            started_count,
-            completed_count,
-            repeated_count,
-            course_id,
-            quiz["id"],
+def main() -> None:
+    with SessionLocal() as session:
+        scope = scoped_course_ids(session)
+        started = script_entry(
+            script=__name__,
+            mode=analytics_mode(),
+            scope_size=len(scope) if scope is not None else None,
+            window_since=analytics_window_since(),
         )
 
-    for ml in mls:
-        started_count, completed_count, repeated_count = compute_progress_counts(ml)
+        df_courses = get_running_past_courses(session)
 
-        # store results in database table
-        save_microlearning_progress(
-            db,
-            course_participants,
-            started_count,
-            completed_count,
-            course_id,
-            ml["id"],
-        )
+        for idx, course in df_courses.iterrows():
+            check_analytics_cancellation()
+            course_id = course["id"]
+            print("Processing course", idx, "of", len(df_courses), "with id", course_id)
+
+            course_participants = len(course["participations"])
+            pqs, mls = get_course_progress_activities(session, course_id)
+
+            for quiz in pqs:
+                check_analytics_cancellation()
+                started_count, completed_count, repeated_count = compute_progress_counts(quiz)
+                save_practice_quiz_progress(
+                    session,
+                    course_participants,
+                    started_count,
+                    completed_count,
+                    repeated_count,
+                    course_id,
+                    quiz["id"],
+                )
+
+            for ml in mls:
+                check_analytics_cancellation()
+                started_count, completed_count, _ = compute_progress_counts(ml)
+                save_microlearning_progress(
+                    session,
+                    course_participants,
+                    started_count,
+                    completed_count,
+                    course_id,
+                    ml["id"],
+                )
+
+        script_exit(script=__name__, started=started, rows_written=None)
 
 
-# Disconnect from the database
-db.disconnect()
+if __name__ == "__main__":
+    main()

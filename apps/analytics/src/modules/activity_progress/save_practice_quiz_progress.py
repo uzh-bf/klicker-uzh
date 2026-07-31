@@ -1,23 +1,43 @@
-def save_practice_quiz_progress(
-    db,
-    course_participants,
-    started_count,
-    completed_count,
-    repeated_count,
-    course_id,
-    quiz_id,
-):
-    values = {
-        "totalCourseParticipants": course_participants,
-        "startedCount": started_count,
-        "completedCount": completed_count,
-        "repeatedCount": repeated_count,
-    }
-    creation_values = values.copy()
-    creation_values["course"] = {"connect": {"id": course_id}}
-    creation_values["practiceQuiz"] = {"connect": {"id": quiz_id}}
+from datetime import datetime
 
-    db.activityprogress.upsert(
-        where={"practiceQuizId": quiz_id},
-        data={"create": creation_values, "update": values},
+from sqlalchemy.orm import Session
+
+from src.db_helpers import bulk_upsert
+from src.models import ActivityProgress
+
+
+def save_practice_quiz_progress(
+    session: Session,
+    course_participants: int,
+    started_count: int,
+    completed_count: int,
+    repeated_count: int,
+    course_id: str,
+    quiz_id: str,
+):
+    now = datetime.now()
+    row = {
+        "totalCourseParticipants": int(course_participants),
+        "startedCount": int(started_count),
+        "completedCount": int(completed_count),
+        "repeatedCount": int(repeated_count),
+        "practiceQuizId": quiz_id,
+        "courseId": course_id,
+        "createdAt": now,
+        "updatedAt": now,
+    }
+    bulk_upsert(
+        session,
+        ActivityProgress,
+        [row],
+        conflict_cols=["practiceQuizId"],
+        update_cols=[
+            "totalCourseParticipants",
+            "startedCount",
+            "completedCount",
+            "repeatedCount",
+            "courseId",
+            "updatedAt",
+        ],
     )
+    session.commit()

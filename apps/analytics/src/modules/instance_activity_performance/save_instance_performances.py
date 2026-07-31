@@ -1,42 +1,48 @@
-def save_instance_performances(db, df_instance_performance, course_id, total_only=False):
-    for _, row in df_instance_performance.iterrows():
-        # extract values from dataframe
-        values = {
-            "responseCount": row["responseCount"],
-            "totalErrorRate": row["totalErrorRate"],
-            "totalPartialRate": row["totalPartialRate"],
-            "totalCorrectRate": row["totalCorrectRate"],
-            "averageTimeSpent": row["averageTimeSpent"],
-        }
+from datetime import datetime
 
-        # only define first and last response rates if applicable
+from sqlalchemy.orm import Session
+
+from src.db_helpers import bulk_upsert
+from src.models import InstancePerformance
+
+
+def save_instance_performances(session: Session, df_instance_performance, course_id: str, total_only: bool = False):
+    if df_instance_performance is None or df_instance_performance.empty:
+        return
+
+    now = datetime.now()
+    rows = []
+    for _, row in df_instance_performance.iterrows():
+        values = {
+            "responseCount": int(row["responseCount"]),
+            "totalErrorRate": float(row["totalErrorRate"]),
+            "totalPartialRate": float(row["totalPartialRate"]),
+            "totalCorrectRate": float(row["totalCorrectRate"]),
+            "averageTimeSpent": float(row["averageTimeSpent"]),
+            "instanceId": int(row["instanceId"]),
+            "courseId": course_id,
+            "createdAt": now,
+            "updatedAt": now,
+        }
         if not total_only:
             values.update(
                 {
-                    "firstErrorRate": row["firstErrorRate"],
-                    "firstPartialRate": row["firstPartialRate"],
-                    "firstCorrectRate": row["firstCorrectRate"],
-                    "lastErrorRate": row["lastErrorRate"],
-                    "lastPartialRate": row["lastPartialRate"],
-                    "lastCorrectRate": row["lastCorrectRate"],
+                    "firstErrorRate": float(row["firstErrorRate"]),
+                    "firstPartialRate": float(row["firstPartialRate"]),
+                    "firstCorrectRate": float(row["firstCorrectRate"]),
+                    "lastErrorRate": float(row["lastErrorRate"]),
+                    "lastPartialRate": float(row["lastPartialRate"]),
+                    "lastCorrectRate": float(row["lastCorrectRate"]),
                 }
             )
+        rows.append(values)
 
-        # add relational links during creation
-        create_values = values.copy()
-        create_values.update(
-            {
-                "instance": {"connect": {"id": row["instanceId"]}},
-                "course": {"connect": {"id": course_id}},
-            }
-        )
-
-        db.instanceperformance.upsert(
-            where={
-                "instanceId": row["instanceId"],
-            },
-            data={
-                "create": create_values,
-                "update": values,
-            },
-        )
+    update_cols = [c for c in rows[0].keys() if c not in ("instanceId", "createdAt")]
+    bulk_upsert(
+        session,
+        InstancePerformance,
+        rows,
+        conflict_cols=["instanceId"],
+        update_cols=update_cols,
+    )
+    session.commit()

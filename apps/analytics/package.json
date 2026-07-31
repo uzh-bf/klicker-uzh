@@ -7,8 +7,11 @@
   },
   "scripts": {
     "analytics:dev": "../../util/_run_with_infisical.sh --env dev nodemon --exec 'uv run python -m src.main' --watch src,prisma --ext py,prisma",
+    "dryrun:dev": "../../util/_run_with_infisical.sh --env dev uv run python -m src.scripts.export_dryrun",
+    "dryrun:prod": "../../util/_run_with_infisical.sh --env prd uv run python -m src.scripts.export_dryrun",
+    "dryrun:qa": "../../util/_run_with_infisical.sh --env stg uv run python -m src.scripts.export_dryrun",
     "format": "uv run ruff format .",
-    "generate": "uv run prisma generate",
+    "generate": "../../util/_run_with_infisical.sh --env dev uv run poe generate",
     "lint": "uv run ruff check . && uv run ruff format --check .",
     "main": "../../util/_run_with_infisical.sh --env dev uv run python -m src.main",
     "script": "../../util/_run_with_infisical.sh --env dev uv run python -m",

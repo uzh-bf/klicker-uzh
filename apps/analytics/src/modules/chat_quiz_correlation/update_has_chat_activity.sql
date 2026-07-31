@@ -9,4 +9,6 @@ UPDATE "ParticipantCourseAnalytics" pca SET
       AND pcha."participantId" = pca."participantId"
       AND pcha."courseId"      = pca."courseId"
       AND pcha."userMessages" > 0
-  );
+  )
+WHERE true
+  /*COURSE_FILTER*/;

@@ -1,62 +1,79 @@
 import pandas as pd
+from sqlalchemy import select
+from sqlalchemy.orm import Session, selectinload
+
+from src.models import (
+    ElementInstance,
+    ElementStack,
+    MicroLearning,
+    Participation,
+    PracticeQuiz,
+)
+from src.modules.utils import check_analytics_cancellation
 
 
-def prepare_participant_activity_data(db, course_id: str):
-    # fetch all asynchronous activities in the course alongside their question responses
-    course = db.course.find_first(
-        where={
-            "id": course_id,
-        },
-        include={
-            "practiceQuizzes": {
-                "where": {"status": {"in": ["PUBLISHED", "ENDED", "GRADED"]}},
-                "include": {"stacks": {"include": {"elements": {"include": {"responses": True}}}}},
-            },
-            "microLearnings": {
-                "where": {"status": {"in": ["PUBLISHED", "ENDED", "GRADED"]}},
-                "include": {"stacks": {"include": {"elements": {"include": {"responses": True}}}}},
-            },
-            "participations": {"include": {"participant": True}},
-        },
-    )
-
-    # convert prisma object to python dictionary
-    course_dict = course.dict()
-
-    # combine the activities into a single dataframe for easier processing
-    df_activities = pd.concat(
-        [
-            pd.DataFrame(
-                [
-                    {
-                        "id": activity["id"],
-                        "type": activity_type,
-                        "instanceCount": sum(len(stack["elements"]) for stack in activity["stacks"]),
-                    }
-                    for activity in course_dict[activity_type]
-                ]
+def prepare_participant_activity_data(session: Session, course_id: str):
+    practice_quizzes = (
+        session.execute(
+            select(PracticeQuiz)
+            .where(PracticeQuiz.courseId == course_id)
+            .options(
+                selectinload(PracticeQuiz.stacks)
+                .selectinload(ElementStack.elements)
+                .selectinload(ElementInstance.responses)
             )
-            for activity_type in ["practiceQuizzes", "microLearnings"]
-        ],
-        ignore_index=True,
+        )
+        .scalars()
+        .all()
+    )
+    micro_learnings = (
+        session.execute(
+            select(MicroLearning)
+            .where(MicroLearning.courseId == course_id)
+            .options(
+                selectinload(MicroLearning.stacks)
+                .selectinload(ElementStack.elements)
+                .selectinload(ElementInstance.responses)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    participant_ids = (
+        session.execute(select(Participation.participantId).where(Participation.courseId == course_id)).scalars().all()
     )
 
-    # get a list of all participant ids
-    participant_ids = [p["participantId"] for p in course_dict["participations"]]
+    published_statuses = {"PUBLISHED", "ENDED", "GRADED"}
+    practice_quizzes = [pq for pq in practice_quizzes if pq.status in published_statuses]
+    micro_learnings = [ml for ml in micro_learnings if ml.status in published_statuses]
 
-    # extract a list of all responses and add the activityId as a column, drop the stackId
+    def _activity_rows(activities, activity_type: str):
+        return [
+            {
+                "id": activity.id,
+                "type": activity_type,
+                "instanceCount": sum(len(stack.elements) for stack in activity.stacks),
+            }
+            for activity in activities
+        ]
+
+    df_activities = pd.DataFrame(
+        _activity_rows(practice_quizzes, "practiceQuizzes") + _activity_rows(micro_learnings, "microLearnings")
+    )
+
     responses = []
-    for activity in course_dict["practiceQuizzes"] + course_dict["microLearnings"]:
-        for stack in activity["stacks"]:
-            for element in stack["elements"]:
-                for response in element["responses"]:
+    for activity in list(practice_quizzes) + list(micro_learnings):
+        check_analytics_cancellation()
+        for stack in activity.stacks:
+            for element in stack.elements:
+                for response in element.responses:
                     responses.append(
                         {
-                            "activityId": activity["id"],
-                            "participantId": response["participantId"],
-                            "elementId": element["id"],
-                            "totalScore": response["totalScore"],
-                            "trialsCount": response["trialsCount"],
+                            "activityId": activity.id,
+                            "participantId": response.participantId,
+                            "elementId": element.id,
+                            "totalScore": response.totalScore,
+                            "trialsCount": response.trialsCount,
                         }
                     )
     df_responses = pd.DataFrame(responses)

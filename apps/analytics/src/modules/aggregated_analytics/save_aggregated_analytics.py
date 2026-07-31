@@ -1,108 +1,105 @@
-from datetime import datetime
+from sqlalchemy import select
+from sqlalchemy.orm import Session, selectinload
+
+from src.db_helpers import bulk_upsert, coerce_date, utcnow
+from src.models import (
+    AggregatedAnalytics,
+    ElementStack,
+    MicroLearning,
+    PracticeQuiz,
+)
 
 
-def save_aggregated_analytics(db, df_analytics, timestamp, analytics_type="DAILY"):
-    computedAt = datetime.now().strftime("%Y-%m-%d") + "T00:00:00.000Z"
-
-    # create daily / weekly / monthly analytics entries for all participants
-    if analytics_type in ["DAILY", "WEEKLY", "MONTHLY"]:
-        for _, row in df_analytics.iterrows():
-            db.aggregatedanalytics.upsert(
-                where={
-                    "type_courseId_timestamp": {
-                        "type": analytics_type,
-                        "courseId": row["courseId"],
-                        "timestamp": timestamp,
-                    }
-                },
-                data={
-                    "create": {
-                        "type": analytics_type,
-                        "timestamp": timestamp,
-                        "computedAt": computedAt,
-                        "participantCount": row["participantCount"],
-                        "responseCount": row["responseCount"],
-                        "totalScore": row["totalScore"],
-                        "totalPoints": row["totalPoints"],
-                        "totalXp": row["totalXp"],
-                        # TODO: set this value correctly for rolling updates in production code
-                        # (cannot be computed for past learning analytics -> therefore set to invalid value)
-                        "totalElementsAvailable": -1,
-                        "course": {"connect": {"id": row["courseId"]}},
-                    },
-                    "update": {},
-                },
+def _count_elements_for_course(session: Session, course_id: str) -> int:
+    practice_quizzes = (
+        session.execute(
+            select(PracticeQuiz)
+            .where(PracticeQuiz.courseId == course_id)
+            .options(
+                selectinload(PracticeQuiz.stacks).selectinload(ElementStack.elements),
             )
+        )
+        .scalars()
+        .all()
+    )
+    micro_learnings = (
+        session.execute(
+            select(MicroLearning)
+            .where(MicroLearning.courseId == course_id)
+            .options(
+                selectinload(MicroLearning.stacks).selectinload(ElementStack.elements),
+            )
+        )
+        .scalars()
+        .all()
+    )
 
-    # create or update course-wide analytics entries (should be unique for participant / course combination)
+    total = 0
+    for pq in practice_quizzes:
+        for stack in pq.stacks:
+            total += len(stack.elements)
+    for ml in micro_learnings:
+        for stack in ml.stacks:
+            total += len(stack.elements)
+    return total
+
+
+def save_aggregated_analytics(session: Session, df_analytics, timestamp, analytics_type="DAILY"):
+    if df_analytics is None or df_analytics.empty:
+        return
+
+    now = utcnow()
+    computedAt = now.date()
+    timestamp_value = coerce_date(timestamp)
+
+    if analytics_type in ("DAILY", "WEEKLY", "MONTHLY"):
+        rows = [
+            {
+                "type": analytics_type,
+                "timestamp": timestamp_value,
+                "computedAt": computedAt,
+                "participantCount": int(row["participantCount"]),
+                "responseCount": int(row["responseCount"]),
+                "totalScore": int(row["totalScore"]),
+                "totalPoints": int(row["totalPoints"]),
+                "totalXp": int(row["totalXp"]),
+                # Cannot be computed for past learning analytics; sentinel value
+                # kept from the pre-migration implementation.
+                "totalElementsAvailable": -1,
+                "courseId": row["courseId"],
+                "createdAt": now,
+                "updatedAt": now,
+            }
+            for _, row in df_analytics.iterrows()
+        ]
     elif analytics_type == "COURSE":
+        rows = []
         for _, row in df_analytics.iterrows():
-            course = db.course.find_unique_or_raise(
-                where={"id": row["courseId"]},
-                include={
-                    "practiceQuizzes": {
-                        "include": {
-                            "stacks": {
-                                "include": {"elements": True},
-                            }
-                        }
-                    },
-                    "microLearnings": {
-                        "include": {
-                            "stacks": {
-                                "include": {"elements": True},
-                            }
-                        }
-                    },
-                },
+            total_elements = _count_elements_for_course(session, row["courseId"])
+            rows.append(
+                {
+                    "type": "COURSE",
+                    "timestamp": timestamp_value,
+                    "computedAt": computedAt,
+                    "participantCount": int(row["participantCount"]),
+                    "responseCount": int(row["responseCount"]),
+                    "totalScore": int(row["totalScore"]),
+                    "totalPoints": int(row["totalPoints"]),
+                    "totalXp": int(row["totalXp"]),
+                    "totalElementsAvailable": total_elements,
+                    "courseId": row["courseId"],
+                    "createdAt": now,
+                    "updatedAt": now,
+                }
             )
-            course = dict(course)
-
-            # add all the number of elements in all practice quizzes and microlearnings together
-            totalElementsAvailable = 0
-            for practice_quiz in course["practiceQuizzes"]:
-                pq_dict = dict(practice_quiz)
-                for stack in pq_dict["stacks"]:
-                    stack_dict = dict(stack)
-                    totalElementsAvailable += len(stack_dict["elements"])
-            for microlearning in course["microLearnings"]:
-                ml_dict = dict(microlearning)
-                for stack in ml_dict["stacks"]:
-                    stack_dict = dict(stack)
-                    totalElementsAvailable += len(stack_dict["elements"])
-
-            db.aggregatedanalytics.upsert(
-                where={
-                    "type_courseId_timestamp": {
-                        "type": analytics_type,
-                        "courseId": row["courseId"],
-                        "timestamp": timestamp,
-                    }
-                },
-                data={
-                    "create": {
-                        "type": analytics_type,
-                        "timestamp": timestamp,
-                        "computedAt": computedAt,
-                        "participantCount": row["participantCount"],
-                        "responseCount": row["responseCount"],
-                        "totalScore": row["totalScore"],
-                        "totalPoints": row["totalPoints"],
-                        "totalXp": row["totalXp"],
-                        "totalElementsAvailable": totalElementsAvailable,
-                        "course": {"connect": {"id": row["courseId"]}},
-                    },
-                    "update": {
-                        "computedAt": computedAt,
-                        "participantCount": row["participantCount"],
-                        "responseCount": row["responseCount"],
-                        "totalScore": row["totalScore"],
-                        "totalPoints": row["totalPoints"],
-                        "totalXp": row["totalXp"],
-                        "totalElementsAvailable": totalElementsAvailable,
-                    },
-                },
-            )
-
     else:
         raise ValueError("Unknown analytics type: {}".format(analytics_type))
+
+    bulk_upsert(
+        session,
+        AggregatedAnalytics,
+        rows,
+        conflict_cols=["type", "courseId", "timestamp"],
+        update_cols=[c for c in rows[0].keys() if c not in ("type", "courseId", "timestamp", "createdAt")],
+    )
+    session.commit()

@@ -101,6 +101,14 @@ hatchet:
           value: reserved
           effect: NoSchedule
 
+    analytics:
+      replicaCount: 1
+      priorityClassName: staging-workload
+      image:
+        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-analytics-arm
+        pullPolicy: Always
+        tag: v3
+
 auth:
   priorityClassName: staging-workload
   podAnnotations:

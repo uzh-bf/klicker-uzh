@@ -1,48 +1,61 @@
 # This script compute the participant activity performance analytics
 # ! This script is a copy of the corresponding notebook content and needs to be kept in sync with it
 
-
-from prisma import Prisma
-
-# set the python path correctly for module imports to work
 import sys
 
 sys.path.append("../../")
 
-from src.modules.participant_course_analytics.get_running_past_courses import (
-    get_running_past_courses,
+from src.db import SessionLocal
+from src.log import script_entry, script_exit
+from src.modules.participant_activity_performance.agg_participant_activity_performance import (
+    agg_participant_activity_performance,
 )
 from src.modules.participant_activity_performance.prepare_participant_activity_data import (
     prepare_participant_activity_data,
 )
-from src.modules.participant_activity_performance.agg_participant_activity_performance import (
-    agg_participant_activity_performance,
+from src.modules.participant_course_analytics.get_running_past_courses import (
+    get_running_past_courses,
+)
+from src.modules.utils import (
+    analytics_mode,
+    analytics_window_since,
+    check_analytics_cancellation,
+    scoped_course_ids,
 )
 
 
-db = Prisma()
-db.connect()
+def main() -> None:
+    with SessionLocal() as session:
+        scope = scoped_course_ids(session)
+        started = script_entry(
+            script=__name__,
+            mode=analytics_mode(),
+            scope_size=len(scope) if scope is not None else None,
+            window_since=analytics_window_since(),
+        )
 
-# Script settings
-verbose = False
+        df_courses = get_running_past_courses(session)
+
+        for idx, base_course in df_courses.iterrows():
+            check_analytics_cancellation()
+            print(
+                "Processing course",
+                idx,
+                "of",
+                len(df_courses),
+                "with id",
+                base_course["id"],
+            )
+
+            df_activities, df_responses, participant_ids = prepare_participant_activity_data(session, base_course["id"])
+
+            if df_responses.empty:
+                continue
+
+            agg_participant_activity_performance(session, df_responses, df_activities, participant_ids)
+
+        script_exit(script=__name__, started=started, rows_written=None)
 
 
-# find all courses that started in the past
-df_courses = get_running_past_courses(db)
-
-# iterate over all courses and compute the participant course analytics
-for idx, base_course in df_courses.iterrows():
-    print("Processing course", idx, "of", len(df_courses), "with id", base_course["id"])
-
-    df_activities, df_responses, participant_ids = prepare_participant_activity_data(db, base_course["id"])
-
-    # if no responses were submitted, skip the course
-    if df_responses.empty:
-        continue
-
-    # aggregate participant activity performance data and store in the corresponding database table
-    agg_participant_activity_performance(db, df_responses, df_activities, participant_ids)
-
-
-# Disconnect from the database
-db.disconnect()
+if __name__ == "__main__":
+    main()

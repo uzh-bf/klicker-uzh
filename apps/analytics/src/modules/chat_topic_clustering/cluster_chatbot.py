@@ -1,5 +1,9 @@
 """Top-level orchestrator for clustering a single chatbot."""
 
+from collections import Counter
+
+from sqlalchemy.orm import Session
+
 from .derive_cluster_labels import derive_labels
 from .embed_and_cluster import MIN_MESSAGES, cluster_embeddings, embed_texts
 from .load_user_text import load_user_text
@@ -7,7 +11,7 @@ from .save_topic_clusters import save_clusters
 
 
 def cluster_chatbot(
-    db,
+    session: Session,
     chatbot_id: str,
     win_start: str,
     win_end: str,
@@ -17,9 +21,10 @@ def cluster_chatbot(
 ) -> int:
     """Run the full clustering pipeline for one chatbot and persist results.
 
-    Returns number of ChatTopicCluster rows written (0 if skipped due to too-few messages).
+    Returns number of ChatTopicCluster rows written (0 if skipped due to too-few
+    messages).
     """
-    rows = load_user_text(db, chatbot_id, win_start, win_end)
+    rows = load_user_text(session, chatbot_id, win_start, win_end)
     if verbose:
         print(f"[chat_topic_clustering] chatbot={chatbot_id} messages_loaded={len(rows)}")
 
@@ -30,7 +35,7 @@ def cluster_chatbot(
                 f"{MIN_MESSAGES} messages, got {len(rows)}"
             )
         return save_clusters(
-            db,
+            session,
             chatbot_id,
             analytics_type,
             timestamp,
@@ -45,10 +50,18 @@ def cluster_chatbot(
 
     embeddings = embed_texts(texts)
     cluster_ids = cluster_embeddings(embeddings)
+    if verbose:
+        counts = Counter(cid for cid in cluster_ids if cid >= 0)
+        noise_count = sum(1 for cid in cluster_ids if cid < 0)
+        sizes_desc = sorted(counts.values(), reverse=True)
+        print(
+            f"[chat_topic_clustering] chatbot={chatbot_id} raw_clusters="
+            f"{len(counts)} raw_sizes={sizes_desc} noise={noise_count}"
+        )
     labels = derive_labels(cluster_ids, texts)
 
     return save_clusters(
-        db,
+        session,
         chatbot_id,
         analytics_type,
         timestamp,

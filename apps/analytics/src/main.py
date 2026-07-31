@@ -1,10 +1,14 @@
-from prisma import Prisma
+from sqlalchemy import select
 
-db = Prisma()
+from src.db import SessionLocal
+from src.models import User
 
-db.connect()
 
-user = db.user.find_first()
-print(user)
+def main() -> None:
+    with SessionLocal() as session:
+        user = session.execute(select(User).limit(1)).scalar_one_or_none()
+        print(user)
 
-db.disconnect()
+
+if __name__ == "__main__":
+    main()

@@ -90,15 +90,10 @@ export interface HatchetHandlers {
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
-  handleRecomputeLearningAnalytics: (
-    input: RecomputeLearningAnalyticsInput,
-    globalCtx: HatchetHandlerGlobalContext,
-    executionCtx: Context<unknown>
-  ) => Promise<boolean>
 }
 
 // Input shape for the weekly learning-analytics recompute. `mode` defaults to
-// incremental; the scanner sends `courseId` alone and the handler promotes it
+// incremental; the scanner sends `courseId` alone and the workflow promotes it
 // to finalize for that course.
 export type RecomputeLearningAnalyticsInput = {
   mode?: 'incremental' | 'finalize' | 'full'
@@ -112,6 +107,7 @@ export type RecomputeLearningAnalyticsInput = {
 export const HATCHET_EVENTS = {
   courseEnded: 'course-ended',
   adminRecomputeAnalytics: 'admin-recompute-analytics',
+  adminRecomputeAnalyticsFull: 'admin-recompute-analytics-full',
 } as const
 
 // Contract for the tasks that are passed into the GraphQL context.
@@ -161,10 +157,6 @@ export interface PreparedHatchetTasks {
   >
   aggregateLiveQuizBlockResultsAssessment: TaskWorkflowDeclaration<
     { liveQuizId: string; blockId: number },
-    { success: boolean }
-  >
-  recomputeLearningAnalytics: TaskWorkflowDeclaration<
-    RecomputeLearningAnalyticsInput,
     { success: boolean }
   >
 }

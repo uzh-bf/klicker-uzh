@@ -6,12 +6,14 @@ def aggregate_participant_analytics(df_participant_analytics, verbose=False):
 
         return None
 
-    # aggreagte all participant analytics for the specified time range and separate courses
+    # ``participantId`` is present in both DB- and buffer-sourced rows; the
+    # auto-generated ``id`` PK is missing on buffered rows because
+    # ``save_participant_analytics`` never passes it to ``bulk_upsert``.
     df_aggregated_analytics = (
         df_participant_analytics.groupby("courseId")
         .agg(
             {
-                "id": "count",
+                "participantId": "count",
                 "responseCount": "sum",
                 "totalScore": "sum",
                 "totalPoints": "sum",
@@ -21,7 +23,7 @@ def aggregate_participant_analytics(df_participant_analytics, verbose=False):
         .reset_index()
         .rename(
             columns={
-                "id": "participantCount",
+                "participantId": "participantCount",
             }
         )
     )

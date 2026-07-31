@@ -37,7 +37,8 @@
     "dev": "run-p --npm-path pnpm dev:ts",
     "dev:infisical": "../../util/_run_with_infisical.sh --env dev pnpm run dev",
     "dev:offline": "pnpm run dev",
-    "dev:ts": "cross-env NODE_ENV=development rollup -c --watch"
+    "dev:ts": "cross-env NODE_ENV=development rollup -c --watch",
+    "test": "node --test test/*.test.mjs"
   },
   "engines": {
     "node": "=24"

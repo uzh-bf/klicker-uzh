@@ -1,8 +1,8 @@
 ---
 type: Async Architecture
 title: Async & Workers
-description: The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
-timestamp: '2026-07-07'
+description: The Hatchet-based response and learning-analytics pipelines, worker task catalog, scheduled jobs, and what silently breaks without workers.
+timestamp: '2026-07-23'
 tags:
   - backend
   - hatchet
@@ -43,7 +43,15 @@ Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. No
 - `publish-scheduled-*` / `end-expired-*` — activity lifecycle
 - `aggregate-block-closure-*` — live-quiz block aggregation
 - Daily crons (`0 0 * * *`): `updateGroupAverageScores`, `runningRandomGroupAssignments`, `finalRandomGroupAssignments`, `updateWeeklyTimelineEntries`
+- `scan-ended-courses` — finds courses ready for final analytics and emits a scoped `course-ended` event
+
+`apps/hatchet-worker-analytics` runs `apps/analytics/src/hatchet_worker.py` directly and is the sole owner of `recompute-learning-analytics` and `recompute-learning-analytics-full`. The native Python workflows execute the 15 analytics modules in-process with bounded cooperative cancellation and fail-fast validity marking. TypeScript retains only the GraphQL/manual event producers and the `scan-ended-courses` task. Several analytics modules use parameterized SQLAlchemy text queries for set-based aggregation; keep values parameterized and treat SQL identifiers and fragments as trusted constants.
 
 ## Running locally (config-derived — verify on your machine)
 
 The Hatchet engine runs as the `hatchet` compose service (gRPC 7077, UI 8888); workers need a client token minted by `./util/_create_hatchet_token.sh` (Cypress/CI variant: `_create_hatchet_token_cypress.sh`, which has an HTTP-API fallback for containers without Docker). Workers must see the **same `DATABASE_URL`, `APP_SECRET`, and Redis settings** as the app stack — a worker pointed at the wrong database happily processes events into nowhere. The `packages/graphql` vitest suite also requires a live Hatchet + `HATCHET_CLIENT_TOKEN` (see [Testing](./testing.md)).
+
+The analytics worker uses the SDK-standard `HATCHET_CLIENT_*` settings, the analytics database connection settings, and optional `ANALYTICS_ALLOW_FULL=1` for guarded full rebuilds. Its SDK health and metrics endpoints are exposed on port 8001 at `/health` and `/metrics`.
+
+Deployment, triggering, recovery, and cold rollback are covered in the
+[Learning Analytics Operations](./learning-analytics-operations.md) runbook.

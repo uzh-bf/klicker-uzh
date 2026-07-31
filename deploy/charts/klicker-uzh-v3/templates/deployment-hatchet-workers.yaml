@@ -267,6 +267,8 @@ spec:
         {{- include "chart.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: hatchet-worker-analytics
     spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: {{ .Values.hatchet.workers.analytics.terminationGracePeriodSeconds }}
       priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.hatchet.workers.analytics.priorityClassName }}
       {{- with .Values.hatchet.workers.analytics.imagePullSecrets }}
       imagePullSecrets:
@@ -280,6 +282,10 @@ spec:
             {{- toYaml .Values.hatchet.workers.analytics.securityContext | nindent 12 }}
           image: "{{ .Values.hatchet.workers.analytics.image.repository }}:{{ .Values.hatchet.workers.analytics.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.hatchet.workers.analytics.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8001
+              protocol: TCP
           envFrom:
             - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-global
@@ -287,18 +293,35 @@ spec:
                 name: {{ include "chart.fullname" . }}-config-hatchet-worker-analytics
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-hatchet-worker-analytics
-          # TODO: add liveness and readiness probes to container
-          # livenessProbe:
-          #   httpGet:
-          #     path: /healthz
-          #     port: http
-          #   initialDelaySeconds: 600
-          # readinessProbe:
-          #   httpGet:
-          #     path: /healthz
-          #     port: http
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 3
+            failureThreshold: 3
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           resources:
             {{- toYaml .Values.hatchet.workers.analytics.resources | nindent 12 }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
       {{- with .Values.hatchet.workers.analytics.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

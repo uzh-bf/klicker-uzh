@@ -2,95 +2,125 @@
 # ! This script is a copy of the corresponding notebook content and needs to be kept in sync with it
 
 from datetime import datetime
-from prisma import Prisma
+
 import pandas as pd
 
-# set the python path correctly for module imports to work
 import sys
 
 sys.path.append("../../")
 
+from src.db import SessionLocal
+from src.log import script_entry, script_exit
 from src.modules.aggregated_analytics.compute_aggregated_analytics import (
     compute_aggregated_analytics,
 )
-from src.modules.utils import analytics_window_since, should_skip_window
-
-db = Prisma()
-db.connect()
-
-# Script settings
-verbose = False
-
-# Settings which analytics to compute
-compute_daily = True
-compute_weekly = True
-compute_monthly = True
-compute_course = True
-
-start_date = "2021-01-01"
-end_date = datetime.now().strftime("%Y-%m-%d")
-date_range_daily = pd.date_range(start=start_date, end=end_date, freq="D")
-date_range_weekly = pd.date_range(start=start_date, end=end_date, freq="W")
-date_range_monthly = pd.date_range(start=start_date, end=end_date, freq="ME")
-
-windows_since = analytics_window_since()
-
-if compute_daily:
-    # Iterate over the date range and compute the participant analytics for each day
-    for curr_date in date_range_daily:
-        # determine day start and end dates required for aggregation
-        specific_date = curr_date.strftime("%Y-%m-%d")
-        if should_skip_window(specific_date, windows_since):
-            continue
-        day_start = specific_date + "T00:00:00.000Z"
-        day_end = specific_date + "T23:59:59.999Z"
-        print(f"Computing daily aggregated analytics (course) for {specific_date}")
-
-        # compute aggregated analytics for a specific day
-        timestamp = day_start
-        compute_aggregated_analytics(db, day_start, day_end, timestamp, "DAILY", verbose)
+from src.modules.utils import (
+    COURSE_TIMESTAMP,
+    analytics_mode,
+    analytics_window_since,
+    check_analytics_cancellation,
+    scoped_course_ids,
+    should_skip_window,
+)
 
 
-if compute_weekly:
-    # Iterate over the date range and compute the participant analytics for each week
-    for curr_date in date_range_weekly:
-        week_end_date = curr_date.strftime("%Y-%m-%d")
-        if should_skip_window(week_end_date, windows_since):
-            continue
-        # determine week start and end dates required for aggregation
-        week_end = week_end_date + "T23:59:59.999Z"
-        week_start = (curr_date - pd.DateOffset(days=6)).strftime("%Y-%m-%d") + "T00:00:00.000Z"
-        print(f"Computing weekly aggregated analytics (course) for {week_start} to {week_end}")
+def main() -> None:
+    verbose = False
+    compute_daily = True
+    compute_weekly = True
+    compute_monthly = True
+    compute_course = True
 
-        # compute aggregated analytics for a specific week
-        timestamp = week_end
-        compute_aggregated_analytics(db, week_start, week_end, timestamp, "WEEKLY", verbose)
+    start_date = "2021-01-01"
+    end_date = datetime.now().strftime("%Y-%m-%d")
+    date_range_daily = pd.date_range(start=start_date, end=end_date, freq="D")
+    date_range_weekly = pd.date_range(start=start_date, end=end_date, freq="W")
+    date_range_monthly = pd.date_range(start=start_date, end=end_date, freq="ME")
+
+    windows_since = analytics_window_since()
+    mode = analytics_mode()
+
+    with SessionLocal() as session:
+        scope = scoped_course_ids(session)
+        started = script_entry(
+            script=__name__,
+            mode=mode,
+            scope_size=len(scope) if scope is not None else None,
+            window_since=windows_since,
+        )
+        if compute_daily:
+            for curr_date in date_range_daily:
+                check_analytics_cancellation()
+                specific_date = curr_date.strftime("%Y-%m-%d")
+                if should_skip_window(specific_date, windows_since):
+                    continue
+                day_start = specific_date + "T00:00:00.000Z"
+                day_end = specific_date + "T23:59:59.999Z"
+                print(f"Computing daily aggregated analytics (course) for {specific_date}")
+                compute_aggregated_analytics(
+                    session,
+                    day_start,
+                    day_end,
+                    day_start,
+                    "DAILY",
+                    verbose,
+                    course_ids=scope,
+                )
+
+        if compute_weekly:
+            for curr_date in date_range_weekly:
+                check_analytics_cancellation()
+                week_end_date = curr_date.strftime("%Y-%m-%d")
+                if should_skip_window(week_end_date, windows_since):
+                    continue
+                week_end = week_end_date + "T23:59:59.999Z"
+                week_start = (curr_date - pd.DateOffset(days=6)).strftime("%Y-%m-%d") + "T00:00:00.000Z"
+                print(f"Computing weekly aggregated analytics (course) for {week_start} to {week_end}")
+                compute_aggregated_analytics(
+                    session,
+                    week_start,
+                    week_end,
+                    week_end,
+                    "WEEKLY",
+                    verbose,
+                    course_ids=scope,
+                )
+
+        if compute_monthly:
+            for curr_date in date_range_monthly:
+                check_analytics_cancellation()
+                month_end_date = curr_date.strftime("%Y-%m-%d")
+                if should_skip_window(month_end_date, windows_since):
+                    continue
+                month_end = month_end_date + "T23:59:59.999Z"
+                month_start = (curr_date - pd.offsets.MonthBegin(1)).strftime("%Y-%m-%d") + "T00:00:00.000Z"
+                print(f"Computing monthly aggregated analytics (course) for {month_start} to {month_end}")
+                compute_aggregated_analytics(
+                    session,
+                    month_start,
+                    month_end,
+                    month_end,
+                    "MONTHLY",
+                    verbose,
+                    course_ids=scope,
+                )
+
+        if compute_course:
+            check_analytics_cancellation()
+            print("Computing course-wide aggregated analytics")
+            timestamp = COURSE_TIMESTAMP
+            compute_aggregated_analytics(
+                session,
+                timestamp,
+                timestamp,
+                timestamp,
+                "COURSE",
+                verbose,
+                course_ids=scope,
+            )
+
+        script_exit(script=__name__, started=started, rows_written=None)
 
 
-if compute_monthly:
-    # Iterate over the date range and compute the participant analytics for each month
-    for curr_date in date_range_monthly:
-        month_end_date = curr_date.strftime("%Y-%m-%d")
-        if should_skip_window(month_end_date, windows_since):
-            continue
-        # determine month start and end dates required for aggregation
-        month_end = month_end_date + "T23:59:59.999Z"
-        month_start = (curr_date - pd.offsets.MonthBegin(1)).strftime("%Y-%m-%d") + "T00:00:00.000Z"
-        print(f"Computing monthly aggregated analytics (course) for {month_start} to {month_end}")
-
-        # compute aggregated analytics for a specific month
-        timestamp = month_end
-        compute_aggregated_analytics(db, month_start, month_end, timestamp, "MONTHLY", verbose)
-
-
-if compute_course:
-    print("Computing course-wide aggregated analytics")
-
-    # compute aggregated analytics over entire course based on corresponding participant analytics
-    # (a constant timestamp is used here, since the data combination has to be unique
-    # during querying, but only one entry per course is available by definition)
-    timestamp = "1970-01-01T00:00:00.000Z"
-    compute_aggregated_analytics(db, timestamp, timestamp, timestamp, "COURSE", verbose)
-
-# Disconnect from the database
-db.disconnect()
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,57 @@
+name: Test analytics correctness
+
+on:
+  push:
+    branches: ['v3', 'v3*']
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  test-analytics:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Check for changes
+        id: filter
+        uses: ./.github/actions/changed-paths
+        with:
+          pattern: '^(apps/analytics/|packages/grading/|\.github/workflows/test-analytics\.yml|\.github/actions/changed-paths/)'
+
+      - name: Set up uv
+        if: steps.filter.outputs.should_run == 'true'
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
+        with:
+          python-version: '3.12'
+          enable-cache: true
+          cache-dependency-glob: apps/analytics/uv.lock
+
+      - name: Test analytics correctness
+        if: steps.filter.outputs.should_run == 'true'
+        working-directory: apps/analytics
+        run: |
+          uv run --isolated --no-project \
+            --with 'hatchet-sdk[v0-sdk]==1.18.1' \
+            --with pandas==2.2.2 \
+            --with 'psycopg[binary]==3.3.3' \
+            --with pytest==8.4.2 \
+            --with sqlalchemy==2.0.49 \
+            pytest -q \
+              tests/test_analytics_save_timestamps.py \
+              tests/test_analytics_runtime.py \
+              tests/test_cancellation_boundaries.py \
+              tests/test_chat_topic_clustering_script.py \
+              tests/test_course_scope_sql.py \
+              tests/test_db_helpers.py \
+              tests/test_live_quiz_entrypoint.py \
+              tests/test_participant_analytics_helpers.py \
+              tests/test_live_quiz_analytics_sql.py \
+              tests/test_native_hatchet_worker.py \
+              tests/test_utils.py

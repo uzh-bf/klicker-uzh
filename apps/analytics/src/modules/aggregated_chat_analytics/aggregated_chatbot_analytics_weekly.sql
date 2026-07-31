@@ -1,8 +1,8 @@
 -- AggregatedChatbotAnalytics rollup for WEEKLY windows.
 -- Parameters:
---   $1 timestamptz — window start (inclusive)
---   $2 timestamptz — window end (exclusive)
---   $3 date        — timestamp column value
+--   :win_start       timestamptz — window start (inclusive)
+--   :win_end         timestamptz — window end (exclusive)
+--   :ts              date        — timestamp column value
 --
 -- Differs from aggregated_chatbot_analytics.sql by also populating
 -- newParticipants / returningParticipants using a first_seen CTE that scans the
@@ -10,15 +10,8 @@
 -- metric) can skip the expensive scan.
 
 WITH params AS (
-  SELECT ($1::timestamptz AT TIME ZONE 'UTC') AS win_start,
-         ($2::timestamptz AT TIME ZONE 'UTC') AS win_end
-),
-eligible_pairs AS (
-  SELECT cuc."participantId", cuc."chatbotId"
-  FROM "ChatUsageCredits" cuc
-  JOIN "Chatbot" cb ON cb.id = cuc."chatbotId"
-  WHERE cuc."acceptedDisclaimerId" = cb."disclaimerId"
-    AND cuc."disclaimerDeclined" = false
+  SELECT CAST(:win_start AS timestamptz) AS win_start,
+         CAST(:win_end AS timestamptz) AS win_end
 ),
 messages AS (
   SELECT
@@ -28,10 +21,9 @@ messages AS (
   FROM "ChatMessage" m
   JOIN "ChatThread" ct ON ct.id = m."threadId"
   JOIN "Chatbot" cb   ON cb.id = ct."chatbotId"
-  JOIN eligible_pairs ep
-    ON ep."participantId" = ct."participantId" AND ep."chatbotId" = ct."chatbotId"
   CROSS JOIN params
   WHERE m."createdAt" >= params.win_start AND m."createdAt" < params.win_end
+    /*COURSE_FILTER*/
 ),
 user_msgs AS (SELECT * FROM messages WHERE role = 'user'),
 first_seen AS (
@@ -73,8 +65,8 @@ new_returning AS (
 hour_of_day_raw AS (
   SELECT
     "chatbotId",
-    EXTRACT(ISODOW FROM "createdAt")::int AS iso_dow,
-    EXTRACT(HOUR   FROM "createdAt")::int AS hr,
+    EXTRACT(ISODOW FROM "createdAt" AT TIME ZONE 'UTC')::int AS iso_dow,
+    EXTRACT(HOUR   FROM "createdAt" AT TIME ZONE 'UTC')::int AS hr,
     COUNT(*) AS cnt
   FROM user_msgs GROUP BY 1, 2, 3
 ),
@@ -116,15 +108,10 @@ effort_counts AS (
 ),
 disclaimer_counts AS (
   SELECT
-    cuc."chatbotId",
-    COUNT(*) FILTER (
-      WHERE cuc."acceptedDisclaimerId" = cb."disclaimerId"
-        AND cuc."disclaimerDeclined" = false
-    ) AS disclaimer_accepted,
-    COUNT(*) FILTER (WHERE cuc."disclaimerDeclined" = true) AS disclaimer_declined
-  FROM "ChatUsageCredits" cuc
-  JOIN "Chatbot" cb ON cb.id = cuc."chatbotId"
-  GROUP BY 1
+    "chatbotId",
+    COUNT(*) FILTER (WHERE "acceptedDisclaimerId" IS NOT NULL) AS disclaimer_accepted,
+    COUNT(*) FILTER (WHERE "disclaimerDeclined" = true)        AS disclaimer_declined
+  FROM "ChatUsageCredits" GROUP BY 1
 ),
 credit_exhaustion AS (
   SELECT
@@ -144,7 +131,7 @@ INSERT INTO "AggregatedChatbotAnalytics" (
 )
 SELECT
   'WEEKLY'::"AnalyticsType",
-  $3::date,
+  CAST(:ts AS date),
   r."chatbotId",
   r."courseId",
   r.active_participants,
@@ -171,4 +158,20 @@ LEFT JOIN mode_counts mc       USING ("chatbotId")
 LEFT JOIN effort_counts ec     USING ("chatbotId")
 LEFT JOIN disclaimer_counts dc USING ("chatbotId")
 LEFT JOIN credit_exhaustion ce USING ("chatbotId")
-ON CONFLICT ("type", "chatbotId", "timestamp") DO NOTHING;
+ON CONFLICT ("type", "chatbotId", "timestamp") DO UPDATE SET
+  "courseId"                    = EXCLUDED."courseId",
+  "activeParticipants"          = EXCLUDED."activeParticipants",
+  "newParticipants"             = EXCLUDED."newParticipants",
+  "returningParticipants"       = EXCLUDED."returningParticipants",
+  "threads"                     = EXCLUDED."threads",
+  "userMessages"                = EXCLUDED."userMessages",
+  "assistantMessages"           = EXCLUDED."assistantMessages",
+  "totalCreditsUsed"            = EXCLUDED."totalCreditsUsed",
+  "creditExhaustionRate"        = EXCLUDED."creditExhaustionRate",
+  "disclaimerAcceptedCount"     = EXCLUDED."disclaimerAcceptedCount",
+  "disclaimerDeclinedCount"     = EXCLUDED."disclaimerDeclinedCount",
+  "hourOfDayDistribution"       = EXCLUDED."hourOfDayDistribution",
+  "modelDistribution"           = EXCLUDED."modelDistribution",
+  "modeDistribution"            = EXCLUDED."modeDistribution",
+  "reasoningEffortDistribution" = EXCLUDED."reasoningEffortDistribution",
+  "updatedAt"                   = NOW();

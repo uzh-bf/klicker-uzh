@@ -3,24 +3,43 @@
 # All work happens in raw SQL; Python is just the orchestrator.
 
 import sys
-from prisma import Prisma
 
 sys.path.append("../../")
 
+from src.db import SessionLocal
+from src.log import script_entry, script_exit
 from src.modules.platform_analytics.compute_platform_analytics import (
-    compute_platform_semester_analytics,
     compute_course_modality_footprint,
+    compute_platform_semester_analytics,
+)
+from src.modules.utils import (
+    analytics_mode,
+    analytics_window_since,
+    check_analytics_cancellation,
+    scoped_course_ids,
 )
 
-db = Prisma()
-db.connect()
 
-verbose = True
+def main() -> None:
+    verbose = True
+    with SessionLocal() as session:
+        scope = scoped_course_ids(session)
+        started = script_entry(
+            script=__name__,
+            mode=analytics_mode(),
+            scope_size=len(scope) if scope is not None else None,
+            window_since=analytics_window_since(),
+        )
 
-print("Computing platform semester analytics")
-compute_platform_semester_analytics(db, verbose)
+        print("Computing platform semester analytics")
+        compute_platform_semester_analytics(session, verbose)
 
-print("Updating per-course modality footprint on AggregatedCourseAnalytics")
-compute_course_modality_footprint(db, verbose)
+        check_analytics_cancellation()
+        print("Updating per-course modality footprint on AggregatedCourseAnalytics")
+        compute_course_modality_footprint(session, verbose)
 
-db.disconnect()
+        script_exit(script=__name__, started=started, rows_written=None)
+
+
+if __name__ == "__main__":
+    main()

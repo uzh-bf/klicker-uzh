@@ -71,6 +71,8 @@ model QuestionResponse {
   @@index([microLearningId])
   @@index([practiceQuizId, participantId])
   @@index([microLearningId, participantId])
+  // Covers per-course, recent-window scans done by analytics scripts 2-7.
+  @@index([courseId, createdAt])
 }
 
 model QuestionResponseDetail {
@@ -142,6 +144,8 @@ model LiveQuizResponse {
 
   @@unique([instanceId, elementBlockExecution, participantId])
   @@index([instanceId, elementBlockExecution])
+  // Supports script 14's first/last attempt windows per participant and instance.
+  @@index([instanceId, participantId, submittedAt])
 }
 
 enum PointCorrectionType {

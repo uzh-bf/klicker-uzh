@@ -1,55 +1,83 @@
 # Clusters user-role ChatMessage content per chatbot using an NLP-only pipeline
 # (sentence-transformers → UMAP → HDBSCAN → TF-IDF labels). No LLM involved — per §3.5,
 # labels come from TF-IDF top-k terms so no raw-text leaks can happen via an LLM prompt.
-# Clusters with fewer than 5 distinct participants collapse into an "Other" bucket.
+# Clusters with fewer than 3 distinct participants collapse into an "Other" bucket.
 
 import sys
 from datetime import datetime
-from prisma import Prisma
+
+from sqlalchemy import select
 
 sys.path.append("../../")
 
+from src.db import SessionLocal
+from src.log import script_entry, script_exit
+from src.models import Chatbot
 from src.modules.chat_topic_clustering.cluster_chatbot import cluster_chatbot
-from src.modules.utils import exclusive_day_end, scoped_course_ids
+from src.modules.utils import (
+    analytics_mode,
+    analytics_window_since,
+    check_analytics_cancellation,
+    scoped_course_ids,
+)
 
 COURSE_TIMESTAMP = "1970-01-01"
 
-db = Prisma()
-db.connect()
 
-verbose = True
+def main() -> None:
+    verbose = True
 
-scope = scoped_course_ids(db)
-if scope is not None:
-    if not scope:
-        print("[10_chat_topic_clustering] empty course scope — nothing to cluster")
-        chatbots = []
-    else:
-        chatbots = db.chatbot.find_many(where={"courseId": {"in": scope}})
-else:
-    chatbots = db.chatbot.find_many()
-scope_note = f" (scoped to {len(scope)} course ids)" if scope is not None else ""
-print(f"Found {len(chatbots)} chatbots to cluster{scope_note}")
-
-win_start = "2022-10-23T00:00:00.000Z"
-win_end = exclusive_day_end(datetime.now().strftime("%Y-%m-%d"))
-
-total_rows = 0
-for cb in chatbots:
-    try:
-        written = cluster_chatbot(
-            db,
-            str(cb.id),
-            win_start,
-            win_end,
-            "COURSE",
-            COURSE_TIMESTAMP,
-            verbose=verbose,
+    with SessionLocal() as session:
+        scope = scoped_course_ids(session)
+        started = script_entry(
+            script=__name__,
+            mode=analytics_mode(),
+            scope_size=len(scope) if scope is not None else None,
+            window_since=analytics_window_since(),
         )
-        total_rows += written
-    except Exception as exc:
-        print(f"[chat_topic_clustering] chatbot={cb.id} FAILED: {exc}")
+        if scope is not None:
+            if not scope:
+                print("[10_chat_topic_clustering] empty course scope — nothing to cluster")
+                chatbots = []
+            else:
+                chatbots = session.execute(select(Chatbot).where(Chatbot.courseId.in_(scope))).scalars().all()
+        else:
+            chatbots = session.execute(select(Chatbot)).scalars().all()
 
-print(f"[chat_topic_clustering] total rows written: {total_rows}")
+        scope_note = f" (scoped to {len(scope)} course ids)" if scope is not None else ""
+        print(f"Found {len(chatbots)} chatbots to cluster{scope_note}")
 
-db.disconnect()
+        win_start = "2022-10-23T00:00:00.000Z"
+        win_end = datetime.now().strftime("%Y-%m-%d") + "T23:59:59.999Z"
+
+        total_rows = 0
+        failures = []
+        for cb in chatbots:
+            check_analytics_cancellation()
+            try:
+                written = cluster_chatbot(
+                    session,
+                    str(cb.id),
+                    win_start,
+                    win_end,
+                    "COURSE",
+                    COURSE_TIMESTAMP,
+                    verbose=verbose,
+                )
+                total_rows += written
+            except Exception as exc:
+                session.rollback()
+                failures.append(str(cb.id))
+                print(f"[chat_topic_clustering] chatbot={cb.id} FAILED: {exc}")
+
+        print(f"[chat_topic_clustering] total rows written: {total_rows}")
+
+        if failures:
+            failed_ids = ", ".join(failures)
+            raise RuntimeError(f"{len(failures)} of {len(chatbots)} chatbot clustering jobs failed: {failed_ids}")
+
+        script_exit(script=__name__, started=started, rows_written=total_rows)
+
+
+if __name__ == "__main__":
+    main()

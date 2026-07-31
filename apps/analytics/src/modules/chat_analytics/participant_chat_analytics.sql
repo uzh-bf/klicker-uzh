@@ -1,21 +1,19 @@
 -- ParticipantChatAnalytics rollup for a single (analytics_type, timestamp, [win_start, win_end)) window.
 -- Parameters:
---   $1 timestamptz — window start (inclusive)
---   $2 timestamptz — window end (exclusive)
---   $3 text        — AnalyticsType ('DAILY' | 'WEEKLY' | 'MONTHLY' | 'COURSE')
---   $4 date        — timestamp column value (for COURSE use the sentinel 1970-01-01)
--- Only participants who accepted the chatbot's current disclaimer are included (§3.9 privacy gate).
+--   :win_start       timestamptz — window start (inclusive)
+--   :win_end         timestamptz — window end (exclusive)
+--   :analytics_type  text        — AnalyticsType ('DAILY' | 'WEEKLY' | 'MONTHLY' | 'COURSE')
+--   :ts              date        — timestamp column value (for COURSE use the sentinel 1970-01-01)
+-- Only participants with acceptedDisclaimerId IS NOT NULL are included (§3.9 privacy gate).
 
 WITH params AS (
-  SELECT ($1::timestamptz AT TIME ZONE 'UTC') AS win_start,
-         ($2::timestamptz AT TIME ZONE 'UTC') AS win_end
+  SELECT CAST(:win_start AS timestamptz) AS win_start,
+         CAST(:win_end AS timestamptz) AS win_end
 ),
 eligible_pairs AS (
-  SELECT cuc."participantId", cuc."chatbotId"
-  FROM "ChatUsageCredits" cuc
-  JOIN "Chatbot" cb ON cb.id = cuc."chatbotId"
-  WHERE cuc."acceptedDisclaimerId" = cb."disclaimerId"
-    AND cuc."disclaimerDeclined" = false
+  SELECT "participantId", "chatbotId"
+  FROM "ChatUsageCredits"
+  WHERE "acceptedDisclaimerId" IS NOT NULL
 ),
 messages AS (
   SELECT
@@ -38,6 +36,7 @@ messages AS (
     ON ep."participantId" = ct."participantId" AND ep."chatbotId" = ct."chatbotId"
   CROSS JOIN params
   WHERE m."createdAt" >= params.win_start AND m."createdAt" < params.win_end
+    /*COURSE_FILTER*/
 ),
 user_msgs AS (
   SELECT * FROM messages WHERE role = 'user'
@@ -99,17 +98,7 @@ assistant_rollup AS (
     )::int                                     AS tool_call_count
   FROM messages WHERE role = 'assistant' GROUP BY 1, 2
 ),
-attachment_rollup AS (
-  SELECT ct."participantId", ct."chatbotId", COUNT(a.id) AS attachment_count
-  FROM "ChatAttachment" a
-  JOIN "ChatMessage" m ON m.id = a."messageId"
-  JOIN "ChatThread" ct ON ct.id = m."threadId"
-  JOIN eligible_pairs ep ON ep."participantId" = ct."participantId" AND ep."chatbotId" = ct."chatbotId"
-  CROSS JOIN params
-  WHERE m.role = 'user'
-    AND m."createdAt" >= params.win_start AND m."createdAt" < params.win_end
-  GROUP BY 1, 2
-),
+/*ATTACHMENT_ROLLUP_CTE*/
 credits_snapshot AS (
   -- current ChatUsageCredits snapshot; used as a coarse proxy for credit exhaustion in-window
   SELECT "participantId", "chatbotId", ("current" = 0) AS credits_exhausted
@@ -127,8 +116,8 @@ INSERT INTO "ParticipantChatAnalytics" (
   "createdAt", "updatedAt"
 )
 SELECT
-  $3::"AnalyticsType",
-  $4::date,
+  CAST(:analytics_type AS "AnalyticsType"),
+  CAST(:ts AS date),
   ur."participantId",
   ur."chatbotId",
   ur."courseId",
@@ -176,5 +165,4 @@ ON CONFLICT ("type", "participantId", "chatbotId", "timestamp") DO UPDATE SET
   "toolCallCount"        = EXCLUDED."toolCallCount",
   "totalCreditsUsed"     = EXCLUDED."totalCreditsUsed",
   "creditsExhausted"     = EXCLUDED."creditsExhausted",
-  "updatedAt"            = NOW()
-WHERE "ParticipantChatAnalytics"."type" = 'COURSE';
+  "updatedAt"            = NOW();
