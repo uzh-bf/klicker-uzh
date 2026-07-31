@@ -73,6 +73,8 @@ model ChatMessage {
 
   @@index([threadId])
   @@index([parentId])
+  // Used by analytics scripts 8/9/13 to scope rollups by date window.
+  @@index([createdAt])
 }
 
 model ChatAttachment {
@@ -127,6 +129,9 @@ model Chatbot {
   mcpConfigurations ChatbotMCPConfig[]
   threads           ChatThread[]
   usageCredits      ChatUsageCredits[]
+  participantChatAnalytics   ParticipantChatAnalytics[]
+  aggregatedChatbotAnalytics AggregatedChatbotAnalytics[]
+  topicClusters              ChatTopicCluster[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid

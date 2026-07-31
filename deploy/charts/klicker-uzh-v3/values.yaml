@@ -122,6 +122,33 @@ hatchet:
       tolerations: []
       affinity: {}
 
+    # Dedicated worker for the learning-analytics recompute pipeline. Image
+    # ships with Python 3.12 + uv + apps/analytics, so resource requests are
+    # higher than the Node-only workers (embedding + UMAP/HDBSCAN run in-proc
+    # during script 10). One replica is sufficient — the cron fires weekly and
+    # the task is single-shot.
+    analytics:
+      replicaCount: 1
+      priorityClassName: production-workload
+      image:
+        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-analytics
+        pullPolicy: Always
+      resources:
+        requests:
+          cpu: 200m
+          memory: 512Mi
+        limits:
+          memory: 4Gi
+      autoscaling:
+        enabled: false
+        minReplicas: 1
+        maxReplicas: 1
+        targetCPUUtilizationPercentage: 80
+        targetMemoryUtilizationPercentage: 80
+      nodeSelector: {}
+      tolerations: []
+      affinity: {}
+
 auth:
   priorityClassName: production-workload
 

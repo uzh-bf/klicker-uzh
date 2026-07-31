@@ -13,6 +13,7 @@ sys.path.append("../../")
 from src.modules.aggregated_analytics.compute_aggregated_analytics import (
     compute_aggregated_analytics,
 )
+from src.modules.utils import analytics_window_since, should_skip_window
 
 db = Prisma()
 db.connect()
@@ -32,11 +33,15 @@ date_range_daily = pd.date_range(start=start_date, end=end_date, freq="D")
 date_range_weekly = pd.date_range(start=start_date, end=end_date, freq="W")
 date_range_monthly = pd.date_range(start=start_date, end=end_date, freq="ME")
 
+windows_since = analytics_window_since()
+
 if compute_daily:
     # Iterate over the date range and compute the participant analytics for each day
     for curr_date in date_range_daily:
         # determine day start and end dates required for aggregation
         specific_date = curr_date.strftime("%Y-%m-%d")
+        if should_skip_window(specific_date, windows_since):
+            continue
         day_start = specific_date + "T00:00:00.000Z"
         day_end = specific_date + "T23:59:59.999Z"
         print(f"Computing daily aggregated analytics (course) for {specific_date}")
@@ -49,8 +54,11 @@ if compute_daily:
 if compute_weekly:
     # Iterate over the date range and compute the participant analytics for each week
     for curr_date in date_range_weekly:
+        week_end_date = curr_date.strftime("%Y-%m-%d")
+        if should_skip_window(week_end_date, windows_since):
+            continue
         # determine week start and end dates required for aggregation
-        week_end = curr_date.strftime("%Y-%m-%d") + "T23:59:59.999Z"
+        week_end = week_end_date + "T23:59:59.999Z"
         week_start = (curr_date - pd.DateOffset(days=6)).strftime("%Y-%m-%d") + "T00:00:00.000Z"
         print(f"Computing weekly aggregated analytics (course) for {week_start} to {week_end}")
 
@@ -62,8 +70,11 @@ if compute_weekly:
 if compute_monthly:
     # Iterate over the date range and compute the participant analytics for each month
     for curr_date in date_range_monthly:
+        month_end_date = curr_date.strftime("%Y-%m-%d")
+        if should_skip_window(month_end_date, windows_since):
+            continue
         # determine month start and end dates required for aggregation
-        month_end = curr_date.strftime("%Y-%m-%d") + "T23:59:59.999Z"
+        month_end = month_end_date + "T23:59:59.999Z"
         month_start = (curr_date - pd.offsets.MonthBegin(1)).strftime("%Y-%m-%d") + "T00:00:00.000Z"
         print(f"Computing monthly aggregated analytics (course) for {month_start} to {month_end}")
 

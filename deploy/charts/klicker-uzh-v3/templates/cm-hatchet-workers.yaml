@@ -29,3 +29,21 @@ data:
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
   ASSESSMENT_MODE: 'true'
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "chart.fullname" . }}-config-hatchet-worker-analytics
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:
+  HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
+  HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
+  # ANALYTICS_CWD matches the WORKDIR baked into the analytics worker image.
+  # Override in a per-env ConfigMap if the layout ever changes.
+  ANALYTICS_CWD: /app/apps/analytics
+  ANALYTICS_RUNNER_CMD: uv
+  ANALYTICS_RUNNER_ARGS: 'run python'
+  # Days after Course.endDate before the scanner marks a course as FINALIZING.
+  # Keeps the grace window generous for late student responses / chat messages.
+  ANALYTICS_FINALIZE_GRACE_DAYS: '7'

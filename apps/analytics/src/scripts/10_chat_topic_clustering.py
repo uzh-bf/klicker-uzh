@@ -1,0 +1,55 @@
+# Clusters user-role ChatMessage content per chatbot using an NLP-only pipeline
+# (sentence-transformers → UMAP → HDBSCAN → TF-IDF labels). No LLM involved — per §3.5,
+# labels come from TF-IDF top-k terms so no raw-text leaks can happen via an LLM prompt.
+# Clusters with fewer than 5 distinct participants collapse into an "Other" bucket.
+
+import sys
+from datetime import datetime
+from prisma import Prisma
+
+sys.path.append("../../")
+
+from src.modules.chat_topic_clustering.cluster_chatbot import cluster_chatbot
+from src.modules.utils import exclusive_day_end, scoped_course_ids
+
+COURSE_TIMESTAMP = "1970-01-01"
+
+db = Prisma()
+db.connect()
+
+verbose = True
+
+scope = scoped_course_ids(db)
+if scope is not None:
+    if not scope:
+        print("[10_chat_topic_clustering] empty course scope — nothing to cluster")
+        chatbots = []
+    else:
+        chatbots = db.chatbot.find_many(where={"courseId": {"in": scope}})
+else:
+    chatbots = db.chatbot.find_many()
+scope_note = f" (scoped to {len(scope)} course ids)" if scope is not None else ""
+print(f"Found {len(chatbots)} chatbots to cluster{scope_note}")
+
+win_start = "2022-10-23T00:00:00.000Z"
+win_end = exclusive_day_end(datetime.now().strftime("%Y-%m-%d"))
+
+total_rows = 0
+for cb in chatbots:
+    try:
+        written = cluster_chatbot(
+            db,
+            str(cb.id),
+            win_start,
+            win_end,
+            "COURSE",
+            COURSE_TIMESTAMP,
+            verbose=verbose,
+        )
+        total_rows += written
+    except Exception as exc:
+        print(f"[chat_topic_clustering] chatbot={cb.id} FAILED: {exc}")
+
+print(f"[chat_topic_clustering] total rows written: {total_rows}")
+
+db.disconnect()

@@ -4,6 +4,7 @@ node_modules/
 .next/
 .turbo/
 .vercel/
+.venv/
 dist/
 out/
 build/

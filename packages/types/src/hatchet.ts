@@ -90,9 +90,37 @@ export interface HatchetHandlers {
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
+  handleRecomputeLearningAnalytics: (
+    input: RecomputeLearningAnalyticsInput,
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
 }
 
+// Input shape for the weekly learning-analytics recompute. `mode` defaults to
+// incremental; the scanner sends `courseId` alone and the handler promotes it
+// to finalize for that course.
+export type RecomputeLearningAnalyticsInput = {
+  mode?: 'incremental' | 'finalize' | 'full'
+  courseIds?: string[]
+  courseId?: string
+  windowSince?: string
+}
+
+// Named event constants for Hatchet task triggers. Keeping them here instead of
+// sprinkling string literals across workflow definitions and emitter call sites.
+export const HATCHET_EVENTS = {
+  courseEnded: 'course-ended',
+  adminRecomputeAnalytics: 'admin-recompute-analytics',
+} as const
+
 // Contract for the tasks that are passed into the GraphQL context.
+// NOTE: the historical createAuditLogEntry shape disagrees with the real task
+// implementation in packages/hatchet/src/index.ts (wrapper vs direct payload);
+// GraphQL call sites currently rely on the wrapper shape, so keeping the
+// interface as-is avoids disturbing them. Downstream code that needs the real
+// inferred shape should import PreparedHatchetTasks from @klicker-uzh/hatchet
+// (the ReturnType<typeof prepareHatchetTasks>) instead.
 export interface PreparedHatchetTasks {
   createAuditLogEntry: TaskWorkflowDeclaration<
     {
@@ -133,6 +161,10 @@ export interface PreparedHatchetTasks {
   >
   aggregateLiveQuizBlockResultsAssessment: TaskWorkflowDeclaration<
     { liveQuizId: string; blockId: number },
+    { success: boolean }
+  >
+  recomputeLearningAnalytics: TaskWorkflowDeclaration<
+    RecomputeLearningAnalyticsInput,
     { success: boolean }
   >
 }

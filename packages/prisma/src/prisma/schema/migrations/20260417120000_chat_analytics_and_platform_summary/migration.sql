@@ -1,0 +1,252 @@
+-- CreateEnum
+CREATE TYPE "public"."ChatDoseBucket" AS ENUM ('NONE', 'LOW', 'MED', 'HIGH');
+
+-- AlterTable
+ALTER TABLE "public"."ParticipantCourseAnalytics" ADD COLUMN     "hasChatActivity" BOOLEAN NOT NULL DEFAULT false;
+
+-- AlterTable
+ALTER TABLE "public"."AggregatedCourseAnalytics" ADD COLUMN     "bothChatAndQuizCount" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "chatParticipantCount" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "chatbotCount" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "liveQuizCount" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "microLearningCount" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "practiceQuizCount" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "quizParticipantCount" INTEGER NOT NULL DEFAULT 0;
+
+-- AlterTable
+ALTER TABLE "public"."Course" ADD COLUMN     "analyticsLastComputedAt" TIMESTAMP(3),
+ADD COLUMN     "chatAnalyticsValidAt" TIMESTAMP(3);
+
+-- CreateTable
+CREATE TABLE "public"."ParticipantChatAnalytics" (
+    "id" SERIAL NOT NULL,
+    "type" "public"."AnalyticsType" NOT NULL,
+    "timestamp" DATE NOT NULL,
+    "participantId" UUID NOT NULL,
+    "chatbotId" UUID NOT NULL,
+    "courseId" UUID NOT NULL,
+    "userMessages" INTEGER NOT NULL DEFAULT 0,
+    "assistantMessages" INTEGER NOT NULL DEFAULT 0,
+    "threads" INTEGER NOT NULL DEFAULT 0,
+    "distinctDays" INTEGER NOT NULL DEFAULT 0,
+    "firstMessageAt" TIMESTAMP(3),
+    "lastMessageAt" TIMESTAMP(3),
+    "msgLenMedian" REAL,
+    "msgLenP90" REAL,
+    "msgLenP99" REAL,
+    "messagesPerThreadP50" REAL,
+    "messagesPerThreadP90" REAL,
+    "chatModeCounts" JSONB NOT NULL DEFAULT '{}',
+    "reasoningEffortCounts" JSONB NOT NULL DEFAULT '{}',
+    "attachmentCount" INTEGER NOT NULL DEFAULT 0,
+    "toolCallCount" INTEGER NOT NULL DEFAULT 0,
+    "totalCreditsUsed" DECIMAL(18,6) NOT NULL DEFAULT 0,
+    "creditsExhausted" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ParticipantChatAnalytics_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."AggregatedChatbotAnalytics" (
+    "id" SERIAL NOT NULL,
+    "type" "public"."AnalyticsType" NOT NULL,
+    "timestamp" DATE NOT NULL,
+    "chatbotId" UUID NOT NULL,
+    "courseId" UUID NOT NULL,
+    "activeParticipants" INTEGER NOT NULL DEFAULT 0,
+    "newParticipants" INTEGER NOT NULL DEFAULT 0,
+    "returningParticipants" INTEGER NOT NULL DEFAULT 0,
+    "threads" INTEGER NOT NULL DEFAULT 0,
+    "userMessages" INTEGER NOT NULL DEFAULT 0,
+    "assistantMessages" INTEGER NOT NULL DEFAULT 0,
+    "totalCreditsUsed" DECIMAL(18,6) NOT NULL DEFAULT 0,
+    "creditExhaustionRate" REAL,
+    "disclaimerAcceptedCount" INTEGER NOT NULL DEFAULT 0,
+    "disclaimerDeclinedCount" INTEGER NOT NULL DEFAULT 0,
+    "hourOfDayDistribution" JSONB NOT NULL DEFAULT '{}',
+    "modelDistribution" JSONB NOT NULL DEFAULT '{}',
+    "modeDistribution" JSONB NOT NULL DEFAULT '{}',
+    "reasoningEffortDistribution" JSONB NOT NULL DEFAULT '{}',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AggregatedChatbotAnalytics_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."ChatTopicCluster" (
+    "id" SERIAL NOT NULL,
+    "type" "public"."AnalyticsType" NOT NULL,
+    "timestamp" DATE NOT NULL,
+    "chatbotId" UUID NOT NULL,
+    "clusterIndex" INTEGER NOT NULL,
+    "clusterLabel" TEXT NOT NULL,
+    "messageCount" INTEGER NOT NULL,
+    "participantCount" INTEGER NOT NULL,
+    "representativeParaphrase" TEXT,
+    "embeddingCentroid" BYTEA,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ChatTopicCluster_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."ParticipantChatOutcome" (
+    "id" SERIAL NOT NULL,
+    "participantId" UUID NOT NULL,
+    "courseId" UUID NOT NULL,
+    "chatMessagesInCourse" INTEGER NOT NULL DEFAULT 0,
+    "chatDoseBucket" "public"."ChatDoseBucket" NOT NULL,
+    "firstErrorRate" REAL,
+    "lastErrorRate" REAL,
+    "errorRateDelta" REAL,
+    "hasBothModalities" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ParticipantChatOutcome_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."ParticipantLiveQuizAnalytics" (
+    "id" SERIAL NOT NULL,
+    "participantId" UUID NOT NULL,
+    "liveQuizId" UUID NOT NULL,
+    "courseId" UUID NOT NULL,
+    "totalResponses" INTEGER NOT NULL DEFAULT 0,
+    "firstCorrectCount" INTEGER NOT NULL DEFAULT 0,
+    "lastCorrectCount" INTEGER NOT NULL DEFAULT 0,
+    "averageTimeSpent" REAL,
+    "totalBasePoints" INTEGER NOT NULL DEFAULT 0,
+    "totalCorrectnessPoints" INTEGER NOT NULL DEFAULT 0,
+    "totalBonusPoints" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ParticipantLiveQuizAnalytics_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."AggregatedLiveQuizAnalytics" (
+    "id" SERIAL NOT NULL,
+    "liveQuizId" UUID NOT NULL,
+    "courseId" UUID NOT NULL,
+    "participantCount" INTEGER NOT NULL DEFAULT 0,
+    "responseCount" INTEGER NOT NULL DEFAULT 0,
+    "meanFirstCorrectness" REAL,
+    "meanLastCorrectness" REAL,
+    "lateSubmitterRate" REAL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AggregatedLiveQuizAnalytics_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."PlatformSemesterAnalytics" (
+    "id" SERIAL NOT NULL,
+    "semesterLabel" TEXT NOT NULL,
+    "semesterStart" TIMESTAMP(3) NOT NULL,
+    "semesterEnd" TIMESTAMP(3) NOT NULL,
+    "quizResponseRows" INTEGER NOT NULL DEFAULT 0,
+    "quizTrials" INTEGER NOT NULL DEFAULT 0,
+    "quizDistinctParticipants" INTEGER NOT NULL DEFAULT 0,
+    "liveQuizResponses" INTEGER NOT NULL DEFAULT 0,
+    "liveQuizDistinctParticipants" INTEGER NOT NULL DEFAULT 0,
+    "chatMessages" INTEGER NOT NULL DEFAULT 0,
+    "chatDistinctParticipants" INTEGER NOT NULL DEFAULT 0,
+    "activeCourses" INTEGER NOT NULL DEFAULT 0,
+    "coursesWithChatbot" INTEGER NOT NULL DEFAULT 0,
+    "coursesWithLiveQuiz" INTEGER NOT NULL DEFAULT 0,
+    "coursesWithQuizActivity" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PlatformSemesterAnalytics_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE INDEX "ParticipantChatAnalytics_chatbotId_type_timestamp_idx" ON "public"."ParticipantChatAnalytics"("chatbotId", "type", "timestamp");
+
+-- CreateIndex
+CREATE INDEX "ParticipantChatAnalytics_courseId_type_timestamp_idx" ON "public"."ParticipantChatAnalytics"("courseId", "type", "timestamp");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ParticipantChatAnalytics_type_participantId_chatbotId_times_key" ON "public"."ParticipantChatAnalytics"("type", "participantId", "chatbotId", "timestamp");
+
+-- CreateIndex
+CREATE INDEX "AggregatedChatbotAnalytics_courseId_type_timestamp_idx" ON "public"."AggregatedChatbotAnalytics"("courseId", "type", "timestamp");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AggregatedChatbotAnalytics_type_chatbotId_timestamp_key" ON "public"."AggregatedChatbotAnalytics"("type", "chatbotId", "timestamp");
+
+-- CreateIndex
+CREATE INDEX "ChatTopicCluster_chatbotId_timestamp_idx" ON "public"."ChatTopicCluster"("chatbotId", "timestamp");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ChatTopicCluster_type_chatbotId_timestamp_clusterIndex_key" ON "public"."ChatTopicCluster"("type", "chatbotId", "timestamp", "clusterIndex");
+
+-- CreateIndex
+CREATE INDEX "ParticipantChatOutcome_courseId_chatDoseBucket_idx" ON "public"."ParticipantChatOutcome"("courseId", "chatDoseBucket");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ParticipantChatOutcome_participantId_courseId_key" ON "public"."ParticipantChatOutcome"("participantId", "courseId");
+
+-- CreateIndex
+CREATE INDEX "ParticipantLiveQuizAnalytics_courseId_idx" ON "public"."ParticipantLiveQuizAnalytics"("courseId");
+
+-- CreateIndex
+CREATE INDEX "ParticipantLiveQuizAnalytics_liveQuizId_idx" ON "public"."ParticipantLiveQuizAnalytics"("liveQuizId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ParticipantLiveQuizAnalytics_participantId_liveQuizId_key" ON "public"."ParticipantLiveQuizAnalytics"("participantId", "liveQuizId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AggregatedLiveQuizAnalytics_liveQuizId_key" ON "public"."AggregatedLiveQuizAnalytics"("liveQuizId");
+
+-- CreateIndex
+CREATE INDEX "AggregatedLiveQuizAnalytics_courseId_idx" ON "public"."AggregatedLiveQuizAnalytics"("courseId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "PlatformSemesterAnalytics_semesterLabel_key" ON "public"."PlatformSemesterAnalytics"("semesterLabel");
+
+-- AddForeignKey
+ALTER TABLE "public"."ParticipantChatAnalytics" ADD CONSTRAINT "ParticipantChatAnalytics_participantId_fkey" FOREIGN KEY ("participantId") REFERENCES "public"."Participant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."ParticipantChatAnalytics" ADD CONSTRAINT "ParticipantChatAnalytics_chatbotId_fkey" FOREIGN KEY ("chatbotId") REFERENCES "public"."Chatbot"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."ParticipantChatAnalytics" ADD CONSTRAINT "ParticipantChatAnalytics_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "public"."Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."AggregatedChatbotAnalytics" ADD CONSTRAINT "AggregatedChatbotAnalytics_chatbotId_fkey" FOREIGN KEY ("chatbotId") REFERENCES "public"."Chatbot"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."AggregatedChatbotAnalytics" ADD CONSTRAINT "AggregatedChatbotAnalytics_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "public"."Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."ChatTopicCluster" ADD CONSTRAINT "ChatTopicCluster_chatbotId_fkey" FOREIGN KEY ("chatbotId") REFERENCES "public"."Chatbot"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."ParticipantChatOutcome" ADD CONSTRAINT "ParticipantChatOutcome_participantId_fkey" FOREIGN KEY ("participantId") REFERENCES "public"."Participant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."ParticipantChatOutcome" ADD CONSTRAINT "ParticipantChatOutcome_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "public"."Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."ParticipantLiveQuizAnalytics" ADD CONSTRAINT "ParticipantLiveQuizAnalytics_participantId_fkey" FOREIGN KEY ("participantId") REFERENCES "public"."Participant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."ParticipantLiveQuizAnalytics" ADD CONSTRAINT "ParticipantLiveQuizAnalytics_liveQuizId_fkey" FOREIGN KEY ("liveQuizId") REFERENCES "public"."LiveQuiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."ParticipantLiveQuizAnalytics" ADD CONSTRAINT "ParticipantLiveQuizAnalytics_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "public"."Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."AggregatedLiveQuizAnalytics" ADD CONSTRAINT "AggregatedLiveQuizAnalytics_liveQuizId_fkey" FOREIGN KEY ("liveQuizId") REFERENCES "public"."LiveQuiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."AggregatedLiveQuizAnalytics" ADD CONSTRAINT "AggregatedLiveQuizAnalytics_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "public"."Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
