@@ -4,6 +4,7 @@ import { ActivityType, type ElementOptionsCaseStudy } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
   getInitialInstanceStatistics,
+  LEARNING_ANALYTICS_DISCLOSURE_VERSION,
   MISSING_CATALOG_COLLECTION_ID,
   processElementData,
   recomputeDerivedPermissions,
@@ -205,6 +206,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       description: 'Das ist ein Testkurs. Hier wird getestet. Viel Spass!',
       isGamificationEnabled: true,
       isAssessmentEnabled: false,
+      isLearningAnalyticsEnabled: true,
       ownerId: USER_ID_TEST,
       color: '#016272',
       pinCode: 123456789,
@@ -777,9 +779,46 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     })
   )
 
+  // Learning analytics participation for Testkurs. The course has LA enabled,
+  // so every participant needs a choice for the dashboards to be verifiable.
+  // The split is deterministic: testuser1-35 included, testuser36-45 excluded,
+  // testuser46-50 undecided. 35 inclusions keep aggregates above the
+  // five-student suppression threshold even after dormant profiles and
+  // per-element sparsity from `seed:interactions`.
+  // `includedFrom` predates the course start, so every seeded interaction
+  // falls inside the inclusion window (activity must be at or after it).
+  const LA_INCLUDED_UNTIL_INDEX = 35
+  const LA_EXCLUDED_UNTIL_INDEX = 45
+  const LA_CHOICE_AT = new Date('2018-12-01T00:00')
+
   // create participations for all the first 30 participants
   await Promise.all(
     PARTICIPANT_IDS.map(async (id, ix) => {
+      const learningAnalyticsStatus =
+        ix < LA_INCLUDED_UNTIL_INDEX
+          ? Prisma.LearningAnalyticsParticipationStatus.INCLUDED
+          : ix < LA_EXCLUDED_UNTIL_INDEX
+            ? Prisma.LearningAnalyticsParticipationStatus.EXCLUDED
+            : Prisma.LearningAnalyticsParticipationStatus.UNDECIDED
+
+      const isDecided =
+        learningAnalyticsStatus !==
+        Prisma.LearningAnalyticsParticipationStatus.UNDECIDED
+      const includedFrom =
+        learningAnalyticsStatus ===
+        Prisma.LearningAnalyticsParticipationStatus.INCLUDED
+          ? LA_CHOICE_AT
+          : null
+
+      const learningAnalyticsData = {
+        learningAnalyticsStatus,
+        learningAnalyticsIncludedFrom: includedFrom,
+        learningAnalyticsChoiceAt: isDecided ? LA_CHOICE_AT : null,
+        learningAnalyticsDisclosureVersion: isDecided
+          ? LEARNING_ANALYTICS_DISCLOSURE_VERSION
+          : null,
+      }
+
       return prisma.participation.upsert({
         where: {
           courseId_participantId: {
@@ -789,6 +828,21 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         },
         create: {
           isActive: true,
+          ...learningAnalyticsData,
+          // Backdated so the choice predates the analytics pipeline cutoff and
+          // does not hold the course in a pending-finalization state.
+          ...(isDecided
+            ? {
+                learningAnalyticsChoiceEvents: {
+                  create: {
+                    status: learningAnalyticsStatus,
+                    includedFrom,
+                    disclosureVersion: LEARNING_ANALYTICS_DISCLOSURE_VERSION,
+                    createdAt: LA_CHOICE_AT,
+                  },
+                },
+              }
+            : {}),
           course: {
             connect: {
               id: COURSE_ID_TEST,
@@ -802,6 +856,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         },
         update: {
           isActive: true,
+          ...learningAnalyticsData,
         },
       })
     })

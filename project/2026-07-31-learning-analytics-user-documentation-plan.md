@@ -166,10 +166,26 @@ rather than a rollout detail.
 
 ## Progress
 
-- Status: plan committed; S1 not started.
 - Base: `d5a21f3b90` on `codex/learning-analytics-opt-out-plan`.
-- Next action: S1 — extend the seed with LA participation and verify the
-  analytics pipeline produces unsuppressed results.
+- S1 implemented. `LEARNING_ANALYTICS_DISCLOSURE_VERSION` moved to
+  `@klicker-uzh/util` (re-exported from the GraphQL lib) so the seed can reach
+  it without a GraphQL dependency. `Testkurs` now seeds with LA enabled;
+  `testuser1-35` are `INCLUDED`, `testuser36-45` `EXCLUDED`, `testuser46-50`
+  `UNDECIDED`, all backdated to 2018-12-01 so every interaction from
+  `seed:interactions` (window 2025-09-15 to 2026-04-18) falls inside the
+  inclusion period.
+- `Evidence:` `pnpm --filter @klicker-uzh/{util,prisma-data,graphql} check`
+  clean; `@klicker-uzh/graphql` builds and the bundle resolves the constant
+  through the util import; prettier clean on all changed files.
+- `Evidence:` R1 partially retired. The three lecturer-facing screenshots under
+  `apps/docs/static/img/learning_analytics/` carry no personal data and the
+  performance dashboard already uses `Student 1`-style pseudonyms.
+  `la_students_dashboard.png` is a captioned thesis figure of the student view,
+  not a product screenshot, and is not reused.
+- `Risk:` The database-backed check (pipeline run against the seeded data)
+  is outstanding and is batched into S5 with the browser verification so the
+  environment is started once.
+- Next action: S2 — disclosure links and version bump.
 
 ## Next steps
 

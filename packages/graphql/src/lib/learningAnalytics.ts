@@ -1,7 +1,10 @@
 import * as DB from '@klicker-uzh/prisma/client'
+import { LEARNING_ANALYTICS_DISCLOSURE_VERSION } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
 
-export const LEARNING_ANALYTICS_DISCLOSURE_VERSION = '2026-07-30-v1'
+// Lives in @klicker-uzh/util so packages without a GraphQL dependency (seeds,
+// scripts) can reach the same constant. Re-exported here for existing importers.
+export { LEARNING_ANALYTICS_DISCLOSURE_VERSION }
 
 export type LearningAnalyticsChoiceStatus =
   | typeof DB.LearningAnalyticsParticipationStatus.INCLUDED

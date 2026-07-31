@@ -59,7 +59,7 @@ from the previous boundary while leaving operational data and existing
 aggregates unchanged. Re-inclusion and renewal after a disclosure change set a
 new prospective inclusion time
 (`packages/graphql/src/services/participants.ts:setOwnLearningAnalyticsChoice`;
-`packages/graphql/src/lib/learningAnalytics.ts:LEARNING_ANALYTICS_DISCLOSURE_VERSION`).
+`packages/util/src/learningAnalytics.ts:LEARNING_ANALYTICS_DISCLOSURE_VERSION`).
 The choice API and PWA control are hidden while course LA is disabled, but the
 stored choice and history remain available if the lecturer enables it again.
 
