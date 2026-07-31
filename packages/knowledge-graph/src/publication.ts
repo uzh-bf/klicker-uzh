@@ -1,20 +1,27 @@
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 
+import { computeKBContentDigest } from './digest.js'
+
 export type KnowledgeGraphSourceMetadata = {
   resourceId: string
   title: string
 }
 
 export type PublishedKnowledgeGraph = {
-  chatbotId: string
-  builtRevision: number
+  kbId: string
+  buildId: string
   graphName: string
+  /**
+   * The KB's content has moved on since this build was made. The build keeps
+   * serving regardless — staleness is a label on the lecturer's views, never an
+   * outage for students (ADR 0001).
+   */
+  isStale: boolean
   sources: KnowledgeGraphSourceMetadata[]
 }
 
 export type KnowledgeGraphPublicationCode =
   | 'EMPTY'
-  | 'DIRTY'
   | 'QUEUED'
   | 'PROCESSING'
   | 'FAILED'
@@ -29,78 +36,80 @@ export class KnowledgeGraphNotPublishedError extends Error {
   }
 }
 
-export function getKnowledgeGraphName(chatbotId: string): string {
-  return `klickeruzh:${chatbotId}`
+/**
+ * Each build writes its own graph and the KB's published pointer moves to it once
+ * the build completes, so a graph is never mutated while it is being served.
+ */
+export function getKnowledgeGraphName(kbId: string, buildId: string): string {
+  return `klickeruzh:kb:${kbId}:${buildId}`
 }
 
 function unpublishedCode(
-  graph: {
-    status: string
-    selectionRevision: number
-    builtRevision: number | null
-    resources: unknown[]
-  } | null
-): KnowledgeGraphPublicationCode | null {
-  if (
-    graph === null ||
-    graph.resources.length === 0 ||
-    graph.status === 'EMPTY'
-  ) {
+  latestBuild: { status: string } | null
+): KnowledgeGraphPublicationCode {
+  if (latestBuild === null) {
     return 'EMPTY'
   }
 
-  if (
-    graph.status === 'READY' &&
-    graph.builtRevision !== null &&
-    graph.builtRevision === graph.selectionRevision
-  ) {
-    return null
+  if (latestBuild.status === 'QUEUED' || latestBuild.status === 'PROCESSING') {
+    return latestBuild.status
   }
 
-  if (graph.status === 'QUEUED' || graph.status === 'PROCESSING') {
-    return graph.status
-  }
-
-  if (graph.status === 'FAILED') {
+  if (latestBuild.status === 'FAILED') {
     return 'FAILED'
   }
 
-  return 'DIRTY'
+  return 'EMPTY'
 }
 
 export async function getPublishedKnowledgeGraph(
   prisma: PrismaClient,
-  chatbotId: string
+  kbId: string
 ): Promise<PublishedKnowledgeGraph> {
-  const graph = await prisma.chatbotKnowledgeGraph.findUnique({
-    where: { chatbotId },
+  const kb = await prisma.kB.findFirst({
+    where: { id: kbId, deletedAt: null },
     select: {
-      status: true,
-      selectionRevision: true,
-      builtRevision: true,
+      publishedGraphBuildId: true,
       resources: {
+        where: { deletedAt: null },
         select: { id: true, title: true },
         orderBy: { id: 'asc' },
       },
     },
   })
 
-  const code = unpublishedCode(graph)
-  if (code !== null) {
-    throw new KnowledgeGraphNotPublishedError(code)
+  if (kb === null || kb.publishedGraphBuildId === null) {
+    const latestBuild =
+      kb === null
+        ? null
+        : await prisma.kBGraphBuild.findFirst({
+            where: { kbId },
+            select: { status: true },
+            orderBy: { createdAt: 'desc' },
+          })
+
+    throw new KnowledgeGraphNotPublishedError(unpublishedCode(latestBuild))
   }
 
-  // The publication predicate above proves this value is non-null.
-  const builtRevision = graph?.builtRevision
-  if (builtRevision === null || builtRevision === undefined || graph === null) {
-    throw new KnowledgeGraphNotPublishedError('DIRTY')
+  const build = await prisma.kBGraphBuild.findUnique({
+    where: { id: kb.publishedGraphBuildId },
+    select: { id: true, graphName: true, sourceContentDigest: true },
+  })
+
+  // A published pointer with no build behind it leaves nothing to read, even
+  // though the KB believes a graph is published.
+  if (build === null) {
+    throw new KnowledgeGraphNotPublishedError('EMPTY')
   }
 
   return {
-    chatbotId,
-    builtRevision,
-    graphName: getKnowledgeGraphName(chatbotId),
-    sources: graph.resources.map((resource) => ({
+    kbId,
+    buildId: build.id,
+    graphName: build.graphName,
+    isStale:
+      build.sourceContentDigest !==
+      (await computeKBContentDigest(prisma, kbId)),
+    sources: kb.resources.map((resource) => ({
       resourceId: resource.id,
       title: resource.title,
     })),

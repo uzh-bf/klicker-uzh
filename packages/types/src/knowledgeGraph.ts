@@ -25,8 +25,10 @@ export type KnowledgeGraphEdge = {
 }
 
 export type KnowledgeGraphResponse = {
-  chatbotId: string
-  builtRevision: number
+  kbId: string
+  buildId: string
+  // stale graphs keep serving; only lecturer-facing views surface the label
+  isStale: boolean
   nodes: KnowledgeGraphNode[]
   edges: KnowledgeGraphEdge[]
   truncated: boolean

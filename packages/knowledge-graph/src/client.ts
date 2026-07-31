@@ -18,10 +18,7 @@ import {
   normalizeKnowledgeGraphEdge,
   normalizeKnowledgeGraphNode,
 } from './normalize.js'
-import {
-  type PublishedKnowledgeGraph,
-  getKnowledgeGraphName,
-} from './publication.js'
+import { type PublishedKnowledgeGraph } from './publication.js'
 import {
   type KnowledgeGraphEdgeRow,
   type KnowledgeGraphNodeRow,
@@ -108,13 +105,15 @@ export async function closeKnowledgeGraphClient(): Promise<void> {
   await session.client.close()
 }
 
-async function graphSession(chatbotId: string): Promise<{
+// The graph name comes from the published build rather than being recomputed, so
+// a build that is being served is always read under the name it was written to.
+async function graphSession(graphName: string): Promise<{
   graph: Graph
   config: KnowledgeGraphConfig
 }> {
   const { client, config } = await getClientSession()
   return {
-    graph: client.selectGraph(getKnowledgeGraphName(chatbotId)),
+    graph: client.selectGraph(graphName),
     config,
   }
 }
@@ -174,8 +173,9 @@ function response(
   truncated: boolean
 ): KnowledgeGraphResponse {
   return {
-    chatbotId: context.chatbotId,
-    builtRevision: context.builtRevision,
+    kbId: context.kbId,
+    buildId: context.buildId,
+    isStale: context.isStale,
     nodes,
     edges,
     truncated,
@@ -185,7 +185,7 @@ function response(
 export async function readKnowledgeGraphOverview(
   context: PublishedKnowledgeGraph
 ): Promise<KnowledgeGraphResponse> {
-  const { graph, config } = await graphSession(context.chatbotId)
+  const { graph, config } = await graphSession(context.graphName)
   const nodeRows = await readRows<KnowledgeGraphNodeRow>(
     graph,
     config,
@@ -224,7 +224,7 @@ export async function searchKnowledgeGraph(
   searchText: string
 ): Promise<KnowledgeGraphResponse> {
   const query = getSearchNodesQuery(searchText)
-  const { graph, config } = await graphSession(context.chatbotId)
+  const { graph, config } = await graphSession(context.graphName)
   const rows = await readRows<KnowledgeGraphNodeRow>(graph, config, query)
 
   return response(
@@ -240,7 +240,7 @@ export async function readKnowledgeGraphNeighbors(
   nodeId: string
 ): Promise<KnowledgeGraphResponse> {
   const query = getNeighborhoodNodesQuery(nodeId)
-  const { graph, config } = await graphSession(context.chatbotId)
+  const { graph, config } = await graphSession(context.graphName)
   const nodeRows = await readRows<KnowledgeGraphNodeRow>(graph, config, query)
   const allNodes = normalizedNodes(nodeRows, context).filter(
     (node) => node.id !== nodeId

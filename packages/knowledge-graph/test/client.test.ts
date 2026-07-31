@@ -27,10 +27,14 @@ import {
   exampleLectureSources,
 } from './fixtures/exampleLectureGraph.js'
 
+const KB_ID = '00000000-0000-4000-8000-000000000001'
+const BUILD_ID = '00000000-0000-4000-8000-0000000000b1'
+
 const context: PublishedKnowledgeGraph = {
-  chatbotId: '00000000-0000-4000-8000-000000000001',
-  builtRevision: 4,
-  graphName: 'klickeruzh:00000000-0000-4000-8000-000000000001',
+  kbId: KB_ID,
+  buildId: BUILD_ID,
+  graphName: `klickeruzh:kb:${KB_ID}:${BUILD_ID}`,
+  isStale: false,
   sources: exampleLectureSources,
 }
 
@@ -148,8 +152,9 @@ describe('knowledge graph client', () => {
     const result = await readKnowledgeGraphOverview(context)
 
     expect(result).toMatchObject({
-      chatbotId: context.chatbotId,
-      builtRevision: 4,
+      kbId: context.kbId,
+      buildId: context.buildId,
+      isStale: false,
       truncated: true,
     })
     expect(result.nodes).toHaveLength(250)
@@ -209,7 +214,7 @@ describe('knowledge graph client', () => {
     expect(result.nodes).toHaveLength(100)
     expect(result.edges).toHaveLength(200)
     expect(result.truncated).toBe(true)
-    expect(sdk.roQuery.mock.calls[0]?.[0]).not.toContain(context.chatbotId)
+    expect(sdk.roQuery.mock.calls[0]?.[0]).not.toContain(context.kbId)
     expect(sdk.roQuery.mock.calls[0]?.[1]).toMatchObject({
       params: { nodeId: '12' },
     })

@@ -1050,4 +1050,5 @@ export enum PointCorrectionType {
 }
 // #endregion
 
+export * from './knowledgeGraph.js'
 export * from './studentMcp.js'
