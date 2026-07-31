@@ -2892,7 +2892,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       responseExportFailed:
         'Der Antwortexport konnte nicht heruntergeladen werden.',
       responseExportEmpty:
-        'Es sind keine verknüpften Antworten für den Export verfügbar.',
+        'Es sind keine korrelierten Antworten für den Export verfügbar.',
       responseExportNotReady:
         'Antworten werden noch verarbeitet. Versuchen Sie den Download in Kürze erneut.',
       responseExportTooLarge:

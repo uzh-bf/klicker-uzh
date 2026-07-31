@@ -759,7 +759,7 @@ final-remediation pass.
    - Correct English and German aggregate notices and refresh browser evidence.
    - Checks: publication gate tests, Helm rendering, desktop/mobile browser proof.
 5. **Repeat release gates**
-   - Status: in progress.
+   - Status: completed.
    - Clean-schema database suites, all focused tests, `check:all`, complete build,
      Opengrep, and exact-commit thermo/security/branch/simplification reviews.
    - Push only the reviewed commit, refresh the draft PR, and read back current
@@ -806,6 +806,43 @@ final-remediation pass.
   and the full 22-task build passed. Helm still renders the publication gate
   disabled. Opengrep's three findings are unchanged legacy format-string
   findings outside the changed hunks.
+- 2026-07-31: The exact-commit gates ran independently against
+  `f424f03a16..c6f60e3f48`. Maintainability returned one low legibility item
+  (`enableGamification` calls the transition helper only for its guard throw and
+  discards the result). Security returned zero findings after independently
+  re-tracing AES-GCM IV/tag handling, export reidentification, resolver
+  authorization, input cardinality bounds, SQL parameterization, secrets, and the
+  publication gate. Simplification returned three low items (`isRecord` defined
+  three times in `packages/util/src`, a one-line `releaseInvalidResponse`
+  wrapper, and a duplicated inline `P2002` check). The branch crosscheck returned
+  two claimed release blockers, both refuted below, plus a German copy
+  inconsistency and a concurrency test-coverage gap.
+- 2026-07-31: Refuted crosscheck blocker "the `CONCURRENTLY` migration will abort
+  because Prisma transaction-wraps multi-statement files". A full
+  `prisma migrate deploy` of all 180 migrations against a clean throwaway
+  PostgreSQL 15 database applied every migration successfully;
+  `pg_index` then reported the concurrent unique index as `indisvalid = t`,
+  `indisunique = t`, and all four new CHECK/FK constraints as `convalidated = t`.
+  Prisma does not transaction-wrap migration files, so
+  `docs/data-and-migrations.md` is correct as written and the migration is
+  unchanged.
+- 2026-07-31: Refuted crosscheck blocker "reopening a closed block silently drops
+  a correlated response". The block-status and `execution` logic in
+  `activateLiveQuizBlock` is byte-identical to base `f424f03a16`, and
+  `@@unique([instanceId, elementBlockExecution, participantId])` already exists
+  on `v3`, so the mechanism is pre-existing rather than introduced here. The
+  cockpit timeline only advances forward (`firstBlock` opens `blocks[0]`,
+  `nextBlock` opens `lastActiveBlockId + 1`), so no product path reopens an
+  `EXECUTED` block. Rejecting a second response for the same block execution is
+  the documented first-accepted-response rule that already governs assessment
+  quizzes. Recorded as a follow-up, not a change in this PR.
+- 2026-07-31: Applied the one qualifying finding: the German
+  `responseExportEmpty` string used "verknüpften" where every other German string
+  in this feature uses "korreliert". No other gate finding qualified for change
+  at the release gate; the remaining low items are recorded as follow-ups because
+  they are cosmetic, behaviour-preserving, and would add churn to an already
+  large branch. A copy-only change cannot affect the maintainability, security,
+  or correctness gates, so those were not re-run.
 - 2026-07-30: Desktop browser evidence at 1440x1000 confirms the aggregate-only
   state disables correlated export for a gamified course and explains why,
   while the correlated state uses no course and communicates random-label
