@@ -1,0 +1,46 @@
+name: Test backend-docker
+
+on:
+  push:
+    branches: ['v3', 'v3*']
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  filter:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Check for changes
+        id: check
+        uses: ./.github/actions/changed-paths
+        with:
+          pattern: '^(apps/backend-docker/|package\.json|pnpm-lock\.yaml|\.github/workflows/test-backend-docker\.yml|\.github/actions/changed-paths/)'
+
+  test-backend-docker:
+    needs: filter
+    if: needs.filter.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Define node version
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.0
+          run_install: true
+
+      - name: Run backend tests
+        run: pnpm --filter @klicker-uzh/backend-docker test:run

@@ -1,0 +1,270 @@
+import * as DB from '@klicker-uzh/prisma/client'
+import {
+  buildCourseDiscussionScopeKey,
+  buildExternalBlockDiscussionScopeKey,
+  COURSE_QA_CONTENT_MAX_LENGTH,
+  COURSE_QA_EXTERNAL_REF_MAX_LENGTH,
+  COURSE_QA_EXTERNAL_SOURCE_MAX_LENGTH,
+} from '@klicker-uzh/types'
+import type { Context } from '../../lib/context.js'
+import {
+  buildThreadInclude,
+  type DiscussionReplyWithVotes,
+  type DiscussionThreadWithRelationsBase,
+} from './relations.js'
+import type {
+  DiscussionReplyWithRelations,
+  DiscussionSort,
+  DiscussionThreadWithRelations,
+  DiscussionViewer,
+} from './types.js'
+
+export {
+  buildReplyInclude,
+  buildThreadInclude,
+  REPLIES_PER_THREAD_MAX,
+} from './relations.js'
+
+const LIMIT_DEFAULT = 20
+
+const LIMIT_MAX = 50
+
+export const ACTIVE_COURSE_SCOPE_TYPES = [
+  DB.DiscussionScopeType.COURSE,
+  DB.DiscussionScopeType.PRACTICE_STACK,
+  DB.DiscussionScopeType.EXTERNAL_BLOCK,
+] as const
+
+export function normalizeContent(content: string) {
+  const normalized = content.trim()
+  if (
+    normalized.length === 0 ||
+    normalized.length > COURSE_QA_CONTENT_MAX_LENGTH
+  ) {
+    return null
+  }
+
+  return normalized
+}
+
+export function parseLimit(limit?: number | null) {
+  if (!limit || Number.isNaN(limit)) return LIMIT_DEFAULT
+  return Math.max(1, Math.min(LIMIT_MAX, Math.floor(limit)))
+}
+
+export function parseCursor(cursor?: string | null) {
+  if (!cursor) return null
+
+  const parsed = Number.parseInt(cursor, 10)
+  if (Number.isNaN(parsed) || parsed <= 0) return null
+
+  return parsed
+}
+
+export function getThreadOrderBy(
+  sort?: DiscussionSort | null
+): DB.Prisma.DiscussionThreadOrderByWithRelationInput[] {
+  if (sort === 'NEWEST_DESC') {
+    return [{ createdAt: 'desc' }, { id: 'desc' }]
+  }
+
+  if (sort === 'UPVOTES_DESC') {
+    return [{ upvotes: 'desc' }, { lastActivityAt: 'desc' }, { id: 'desc' }]
+  }
+
+  return [{ lastActivityAt: 'desc' }, { id: 'desc' }]
+}
+
+function sourceKeyForSpace(space: DB.DiscussionSpace) {
+  return buildCourseDiscussionScopeKey(space.courseId)
+}
+
+function sourceLabelForSpace() {
+  return 'Course'
+}
+
+export function isActiveCourseScopeType(scopeType: DB.DiscussionScopeType) {
+  return ACTIVE_COURSE_SCOPE_TYPES.includes(
+    scopeType as (typeof ACTIVE_COURSE_SCOPE_TYPES)[number]
+  )
+}
+
+export function isPrismaUniqueConstraintError(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 'P2002'
+  )
+}
+
+// Mirrors canDeleteDiscussionContent without its scope-prerequisite query: the
+// viewer already passed those checks to read this content. Only an affordance
+// hint — the delete mutations re-authorize on their own.
+function canViewerDelete(
+  authorParticipantId: string | null,
+  viewer?: DiscussionViewer | null
+) {
+  if (!viewer) return false
+  if (viewer.isModerator) return true
+
+  return (
+    viewer.participantId !== null &&
+    viewer.participantId === authorParticipantId
+  )
+}
+
+export function mapReply(
+  reply: DiscussionReplyWithVotes,
+  {
+    spaceId,
+    scopeId,
+    viewer,
+  }: {
+    spaceId: number
+    scopeId: number
+    viewer?: DiscussionViewer | null
+  }
+): DiscussionReplyWithRelations {
+  return {
+    ...reply,
+    spaceId,
+    scopeId,
+    hasUpvoted: (reply.votes?.length ?? 0) > 0,
+    canDelete: canViewerDelete(reply.authorParticipantId, viewer),
+  }
+}
+
+function mapThread(
+  thread: DiscussionThreadWithRelationsBase,
+  viewer: DiscussionViewer | null | undefined,
+  stack?: {
+    type: DB.ElementStackType
+    order: number
+    displayName: string | null
+  }
+): DiscussionThreadWithRelations {
+  const { space, ...scope } = thread.scope
+  const sourceKey = sourceKeyForSpace(space)
+  const sourceLabel = sourceLabelForSpace()
+
+  return {
+    ...thread,
+    spaceId: space.id,
+    scope: {
+      ...scope,
+      stackType: stack?.type ?? null,
+      stackOrder: stack?.order ?? null,
+      stackDisplayName: stack?.displayName ?? null,
+    },
+    sourceKey,
+    sourceLabel,
+    hasUpvoted: (thread.votes?.length ?? 0) > 0,
+    canDelete: canViewerDelete(thread.authorParticipantId, viewer),
+    replies: thread.replies.map((reply) =>
+      mapReply(reply, {
+        spaceId: space.id,
+        scopeId: thread.scopeId,
+        viewer,
+      })
+    ),
+  }
+}
+
+export async function mapThreads(
+  threads: DiscussionThreadWithRelationsBase[],
+  ctx: Context,
+  viewer?: DiscussionViewer | null
+) {
+  const stackIds = [
+    ...new Set(
+      threads
+        .map((thread) => thread.scope.stackId)
+        .filter((stackId): stackId is number => stackId !== null)
+    ),
+  ]
+  const stacks =
+    stackIds.length === 0
+      ? []
+      : await ctx.prisma.elementStack.findMany({
+          where: { id: { in: stackIds } },
+          select: {
+            id: true,
+            type: true,
+            order: true,
+            displayName: true,
+          },
+        })
+  const stacksById = new Map(stacks.map((stack) => [stack.id, stack]))
+
+  return threads.map((thread) => {
+    const stack = thread.scope.stackId
+      ? stacksById.get(thread.scope.stackId)
+      : undefined
+
+    return mapThread(thread, viewer, stack)
+  })
+}
+
+export function normalizeExternalScopeIdentifiers(
+  externalSource: string,
+  externalRef: string
+) {
+  const normalizedSource = externalSource.trim()
+  const normalizedRef = externalRef.trim()
+
+  if (
+    !normalizedSource ||
+    !normalizedRef ||
+    normalizedSource.length > COURSE_QA_EXTERNAL_SOURCE_MAX_LENGTH ||
+    normalizedRef.length > COURSE_QA_EXTERNAL_REF_MAX_LENGTH
+  ) {
+    return null
+  }
+
+  try {
+    buildExternalBlockDiscussionScopeKey(normalizedSource, normalizedRef)
+  } catch {
+    return null
+  }
+
+  return {
+    externalSource: normalizedSource,
+    externalRef: normalizedRef,
+  }
+}
+
+export function extractCourseIdFromSpace(space: DB.DiscussionSpace | null) {
+  if (!space) return null
+
+  return space.spaceType === DB.DiscussionSpaceType.COURSE
+    ? space.courseId
+    : null
+}
+
+export async function getDiscussionThreadById(
+  {
+    threadId,
+    participantId,
+  }: { threadId: number; participantId?: string | null },
+  ctx: Context
+): Promise<DiscussionThreadWithRelations | null> {
+  const thread = await ctx.prisma.discussionThread.findUnique({
+    where: { id: threadId },
+    include: buildThreadInclude(participantId),
+  })
+
+  if (!thread || thread.isDeleted) {
+    return null
+  }
+
+  if (!isActiveCourseScopeType(thread.scope.scopeType)) {
+    return null
+  }
+
+  const [mappedThread] = await mapThreads([thread], ctx, {
+    participantId: participantId ?? null,
+    isModerator: false,
+  })
+  return mappedThread ?? null
+}

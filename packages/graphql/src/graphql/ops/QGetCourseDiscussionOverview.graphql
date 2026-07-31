@@ -1,0 +1,25 @@
+query GetCourseDiscussionOverview(
+  $courseId: String!
+  $sort: DiscussionSort
+  $limit: Int
+  $cursor: String
+) {
+  courseDiscussionOverview(
+    courseId: $courseId
+    sort: $sort
+    limit: $limit
+    cursor: $cursor
+  ) {
+    groups {
+      sourceKey
+      sourceLabel
+      spaceType
+      threads {
+        ...DiscussionThreadData
+      }
+    }
+    nextCursor
+    hasMore
+    totalThreads
+  }
+}

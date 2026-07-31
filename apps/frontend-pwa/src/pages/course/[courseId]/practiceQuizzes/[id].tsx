@@ -77,6 +77,7 @@ import { UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import nookies from 'nookies'
 import { useEffect, useState } from 'react'
 import Layout, {
@@ -120,6 +121,7 @@ function PracticeQuizPage({
   embedded: boolean
 }) {
   const t = useTranslations()
+  const router = useRouter()
   const [currentIx, setCurrentIx] = useState(-1)
   const [parentOrigin, setParentOrigin] = useState<string | null>(null)
   const [isCompleted, setIsCompleted] = useState(false)

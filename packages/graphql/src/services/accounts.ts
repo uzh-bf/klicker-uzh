@@ -14,6 +14,7 @@ import type { CookieOptions } from 'express'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import * as EmailService from '../services/email.js'
+import { reconcileParticipantDiscussionVotesBeforeDeletion } from './discussions/participant-votes.js'
 import { sendTeamsNotification } from './notifications.js'
 
 const COOKIE_SETTINGS: CookieOptions = {
@@ -520,43 +521,58 @@ export async function changeParticipantLocale(
 }
 
 export async function deleteParticipantAccount(ctx: ContextWithUser) {
-  const participant = await ctx.prisma.participant.findUnique({
-    where: { id: ctx.user.sub },
-    include: {
-      participantGroups: {
-        include: {
-          participants: true,
+  const deleted = await ctx.prisma.$transaction(async (prisma) => {
+    if (
+      !(await reconcileParticipantDiscussionVotesBeforeDeletion(
+        prisma,
+        ctx.user.sub
+      ))
+    ) {
+      return false
+    }
+
+    const participant = await prisma.participant.findUnique({
+      where: { id: ctx.user.sub },
+      select: {
+        id: true,
+        participantGroups: {
+          select: {
+            id: true,
+            _count: {
+              select: {
+                participants: true,
+              },
+            },
+          },
         },
       },
-    },
+    })
+
+    if (!participant) return false
+
+    const emptyGroupIds = participant.participantGroups
+      .filter((group) => group._count.participants === 1)
+      .map((group) => group.id)
+    await prisma.participantGroup.deleteMany({
+      where: {
+        id: { in: emptyGroupIds },
+      },
+    })
+
+    await prisma.participant.delete({
+      where: { id: participant.id },
+    })
+
+    return true
   })
 
-  if (!participant) return false
+  if (!deleted) return false
 
   ctx.res.cookie('participant_token', 'logoutString', {
     ...COOKIE_SETTINGS,
     maxAge: 0,
   })
 
-  // if a participant group is empty after the participant leaves it, delete the group as well
-  let deletionPromises: any[] = []
-  for (const group of participant.participantGroups) {
-    if (group.participants.length === 1) {
-      deletionPromises.push(
-        ctx.prisma.participantGroup.delete({
-          where: { id: group.id },
-        })
-      )
-    }
-  }
-
-  deletionPromises.push(
-    ctx.prisma.participant.delete({
-      where: { id: ctx.user.sub },
-    })
-  )
-
-  await ctx.prisma.$transaction(deletionPromises)
   return true
 }
 

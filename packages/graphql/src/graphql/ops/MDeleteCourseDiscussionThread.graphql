@@ -1,0 +1,3 @@
+mutation DeleteCourseDiscussionThread($threadId: Int!) {
+  deleteCourseDiscussionThread(threadId: $threadId)
+}

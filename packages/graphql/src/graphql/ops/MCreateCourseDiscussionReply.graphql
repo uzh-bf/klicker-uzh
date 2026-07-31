@@ -1,0 +1,10 @@
+mutation CreateCourseDiscussionReply(
+  $input: CreateCourseDiscussionReplyInput!
+) {
+  createCourseDiscussionReply(input: $input) {
+    reply {
+      ...DiscussionReplyData
+    }
+    failureCode
+  }
+}

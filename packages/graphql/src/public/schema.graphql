@@ -951,6 +951,9 @@ type Course {
   id: ID!
   isArchived: Boolean!
   isAssessmentEnabled: Boolean!
+  isCourseQAAnonymousEnabled: Boolean!
+  isCourseQAEnabled: Boolean!
+  isCourseQARolloutEnabled: Boolean!
   isEditor: Boolean
   isGamificationEnabled: Boolean!
   isGroupCreationEnabled: Boolean!
@@ -1019,6 +1022,52 @@ type CourseAssessmentReportRecordPage {
   totalCount: Int!
 }
 
+type CourseDiscussionEmbeddingInfo {
+  allowAnonymous: Boolean!
+  courseId: ID!
+  embedToken: String!
+  embedUrl: String!
+  expiresAt: Date!
+  scopeKey: String!
+  scopeLabel: String!
+}
+
+type CourseDiscussionOverview {
+  groups: [CourseDiscussionOverviewGroup!]!
+  hasMore: Boolean!
+  nextCursor: String
+  totalThreads: Int!
+}
+
+type CourseDiscussionOverviewGroup {
+  sourceKey: String!
+  sourceLabel: String!
+  spaceType: DiscussionSpaceType!
+  threads: [DiscussionThread!]!
+}
+
+enum CourseDiscussionPostFailure {
+  ACCESS_DENIED
+  COURSE_QA_UNAVAILABLE
+  INVALID_EMBED
+  INVALID_INPUT
+  INVALID_SCOPE
+  POST_FAILED
+  RATE_LIMITED
+  REPLY_LIMIT_REACHED
+  THREAD_UNAVAILABLE
+}
+
+type CourseDiscussionReplyPostResult {
+  failureCode: CourseDiscussionPostFailure
+  reply: DiscussionReply
+}
+
+type CourseDiscussionThreadPostResult {
+  failureCode: CourseDiscussionPostFailure
+  thread: DiscussionThread
+}
+
 type CourseLeaderboard {
   averageActiveScore: Float!
   computedAt: Date
@@ -1082,6 +1131,22 @@ type CourseSummary {
   numOfPracticeQuizzes: Int!
 }
 
+input CreateCourseDiscussionReplyInput {
+  content: String!
+  courseId: String!
+  embedToken: String
+  isAnonymous: Boolean
+  threadId: Int!
+}
+
+input CreateCourseDiscussionThreadInput {
+  content: String!
+  courseId: String!
+  embedToken: String
+  isAnonymous: Boolean
+  scope: DiscussionScopeInput!
+}
+
 enum CreditResetPeriod {
   BIWEEKLY
   DAILY
@@ -1112,6 +1177,94 @@ type DerivedPermissionOriginInformation {
   parentTargetUser: String
   parentTargetUserGroup: String
   permissionUser: String!
+}
+
+input DiscussionExternalBlockInput {
+  externalRef: String!
+  externalSource: String!
+}
+
+type DiscussionReply {
+  canDelete: Boolean
+  content: String!
+  createdAt: Date!
+  hasUpvoted: Boolean
+  id: Int!
+  isAnonymous: Boolean!
+  isDeleted: Boolean!
+  scopeId: Int!
+  spaceId: Int!
+  threadId: Int!
+  updatedAt: Date!
+  upvotes: Int!
+}
+
+type DiscussionScope {
+  createdAt: Date!
+  externalRef: String
+  externalSource: String
+  id: Int!
+  scopeKey: String!
+  scopeLabel: String!
+  scopeType: DiscussionScopeType!
+  spaceId: Int!
+  stackDisplayName: String
+  stackId: Int
+  stackOrder: Int
+  stackType: ElementStackType
+  updatedAt: Date!
+}
+
+input DiscussionScopeInput {
+  externalRef: String
+  externalSource: String
+  scopeType: DiscussionScopeType!
+  stackId: Int
+}
+
+enum DiscussionScopeType {
+  COURSE
+  EXTERNAL_BLOCK
+  PRACTICE_STACK
+}
+
+enum DiscussionSort {
+  ACTIVITY_DESC
+  NEWEST_DESC
+  UPVOTES_DESC
+}
+
+enum DiscussionSpaceType {
+  COURSE
+}
+
+type DiscussionThread {
+  canDelete: Boolean
+  content: String!
+  createdAt: Date!
+  hasUpvoted: Boolean
+  id: Int!
+  isAnonymous: Boolean!
+  isDeleted: Boolean!
+  lastActivityAt: Date!
+  replies: [DiscussionReply!]!
+  replyCount: Int!
+  scope: DiscussionScope!
+  scopeId: Int!
+  sourceKey: String
+  sourceLabel: String
+  spaceId: Int!
+  updatedAt: Date!
+  upvotes: Int!
+}
+
+type DiscussionThreadPage {
+  canPostAnonymously: Boolean!
+  canPostIdentified: Boolean!
+  hasMore: Boolean!
+  isAccessible: Boolean!
+  nextCursor: String
+  threads: [DiscussionThread!]!
 }
 
 union Element = CaseStudyElement | ChoicesElement | ContentElement | FlashcardElement | FreeTextElement | NumericalElement | SelectionElement
@@ -1866,6 +2019,8 @@ type Mutation {
   createAnswerCollection(answers: [String!]!, description: String!, name: String!): AnswerCollection
   createCatalogCollection(access: ObjectAccess!, name: String!): CatalogCollection
   createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, startDate: Date!): Course
+  createCourseDiscussionReply(input: CreateCourseDiscussionReplyInput!): CourseDiscussionReplyPostResult!
+  createCourseDiscussionThread(input: CreateCourseDiscussionThreadInput!): CourseDiscussionThreadPostResult!
   createFeedback(content: String!, quizId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): ActivityInfo
   createLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, defaultCorrectPoints: Int, defaultPoints: Int, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, isPinProtected: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): ActivityInfo
@@ -1884,6 +2039,8 @@ type Mutation {
   deleteAnswerCollectionEntry(collectionId: Int!, id: Int!): Int
   deleteCatalogCollection(catalogCollectionId: String!): String
   deleteCourse(id: String!): Course
+  deleteCourseDiscussionReply(replyId: Int!): Boolean!
+  deleteCourseDiscussionThread(threadId: Int!): Boolean!
   deleteElement(id: Int!): Element
   deleteFeedback(id: Int!, liveQuizId: String!): Feedback
   deleteFeedbackResponse(id: Int!, liveQuizId: String!): Feedback
@@ -1914,6 +2071,7 @@ type Mutation {
   finalizeGroupActivityGrading(id: String!): GroupActivity
   flagElement(content: String!, elementId: Int!, elementInstanceId: Int!): ElementFeedback
   flagOutdatedElementInstances(elementId: Int!): Boolean
+  generateCourseDiscussionEmbeddingInfo(allowAnonymous: Boolean, courseId: String!, expiresInHours: Int, externalBlock: DiscussionExternalBlockInput): CourseDiscussionEmbeddingInfo
   getFileUploadSas(contentType: String!, fileName: String!): FileUploadSAS
   gradeGroupActivitySubmission(gradingDecisions: GroupActivityGradingInput!, groupActivityId: String!, id: Int!): GroupActivityInstance
   grantPrivatePreviewAccess(email: String!): Int
@@ -1975,6 +2133,8 @@ type Mutation {
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
   toggleArchiveCourse(id: String!, isArchived: Boolean!): Course
+  toggleCourseDiscussionReplyUpvote(replyId: Int!, upvote: Boolean!): DiscussionReply
+  toggleCourseDiscussionThreadUpvote(threadId: Int!, upvote: Boolean!): DiscussionThread
   transferGroupOwnership(id: Int!, newOwnerId: String!): Boolean!
   transferObjectOwnership(objectId: String!, objectType: ObjectType!, shortnameOrEmail: String!): PermissionInfo
   unpublishGroupActivity(id: String!): GroupActivity
@@ -1983,7 +2143,7 @@ type Mutation {
   unpublishPracticeQuiz(id: String!): PracticeQuiz
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
   updateChatbotModelSettings(allowedModelIds: [String!]!, allowedReasoningEffortsByModel: [ChatbotReasoningConfigInput!], chatbotId: String!, modelSelection: Boolean!): Chatbot
-  updateCourseSettings(color: String, description: String, displayName: String, endDate: Date, groupDeadlineDate: Date, id: String!, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean, language: LocaleType!, name: String, notificationEmail: String, startDate: Date): Course
+  updateCourseSettings(color: String, description: String, displayName: String, endDate: Date, groupDeadlineDate: Date, id: String!, isCourseQAAnonymousEnabled: Boolean, isCourseQAEnabled: Boolean, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean, language: LocaleType!, name: String, notificationEmail: String, startDate: Date): Course
   updateElementInstances(elementId: Int!, includeTemplates: Boolean!): [ElementInstance!]
   updateParticipantAvatar(avatar: String!, avatarSettings: AvatarSettingsInput!): Participant
   updateParticipantProfile(email: String!, isProfilePublic: Boolean, password: String, username: String!): Participant
@@ -2437,6 +2597,8 @@ type Query {
   course(id: String!): Course
   courseAssessmentReportRecordCount(courseId: String!): Int!
   courseAssessmentReportRecords(courseId: String!, numEntries: Int, offset: Int, searchString: String, statusFilter: [AssessmentReportCredentialStatus!]): CourseAssessmentReportRecordPage!
+  courseDiscussionOverview(courseId: String!, cursor: String, limit: Int, sort: DiscussionSort): CourseDiscussionOverview!
+  courseDiscussionThreads(courseId: String!, cursor: String, embedToken: String, limit: Int, scopeKey: String, sort: DiscussionSort): DiscussionThreadPage!
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   element(id: Int!): Element
   endedLiveQuizzesCourse(courseId: String!): [LiveQuizSelectionItem!]
@@ -2856,6 +3018,9 @@ type StudentCourse {
   description: String
   displayName: String!
   id: ID!
+  isCourseQAAnonymousEnabled: Boolean!
+  isCourseQAEnabled: Boolean!
+  isCourseQARolloutEnabled: Boolean!
   owner: User!
   pinCode: Int
 }

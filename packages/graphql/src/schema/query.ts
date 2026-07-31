@@ -7,6 +7,7 @@ import * as ActivityService from '../services/activities.js'
 import * as AnalyticsService from '../services/analytics.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseService from '../services/courses.js'
+import * as DiscussionService from '../services/discussions.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
@@ -51,6 +52,11 @@ import {
   LiveQuizSelectionItem,
   StudentCourse,
 } from './course.js'
+import {
+  CourseDiscussionOverviewRef,
+  DiscussionSort,
+  DiscussionThreadPageRef,
+} from './discussions.js'
 import {
   Element,
   ElementInstance,
@@ -221,6 +227,34 @@ export const Query = builder.queryType({
         },
         resolve: async (_, args, ctx) => {
           return await FeedbackService.getFeedbacks(args, ctx)
+        },
+      }),
+
+      courseDiscussionThreads: t.field({
+        type: DiscussionThreadPageRef,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          scopeKey: t.arg.string({ required: false }),
+          sort: t.arg({ type: DiscussionSort, required: false }),
+          limit: t.arg.int({ required: false }),
+          cursor: t.arg.string({ required: false }),
+          embedToken: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await DiscussionService.courseDiscussionThreads(args, ctx)
+        },
+      }),
+
+      courseDiscussionOverview: t.field({
+        type: CourseDiscussionOverviewRef,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          sort: t.arg({ type: DiscussionSort, required: false }),
+          limit: t.arg.int({ required: false }),
+          cursor: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await DiscussionService.courseDiscussionOverview(args, ctx)
         },
       }),
 

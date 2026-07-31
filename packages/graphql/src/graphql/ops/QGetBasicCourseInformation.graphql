@@ -4,6 +4,9 @@ query GetBasicCourseInformation($courseId: String!) {
     displayName
     description
     color
+    isCourseQARolloutEnabled
+    isCourseQAEnabled
+    isCourseQAAnonymousEnabled
     owner {
       shortname
     }

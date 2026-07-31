@@ -248,6 +248,10 @@ function CourseOverviewHeader({
                   endDate: endDateUTC,
                   notificationEmail: values.notificationEmail,
                   isGamificationEnabled: values.isGamificationEnabled,
+                  isCourseQAEnabled: values.isCourseQAEnabled,
+                  isCourseQAAnonymousEnabled:
+                    values.isCourseQAEnabled &&
+                    values.isCourseQAAnonymousEnabled,
                   isGroupCreationEnabled: values.isGroupCreationEnabled,
                   groupDeadlineDate: groupDeadlineDateUTC,
                 },

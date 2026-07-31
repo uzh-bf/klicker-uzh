@@ -301,6 +301,8 @@ export default {
       elementN: 'Element {number}',
       Nelements: '{number} Element(e)',
       stackN: 'Stack {number}',
+      practiceStackN: 'Übungs-Stack {number}',
+      microlearningStackN: 'Microlearning-Stack {number}',
       questionN: 'Frage {number}',
       clueN: 'Hinweis {number}',
       availability: 'Verfügbarkeit',
@@ -922,6 +924,62 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       solvedAt: 'Gelöst am {date}',
       feedbackSubmitted:
         'Ihr Feedback / ihre Frage wurde erfolgreich übermittelt.',
+    },
+    courseQA: {
+      title: 'Kurs Q&A',
+      newThread: 'Neuer Beitrag',
+      threadPlaceholder: 'Stellen Sie eine Frage zu diesem Bereich...',
+      postThread: 'Beitrag erstellen',
+      postAnonymously: 'Anonym posten',
+      postingAnonymously: 'Diese Frage wird anonym veröffentlicht.',
+      replyAnonymously: 'Anonym antworten',
+      replyingAnonymously: 'Diese Antwort wird anonym veröffentlicht.',
+      replyPlaceholder: 'Antwort schreiben...',
+      reply: 'Antworten',
+      openStackDiscussion: 'Diesen Stack diskutieren',
+      discussionContext: 'Frageset für die Diskussion',
+      nReply: '{count, plural, =1 {1 Antwort} other {# Antworten}}',
+      noThreads: 'Noch keine Diskussionsbeiträge für diesen Bereich.',
+      threadPostFailed:
+        'Beitrag konnte nicht erstellt werden. Überprüfen Sie die Berechtigungen oder Embed-Einstellungen.',
+      threadPostError:
+        'Beitrag konnte nicht erstellt werden. Bitte versuchen Sie es erneut.',
+      postRateLimited:
+        'Sie posten zu schnell. Warten Sie einen Moment und versuchen Sie es erneut.',
+      replyPostFailed:
+        'Antwort konnte nicht gesendet werden. Überprüfen Sie die Berechtigungen oder Embed-Einstellungen.',
+      replyPostError:
+        'Antwort konnte nicht gesendet werden. Bitte versuchen Sie es erneut.',
+      replyLimitReached:
+        'Dieser Beitrag hat die maximale Anzahl an Antworten erreicht.',
+      upvoteFailed:
+        'Upvote konnte nicht aktualisiert werden. Melden Sie sich als Teilnehmer an, um abzustimmen.',
+      threadUpvoteAriaLabel: 'Frage positiv bewerten',
+      replyUpvoteAriaLabel: 'Antwort positiv bewerten',
+      threadUpvoteCountAriaLabel:
+        '{count, plural, =1 {1 Upvote} other {# Upvotes}}',
+      replyUpvoteCountAriaLabel:
+        '{count, plural, =1 {1 Upvote} other {# Upvotes}}',
+      readOnly:
+        'Diese eingebettete Diskussion ist schreibgeschützt. Melden Sie sich als Kursteilnehmer an, um Beiträge zu verfassen.',
+      disabled: 'Kurs Q&A ist für diesen Kurs nicht aktiviert.',
+      accessDenied:
+        'Sie haben keinen Zugriff auf diese Kurs-Q&A-Ansicht oder der Link ist ungültig.',
+      loadMore: 'Mehr laden',
+      deleteThread: 'Frage löschen',
+      deleteReply: 'Antwort löschen',
+      deleteThreadTitle: 'Diese Frage löschen?',
+      deleteReplyTitle: 'Diese Antwort löschen?',
+      deleteThreadMessage:
+        'Diese Frage und alle zugehörigen Antworten werden für alle entfernt. Diese Aktion kann nicht rückgängig gemacht werden.',
+      deleteReplyMessage:
+        'Diese Antwort wird für alle entfernt. Diese Aktion kann nicht rückgängig gemacht werden.',
+      deleteConfirm: 'Löschen',
+      deleteThreadFailed:
+        'Diese Frage konnte nicht gelöscht werden. Möglicherweise wurde sie bereits entfernt.',
+      deleteReplyFailed:
+        'Diese Antwort konnte nicht gelöscht werden. Möglicherweise wurde sie bereits entfernt.',
+      deleteError: 'Löschen fehlgeschlagen. Bitte versuchen Sie es erneut.',
     },
     profile: {
       publicProfile: 'Profilsichtbarkeit',
@@ -2931,6 +2989,50 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       saveDescription: 'Beschreibung speichern',
       noDescriptionNotification: 'Keine Beschreibung vorhanden',
       reviewProgress: 'Review-Fortschritt',
+      courseQA: 'Kurs Q&A',
+      courseQAAnonymousInEmbeds: 'Anonym in Einbettungen',
+      enableCourseQA: 'Kurs Q&A aktivieren',
+      enableCourseQATooltip:
+        'Ermöglicht es Teilnehmenden, Diskussionsbeiträge auf Kursebene zu erstellen und zu beantworten.',
+      allowAnonymousInEmbeds: 'Anonyme Beiträge in Einbettungen erlauben',
+      allowAnonymousInEmbedsTooltip:
+        'Ermöglicht anonymes Posten in eingebetteten Q&A-Ansichten bei gültigem Embed-Token.',
+      courseQADisabledNotice:
+        'Kurs Q&A ist derzeit deaktiviert. Aktivieren Sie es in den Kurseinstellungen, um die Diskussionsfunktionen zu nutzen.',
+      embedLinkGenerator: 'Embed-Link Generator',
+      embedExternalBlockHelp:
+        'Generieren Sie einen Embed-Link für einen bestimmten externen Block, indem Sie Quelle und Referenz angeben.',
+      embedCourseHelp:
+        'Erstellen Sie einen Link zur Einbettung der kursweiten Q&A-Diskussion.',
+      embedScope: 'Diskussionsbereich',
+      embedScopeCourse: 'Gesamter Kurs',
+      embedScopeExternal: 'Externer Block',
+      embedExternalSource: 'Externe Quelle',
+      embedExternalSourcePlaceholder: 'z.B. moodle',
+      embedExternalRef: 'Externe Referenz',
+      embedExternalRefPlaceholder: 'z.B. course-block-1',
+      discussionOverview: 'Diskussionsübersicht',
+      noThreadsYet:
+        'Es sind noch keine Diskussionsbeiträge in diesem Kurs vorhanden.',
+      generateEmbedLink: 'Embed-Link generieren',
+      copyUrl: 'URL kopieren',
+      refreshOverview: 'Übersicht aktualisieren',
+      loadMoreThreads: 'Weitere Beiträge laden',
+      allThreadsLoaded: 'Alle Beiträge geladen',
+      loadedThreadCount:
+        '{count, plural, one {# Beitrag geladen} other {# Beiträge geladen}}',
+      embedUrl: 'Embed URL',
+      expiresAt: 'Gültig bis: {date}',
+      embedGenFailed:
+        'Die Generierung der Embed-Informationen ist fehlgeschlagen.',
+      embedCopied: 'Embed-URL in die Zwischenablage kopiert.',
+      embedExpiredRegenerate:
+        'Generieren Sie vor dem Kopieren einen neuen Link.',
+      scopeLabel: 'Bereich',
+      tokenLifetime: 'Token-Gültigkeitsdauer (Stunden)',
+      allowAnonymousPosting: 'Anonymes Posten erlauben',
+      allowAnonymousPostingDisabled:
+        'Aktivieren Sie anonymes Posten in den Kurseinstellungen, damit es in Embeds verfügbar ist.',
       activityNotAvailableAssessment:
         '{activityType} werden in Assessment-Kursen leider aktuell noch nicht unterstützt.',
       withGroups: 'Mit Gruppen',

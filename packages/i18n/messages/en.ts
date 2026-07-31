@@ -300,6 +300,8 @@ export default {
       elementN: 'Element {number}',
       Nelements: '{number} element(s)',
       stackN: 'Stack {number}',
+      practiceStackN: 'Practice stack {number}',
+      microlearningStackN: 'Microlearning stack {number}',
       questionN: 'Question {number}',
       clueN: 'Clue {number}',
       availability: 'Availability',
@@ -920,6 +922,60 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       solvedAt: 'Resolved at {date}',
       feedbackSubmitted:
         'Your feedback / question has been successfully submitted.',
+    },
+    courseQA: {
+      title: 'Course Q&A',
+      newThread: 'New Thread',
+      threadPlaceholder: 'Ask a question for this scope...',
+      postThread: 'Post Thread',
+      postAnonymously: 'Post anonymously',
+      postingAnonymously: 'This question will be posted anonymously.',
+      replyAnonymously: 'Reply anonymously',
+      replyingAnonymously: 'This reply will be posted anonymously.',
+      replyPlaceholder: 'Write a reply...',
+      reply: 'Reply',
+      openStackDiscussion: 'Discuss this stack',
+      discussionContext: 'Question set for discussion',
+      nReply: '{count, plural, =1 {1 reply} other {# replies}}',
+      noThreads: 'No discussion threads yet for this scope.',
+      threadPostFailed:
+        'Unable to post thread. Check permissions or embed settings.',
+      threadPostError: 'Unable to post thread. Please try again.',
+      postRateLimited:
+        "You're posting too quickly. Wait a moment and try again.",
+      replyPostFailed:
+        'Unable to post reply. Check permissions or embed settings.',
+      replyPostError: 'Unable to post reply. Please try again.',
+      replyLimitReached:
+        'This thread has reached the maximum number of replies.',
+      upvoteFailed:
+        'Unable to update upvote. Sign in as a participant to vote.',
+      threadUpvoteAriaLabel: 'Upvote question',
+      replyUpvoteAriaLabel: 'Upvote reply',
+      threadUpvoteCountAriaLabel:
+        '{count, plural, =1 {1 upvote} other {# upvotes}}',
+      replyUpvoteCountAriaLabel:
+        '{count, plural, =1 {1 upvote} other {# upvotes}}',
+      readOnly:
+        'This embedded discussion is read-only. Sign in as a course participant to contribute.',
+      disabled: 'Course Q&A is not enabled for this course.',
+      accessDenied:
+        'You do not have access to this Course Q&A view or the link is invalid.',
+      loadMore: 'Load more',
+      deleteThread: 'Delete question',
+      deleteReply: 'Delete reply',
+      deleteThreadTitle: 'Delete this question?',
+      deleteReplyTitle: 'Delete this reply?',
+      deleteThreadMessage:
+        'This question and all of its replies will be removed for everyone. This action cannot be undone.',
+      deleteReplyMessage:
+        'This reply will be removed for everyone. This action cannot be undone.',
+      deleteConfirm: 'Delete',
+      deleteThreadFailed:
+        'Unable to delete this question. It may already have been removed.',
+      deleteReplyFailed:
+        'Unable to delete this reply. It may already have been removed.',
+      deleteError: 'Unable to delete. Please try again.',
     },
     profile: {
       publicProfile: 'Profile Visibility',
@@ -2880,6 +2936,47 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       saveDescription: 'Save description',
       noDescriptionNotification: 'No description available.',
       reviewProgress: 'Review progress',
+      courseQA: 'Course Q&A',
+      courseQAAnonymousInEmbeds: 'Anonymous in Embeds',
+      enableCourseQA: 'Enable Course Q&A',
+      enableCourseQATooltip:
+        'Allow participants to post and reply to course-level discussion threads.',
+      allowAnonymousInEmbeds: 'Allow Anonymous in Embeds',
+      allowAnonymousInEmbedsTooltip:
+        'Allow anonymous posting in embedded Q&A views when a valid embed token is used.',
+      courseQADisabledNotice:
+        'Course Q&A is currently disabled. Enable it in course settings to activate discussion features.',
+      embedLinkGenerator: 'Embed Link Generator',
+      embedExternalBlockHelp:
+        'Generate an embed link for a specific external block by providing its source and reference.',
+      embedCourseHelp:
+        'Generate a link for embedding the course-wide Q&A discussion.',
+      embedScope: 'Discussion scope',
+      embedScopeCourse: 'Entire course',
+      embedScopeExternal: 'External block',
+      embedExternalSource: 'External Source',
+      embedExternalSourcePlaceholder: 'e.g. moodle',
+      embedExternalRef: 'External Reference',
+      embedExternalRefPlaceholder: 'e.g. course-block-1',
+      discussionOverview: 'Discussion Overview',
+      noThreadsYet: 'No threads available yet in this course.',
+      generateEmbedLink: 'Generate Embed Link',
+      copyUrl: 'Copy URL',
+      refreshOverview: 'Refresh Overview',
+      loadMoreThreads: 'Load more threads',
+      allThreadsLoaded: 'All threads loaded',
+      loadedThreadCount:
+        '{count, plural, one {# thread loaded} other {# threads loaded}}',
+      embedUrl: 'Embed URL',
+      expiresAt: 'Expires: {date}',
+      embedGenFailed: 'Failed to generate embedding information.',
+      embedCopied: 'Embed URL copied to clipboard.',
+      embedExpiredRegenerate: 'Generate a new link before copying.',
+      scopeLabel: 'Scope',
+      tokenLifetime: 'Token Lifetime (hours)',
+      allowAnonymousPosting: 'Allow anonymous posting',
+      allowAnonymousPostingDisabled:
+        'Enable anonymous posting in the course settings to include it in embeds.',
       activityNotAvailableAssessment:
         '{activityType} are currently not supported in assessment courses.',
       withGroups: 'With Groups',

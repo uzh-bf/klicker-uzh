@@ -1,0 +1,5 @@
+mutation ToggleCourseDiscussionReplyUpvote($replyId: Int!, $upvote: Boolean!) {
+  toggleCourseDiscussionReplyUpvote(replyId: $replyId, upvote: $upvote) {
+    ...DiscussionReplyData
+  }
+}

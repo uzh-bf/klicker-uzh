@@ -37,7 +37,12 @@ export function resetPracticeQuizLocalStorage(id: string) {
 }
 
 interface PracticeQuizProps {
-  quiz: Omit<PracticeQuizType, 'course'> & { course: Pick<Course, 'id'> }
+  quiz: Omit<PracticeQuizType, 'course'> & {
+    course: Pick<
+      Course,
+      'id' | 'isCourseQARolloutEnabled' | 'isCourseQAEnabled'
+    >
+  }
   currentIx: number
   setCurrentIx: (ix: number) => void
   handleNextElement: () => void
@@ -192,6 +197,8 @@ function PracticeQuiz({
             onAllStacksCompletion={handleAllStacksCompletion}
             bookmarks={bookmarksData?.getBookmarksPracticeQuiz}
             previewOnly={previewOnly}
+            isCourseQARolloutEnabled={quiz.course?.isCourseQARolloutEnabled}
+            isCourseQAEnabled={quiz.course?.isCourseQAEnabled}
           />
         )}
       </div>

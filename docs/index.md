@@ -18,6 +18,7 @@ Conventions: one concept per file (OKF v0.1), claims cite `path:Symbol`, command
 - [Async & Workers](./async-and-workers.md) - The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
 - [Auth Model](./auth-model.md) - Login flows for lecturers and participants, origin-based cookie selection in the backend, JWT scopes, and LTI launch rules.
 - [Frontend Conventions](./frontend-conventions.md) - Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.
+- [Course Discussions](./course-discussions.md) - Course-scoped Q&A data, access, contextual UI surfaces, embeds, and verification.
 - [Chat Platform](./chat-platform.md) - The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
 - [Testing](./testing.md) - Which test level to use when, what runs safely without services, the two e2e stacks and their seeds, and the CI test matrix.
 - [CI & Deployment](./ci-and-deployment.md) - PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
