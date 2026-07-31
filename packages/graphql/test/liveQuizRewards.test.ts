@@ -2132,7 +2132,7 @@ describe('regular live quiz reward ledger integration', () => {
     )
 
     expect(reversal).toMatchObject({
-      totals: { timelineChanges: 1 },
+      totals: { timelineChanges: 0 },
       weeklyTimelineRecomputations: [],
     })
   })

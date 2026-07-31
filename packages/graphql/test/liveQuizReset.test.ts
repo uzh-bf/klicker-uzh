@@ -181,6 +181,24 @@ describe('live quiz reset summary', () => {
     })
   })
 
+  it('summarizes the exact achievement occurrence-count delta', async () => {
+    const fixture = await seedEndedRegularLiveQuizForReset(
+      { gamified: true, withRewardRun: true },
+      userOneCtx
+    )
+    await prisma.liveQuizRewardEntry.updateMany({
+      where: {
+        rewardRunId: fixture.rewardRunId!,
+        participantId: fixture.participantId,
+      },
+      data: { achievementCountAwarded: 2 },
+    })
+
+    await expect(
+      getLiveQuizResetSummary({ quizId: fixture.liveQuizId }, userOneCtx)
+    ).resolves.toMatchObject({ numOfAchievementChanges: 2 })
+  })
+
   it('counts aggregate-only responses when they exceed persisted rows', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
       { gamified: false, withRewardRun: false, withCourse: false },
@@ -509,6 +527,7 @@ describe('live quiz reset summary', () => {
     expect(result).toMatchObject({
       outcome: 'SUCCESS',
       rewardRunId: fixture.rewardRunId,
+      activity: { isActivityReviewer: true },
       totals: {
         coursePoints: fixture.awardedCoursePoints,
         participantXp: fixture.awardedParticipantXp,
@@ -657,6 +676,29 @@ describe('live quiz reset summary', () => {
         id: fixture.liveQuizId,
         permissionLevel: PermissionLevel.ADMIN,
         isManager: true,
+        isActivityReviewer: true,
+      },
+    })
+  })
+
+  it('does not grant course-reviewer status to an activity owner', async () => {
+    const fixture = await seedEndedRegularLiveQuizForReset(
+      { gamified: false, withRewardRun: false, withCourse: true },
+      userOneCtx
+    )
+    await makeFixtureInstanceResettable(fixture.instanceId)
+    await prisma.course.update({
+      where: { id: fixture.courseId! },
+      data: { ownerId: userTwoCtx.user.sub },
+    })
+
+    await expect(
+      resetLiveQuiz({ id: fixture.liveQuizId }, userOneCtx)
+    ).resolves.toMatchObject({
+      outcome: 'SUCCESS',
+      activity: {
+        id: fixture.liveQuizId,
+        isActivityReviewer: false,
       },
     })
   })
@@ -1685,18 +1727,10 @@ describe('live quiz reset summary', () => {
     }
 
     await expect(
-      handleCleanupLiveQuizResetCache(
-        input,
-        globalHandlerContext(userOneCtx),
-        {} as never
-      )
+      handleCleanupLiveQuizResetCache(input, globalHandlerContext(userOneCtx))
     ).resolves.toBe(true)
     await expect(
-      handleCleanupLiveQuizResetCache(
-        input,
-        globalHandlerContext(userOneCtx),
-        {} as never
-      )
+      handleCleanupLiveQuizResetCache(input, globalHandlerContext(userOneCtx))
     ).resolves.toBe(true)
     await expect(
       userOneCtx.redisAssessmentExec.get(`lq:${liveQuizId}:synthetic`)
@@ -1744,8 +1778,7 @@ describe('live quiz reset summary', () => {
           },
         ],
       },
-      globalHandlerContext(userOneCtx),
-      {} as never
+      globalHandlerContext(userOneCtx)
     )
 
     await expect(
@@ -1796,8 +1829,7 @@ describe('live quiz reset summary', () => {
           cacheGenerationSnapshot: { status: 'UNAVAILABLE' },
           weeklyTimelineRecomputations: [],
         },
-        globalHandlerContext(userOneCtx),
-        {} as never
+        globalHandlerContext(userOneCtx)
       )
     ).resolves.toBe(true)
     await expect(
@@ -1846,8 +1878,7 @@ describe('live quiz reset summary', () => {
 
     await handleCleanupLiveQuizResetCache(
       cleanupInput,
-      globalHandlerContext(userOneCtx),
-      {} as never
+      globalHandlerContext(userOneCtx)
     )
     await expect(
       userOneCtx.redisExec.get(`lq:${fixture.liveQuizId}:synthetic`)
@@ -1875,8 +1906,7 @@ describe('live quiz reset summary', () => {
           cacheGenerationSnapshot: { status: 'UNAVAILABLE' },
           weeklyTimelineRecomputations: [],
         },
-        globalHandlerContext(userOneCtx),
-        {} as never
+        globalHandlerContext(userOneCtx)
       )
     ).resolves.toBe(true)
     await expect(

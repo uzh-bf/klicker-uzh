@@ -1,6 +1,5 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
-  ActivityType,
   ElementData,
   ElementInstanceResults,
   ElementResultsCaseStudy,
@@ -32,11 +31,12 @@ import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { computeRanks } from '../lib/util.js'
-import { getPermissionBooleans } from './activities.js'
 import {
-  initializeLiveQuizExecutionCache,
-  resetAssessmentLiveQuiz as resetAssessmentLiveQuizService,
-} from './liveQuizReset.js'
+  formatLiveQuizActivityInfo,
+  type LiveQuizActivityInfoPermission,
+} from './liveQuizActivityInfo.js'
+import { initializeLiveQuizExecutionCache } from './liveQuizExecutionCache.js'
+import { resetAssessmentLiveQuiz as resetAssessmentLiveQuizService } from './liveQuizReset.js'
 import {
   applyRegularLiveQuizRewardPlan,
   calculateLiveQuizRewardPlan,
@@ -521,66 +521,26 @@ export async function manipulateLiveQuiz(
     id,
   })
 
-  const permissionLevel =
-    activity.permissions[0]?.permissionLevel ?? DB.PermissionLevel.OWNER
-  const derived = activity.permissions[0]?.derived ?? false
-  const {
-    isOwner,
-    isManager,
-    isEditor,
-    isExecutor,
-    isShared,
-    isRemovable,
-    sharingType,
-  } = getPermissionBooleans({
-    permissionLevel,
-    derived,
-    directGroupPermission:
-      activity.permissions[0]?.directPermission &&
-      activity.permissions[0].directPermission.userGroupId !== null,
-  })
-
-  return {
-    id: activity.id,
-    templateId: activity.templateInfo?.id ?? null,
-    name: activity.name,
-    displayName: activity.displayName,
-    reviewStatus: activity.reviewStatus,
-    type: ActivityType.LIVE_QUIZ,
-    status: activity.status,
-    courseId: isCourseAdminOwner ? activity.course?.id : null, // only return course id if the user can access corresponding course overview
-    courseName: activity.course?.name,
-    courseLanguage: activity.course?.language,
-    courseStartDate: activity.course?.startDate,
-    numOfStacks: activity.blocks.length,
-    numOfElements: activity.blocks.reduce(
-      (acc, block) => acc + block._count.elements,
-      0
-    ),
-    permissionLevel,
-    derivedAccess: derived,
-    areInstancesOutdated: activity.areInstancesOutdated,
-    isGamificationEnabled: activity.isGamificationEnabled,
-    isAssessmentEnabled: activity.isAssessmentEnabled,
-    pinCode: activity.pinCode,
-    numSharedUsers: id ? activity._count.permissions - 1 : 0,
-    isOwner,
-    isManager,
-    isEditor,
-    isExecutor,
-    isShared,
-    isRemovable,
+  const storedPermission = activity.permissions[0]
+  const permission: LiveQuizActivityInfoPermission = storedPermission ?? {
+    permissionLevel: DB.PermissionLevel.OWNER,
+    derived: false,
+    directPermission: null,
+  }
+  return formatLiveQuizActivityInfo({
+    activity,
+    permission,
+    course: activity.course,
+    implicitOwner: storedPermission === undefined,
+    exposedCourseId: isCourseAdminOwner ? activity.course?.id : null,
+    numSharedUsers: id ? Math.max(0, activity._count.permissions - 1) : 0,
     isActivityReviewer:
       !id || // activity creation -> automatically activity owner
       (activity.courseId === null &&
-        (activity.permissions[0]?.permissionLevel ===
-          DB.PermissionLevel.OWNER ||
-          activity.permissions[0]?.permissionLevel ===
-            DB.PermissionLevel.ADMIN)) || // live quiz not part of course -> activity admin
+        (permission.permissionLevel === DB.PermissionLevel.OWNER ||
+          permission.permissionLevel === DB.PermissionLevel.ADMIN)) || // live quiz not part of course -> activity admin
       (!!activity.course && activity.course._count.permissions > 0), // live quiz in course -> course admin
-    sharingType,
-    updatedAt: activity.updatedAt,
-  }
+  })
 }
 
 export async function removeLiveQuiz(

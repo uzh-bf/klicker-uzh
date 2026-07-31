@@ -2,7 +2,7 @@
 type: Async Architecture
 title: Async & Workers
 description: The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
-timestamp: '2026-07-30'
+timestamp: '2026-07-31'
 tags:
   - backend
   - hatchet
@@ -47,11 +47,11 @@ Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. No
 
 ## Live Quiz reset cache cleanup
 
-Before resetting, GraphQL snapshots the quiz execution cache generation. After the database transaction commits, `packages/graphql/src/services/liveQuizReset.ts:runPostCommitCleanup` synchronously recomputes affected historical weekly timeline entries and deletes `lq:<quizId>:*` keys from the correct standard or assessment Redis only when they still belong to that captured generation. This fence prevents a delayed cleanup from deleting a newly started run.
+Before resetting, GraphQL snapshots the quiz execution cache generation. After the database transaction commits, `packages/graphql/src/services/liveQuizReset.ts:runPostCommitCleanup` synchronously recomputes affected historical weekly timeline entries and delegates generation-fenced deletion of `lq:<quizId>:*` keys to `packages/graphql/src/services/liveQuizExecutionCache.ts:clearLiveQuizExecutionCache`. The correct standard or assessment Redis is cleared only when its keys still belong to the captured generation, preventing delayed cleanup from deleting a newly started run.
 
-If synchronous recomputation or Redis cleanup throws, GraphQL schedules `cleanup-live-quiz-reset-cache`, an idempotent Hatchet task with three retries (`packages/hatchet/src/index.ts:cleanupLiveQuizResetCache`). The serialized input contains the captured cache generation and exact historical weeks, so the fallback repeats the same fenced operations. Cleanup or fallback-delivery failures do not turn an already committed reset into a mutation failure.
+If synchronous recomputation or Redis cleanup throws, GraphQL schedules `cleanup-live-quiz-reset-cache`, an idempotent Hatchet task with three retries (`packages/hatchet/src/index.ts:cleanupLiveQuizResetCache`). `packages/graphql/src/services/liveQuizResetCleanup.ts:handleCleanupLiveQuizResetCache` owns the reset-specific recovery workflow, while the execution-cache module stays limited to generic Redis primitives. The serialized input contains the captured cache generation and exact historical weeks, so the fallback repeats the same fenced operations. Cleanup or fallback-delivery failures do not turn an already committed reset into a mutation failure.
 
-Starting an eligible draft or scheduled quiz calls `packages/graphql/src/services/liveQuizReset.ts:initializeLiveQuizExecutionCache` before the status transition: one Redis script removes stale execution keys, writes new metadata, and assigns a fresh generation. If that initialization fails, the quiz does not transition to `PUBLISHED`.
+Starting an eligible draft or scheduled quiz calls `packages/graphql/src/services/liveQuizExecutionCache.ts:initializeLiveQuizExecutionCache` before the status transition: one Redis script removes stale execution keys, writes new metadata, and assigns a fresh generation. If that initialization fails, the quiz does not transition to `PUBLISHED`.
 
 ## Running locally (config-derived — verify on your machine)
 

@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-07-30'
+timestamp: '2026-07-31'
 tags:
   - backend
   - prisma
@@ -60,6 +60,8 @@ Scheduled publication/ending is executed by the Hatchet general worker — witho
 
 Every newly ended regular Live Quiz owns one active `LiveQuizRewardRun` (`packages/prisma/src/prisma/schema/quiz.prisma:LiveQuizRewardRun`). Reward application, reward-entry creation, and the `ENDED` transition commit in one serializable transaction (`packages/graphql/src/services/liveQuizzes.ts:endRegularLiveQuiz`). Each `LiveQuizRewardEntry` stores the exact course-point, participant-XP, daily-timeline, and achievement-count deltas applied for one participant; nongamified runs have an empty entry list.
 
-Reset transitions the active run from `APPLIED` to `REVERSED` in the same serializable transaction that returns the quiz to `DRAFT` and deletes its execution data (`packages/graphql/src/services/liveQuizReset.ts:executeLiveQuizReset`). Reversed runs remain as accounting records and record the actor and reversal time; a later execution creates a new run. A legacy gamified quiz can reset only when `packages/graphql/src/services/liveQuizRewards.ts:inspectLegacyRegularLiveQuizRewards` can reconstruct its complete reward plan from persisted leaderboards and the unexpired Redis XP hash. Otherwise reset is rejected with `REWARD_DATA_UNAVAILABLE` instead of estimating a rollback.
+Reset transitions the active run from `APPLIED` to `REVERSED` in the same serializable transaction that returns the quiz to `DRAFT` and deletes its execution data (`packages/graphql/src/services/liveQuizResetTransaction.ts:executeLiveQuizReset`). Reversed runs remain as accounting records and record the actor and reversal time; a later execution creates a new run. A legacy gamified quiz can reset only when `packages/graphql/src/services/liveQuizRewardLegacy.ts:inspectLegacyRegularLiveQuizRewards` can reconstruct its complete reward plan from persisted leaderboards and the unexpired Redis XP hash. Otherwise reset is rejected with `REWARD_DATA_UNAVAILABLE` instead of estimating a rollback.
 
-Timeline reversal targets the original daily entry and schedules an exact recomputation of its historical week (`packages/graphql/src/services/liveQuizRewards.ts:reverseLiveQuizRewardRun`). If daily compaction already removed that row, reset subtracts the ledgered delta from the corresponding weekly entry. If neither row exists, that timeline contribution has already disappeared and no subtraction is made.
+Timeline reversal targets the original daily entry and schedules an exact recomputation of its historical week (`packages/graphql/src/services/liveQuizRewardLedger.ts:reverseLiveQuizRewardRun`). If daily compaction already removed that row, reset subtracts the ledgered delta from the corresponding weekly entry. If neither row exists, that timeline contribution has already disappeared and no subtraction is made. Reset audit totals count only timeline rows actually updated or deleted, while achievement totals and the confirmation summary report the exact occurrence-count delta rather than the number of ledger entries.
+
+`packages/graphql/src/services/liveQuizRewardValidation.ts` converts structurally valid entries into a typed, partitioned ledger. Both legacy reconstruction and persisted reversal load and preflight the current participant, course, timeline, and achievement state through `packages/graphql/src/services/liveQuizRewardState.ts`; legacy daily timestamps are normalized to their UTC day while persisted ledger timestamps remain exact.

@@ -1,5 +1,9 @@
 # Log
 
+## 2026-07-31
+
+- **Update**: [domain-model](./domain-model.md), [graphql-api-layer](./graphql-api-layer.md), and [async-and-workers](./async-and-workers.md) now reference the focused Live Quiz reward, typed current-state preflight, reset transaction/summary/cleanup, neutral execution-cache, and shared activity-mapping modules. Reward reporting explicitly uses exact achievement occurrence deltas and counts only timeline rows actually modified.
+
 ## 2026-07-30
 
 - **Update**: [domain-model](./domain-model.md), [graphql-api-layer](./graphql-api-layer.md), and [async-and-workers](./async-and-workers.md) now document exact regular Live Quiz reward ledgers, owner/activity-admin reset authorization, structured reset outcomes, legacy exact-or-reject behavior, and generation-fenced cache cleanup.
