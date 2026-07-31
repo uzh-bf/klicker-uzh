@@ -32,7 +32,7 @@ Both elements must include complete sample solutions and demonstrate how reusabl
 
 ## Architecture
 
-Keep `seedDemoQuestions` as the entry point. Add a private helper focused on the relational bundle, conceptually named `seedDemoSelectionAndCaseStudyElements`. The helper creates the answer collection and both elements, recomputes their derived permissions, and returns both elements with the relations required by `processElementData`.
+Keep `changeInitialSettings` and `seedDemoQuestions` as the entry points. `changeInitialSettings` returns the current user unchanged when first login is already complete, preventing completed users from replaying demo seeding. Add a private helper focused on the relational bundle, conceptually named `seedDemoSelectionAndCaseStudyElements`. The helper creates the answer collection and both elements, recomputes their derived permissions, and returns both elements with the relations required by `processElementData`.
 
 The helper uses a local Prisma transaction for only these three resources. This prevents an answer collection or one of the two elements from being left behind if creation of the relational bundle fails, without expanding the work into an all-demo seeder refactor.
 
@@ -161,7 +161,7 @@ The existing live-quiz creation path calls `processElementData` for each returne
 - Failure while creating the collection, either element, or their derived permissions rolls back the new relational bundle.
 - The error continues through the existing first-login mutation. No new frontend error state is introduced.
 - Failure during later Demo Live Quiz creation retains already-created standalone demo elements, matching the current seeder behavior.
-- Retry/idempotency changes for the legacy demo seeder are outside this feature's scope.
+- Sequential replays after first login are blocked at `changeInitialSettings`; broader concurrency and partial-seeder idempotency changes remain outside this feature's scope.
 
 ## Acceptance criteria
 
@@ -177,12 +177,13 @@ When a new user submits first-login settings with `seedDemoElements: true`:
 8. The Demo Live Quiz has one additional untimed block containing selection followed by case study.
 9. The two new quiz instances contain complete collection snapshots, sample solutions, and valid empty initial results.
 10. Existing demo elements and quiz blocks remain unchanged.
+11. After first login is complete, a repeated `changeInitialSettings` call creates no additional demo resources.
 
 When a new user submits first-login settings with `seedDemoElements: false`, none of the new collection, elements, or quiz block is created.
 
 ## Verification
 
-Add a focused database-backed service test, without mocks, around `changeInitialSettings` or the closest existing account-service integration boundary. Cover both `seedDemoElements: true` and `seedDemoElements: false` and assert all acceptance criteria at the database and quiz-instance level.
+Add a focused database-backed service test, without mocks, around `changeInitialSettings` or the closest existing account-service integration boundary. Cover `seedDemoElements: true`, `seedDemoElements: false`, and a repeated call after first login is complete, and assert all acceptance criteria at the database and quiz-instance level.
 
 Run:
 

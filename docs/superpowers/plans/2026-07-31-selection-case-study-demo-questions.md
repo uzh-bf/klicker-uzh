@@ -4,7 +4,7 @@
 
 **Goal:** Seed complete selection and case-study demo questions, their shared answer collection, and a new Demo Live Quiz block when a new lecturer opts into demo content.
 
-**Architecture:** Keep `changeInitialSettings` and `seedDemoQuestions` as the existing entry points. Add one private, transaction-backed helper in the account service for the relational answer-collection bundle, return relation-enriched elements to the existing `processElementData` live-quiz path, and cover the persisted resources and instance snapshots with a database-backed service test.
+**Architecture:** Keep `changeInitialSettings` and `seedDemoQuestions` as the existing entry points. Guard `changeInitialSettings` with `User.firstLogin` so completed users cannot replay demo seeding. Add one private, transaction-backed helper in the account service for the relational answer-collection bundle, return relation-enriched elements to the existing `processElementData` live-quiz path, and cover the persisted resources and instance snapshots with a database-backed service test.
 
 **Tech Stack:** TypeScript 6, Node.js 24, Prisma 7.8, PostgreSQL, Vitest, pnpm 11, Turborepo, devrouter, agent-browser.
 
@@ -17,7 +17,7 @@
 - Add one new untimed Demo Live Quiz block containing selection first and case study second; leave all existing blocks unchanged.
 - Keep content English, matching the existing onboarding demos.
 - Do not change Prisma schema, migrations, GraphQL schema/operations, frontend code, dependencies, or public documentation.
-- Keep the new collection-plus-elements bundle atomic without refactoring the legacy seeder or changing its broader retry behavior.
+- Keep the new collection-plus-elements bundle atomic without refactoring the legacy seeder; prevent sequential replay at `changeInitialSettings` while leaving broader concurrency and partial-failure idempotency outside scope.
 - Before editing Prisma calls, use Context7 to resolve Prisma ORM and confirm the installed Prisma 7 transaction, nested-create, relation-connect, and relation-include APIs.
 - Run pnpm, Prisma, and tests inside the self-contained DevPod through `devrouter exec . -- ...`.
 - Use Prettier formatting, strict TypeScript, no semicolons, single quotes, and trailing commas.
