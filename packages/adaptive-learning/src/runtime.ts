@@ -10,6 +10,13 @@ import {
   type LevelMappingRule,
   type ThetaRange,
 } from './core.js'
+import {
+  AdaptiveRuntimeConfigurationError,
+  resolveAdaptiveEstimator,
+  type AdaptiveMeasurementVersion,
+} from './estimator.js'
+
+export { AdaptiveRuntimeConfigurationError } from './estimator.js'
 
 export const MIN_ADAPTIVE_REPORTING_RESPONSES = 4
 
@@ -84,6 +91,7 @@ export type AdaptiveRuntimeEstimates = {
 export type PreparedAdaptiveRuntime<
   TPoolItem extends AdaptiveRuntimePoolItem = AdaptiveRuntimePoolItem,
 > = {
+  measurementVersion: 'IRT_V1'
   nodes: AdaptiveRuntimeNode[]
   levels: AdaptiveRuntimeLevel[]
   pool: TPoolItem[]
@@ -104,16 +112,6 @@ export type AdaptiveRuntimeDecision<
   estimates: AdaptiveRuntimeEstimates
 }
 
-export class AdaptiveRuntimeConfigurationError extends Error {
-  readonly code: string
-
-  constructor(message: string, code: string) {
-    super(message)
-    this.name = 'AdaptiveRuntimeConfigurationError'
-    this.code = code
-  }
-}
-
 export function prepareAdaptiveRuntime<
   TPoolItem extends AdaptiveRuntimePoolItem,
 >({
@@ -121,12 +119,21 @@ export function prepareAdaptiveRuntime<
   levels,
   pool,
   settings,
+  measurementVersion = 'IRT_V1',
 }: {
   nodes: AdaptiveRuntimeNode[]
   levels: AdaptiveRuntimeLevel[]
   pool: TPoolItem[]
   settings: AdaptiveRuntimeSettings
+  measurementVersion?: AdaptiveMeasurementVersion
 }): PreparedAdaptiveRuntime<TPoolItem> {
+  const estimator = resolveAdaptiveEstimator(measurementVersion)
+  if (estimator.version !== 'IRT_V1') {
+    throw new AdaptiveRuntimeConfigurationError(
+      'The legacy adaptive runtime requires the IRT_V1 estimator.',
+      'ADAPTIVE_ESTIMATOR_RUNTIME_MISMATCH'
+    )
+  }
   const enabledNodeIds = getEffectivelyEnabledNodes(nodes)
   const roots = getEnabledRoots(nodes, enabledNodeIds)
   assertValidRootWeights(roots)
@@ -145,6 +152,7 @@ export function prepareAdaptiveRuntime<
   }
 
   return {
+    measurementVersion: 'IRT_V1',
     nodes,
     levels,
     pool,
@@ -204,6 +212,12 @@ export function advanceAdaptiveRuntime<
   runtime: PreparedAdaptiveRuntime<TPoolItem>
   responses: AdaptiveRuntimeResponse<TPoolItem>[]
 }): AdaptiveRuntimeDecision<TPoolItem> {
+  if (runtime.measurementVersion !== 'IRT_V1') {
+    throw new AdaptiveRuntimeConfigurationError(
+      'The legacy adaptive runtime requires the IRT_V1 estimator.',
+      'ADAPTIVE_ESTIMATOR_RUNTIME_MISMATCH'
+    )
+  }
   const estimates = computeEstimates({
     nodes: runtime.nodes,
     levels: runtime.levels,

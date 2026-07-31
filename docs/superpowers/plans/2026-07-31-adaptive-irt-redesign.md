@@ -630,11 +630,14 @@ git commit -m "feat(adaptive): add Bayesian posterior estimation"
 - Create: `packages/adaptive-learning/src/selectionV2.ts`
 - Create: `packages/adaptive-learning/src/estimator.ts`
 - Create: `packages/adaptive-learning/src/runtimeV2.ts`
+- Create: `packages/adaptive-learning/src/runtimeV2Preparation.ts`
+- Create: `packages/adaptive-learning/src/runtimeV2Estimation.ts`
 - Create: `packages/adaptive-learning/test/selectionV2.test.ts`
 - Create: `packages/adaptive-learning/test/estimatorVersion.test.ts`
 - Create: `packages/adaptive-learning/test/runtimeV2.test.ts`
 - Create: `packages/adaptive-learning/test/runtimeV2.performance.test.ts`
 - Modify: `packages/adaptive-learning/src/runtime.ts`
+- Modify: `packages/adaptive-learning/src/posterior.ts`
 - Modify: `packages/adaptive-learning/src/index.ts`
 - Modify: `packages/adaptive-learning/package.json`
 
@@ -652,17 +655,40 @@ export function assertSupportedEstimatorVersion(
 ): asserts version is AdaptiveMeasurementVersion
 
 export type AdaptiveV2PoolItem = AdaptiveRuntimePoolItem & {
+  itemType: AdaptiveItemType
+  choiceCount: number | null
   model: AdaptiveItemModel
   calibrationId: string | null
   contributesToEstimate: boolean
+  role: 'SCORING' | 'ANCHOR' | 'FIELD_TEST'
+}
+
+export type AdaptiveV2RuntimeSettings = AdaptiveRuntimeSettings & {
+  mode: 'DIAGNOSTIC' | 'RESEARCH'
+  credibleMass: number
+  classificationProbabilityThreshold: number
+  minimumRootResponses: number
+  researchPolicy: {
+    anchorResponsesPerLeafLevel: number
+    fieldTestResponsesPerLeaf: number
+    fieldTestInclusionProbability: number
+    collectionDesignVersion: string
+  } | null
 }
 
 export type AdaptiveV2Estimate = {
+  nodeKind: 'OVERALL' | 'COMPETENCE' | 'SUBCOMPETENCE'
   nodeId: number | null
-  posterior: AdaptivePosterior | null
+  posterior: AdaptivePosterior
   responseCount: number
+  administeredResponseCount: number
   classifiedLevelId: number | null
   classificationProbability: number | null
+  resultStatus: AdaptiveV2ResultStatus
+  evidenceSatisfied: boolean
+  evidenceReachable: boolean
+  calibratedCoverageSatisfied: boolean
+  stopReason: AdaptiveRuntimeStopReason | null
 }
 
 export type AdaptiveV2ResultStatus =
@@ -678,26 +704,43 @@ export function expectedPosteriorInformation(input: {
 }): number
 
 export function prepareAdaptiveV2Runtime(input: {
+  measurementVersion?: AdaptiveMeasurementVersion
   nodes: AdaptiveRuntimeNode[]
   scale: AdaptiveScaleDefinition
   pool: AdaptiveV2PoolItem[]
-  settings: AdaptiveRuntimeSettings
+  settings: AdaptiveV2RuntimeSettings
 }): PreparedAdaptiveV2Runtime
 
 export function advanceAdaptiveV2Runtime(input: {
   attemptId: string
   runtime: PreparedAdaptiveV2Runtime
   responses: AdaptiveRuntimeResponse<AdaptiveV2PoolItem>[]
+  selectionContext?: {
+    isExposureEligible?: (item: AdaptiveV2PoolItem) => boolean
+    servedCountByPoolItem?: ReadonlyMap<number, number>
+    priorAttemptPoolItemIds?: ReadonlySet<number>
+  }
 }): AdaptiveV2Decision
 ```
 
-- [ ] **Step 1: Add posterior-information tests**
+Preparation snapshots the published tree, scale, item pool, and settings before
+validation. `runtimeV2.ts` owns orchestration and deterministic selection,
+`runtimeV2Preparation.ts` owns topology/pool/version invariants, and
+`runtimeV2Estimation.ts` owns response propagation, EAP estimates, composites,
+evidence reachability, and classification. Diagnostic pools contain calibrated
+evidence only. Research pools satisfy calibrated anchor connectivity before
+bounded randomized field-test collection; field tests never enter EAP estimates.
+Prepared runtimes are factory-branded, deeply immutable snapshots. Response
+histories are revalidated incrementally against total, leaf, and ancestor caps
+and mandatory Research anchor order before estimation.
+
+- [x] **Step 1: Add posterior-information tests**
 
 Assert that expected information is the posterior-mass-weighted item
 information and that a calibrated item near the posterior receives a higher
 score than a distant item.
 
-- [ ] **Step 2: Add hierarchy and no-double-counting tests**
+- [x] **Step 2: Add hierarchy and no-double-counting tests**
 
 ```ts
 it('estimates each node from its descendant responses exactly once', () => {
@@ -713,7 +756,7 @@ it('estimates each node from its descendant responses exactly once', () => {
 })
 ```
 
-- [ ] **Step 3: Add content-allocation tests**
+- [x] **Step 3: Add content-allocation tests**
 
 Cover:
 
@@ -729,7 +772,7 @@ Cover:
   version,
 - Diagnostic rejects non-calibrated scoring pools.
 
-- [ ] **Step 4: Add stopping tests**
+- [x] **Step 4: Add stopping tests**
 
 ```ts
 it('does not classify a capped point estimate below the probability threshold', () => {
@@ -740,13 +783,13 @@ it('does not classify a capped point estimate below the probability threshold', 
 })
 ```
 
-- [ ] **Step 5: Run tests and confirm missing-module failures**
+- [x] **Step 5: Run tests and confirm missing-module failures**
 
 ```bash
 pnpm --filter @klicker-uzh/adaptive-learning exec vitest run test/selectionV2.test.ts test/estimatorVersion.test.ts test/runtimeV2.test.ts
 ```
 
-- [ ] **Step 6: Implement v2 selection**
+- [x] **Step 6: Implement v2 selection**
 
 Selection order is:
 
@@ -769,13 +812,20 @@ field-test inclusion inside the selected content stratum. Return and persist the
 known conditional administration probability and collection-design version so
 offline calibration can account for the design.
 
-- [ ] **Step 7: Implement v2 estimates and stopping**
+`HASH32_JOINT_V1` uses one auditable 32-bit draw for the complete role/item
+decision. Field and scoring roles occupy disjoint draw intervals; item choice is
+the modulo preimage within the selected interval. The runtime returns the draw,
+randomization version, exact item-level propensity, and candidate-set checksum.
+This avoids multiplying probabilities from hashes whose independence has not
+been established.
+
+- [x] **Step 7: Implement v2 estimates and stopping**
 
 Build evidence per node from unique node paths, calculate EAP for each node,
 combine top-level roots only, and classify with posterior band mass. Roots gate
 completion; nested leaves are reported when their own threshold is reached.
 
-- [ ] **Step 8: Add fail-closed estimator dispatch**
+- [x] **Step 8: Add fail-closed estimator dispatch**
 
 Keep all current `core.ts` and v1 runtime behavior as the `IRT_V1` compatibility
 contract. `runtime.ts` dispatches through `resolveAdaptiveEstimator`; v2
@@ -783,7 +833,14 @@ estimation remains in `runtimeV2.ts`. Unknown versions and attempts whose pool,
 scale, or estimator versions disagree throw `AdaptiveRuntimeConfigurationError`
 before item delivery or response persistence.
 
-- [ ] **Step 9: Verify performance, tests, and commit**
+The package boundary rejects estimator mismatches, accepts only the matching
+classification-policy version and code-owned threshold candidates, validates
+every exact calibration identity, and brands the immutable prepared snapshot.
+Task 5 persists the external scale/pool/calibration snapshot IDs; the Task 6
+adapter must compare those IDs before invoking this factory and preserve the
+returned Research randomization audit fields with each delivery.
+
+- [x] **Step 9: Verify performance, tests, and commit**
 
 ```bash
 pnpm --filter @klicker-uzh/adaptive-learning test
@@ -794,7 +851,8 @@ git commit -m "feat(adaptive): add hierarchical EAP runtime"
 ```
 
 Expected: v1 tests remain unchanged and v2 performance stays within the current
-runtime test budget for a 60-item, depth-5 fixture.
+runtime test budget for both a 60-item, depth-5 fixture and a two-root composite
+on the maximum supported 2,001-point grid.
 
 ---
 
@@ -1275,9 +1333,18 @@ overallCredibleLowerAfter Float?
 overallCredibleUpperAfter Float?
 overallBandProbabilitiesAfter Json?
 administrationProbability Float?
-collectionDesignVersion Int?
+collectionDesignVersion String?
+randomizationVersion String?
+randomDraw BigInt?
+candidateSetHash String?
 isCalibrationAnchor Boolean @default(false)
 ```
+
+`randomDraw` stores the unsigned 32-bit value in a database type that cannot
+overflow a signed Prisma `Int`. The submit transaction already verifies the
+served item against the attempt's persisted `nextPoolItemId`; for v2 it also
+persists and validates the matching role, propensity, design/randomization
+versions, draw, and candidate-set checksum before accepting the response.
 
 Keep legacy theta/standard-error columns for `IRT_V1` and compatibility.
 
@@ -1862,6 +1929,7 @@ Research attempts:
 - persist their canonical score/category,
 - persist anchor role, conditional administration probability, and collection
   design version,
+- persist the randomization version, unsigned draw, and candidate-set checksum,
 - return `RESEARCH_ONLY`,
 - never set `finalLevelId`, and
 - emit no student-facing proficiency result.

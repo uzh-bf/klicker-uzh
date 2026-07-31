@@ -183,7 +183,7 @@ function assertScoredResponse(response: AdaptiveScoredResponse) {
   if (typeof response.correct !== 'boolean') {
     throw new TypeError('Scored response correctness must be boolean.')
   }
-  assertScoredItem(response.item)
+  assertAdaptiveScoredItem(response.item)
 }
 
 function assertUniqueScoredResponses(responses: AdaptiveScoredResponse[]) {
@@ -206,7 +206,7 @@ function assertUniqueScoredResponses(responses: AdaptiveScoredResponse[]) {
   }
 }
 
-function assertScoredItem(item: AdaptiveScoredItem) {
+export function assertAdaptiveScoredItem(item: AdaptiveScoredItem) {
   if (
     (typeof item.id !== 'string' && typeof item.id !== 'number') ||
     (typeof item.id === 'string' && item.id.trim().length === 0) ||
@@ -216,7 +216,10 @@ function assertScoredItem(item: AdaptiveScoredItem) {
       'Scored item ID must be a finite number or non-empty string.'
     )
   }
-  if (item.calibrationId.trim().length === 0) {
+  if (
+    typeof item.calibrationId !== 'string' ||
+    item.calibrationId.trim().length === 0
+  ) {
     throw new TypeError('Scored items require a calibration ID.')
   }
   if (!SUPPORTED_ADAPTIVE_ITEM_TYPES.includes(item.itemType)) {
