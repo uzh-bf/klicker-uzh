@@ -1,0 +1,119 @@
+---
+title: Learning Analytics
+---
+
+:::info
+Learning Analytics is in **beta** and is available on request for users at UZH. Please contact the KlickerUZH team if you would like to use it in one of your courses.
+:::
+
+## What is Learning Analytics?
+
+Learning Analytics summarizes how the students in one of your courses work with your KlickerUZH activities. It is designed to answer teaching questions such as: is engagement dropping off mid-semester, which questions cause the most errors, and how far through the material has the group actually progressed.
+
+Learning Analytics is deliberately **not** a monitoring tool for individual students. It is built so that you see the shape of the group, not the identity of its members. The sections below describe exactly what it shows and what it deliberately withholds.
+
+Two independent switches control whether any data reaches a dashboard:
+
+1. **You** enable Learning Analytics for a specific course. It is off by default.
+2. **Each student** decides individually whether their own activity may be used. Students who do not decide are excluded.
+
+Only the activity of students who are enrolled in a course with Learning Analytics enabled **and** who have chosen to participate is used, and only from the moment they made that choice onward. Earlier activity is never backfilled.
+
+## Enabling Learning Analytics for a course
+
+Learning Analytics is enabled per course in the course settings, and only a **course manager** can change it. Open the course, choose _Modify course_, and use the _Use learning analytics_ switch in the _Learning analytics_ section. You can change the setting at any time.
+
+![The Learning analytics section of the course settings](/img/learning_analytics/la_course_setting_example.png)
+
+Once you enable it, students in that course are asked to make their choice the next time they open the course.
+
+## Disabling Learning Analytics again
+
+Disabling Learning Analytics for a course hides the dashboards immediately and deletes all dedicated Learning Analytics results for that course. Normal course activity, responses, feedback, grades, points, and XP are **not** affected — Learning Analytics is a separate layer on top of them, not the source of them.
+
+Students' saved choices are kept, so that if you enable Learning Analytics again later, they do not have to decide again from scratch.
+
+## The dashboards
+
+Once Learning Analytics is enabled for at least one of your courses, an **Analytics** entry appears in the main navigation. It lists your most recent courses, each with the three dashboards below (_Activity_, _Performance & Progress_, and _Quizzes_). Older courses are reachable through the _Older courses..._ entry. The course page itself also carries a _Learning Analytics_ button that opens the Activity Dashboard for that course directly.
+
+### Activity Dashboard
+
+The Activity Dashboard shows how engagement develops over the course of the semester, as a weekly and a daily time series of active students. Enabling _Course Comparison_ lets you overlay a second course, which is useful for comparing one semester against the previous run of the same course.
+
+![Weekly and daily student activity over a semester](/img/learning_analytics/la_activity_dashboard_example.png)
+
+### Performance and Progress Dashboard
+
+The Performance and Progress Dashboard groups four views:
+
+- **Performance Rates** — error, partial error, and success rates per activity and per element, filterable by activity type, element type, and by whether you want all attempts, only first attempts, or only last attempts. This is the fastest way to find the questions your students struggle with.
+- **Activity Progress** — how far the group has progressed through your asynchronous activities.
+- **Student Performance** — a de-identified table of coarse progress summaries, described in more detail below.
+- **Feedback Overview** — the upvotes and downvotes students gave to activities and individual elements.
+
+![Error, partial error, and success rates per activity](/img/learning_analytics/la_performance_dashboard_example.png)
+
+The _Student Performance_ view is the only place where results are broken down per student, and it is deliberately kept coarse:
+
+- **Coverage** tells you whether a student has data for all of the selected activities (_Complete_) or only for some of them (_Partial_).
+- **Completed Activities** counts the activities that student finished entirely.
+- **Mean completion** is their average completion across the selected activities, rounded to the nearest ten percent.
+
+![De-identified student performance summaries with report-local labels](/img/learning_analytics/la_student_performance_example.png)
+
+### Quiz Dashboard
+
+The Quiz Dashboard drills into a single practice quiz or microlearning. It shows the effective sample size, the total number of answered elements, the average time students spent, success rates split by first and last attempt, and then the same breakdown per question, together with the student feedback for that question.
+
+![Quiz analytics for a single activity, with per-question breakdown](/img/learning_analytics/la_quiz_dashboard_example.png)
+
+The example above also shows the five-student rule in action: the feedback for the first question is withheld because fewer than five eligible students contributed to it.
+
+Note that for microlearnings there is no split between first and last attempts, because each element can only be answered once.
+
+## What you can and cannot see
+
+This is the part worth reading carefully, because it is what you may need to explain to your students.
+
+**Learning Analytics shows you:**
+
+- interaction activity and learning progress
+- response performance and scores
+- feedback ratings (upvotes and downvotes)
+- coarse per-student progress summaries under report-local labels
+
+**Learning Analytics never shows you:**
+
+- names, email addresses, or participant identifiers
+- free-text responses
+- free-text feedback
+- which students chose to participate and which did not
+
+Two further rules apply to everything above:
+
+**At least five students.** Any view is only rendered if at least five eligible students contribute to it. Below that threshold, the dashboard shows a notice instead of the data. This applies to the feedback views and to the export as well. In a small course, or in a course where few students chose to participate, you may therefore see no data at all — that is the privacy model working as intended, not a fault.
+
+**Report-local labels.** The Student Performance table uses labels such as _Student 1_ and _Student 2_. These labels are assigned afresh every time the report is generated. _Student 3_ in today's report is not the same person as _Student 3_ in last week's report, and the labels cannot be linked across reports, across dashboards, or back to a KlickerUZH account.
+
+## Exporting
+
+The Student Performance view offers an export of the de-identified progress summaries. By default the export covers only students with complete coverage of the selected activities; the _Include partial coverage_ option widens it to partial coverage as well.
+
+The export follows the same rules as the dashboards: it carries report-local labels only, and no export is produced if the selection contains fewer than five eligible students.
+
+## Your responsibilities
+
+Learning Analytics is designed so that you cannot identify individual students from it. Please do not work around that design:
+
+- Do not attempt to identify individual students from the results.
+- Do not combine Learning Analytics results with other information — attendance lists, grades, submission timestamps, or your own notes — in order to identify individuals.
+
+Please also keep two things separate in your communication with students:
+
+- **Learning Analytics participation is not research consent.** A student choosing to participate in Learning Analytics has not consented to their data being used in a research project. If you plan to do research, you need a separate consent process.
+- **A student's choice is theirs.** Students may participate, decline, or change their mind at any time, and their normal course participation is unaffected either way. You cannot see who chose what, so please do not make participation a condition for anything.
+
+## What your students see
+
+Your students see their own Learning Analytics choice in the KlickerUZH app, with an explanation of what participating means. If you want to see the student side, or point your students at it, see [Learning Analytics for students](/student_tutorials/learning_analytics).

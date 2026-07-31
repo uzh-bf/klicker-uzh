@@ -30,6 +30,7 @@ module.exports = {
       'tutorials/delegated_access',
       'tutorials/review',
     ],
+    'Lecturer - Analytics': ['tutorials/learning_analytics'],
     'Lecturer - Integrations': [
       'tutorials/ppt_integration',
       'tutorials/lti_integration',
@@ -42,6 +43,7 @@ module.exports = {
       'student_tutorials/microlearning',
       'student_tutorials/course_leaderboard',
       'student_tutorials/groups_activities',
+      'student_tutorials/learning_analytics',
     ],
     Gamification: [
       'gamification/overview',

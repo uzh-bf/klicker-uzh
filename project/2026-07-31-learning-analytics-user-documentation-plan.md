@@ -183,14 +183,11 @@ rather than a rollout detail.
 - `Evidence:` `pnpm --filter @klicker-uzh/{util,prisma-data,graphql} check`
   clean; `@klicker-uzh/graphql` builds and the bundle resolves the constant
   through the util import; prettier clean on all changed files.
-- `Evidence:` R1 partially retired. The three lecturer-facing screenshots under
+- `Evidence:` R1 first pass. The three lecturer-facing screenshots under
   `apps/docs/static/img/learning_analytics/` carry no personal data and the
   performance dashboard already uses `Student 1`-style pseudonyms.
   `la_students_dashboard.png` is a captioned thesis figure of the student view,
   not a product screenshot, and is not reused.
-- `Risk:` The database-backed check (pipeline run against the seeded data)
-  is outstanding and is batched into S5 with the browser verification so the
-  environment is started once.
 - S2 implemented. The participant disclosure now carries a sentence linking the
   student and lecturer documentation pages, in both locales, rendered as
   external links inside the existing info notification. The German string names
@@ -198,7 +195,50 @@ rather than a rollout detail.
   bumped; see the S2 decision.
 - `Evidence:` `pnpm --filter @klicker-uzh/frontend-pwa check` and its unit
   tests pass; prettier clean.
-- Next action: S3 — lecturer documentation page.
+- S1 follow-up committed. The nested `learningAnalyticsChoiceEvents` create
+  never ran: `prepareParticipant` already creates the participations through
+  `courseIds`, so the participation upsert always took its update branch. The
+  choice history is now rebuilt explicitly after the participation loop.
+  `Evidence:` against the seeded database, every decided participation carries
+  exactly one choice event, and the eligible participation count is 35.
+- `Evidence:` full local verification loop established. The DevPod workspace
+  `claude-la-user-documentation` runs the apps; `seedInteractions` supplies
+  1105 responses for `Testkurs`; the Python analytics pipeline ran in the
+  container (`uv sync --no-install-package hdbscan`, then scripts 0-9, 13, 14,
+  11, 99 — script 10 needs a C compiler the container lacks) and marked the
+  course analytics valid. All three dashboards render real data.
+- `Problem:` `turbo dev` aborted in the container on `@klicker-uzh/hatchet:build`
+  with `Expected '{', got 'type'`. `Evidence:` the host build had left
+  `packages/hatchet/dist/tsconfig.tsbuildinfo` in the mounted worktree, so the
+  incremental TypeScript compiler emitted nothing and Rollup parsed raw `.ts`.
+  Clearing every `*.tsbuildinfo` outside `node_modules` fixed it.
+- S3 and S4 implemented as one commit. `Decision:` the two pages cross-link each
+  other, so splitting them would leave an intermediate commit whose Docusaurus
+  build fails on a broken link.
+- `Decision:` the lecturer page does not use `CatalystTitle`. Its badge reads
+  "Available for UZH & KlickerUZH Catalyst", which contradicts the approved
+  beta/on-request-at-UZH positioning. The beta admonition is the single
+  availability statement.
+- `Evidence:` R1 retired. All three stored screenshots were stale, not only the
+  performance one: the activity capture predates the switch from `Week N` to
+  date axis labels and shows real UZH course names, and the quiz capture shows
+  `Student Feedback (N = 1)`, which the current five-student rule forbids and
+  which would have contradicted the page text. All three were replaced with
+  fresh captures from the synthetic `Testkurs` fixture, and two were added
+  (course setting, student performance). No image carries personal data.
+- `Evidence:` the two rate views agree. `ActivityPerformance.totalErrorRate` for
+  `Practice Quiz Demo` is 0.642 and both the Performance Rates bar chart and the
+  Quiz Dashboard donut render it as the error rate; the donut's data order is
+  `[success, partial, error]`, which is what makes a flat text dump of it look
+  inverted against its legend.
+- `Evidence:` `pnpm --filter @klicker-uzh/docs build:docs` succeeds. The only
+  broken link is the pre-existing `/tutorials/gamification/` from
+  `getting_started/core_concepts`; both new pages and all their cross-links
+  resolve. Both pages were rendered from the built site and checked visually.
+- `Evidence:` browser verification of S2 in the running PWA. Both documentation
+  links render inside the disclosure notice with the correct absolute URLs, in
+  English and German, at 1280px and 390px.
+- Next action: S5 — review gates and PR.
 
 ## Next steps
 
