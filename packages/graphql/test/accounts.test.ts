@@ -445,4 +445,39 @@ describe('Account demo element seeding', () => {
       prisma.liveQuiz.count({ where: { ownerId: userOne.id } })
     ).resolves.toBe(0)
   })
+
+  it('does not seed demo resources after initial settings were completed', async () => {
+    await changeInitialSettings(
+      {
+        shortname: userOne.shortname,
+        locale: Locale.en,
+        sendUpdates: false,
+        seedDemoElements: false,
+      },
+      userOneCtx
+    )
+
+    await changeInitialSettings(
+      {
+        shortname: userOne.shortname,
+        locale: Locale.en,
+        sendUpdates: false,
+        seedDemoElements: true,
+      },
+      userOneCtx
+    )
+
+    await expect(
+      prisma.answerCollection.count({ where: { ownerId: userOne.id } })
+    ).resolves.toBe(0)
+    await expect(
+      prisma.element.count({ where: { ownerId: userOne.id } })
+    ).resolves.toBe(0)
+    await expect(
+      prisma.liveQuiz.count({ where: { ownerId: userOne.id } })
+    ).resolves.toBe(0)
+    await expect(
+      prisma.user.findUniqueOrThrow({ where: { id: userOne.id } })
+    ).resolves.toMatchObject({ firstLogin: false })
+  })
 })

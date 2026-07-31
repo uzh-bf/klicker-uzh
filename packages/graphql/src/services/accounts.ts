@@ -1198,6 +1198,14 @@ export async function changeInitialSettings(
   },
   ctx: ContextWithUser
 ) {
+  const currentUser = await ctx.prisma.user.findUniqueOrThrow({
+    where: { id: ctx.user.sub },
+  })
+
+  if (!currentUser.firstLogin) {
+    return currentUser
+  }
+
   const existingUser = await ctx.prisma.user.findFirst({
     where: { shortname: shortname.trim() },
   })
