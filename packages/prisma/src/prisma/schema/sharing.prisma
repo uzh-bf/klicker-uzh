@@ -24,6 +24,7 @@ model UserGroup {
     updatedAt DateTime @updatedAt
 
     @@unique([ownerId, name])
+    @@index([updatedAt, id])
 }
 
 // explicitly granted permissions for a user or user group to access an object
@@ -89,6 +90,8 @@ model Permission {
     @@unique([practiceQuizId, userGroupId])
     @@unique([microLearningId, userGroupId])
     @@unique([groupActivityId, userGroupId])
+    @@index([updatedAt, id])
+    @@index([userGroupId, id])
 }
 
 // permissions requested by a user (default: READ, after granting higher access level can be requested)
@@ -245,6 +248,21 @@ enum PermissionPropagationFailureCode {
     RECOVERY_SLO_BREACHED
 }
 
+enum PermissionPropagationCursorKind {
+    SAMPLE
+    FULL_SWEEP
+}
+
+enum PermissionPropagationSignalSource {
+    PERMISSION
+    USER_GROUP
+    DIRECT_AUDIT
+    USER_GROUP_AUDIT
+    ACTIVITY
+    ELEMENT_INSTANCE
+    CATALOG_ASSIGNMENT
+}
+
 model PermissionPropagationWork {
     key        String                    @id
     objectType ObjectType
@@ -252,10 +270,10 @@ model PermissionPropagationWork {
     mode       PermissionPropagationMode
     userId     String?                   @db.Uuid
 
-    generation           BigInt    @default(1)
-    processedGeneration  BigInt    @default(0)
-    dispatchedGeneration BigInt    @default(0)
-    updateAccessRequests Boolean   @default(false)
+    generation           BigInt  @default(1)
+    processedGeneration  BigInt  @default(0)
+    dispatchedGeneration BigInt  @default(0)
+    updateAccessRequests Boolean @default(false)
     lastDispatchedAt     DateTime?
 
     dirtyAt   DateTime
@@ -266,6 +284,38 @@ model PermissionPropagationWork {
     failures PermissionPropagationFailure[]
 
     @@index([objectType, objectId])
+}
+
+model PermissionPropagationReconciliationState {
+    id String @id
+
+    sampleObjectType ObjectType @default(CATALOG_COLLECTION)
+    fullSweepObjectType ObjectType @default(CATALOG_COLLECTION)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model PermissionPropagationCursor {
+    kind       PermissionPropagationCursorKind
+    objectType ObjectType
+    objectId   String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@id([kind, objectType])
+}
+
+model PermissionPropagationSignalCursor {
+    source     PermissionPropagationSignalSource @id
+    through    DateTime
+    sourceId   Int?
+    relationId Int?
+    relationMaxId Int?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 }
 
 model PermissionPropagationFailure {
@@ -361,6 +411,7 @@ model CatalogCollectionAssignment {
     @@unique([practiceQuizId, catalogCollectionId])
     @@unique([microLearningId, catalogCollectionId])
     @@unique([groupActivityId, catalogCollectionId])
+    @@index([updatedAt, id])
 }
 
 model CatalogCollection {
@@ -444,6 +495,10 @@ model AuditLogEntry {
     // timestamp of the action
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+
+    @@index([createdAt])
+    // serves the bounded per-object-type audit signal scans of permission propagation reconciliation
+    @@index([objectType, createdAt, id])
 }
 
 enum ActivityLogType {
@@ -498,6 +553,8 @@ model ActivityLogEntry {
     // timestamps for the creation and modification of the entry
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+
+    @@index([updatedAt, id])
 }
 
 // #endregion

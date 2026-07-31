@@ -112,6 +112,7 @@ model ElementInstance {
 
   @@unique([type, elementStackId, order])
   @@unique([type, elementBlockId, order])
+  @@index([updatedAt, id])
 }
 
 model InstanceStatistics {

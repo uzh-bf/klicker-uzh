@@ -26,6 +26,7 @@ Provenance: steps 2 requires a database; on a machine without one running, write
 
 - **Pick the right area file** — don't create new `.prisma` files; `js.prisma` is generators-only and the shared `datasource.prisma` declares only the provider. JavaScript URLs live in `packages/prisma/prisma.config.ts`.
 - **Migrations may carry data backfills** (plain SQL in the migration file — `ROW_NUMBER()` example in `20260414223500_*`). Write the backfill in the same migration as the DDL.
+- **Migration-only constraints are part of the contract** — Prisma schema syntax and `prisma db push` cannot express partial indexes or every `CHECK`. Preserve and test the SQL constraints when changing a model such as `PermissionPropagationWork`, `PermissionPropagationReconciliationState`, or `PermissionPropagationCursor`; Analytics sync copies model files, not migration-only enforcement.
 - **Typed Json fields are two edits**: `/// [TypeName]` doc comment on the field AND the declaration in `packages/graphql/src/types/app.ts` (`PrismaJson` namespace, shape from `@klicker-uzh/types`).
 - **Decimal fields**: Python client needs `enable_experimental_decimal = true` in `apps/analytics/prisma/schema/py.prisma` (already set — don't remove); TS side never truthy-checks Decimals.
 - **Don't touch synced Analytics model files by hand** — `prisma:sync` overwrites them while preserving Analytics-owned `py.prisma` and `datasource.prisma`.
