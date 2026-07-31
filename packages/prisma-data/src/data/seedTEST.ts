@@ -829,20 +829,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         create: {
           isActive: true,
           ...learningAnalyticsData,
-          // Backdated so the choice predates the analytics pipeline cutoff and
-          // does not hold the course in a pending-finalization state.
-          ...(isDecided
-            ? {
-                learningAnalyticsChoiceEvents: {
-                  create: {
-                    status: learningAnalyticsStatus,
-                    includedFrom,
-                    disclosureVersion: LEARNING_ANALYTICS_DISCLOSURE_VERSION,
-                    createdAt: LA_CHOICE_AT,
-                  },
-                },
-              }
-            : {}),
           course: {
             connect: {
               id: COURSE_ID_TEST,
@@ -861,6 +847,38 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       })
     })
   )
+
+  // Rebuild the choice history for the decided participations. Participations
+  // already exist at this point (they are created together with the
+  // participant), so the upsert above always takes its update branch and can
+  // never nest the event creation. Events are backdated to the choice so they
+  // precede the analytics pipeline cutoff and do not hold the course in a
+  // pending-finalization state.
+  const testkursParticipations = await prisma.participation.findMany({
+    where: { courseId: COURSE_ID_TEST },
+    select: {
+      id: true,
+      learningAnalyticsStatus: true,
+      learningAnalyticsIncludedFrom: true,
+    },
+  })
+  const decidedParticipations = testkursParticipations.filter(
+    (participation) =>
+      participation.learningAnalyticsStatus !==
+      Prisma.LearningAnalyticsParticipationStatus.UNDECIDED
+  )
+  await prisma.learningAnalyticsChoiceEvent.deleteMany({
+    where: { participationId: { in: testkursParticipations.map((p) => p.id) } },
+  })
+  await prisma.learningAnalyticsChoiceEvent.createMany({
+    data: decidedParticipations.map((participation) => ({
+      participationId: participation.id,
+      status: participation.learningAnalyticsStatus,
+      includedFrom: participation.learningAnalyticsIncludedFrom,
+      disclosureVersion: LEARNING_ANALYTICS_DISCLOSURE_VERSION,
+      createdAt: LA_CHOICE_AT,
+    })),
+  })
 
   // add participants 30 to 35 to single groups
   const PARTICIPANT_GROUP_IDS_SINGLE = [
