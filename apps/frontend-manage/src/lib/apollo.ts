@@ -31,6 +31,8 @@ export const APOLLO_STATE_PROP_NAME = '__APOLLO_STATE__'
 
 let apolloClient: ApolloClient<NormalizedCacheObject>
 
+const POST_ONLY_OPERATIONS = new Set(['QGetCourseVerificationRecords'])
+
 function createIsomorphLink() {
   const isBrowser = typeof window !== 'undefined'
 
@@ -39,8 +41,7 @@ function createIsomorphLink() {
       ? []
       : [
           split(
-            ({ operationName }) =>
-              operationName === 'QGetCourseVerificationRecords',
+            ({ operationName }) => POST_ONLY_OPERATIONS.has(operationName),
             createPersistedQueryLink({
               useGETForHashedQueries: false,
               // eslint-disable-next-line react-hooks/rules-of-hooks

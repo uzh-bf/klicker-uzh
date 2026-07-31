@@ -27,6 +27,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../../components/Layout'
 import CourseCalendarView from '../../../components/courses/CourseCalendarView'
+import CourseDiscussionOverview from '../../../components/courses/CourseDiscussionOverview'
 import CourseGamificationInfos from '../../../components/courses/CourseGamificationInfos'
 import CourseOverviewHeader from '../../../components/courses/CourseOverviewHeader'
 import GroupActivityList from '../../../components/courses/GroupActivityList'
@@ -125,6 +126,9 @@ function CourseOverviewPage() {
     )
 
   const { course } = data
+  const courseQAAvailable = course.isCourseQARolloutEnabled && course.isEditor
+  const activeTabValue =
+    tabValue === 'discussions' && !courseQAAvailable ? 'liveQuizzes' : tabValue
 
   return (
     <Layout>
@@ -221,6 +225,24 @@ function CourseOverviewPage() {
           {course.isGamificationEnabled
             ? t('shared.generic.enabled')
             : t('shared.generic.disabled')}
+          {course.isCourseQARolloutEnabled && (
+            <>
+              <div className="font-bold">{t('manage.course.courseQA')}</div>
+              {course.isCourseQAEnabled
+                ? t('shared.generic.enabled')
+                : t('shared.generic.disabled')}
+              {course.isCourseQAEnabled && (
+                <>
+                  <div className="font-bold">
+                    {t('manage.course.courseQAAnonymousInEmbeds')}
+                  </div>
+                  {course.isCourseQAAnonymousEnabled
+                    ? t('shared.generic.enabled')
+                    : t('shared.generic.disabled')}
+                </>
+              )}
+            </>
+          )}
           {course.isGamificationEnabled && (
             <>
               <div className="font-bold">
@@ -270,7 +292,7 @@ function CourseOverviewPage() {
         ) : (
           <Tabs
             defaultValue="liveQuizzes"
-            value={tabValue}
+            value={activeTabValue}
             onValueChange={(newValue: string) => setTabValue(newValue)}
             tabs={[
               {
@@ -342,6 +364,16 @@ function CourseOverviewPage() {
                 tooltipDelay: 0,
                 data: { cy: 'tab-groupActivities' },
               },
+              ...(courseQAAvailable
+                ? [
+                    {
+                      id: 'tab-discussions',
+                      value: 'discussions',
+                      label: t('manage.course.courseQA'),
+                      data: { cy: 'tab-discussions' },
+                    },
+                  ]
+                : []),
             ]}
             className={{ root: 'flex-1 basis-3/5' }}
           >
@@ -395,16 +427,30 @@ function CourseOverviewPage() {
                 highlightedActivity={highlightedActivity}
               />
             </TabContent>
+            {courseQAAvailable && (
+              <TabContent
+                key="content-discussions"
+                value="discussions"
+                className={{ root: 'px-0 py-1' }}
+              >
+                <CourseDiscussionOverview
+                  courseId={course.id}
+                  isCourseQAEnabled={course.isCourseQAEnabled}
+                  isCourseQAAnonymousEnabled={course.isCourseQAAnonymousEnabled}
+                />
+              </TabContent>
+            )}
           </Tabs>
         )}
 
-        {data?.course?.isGamificationEnabled && (
-          <CourseGamificationInfos
-            course={course}
-            tabValue={gamificationTabValue}
-            setTabValue={setGamificationTabValue}
-          />
-        )}
+        {data?.course?.isGamificationEnabled &&
+          activeTabValue !== 'discussions' && (
+            <CourseGamificationInfos
+              course={course}
+              tabValue={gamificationTabValue}
+              setTabValue={setGamificationTabValue}
+            />
+          )}
       </div>
     </Layout>
   )

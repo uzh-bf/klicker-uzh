@@ -33,6 +33,12 @@ describe('Different microlearning workflows', function () {
   it('CLEANUP', () => {
     cy.cleanup()
     cy.seed()
+    cy.task('setCourseQAFlags', {
+      courseName: 'Testkurs',
+      isCourseQARolloutEnabled: true,
+      isCourseQAEnabled: true,
+      isCourseQAAnonymousEnabled: false,
+    })
   })
 
   // ! Part 0: Preparation - Question Creation
@@ -812,6 +818,7 @@ describe('Different microlearning workflows', function () {
 
   it("Check that the student's previous response is correctly loaded (despite cookie reset) and respond to the second stack", function () {
     // sign in as a student on a mobile device and respond to the all questions
+    cy.viewport('iphone-6+')
     cy.clearAllLocalStorage()
     cy.clearAllSessionStorage()
     cy.loginStudent()
@@ -844,6 +851,32 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="free-text-input-1"]').click().type('Free text answer 2')
     cy.get('[data-cy="student-stack-submit"]').click()
     cy.get('[data-cy="student-stack-continue"]').click()
+
+    cy.get('[data-cy="microlearning-evaluation-qa-panel"]')
+      .next('[data-cy="microlearning-evaluation-results"]')
+      .should('exist')
+    cy.get('[data-cy="microlearning-evaluation-qa-toggle"]')
+      .should('have.attr', 'aria-expanded', 'false')
+      .click()
+      .should('have.attr', 'aria-expanded', 'true')
+    cy.get('[data-cy="microlearning-evaluation-qa-context"]')
+      .find('option')
+      .first()
+      .should('contain.text', '1.')
+    cy.get('[data-cy="microlearning-evaluation-qa-context"]')
+      .find('option')
+      .eq(1)
+      .invoke('val')
+      .then((stackId) => {
+        const value = String(stackId)
+        cy.get('[data-cy="microlearning-evaluation-qa-context"]')
+          .select(value)
+          .should('have.value', value)
+        cy.get(
+          `[id="microlearning-evaluation-qa-${value}-thread-content"]`
+        ).should('be.visible')
+      })
+
     cy.get('[data-cy="finish-microlearning"]').click()
     cy.wait(1000)
     cy.get(

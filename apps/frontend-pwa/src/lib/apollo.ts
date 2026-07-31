@@ -32,6 +32,21 @@ export const APOLLO_STATE_PROP_NAME = '__APOLLO_STATE__'
 
 let apolloClient: ApolloClient<NormalizedCacheObject>
 
+function operationUsesEmbedToken(variables: Record<string, unknown>) {
+  if (typeof variables.embedToken === 'string' && variables.embedToken) {
+    return true
+  }
+
+  const input = variables.input
+  return (
+    typeof input === 'object' &&
+    input !== null &&
+    'embedToken' in input &&
+    typeof input.embedToken === 'string' &&
+    !!input.embedToken
+  )
+}
+
 function createIsomorphLink(ctx?: GetServerSidePropsContext) {
   const isBrowser = typeof window !== 'undefined'
 
@@ -40,7 +55,9 @@ function createIsomorphLink(ctx?: GetServerSidePropsContext) {
       ? []
       : [
           split(
-            ({ operationName }) => operationName === 'QGetVerifiableCredential',
+            ({ operationName, variables }) =>
+              operationName === 'QGetVerifiableCredential' ||
+              operationUsesEmbedToken(variables),
             createPersistedQueryLink({
               useGETForHashedQueries: false,
               // eslint-disable-next-line react-hooks/rules-of-hooks
