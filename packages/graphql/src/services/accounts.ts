@@ -1772,7 +1772,8 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
     ctx.prisma
   )
 
-  await seedDemoSelectionAndCaseStudyElements(ctx)
+  const { questionSE, questionCS } =
+    await seedDemoSelectionAndCaseStudyElements(ctx)
 
   const blockData = [
     {
@@ -1797,6 +1798,11 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
     },
     {
       questions: [questionKPRIM],
+      timeLimit: null,
+      randomSelection: null,
+    },
+    {
+      questions: [questionSE, questionCS],
       timeLimit: null,
       randomSelection: null,
     },

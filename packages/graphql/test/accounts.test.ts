@@ -6,8 +6,12 @@ import {
   PrismaClient,
 } from '@klicker-uzh/prisma/client'
 import type {
+  CaseStudyElementData,
   ElementOptionsCaseStudy,
   ElementOptionsSelection,
+  ElementResultsCaseStudy,
+  ElementResultsSelection,
+  SelectionElementData,
 } from '@klicker-uzh/types'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
@@ -302,6 +306,122 @@ describe('Account demo element seeding', () => {
         },
       ],
     })
+
+    const liveQuiz = await prisma.liveQuiz.findFirstOrThrow({
+      where: { ownerId: userOne.id, name: 'Demo Live Quiz' },
+      include: {
+        blocks: {
+          orderBy: { order: 'asc' },
+          include: { elements: { orderBy: { order: 'asc' } } },
+        },
+      },
+    })
+
+    expect(liveQuiz.blocks).toHaveLength(6)
+    expect(
+      liveQuiz.blocks.slice(0, 5).map((block) => ({
+        timeLimit: block.timeLimit,
+        randomSelection: block.randomSelection,
+        elementTypes: block.elements.map((element) => element.elementType),
+      }))
+    ).toEqual([
+      {
+        timeLimit: 100,
+        randomSelection: null,
+        elementTypes: [ElementType.SC, ElementType.MC],
+      },
+      {
+        timeLimit: null,
+        randomSelection: null,
+        elementTypes: [
+          ElementType.KPRIM,
+          ElementType.NUMERICAL,
+          ElementType.FREE_TEXT,
+        ],
+      },
+      {
+        timeLimit: 50,
+        randomSelection: null,
+        elementTypes: [ElementType.SC],
+      },
+      {
+        timeLimit: 20,
+        randomSelection: null,
+        elementTypes: [ElementType.MC],
+      },
+      {
+        timeLimit: null,
+        randomSelection: null,
+        elementTypes: [ElementType.KPRIM],
+      },
+    ])
+    const demoBlock = liveQuiz.blocks[5]!
+    expect(demoBlock).toMatchObject({
+      order: 5,
+      timeLimit: null,
+      randomSelection: null,
+    })
+    expect(demoBlock.elements.map((element) => element.elementType)).toEqual([
+      ElementType.SELECTION,
+      ElementType.CASE_STUDY,
+    ])
+
+    const selectionInstance = demoBlock.elements[0]!
+    expect(selectionInstance.elementId).toBe(selection!.id)
+    const selectionData = selectionInstance.elementData as SelectionElementData
+    expect(selectionData.options.answerCollection?.id).toBe(collection.id)
+    expect(
+      selectionData.options.answerCollection?.entries
+        .map((entry) => entry.value)
+        .sort()
+    ).toEqual([...COLLECTION_ENTRIES].sort())
+    expect(selectionData.options.answerCollectionSolutionIds?.sort()).toEqual(
+      [entryId('Live poll'), entryId('One-minute paper')].sort()
+    )
+
+    const selectionResults =
+      selectionInstance.results as ElementResultsSelection
+    expect(selectionResults).toEqual({
+      selections: Object.fromEntries(
+        collection.entries.map((entry) => [entry.id, 0])
+      ),
+      total: 0,
+    })
+    expect(selectionInstance.anonymousResults).toEqual(selectionResults)
+
+    const caseStudyInstance = demoBlock.elements[1]!
+    expect(caseStudyInstance.elementId).toBe(caseStudy!.id)
+    const caseStudyData = caseStudyInstance.elementData as CaseStudyElementData
+    const expectedCaseStudyItemIds = [
+      entryId('Live poll'),
+      entryId('Think-pair-share'),
+      entryId('Small-group case discussion'),
+      entryId('Mini-lecture'),
+    ].sort()
+    expect(caseStudyData.options.answerCollectionId).toBe(collection.id)
+    expect(caseStudyData.options.items?.map((item) => item.id).sort()).toEqual(
+      expectedCaseStudyItemIds
+    )
+    expect(caseStudyData.options.criteria).toEqual(caseStudyOptions.criteria)
+    expect(caseStudyData.options.cases).toEqual(caseStudyOptions.cases)
+
+    const caseStudyResults =
+      caseStudyInstance.results as ElementResultsCaseStudy
+    expect(caseStudyResults.total).toBe(0)
+    for (const caseId of ['demo-large-lecture', 'demo-small-seminar']) {
+      for (const itemId of expectedCaseStudyItemIds) {
+        for (const criterionId of [
+          'demo-engagement',
+          'demo-preparation',
+          'demo-time',
+        ]) {
+          expect(
+            caseStudyResults.assessments[caseId]![String(itemId)]![criterionId]
+          ).toEqual({})
+        }
+      }
+    }
+    expect(caseStudyInstance.anonymousResults).toEqual(caseStudyResults)
   })
 
   it('does not seed demo resources when the user opts out', async () => {
