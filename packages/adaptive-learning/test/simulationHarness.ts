@@ -1,4 +1,8 @@
 import {
+  createSimulationRandom,
+  simulationChoiceCountFor,
+} from '../scripts/internalSimulation.js'
+import {
   ADAPTIVE_SECONDS_PER_ITEM,
   MIN_ADAPTIVE_REPORTING_RESPONSES,
   SUPPORTED_ADAPTIVE_ITEM_TYPES,
@@ -227,10 +231,10 @@ export function runAdaptiveSimulation(
       { length: resolvedConfig.learnersPerLevel },
       (_, learnerIndex) => {
         const learnerSeed = level.order * 1_009 + learnerIndex * 7_919
-        const abilityRandom = mulberry32(
+        const abilityRandom = createSimulationRandom(
           resolvedConfig.seed + 100_000 + learnerSeed
         )
-        const responseRandom = mulberry32(
+        const responseRandom = createSimulationRandom(
           resolvedConfig.seed + 200_000 + learnerSeed
         )
         const band = mappedLevels[level.order]!
@@ -408,7 +412,7 @@ function buildRuntimeFixture(config: ResolvedAdaptiveSimulationConfig) {
   const nodes: AdaptiveRuntimeNode[] = []
   const pool: SimulationItem[] = []
   const itemTypes = itemTypesFor(config.itemMix)
-  const poolRandom = mulberry32(config.seed + 300_000)
+  const poolRandom = createSimulationRandom(config.seed + 300_000)
   const rawWeights = Array.from(
     { length: config.rootCount },
     (_, index) => config.rootCount - index
@@ -462,7 +466,7 @@ function buildRuntimeFixture(config: ResolvedAdaptiveSimulationConfig) {
             difficulty: mappedLevels[level.order]!.theta,
             guessing: deriveGuessingParameter({
               type,
-              choiceCount: choiceCountFor(type),
+              choiceCount: simulationChoiceCountFor(type),
             }),
             trueDifficulty: mappedLevels[trueLevelIndex]!.theta,
             trueDiscrimination: config.trueDiscrimination,
@@ -822,10 +826,6 @@ function itemTypesFor(mix: SimulationItemMix): AdaptiveItemType[] {
   return mix === 'MIXED' ? [...SUPPORTED_ADAPTIVE_ITEM_TYPES] : [mix]
 }
 
-function choiceCountFor(type: AdaptiveItemType) {
-  return type === 'SC' || type === 'MC' || type === 'KPRIM' ? 4 : undefined
-}
-
 function adjacentLevelIndex(
   levelIndex: number,
   levelCount: number,
@@ -865,13 +865,4 @@ function mean(values: number[]) {
 
 function percentile(sortedValues: number[], quantile: number) {
   return sortedValues[Math.ceil(sortedValues.length * quantile) - 1] ?? 0
-}
-
-function mulberry32(seed: number) {
-  return function random() {
-    let value = (seed += 0x6d2b79f5)
-    value = Math.imul(value ^ (value >>> 15), value | 1)
-    value ^= value + Math.imul(value ^ (value >>> 7), value | 61)
-    return ((value ^ (value >>> 14)) >>> 0) / 4294967296
-  }
 }

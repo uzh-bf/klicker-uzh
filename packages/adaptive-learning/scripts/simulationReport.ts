@@ -1,5 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { format, resolveConfig } from 'prettier'
 import { ADAPTIVE_SECONDS_PER_ITEM } from '../src/index.js'
 import {
   runAdaptiveSimulation,
@@ -14,6 +16,10 @@ import {
   type RootFailureReason,
   type SimulationStopReason,
 } from '../test/simulationHarness.js'
+import {
+  runAdaptiveV2Simulation,
+  type AdaptiveV2SimulationReport,
+} from './internalSimulation.js'
 import {
   PHASE_11_REGRESSION_GATES,
   UNEXPECTED_CLEAN_FALLBACKS,
@@ -30,6 +36,12 @@ import {
   type SimulationPoolProfile,
   type SimulationScenarioCategory,
 } from './simulationScenarios.js'
+import {
+  ADAPTIVE_V2_SCENARIO_SET,
+  buildAdaptiveV2ReleaseInput,
+  runAdaptiveV2ScenarioProbes,
+  type AdaptiveV2ScenarioProbe,
+} from './simulationV2Scenarios.js'
 
 export const SIMULATION_TRACE_ENCODING = {
   learnerTuple: [
@@ -79,7 +91,7 @@ export type AdaptiveSimulationReportScenario = {
 }
 
 export type AdaptiveSimulationReport = {
-  schemaVersion: 2
+  schemaVersion: 3
   traceEncoding: typeof SIMULATION_TRACE_ENCODING
   assumptions: {
     seed: number
@@ -96,6 +108,9 @@ export type AdaptiveSimulationReport = {
     AdaptiveSimulationStratumMetrics
   >
   scenarios: AdaptiveSimulationReportScenario[]
+  irtV2: AdaptiveV2SimulationReport
+  irtV2ScenarioSet: typeof ADAPTIVE_V2_SCENARIO_SET
+  irtV2ScenarioProbes: AdaptiveV2ScenarioProbe[]
 }
 
 type EncodedEstimateTrace = [
@@ -182,7 +197,7 @@ export function buildSimulationReport(): AdaptiveSimulationReport {
   })
 
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     traceEncoding: SIMULATION_TRACE_ENCODING,
     assumptions: {
       seed: SIMULATION_SEED,
@@ -199,24 +214,43 @@ export function buildSimulationReport(): AdaptiveSimulationReport {
       DIAGNOSTIC: aggregateCanonicalPresetMetrics(executions, 'DIAGNOSTIC'),
     },
     scenarios,
+    irtV2: runAdaptiveV2Simulation(buildAdaptiveV2ReleaseInput()),
+    irtV2ScenarioSet: ADAPTIVE_V2_SCENARIO_SET,
+    irtV2ScenarioProbes: runAdaptiveV2ScenarioProbes(),
   }
 }
 
-export function writeSimulationReport() {
+export async function writeSimulationReport({
+  reportDirectory = fileURLToPath(new URL('../reports/', import.meta.url)),
+}: { reportDirectory?: string } = {}) {
   const report = buildSimulationReport()
-  const reportsDirectory = fileURLToPath(
-    new URL('../reports/', import.meta.url)
+  const jsonPath = resolve(reportDirectory, 'simulation-report.json')
+  const markdownPath = resolve(reportDirectory, 'simulation-summary.md')
+  mkdirSync(reportDirectory, { recursive: true })
+  writeFileSync(jsonPath, await renderCanonicalJsonReport(report, jsonPath))
+  writeFileSync(
+    markdownPath,
+    await renderCanonicalMarkdownSummary(report, markdownPath)
   )
-  const jsonPath = fileURLToPath(
-    new URL('../reports/simulation-report.json', import.meta.url)
-  )
-  const markdownPath = fileURLToPath(
-    new URL('../reports/simulation-summary.md', import.meta.url)
-  )
-  mkdirSync(reportsDirectory, { recursive: true })
-  writeFileSync(jsonPath, `${JSON.stringify(report, null, 2)}\n`)
-  writeFileSync(markdownPath, renderMarkdownSummary(report))
   return { report, jsonPath, markdownPath }
+}
+
+export async function renderCanonicalJsonReport(
+  report: AdaptiveSimulationReport,
+  _jsonPath: string
+) {
+  return `${JSON.stringify(report, null, 2)}\n`
+}
+
+export async function renderCanonicalMarkdownSummary(
+  report: AdaptiveSimulationReport,
+  markdownPath: string
+) {
+  const config = (await resolveConfig(markdownPath)) ?? {}
+  return format(renderMarkdownSummary(report), {
+    ...config,
+    filepath: markdownPath,
+  })
 }
 
 export function regressionGateFailures(report: AdaptiveSimulationReport) {
@@ -248,6 +282,12 @@ export function renderMarkdownSummary(report: AdaptiveSimulationReport) {
     ({ canonicalProductProfile }) => !canonicalProductProfile
   )
   const failures = regressionGateFailures(report)
+  const v2Failures = report.irtV2.thresholdResults.flatMap(
+    ({ probabilityThreshold, gates }) =>
+      gates
+        .filter(({ passed }) => !passed)
+        .map((gate) => ({ probabilityThreshold, ...gate }))
+  )
   const lines = [
     '# Adaptive Learning Simulation Summary',
     '',
@@ -330,6 +370,59 @@ export function renderMarkdownSummary(report: AdaptiveSimulationReport) {
     ),
     '',
     'The JSON artifact contains resolved configuration, profile-aware regression gates, preset aggregates, level/root/boundary strata, exposure, terminal failure reasons, and losslessly encoded nullable learner traces.',
+    '',
+    '## Bayesian IRT v2 Release Evidence',
+    '',
+    `Input fingerprint: \`${report.irtV2.inputFingerprint}\`. Evidence: \`${report.irtV2.evidenceProfile}\`; estimator: \`${report.irtV2.estimatorVersion}\`; policy: ${report.irtV2.policyVersion}.`,
+    '',
+    '| Threshold | Classified | Required roots | Accuracy when classified | Bias upper 95% | RMSE upper 95% | Coverage 95% interval | Exposure / retake / sampled pairwise overlap | Release |',
+    '| ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | --- |',
+    ...report.irtV2.thresholdResults.map(
+      ({ probabilityThreshold, metrics, passed }) =>
+        `| ${probabilityThreshold.toFixed(2)} | ${percent(
+          metrics.classificationRate
+        )} | ${percent(
+          metrics.requiredRootClassificationRate
+        )} | ${percent(metrics.classifiedBandAccuracy)} | ${decimal(
+          metrics.absoluteBiasUpper95
+        )} | ${decimal(metrics.rmseUpper95)} | ${percent(
+          metrics.credibleCoverageLower95
+        )} - ${percent(metrics.credibleCoverageUpper95)} | ${percent(
+          metrics.maximumExposureRate
+        )} / ${percent(metrics.maximumTestOverlapRate)} / ${percent(
+          metrics.sampledMaximumPairwiseFormOverlapRate
+        )} | ${passed ? 'PASS' : 'BLOCKED'} |`
+    ),
+    '',
+    report.irtV2.passed
+      ? `The lowest fully approved threshold is ${report.irtV2.approvedProbabilityThreshold}.`
+      : 'No candidate threshold passes all reviewed release gates. Broad IRT v2 Diagnostic release remains blocked; the simulation does not silently lower any gate.',
+    '',
+    '| Threshold | Failed gate | Actual | Required |',
+    '| ---: | --- | ---: | --- |',
+    ...v2Failures.map(
+      ({ probabilityThreshold, name, actual, required }) =>
+        `| ${probabilityThreshold.toFixed(2)} | ${name} | ${decimal(
+          actual
+        )} | ${required} |`
+    ),
+    '',
+    `The v2 scenario catalog contains ${report.irtV2ScenarioSet.length} executed profiles across model recovery, boundaries, misspecification, hierarchy, item types, calibration, Research collection, retakes, and pool sizes. Only ${report.irtV2.retainedTraces.length} compact canonical traces are retained; all ${report.irtV2.thresholdResults[0]!.metrics.learnerCount} canonical outcomes contribute to the aggregate and stratum metrics.`,
+    '',
+    'EXECUTED means that a probe completed and its declared invariant was evaluated; it is not a psychometric pass. Production-routed near-cut strata, injected-DIF detection, cap, and exhaustion checks are included in the blocking gate table above.',
+    '',
+    '| Scenario | Category | Learners | Bias | RMSE | Coverage | Classified | Execution |',
+    '| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |',
+    ...report.irtV2ScenarioProbes.map(
+      (probe) =>
+        `| ${probe.id} | ${probe.category} | ${probe.learnerCount} | ${decimal(
+          probe.meanBias
+        )} | ${decimal(probe.rmse)} | ${percent(
+          probe.credibleCoverage
+        )} | ${percent(probe.classificationRate)} | ${
+          probe.executedSuccessfully ? 'EXECUTED' : 'FAILED'
+        } |`
+    ),
     '',
   ]
   return `${lines.join('\n')}\n`

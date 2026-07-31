@@ -1774,6 +1774,9 @@ importers:
       npm-run-all:
         specifier: ~4.1.5
         version: 4.1.5
+      prettier:
+        specifier: ~3.3.3
+        version: 3.3.3
       rollup:
         specifier: ~4.34.9
         version: 4.34.9

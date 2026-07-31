@@ -858,14 +858,51 @@ on the maximum supported 2,001-point grid.
 
 ### Task 4: Internal Versioned Simulation And V2 Release Gates
 
+**Implemented 2026-07-31:** The internal suite now executes the reviewed
+three-level, two-root, 3:2-weight, depth-5, 60-item fixture with the operational
+`Normal(0, 1)` prior and all five item types. It evaluates all candidate
+thresholds over 7,002 canonical learners, five separately powered 1,000-learner
+item-type cohorts, 40 compact stress probes, Wilson and 1,000-replicate
+deterministic-bootstrap bounds, and every required stratum. Canonical attempts
+now follow the production `advanceAdaptiveV2Runtime` selection/stopping loop;
+the shared highest-threshold path is replay-verified against direct lower-
+threshold runtimes. Retake and sampled pairwise overlap are reported
+separately, and retakes use deterministic band/cut-distance/cohort stratified
+sampling. The 2,000 interior learners in each band are distributed over five
+predeclared theta cells with 400 learners per cell, while cut evidence is
+generated exactly 0.02 inward from both sides of each finite cut. Production-
+routed near-cut strata, injected-DIF detection, cap, and exhaustion checks are
+release-blocking, while exploratory probes are labeled as executed rather than
+psychometrically passed. A standalone replay rebuilds and compares the complete
+release report, not only its fingerprint.
+No threshold passes the immutable release gates: the standalone release command
+exits non-zero while the normal package suite verifies that a future passing
+report would succeed. This blocks broad IRT v2 Diagnostic rollout but does not
+block the remaining persistence, service, UI, Research, and pilot
+infrastructure tasks.
+
 **Files:**
 
 - Create: `packages/adaptive-learning/scripts/internalSimulation.ts`
+- Create: `packages/adaptive-learning/scripts/simulationV2Types.ts`
+- Create: `packages/adaptive-learning/scripts/simulationV2Support.ts`
+- Create: `packages/adaptive-learning/scripts/simulationV2Attempt.ts`
+- Create: `packages/adaptive-learning/scripts/simulationV2Population.ts`
 - Modify: `packages/adaptive-learning/test/simulationHarness.ts`
 - Create: `packages/adaptive-learning/test/internalSimulation.test.ts`
 - Create: `packages/adaptive-learning/test/irtV2Simulation.test.ts`
 - Create: `packages/adaptive-learning/scripts/simulationV2Scenarios.ts`
+- Create: `packages/adaptive-learning/scripts/simulationV2Fixtures.ts`
+- Create: `packages/adaptive-learning/scripts/simulationV2ModelProbes.ts`
+- Create: `packages/adaptive-learning/scripts/simulationV2InfrastructureProbes.ts`
 - Create: `packages/adaptive-learning/scripts/simulationV2Gates.ts`
+- Create: `packages/adaptive-learning/scripts/simulationV2Metrics.ts`
+- Create: `packages/adaptive-learning/scripts/simulationV2Statistics.ts`
+- Create: `packages/adaptive-learning/scripts/simulationV2ReleaseAssertion.ts`
+- Create: `packages/adaptive-learning/scripts/generateSimulationReport.ts`
+- Create: `packages/adaptive-learning/scripts/assertSimulationRelease.ts`
+- Create: `packages/adaptive-learning/scripts/verifySimulationReportDeterminism.ts`
+- Create: `packages/adaptive-learning/test/simulationV2Statistics.test.ts`
 - Modify: `packages/adaptive-learning/scripts/simulationScenarios.ts`
 - Modify: `packages/adaptive-learning/scripts/simulationGates.ts`
 - Modify: `packages/adaptive-learning/scripts/simulationReport.ts`
@@ -906,15 +943,22 @@ export type AdaptiveV2SimulationMetrics = {
   stopReasons: Record<string, number>
   maximumExposureRate: number
   maximumTestOverlapRate: number
+  sampledMaximumPairwiseFormOverlapRate: number
   strata: Array<{
     key: string
     learnerCount: number
+    meanBias: number
+    absoluteBiasUpper95: number
+    rmse: number
+    rmseUpper95: number
     classificationRate: number
     classificationRateLower95: number
     classifiedBandAccuracy: number
     classifiedBandAccuracyLower95: number
     nonAdjacentConfidentErrorRate: number
     nonAdjacentConfidentErrorRateUpper95: number
+    confidentMisclassificationRate: number
+    confidentMisclassificationRateUpper95: number
     credibleCoverage: number
     credibleCoverageLower95: number
     credibleCoverageUpper95: number
@@ -928,6 +972,7 @@ export type AdaptiveV2ReleasePolicy = {
   candidateProbabilityThresholds: readonly number[]
   minimumProbabilityThreshold: number
   minimumSimulatedLearnersPerRequiredStratum: number
+  minimumSimulatedLearnersPerThetaCell: number
   minimumHoldoutLearnersPerMajorStratum: number
   minimumHoldoutLearnersPerDifGroup: number
   minimumInteriorClassificationRate: number
@@ -935,12 +980,14 @@ export type AdaptiveV2ReleasePolicy = {
   cutNeighborhoodWidth: number
   maximumExposureRate: number
   maximumTestOverlapRate: number
+  maximumSampledPairwiseFormOverlapRate: number
   maximumMedianDurationSeconds: number
   maximumP95DurationSeconds: number
 }
 
 export type AdaptiveV2SimulationReport = {
   schemaVersion: 1
+  evidenceProfile: 'CONTRACT' | 'RELEASE'
   inputFingerprint: string
   estimatorVersion: 'IRT_V2_EAP_GRID_1'
   policyVersion: number
@@ -978,22 +1025,31 @@ This module is developer-facing validation code. Only package tests, report
 scripts, and CI/release commands may import the scenario runner. Production
 GraphQL services, Next.js applications, Hatchet workers, and participant
 runtime code must not import or expose it. `scripts/internalSimulation.ts`
-contains the fingerprint, metric reduction, gate predicates, and scenario
-runner and is not exported from the package entry point or production bundle.
+contains attempt orchestration and fingerprinting; `simulationV2Fixtures.ts`
+owns code-reviewed fixtures and policies, while `simulationV2ModelProbes.ts`
+and `simulationV2InfrastructureProbes.ts` own bounded stress probes.
+`simulationV2Metrics.ts`, `simulationV2Statistics.ts`, and
+`simulationV2Gates.ts` own evidence reduction, confidence bounds, and release
+predicates. `simulationV2Types.ts`, `simulationV2Support.ts`,
+`simulationV2Attempt.ts`, and `simulationV2Population.ts` keep the runner's
+types, fingerprint/validation, production-loop replay, and evidence generation
+separate from the thin report orchestrator. None are exported from the package
+entry point or production bundle.
 It must not register a runtime endpoint or persist simulated learner data.
 
-- [ ] **Step 1: Port the seed-shaped model-recovery scenarios**
+- [x] **Step 1: Port the seed-shaped model-recovery scenarios**
 
 Reproduce the current two-root, 3:2-weight, depth-5, mixed-type, 60-item seed
 fixture and theta grid from the psychometric review. Extend the existing
 harness with estimator version, explicit scale, per-root/per-leaf abilities,
 and response-profile strategy; do not create a second incompatible harness.
-Move the deterministic fingerprint, scenario runner, metric reduction, and
-gate evaluation into `scripts/internalSimulation.ts`; tests/report scripts may
-add richer trace formatting around that internal kernel. Do not export it from
-`src/index.ts` or import it from production code.
+Move the deterministic fingerprint and attempt runner into
+`scripts/internalSimulation.ts`, with metric/statistical/gate modules beside
+it; tests/report scripts may add richer trace formatting around that internal
+kernel. Do not export any of them from `src/index.ts` or import them from
+production code.
 
-- [ ] **Step 2: Add misspecification and boundary scenarios**
+- [x] **Step 2: Add misspecification and boundary scenarios**
 
 Include:
 
@@ -1012,7 +1068,7 @@ Include:
   and first-exposure calibration filtering, and
 - sparse, target, and rich banks.
 
-- [ ] **Step 3: Encode the approved gates**
+- [x] **Step 3: Encode the approved gates**
 
 The gate implementation checks:
 
@@ -1045,12 +1101,13 @@ const gates = [
 ]
 ```
 
-Boundary scenarios separately require abstention when the approved
+Production-routed near-cut strata require abstention when the approved
 misclassification limit cannot be met. Cap/exhaustion scenarios require zero
-forced classified labels. Report every gate overall and by band, root, item
-type, course cohort, and cut-distance stratum. Cut-neighborhood width, exposure,
-overlap, and formative duration limits live in the immutable policy input, not
-hidden constants.
+forced classified labels, and known injected DIF profiles must be detected.
+Report every gate overall and by band, root, item type, course cohort,
+theta-cell, and cut-distance stratum. Cut-neighborhood width, exposure, overlap,
+and formative duration limits live in the immutable policy input, not hidden
+constants.
 
 Policy v1 uses at least 1,000 simulated learners in every required band/root,
 item-type, course-cohort, and cut-distance stratum, a lower 95% classification
@@ -1061,7 +1118,32 @@ lower 95% bound (`>= 0.90`), non-adjacent confident error on its upper 95% bound
 `[0.85, 0.95]`. Bias and RMSE use deterministic bootstrap 95% bounds against
 their limits. Every required stratum must pass independently; an aggregate pass
 cannot hide a failed stratum. Near-cut strata have no minimum classification
-rate but retain misclassification/abstention gates.
+rate and do not use conditional accuracy when no classification is made. They
+instead retain the non-adjacent error and coverage gates plus an unconditional
+upper 95% bound of `0.01` on all confident misclassifications, so abstention
+cannot hide confidently wrong adjacent labels.
+
+The canonical interior population uses five production-shaped theta cells in
+each level band, with at least 400 release learners per cell. Two hundred would
+make the `<= 0.01` non-adjacent-error gate mathematically impossible because a
+zero-event two-sided Wilson upper bound is approximately `0.0188`; at 400 it is
+below `0.01`. Near-cut learners
+sit exactly 0.02 inward from every finite cut, covering both sides across the
+adjacent bands. The separate item-type cohorts remain independently powered at
+1,000 learners per supported type. Retake overlap evidence is selected by a
+deterministic round-robin over band, cut-distance class, and course cohort so a
+prefix cannot silently represent only the first band. The fingerprint includes
+the cell grid, jitter, cut offset, and retake-sampling version.
+
+Both known injected DIF scenarios are release-blocking. Item-type DIF compares
+paired per-learner SC-versus-unaffected-item residual contrasts; course-cohort
+DIF compares one mean residual per affected or reference learner. The bootstrap
+unit is therefore the independent learner rather than correlated item
+responses. The absolute mean residual contrast must retain a deterministic-
+bootstrap lower 95% bound of at least `0.02` over 1,000 replicates. The DIF
+probes use 384 learners per theta so the clustered SC detector has meaningful
+margin above the predeclared threshold. General model probes remain at 48
+learners per theta.
 
 Empirical validation uses separately approved minima of at least 200 holdout
 learners per major band/root/boundary stratum and 100 per predeclared DIF group;
@@ -1079,17 +1161,17 @@ suite fails and v2 cannot be released. The selected threshold becomes part of
 the reviewed, code-owned classification-policy version; no course author or
 other user can run the suite, inspect its traces, or override the result.
 
-- [ ] **Step 4: Run the failing v2 simulation**
+- [x] **Step 4: Run the failing v2 simulation**
 
 ```bash
-pnpm --filter @klicker-uzh/adaptive-learning exec vitest run test/irtV2Simulation.test.ts
+pnpm --filter @klicker-uzh/adaptive-learning test:simulation:v2:release
 ```
 
 Expected: local/CI failures identify parameter, pool, or threshold combinations that do
 not meet the approved gates. Do not weaken gates to make the initial synthetic
 suite pass; mark non-shipping profiles explicitly.
 
-- [ ] **Step 5: Generate deterministic report artifacts**
+- [x] **Step 5: Generate deterministic report artifacts**
 
 Upgrade the existing report to schema version 3. Preserve all v1 evidence and
 add v2 resolved scenarios, nullable learner traces, metrics, and gates. The
@@ -1098,28 +1180,37 @@ conditional on classification, abstention, exposure, and length.
 
 The input fingerprint includes the fixture scale/cuts/grid/prior, estimator and
 policy versions, simulated item identities and parameters, hierarchy/weights,
-evidence minima, caps, exposure policy, scenario set, and deterministic seed.
-Any change invalidates the earlier internal report and CI regenerates it. This
-fingerprint is release evidence for the estimator/policy implementation, not a
-user-visible or per-quiz publication record.
+evidence minima, caps, exposure policy, scenario set, learner-cluster DIF
+bootstrap unit, sample schedules, and deterministic seed. Any change invalidates
+the earlier internal report and CI regenerates it. The verifier compares both
+the exact canonical JSON and Markdown bytes against a fresh reconstruction of
+the complete report. Every gate persists a machine-readable comparison and
+numeric target; the release assertion reevaluates those predicates, requires a
+non-empty gate set, and rejects contradictory cached gate, threshold, or report
+booleans. Simulation scripts compile into an ignored internal directory outside
+`dist`, and the package manifest explicitly includes only the production bundle
+and declaration files. This fingerprint is release evidence for the
+estimator/policy implementation, not a user-visible or per-quiz publication
+record.
 
 Add package scripts:
 
 ```json
 {
-  "test:simulation:v2": "vitest run test/irtV2Simulation.test.ts",
+  "test:simulation:v2": "vitest run test/internalSimulation.test.ts test/irtV2Simulation.test.ts",
+  "test:simulation:v2:release": "run-s build:simulation-report generate:simulation-report format:simulation-report test:simulation:report:verify verify:simulation:report:determinism assert:simulation:v2:release",
   "test:performance": "vitest run test/runtime.performance.test.ts test/runtimeV2.performance.test.ts",
-  "test:irt-v2:release": "run-s test test:simulation test:simulation:v2 test:simulation:report test:performance"
+  "test:irt-v2:release": "run-s test test:simulation test:simulation:v2 test:performance test:simulation:v2:release"
 }
 ```
 
-- [ ] **Step 6: Verify determinism and commit**
+- [x] **Step 6: Verify determinism and commit**
 
 ```bash
 pnpm --filter @klicker-uzh/adaptive-learning test:irt-v2:release
 git add packages/adaptive-learning/reports
-pnpm --filter @klicker-uzh/adaptive-learning test:simulation:report
-git diff --exit-code -- packages/adaptive-learning/reports
+pnpm --filter @klicker-uzh/adaptive-learning test:simulation:report:verify
+pnpm --filter @klicker-uzh/adaptive-learning verify:simulation:report:determinism
 git add packages/adaptive-learning
 git commit -m "test(adaptive): gate Bayesian IRT simulations"
 ```
