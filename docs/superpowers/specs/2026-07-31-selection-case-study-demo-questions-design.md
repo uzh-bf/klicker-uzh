@@ -1,7 +1,7 @@
 # Selection and Case Study Demo Questions
 
 - **Date:** 2026-07-31
-- **Status:** Design approved; awaiting written-spec review
+- **Status:** Approved
 
 ## Context
 
