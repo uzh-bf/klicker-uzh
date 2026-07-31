@@ -1,5 +1,9 @@
 # Log
 
+## 2026-07-31
+
+- **Update**: [data-and-migrations](./data-and-migrations.md) documents request-driven first-login demo seeding, including the shared answer collection used by the selection and case-study demos and their final Demo Live Quiz block.
+
 ## 2026-07-20
 
 - **Update**: [getting-started](./getting-started.md) now records that the vanilla Office Add-in follows the TypeScript 6 workspace baseline with explicit Office global types. [testing](./testing.md) and the `klicker-testing-verification` procedure cover its URL tests, build, deployment parity, manifest, browser, and PowerPoint host checks.
