@@ -1,5 +1,6 @@
 import { Priority, type HatchetClient } from '@hatchet-dev/typescript-sdk'
 import { prisma } from '@klicker-uzh/prisma'
+import { Prisma } from '@klicker-uzh/prisma/client'
 import {
   HATCHET_EVENTS,
   type HatchetHandlers,
@@ -17,6 +18,7 @@ export function prepareHatchetTasks({
   redisAssessmentExec,
   redisCache,
   handlers,
+  database = prisma,
 }: {
   hatchet: HatchetClient
   pubSub: PubSub<any>
@@ -25,6 +27,7 @@ export function prepareHatchetTasks({
   redisAssessmentExec: Redis
   redisCache?: Redis
   handlers: HatchetHandlers
+  database?: Pick<typeof prisma, '$queryRaw'>
 }) {
   const globalContext = {
     hatchet,
@@ -305,13 +308,64 @@ export function prepareHatchetTasks({
         Number.isFinite(graceDays) && graceDays >= 0 ? graceDays : 7
       const cutoff = new Date(Date.now() - effectiveGrace * 24 * 60 * 60 * 1000)
 
-      const candidates = await prisma.course.findMany({
-        where: {
-          analyticsFinalizedAt: null,
-          OR: [{ endDate: { lte: cutoff } }, { isArchived: true }],
-        },
-        select: { id: true },
-      })
+      const candidates = await database.$queryRaw<{ id: string }[]>(
+        Prisma.sql`
+          WITH ended_courses AS MATERIALIZED (
+            SELECT
+              c.id,
+              c."analyticsFinalizedAt",
+              c."chatAnalyticsValidAt"
+            FROM "Course" c
+            WHERE (
+              c."endDate" <= ${cutoff}
+              OR c."isArchived" = true
+            )
+          ),
+          dirty_chat_courses AS MATERIALIZED (
+            SELECT cb."courseId"
+            FROM ended_courses ended
+            JOIN "Chatbot" cb ON cb."courseId" = ended.id
+            JOIN "ChatUsageCredits" cuc ON cuc."chatbotId" = cb.id
+            WHERE (
+              cuc."disclaimerAcceptedAt" > ended."chatAnalyticsValidAt"
+              OR (
+                cuc."disclaimerDeclined" = true
+                AND cuc."updatedAt" > ended."chatAnalyticsValidAt"
+              )
+              OR (
+                cuc."acceptedDisclaimerId" IS DISTINCT FROM cb."disclaimerId"
+                AND cb."updatedAt" > ended."chatAnalyticsValidAt"
+              )
+            )
+
+            UNION
+
+            SELECT pca."courseId"
+            FROM ended_courses ended
+            JOIN "ParticipantChatAnalytics" pca ON pca."courseId" = ended.id
+            JOIN "Chatbot" cb ON cb.id = pca."chatbotId"
+            LEFT JOIN "ChatUsageCredits" cuc
+              ON cuc."participantId" = pca."participantId"
+             AND cuc."chatbotId" = pca."chatbotId"
+            WHERE (
+              cuc."participantId" IS NULL
+              OR cuc."acceptedDisclaimerId" IS DISTINCT FROM cb."disclaimerId"
+              OR cuc."disclaimerDeclined" = true
+            )
+          )
+          SELECT ended.id
+          FROM ended_courses ended
+          WHERE (
+            ended."analyticsFinalizedAt" IS NULL
+            OR ended."chatAnalyticsValidAt" IS NULL
+            OR EXISTS (
+              SELECT 1
+              FROM dirty_chat_courses dirty
+              WHERE dirty."courseId" = ended.id
+            )
+          )
+        `
+      )
 
       await executionContext.logger.info(
         `[scanEndedCourses] graceDays=${effectiveGrace} cutoff=${cutoff.toISOString()} candidates=${candidates.length}`

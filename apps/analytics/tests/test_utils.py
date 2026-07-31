@@ -22,6 +22,7 @@ from src.modules.utils import (  # noqa: E402
     AnalyticsRunConfig,
     analytics_mode,
     analytics_run_context,
+    analytics_run_config_from_env,
     analytics_window_since,
     apply_course_scope,
     iter_analytics_windows,
@@ -62,6 +63,14 @@ def test_window_since_returns_none_when_unset():
 def test_window_since_returns_trimmed_value():
     with mock.patch.dict(os.environ, {"ANALYTICS_WINDOW_SINCE": "  2026-04-01  "}):
         assert analytics_window_since() == "2026-04-01"
+
+
+def test_cli_run_config_reads_immutable_chat_cutoff():
+    with mock.patch.dict(
+        os.environ,
+        {"ANALYTICS_CHAT_CUTOFF": " 2026-07-23T09:30:00Z "},
+    ):
+        assert analytics_run_config_from_env().chat_analytics_cutoff == "2026-07-23T09:30:00Z"
 
 
 # --- should_skip_window ----------------------------------------------------

@@ -9,6 +9,12 @@ _DIR = os.path.dirname(__file__)
 _SQL_DEFAULT = load_sql(os.path.join(_DIR, "aggregated_chatbot_analytics.sql"))
 _SQL_WEEKLY = load_sql(os.path.join(_DIR, "aggregated_chatbot_analytics_weekly.sql"))
 _PLACEHOLDER = "/*COURSE_FILTER*/"
+_DELETE_SQL = """
+DELETE FROM "AggregatedChatbotAnalytics"
+WHERE "type" = CAST(:analytics_type AS "AnalyticsType")
+  AND "timestamp" = CAST(:ts AS date)
+  /*COURSE_FILTER*/
+"""
 
 __all__ = ["compute_aggregated_chatbot_analytics", "COURSE_TIMESTAMP"]
 
@@ -16,6 +22,11 @@ __all__ = ["compute_aggregated_chatbot_analytics", "COURSE_TIMESTAMP"]
 def _prepare_sql(template: str, course_ids: list[str] | None) -> str:
     clause = "" if course_ids is None else render_uuid_in_clause('cb."courseId"', course_ids)
     return template.replace(_PLACEHOLDER, clause)
+
+
+def _prepare_delete_sql(course_ids: list[str] | None) -> str:
+    clause = "" if course_ids is None else render_uuid_in_clause('"courseId"', course_ids)
+    return _DELETE_SQL.replace(_PLACEHOLDER, clause)
 
 
 def compute_aggregated_chatbot_analytics(
@@ -39,6 +50,8 @@ def compute_aggregated_chatbot_analytics(
     if verbose:
         print(f"[aggregated_chat_analytics] {analytics_type} {win_start}..{win_end} -> {timestamp}")
 
+    params = {"analytics_type": analytics_type, "ts": timestamp}
+    session.execute(text(_prepare_delete_sql(course_ids)), params)
     if analytics_type == "WEEKLY":
         result = session.execute(
             text(_prepare_sql(_SQL_WEEKLY, course_ids)),
@@ -47,11 +60,10 @@ def compute_aggregated_chatbot_analytics(
     else:
         result = session.execute(
             text(_prepare_sql(_SQL_DEFAULT, course_ids)),
-            {
+            params
+            | {
                 "win_start": win_start,
                 "win_end": win_end,
-                "analytics_type": analytics_type,
-                "ts": timestamp,
             },
         )
     session.commit()

@@ -3,8 +3,20 @@ from __future__ import annotations
 import importlib
 import sys
 import types
+from collections.abc import Iterator
 
 import pytest
+
+from tests.module_isolation import preserve_imported_modules
+
+_DATABASE_MODULES = ("src.db", "src.scripts.10_chat_topic_clustering")
+
+
+@pytest.fixture(autouse=True)
+def isolate_database_modules() -> Iterator[None]:
+    """Do not retain modules imported under a test-only DATABASE_URL."""
+    with preserve_imported_modules(_DATABASE_MODULES):
+        yield
 
 
 class _Scalars:

@@ -106,6 +106,13 @@ For the first staging rollout, run the non-mutating
 a known low-volume course. Confirm task completion, expected analytics rows,
 and the course status before increasing scope.
 
+Before enabling the production cron, run one guarded `FULL` rebuild in a
+reviewed maintenance window. This establishes a consent-correct baseline for
+analytics rows created before the native worker tracked consent changes. After
+that baseline, incremental runs retain the 14-day fast path for unaffected
+courses and automatically rebuild older chat windows only where current
+disclaimer consent changed.
+
 ## Trigger modes
 
 Course admins can trigger the existing GraphQL mutation:
@@ -118,7 +125,10 @@ mutation RecomputeCourseAnalytics($courseId: String!, $mode: AnalyticsMode!) {
 
 - `INCREMENTAL` — scoped course recompute with the default 14-day window.
 - `FINALIZE` — scoped course recompute without the incremental window; the
-  nightly scanner uses this route for ended courses.
+  nightly scanner uses this route for ended courses. It also requeues an
+  already-finalized course when its chat privacy state changed after the last
+  successful cutoff, so a consent change racing with finalization is reconciled
+  on the next scan.
 - `FULL` — guarded rebuild through the protected full workflow. It fails
   closed unless the worker was explicitly deployed with `allowFull=true`.
 
@@ -167,6 +177,9 @@ only `s99-mark-analytics-valid` should mark a successful run valid.
    prerequisites, and script 10 clustering/model memory pressure.
 3. Prefer retriggering the complete course workflow with the original mode.
    Do not replay `s99-mark-analytics-valid` in isolation.
+   The final marker requires the immutable workflow cutoff; the legacy
+   `_initialize_analytics.sh` launcher supplies the same cutoff to every
+   script when that cold rollback path is used.
 4. Ordinary tasks have two automatic retries. Script 10 has no automatic retry
    because its CPU/memory-heavy work should not repeat without operator review.
 5. A superseded freshness run is intentionally canceled and is not an incident

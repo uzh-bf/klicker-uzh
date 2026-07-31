@@ -14,6 +14,11 @@ ChatDoseBucketLiteral = Literal["NONE", "LOW", "MED", "HIGH"]
 _DIR = os.path.dirname(__file__)
 _OUTCOME_SQL = os.path.join(_DIR, "participant_chat_outcome.sql")
 _UPDATE_SQL = os.path.join(_DIR, "update_has_chat_activity.sql")
+_DELETE_OUTCOMES_SQL = """
+DELETE FROM "ParticipantChatOutcome"
+WHERE true
+  /*COURSE_FILTER*/
+"""
 
 _OUTCOME_PLACEHOLDERS = {
     "/*CHAT_COURSE_FILTER*/": '"courseId"',
@@ -21,6 +26,7 @@ _OUTCOME_PLACEHOLDERS = {
     "/*COURSE_PERFORMANCE_FILTER*/": '"courseId"',
 }
 _UPDATE_PLACEHOLDERS = {"/*COURSE_FILTER*/": 'pca."courseId"'}
+_DELETE_OUTCOME_PLACEHOLDERS = {"/*COURSE_FILTER*/": '"courseId"'}
 
 
 def _load(path: str) -> str:
@@ -41,21 +47,15 @@ def _render_sql(
     return rendered
 
 
-class AnalyticsNotReadyError(RuntimeError):
-    """Raised when required upstream analytics tables are empty.
-
-    Script 11 joins ParticipantChatAnalytics (script 8) with ParticipantPerformance
-    (script 4). If either table is empty we abort loudly rather than writing
-    degenerate rows — per §3.5 the outcome build has a hard precondition on
-    upstream runs.
-    """
-
-
-def assert_preconditions(
+def report_source_counts(
     session: Session,
     course_ids: list[str] | None = None,
     verbose: bool = False,
 ) -> None:
+    """Report current source counts without rejecting a valid empty result."""
+    if not verbose:
+        return
+
     buffer_active = buffer_registry.is_active()
 
     if buffer_active:
@@ -69,13 +69,20 @@ def assert_preconditions(
         perf_rows = session.execute(
             text(f'SELECT COUNT(*) AS n FROM "ParticipantPerformance" WHERE true {scope_clause}')
         ).scalar_one()
-    if verbose:
-        source = "buffer" if buffer_active else "db"
-        print(f"[chat_quiz_correlation] preconditions ({source}): chat_course_rows={chat_rows} perf_rows={perf_rows}")
-    if chat_rows == 0:
-        raise AnalyticsNotReadyError("ParticipantChatAnalytics (type=COURSE) is empty — run script 8 first.")
-    if perf_rows == 0:
-        raise AnalyticsNotReadyError("ParticipantPerformance is empty — run script 4 first.")
+    source = "buffer" if buffer_active else "db"
+    print(f"[chat_quiz_correlation] source counts ({source}): chat_course_rows={chat_rows} perf_rows={perf_rows}")
+
+
+def _execute_participant_chat_outcomes(
+    session: Session,
+    course_ids: list[str] | None,
+):
+    sql = _render_sql(
+        _load(_OUTCOME_SQL),
+        course_ids=course_ids,
+        placeholders=_OUTCOME_PLACEHOLDERS,
+    )
+    return session.execute(text(sql))
 
 
 def compute_participant_chat_outcomes(
@@ -86,14 +93,9 @@ def compute_participant_chat_outcomes(
     if buffer_registry.is_active():
         return _compute_outcomes_from_buffer(session, course_ids, verbose)
 
-    sql = _render_sql(
-        _load(_OUTCOME_SQL),
-        course_ids=course_ids,
-        placeholders=_OUTCOME_PLACEHOLDERS,
-    )
     if verbose:
         print("[chat_quiz_correlation] running participant_chat_outcome.sql")
-    result = session.execute(text(sql))
+    result = _execute_participant_chat_outcomes(session, course_ids)
     session.commit()
     rows = result.rowcount or 0
     if verbose:
@@ -101,24 +103,67 @@ def compute_participant_chat_outcomes(
     return rows
 
 
-def update_has_chat_activity(
+def _execute_has_chat_activity(
     session: Session,
-    course_ids: list[str] | None = None,
-    verbose: bool = False,
+    course_ids: list[str] | None,
 ):
     sql = _render_sql(
         _load(_UPDATE_SQL),
         course_ids=course_ids,
         placeholders=_UPDATE_PLACEHOLDERS,
     )
+    return session.execute(text(sql))
+
+
+def update_has_chat_activity(
+    session: Session,
+    course_ids: list[str] | None = None,
+    verbose: bool = False,
+):
     if verbose:
         print("[chat_quiz_correlation] running update_has_chat_activity.sql")
-    result = session.execute(text(sql))
+    result = _execute_has_chat_activity(session, course_ids)
     session.commit()
     rows = result.rowcount or 0
     if verbose:
         print(f"[chat_quiz_correlation] hasChatActivity rows updated: {rows}")
     return rows
+
+
+def reconcile_chat_quiz_correlation(
+    session: Session,
+    course_ids: list[str] | None = None,
+    verbose: bool = False,
+) -> tuple[int, int]:
+    """Atomically replace scoped outcomes and reset activity flags."""
+    if buffer_registry.is_active():
+        outcome_rows = compute_participant_chat_outcomes(
+            session,
+            course_ids=course_ids,
+            verbose=verbose,
+        )
+        activity_rows = update_has_chat_activity(
+            session,
+            course_ids=course_ids,
+            verbose=verbose,
+        )
+        return outcome_rows, activity_rows
+
+    delete_sql = _render_sql(
+        _DELETE_OUTCOMES_SQL,
+        course_ids=course_ids,
+        placeholders=_DELETE_OUTCOME_PLACEHOLDERS,
+    )
+    session.execute(text(delete_sql))
+    outcome_result = _execute_participant_chat_outcomes(session, course_ids)
+    activity_result = _execute_has_chat_activity(session, course_ids)
+    session.commit()
+
+    outcome_rows = outcome_result.rowcount or 0
+    activity_rows = activity_result.rowcount or 0
+    if verbose:
+        print(f"[chat_quiz_correlation] reconciled outcome_rows={outcome_rows} activity_rows={activity_rows}")
+    return outcome_rows, activity_rows
 
 
 # ---------------------------------------------------------------------------

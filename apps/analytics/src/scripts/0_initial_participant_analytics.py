@@ -63,7 +63,15 @@ def main() -> None:
                 print(f"Computing daily participant analytics for {specific_date}")
                 win_start = specific_date + "T00:00:00.000Z"
                 win_end = specific_date + "T23:59:59.999Z"
-                compute_participant_analytics(session, win_start, win_end, win_start, "DAILY", verbose)
+                compute_participant_analytics(
+                    session,
+                    win_start,
+                    win_end,
+                    win_start,
+                    "DAILY",
+                    verbose,
+                    course_ids=scope,
+                )
 
         if compute_weekly:
             for curr_date in date_range_weekly:
@@ -74,7 +82,15 @@ def main() -> None:
                 week_end = week_end_date + "T23:59:59.999Z"
                 week_start = (curr_date - pd.DateOffset(days=6)).strftime("%Y-%m-%d") + "T00:00:00.000Z"
                 print(f"Computing weekly participant analytics for {week_start} to {week_end}")
-                compute_participant_analytics(session, week_start, week_end, week_end, "WEEKLY", verbose)
+                compute_participant_analytics(
+                    session,
+                    week_start,
+                    week_end,
+                    week_end,
+                    "WEEKLY",
+                    verbose,
+                    course_ids=scope,
+                )
 
         if compute_monthly:
             for curr_date in date_range_monthly:
@@ -85,7 +101,15 @@ def main() -> None:
                 month_end = month_end_date + "T23:59:59.999Z"
                 month_start = (curr_date - pd.offsets.MonthBegin(1)).strftime("%Y-%m-%d") + "T00:00:00.000Z"
                 print(f"Computing monthly participant analytics for {month_start} to {month_end}")
-                compute_participant_analytics(session, month_start, month_end, month_end, "MONTHLY", verbose)
+                compute_participant_analytics(
+                    session,
+                    month_start,
+                    month_end,
+                    month_end,
+                    "MONTHLY",
+                    verbose,
+                    course_ids=scope,
+                )
 
         if compute_course:
             check_analytics_cancellation()

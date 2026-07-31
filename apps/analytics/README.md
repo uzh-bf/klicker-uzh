@@ -12,20 +12,27 @@ This service computes learning analytics for KlickerUZH, providing insights into
 
 - The project uses uv for dependency management. Run `uv sync` in this folder to create the virtual environment and install deps.
 - The project uses PNPM to simplify the execution of scripts and to provide a watch mode for execution. Make sure that you have executed `pnpm install` in the repository before trying to run the commands below.
-- Make sure that all `.prisma` files are available in `prisma/`. If this is not the case, run the `util/sync-schema.sh` script first. The mirror is for schema review; the analytics runtime uses SQLAlchemy models generated from a live development database.
+- Make sure that all `.prisma` files are available in `prisma/`. If this is not the case, run the `util/sync-schema.sh` script first. The mirror is for schema review; the analytics runtime uses a curated SQLAlchemy model surface checked against a live development database.
 - Make sure that a valid Python environment is used (3.12). If needed, set the Python binary explicitly with `uv python pin 3.12` before running `uv sync`.
 
 ## Available Commands
 
 The following commands are available through PNPM:
 
-- `pnpm generate` - Regenerate the SQLAlchemy models from the live development database
+- `pnpm generate` - Generate the ignored `src/models.generated.py` reference on the legacy host with Infisical
+- `pnpm generate:raw` - Generate the same reference in the self-contained DevPod from its injected `DATABASE_URL`
+
+Both generation paths query the migrated live development database. Reconcile
+only relevant changes from the generated reference into `src/models.py`.
+
 - `pnpm main` - Run the analytics service
 - `pnpm analytics:dev` - Start the service in watch mode for development
 
 ## Pipeline scripts
 
 The `src/scripts/` directory contains numbered scripts that form the analytics pipeline. Run them in order via `./_initialize_analytics.sh <target>` (target = `dev` | `qa` | `prd`; defaults to `dev`).
+The launcher exports one immutable `ANALYTICS_CHAT_CUTOFF` for all scripts.
+Do not run script 99 by itself: it fails closed without that shared cutoff.
 
 For per-table column-level documentation (purpose, grain, source data, computed columns) see [`ANALYTICS.md`](./ANALYTICS.md).
 
@@ -145,6 +152,18 @@ It registers the non-mutating `learning-analytics-native-proof` task plus two co
 - `recompute-learning-analytics-full` handles only guarded full rebuilds. A running full rebuild is protected and a newer full request is canceled.
 
 Both DAGs call the existing Python script entry points in-process with immutable per-run configuration and cooperative cancellation. `ANALYTICS_ALLOW_FULL=1` is required for the full DAG and remains unset by default. TypeScript retains only the GraphQL/manual event producers and the `scan-ended-courses` task. It does not register an analytics DAG or spawn Python.
+
+Incremental chat stages keep the normal 14-day window for unaffected courses.
+If current disclaimer consent changed, they purge now-ineligible participant
+rows across retained history and rebuild only the affected courses from the
+earliest affected message or aggregate window. The course chat watermark
+is the durable handoff from the participant stage to its aggregate child,
+preventing a completed aggregate task from swallowing a later consent cleanup.
+The final marker uses Hatchet's immutable workflow-creation time, so consent
+changes during a run remain visible to the next reconciliation.
+Finalize runs leave `analyticsFinalizedAt` unset when such a change is pending;
+the ended-course scanner then schedules a follow-up run that can converge
+before the course becomes terminal.
 
 Cutover and rollback are cold: stop the current owner before starting another worker image so exactly one analytics DAG consumes these events.
 

@@ -1,6 +1,7 @@
 import importlib
 import os
 import sys
+from collections.abc import Iterator
 from contextlib import nullcontext
 from types import ModuleType
 from typing import Any, cast
@@ -16,6 +17,20 @@ from src.modules.utils import (
     analytics_run_config_from_env,
     analytics_window_since,
 )
+from tests.module_isolation import preserve_imported_modules
+
+_DATABASE_MODULES = (
+    "src.db",
+    "src.scripts.11_chat_quiz_correlation",
+    "src.scripts.13_platform_semester_analytics",
+)
+
+
+@pytest.fixture(autouse=True)
+def isolate_database_modules() -> Iterator[None]:
+    """Do not retain modules imported under a test-only DATABASE_URL."""
+    with preserve_imported_modules(_DATABASE_MODULES):
+        yield
 
 
 def test_direct_runtime_uses_task_local_config_without_mutating_environment(
@@ -89,7 +104,7 @@ def test_direct_runtime_normalizes_process_exit_to_task_failure(monkeypatch) -> 
     assert isinstance(exc_info.value.__cause__, SystemExit)
 
 
-def test_chat_quiz_precondition_raises_ordinary_task_error(monkeypatch) -> None:
+def test_chat_quiz_empty_sources_continue_to_reconciliation(monkeypatch) -> None:
     monkeypatch.setenv(
         "DATABASE_URL",
         "postgresql://postgres@127.0.0.1/analytics-entrypoint-test",
@@ -99,31 +114,32 @@ def test_chat_quiz_precondition_raises_ordinary_task_error(monkeypatch) -> None:
         importlib.import_module("src.scripts.11_chat_quiz_correlation"),
     )
     session = object()
-    expected = entrypoint.AnalyticsNotReadyError("analytics inputs missing")
-
-    def fail_precondition(*_args, **_kwargs) -> None:
-        raise expected
+    calls: list[str] = []
 
     monkeypatch.setattr(entrypoint, "SessionLocal", lambda: nullcontext(session))
     monkeypatch.setattr(entrypoint, "scoped_course_ids", lambda _session: None)
     monkeypatch.setattr(entrypoint, "script_entry", lambda **_kwargs: 0.0)
-    monkeypatch.setattr(entrypoint, "assert_preconditions", fail_precondition)
+    monkeypatch.setattr(entrypoint, "script_exit", lambda **_kwargs: None)
+    monkeypatch.setattr(entrypoint, "check_analytics_cancellation", lambda: None)
+    monkeypatch.setattr(
+        entrypoint,
+        "report_source_counts",
+        lambda *_args, **_kwargs: calls.append("report"),
+    )
+    monkeypatch.setattr(
+        entrypoint,
+        "reconcile_chat_quiz_correlation",
+        lambda *_args, **_kwargs: calls.append("reconcile"),
+    )
 
-    with pytest.raises(entrypoint.AnalyticsNotReadyError) as exc_info:
-        entrypoint.main()
+    entrypoint.main()
 
-    assert exc_info.value is expected
-    assert not isinstance(exc_info.value, SystemExit)
+    assert calls == ["report", "reconcile"]
 
 
 @pytest.mark.parametrize(
     ("module_name", "first_phase", "second_phase"),
     [
-        (
-            "src.scripts.11_chat_quiz_correlation",
-            "compute_participant_chat_outcomes",
-            "update_has_chat_activity",
-        ),
         (
             "src.scripts.13_platform_semester_analytics",
             "compute_platform_semester_analytics",
@@ -160,13 +176,6 @@ def test_script_stops_between_committed_phases(
         second_phase,
         lambda *_args, **_kwargs: calls.append("second"),
     )
-    if hasattr(entrypoint, "assert_preconditions"):
-        monkeypatch.setattr(
-            entrypoint,
-            "assert_preconditions",
-            lambda *_args, **_kwargs: None,
-        )
-
     with (
         analytics_run_context(config, lambda: calls == ["first"]),
         pytest.raises(AnalyticsRunCancelled),

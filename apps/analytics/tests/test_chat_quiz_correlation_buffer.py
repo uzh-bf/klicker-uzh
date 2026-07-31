@@ -38,31 +38,26 @@ def _populate(buffer: CaptureBuffer) -> None:
     buffer.record("ParticipantPerformance", _PERF_ROWS)
 
 
-def test_assert_preconditions_raises_when_buffer_empty():
+def test_report_source_counts_accepts_empty_buffer():
     from src.modules.chat_quiz_correlation.compute_chat_quiz_correlation import (
-        AnalyticsNotReadyError,
-        assert_preconditions,
+        report_source_counts,
     )
 
     buffer = CaptureBuffer()
     with intercept_writes(buffer):
-        try:
-            assert_preconditions(session=None, course_ids=["c1"])
-        except AnalyticsNotReadyError:
-            return
-    raise AssertionError("expected AnalyticsNotReadyError for empty buffer")
+        report_source_counts(session=None, course_ids=["c1"], verbose=True)
 
 
-def test_assert_preconditions_passes_when_buffer_has_rows():
+def test_report_source_counts_accepts_populated_buffer():
     from src.modules.chat_quiz_correlation.compute_chat_quiz_correlation import (
-        assert_preconditions,
+        report_source_counts,
     )
 
     buffer = CaptureBuffer()
     _populate(buffer)
     with intercept_writes(buffer):
         # No exception — DB is never touched because buffer_registry is active.
-        assert_preconditions(session=None, course_ids=["c1"])
+        report_source_counts(session=None, course_ids=["c1"], verbose=True)
 
 
 def test_compute_outcomes_writes_rows_into_buffer_with_expected_columns():

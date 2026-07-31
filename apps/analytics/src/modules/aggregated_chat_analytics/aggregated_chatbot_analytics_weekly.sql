@@ -13,6 +13,13 @@ WITH params AS (
   SELECT CAST(:win_start AS timestamptz) AS win_start,
          CAST(:win_end AS timestamptz) AS win_end
 ),
+eligible_pairs AS (
+  SELECT cuc."participantId", cuc."chatbotId"
+  FROM "ChatUsageCredits" cuc
+  JOIN "Chatbot" cb ON cb.id = cuc."chatbotId"
+  WHERE cuc."acceptedDisclaimerId" = cb."disclaimerId"
+    AND cuc."disclaimerDeclined" = false
+),
 messages AS (
   SELECT
     m.id, m.role, m."chatMode", m."modelId", m."reasoningEffort",
@@ -21,6 +28,8 @@ messages AS (
   FROM "ChatMessage" m
   JOIN "ChatThread" ct ON ct.id = m."threadId"
   JOIN "Chatbot" cb   ON cb.id = ct."chatbotId"
+  JOIN eligible_pairs ep
+    ON ep."participantId" = ct."participantId" AND ep."chatbotId" = ct."chatbotId"
   CROSS JOIN params
   WHERE m."createdAt" >= params.win_start AND m."createdAt" < params.win_end
     /*COURSE_FILTER*/

@@ -1,248 +1,185 @@
 from __future__ import annotations
 
 import importlib
-import unittest
-from contextlib import AbstractContextManager
-from datetime import timedelta
-from types import TracebackType
+import uuid
+from typing import Any, cast
 from unittest import mock
 
-import pandas as pd
+import pytest
 
 from src.modules.analytics_validity.mark_analytics_valid import _render_sql
-from src.modules.aggregated_chat_analytics.compute_aggregated_chatbot_analytics import (
-    _DELETE_SQL as _DELETE_AGGREGATE_SQL,
-)
-from src.modules.aggregated_chat_analytics.compute_aggregated_chatbot_analytics import (
-    _SQL_WEEKLY,
-    compute_aggregated_chatbot_analytics,
-)
-from src.modules.chat_analytics.compute_participant_chat_analytics import (
-    _DELETE_SQL as _DELETE_PARTICIPANT_SQL,
-    _SQL,
-    compute_participant_chat_analytics,
-)
-from src.modules.chat_quiz_correlation.compute_chat_quiz_correlation import (
-    _DELETE_OUTCOMES_SQL,
-    reconcile_chat_quiz_correlation,
-    report_source_counts,
-)
-
-cluster_module = importlib.import_module("src.modules.chat_topic_clustering.cluster_chatbot")
-responses_module = importlib.import_module("src.modules.participant_analytics.get_participant_responses")
 
 COURSE_A = "aaaa0000-0000-0000-0000-000000000001"
 COURSE_B = "aaaa0000-0000-0000-0000-000000000002"
 
 
-class _ParticipantTable:
-    def __init__(self) -> None:
-        self.where = None
-        self.include = None
+class _Result:
+    def __init__(self, *, rowcount: int = 7, scalar: int = 0):
+        self.rowcount = rowcount
+        self._scalar = scalar
 
-    def find_many(self, *, where=None, include=None):
-        self.where = where
-        self.include = include
+    def scalar_one(self):
+        return self._scalar
+
+    def scalars(self):
+        return self
+
+    def all(self):
         return []
 
 
-class _ParticipantDb:
-    def __init__(self) -> None:
-        self.participant = _ParticipantTable()
+class _CaptureSession:
+    def __init__(self, scalars: list[int] | None = None):
+        self.statements: list[object] = []
+        self.params: list[dict[str, object] | None] = []
+        self.scalars = list(scalars or [])
+        self.commits = 0
+
+    def execute(self, statement, params=None):
+        self.statements.append(statement)
+        self.params.append(params)
+        scalar = self.scalars.pop(0) if self.scalars else 0
+        return _Result(scalar=scalar)
+
+    def commit(self):
+        self.commits += 1
 
 
-class _Transaction:
-    def __init__(self) -> None:
-        self.calls: list[tuple[object, ...]] = []
+def test_participant_response_query_scopes_both_activity_types():
+    module = importlib.import_module("src.modules.participant_analytics.get_participant_responses")
+    session = _CaptureSession()
 
-    def execute_raw(self, *args: object) -> int:
-        self.calls.append(args)
-        return 7
+    result = module.get_participant_responses(
+        session,
+        "2026-07-01T00:00:00Z",
+        "2026-07-02T00:00:00Z",
+        course_ids=[COURSE_A, COURSE_B],
+    )
 
-
-class _TransactionContext(AbstractContextManager[_Transaction]):
-    def __init__(self, transaction: _Transaction) -> None:
-        self.transaction = transaction
-
-    def __enter__(self) -> _Transaction:
-        return self.transaction
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        traceback: TracebackType | None,
-    ) -> None:
-        return None
+    statement = str(session.statements[0])
+    params = session.statements[0].compile().params
+    assert 'FROM "PracticeQuiz"' in statement
+    assert 'FROM "MicroLearning"' in statement
+    assert '"PracticeQuiz"."courseId" IN ' in statement
+    assert '"MicroLearning"."courseId" IN ' in statement
+    assert [COURSE_A, COURSE_B] in params.values()
+    assert result.empty
 
 
-class _ChatDb:
-    def __init__(self) -> None:
-        self.transaction = _Transaction()
-        self.timeout = None
+def test_participant_chat_window_replaces_only_scoped_rows():
+    module = importlib.import_module("src.modules.chat_analytics.compute_participant_chat_analytics")
+    session = _CaptureSession(scalars=[0])
 
-    def tx(self, *, timeout=None):
-        self.timeout = timeout
-        return _TransactionContext(self.transaction)
+    rows = module.compute_participant_chat_analytics(
+        session,
+        "2026-07-01T00:00:00Z",
+        "2026-07-02T00:00:00Z",
+        "2026-07-01",
+        "DAILY",
+        course_ids=[COURSE_A],
+    )
 
-
-class _CorrelationDb(_ChatDb):
-    def query_raw(self, *_args: object) -> list[dict[str, int]]:
-        return [{"n": 0}]
-
-
-class ParticipantScopeTests(unittest.TestCase):
-    def test_course_scope_is_applied_to_parent_and_nested_detail_queries(self):
-        db = _ParticipantDb()
-
-        with mock.patch.object(
-            responses_module,
-            "convert_to_df",
-            return_value=pd.DataFrame(),
-        ):
-            responses_module.get_participant_responses(
-                db,
-                "2026-07-01T00:00:00Z",
-                "2026-07-02T00:00:00Z",
-                course_ids=[COURSE_A, COURSE_B],
-            )
-
-        detail_where = {
-            "createdAt": {
-                "gte": "2026-07-01T00:00:00Z",
-                "lte": "2026-07-02T00:00:00Z",
-            },
-            "OR": [
-                {"practiceQuiz": {"is": {"courseId": {"in": [COURSE_A, COURSE_B]}}}},
-                {"microLearning": {"is": {"courseId": {"in": [COURSE_A, COURSE_B]}}}},
-            ],
-        }
-        self.assertEqual(
-            db.participant.where,
-            {"detailQuestionResponses": {"some": detail_where}},
-        )
-        self.assertEqual(
-            db.participant.include["detailQuestionResponses"]["where"],
-            detail_where,
-        )
+    statements = [str(statement) for statement in session.statements]
+    assert rows == 7
+    assert 'DELETE FROM "ParticipantChatAnalytics"' in statements[1]
+    assert f""""courseId" IN ('{COURSE_A}')""" in statements[1]
+    assert f"""cb."courseId" IN ('{COURSE_A}')""" in statements[2]
+    assert session.commits == 1
 
 
-class ConsentReconciliationTests(unittest.TestCase):
-    def test_participant_chat_window_is_replaced_atomically(self):
-        db = _ChatDb()
+def test_aggregate_chat_window_replaces_only_scoped_rows():
+    module = importlib.import_module("src.modules.aggregated_chat_analytics.compute_aggregated_chatbot_analytics")
+    session = _CaptureSession()
 
-        rows = compute_participant_chat_analytics(
-            db,
+    rows = module.compute_aggregated_chatbot_analytics(
+        session,
+        "2026-07-01T00:00:00Z",
+        "2026-07-08T00:00:00Z",
+        "2026-07-07",
+        "WEEKLY",
+        course_ids=[COURSE_A],
+    )
+
+    statements = [str(statement) for statement in session.statements]
+    assert rows == 7
+    assert 'DELETE FROM "AggregatedChatbotAnalytics"' in statements[0]
+    assert f""""courseId" IN ('{COURSE_A}')""" in statements[0]
+    assert f"""cb."courseId" IN ('{COURSE_A}')""" in statements[1]
+    assert session.commits == 1
+
+
+def test_below_threshold_clustering_clears_previous_rows():
+    module = importlib.import_module("src.modules.chat_topic_clustering.cluster_chatbot")
+    session = object()
+
+    with (
+        mock.patch.object(module, "load_user_text", return_value=[]),
+        mock.patch.object(module, "save_clusters", return_value=0) as save,
+    ):
+        result = module.cluster_chatbot(
+            session,
+            str(uuid.uuid4()),
             "2026-07-01T00:00:00Z",
             "2026-07-02T00:00:00Z",
-            "2026-07-01",
-            "DAILY",
-        )
-
-        self.assertEqual(rows, 7)
-        self.assertEqual(db.timeout, timedelta(minutes=30))
-        self.assertEqual(
-            db.transaction.calls,
-            [
-                (_DELETE_PARTICIPANT_SQL, "DAILY", "2026-07-01"),
-                (
-                    _SQL,
-                    "2026-07-01T00:00:00Z",
-                    "2026-07-02T00:00:00Z",
-                    "DAILY",
-                    "2026-07-01",
-                ),
-            ],
-        )
-
-    def test_aggregate_chat_window_is_replaced_atomically(self):
-        db = _ChatDb()
-
-        rows = compute_aggregated_chatbot_analytics(
-            db,
-            "2026-07-01T00:00:00Z",
-            "2026-07-08T00:00:00Z",
-            "2026-07-07",
-            "WEEKLY",
-        )
-
-        self.assertEqual(rows, 7)
-        self.assertEqual(db.timeout, timedelta(minutes=30))
-        self.assertEqual(
-            db.transaction.calls,
-            [
-                (_DELETE_AGGREGATE_SQL, "WEEKLY", "2026-07-07"),
-                (
-                    _SQL_WEEKLY,
-                    "2026-07-01T00:00:00Z",
-                    "2026-07-08T00:00:00Z",
-                    "2026-07-07",
-                ),
-            ],
-        )
-
-    def test_below_threshold_clustering_clears_previous_rows(self):
-        db = object()
-
-        with (
-            mock.patch.object(cluster_module, "load_user_text", return_value=[]),
-            mock.patch.object(cluster_module, "save_clusters", return_value=0) as save,
-        ):
-            result = cluster_module.cluster_chatbot(
-                db,
-                "chatbot-a",
-                "2026-07-01T00:00:00Z",
-                "2026-07-02T00:00:00Z",
-                "COURSE",
-                "1970-01-01",
-            )
-
-        self.assertEqual(result, 0)
-        save.assert_called_once_with(
-            db,
-            "chatbot-a",
             "COURSE",
             "1970-01-01",
-            {},
-            [],
-            [],
-            verbose=False,
         )
 
-    def test_empty_chat_source_reconciles_outcomes_and_activity(self):
-        db = _CorrelationDb()
-
-        report_source_counts(db)
-        correlation_module = importlib.import_module("src.modules.chat_quiz_correlation.compute_chat_quiz_correlation")
-        with (
-            mock.patch.object(correlation_module, "_load", side_effect=["outcome SQL", "activity SQL"]),
-        ):
-            result = reconcile_chat_quiz_correlation(db)
-
-        self.assertEqual(result, (7, 7))
-        self.assertEqual(db.timeout, timedelta(minutes=30))
-        self.assertEqual(
-            db.transaction.calls,
-            [
-                (_DELETE_OUTCOMES_SQL,),
-                ("outcome SQL",),
-                ("activity SQL",),
-            ],
-        )
+    assert result == 0
+    save.assert_called_once_with(
+        session,
+        mock.ANY,
+        "COURSE",
+        "1970-01-01",
+        {},
+        [],
+        [],
+        verbose=False,
+    )
 
 
-class AnalyticsValidityScopeTests(unittest.TestCase):
-    def test_incremental_scope_filters_completion_watermarks(self):
-        statement = _render_sql(False, [COURSE_A])
+def test_empty_chat_source_reconciles_scoped_outcomes_and_activity(monkeypatch):
+    module = importlib.import_module("src.modules.chat_quiz_correlation.compute_chat_quiz_correlation")
+    monkeypatch.setattr(module.buffer_registry, "is_active", lambda: False)
+    session = _CaptureSession(scalars=[0, 0])
 
-        self.assertIn(f"AND c.id IN ('{COURSE_A}')", statement)
-        self.assertNotIn('\n  "analyticsFinalizedAt" = NOW(),', statement)
+    module.report_source_counts(session, course_ids=[COURSE_A], verbose=True)
+    result = module.reconcile_chat_quiz_correlation(session, course_ids=[COURSE_A])
 
-    def test_empty_incremental_scope_updates_no_course(self):
-        statement = _render_sql(False, [])
+    statements = [str(statement) for statement in session.statements]
+    assert result == (7, 7)
+    assert 'DELETE FROM "ParticipantChatOutcome"' in statements[2]
+    assert f""""courseId" IN ('{COURSE_A}')""" in statements[2]
+    assert f"""pca."courseId" IN ('{COURSE_A}')""" in statements[4]
+    assert session.commits == 1
 
-        self.assertIn("AND false", statement)
+
+def test_incremental_scope_filters_completion_watermarks():
+    statement = _render_sql(False, [COURSE_A])
+
+    assert f"AND c.id IN ('{COURSE_A}')" in statement
+    assert '"analyticsFinalizedAt" = CASE' not in statement
 
 
-if __name__ == "__main__":
-    unittest.main()
+def test_finalize_scope_defers_terminal_marker_for_pending_consent():
+    statement = _render_sql(True, [COURSE_A])
+
+    assert '"analyticsFinalizedAt" = CASE' in statement
+    assert "pending_chat_changes pending" in statement
+    assert f"""cb."courseId" IN ('{COURSE_A}')""" in statement
+    assert 'AND c."analyticsFinalizedAt" IS NULL' not in statement
+
+
+def test_validity_marker_fails_closed_without_immutable_cutoff(monkeypatch):
+    from src.modules.analytics_validity.mark_analytics_valid import (
+        mark_analytics_valid,
+    )
+
+    monkeypatch.delenv("ANALYTICS_CHAT_CUTOFF", raising=False)
+
+    with pytest.raises(RuntimeError, match="immutable workflow cutoff"):
+        mark_analytics_valid(cast(Any, None))
+
+
+def test_empty_incremental_scope_updates_no_course():
+    assert "AND false" in _render_sql(False, [])

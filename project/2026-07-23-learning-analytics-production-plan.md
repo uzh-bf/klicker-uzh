@@ -12,7 +12,8 @@ the existing Hatchet control plane.
 - Plan: `project/2026-07-23-learning-analytics-production-plan.md`
 - Phase 1 branch: `chat-analytics`
 - Phase 1 target: `v3`
-- Phase 1 PR: none yet
+- Phase 1 PR:
+  [#5199](https://github.com/uzh-bf/klicker-uzh/pull/5199)
 - Phase 1 worktree:
   `trees/chat-analytics-integration`
 - Phase 2 branch: `analytics-phase-a`
@@ -366,7 +367,7 @@ Focused slices run the relevant subset. Slice 6 reruns the complete matrix:
 | Diff hygiene | `git diff --check` | No errors |
 | Dependency policy | `volta run --node 24.16.0 pnpm run check:syncpack` | Exit 0 |
 | Analytics format | `cd apps/analytics && uv run ruff format --check . && uv run ruff check .` | Exit 0 |
-| Analytics types | `cd apps/analytics && uv run pyright` | Exit 0 |
+| Analytics types | Focused strict Pyright on changed typed boundaries; record the full Phase A baseline | No new findings in changed typed boundaries |
 | Analytics tests | `cd apps/analytics && uv run pytest` | All tests pass |
 | Hatchet packages | `volta run --node 24.16.0 pnpm exec turbo run check --filter=@klicker-uzh/hatchet --filter=@klicker-uzh/hatchet-worker-general` | Exit 0 |
 | GraphQL package | `volta run --node 24.16.0 pnpm exec turbo run check --filter=@klicker-uzh/graphql` | Exit 0 |
@@ -827,9 +828,238 @@ the repository script that replaces it before continuing.
   between image stages. Fresh ARM64 and AMD64 builds retain their separate
   runtime packages and both pass the non-root, no-network, read-only model,
   license, snapshot, and CPU-only smoke.
-- Active: Commit and review the final simplification, reconcile independent
-  branch findings, then run the finish gates and publish both stacked draft
-  PRs.
+- 2026-07-23: The refreshed Phase 1 base received three final correctness
+  commits (`3ba307ccef`, `f6df11d3a9`, and `1da4c868ba`). They correct
+  participant/instance first-and-last live-quiz attempts, require current
+  non-declined chatbot-disclaimer consent, and make daily through monthly
+  windows UTC-safe with exclusive next-midnight ends. Independent review found
+  no remaining Phase 1 blocker.
+- 2026-07-23: Merged final `chat-analytics` head `1da4c868ba` into Phase 2 as
+  `a23627c147`. The commit hook passed all 24 runnable repository typechecks,
+  lint, formatting, Syncpack, AGENTS validation, and Prisma schema sync.
+- 2026-07-23: The final database-backed SQL checks pass for current consent,
+  UTC window parameters, live-quiz first/last ranking, and clustering queries.
+  The complete database-enabled analytics suite passes 178 tests in
+  5 minutes 44 seconds. The run exposed and then verified a test-only
+  isolation defect: runtime tests imported `src.db` under fake database URLs
+  and retained those modules for later database tests. Autouse fixtures now
+  restore the prior module state after those tests.
+- 2026-07-23: Final local verification also passes Ruff formatting/lint across
+  125 files, uv lock validation, focused strict Pyright on the changed native
+  worker/runtime/model and SQL-test boundaries, Syncpack, GraphQL and Hatchet
+  typechecks, three GraphQL event-routing tests, the TypeScript cutover test,
+  Prisma schema-mirror validation, strict staging/production Helm lint and
+  renders, guarded `allowFull` rendering, and immutable-action workflow
+  validation. Full Phase A Pyright remains the recorded existing baseline of
+  about 2,300 findings rather than a false all-green gate.
+- 2026-07-23: Final ARM64 and AMD64 images rebuilt from the stacked head and
+  passed non-root, no-network, read-only, capability-dropped model and license
+  smoke. A final ARM64 worker registered the proof task and both 15-task DAGs
+  against disposable Hatchet v0.73.1, completed the proof task with the
+  expected immutable input, and exited gracefully.
+- 2026-07-23: Final security review found no high-confidence exploitable
+  vulnerability. Four focused Opengrep findings are allowlisted dynamic
+  imports or UUID-validated values interpolated into static SQL templates.
+  The GraphQL recompute mutation still requires full user access and course
+  administration; full rebuilds additionally require the server-side
+  `ANALYTICS_ALLOW_FULL` gate. Image CVE scanning and live
+  ExternalSecret/Infisical readiness remain explicit pre-deployment gates
+  because no scanner or live environment access is available here.
+- 2026-07-24: Final Phase 1 review found four related privacy/correctness gaps:
+  aggregate message metrics did not apply current consent, consent revocation
+  retained participant/aggregate rows and downstream outcomes, a
+  below-threshold recluster retained old topics, and scoped runs still read or
+  timestamped courses outside the current scope. Commits `3510240467` and
+  `f11b17c20` address those gaps while preserving the existing GraphQL and
+  analytics stack.
+- 2026-07-24: The corrections are translated into the Phase 2 SQLAlchemy path.
+  Scoped chat windows now delete and rebuild atomically; empty valid results
+  reconcile outcomes and activity flags; participant response reads and
+  validity watermarks stay inside the current course scope; and aggregate
+  messages require current, non-declined consent.
+- 2026-07-24: Focused native-worker verification passes Ruff and 79 tests.
+  Four new PostgreSQL regressions pass against the disposable migrated
+  database: declined/stale consent exclusion, revocation cleanup, preservation
+  of another course during scoped runs, empty downstream reconciliation,
+  rollback after a failed rebuild, database-level participant-read scoping,
+  and scoped validity marking.
+- 2026-07-24: The complete database-enabled analytics suite passes 188 tests
+  with 18 existing dependency/dataframe warnings in 5 minutes 49 seconds.
+- 2026-07-24: Exact-merge review found one remaining release blocker:
+  incremental consent revocation only reconciled the 14-day lookback and
+  retained older participant and aggregate windows. Phase 2 now purges
+  ineligible participant rows across retained history, splits consent-affected
+  courses into targeted historical rebuilds from their earliest affected
+  message or aggregate, and clears then refreshes the scoped chat watermark so
+  participant and aggregate stages coordinate through a durable handoff.
+  The new old-window PostgreSQL regression passes before and after the
+  participant purge.
+- 2026-07-24: The refreshed complete suite passes 189 tests with 18 existing
+  dependency/dataframe warnings in 5 minutes 47 seconds; Ruff formatting and
+  lint pass across 129 files. The accepted simplification avoids source-count
+  queries when logging is disabled, and the strict maintainability follow-up
+  centralizes test module restoration.
+- 2026-07-24: The environment publication gate rejected the updated Phase 1
+  push despite the approved draft-PR workflow. Both branches will remain local
+  until the user explicitly reconfirms publication.
+- 2026-07-24: Final sequencing review found that independent script-8 and
+  script-9 roots could let the validity marker swallow a consent change.
+  Script 9 now waits for script 8, preserving the watermark handoff. Dry runs
+  bypass consent-history queries and purges while the capture buffer is active.
+- 2026-07-24: The same review reproduced acceptance arriving after script 8
+  but before the final marker. The native worker now binds Hatchet's immutable
+  workflow-creation time into the final SQL instead of stamping completion
+  time, leaving mid-run consent changes visible for the next rebuild.
+- 2026-07-24: A disposable Hatchet v0.73.1 task using the pinned Python SDK
+  read the workflow creation timestamp from its live task context and matched
+  it exactly against REST readback. The six-case PostgreSQL privacy suite,
+  including the acceptance-interleaving convergence regression, passes.
+- 2026-07-24: Exact-commit review confirmed the incremental sequencing races
+  are closed, then reproduced three remaining production boundaries:
+  mid-run consent could be stranded by finalization, the supported shell
+  launcher had no shared cutoff, and non-UTC sessions shifted a UTC cursor.
+  Finalization now stays pending until a follow-up converges, the launcher
+  exports one fail-closed cutoff, and SQL stores it explicitly as UTC-naive.
+  Simplification review's accepted cleanup also makes the final marker read
+  mode, scope, and cutoff from one immutable run-config snapshot.
+- 2026-07-24: Nine PostgreSQL privacy cases now pass, including acceptance and
+  revocation during finalize plus a Europe/Zurich session-timezone regression.
+  A fake-pnpm launcher smoke observed one identical UTC cutoff across all 15
+  scripts. Bash syntax, 47 focused unit tests, full Ruff, Prettier, diff
+  hygiene, and a focused 293-rule Opengrep scan pass.
+- 2026-07-24: The refreshed complete database-backed analytics suite passes
+  192 tests with 18 existing dependency/dataframe warnings in 6 minutes.
+- 2026-07-24: Final race review found that a consent change committing after
+  the final-marker snapshot could leave an ended course finalized and outside
+  the nightly scanner. The scanner now also requeues finalized courses whose
+  chat cutoff is missing or older than current consent/disclaimer state, or
+  whose participant chat rows are no longer eligible. Requeued finalized
+  courses can pass through the final marker again and converge.
+- 2026-07-24: Hatchet workflow creation times are normalized to the
+  PostgreSQL `TIMESTAMP(3)` boundary and shifted back one millisecond before
+  use. The supported shell launcher calls the same helper. A PostgreSQL
+  regression proves a consent timestamp in the workflow's creation
+  millisecond remains visible, and a direct scanner query selects late
+  consent, never-finalized, and stale-row cases while excluding clean and
+  active courses. The focused privacy/finalization suite passes 26 tests;
+  Hatchet typecheck and both scanner tests pass.
+- 2026-07-24: Review found that the first scanner query materialized dirty
+  privacy state from all retained chat rows before applying the ended-course
+  filter. A disposable benchmark with 1,000 courses, 10,000 chatbots, one
+  million consent rows, and 500,000 participant-chat rows reduced the warm
+  plan from about 382 ms to 99 ms by materializing the 50 ended courses first.
+  A `ChatUsageCredits(chatbotId)` index reduced it further to about 46 ms, but
+  that extra write/index cost is not justified for a once-daily 99 ms query
+  without representative staging evidence, so no speculative index is added.
+- 2026-07-24: The refreshed complete database-backed analytics suite passes
+  199 tests with 18 existing dependency/dataframe warnings in 5 minutes
+  57 seconds. The focused privacy/finalization suite passes 26 tests; Ruff
+  formatting and lint pass across 130 files; the uv lock, Hatchet typecheck,
+  scanner tests, direct PostgreSQL scanner semantics, launcher cutoff smoke,
+  and diff hygiene all pass. A focused 452-rule Opengrep scan reports no
+  findings.
+- 2026-07-24: Independent correctness review of commits `871e7b8ce4` and
+  `9e43cb9326` found no remaining correctness or performance finding at
+  confidence 75 or higher. Independent simplification review found no safe
+  smaller form for the cutoff helper, launcher, scanner query, or
+  same-millisecond regression. The repeated privacy predicate across Python
+  reconciliation and the TypeScript scanner remains a future data-model
+  concern; centralizing it safely would require a database view or synchronous
+  invalidation design rather than a local cleanup.
+- 2026-07-24: Exact code head `9e43cb9326` produced fresh ARM64 and AMD64
+  images with digests
+  `sha256:15ffa6c1bfbcf55c591900b2ba879e9326b7a6400d9825e15f30cf673a31e45e`
+  and
+  `sha256:ae1a98a888b4f12be149e048f611736fb9692cc4064ffc76115c57dfcdac176f`.
+  Both passed non-root UID 10001, no-network, read-only-root,
+  capability-dropped, CPU-only model/license/embedding smoke. The ARM64 worker
+  then registered the proof task and both complete 15-task DAGs against
+  disposable Hatchet v0.73.1, reported healthy with one slot, completed the
+  immutable-input proof workflow, and stopped cleanly.
+- 2026-07-24: The final security gate found no high-confidence vulnerability
+  in the cutoff or scanner change. The scanner uses static SQL identifiers and
+  a parameterized server-generated `Date`; the worker and shell launcher use
+  one server-controlled immutable cutoff. The full branch still requires image
+  CVE scanning and live ExternalSecret/Infisical readiness verification before
+  deployment because neither capability is available in this environment.
+- 2026-07-24: The first maintainability decomposition preserved all 46
+  production definitions exactly, but strict review correctly rejected its
+  955-line mixed `workbook_sections.py` and 20-symbol private sibling import as
+  threshold-only splitting. The accepted refinement leaves a 414-line write
+  interceptor, 824-line workbook renderer, and 685-line domain-summary
+  builder. Their sibling interface is explicit and public, the two module
+  import orders pass, and focused Pyright reports no new cross-module private
+  usage.
+- 2026-07-24: The 807-line mixed interceptor/workbook test is also split into
+  315-line interceptor and 478-line workbook modules with one workbook import.
+  The 1,295-line privacy regression is split into shared fixtures plus scope,
+  reconciliation, cutoff/finalization, and rollback modules; all 12
+  helper/test function ASTs and decorators are preserved. The 10 PostgreSQL
+  privacy cases and 55 tests across six focused dry-run/interceptor files pass,
+  with three additional expected no-database skips in the latter group.
+- 2026-07-24: The exact final maintainability cleanup localizes the generic
+  diagnostic truncation helper in the workbook renderer and removes one unused
+  JSON helper from the domain builder. Independent correctness re-review and
+  the final strict maintainability/simplification gate both pass with no
+  finding at confidence 75 or higher. The final modules are a 414-line write
+  interceptor, 827-line workbook renderer, and 669-line domain-summary
+  builder, with seven public sibling imports, no private sibling dependency,
+  and no import cycle.
+- 2026-07-24: The exact final code head `d7064ed7d` passes all 199
+  database-enabled analytics tests with 18 existing dependency/dataframe
+  warnings in 358.82 seconds. Ruff passes across all 137 analytics Python
+  files; both module import orders, the focused 55-test dry-run suite, the 10
+  PostgreSQL privacy cases, and the repository commit hook also pass.
+- 2026-07-29: Live refresh found `origin/v3` advanced by the Prisma 7 upgrade
+  and Office Add-in rewrite. Both stacked draft PRs now report conflicts.
+  Phase 1 overlaps upstream in `docs/log.md`, `docs/testing.md`,
+  `packages/prisma-data/package.json`, and `pnpm-lock.yaml`; the next slice is
+  to merge current v3 into Phase 1, verify it, then merge the refreshed Phase 1
+  into Phase 2 and rerun the affected analytics gates.
+- 2026-07-29: Phase 1 now contains current `origin/v3` at merge commit
+  `7350ad1c13`. Conflict resolution preserves both documentation histories,
+  adopts the regenerated Prisma 7/pnpm lock state, and retains the Phase 1
+  Python analytics runtime. Repository `check:all` passes, Prisma Client Python
+  still generates for Phase 1, and all 36 Phase 1 Python tests pass.
+- 2026-07-29: The refreshed Phase 1 is merged into Phase 2 without restoring
+  the archived Prisma-Python runtime. The resolution keeps Prisma 7 for the
+  TypeScript client and deployment tooling, SQLAlchemy 2.x for the Analytics
+  runtime, and the guarded analytics-index deploy wrapper. Current
+  schema-mirror documentation and checks now require the Analytics-owned
+  datasource only; no current instruction references the deleted
+  `py.prisma`.
+- 2026-07-29: Phase 2 repository `check:all` passes all 25 runnable typechecks,
+  seven lint tasks, Prisma generation, 11 guarded analytics-index deploy tests,
+  formatting, Syncpack, AGENTS validation, and Prisma schema sync. Against a
+  fresh PostgreSQL 15 database initialized with the Prisma 7 schema, repository
+  seeds, and deterministic analytics interactions, the complete analytics
+  suite passes 199 tests with nine dependency/dataframe warnings in 64.90
+  seconds; Ruff reports no findings.
+- 2026-07-29: The verified Phase 2 reconciliation is committed as
+  `181c229cb2`. Independent spec review found no lost requirement, scope creep,
+  tRPC addition, or incorrect merge behavior. Standards review found one
+  contradictory model-ownership rule: current guidance could overwrite the
+  curated SQLAlchemy runtime model with an unfiltered introspection result.
+- 2026-07-29: The accepted review fix makes `src/models.py` explicitly curated
+  and generates the ignored `src/models.generated.py` reference through a
+  credential-safe Python wrapper. The wrapper selects the installed psycopg 3
+  driver, succeeds against the disposable migrated database, does not print
+  the connection string, and leaves the curated model hash unchanged. Ruff
+  passes across 138 files.
+- 2026-07-29: Standards re-review passes after separating the Analytics
+  generation commands: `generate:raw` consumes the DevPod's injected
+  `DATABASE_URL`, while `generate` remains the legacy Infisical wrapper. The
+  raw path succeeds end to end against a second disposable migrated PostgreSQL
+  15 database, and current documentation and skills consistently distinguish
+  the two environments.
+- 2026-07-29: The full production monorepo build passes all 22 runnable build
+  tasks under Node 24 and pnpm 11.5.0. The first sandboxed attempt reached the
+  frontend builds but could not resolve Google Fonts; the allowed rerun
+  completed without a repository failure. Existing Rollup, page-size,
+  translation, and cache warnings remain non-blocking.
+- Active: Request explicit publication confirmation for the verified stacked
+  heads. After publication, update both PR descriptions and read CI to a
+  terminal result without merging or deploying.
 
 ## Finish evidence
 
@@ -843,7 +1073,13 @@ the repository script that replaces it before continuing.
 
 ## Next Steps
 
-1. Commit and independently review the final security adjustments.
-2. Run the final maintainability, simplification, and branch reviews.
-3. Publish `chat-analytics` against `v3`, refresh the stacked
-   `analytics-phase-a` draft, and read back CI without merging or deploying.
+1. After explicit publication confirmation, push `chat-analytics` and
+   `analytics-phase-a`, update both stacked draft PR descriptions, and read CI
+   to a terminal result without merging or deploying.
+2. Before staging, scan the exact image digest for CVEs, confirm the deployed
+   Hatchet control-plane compatibility, and verify the owning
+   ExternalSecret/Infisical sync is ready.
+3. Cold-cut over in staging with one replica and one slot. Run the proof task
+   and one scoped incremental/finalize course, compare rows and privacy
+   convergence, and measure duration, query plans, memory, and CPU before
+   changing resources or enabling the schedule.

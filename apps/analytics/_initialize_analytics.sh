@@ -16,6 +16,14 @@ case "$TARGET" in
   *)    echo "Unknown target: $TARGET (expected: dev | qa | prd)" >&2; exit 64 ;;
 esac
 
+# All scripts in one launcher invocation share this immutable UTC cutoff. The
+# final validity marker uses it so consent changes committed while the pipeline
+# is running remain visible to the next reconciliation.
+if [[ -z "${ANALYTICS_CHAT_CUTOFF:-}" ]]; then
+  ANALYTICS_CHAT_CUTOFF="$(uv run python -m src.analytics_cutoff)"
+  export ANALYTICS_CHAT_CUTOFF
+fi
+
 SCRIPTS=(
   src.scripts.0_initial_participant_analytics
   src.scripts.1_initial_aggregated_analytics

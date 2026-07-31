@@ -1,12 +1,14 @@
 from datetime import datetime
 
 import pandas as pd
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from src.db_helpers import coerce_timestamp, row_to_dict
 from src.models import (
     Course,
+    MicroLearning,
+    PracticeQuiz,
     QuestionResponseDetail,
 )
 
@@ -69,21 +71,34 @@ def _detail_to_dict(
     return base
 
 
-def get_participant_responses(session: Session, start_date: str, end_date: str, verbose: bool = False):
+def get_participant_responses(
+    session: Session,
+    start_date: str,
+    end_date: str,
+    verbose: bool = False,
+    course_ids: list[str] | None = None,
+):
     """Return a dataframe of per-response detail rows for the window.
 
     The time predicate stays in Postgres so the ``createdAt`` BRIN index can
     prune the append-mostly detail table before relationships are loaded.
     """
     start_ts, end_ts = _coerce_window_bounds(start_date, end_date)
+    statement = select(QuestionResponseDetail).where(
+        QuestionResponseDetail.createdAt >= start_ts,
+        QuestionResponseDetail.createdAt <= end_ts,
+    )
+    if course_ids is not None:
+        statement = statement.where(
+            or_(
+                QuestionResponseDetail.practiceQuiz.has(PracticeQuiz.courseId.in_(course_ids)),
+                QuestionResponseDetail.microLearning.has(MicroLearning.courseId.in_(course_ids)),
+            )
+        )
+
     details = (
         session.execute(
-            select(QuestionResponseDetail)
-            .where(
-                QuestionResponseDetail.createdAt >= start_ts,
-                QuestionResponseDetail.createdAt <= end_ts,
-            )
-            .options(
+            statement.options(
                 selectinload(QuestionResponseDetail.practiceQuiz),
                 selectinload(QuestionResponseDetail.microLearning),
             )
@@ -92,7 +107,7 @@ def get_participant_responses(session: Session, start_date: str, end_date: str, 
         .all()
     )
 
-    course_ids = {
+    detail_course_ids = {
         str(detail.practiceQuiz.courseId)
         for detail in details
         if detail.practiceQuiz is not None and detail.practiceQuiz.courseId is not None
@@ -101,7 +116,7 @@ def get_participant_responses(session: Session, start_date: str, end_date: str, 
         for detail in details
         if detail.microLearning is not None and detail.microLearning.courseId is not None
     }
-    course_windows = _load_course_windows(session, course_ids)
+    course_windows = _load_course_windows(session, detail_course_ids)
 
     rows = []
     for detail in details:

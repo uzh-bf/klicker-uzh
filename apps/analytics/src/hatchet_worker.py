@@ -1,5 +1,6 @@
 import os
 from collections.abc import Callable
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -13,6 +14,7 @@ from hatchet_sdk import (
 )
 from pydantic import BaseModel, ConfigDict
 
+from src.analytics_cutoff import database_safe_cutoff
 from src.analytics_runtime import run_analytics_module
 from src.modules.utils import (
     AnalyticsMode,
@@ -90,6 +92,14 @@ def resolve_run_config(
     )
 
 
+def workflow_run_cutoff(ctx: Context) -> str:
+    """Return one conservative, immutable cutoff shared by every task."""
+    created_at = ctx.runs_client.get(ctx.workflow_run_id).run.created_at
+    if created_at is None:
+        raise RuntimeError("Hatchet workflow run has no creation timestamp")
+    return database_safe_cutoff(created_at)
+
+
 def register_native_workflows(
     hatchet: Hatchet,
     *,
@@ -162,6 +172,11 @@ def register_native_workflows(
                 )
                 if full_only and config.mode != "full":
                     raise ValueError(f"{FULL_ANALYTICS_WORKFLOW_NAME} requires mode=full")
+                if key == "s99":
+                    config = replace(
+                        config,
+                        chat_analytics_cutoff=workflow_run_cutoff(ctx),
+                    )
                 try:
                     script_runner(ANALYTICS_SCRIPTS[key], config, ctx.done)
                 except AnalyticsRunCancelled as exc:
@@ -177,7 +192,12 @@ def register_native_workflows(
         add_task("s6", "s6-activity-progress")
         add_task("s7", "s7-participant-activity-perf")
         add_task("s8", "s8-chat-analytics", execution_timeout="60m")
-        add_task("s9", "s9-aggregated-chatbot-analytics", execution_timeout="60m")
+        add_task(
+            "s9",
+            "s9-aggregated-chatbot-analytics",
+            parents=("s8",),
+            execution_timeout="60m",
+        )
         add_task(
             "s10",
             "s10-chat-topic-clustering",
