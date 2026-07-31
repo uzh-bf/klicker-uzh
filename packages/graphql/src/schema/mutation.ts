@@ -6,6 +6,7 @@ import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseService from '../services/courses.js'
+import * as DiscussionService from '../services/discussions.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
@@ -22,6 +23,16 @@ import { ActivityInfo } from './activities.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
 import { PointCorrection, PointCorrectionType } from './assessment.js'
 import { Course } from './course.js'
+import {
+  CourseDiscussionEmbeddingInfoRef,
+  CourseDiscussionReplyPostResultRef,
+  CourseDiscussionThreadPostResultRef,
+  CreateCourseDiscussionReplyInput,
+  CreateCourseDiscussionThreadInput,
+  DiscussionExternalBlockInput,
+  DiscussionReplyRef,
+  DiscussionThreadRef,
+} from './discussions.js'
 import {
   Element,
   ElementInstance,
@@ -175,6 +186,88 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await FeedbackService.upvoteFeedback(args, ctx)
+        },
+      }),
+
+      createCourseDiscussionThread: t.field({
+        type: CourseDiscussionThreadPostResultRef,
+        args: {
+          input: t.arg({
+            type: CreateCourseDiscussionThreadInput,
+            required: true,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await DiscussionService.createCourseDiscussionThreadResult(
+            args.input,
+            ctx
+          )
+        },
+      }),
+
+      createCourseDiscussionReply: t.field({
+        type: CourseDiscussionReplyPostResultRef,
+        args: {
+          input: t.arg({
+            type: CreateCourseDiscussionReplyInput,
+            required: true,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await DiscussionService.createCourseDiscussionReplyResult(
+            args.input,
+            ctx
+          )
+        },
+      }),
+
+      toggleCourseDiscussionThreadUpvote: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: DiscussionThreadRef,
+        args: {
+          threadId: t.arg.int({ required: true }),
+          upvote: t.arg.boolean({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await DiscussionService.toggleCourseDiscussionThreadUpvote(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      toggleCourseDiscussionReplyUpvote: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: DiscussionReplyRef,
+        args: {
+          replyId: t.arg.int({ required: true }),
+          upvote: t.arg.boolean({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await DiscussionService.toggleCourseDiscussionReplyUpvote(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      deleteCourseDiscussionThread: t.boolean({
+        nullable: false,
+        args: {
+          threadId: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await DiscussionService.deleteCourseDiscussionThread(args, ctx)
+        },
+      }),
+
+      deleteCourseDiscussionReply: t.boolean({
+        nullable: false,
+        args: {
+          replyId: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await DiscussionService.deleteCourseDiscussionReply(args, ctx)
         },
       }),
 
@@ -613,6 +706,36 @@ export const Mutation = builder.mutationType({
         resolve: async (_, args, ctx) => {
           return await AccountService.changeUserLocale(args, ctx)
         },
+      }),
+
+      generateCourseDiscussionEmbeddingInfo: t.withAuth(asUser).field({
+        nullable: true,
+        type: CourseDiscussionEmbeddingInfoRef,
+        args: {
+          courseId: t.arg.string({
+            required: true,
+            validate: { minLength: 1 },
+          }),
+          externalBlock: t.arg({
+            type: DiscussionExternalBlockInput,
+            required: false,
+          }),
+          allowAnonymous: t.arg.boolean({ required: false }),
+          expiresInHours: t.arg.int({
+            required: false,
+            validate: { min: 1, max: 24 * 14 },
+          }),
+        },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.WRITE,
+          async (_, args, ctx) => {
+            return await DiscussionService.generateCourseDiscussionEmbeddingInfo(
+              args,
+              ctx
+            )
+          }
+        ),
       }),
 
       cancelLiveQuiz: t.withAuth(asUserSessionExec).field({
@@ -1368,6 +1491,8 @@ export const Mutation = builder.mutationType({
             validate: { email: false },
           }),
           isGamificationEnabled: t.arg.boolean({ required: false }),
+          isCourseQAEnabled: t.arg.boolean({ required: false }),
+          isCourseQAAnonymousEnabled: t.arg.boolean({ required: false }),
         },
         resolve: withPermission(
           (args) => ({ courseId: args.id }),

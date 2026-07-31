@@ -11,6 +11,8 @@ fragment MicroLearningDataWithoutSolutions on MicroLearning {
     id
     displayName
     color
+    isCourseQARolloutEnabled
+    isCourseQAEnabled
   }
   stacks {
     id

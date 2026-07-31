@@ -220,6 +220,7 @@ jobs:
           cd packages/graphql
           pnpm vitest run
         env:
+          APP_SECRET: test-app-secret
           DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
           HATCHET_CLIENT_TLS_STRATEGY: none
           HATCHET_CLIENT_HOST_PORT: localhost:7077

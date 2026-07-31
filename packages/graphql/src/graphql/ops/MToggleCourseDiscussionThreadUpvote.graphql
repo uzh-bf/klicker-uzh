@@ -1,0 +1,8 @@
+mutation ToggleCourseDiscussionThreadUpvote(
+  $threadId: Int!
+  $upvote: Boolean!
+) {
+  toggleCourseDiscussionThreadUpvote(threadId: $threadId, upvote: $upvote) {
+    ...DiscussionThreadData
+  }
+}

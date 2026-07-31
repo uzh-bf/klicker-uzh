@@ -1,0 +1,21 @@
+mutation GenerateCourseDiscussionEmbeddingInfo(
+  $courseId: String!
+  $externalBlock: DiscussionExternalBlockInput
+  $allowAnonymous: Boolean
+  $expiresInHours: Int
+) {
+  generateCourseDiscussionEmbeddingInfo(
+    courseId: $courseId
+    externalBlock: $externalBlock
+    allowAnonymous: $allowAnonymous
+    expiresInHours: $expiresInHours
+  ) {
+    courseId
+    scopeKey
+    scopeLabel
+    allowAnonymous
+    expiresAt
+    embedToken
+    embedUrl
+  }
+}

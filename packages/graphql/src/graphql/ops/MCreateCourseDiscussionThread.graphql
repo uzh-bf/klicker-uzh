@@ -1,0 +1,10 @@
+mutation CreateCourseDiscussionThread(
+  $input: CreateCourseDiscussionThreadInput!
+) {
+  createCourseDiscussionThread(input: $input) {
+    thread {
+      ...DiscussionThreadData
+    }
+    failureCode
+  }
+}

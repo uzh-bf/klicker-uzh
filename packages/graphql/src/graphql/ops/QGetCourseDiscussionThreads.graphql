@@ -1,0 +1,26 @@
+query GetCourseDiscussionThreads(
+  $courseId: String!
+  $scopeKey: String
+  $sort: DiscussionSort
+  $limit: Int
+  $cursor: String
+  $embedToken: String
+) {
+  courseDiscussionThreads(
+    courseId: $courseId
+    scopeKey: $scopeKey
+    sort: $sort
+    limit: $limit
+    cursor: $cursor
+    embedToken: $embedToken
+  ) {
+    threads {
+      ...DiscussionThreadData
+    }
+    nextCursor
+    hasMore
+    canPostAnonymously
+    canPostIdentified
+    isAccessible
+  }
+}
