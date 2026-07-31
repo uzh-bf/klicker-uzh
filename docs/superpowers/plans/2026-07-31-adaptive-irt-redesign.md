@@ -132,6 +132,7 @@ export function levelForTheta(
 
 export function resolveEffectiveItemParameters(input: {
   calibration: AdaptiveItemCalibration | null
+  elementVersion: number
   provisionalDifficulty: number
   provisionalDiscrimination?: number
   itemType: AdaptiveItemType
@@ -299,6 +300,13 @@ for (let index = 0; index < ordered.length; index++) {
 `levelForTheta` uses lower-inclusive, upper-exclusive bands and returns the last
 band for positive infinity only when the input is finite.
 
+Require positive unique level IDs and non-empty labels. The prior mean, all
+finite internal cuts, and all item-difficulty priors must lie inside the grid.
+Require `(gridMax - gridMin) / gridStep` to be integral within a scale-aware
+floating-point tolerance and cap the grid at 2,001 points. Task 2 constructs
+points as `gridMin + index * gridStep` and assigns the final endpoint exactly to
+`gridMax`; it never grows an array through unchecked repeated addition.
+
 Add a code-owned `ADAPTIVE_CLASSIFICATION_POLICY_V1` with `credibleMass = 0.9`,
 candidate thresholds `[0.8, 0.9, 0.95]`, and minimum threshold `0.8`. Validate
 that masses/thresholds are finite, strictly between zero and one, sorted, and
@@ -315,6 +323,10 @@ published element version. For a provisional item, return
 `a = provisionalDiscrimination ?? 1.2`, the level prior as `b`, the
 server-derived `c`, and `contributesToDiagnosticEstimate: false`. Diagnostic
 never substitutes this provisional `a` for an approved item calibration.
+Require the exact published element version as input and reject a calibration
+from any other version. Reject unsupported deserialized item types, require an
+exact choice count for SC/MC/KPRIM, and require exactly four statements for
+KPRIM.
 
 - [ ] **Step 6: Export modules and include tests in package scripts**
 
@@ -374,8 +386,22 @@ export type AdaptivePosterior = {
   }>
 }
 
+export type AdaptiveScoredItem = {
+  id: number | string
+  model: AdaptiveItemModel
+  calibrationId: string
+  discrimination: number
+  difficulty: number
+  guessing: number
+}
+
+export type AdaptiveScoredResponse = {
+  item: AdaptiveScoredItem
+  correct: boolean
+}
+
 export function estimateEapPosterior(input: {
-  responses: AdaptiveResponse[]
+  responses: AdaptiveScoredResponse[]
   scale: AdaptiveScaleDefinition
   credibleMass: number
 }): AdaptivePosterior
@@ -387,6 +413,7 @@ export function combineWeightedPosteriors(input: {
     weight: number
   }>
   scale: AdaptiveScaleDefinition
+  credibleMass: number
 }): AdaptivePosterior
 
 export function classifyPosterior(input: {
@@ -394,6 +421,9 @@ export function classifyPosterior(input: {
   scale: AdaptiveScaleDefinition
   probabilityThreshold: number
   evidenceSatisfied: boolean
+  evidenceReachable: boolean
+  calibratedCoverageSatisfied: boolean
+  integritySatisfied: boolean
   terminalReason: AdaptiveRuntimeStopReason | null
 }): {
   status:
@@ -439,10 +469,13 @@ it.each([
 
 The reference fixture must be produced once from a standalone script that
 implements the discrete grid literally and independently, then cross-checks it
-with adaptive-Simpson continuous quadrature. It imports no production estimator
-code. Commit numeric input/output plus provenance, formula, generator command,
-toolchain versions, tolerances, and checksum. CI reads the fixture but does not
-regenerate it implicitly.
+with adaptive-Simpson continuous quadrature over the same finite grid domain.
+It imports no production probability, scale, posterior, or summarization code.
+Freeze prior-only, mixed 2PL/3PL, asymmetric, extreme-correct, extreme-wrong,
+and cut-boundary cases. Commit numeric input/output plus provenance, formula,
+generator command, Node/pnpm versions, tolerances, fixture SHA-256, and
+generator-source SHA-256. CI verifies both checksums without regenerating the
+fixture implicitly.
 
 - [ ] **Step 2: Add probability-classification tests**
 
@@ -453,6 +486,9 @@ it('abstains when no band reaches the approved probability', () => {
     scale,
     probabilityThreshold: 0.8,
     evidenceSatisfied: true,
+    evidenceReachable: true,
+    calibratedCoverageSatisfied: true,
+    integritySatisfied: true,
     terminalReason: null,
   })
   expect(decision).toEqual({
@@ -470,6 +506,7 @@ it('abstains when no band reaches the approved probability', () => {
 it('combines root posteriors without counting descendants again', () => {
   const combined = combineWeightedPosteriors({
     scale,
+    credibleMass: 0.9,
     entries: [
       { key: 'root-a', posterior: normalPosterior(-2, 0.4), weight: 3 },
       { key: 'root-b', posterior: normalPosterior(2, 0.4), weight: 2 },
@@ -497,41 +534,71 @@ For each point:
 const logPrior =
   -0.5 * Math.pow((theta - priorMean) / priorStandardDeviation, 2)
 const logLikelihood = responses.reduce((sum, response) => {
-  const p = probability(theta, response.item)
-  return sum + Math.log(response.correct ? p : 1 - p)
+  return sum + stableBernoulliLogLikelihood(theta, response)
 }, 0)
 ```
 
-Normalize with log-sum-exp. Derive mean/variance from the normalized discrete
-mass. Compute equal-tail credible bounds using the scale's snapshotted
-classification policy's `credibleMass` and sum band probabilities against
-explicit bounds.
+Do not call the v1 `probability()` helper, because its optional defaults and
+probability clamping are incompatible with calibrated v2 likelihoods. Validate
+non-empty calibration IDs, required finite `a/b/c`, supported bounds, and
+model/guessing compatibility before evaluation. Compute correct/incorrect 2PL
+and 3PL log likelihoods with stable log-sigmoid/log-add-exp identities; never
+form `log(1 - p)` from a rounded probability.
+
+Normalize with log-sum-exp. Derive mean/variance from the normalized truncated
+discrete mass; zero responses return the normalized grid prior. Compute
+equal-tail credible bounds through the generalized inverse discrete CDF using
+the explicit `credibleMass`. Point-level mapping remains lower-inclusive and
+maps an exact cut to the higher level, while posterior probability on a grid
+atom exactly equal to a cut is split equally between its adjacent bands to
+avoid grid-alignment bias. All band probabilities must sum to one.
 
 - [ ] **Step 6: Implement deterministic weighted convolution**
 
-Normalize non-negative weights, reject all-zero input, sort entries by stable
-root key, map weighted root mass onto adjacent composite bins while preserving
-the first moment, and convolve probability masses. Renormalize after each
-convolution and derive summary fields through the same posterior summarizer
-used by EAP. Do not use `Math.random`. Test root-order invariance, normalization,
-mean/variance moments, and single-root identity.
+Validate every posterior and weight before filtering zero-weight entries.
+Reject empty input, duplicate keys, all-zero/negative/non-finite weights,
+mismatched point/probability lengths, non-canonical grids, negative/non-finite
+probabilities, and zero probability totals. Normalize weights using
+maximum-weight scaling, sort entries by stable root key, map weighted root mass
+onto adjacent composite bins while preserving the first moment, and convolve
+probability masses. Renormalize after each convolution and derive summary
+fields through the same posterior summarizer used by EAP with the explicitly
+passed `credibleMass`. Do not use `Math.random`.
+
+Test every input permutation, proportional weight scaling, normalization,
+single-root exact identity, and mean preservation within `1e-12`. The expected
+independent-root variance is `sum(normalizedWeight^2 * posterior.variance)`;
+the accepted discretization difference is bounded by
+`positiveEntryCount * maximumGridInterval^2 / 4 + 1e-12`.
 
 - [ ] **Step 7: Implement classification precedence**
 
-Return `CLASSIFIED` only when minimum evidence is satisfied, no integrity
-failure exists, and one band reaches the snapshotted threshold. Otherwise:
+Reject invalid thresholds/posteriors and throw an integrity error when
+`integritySatisfied` is false; integrity failures never become a result label.
+`ABANDONED` never classifies. Both `CLASSIFIED` and `BETWEEN_LEVELS` require
+minimum evidence. With those guards:
 
-1. return `POOL_LIMITED` when missing calibrated coverage or exhausted/capped
-   eligible nodes makes required evidence unreachable,
-2. return `BETWEEN_LEVELS` when the two highest bands are adjacent and their
-   combined mass reaches the same threshold,
-3. return `INSUFFICIENT_EVIDENCE` for remaining capped/early states.
+1. return `CLASSIFIED` when one band reaches the snapshotted threshold,
+2. return `BETWEEN_LEVELS` when exactly two unambiguously leading adjacent
+   bands reach the threshold in combination,
+3. return `POOL_LIMITED` when calibrated coverage is missing or required
+   evidence is explicitly unreachable, and
+4. return `INSUFFICIENT_EVIDENCE` for remaining capped/early states.
+
+A cap or pool exhaustion reason alone does not prove evidence is unreachable;
+the v2 runtime supplies that fact explicitly. A capped attempt with sufficient
+evidence and adjacent-band mass remains `BETWEEN_LEVELS`. Use an exhaustive
+switch over every terminal reason; `CLASSIFIED` with no qualifying posterior
+band is an invalid state, while `ALL_ROOTS_CLASSIFIED` may still yield an
+uncertain overall composite.
 
 Never select a level from the posterior mean as a fallback. Add tests for
-non-adjacent leading bands, exact-cut symmetry, missing minimum evidence, every
-terminal reason, and integrity failure. `probability` is the winning-band mass
-for `CLASSIFIED`, combined adjacent-band mass for `BETWEEN_LEVELS`, and zero for
-the remaining internal decisions; GraphQL maps non-classifying zero to `null`.
+non-adjacent leading bands, three-way ties, exact-cut symmetry, exact-threshold
+inclusion, false evidence with high mass, abandonment, every terminal reason,
+reachability/coverage distinctions, and integrity failure. `probability` is the
+winning-band mass for `CLASSIFIED`, combined adjacent-band mass for
+`BETWEEN_LEVELS`, and zero for the remaining internal decisions; GraphQL maps
+non-classifying zero to `null`.
 
 - [ ] **Step 8: Verify and commit**
 
