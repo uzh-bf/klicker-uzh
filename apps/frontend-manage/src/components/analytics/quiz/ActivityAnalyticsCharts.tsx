@@ -26,20 +26,37 @@ function ActivityAnalyticsCharts({
 }) {
   const t = useTranslations()
 
+  if (!analytics) {
+    return (
+      <UserNotification
+        className={{ root: className }}
+        type="info"
+        message={t('manage.analytics.learningAnalyticsSuppressed')}
+      />
+    )
+  }
+
   return (
     <div className={className}>
       <div>
+        {t.rich('manage.analytics.effectiveSampleSize', {
+          effectiveN: analytics.participantCount,
+          b: (children) => <span className="font-bold">{children}</span>,
+        })}
+      </div>
+      <hr className="my-2 w-full border-t border-solid border-gray-300" />
+      <div>
         {t.rich('manage.analytics.totalAnsweredElements', {
           activityName: activityName,
-          number: analytics?.numberOfAnswers ?? 0,
+          number: analytics.numberOfAnswers,
           b: (children) => <span className="font-bold">{children}</span>,
         })}
       </div>
       <hr className="my-2 w-full border-t border-solid border-gray-300" />
       <div>
         {t.rich('manage.analytics.averageTimeSpentActivity', {
-          min: Math.floor((analytics?.averageTimeSpent ?? 0) / 60),
-          sec: Math.floor((analytics?.averageTimeSpent ?? 0) % 60)
+          min: Math.floor(analytics.averageTimeSpent / 60),
+          sec: Math.floor(analytics.averageTimeSpent % 60)
             .toString()
             .padStart(2, '0'),
           b: (children) => <span className="font-bold">{children}</span>,
@@ -60,9 +77,9 @@ function ActivityAnalyticsCharts({
           <CircularPerformancePlot
             title={t('manage.analytics.total')}
             rates={{
-              correctRate: analytics?.totalCorrectRate ?? 0,
-              partialRate: analytics?.totalPartialRate ?? 0,
-              incorrectRate: analytics?.totalErrorRate ?? 0,
+              correctRate: analytics.totalCorrectRate,
+              partialRate: analytics.totalPartialRate,
+              incorrectRate: analytics.totalErrorRate,
             }}
             colors={colors}
           />
@@ -71,18 +88,18 @@ function ActivityAnalyticsCharts({
               <CircularPerformancePlot
                 title={t('manage.analytics.firstAttempt')}
                 rates={{
-                  correctRate: analytics?.firstCorrectRate ?? 0,
-                  partialRate: analytics?.firstPartialRate ?? 0,
-                  incorrectRate: analytics?.firstErrorRate ?? 0,
+                  correctRate: analytics.firstCorrectRate ?? 0,
+                  partialRate: analytics.firstPartialRate ?? 0,
+                  incorrectRate: analytics.firstErrorRate ?? 0,
                 }}
                 colors={colors}
               />
               <CircularPerformancePlot
                 title={t('manage.analytics.lastAttempts')}
                 rates={{
-                  correctRate: analytics?.lastCorrectRate ?? 0,
-                  partialRate: analytics?.lastPartialRate ?? 0,
-                  incorrectRate: analytics?.lastErrorRate ?? 0,
+                  correctRate: analytics.lastCorrectRate ?? 0,
+                  partialRate: analytics.lastPartialRate ?? 0,
+                  incorrectRate: analytics.lastErrorRate ?? 0,
                 }}
                 colors={colors}
               />

@@ -52,7 +52,13 @@ def main() -> None:
             if df_responses.empty:
                 continue
 
-            agg_participant_activity_performance(session, df_responses, df_activities, participant_ids)
+            agg_participant_activity_performance(
+                session,
+                df_responses,
+                df_activities,
+                participant_ids,
+                base_course["id"],
+            )
 
         script_exit(script=__name__, started=started, rows_written=None)
 

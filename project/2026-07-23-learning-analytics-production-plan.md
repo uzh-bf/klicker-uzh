@@ -830,10 +830,11 @@ the repository script that replaces it before continuing.
   license, snapshot, and CPU-only smoke.
 - 2026-07-23: The refreshed Phase 1 base received three final correctness
   commits (`3ba307ccef`, `f6df11d3a9`, and `1da4c868ba`). They correct
-  participant/instance first-and-last live-quiz attempts, require current
-  non-declined chatbot-disclaimer consent, and make daily through monthly
-  windows UTC-safe with exclusive next-midnight ends. Independent review found
-  no remaining Phase 1 blocker.
+  participant/instance first-and-last live-quiz attempts, enforce the then
+  current chat-privacy boundary, and make daily through monthly windows UTC-safe
+  with exclusive next-midnight ends. The later opt-out milestone supersedes
+  that chat-specific boundary: the disclaimer gates chat access, while shared
+  LA eligibility governs whether resulting activity enters analytics.
 - 2026-07-23: Merged final `chat-analytics` head `1da4c868ba` into Phase 2 as
   `a23627c147`. The commit hook passed all 24 runnable repository typechecks,
   lint, formatting, Syncpack, AGENTS validation, and Prisma schema sync.
@@ -875,8 +876,9 @@ the repository script that replaces it before continuing.
 - 2026-07-24: The corrections are translated into the Phase 2 SQLAlchemy path.
   Scoped chat windows now delete and rebuild atomically; empty valid results
   reconcile outcomes and activity flags; participant response reads and
-  validity watermarks stay inside the current course scope; and aggregate
-  messages require current, non-declined consent.
+  validity watermarks stay inside the current course scope. The later opt-out
+  milestone replaces the temporary chat-specific inclusion condition with the
+  shared course and participant LA eligibility rule.
 - 2026-07-24: Focused native-worker verification passes Ruff and 79 tests.
   Four new PostgreSQL regressions pass against the disposable migrated
   database: declined/stale consent exclusion, revocation cleanup, preservation
@@ -929,10 +931,10 @@ the repository script that replaces it before continuing.
   hygiene, and a focused 293-rule Opengrep scan pass.
 - 2026-07-24: The refreshed complete database-backed analytics suite passes
   192 tests with 18 existing dependency/dataframe warnings in 6 minutes.
-- 2026-07-24: Final race review found that a consent change committing after
+- 2026-07-24: Final race review found that a privacy-state change committing after
   the final-marker snapshot could leave an ended course finalized and outside
   the nightly scanner. The scanner now also requeues finalized courses whose
-  chat cutoff is missing or older than current consent/disclaimer state, or
+  chat cutoff is missing or older than current privacy state, or
   whose participant chat rows are no longer eligible. Requeued finalized
   courses can pass through the final marker again and converge.
 - 2026-07-24: Hatchet workflow creation times are normalized to the

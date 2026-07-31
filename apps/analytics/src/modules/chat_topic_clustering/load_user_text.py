@@ -1,8 +1,8 @@
 """In-memory fetch of user-role chat message text per chatbot.
 
-Text is read straight from Postgres into a Python list and never persisted to disk
-(§3.9 privacy gate). The caller is responsible for releasing the list once the
-clustering pipeline has finished with it.
+Text is read straight from Postgres into a Python list and never persisted to
+disk. Chat access already requires the disclaimer; this analytics input is
+governed by the course and participant LA choice.
 """
 
 from sqlalchemy import text
@@ -21,13 +21,17 @@ SELECT
 FROM "ChatMessage" m
 JOIN "ChatThread" ct ON ct.id = m."threadId"
 JOIN "Chatbot" cb ON cb.id = ct."chatbotId"
-JOIN "ChatUsageCredits" cuc
-  ON cuc."participantId" = ct."participantId"
-  AND cuc."chatbotId" = ct."chatbotId"
-  AND cuc."acceptedDisclaimerId" = cb."disclaimerId"
-  AND cuc."disclaimerDeclined" = false
+JOIN "Course" c ON c.id = cb."courseId"
+JOIN "Participation" p
+  ON p."participantId" = ct."participantId"
+ AND p."courseId" = cb."courseId"
 WHERE m.role = 'user'
   AND ct."chatbotId" = CAST(:chatbot_id AS uuid)
+  AND c."isLearningAnalyticsEnabled" = true
+  AND p."learningAnalyticsStatus" = 'INCLUDED'
+  AND p."learningAnalyticsDisclosureVersion" = '2026-07-30-v1'
+  AND p."learningAnalyticsIncludedFrom" IS NOT NULL
+  AND m."createdAt" >= p."learningAnalyticsIncludedFrom"
   AND m."createdAt" >= (CAST(:win_start AS timestamptz) AT TIME ZONE 'UTC')
   AND m."createdAt" <  (CAST(:win_end AS timestamptz) AT TIME ZONE 'UTC')
 """

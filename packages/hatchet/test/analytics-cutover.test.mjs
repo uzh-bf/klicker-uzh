@@ -40,7 +40,7 @@ test('TypeScript keeps the ended-course scanner without registering an analytics
   assert.deepEqual(prepared.scanEndedCourses.onCrons, ['0 1 * * *'])
 })
 
-test('ended-course scanner reactivates finalized courses with dirty chat privacy state', async () => {
+test('ended-course scanner reactivates LA-enabled courses with invalid analytics', async () => {
   const handlers = new Proxy(
     {},
     {
@@ -60,7 +60,7 @@ test('ended-course scanner reactivates finalized courses with dirty chat privacy
     database: {
       $queryRaw: async (query) => {
         queries.push(query)
-        return [{ id: 'course-with-late-consent' }]
+        return [{ id: 'course-with-invalid-analytics' }]
       },
     },
   })
@@ -74,21 +74,15 @@ test('ended-course scanner reactivates finalized courses with dirty chat privacy
   assert.equal(queries.length, 1)
   const queryText = queries[0].strings.join('')
   assert.match(queryText, /ended\."analyticsFinalizedAt" IS NULL/)
-  assert.match(
-    queryText,
-    /cuc\."disclaimerAcceptedAt" > ended\."chatAnalyticsValidAt"/
-  )
-  assert.match(
-    queryText,
-    /cuc\."acceptedDisclaimerId" IS DISTINCT FROM cb\."disclaimerId"/
-  )
+  assert.match(queryText, /ended\."chatAnalyticsValidAt" IS NULL/)
+  assert.match(queryText, /ended\."areAnalyticsValid" = false/)
+  assert.match(queryText, /c\."isLearningAnalyticsEnabled" = true/)
   assert.match(queryText, /WITH ended_courses AS MATERIALIZED/)
-  assert.match(queryText, /dirty_chat_courses AS MATERIALIZED/)
-  assert.match(queryText, /JOIN "ParticipantChatAnalytics" pca/)
+  assert.doesNotMatch(queryText, /disclaimer/)
   assert.equal(pushedEvents.length, 1)
   assert.equal(pushedEvents[0][0], 'course-ended')
   assert.deepEqual(pushedEvents[0][1], {
     mode: 'finalize',
-    courseId: 'course-with-late-consent',
+    courseId: 'course-with-invalid-analytics',
   })
 })

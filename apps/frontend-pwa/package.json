@@ -91,7 +91,8 @@
     "lint": "eslint .",
     "pushTest": "node src/testPush.js",
     "start": "next start --port 3001",
-    "start:test": "cross-env NODE_ENV=test pnpm start"
+    "start:test": "cross-env NODE_ENV=test pnpm start",
+    "test": "tsx --test src/lib/learningAnalyticsValidation.test.ts"
   },
   "engines": {
     "node": "=24"

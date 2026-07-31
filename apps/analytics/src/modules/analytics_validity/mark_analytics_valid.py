@@ -28,7 +28,7 @@ def _render_sql(finalize: bool, course_ids: list[str] | None) -> str:
     bypass_clause = "true" if course_ids is not None else "false"
     if course_ids is not None:
         filter_clause = render_uuid_in_clause("c.id", course_ids)
-        pending_scope = render_uuid_in_clause('cb."courseId"', course_ids)
+        pending_scope = render_uuid_in_clause('pending."courseId"', course_ids)
     if finalize:
         set_clause = """
   "analyticsFinalizedAt" = CASE
@@ -57,7 +57,7 @@ def mark_analytics_valid(session: Session, verbose: bool = False):
 
     When ``ANALYTICS_MODE=finalize`` and ``ANALYTICS_COURSE_IDS`` is set, the
     per-course terminal marker ``analyticsFinalizedAt`` is stamped or refreshed
-    for scoped courses only when no chat-consent change arrived after the
+    for scoped courses only when no LA-eligibility change arrived after the
     immutable run cutoff. Already-finalized courses remain eligible so the
     scanner can reconcile late privacy changes.
     """

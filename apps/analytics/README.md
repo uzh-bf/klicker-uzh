@@ -154,16 +154,18 @@ It registers the non-mutating `learning-analytics-native-proof` task plus two co
 Both DAGs call the existing Python script entry points in-process with immutable per-run configuration and cooperative cancellation. `ANALYTICS_ALLOW_FULL=1` is required for the full DAG and remains unset by default. TypeScript retains only the GraphQL/manual event producers and the `scan-ended-courses` task. It does not register an analytics DAG or spawn Python.
 
 Incremental chat stages keep the normal 14-day window for unaffected courses.
-If current disclaimer consent changed, they purge now-ineligible participant
-rows across retained history and rebuild only the affected courses from the
-earliest affected message or aggregate window. The course chat watermark
-is the durable handoff from the participant stage to its aggregate child,
-preventing a completed aggregate task from swallowing a later consent cleanup.
-The final marker uses Hatchet's immutable workflow-creation time, so consent
-changes during a run remain visible to the next reconciliation.
-Finalize runs leave `analyticsFinalizedAt` unset when such a change is pending;
-the ended-course scanner then schedules a follow-up run that can converge
-before the course becomes terminal.
+If a participant LA choice changes, they purge now-ineligible participant rows
+across retained history and rebuild only the affected courses from the earliest
+affected message or aggregate window. Accepting the chatbot disclaimer gates
+chat access; LA inclusion is determined independently by the shared course and
+participant eligibility rule. The course chat watermark is the durable handoff
+from the participant stage to its aggregate child, preventing a completed
+aggregate task from swallowing a later eligibility cleanup. The final marker
+uses Hatchet's immutable workflow-creation time, so eligibility changes during
+a run remain visible to the next reconciliation. Finalize runs leave
+`analyticsFinalizedAt` unset when such a change is pending; the ended-course
+scanner then schedules a follow-up run that can converge before the course
+becomes terminal.
 
 Cutover and rollback are cold: stop the current owner before starting another worker image so exactly one analytics DAG consumes these events.
 

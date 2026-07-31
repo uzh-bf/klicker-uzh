@@ -7,7 +7,11 @@ from sqlalchemy.orm import Session
 
 from src.db_helpers import bulk_upsert, coerce_date, row_to_dict
 from src.dryrun import buffer_registry
-from src.models import AggregatedCourseAnalytics, ParticipantAnalytics
+from src.models import AggregatedCourseAnalytics, ParticipantAnalytics, Participation
+from src.modules.learning_analytics_eligibility import (
+    current_participation_predicates,
+    filter_learning_analytics_rows_for_write,
+)
 
 
 def compute_weekday_activity(session: Session, course):
@@ -54,10 +58,14 @@ def compute_weekday_activity(session: Session, course):
         "createdAt": now,
         "updatedAt": now,
     }
+    rows = filter_learning_analytics_rows_for_write(session, [row])
+    if not rows:
+        session.rollback()
+        return
     bulk_upsert(
         session,
         AggregatedCourseAnalytics,
-        [row],
+        rows,
         conflict_cols=["courseId"],
         update_cols=[c for c in row.keys() if c not in ("courseId", "createdAt")],
     )
@@ -94,9 +102,16 @@ def _load_daily_participant_analytics(session: Session, course_id: str) -> pd.Da
 
     daily_analytics = (
         session.execute(
-            select(ParticipantAnalytics).where(
+            select(ParticipantAnalytics)
+            .join(
+                Participation,
+                (Participation.courseId == ParticipantAnalytics.courseId)
+                & (Participation.participantId == ParticipantAnalytics.participantId),
+            )
+            .where(
                 ParticipantAnalytics.type == "DAILY",
                 ParticipantAnalytics.courseId == course_id,
+                *current_participation_predicates(),
             )
         )
         .scalars()

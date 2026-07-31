@@ -1,8 +1,43 @@
 # Log
 
+## 2026-07-30
+
+- **Update** — Documented the guarded pre-rollout purge of dedicated
+  learning-analytics results, its shared runtime cleanup boundary, legal rollout
+  gate, and mandatory LA/privacy feature-design question in
+  [ADR 0003](./adr/0003-purge-pre-control-learning-analytics-results.md),
+  [Domain Model](./domain-model.md), [Data & Migrations](./data-and-migrations.md),
+  [Testing](./testing.md), and the `klicker-feature-design` procedure.
+
+- **Update** — Documented the learning-analytics output boundary, post-filter
+  effective-sample-size suppression, report-local labels, coarse participant
+  summaries, and server-owned complete/partial export in
+  [Domain Model](./domain-model.md), [GraphQL API Layer](./graphql-api-layer.md),
+  and [Testing](./testing.md).
+
+- **Update** — Documented learning-analytics computation eligibility,
+  prospective detail-row rebuilding, free-text exclusion, write-time rechecks,
+  and effective participant counts in [Domain Model](./domain-model.md),
+  [Data & Migrations](./data-and-migrations.md),
+  [GraphQL API Layer](./graphql-api-layer.md), and [Testing](./testing.md).
+
+- **Update** — Documented the ADMIN-only learning-analytics course control,
+  immediate read gate, and dedicated-data cleanup in [Domain Model](./domain-model.md)
+  and [GraphQL API Layer](./graphql-api-layer.md).
+
+- **Update** — Clarified which learning-analytics lifecycle behavior is implemented and added source citations to [Domain Model](./domain-model.md) and [Data & Migrations](./data-and-migrations.md).
+
+## 2026-07-29
+
+- **Update**: [domain-model](./domain-model.md) and [data-and-migrations](./data-and-migrations.md) document the independent course and participant learning-analytics controls, timestamped eligibility boundary, append-only choice history, and shared-schema synchronization requirement.
+
 ## 2026-07-23
 
 - **Update**: [async-and-workers](./async-and-workers.md) documents the dedicated native Python learning-analytics worker, triggers, health endpoints, and SQL safety boundary. [testing](./testing.md) documents the deterministic development-only analytics interaction fixture.
+
+- **Creation**: [ADR 0001](./adr/0001-separate-course-and-participant-learning-analytics-controls.md) records independent course and participant controls for optional learning analytics.
+
+- **Creation**: [ADR 0002](./adr/0002-deidentified-learning-analytics-output.md) records lecturer-output de-identification, effective-sample-size suppression, and export coverage rules.
 
 ## 2026-07-20
 

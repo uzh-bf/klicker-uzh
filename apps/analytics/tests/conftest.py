@@ -18,6 +18,12 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 
+@pytest.fixture(autouse=True)
+def learning_analytics_rollout_enabled(monkeypatch):
+    """Unit and integration tests exercise the production LA path by default."""
+    monkeypatch.setenv("NEXT_PUBLIC_LEARNING_ANALYTICS_ROLLOUT_ENABLED", "true")
+
+
 @pytest.fixture()
 def session():
     """Open a session in a nested transaction that rolls back after the test.

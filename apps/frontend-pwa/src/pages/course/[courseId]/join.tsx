@@ -3,6 +3,7 @@ import {
   CreateParticipantAccountDocument,
   GetBasicCourseInformationDocument,
   JoinCourseWithPinDocument,
+  LearningAnalyticsChoice,
   SelfDocument,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -23,22 +24,29 @@ import { useEffect, useState } from 'react'
 import * as Yup from 'yup'
 import Layout from '../../../components/Layout'
 import CreateAccountForm from '../../../components/forms/CreateAccountForm'
+import LearningAnalyticsChoiceField from '../../../components/learningAnalytics/LearningAnalyticsChoiceField'
+import { learningAnalyticsRolloutEnabled } from '../../../lib/learningAnalytics'
+import { normalizeLearningAnalyticsChoice } from '../../../lib/learningAnalyticsValidation'
 
 function JoinCourse({
   courseId,
   displayName,
   color,
   courseLoading,
+  isLearningAnalyticsEnabled,
 }: {
   courseId: string
   displayName: string
   color: string
   courseLoading: boolean
+  isLearningAnalyticsEnabled: boolean
 }) {
   const t = useTranslations()
   const router = useRouter()
   const [showError, setError] = useState(false)
   const [initialPin, setInitialPin] = useState<string>('')
+  const collectLearningAnalyticsChoice =
+    learningAnalyticsRolloutEnabled && isLearningAnalyticsEnabled
 
   const joinCourseWithPinSchema = Yup.object({
     pin: Yup.number()
@@ -49,6 +57,12 @@ function JoinCourse({
         (val) => val !== undefined && val.toString().length === 9
       )
       .required(t('pwa.joinCourse.coursePinRequired')),
+    learningAnalyticsStatus: collectLearningAnalyticsChoice
+      ? Yup.mixed<LearningAnalyticsChoice>()
+          .transform(normalizeLearningAnalyticsChoice)
+          .oneOf(Object.values(LearningAnalyticsChoice))
+          .notRequired()
+      : Yup.mixed().notRequired(),
   })
 
   useEffect(() => {
@@ -92,9 +106,11 @@ function JoinCourse({
               {t('pwa.joinCourse.introLoggedIn', { name: displayName })}
             </div>
             <Formik
+              enableReinitialize
               validateOnMount
               initialValues={{
                 pin: initialPin,
+                learningAnalyticsStatus: '',
               }}
               validationSchema={joinCourseWithPinSchema}
               onSubmit={async (values, { setSubmitting }) => {
@@ -102,18 +118,28 @@ function JoinCourse({
                 const participant = await joinCourseWithPin({
                   variables: {
                     pin: Number(values.pin.replace(/\s/g, '')),
+                    learningAnalyticsStatus:
+                      (values.learningAnalyticsStatus as LearningAnalyticsChoice) ||
+                      undefined,
                   },
                 })
 
                 if (participant?.data?.joinCourseWithPin) {
-                  router.push('/')
+                  await router.push(`/course/${courseId}`)
                 } else {
                   setError(true)
                   setSubmitting(false)
                 }
               }}
             >
-              {({ isSubmitting, isValid }) => {
+              {({
+                errors,
+                isSubmitting,
+                isValid,
+                setFieldValue,
+                touched,
+                values,
+              }) => {
                 return (
                   <Form>
                     <FormikPinField
@@ -123,6 +149,28 @@ function JoinCourse({
                       label={t('pwa.joinCourse.coursePinFormat')}
                       className={{ inputItem: 'w-8', field: 'mb-2' }}
                     />
+                    {collectLearningAnalyticsChoice ? (
+                      <div className="my-4">
+                        <LearningAnalyticsChoiceField
+                          value={
+                            values.learningAnalyticsStatus as
+                              | LearningAnalyticsChoice
+                              | ''
+                          }
+                          onChange={(choice) =>
+                            setFieldValue('learningAnalyticsStatus', choice)
+                          }
+                          error={
+                            touched.learningAnalyticsStatus
+                              ? (errors.learningAnalyticsStatus as
+                                  | string
+                                  | undefined)
+                              : undefined
+                          }
+                          idPrefix="join-learning-analytics"
+                        />
+                      </div>
+                    ) : null}
                     <Button
                       primary
                       type="submit"
@@ -145,6 +193,7 @@ function JoinCourse({
               {t('pwa.joinCourse.introNewUser', { name: displayName })}
             </div>
             <CreateAccountForm
+              learningAnalyticsEnabled={collectLearningAnalyticsChoice}
               initialUsername={generatePassword.generate({
                 length: 10,
                 uppercase: true,
@@ -159,6 +208,8 @@ function JoinCourse({
                     password: values.password.trim(),
                     isProfilePublic: values.isProfilePublic,
                     courseId,
+                    learningAnalyticsStatus:
+                      values.learningAnalyticsStatus || undefined,
                   },
                 })
 
@@ -210,6 +261,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         displayName: data?.basicCourseInformation?.displayName,
         color: data?.basicCourseInformation?.color,
         description: data?.basicCourseInformation?.description,
+        isLearningAnalyticsEnabled:
+          data?.basicCourseInformation?.isLearningAnalyticsEnabled ?? false,
         courseLoading: loading,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,

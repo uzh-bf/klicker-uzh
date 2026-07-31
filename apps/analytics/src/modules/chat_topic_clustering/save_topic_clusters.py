@@ -2,10 +2,15 @@
 
 from typing import Dict, List
 
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
-MIN_PARTICIPANTS_PER_CLUSTER = 3  # §3.9 privacy threshold
+from src.models import Chatbot
+from src.modules.learning_analytics_eligibility import (
+    lock_learning_analytics_courses,
+)
+
+MIN_PARTICIPANTS_PER_CLUSTER = 5
 
 DELETE_SQL = """
 DELETE FROM "ChatTopicCluster"
@@ -46,6 +51,14 @@ def save_clusters(
     Returns the number of rows written (including an "Other" bucket if any small
     clusters were collapsed into it).
     """
+    course_id = session.execute(select(Chatbot.courseId).where(Chatbot.id == chatbot_id)).scalar_one_or_none()
+    if course_id is None or not lock_learning_analytics_courses(
+        session,
+        [str(course_id)],
+    ):
+        session.rollback()
+        return 0
+
     message_counts: Dict[int, int] = {}
     participant_sets: Dict[int, set] = {}
     for cid, pid in zip(cluster_ids_per_message, participant_ids_per_message):

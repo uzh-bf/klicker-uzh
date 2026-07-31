@@ -13,6 +13,11 @@ import bcrypt from 'bcryptjs'
 import type { CookieOptions } from 'express'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
+import {
+  buildLearningAnalyticsChoiceData,
+  isLearningAnalyticsAvailableForCourse,
+  type LearningAnalyticsChoiceStatus,
+} from '../lib/learningAnalytics.js'
 import * as EmailService from '../services/email.js'
 import { sendTeamsNotification } from './notifications.js'
 
@@ -808,6 +813,7 @@ interface CreateParticipantAccountArgs {
   isProfilePublic: boolean
   courseId?: string | null
   signedLtiData?: string | null
+  learningAnalyticsStatus?: LearningAnalyticsChoiceStatus | null
 }
 
 export async function createParticipantAccount(
@@ -818,16 +824,19 @@ export async function createParticipantAccount(
     password,
     courseId,
     signedLtiData,
+    learningAnalyticsStatus,
   }: CreateParticipantAccountArgs,
   ctx: Context
 ) {
+  let courseForJoin: DB.Course | null = null
+
   // verify that the course that should be joined is not an assessment course
   if (courseId) {
-    const course = await ctx.prisma.course.findUnique({
+    courseForJoin = await ctx.prisma.course.findUnique({
       where: { id: courseId },
     })
 
-    if (!course || course.isAssessmentEnabled) {
+    if (!courseForJoin || courseForJoin.isAssessmentEnabled) {
       return null
     }
   }
@@ -886,6 +895,17 @@ export async function createParticipantAccount(
 
   try {
     const participant = await ctx.prisma.$transaction(async (prisma) => {
+      let lockedCourse = courseForJoin
+      if (courseId) {
+        await prisma.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${courseId}))::text`
+        lockedCourse = await prisma.course.findUnique({
+          where: { id: courseId, isAssessmentEnabled: false },
+        })
+        if (!lockedCourse) {
+          return null
+        }
+      }
+
       const participant = await prisma.participant.create({
         data: {
           email: normalizedEmail,
@@ -900,6 +920,15 @@ export async function createParticipantAccount(
 
       // if a courseId is specified, add a participation in the corresponding course
       if (courseId) {
+        const choiceData =
+          lockedCourse &&
+          learningAnalyticsStatus &&
+          isLearningAnalyticsAvailableForCourse(
+            lockedCourse.isLearningAnalyticsEnabled
+          )
+            ? buildLearningAnalyticsChoiceData(learningAnalyticsStatus)
+            : {}
+
         await prisma.participation.upsert({
           where: {
             courseId_participantId: {
@@ -910,6 +939,7 @@ export async function createParticipantAccount(
           create: {
             course: { connect: { id: courseId } },
             participant: { connect: { id: participant.id } },
+            ...choiceData,
           },
           update: {},
         })

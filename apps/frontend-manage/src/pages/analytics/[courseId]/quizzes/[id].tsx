@@ -3,11 +3,13 @@ import { faChartSimple } from '@fortawesome/free-solid-svg-icons'
 import {
   ActivityType,
   GetActivityAnalyticsDocument,
+  GetSingleCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H1 } from '@uzh-bf/design-system'
+import { Button, H1, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import AnalyticsDisabledView from '../../../../components/analytics/AnalyticsDisabledView'
 import AnalyticsErrorView from '../../../../components/analytics/AnalyticsErrorView'
 import AnalyticsLoadingView from '../../../../components/analytics/AnalyticsLoadingView'
 import ActivityAnalyticsCharts from '../../../../components/analytics/quiz/ActivityAnalyticsCharts'
@@ -15,6 +17,7 @@ import InstanceQuizAnalytics from '../../../../components/analytics/quiz/Instanc
 import QuizAnalyticsNavigation from '../../../../components/analytics/quiz/QuizAnalyticsNavigation'
 import PreviewTag from '../../../../components/common/PreviewTag'
 import Layout from '../../../../components/Layout'
+import { learningAnalyticsRolloutEnabled } from '../../../../lib/learningAnalytics'
 
 function QuizAnalytics() {
   const router = useRouter()
@@ -24,8 +27,15 @@ function QuizAnalytics() {
 
   const { data, loading, error } = useQuery(GetActivityAnalyticsDocument, {
     variables: { activityId },
-    skip: !activityId,
+    skip: !activityId || !learningAnalyticsRolloutEnabled,
   })
+  const { data: courseData, loading: courseLoading } = useQuery(
+    GetSingleCourseDocument,
+    {
+      variables: { courseId },
+      skip: !courseId || !learningAnalyticsRolloutEnabled,
+    }
+  )
 
   const navigation = (
     <QuizAnalyticsNavigation courseId={courseId} activityId={activityId} />
@@ -39,9 +49,21 @@ function QuizAnalytics() {
   }
 
   // loading state
-  if (loading || !activityId) {
+  if (loading || courseLoading || !activityId || !courseId) {
     return (
       <AnalyticsLoadingView
+        title={t('manage.analytics.quizDashboard')}
+        navigation={navigation}
+      />
+    )
+  }
+
+  if (
+    !learningAnalyticsRolloutEnabled ||
+    courseData?.course?.isLearningAnalyticsEnabled === false
+  ) {
+    return (
+      <AnalyticsDisabledView
         title={t('manage.analytics.quizDashboard')}
         navigation={navigation}
       />
@@ -55,6 +77,21 @@ function QuizAnalytics() {
         title={t('manage.analytics.quizDashboard')}
         navigation={navigation}
       />
+    )
+  }
+
+  if (analytics.isSuppressed) {
+    return (
+      <Layout displayName={t('manage.analytics.quizDashboard')}>
+        {navigation}
+        <H1>
+          {t('manage.analytics.quizAnalytics')}: {analytics.activityName}
+        </H1>
+        <UserNotification
+          type="info"
+          message={t('manage.analytics.learningAnalyticsSuppressed')}
+        />
+      </Layout>
     )
   }
 

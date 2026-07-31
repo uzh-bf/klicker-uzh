@@ -2,7 +2,7 @@
 type: Data Layer
 title: Data & Migrations
 description: Split Prisma schema, the migrate→sync→build ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-07-29'
+timestamp: '2026-07-30'
 tags:
   - backend
   - prisma
@@ -32,6 +32,48 @@ Prisma Client 7.8.0 and `prisma-json-types-generator` 5.1.0 emit declarations th
 The schema is a **folder** (`prisma.config.ts` → `schema: 'src/prisma/schema'`), 15 files split by area: `user`, `participant`, `course`, `element`, `quiz`, `response`, `gamification`, `sharing`, `chat`, `analytics`, `resources`, `verification`, `other`, plus `datasource.prisma` (PostgreSQL provider only) and `js.prisma` (generators only: `prisma-client` ESM output to `../client`, Pothos types, `prisma-json-types-generator`). JavaScript datasource and migration settings live in `prisma.config.ts`.
 
 The Analytics mirror under `apps/analytics/prisma/schema/` excludes the JavaScript generator and keeps an Analytics-owned datasource so the copied model files remain readable as a complete schema. It does not generate a Python Prisma client. `apps/analytics/src/models.py` is the curated runtime model surface. `sqlacodegen` writes an ignored `src/models.generated.py` reference from the migrated live development database; it must not overwrite the curated module.
+
+Learning-analytics eligibility state belongs to the shared schema: the course enable flag is `packages/prisma/src/prisma/schema/course.prisma:Course.isLearningAnalyticsEnabled`, while the current participation choice and choice-event history are `packages/prisma/src/prisma/schema/participant.prisma:Participation.learningAnalyticsStatus` and `packages/prisma/src/prisma/schema/participant.prisma:LearningAnalyticsChoiceEvent`. Run the full migrate → sync → build ritual after changing these fields so the TypeScript client and Analytics' Python schema expose the same eligibility boundary (`util/sync-schema.sh`).
+
+Learning-analytics aggregate coverage is persisted as
+`ActivityPerformance.participantCount`. It counts distinct eligible participants
+that contributed to that activity's computed metrics; it is not the course
+enrollment count or an opt-out count. Migration
+`20260730113000_add_activity_performance_participant_count` adds the field with a
+zero default and the schema mirror exposes it to the Python client.
+
+### Pre-rollout learning-analytics cleanup
+
+`packages/graphql/src/scripts/2026-07-30_cleanup_learning_analytics.ts` removes
+only dedicated learning-analytics result rows that predate the optional course
+and participant controls. It shares its model boundary with course disable,
+never reads participant identifiers or response content, and records only
+aggregate model counts. Normal courses, participations, participants, responses,
+response details, feedback, grading, gamification, and research-consent state
+are outside the cleanup contract.
+
+Run the production command without flags first. The dry run creates a
+gitignored, owner-only before-state dump under
+`packages/graphql/src/scripts/_local/`. Review that aggregate-only dump before
+authorizing the write:
+
+```bash
+pnpm --filter @klicker-uzh/graphql script:prod:cleanup-learning-analytics
+
+DRY_RUN=false \
+CONFIRM_LEARNING_ANALYTICS_CLEANUP=<reviewed-snapshot-hash> \
+pnpm --filter @klicker-uzh/graphql script:prod:cleanup-learning-analytics
+```
+
+Use the exact snapshot hash printed by the reviewed dry run; it binds approval
+to both the database counts and cleanup contract. The write refuses a changed
+snapshot or contract. It acquires the same course advisory locks as runtime LA
+writers, runs at `Serializable`, verifies every dedicated model is empty and
+representative operational counts are unchanged, then creates a durable
+`LearningAnalyticsCleanupReceipt` in the same transaction. That database
+receipt blocks replay across pods and deployments. Run it once, before enabling
+the rollout, during an approved operational window. Never commit either local
+dump.
 
 ## Migrations
 

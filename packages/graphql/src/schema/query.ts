@@ -28,6 +28,7 @@ import {
   CourseActivityAnalytics,
   CoursePerformanceAnalytics,
   ElementFeedback,
+  LearningAnalyticsExport,
   QuizAnalytics,
   WeeklyCourseActivities,
 } from './analytics.js'
@@ -78,6 +79,7 @@ import {
 } from './liveQuiz.js'
 import { MicroLearning } from './microLearning.js'
 import {
+  LearningAnalyticsParticipantChoice,
   Participant,
   ParticipantGroup,
   ParticipantLearningData,
@@ -1005,6 +1007,20 @@ export const Query = builder.queryType({
         },
       }),
 
+      getOwnLearningAnalyticsChoice: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: LearningAnalyticsParticipantChoice,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ParticipantService.getOwnLearningAnalyticsChoice(
+            args,
+            ctx
+          )
+        },
+      }),
+
       getCourseOverviewData: t.field({
         nullable: true,
         type: ParticipantLearningData,
@@ -1302,6 +1318,22 @@ export const Query = builder.queryType({
               args,
               ctx
             )
+          }
+        ),
+      }),
+
+      getLearningAnalyticsExport: t.withAuth(asUser).field({
+        nullable: true,
+        type: LearningAnalyticsExport,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          includePartial: t.arg.boolean({ defaultValue: false }),
+        },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.READ,
+          async (_, args, ctx) => {
+            return await AnalyticsService.getLearningAnalyticsExport(args, ctx)
           }
         ),
       }),

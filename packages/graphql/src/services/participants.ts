@@ -8,6 +8,13 @@ import isoWeek from 'dayjs/plugin/isoWeek.js'
 import { prop, sortBy } from 'remeda'
 import isEmail from 'validator/lib/isEmail.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
+import {
+  assertLearningAnalyticsChoiceAvailable,
+  buildLearningAnalyticsChoiceData,
+  isLearningAnalyticsChoiceCurrent,
+  isLearningAnalyticsRolloutEnabled,
+  type LearningAnalyticsChoiceStatus,
+} from '../lib/learningAnalytics.js'
 
 dayjs.extend(isoWeek)
 
@@ -241,6 +248,159 @@ export async function getParticipation(
   })
 
   return participation
+}
+
+export async function getOwnLearningAnalyticsChoice(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  if (
+    ctx.user.role !== DB.UserRole.PARTICIPANT ||
+    !isLearningAnalyticsRolloutEnabled()
+  ) {
+    return null
+  }
+
+  const participation = await ctx.prisma.participation.findUnique({
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId: ctx.user.sub,
+      },
+    },
+    include: {
+      course: {
+        select: { isLearningAnalyticsEnabled: true },
+      },
+    },
+  })
+
+  if (!participation?.course.isLearningAnalyticsEnabled) {
+    return null
+  }
+
+  return {
+    courseId,
+    status: participation.learningAnalyticsStatus,
+    isCurrent: isLearningAnalyticsChoiceCurrent(participation),
+  }
+}
+
+async function deleteParticipantLearningAnalytics(
+  prisma: PrismaTransactionClient,
+  courseId: string,
+  participantId: string
+) {
+  await prisma.participantChatOutcome.deleteMany({
+    where: { courseId, participantId },
+  })
+  await prisma.participantChatAnalytics.deleteMany({
+    where: { courseId, participantId },
+  })
+  await prisma.participantLiveQuizAnalytics.deleteMany({
+    where: { courseId, participantId },
+  })
+  await prisma.participantActivityPerformance.deleteMany({
+    where: {
+      participantId,
+      OR: [{ practiceQuiz: { courseId } }, { microLearning: { courseId } }],
+    },
+  })
+  await prisma.participantAnalytics.deleteMany({
+    where: { courseId, participantId },
+  })
+  await prisma.participantCourseAnalytics.deleteMany({
+    where: { courseId, participantId },
+  })
+  await prisma.participantPerformance.deleteMany({
+    where: { courseId, participantId },
+  })
+}
+
+export async function setOwnLearningAnalyticsChoice(
+  {
+    courseId,
+    status,
+  }: {
+    courseId: string
+    status: LearningAnalyticsChoiceStatus
+  },
+  ctx: ContextWithUser
+) {
+  return ctx.prisma.$transaction(
+    async (prisma) => {
+      await prisma.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${courseId}))::text`
+
+      const participation = await prisma.participation.findUnique({
+        where: {
+          courseId_participantId: {
+            courseId,
+            participantId: ctx.user.sub,
+          },
+        },
+        include: {
+          course: {
+            select: { isLearningAnalyticsEnabled: true },
+          },
+        },
+      })
+
+      if (!participation) {
+        return null
+      }
+
+      assertLearningAnalyticsChoiceAvailable(
+        participation.course.isLearningAnalyticsEnabled
+      )
+
+      if (
+        participation.learningAnalyticsStatus === status &&
+        isLearningAnalyticsChoiceCurrent(participation)
+      ) {
+        if (status === DB.LearningAnalyticsParticipationStatus.EXCLUDED) {
+          await deleteParticipantLearningAnalytics(
+            prisma,
+            courseId,
+            ctx.user.sub
+          )
+        }
+        await prisma.course.update({
+          where: { id: courseId },
+          data: { areAnalyticsValid: false, chatAnalyticsValidAt: null },
+        })
+        return {
+          courseId,
+          status,
+          isCurrent: true,
+        }
+      }
+
+      const updated = await prisma.participation.update({
+        where: { id: participation.id },
+        data: buildLearningAnalyticsChoiceData(status),
+      })
+
+      // A real choice transition establishes a new eligibility boundary.
+      // Remove participant-level results from the previous boundary even when
+      // the participant renews inclusion after a disclosure change. Aggregate
+      // rows intentionally remain until the next normal calculation.
+      await deleteParticipantLearningAnalytics(prisma, courseId, ctx.user.sub)
+      await prisma.course.update({
+        where: { id: courseId },
+        data: { areAnalyticsValid: false, chatAnalyticsValidAt: null },
+      })
+
+      return {
+        courseId,
+        status: updated.learningAnalyticsStatus,
+        isCurrent: true,
+      }
+    },
+    {
+      maxWait: 10000,
+      timeout: 60000,
+    }
+  )
 }
 
 // interface RegisterParticipantFromLTIArgs {

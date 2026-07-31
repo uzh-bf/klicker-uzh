@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-07-07'
+timestamp: '2026-07-30'
 tags:
   - backend
   - prisma
@@ -24,6 +24,82 @@ Schema sources live in [packages/prisma/src/prisma/schema/](../packages/prisma/s
 | Role enum | `USER` / `ADMIN`          | `PARTICIPANT` / `TEMPORARY_PARTICIPANT`            |
 
 They are unrelated models — never conflate them. A `Participant` joins a `Course` through **`Participation`** (`@@unique([courseId, participantId])`, carries `isActive`) — the domain word is _Participation_, not "Enrollment". Course names like "Testkurs" are seed data only (`packages/prisma-data/src/data/seedTEST.ts`).
+
+## Learning analytics participation
+
+Optional learning analytics has two independent controls:
+
+- `Course.isLearningAnalyticsEnabled` records whether the lecturer has enabled learning analytics for the course. It is separate from `Course.areAnalyticsValid`, which remains an analytics-data validity flag (`packages/prisma/src/prisma/schema/course.prisma:Course.isLearningAnalyticsEnabled`).
+- Each `Participation` records the student's current `LearningAnalyticsParticipationStatus` (`UNDECIDED`, `INCLUDED`, or `EXCLUDED`), the disclosure version they acknowledged, their latest choice time, and `learningAnalyticsIncludedFrom` (`packages/prisma/src/prisma/schema/participant.prisma:Participation.learningAnalyticsStatus`).
+
+`Participation.isActive` still controls ordinary course participation and gamification visibility; it is not learning-analytics consent. The shared eligibility helper admits activity only while the course control is enabled, the status is `INCLUDED`, the acknowledged disclosure version is current, and the activity timestamp is at or after `learningAnalyticsIncludedFrom` (`packages/util/src/learningAnalytics.ts:isActivityEligibleForLearningAnalytics`).
+
+Course owners and administrators can change the course control through the
+ADMIN-protected `setCourseLearningAnalyticsEnabled` mutation. A serialized
+transaction atomically disables lecturer reads and idempotently deletes the
+dedicated analytics models. It deliberately keeps participations, choice
+history, responses, feedback, grades, points, and XP
+(`packages/graphql/src/services/courses.ts:setCourseLearningAnalyticsEnabled`;
+`packages/graphql/src/lib/learningAnalytics.ts:isLearningAnalyticsRolloutEnabled`).
+The deployment gate `NEXT_PUBLIC_LEARNING_ANALYTICS_ROLLOUT_ENABLED` fails
+closed in both the API and Manage UI and must stay off until participant
+eligibility, computation filtering, de-identification/suppression, and legal
+approval have all landed. The committed devcontainer enables it only for
+synthetic local verification (`turbo.json`;
+`.devcontainer/devcontainer.env`).
+
+`LearningAnalyticsChoiceEvent` keeps the append-only choice history
+(`packages/prisma/src/prisma/schema/participant.prisma:LearningAnalyticsChoiceEvent`).
+Interactive PIN joins and course-specific account creation require an explicit,
+neutral choice when course LA is enabled. LTI, invitation, and other automatic
+joins remain `UNDECIDED` and prompt on the next course entry. The participant-only
+choice mutation atomically updates the current snapshot and appends the event;
+every real choice transition also deletes participant-level dedicated analytics
+from the previous boundary while leaving operational data and existing
+aggregates unchanged. Re-inclusion and renewal after a disclosure change set a
+new prospective inclusion time
+(`packages/graphql/src/services/participants.ts:setOwnLearningAnalyticsChoice`;
+`packages/graphql/src/lib/learningAnalytics.ts:LEARNING_ANALYTICS_DISCLOSURE_VERSION`).
+The choice API and PWA control are hidden while course LA is disabled, but the
+stored choice and history remain available if the lecturer enables it again.
+
+The Analytics service mirrors the scalar eligibility contract and rebuilds
+attempt-sensitive metrics from eligible `QuestionResponseDetail` rows. It does
+not use cumulative `QuestionResponse` counters because those cannot separate
+activity before and after a renewed inclusion boundary. Free-text responses are
+excluded from LA computation entirely. Every dedicated-data write rechecks the
+course control and, for participant rows, the current participation inside a
+course-serialized transaction; the course's disabled intervals are deliberately
+not an activity-time filter (`apps/analytics/src/modules/learning_analytics_eligibility.py`;
+`apps/analytics/src/modules/eligible_response_details.py`).
+
+`ActivityPerformance.participantCount` stores the effective number of eligible
+participants contributing to that activity aggregate. It is distinct from the
+number of currently eligible course participants and from the number of
+response attempts
+(`packages/prisma/src/prisma/schema/analytics.prisma:ActivityPerformance`).
+
+Lecturer-facing LA is a separate output boundary. Participant rows are first
+filtered for the requested coverage, then suppressed below an effective sample
+size of five, shuffled, and labelled afresh as `Student 1`, `Student 2`, and so
+on. Only coarse completion summaries survive that boundary. Labels and ordering
+are not persisted, and the public LA API contains no participant ID, username,
+email, exact score, activity-level sequence, response content, or free text.
+Exports default to complete coverage; explicitly including partial coverage
+re-runs both the sample-size check and label assignment
+(`packages/graphql/src/lib/learningAnalyticsOutput.ts`;
+`packages/graphql/src/services/analytics.ts:getLearningAnalyticsExport`).
+
+All dedicated result-model cleanup uses one explicit boundary in
+`packages/graphql/src/lib/learningAnalyticsCleanup.ts`. It includes the eleven
+analytics result models and deliberately excludes `TimelineEntry`,
+`Competency`, normal responses and feedback, participation and choice history,
+grades, points, XP, and research consent. Course disable applies this boundary
+to one course. The pre-rollout cleanup applies the same boundary globally under
+the guarded procedure documented in [Data & Migrations](./data-and-migrations.md).
+The rollout gate stays disabled until that cleanup has completed and the German
+privacy notice, German terms, and in-app disclosures have recorded UZH
+data-protection/legal approval.
 
 ## Content hierarchy
 

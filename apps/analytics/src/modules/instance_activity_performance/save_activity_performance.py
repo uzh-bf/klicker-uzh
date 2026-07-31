@@ -4,6 +4,9 @@ from sqlalchemy.orm import Session
 
 from src.db_helpers import bulk_upsert
 from src.models import ActivityPerformance
+from src.modules.learning_analytics_eligibility import (
+    filter_learning_analytics_rows_for_write,
+)
 
 
 def save_activity_performance(
@@ -15,6 +18,7 @@ def save_activity_performance(
 ):
     now = datetime.now()
     values = {
+        "participantCount": int(activity_performance.participantCount),
         "totalErrorRate": float(activity_performance.totalErrorRate),
         "totalPartialRate": float(activity_performance.totalPartialRate),
         "totalCorrectRate": float(activity_performance.totalCorrectRate),
@@ -44,11 +48,15 @@ def save_activity_performance(
             "Either practice_quiz_id or microlearning_id must be provided for activity performance creation/update"
         )
 
+    rows = filter_learning_analytics_rows_for_write(session, [values])
+    if not rows:
+        session.rollback()
+        return
     update_cols = [c for c in values.keys() if c != conflict_col and c != "createdAt"]
     bulk_upsert(
         session,
         ActivityPerformance,
-        [values],
+        rows,
         conflict_cols=[conflict_col],
         update_cols=update_cols,
     )

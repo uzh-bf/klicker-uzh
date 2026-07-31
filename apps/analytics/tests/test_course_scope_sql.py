@@ -8,6 +8,31 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+DEFAULT_COURSE_ID = "aaaa0000-0000-0000-0000-000000000001"
+
+
+@pytest.fixture(autouse=True)
+def _admit_requested_courses(monkeypatch):
+    def enabled(_session, course_ids, **_kwargs):
+        return list(course_ids) if course_ids is not None else [DEFAULT_COURSE_ID]
+
+    monkeypatch.setattr(
+        "src.modules.chat_analytics.compute_participant_chat_analytics.eligible_course_ids",
+        enabled,
+    )
+    monkeypatch.setattr(
+        "src.modules.chat_analytics.compute_participant_chat_analytics.lock_learning_analytics_courses",
+        lambda _session, course_ids: set(course_ids),
+    )
+    monkeypatch.setattr(
+        "src.modules.aggregated_chat_analytics.compute_aggregated_chatbot_analytics.eligible_course_ids",
+        enabled,
+    )
+    monkeypatch.setattr(
+        "src.modules.aggregated_chat_analytics.compute_aggregated_chatbot_analytics.lock_learning_analytics_courses",
+        lambda _session, course_ids: set(course_ids),
+    )
+
 
 class _Result:
     def __init__(self, rowcount: int = 0, scalar: int = 1):
@@ -33,6 +58,9 @@ class _CaptureSession:
     def commit(self):
         return None
 
+    def rollback(self):
+        return None
+
 
 def test_participant_chat_analytics_renders_course_filter():
     from src.modules.chat_analytics.compute_participant_chat_analytics import (
@@ -54,7 +82,7 @@ def test_participant_chat_analytics_renders_course_filter():
     assert f"""AND cb."courseId" IN ('{course_id}')""" in session.statements[-1]
 
 
-def test_participant_chat_analytics_leaves_query_unscoped_when_course_ids_none():
+def test_participant_chat_analytics_resolves_unscoped_input_to_enabled_courses():
     from src.modules.chat_analytics.compute_participant_chat_analytics import (
         compute_participant_chat_analytics,
     )
@@ -70,7 +98,7 @@ def test_participant_chat_analytics_leaves_query_unscoped_when_course_ids_none()
         course_ids=None,
     )
 
-    assert """cb."courseId" IN (""" not in session.statements[-1]
+    assert f"""cb."courseId" IN ('{DEFAULT_COURSE_ID}')""" in session.statements[-1]
     assert "/*COURSE_FILTER*/" not in session.statements[-1]
 
 
@@ -131,7 +159,7 @@ def test_aggregated_chatbot_analytics_renders_course_filter_for_weekly():
         course_ids=[course_id],
     )
 
-    assert f"""AND cb."courseId" IN ('{course_id}')""" in session.statements[1]
+    assert f"""AND cb."courseId" IN ('{course_id}')""" in session.statements[-1]
 
 
 @pytest.mark.parametrize("analytics_type", ["DAILY", "WEEKLY", "MONTHLY", "COURSE"])

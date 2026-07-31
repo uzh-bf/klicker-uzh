@@ -7,6 +7,10 @@ from sqlalchemy.orm import Session
 
 from src.db_helpers import bulk_upsert
 from src.dryrun import buffer_registry
+from src.modules.learning_analytics_eligibility import (
+    eligible_course_ids,
+    lock_learning_analytics_courses,
+)
 from src.modules.utils import render_uuid_in_clause
 
 ChatDoseBucketLiteral = Literal["NONE", "LOW", "MED", "HIGH"]
@@ -22,7 +26,7 @@ WHERE true
 
 _OUTCOME_PLACEHOLDERS = {
     "/*CHAT_COURSE_FILTER*/": '"courseId"',
-    "/*COURSE_PARTICIPATION_FILTER*/": '"courseId"',
+    "/*COURSE_PARTICIPATION_FILTER*/": 'p."courseId"',
     "/*COURSE_PERFORMANCE_FILTER*/": '"courseId"',
 }
 _UPDATE_PLACEHOLDERS = {"/*COURSE_FILTER*/": 'pca."courseId"'}
@@ -149,14 +153,20 @@ def reconcile_chat_quiz_correlation(
         )
         return outcome_rows, activity_rows
 
+    enabled_ids = eligible_course_ids(session, course_ids)
+    locked_ids = sorted(lock_learning_analytics_courses(session, enabled_ids))
+    if not locked_ids:
+        session.rollback()
+        return 0, 0
+
     delete_sql = _render_sql(
         _DELETE_OUTCOMES_SQL,
-        course_ids=course_ids,
+        course_ids=locked_ids,
         placeholders=_DELETE_OUTCOME_PLACEHOLDERS,
     )
     session.execute(text(delete_sql))
-    outcome_result = _execute_participant_chat_outcomes(session, course_ids)
-    activity_result = _execute_has_chat_activity(session, course_ids)
+    outcome_result = _execute_participant_chat_outcomes(session, locked_ids)
+    activity_result = _execute_has_chat_activity(session, locked_ids)
     session.commit()
 
     outcome_rows = outcome_result.rowcount or 0

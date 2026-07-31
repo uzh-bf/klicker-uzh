@@ -13,6 +13,27 @@ COURSE_A = "aaaa0000-0000-0000-0000-000000000001"
 COURSE_B = "aaaa0000-0000-0000-0000-000000000002"
 
 
+@pytest.fixture(autouse=True)
+def _admit_requested_courses(monkeypatch):
+    def enabled(_session, course_ids, **_kwargs):
+        return list(course_ids) if course_ids is not None else [COURSE_A, COURSE_B]
+
+    module_names = (
+        "src.modules.chat_analytics.compute_participant_chat_analytics",
+        "src.modules.aggregated_chat_analytics.compute_aggregated_chatbot_analytics",
+        "src.modules.chat_quiz_correlation.compute_chat_quiz_correlation",
+    )
+    for module_name in module_names:
+        monkeypatch.setattr(
+            f"{module_name}.eligible_course_ids",
+            enabled,
+        )
+        monkeypatch.setattr(
+            f"{module_name}.lock_learning_analytics_courses",
+            lambda _session, course_ids: set(course_ids),
+        )
+
+
 class _Result:
     def __init__(self, *, rowcount: int = 7, scalar: int = 0):
         self.rowcount = rowcount
@@ -44,6 +65,9 @@ class _CaptureSession:
     def commit(self):
         self.commits += 1
 
+    def rollback(self):
+        return None
+
 
 def test_participant_response_query_scopes_both_activity_types():
     module = importlib.import_module("src.modules.participant_analytics.get_participant_responses")
@@ -58,10 +82,10 @@ def test_participant_response_query_scopes_both_activity_types():
 
     statement = str(session.statements[0])
     params = session.statements[0].compile().params
+    assert 'JOIN "Participation"' in statement
+    assert '"Participation"."courseId" IN ' in statement
     assert 'FROM "PracticeQuiz"' in statement
     assert 'FROM "MicroLearning"' in statement
-    assert '"PracticeQuiz"."courseId" IN ' in statement
-    assert '"MicroLearning"."courseId" IN ' in statement
     assert [COURSE_A, COURSE_B] in params.values()
     assert result.empty
 
@@ -166,7 +190,7 @@ def test_finalize_scope_defers_terminal_marker_for_pending_consent():
 
     assert '"analyticsFinalizedAt" = CASE' in statement
     assert "pending_chat_changes pending" in statement
-    assert f"""cb."courseId" IN ('{COURSE_A}')""" in statement
+    assert f"""pending."courseId" IN ('{COURSE_A}')""" in statement
     assert 'AND c."analyticsFinalizedAt" IS NULL' not in statement
 
 

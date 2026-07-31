@@ -9,3 +9,4 @@ hive.json
 
 !invitations_dev.csv
 invitations_*.csv
+/src/scripts/_local/

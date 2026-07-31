@@ -4,12 +4,58 @@
 -- The semesters CTE is generated dynamically from the earliest data row, so the query
 -- keeps working year after year without code changes.
 
-WITH bounds AS (
+WITH eligible_participations AS MATERIALIZED (
+  SELECT
+    p.id,
+    p."participantId",
+    p."courseId",
+    p."learningAnalyticsIncludedFrom"
+  FROM "Participation" p
+  JOIN "Course" c ON c.id = p."courseId"
+  WHERE c."isLearningAnalyticsEnabled" = true
+    /*COURSE_FILTER*/
+    AND p."learningAnalyticsStatus" = 'INCLUDED'
+    AND p."learningAnalyticsDisclosureVersion" = '2026-07-30-v1'
+    AND p."learningAnalyticsIncludedFrom" IS NOT NULL
+),
+eligible_quiz_details AS MATERIALIZED (
+  SELECT qrd.*, ep."courseId"
+  FROM "QuestionResponseDetail" qrd
+  JOIN "ElementInstance" ei
+    ON ei.id = qrd."elementInstanceId"
+   AND ei."elementType" <> 'FREE_TEXT'
+  JOIN eligible_participations ep ON ep.id = qrd."participationId"
+  WHERE qrd."createdAt" >= ep."learningAnalyticsIncludedFrom"
+),
+eligible_live_responses AS MATERIALIZED (
+  SELECT lqr.*, ep."courseId"
+  FROM "LiveQuizResponse" lqr
+  JOIN "ElementInstance" ei
+    ON ei.id = lqr."instanceId"
+   AND ei."elementType" <> 'FREE_TEXT'
+  JOIN "ElementBlock" eb ON eb.id = ei."elementBlockId"
+  JOIN "LiveQuiz" lq ON lq.id = eb."liveQuizId"
+  JOIN eligible_participations ep
+    ON ep."participantId" = lqr."participantId"
+   AND ep."courseId" = lq."courseId"
+  WHERE lqr."submittedAt" >= ep."learningAnalyticsIncludedFrom"
+),
+eligible_chat_messages AS MATERIALIZED (
+  SELECT m.*, ct."participantId", cb."courseId"
+  FROM "ChatMessage" m
+  JOIN "ChatThread" ct ON ct.id = m."threadId"
+  JOIN "Chatbot" cb ON cb.id = ct."chatbotId"
+  JOIN eligible_participations ep
+    ON ep."participantId" = ct."participantId"
+   AND ep."courseId" = cb."courseId"
+  WHERE m."createdAt" >= ep."learningAnalyticsIncludedFrom"
+),
+bounds AS (
   SELECT
     LEAST(
-      COALESCE((SELECT MIN("createdAt") FROM "QuestionResponse"),     NOW()),
-      COALESCE((SELECT MIN("createdAt") FROM "LiveQuizResponse"),     NOW()),
-      COALESCE((SELECT MIN("createdAt") FROM "ChatMessage"),          NOW())
+      COALESCE((SELECT MIN("createdAt") FROM eligible_quiz_details), NOW()),
+      COALESCE((SELECT MIN("createdAt") FROM eligible_live_responses), NOW()),
+      COALESCE((SELECT MIN("createdAt") FROM eligible_chat_messages), NOW())
     ) AS first_seen,
     NOW() AS now_ts
 ),
@@ -64,32 +110,39 @@ SELECT
 FROM relevant_semesters rs
 LEFT JOIN LATERAL (
   SELECT
-    COUNT(*)                                                            AS response_rows,
-    COALESCE(SUM(qr."trialsCount"), 0)                                  AS total_trials,
+    COUNT(DISTINCT (
+      qr."participantId",
+      qr."elementInstanceId",
+      qr."practiceQuizId",
+      qr."microLearningId"
+    ))                                                                  AS response_rows,
+    COUNT(*)                                                            AS total_trials,
     COUNT(DISTINCT qr."participantId")                                  AS distinct_participants
-  FROM "QuestionResponse" qr
+  FROM eligible_quiz_details qr
   WHERE qr."createdAt" >= rs.semester_start AND qr."createdAt" <= rs.semester_end
 ) q ON true
 LEFT JOIN LATERAL (
   SELECT
     COUNT(*)                                                            AS responses,
     COUNT(DISTINCT lqr."participantId")                                 AS distinct_participants
-  FROM "LiveQuizResponse" lqr
+  FROM eligible_live_responses lqr
   WHERE lqr."createdAt" >= rs.semester_start AND lqr."createdAt" <= rs.semester_end
 ) lq ON true
 LEFT JOIN LATERAL (
   SELECT
     COUNT(*)                                                            AS messages,
-    COUNT(DISTINCT ct."participantId")                                  AS distinct_participants
-  FROM "ChatMessage" m
-  JOIN "ChatThread" ct ON ct.id = m."threadId"
+    COUNT(DISTINCT m."participantId")                                   AS distinct_participants
+  FROM eligible_chat_messages m
   WHERE m."createdAt" >= rs.semester_start AND m."createdAt" <= rs.semester_end
     AND m.role = 'user'
 ) ch ON true
 LEFT JOIN LATERAL (
   SELECT
     COUNT(DISTINCT c.id) FILTER (
-      WHERE EXISTS (SELECT 1 FROM "Participation" p WHERE p."courseId" = c.id)
+      WHERE EXISTS (
+        SELECT 1 FROM eligible_participations p
+        WHERE p."courseId" = c.id
+      )
     ) AS active_courses,
     COUNT(DISTINCT c.id) FILTER (
       WHERE EXISTS (SELECT 1 FROM "Chatbot" cb WHERE cb."courseId" = c.id)
@@ -99,7 +152,7 @@ LEFT JOIN LATERAL (
     ) AS courses_with_livequiz,
     COUNT(DISTINCT c.id) FILTER (
       WHERE EXISTS (
-        SELECT 1 FROM "QuestionResponse" qr2
+        SELECT 1 FROM eligible_quiz_details qr2
         WHERE qr2."courseId" = c.id
           AND qr2."createdAt" >= rs.semester_start AND qr2."createdAt" <= rs.semester_end
       )
@@ -107,6 +160,8 @@ LEFT JOIN LATERAL (
   FROM "Course" c
   WHERE c."startDate" <= rs.semester_end
     AND c."endDate"   >= rs.semester_start
+    AND c."isLearningAnalyticsEnabled" = true
+    /*COURSE_FILTER*/
 ) c ON true
 ON CONFLICT ("semesterLabel") DO UPDATE SET
   "semesterStart"                = EXCLUDED."semesterStart",

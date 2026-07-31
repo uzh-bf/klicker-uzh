@@ -181,14 +181,22 @@ def test_apply_scope_non_empty_list_appends_in_filter():
 
 
 def test_immutable_run_config_does_not_fall_back_to_process_scope():
-    with mock.patch.dict(os.environ, {"ANALYTICS_COURSE_IDS": VALID_A}):
-        assert (
-            scoped_course_ids(
-                cast(Session, object()),
-                AnalyticsRunConfig(mode="full"),
-            )
-            is None
-        )
+    with (
+        mock.patch.dict(os.environ, {"ANALYTICS_COURSE_IDS": VALID_A}),
+        mock.patch(
+            "src.modules.utils.eligible_course_ids",
+            return_value=[VALID_B],
+        ) as eligible,
+    ):
+        assert scoped_course_ids(
+            cast(Session, object()),
+            AnalyticsRunConfig(mode="full"),
+        ) == [VALID_B]
+    eligible.assert_called_once_with(
+        mock.ANY,
+        None,
+        include_finalized=True,
+    )
 
 
 def test_window_iteration_stops_at_next_bounded_cancellation_check():

@@ -183,6 +183,8 @@ function CourseSelectionPage() {
                       endDate: endDateUTC,
                       notificationEmail: values.notificationEmail,
                       isGamificationEnabled: values.isGamificationEnabled,
+                      isLearningAnalyticsEnabled:
+                        values.isLearningAnalyticsEnabled,
                       isGroupCreationEnabled: values.isGroupCreationEnabled,
                       groupDeadlineDate: groupDeadlineDateUTC,
                       maxGroupSize: parseInt(String(values.maxGroupSize)),

@@ -492,7 +492,7 @@ export default {
     delegatedAccess: 'Delegierter Zugriff',
     signedInAs: 'Sie sind bereits eingelogged als {username}',
     tosAgreement:
-      'Ich akzeptiere die KlickerUZH <tos></tos> (aktualisiert am 26.08.2023) und <privacy></privacy> (aktualisiert am 26.08.2023).',
+      'Ich akzeptiere die KlickerUZH <tos></tos> (aktualisiert am 30.07.2026) und <privacy></privacy> (aktualisiert am 30.07.2026).',
     tosAgreementRequired:
       'Bitte akzeptieren Sie die Nutzungsbedingungen und Datenschutzerklärung, bevor Sie sich einloggen.',
     termsOfService: 'Nutzungsbedingungen',
@@ -556,6 +556,33 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
 `,
       activityPreview:
         'Sie sehen eine Vorschau der Aktivität {activity} "{name}" (Anzeigename "{displayName}"). Bitte beachten Sie, dass diese Vorschau als Test-Ansicht für Dozierende konzipiert wurde. Während die meisten Interaktionsfunktionalitäten unterstützt werden, werden keine eingereichten Antworten gespeichert oder in der Auswertungsansicht angezeigt.',
+    },
+    learningAnalytics: {
+      title: 'Teilnahme an Learning Analytics',
+      explanation:
+        'Learning Analytics kann Dozierenden helfen zu erkennen, wo teilnehmende Gruppen Unterstützung benötigen, und dadurch Kursaktivitäten und Rückmeldungen für Studierende zu verbessern. Wenn Sie teilnehmen, verwendet KlickerUZH Ihre Interaktionsaktivität, Ihren Lernfortschritt, Ihre Antwortleistung, Punktzahlen und Feedback-Bewertungen. Ergebnisse werden nur für Gruppen ab fünf Personen angezeigt; Tabellen verwenden für jeden Bericht neue Bezeichnungen wie «Student 1». Dozierende sehen weder Ihren Namen noch Ihre E-Mail-Adresse, Teilnehmenden-ID, Freitextantworten, Freitext-Feedback oder Teilnahmeentscheidung und dürfen die Ergebnisse nicht mit anderen Informationen kombinieren, um Sie zu identifizieren.',
+      include: 'An Learning Analytics teilnehmen',
+      includeDescription:
+        'Nur Aktivitäten ab dem Zeitpunkt dieser Auswahl können für Learning Analytics berücksichtigt werden.',
+      exclude: 'Nicht an Learning Analytics teilnehmen',
+      excludeDescription:
+        'Ihre normale Kursnutzung bleibt unverändert. Ihre Daten werden aus neuen Learning-Analytics-Berechnungen ausgeschlossen und Ihre teilnehmendenbezogenen Learning-Analytics-Ergebnisse sofort entfernt.',
+      changeDisclaimer:
+        'Sie können diese Auswahl jederzeit ändern, solange Learning Analytics aktiviert ist. Wenn Kursverantwortliche Learning Analytics deaktivieren und später erneut aktivieren, gilt Ihre gespeicherte Auswahl wieder und zulässige normale Kursdaten können neu berechnet werden. Wenn Sie Ihre Teilnahme beenden und später erneut teilnehmen, können nur Aktivitäten ab der erneuten Teilnahme berücksichtigt werden; der Zeitraum Ihrer Nichtteilnahme wird nie rückwirkend einbezogen. Bestehende Aggregate werden im normalen Rhythmus aktualisiert. Diese Auswahl ist von einer Forschungsteilnahme getrennt und stellt keine Einwilligung in Forschung dar.',
+      choiceRequired:
+        'Bitte wählen Sie, ob Sie an Learning Analytics teilnehmen möchten.',
+      decideLater: 'Später entscheiden',
+      reminder:
+        'Sie haben noch keine aktuelle Auswahl zu Learning Analytics getroffen. Bis zu Ihrer Entscheidung bleiben Sie ausgeschlossen.',
+      currentlyIncluded:
+        'Sie nehmen derzeit in diesem Kurs an Learning Analytics teil.',
+      currentlyExcluded:
+        'Sie nehmen derzeit in diesem Kurs nicht an Learning Analytics teil.',
+      chooseNow: 'Jetzt auswählen',
+      changeChoice: 'Auswahl ändern',
+      saveSuccess: 'Ihre Auswahl zu Learning Analytics wurde gespeichert.',
+      saveError:
+        'Ihre Auswahl zu Learning Analytics konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.',
     },
     chatbot: {
       loginRequiredMessage:
@@ -2840,6 +2867,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte geben Sie eine gültige bevorzugte Gruppengrösse an.',
       gamificationTooltip:
         'Gamifizierung kann nach Erstellung des Kurses nur noch aktiviert (nicht mehr deaktiviert) werden.',
+      learningAnalytics: 'Learning Analytics',
+      learningAnalyticsEnabled: 'Learning Analytics verwenden',
+      learningAnalyticsTooltip:
+        'Sie können diese Einstellung jederzeit ändern. Nur Kursverantwortliche können Learning Analytics aktivieren oder deaktivieren.',
+      learningAnalyticsExplanation:
+        'Learning Analytics kann zeigen, wo teilnehmende Gruppen Unterstützung benötigen, und dadurch Kursaktivitäten und Rückmeldungen für Studierende verbessern. KlickerUZH verwendet Interaktionsaktivität, Lernfortschritt, Antwortleistung, Punktzahlen und Feedback-Bewertungen von Studierenden, die teilnehmen. Ergebnisse benötigen mindestens fünf beitragende Studierende; Tabellen verwenden für jeden Bericht neue Bezeichnungen wie «Student 1» und nur grobe Zusammenfassungen. Learning Analytics zeigt keine Namen, E-Mail-Adressen, Teilnehmenden-IDs, Freitextantworten, Freitext-Feedback oder Teilnahmeentscheidungen. Versuchen Sie nicht, Studierende zu identifizieren oder Ergebnisse dafür mit anderen Informationen zu kombinieren. Die Teilnahme an Learning Analytics ist von einer Forschungseinwilligung getrennt.',
+      learningAnalyticsDisableConfirmation:
+        'Learning Analytics für diesen Kurs deaktivieren? Die Dashboards werden sofort ausgeblendet und alle dedizierten Learning-Analytics-Ergebnisse gelöscht. Normale Kursaktivitäten, Antworten, Feedback, Bewertungen, Punkte und XP bleiben erhalten. Gespeicherte Entscheidungen der Studierenden bleiben für eine mögliche spätere Reaktivierung bestehen.',
       groupCreationEnabled: 'Gruppenbildung möglich',
       groupCreationDisabledTooltip:
         'Um die Gruppenbildung für Ihre Studierenden zu aktivieren, aktivieren Sie bitte zuerst die Gamifizierung für diesen Kurs.',
@@ -2907,6 +2942,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       modifyCourse: 'Kurs bearbeiten',
       shareCourse: 'Kurs teilen',
       learningAnalytics: 'Learning Analytics',
+      learningAnalyticsDisabled: 'Learning Analytics deaktiviert',
       pointCorrections: 'Punktekorrekturen',
       assessmentResults: 'Assessment Resultate',
       appliedCorrections: 'Angewendete Punktkorrekturen',
@@ -3861,27 +3897,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       analyticsLoadingWait: 'Lade Analyse-Daten. Bitte warten...',
       analyticsLoadingFailed:
         'Beim Laden der Analyse-Daten ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut oder kontaktieren Sie den Support.',
+      learningAnalyticsDisabled:
+        'Learning Analytics ist für diesen Kurs deaktiviert. Kursverantwortliche können die Funktion in den Kurseinstellungen aktivieren.',
       weeklyStudentActivity: 'Wöchentliche Aktivität der Studierenden',
       dailyStudentActivity: 'Tägliche Aktivität der Studierenden',
       totalParticipants: 'Kurs-Teilnehmende: {number}',
-      dailyActivity: 'Tagesabhängige Aktivität',
       activeStudents: 'Aktive Studierende',
-      percentageOfStudents: 'Prozentuale Verteilung der Studierenden',
       courseComparison: 'Kursvergleich',
       courseComparisonDescription:
         'Wählen Sie einen zweiten Kurs aus, um die entsprechenden Daten direkt zu vergleichen.',
       selectCourse: 'Kurs auswählen...',
       weekN: 'Woche {number}',
-      studentN: 'Studierende(r) {number}',
-      overallStudentActivity: 'Gesamte Studierendenaktivität',
-      numberOfStudents: 'Anzahl Studierende',
-      activeWeeks: 'Aktive Wochen',
-      activeDaysPerWeek: 'Aktive Tage pro Woche',
-      meanElementsPerDay: 'Durchschnittliche Elemente pro Tag',
-      activityLevel: 'Aktivitätslevel',
-      levelHigh: 'HOCH',
-      levelMedium: 'MITTEL',
-      levelLow: 'TIEF',
       asynchronousActivityProgress: 'Fortschritt in asynchronen Aktivitäten',
       started: 'Gestartet',
       completed: 'Abgeschlossen',
@@ -3907,19 +3933,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       searchPlaceholder: 'Suche...',
       activityNameLabel: 'Aktivitätsname',
       elementNameLabel: 'Elementname',
-      overallStudentPerformance:
-        'Gesamtleistung der Studierenden (Fehlerraten)',
-      totalErrorRate: 'Totale Fehlerrate',
       total: 'Total',
       firstAttempt: 'Erster Lösungsversuch',
       lastAttempt: 'Letzter Lösungsversuch',
-      performanceLevel: 'Leistungslevel',
       feedbackOverviewActivityInstances:
         'Übersicht für Aktivitäts- und Element-Bewertungen',
       upvotes: 'Positive Bewertungen',
       downvotes: 'Negative Bewertungen',
       performanceRates: 'Performance-Raten',
-      totalScore: 'Gesamtpunktzahl',
       activityProgress: 'Aktivitätsfortschritt',
       studentPerformance: 'Studierendenleistung',
       feedbackOverview: 'Feedback-Übersicht',
@@ -3949,28 +3970,25 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bisher sind keine wöchentlichen Aktivitätsdaten für diesen Kurs verfügbar.',
       noDailyActivityData:
         'Bisher sind keine täglichen Aktivitätsdaten für diesen Kurs verfügbar.',
-      noActivityDistributionData:
-        'Bisher sind keine Aktivitätsverteilungsdaten für diesen Kurs verfügbar.',
-      noStudentActivity:
-        'Bisher wurde keine Studierendenaktivität für diesen Kurs berechnet.',
       noAsynchronousActivityProgressData:
         'Bisher sind keine Daten zum Fortschritt in asynchronen Aktivitäten für diesen Kurs verfügbar.',
-      noStudentPerformanceData:
-        'Bisher sind keine Daten zur Studierendenleistung für diesen Kurs verfügbar.',
-      noStudentActivityPerformanceData:
-        'Bisher sind keine Daten zur Studierendenleistung für Aktivitäten in diesem Kurs verfügbar.',
       studentActivityPerformance: 'Leistung der Studierenden in Aktivitäten',
-      studentUsername: 'Nutzername',
-      studentEmail: 'E-Mail Adresse',
-      emailMissing: 'n/a',
-      selectAllActivities: 'Alle Aktivitäten auswählen',
-      deselectAllActivities: 'Alle Aktivitäten abwählen',
-      noActivitySelected:
-        'Bitte wählen Sie mindestens eine Aktivität aus, um die gesammelten Punkte und den Fortschritt der Studierenden anzuzeigen.',
-      participantActivityPerformanceDescription:
-        'Diese Tabelle stellt den Fortschritt und die gesammelten Punkte der Studierenden in den ausgewählten Aktivitäten dar. Es werden alle berechneten Punkte (inkl. Repetitionen bei Übungs-Quizzes) dargestellt. Diese Zahl kann aufgrund der Bepunktungslogik bei Repetitionen von der Anzahl gesammelter Punkte auf dem Kurs-Leaderboard abweichen. Der prozentuale Fortschritt entspricht der Anzahl Elemente in der Aktivität, welche mindestens einmal beantwortet wurden. Eine Aktivität wird zu den abgeschlossenen Aktivitäten gezählt, wenn der prozentuale Fortschritt 100% beträgt.',
-      completedActivitiesExplanation:
-        'Abgeschlossene Aktivitäten (mit 100% Fortschritt)',
+      studentLabel: 'Studierende Person',
+      coverage: 'Abdeckung',
+      completeCoverage: 'Vollständig',
+      partialCoverage: 'Teilweise',
+      meanCompletion: 'Mittlerer Fortschritt',
+      includePartialCoverage: 'Teilweise Abdeckung einschliessen',
+      exportLearningAnalytics: 'Learning Analytics exportieren',
+      effectiveSampleSize: 'Effektive Stichprobe: <b>N = {effectiveN}</b>',
+      learningAnalyticsSuppressed:
+        'Learning Analytics werden ausgeblendet, weil weniger als fünf teilnahmeberechtigte Studierende zu dieser Ansicht beitragen.',
+      feedbackSuppressed:
+        'Das Feedback wird ausgeblendet, weil weniger als fünf teilnahmeberechtigte Studierende beigetragen haben.',
+      exportSuppressed:
+        'Es wurde kein Export erstellt, weil die gewählte Abdeckung weniger als fünf teilnahmeberechtigte Studierende enthält.',
+      deidentifiedPerformanceDescription:
+        'Dieser Bericht enthält de-identifizierte, grobe Fortschrittsübersichten für {effectiveN} teilnahmeberechtigte Studierende. Die Bezeichnungen werden für jeden Bericht neu vergeben und können nicht mit einem anderen Bericht verknüpft werden.',
       completedActivities: 'Abgeschlossene Aktivitäten',
     },
   },

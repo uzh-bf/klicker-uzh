@@ -58,6 +58,7 @@ type ActivityFeedback {
   downvoteRate: Float!
   feedbackCount: Int!
   id: String!
+  participantCount: Int!
   upvoteRate: Float!
 }
 
@@ -119,12 +120,6 @@ type ActivityInfoStack {
   timeLimit: Int
 }
 
-enum ActivityLevel {
-  HIGH
-  LOW
-  MEDIUM
-}
-
 type ActivityLogEntry {
   createdAt: Date!
   id: Int!
@@ -163,6 +158,7 @@ type ActivityPerformance {
   activityName: String!
   activityType: ActivityType!
   id: Int!
+  participantCount: Int!
   rates: PerformanceRates!
 }
 
@@ -184,6 +180,7 @@ type ActivityQuizAnalytics {
   lastErrorRate: Float
   lastPartialRate: Float
   numberOfAnswers: Int!
+  participantCount: Int!
   totalCorrectRate: Float!
   totalErrorRate: Float!
   totalPartialRate: Float!
@@ -962,6 +959,7 @@ type Course {
   isGamificationEnabled: Boolean!
   isGroupCreationEnabled: Boolean!
   isGroupDeadlinePassed: Boolean
+  isLearningAnalyticsEnabled: Boolean!
   isManager: Boolean
   isOwner: Boolean
   isRemovable: Boolean
@@ -990,12 +988,10 @@ type Course {
 }
 
 type CourseActivityAnalytics {
-  activeDays: WeekdayActivityAnalytics!
-  courseWeeks: Int!
   dailyActivity: [ParticipantActivityTimestamp!]!
+  isSuppressed: Boolean!
   name: String!
-  participantCourseAnalytics: [ParticipantCourseActivity!]!
-  totalParticipants: Int!
+  totalParticipants: Int
   weeklyActivity: [ParticipantActivityTimestamp!]!
 }
 
@@ -1063,10 +1059,11 @@ type CoursePerformanceAnalytics {
   activityProgresses: [ActivityProgress!]!
   instanceFeedbacks: [InstanceFeedback!]!
   instancePerformances: [InstancePerformance!]!
+  isSuppressed: Boolean!
   name: String!
+  participantActivityPerformanceN: Int
   participantActivityPerformances: [ParticipantActivityPerformances!]!
-  participantPerformances: [ParticipantPerformance!]!
-  totalParticipants: Int!
+  totalParticipants: Int
 }
 
 type CourseStudentTimeline {
@@ -1646,6 +1643,7 @@ type InstanceFeedback {
   id: Int!
   instanceName: String!
   instanceType: ElementType!
+  participantCount: Int!
   upvoteRate: Float!
 }
 
@@ -1653,6 +1651,7 @@ type InstancePerformance {
   elementName: String!
   elementType: ElementType!
   id: Int!
+  participantCount: Int!
   rates: PerformanceRates!
 }
 
@@ -1662,6 +1661,7 @@ type InstanceQuizAnalytics {
   elementName: String!
   elementType: ElementType!
   feedbackCount: Int!
+  feedbackSuppressed: Boolean!
   firstCorrectRate: Float
   firstErrorRate: Float
   firstPartialRate: Float
@@ -1714,6 +1714,36 @@ type LeaderboardEntry {
 type LeaderboardStatistics {
   averageScore: Float!
   participantCount: Int!
+}
+
+enum LearningAnalyticsChoice {
+  EXCLUDED
+  INCLUDED
+}
+
+enum LearningAnalyticsCoverage {
+  COMPLETE
+  PARTIAL
+}
+
+type LearningAnalyticsExport {
+  content: String!
+  effectiveN: Int!
+  filename: String!
+  includesPartial: Boolean!
+  mimeType: String!
+}
+
+type LearningAnalyticsParticipantChoice {
+  courseId: String!
+  isCurrent: Boolean!
+  status: LearningAnalyticsParticipationStatus!
+}
+
+enum LearningAnalyticsParticipationStatus {
+  EXCLUDED
+  INCLUDED
+  UNDECIDED
 }
 
 type LeaveCourseParticipation {
@@ -1879,13 +1909,13 @@ type Mutation {
   createActivityTemplate(activityId: String!, activityType: ActivityType!, copyBeforeConversion: Boolean!, templateDescription: String!, templateInstructions: String!, templateName: String!): Boolean
   createAnswerCollection(answers: [String!]!, description: String!, name: String!): AnswerCollection
   createCatalogCollection(access: ObjectAccess!, name: String!): CatalogCollection
-  createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, startDate: Date!): Course
+  createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, isLearningAnalyticsEnabled: Boolean, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, startDate: Date!): Course
   createFeedback(content: String!, quizId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): ActivityInfo
   createLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, defaultCorrectPoints: Int, defaultPoints: Int, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, isPinProtected: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): ActivityInfo
   createLiveQuizFromTemplate(blocks: [TemplateBlockInput!]!, courseId: String, description: String, displayName: String!, isGamificationEnabled: Boolean!, name: String!, templateId: String!): String
   createMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): ActivityInfo
-  createParticipantAccount(courseId: String, email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
+  createParticipantAccount(courseId: String, email: String!, isProfilePublic: Boolean!, learningAnalyticsStatus: LearningAnalyticsChoice, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
   createPracticeQuiz(courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): ActivityInfo
   createUserGroup(members: [UserGroupMembersInput!]!, name: String!): UserGroup
@@ -1934,7 +1964,7 @@ type Mutation {
   importCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!): Boolean!
   issueAssessmentReport(courseId: String!): IssuedAssessmentReport!
   joinCourseLeaderboard(courseId: String!): ParticipantLearningData
-  joinCourseWithPin(pin: Int!): Participant
+  joinCourseWithPin(learningAnalyticsStatus: LearningAnalyticsChoice, pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: String!): String
   joinRandomCourseGroupPool(courseId: String!): Boolean!
   leaveCourseLeaderboard(courseId: String!): LeaveCourseParticipation
@@ -1983,7 +2013,9 @@ type Mutation {
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
   sendMagicLink(usernameOrEmail: String!): Boolean
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
+  setCourseLearningAnalyticsEnabled(courseId: String!, isEnabled: Boolean!): Course
   setLiveQuizPin(liveQuizId: String!, pin: String!): Boolean!
+  setOwnLearningAnalyticsChoice(courseId: String!, status: LearningAnalyticsChoice!): LearningAnalyticsParticipantChoice
   shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startLiveQuiz(id: String!): LiveQuizMeta
@@ -2233,30 +2265,16 @@ type ParticipantAchievementInstance {
   id: Int!
 }
 
-type ParticipantActivityPerformance {
-  activityId: String!
-  completion: Float!
-  id: Int!
-  totalScore: Int!
-}
-
 type ParticipantActivityPerformances {
-  participantEmail: String
-  participantId: String!
-  participantUsername: String!
-  performances: [ParticipantActivityPerformance!]!
+  completedActivities: Int!
+  coverage: LearningAnalyticsCoverage!
+  meanCompletion: Float!
+  studentLabel: String!
 }
 
 type ParticipantActivityTimestamp {
   activeParticipants: Int!
   date: Date!
-}
-
-type ParticipantCourseActivity {
-  activeDaysPerWeek: Float!
-  activeWeeks: Int!
-  activityLevel: ActivityLevel!
-  meanElementsPerDay: Float!
 }
 
 type ParticipantGroup {
@@ -2282,16 +2300,6 @@ type ParticipantLearningData {
   participation: Participation
 }
 
-type ParticipantPerformance {
-  firstErrorRate: Float!
-  firstPerformance: PerformanceLevel!
-  id: Int!
-  lastErrorRate: Float!
-  lastPerformance: PerformanceLevel!
-  totalErrorRate: Float!
-  totalPerformance: PerformanceLevel!
-}
-
 type ParticipantTokenData {
   participant: Participant
   participantToken: String
@@ -2309,12 +2317,6 @@ type Participation {
   isActive: Boolean!
   participant: Participant
   subscriptions: [PushSubscription!]
-}
-
-enum PerformanceLevel {
-  HIGH
-  LOW
-  MEDIUM
 }
 
 type PerformanceRates {
@@ -2492,6 +2494,7 @@ type Query {
   getGradingGroupActivity(id: String!): GroupActivity
   getGroupActivitySummary(id: String!): GroupActivitySummary
   getInstanceUpdateActivities(elementId: Int!, hasSampleSolution: Boolean, includeTemplateInstances: Boolean!): [InstanceUpdateActivityInfo!]
+  getLearningAnalyticsExport(courseId: String!, includePartial: Boolean = false): LearningAnalyticsExport
   getLecturerViewLiveQuiz(id: String!): LiveQuiz
   getLiveQuizEmbeddingInfo(id: String!): LiveQuizEmbeddingInfo
   getLiveQuizSummary(quizId: String!): LiveQuizSummary
@@ -2501,6 +2504,7 @@ type Query {
   getObjectActivity(objectId: String!, objectType: ObjectType!): [ActivityLogEntry!]
   getObjectPermissions(objectId: String!, objectType: ObjectType!): PermissionsList
   getOutdatedElementInstances(instanceIds: [Int!]!): [ElementInstanceVersionInfo!]
+  getOwnLearningAnalyticsChoice(courseId: String!): LearningAnalyticsParticipantChoice
   getParticipation(courseId: String!): Participation
   getPracticeCourses: [Course!]
   getPracticeQuizEvaluation(id: String!): ActivityEvaluation
@@ -2563,8 +2567,9 @@ type QuizAnalytics {
   activityName: String!
   activityQuizAnalytics: ActivityQuizAnalytics
   activityType: ActivityType!
-  courseParticipants: Int!
+  courseParticipants: Int
   instanceQuizAnalytics: [InstanceQuizAnalytics!]!
+  isSuppressed: Boolean!
 }
 
 type ReducedActivityInfo {
@@ -2871,6 +2876,7 @@ type StudentCourse {
   description: String
   displayName: String!
   id: ID!
+  isLearningAnalyticsEnabled: Boolean!
   owner: User!
   pinCode: Int
 }
@@ -3039,17 +3045,8 @@ enum UserRole {
   USER
 }
 
-type WeekdayActivityAnalytics {
-  friday: Float!
-  monday: Float!
-  saturday: Float!
-  sunday: Float!
-  thursday: Float!
-  tuesday: Float!
-  wednesday: Float!
-}
-
 type WeeklyCourseActivities {
-  totalParticipants: Int!
+  isSuppressed: Boolean!
+  totalParticipants: Int
   weeklyActivity: [ParticipantActivityTimestamp!]!
 }

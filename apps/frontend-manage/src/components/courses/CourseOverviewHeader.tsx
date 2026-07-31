@@ -12,6 +12,7 @@ import {
   Course,
   GetSingleCourseDocument,
   ObjectType,
+  SetCourseLearningAnalyticsEnabledDocument,
   UpdateCourseSettingsDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -20,6 +21,7 @@ import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import { learningAnalyticsRolloutEnabled } from '../../lib/learningAnalytics'
 import ActivityLogDialog from '../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
 import getLTIAccessLink from './getLTIAccessLink'
@@ -58,6 +60,9 @@ function CourseOverviewHeader({
   const [isActivityLogOpen, setIsActivityLogOpen] = useState(false)
 
   const [updateCourseSettings] = useMutation(UpdateCourseSettingsDocument)
+  const [setCourseLearningAnalyticsEnabled] = useMutation(
+    SetCourseLearningAnalyticsEnabledDocument
+  )
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
   })
@@ -158,9 +163,10 @@ function CourseOverviewHeader({
             data={{ cy: `course-join-qr-code` }}
           />
         )}
-        {user?.publicPreview ? (
+        {user?.publicPreview && learningAnalyticsRolloutEnabled ? (
           <Button
-            primary
+            primary={course.isLearningAnalyticsEnabled}
+            disabled={!course.isLearningAnalyticsEnabled}
             onClick={() => {
               window.open(`/analytics/${course.id}/activity`, '_blank')
             }}
@@ -168,7 +174,11 @@ function CourseOverviewHeader({
             data={{ cy: 'course-learning-analytics-link' }}
           >
             <Button.Icon icon={faChartPie} />
-            <Button.Label>{t('manage.course.learningAnalytics')}</Button.Label>
+            <Button.Label>
+              {course.isLearningAnalyticsEnabled
+                ? t('manage.course.learningAnalytics')
+                : t('manage.course.learningAnalyticsDisabled')}
+            </Button.Label>
           </Button>
         ) : null}
         {course.isAssessmentEnabled && course.isManager ? (
@@ -225,6 +235,20 @@ function CourseOverviewHeader({
             onError
           ) => {
             try {
+              const learningAnalyticsChanged =
+                course.isLearningAnalyticsEnabled !==
+                values.isLearningAnalyticsEnabled
+              if (
+                learningAnalyticsChanged &&
+                !values.isLearningAnalyticsEnabled &&
+                !window.confirm(
+                  t('manage.courseList.learningAnalyticsDisableConfirmation')
+                )
+              ) {
+                setSubmitting(false)
+                return
+              }
+
               // convert dates to UTC
               const startDateUTC = dayjs(values.startDate).utc().toISOString()
               const endDateUTC = dayjs(values.endDate).utc().toISOString()
@@ -274,6 +298,25 @@ function CourseOverviewHeader({
                   )
                 },
               })
+
+              if (
+                result.data?.updateCourseSettings &&
+                learningAnalyticsChanged
+              ) {
+                const analyticsResult = await setCourseLearningAnalyticsEnabled(
+                  {
+                    variables: {
+                      courseId: course.id,
+                      isEnabled: values.isLearningAnalyticsEnabled,
+                    },
+                  }
+                )
+                if (!analyticsResult.data?.setCourseLearningAnalyticsEnabled) {
+                  onError()
+                  setSubmitting(false)
+                  return
+                }
+              }
 
               if (result.data?.updateCourseSettings) {
                 setCourseSettingsModal(false)

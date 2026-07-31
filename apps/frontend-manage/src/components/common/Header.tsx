@@ -21,6 +21,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { learningAnalyticsRolloutEnabled } from '../../lib/learningAnalytics'
 import SupportModal from './SupportModal'
 
 function Header({ user }: { user?: User | null }): React.ReactElement {
@@ -36,10 +37,14 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
   })
   const { data: courseData } = useQuery(GetUserCoursesDocument, {
     fetchPolicy: 'cache-first',
+    skip: !learningAnalyticsRolloutEnabled,
   })
 
   const quizzes = liveQuizData?.userRunningLiveQuizzes
   const courses = courseData?.userCourses
+  const analyticsCourses = learningAnalyticsRolloutEnabled
+    ? courses?.filter((course) => course.isLearningAnalyticsEnabled)
+    : []
 
   const resourceElements: NavigationMenuItemProps[] = [
     {
@@ -154,7 +159,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
         content: 'flex flex-col gap-0.5',
       },
     },
-    ...(user?.publicPreview
+    ...(user?.publicPreview && learningAnalyticsRolloutEnabled
       ? [
           {
             type: 'dropdown',
@@ -163,7 +168,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
             icon: faBolt,
             active: router.pathname.includes('/analytics'),
             elements: [
-              ...(courses?.slice(0, 5).map((course) => ({
+              ...(analyticsCourses?.slice(0, 5).map((course) => ({
                 key: `course-analytics-${course.id}`,
                 type: 'submenu',
                 label: course.name,

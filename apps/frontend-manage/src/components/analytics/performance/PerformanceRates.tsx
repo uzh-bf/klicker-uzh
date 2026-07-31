@@ -148,6 +148,7 @@ function PerformanceRates({
                   <PerformanceRatesBarChart
                     key={`performance-rates-${progress.id}`}
                     title={progress.name}
+                    effectiveN={progress.participantCount}
                     rates={progress}
                     colors={chartColors}
                   />

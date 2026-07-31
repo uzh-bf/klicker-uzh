@@ -1,6 +1,7 @@
 import { useQuery } from '@apollo/client'
 import {
   GetCourseActivitiesDocument,
+  GetSingleCourseDocument,
   MicroLearning,
   PracticeQuiz,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -17,11 +18,13 @@ import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useMemo, useState } from 'react'
+import AnalyticsDisabledView from '../../../../components/analytics/AnalyticsDisabledView'
 import AnalyticsErrorView from '../../../../components/analytics/AnalyticsErrorView'
 import AnalyticsLoadingView from '../../../../components/analytics/AnalyticsLoadingView'
 import QuizSelectionNavigation from '../../../../components/analytics/quiz/QuizSelectionNavigation'
 import PreviewTag from '../../../../components/common/PreviewTag'
 import Layout from '../../../../components/Layout'
+import { learningAnalyticsRolloutEnabled } from '../../../../lib/learningAnalytics'
 
 const ActivityLink = ({
   courseId,
@@ -49,8 +52,15 @@ function ActivityDashboard() {
 
   const { data, loading, error } = useQuery(GetCourseActivitiesDocument, {
     variables: { courseId },
-    skip: !courseId,
+    skip: !courseId || !learningAnalyticsRolloutEnabled,
   })
+  const { data: courseData, loading: courseLoading } = useQuery(
+    GetSingleCourseDocument,
+    {
+      variables: { courseId },
+      skip: !courseId || !learningAnalyticsRolloutEnabled,
+    }
+  )
 
   const navigation = <QuizSelectionNavigation courseId={courseId} />
   const course = data?.getCourseActivities
@@ -84,9 +94,21 @@ function ActivityDashboard() {
   }, [microSearch, course?.microLearnings, microSearchEngine])
 
   // loading state
-  if (loading || !courseId) {
+  if (loading || courseLoading || !courseId) {
     return (
       <AnalyticsLoadingView
+        title={t('manage.analytics.quizDashboard')}
+        navigation={navigation}
+      />
+    )
+  }
+
+  if (
+    !learningAnalyticsRolloutEnabled ||
+    courseData?.course?.isLearningAnalyticsEnabled === false
+  ) {
+    return (
+      <AnalyticsDisabledView
         title={t('manage.analytics.quizDashboard')}
         navigation={navigation}
       />

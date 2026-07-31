@@ -111,7 +111,15 @@ Defined in the schema, **not computed by the current pipeline.** Would require a
 
 ## Chat analytics
 
-Added on the chat-analytics branch. Sourced from `ChatMessage`, `ChatThread`, `Chatbot`, `ChatUsageCredits`, `ChatAttachment`. Message-derived rows require the chatbot's current disclaimer to be accepted and not declined (`ChatUsageCredits.acceptedDisclaimerId = Chatbot.disclaimerId` and `disclaimerDeclined = false`). Incremental runs purge participant rows that no longer meet that rule across all retained history and rebuild affected aggregate windows from the earliest changed message or retained aggregate.
+Added on the chat-analytics branch. Sourced from `ChatMessage`, `ChatThread`,
+`Chatbot`, `ChatUsageCredits`, and `ChatAttachment`. Chat access requires the
+chatbot disclaimer, so stored messages already come from an accepted chat
+session. Analytics inclusion is governed independently by the shared LA rule:
+the course is enabled, the participation is currently included for the active
+disclosure version, and the message is not older than the participant's
+effective inclusion time. Incremental runs purge participant rows that no
+longer meet that rule across retained history and rebuild affected aggregate
+windows from the earliest changed message or retained aggregate.
 
 ### `ParticipantChatAnalytics` — script 8
 

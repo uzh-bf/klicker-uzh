@@ -29,8 +29,13 @@ course_participants AS (
   --   * participants who have chat or quiz activity in the course
   SELECT DISTINCT "participantId", "courseId"
   FROM (
-    SELECT "participantId", "courseId" FROM "Participation"
-    WHERE true
+    SELECT p."participantId", p."courseId"
+    FROM "Participation" p
+    JOIN "Course" c ON c.id = p."courseId"
+    WHERE c."isLearningAnalyticsEnabled" = true
+      AND p."learningAnalyticsStatus" = 'INCLUDED'
+      AND p."learningAnalyticsDisclosureVersion" = '2026-07-30-v1'
+      AND p."learningAnalyticsIncludedFrom" IS NOT NULL
       /*COURSE_PARTICIPATION_FILTER*/
     UNION
     SELECT "participantId", "courseId" FROM chat_course

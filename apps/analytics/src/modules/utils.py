@@ -13,10 +13,9 @@ from datetime import datetime, timedelta
 from typing import Callable, Iterator, Literal, cast
 
 import pandas as pd
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from src.models import Course
+from src.modules.learning_analytics_eligibility import eligible_course_ids
 
 
 def load_sql(path: str) -> str:
@@ -294,15 +293,12 @@ def scoped_course_ids(
         explicit = list(config.course_ids) if config.course_ids is not None else None
     else:
         explicit = _parse_course_ids_env()
-    if explicit is not None:
-        return explicit
-
     mode = config.mode if config is not None else analytics_mode()
-    if mode == "incremental":
-        rows = session.execute(select(Course.id).where(Course.analyticsFinalizedAt.is_(None))).scalars().all()
-        return [str(cid) for cid in rows]
-
-    return None
+    return eligible_course_ids(
+        session,
+        explicit,
+        include_finalized=mode != "incremental",
+    )
 
 
 def apply_course_scope(

@@ -21,9 +21,11 @@ def _create_temp_tables(session) -> None:
             CREATE TEMP TABLE "Course" (
               id uuid PRIMARY KEY,
               "areAnalyticsValid" boolean NOT NULL DEFAULT false,
+              "isLearningAnalyticsEnabled" boolean NOT NULL DEFAULT true,
               "analyticsLastComputedAt" timestamp,
               "analyticsFinalizedAt" timestamp,
-              "chatAnalyticsValidAt" timestamp
+              "chatAnalyticsValidAt" timestamp,
+              "updatedAt" timestamp NOT NULL DEFAULT NOW()
             );
             CREATE TEMP TABLE "ParticipantAnalytics" ("courseId" uuid NOT NULL);
             CREATE TEMP TABLE "Chatbot" (
@@ -112,8 +114,19 @@ def _create_temp_tables(session) -> None:
               UNIQUE ("type", "chatbotId", "timestamp")
             );
             CREATE TEMP TABLE "Participation" (
+              id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
               "participantId" uuid NOT NULL,
-              "courseId" uuid NOT NULL
+              "courseId" uuid NOT NULL,
+              "learningAnalyticsStatus" text NOT NULL DEFAULT 'UNDECIDED',
+              "learningAnalyticsIncludedFrom" timestamp,
+              "learningAnalyticsDisclosureVersion" text,
+              "updatedAt" timestamp NOT NULL DEFAULT NOW(),
+              UNIQUE ("participantId", "courseId")
+            );
+            CREATE TEMP TABLE "LearningAnalyticsChoiceEvent" (
+              id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+              "participationId" integer NOT NULL,
+              "createdAt" timestamp NOT NULL
             );
             CREATE TEMP TABLE "ParticipantPerformance" (
               "participantId" uuid NOT NULL,
@@ -159,9 +172,45 @@ def _seed_chat_sources(session) -> None:
     session.execute(
         text(
             """
-            INSERT INTO "Course" (id, "chatAnalyticsValidAt") VALUES
-              (:course_a, TIMESTAMP '2026-07-05 00:00:00'),
-              (:course_b, TIMESTAMP '2026-07-05 00:00:00')
+            INSERT INTO "Course" (id, "chatAnalyticsValidAt", "updatedAt") VALUES
+              (
+                :course_a, TIMESTAMP '2026-07-05 00:00:00',
+                TIMESTAMP '2026-01-01 00:00:00'
+              ),
+              (
+                :course_b, TIMESTAMP '2026-07-05 00:00:00',
+                TIMESTAMP '2026-01-01 00:00:00'
+              )
+            """
+        ),
+        params,
+    )
+    session.execute(
+        text(
+            """
+            INSERT INTO "Participation" (
+              "participantId",
+              "courseId",
+              "learningAnalyticsStatus",
+              "learningAnalyticsIncludedFrom",
+              "learningAnalyticsDisclosureVersion",
+              "updatedAt"
+            ) VALUES
+              (
+                :accepted, :course_a, 'INCLUDED',
+                TIMESTAMP '2026-07-01 09:00:00', '2026-07-30-v1',
+                TIMESTAMP '2026-01-01 00:00:00'
+              ),
+              (
+                :stale, :course_a, 'EXCLUDED',
+                NULL, '2026-07-30-v1',
+                TIMESTAMP '2026-01-01 00:00:00'
+              ),
+              (
+                :declined, :course_a, 'EXCLUDED',
+                NULL, '2026-07-30-v1',
+                TIMESTAMP '2026-01-01 00:00:00'
+              )
             """
         ),
         params,
@@ -250,7 +299,16 @@ def _create_participant_scope_tables(session) -> None:
             CREATE TEMP TABLE "Course" (
               id uuid PRIMARY KEY,
               "startDate" timestamp NOT NULL,
-              "endDate" timestamp NOT NULL
+              "endDate" timestamp NOT NULL,
+              "isLearningAnalyticsEnabled" boolean NOT NULL DEFAULT true
+            );
+            CREATE TEMP TABLE "Participation" (
+              id integer PRIMARY KEY,
+              "participantId" uuid NOT NULL,
+              "courseId" uuid NOT NULL,
+              "learningAnalyticsStatus" text NOT NULL,
+              "learningAnalyticsIncludedFrom" timestamp,
+              "learningAnalyticsDisclosureVersion" text
             );
             CREATE TEMP TABLE "PracticeQuiz" (
               id uuid PRIMARY KEY,

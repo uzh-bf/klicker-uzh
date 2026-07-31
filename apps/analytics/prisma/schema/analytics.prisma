@@ -238,6 +238,8 @@ model InstancePerformance {
 model ActivityPerformance {
   id Int @id @default(autoincrement())
 
+  participantCount Int @default(0)
+
   firstErrorRate   Float? @db.Real // fraction of wrong answers to instances in this activity (first attempt, PQ only)
   firstPartialRate Float? @db.Real // fraction of partially correct answers to instances in this activity (first attempt, PQ only)
   firstCorrectRate Float? @db.Real // fraction of correct answers to instances in this activity (first attempt, PQ only)
@@ -356,7 +358,7 @@ enum ChatDoseBucket {
 }
 
 // Per-participant x per-chatbot engagement + cost rollup over a DAILY/WEEKLY/MONTHLY/COURSE window.
-// Only populated for participants with an accepted disclaimer on the chatbot.
+// Chat access requires the disclaimer; analytics inclusion follows the shared LA eligibility boundary.
 model ParticipantChatAnalytics {
   id   Int           @id @default(autoincrement())
   type AnalyticsType
@@ -573,4 +575,14 @@ model PlatformSemesterAnalytics {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// Durable replay fence for the one-time pre-control LA cleanup.
+model LearningAnalyticsCleanupReceipt {
+  id String @id
+
+  contractHash String
+  snapshotHash String
+
+  completedAt DateTime @default(now())
 }

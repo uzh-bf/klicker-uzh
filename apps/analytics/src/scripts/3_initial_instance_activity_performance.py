@@ -49,6 +49,7 @@ def main() -> None:
             check_analytics_cancellation()
             course_id = course["id"]
             print("Processing course", idx, "of", len(df_courses), "with id", course_id)
+            participant_count = len(course["participations"])
 
             pqs, mls = get_course_activities(session, course_id)
 
@@ -57,7 +58,10 @@ def main() -> None:
                 df_instance_performance = compute_instance_performance(session, quiz)
                 if df_instance_performance.empty:
                     continue
-                activity_performance = agg_activity_performance(df_instance_performance)
+                activity_performance = agg_activity_performance(
+                    df_instance_performance,
+                    participant_count,
+                )
                 save_instance_performances(session, df_instance_performance, course_id)
                 save_activity_performance(
                     session,
@@ -71,7 +75,10 @@ def main() -> None:
                 df_instance_performance = compute_instance_performance(session, ml, total_only=True)
                 if df_instance_performance.empty:
                     continue
-                activity_performance = agg_activity_performance(df_instance_performance)
+                activity_performance = agg_activity_performance(
+                    df_instance_performance,
+                    participant_count,
+                )
                 save_instance_performances(session, df_instance_performance, course_id, total_only=True)
                 save_activity_performance(session, activity_performance, course_id, microlearning_id=ml["id"])
 

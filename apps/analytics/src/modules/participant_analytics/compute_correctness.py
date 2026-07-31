@@ -201,6 +201,70 @@ def _numerical_correctness(response, options):
     return "INCORRECT"
 
 
+def compute_response_correctness(element_type, options, response):
+    if element_type in {"FLASHCARD", "CONTENT"}:
+        return None
+
+    if element_type == "SC":
+        if not isinstance(response, dict) or not isinstance(options, dict):
+            return None
+        selected_choices = response.get("choices")
+        choices = options.get("choices")
+        if not isinstance(selected_choices, list) or not selected_choices or not isinstance(choices, list):
+            return None
+        correct_choice = next(
+            (choice.get("ix") for choice in choices if isinstance(choice, dict) and choice.get("correct")),
+            None,
+        )
+        return "CORRECT" if selected_choices[0] == correct_choice else "INCORRECT"
+
+    if element_type in {"MC", "KPRIM"}:
+        if not isinstance(response, dict) or not isinstance(options, dict):
+            return None
+        selected_choices = response.get("choices")
+        choices = options.get("choices")
+        if not isinstance(selected_choices, list) or not isinstance(choices, list) or not choices:
+            return None
+        correct_choices = [choice.get("ix") for choice in choices if isinstance(choice, dict) and choice.get("correct")]
+        available_choices = len(choices)
+        selected_choices_array = [1 if ix in selected_choices else 0 for ix in range(available_choices)]
+        correct_choices_array = [1 if ix in correct_choices else 0 for ix in range(available_choices)]
+        hamming_distance = sum(
+            1 for index in range(available_choices) if selected_choices_array[index] != correct_choices_array[index]
+        )
+
+        if element_type == "MC":
+            correctness = max(-2 * hamming_distance / available_choices + 1, 0)
+            if correctness == 1:
+                return "CORRECT"
+            if correctness == 0:
+                return "INCORRECT"
+            return "PARTIAL"
+        return "CORRECT" if hamming_distance == 0 else "PARTIAL" if hamming_distance == 1 else "INCORRECT"
+
+    if element_type == "NUMERICAL":
+        return _numerical_correctness(response, options)
+
+    if element_type == "FREE_TEXT":
+        if not isinstance(response, dict) or not isinstance(options, dict):
+            return None
+        if "solutions" not in options:
+            return "CORRECT"
+        response_value = response.get("value")
+        if not isinstance(response_value, str):
+            return None
+        solutions = [str(solution).strip().lower() for solution in options["solutions"]]
+        return "CORRECT" if response_value.strip().lower() in solutions else "INCORRECT"
+
+    if element_type == "SELECTION":
+        return _selection_correctness(response, options)
+
+    if element_type == "CASE_STUDY":
+        return _case_study_correctness(response, options)
+
+    raise ValueError(f"Unknown element type: {element_type}")
+
+
 def compute_correctness_columns(df_element_instances, row):
     element_instance = df_element_instances[df_element_instances["elementInstanceId"] == row["elementInstanceId"]].iloc[
         0
@@ -208,61 +272,7 @@ def compute_correctness_columns(df_element_instances, row):
     response = row["response"]
     options = element_instance["options"]
 
-    if element_instance["type"] == "FLASHCARD" or element_instance["type"] == "CONTENT":
-        return None
-
-    elif element_instance["type"] == "SC":
-        selected_choice = response["choices"][0]
-        correct_choice = next((choice["ix"] for choice in options["choices"] if choice["correct"]), None)
-        return "CORRECT" if selected_choice == correct_choice else "INCORRECT"
-
-    elif element_instance["type"] == "MC" or element_instance["type"] == "KPRIM":
-        selected_choices = response["choices"]
-        correct_choices = [choice["ix"] for choice in options["choices"] if choice["correct"]]
-        available_choices = len(options["choices"])
-
-        selected_choices_array = [1 if ix in selected_choices else 0 for ix in range(available_choices)]
-        correct_choices_array = [1 if ix in correct_choices else 0 for ix in range(available_choices)]
-        hamming_distance = sum(
-            [1 for i in range(available_choices) if selected_choices_array[i] != correct_choices_array[i]]
-        )
-
-        if element_instance["type"] == "MC":
-            correctness = max(-2 * hamming_distance / available_choices + 1, 0)
-            if correctness == 1:
-                return "CORRECT"
-            elif correctness == 0:
-                return "INCORRECT"
-            else:
-                return "PARTIAL"
-        elif element_instance["type"] == "KPRIM":
-            return "CORRECT" if hamming_distance == 0 else "PARTIAL" if hamming_distance == 1 else "INCORRECT"
-
-    elif element_instance["type"] == "NUMERICAL":
-        return _numerical_correctness(response, options)
-
-    elif element_instance["type"] == "FREE_TEXT":
-        # if no sample solution is specified, automatically grade as correct
-        if "solutions" not in options:
-            return "CORRECT"
-
-        # otherwise, check if the response (ignoring capitalization) is included
-        # in the list of solutions
-        response_value = response["value"]
-        solutions = list(map(lambda solution: solution.strip().lower(), options["solutions"]))
-        if response_value.strip().lower() in solutions:
-            return "CORRECT"
-
-        return "INCORRECT"
-
-    elif element_instance["type"] == "SELECTION":
-        return _selection_correctness(response, options)
-
-    elif element_instance["type"] == "CASE_STUDY":
-        return _case_study_correctness(response, options)
-
-    else:
-        raise ValueError("Unknown element type: {}".format(element_instance["type"]))
+    return compute_response_correctness(element_instance["type"], options, response)
 
 
 def compute_correctness(session: Session, df_details, verbose: bool = False):
@@ -290,6 +300,7 @@ def compute_correctness(session: Session, df_details, verbose: bool = False):
             "xpAwarded",
             "timeSpent",
             "response",
+            "createdAt",
             "elementInstanceId",
             "participantId",
             "courseId",

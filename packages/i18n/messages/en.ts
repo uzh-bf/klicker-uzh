@@ -490,7 +490,7 @@ export default {
     delegatedAccess: 'Delegated Access',
     signedInAs: 'You are already logged in as {username}',
     tosAgreement:
-      'I consent to the KlickerUZH <tos></tos> (updated on 26.08.2023) and <privacy></privacy> (updated on 26.08.2023).',
+      'I consent to the KlickerUZH <tos></tos> (updated on 30.07.2026) and <privacy></privacy> (updated on 30.07.2026).',
     tosAgreementRequired:
       'Please accept the terms of service and privacy policy before logging in.',
     termsOfService: 'Terms of Service',
@@ -554,6 +554,33 @@ Other participants will only see your public **participant profile**, including 
 `,
       activityPreview:
         'You are seeing an activity preview for the {activity} "{name}" (display name "{displayName}"). Please note that this preview is meant for the lecturer to test the activity from a student perspective. While most interaction functionalities are supported, no submitted responses are stored or will appear in the evaluation view.',
+    },
+    learningAnalytics: {
+      title: 'Learning analytics participation',
+      explanation:
+        'Learning analytics can help lecturers identify where participating groups may need support and improve course activities and feedback for students. If you participate, KlickerUZH uses your interaction activity, learning progress, response performance, scores, and feedback ratings. Results are shown only for groups of at least five, and student tables use fresh labels such as “Student 1” for each report. Lecturers do not see your name, email address, participant identifier, free-text responses, free-text feedback, or participation choice, and must not combine the results with other information to identify you.',
+      include: 'Participate in learning analytics',
+      includeDescription:
+        'Only activity created from the time you choose this option is eligible for learning analytics.',
+      exclude: 'Do not participate in learning analytics',
+      excludeDescription:
+        'Your normal course use is unchanged. Your data is excluded from new learning analytics calculations and your participant-level learning analytics results are removed immediately.',
+      changeDisclaimer:
+        'You can change this choice at any time while learning analytics is enabled. If a course manager disables and later re-enables learning analytics, your saved choice applies again and permitted normal course data may be recomputed. If you stop participating and later participate again, only activity created after you participate again is eligible; the period when you opted out is never backfilled. Existing aggregates are updated on the normal schedule. This choice is separate from research participation and does not provide consent for research.',
+      choiceRequired:
+        'Please choose whether you want to participate in learning analytics.',
+      decideLater: 'Decide later',
+      reminder:
+        'You have not made a current learning analytics choice. You remain excluded until you decide.',
+      currentlyIncluded:
+        'You currently participate in learning analytics for this course.',
+      currentlyExcluded:
+        'You currently do not participate in learning analytics for this course.',
+      chooseNow: 'Choose now',
+      changeChoice: 'Change choice',
+      saveSuccess: 'Your learning analytics choice was saved.',
+      saveError:
+        'Your learning analytics choice could not be saved. Please try again.',
     },
     chatbot: {
       loginRequiredMessage:
@@ -2791,6 +2818,14 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       preferredGroupSizeReq: 'Please specify a valid preferred group size.',
       gamificationTooltip:
         'Gamification can only be activated (not deactivated) after the course has been created.',
+      learningAnalytics: 'Learning analytics',
+      learningAnalyticsEnabled: 'Use learning analytics',
+      learningAnalyticsTooltip:
+        'You can change this setting at any time. Only course managers can enable or disable learning analytics.',
+      learningAnalyticsExplanation:
+        'Learning analytics can help identify where participating groups may need support and improve course activities and feedback for students. KlickerUZH uses interaction activity, progress, response performance, scores, and feedback ratings from students who choose to participate. Results require at least five contributing students; participant tables use fresh labels such as “Student 1” for each report and only coarse summaries. Learning analytics does not show names, email addresses, participant identifiers, free-text responses, free-text feedback, or participation choices. Do not try to identify students or combine results with other information for that purpose. Learning-analytics participation is separate from research consent.',
+      learningAnalyticsDisableConfirmation:
+        'Disable learning analytics for this course? The dashboards will be hidden immediately and all dedicated learning-analytics results will be deleted. Normal course activity, responses, feedback, grades, points, and XP remain available. Saved student choices are kept for a possible later reactivation.',
       groupCreationEnabled: 'Group Creation',
       groupCreationDisabledTooltip:
         'To enable group creation for your students, please first activate gamification for this course.',
@@ -2856,6 +2891,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       modifyCourse: 'Modify course',
       shareCourse: 'Share course',
       learningAnalytics: 'Learning Analytics',
+      learningAnalyticsDisabled: 'Learning Analytics disabled',
       pointCorrections: 'Point Corrections',
       assessmentResults: 'Assessment Results',
       appliedCorrections: 'Applied Point Corrections',
@@ -3796,27 +3832,17 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       analyticsLoadingWait: 'Loading analytics data. Please wait...',
       analyticsLoadingFailed:
         'An error occurred while loading the analytics data. Please try again later or contact the support.',
+      learningAnalyticsDisabled:
+        'Learning analytics is disabled for this course. A course manager can enable it in the course settings.',
       weeklyStudentActivity: 'Weekly Student Activity',
       dailyStudentActivity: 'Daily Student Activity',
       totalParticipants: 'Course participants: {number}',
-      dailyActivity: 'Daily Activity',
       activeStudents: 'Active Students',
-      percentageOfStudents: 'Percentage of students',
       courseComparison: 'Course Comparison',
       courseComparisonDescription:
         'Select a second course to compare the corresponding data directly.',
       selectCourse: 'Select course...',
       weekN: 'Week {number}',
-      studentN: 'Student {number}',
-      overallStudentActivity: 'Overall Student Activity',
-      numberOfStudents: 'Number of Students',
-      activeWeeks: 'Active Weeks',
-      activeDaysPerWeek: 'Active Days per Week',
-      meanElementsPerDay: 'Mean Elements per Day',
-      activityLevel: 'Activity Level',
-      levelHigh: 'HIGH',
-      levelMedium: 'MEDIUM',
-      levelLow: 'LOW',
       asynchronousActivityProgress: 'Asynchronous Activity Progress',
       started: 'Started',
       completed: 'Completed',
@@ -3841,18 +3867,14 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       searchPlaceholder: 'Search...',
       activityNameLabel: 'Activity Name',
       elementNameLabel: 'Element Name',
-      overallStudentPerformance: 'Overall Student Performance (Error Rates)',
-      totalErrorRate: 'Total Error Rate',
       total: 'Total',
       firstAttempt: 'First Attempt',
       lastAttempt: 'Last Attempt',
-      performanceLevel: 'Performance Level',
       feedbackOverviewActivityInstances:
         'Overview of Activity and Element Ratings',
       upvotes: 'Upvotes',
       downvotes: 'Downvotes',
       performanceRates: 'Performance Rates',
-      totalScore: 'Total Score',
       activityProgress: 'Activity Progress',
       studentPerformance: 'Student Performance',
       feedbackOverview: 'Feedback Overview',
@@ -3881,28 +3903,25 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Until now, no weekly activity data is available for this course.',
       noDailyActivityData:
         'Until now, no daily activity data is available for this course.',
-      noActivityDistributionData:
-        'No activity distribution data is available for this course yet.',
-      noStudentActivity:
-        'No student activity has been calculated for this course yet.',
       noAsynchronousActivityProgressData:
         'No asynchronous activity progress data is available for this course yet.',
-      noStudentPerformanceData:
-        'No student performance data is available for this course yet.',
-      noStudentActivityPerformanceData:
-        'No student performance data is available for activities in this course yet.',
       studentActivityPerformance: 'Student Activity Performance',
-      studentUsername: 'Username',
-      studentEmail: 'E-Mail Address',
-      emailMissing: 'n/a',
-      selectAllActivities: 'Select all activities',
-      deselectAllActivities: 'Deselect all activities',
-      noActivitySelected:
-        'Please select at least one activity to display the collected points and the progress of the students.',
-      participantActivityPerformanceDescription:
-        'This table illustrates the progress and collected points of the participants in the selected activities. It displays all calculated points (including repetitions of practice quizzes). This number may differ from the number of collected points on the course leaderboard due to the scoring logic for repetitions. The percentage progress corresponds to the number of elements in the activity that have been answered at least once. An activity is counted towards the completed activities if the percentage progress equals 100%.',
-      completedActivitiesExplanation:
-        'Completed Activities (with 100% Progress)',
+      studentLabel: 'Student',
+      coverage: 'Coverage',
+      completeCoverage: 'Complete',
+      partialCoverage: 'Partial',
+      meanCompletion: 'Mean completion',
+      includePartialCoverage: 'Include partial coverage',
+      exportLearningAnalytics: 'Export learning analytics',
+      effectiveSampleSize: 'Effective sample size: <b>N = {effectiveN}</b>',
+      learningAnalyticsSuppressed:
+        'Learning analytics are hidden because fewer than five eligible students contribute to this view.',
+      feedbackSuppressed:
+        'Feedback is hidden because fewer than five eligible students contributed.',
+      exportSuppressed:
+        'No export was created because the selected coverage contains fewer than five eligible students.',
+      deidentifiedPerformanceDescription:
+        'This report contains de-identified, coarse progress summaries for {effectiveN} eligible students. Labels are assigned afresh for this report and cannot be linked to another report.',
       completedActivities: 'Completed Activities',
     },
   },

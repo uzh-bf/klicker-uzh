@@ -22,6 +22,52 @@ tags:
 
 Worked examples: `deleteCourse` in `mutation.ts` (asUser + ADMIN permission on courseId), `controlCourse` in `query.ts` (EXECUTE), `getLiveQuizSummary` (READ). Existing fields use `t.withAuth(...)` exclusively — follow them rather than inventing `authScopes` variants.
 
+Learning analytics adds a second boundary after normal object authorization:
+`setCourseLearningAnalyticsEnabled` requires course `ADMIN`, while all four
+lecturer analytics services check `Course.isLearningAnalyticsEnabled` before
+reading derived analytics or operational response/feedback data
+(`packages/graphql/src/schema/mutation.ts:setCourseLearningAnalyticsEnabled`;
+`packages/graphql/src/lib/learningAnalytics.ts:isLearningAnalyticsRolloutEnabled`).
+Keep this service-level gate when adding a new analytics query so another API
+surface cannot bypass it.
+
+Participant choice uses a separate self-only API surface:
+`getOwnLearningAnalyticsChoice` and `setOwnLearningAnalyticsChoice` both require
+the exact `PARTICIPANT` role and derive the participant ID from the authenticated
+context. They return a dedicated object containing only course ID, status, and
+whether the disclosure is current; LA choice fields are not exposed on the
+general `Participation` GraphQL type. The service query returns `null` while the
+rollout or course control is disabled, and the mutation serializes choice
+changes with the course toggle before updating the snapshot/history and applying
+participant-level deletion
+(`packages/graphql/src/services/participants.ts:getOwnLearningAnalyticsChoice`;
+`packages/graphql/src/services/participants.ts:setOwnLearningAnalyticsChoice`).
+
+Analytics queries that aggregate operational detail rows apply the same current
+status, disclosure-version, and prospective inclusion-time boundary before
+counting responses or feedback. They select response metadata only, never the
+response body, and omit free-text elements from LA entirely. Reads of
+participant-level derived rows also require a currently eligible participation;
+activity aggregates expose their persisted effective participant count
+(`packages/graphql/src/services/analytics.ts:filterEligibleLearningAnalyticsActivity`;
+`packages/graphql/src/services/analytics.ts:getActivityAnalytics`).
+
+Lecturer output applies one shared privacy policy after eligibility and coverage
+filters. Any course view, metric, filtered breakdown, or row table with fewer
+than five contributing participants is suppressed; low counts are returned as
+`null`, not exposed to explain why a view is hidden. The remaining row table
+contains only a fresh report-local `Student N` label, complete/partial coverage,
+completed-activity count, and completion rounded to ten-percentage-point steps.
+It has no stable participant identifier, activity identifier, score, response
+content, or free text. The dedicated `getLearningAnalyticsExport` query reuses
+that service policy, defaults to complete coverage, re-applies the threshold
+after coverage filtering, and assigns fresh labels for the CSV
+(`packages/graphql/src/lib/learningAnalyticsOutput.ts`;
+`packages/graphql/src/services/analytics.ts:getLearningAnalyticsExport`).
+Legacy breakdowns without a report-local effective N are not part of this
+boundary; the weekday activity distribution was removed instead of exposing a
+course-level aggregate as though its N applied to every point.
+
 ## Layering contract
 
 - `schema/*.ts` — Pothos object types + root `query.ts`/`mutation.ts`/`subscription.ts`. Resolvers delegate immediately: `resolve: (_, args, ctx) => CourseService.deleteCourse(args, ctx)`.
