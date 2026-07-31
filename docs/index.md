@@ -38,6 +38,10 @@ Task-shaped procedures live in [.agents/skills/](../.agents/skills/); the wiki h
 - Browser-based verification of UI changes → `agent-browser` (invoke via `npx agent-browser`)
 - Updating this wiki → `klicker-wiki-maintenance`
 
+## Agent configuration
+
+Not wiki pages — the per-repo configuration the engineering skills read before acting. [agents/issue-tracker.md](./agents/issue-tracker.md) (where issues live and how wayfinder maps express tickets, blocking, and the frontier), [agents/triage-labels.md](./agents/triage-labels.md), [agents/domain.md](./agents/domain.md).
+
 ## Maintenance
 
 Any PR that changes documented behavior updates the affected pages in the same PR. Find affected pages by grepping this directory for the symbol that changed. Record changes in [log.md](./log.md).

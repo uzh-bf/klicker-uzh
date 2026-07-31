@@ -93,7 +93,7 @@ Product implication: build a small in-app migration notice/checklist surface or 
 
 The original review spot-checked the load-bearing codebase claims on 2026-07-06 against `v3` (`d6c7772f8`). The table records why this plan was accepted as a credible starting point, not a permanent proof.
 
-Re-verified on 2026-07-31 against `v3` (`7812fa71ce`): 11 rows fresh, 2 changed, 1 stale, and one personal-data store missing from the table entirely. Per-row verdicts with `file:line` evidence are in [the re-verification ticket](wayfinder-participant-privacy/tickets/T01-reverify-codebase-claims.md); the two rows below carry the corrections inline because they are actively misleading as written.
+Re-verified on 2026-07-31 against `v3` (`7812fa71ce`): 11 rows fresh, 2 changed, 1 stale, and one personal-data store missing from the table entirely. Per-row verdicts with `file:line` evidence are in [the re-verification ticket](https://github.com/uzh-bf/klicker-uzh/issues/5270); the two rows below carry the corrections inline because they are actively misleading as written.
 
 | Claim area | Evidence path | Review result |
 | --- | --- | --- |

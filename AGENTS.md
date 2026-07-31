@@ -196,7 +196,7 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 
 ## Important Notes
 
-- **Task tracking**: ClickUp is the source of truth; GitHub Issues are not actively used.
+- **Task tracking**: ClickUp is the product source of truth (roadmap, releases, what the team plans against); GitHub Issues is the tracker for agent-facing engineering work. See [Agent skills](#agent-skills).
 - Dev scripts use `./util/_run_with_infisical.sh` for secret injection. Avoid starting dev servers unless explicitly asked.
 - If you add or rename an Infisical-managed env var/secret, also update `turbo.json` `globalEnv` so Turborepo sees it during task execution and cache invalidation.
 - Never commit secrets, `.env` files, or credentials. **This repo is public** — anything committed on any branch, once pushed, is permanent public history that deleting the file later does not remove.
@@ -211,6 +211,22 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 Ground truth for working on this codebase is the agent-facing wiki at **[docs/index.md](docs/index.md)** (not to be confused with `apps/docs`, the user-facing site). Read the relevant page before working in an unfamiliar area, and keep it current — **any PR that changes behavior must update the affected wiki pages in `docs/` and relevant skills in `.agents/skills/` within the same PR.** The former `project/CODEBASE_NOTES.md` is a retired pointer stub.
 
 Retrospective fixes and durable lessons live in `docs/solutions/`; check them before re-deriving a solved problem.
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues on `uzh-bf/klicker-uzh`, driven with the `gh` CLI, for agent-facing engineering work — wayfinder maps, triage queues, specs. ClickUp stays the product source of truth and keeps its links in PR descriptions. See [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md), which also carries the wayfinding operations: sub-issues for tickets, native issue dependencies for blocking, and the frontier query.
+
+Issues are as public as commits. The data-hygiene rule in [Important Notes](#important-notes) applies to issue bodies and comments too.
+
+### Triage labels
+
+The five canonical roles, each label string equal to its name; `wontfix` predates this setup and is reused. See [docs/agents/triage-labels.md](docs/agents/triage-labels.md).
+
+### Domain docs
+
+Single-context: one root `CONTEXT.md` plus `docs/adr/`, both created lazily by `/domain-modeling` and neither present yet. The [engineering wiki](docs/index.md) remains the first stop. See [docs/agents/domain.md](docs/agents/domain.md).
 
 ## AI Assistance (Skills)
 

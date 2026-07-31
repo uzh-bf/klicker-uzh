@@ -1,5 +1,9 @@
 # Log
 
+## 2026-07-31
+
+- **New**: [agents/issue-tracker](./agents/issue-tracker.md), [agents/triage-labels](./agents/triage-labels.md), and [agents/domain](./agents/domain.md) record the per-repo configuration the engineering skills read. GitHub Issues is now the tracker for agent-facing work while ClickUp stays the product source of truth, so the "GitHub Issues are not actively used" note in AGENTS.md is retired.
+
 ## 2026-07-29
 
 - **Update**: [auth-model](./auth-model.md) documents the participant privacy migration constraints: current email-dependent auth/linking surfaces, LTI email handling, course-aware account merge requirements, and the lack of a reliable general participant inbox.
