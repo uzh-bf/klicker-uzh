@@ -105,6 +105,7 @@ Re-verified on 2026-07-31 against `v3` (`7812fa71ce`): 11 rows fresh, 2 changed,
 | LTI participant linking | `packages/graphql/src/services/accounts.ts` | Current LTI path writes email and `ssoEmail` and links by email fallback |
 | LTI launch payloads | `apps/lti/src/index.ts`, `apps/frontend-pwa/src/lib/getParticipantToken.ts` | **Stale as written.** LTI 1.3 still carries email in the launch JWT and exposes it from `/info`; the LTI 1.1 path and its TODO were removed in PR #5260 |
 | Assessment Edu-ID linking | `apps/auth/src/lib/helpers.ts` | Current assessment auth writes global email fields and matches invitations by raw email |
+| Assessment report credentials | `packages/prisma/src/prisma/schema/verification.prisma`, `packages/graphql/src/services/assessmentReports.ts` | **Added 2026-08-01.** Missing from the original review — PR #5141 postdates it. Each issued report stores the participant email twice, once as a column and once inside a hash-covered snapshot, and serves it to any holder of the report token without authentication |
 | GraphQL email exposure | `packages/graphql/src/schema/participant.ts`, `packages/graphql/src/schema/course.ts`, `packages/graphql/src/schema/assessment.ts` | Current API exposes participant/leaderboard/assessment emails |
 | Push communication | `packages/graphql/src/services/notifications.ts` | Push delivery is not a reliable migration channel today |
 | Export PII | `packages/export/src` | Export can pseudonymize artifacts, but source PII remains in the database |
@@ -120,6 +121,10 @@ Re-verified on 2026-07-31 against `v3` (`7812fa71ce`): 11 rows fresh, 2 changed,
 - `packages/prisma/src/prisma/schema/course.prisma`
   - `Course.authType` is `SSO | PIN`.
   - `Course.isAssessmentEnabled` gates assessment behavior.
+- `packages/prisma/src/prisma/schema/verification.prisma`
+  - `VerifiableCredential.subjectEmail String`, non-null, written once at issue and never rewritten.
+  - A second copy of the same address lives at `snapshot.subject.email` inside the credential JSON, covered by `snapshotHash`.
+  - Mirrored into `apps/analytics/prisma/schema/verification.prisma` with the same raw column.
 
 ### LTI
 
@@ -172,6 +177,9 @@ Re-verified on 2026-07-31 against `v3` (`7812fa71ce`): 11 rows fresh, 2 changed,
   - Course leaderboard returns participant email for lecturer views.
 - `packages/export/src/*`
   - Export package writes participant email, SSO id/email, invitation email, matriculation number, and correction email. It supports pseudonymization in the export artifact, but the database still stores the source PII.
+- `packages/graphql/src/schema/verification.ts`, `packages/graphql/src/services/verification.ts`
+  - `assessmentReportVerification` takes a token and no credentials. Any holder of a report link gets the full snapshot back, `subject.email` included; `apps/frontend-pwa/src/pages/verify/index.tsx` renders it on a public page. This is the credential's purpose rather than a leak, but it is a disclosure path the plan has to account for.
+  - `courseAssessmentReportRecords` returns `subjectEmail` per row to course admins with full access, and filters on it by case-insensitive substring. The export package does not read credentials.
 
 ## Target Data Model
 
@@ -385,6 +393,14 @@ model ParticipantInvitation {
   @@index([emailLookupHash])
 }
 ```
+
+### Assessment Report Credentials
+
+`VerifiableCredential` is assessment-scoped by construction: issuance requires `Course.isAssessmentEnabled`, so no credential exists for a non-assessment course and the Slice 2 and Slice 6 work never reaches it. It nonetheless keeps raw email in two places, which puts it inside the assessment carve-out but outside the encryption rule that carve-out is built on.
+
+The read path is fixable, and has to be fixed in step with Slice 4 rather than after it: issuance derives the address from the first accepted `ParticipantInvitation`, so encrypting invitations breaks report issuance outright. `AssessmentParticipantIdentity` is the better source — it exists exactly when a verified assessment identity exists for that course, which is what the invitation check approximates today, and its `source` and `verifiedAt` let a credential state how identity was established instead of asserting `COURSE_INVITATION` for every row. Redirecting the read costs a snapshot-shape change, because the snapshot schema pins `subject.source` to that one literal.
+
+The stored copies are the hard part. `snapshotHash` covers `subject.email`, and verification recomputes the hash before serving a credential, so the stored snapshot cannot be rewritten in place — a migration that edits it makes the credential unverifiable rather than merely stale. Already-issued credentials therefore have to be grandfathered, reissued, or dual-verified. Reissue is the expensive option: the service strips the cohort comparison from any replacement credential and refuses claims matching a revoked record, both deliberate anti-differencing controls, so a mass reissue would degrade the credentials it rewrote and require bypassing two safeguards. Which option applies follows from the retention ruling in the decision table, so the target shape is deliberately left open here.
 
 ## Target Flows
 
@@ -824,6 +840,12 @@ Implementation details:
   - import invitations to encrypted/hash columns;
   - match on HMAC lookup hash;
   - auto-accept without raw DB email.
+- `packages/graphql/src/services/assessmentReports.ts`:
+  - stop reading the accepted invitation's raw email when building a report snapshot;
+  - resolve the subject from `AssessmentParticipantIdentity` instead, decrypting in memory;
+  - keep `ASSESSMENT_REPORT_IDENTITY_UNVERIFIED` as the failure when no identity row exists;
+  - keep the accepted-invitation eligibility gate exactly as it is. An identity row is not the same population as an accepted invitation, so resolving the subject from it must not become a way to widen who may issue a report.
+  - This is not optional cleanup — encrypting invitations without it breaks report issuance.
 - `packages/graphql/src/services/courses.ts` and assessment schema:
   - resolve assessment email by decrypting `AssessmentParticipantIdentity`;
   - fail closed for non-assessment courses.
@@ -846,6 +868,10 @@ Backfill:
 3. For each `ParticipantAccount`:
    - create `ParticipantExternalIdentity` from raw `ssoId`;
    - leave old row for compatibility until reads switch.
+4. For each `VerifiableCredential`:
+   - do **not** rewrite `snapshot` — the stored hash covers it and editing it destroys verifiability;
+   - the `subjectEmail` column is pure denormalization of `snapshot.subject.email`, so it can be dropped or replaced without touching the credential itself, at the cost of the lecturer substring search;
+   - apply whatever the credential retention decision settles, which may mean deleting rows rather than migrating them.
 
 Legacy claim window:
 
@@ -864,6 +890,7 @@ Cutover:
 - Null all remaining non-assessment `Participant.email` and `ParticipantAccount.ssoEmail`.
 - Keep encrypted assessment identity only for assessment participations.
 - Drop old unique constraint and eventually drop columns in a later migration.
+- Issued assessment report credentials are not reached by this purge. Their emails survive it, and revoking a credential does not clear them — revocation is deliberately an audit record. They come out only under the credential retention rule.
 
 Clean migration runbook:
 
@@ -1043,6 +1070,7 @@ Falls ein Konto für diese E-Mail-Adresse existiert, senden wir dir einen einmal
 - Recovery codes: single-use, hashed storage, reset rotates/invalidates as designed.
 - LTI: signed token no email, subject hash matches same launch and differs by issuer/client/deployment.
 - Assessment invitation matching: same normalized email matches via hash; no raw email selected in Prisma queries outside encryption module.
+- Assessment report issuance: the subject resolves from the encrypted assessment identity, and a snapshot built that way still hashes and verifies. `packages/graphql/test/verification.test.ts` already covers hash-mismatch handling and is where this belongs.
 
 ### Integration
 
@@ -1076,7 +1104,8 @@ Use `npx agent-browser` for UI validation per repo rules.
   - no non-assessment participant has `Participant.email`;
   - no non-assessment account has `ssoEmail`;
   - all assessment participations that require identity have `AssessmentParticipantIdentity`;
-  - raw email columns are unused or dropped.
+  - raw email columns are unused or dropped;
+  - every credential issued before the migration still verifies after it. Seed a fixture credential ahead of the backfill and re-verify it afterwards — a silent hash mismatch surfaces as `DATA_UNAVAILABLE` on the public page, not as an error anyone would notice.
 
 ## Risks and Decisions
 
@@ -1092,6 +1121,8 @@ These decisions must be closed with product owner / DPO input before behavior-ch
 | Privacy policy and re-consent | DPO review of changed data categories and retention | Update policy before first notice; re-consent if DPO requires it | DPO + Product | Open |
 | `ParticipantAccount` migration shape | Count references and code paths depending on `ParticipantAccount` | Keep facade during migration, remove in cleanup slice | Engineering | Open |
 | Retention durations | Legal/DPO input for assessment identity, challenges, claim contacts, backups | Replace placeholder ranges with concrete values before rollout | DPO + Product | Open |
+| Assessment credential retention | Whether an issued credential's email may outlive the migration, and for how long. Rows have no expiry today, and revoking one preserves it as an audit record | Give credentials an explicit retention window and purge on expiry. The alternative is rewriting a snapshot the hash makes immutable | DPO + Product | Open — added 2026-08-01 |
+| Lecturer credential search | What course admins actually use the credentials-list email search for | Replace substring search with exact-address lookup plus the existing status filters. A lookup hash cannot answer `contains` | Product + Engineering | Open — added 2026-08-01 |
 
 ### Resolved: LTI 1.1 Retirement
 
