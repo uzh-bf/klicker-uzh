@@ -771,11 +771,11 @@ PR #5109 is production-ready only when all are true:
 - [x] S3 has no silence-based E7 pass; 401/429 are measured through the
       transport/UI contract.
 - [x] S4 full automated gate passes at one clean commit.
-- [ ] One fully measured live judged run reports `OVERALL: PASS`. (Two full
-      measured runs completed 2026-07-29 with DeepEval 3.6.7 and the historical
-      `o3-mini` route, plus one upgraded run on 2026-08-01 with DeepEval 4.1.5;
-      all verdicts are `OVERALL: FAIL` on soft judge aggregates with all hard
-      gates passing — see Progress. A qualifying PASS remains pending.)
+- [x] One fully measured live judged run reports `OVERALL: PASS`. (The
+      confirmatory 2026-08-01 run used DeepEval 4.1.5 and direct
+      `gpt-5.6-luna` after the focused prompt-quality fix: 148/148 passed, with
+      every dimension at 1.000. Historical DeepEval 3.6.7/`o3-mini` runs remain
+      separate evidence — see Progress.)
 - [x] Firefox and WebKit targeted tests pass against production builds.
 - [ ] VoiceOver pass is recorded.
 - [x] Wiki, skills, eval README, and plan Progress match the implementation.
@@ -1042,9 +1042,17 @@ approved.
   schema 6/6, and both E7 channels passing. E3 remained 0.833 (one case
   penalized for unnecessary extra detail) and E4 judge remained 0.833 (one
   weak distractor/feedback pairing), so `OVERALL: FAIL`. The old E7 fault
-  attribution failures are no longer present. The S5.1 Definition-of-Done
-  item remains unchecked pending a product decision on the two soft-gate
-  failures.
+  attribution failures are no longer present. That pre-fix run left the S5.1
+  Definition-of-Done item pending; the focused follow-up and confirmatory run
+  below supersede that verdict.
+- 2026-08-01: The focused follow-up added two behavior guardrails: single-
+  element lookups stay scoped to the requested status/type/content, and SC/MC
+  drafts verify every option-feedback pair against the stem and answer key.
+  The prompt tests passed 16/16 and the repository pre-commit gate passed
+  25/25 at `222552b07`. One confirmatory full run with the upgraded evaluator
+  then completed 148/148 in 15m26s: E1, E3, E4 schema/judge, E5, E6, and both
+  E7 channels all scored 1.000, producing `OVERALL: PASS`. No threshold,
+  rubric, or dataset weakening was used.
 - 2026-07-29: S5.2 production Firefox/WebKit rig built with explicit container
   authority. Probes proved that Firefox, WebKit, and curl force `*.localhost`
   hostnames to loopback (RFC 6761), ignoring `/etc/hosts` and `--add-host`,

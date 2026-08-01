@@ -1,5 +1,13 @@
 # Log
 
+## 2026-08-01
+
+- **Update**: [chat-platform](./chat-platform.md) records the Manage assistant's
+  scoped single-element lookup and SC/MC option-feedback consistency guardrails.
+  The upgraded DeepEval 4.1.5 evaluator using direct `gpt-5.6-luna` now has a
+  measured 148/148 `OVERALL: PASS` baseline; details remain in
+  `evaluation/manage-assistant/README.md`.
+
 ## 2026-07-29
 
 - **Update**: [testing](./testing.md) and the `klicker-playwright-e2e` skill document the opt-in Firefox/WebKit assistant release matrix. Ordinary Playwright CI remains Chromium-only; cross-browser release evidence must use production builds and matching Playwright browser binaries.

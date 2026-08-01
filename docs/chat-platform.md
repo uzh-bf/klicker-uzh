@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-07-29'
+timestamp: '2026-08-01'
 tags:
   - frontend
   - chat
@@ -36,6 +36,14 @@ The Manage chat route authenticates before admitting work, and applies its per-l
 After the resource checks, the route uses the AI SDK's message validator before opening the lecturer MCP client. Browser-supplied system messages, unsupported user parts, non-user files, malformed tool states, and invalid image base64 are rejected. Every accepted message is reconstructed from allowlisted fields, dropping browser-owned provider metadata and other extra fields. Previous assistant prose is retained for conversational continuity, but browser-supplied assistant tool, data, reasoning, and file parts are removed before model conversion; only tool results produced inside the current server-owned MCP loop reach the model as tool history. A total 60-second abort deadline covers body parsing, the MCP transport's actual composed fetch signal, model streaming, and the response-lifetime slot, because self-hosted Next does not itself enforce the route's exported `maxDuration`.
 
 Inline base64 images make parsing memory-intensive. Only one Manage request per Chat pod may enter the body/model path at a time; an overlapping authenticated request receives a generic retryable `503` before its body is read. Staging and production therefore request 200 MiB and limit the Chat pod to 400 MiB: a production-standalone probe with ten concurrent 15.5 MiB requests peaked at 235 MiB, below the 280 MiB (70%) risk threshold, with one parsed request and nine pre-read rejections. The Manage composer accepts at most two 5 MiB images so its largest supported request fits the route envelope; participant chat intentionally retains its separate three-image limit.
+
+The Manage assistant's response-quality guardrails are part of the system prompt:
+single-question or single-element lookups stay scoped to the requested status,
+type, and content unless the lecturer asks for related metadata, and SC/MC
+drafts must keep every option-feedback pair consistent with the stem and answer
+key. The live evaluator measures these behaviors through E3 grounding and E4
+proposal-quality judge cases; the current DeepEval 4.1.5 / `gpt-5.6-luna`
+baseline is recorded in `evaluation/manage-assistant/README.md`.
 
 ## Model registry and credits
 

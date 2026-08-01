@@ -242,13 +242,19 @@ First fully measured judged runs of the complete suite (all 144 tests, live
   remaining soft failures were E3 grounding 0.833 (one case scored 0.800 for
   unnecessary extra detail) and E4 judge 0.833 (one case scored 0.800 for a
   weak distractor/feedback pairing). Wall clock was 15m44s.
-* **Current verdict**: OVERALL FAIL. The upgrade removed the obsolete
-  `o3-mini` compatibility name, and the prompt tuning fixed the prior E7
-  failures, but the E3/E4 soft gates remain just below their thresholds.
-  Dimension scores are pass-fractions, so one borderline case is enough to
-  fail a six-case dimension. The remaining disposition is whether to tune the
-  two cases' assistant behavior, revise the judge rubric/threshold with an
-  explicit product decision, or keep these soft gates advisory.
+* **Run 5 (2026-08-01, focused prompt-quality fix)**: The run recorded
+  `148 passed / 0 failed` from the same 148-test collection in 15m26s, using
+  `deepeval==4.1.5`, direct `gpt-5.6-luna`, and `temperature=1`. The focused
+  lookup-scoping instruction fixed the E3 element-details case, and the
+  option-feedback consistency instruction fixed the E4 three-option case.
+  Every measured dimension scored 1.000: E1 12/12, E3 6/6, E4 schema 6/6,
+  E4 judge 6/6, E5 8/8, E6 10/10, E7 no-fabrication 7/7, and E7
+  response/safe transport 7/7. The run completed with 87 deprecation warnings
+  from the local Python/DeepEval dependencies, but no test failures.
+* **Current verdict**: `OVERALL: PASS` for the upgraded evaluator baseline.
+  The historical DeepEval 3.6.7/o3-mini runs remain separate evidence; the
+  direct DeepEval 4.1.5/gpt-5.6-luna baseline now clears every planned
+  dimension threshold without weakening the rubric or removing a case.
 
 ## Fault injection (E7)
 
