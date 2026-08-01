@@ -166,6 +166,23 @@ When blocked by environment or authentication, complete every independent local 
 
 - `gh auth status` reports that the active `rschlaefli` token is invalid. Local stack work can continue; draft publication requires re-authentication before `gh stack submit --auto`.
 
+## Layer 1 corrective follow-up — 2026-08-01
+
+The independent Sol high review of `7812fa71..4f2a6186` confirmed three release-relevant gaps. All corrective work stays on the existing bottom branch `codex/escape-room-qr` and therefore remains part of PR #5224; no new stack branch is needed.
+
+1. **Catalog duplication lifecycle:** `copyElementToAccount` must generate a new opaque code whenever the copied element is `QR_SCAN`. Extend the existing element-sharing integration coverage to assert source/copy ownership, code format, code inequality, and owner-authorized print data.
+2. **Ordinary activity selection boundary:** move the four wizard `acceptedTypes` lists into one shared manage-side source. Filter the question-pool view and select-all state when a wizard is open, and apply the same predicate defensively in `PasteSelectionButton` and `AddStackButton`. This must cover Practice Quiz, Microlearning, Group Activity, and Live Quiz without changing the server-side fail-closed guards.
+3. **Current-tip browser evidence:** rerun the QR print flow at the corrective tip, including fractional and boundary decoy inputs and a foreign-owner print URL. Record the exact commit SHA, environment, and screenshots in `project/2026-07-29-escape-room-qr-verification/README.md`.
+4. **Optional standards cleanup:** add the documented `0..20` Pothos validation to `qrScanPrintData.decoyCount` while retaining the service guard. The resolver-shape, duplicated-guard, and repeated-dispatch observations remain deferred because they are not functional blockers for this layer.
+
+### Corrective verification gates
+
+- GraphQL sharing, QR contract, and placement tests pass in the isolated DevPod.
+- Manage and Playwright package checks pass; the new selection regression covers all four ordinary wizard entry points.
+- `npx agent-browser@0.32.2` reproduces owner, unauthorized, and decoy-count states at the reviewed tip with current screenshots.
+- If the schema validation is included, GraphQL codegen is regenerated and tracked artifacts are clean.
+- `pnpm run check:all`, `pnpm run build`, `git diff --check`, and a clean worktree pass before rebasing `codex/escape-room-individual`, `codex/escape-room-group`, and `codex/escape-room-live` with `gh stack rebase --upstack`.
+
 ## Layer 1 evidence
 
 - **Primary implementation commits:** `4ce964b08`, `01b7693a4`, `a270c49b5`, `37eacfb31`; the final review correction is committed with this progress update.
