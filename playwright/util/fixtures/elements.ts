@@ -113,6 +113,32 @@ async function clearEditor(editor: Locator) {
   await expect(editor).toHaveText('')
 }
 
+export async function pasteEditorField(
+  page: Page,
+  testId: string,
+  text: string,
+  html?: string
+) {
+  const editor = page.getByTestId(testId)
+  await editor.scrollIntoViewIfNeeded()
+  await editor.click()
+  await editor.evaluate(
+    (element, { text, html }) => {
+      const clipboardData = new DataTransfer()
+      clipboardData.setData('text/plain', text)
+      if (html) clipboardData.setData('text/html', html)
+      element.dispatchEvent(
+        new ClipboardEvent('paste', {
+          bubbles: true,
+          cancelable: true,
+          clipboardData,
+        })
+      )
+    },
+    { text, html }
+  )
+}
+
 // ---------------------------------------------------------------------------
 // Assert that a rich-text editor field contains the expected text (read-only).
 // ---------------------------------------------------------------------------

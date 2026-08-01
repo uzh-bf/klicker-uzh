@@ -452,6 +452,14 @@ export default {
         'Wählen Sie diese Einstellung, um eine LaTeX-Formel inline einzubinden. Benutzen Sie dieselbe Schreibweise, um Formeln in Antortmöglichkeiten einzubinden.',
       latexCentered:
         'Wählen Sie diese Einstellung, um eine LaTeX-Formel zentriert auf einer separaten Zeile einzubinden.',
+      codeBlock:
+        'Wählen Sie diese Einstellung, um einen Code-Block einzufügen.',
+      table: 'Wählen Sie diese Einstellung, um eine Tabelle einzufügen.',
+      addRow: 'Zeile hinzufügen',
+      deleteRow: 'Zeile löschen',
+      addColumn: 'Spalte hinzufügen',
+      deleteColumn: 'Spalte löschen',
+      deleteTable: 'Tabelle löschen',
     },
     leaderboard: {
       lqLeaderboard: 'Quiz Leaderboard',
