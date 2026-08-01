@@ -23,8 +23,6 @@ Only the activity of students who are enrolled in a course with Learning Analyti
 
 Learning Analytics is enabled per course in the course settings, and only a **course manager** can change it. Open the course, choose _Modify course_, and use the _Use learning analytics_ switch in the _Learning analytics_ section. You can change the setting at any time.
 
-![The Learning analytics section of the course settings](/img/learning_analytics/la_course_setting_example.png)
-
 Once you enable it, students in that course are asked to make their choice the next time they open the course.
 
 ## Disabling Learning Analytics again
@@ -64,11 +62,11 @@ The _Student Performance_ view is the only place where results are broken down p
 
 ### Quiz Dashboard
 
-The Quiz Dashboard drills into a single practice quiz or microlearning. It shows the effective sample size, the total number of answered elements, the average time students spent, success rates split by first and last attempt, and then the same breakdown per question, together with the student feedback for that question.
+The Quiz Dashboard drills into a single practice quiz or microlearning. It shows the reported sample size, the total number of answered elements, the average time students spent, success rates split by first and last attempt, and then the same breakdown per question, together with the student feedback for that question.
 
 ![Quiz analytics for a single activity, with per-question breakdown](/img/learning_analytics/la_quiz_dashboard_example.png)
 
-The example above also shows the five-student rule in action: the feedback for the first question is withheld because its effective sample is below five.
+The example above also shows the minimum-sample privacy rule in action: the feedback for the first question is withheld because the report does not meet the minimum.
 
 Note that for microlearnings there is no split between first and last attempts, because each element can only be answered once.
 
@@ -96,7 +94,7 @@ This is the part worth reading carefully, because it is what you may need to exp
 
 Two further rules apply to everything above:
 
-**Five-student privacy rule.** Learning Analytics uses a minimum sample size of five. A report-wide result may show a suppression notice when its effective sample is below that threshold. Depending on the report and filters, lower-sample chart points, activities, instances, or feedback breakdowns may instead be omitted without a separate notice. The same threshold applies to the feedback views and export. In a small course, or in a course where few students chose to participate, you may therefore see no data at all — that is the privacy model working as intended, not a fault.
+**Minimum-sample privacy rule.** Learning Analytics applies report-specific minimum-sample suppression. A report-wide result may show a suppression notice when it does not meet the minimum. Depending on the report and filters, lower-sample chart points, activities, instances, or feedback breakdowns may instead be omitted without a separate notice. The same privacy rule applies to the feedback views and export. In a small course, or in a course where few students chose to participate, you may therefore see no data at all — that is the privacy model working as intended, not a fault.
 
 **Report-local labels.** The Student Performance table uses labels such as _Student 1_ and _Student 2_. These labels are assigned afresh every time the report is generated and are report-local rather than stable pseudonyms. _Student 3_ in today's report is not intended to be linked to _Student 3_ in last week's report, another dashboard, or a KlickerUZH account.
 

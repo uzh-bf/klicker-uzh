@@ -56,8 +56,10 @@ Ruled by the user before planning:
   `apps/analytics/src/modules/learning_analytics_eligibility.py:21` requires all
   of: course enabled, participation status `INCLUDED`, acknowledged disclosure
   version equal to the current constant, `includedFrom` set, and
-  `activity_at >= included_from`. Aggregates additionally suppress below five
-  contributing students.
+  `activity_at >= included_from`. Report-specific minimum-sample suppression is
+  implemented in the analytics read and aggregation paths, but the activity
+  performance and quiz paths currently derive some counts course-wide; see the
+  parent-stack effective-N blocker below.
 - `Evidence:` No existing seed sets `learningAnalyticsStatus`,
   `learningAnalyticsDisclosureVersion`, or `Course.isLearningAnalyticsEnabled`.
   `Course.isLearningAnalyticsEnabled` defaults to `false` and
@@ -139,8 +141,9 @@ rather than a rollout detail.
 - `Do:` Add `apps/docs/docs/tutorials/learning_analytics.mdx` and a
   `Lecturer - Analytics` group in `apps/docs/sidebars.js`. Cover what LA is,
   enabling it per course (default-off, course managers only), the three
-  dashboards, what lecturers can and cannot see, the five-student suppression
-  rule, per-report pseudonyms, export, the obligation not to re-identify, and
+  dashboards, what lecturers can and cannot see, the report-specific
+  minimum-sample privacy rule, per-report pseudonyms, export, the obligation not
+  to re-identify, and
   separation from research consent. Include the beta notice.
 - `Check:` Docs build; internal links resolve; every screenshot audited for
   identifiable data before inclusion.
@@ -228,10 +231,12 @@ rather than a rollout detail.
 - `Evidence:` R1 retired. All three stored screenshots were stale, not only the
   performance one: the activity capture predates the switch from `Week N` to
   date axis labels and shows real UZH course names, and the quiz capture shows
-  `Student Feedback (N = 1)`, which the current five-student rule forbids and
-  which would have contradicted the page text. All three were replaced with
-  fresh captures from the synthetic `Testkurs` fixture, and two were added
-  (course setting, student performance). No image carries personal data.
+  `Student Feedback (N = 1)`, which is inconsistent with the approved
+  minimum-sample privacy boundary and would have contradicted the page text.
+  The activity, performance, and quiz captures were replaced with fresh
+  captures from the synthetic `Testkurs` fixture; the student-performance
+  capture was added. The course-setting capture is omitted until the
+  parent-stack effective-N blocker is resolved. No image carries personal data.
 - `Evidence:` the two rate views agree. `ActivityPerformance.totalErrorRate` for
   `Practice Quiz Demo` is 0.642 and both the Performance Rates bar chart and the
   Quiz Dashboard donut render it as the error rate; the donut's data order is
