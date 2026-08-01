@@ -4,6 +4,7 @@ import { ActivityType, type ElementOptionsCaseStudy } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
   getInitialInstanceStatistics,
+  LEARNING_ANALYTICS_DISCLOSURE_VERSION,
   MISSING_CATALOG_COLLECTION_ID,
   processElementData,
   recomputeDerivedPermissions,
@@ -205,6 +206,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       description: 'Das ist ein Testkurs. Hier wird getestet. Viel Spass!',
       isGamificationEnabled: true,
       isAssessmentEnabled: false,
+      isLearningAnalyticsEnabled: true,
       ownerId: USER_ID_TEST,
       color: '#016272',
       pinCode: 123456789,
@@ -777,35 +779,114 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     })
   )
 
-  // create participations for all the first 30 participants
-  await Promise.all(
-    PARTICIPANT_IDS.map(async (id, ix) => {
-      return prisma.participation.upsert({
-        where: {
-          courseId_participantId: {
-            courseId: COURSE_ID_TEST,
-            participantId: id,
-          },
-        },
-        create: {
-          isActive: true,
-          course: {
-            connect: {
-              id: COURSE_ID_TEST,
+  // Learning analytics participation for Testkurs. The course has LA enabled,
+  // so every participant needs a choice for the dashboards to be verifiable.
+  // The split is deterministic: testuser1-35 included, testuser36-45 excluded,
+  // testuser46-50 undecided. 35 inclusions keep aggregates above the
+  // five-student suppression threshold even after dormant profiles and
+  // per-element sparsity from `seed:interactions`.
+  // `includedFrom` predates the course start, so every seeded interaction
+  // falls inside the inclusion window (activity must be at or after it).
+  const LA_INCLUDED_UNTIL_INDEX = 35
+  const LA_EXCLUDED_UNTIL_INDEX = 45
+  const LA_CHOICE_AT = new Date('2018-12-01T00:00')
+
+  // Rebuild the participation snapshots and choice history together so a
+  // failed fixture seed cannot leave one without the other. Participations
+  // already exist at this point (they are created together with the
+  // participant), so the upsert always takes its update branch and can never
+  // nest the event creation. Events are backdated to the choice so they
+  // precede the analytics pipeline cutoff and do not hold the course in a
+  // pending-finalization state.
+  await prisma.$transaction(async (tx) => {
+    await Promise.all(
+      PARTICIPANT_IDS.map(async (id, ix) => {
+        const learningAnalyticsStatus =
+          ix < LA_INCLUDED_UNTIL_INDEX
+            ? Prisma.LearningAnalyticsParticipationStatus.INCLUDED
+            : ix < LA_EXCLUDED_UNTIL_INDEX
+              ? Prisma.LearningAnalyticsParticipationStatus.EXCLUDED
+              : Prisma.LearningAnalyticsParticipationStatus.UNDECIDED
+
+        const isDecided =
+          learningAnalyticsStatus !==
+          Prisma.LearningAnalyticsParticipationStatus.UNDECIDED
+        const includedFrom =
+          learningAnalyticsStatus ===
+          Prisma.LearningAnalyticsParticipationStatus.INCLUDED
+            ? LA_CHOICE_AT
+            : null
+
+        const learningAnalyticsData = {
+          learningAnalyticsStatus,
+          learningAnalyticsIncludedFrom: includedFrom,
+          learningAnalyticsChoiceAt: isDecided ? LA_CHOICE_AT : null,
+          learningAnalyticsDisclosureVersion: isDecided
+            ? LEARNING_ANALYTICS_DISCLOSURE_VERSION
+            : null,
+        }
+
+        return tx.participation.upsert({
+          where: {
+            courseId_participantId: {
+              courseId: COURSE_ID_TEST,
+              participantId: id,
             },
           },
-          participant: {
-            connect: {
-              id: id,
+          create: {
+            isActive: true,
+            ...learningAnalyticsData,
+            course: {
+              connect: {
+                id: COURSE_ID_TEST,
+              },
+            },
+            participant: {
+              connect: {
+                id: id,
+              },
             },
           },
-        },
-        update: {
-          isActive: true,
-        },
+          update: {
+            isActive: true,
+            ...learningAnalyticsData,
+          },
+        })
       })
+    )
+
+    const testkursParticipations = await tx.participation.findMany({
+      where: {
+        courseId: COURSE_ID_TEST,
+        participantId: { in: [...PARTICIPANT_IDS] },
+      },
+      select: {
+        id: true,
+        learningAnalyticsStatus: true,
+        learningAnalyticsIncludedFrom: true,
+      },
     })
-  )
+    const decidedParticipations = testkursParticipations.filter(
+      (participation) =>
+        participation.learningAnalyticsStatus !==
+        Prisma.LearningAnalyticsParticipationStatus.UNDECIDED
+    )
+
+    await tx.learningAnalyticsChoiceEvent.deleteMany({
+      where: {
+        participationId: { in: testkursParticipations.map((p) => p.id) },
+      },
+    })
+    await tx.learningAnalyticsChoiceEvent.createMany({
+      data: decidedParticipations.map((participation) => ({
+        participationId: participation.id,
+        status: participation.learningAnalyticsStatus,
+        includedFrom: participation.learningAnalyticsIncludedFrom,
+        disclosureVersion: LEARNING_ANALYTICS_DISCLOSURE_VERSION,
+        createdAt: LA_CHOICE_AT,
+      })),
+    })
+  })
 
   // add participants 30 to 35 to single groups
   const PARTICIPANT_GROUP_IDS_SINGLE = [

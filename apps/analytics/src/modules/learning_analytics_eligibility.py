@@ -10,7 +10,7 @@ from src.models import Course, Participation
 
 
 # Keep this value aligned with
-# packages/graphql/src/lib/learningAnalytics.ts:LEARNING_ANALYTICS_DISCLOSURE_VERSION.
+# packages/util/src/learningAnalytics.ts:LEARNING_ANALYTICS_DISCLOSURE_VERSION.
 LEARNING_ANALYTICS_DISCLOSURE_VERSION = "2026-07-30-v1"
 
 

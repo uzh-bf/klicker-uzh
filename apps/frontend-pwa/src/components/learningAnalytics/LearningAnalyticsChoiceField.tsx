@@ -24,10 +24,35 @@ function LearningAnalyticsChoiceField({
 
   return (
     <div className="space-y-3">
-      <UserNotification
-        type="info"
-        message={t('pwa.learningAnalytics.explanation')}
-      />
+      <UserNotification type="info">
+        <p>{t('pwa.learningAnalytics.explanation')}</p>
+        <p className="mt-2">
+          {t.rich('pwa.learningAnalytics.documentation', {
+            student: (chunks) => (
+              <a
+                className="underline hover:text-red-500"
+                href={t('pwa.learningAnalytics.studentDocsUrl')}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-cy="learning-analytics-student-docs-link"
+              >
+                {chunks}
+              </a>
+            ),
+            lecturer: (chunks) => (
+              <a
+                className="underline hover:text-red-500"
+                href={t('pwa.learningAnalytics.lecturerDocsUrl')}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-cy="learning-analytics-lecturer-docs-link"
+              >
+                {chunks}
+              </a>
+            ),
+          })}
+        </p>
+      </UserNotification>
       <RadioGroup
         value={value}
         onValueChange={(choice) => onChange(choice as LearningAnalyticsChoice)}

@@ -583,6 +583,12 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
       saveSuccess: 'Ihre Auswahl zu Learning Analytics wurde gespeichert.',
       saveError:
         'Ihre Auswahl zu Learning Analytics konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.',
+      documentation:
+        'Erfahren Sie mehr über <student>Learning Analytics für Studierende</student> oder sehen Sie, <lecturer>was Dozierende zu sehen bekommen</lecturer> (Dokumentation auf Englisch).',
+      studentDocsUrl:
+        'https://www.klicker.uzh.ch/student_tutorials/learning_analytics',
+      lecturerDocsUrl:
+        'https://www.klicker.uzh.ch/tutorials/learning_analytics',
     },
     chatbot: {
       loginRequiredMessage:

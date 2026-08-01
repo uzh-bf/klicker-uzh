@@ -581,6 +581,12 @@ Other participants will only see your public **participant profile**, including 
       saveSuccess: 'Your learning analytics choice was saved.',
       saveError:
         'Your learning analytics choice could not be saved. Please try again.',
+      documentation:
+        'Learn more about <student>learning analytics for students</student>, or see <lecturer>what your lecturers get to see</lecturer>.',
+      studentDocsUrl:
+        'https://www.klicker.uzh.ch/student_tutorials/learning_analytics',
+      lecturerDocsUrl:
+        'https://www.klicker.uzh.ch/tutorials/learning_analytics',
     },
     chatbot: {
       loginRequiredMessage:
