@@ -527,6 +527,7 @@ export async function assertScaleLinkAnchors(
     )
   }
 
+  const logicalItemIds = new Set<string>()
   for (const anchor of artifact.anchors) {
     const from = calibrations.get(anchor.fromCalibrationId)
     const to = calibrations.get(anchor.toCalibrationId)
@@ -548,5 +549,13 @@ export async function assertScaleLinkAnchors(
         'ADAPTIVE_SCALE_LINK_ANCHOR_MISMATCH'
       )
     }
+    const logicalItemId = `${from.assignmentId}:${from.elementId}:${from.elementVersion}`
+    if (logicalItemIds.has(logicalItemId)) {
+      throw calibrationServiceError(
+        'Each logical item can appear in only one scale-link anchor.',
+        'ADAPTIVE_SCALE_LINK_LOGICAL_ANCHOR_DUPLICATE'
+      )
+    }
+    logicalItemIds.add(logicalItemId)
   }
 }

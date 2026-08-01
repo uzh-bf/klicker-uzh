@@ -239,7 +239,12 @@ describe('competence tree management', () => {
     ).resolves.toMatchObject({
       leafNodeId: assignment.leafNodeId,
       levelId: assignment.levelId,
+    })
+    await expect(
+      prisma.element.findUnique({ where: { id: created!.id } })
+    ).resolves.toMatchObject({
       creationRequestId,
+      creationRequestFingerprint: expect.stringMatching(/^[0-9a-f]{64}$/),
     })
 
     const retried = await manipulateElementWithInitialCompetenceTreeAssignment(
@@ -261,10 +266,44 @@ describe('competence tree management', () => {
       prisma.element.count({ where: { name: 'Atomic adaptive element' } })
     ).resolves.toBe(1)
     await expect(
-      prisma.competenceTreeElementAssignment.count({
+      prisma.element.count({
         where: { creationRequestId },
       })
     ).resolves.toBe(1)
+
+    await updateCompetenceTreeElementAssignment(
+      {
+        treeId: tree.id,
+        elementId: created!.id,
+        assignment: null,
+      },
+      ownerCtx
+    )
+    const retriedAfterUnmapping =
+      await manipulateElementWithInitialCompetenceTreeAssignment(
+        {
+          elementInput,
+          creationRequestId,
+          initialCompetenceTreeAssignment: {
+            treeId: tree.id,
+            leafNodeId: assignment.leafNodeId,
+            levelId: assignment.levelId,
+            enabled: true,
+            enablePercentInput: false,
+          },
+        },
+        ownerCtx
+      )
+    expect(retriedAfterUnmapping?.id).toBe(created?.id)
+    await expect(
+      prisma.element.count({ where: { name: 'Atomic adaptive element' } })
+    ).resolves.toBe(1)
+    await expect(
+      prisma.competenceTreeElementAssignment.count({
+        where: { treeId: tree.id, elementId: created!.id },
+      })
+    ).resolves.toBe(0)
+
     await expect(
       manipulateElementWithInitialCompetenceTreeAssignment(
         {

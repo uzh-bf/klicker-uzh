@@ -240,8 +240,6 @@ model CompetenceTreeLeafLevelCoverage {
 model CompetenceTreeElementAssignment {
   id Int @id @default(autoincrement())
 
-  creationRequestId String? @unique(map: "ctea_creation_request_key") @db.Uuid
-
   enabled            Boolean @default(true)
   discrimination     Float?
   enablePercentInput Boolean @default(false)

@@ -153,14 +153,12 @@ export async function persistCompetenceTreeElementAssignment({
   treeId,
   elementId,
   assignment,
-  creationRequestId,
   ownerId,
   tx,
 }: {
   treeId: string
   elementId: number
   assignment?: CompetenceTreeElementAssignmentUpdateInput | null
-  creationRequestId?: string
   ownerId: string
   tx: DB.Prisma.TransactionClient
 }): Promise<void> {
@@ -254,7 +252,7 @@ export async function persistCompetenceTreeElementAssignment({
   }
   await tx.competenceTreeElementAssignment.upsert({
     where: { treeId_elementId: { treeId, elementId } },
-    create: { treeId, elementId, creationRequestId, ...assignmentData },
+    create: { treeId, elementId, ...assignmentData },
     update: assignmentData,
   })
 }

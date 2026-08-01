@@ -110,10 +110,35 @@ export async function requestAdaptiveCalibrationExport(
       status: 'REQUESTED',
     })
   } catch {
-    await ctx.prisma.adaptiveCalibrationExportRequest.update({
-      where: { id: request.id },
-      data: { failureCode: 'EXPORT_ENQUEUE_FAILED' },
-    })
+    const failedTransition =
+      await ctx.prisma.adaptiveCalibrationExportRequest.updateMany({
+        where: {
+          id: request.id,
+          status: DB.AdaptiveCalibrationExportStatus.REQUESTED,
+        },
+        data: {
+          status: DB.AdaptiveCalibrationExportStatus.FAILED,
+          failureCode: 'EXPORT_ENQUEUE_FAILED',
+          completedAt: new Date(),
+          runToken: null,
+        },
+      })
+    if (failedTransition.count === 0) {
+      const currentRequest =
+        await ctx.prisma.adaptiveCalibrationExportRequest.findUnique({
+          where: { id: request.id },
+        })
+      if (
+        currentRequest &&
+        currentRequest.status !== DB.AdaptiveCalibrationExportStatus.REQUESTED
+      ) {
+        return projectExportRequest(currentRequest, null)
+      }
+      throw calibrationServiceError(
+        'The calibration export could not be queued.',
+        'ADAPTIVE_EXPORT_ENQUEUE_FAILED'
+      )
+    }
     emitAdaptiveOperationalEvent({
       name: 'adaptive_calibration_export',
       treeId: request.treeId,

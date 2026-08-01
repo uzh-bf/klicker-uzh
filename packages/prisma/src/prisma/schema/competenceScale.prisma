@@ -158,7 +158,8 @@ model CompetenceTreeScaleLinkAnchor {
   order Int
 
   @@unique([scaleLinkId, order], map: "ctsla_link_order_key")
-  @@unique([scaleLinkId, fromCalibrationId, toCalibrationId], map: "ctsla_link_pair_key")
+  @@unique([scaleLinkId, fromCalibrationId], map: "ctsla_link_from_key")
+  @@unique([scaleLinkId, toCalibrationId], map: "ctsla_link_to_key")
   @@index([fromCalibrationId], map: "ctsla_from_calibration_idx")
   @@index([toCalibrationId], map: "ctsla_to_calibration_idx")
 }

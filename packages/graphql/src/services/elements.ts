@@ -22,7 +22,6 @@ import {
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import EventEmitter from 'events'
-import { isDeepStrictEqual } from 'node:util'
 import { prop, sortBy, swapIndices, uniqueBy } from 'remeda'
 import type {
   ContextWithUser,
@@ -719,42 +718,41 @@ export function formatManipulatedElement<
   }
 }
 
-export function matchesManipulatedElementCreationInput(
-  input: ElementManipulationInput,
-  element: {
-    status: DB.ElementStatus
-    type: DB.ElementType
-    name: string
-    content: string
-    explanation: string | null
-    basePoints: boolean
-    pointsMultiplier: number
-    options: object
-    tags: Array<{ name: string }>
-  }
+export function getManipulatedElementCreationIdentity(
+  input: ElementManipulationInput
 ) {
+  const validInputs = validateElementInputs({
+    id: input.id,
+    status: input.status,
+    type: input.type,
+    name: input.name,
+    content: input.content,
+    explanation: input.explanation,
+    basePoints: input.basePoints,
+    pointsMultiplier: input.pointsMultiplier,
+  })
   const processedOptions = validateAndProcessElementOptions(
     input.type,
     input.options
   )
-  if (processedOptions === null) return false
-  const persistedProcessedOptions = JSON.parse(
-    JSON.stringify(processedOptions)
-  ) as object
+  if (!validInputs || processedOptions === null) return null
 
-  const requestedTags = [...(input.tags ?? [])].sort()
-  const persistedTags = element.tags.map(({ name }) => name).sort()
-  return (
-    input.status === element.status &&
-    input.type === element.type &&
-    input.name === element.name &&
-    input.content === element.content &&
-    (input.explanation ?? null) === element.explanation &&
-    input.basePoints === element.basePoints &&
-    input.pointsMultiplier === element.pointsMultiplier &&
-    isDeepStrictEqual(persistedProcessedOptions, element.options) &&
-    isDeepStrictEqual(requestedTags, persistedTags)
-  )
+  return {
+    status: input.status!,
+    type: input.type,
+    name: input.name!,
+    content: input.content!,
+    explanation: input.explanation ?? null,
+    basePoints:
+      input.type === DB.ElementType.CONTENT ||
+      input.type === DB.ElementType.FLASHCARD
+        ? false
+        : input.basePoints!,
+    pointsMultiplier: input.pointsMultiplier!,
+    options: JSON.parse(JSON.stringify(processedOptions)) as object,
+    tags: [...(input.tags ?? [])].sort(),
+    templateId: input.templateId ?? null,
+  }
 }
 
 export async function applyElementBatchOperations(

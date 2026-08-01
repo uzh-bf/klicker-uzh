@@ -90,4 +90,84 @@ describe('scale-link anchor validation', () => {
       )
     }
   })
+
+  it('rejects distinct calibration pairs for the same logical item', async () => {
+    const anchors = [
+      {
+        fromCalibrationId: calibrationId('4', 1),
+        toCalibrationId: calibrationId('5', 1),
+      },
+      {
+        fromCalibrationId: calibrationId('4', 2),
+        toCalibrationId: calibrationId('5', 2),
+      },
+    ]
+    const calibrations = new Map(
+      anchors.flatMap((anchor) => [
+        [
+          anchor.fromCalibrationId,
+          {
+            id: anchor.fromCalibrationId,
+            treeId,
+            scaleVersionId: fromScaleVersionId,
+            assignmentId: 17,
+            elementId: 23,
+            elementVersion: 4,
+            status: DB.AdaptiveItemCalibrationStatus.CALIBRATED,
+          },
+        ],
+        [
+          anchor.toCalibrationId,
+          {
+            id: anchor.toCalibrationId,
+            treeId,
+            scaleVersionId: toScaleVersionId,
+            assignmentId: 17,
+            elementId: 23,
+            elementVersion: 4,
+            status: DB.AdaptiveItemCalibrationStatus.CALIBRATED,
+          },
+        ],
+      ])
+    )
+    const tx = {
+      adaptiveItemCalibration: {
+        findMany: vi.fn(({ where }) =>
+          Promise.resolve(
+            where.id.in
+              .map((id: string) => calibrations.get(id)!)
+              .filter(Boolean)
+          )
+        ),
+      },
+    } as unknown as DB.Prisma.TransactionClient
+    const metric = {
+      anchorCount: anchors.length,
+      intercept: 0,
+      slope: 1,
+      rootMeanSquareError: 0,
+      interceptStandardError: 0,
+      slopeStandardError: 0,
+    }
+    const artifact: AdaptiveScaleLinkArtifact = {
+      schemaVersion: 1,
+      treeId,
+      fromScaleVersionId,
+      toScaleVersionId,
+      method: 'FIXED_ANCHOR',
+      implementationVersion: 'link-v1',
+      generatedAt: '2026-08-01T10:00:00.000Z',
+      anchors,
+      fitMetrics: metric,
+      uncertaintyMetrics: metric,
+      artifactChecksum: 'a'.repeat(64),
+      artifactKey: 'private/scale-link.json',
+    }
+
+    await expect(assertScaleLinkAnchors(tx, artifact)).rejects.toMatchObject({
+      extensions: {
+        code: 'ADAPTIVE_SCALE_LINK_LOGICAL_ANCHOR_DUPLICATE',
+      },
+    })
+  })
 })

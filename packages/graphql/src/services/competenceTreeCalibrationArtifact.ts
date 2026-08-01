@@ -207,17 +207,22 @@ export const adaptiveScaleLinkArtifactSchema = z
       })
     }
 
-    const pairs = new Set<string>()
+    const fromCalibrationIds = new Set<string>()
+    const toCalibrationIds = new Set<string>()
     artifact.anchors.forEach((anchor, index) => {
-      const pair = `${anchor.fromCalibrationId}:${anchor.toCalibrationId}`
-      if (pairs.has(pair)) {
+      if (
+        fromCalibrationIds.has(anchor.fromCalibrationId) ||
+        toCalibrationIds.has(anchor.toCalibrationId)
+      ) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Duplicate scale-link anchor pair.',
+          message:
+            'Each source and target calibration can appear in only one scale-link anchor.',
           path: ['anchors', index],
         })
       }
-      pairs.add(pair)
+      fromCalibrationIds.add(anchor.fromCalibrationId)
+      toCalibrationIds.add(anchor.toCalibrationId)
     })
   })
 

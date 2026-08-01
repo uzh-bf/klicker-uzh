@@ -238,6 +238,60 @@ describe('adaptive standard-setting and scale-link artifacts', () => {
       }).success
     ).toBe(false)
   })
+
+  it('rejects reuse of either side of a scale-link anchor', () => {
+    const metric = {
+      anchorCount: 2,
+      intercept: 0,
+      slope: 1,
+      rootMeanSquareError: 0,
+      interceptStandardError: 0,
+      slopeStandardError: 0,
+    }
+    const artifact = {
+      schemaVersion: 1,
+      treeId,
+      fromScaleVersionId: scaleVersionId,
+      toScaleVersionId: '10000000-0000-4000-8000-000000000003',
+      method: 'FIXED_ANCHOR',
+      implementationVersion: 'link-v1',
+      generatedAt: '2026-07-31T10:00:00.000Z',
+      fitMetrics: metric,
+      uncertaintyMetrics: metric,
+      artifactChecksum: checksum,
+      artifactKey: 'private/scale-link.json',
+    }
+
+    for (const anchors of [
+      [
+        {
+          fromCalibrationId: '10000000-0000-4000-8000-000000000004',
+          toCalibrationId: '10000000-0000-4000-8000-000000000005',
+        },
+        {
+          fromCalibrationId: '10000000-0000-4000-8000-000000000004',
+          toCalibrationId: '10000000-0000-4000-8000-000000000006',
+        },
+      ],
+      [
+        {
+          fromCalibrationId: '10000000-0000-4000-8000-000000000004',
+          toCalibrationId: '10000000-0000-4000-8000-000000000005',
+        },
+        {
+          fromCalibrationId: '10000000-0000-4000-8000-000000000006',
+          toCalibrationId: '10000000-0000-4000-8000-000000000005',
+        },
+      ],
+    ]) {
+      expect(
+        adaptiveScaleLinkArtifactSchema.safeParse({
+          ...artifact,
+          anchors,
+        }).success
+      ).toBe(false)
+    }
+  })
 })
 
 describe('adaptive empirical-validation artifacts', () => {

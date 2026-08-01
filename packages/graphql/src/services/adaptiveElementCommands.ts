@@ -1,5 +1,6 @@
 import type { ElementManipulationInput } from '@klicker-uzh/types'
 import { GraphQLError } from 'graphql'
+import { createHash } from 'node:crypto'
 import { EventEmitter } from 'node:events'
 import { z } from 'zod'
 import type { ContextWithUser } from '../lib/context.js'
@@ -8,8 +9,8 @@ import { persistCompetenceTreeElementAssignment } from './competenceTreeCommands
 import type { CompetenceTreeElementAssignmentCreateInput } from './competenceTreeManagementTypes.js'
 import {
   formatManipulatedElement,
+  getManipulatedElementCreationIdentity,
   manipulateElement,
-  matchesManipulatedElementCreationInput,
 } from './elements.js'
 
 const creationRequestIdSchema = z.string().uuid()
@@ -51,6 +52,13 @@ export async function manipulateElementWithInitialCompetenceTreeAssignment(
     )
   }
 
+  const elementIdentity = getManipulatedElementCreationIdentity(elementInput)
+  if (!elementIdentity) return null
+  const creationRequestFingerprint = fingerprintAdaptiveElementCreation({
+    element: elementIdentity,
+    assignment: initialCompetenceTreeAssignment,
+  })
+
   const existing = await findIdempotentElement(
     parsedCreationRequestId.data,
     ctx
@@ -58,8 +66,7 @@ export async function manipulateElementWithInitialCompetenceTreeAssignment(
   if (existing) {
     return resolveIdempotentElement({
       existing,
-      elementInput,
-      initialCompetenceTreeAssignment,
+      creationRequestFingerprint,
       ownerId: ctx.user.sub,
     })
   }
@@ -75,12 +82,19 @@ export async function manipulateElementWithInitialCompetenceTreeAssignment(
       })
       if (!element) return null
 
+      await tx.element.update({
+        where: { id: element.id },
+        data: {
+          creationRequestId: parsedCreationRequestId.data,
+          creationRequestFingerprint,
+        },
+      })
+
       const { treeId, ...assignment } = initialCompetenceTreeAssignment
       await persistCompetenceTreeElementAssignment({
         treeId,
         elementId: element.id,
         assignment,
-        creationRequestId: parsedCreationRequestId.data,
         ownerId: ctx.user.sub,
         tx,
       })
@@ -95,8 +109,7 @@ export async function manipulateElementWithInitialCompetenceTreeAssignment(
     if (!concurrent) throw error
     return resolveIdempotentElement({
       existing: concurrent,
-      elementInput,
-      initialCompetenceTreeAssignment,
+      creationRequestFingerprint,
       ownerId: ctx.user.sub,
     })
   }
@@ -114,46 +127,51 @@ async function findIdempotentElement(
   creationRequestId: string,
   ctx: ContextWithUser
 ) {
-  return await ctx.prisma.competenceTreeElementAssignment.findUnique({
+  return await ctx.prisma.element.findUnique({
     where: { creationRequestId },
     include: {
-      element: {
-        include: {
-          tags: { orderBy: { order: 'asc' } },
-          answerCollectionItems: true,
-        },
-      },
+      tags: { orderBy: { order: 'asc' } },
+      answerCollectionItems: true,
     },
   })
 }
 
 function resolveIdempotentElement({
   existing,
-  elementInput,
-  initialCompetenceTreeAssignment,
+  creationRequestFingerprint,
   ownerId,
 }: {
   existing: NonNullable<Awaited<ReturnType<typeof findIdempotentElement>>>
-  elementInput: ElementManipulationInput
-  initialCompetenceTreeAssignment: CompetenceTreeElementAssignmentCreateInput
+  creationRequestFingerprint: string
   ownerId: string
 }) {
   if (
-    existing.element.ownerId !== ownerId ||
-    existing.treeId !== initialCompetenceTreeAssignment.treeId ||
-    existing.leafNodeId !== initialCompetenceTreeAssignment.leafNodeId ||
-    existing.levelId !== initialCompetenceTreeAssignment.levelId ||
-    existing.enabled !== initialCompetenceTreeAssignment.enabled ||
-    existing.enablePercentInput !==
-      initialCompetenceTreeAssignment.enablePercentInput ||
-    existing.discrimination !==
-      (initialCompetenceTreeAssignment.discrimination ?? null) ||
-    !matchesManipulatedElementCreationInput(elementInput, existing.element)
+    existing.ownerId !== ownerId ||
+    existing.isDeleted ||
+    existing.creationRequestFingerprint !== creationRequestFingerprint
   ) {
     throw new GraphQLError(
       'The adaptive creation request identifier is already in use.',
       { extensions: { code: 'ADAPTIVE_CREATION_REQUEST_CONFLICT' } }
     )
   }
-  return formatManipulatedElement(existing.element)
+  return formatManipulatedElement(existing)
+}
+
+function fingerprintAdaptiveElementCreation(value: unknown) {
+  return createHash('sha256')
+    .update(JSON.stringify(canonicalizeJson(value)))
+    .digest('hex')
+}
+
+function canonicalizeJson(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalizeJson)
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, child]) => [key, canonicalizeJson(child)])
+    )
+  }
+  return value
 }

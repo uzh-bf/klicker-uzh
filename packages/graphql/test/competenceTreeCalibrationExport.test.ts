@@ -11,6 +11,7 @@ import {
 import {
   getAdaptiveCalibrationExportRequest,
   hasCurrentAdaptiveCalibrationExportAuthority,
+  requestAdaptiveCalibrationExport,
   type AdaptiveCalibrationExportAuthorizationScope,
 } from '../src/services/competenceTreeCalibrationExportRequest.js'
 import {
@@ -116,6 +117,113 @@ describe('adaptive calibration export pseudonyms', () => {
     expect(assignAdaptiveExportSplit(input)).toBe(
       assignAdaptiveExportSplit(input)
     )
+  })
+})
+
+function enqueueFailureContext({
+  failedTransitionCount,
+  currentRequest = null,
+}: {
+  failedTransitionCount: number
+  currentRequest?: AdaptiveCalibrationExportAuthorizationScope | null
+}) {
+  const createdRequest = exportRequest({
+    status: DB.AdaptiveCalibrationExportStatus.REQUESTED,
+  })
+  const queryRaw = vi
+    .fn()
+    .mockResolvedValueOnce([{ id: treeId, ownerId, isDeleted: false }])
+    .mockResolvedValueOnce([
+      {
+        id: scaleVersionId,
+        treeId,
+        version: 1,
+        status: DB.AdaptiveScaleVersionStatus.APPROVED,
+        supersedesVersionId: null,
+        createdById: ownerId,
+      },
+    ])
+  const updateMany = vi.fn().mockResolvedValue({ count: failedTransitionCount })
+  const findUnique = vi.fn().mockResolvedValue(currentRequest)
+  const tx = {
+    $queryRaw: queryRaw,
+    adaptiveCalibrationExportRequest: {
+      create: vi.fn().mockResolvedValue(createdRequest),
+    },
+  }
+  const ctx = {
+    user: {
+      sub: ownerId,
+      role: DB.UserRole.USER,
+      scope: DB.UserLoginScope.FULL_ACCESS,
+      catalystInstitutional: false,
+      catalystIndividual: false,
+    },
+    prisma: {
+      $transaction: vi.fn((operation) => operation(tx)),
+      adaptiveCalibrationExportRequest: { updateMany, findUnique },
+    },
+    tasks: {
+      adaptiveCalibrationExport: {
+        runNoWait: vi.fn().mockRejectedValue(new Error('queue unavailable')),
+      },
+    },
+  } as unknown as ContextWithUser
+  return { ctx, updateMany, findUnique }
+}
+
+describe('adaptive calibration export requests', () => {
+  it('transitions to a terminal failed state when enqueueing fails', async () => {
+    const { ctx, updateMany } = enqueueFailureContext({
+      failedTransitionCount: 1,
+    })
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    await expect(
+      requestAdaptiveCalibrationExport(
+        { treeId, scaleVersionId, datasetVersion },
+        ctx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'ADAPTIVE_EXPORT_ENQUEUE_FAILED' },
+    })
+    expect(updateMany).toHaveBeenCalledWith({
+      where: {
+        id: requestId,
+        status: DB.AdaptiveCalibrationExportStatus.REQUESTED,
+      },
+      data: {
+        status: DB.AdaptiveCalibrationExportStatus.FAILED,
+        failureCode: 'EXPORT_ENQUEUE_FAILED',
+        completedAt: expect.any(Date),
+        runToken: null,
+      },
+    })
+    warnSpy.mockRestore()
+  })
+
+  it('returns the authoritative state when the worker won an enqueue race', async () => {
+    const runningRequest = exportRequest({
+      status: DB.AdaptiveCalibrationExportStatus.RUNNING,
+    })
+    const { ctx, findUnique } = enqueueFailureContext({
+      failedTransitionCount: 0,
+      currentRequest: runningRequest,
+    })
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    await expect(
+      requestAdaptiveCalibrationExport(
+        { treeId, scaleVersionId, datasetVersion },
+        ctx
+      )
+    ).resolves.toMatchObject({
+      id: requestId,
+      status: DB.AdaptiveCalibrationExportStatus.RUNNING,
+    })
+    expect(findUnique).toHaveBeenCalledWith({ where: { id: requestId } })
+    expect(warnSpy).not.toHaveBeenCalled()
+    warnSpy.mockRestore()
   })
 })
 
