@@ -791,70 +791,70 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   const LA_EXCLUDED_UNTIL_INDEX = 45
   const LA_CHOICE_AT = new Date('2018-12-01T00:00')
 
-  // create participations for all test participants
-  await Promise.all(
-    PARTICIPANT_IDS.map(async (id, ix) => {
-      const learningAnalyticsStatus =
-        ix < LA_INCLUDED_UNTIL_INDEX
-          ? Prisma.LearningAnalyticsParticipationStatus.INCLUDED
-          : ix < LA_EXCLUDED_UNTIL_INDEX
-            ? Prisma.LearningAnalyticsParticipationStatus.EXCLUDED
-            : Prisma.LearningAnalyticsParticipationStatus.UNDECIDED
-
-      const isDecided =
-        learningAnalyticsStatus !==
-        Prisma.LearningAnalyticsParticipationStatus.UNDECIDED
-      const includedFrom =
-        learningAnalyticsStatus ===
-        Prisma.LearningAnalyticsParticipationStatus.INCLUDED
-          ? LA_CHOICE_AT
-          : null
-
-      const learningAnalyticsData = {
-        learningAnalyticsStatus,
-        learningAnalyticsIncludedFrom: includedFrom,
-        learningAnalyticsChoiceAt: isDecided ? LA_CHOICE_AT : null,
-        learningAnalyticsDisclosureVersion: isDecided
-          ? LEARNING_ANALYTICS_DISCLOSURE_VERSION
-          : null,
-      }
-
-      return prisma.participation.upsert({
-        where: {
-          courseId_participantId: {
-            courseId: COURSE_ID_TEST,
-            participantId: id,
-          },
-        },
-        create: {
-          isActive: true,
-          ...learningAnalyticsData,
-          course: {
-            connect: {
-              id: COURSE_ID_TEST,
-            },
-          },
-          participant: {
-            connect: {
-              id: id,
-            },
-          },
-        },
-        update: {
-          isActive: true,
-          ...learningAnalyticsData,
-        },
-      })
-    })
-  )
-
-  // Rebuild the choice history for the decided participations. Participations
+  // Rebuild the participation snapshots and choice history together so a
+  // failed fixture seed cannot leave one without the other. Participations
   // already exist at this point (they are created together with the
-  // participant), so the upsert above always takes its update branch and can
-  // never nest the event creation. Events are backdated to the choice so they
+  // participant), so the upsert always takes its update branch and can never
+  // nest the event creation. Events are backdated to the choice so they
   // precede the analytics pipeline cutoff and do not hold the course in a
   // pending-finalization state.
   await prisma.$transaction(async (tx) => {
+    await Promise.all(
+      PARTICIPANT_IDS.map(async (id, ix) => {
+        const learningAnalyticsStatus =
+          ix < LA_INCLUDED_UNTIL_INDEX
+            ? Prisma.LearningAnalyticsParticipationStatus.INCLUDED
+            : ix < LA_EXCLUDED_UNTIL_INDEX
+              ? Prisma.LearningAnalyticsParticipationStatus.EXCLUDED
+              : Prisma.LearningAnalyticsParticipationStatus.UNDECIDED
+
+        const isDecided =
+          learningAnalyticsStatus !==
+          Prisma.LearningAnalyticsParticipationStatus.UNDECIDED
+        const includedFrom =
+          learningAnalyticsStatus ===
+          Prisma.LearningAnalyticsParticipationStatus.INCLUDED
+            ? LA_CHOICE_AT
+            : null
+
+        const learningAnalyticsData = {
+          learningAnalyticsStatus,
+          learningAnalyticsIncludedFrom: includedFrom,
+          learningAnalyticsChoiceAt: isDecided ? LA_CHOICE_AT : null,
+          learningAnalyticsDisclosureVersion: isDecided
+            ? LEARNING_ANALYTICS_DISCLOSURE_VERSION
+            : null,
+        }
+
+        return tx.participation.upsert({
+          where: {
+            courseId_participantId: {
+              courseId: COURSE_ID_TEST,
+              participantId: id,
+            },
+          },
+          create: {
+            isActive: true,
+            ...learningAnalyticsData,
+            course: {
+              connect: {
+                id: COURSE_ID_TEST,
+              },
+            },
+            participant: {
+              connect: {
+                id: id,
+              },
+            },
+          },
+          update: {
+            isActive: true,
+            ...learningAnalyticsData,
+          },
+        })
+      })
+    )
+
     const testkursParticipations = await tx.participation.findMany({
       where: {
         courseId: COURSE_ID_TEST,
