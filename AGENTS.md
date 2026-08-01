@@ -99,18 +99,18 @@ cypress/                   # E2E tests
 
 ## Tech Stack
 
-| Layer                  | Technology                                            |
-| ---------------------- | ----------------------------------------------------- |
-| Frontend framework     | Next.js 16, React, TypeScript                         |
-| Styling                | TailwindCSS, @uzh-bf/design-system                    |
-| GraphQL server         | GraphQL Yoga + Pothos schema builder                  |
-| GraphQL client         | Apollo Client                                         |
-| ORM                    | Prisma 7 (PostgreSQL)                                 |
-| Caching                | Redis (ioredis)                                       |
-| Workflow orchestration | Hatchet (workers for async processing)                |
-| Auth                   | Edu-ID (OIDC), magic links, LTI, delegated login      |
-| Build                  | Turborepo + Rollup                                    |
-| Test                   | Vitest (unit), Cypress (E2E)                          |
+| Layer                  | Technology                                                                         |
+| ---------------------- | ---------------------------------------------------------------------------------- |
+| Frontend framework     | Next.js 16, React, TypeScript                                                      |
+| Styling                | TailwindCSS, @uzh-bf/design-system                                                 |
+| GraphQL server         | GraphQL Yoga + Pothos schema builder                                               |
+| GraphQL client         | Apollo Client                                                                      |
+| ORM                    | Prisma 7 (PostgreSQL)                                                              |
+| Caching                | Redis (ioredis)                                                                    |
+| Workflow orchestration | Hatchet (workers for async processing)                                             |
+| Auth                   | Edu-ID (OIDC), magic links, LTI, delegated login                                   |
+| Build                  | Turborepo + Rollup                                                                 |
+| Test                   | Vitest (unit), Cypress (E2E)                                                       |
 | Format + lint          | Biome (code fmt+lint), Prettier (md/yaml + e2e specs), ESLint (Next.js safety net) |
 
 ## GraphQL Workflow
