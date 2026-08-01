@@ -7,7 +7,11 @@ import {
 } from '../src/digest.js'
 
 function mockPrisma(
-  resources: { id: string; activeContentSha256: string | null }[]
+  resources: {
+    id: string
+    activeContentSha256: string | null
+    status?: 'PROCESSING'
+  }[]
 ) {
   const findMany = vi.fn().mockResolvedValue(resources)
   return {
@@ -17,7 +21,7 @@ function mockPrisma(
 }
 
 describe('KB content digest', () => {
-  it('covers only the resources that are actually serving', async () => {
+  it('covers every resource that has active serving content', async () => {
     const { prisma, findMany } = mockPrisma([])
 
     await computeKBContentDigest(prisma, 'kb-id')
@@ -27,11 +31,26 @@ describe('KB content digest', () => {
         where: {
           kbId: 'kb-id',
           deletedAt: null,
-          status: 'READY',
           activeContentSha256: { not: null },
         },
         orderBy: { id: 'asc' },
       })
+    )
+  })
+
+  it('keeps a serving revision in the digest while its replacement is processing', async () => {
+    const { prisma } = mockPrisma([
+      {
+        id: 'resource-a',
+        activeContentSha256: 'sha-a',
+        status: 'PROCESSING',
+      },
+    ])
+
+    await expect(computeKBContentDigest(prisma, 'kb-id')).resolves.toBe(
+      hashKBContentDigestEntries([
+        { resourceId: 'resource-a', contentSha256: 'sha-a' },
+      ])
     )
   })
 

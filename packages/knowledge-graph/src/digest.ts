@@ -22,7 +22,8 @@ export async function readKBContentDigestEntries(
     where: {
       kbId,
       deletedAt: null,
-      status: 'READY',
+      // `status` belongs to the newest ingestion operation. Its predecessor can
+      // still be serving while that operation is queued or processing.
       activeContentSha256: { not: null },
     },
     select: { id: true, activeContentSha256: true },
