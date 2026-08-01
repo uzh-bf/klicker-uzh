@@ -268,6 +268,7 @@ export const Query = builder.queryType({
         args: {
           status: t.arg({ type: ElementStatus, required: false }),
           type: t.arg({ type: ElementType, required: false }),
+          elementTypes: t.arg({ type: [ElementType], required: false }),
           hasSampleSolution: t.arg.boolean({ required: true }),
           hasAnswerFeedbacks: t.arg.boolean({ required: true }),
           searchString: t.arg.string({ required: false }),

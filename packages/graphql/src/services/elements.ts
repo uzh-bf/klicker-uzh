@@ -39,6 +39,7 @@ export async function getUserElements(
   {
     status,
     type,
+    elementTypes,
     hasSampleSolution,
     hasAnswerFeedbacks,
     searchString,
@@ -57,6 +58,7 @@ export async function getUserElements(
   }: {
     status?: DB.ElementStatus | null
     type?: DB.ElementType | null
+    elementTypes?: DB.ElementType[] | null
     hasSampleSolution: boolean
     hasAnswerFeedbacks: boolean
     searchString?: string | null
@@ -106,6 +108,7 @@ export async function getUserElements(
       isArchived: showArchived ? undefined : false,
       tags: showUntagged ? { none: { ownerId: ctx.user.sub } } : undefined,
       AND: [
+        ...(elementTypes ? [{ type: { in: elementTypes } }] : []),
         ...(multiplier ? [{ pointsMultiplier: multiplier }] : []),
         ...(hasSampleSolution
           ? [{ options: { path: ['hasSampleSolution'], equals: true } }]

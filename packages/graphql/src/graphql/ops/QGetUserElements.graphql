@@ -1,6 +1,7 @@
 query GetUserElements(
   $status: ElementStatus
   $type: ElementType
+  $elementTypes: [ElementType!]
   $hasSampleSolution: Boolean!
   $hasAnswerFeedbacks: Boolean!
   $searchString: String
@@ -20,6 +21,7 @@ query GetUserElements(
   userElements(
     status: $status
     type: $type
+    elementTypes: $elementTypes
     hasSampleSolution: $hasSampleSolution
     hasAnswerFeedbacks: $hasAnswerFeedbacks
     searchString: $searchString

@@ -111,6 +111,10 @@ function Index() {
     toggleAnswerFeedbackFilter,
   } = useSortingAndFiltering(storedFiltering)
 
+  const acceptedTypes = creationMode
+    ? getActivityAcceptedElementTypes(creationMode)
+    : undefined
+
   const handleResetCleanURL = useCallback(() => {
     // if a filtering by activity / course is set through the URL, reset it
     if (router.query.filterByActivity || router.query.filterByCourse) {
@@ -131,6 +135,7 @@ function Index() {
     variables: {
       status: filters.status,
       type: filters.type,
+      elementTypes: acceptedTypes,
       hasSampleSolution: filters.sampleSolution,
       hasAnswerFeedbacks: filters.answerFeedbacks,
       searchString: searchString.trim() || undefined,
