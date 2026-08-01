@@ -5,7 +5,7 @@
 - Plan path: `project/2026-07-31-pr-5265-learning-analytics-user-documentation-plan.md`
 - Branch: `claude/la-user-documentation`
 - Target branch: `codex/learning-analytics-opt-out-plan` (head of [PR #5198](https://github.com/uzh-bf/klicker-uzh/pull/5198))
-- PR ID: [PR #5265](https://github.com/uzh-bf/klicker-uzh/pull/5265) — documentation follow-up after the five-PR learning analytics implementation stack, kept as draft
+- PR ID: [PR #5265](https://github.com/uzh-bf/klicker-uzh/pull/5265) — documentation follow-up with supporting UI-link, seed, and constant changes after the five-PR learning analytics implementation stack, kept as draft
 - Worktree: `trees/la-user-docs`
 - History: continues the LA portfolio governed by
   `project/2026-07-23-pr-5198-learning-analytics-opt-out-plan.md` and
@@ -24,7 +24,7 @@
 
 - German documentation pages. The docs site is English-only; the operative
   bilingual disclosure stays in-app.
-- Enabling the rollout gate or changing any LA behaviour.
+- Enabling the rollout gate or changing LA eligibility, computation, or production behaviour.
 - Editing the already-reviewed milestone-5 diff on `codex/learning-analytics-opt-out-plan`.
 - Rewriting the `/development` page. Tracked separately; the user ruled it
   non-critical for this PR.
@@ -41,8 +41,10 @@ Ruled by the user before planning:
   dashboards can be verified and captured for real.
 - `Decision:` Ship as a separate PR stacked on `codex/learning-analytics-opt-out-plan`,
   keeping the reviewed milestone-5 diff untouched.
-- `Decision:` PR #5265 is a documentation-only follow-up outside the five ordered
-  implementation PRs. It is stacked on #5198 solely for review; after #5198 lands,
+- `Decision:` PR #5265 is a documentation follow-up outside the five ordered
+  implementation PRs. Its supporting disclosure link, deterministic development
+  and QA seed safeguards, and behavior-preserving constant relocation are included
+  for verification. It is stacked on #5198 solely for review; after #5198 lands,
   retarget or rebase it to the resulting target before its own merge. It is not a
   sixth implementation milestone and does not alter the reviewed milestone-5 diff.
 - `Decision:` Both pages carry a beta notice reading, in substance, that
@@ -271,8 +273,15 @@ rather than a rollout detail.
   stack-level review by user decision. The PR remains draft until the corrected
   branch passes the maintainability and independent review rerun, and legal,
   release, and rollout gates remain separate.
-- Next action: rerun the authorized review gates on the corrected range, then
-  update the draft PR evidence without marking it ready or merging it.
+- `Risk:` The parent-stack activity-level effective-N path currently uses the
+  course-wide included-participant count for some activity performance and quiz
+  results. This documentation branch does not change the milestone-5
+  implementation. The docs must remain draft until the parent stack corrects or
+  explicitly approves that privacy boundary; the pages do not claim a
+  contributor-level five-student guarantee.
+- Next action: resolve or obtain explicit approval for the parent-stack
+  effective-N blocker, rerun the authorized review gates on the corrected range,
+  then update the draft PR evidence without marking it ready or merging it.
 
 ## Next steps
 
