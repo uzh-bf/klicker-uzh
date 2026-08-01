@@ -181,7 +181,7 @@ The split is now being treated as a reviewable implementation stack. The followi
 The durable rate-limit lesson is recorded in `docs/solutions/security/anonymous-discussion-rate-limit-ip-first.md` (`aad6e44b5b`). The API and UI branches were pushed without force-updating the existing draft PR topology:
 
 - PR A remote head: `aad6e44b5b9faea83e9e5ee771c9e716805b6711`
-- PR B remote head: `795bc3b207c8f2bac36f7f8cb0a12e2de8c95e8a`
+- PR B remote head: branch parity was verified at close-out; see the live PR metadata for the exact bookkeeping head.
 
 The following review suggestions remain explicitly deferred because they would widen the approved remediation scope: replacing optional-field scope bags with a discriminated union, consolidating lossy posting wrappers and deletion orchestration, and changing the intentional polling stop after load-more. Denormalized `replyCount` and `upvotes` remain as designed counters; the new index supports the existing upvote ordering rather than changing counter semantics.
 
