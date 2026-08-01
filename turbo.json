@@ -18,6 +18,8 @@
     "APP_STUDENT_SUBDOMAIN",
     "APP_SECRET",
     "ASSESSMENT_MODE",
+    "AUTH_LECTURER_ALLOWED_HOSTS",
+    "AUTH_STUDENT_ALLOWED_HOSTS",
     "AZUREWEBJOBSFEATUREFLAGS",
     "AZUREWEBJOBSSTORAGE",
     "BLOB_STORAGE_ACCESS_KEY",
@@ -116,9 +118,6 @@
       "cache": false,
       "outputLogs": "new-only",
       "dependsOn": ["^build"]
-    },
-    "@klicker-uzh/prisma#check": {
-      "dependsOn": ["build"]
     },
     "build": {
       "dependsOn": ["^build"],

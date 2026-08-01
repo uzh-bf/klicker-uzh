@@ -29,6 +29,13 @@ export default {
       packages: ['**'],
     },
     {
+      // Keep reviewed upgrade targets exact instead of floating across releases.
+      range: '',
+      dependencyTypes: ['dev'],
+      dependencies: ['prisma', 'prisma-json-types-generator'],
+      packages: ['@klicker-uzh/prisma'],
+    },
+    {
       range: '~',
       dependencyTypes: ['dev'],
       dependencies: ['!@types/**'],
@@ -48,6 +55,14 @@ export default {
     },
   ],
   versionGroups: [
+    {
+      // Rollup 4.59 fixes an arbitrary-file-write advisory. Keep the add-in
+      // patched until the workspace-wide Rollup upgrade is handled separately.
+      label: 'Office Add-in Rollup security floor can differ',
+      dependencies: ['rollup'],
+      packages: ['@klicker-uzh/office-addin'],
+      isIgnored: true,
+    },
     {
       // FIXME: update when consistent versions are possible (e.g., do other remark updates in apps)
       label: 'remark-math can be inconsistent between docs and apps',

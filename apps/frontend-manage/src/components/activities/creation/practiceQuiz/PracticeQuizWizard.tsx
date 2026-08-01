@@ -61,7 +61,7 @@ export interface PracticeQuizWizardStepProps {
   adaptiveInitialPreview?: NonNullable<
     AdaptivePracticeQuizPreviewQuery['adaptivePracticeQuizPreview']
   >
-  onSubmit?: (newValues: PracticeQuizFormValues) => void
+  onSubmit?: (newValues: PracticeQuizFormValues) => Promise<void>
   onModeChange?: (newValues: PracticeQuizFormValues) => void
   setStepValidity: Dispatch<SetStateAction<boolean[]>>
   onPrevStep?: (newValues: PracticeQuizFormValues) => void
@@ -439,8 +439,8 @@ function PracticeQuizWizard({
     EditPracticeQuizDocument
   )
   const handleSubmit = useCallback(
-    async (values: PracticeQuizFormValues) => {
-      submitPracticeQuizForm({
+    (values: PracticeQuizFormValues) => {
+      return submitPracticeQuizForm({
         id: initialValues?.id,
         previousCourseId: initialValues?.course?.id,
         values,

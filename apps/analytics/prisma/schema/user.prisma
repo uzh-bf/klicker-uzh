@@ -140,6 +140,7 @@ model User {
   adaptiveExportRequests          AdaptiveCalibrationExportRequest[]        @relation("AdaptiveCalibrationExportRequestedBy")
   adaptiveValidationsSubmitted    AdaptivePracticeQuizEmpiricalValidation[] @relation("AdaptiveEmpiricalValidationSubmittedBy")
   adaptiveValidationsApproved     AdaptivePracticeQuizEmpiricalValidation[] @relation("AdaptiveEmpiricalValidationApprovedBy")
+  revokedVerificationRecords      VerifiableCredential[]                    @relation("RevokedVerifiableCredentials")
 
   userGroups                UserGroup[]         @relation("UserGroupMembers")
   adminUserGroups           UserGroup[]         @relation("UserGroupAdmins")

@@ -6,6 +6,11 @@
 - **Main branch**: `v3`
 - **Package names**: `@klicker-uzh/<name>` (e.g., `@klicker-uzh/graphql`)
 
+## Stacked PRs
+
+- GitHub stacked PRs are enabled for this repository. Always use `$stacked-change` and `$gh-stack` for larger features: substantial cross-layer or multi-concern work, changes with distinct reviewer audiences or runtime models, and existing large branches that need decomposition. Keep an ordinary single PR for small, cohesive changes only.
+- This is a KlickerUZH repository capability, not a GitHub-wide assumption. Verify native stack support before using the workflow in another repository.
+
 ## Commands
 
 ### Root-level (from repo root)
@@ -37,9 +42,12 @@ pnpm --filter @klicker-uzh/graphql test
 pnpm run prisma:migrate       # create + apply migration (dev)
 pnpm run prisma:setup         # reset DB + push schema + seed
 pnpm run prisma:reset         # reset DB (skip seed)
+pnpm --filter @klicker-uzh/prisma prisma:seed  # seed explicitly
 pnpm run prisma:studio        # open Prisma Studio
 pnpm run prisma:sync          # sync schema to apps/analytics
 ```
+
+The commands above are the legacy host/Infisical path. In the self-contained DevPod, the environment is already injected: use `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`, then `pnpm --filter @klicker-uzh/prisma run prisma:push:raw`, then `pnpm --filter @klicker-uzh/prisma-data run seed:raw` for a full destructive reset and reseed.
 
 ### GraphQL codegen
 
@@ -93,11 +101,11 @@ cypress/                   # E2E tests
 
 | Layer                  | Technology                                            |
 | ---------------------- | ----------------------------------------------------- |
-| Frontend framework     | Next.js 15, React, TypeScript                         |
+| Frontend framework     | Next.js 16, React, TypeScript                         |
 | Styling                | TailwindCSS, @uzh-bf/design-system                    |
 | GraphQL server         | GraphQL Yoga + Pothos schema builder                  |
 | GraphQL client         | Apollo Client                                         |
-| ORM                    | Prisma 6 (PostgreSQL)                                 |
+| ORM                    | Prisma 7 (PostgreSQL)                                 |
 | Caching                | Redis (ioredis)                                       |
 | Workflow orchestration | Hatchet (workers for async processing)                |
 | Auth                   | Edu-ID (OIDC), magic links, LTI, delegated login      |
@@ -111,7 +119,7 @@ Code-first with **Pothos** in `packages/graphql/src/`. After changing types/reso
 
 ## Database Workflow
 
-Prisma split-schema under `packages/prisma/src/prisma/schema/`. After editing a `.prisma` file: `pnpm run prisma:migrate`, then `pnpm run prisma:sync` (mirrors the schema into `apps/analytics`, excluding `js.prisma`) and regenerate the client. Update GraphQL types/resolvers if the change affects the API.
+Prisma split-schema under `packages/prisma/src/prisma/schema/`. After editing a `.prisma` file: `pnpm run prisma:migrate` (creates/applies the migration and explicitly regenerates the TypeScript client), then `pnpm run prisma:sync` (mirrors model files into `apps/analytics` while preserving its Python generator and datasource), then rebuild dependents. Update GraphQL types/resolvers if the change affects the API. Prisma 7 reset and migration commands do not seed automatically; use the explicit setup or seed command for local fixtures.
 
 ## Auth Model
 
@@ -126,22 +134,29 @@ Prisma split-schema under `packages/prisma/src/prisma/schema/`. After editing a 
 Clone-and-run via a self-contained devcontainer — no Infisical/Doppler, no EduID, no `/etc/hosts` edits. The container owns the whole stack (Node 24 + pnpm toolchain, Postgres, 3× Redis, MailHog, Hatchet) and runs **all core apps in ONE container** via `turbo dev`. Run pnpm/prisma/tests **inside the container**, never on the host.
 
 ```bash
-devpod up .            # builds image, starts services, installs, builds, seeds, runs dev
-devpod ssh klicker-uzh # shell inside the container
+devrouter ensure .
 ```
 
-The dev servers auto-start in the background (`tail -f /tmp/dev.log`; first compile takes ~1min). Re-run lifecycle by hand inside the container: `bash .devcontainer/post-create.sh` / `bash .devcontainer/post-start.sh`. Covers the core apps (backend, auth, frontend-pwa/manage/control) plus olat-api, response-api, and the two Hatchet workers (Phase 2 Tier 1; workers have no port/route); All runnable apps are included (no analytics/office-addin/docs). See `.devcontainer/README.md`.
+The same command starts and proves primary and linked checkouts. Use `devrouter exec . -- <command...>` for one-shot commands or the exact DevPod ID printed by `ensure` for an interactive shell.
 
-**Routing (devrouter — when available):** nothing is published on the host; [devrouter](https://github.com/rschlaefli/devrouter) (≥ 0.0.23 recommended; ≥ 0.0.21 required) fronts the stack over the shared `devnet` network and routes each `*.klicker.localhost` host to the one container's internal port. The devrouter overlay uses `${WORKSPACE}-app` / `${WORKSPACE}-db` aliases, so parallel worktrees must use one stable token for both DevPod and route registration (`WORKSPACE=<slug> devpod up .`, then `devrouter app run <app> --workspace <slug>`). One-time host setup **before** the container starts:
+The dev servers auto-start in the background (`devrouter exec . -- tail -f /tmp/dev.log`; first compile takes ~1min). Host-side `devrouter ensure` owns lifecycle reconciliation and delivers its matching process helper to the exact validated container. The stack runs every routed app plus the two Hatchet workers (no worker route); analytics, Office add-in, and docs remain outside it. See `.devcontainer/README.md`.
+
+**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.35 fronts the stack over the shared `devnet` network. One-time host setup must happen **before** the container starts:
 
 ```bash
-devrouter up && devrouter tls install                           # Traefik + devnet + mkcert CA
-for a in api auth pwa manage control olat-api response-api lti chat db; do devrouter app run "$a"; done
+devrouter setup --yes # Traefik + devnet + mkcert CA
 ```
 
-Apps at `https://{api,auth,pwa,manage,control,olat-api,response-api}.klicker.localhost` for the primary checkout, or `https://{app}.klicker.<workspace>.localhost` for a linked worktree; Postgres for host tooling at `db.klicker[.<workspace>].localhost:5432` (`sslmode=require sslnegotiation=direct`). Login as `lecturer`/`abcd` (see test credentials below). Env in `.devcontainer/devcontainer.env` (committed, dev-only — no real secrets).
+One command owns DevPod identity, the Git metadata mount, aliases, runtime proof, and route reconciliation for either checkout kind. Do not use bare `devpod up`, manual `WORKSPACE`, or per-app `--workspace` route loops:
 
-**Media uploads and Blob CORS:** the manage media library uploads directly from the browser to Azure Blob Storage with a SAS URL. The storage account's Blob service CORS must allow the actual local origin (`https://manage.klicker.localhost` or `https://manage.klicker.<workspace>.localhost`), not only production origins such as `https://manage.klicker.com`. For a dedicated dev storage account, use a dev-only rule like `https://*.localhost`; keep production storage accounts exact.
+```bash
+devrouter ensure .                    # existing primary or linked checkout
+devrouter workspace up <branch-name>  # create and start a new worktree
+```
+
+Primary-checkout apps use `https://{app}.klicker.localhost`; linked-worktree apps use `https://{app}.klicker.<workspace>.localhost`. Postgres for host tooling is at `db.klicker[.<workspace>].localhost:5432` (`sslmode=require sslnegotiation=direct`). The primary checkout also keeps the fixed localhost ports in [Repo Layout](#repo-layout). Login as `lecturer`/`abcd` (see test credentials below). Env in `.devcontainer/devcontainer.env` (committed, dev-only — no real secrets).
+
+**Media uploads and Blob CORS:** the manage media library uploads directly from the browser to Azure Blob Storage with a SAS URL. The storage account's Blob service CORS must allow the actual local origin (`https://manage.klicker.localhost` or `https://manage.klicker.<workspace>.localhost`), not only production origins such as `https://manage.klicker.com`. For a dedicated dev storage account, use dev-only localhost rules; keep production storage accounts exact.
 
 ### Legacy host-based stack
 
@@ -200,6 +215,8 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 
 Ground truth for working on this codebase is the agent-facing wiki at **[docs/index.md](docs/index.md)** (not to be confused with `apps/docs`, the user-facing site). Read the relevant page before working in an unfamiliar area, and keep it current — **any PR that changes behavior must update the affected wiki pages in `docs/` and relevant skills in `.agents/skills/` within the same PR.** The former `project/CODEBASE_NOTES.md` is a retired pointer stub.
 
+Retrospective fixes and durable lessons live in `docs/solutions/`; check them before re-deriving a solved problem.
+
 ## AI Assistance (Skills)
 
 Skills live in `.agents/skills/` (the canonical location); `.claude/skills` and `.github/skills` symlink to it, so Claude Code and GitHub stay in sync. Task-shaped `klicker-*` skills cover the feature lifecycle — environment diagnosis (`klicker-environment-doctor`), design (`klicker-feature-design`), API (`klicker-graphql-api`), schema/data (`klicker-data-model`), UI (`klicker-frontend-ui`), testing/verification (`klicker-testing-verification`), e2e (`klicker-cypress-e2e`, `klicker-playwright-e2e`), and wiki upkeep (`klicker-wiki-maintenance`); the routing table lives in [docs/index.md](docs/index.md).
@@ -207,3 +224,24 @@ Skills live in `.agents/skills/` (the canonical location); `.claude/skills` and 
 - **`agent-browser`** — **mandatory** verification for any change touching frontend apps, shared components, styling, i18n text, frontend-facing GraphQL ops, or auth/redirect/cookie flows. Open the page and confirm with before/after screenshots; don't rely on "the logic looks correct". Run via `npx agent-browser`, and log in with **delegated** access, not Edu-ID (credentials under [Test credentials](#test-credentials-local-seeded-db-only)). Full workflow + Traefik troubleshooting: [.agents/skills/agent-browser/SKILL.md](.agents/skills/agent-browser/SKILL.md).
 - **`web-design-guidelines`** — UI/UX/accessibility review ([SKILL.md](.agents/skills/web-design-guidelines/SKILL.md)).
 - **`vercel-react-best-practices`** — React/Next performance guidance ([SKILL.md](.agents/skills/vercel-react-best-practices/SKILL.md)).
+
+<!-- devrouter -->
+
+## devrouter
+
+This repository uses [devrouter](https://github.com/rschlaefli/devrouter) for local dev routing.
+All apps and dependencies are declared in `.devrouter.yml`.
+
+Full reference (config schema, docker requirements, env injection, commands):
+`.agents/skills/devrouter/SKILL.md`
+
+Quick validation sequence:
+
+- Managed devcontainer consumer images contain no devrouter package or helper; `devrouter ensure` delivers the matching helper at runtime.
+- `devrouter up`
+- `devrouter tls install` (required when repo defines tcp/postgres apps)
+- `devrouter app ls --repo .`
+- Primary or linked devcontainer checkout: `devrouter ensure . --json`
+- Host/docker runtime app only: `devrouter app run <host-app> --repo . --yes`
+- `devrouter ls`
+<!-- /devrouter -->

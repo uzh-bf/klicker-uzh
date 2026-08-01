@@ -4,7 +4,6 @@ import type {
 } from '@klicker-uzh/graphql/dist/ops'
 import type { CaseStudySolutionsObject } from '@klicker-uzh/types'
 import { Progress } from '@uzh-bf/design-system'
-import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import useEvaluationCaseStudyResults from '../hooks/useEvaluationCaseStudyResults'
 

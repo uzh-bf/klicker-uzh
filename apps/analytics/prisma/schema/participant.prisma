@@ -95,6 +95,7 @@ model Participant {
   individualPointCorrections      PointCorrection[]                @relation("PointCorrectionParticipants")
   adaptiveAssessmentAttempts      AdaptiveAssessmentAttempt[]
   adaptivePracticeQuizAttempts    AdaptivePracticeQuizAttempt[]
+  verificationRecords             VerifiableCredential[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

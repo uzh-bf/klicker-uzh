@@ -69,7 +69,10 @@ playwright/test-results/
 packages/adaptive-learning/reports/simulation-report.json
 packages/adaptive-learning/.simulation-build/
 
-# One-off course data pulls (contain real participant data — never commit)
+# One-off course data pulls (contain real participant data — never commit).
+# Course-award seed payloads, comparison sheets, and state dumps all live in
+# _local/, so a new round cannot leak data by picking an unignored filename.
+packages/prisma-data/src/data/_local/
 packages/prisma-data/summerschool_*
 packages/prisma-data/src/data/summerschool_*
 

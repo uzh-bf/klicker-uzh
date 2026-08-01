@@ -38,11 +38,20 @@ function createIsomorphLink() {
     process.env.NODE_ENV === 'development'
       ? []
       : [
-          createPersistedQueryLink({
-            useGETForHashedQueries: true, // Optional but allows better caching
-            // eslint-disable-next-line react-hooks/rules-of-hooks
-            generateHash: usePregeneratedHashes(hashes),
-          }),
+          split(
+            ({ operationName }) =>
+              operationName === 'QGetCourseVerificationRecords',
+            createPersistedQueryLink({
+              useGETForHashedQueries: false,
+              // eslint-disable-next-line react-hooks/rules-of-hooks
+              generateHash: usePregeneratedHashes(hashes),
+            }),
+            createPersistedQueryLink({
+              useGETForHashedQueries: true,
+              // eslint-disable-next-line react-hooks/rules-of-hooks
+              generateHash: usePregeneratedHashes(hashes),
+            })
+          ),
         ]
 
   const errorLink = onError(({ graphQLErrors, networkError }) => {

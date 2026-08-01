@@ -1,12 +1,13 @@
-# Dev container (Phase 1 + Phase 2 Tier 1)
+# Self-contained dev container
 
 Self-contained local environment for `klicker-uzh`. No Infisical/Doppler, no
 external EduID, no `/etc/hosts` edits — clone, route through devrouter, and run.
 The devcontainer owns the whole stack (toolchain, Postgres, 3× Redis, MailHog,
 Hatchet, install + build + seed, `turbo dev`);
 [devrouter](https://github.com/rschlaefli/devrouter) fronts it on a shared
-`:443` / `:5432` so many projects coexist with **zero host-port collisions**
-(nothing is published on the host).
+`:443` / `:5432`. Linked worktrees publish no host ports and can coexist;
+the primary checkout intentionally keeps fixed localhost ports and is
+one-at-a-time.
 
 > **Scope:** all runnable apps — **backend, auth, frontend-pwa, frontend-manage,
 > frontend-control, olat-api, response-api, lti-service, chat**, and the **two
@@ -19,12 +20,12 @@ Hatchet, install + build + seed, `turbo dev`);
 
 You can run the devcontainer in two modes:
 
-### Mode 1: Plain localhost (Fallback)
+### Mode 1: Primary checkout
 
-Use this if you are running in a headless cloud server or want to avoid installing Traefik/mkcert on your host:
+The primary checkout keeps fixed localhost ports and receives stable unnamespaced devrouter routes:
 
-1. No action required; the default setup dynamically falls back to the localhost overlay. (If you need to force it, ensure `DEVCONTAINER_COMPOSE_OVERLAY` is unset or explicitly set to `docker-compose.localhost.yml`).
-2. Start the devcontainer (`devpod up .` or via VS Code).
+1. Run one-time setup: `devrouter setup --yes`.
+2. Start and prove the checkout: `devrouter ensure .`.
 3. The applications are exposed directly on your host's ports:
    - Student PWA: `http://localhost:3001`
    - Lecturer UI (Manage): `http://localhost:3002` (login: `lecturer` / `abcd`)
@@ -36,63 +37,56 @@ Use this if you are running in a headless cloud server or want to avoid installi
    - Hatchet Dashboard: `http://localhost:8888`
    - Postgres DB: `localhost:5432`
 
-### Mode 2: devrouter (Default Routed HTTPS domains)
+### Mode 2: Linked checkout
 
 Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, and enable parallel workspaces:
 
-1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) (≥ 0.0.23 recommended; ≥ 0.0.21 required) and start it:
+1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.35 and set it up:
    ```bash
-   devrouter up && devrouter tls install   # Traefik + the shared `devnet` + mkcert CA
+   devrouter setup --yes   # Traefik + the shared `devnet` + mkcert CA
    ```
-2. Start the devcontainer via devrouter workspace commands:
+2. Reconcile this existing linked worktree with one command:
    ```bash
-   dev workspace up <branch-name>
+   devrouter ensure .
    ```
-   _Note: This automatically provisions a git worktree, sets `WORKSPACE` and `DEVCONTAINER_COMPOSE_OVERLAY=docker-compose.devrouter.yml` inside the environment, and runs `devpod up` under the hood._
+   To create a new worktree instead, run `devrouter workspace up <branch-name>` from the main repository. Both commands persist one identity, select the devrouter overlay, mount linked Git metadata, start or attach the exact DevPod, prove the runtime, and reconcile routes.
 3. Open `https://manage.klicker.<workspace>.localhost` (credentials: `lecturer` / `abcd`).
 
-For a manual `devpod up` configuration (without using `dev workspace up`), you must supply the environment variables yourself:
+Do not use bare `devpod up`, manual `WORKSPACE`, or per-app `--workspace` route loops for this managed devcontainer. Those paths bypass the identity and runtime proof.
+
+## Checkout lifecycle
 
 ```bash
-WORKSPACE=my-branch DEVCONTAINER_COMPOSE_OVERLAY=docker-compose.devrouter.yml devpod up . --ide none
-for a in api auth pwa manage control olat-api response-api lti chat db; do
-  devrouter app run "$a" --workspace my-branch
-done
+devrouter ensure .
+devrouter exec . -- <command...>
+devrouter stop .
 ```
 
-## Run with DevPod
-
-```bash
-devpod up . --ide none         # builds image, starts infra, installs, builds, seeds
-for a in api auth pwa manage control olat-api response-api lti chat db; do devrouter app run "$a"; done   # register routes
-```
-
-Open <https://manage.klicker.localhost> and log in as **`lecturer` / `abcd`**
-(accept the terms checkbox). The dev servers auto-start in the background
-(`tail -f /tmp/dev.log`; first compile can take a minute).
+Open the Manage URL printed by `ensure` and log in as **`lecturer` / `abcd`**
+(accept the terms checkbox). The dev servers run in the background; inspect
+`/tmp/dev.log` through `devrouter exec` or an exact DevPod shell.
 
 ## How routing works
 
 The monorepo runs **all apps in one container** via `turbo dev`;
 devrouter's Traefik (on `devnet`) routes each hostname to that container's
-internal port — no published host ports. The devrouter overlay exposes
-`${WORKSPACE:-klicker-uzh}-app` and `${WORKSPACE:-klicker-uzh}-db` aliases.
-`.devrouter.yml` uses `${WORKSPACE}` in each proxy upstream, so the primary
-checkout routes to `klicker-uzh-app` / `klicker-uzh-db`, while a worktree with
-`WORKSPACE=my-branch` routes to `my-branch-app` / `my-branch-db`.
+internal port. The linked-worktree overlay publishes no host ports and exposes
+`${WORKSPACE}-app` and `${WORKSPACE}-db` aliases. The primary overlay exposes
+stable unnamespaced aliases plus fixed localhost ports. `.devrouter.yml` uses
+the selected checkout identity in every proxy upstream.
 
-| What              | Host                                                   | Upstream (devnet)       |
-| ----------------- | ------------------------------------------------------ | ----------------------- |
-| API (GraphQL)     | `https://api.klicker[.<workspace>].localhost`          | `${WORKSPACE}-app:3000` |
-| Auth              | `https://auth.klicker[.<workspace>].localhost`         | `${WORKSPACE}-app:3010` |
-| PWA (student)     | `https://pwa.klicker[.<workspace>].localhost`          | `${WORKSPACE}-app:3001` |
-| Manage (lecturer) | `https://manage.klicker[.<workspace>].localhost`       | `${WORKSPACE}-app:3002` |
-| Control           | `https://control.klicker[.<workspace>].localhost`      | `${WORKSPACE}-app:3003` |
-| OLAT API          | `https://olat-api.klicker[.<workspace>].localhost`     | `${WORKSPACE}-app:3030` |
-| Response API      | `https://response-api.klicker[.<workspace>].localhost` | `${WORKSPACE}-app:7078` |
-| LTI Service       | `https://lti.klicker[.<workspace>].localhost`          | `${WORKSPACE}-app:4000` |
-| Chat App          | `https://chat.klicker[.<workspace>].localhost`         | `${WORKSPACE}-app:3004` |
-| Postgres          | `db.klicker[.<workspace>].localhost:5432`              | `${WORKSPACE}-db:5432`  |
+| What              | Host                                                 | Upstream (devnet)       |
+| ----------------- | ---------------------------------------------------- | ----------------------- |
+| API (GraphQL)     | `https://api.klicker.<workspace>.localhost`          | `${WORKSPACE}-app:3000` |
+| Auth              | `https://auth.klicker.<workspace>.localhost`         | `${WORKSPACE}-app:3010` |
+| PWA (student)     | `https://pwa.klicker.<workspace>.localhost`          | `${WORKSPACE}-app:3001` |
+| Manage (lecturer) | `https://manage.klicker.<workspace>.localhost`       | `${WORKSPACE}-app:3002` |
+| Control           | `https://control.klicker.<workspace>.localhost`      | `${WORKSPACE}-app:3003` |
+| OLAT API          | `https://olat-api.klicker.<workspace>.localhost`     | `${WORKSPACE}-app:3030` |
+| Response API      | `https://response-api.klicker.<workspace>.localhost` | `${WORKSPACE}-app:7078` |
+| LTI Service       | `https://lti.klicker.<workspace>.localhost`          | `${WORKSPACE}-app:4000` |
+| Chat App          | `https://chat.klicker.<workspace>.localhost`         | `${WORKSPACE}-app:3004` |
+| Postgres          | `db.klicker.<workspace>.localhost:5432`              | `${WORKSPACE}-db:5432`  |
 
 The two Hatchet workers (`hatchet-worker-general`, `hatchet-worker-response-processor`)
 also run in the `app` container but have **no port/route** — they consume the
@@ -103,7 +97,7 @@ compose DNS (`redis_exec`, `redis_cache`, `redis_assessment`, `mailhog`,
 `hatchet:7077`). Connect to the DB from the host with direct-SSL:
 
 ```bash
-psql "host=db.klicker.localhost port=5432 user=klicker-prod password=klicker \
+psql "host=db.klicker.<workspace>.localhost port=5432 user=klicker-prod password=klicker \
       dbname=klicker-prod sslmode=require sslnegotiation=direct"
 ```
 
@@ -112,9 +106,8 @@ psql "host=db.klicker.localhost port=5432 user=klicker-prod password=klicker \
 EduID is replaced by klicker's own **credentials login** (no OIDC mock needed).
 Seeded users (`packages/prisma-data`): `lecturer`/`abcd` (ADMIN), `free`/`abcd`,
 `pro1..3`/`abcd`, and `testuser1..50`/`abcdabcd`. Cross-app sessions work because
-every app is served under the same `klicker*.localhost` parent and the cookie
-domain resolves to that parent (`klicker.localhost` for the primary checkout,
-`klicker.<workspace>.localhost` for linked worktrees). `post-start.sh` rewrites
+linked-worktree apps are served under the same `klicker.<workspace>.localhost`
+parent and the cookie domain resolves to that parent. `post-start.sh` rewrites
 the public origins and `AUTH_*_ALLOWED_HOSTS` when `WORKSPACE` is set, because
 the hardcoded defaults only know `klicker.com`.
 
@@ -138,7 +131,7 @@ hatchet DB migrations finishing. If the API is down, check
 
 | Service                             | Image                                      | Purpose                                                |
 | ----------------------------------- | ------------------------------------------ | ------------------------------------------------------ |
-| `app`                               | local `Dockerfile` (Node 24 + pnpm 11.5.0) | runs `turbo dev` for the core + Tier-1 apps + workers  |
+| `app`                               | local `Dockerfile` (Node 24 + pnpm 11.5.0) | runs every routed app plus the two Hatchet workers     |
 | `postgres`                          | `postgres:15`                              | DB (klicker-prod + shadow/lti/qa/hatchet via init.sql) |
 | `redis_exec`/`_assessment`/`_cache` | `redis:7`                                  | live-quiz exec / assessment / cache + pub/sub          |
 | `mailhog`                           | `mailhog/mailhog`                          | dev SMTP sink                                          |
@@ -148,13 +141,25 @@ hatchet DB migrations finishing. If the API is down, check
 
 Environment lives in `devcontainer.env` (committed, dev-only). Lifecycle:
 `post-create.sh` (install + build packages + prisma reset/push/seed + token) then
-`post-start.sh` (launch `turbo dev`).
+host-side `devrouter ensure` delivers its matching process helper and invokes
+`post-start.sh` (set Klicker origins and call that helper). Runtime state is
+`/tmp/devrouter-process-klicker-dev.state`: exact workspace, command, adapter
+bytes, and declared non-secret runtime-origin values are fingerprinted for
+reuse; stale owned groups are replaced boundedly, and unknown processes are
+never killed. HTTP readiness remains in
+`devrouter ensure .`; the root build script forces production mode even though
+the live container exports `NODE_ENV=development`. Rerun ensure after
+`pnpm run build` so stale Next.js dev output can trigger the single
+container-recreate budget.
+
+The image also carries uv `0.11.12` and selects Python 3.12, matching the
+analytics image and lint CI so the root quality gate runs inside the container.
 
 ## Notes
 
 - `node_modules` is a named volume (pnpm hoists natives into the root
   `node_modules/.pnpm`, so one root volume covers the monorepo).
-- Reset the DB: `pnpm --filter @klicker-uzh/prisma exec prisma migrate reset --skip-seed --force`.
+- Reset the DB without seeding: `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`.
 - `response-api` + both workers run `tsx --watch --env-file=.env`; node 24 errors
   if `.env` is missing, so `post-create` seeds an **empty** `.env` in each dir
   (the container env from `devcontainer.env` is what actually applies).

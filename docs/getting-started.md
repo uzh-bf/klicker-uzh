@@ -2,7 +2,7 @@
 type: Guide
 title: Getting Started
 description: Toolchain, first-time setup, infrastructure bring-up, dev-server paths, and the exact failure signatures a fresh clone produces.
-timestamp: '2026-07-07'
+timestamp: '2026-07-20'
 tags:
   - environment
   - onboarding
@@ -16,35 +16,53 @@ tags:
 
 Aligned to Node `24.16.0` and pnpm `11.5.0` across the entire workspace, including the self-contained devcontainer. Pinned in root `package.json`: `volta.node = 24.16.0`, `volta.pnpm = 11.5.0`, `packageManager = pnpm@11.5.0`.
 
+The workspace TypeScript baseline is `~6.0.3` across all packages, including `apps/office-addin`. Cypress uses that baseline with its documented legacy non-strict compiler contract; it is not a TypeScript-version exception. The Office Add-in uses the browser/bundler contract (`target: ES2022`, `module: ESNext`, `moduleResolution: Bundler`, `noEmit`) and explicitly loads the `office-js` global types required by TypeScript 6. No syncpack exception is needed.
+
+Compiler settings follow the code's runtime and build owner:
+
+| Role                                       | Compiler contract                                                                                                                                                                   |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Next.js application                        | `target: ES2017`, `module: ESNext`, `moduleResolution: Bundler`, `jsx: react-jsx`, and the Next TypeScript plugin                                                                   |
+| Emitted Node application or library        | `module: NodeNext`; use incremental build info only when the build owner preserves outputs and matching state atomically, and emit declarations only for packages that publish them |
+| Browser or bundler-owned source            | Bundler resolution; source-only packages use `module: preserve` and `noEmit`                                                                                                        |
+| Node-only script source                    | `module: NodeNext` with `noEmit`; the runtime transpiler owns execution                                                                                                             |
+| Check-only config extending an emit config | `noEmit`; disable inherited declarations when declaration portability is outside the check's purpose, and keep incremental state separate from the emitting build                   |
+
+The workspace does not use TypeScript project references or `tsc -b`, so `composite` is not a package-role marker. Emitted packages use `incremental` only when their build preserves outputs and matching state atomically; Prisma's Rollup build deliberately does not because it deletes `dist` while TypeScript's parallel build-start hook may read its cache. Separate compiler invocations also use separate build-info files: no-output checks cannot overwrite emit state, and Export's library and CLI Rollup builds own distinct caches. Do not choose `NodeNext` or `Bundler` by package location alone: choose it based on whether TypeScript/Node must resolve the emitted runtime imports or another bundler owns that job.
+
 ## Onboarding Paths
 
 You can set up the environment in two ways:
 
 ### Path A: Self-contained Devcontainer (Recommended)
 
-Clone-and-run via a self-contained devcontainer — no Infisical, no external EduID, no `/etc/hosts` edits needed. The container runs all core apps via `turbo dev` and houses all dependencies (Postgres, Redis, MailHog, Hatchet).
+Clone-and-run via a self-contained devcontainer — no Infisical, no external EduID, no `/etc/hosts` edits needed. The container runs every routed app plus the two Hatchet workers through one `turbo dev` task set and houses all dependencies (Postgres, Redis, MailHog, Hatchet).
 
-1. **Start the container:**
+1. **Start and prove the checkout:**
    ```bash
-   devpod up .            # builds image, starts services, installs, builds, seeds, runs dev
-   devpod ssh klicker-uzh # shell inside the container
+   devrouter ensure .
    ```
+   The same command owns primary and linked checkout startup. It prints the exact DevPod ID when an interactive shell is needed.
 2. **Accessing the apps:**
-   - **Mode 1 (Plain localhost fallback):** Exposed directly on host ports after starting devcontainer (`devpod up .` or via VS Code) without devrouter: Student PWA at `http://localhost:3001`, Lecturer UI at `http://localhost:3002` (login: `lecturer`/`abcd`).
-   - **Mode 2 (devrouter overlay):** Routes local traffic over HTTPS: `https://manage.klicker.localhost` (or `https://manage.klicker.<workspace>.localhost` for parallel workspaces). Requires:
-     1. Start devrouter on host (`devrouter up && devrouter tls install`).
-     2. Start the devcontainer via devrouter command line for automatic overlay injection and token plumbing:
+   - **Mode 1 (Primary checkout):** Stable routes such as `https://manage.klicker.localhost` plus the fixed localhost ports. Lecturer login is `lecturer`/`abcd`.
+   - **Mode 2 (linked checkout):** Routes linked-worktree traffic over HTTPS at `https://manage.klicker.<workspace>.localhost`. Requires:
+     1. Install devrouter ≥ 0.0.35 and run `devrouter setup --yes` once.
+     2. From an existing linked worktree, start and prove the environment with:
         ```bash
-        dev workspace up <branch-name>
+        devrouter ensure .
         ```
-        _(Or for manual startup: `WORKSPACE=<slug> DEVCONTAINER_COMPOSE_OVERLAY=docker-compose.devrouter.yml devpod up .`)_.
-     3. Register the application routes:
-        ```bash
-        for a in api auth pwa manage control olat-api response-api lti chat db; do devrouter app run "$a"; done
-        # linked worktree variant:
-        for a in api auth pwa manage control olat-api response-api lti chat db; do devrouter app run "$a" --workspace <slug>; done
-        ```
-3. **Logs:** The dev servers auto-start inside the container. View logs via `tail -f /tmp/dev.log`.
+        Use `devrouter workspace up <branch-name>` from the main repository to create a new worktree. Do not use bare `devpod up` or manual route-token loops; `ensure` owns the persisted identity, Git mount, overlay, aliases, runtime proof, and routes together.
+3. **Logs:** The dev servers auto-start inside the container. View logs via `devrouter exec . -- tail -f /tmp/dev.log`.
+
+`post-start.sh` keeps Klicker's environment and origin setup local. Host-side `devrouter ensure` delivers its matching process helper to the exact validated container, then invokes the adapter. Released devrouter `0.0.35` records its owned process group and fingerprints the workspace, command, adapter bytes, and declared non-secret origin environment in `/tmp/devrouter-process-klicker-dev.state`; an exact repeat is idempotent, stale owned groups are replaced boundedly, and unknown processes are never killed.
+
+Devrouter owns generic process lifecycle and HTTP readiness. `ensure` verifies all ten routes and can spend one container recreate when an exact workspace is alive but an application remains unhealthy, including after a production build replaces live Next.js output.
+
+The consumer contract is pinned once in `.devrouter.yml` at devrouter `0.0.35`. The devcontainer image contains no devrouter package or helper, and `devcontainer.json` does not run the managed adapter independently.
+
+The image does include the repository's development toolchain: pnpm `11.5.0`, uv `0.11.12`, and the Python 3.12 selection used by analytics CI. This keeps `pnpm run check:all` reproducible inside the container.
+
+`devrouter doctor --repo .` is the static check. `devrouter ensure .` is the runtime authority: it resolves the checkout-specific overlay and fails unless the actual container aliases, Git mount, managed process, and routes agree.
 
 ### Path B: Host-based Setup (Legacy)
 
@@ -53,11 +71,11 @@ Runs all services on your host machine. Needs Traefik (`*.klicker.com` reverse p
 ```bash
 pnpm --version        # must print 11.x
 pnpm install          # ~20s cold; peer warnings are pre-existing
-pnpm run build        # 21 turbo tasks, ~1.5min; needs NO secrets
+pnpm run build        # 21 production-mode turbo tasks, ~1.5min; needs NO secrets
 pnpm run check        # typecheck — only passes AFTER build (generated artifacts)
 ```
 
-Order matters: on a fresh clone, `pnpm run check` fails in ~19 packages until `pnpm run build` has produced the Prisma client, GraphQL codegen output, and package dists. Git hooks depend on the same state: pre-commit runs `check:all`, pre-push runs `build` — both fail hard without `node_modules` and a prior build.
+Order matters: on a fresh clone, `pnpm run check` fails in ~19 packages until `pnpm run build` has produced the Prisma client, GraphQL codegen output, and package dists. The root build script forces `NODE_ENV=production`, even when the devcontainer exports `NODE_ENV=development` for live apps. Direct checks for the five Next apps are self-contained with respect to Next-generated route types: each app runs `next typegen` before `tsc --noEmit`, so those ignored types do not require a prior app build. Workspace dependency builds are still required; CI builds changed packages before checking them. Git hooks depend on the same broader workspace state: pre-commit runs `check:all`, pre-push runs `build` — both fail hard without `node_modules` and the required workspace-generated artifacts.
 
 ## Failure signatures (fresh clone / wrong state)
 

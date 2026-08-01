@@ -20,6 +20,11 @@ overrides:
   'next@>=15.0.0 <15.5.16': 15.5.18
   'systeminformation@>=4.17.0 <=5.31.5': 5.31.6
 
+packageExtensions:
+  'recharts@2.15.3':
+    peerDependencies:
+      '@types/react': '*'
+
 ignoredBuiltDependencies:
   - '@microsoft/teamsapp-cli'
   - keytar

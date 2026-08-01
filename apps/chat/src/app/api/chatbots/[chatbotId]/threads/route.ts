@@ -1,6 +1,6 @@
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
+import { ThreadService } from '@/src/services/threads'
 import { NextRequest, NextResponse } from 'next/server'
-import { ThreadService } from 'src/services/threads'
 
 /**
  * Retrieves all chat threads for the authenticated participant ordered by most recently updated.

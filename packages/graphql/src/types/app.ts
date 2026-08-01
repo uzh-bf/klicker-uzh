@@ -5,6 +5,7 @@ import {
 } from '@klicker-uzh/prisma/client'
 import type {
   ActivityLogModificationDetails,
+  AssessmentReportSnapshotV1,
   AvatarSettings,
   ElementData,
   ElementInstanceOptions,
@@ -238,6 +239,7 @@ declare global {
             }>
           }
         }
+    type PrismaAssessmentReportSnapshot = AssessmentReportSnapshotV1
   }
 }
 // #endregion

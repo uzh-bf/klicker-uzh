@@ -892,6 +892,65 @@ type AssessmentParticipant {
   id: String!
 }
 
+type AssessmentReportComparison {
+  cohortSize: Int!
+  histogram: [AssessmentReportHistogramBin!]!
+  percentile: Int!
+}
+
+type AssessmentReportCourse {
+  displayName: String!
+  id: String!
+  name: String!
+}
+
+enum AssessmentReportCredentialStatus {
+  ACTIVE
+  REVOKED
+  SUPERSEDED
+}
+
+type AssessmentReportHistogramBin {
+  binEnd: Float!
+  binStart: Float!
+  count: Int!
+}
+
+enum AssessmentReportIdentitySource {
+  COURSE_INVITATION
+}
+
+type AssessmentReportResults {
+  availableBasePoints: Float!
+  availableBonusPoints: Float!
+  availableCorrectnessPoints: Float!
+  availableTotalPoints: Float!
+  basePoints: Float!
+  bonusPoints: Float!
+  correctnessPoints: Float!
+  totalPoints: Float!
+}
+
+type AssessmentReportSnapshot {
+  comparison: AssessmentReportComparison
+  course: AssessmentReportCourse!
+  results: AssessmentReportResults!
+  subject: AssessmentReportSubject!
+  version: Int!
+}
+
+type AssessmentReportSubject {
+  email: String!
+  source: AssessmentReportIdentitySource!
+}
+
+enum AssessmentReportVerificationStatus {
+  ACTIVE
+  DATA_UNAVAILABLE
+  REVOKED
+  SUPERSEDED
+}
+
 type AssessmentResultsCourse {
   availableBasePoints: Float!
   availableBonusPoints: Float!
@@ -1836,6 +1895,21 @@ type CourseActivityList {
   practiceQuizzes: [CourseActivityItem!]!
 }
 
+type CourseAssessmentReportRecord {
+  id: ID!
+  issuedAt: Date!
+  revokedAt: Date
+  status: AssessmentReportCredentialStatus!
+  subjectEmail: String!
+  supersededAt: Date
+  verificationToken: String!
+}
+
+type CourseAssessmentReportRecordPage {
+  records: [CourseAssessmentReportRecord!]!
+  totalCount: Int!
+}
+
 type CourseLeaderboard {
   averageActiveScore: Float!
   computedAt: Date
@@ -2491,6 +2565,13 @@ type InstanceUpdateActivityInfo {
   status: PublicationStatus!
 }
 
+type IssuedAssessmentReport {
+  issuedAt: Date!
+  snapshot: AssessmentReportSnapshot!
+  status: AssessmentReportCredentialStatus!
+  token: String!
+}
+
 """
 The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
@@ -2742,6 +2823,7 @@ type Mutation {
   grantPrivatePreviewAccess(email: String!): Int
   importAdaptiveItemCalibrations(artifact: Json!): AdaptiveCalibrationImportReceipt!
   importCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!): Boolean!
+  issueAssessmentReport(courseId: String!): IssuedAssessmentReport!
   joinCourseLeaderboard(courseId: String!): ParticipantLearningData
   joinCourseWithPin(pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: String!): String
@@ -2795,6 +2877,7 @@ type Mutation {
   reviewAdaptiveEmpiricalValidation(decision: AdaptiveReviewDecision!, validationId: String!): AdaptiveWorkflowReceipt!
   reviewCompetenceTreeScale(decision: AdaptiveReviewDecision!, scaleVersionId: String!): AdaptiveWorkflowReceipt!
   reviewCompetenceTreeScaleLink(decision: AdaptiveReviewDecision!, scaleLinkId: String!): AdaptiveWorkflowReceipt!
+  revokeAssessmentReport(id: String!): CourseAssessmentReportRecord!
   revokeObjectAccess(objectId: String!, objectType: ObjectType!, permissionId: Int!): Int
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
   sendMagicLink(usernameOrEmail: String!): Boolean
@@ -3244,6 +3327,25 @@ type PracticeQuizPublicationPreview {
   rootNodes: [AdaptivePracticeQuizNode!]!
 }
 
+type PublicAssessmentReportCourse {
+  displayName: String!
+  name: String!
+}
+
+type PublicAssessmentReportSnapshot {
+  comparison: AssessmentReportComparison
+  course: PublicAssessmentReportCourse!
+  results: AssessmentReportResults!
+  subject: AssessmentReportSubject!
+  version: Int!
+}
+
+type PublicAssessmentReportVerification {
+  issuedAt: Date!
+  snapshot: PublicAssessmentReportSnapshot
+  status: AssessmentReportVerificationStatus!
+}
+
 enum PublicationStatus {
   DRAFT
   ENDED
@@ -3268,6 +3370,7 @@ type Query {
   adaptivePracticeQuizSetupPreview(courseId: String!, input: AdaptivePracticeQuizConfigInput!): AdaptivePracticeQuizSetupPreview
   artificialInstance(elementId: Int!): ElementInstance
   assessmentCourseParticipants(courseId: String!): [AssessmentParticipant!]
+  assessmentReportVerification(token: String!): PublicAssessmentReportVerification
   assessmentResultsCourse(courseId: String!): AssessmentResultsCourse
   assessmentResultsLiveQuiz(liveQuizId: String!): AssessmentResultsLiveQuiz
   basicCourseInformation(courseId: String!): StudentCourse
@@ -3286,6 +3389,8 @@ type Query {
   controlLiveQuiz(id: String!): LiveQuiz
   countCatalogSharingRequests: Int!
   course(id: String!): Course
+  courseAssessmentReportRecordCount(courseId: String!): Int!
+  courseAssessmentReportRecords(courseId: String!, numEntries: Int, offset: Int, searchString: String, statusFilter: [AssessmentReportCredentialStatus!]): CourseAssessmentReportRecordPage!
   courseCompetenceTreeCatalog(courseId: String!, cursor: String, limit: Int = 25, search: String): CompetenceTreeCatalogPage!
   courseCompetenceTrees(courseId: String!): [CompetenceTreeSummary!]!
   coursePracticeQuiz(courseId: String!): PracticeQuiz

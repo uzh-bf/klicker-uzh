@@ -1041,9 +1041,9 @@ describe('Different live-quiz workflows', function () {
     // check if live quiz description is shown to students on desktop view
     cy.loginStudent()
     cy.findByText(this.data.course2.quiz.displayName).click()
-    cy.get('[data-cy="live-quiz-description"]').contains(
-      this.data.course2.quiz.displayName
-    )
+    cy.get('[data-cy="live-quiz-description"]', { timeout: 15_000 })
+      .should('be.visible')
+      .and('contain', this.data.course2.quiz.displayName)
 
     // check if the description is also shown correctly on mobile view
     cy.viewport('iphone-x')

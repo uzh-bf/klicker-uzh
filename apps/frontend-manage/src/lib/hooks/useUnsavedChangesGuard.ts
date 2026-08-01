@@ -22,7 +22,9 @@ export function useUnsavedChangesGuard({
     return true
   }, [message])
 
-  dirtyRef.current = isDirty
+  useEffect(() => {
+    dirtyRef.current = isDirty
+  }, [isDirty])
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {

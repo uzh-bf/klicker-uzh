@@ -1,16 +1,16 @@
-# Self-contained dev stack for the klicker-uzh devcontainer (core apps + Phase 2
-# Tier 1). Intentionally does NOT extend the root docker-compose.yml (which carries
+# Self-contained dev stack for every routed app plus the two Hatchet workers.
+# Intentionally does NOT extend the root docker-compose.yml (which carries
 # the legacy per-repo Traefik + the `full`-profile prebuilt images). A single compose
 # project directory (.devcontainer) avoids relative-path ambiguity. (GOTCHAS #13)
 #
-# By default, this stack runs in self-contained localhost port-based mode:
+# The primary checkout adds the localhost overlay through `devrouter ensure`:
 # - postgres on db.klicker.localhost -> host port 5432
 # - mailhog UI -> host port 8025
 # - hatchet dashboard -> host port 8888
 # - all web applications published on localhost ports (3000-3010, 3030, 7078)
 #
-# To route through Traefik devrouter (https://*.klicker.localhost), use the
-# overlay file: `docker-compose.devrouter.yml`.
+# Linked worktrees use `docker-compose.devrouter.yml` for namespaced aliases,
+# routes, and the same-path Git common-directory mount.
 services:
   # --- main database (klicker-prod + shadow/lti/qa/hatchet DBs via init.sql) ---
   postgres:
@@ -25,7 +25,8 @@ services:
       timeout: 3s
       retries: 20
     networks:
-      - default
+      default: {}
+      devnet: {}
     volumes:
       # init.sql creates shadow + lti + qa + hatchet DBs and roles.
       - ../util/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -121,8 +122,19 @@ services:
       - devcontainer.env
     environment:
       - WORKSPACE=${WORKSPACE:-}
+    extra_hosts:
+      - 'api.klicker.localhost:host-gateway'
+      - 'auth.klicker.localhost:host-gateway'
+      - 'pwa.klicker.localhost:host-gateway'
+      - 'manage.klicker.localhost:host-gateway'
+      - 'control.klicker.localhost:host-gateway'
+      - 'olat-api.klicker.localhost:host-gateway'
+      - 'response-api.klicker.localhost:host-gateway'
+      - 'lti.klicker.localhost:host-gateway'
+      - 'chat.klicker.localhost:host-gateway'
     networks:
-      - default
+      default: {}
+      devnet: {}
     volumes:
       - ..:/workspaces/klicker-uzh:cached
       # Named volume shadows host node_modules so Linux-native binaries (Prisma
@@ -132,6 +144,8 @@ services:
       - node_modules_root:/workspaces/klicker-uzh/node_modules
       # Hatchet client token minted by the hatchet_token sidecar (read in post-create).
       - hatchet_token:/hatchet-token:ro
+      # Local mkcert root CA (prepared by initializeCommand on host) for server-side TLS trust.
+      - '${DEVROUTER_MKCERT_CAROOT:-./certs}/rootCA.pem:/etc/devrouter/mkcert-rootCA.pem:ro'
     command: sleep infinity
     depends_on:
       postgres:
@@ -156,3 +170,7 @@ volumes:
   node_modules_root:
   hatchet_lite_config:
   hatchet_token:
+
+networks:
+  devnet:
+    external: true

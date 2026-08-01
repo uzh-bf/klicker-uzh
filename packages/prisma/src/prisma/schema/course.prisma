@@ -61,11 +61,12 @@ model Course {
   adaptivePracticeQuizAttempts AdaptivePracticeQuizAttempt[] @relation("AdaptivePracticeQuizAttemptCourse")
   competenceTreeLinks          CompetenceTreeCourse[]
 
-  directPermissions  Permission[]
-  permissions        DerivedPermission[]
-  accessRequests     AccessRequest[]
-  catalogAssignments CatalogCollectionAssignment[]
-  activityLog        ActivityLogEntry[]
+  directPermissions   Permission[]
+  permissions         DerivedPermission[]
+  accessRequests      AccessRequest[]
+  catalogAssignments  CatalogCollectionAssignment[]
+  activityLog         ActivityLogEntry[]
+  verificationRecords VerifiableCredential[]
 
   competencyTree   CompetencyTree? @relation(fields: [competencyTreeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   competencyTreeId Int?

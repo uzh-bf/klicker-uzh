@@ -2,6 +2,7 @@ import {
   computeAwardedXp,
   computeSimpleAwardedPoints,
 } from '@klicker-uzh/grading'
+import { prisma } from '@klicker-uzh/prisma'
 import {
   Element,
   ElementInstance,
@@ -11,7 +12,7 @@ import {
   LeaderboardType,
   Participant,
   Participation,
-  PrismaClient,
+  type PrismaClient,
   QuestionResponse,
   QuestionResponseDetail,
   ResponseCorrectness,
@@ -48,8 +49,6 @@ const verbose = true
 // ? This script will iterate through all element instances and
 // ? update the question responses and question response details
 async function run() {
-  const prisma = new PrismaClient()
-
   // count number of available instances for logging
   const numOfInstances = await prisma.elementInstance.count({
     where: {
