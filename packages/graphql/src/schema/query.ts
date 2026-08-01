@@ -855,7 +855,10 @@ export const Query = builder.queryType({
         type: QrScanPrintData,
         args: {
           elementId: t.arg.int({ required: true }),
-          decoyCount: t.arg.int({ required: true }),
+          decoyCount: t.arg.int({
+            required: true,
+            validate: { min: 0, max: 20 },
+          }),
         },
         resolve: withPermission(
           (args) => ({ elementId: args.elementId }),

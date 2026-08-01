@@ -9,6 +9,21 @@
 The verification used the synthetic element “QR verification station” in the
 isolated development database. No production or personal data was used.
 
+## Evidence provenance
+
+The screenshots were captured on the earlier QR foundation commits
+`fcba60802` and `70ac45ec1`; they are historical evidence for authoring,
+printing, ownership, and decoy rendering, not proof of the Layer 1 corrective
+changes currently under review.
+
+The current-tip browser recheck on 2026-08-01 is blocked on this host. The
+managed runtime could not start because `devrouter ensure` could not determine
+the process identity for the workspace lifecycle lock, and `devrouter ls`
+could not access `/Users/rschlae/.orbstack/run/docker.sock` (`EPERM`). The
+primary and linked Manage URLs therefore returned no HTTP response. A fresh
+`agent-browser` run against the corrective commit is still required once the
+DevPod/Docker runtime is available.
+
 ## Evidence
 
 | File | Verified state |

@@ -13,6 +13,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Suspense, useCallback, useEffect, useState } from 'react'
 import ActivityCreation from '../components/activities/ActivityCreation'
+import { getActivityAcceptedElementTypes } from '../components/activities/creation/activityAcceptedElementTypes'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
 import Pagination, {
   isPaginationPageSize,
@@ -154,6 +155,13 @@ function Index() {
     await refetchElements()
   }, [refetchElements])
 
+  const acceptedTypes = creationMode
+    ? getActivityAcceptedElementTypes(creationMode)
+    : undefined
+  const visibleElements = acceptedTypes
+    ? elements.filter((element) => acceptedTypes.includes(element.type))
+    : elements
+
   // on change, store new page size in local storage
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -240,13 +248,16 @@ function Index() {
       if (!!creationMode) {
         return Object.fromEntries(
           Object.entries(selection).filter(
-            ([, question]) => question?.isManager ?? false
+            ([, question]) =>
+              (question?.isManager ?? false) &&
+              question?.type !== undefined &&
+              acceptedTypes?.includes(question.type)
           )
         )
       }
       return selection
     })
-  }, [creationMode])
+  }, [acceptedTypes, creationMode])
 
   // if passed through the query arguments, open the element editing dialog
   useEffect(() => {
@@ -344,7 +355,7 @@ function Index() {
             <div className="flex flex-none flex-row content-center items-end justify-between pb-2.5">
               <div className="flex flex-row items-center gap-1.5">
                 <ElementListSelectAllCheckbox
-                  elements={elements}
+                  elements={visibleElements}
                   selectedElements={selectedElements}
                   setSelectedElements={setSelectedElements}
                   creationMode={creationMode}
@@ -405,7 +416,7 @@ function Index() {
                   <ElementList
                     filtersActive={filtersActiveExceptCourse}
                     activityWizardOpen={!!creationMode}
-                    elements={elements}
+                    elements={visibleElements}
                     selectedElements={selectedElements}
                     triggerSuccessToast={() =>
                       toast({
