@@ -27,7 +27,10 @@ const OWNER_ID = 'fb5c14dc-853a-4acb-b146-080e84c4b7df'
 const RESOURCE_ID = '17af8b84-58bf-4a92-8f8b-197556ed98f4'
 const CONTENT_SHA256 =
   '9b74c9897bac770ffc029102a200c5de11ba9dbd0e0f28c991eb64b0fb54d96e'
-const SOURCE_DIGEST =
+const SOURCE_DIGEST = hashKBContentDigestEntries([
+  { resourceId: RESOURCE_ID, contentSha256: CONTENT_SHA256 },
+])
+const STALE_SOURCE_DIGEST =
   'c2d01b6fd94f7a792b00401922865f76da84d5206a2c6940a009456f5e2f1a15'
 const SOURCE_URL = 'https://content.example.org/public-paper.pdf?version=1'
 
@@ -513,7 +516,7 @@ describe('KB graph external reconciliation', () => {
         {
           id: BUILD_ID,
           kbId: KB_ID,
-          sourceContentDigest: SOURCE_DIGEST,
+          sourceContentDigest: STALE_SOURCE_DIGEST,
           createdAt: CREATED_AT,
           externalOperationId: 'external-run-id',
         },
