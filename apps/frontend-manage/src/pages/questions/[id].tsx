@@ -60,7 +60,10 @@ function QuestionDetails() {
             element: instance.elementData.name,
           })}
         </H2>
-        <div className="w-256 max-w-full rounded-lg border border-solid p-5">
+        <div
+          data-cy="question-preview-container"
+          className="w-256 max-w-full rounded-lg border border-solid p-5"
+        >
           <StudentElement
             element={instance}
             elementIx={0}
