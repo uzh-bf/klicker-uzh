@@ -23,51 +23,62 @@
 - **Evidence:** The final source state removes table cell merging and persisted resizing because Markdown cannot round-trip either; it adds `immediatelyRender: false`, Markdown-typed content boundaries, legacy-empty normalization, clipboard safeguards, and React selection subscriptions.
 - **Evidence:** The source patch relative to its PR base changes 42 files. Comparing its stale head directly with current `v3` produces unrelated changes from the branch's old base; that comparison must never be copied.
 - **Evidence:** `klicker-frontend-ui`, `klicker-playwright-e2e`, and `klicker-testing-verification` require Markdown round trips, `data-cy`, a real browser, and targeted Playwright validation.
+- **Review:** Independent read-only review of plan commit `2be81f273` required moving rich dependencies and paste behavior into A2, adding an A1 E2E integrity proof, assigning docs/skills per layer, and making source parity hunk-auditable. Those corrections are incorporated below.
 - **Limitation:** Context7 is unavailable in this environment. Use the version-pinned source implementation and the repository's Tiptap guidance; do not infer new Tiptap APIs.
 
 ## Source-to-Stack Coverage Ledger
 
 | Source patch area | Destination | Handling |
 | --- | --- | --- |
-| `apps/frontend-manage/package.json`, `packages/shared-components/package.json`, `pnpm-lock.yaml`, deleted Slate declarations/converter | Core | Start from source commit `635f16b43`; retain the final source's single aligned Tiptap version only if current lockfile reconciliation requires it. |
+| Core dependency removals in `apps/frontend-manage/package.json` and `packages/shared-components/package.json`, deleted Slate declarations/converter, and their lockfile entries | Core | Start from source commit `635f16b43`; copy the Slate-removal and core-Tiptap dependency hunks, then regenerate only the conflicted current-`v3` lockfile context. |
 | `ContentInput.tsx` Slate replacement, direct callers (`GroupActivityGradingStack`, `ElementContentInput`, `ElementExplanationField`, `CaseStudyCasesFields`, `ChoicesOptions`, `pages/questions/[id]`) | Core | Copy the source core implementation, including existing toolbar/media behavior and `data-cy` boundaries. Bring forward only the final source lifecycle hunks required for safe SSR and Markdown persistence. |
-| `ContentInput.tsx` table/code extensions and controls; `apps/frontend-manage/src/globals.css`, `apps/frontend-pwa/src/globals.css`, `packages/markdown/src/Markdown.tsx`, `packages/i18n/messages/{de,en}.ts` | Rich Markdown | Reapply source commit `e0734c93c` and later source safety fixes. Keep only controls that persist as GFM: insert/delete table, add/delete rows/columns, delete table, and fenced code with language. Never reintroduce merge or resize UI. |
-| `playwright/tests/ZA-editor-rich-features.spec.ts`, rich portions of `0-video-embed.spec.ts` and `G-elements-mc.spec.ts`, and `playwright/util/fixtures/elements.ts` paste helper | Rich Markdown | Reuse source tests/helpers for Markdown round trips, supported embeds, table/code authoring, and paste precedence. |
-| Final `ContentInput.tsx` compatibility hunks: external content synchronization, Formik-safe updates, legacy `'<br>'` handling, dynamic placeholder, selection state, Markdown paste/clearing, and pasted table-span expansion | Compatibility | Selectively apply the source fixes in their final form. This layer may not invent a new editor architecture. |
+| Table/code/Lowlight dependency hunks in `apps/frontend-manage/package.json` and `pnpm-lock.yaml`; `ContentInput.tsx` table/code extensions and controls; `apps/frontend-manage/src/globals.css`, `apps/frontend-pwa/src/globals.css`, `packages/markdown/src/Markdown.tsx`, `packages/i18n/messages/{de,en}.ts` | Rich Markdown | Reapply source commit `e0734c93c` and later source safety fixes. Keep only controls that persist as GFM: insert/delete table, add/delete rows/columns, delete table, and fenced code with language. Never reintroduce merge or resize UI. |
+| `playwright/tests/ZA-editor-rich-features.spec.ts`, rich portions of `0-video-embed.spec.ts` and `G-elements-mc.spec.ts`, `playwright/util/fixtures/elements.ts` paste helper, and the `ContentInput.tsx` plain-Markdown/table-span paste implementation | Rich Markdown | Reuse source tests/helpers and their implementation together for Markdown round trips, supported embeds, table/code authoring, and paste precedence. |
+| Final `ContentInput.tsx` compatibility hunks: legacy `'<br>'` handling, dynamic placeholder, selection state, and contenteditable-clearing support; `@tiptap/pm` dependency/lockfile hunk | Compatibility | Selectively apply the source fixes in their final form. This layer may not invent a new editor architecture. Core already owns safe external synchronization, Formik-safe updates, and disabled-state no-op behavior. |
 | `playwright/util/actions.ts`, remaining `playwright/util/fixtures/elements.ts`, and existing workflow specs `F`, `H`, `J`, `K`, `L`, `MA`, `O`, `P`, `Q`, `S`, `V` | Compatibility | Preserve test intent; copy the source contenteditable keyboard-clear and helper adaptations needed by real authoring workflows. |
-| `.agents/skills/tiptap/SKILL.md`, `skills-lock.json`, `.gitignore`, and affected frontend/Playwright skill guidance | Core then Compatibility | Copy source guidance only where it describes shipped behavior. The `.reference/` ignore rule travels with the Tiptap guidance. |
-| `docs/frontend-conventions.md` and `docs/testing.md` | Rich Markdown then Compatibility | Reapply only the still-true Markdown/clipboard/editor contracts, preserving current `v3` documentation added after the source branch diverged. |
+| `.agents/skills/tiptap/SKILL.md`, `skills-lock.json`, `.gitignore`, and core `klicker-frontend-ui` guidance | Core | Copy source guidance only where it describes shipped core behavior. The `.reference/` ignore rule travels with the Tiptap guidance. |
+| Rich sections of `docs/frontend-conventions.md`, `docs/testing.md`, `klicker-frontend-ui`, and `klicker-playwright-e2e` guidance | Rich Markdown | Update the same layer with its table/code, Markdown persistence, and rich E2E contracts while preserving newer current-`v3` documentation. |
+| Compatibility sections of the same wiki/skills | Compatibility | Update only legacy-empty, selection, placeholder, and contenteditable-clear guidance introduced by A3. |
 | `docs/log.md` and `project/2026-07-10-pr-5148-tiptap-editor-finalization-plan.md` | Deliberate exclusion | Do not copy stale historical entries or the source finalization plan. This plan and its progress replace them; the final parity audit will state that substitution. |
+
+### Hunk Ledger
+
+- **Do:** Maintain a row for every source hunk as it is applied: source commit/path/range, destination layer/commit, disposition (`verbatim`, `current-v3 adaptation`, or `exclusion`), and the reason for every non-verbatim disposition.
+- **Check:** Review the ledger with the per-layer diff before commit. `ContentInput.tsx`, package manifests, lockfile entries, docs, and tests require hunk-level rows; a matching file name alone is not parity evidence.
+- **Finish:** Compare the source and stack content diffs, not only their path lists. Source-only or stack-only hunks without an approved ledger row block publication.
 
 ## Approved Slices and Commit Boundaries
 
 ### Slice A1 — Core Markdown editor migration
 
-- **Do:** Commit this plan first. Then apply source commit `635f16b43` selectively, reconcile it with current `v3`, and carry forward only source lifecycle code necessary for safe initial use: SSR-safe Tiptap initialization, Markdown content boundaries, no update emission from external sync, and existing caller contracts.
-- **Check:** Package/type checks in the DevPod; targeted Playwright helper compilation/listing; a seeded Manage editor browser run covering initial content, editing, disabled state, and save/reopen; source-diff review.
+- **Do:** Commit this plan first. Then apply source commit `635f16b43` selectively, reconcile it with current `v3`, and carry forward only source lifecycle code necessary for safe initial use: SSR-safe Tiptap initialization, Markdown content boundaries, no update emission from external sync or disabled-state transitions, and existing caller contracts.
+- **Check:** Package/type checks in the DevPod; focused full-stack Playwright coverage based on the existing source authoring workflow, including create/edit/save/reopen plus no dirty/save transition on mount, external content synchronization, or disabled-state transition until a real edit; a seeded Manage browser run covering the same states; source-hunk review.
 - **Commit:** `refactor(manage): migrate core rich-text editor to tiptap`.
+- **Docs:** Update the core Tiptap/frontend guidance and wiki contract in this layer.
 - **Gate:** Foundation review and simplification before moving to A2. Pause only if that review finds a content-integrity or current-base conflict that changes the approved boundary.
 
 ### Slice A2 — Markdown-safe rich content
 
-- **Do:** Apply source rich-content commits/hunks for GFM table and fenced-code authoring, shared preview rendering, styles, translations, and dedicated coverage. Keep the source's final Markdown-safe restriction: no merged cells and no persisted column widths.
+- **Do:** Apply source rich-content commits/hunks for the table/code/Lowlight dependencies, GFM table and fenced-code authoring, source Markdown/table-span paste handling, shared preview rendering, styles, translations, and dedicated coverage. Keep the source's final Markdown-safe restriction: no merged cells and no persisted column widths.
 - **Check:** Focused Markdown tests; app type checks; rich feature Playwright spec; browser screenshots for table/code authoring and saved preview; source-diff review.
 - **Commit:** `enhance(editor): support Markdown-safe tables and code blocks`.
+- **Docs:** Update the rich Markdown wiki and frontend/Playwright guidance in this layer.
 
 ### Slice A3 — Compatibility and workflow hardening
 
-- **Do:** Apply the remaining source compatibility commits/hunks and existing-flow Playwright updates. Preserve Formik, paste, legacy-content, placeholder, selection-state, and contenteditable-clear behavior without adding new user-facing controls.
+- **Do:** Apply the remaining source compatibility commits/hunks and existing-flow Playwright updates. Preserve legacy-content, placeholder, selection-state, and contenteditable-clear behavior without adding new user-facing controls.
 - **Check:** Targeted affected Playwright specs, `pnpm run check:all`, `pnpm run build`, real browser evidence, and source-union audit against the 42-file source patch.
 - **Commit:** `fix(editor): harden Tiptap authoring workflows`.
+- **Docs:** Update only compatibility-specific wiki and skill guidance in this layer.
 
 ## Verification and Review
 
 - **Tooling:** Run dependency-backed checks inside the DevPod via `devrouter ensure .` / `devrouter exec . -- …`; use `npx agent-browser` for the required browser proof.
-- **Per layer:** Review staged data and diffs for secrets/PII, run the fastest relevant checks first, commit only layer files, then obtain separate code review and simplification review against the committed range.
+- **Per layer:** Review staged data and diffs for secrets/PII, update the affected wiki and skills in the same layer, run the fastest relevant checks first, commit only layer files, then obtain separate code review and simplification review against the committed range.
 - **Final stack:** Perform the routine code-level security review and maintainability review required by repository policy. Do not perform a broad security assessment without new user approval.
-- **Parity audit:** Compare the stack union with `git diff --name-status c8de9c89782e8aa63b612538a3508c0d4a73cab3 5ad6681508c92680e75ed5e30937c5ebf09fd925`; enumerate source-only and stack-only paths, and explain all intentional differences.
+- **Parity audit:** Compare the stack union with `git diff c8de9c89782e8aa63b612538a3508c0d4a73cab3 5ad6681508c92680e75ed5e30937c5ebf09fd925`, using the hunk ledger to enumerate every source-only and stack-only hunk and explain all intentional differences.
 - **Publication:** Create draft PRs only after their respective layer commits and checks. Do not merge, close, alter, or delete PR #5148 or its branch.
 
 ## Progress
 
-- **2026-08-01 — active:** User approved the two-stack topology and source-copy constraint. Live base fetched at `7812fa7`; dedicated worktree and native three-layer stack created. Next: commit this plan, have it reviewed, then apply the source core commit onto A1.
+- **2026-08-01 — active:** User approved the two-stack topology and source-copy constraint. Live base fetched at `7812fa7`; dedicated worktree and native three-layer stack created. Independent plan review found four layer/parity/verification/documentation issues; this update resolves them. Next: commit the plan correction, then apply the source core patch onto A1.
