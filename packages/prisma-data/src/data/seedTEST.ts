@@ -791,7 +791,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   const LA_EXCLUDED_UNTIL_INDEX = 45
   const LA_CHOICE_AT = new Date('2018-12-01T00:00')
 
-  // create participations for all the first 30 participants
+  // create participations for all test participants
   await Promise.all(
     PARTICIPANT_IDS.map(async (id, ix) => {
       const learningAnalyticsStatus =
@@ -854,30 +854,38 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   // never nest the event creation. Events are backdated to the choice so they
   // precede the analytics pipeline cutoff and do not hold the course in a
   // pending-finalization state.
-  const testkursParticipations = await prisma.participation.findMany({
-    where: { courseId: COURSE_ID_TEST },
-    select: {
-      id: true,
-      learningAnalyticsStatus: true,
-      learningAnalyticsIncludedFrom: true,
-    },
-  })
-  const decidedParticipations = testkursParticipations.filter(
-    (participation) =>
-      participation.learningAnalyticsStatus !==
-      Prisma.LearningAnalyticsParticipationStatus.UNDECIDED
-  )
-  await prisma.learningAnalyticsChoiceEvent.deleteMany({
-    where: { participationId: { in: testkursParticipations.map((p) => p.id) } },
-  })
-  await prisma.learningAnalyticsChoiceEvent.createMany({
-    data: decidedParticipations.map((participation) => ({
-      participationId: participation.id,
-      status: participation.learningAnalyticsStatus,
-      includedFrom: participation.learningAnalyticsIncludedFrom,
-      disclosureVersion: LEARNING_ANALYTICS_DISCLOSURE_VERSION,
-      createdAt: LA_CHOICE_AT,
-    })),
+  await prisma.$transaction(async (tx) => {
+    const testkursParticipations = await tx.participation.findMany({
+      where: {
+        courseId: COURSE_ID_TEST,
+        participantId: { in: [...PARTICIPANT_IDS] },
+      },
+      select: {
+        id: true,
+        learningAnalyticsStatus: true,
+        learningAnalyticsIncludedFrom: true,
+      },
+    })
+    const decidedParticipations = testkursParticipations.filter(
+      (participation) =>
+        participation.learningAnalyticsStatus !==
+        Prisma.LearningAnalyticsParticipationStatus.UNDECIDED
+    )
+
+    await tx.learningAnalyticsChoiceEvent.deleteMany({
+      where: {
+        participationId: { in: testkursParticipations.map((p) => p.id) },
+      },
+    })
+    await tx.learningAnalyticsChoiceEvent.createMany({
+      data: decidedParticipations.map((participation) => ({
+        participationId: participation.id,
+        status: participation.learningAnalyticsStatus,
+        includedFrom: participation.learningAnalyticsIncludedFrom,
+        disclosureVersion: LEARNING_ANALYTICS_DISCLOSURE_VERSION,
+        createdAt: LA_CHOICE_AT,
+      })),
+    })
   })
 
   // add participants 30 to 35 to single groups

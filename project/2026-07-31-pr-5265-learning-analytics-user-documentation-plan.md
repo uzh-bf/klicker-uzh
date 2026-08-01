@@ -247,12 +247,27 @@ rather than a rollout detail.
 - S5 done except the review gates. Branch pushed; pre-push `pnpm run build`
   passed (22/22 tasks). Draft [PR #5265](https://github.com/uzh-bf/klicker-uzh/pull/5265)
   opened against `codex/learning-analytics-opt-out-plan`.
-- `Risk:` the finish-gate reviews (`$security-review`,
-  `$thermo-nuclear-code-quality-review`, independent whole-branch review) were
-  **not** run. The session forbids agent delegation without an explicit user
-  request. Deferred pending the user's go-ahead; the PR stays draft until then.
-- Next action: run the three review gates once authorised, then mark the PR
-  ready together with the rest of the stack.
+- `Evidence:` the authorized maintainability and independent whole-branch
+  reviews found documentation claims that overstated anonymity and coverage,
+  omitted approved privacy exclusions, overpromised chatbot access, and a seed
+  rebuild that could rewrite unrelated Testkurs choice history. The fixes align
+  both pages with ADR 0002 and the chatbot boundary in ADR 0001, scope the seed
+  rebuild to `PARTICIPANT_IDS`, make it atomic, and document the deterministic
+  fixture in the engineering wiki.
+- `Evidence:` `pnpm --filter @klicker-uzh/prisma-data check` passes; the
+  Docusaurus build passes with only the pre-existing broken links and anchors
+  elsewhere in the site; Prettier passes on all changed files; and browser
+  verification passes for both documentation pages at desktop and 390x844 with
+  no horizontal overflow. The wiki validator runs but still reports one
+  pre-existing frontmatter error in an unrelated solution note plus existing
+  hygiene warnings.
+- `Risk:` the separate security review is intentionally deferred to the
+  stack-level review by user decision. The PR remains draft until the corrected
+  branch passes the maintainability and independent review rerun, and legal,
+  release, and rollout gates remain separate.
+- Next action: commit the verified fixes, rerun the authorized review gates on
+  the corrected range, then update the draft PR evidence without marking it
+  ready or merging it.
 
 ## Next steps
 

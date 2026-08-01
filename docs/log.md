@@ -1,5 +1,9 @@
 # Log
 
+## 2026-08-01
+
+- **Update** — Aligned the Domain Model citation with the canonical learning-analytics disclosure constant, documented the deterministic Testkurs learning-analytics seed and its scoped atomic choice-history rebuild in [Testing](./testing.md), and refreshed both pages' timestamps.
+
 ## 2026-07-30
 
 - **Update** — Documented the guarded pre-rollout purge of dedicated

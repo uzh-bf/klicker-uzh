@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the two e2e stacks and their seeds, and the CI test matrix.
-timestamp: '2026-07-23'
+timestamp: '2026-08-01'
 tags:
   - testing
   - ci
@@ -64,6 +64,8 @@ Both frameworks click the same `data-cy` attributes ([Frontend Conventions](./fr
 The three seed paths (dev `seedTEST.ts`, Cypress, Playwright) are **independent** — a fixture added to one does not exist in the others ([Data & Migrations](./data-and-migrations.md)). `*:raw` script variants skip Infisical on both sides. `_run_app_dependencies.sh` with no args (or `local`/`dev`/`playwright`) applies the schema with `prisma:push` without forcing a reset; the `test`/`cypress` argument is the Cypress-specific **reset** path.
 
 Learning-analytics development has a separate deterministic interaction fixture: `packages/prisma-data/src/data/interactions/index.ts:seedInteractions`. It uses a stable seed to populate responses, assessment live-quiz responses, chat threads, and messages across seeded courses, and upserts the repeatable records where the schema provides stable keys. Run it only through its development command; `packages/prisma-data/src/scripts/seedInteractions.ts:main` refuses `ENV=production`. This fixture supplements the base development seed and is not part of the Cypress or Playwright seed paths.
+
+The development and QA seed (`packages/prisma-data/src/data/seedTEST.ts:seedTest`) enables Learning Analytics for `Testkurs` and assigns a deterministic split: `testuser1`–`testuser35` are included, `testuser36`–`testuser45` are excluded, and `testuser46`–`testuser50` remain undecided. Decided choices and their choice events use the shared disclosure version and a backdated timestamp so the interaction fixture can produce eligible analytics. The choice-history rebuild is scoped to these synthetic participant IDs and runs atomically; it must not be used to rewrite other Testkurs participation history.
 
 For authoring specifics, helper patterns, and failure triage, use the skills — `klicker-cypress-e2e` and `klicker-playwright-e2e` ([.agents/skills/](../.agents/skills/)) — rather than duplicating their content here.
 

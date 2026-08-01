@@ -56,7 +56,7 @@ The Performance and Progress Dashboard groups four views:
 
 The _Student Performance_ view is the only place where results are broken down per student, and it is deliberately kept coarse:
 
-- **Coverage** tells you whether a student has data for all of the selected activities (_Complete_) or only for some of them (_Partial_).
+- **Coverage** tells you whether the student's inclusion period began by the start of the selected reporting period (_Complete_) or later (_Partial_). It is independent of whether the student completed every activity.
 - **Completed Activities** counts the activities that student finished entirely.
 - **Mean completion** is their average completion across the selected activities, rounded to the nearest ten percent.
 
@@ -88,23 +88,27 @@ This is the part worth reading carefully, because it is what you may need to exp
 - names, email addresses, or participant identifiers
 - free-text responses
 - free-text feedback
+- exact timestamps for individual students
+- item-level response sequences
+- rare attributes or other distinctive dimensions
+- stable pseudonyms or links across reports
 - which students chose to participate and which did not
 
 Two further rules apply to everything above:
 
 **At least five students.** Any view is only rendered if at least five eligible students contribute to it. Below that threshold, the dashboard shows a notice instead of the data. This applies to the feedback views and to the export as well. In a small course, or in a course where few students chose to participate, you may therefore see no data at all — that is the privacy model working as intended, not a fault.
 
-**Report-local labels.** The Student Performance table uses labels such as _Student 1_ and _Student 2_. These labels are assigned afresh every time the report is generated. _Student 3_ in today's report is not the same person as _Student 3_ in last week's report, and the labels cannot be linked across reports, across dashboards, or back to a KlickerUZH account.
+**Report-local labels.** The Student Performance table uses labels such as _Student 1_ and _Student 2_. These labels are assigned afresh every time the report is generated and are report-local rather than stable pseudonyms. _Student 3_ in today's report is not intended to be linked to _Student 3_ in last week's report, another dashboard, or a KlickerUZH account.
 
 ## Exporting
 
-The Student Performance view offers an export of the de-identified progress summaries. By default the export covers only students with complete coverage of the selected activities; the _Include partial coverage_ option widens it to partial coverage as well.
+The Student Performance view offers an export of the de-identified progress summaries. By default the export covers only students with _Complete_ coverage for the selected reporting period; the _Include partial coverage_ option widens it to _Partial_ coverage as well.
 
 The export follows the same rules as the dashboards: it carries report-local labels only, and no export is produced if the selection contains fewer than five eligible students.
 
 ## Your responsibilities
 
-Learning Analytics is designed so that you cannot identify individual students from it. Please do not work around that design:
+Learning Analytics output is de-identified with safeguards against re-identification, but it is not guaranteed anonymous. Please do not work around those safeguards:
 
 - Do not attempt to identify individual students from the results.
 - Do not combine Learning Analytics results with other information — attendance lists, grades, submission timestamps, or your own notes — in order to identify individuals.
