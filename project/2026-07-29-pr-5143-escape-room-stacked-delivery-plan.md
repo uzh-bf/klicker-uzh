@@ -183,6 +183,14 @@ The independent Sol high review of `7812fa71..4f2a6186` confirmed three release-
 - If the schema validation is included, GraphQL codegen is regenerated and tracked artifacts are clean.
 - `pnpm run check:all`, `pnpm run build`, `git diff --check`, and a clean worktree pass before rebasing `codex/escape-room-individual`, `codex/escape-room-group`, and `codex/escape-room-live` with `gh stack rebase --upstack`.
 
+### Corrective execution status — 2026-08-01
+
+- **Implemented in `9fed582de`:** catalog imports now rotate QR scan codes; the manage question pool, selection cleanup, select-all, paste, drag/drop, and bulk-add paths share the four activity-specific accepted-type contracts; `decoyCount` now carries the documented Pothos `0..20` validation; and a Playwright regression covers all four ordinary wizard entry points.
+- **Static gates passed:** frontend-manage, GraphQL, and Playwright type checks; GraphQL codegen; the focused QR placement suite (6/6); frontend-manage production build; repository `check:all` (25 checks, 7 lint tasks); `git diff --check`; and the commit hooks. The host used Node 26.5.1 with Volta pnpm 9.7.0, so the repository's Node 24 engine warnings remain noted.
+- **Database-backed checks remain blocked:** the focused QR contract suite cannot reach the local Prisma database, and the catalog-sharing test cannot load Hatchet without `HATCHET_CLIENT_TOKEN`; no test result is being treated as a pass.
+- **Browser gate remains blocked:** the current-tip `agent-browser` run could not start because `devrouter ensure` could not determine the workspace process identity and the Docker socket is unavailable (`EPERM`). The verification README now labels the existing screenshots as historical evidence and records the exact blocker.
+- **Stack topology is unchanged and dependents are not rebased yet:** after the database and browser gates are available, run `gh stack rebase --upstack`, re-run the dependent checks, and only then consider publication. No PR was marked ready or merged by this corrective execution.
+
 ## Layer 1 evidence
 
 - **Primary implementation commits:** `4ce964b08`, `01b7693a4`, `a270c49b5`, `37eacfb31`; the final review correction is committed with this progress update.
