@@ -1133,7 +1133,11 @@ export async function deleteKb({ id }: { id: string }, ctx: ContextWithUser) {
 
       await prisma.kB.update({
         where: { id },
-        data: { deletedAt, deletedById: ctx.user.sub },
+        data: {
+          deletedAt,
+          deletedById: ctx.user.sub,
+          publishedGraphBuildId: null,
+        },
       })
       const bindingCandidates = await prisma.kBChatbot.findMany({
         where: { kbId: id, isEnabled: true },
@@ -1791,6 +1795,18 @@ function getKBGraphArtifactBlobName(buildId: string): string {
   return `knowledge-graphs/${buildId}.graphml`
 }
 
+const KB_GRAPH_BUILD_CONFIG_SELECT = {
+  id: true,
+  status: true,
+  statusMessage: true,
+  qualityTier: true,
+  sourceContentDigest: true,
+  startedAt: true,
+  finishedAt: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies DB.Prisma.KBGraphBuildSelect
+
 function getKBGraphBuildConfig(
   kb: {
     id: string
@@ -1833,42 +1849,17 @@ export async function getKbKnowledgeGraphConfig(
 ): Promise<KBKnowledgeGraphConfig> {
   await assertKbPreviewAccess(ctx)
   const kb = await getOwnedKbOrThrow(ctx, kbId)
-  const latestBuild = await ctx.prisma.kBGraphBuild.findFirst({
-    where: { kbId: kb.id },
-    select: {
-      id: true,
-      status: true,
-      statusMessage: true,
-      qualityTier: true,
-      sourceContentDigest: true,
-      startedAt: true,
-      finishedAt: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-    orderBy: { createdAt: 'desc' },
-  })
-  const preferredBuildId =
-    kb.activeGraphBuildId ?? kb.publishedGraphBuildId ?? latestBuild?.id
-  const build =
-    preferredBuildId === latestBuild?.id
-      ? latestBuild
-      : preferredBuildId
-        ? await ctx.prisma.kBGraphBuild.findFirst({
-            where: { id: preferredBuildId, kbId: kb.id },
-            select: {
-              id: true,
-              status: true,
-              statusMessage: true,
-              qualityTier: true,
-              sourceContentDigest: true,
-              startedAt: true,
-              finishedAt: true,
-              createdAt: true,
-              updatedAt: true,
-            },
-          })
-        : null
+  const preferredBuildId = kb.activeGraphBuildId ?? kb.publishedGraphBuildId
+  const build = preferredBuildId
+    ? await ctx.prisma.kBGraphBuild.findFirst({
+        where: { id: preferredBuildId, kbId: kb.id },
+        select: KB_GRAPH_BUILD_CONFIG_SELECT,
+      })
+    : await ctx.prisma.kBGraphBuild.findFirst({
+        where: { kbId: kb.id },
+        select: KB_GRAPH_BUILD_CONFIG_SELECT,
+        orderBy: { createdAt: 'desc' },
+      })
   const isStale =
     build?.status === DB.KBGraphBuildStatus.SUCCEEDED
       ? build.sourceContentDigest !==
@@ -2018,10 +2009,14 @@ export async function rebuildKbKnowledgeGraph(
       })
     }
 
+    const validatedResources = resources.map((resource) => ({
+      resource,
+      contentSha256: validateGraphBuildSnapshotResource(resource),
+    }))
     const sourceContentDigest = hashKBContentDigestEntries(
-      resources.map((resource) => ({
+      validatedResources.map(({ resource, contentSha256 }) => ({
         resourceId: resource.id,
-        contentSha256: validateGraphBuildSnapshotResource(resource),
+        contentSha256,
       }))
     )
     const buildId = randomUUID()
@@ -2035,13 +2030,13 @@ export async function rebuildKbKnowledgeGraph(
         graphName: getKnowledgeGraphName(kbId, buildId),
         graphmlBlobName: getKBGraphArtifactBlobName(buildId),
         sources: {
-          create: resources.map((resource) => ({
+          create: validatedResources.map(({ resource, contentSha256 }) => ({
             resourceId: resource.id,
             title: resource.title,
             type: resource.type,
             sourceUrl: resource.sourceUrl,
             blobName: resource.blobName,
-            contentSha256: validateGraphBuildSnapshotResource(resource),
+            contentSha256,
           })),
         },
       },

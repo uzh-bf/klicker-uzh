@@ -4,6 +4,9 @@
 ALTER TABLE "public"."KBGraphBuild"
 ADD COLUMN "cleanedAt" TIMESTAMP(3);
 
+ALTER TABLE "public"."KBGraphBuild"
+ADD COLUMN "cleanupStartedAt" TIMESTAMP(3);
+
 CREATE TABLE "public"."KBGraphBuildSource" (
     "id" UUID NOT NULL,
     "resourceId" UUID NOT NULL,

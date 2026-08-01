@@ -1,7 +1,11 @@
-import { computeKBContentDigest } from '@klicker-uzh/knowledge-graph'
+import {
+  computeKBContentDigest,
+  getKnowledgeGraphName,
+} from '@klicker-uzh/knowledge-graph'
 import {
   KBGraphBuildStatus,
   type KBGraphBuildSource,
+  type Prisma,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
 import type { BuildKBGraphInput } from '@klicker-uzh/types'
@@ -22,9 +26,12 @@ import {
   type KBGraphLogger,
 } from './kbGraphIngestionApi.js'
 
+const KB_GRAPH_MONITOR_BATCH_SIZE = 32
+const KB_GRAPH_MONITOR_INTERVAL_MS = 15 * 60 * 1000
+
 type KBGraphPrisma = Pick<
   PrismaClient,
-  '$transaction' | 'kB' | 'kBGraphBuild' | 'kBResource'
+  '$queryRaw' | '$transaction' | 'kB' | 'kBGraphBuild' | 'kBResource'
 >
 
 type KBGraphDispatchRecord = {
@@ -101,6 +108,14 @@ function isActiveBuildStatus(status: KBGraphBuildStatus) {
   )
 }
 
+function getGraphMonitorBatchOffset(total: number, now: Date) {
+  if (total <= KB_GRAPH_MONITOR_BATCH_SIZE) {
+    return 0
+  }
+  const runNumber = Math.floor(now.getTime() / KB_GRAPH_MONITOR_INTERVAL_MS)
+  return (runNumber * KB_GRAPH_MONITOR_BATCH_SIZE) % total
+}
+
 function isDispatchableBuild(build: {
   id: string
   status: KBGraphBuildStatus
@@ -162,7 +177,7 @@ function validateBuildIdentity(build: KBGraphDispatchRecord): void {
     throw new Error('KB graph artifact path is invalid')
   }
   if (
-    build.graphName !== `klickeruzh:kb:${build.kbId}:${build.id}` ||
+    build.graphName !== getKnowledgeGraphName(build.kbId, build.id) ||
     build.sources.some(
       (source) =>
         !source.contentSha256 ||
@@ -367,7 +382,7 @@ async function finishKBGraphBuild({
     }
 
     if (publish) {
-      await tx.kB.updateMany({
+      const published = await tx.kB.updateMany({
         where: {
           id: build.kbId,
           deletedAt: null,
@@ -378,6 +393,9 @@ async function finishKBGraphBuild({
           publishedGraphBuildId: build.id,
         },
       })
+      if (published.count !== 1) {
+        throw new Error('KB graph build lost its active publication slot')
+      }
       return
     }
 
@@ -399,7 +417,7 @@ type TimedOutKBGraphBuild = {
 
 async function recordIneligibleLateSuccess(
   build: TimedOutKBGraphBuild,
-  prisma: KBGraphPrisma,
+  prisma: Pick<KBGraphPrisma, 'kBGraphBuild'>,
   status:
     | typeof KBGraphBuildStatus.FAILED
     | typeof KBGraphBuildStatus.SUPERSEDED,
@@ -413,6 +431,8 @@ async function recordIneligibleLateSuccess(
       externalOperationId: build.externalOperationId,
       status: KBGraphBuildStatus.FAILED,
       errorCode: 'KB_GRAPH_TIMEOUT',
+      cleanedAt: null,
+      cleanupStartedAt: null,
     },
     data: { status, statusMessage, errorCode },
   })
@@ -423,45 +443,63 @@ async function acceptLateKBGraphSuccess(
   prisma: KBGraphPrisma,
   finishedAt: Date
 ): Promise<void> {
-  if (build.kb.activeGraphBuildId !== null) {
-    await recordIneligibleLateSuccess(
-      build,
-      prisma,
-      KBGraphBuildStatus.SUPERSEDED,
-      'A newer KB graph build replaced this timed-out build.',
-      'KB_GRAPH_LATE_SUCCESS_SUPERSEDED'
-    )
-    return
-  }
-
-  const newerBuild = await prisma.kBGraphBuild.findFirst({
-    where: { kbId: build.kbId, createdAt: { gt: build.createdAt } },
-    select: { id: true },
-  })
-  if (newerBuild) {
-    await recordIneligibleLateSuccess(
-      build,
-      prisma,
-      KBGraphBuildStatus.SUPERSEDED,
-      'A newer KB graph build replaced this timed-out build.',
-      'KB_GRAPH_LATE_SUCCESS_SUPERSEDED'
-    )
-    return
-  }
-
-  const currentDigest = await computeKBContentDigest(prisma, build.kbId)
-  if (currentDigest !== build.sourceContentDigest) {
-    await recordIneligibleLateSuccess(
-      build,
-      prisma,
-      KBGraphBuildStatus.FAILED,
-      'The KB changed before the timed-out build completed.',
-      'KB_GRAPH_LATE_SUCCESS_STALE'
-    )
-    return
-  }
-
   await prisma.$transaction(async (tx) => {
+    const lockedKb = await tx.$queryRaw<Array<{ id: string }>>`
+      SELECT "id"
+      FROM "public"."KB"
+      WHERE "id" = CAST(${build.kbId} AS UUID)
+      FOR UPDATE
+    `
+    if (lockedKb.length !== 1) {
+      return
+    }
+
+    const currentKb = await tx.kB.findUnique({
+      where: { id: build.kbId },
+      select: { activeGraphBuildId: true, deletedAt: true },
+    })
+    if (
+      !currentKb ||
+      currentKb.deletedAt !== null ||
+      currentKb.activeGraphBuildId !== null
+    ) {
+      await recordIneligibleLateSuccess(
+        build,
+        tx,
+        KBGraphBuildStatus.SUPERSEDED,
+        'A newer KB graph build replaced this timed-out build.',
+        'KB_GRAPH_LATE_SUCCESS_SUPERSEDED'
+      )
+      return
+    }
+
+    const newerBuild = await tx.kBGraphBuild.findFirst({
+      where: { kbId: build.kbId, createdAt: { gt: build.createdAt } },
+      select: { id: true },
+    })
+    if (newerBuild) {
+      await recordIneligibleLateSuccess(
+        build,
+        tx,
+        KBGraphBuildStatus.SUPERSEDED,
+        'A newer KB graph build replaced this timed-out build.',
+        'KB_GRAPH_LATE_SUCCESS_SUPERSEDED'
+      )
+      return
+    }
+
+    const currentDigest = await computeKBContentDigest(tx, build.kbId)
+    if (currentDigest !== build.sourceContentDigest) {
+      await recordIneligibleLateSuccess(
+        build,
+        tx,
+        KBGraphBuildStatus.FAILED,
+        'The KB changed before the timed-out build completed.',
+        'KB_GRAPH_LATE_SUCCESS_STALE'
+      )
+      return
+    }
+
     const updated = await tx.kBGraphBuild.updateMany({
       where: {
         id: build.id,
@@ -469,6 +507,8 @@ async function acceptLateKBGraphSuccess(
         externalOperationId: build.externalOperationId,
         status: KBGraphBuildStatus.FAILED,
         errorCode: 'KB_GRAPH_TIMEOUT',
+        cleanedAt: null,
+        cleanupStartedAt: null,
       },
       data: {
         status: KBGraphBuildStatus.SUCCEEDED,
@@ -531,6 +571,7 @@ export async function monitorActiveKBGraphBuilds(
   const env = dependencies.env ?? process.env
   const now = dependencies.now ?? (() => new Date())
   const timeoutMilliseconds = getKBGraphTimeoutSeconds(env) * 1000
+  const sweepNow = now()
   const builds = await dependencies.prisma.kBGraphBuild.findMany({
     where: {
       status: {
@@ -547,12 +588,19 @@ export async function monitorActiveKBGraphBuilds(
     },
     orderBy: { createdAt: 'asc' },
   })
+  const timedOutWhere = {
+    status: KBGraphBuildStatus.FAILED,
+    errorCode: 'KB_GRAPH_TIMEOUT',
+    externalOperationId: { not: null },
+    cleanedAt: null,
+    cleanupStartedAt: null,
+  } satisfies Prisma.KBGraphBuildWhereInput
+  const timedOutCount = await dependencies.prisma.kBGraphBuild.count({
+    where: timedOutWhere,
+  })
+  const timedOutOffset = getGraphMonitorBatchOffset(timedOutCount, sweepNow)
   const timedOutBuilds = await dependencies.prisma.kBGraphBuild.findMany({
-    where: {
-      status: KBGraphBuildStatus.FAILED,
-      errorCode: 'KB_GRAPH_TIMEOUT',
-      externalOperationId: { not: null },
-    },
+    where: timedOutWhere,
     select: {
       id: true,
       kbId: true,
@@ -562,7 +610,8 @@ export async function monitorActiveKBGraphBuilds(
       kb: { select: { activeGraphBuildId: true } },
     },
     orderBy: { createdAt: 'asc' },
-    take: 32,
+    ...(timedOutOffset > 0 ? { skip: timedOutOffset } : {}),
+    take: KB_GRAPH_MONITOR_BATCH_SIZE,
   })
   if (builds.length === 0 && timedOutBuilds.length === 0) {
     return

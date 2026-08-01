@@ -22,6 +22,12 @@ data:
   KB_GRAPH_HIGH_GENERATION_MODEL: {{ .Values.hatchet.kbGraph.highGenerationModel | quote }}
   KB_GRAPH_HIGH_CLEANING_MODEL: {{ .Values.hatchet.kbGraph.highCleaningModel | quote }}
   {{- end }}
+  {{- if .Values.backendGraphql.knowledgeGraph.host }}
+  KB_FALKORDB_HOST: {{ .Values.backendGraphql.knowledgeGraph.host | quote }}
+  KB_FALKORDB_PORT: {{ .Values.backendGraphql.knowledgeGraph.port | quote }}
+  KB_FALKORDB_TLS: {{ .Values.backendGraphql.knowledgeGraph.tls | quote }}
+  KB_FALKORDB_QUERY_TIMEOUT_MS: {{ .Values.backendGraphql.knowledgeGraph.queryTimeoutMs | quote }}
+  {{- end }}
   BLOB_STORAGE_ACCOUNT_NAME: {{ .Values.blobStorage.accountName | quote }}
 ---
 apiVersion: v1

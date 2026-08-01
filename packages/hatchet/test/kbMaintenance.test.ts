@@ -40,6 +40,7 @@ function maintenancePrisma({
   deletedKbs = [],
   deletedKbCount = deletedKbs.length,
   retainedGraphBuilds = [],
+  retainedGraphBuildCount = retainedGraphBuilds.length,
   currentResource,
 }: {
   pendingDispatch?: unknown[]
@@ -53,6 +54,7 @@ function maintenancePrisma({
   deletedKbs?: unknown[]
   deletedKbCount?: number
   retainedGraphBuilds?: unknown[]
+  retainedGraphBuildCount?: number
   currentResource?: unknown
 } = {}) {
   const prisma = {
@@ -86,6 +88,7 @@ function maintenancePrisma({
       deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
     kBGraphBuild: {
+      count: vi.fn().mockResolvedValue(retainedGraphBuildCount),
       findMany: vi.fn().mockResolvedValue(retainedGraphBuilds),
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
@@ -528,6 +531,16 @@ describe('KB retention maintenance', () => {
       expect.objectContaining({
         where: expect.objectContaining({ id: buildId, cleanedAt: null }),
         data: { cleanedAt: NOW },
+      })
+    )
+    expect(prisma.kBGraphBuild.updateMany.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: buildId,
+          cleanedAt: null,
+          OR: expect.arrayContaining([{ cleanupStartedAt: null }]),
+        }),
+        data: { cleanupStartedAt: NOW },
       })
     )
   })

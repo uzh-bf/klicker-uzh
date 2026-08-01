@@ -162,6 +162,10 @@ model KBGraphBuild {
   finishedAt          DateTime?
   // terminal builds keep their ledger row; maintenance records once their
   // external graph and GraphML artifact have been removed.
+  // Set before external deletion so late external completions cannot publish
+  // while retention cleanup is in flight. Stale claims are reclaimable after
+  // the retention grace window.
+  cleanupStartedAt DateTime?
   cleanedAt           DateTime?
 
   // builds spend the requesting lecturer's AI budget, so the requester is recorded

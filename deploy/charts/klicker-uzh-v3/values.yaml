@@ -394,6 +394,12 @@ frontendControl:
 backendGraphql:
   priorityClassName: production-workload
 
+  knowledgeGraph:
+    host: ''
+    port: '6379'
+    tls: 'false'
+    queryTimeoutMs: '5000'
+
   replicaCount: 3
 
   image:

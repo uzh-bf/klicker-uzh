@@ -2,7 +2,10 @@ import {
   BlobServiceClient,
   StorageSharedKeyCredential,
 } from '@azure/storage-blob'
-import { deleteKnowledgeGraph } from '@klicker-uzh/knowledge-graph'
+import {
+  deleteKnowledgeGraph,
+  getKnowledgeGraphName,
+} from '@klicker-uzh/knowledge-graph'
 import {
   KBGraphBuildStatus,
   KBIngestionOperation,
@@ -125,14 +128,6 @@ async function deleteKBBlob(
     .deleteIfExists({
       abortSignal: AbortSignal.timeout(KB_BLOB_DELETE_TIMEOUT_MS),
     })
-}
-
-function isExpectedKBGraphName(
-  graphName: string,
-  kbId: string,
-  buildId: string
-) {
-  return graphName === `klickeruzh:kb:${kbId}:${buildId}`
 }
 
 function isExpectedKBGraphArtifactName(blobName: string, buildId: string) {
@@ -428,18 +423,27 @@ export async function maintainKBResources(
   const expiredGraphBefore = new Date(
     now.getTime() - KB_GRAPH_RETENTION_GRACE_MS
   )
-  const retainedGraphBuilds = await dependencies.prisma.kBGraphBuild.findMany({
-    where: {
-      status: {
-        in: [
-          KBGraphBuildStatus.SUCCEEDED,
-          KBGraphBuildStatus.FAILED,
-          KBGraphBuildStatus.SUPERSEDED,
-        ],
-      },
-      finishedAt: { lte: expiredGraphBefore },
-      cleanedAt: null,
+  const graphCleanupWhere = {
+    status: {
+      in: [
+        KBGraphBuildStatus.SUCCEEDED,
+        KBGraphBuildStatus.FAILED,
+        KBGraphBuildStatus.SUPERSEDED,
+      ],
     },
+    finishedAt: { lte: expiredGraphBefore },
+    cleanedAt: null,
+    OR: [
+      { cleanupStartedAt: null },
+      { cleanupStartedAt: { lt: expiredGraphBefore } },
+    ],
+  } satisfies Prisma.KBGraphBuildWhereInput
+  const retainedGraphCount = await dependencies.prisma.kBGraphBuild.count({
+    where: graphCleanupWhere,
+  })
+  const retainedGraphOffset = getBatchOffset(retainedGraphCount, now)
+  const retainedGraphBuilds = await dependencies.prisma.kBGraphBuild.findMany({
+    where: graphCleanupWhere,
     select: {
       id: true,
       kbId: true,
@@ -454,6 +458,7 @@ export async function maintainKBResources(
       },
     },
     orderBy: { finishedAt: 'asc' },
+    ...(retainedGraphOffset > 0 ? { skip: retainedGraphOffset } : {}),
     take: KB_MAINTENANCE_BATCH_SIZE,
   })
   await runBounded(retainedGraphBuilds, async (build) => {
@@ -463,7 +468,7 @@ export async function maintainKBResources(
     ) {
       return
     }
-    if (!isExpectedKBGraphName(build.graphName, build.kbId, build.id)) {
+    if (build.graphName !== getKnowledgeGraphName(build.kbId, build.id)) {
       await logMaintenanceError(
         dependencies.logger,
         'KB graph cleanup rejected an invalid graph name',
@@ -483,16 +488,55 @@ export async function maintainKBResources(
       return
     }
 
+    const claimed = await dependencies.prisma.kBGraphBuild.updateMany({
+      where: {
+        id: build.id,
+        kbId: build.kbId,
+        status: {
+          in: [
+            KBGraphBuildStatus.SUCCEEDED,
+            KBGraphBuildStatus.FAILED,
+            KBGraphBuildStatus.SUPERSEDED,
+          ],
+        },
+        finishedAt: { lte: expiredGraphBefore },
+        cleanedAt: null,
+        OR: [
+          { cleanupStartedAt: null },
+          { cleanupStartedAt: { lt: expiredGraphBefore } },
+        ],
+        kb: {
+          OR: [
+            { activeGraphBuildId: null },
+            { activeGraphBuildId: { not: build.id } },
+          ],
+          AND: [
+            {
+              OR: [
+                { publishedGraphBuildId: null },
+                { publishedGraphBuildId: { not: build.id } },
+              ],
+            },
+          ],
+        },
+      },
+      data: { cleanupStartedAt: now },
+    })
+    if (claimed.count !== 1) {
+      return
+    }
+
     try {
       if (build.graphmlBlobName) {
         await deleteBlob(build.kb.ownerId, build.graphmlBlobName)
       }
       await deleteGraph(build.graphName)
-      await dependencies.prisma.kBGraphBuild.updateMany({
+      const cleaned = await dependencies.prisma.kBGraphBuild.updateMany({
         where: {
           id: build.id,
           kbId: build.kbId,
           cleanedAt: null,
+          cleanupStartedAt: now,
           status: {
             in: [
               KBGraphBuildStatus.SUCCEEDED,
@@ -501,13 +545,39 @@ export async function maintainKBResources(
             ],
           },
           kb: {
-            activeGraphBuildId: { not: build.id },
-            publishedGraphBuildId: { not: build.id },
+            OR: [
+              { activeGraphBuildId: null },
+              { activeGraphBuildId: { not: build.id } },
+            ],
+            AND: [
+              {
+                OR: [
+                  { publishedGraphBuildId: null },
+                  { publishedGraphBuildId: { not: build.id } },
+                ],
+              },
+            ],
           },
         },
         data: { cleanedAt: now },
       })
+      if (cleaned.count !== 1) {
+        throw new Error('KB graph cleanup claim was lost')
+      }
     } catch {
+      try {
+        await dependencies.prisma.kBGraphBuild.updateMany({
+          where: {
+            id: build.id,
+            kbId: build.kbId,
+            cleanedAt: null,
+            cleanupStartedAt: now,
+          },
+          data: { cleanupStartedAt: null },
+        })
+      } catch {
+        // A stale claim is reclaimable on a later sweep after the grace window.
+      }
       await logMaintenanceError(
         dependencies.logger,
         'KB graph cleanup failed',

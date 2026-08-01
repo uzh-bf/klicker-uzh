@@ -127,10 +127,12 @@ function createMonitorPrisma(
   builds: Array<Record<string, unknown>>,
   {
     timedOutBuilds = [],
+    timedOutBuildCount = timedOutBuilds.length,
     newerBuild = null,
     servingResources = [],
   }: {
     timedOutBuilds?: Array<Record<string, unknown>>
+    timedOutBuildCount?: number
     newerBuild?: { id: string } | null
     servingResources?: Array<{
       id: string
@@ -144,11 +146,18 @@ function createMonitorPrisma(
         .fn()
         .mockResolvedValueOnce(builds)
         .mockResolvedValueOnce(timedOutBuilds),
+      count: vi.fn().mockResolvedValue(timedOutBuildCount),
       findFirst: vi.fn().mockResolvedValue(newerBuild),
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
-    kB: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+    kB: {
+      findUnique: vi
+        .fn()
+        .mockResolvedValue({ activeGraphBuildId: null, deletedAt: null }),
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+    },
     kBResource: { findMany: vi.fn().mockResolvedValue(servingResources) },
+    $queryRaw: vi.fn().mockResolvedValue([{ id: KB_ID }]),
     $transaction: vi.fn(),
   }
   prisma.$transaction.mockImplementation(async (callback) => callback(prisma))
@@ -423,6 +432,25 @@ describe('KB graph external reconciliation', () => {
     })
   })
 
+  it('rotates the timed-out graph backstop window', async () => {
+    const prisma = createMonitorPrisma([], {
+      timedOutBuildCount: 64,
+    })
+    const client = createClient()
+
+    await monitorActiveKBGraphBuilds({
+      prisma: prisma as never,
+      client,
+      env: externalEnv,
+      now: () => new Date(NOW.getTime() + 15 * 60 * 1000),
+    })
+
+    expect(prisma.kBGraphBuild.findMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ skip: 32, take: 32 })
+    )
+  })
+
   it('accepts a late completion only when the pinned source digest still matches', async () => {
     const matchingDigest = hashKBContentDigestEntries([
       { resourceId: RESOURCE_ID, contentSha256: CONTENT_SHA256 },
@@ -457,6 +485,8 @@ describe('KB graph external reconciliation', () => {
         where: expect.objectContaining({
           status: KBGraphBuildStatus.FAILED,
           errorCode: 'KB_GRAPH_TIMEOUT',
+          cleanedAt: null,
+          cleanupStartedAt: null,
         }),
         data: expect.objectContaining({
           status: KBGraphBuildStatus.SUCCEEDED,
