@@ -308,7 +308,7 @@ function GroupActivityGradingStack({
                       <ContentInput
                         error={meta.error}
                         touched={meta.touched}
-                        content={field.value || '<br>'}
+                        content={field.value}
                         onChange={(newValue: string) => {
                           setFieldValue(`grading.${ix}.feedback`, newValue)
                           setFieldTouched(`grading.${ix}.feedback`, true)
@@ -404,7 +404,7 @@ function GroupActivityGradingStack({
                   <ContentInput
                     error={meta.error}
                     touched={meta.touched}
-                    content={field.value || '<br>'}
+                    content={field.value}
                     onChange={(newValue: string) => {
                       setFieldValue('comment', newValue)
                       setFieldTouched('comment', true)

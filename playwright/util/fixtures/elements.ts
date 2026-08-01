@@ -1,4 +1,4 @@
-import { expect, Page } from '@playwright/test'
+import { expect, Locator, Page } from '@playwright/test'
 import { getPrisma } from '../../global-setup.js'
 
 export type ElementOptions = {
@@ -102,9 +102,15 @@ export async function fillEditorField(
   const editor = page.getByTestId(testId)
   await editor.scrollIntoViewIfNeeded()
   await editor.click()
-  if (clear) await editor.clear()
-  await editor.pressSequentially(text)
+  if (clear) await clearEditor(editor)
+  if (text) await editor.pressSequentially(text)
   await expect(editor).toContainText(text)
+}
+
+async function clearEditor(editor: Locator) {
+  await editor.press('ControlOrMeta+A')
+  await editor.press('Backspace')
+  await expect(editor).toHaveText('')
 }
 
 // ---------------------------------------------------------------------------
@@ -141,8 +147,8 @@ export async function fillAnswerField(
   const field = page.getByTestId(`insert-answer-field-${index}`)
   await field.scrollIntoViewIfNeeded()
   await field.click()
-  if (clear) await field.clear()
-  await field.pressSequentially(text)
+  if (clear) await clearEditor(field)
+  if (text) await field.pressSequentially(text)
   await expect(field).toContainText(text)
 }
 
@@ -158,8 +164,8 @@ export async function fillFeedbackField(
   const field = page.getByTestId(`insert-answer-feedback-${index}`)
   await field.scrollIntoViewIfNeeded()
   await field.click()
-  if (clear) await field.clear()
-  await field.pressSequentially(text)
+  if (clear) await clearEditor(field)
+  if (text) await field.pressSequentially(text)
   await expect(field).toContainText(text)
 }
 

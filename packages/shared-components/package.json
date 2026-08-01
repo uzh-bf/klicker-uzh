@@ -22,11 +22,8 @@
     "react-csv-downloader": "~3.3.0",
     "react-tagcloud": "~2.3.3",
     "recharts": "~3.0.2",
-    "remark-parse": "~11.0.0",
-    "remark-slate": "~1.8.6",
     "stopword": "~3.1.5",
-    "typescript": "~6.0.3",
-    "unified": "~11.0.5"
+    "typescript": "~6.0.3"
   },
   "peerDependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
