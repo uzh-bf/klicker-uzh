@@ -7,7 +7,7 @@ license = "AGPL-3.0"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [
-  "deepeval==3.6.7",
+  "deepeval==4.1.5",
   "httpx==0.28.1",
   "psycopg[binary]==3.2.10",
   "pyjwt==2.10.1",

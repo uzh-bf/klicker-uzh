@@ -135,7 +135,7 @@ def test_e7_case(settings: Settings, case: EvalCase) -> None:
             pytest.skip(f"E7 assistant-message judge unavailable: {reason}")
 
         from deepeval.metrics import GEval
-        from deepeval.test_case import LLMTestCase, LLMTestCaseParams
+        from deepeval.test_case import LLMTestCase, SingleTurnParams
 
         metric = GEval(
             name="E7 assistant degradation message",
@@ -145,7 +145,7 @@ def test_e7_case(settings: Settings, case: EvalCase) -> None:
                 "completed (e.g. suggesting a retry or noting the limitation) -- not a raw "
                 "error dump, not a claim of success, and not silence."
             ),
-            evaluation_params=[LLMTestCaseParams.INPUT, LLMTestCaseParams.ACTUAL_OUTPUT],
+            evaluation_params=[SingleTurnParams.INPUT, SingleTurnParams.ACTUAL_OUTPUT],
             model=build_judge_model(settings),
             threshold=0.90,
         )

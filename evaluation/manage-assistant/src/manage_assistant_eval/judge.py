@@ -2,52 +2,37 @@
 checks (see tests/test_e3_grounding.py, test_e4_proposal_quality.py,
 test_e7_degradation.py).
 
-Design note (why `GPTModel`, not DeepEval's bundled `LiteLLMModel`): this
-harness's judge credential is deliberately separate from the app-under-test's
-own `OPENAI_API_KEY`/`OPENAI_BASE_URL` (which point the *model being
-evaluated* at the local litellm gateway, see apps/chat/src/app/api/manage/chat
-/route.ts) -- gating the judge on its own env vars keeps "is the judge
-configured" independent of "is the app's model configured". DeepEval ships
-two OpenAI-SDK-shaped model wrappers: `LiteLLMModel` (arbitrary model names,
-but requires the separate `litellm` package -- not installed here, and it
-pulls in ~15 transitive packages including tokenizers/huggingface-hub for a
-capability this harness does not need) and `GPTModel` (validates the model
-name against DeepEval's own fixed OpenAI model list, but only needs the
-`openai` package, already installed transitively via `deepeval` itself).
-Given the no-new-dependency-unless-required repo convention, `GPTModel` is
-the right default: `judge_api_base` can still point its OpenAI-SDK client at
-a compatible gateway (e.g. this repo's own litellm instance, using a
-`model_name` alias the gateway maps to whatever upstream you actually want to
-judge with) without adding a dependency. If a future need genuinely requires
-an arbitrary (non-OpenAI-list) model name, swap this module's
-`build_judge_model` to `LiteLLMModel` and add `litellm` to pyproject.toml
-then -- do not add the dependency speculatively.
+The judge credential (`MANAGE_ASSISTANT_EVAL_JUDGE_*`) is deliberately separate
+from the app-under-test's `OPENAI_API_KEY`/`OPENAI_BASE_URL`, which point the
+model being evaluated at the local litellm gateway. DeepEval ships two
+OpenAI-SDK-shaped model wrappers: `LiteLLMModel` (arbitrary model names, but
+requires the separate `litellm` package) and `GPTModel` (the smaller wrapper
+that only needs the `openai` package, already installed transitively via
+`deepeval`). DeepEval 4.1.5's `GPTModel` accepts arbitrary OpenAI-compatible
+model identifiers through its generic model-data fallback, so the judge can
+use the real `gpt-5.6-luna` name without a compatibility alias or an additional
+dependency. `judge_api_base` still points the OpenAI-SDK client at a compatible
+gateway (the disposable local litellm instance in the live procedure).
 
-Known residual, live-only risk (documented, not fixed here — the suite DOES
-make live judge calls whenever a judge is configured, but no such run has
-been executed yet against a real gateway, so this path is code-reviewed
-rather than exercised): `GEval`
-requests OpenAI `logprobs`/`top_logprobs` for models `GPTModel` believes
-support them (`no_log_prob_support`, deepeval/metrics/g_eval/utils.py). If
-`judge_api_base` points at a gateway that does not faithfully proxy logprobs
-for the chosen model name, a live GEval call could error. Pick a
-`MANAGE_ASSISTANT_EVAL_JUDGE_MODEL` value in DeepEval's
-`unsupported_log_probs_gpt_models` list (e.g. an `o1`/`o3`-family name) to
-force DeepEval's own no-logprob fallback path if this bites.
+For an unknown model identifier, DeepEval marks log-probability support as
+unknown. `GEval` consequently takes its structured-output fallback instead of
+calling `generate_raw_response` with `logprobs`/`top_logprobs`, which is
+compatible with the GPT-5.6 Luna reasoning endpoint. GPT-5-family endpoints
+require `temperature=1`, so `build_judge_model` selects that value for those
+names while retaining deterministic `temperature=0` for models that support
+it.
 """
 
 from __future__ import annotations
 
 from .config import Settings
 
-# DeepEval's own fixed allow-list this harness's judge model name must be a
-# member of (deepeval/models/llms/openai_model.py::valid_gpt_models). Mirrored
-# here only for the README/error message -- GPTModel itself is the source of
-# truth and raises ValueError on anything else.
+# DeepEval 4.1.5 accepts arbitrary OpenAI-compatible model identifiers and
+# supplies generic model metadata for names it does not know. Keep this hint
+# short and truthful because the gateway may expose a deployment alias.
 SUPPORTED_JUDGE_MODELS_HINT = (
-    "one of DeepEval's supported OpenAI-SDK model names, e.g. 'gpt-4o-mini', "
-    "'gpt-4o', 'gpt-4.1-mini', 'gpt-4.1', 'o3-mini' (see deepeval/models/llms/"
-    "openai_model.py::valid_gpt_models for the exact list)"
+    "an OpenAI-compatible model identifier, e.g. 'gpt-5.6-luna' or "
+    "'gpt-5.4' (DeepEval 4.1.5 accepts custom identifiers)"
 )
 
 
@@ -71,18 +56,19 @@ def judge_unavailable_reason(settings: Settings) -> str | None:
 
 
 def build_judge_model(settings: Settings):
-    """Constructs the `DeepEvalBaseLLM` instance for `GEval(model=...)`.
+    """Construct the `DeepEvalBaseLLM` instance for `GEval(model=...)`.
+
     Callers MUST check `judge_unavailable_reason(settings) is None` (or
-    `settings.judge_configured`) first -- this raises ValueError from
-    `GPTModel` itself if `judge_model` is unset or not in its allow-list, and
-    that is deliberately a hard error here (a test that got this far should
-    already know the judge is configured; this function is not the skip
-    gate)."""
+    `settings.judge_configured`) first. This function is not the skip gate.
+    """
     from deepeval.models import GPTModel
+
+    model_name = (settings.judge_model or "").lower()
+    temperature = 1 if model_name.startswith(("gpt-5", "o1", "o3", "o4")) else 0
 
     return GPTModel(
         model=settings.judge_model,
-        _openai_api_key=settings.judge_api_key,
+        api_key=settings.judge_api_key,
         base_url=settings.judge_api_base,
-        temperature=0,
+        temperature=temperature,
     )

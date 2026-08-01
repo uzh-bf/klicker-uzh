@@ -82,7 +82,7 @@ def test_e4_case(settings: Settings, case: EvalCase) -> None:
         pytest.skip(f"E4 proposal-quality judge unavailable: {reason}")
 
     from deepeval.metrics import GEval
-    from deepeval.test_case import LLMTestCase, LLMTestCaseParams
+    from deepeval.test_case import LLMTestCase, SingleTurnParams
 
     assert result.proposal is not None  # guaranteed by schema_ok above
     metric = GEval(
@@ -97,7 +97,7 @@ def test_e4_case(settings: Settings, case: EvalCase) -> None:
             "must be non-empty and pedagogically useful (explains WHY, not just "
             "restates correctness)."
         ),
-        evaluation_params=[LLMTestCaseParams.INPUT, LLMTestCaseParams.ACTUAL_OUTPUT],
+        evaluation_params=[SingleTurnParams.INPUT, SingleTurnParams.ACTUAL_OUTPUT],
         model=build_judge_model(settings),
         threshold=0.85,
     )

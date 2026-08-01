@@ -772,9 +772,10 @@ PR #5109 is production-ready only when all are true:
       transport/UI contract.
 - [x] S4 full automated gate passes at one clean commit.
 - [ ] One fully measured live judged run reports `OVERALL: PASS`. (Two full
-      measured runs completed 2026-07-29; verdict `OVERALL: FAIL` on soft
-      judge aggregates with all hard gates passing — see Progress. Disposition
-      is an open product decision.)
+      measured runs completed 2026-07-29 with DeepEval 3.6.7 and the historical
+      `o3-mini` route, plus one upgraded run on 2026-08-01 with DeepEval 4.1.5;
+      all verdicts are `OVERALL: FAIL` on soft judge aggregates with all hard
+      gates passing — see Progress. A qualifying PASS remains pending.)
 - [x] Firefox and WebKit targeted tests pass against production builds.
 - [ ] VoiceOver pass is recorded.
 - [x] Wiki, skills, eval README, and plan Progress match the implementation.
@@ -1024,6 +1025,26 @@ approved.
   soft-gate disposition (assistant prompt tuning vs. judge rubric/threshold
   recalibration vs. accepting soft gates as advisory) is an open product
   decision; the Definition of Done item stays unchecked.
+- 2026-08-01: The manage-assistant evaluator was upgraded from DeepEval 3.6.7
+  to the latest available 4.1.5 release and `uv.lock` was regenerated. The
+  judge wiring now uses DeepEval's current `GPTModel(api_key=...)` naming and
+  sends `gpt-5.6-luna` directly through the disposable local litellm route;
+  DeepEval 4.1.5 accepts the custom model identifier and routes GEval through
+  its structured-output fallback when log-probability support is unknown. The
+  2026-07-29 measurements remain historical and are not mixed with the new
+  evaluator baseline. The targeted compatibility check and full measured
+  follow-up are recorded in the next Progress entry.
+- 2026-08-01: S5.1 was rerun after the evaluator upgrade and prompt tuning.
+  The targeted E3/E7 compatibility run passed 15/15 (E3 1.000, E7 hard
+  1.000, E7 response/safe transport 1.000). The full run then measured all
+  144 live cases (148 tests collected including four offline judge contracts)
+  in 15m44s: 146 passed / 2 failed, with E1 12/12, E5 8/8, E6 10/10, E4
+  schema 6/6, and both E7 channels passing. E3 remained 0.833 (one case
+  penalized for unnecessary extra detail) and E4 judge remained 0.833 (one
+  weak distractor/feedback pairing), so `OVERALL: FAIL`. The old E7 fault
+  attribution failures are no longer present. The S5.1 Definition-of-Done
+  item remains unchecked pending a product decision on the two soft-gate
+  failures.
 - 2026-07-29: S5.2 production Firefox/WebKit rig built with explicit container
   authority. Probes proved that Firefox, WebKit, and curl force `*.localhost`
   hostnames to loopback (RFC 6761), ignoring `/etc/hosts` and `--add-host`,

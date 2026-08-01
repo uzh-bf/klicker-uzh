@@ -61,7 +61,7 @@ def test_e3_case(settings: Settings, case: EvalCase) -> None:
         pytest.skip(f"E3 grounding judge unavailable: {reason}")
 
     from deepeval.metrics import GEval
-    from deepeval.test_case import LLMTestCase, LLMTestCaseParams
+    from deepeval.test_case import LLMTestCase, SingleTurnParams
 
     retrieval_context = [o.raw_text for o in result.tool_outputs if o.raw_text]
     metric = GEval(
@@ -74,9 +74,9 @@ def test_e3_case(settings: Settings, case: EvalCase) -> None:
             "lecturer's own data does not need retrieval-context support."
         ),
         evaluation_params=[
-            LLMTestCaseParams.INPUT,
-            LLMTestCaseParams.ACTUAL_OUTPUT,
-            LLMTestCaseParams.RETRIEVAL_CONTEXT,
+            SingleTurnParams.INPUT,
+            SingleTurnParams.ACTUAL_OUTPUT,
+            SingleTurnParams.RETRIEVAL_CONTEXT,
         ],
         model=build_judge_model(settings),
         threshold=0.90,

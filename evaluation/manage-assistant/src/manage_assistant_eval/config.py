@@ -58,11 +58,10 @@ class Settings:
     # own OPENAI_API_KEY/OPENAI_BASE_URL (which point the model UNDER TEST at
     # the litellm gateway) -- the judge is a different concern and this
     # harness must be able to gate on its own credential independently of
-    # whatever the live app's model key is doing. `judge_model` must be one
-    # of DeepEval's supported OpenAI-SDK-compatible model names (see
-    # judge.py / README); `judge_api_base` optionally points that
-    # OpenAI-SDK-shaped call at a compatible gateway (e.g. this repo's own
-    # litellm instance) instead of api.openai.com.
+    # whatever the live app's model key is doing. `judge_model` is an
+    # OpenAI-compatible model identifier (DeepEval 4.1.5 accepts custom names;
+    # see judge.py / README); `judge_api_base` optionally points that
+    # OpenAI-SDK-shaped call at a compatible gateway instead of api.openai.com.
     judge_model: str | None
     judge_api_key: str | None = field(repr=False)
     judge_api_base: str | None

@@ -160,7 +160,7 @@ silently passes) when no judge credential is configured. See
 `tests/test_e4_proposal_quality.py`/`test_e7_degradation.py`'s module
 docstrings for the full rationale.
 
-## Judge model: `GPTModel`, not DeepEval's `LiteLLMModel`
+## Judge model: `GPTModel` with the real deployment name
 
 This harness's judge credential (`MANAGE_ASSISTANT_EVAL_JUDGE_*`) is
 deliberately a separate namespace from the app-under-test's own
@@ -168,24 +168,32 @@ deliberately a separate namespace from the app-under-test's own
 at the local litellm gateway) — gating the judge on its own env vars keeps
 "is the judge configured" independent of "is the app's model configured".
 DeepEval ships two OpenAI-SDK-shaped model wrappers: `LiteLLMModel`
-(arbitrary model names, but requires the separate `litellm` package — not a
-dependency of this project, and it pulls in ~15 transitive packages
-including tokenizers/huggingface-hub for a capability this harness does not
-need) and `GPTModel` (validates the model name against DeepEval's own fixed
-OpenAI model list, but only needs the `openai` package, already installed
-transitively via `deepeval` itself). Given the repo's
-no-new-dependency-unless-required convention, `GPTModel` is the default
-(`src/manage_assistant_eval/judge.py`): `judge_api_base` can still point
-that OpenAI-SDK client at a compatible gateway (e.g. this repo's own
-litellm instance, via a `model_name` alias it maps to whatever upstream you
-actually want to judge with) without adding a dependency. If a future need
-genuinely requires an arbitrary (non-OpenAI-list) model name, swap
-`build_judge_model` to `LiteLLMModel` and add `litellm` to `pyproject.toml`
-then — do not add the dependency speculatively. See `judge.py`'s docstring
-for a residual, live-only logprobs risk this decision carries and how to
-route around it via model-name choice if it ever bites.
+(arbitrary model names, but requires the separate `litellm` package) and
+`GPTModel` (the smaller wrapper that only needs the `openai` package, already
+installed transitively via `deepeval`). DeepEval 4.1.5's `GPTModel` accepts
+arbitrary OpenAI-compatible model identifiers through its generic model-data
+fallback, so the judge uses the real `gpt-5.6-luna` name without a misleading
+compatibility alias or an additional dependency. `judge_api_base` still points
+the OpenAI-SDK client at the disposable local litellm gateway. For unknown
+model metadata, `GEval` uses DeepEval's structured-output fallback rather than
+requesting `logprobs`/`top_logprobs`, which is compatible with the GPT-5.6 Luna
+reasoning endpoint.
 
-## Measured judged runs (2026-07-29)
+## Evaluator upgrade (2026-08-01)
+
+The evaluator is pinned to `deepeval==4.1.5`, the latest release at the time of
+this upgrade, with `uv.lock` regenerated from that pin. `GPTModel` now uses
+DeepEval's current `api_key=` constructor name, and the local judge route is
+named `gpt-5.6-luna` so the configured name matches the upstream deployment.
+Because GPT-5-family endpoints require `temperature=1`, the judge wiring
+selects that value for GPT-5 names and keeps `temperature=0` for models that
+support deterministic sampling. GEval cases use DeepEval's current
+`SingleTurnParams` name rather than the deprecated `LLMTestCaseParams` alias.
+The measured runs below predate this upgrade (DeepEval 3.6.7 plus the old
+`o3-mini` route) and remain historical evidence; results from the upgraded
+evaluator must be recorded as a new baseline.
+
+## Measured judged runs (2026-07-29 and 2026-08-01)
 
 First fully measured judged runs of the complete suite (all 144 tests, live
 
@@ -194,7 +202,7 @@ First fully measured judged runs of the complete suite (all 144 tests, live
   through the stack's litellm gateway at OpenRouter, reasoning effort
   `medium`).
 
-* **Judge**: `MANAGE_ASSISTANT_EVAL_JUDGE_MODEL=o3-mini` — a litellm alias
+* **Judge**: `MANAGE_ASSISTANT_EVAL_JUDGE_MODEL=o3-mini` — a historical litellm alias
   (image `ghcr.io/berriai/litellm:main-v1.82.3`, disposable local
   container) mapping to the same OpenRouter upstream
   (`openai/openai/gpt-5.6-luna`, reasoning effort `medium`). The alias
@@ -202,8 +210,9 @@ First fully measured judged runs of the complete suite (all 144 tests, live
   live**: with a `gpt-5.x` judge name DeepEval requests `logprobs`, which
   the upstream rejects at `reasoning_effort != 'none'`
   (`litellm.UnsupportedParamsError`). DeepEval never requests logprobs for
-  o-family names, so the alias routes around it exactly as `judge.py`
-  predicted. `temperature=0` on the judge.
+  o-family names, so the alias routed around it. `temperature=0` on the
+  judge. This is retained only to describe those pre-upgrade measurements;
+  new runs use `gpt-5.6-luna` directly.
 * **Volume per full run**: 53 live chat turns (plus ~31 rate-limit warm-up
   requests that never reach the model) and ~16 GEval judge calls, paced by
   the chat route's 30-req/5-min limiter; wall clock ~15.5 min per run.
@@ -224,16 +233,22 @@ First fully measured judged runs of the complete suite (all 144 tests, live
   distractor-feedback quibble), E7 assistant-message 0.714
   (`05_tool_error_inaccessible_course` 0.600 and
   `06_tool_error_inaccessible_element` 0.500 — same critique both times).
-* **Verdict**: OVERALL FAIL, stable across both measured runs. The failure
-  mode is consistent: dimension scores are pass-fractions, so a single
-  borderline case fails a 6–7-case dimension against a 0.90 bar.
-  `02_element_details_grounding` and `05_tool_error_inaccessible_course`
-  failed in both runs with the same judge critique; two more cases
-  flipped to borderline-fail in run 3. Hard-gate behavior (refusal,
-  injection resistance, schema validity, no fabrication/leaks) is solid.
-  Disposition of the soft-gate gap (assistant prompt tuning vs. judge
-  rubric/threshold recalibration vs. accepting soft gates as advisory) is
-  an open product decision tracked in the active plan.
+* **Run 4 (2026-08-01, upgraded evaluator)**: `146 passed / 2 failed` from
+  148 collected tests (144 live cases plus four offline DeepEval compatibility
+  contracts), using `deepeval==4.1.5`, `GPTModel(api_key=...)`, direct judge
+  model name `gpt-5.6-luna`, and `temperature=1` required by the GPT-5-family
+  endpoint. All hard gates passed: E1 12/12, E5 8/8, E6 10/10, E4 schema
+  6/6, E7 no-fabrication 7/7, and E7 response/safe transport 7/7. The two
+  remaining soft failures were E3 grounding 0.833 (one case scored 0.800 for
+  unnecessary extra detail) and E4 judge 0.833 (one case scored 0.800 for a
+  weak distractor/feedback pairing). Wall clock was 15m44s.
+* **Current verdict**: OVERALL FAIL. The upgrade removed the obsolete
+  `o3-mini` compatibility name, and the prompt tuning fixed the prior E7
+  failures, but the E3/E4 soft gates remain just below their thresholds.
+  Dimension scores are pass-fractions, so one borderline case is enough to
+  fail a six-case dimension. The remaining disposition is whether to tune the
+  two cases' assistant behavior, revise the judge rubric/threshold with an
+  explicit product decision, or keep these soft gates advisory.
 
 ## Fault injection (E7)
 
@@ -299,6 +314,7 @@ tests/
   test_e3_grounding.py
   test_e4_proposal_quality.py
   test_e7_degradation.py
+  test_judge.py                       offline DeepEval 4.x model/temperature contracts
   test_scoring_contract.py           offline contract tests for E1/E5/E6 (no dev stack needed)
   test_scoring_contract_x2b.py       offline contract tests for E3/E4/E7 + the judge skip gate
 ```
@@ -558,13 +574,12 @@ commit it) for your devrouter workspace or CI:
 - `MANAGE_ASSISTANT_EVAL_MAX_TRIALS` — optional, caps every case's trial
   count for one run (see "Rate-limit pacing caveat" above). Unset by
   default (uses each case's own `trials`).
-- `MANAGE_ASSISTANT_EVAL_JUDGE_MODEL` — the DeepEval `GPTModel`-compatible
-  model name for the E3/E4-quality/E7-assistant-message `GEval` judge (see "Judge
-  model" above), e.g. `gpt-4o-mini`. Must be one of DeepEval's own
-  supported OpenAI-SDK model names (`judge.py::SUPPORTED_JUDGE_MODELS_HINT`
-  documents the hint; `GPTModel` itself is the source of truth and raises
-  `ValueError` on anything else). Unset by default — every judge-based
-  check then skips cleanly (see `judge.judge_unavailable_reason`).
+- `MANAGE_ASSISTANT_EVAL_JUDGE_MODEL` — the OpenAI-compatible model identifier
+  for the E3/E4-quality/E7-assistant-message `GEval` judge (see "Judge model"
+  above), normally `gpt-5.6-luna` for the local route. DeepEval 4.1.5 accepts
+  custom identifiers and supplies generic metadata for unknown names. Unset by
+  default — every judge-based check then skips cleanly (see
+  `judge.judge_unavailable_reason`).
 - `MANAGE_ASSISTANT_EVAL_JUDGE_API_KEY` — credential for the judge model
   call. Deliberately a separate secret from the app-under-test's own
   `OPENAI_API_KEY`. Unset by default (judge skips cleanly).
