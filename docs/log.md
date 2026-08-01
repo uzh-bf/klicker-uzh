@@ -1,5 +1,9 @@
 # Log
 
+## 2026-08-01
+
+- **Update**: [domain-model](./domain-model.md) and [async-and-workers](./async-and-workers.md) document the signed, platform-initiated `resource.content_refreshed` event: a terminal ledger entry correlated to the platform operation, serving-identity-only advancement, repeat-delivery deduplication, and stale-refresh preservation. The `klicker-data-model` and `klicker-testing-verification` skills now require the same two-axis and idempotency checks.
+
 ## 2026-07-30
 
 - **Update**: [getting-started](./getting-started.md) documents the managed DevPod's routed Azurite Blob service, exact local CORS setup, and separate browser-facing and internal account URLs. Matching environment-doctor and testing-verification procedures cover local Blob diagnosis and real KB upload proof without exposing SAS queries.

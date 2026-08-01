@@ -16,11 +16,14 @@ const PREVIOUS_SECRET = 'kb-webhook-previous-test-secret'
 const OWNER_ID = 'c08036f0-5354-47dc-aac0-408a89c251a5'
 const EVENT_ID = 'e8a1b2c3-d4e5-4f60-9a7b-8c9d0e1f2a3b'
 const OTHER_EVENT_ID = 'f92f85a3-bbbc-47cb-8739-f93ed85bdce5'
+const REFRESH_EVENT_ID = 'a2d2c4e8-8e04-49d7-9a5c-0cb485cf57c2'
 const INGESTION_ATTEMPT_ID = 'e69e7cbd-c301-41d4-b653-bb645576d637'
 const OPERATION_ID = 'op_01J2X8K3M9QZ4R7T6V5W1Y0BND'
+const REFRESH_OPERATION_ID = 'op_01K2X8K3M9QZ4R7T6V5W1Y0BND'
 const RESOURCE_VERSION = 3
 const CONTENT_SHA256 =
   '9b74c9897bac770ffc029102a200c5de11ba9dbd0e0f28c991eb64b0fb54d96e'
+const REFRESH_CONTENT_SHA256 = 'f'.repeat(64)
 const OCCURRED_AT = '2026-07-12T14:04:52Z'
 
 type EventType =
@@ -28,6 +31,7 @@ type EventType =
   | 'resource.processing_progress'
   | 'resource.processing_succeeded'
   | 'resource.processing_failed'
+  | 'resource.content_refreshed'
   | 'resource.subresources_updated'
   | 'kb.metrics_updated'
 
@@ -62,11 +66,15 @@ describe('KB ingestion webhook contract', () => {
       resource_version: RESOURCE_VERSION,
       serving: {
         active_resource_version:
-          eventType === 'resource.processing_succeeded'
+          eventType === 'resource.processing_succeeded' ||
+          eventType === 'resource.content_refreshed'
             ? RESOURCE_VERSION
             : null,
         active_sha256:
-          eventType === 'resource.processing_succeeded' ? CONTENT_SHA256 : null,
+          eventType === 'resource.processing_succeeded' ||
+          eventType === 'resource.content_refreshed'
+            ? CONTENT_SHA256
+            : null,
       },
       error_code:
         eventType === 'resource.processing_failed'
@@ -105,6 +113,12 @@ describe('KB ingestion webhook contract', () => {
   async function getRun() {
     return prisma.kBIngestionRun.findUniqueOrThrow({
       where: { id: INGESTION_ATTEMPT_ID },
+    })
+  }
+
+  async function getRunByExternalOperation(externalOperationId: string) {
+    return prisma.kBIngestionRun.findFirstOrThrow({
+      where: { resourceId, externalOperationId },
     })
   }
 
@@ -387,6 +401,169 @@ describe('KB ingestion webhook contract', () => {
       activeResourceVersion: RESOURCE_VERSION,
       activeContentSha256: CONTENT_SHA256,
       ingestedAt: new Date(OCCURRED_AT),
+    })
+  })
+
+  it('records a platform refresh and advances only the serving identity', async () => {
+    const candidateContentSha256 = 'c'.repeat(64)
+    const candidateOperationId = 'op_01L2X8K3M9QZ4R7T6V5W1Y0BND'
+    await prisma.kBResource.update({
+      where: { id: resourceId },
+      data: {
+        status: KBResourceStatus.PROCESSING,
+        resourceVersion: RESOURCE_VERSION + 1,
+        contentSha256: candidateContentSha256,
+        externalOperationId: candidateOperationId,
+        activeResourceVersion: RESOURCE_VERSION,
+        activeContentSha256: CONTENT_SHA256,
+        ingestedAt: new Date('2026-07-11T14:04:52Z'),
+      },
+    })
+    await prisma.kBIngestionRun.update({
+      where: { id: INGESTION_ATTEMPT_ID },
+      data: {
+        status: KBIngestionStatus.PROCESSING,
+        resourceVersion: RESOURCE_VERSION + 1,
+        contentSha256: candidateContentSha256,
+        externalOperationId: candidateOperationId,
+      },
+    })
+    const request = createRequest(
+      event('resource.content_refreshed', {
+        eventId: REFRESH_EVENT_ID,
+        operation_id: REFRESH_OPERATION_ID,
+        serving: {
+          active_resource_version: RESOURCE_VERSION,
+          active_sha256: REFRESH_CONTENT_SHA256,
+        },
+        correlation_id: 'platform-weekly-refresh',
+      })
+    )
+
+    await expect(
+      handleKBIngestionWebhook({
+        prisma,
+        ...request,
+        env: { KB_WEBHOOK_SECRET: SECRET },
+      })
+    ).resolves.toEqual({ statusCode: 200, body: { ok: true } })
+
+    await expect(getResource()).resolves.toMatchObject({
+      status: KBResourceStatus.PROCESSING,
+      ingestionAttemptId: INGESTION_ATTEMPT_ID,
+      resourceVersion: RESOURCE_VERSION + 1,
+      contentSha256: candidateContentSha256,
+      externalOperationId: candidateOperationId,
+      activeResourceVersion: RESOURCE_VERSION,
+      activeContentSha256: REFRESH_CONTENT_SHA256,
+      ingestedAt: new Date(OCCURRED_AT),
+    })
+    await expect(getRun()).resolves.toMatchObject({
+      status: KBIngestionStatus.PROCESSING,
+      externalOperationId: candidateOperationId,
+    })
+    await expect(
+      getRunByExternalOperation(REFRESH_OPERATION_ID)
+    ).resolves.toMatchObject({
+      id: REFRESH_EVENT_ID,
+      operation: KBIngestionOperation.UPSERT,
+      status: KBIngestionStatus.SUCCEEDED,
+      resourceVersion: RESOURCE_VERSION,
+      contentSha256: REFRESH_CONTENT_SHA256,
+      finishedAt: new Date(OCCURRED_AT),
+    })
+  })
+
+  it('deduplicates repeated platform refresh delivery by external operation', async () => {
+    await prisma.kBResource.update({
+      where: { id: resourceId },
+      data: {
+        status: KBResourceStatus.READY,
+        activeResourceVersion: RESOURCE_VERSION,
+        activeContentSha256: CONTENT_SHA256,
+        ingestedAt: new Date('2026-07-11T14:04:52Z'),
+      },
+    })
+    const request = createRequest(
+      event('resource.content_refreshed', {
+        eventId: REFRESH_EVENT_ID,
+        operation_id: REFRESH_OPERATION_ID,
+        serving: {
+          active_resource_version: RESOURCE_VERSION,
+          active_sha256: REFRESH_CONTENT_SHA256,
+        },
+        correlation_id: 'platform-weekly-refresh',
+      })
+    )
+
+    await Promise.all(
+      [request, request].map((refreshRequest) =>
+        handleKBIngestionWebhook({
+          prisma,
+          ...refreshRequest,
+          env: { KB_WEBHOOK_SECRET: SECRET },
+        })
+      )
+    )
+
+    await expect(
+      prisma.kBIngestionRun.count({
+        where: {
+          resourceId,
+          externalOperationId: REFRESH_OPERATION_ID,
+        },
+      })
+    ).resolves.toBe(1)
+    await expect(getResource()).resolves.toMatchObject({
+      activeResourceVersion: RESOURCE_VERSION,
+      activeContentSha256: REFRESH_CONTENT_SHA256,
+      ingestedAt: new Date(OCCURRED_AT),
+    })
+  })
+
+  it('records an older platform refresh as superseded without regressing serving', async () => {
+    const currentServingSha256 = 'd'.repeat(64)
+    await prisma.kBResource.update({
+      where: { id: resourceId },
+      data: {
+        status: KBResourceStatus.READY,
+        resourceVersion: RESOURCE_VERSION + 1,
+        activeResourceVersion: RESOURCE_VERSION + 1,
+        activeContentSha256: currentServingSha256,
+        ingestedAt: new Date('2026-07-13T14:04:52Z'),
+      },
+    })
+    const request = createRequest(
+      event('resource.content_refreshed', {
+        eventId: REFRESH_EVENT_ID,
+        operation_id: REFRESH_OPERATION_ID,
+        serving: {
+          active_resource_version: RESOURCE_VERSION,
+          active_sha256: REFRESH_CONTENT_SHA256,
+        },
+        correlation_id: 'platform-weekly-refresh',
+      })
+    )
+
+    await expect(
+      handleKBIngestionWebhook({
+        prisma,
+        ...request,
+        env: { KB_WEBHOOK_SECRET: SECRET },
+      })
+    ).resolves.toEqual({ statusCode: 200, body: { ok: true } })
+
+    await expect(getResource()).resolves.toMatchObject({
+      activeResourceVersion: RESOURCE_VERSION + 1,
+      activeContentSha256: currentServingSha256,
+      ingestedAt: new Date('2026-07-13T14:04:52Z'),
+    })
+    await expect(
+      getRunByExternalOperation(REFRESH_OPERATION_ID)
+    ).resolves.toMatchObject({
+      status: KBIngestionStatus.SUPERSEDED,
+      statusMessage:
+        'The platform refresh was superseded by a newer serving revision.',
     })
   })
 

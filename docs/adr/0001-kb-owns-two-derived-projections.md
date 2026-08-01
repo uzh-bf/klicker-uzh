@@ -1,3 +1,13 @@
+---
+type: Decision Record
+title: Knowledge base owns two derived projections
+description: The knowledge base owns RAG and graph projections with independent lifecycles.
+timestamp: '2026-08-01'
+tags:
+  - backend
+  - knowledge-base
+---
+
 # 1. The knowledge base owns two derived projections with independent lifecycles
 
 Status: Accepted (2026-07-31)

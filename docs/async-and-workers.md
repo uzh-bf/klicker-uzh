@@ -2,7 +2,7 @@
 type: Async Architecture
 title: Async & Workers
 description: The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
-timestamp: '2026-07-30'
+timestamp: '2026-08-01'
 tags:
   - backend
   - hatchet
@@ -55,7 +55,7 @@ Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. No
 
 Single and bulk lecturer deletion both create their fenced runs inside the database transaction and enqueue only after commit. Bulk dispatch is bounded to eight concurrent tasks; each rejection records retry state independently so one unavailable Hatchet call cannot prevent sibling tombstones or later W5 maintenance.
 
-Operation events also return through the raw-body `/api/webhooks/kb-ingestion` route registered by `apps/backend-docker/src/app.ts:prepareApp`. `packages/graphql/src/services/knowledgeWebhooks.ts:handleKBIngestionWebhook` accepts the strict canonical event body and the four `X-Ingestion-*` headers, verifies an HMAC-SHA256 signature within the five-minute replay window against the current or previous webhook secret, then applies the same operation/version/digest correlation guards and atomic resource/run updates as polling. Later serving events can complete a successful replacement cutover; terminal run guards prevent delayed processing or failure events from regressing it.
+Operation events also return through the raw-body `/api/webhooks/kb-ingestion` route registered by `apps/backend-docker/src/app.ts:prepareApp`. `packages/graphql/src/services/knowledgeWebhooks.ts:handleKBIngestionWebhook` accepts the strict canonical event body and the four `X-Ingestion-*` headers, verifies an HMAC-SHA256 signature within the five-minute replay window against the current or previous webhook secret, then applies the same operation/version/digest correlation guards and atomic resource/run updates as polling. Client-initiated lifecycle events remain attempt-scoped. The distinct platform `resource.content_refreshed` event requires a non-null serving version/hash matching `resource_version`, locks the live resource, writes a terminal UPSERT ledger row correlated to `operation_id`, and advances only the active serving fields and `ingestedAt`; repeated delivery is deduplicated by operation ID and an older refresh is retained as `SUPERSEDED`. Later serving events can complete a successful replacement cutover; terminal run guards prevent delayed processing or failure events from regressing it.
 
 URL resources are registered only with public HTTP(S) destinations using ports 80 or 443 and without credentials, fragments, or secret-like query parameters. Before dispatch, every redirect hop is resolved to a public IPv4 address and fetched through that pinned address while the original public URL remains the ingestion source identity. Private blobs are exposed to the ingestion platform through the authenticated backend source gateway; no Azure storage credential or SAS URL crosses the API contract.
 
