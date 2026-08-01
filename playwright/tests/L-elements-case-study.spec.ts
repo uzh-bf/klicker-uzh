@@ -10,10 +10,12 @@
  */
 
 import { Page } from '@playwright/test'
+import { openAnswerCollectionOptions } from '../util/actions.js'
 import { cleanupTest } from '../util/cleanup.js'
 import { expect, test } from '../util/fixtures.js'
 import {
   deleteElement,
+  fillEditorField,
   searchAndEdit,
   validateElement,
 } from '../util/fixtures/elements.js'
@@ -643,7 +645,7 @@ test.describe('Test creation and editing functionalities for Case Study elements
     await page.getByTestId('answer-collections').click()
     await page.getByTestId(`answer-collection-actions-${CS.collection}`).click()
     await page.getByTestId('edit-answer-collection').click()
-    await page.getByTestId('open-answer-collection-options').click()
+    await openAnswerCollectionOptions(page)
 
     for (const sol of CS.items) {
       await expect(
@@ -674,7 +676,7 @@ test.describe('Test creation and editing functionalities for Case Study elements
       'data-disabled'
     )
     await page.getByTestId('edit-answer-collection').click()
-    await page.getByTestId('open-answer-collection-options').click()
+    await openAnswerCollectionOptions(page)
     await expect(page.getByText(MSG_ANSWER_OPTION_USED)).toBeVisible()
     await page.getByTestId('close-answer-collection-edit-modal').click()
   })
@@ -732,12 +734,9 @@ test.describe('Test creation and editing functionalities for Case Study elements
     await questionText.pressSequentially(CS.content)
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
 
-    await page.getByTestId('insert-question-explanation').click()
-    await page.getByTestId('insert-question-explanation').clear()
+    await fillEditorField(page, 'insert-question-explanation', '', true)
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
-    await page
-      .getByTestId('insert-question-explanation')
-      .pressSequentially(CS.explanation)
+    await fillEditorField(page, 'insert-question-explanation', CS.explanation)
 
     await page.getByTestId('configure-sample-solution').click()
     await page.getByTestId('criterion-0-name').clear()
@@ -985,11 +984,7 @@ test.describe('Test creation and editing functionalities for Case Study elements
     await page.getByTestId('insert-question-title').clear()
     await page.getByTestId('insert-question-title').fill(CS.titleEdited)
 
-    await page.getByTestId('insert-question-text').click()
-    await page.getByTestId('insert-question-text').clear()
-    await page
-      .getByTestId('insert-question-text')
-      .pressSequentially(CS.contentEdited)
+    await fillEditorField(page, 'insert-question-text', CS.contentEdited, true)
 
     // Change collection with cancel then confirm
     await page.getByTestId('select-answer-collection').click()
@@ -1118,7 +1113,7 @@ test.describe('Test creation and editing functionalities for Case Study elements
       page.getByTestId('delete-answer-collection')
     ).not.toHaveAttribute('data-disabled')
     await page.getByTestId('edit-answer-collection').click()
-    await page.getByTestId('open-answer-collection-options').click()
+    await openAnswerCollectionOptions(page)
     for (const sol of [...CS.items, ...CS.unselectedItems]) {
       await expect(
         page.getByTestId(`delete-answer-option-${sol}`)
@@ -1138,7 +1133,7 @@ test.describe('Test creation and editing functionalities for Case Study elements
       'data-disabled'
     )
     await page.getByTestId('edit-answer-collection').click()
-    await page.getByTestId('open-answer-collection-options').click()
+    await openAnswerCollectionOptions(page)
     for (const sol of CS.itemsEdited) {
       await expect(
         page.getByTestId(`delete-answer-option-${sol}`)
@@ -1170,7 +1165,7 @@ test.describe('Test creation and editing functionalities for Case Study elements
     // Country Collection
     await page.getByTestId(`answer-collection-actions-${CS.collection}`).click()
     await page.getByTestId('edit-answer-collection').click()
-    await page.getByTestId('open-answer-collection-options').click()
+    await openAnswerCollectionOptions(page)
     for (const sol of [...CS.items, ...CS.unselectedItems]) {
       await expect(
         page.getByTestId(`delete-answer-option-${sol}`)
@@ -1183,7 +1178,7 @@ test.describe('Test creation and editing functionalities for Case Study elements
       .getByTestId(`answer-collection-actions-${CS.collectionEdited}`)
       .click()
     await page.getByTestId('edit-answer-collection').click()
-    await page.getByTestId('open-answer-collection-options').click()
+    await openAnswerCollectionOptions(page)
     for (const sol of [...CS.itemsEdited, ...CS.unselectedItemsEdited]) {
       await expect(
         page.getByTestId(`delete-answer-option-${sol}`)
@@ -1320,7 +1315,7 @@ test.describe('Test creation and editing functionalities for Case Study elements
       .getByTestId(`answer-collection-actions-${collectionName}`)
       .click()
     await page.getByTestId('edit-answer-collection').click()
-    await page.getByTestId('open-answer-collection-options').click()
+    await openAnswerCollectionOptions(page)
 
     for (const sol of CS_INLINE.items) {
       await expect(
@@ -1338,16 +1333,18 @@ test.describe('Test creation and editing functionalities for Case Study elements
 
     await page.getByTestId('insert-question-title').clear()
     await page.getByTestId('insert-question-title').fill(CS_INLINE.titleEdited)
-    await page.getByTestId('insert-question-text').click()
-    await page.getByTestId('insert-question-text').clear()
-    await page
-      .getByTestId('insert-question-text')
-      .pressSequentially(CS_INLINE.contentEdited)
-    await page.getByTestId('insert-question-explanation').click()
-    await page.getByTestId('insert-question-explanation').clear()
-    await page
-      .getByTestId('insert-question-explanation')
-      .pressSequentially(CS_INLINE.explanationEdited)
+    await fillEditorField(
+      page,
+      'insert-question-text',
+      CS_INLINE.contentEdited,
+      true
+    )
+    await fillEditorField(
+      page,
+      'insert-question-explanation',
+      CS_INLINE.explanationEdited,
+      true
+    )
 
     // Creating inline collection is not available during edit
     await expect(

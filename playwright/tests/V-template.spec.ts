@@ -6,6 +6,7 @@
 import { expect, type Page } from '@playwright/test'
 import fs from 'node:fs'
 import { test } from '../util/fixtures.js'
+import { fillEditorField } from '../util/fixtures/elements.js'
 import { enMessages as messages } from '../util/messages.js'
 import {
   acceptGamifiedLiveQuizAccountPrompt,
@@ -1328,11 +1329,11 @@ test.describe
         content
       )
       await page.waitForTimeout(1000)
-      await page.getByTestId('insert-question-text').click()
-      await page.getByTestId('insert-question-text').clear()
-      await typeInto(
-        page.getByTestId('insert-question-text'),
-        `${content} (NEW)`
+      await fillEditorField(
+        page,
+        'insert-question-text',
+        `${content} (NEW)`,
+        true
       )
       await page.getByTestId('save-new-question').click()
       await expect(page.getByTestId('student-element-preview')).toContainText(
@@ -1549,9 +1550,7 @@ test.describe
       await page.getByTestId('insert-question-title').click()
       await page.getByTestId('insert-question-title').clear()
       await typeInto(page.getByTestId('insert-question-title'), newTitle)
-      await page.getByTestId('insert-question-text').click()
-      await page.getByTestId('insert-question-text').clear()
-      await typeInto(page.getByTestId('insert-question-text'), newContent)
+      await fillEditorField(page, 'insert-question-text', newContent, true)
       await page.getByTestId('save-new-question').click()
       await expect(page.getByTestId('student-element-preview')).toContainText(
         newContent
@@ -2330,9 +2329,7 @@ test.describe
       await page.getByTestId('insert-question-title').click()
       await page.getByTestId('insert-question-title').clear()
       await typeInto(page.getByTestId('insert-question-title'), newTitle)
-      await page.getByTestId('insert-question-text').click()
-      await page.getByTestId('insert-question-text').clear()
-      await typeInto(page.getByTestId('insert-question-text'), newContent)
+      await fillEditorField(page, 'insert-question-text', newContent, true)
       await page.getByTestId('save-new-question').click()
       await expect(page.getByTestId('student-element-preview')).toContainText(
         newContent

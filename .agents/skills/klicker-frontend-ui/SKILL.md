@@ -18,6 +18,7 @@ Conventions (design system, Tailwind v4, Apollo, i18n, CSP): [docs/frontend-conv
    - Forms: Formik + Yup. Conditional classes: `twMerge`. Feature flags gate alone — never `flag && count > 0`.
    - Rich editors: persist Markdown, not editor HTML. Represent empty content as `''` or `undefined`, never the legacy `'<br>'` sentinel. Pages-router Tiptap editors set `immediatelyRender: false`; programmatic content or disabled-state synchronization must not make the surrounding form dirty. Prove tables, code fences, and other rich controls survive the persisted Markdown round-trip before exposing them.
    - Plain-text clipboard content is parsed as Markdown only when it contains Markdown link syntax; keep ordinary plain text on Tiptap's default paste path. Preserve rich HTML paste except for merged table cells, which must expand into explicit unit cells before parsing because GFM tables cannot persist row or column spans.
+   - Tiptap controls that depend on marks or cursor context subscribe through `useEditorState`; document `onUpdate` callbacks do not cover selection-only transactions. Set `immediatelyRender: false` in pages-router apps.
    - No Next.js middleware for CSP/headers — that belongs at the proxy layer.
 3. **Verify in the browser — mandatory, not optional.** Depending on your environment path:
    - **Inside Devcontainer:** Dev servers auto-start in the background. No need to start/stop them. View logs via `tail -f /tmp/dev.log`.

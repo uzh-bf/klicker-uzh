@@ -460,6 +460,8 @@ export default {
       addColumn: 'Spalte hinzufügen',
       deleteColumn: 'Spalte löschen',
       deleteTable: 'Tabelle löschen',
+      undo: 'Rückgängig machen',
+      redo: 'Wiederholen',
     },
     leaderboard: {
       lqLeaderboard: 'Quiz Leaderboard',

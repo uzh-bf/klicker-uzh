@@ -412,3 +412,12 @@
 .token.builtin {
   color: #e36209;
 }
+
+/* Placeholder styling for Tiptap editor */
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: #a3adb7;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}

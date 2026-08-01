@@ -8,7 +8,11 @@
 
 import { cleanupTest } from '../util/cleanup.js'
 import { expect, test } from '../util/fixtures.js'
-import { searchAndEdit, validateElement } from '../util/fixtures/elements.js'
+import {
+  fillEditorField,
+  searchAndEdit,
+  validateElement,
+} from '../util/fixtures/elements.js'
 import { elementTypeLabels, statusLabels } from '../util/messages.js'
 
 // Fixture data (mirrors cypress/cypress/fixtures/DM-questions.json FT section)
@@ -116,11 +120,7 @@ test.describe('Test creation and editing functionalities for Free Text elements'
     await page.getByTestId('insert-question-title').clear()
     await page.getByTestId('insert-question-title').fill(FT.titleEdited)
 
-    await page.getByTestId('insert-question-text').click()
-    await page.getByTestId('insert-question-text').clear()
-    await page
-      .getByTestId('insert-question-text')
-      .pressSequentially(FT.contentEdited)
+    await fillEditorField(page, 'insert-question-text', FT.contentEdited, true)
 
     await page.getByTestId('set-free-text-length').click()
     await page.getByTestId('set-free-text-length').clear()

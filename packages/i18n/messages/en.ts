@@ -457,6 +457,8 @@ export default {
       addColumn: 'Add column',
       deleteColumn: 'Delete column',
       deleteTable: 'Delete table',
+      undo: 'Undo',
+      redo: 'Redo',
     },
     leaderboard: {
       lqLeaderboard: 'Quiz Leaderboard',

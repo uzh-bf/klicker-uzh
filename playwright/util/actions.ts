@@ -93,3 +93,17 @@ export async function chooseActionByTestId(
   await openActionMenuByTestId(page, triggerTestId, actionTestId)
   await clickVisibleByTestId(page, actionTestId)
 }
+
+export async function openAnswerCollectionOptions(page: Page) {
+  await page.locator('.ProseMirror').first().waitFor({ state: 'visible' })
+  if (await page.getByTestId('search-answer-options').isVisible()) {
+    return
+  }
+  const expanded = await page
+    .getByTestId('open-answer-collection-options')
+    .getAttribute('aria-expanded')
+  if (expanded !== 'true') {
+    await page.getByTestId('open-answer-collection-options').click()
+  }
+  await page.getByTestId('search-answer-options').waitFor({ state: 'visible' })
+}
