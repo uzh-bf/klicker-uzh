@@ -8,6 +8,7 @@ import KnowledgeBaseChatbotBindings from './components/KnowledgeBaseChatbotBindi
 import KnowledgeBaseFileDropzone from './components/KnowledgeBaseFileDropzone'
 import KnowledgeBaseResourceList from './components/KnowledgeBaseResourceList'
 import KnowledgeBaseUrlForm from './components/KnowledgeBaseUrlForm'
+import KnowledgeGraphPanel from './components/KnowledgeGraphPanel'
 import { getGraphQLErrorCode } from './graphqlError'
 
 function KnowledgeBaseDetail({ kbId }: { kbId: string }) {
@@ -192,6 +193,7 @@ function KnowledgeBaseDetail({ kbId }: { kbId: string }) {
         />
       </div>
       <KnowledgeBaseChatbotBindings kbId={kbId} onChanged={refreshMetrics} />
+      <KnowledgeGraphPanel kbId={kbId} />
       <KnowledgeBaseResourceList
         kbId={kbId}
         refreshKey={resourceRefreshKey}

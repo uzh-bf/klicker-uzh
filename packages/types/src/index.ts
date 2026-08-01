@@ -16,6 +16,9 @@ import type {
 export * from './assessmentReport.js'
 export * from './hatchet.js'
 
+// ----- KNOWLEDGE GRAPH TYPES -----
+export * from './knowledgeGraph.js'
+
 // ----- ACTIVITY LOG TYPES -----
 // #region
 export enum ActivityLogModificationFieldType {

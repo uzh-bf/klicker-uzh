@@ -141,6 +141,8 @@ jobs:
           pnpm run build
           cd ../util
           pnpm run build
+          cd ../knowledge-graph
+          pnpm run build
           cd ../graphql
           pnpm run build
           cd ../hatchet
