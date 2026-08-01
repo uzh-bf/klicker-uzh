@@ -70,11 +70,6 @@ export async function getPublishedKnowledgeGraph(
     where: { id: kbId, deletedAt: null },
     select: {
       publishedGraphBuildId: true,
-      resources: {
-        where: { deletedAt: null },
-        select: { id: true, title: true },
-        orderBy: { id: 'asc' },
-      },
     },
   })
 
@@ -99,6 +94,10 @@ export async function getPublishedKnowledgeGraph(
       status: true,
       graphName: true,
       sourceContentDigest: true,
+      sources: {
+        select: { resourceId: true, title: true },
+        orderBy: { resourceId: 'asc' },
+      },
     },
   })
 
@@ -115,9 +114,9 @@ export async function getPublishedKnowledgeGraph(
     isStale:
       build.sourceContentDigest !==
       (await computeKBContentDigest(prisma, kbId)),
-    sources: kb.resources.map((resource) => ({
-      resourceId: resource.id,
-      title: resource.title,
+    sources: build.sources.map((source) => ({
+      resourceId: source.resourceId,
+      title: source.title,
     })),
   }
 }

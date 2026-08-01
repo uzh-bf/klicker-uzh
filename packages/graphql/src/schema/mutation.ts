@@ -42,6 +42,10 @@ import {
   GroupActivityGradingInput,
   GroupActivityInstance,
 } from './groupActivity.js'
+import {
+  KBGraphQualityTier,
+  KBKnowledgeGraphConfigType,
+} from './kbKnowledgeGraph.js'
 import { KB, KBChatbotBinding, KBFileUpload, KBResource } from './knowledge.js'
 import {
   ConfusionTimestep,
@@ -1750,6 +1754,18 @@ export const Mutation = builder.mutationType({
         args: { id: t.arg.id({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.ingestKbResource(args, ctx)
+        },
+      }),
+
+      rebuildKbKnowledgeGraph: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBKnowledgeGraphConfigType,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          qualityTier: t.arg({ type: KBGraphQualityTier, required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.rebuildKbKnowledgeGraph(args, ctx)
         },
       }),
 

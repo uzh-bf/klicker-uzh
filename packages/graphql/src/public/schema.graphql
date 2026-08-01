@@ -1715,6 +1715,19 @@ type KBFileUpload {
   uploadSasURL: String!
 }
 
+enum KBGraphBuildStatus {
+  FAILED
+  PROCESSING
+  QUEUED
+  SUCCEEDED
+  SUPERSEDED
+}
+
+enum KBGraphQualityTier {
+  HIGH
+  STANDARD
+}
+
 type KBIngestionRun {
   contentSha256: String
   createdAt: Date!
@@ -1734,6 +1747,22 @@ enum KBIngestionStatus {
   QUEUED
   SUCCEEDED
   SUPERSEDED
+}
+
+type KBKnowledgeGraphConfig {
+  activeBuildId: ID
+  buildId: ID
+  createdAt: Date
+  finishedAt: Date
+  isStale: Boolean!
+  kbId: ID!
+  publishedBuildId: ID
+  qualityTier: KBGraphQualityTier
+  sourceContentDigest: String
+  startedAt: Date
+  status: KBGraphBuildStatus
+  statusMessage: String
+  updatedAt: Date
 }
 
 type KBMetrics {
@@ -1793,6 +1822,41 @@ enum KBResourceStatus {
 enum KBResourceType {
   BLOB
   URL
+}
+
+type KnowledgeGraphEdge {
+  id: ID!
+  label: String!
+  properties: Json!
+  source: ID!
+  target: ID!
+  type: String!
+}
+
+type KnowledgeGraphNode {
+  content: String
+  degree: Int!
+  displayLabel: String!
+  id: ID!
+  kind: String!
+  labels: [String!]!
+  sourceReferences: [KnowledgeGraphSourceReference!]!
+  summary: String
+}
+
+type KnowledgeGraphResponse {
+  buildId: ID!
+  edges: [KnowledgeGraphEdge!]!
+  isStale: Boolean!
+  kbId: ID!
+  nodes: [KnowledgeGraphNode!]!
+  truncated: Boolean!
+}
+
+type KnowledgeGraphSourceReference {
+  reference: String
+  resourceId: ID!
+  title: String!
 }
 
 type LeaderboardEntry {
@@ -2075,6 +2139,7 @@ type Mutation {
   publishMicroLearning(id: String!): MicroLearning
   publishPracticeQuiz(availableFrom: Date, id: String!): PracticeQuiz
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
+  rebuildKbKnowledgeGraph(kbId: ID!, qualityTier: KBGraphQualityTier): KBKnowledgeGraphConfig!
   removeCatalogObjectAssignment(assignmentId: Int!): Boolean!
   removeObject(objectId: String!, objectType: ObjectType!): String
   removeUserFromGroup(groupId: Int!, userId: String!): Boolean!
@@ -2603,6 +2668,9 @@ type Query {
   getInstanceUpdateActivities(elementId: Int!, hasSampleSolution: Boolean, includeTemplateInstances: Boolean!): [InstanceUpdateActivityInfo!]
   getKb(id: ID!): KB!
   getKbChatbotBindings(kbId: ID!): [KBChatbotBinding!]!
+  getKbKnowledgeGraphConfig(kbId: ID!): KBKnowledgeGraphConfig!
+  getKbKnowledgeGraphNeighbors(kbId: ID!, nodeId: ID!): KnowledgeGraphResponse!
+  getKbKnowledgeGraphOverview(kbId: ID!): KnowledgeGraphResponse!
   getKbResourceIngestionRuns(resourceId: ID!): [KBIngestionRun!]!
   getKbResources(after: String, first: Int, kbId: ID!, search: String, status: KBIngestionStatus, type: KBResourceType): KBResourceConnection!
   getLecturerViewLiveQuiz(id: String!): LiveQuiz
@@ -2647,6 +2715,7 @@ type Query {
   practiceQuiz(id: String!): PracticeQuiz
   previousPointCorrections(courseId: String, instanceId: Int, liveQuizId: String): [PointCorrection!]
   publicParticipantProfile(participantId: String!): Participant
+  searchKbKnowledgeGraph(kbId: ID!, query: String!): KnowledgeGraphResponse!
   self(liveQuizId: String): Participant
   selfWithAchievements: ParticipantWithAchievements
   shortnameQuizzes(shortname: String!): [LiveQuiz!]

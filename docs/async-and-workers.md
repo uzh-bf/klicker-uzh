@@ -65,6 +65,8 @@ The interim backend kill switch `KB_INGESTION_DISABLED=true` is checked by `pack
 
 The general worker requires `KB_INGESTION_API_URL`, `KB_INGESTION_API_KEY`, and `KB_SOURCE_GATEWAY_URL`; `KB_INGESTION_PROJECT_ID` defaults to `klicker-course-materials`. The backend requires `KB_SOURCE_GATEWAY_KEY` and `KB_WEBHOOK_SECRET`, with optional `KB_WEBHOOK_PREVIOUS_SECRET` during webhook-key rotation. The API key, gateway key, and webhook keys are secrets and must stay outside chart ConfigMaps.
 
+KB graph builds use the separate `KB_GRAPH_HATCHET_*` connection and workflow settings plus `KB_GRAPH_TIMEOUT_SECONDS` and the named standard/high model pairs. The worker validates a partially configured graph integration at startup, then dispatches only a pinned build manifest and reconciles its external run. `KB_GRAPH_HATCHET_CLIENT_TOKEN` remains in the general-worker secret; the non-secret settings belong under `hatchet.kbGraph` in the chart values. Graph build input URLs and generated Blob SAS values must never be logged or placed in ConfigMaps.
+
 Both Hatchet workers intentionally run `tsx` without `--watch`; watch restarts unregister workflows during development.
 
 ## Running locally (config-derived — verify on your machine)

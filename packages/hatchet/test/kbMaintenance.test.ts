@@ -39,6 +39,7 @@ function maintenancePrisma({
   deletedResourceCount = deletedResources.length,
   deletedKbs = [],
   deletedKbCount = deletedKbs.length,
+  retainedGraphBuilds = [],
   currentResource,
 }: {
   pendingDispatch?: unknown[]
@@ -51,6 +52,7 @@ function maintenancePrisma({
   deletedResourceCount?: number
   deletedKbs?: unknown[]
   deletedKbCount?: number
+  retainedGraphBuilds?: unknown[]
   currentResource?: unknown
 } = {}) {
   const prisma = {
@@ -82,6 +84,10 @@ function maintenancePrisma({
       count: vi.fn().mockResolvedValue(deletedKbCount),
       findMany: vi.fn().mockResolvedValue(deletedKbs),
       deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
+    },
+    kBGraphBuild: {
+      findMany: vi.fn().mockResolvedValue(retainedGraphBuilds),
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
     $transaction: vi.fn(),
   }
@@ -481,8 +487,49 @@ describe('KB retention maintenance', () => {
         resources: { none: {} },
         uploadTickets: { none: {} },
         chatbots: { none: { isEnabled: true } },
+        graphBuilds: { none: { cleanedAt: null } },
       },
     })
+  })
+
+  it('removes only an unreferenced retained graph and its pinned artifact', async () => {
+    const buildId = 'f1fbd1fd-aabb-4dd4-8e64-2f9a13a971a6'
+    const graphName = `klickeruzh:kb:${KB_ID}:${buildId}`
+    const graphmlBlobName = `knowledge-graphs/${buildId}.graphml`
+    const prisma = maintenancePrisma({
+      retainedGraphBuilds: [
+        {
+          id: buildId,
+          kbId: KB_ID,
+          graphName,
+          graphmlBlobName,
+          kb: {
+            ownerId: OWNER_ID,
+            activeGraphBuildId: null,
+            publishedGraphBuildId: null,
+          },
+        },
+      ],
+    })
+    const deleteBlob = vi.fn().mockResolvedValue(undefined)
+    const deleteGraph = vi.fn().mockResolvedValue(undefined)
+
+    await maintainKBResources({
+      prisma: prisma as never,
+      client: client(),
+      now: () => NOW,
+      deleteBlob,
+      deleteGraph,
+    })
+
+    expect(deleteBlob).toHaveBeenCalledWith(OWNER_ID, graphmlBlobName)
+    expect(deleteGraph).toHaveBeenCalledWith(graphName)
+    expect(prisma.kBGraphBuild.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: buildId, cleanedAt: null }),
+        data: { cleanedAt: NOW },
+      })
+    )
   })
 
   it('retries a stranded UPSERT dispatch stuck in the crash window with its stable attempt id', async () => {

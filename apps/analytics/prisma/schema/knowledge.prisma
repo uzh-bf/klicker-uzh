@@ -160,6 +160,9 @@ model KBGraphBuild {
   errorCode           String?
   startedAt           DateTime?
   finishedAt          DateTime?
+  // terminal builds keep their ledger row; maintenance records once their
+  // external graph and GraphML artifact have been removed.
+  cleanedAt           DateTime?
 
   // builds spend the requesting lecturer's AI budget, so the requester is recorded
   requestedBy   User?   @relation(fields: [requestedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
@@ -168,11 +171,34 @@ model KBGraphBuild {
   kb   KB     @relation(fields: [kbId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   kbId String @db.Uuid
 
+  // The graph must remain explainable even if a source resource is later
+  // deleted or replaced, so this is a build-local snapshot rather than a FK.
+  sources KBGraphBuildSource[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([kbId, createdAt])
   @@index([status])
+}
+
+model KBGraphBuildSource {
+  id String @id @default(uuid()) @db.Uuid
+
+  resourceId    String         @db.Uuid
+  title         String
+  type          KBResourceType
+  contentSha256 String
+  sourceUrl     String?
+  blobName      String?
+
+  build   KBGraphBuild @relation(fields: [buildId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  buildId String       @db.Uuid
+
+  createdAt DateTime @default(now())
+
+  @@unique([buildId, resourceId])
+  @@index([resourceId])
 }
 
 model KBUploadTicket {

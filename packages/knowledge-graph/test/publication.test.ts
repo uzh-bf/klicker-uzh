@@ -18,6 +18,7 @@ type MockBuild = {
   status: 'QUEUED' | 'PROCESSING' | 'SUCCEEDED' | 'FAILED'
   graphName: string
   sourceContentDigest: string
+  sources?: { resourceId: string; title: string }[]
 } | null
 
 function mockPrisma({
@@ -46,6 +47,8 @@ const RESOURCES = [
   { id: 'resource-b', title: 'Second' },
 ]
 
+const SOURCES = RESOURCES.map(({ id, title }) => ({ resourceId: id, title }))
+
 const SERVING = [
   { id: 'resource-a', activeContentSha256: 'sha-a' },
   { id: 'resource-b', activeContentSha256: 'sha-b' },
@@ -66,6 +69,7 @@ describe('knowledge graph publication guard', () => {
         status: 'SUCCEEDED',
         graphName: 'klickeruzh:kb:kb-id:build-1',
         sourceContentDigest: CURRENT_DIGEST,
+        sources: SOURCES,
       },
       servingResources: SERVING,
     })
@@ -93,6 +97,7 @@ describe('knowledge graph publication guard', () => {
         status: 'SUCCEEDED',
         graphName: 'klickeruzh:kb:kb-id:build-1',
         sourceContentDigest: 'digest-from-an-older-content-set',
+        sources: SOURCES,
       },
       servingResources: SERVING,
     })
@@ -111,6 +116,7 @@ describe('knowledge graph publication guard', () => {
         status: 'SUCCEEDED',
         graphName: 'klickeruzh:kb:kb-id:build-1',
         sourceContentDigest: CURRENT_DIGEST,
+        sources: SOURCES,
       },
       latestBuild: { status: 'PROCESSING' },
       servingResources: SERVING,
@@ -119,6 +125,29 @@ describe('knowledge graph publication guard', () => {
     await expect(getPublishedKnowledgeGraph(prisma, 'kb-id')).resolves.toEqual(
       expect.objectContaining({ buildId: 'build-1', isStale: false })
     )
+  })
+
+  it('uses the build-local source snapshot after a resource changes', async () => {
+    const snapshot = [{ resourceId: 'resource-a', title: 'Original title' }]
+    const prisma = mockPrisma({
+      kb: { publishedGraphBuildId: 'build-1', resources: RESOURCES },
+      publishedBuild: {
+        id: 'build-1',
+        kbId: 'kb-id',
+        status: 'SUCCEEDED',
+        graphName: 'klickeruzh:kb:kb-id:build-1',
+        sourceContentDigest: 'digest-from-an-older-content-set',
+        sources: snapshot,
+      },
+      servingResources: SERVING,
+    })
+
+    await expect(
+      getPublishedKnowledgeGraph(prisma, 'kb-id')
+    ).resolves.toMatchObject({
+      sources: snapshot,
+      isStale: true,
+    })
   })
 
   it.each([

@@ -11,6 +11,17 @@ data:
   KB_INGESTION_API_URL: {{ .Values.hatchet.kbIngestion.apiUrl | quote }}
   KB_INGESTION_PROJECT_ID: {{ .Values.hatchet.kbIngestion.projectId | quote }}
   KB_SOURCE_GATEWAY_URL: {{ .Values.hatchet.kbIngestion.sourceGatewayUrl | quote }}
+  {{- if .Values.hatchet.kbGraph.workflowName }}
+  KB_GRAPH_HATCHET_CLIENT_HOST_PORT: {{ .Values.hatchet.kbGraph.hostPort | quote }}
+  KB_GRAPH_HATCHET_API_URL: {{ .Values.hatchet.kbGraph.apiUrl | quote }}
+  KB_GRAPH_HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.kbGraph.tlsStrategy | quote }}
+  KB_GRAPH_HATCHET_WORKFLOW_NAME: {{ .Values.hatchet.kbGraph.workflowName | quote }}
+  KB_GRAPH_TIMEOUT_SECONDS: {{ .Values.hatchet.kbGraph.timeoutSeconds | quote }}
+  KB_GRAPH_STANDARD_GENERATION_MODEL: {{ .Values.hatchet.kbGraph.standardGenerationModel | quote }}
+  KB_GRAPH_STANDARD_CLEANING_MODEL: {{ .Values.hatchet.kbGraph.standardCleaningModel | quote }}
+  KB_GRAPH_HIGH_GENERATION_MODEL: {{ .Values.hatchet.kbGraph.highGenerationModel | quote }}
+  KB_GRAPH_HIGH_CLEANING_MODEL: {{ .Values.hatchet.kbGraph.highCleaningModel | quote }}
+  {{- end }}
   BLOB_STORAGE_ACCOUNT_NAME: {{ .Values.blobStorage.accountName | quote }}
 ---
 apiVersion: v1

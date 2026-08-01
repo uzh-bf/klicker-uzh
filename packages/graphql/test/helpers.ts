@@ -17,6 +17,7 @@ import {
   UserRole,
 } from '@klicker-uzh/prisma/client'
 import {
+  BuildKBGraphInput,
   DisplayMode,
   ElementData,
   ElementInstanceOptions,
@@ -151,6 +152,13 @@ export async function testInitialization(
       name: 'ingest-kb-resource',
       fn: async (input: IngestKBResourceInput) => {
         console.info('KB ingestion dispatch stub triggered', input)
+        return { success: true }
+      },
+    }),
+    buildKBGraph: hatchet.task({
+      name: 'build-kb-knowledge-graph',
+      fn: async (input: BuildKBGraphInput) => {
+        console.info('KB graph build dispatch stub triggered', input)
         return { success: true }
       },
     }),

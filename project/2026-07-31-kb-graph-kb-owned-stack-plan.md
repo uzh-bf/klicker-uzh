@@ -25,13 +25,13 @@ Base: `kb-poc` @ `38625cbbf`. Worktree: `trees/kb-graph-stack`. Gate 1 approved 
 - R11 Nothing lands in FalkorDB until complete; every build writes to its own recorded graph name and the published pointer moves only to a successful build. Versioning via GraphML export to Blob.
 - R12 GraphML under a reserved prefix in the owner's KB container, excluded from resource quota. After a bounded grace period, `kbMaintenance` sweeps both GraphML and any graph name that is neither active nor published.
 - R13 Lecturer viewer in KB workspace **and** student viewer in chat, both KB-owned.
-- R14 Carry Patrick's 25 commits by squashing to ~5 layer-aligned commits (him as author), rebased onto `kb-poc`, then refactor forward.
+- R14 Carry Patrick's implementation and attribution forward while preserving the parked branch and PR. Keep a buildable verbatim port as a provenance commit where possible; when the current base makes a raw port intentionally non-buildable, re-home it in the first buildable layer commit with the source refs recorded in the commit body and this plan. Never bypass hooks or mutate Patrick's branch.
 
 ## Porting Patrick's 25 commits (R14)
 
 His commits interleave layers rather than arriving in layer order, so contiguous squashing cannot produce layer-aligned groups. Group by file path instead. The range splits into **56 added** files and **44 modified** files:
 
-- **Added files port verbatim** as Patrick-authored commits, one per layer — his code arrives as his commits, and the adaptation to the KB-owned design lands as separate commits on top, so the two are never conflated.
+- **Added files that remain buildable** are ported verbatim as Patrick-authored provenance commits — L2 is `068241088`. The adaptation to the KB-owned design lands as separate commits on top, so the two are never conflated.
 - **Modified files are hand-merged inside each layer's refactor.** Taking his versions verbatim would revert W1–W8: `packages/prisma/src/prisma/schema/knowledge.prisma`, `packages/hatchet/src/kbIngestion.ts`, `packages/graphql/src/services/knowledge.ts`, and `packages/types/src/hatchet.ts` all evolved substantially after the fork. Generated artifacts (`ops.ts`, `ops.schema.json`, `public/*.json`, `public/schema.graphql`, `pnpm-lock.yaml`) are regenerated, never ported.
 
 | Layer | Added files ported |
@@ -40,6 +40,8 @@ His commits interleave layers rather than arriving in layer order, so contiguous
 | L3 | `packages/hatchet/src/kbGraphIngestion.ts` + test, `packages/graphql/src/schema/chatbotKnowledgeGraph.ts`, `services/chatbotKnowledgeGraphs.ts` + test, 6 `.graphql` ops |
 | L4 | `packages/shared-components/src/knowledgeGraph/**` (6), `ChatbotKnowledgeGraphPanel.tsx`, `ChatbotKnowledgeGraphPreview.tsx` |
 | L5 | `apps/chat/**` knowledge-graph route, page, components, server lib, 3 tests (10) |
+
+L3 provenance note: the L3 source port was first copied verbatim from Patrick's parked tip (`9b5fc7af2`), but the mandatory normal hook stopped at obsolete Chatbot types after the KB re-home. No `--no-verify` port commit was created. The first buildable L3 commit carries the KB-owned re-home and preserves the source lineage in its body; the parked branch remains untouched.
 
 Deliberately **not** ported (11 files), each explained at union validation:
 
@@ -62,7 +64,7 @@ Each layer is independently functional, independently reviewable, green at its o
 
 `docs/domain-model.md` lands with this refactor, where its prose becomes true. Green at its own tip: `check`, `lint`, and the package's vitest run in-container.
 
-**L3 `feat/kb-graph-lifecycle`** — replace the direct Hatchet generation bridge with external-service dispatch on the pinned manifest (R4), reconciliation (R5), timeout release, GraphML export plus retention sweep of only unreferenced, non-active/non-published graph names in `kbMaintenance` (R12), quality-tier config mapping (R7); GraphQL status/rebuild/read ops re-pointed at the KB with KB-edit authorization.
+**L3 `feat/kb-graph-lifecycle`** — re-home Patrick's direct external-Hatchet graph workflow dispatch to the KB-owned pinned manifest (R4), reconciliation (R5), timeout release, GraphML export plus retention sweep of only unreferenced, non-active/non-published graph names in `kbMaintenance` (R12), quality-tier config mapping (R7); GraphQL status/rebuild/read ops re-pointed at the KB with KB-edit authorization. The companion LightRAG branch extends that existing external workflow to verify each pinned source hash after extraction and write the deterministic GraphML artifact; it does not introduce a new graph-generation service.
 
 **L4 `feat/kb-graph-manage-ui`** — move build controls from `ChatbotKnowledgeGraphPanel` to a dedicated card in `KnowledgeBaseDetail` (R8): status, stale label (R9), tier selector, rebuild with cost stated; lecturer viewer keeping Patrick's Cytoscape presentation and accessible DOM fallback.
 
@@ -96,3 +98,5 @@ Each layer is independently functional, independently reviewable, green at its o
 - 2026-08-01: L2 rebased cleanly onto L1. Its R2 digest now follows every non-deleted `activeContentSha256`, not the latest resource status, so a queued or processing replacement cannot omit its still-serving revision. The graph package passes 68 focused tests and typecheck; Prisma sync, workspace `check` (26/26), syncpack, Prettier, documentation validation, and the production build (23/23) pass. Workspace lint remains blocked only by the known analytics `pandas==2.2.2` C-compiler environment failure. Independent L2 review and simplification remain pending.
 - 2026-08-01: Independent L2 review required the reader to reject a pointer to a foreign or non-successful build and Turbo to retain `KB_FALKORDB_*` configuration. The follow-up adds queued, failed, and foreign-pointer coverage (71 graph tests), records the pointer invariant in `klicker-data-model`, and aligns the per-build graph-name and bounded-retention contract. Focused tests, workspace `check` (26/26), documentation validation, and the production build (23/23) pass; separate L2 simplification remains pending.
 - 2026-08-01: Separate L2 simplification review found no actionable reduction. The only unrun L2 proof is applying `20260731200443_kb_owned_knowledge_graph` to a disposable PostgreSQL database: the normal Docker-based local harness has no Docker client in this DevPod, so no shared development database was touched.
+- 2026-08-01: L3 started. Patrick's existing direct external-Hatchet workflow is the dispatch seam being adopted, not replaced. Companion branch `feat/kb-graph-manifest-contract` in `/Users/rschlae/Git/klicker/lightrag/trees/feat-kb-graph-manifest-contract` will add the backward-compatible pinned-hash and deterministic-GraphML contract before the Klicker adapter is re-homed to KB ownership.
+- 2026-08-01: L3 implementation is prepared on `feat/kb-graph-lifecycle`: KB-owned GraphQL rebuild/status/read operations, build-local source snapshots, pinned external Hatchet manifests, private-blob SAS URLs, timeout and late-success reconciliation, deterministic GraphML/FalkorDB retention, worker/chart configuration validation, and the LightRAG companion contract are in place. The adopted runtime seam remains direct Hatchet status polling because no authenticated inbound graph callback contract exists yet; the cron monitor is the reconciliation path. Focused Hatchet tests pass 73/73, knowledge-graph tests pass 72/72, workspace check/lint/build pass (26/26, 6/6, 23/23), Prisma sync, syncpack, AGENTS, and changed-file formatting pass; full-tree formatting still reports five unrelated generated `next-env.d.ts` files. Migration apply and live external integration remain unverified because this DevPod has no Docker-backed local harness and no live services were touched.

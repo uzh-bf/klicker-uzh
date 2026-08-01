@@ -1,0 +1,17 @@
+query GetKbKnowledgeGraphConfig($kbId: ID!) {
+  getKbKnowledgeGraphConfig(kbId: $kbId) {
+    kbId
+    buildId
+    status
+    statusMessage
+    qualityTier
+    sourceContentDigest
+    activeBuildId
+    publishedBuildId
+    isStale
+    startedAt
+    finishedAt
+    createdAt
+    updatedAt
+  }
+}

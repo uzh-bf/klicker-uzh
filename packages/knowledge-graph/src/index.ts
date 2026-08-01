@@ -1,5 +1,6 @@
 export {
   closeKnowledgeGraphClient,
+  deleteKnowledgeGraph,
   readKnowledgeGraphNeighbors,
   readKnowledgeGraphOverview,
   searchKnowledgeGraph,

@@ -1,0 +1,17 @@
+mutation RebuildKbKnowledgeGraph($kbId: ID!, $qualityTier: KBGraphQualityTier) {
+  rebuildKbKnowledgeGraph(kbId: $kbId, qualityTier: $qualityTier) {
+    kbId
+    buildId
+    status
+    statusMessage
+    qualityTier
+    sourceContentDigest
+    activeBuildId
+    publishedBuildId
+    isStale
+    startedAt
+    finishedAt
+    createdAt
+    updatedAt
+  }
+}

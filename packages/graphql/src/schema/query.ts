@@ -71,6 +71,10 @@ import {
   GroupActivitySummary,
 } from './groupActivity.js'
 import {
+  KBKnowledgeGraphConfigType,
+  KnowledgeGraphResponseType,
+} from './kbKnowledgeGraph.js'
+import {
   KB,
   KBChatbotBinding,
   KBConnection,
@@ -137,6 +141,10 @@ export const Query = builder.queryType({
   fields(t) {
     const asParticipant = { authenticated: true, role: DB.UserRole.PARTICIPANT }
     const asUser = { authenticated: true, role: DB.UserRole.USER }
+    const asUserFullAccess = {
+      ...asUser,
+      scope: DB.UserLoginScope.FULL_ACCESS,
+    }
     const asAdmin = { authenticated: true, role: DB.UserRole.ADMIN }
 
     return {
@@ -1472,6 +1480,48 @@ export const Query = builder.queryType({
         args: { resourceId: t.arg.id({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.getKbResourceIngestionRuns(args, ctx)
+        },
+      }),
+
+      getKbKnowledgeGraphConfig: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBKnowledgeGraphConfigType,
+        args: { kbId: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getKbKnowledgeGraphConfig(args, ctx)
+        },
+      }),
+
+      getKbKnowledgeGraphOverview: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KnowledgeGraphResponseType,
+        args: { kbId: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getKbKnowledgeGraphOverview(args, ctx)
+        },
+      }),
+
+      searchKbKnowledgeGraph: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KnowledgeGraphResponseType,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          query: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.searchKbKnowledgeGraph(args, ctx)
+        },
+      }),
+
+      getKbKnowledgeGraphNeighbors: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KnowledgeGraphResponseType,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          nodeId: t.arg.id({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getKbKnowledgeGraphNeighbors(args, ctx)
         },
       }),
 

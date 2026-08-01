@@ -1,6 +1,8 @@
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import { createHash } from 'node:crypto'
 
+type KBContentDigestPrisma = Pick<PrismaClient, 'kBResource'>
+
 export type KBContentDigestEntry = {
   resourceId: string
   contentSha256: string
@@ -15,7 +17,7 @@ export type KBContentDigestEntry = {
  * the resources it describes.
  */
 export async function readKBContentDigestEntries(
-  prisma: PrismaClient,
+  prisma: KBContentDigestPrisma,
   kbId: string
 ): Promise<KBContentDigestEntry[]> {
   const resources = await prisma.kBResource.findMany({
@@ -57,7 +59,7 @@ export function hashKBContentDigestEntries(
 }
 
 export async function computeKBContentDigest(
-  prisma: PrismaClient,
+  prisma: KBContentDigestPrisma,
   kbId: string
 ): Promise<string> {
   return hashKBContentDigestEntries(

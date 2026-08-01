@@ -105,6 +105,16 @@ export async function closeKnowledgeGraphClient(): Promise<void> {
   await session.client.close()
 }
 
+/**
+ * Remove one completed build's private FalkorDB graph. Callers must validate
+ * ownership before invoking this; the client deliberately has no notion of KB
+ * lifecycle or retention policy.
+ */
+export async function deleteKnowledgeGraph(graphName: string): Promise<void> {
+  const { graph } = await graphSession(graphName)
+  await graph.delete()
+}
+
 // The graph name comes from the published build rather than being recomputed, so
 // a build that is being served is always read under the name it was written to.
 async function graphSession(graphName: string): Promise<{

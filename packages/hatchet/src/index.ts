@@ -6,6 +6,7 @@ import {
 } from '@hatchet-dev/typescript-sdk'
 import { prisma } from '@klicker-uzh/prisma'
 import type {
+  BuildKBGraphInput,
   DeleteKBResourceInput,
   HatchetHandlers,
   IngestKBResourceInput,
@@ -13,6 +14,11 @@ import type {
 import type EventEmitter from 'events'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
+import {
+  dispatchKBGraphBuild,
+  markKBGraphBuildDispatchFailed,
+  monitorActiveKBGraphBuilds,
+} from './kbGraphIngestion.js'
 import {
   dispatchKBDeletion,
   dispatchKBIngestion,
@@ -23,6 +29,8 @@ import {
 import { maintainKBResources } from './kbMaintenance.js'
 
 export * from './client.js'
+export * from './kbGraphIngestion.js'
+export * from './kbGraphIngestionApi.js'
 export * from './kbIngestion.js'
 export * from './kbIngestionApi.js'
 export * from './kbMaintenance.js'
@@ -128,6 +136,28 @@ export function prepareHatchetTasks({
     },
   }
   const deleteKBResource = hatchet.task(deleteKBResourceDefinition)
+
+  const buildKBGraphDefinition = {
+    name: 'build-kb-knowledge-graph',
+    retries: 3,
+    fn: async (input: BuildKBGraphInput, ctx: Context<BuildKBGraphInput>) => {
+      await ctx.logger.info('KB graph build dispatch started', {
+        buildId: input.buildId,
+      })
+      await dispatchKBGraphBuild(input, {
+        prisma,
+        logger: ctx.logger,
+      })
+      return { success: true }
+    },
+    onFailure: {
+      retries: 3,
+      fn: async (input: BuildKBGraphInput) => {
+        await markKBGraphBuildDispatchFailed(input, prisma)
+      },
+    },
+  }
+  const buildKBGraph = hatchet.task(buildKBGraphDefinition)
   // #endregion
 
   // ! ACTIVITY PUBLICATION TASKS
@@ -357,6 +387,18 @@ export function prepareHatchetTasks({
     fn: async () => monitorActiveKBIngestions({ prisma }),
   })
 
+  const monitorKBGraphBuilds = hatchet.task({
+    name: 'monitor-kb-graph-builds',
+    onCrons: ['* * * * *'],
+    concurrency: {
+      expression: '"monitor-kb-graph-builds"',
+      maxRuns: 1,
+      limitStrategy: ConcurrencyLimitStrategy.CANCEL_NEWEST,
+    },
+    fn: async (_, ctx) =>
+      monitorActiveKBGraphBuilds({ prisma, logger: ctx.logger }),
+  })
+
   const maintainKBResourcesTask = hatchet.task({
     name: 'maintain-kb-resources',
     onCrons: ['*/15 * * * *'],
@@ -398,7 +440,9 @@ export function prepareHatchetTasks({
     aggregateLiveQuizBlockResultsAssessment,
     ingestKBResource,
     deleteKBResource,
+    buildKBGraph,
     monitorKBIngestions,
+    monitorKBGraphBuilds,
     maintainKBResources: maintainKBResourcesTask,
     createAuditLogEntry,
   }
