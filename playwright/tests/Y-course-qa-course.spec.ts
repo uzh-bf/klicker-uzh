@@ -222,6 +222,58 @@ test.describe('Course Q&A course-level workflows', () => {
     await expect(page.getByTestId('course-qa-empty')).toHaveCount(0)
   })
 
+  test('Student sees a refresh warning after a successful post when refresh fails', async ({
+    page,
+    loginStudent,
+  }) => {
+    let mutationStarted = false
+    let refreshAborted = false
+
+    await page.route('**/api/graphql', async (route) => {
+      const request = route.request()
+      if (request.method() !== 'POST') {
+        await route.continue()
+        return
+      }
+
+      const body = request.postDataJSON() as { operationName?: string }
+
+      if (body.operationName === 'CreateCourseDiscussionThread') {
+        mutationStarted = true
+        await route.continue()
+        return
+      }
+
+      if (
+        mutationStarted &&
+        !refreshAborted &&
+        body.operationName === 'GetCourseDiscussionThreads'
+      ) {
+        refreshAborted = true
+        await route.abort('failed')
+        return
+      }
+
+      await route.continue()
+    })
+
+    await loginStudent()
+    await page.getByTestId(`course-button-${courseName}`).click()
+
+    const input = page.getByTestId('course-qa-thread-input')
+    await input.fill('Course Q&A refresh failure')
+    await page.getByTestId('course-qa-create-thread').click()
+
+    await expect(input).toHaveValue('')
+    await expect(
+      page.getByText(
+        'The action succeeded, but the discussion could not be refreshed. Please refresh the page.',
+        { exact: true }
+      )
+    ).toBeVisible()
+    expect(refreshAborted).toBe(true)
+  })
+
   test('Student upvotes their newly created thread and toggles it back off', async ({
     page,
     loginStudent,

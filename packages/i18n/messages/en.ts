@@ -941,6 +941,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       threadPostFailed:
         'Unable to post thread. Check permissions or embed settings.',
       threadPostError: 'Unable to post thread. Please try again.',
+      refreshError:
+        'The action succeeded, but the discussion could not be refreshed. Please refresh the page.',
       postRateLimited:
         "You're posting too quickly. Wait a moment and try again.",
       replyPostFailed:

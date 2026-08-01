@@ -117,7 +117,14 @@ function CourseDiscussionThreadCard({
 
       setReplyDraft('')
       setPostReplyAnonymous(false)
-      await onReplyCreated()
+      try {
+        await onReplyCreated()
+      } catch {
+        toast({
+          type: 'error',
+          message: t('pwa.courseQA.refreshError'),
+        })
+      }
     } catch {
       toast({
         type: 'error',
@@ -205,7 +212,14 @@ function CourseDiscussionThreadCard({
       }
 
       setPendingDeletion(null)
-      await onContentDeleted()
+      try {
+        await onContentDeleted()
+      } catch {
+        toast({
+          type: 'error',
+          message: t('pwa.courseQA.refreshError'),
+        })
+      }
     } catch {
       toast({
         type: 'error',

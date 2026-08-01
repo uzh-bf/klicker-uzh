@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   CourseDiscussionPostFailure,
   CreateCourseDiscussionThreadDocument,
+  DiscussionScopeType,
   DiscussionSort,
   GetCourseDiscussionThreadsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -10,6 +11,7 @@ import {
   getDiscussionSourceDisplayLabel,
   parseScopeKeyToInput,
 } from '@klicker-uzh/shared-components/src/discussionUtils'
+import { buildCourseDiscussionScopeKey } from '@klicker-uzh/types'
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useRef, useState } from 'react'
@@ -22,7 +24,7 @@ interface UseCourseDiscussionOptions {
 }
 
 function getCourseDiscussionScopeKey(courseId: string, scopeKey?: string) {
-  return scopeKey || `course:${courseId}`
+  return scopeKey || buildCourseDiscussionScopeKey(courseId)
 }
 
 function useCourseDiscussion({
@@ -64,9 +66,11 @@ function useCourseDiscussion({
   const parsedScopeInput = parseScopeKeyToInput(courseId, activeScopeKey)
   const canCreateThreadForActiveScope =
     Boolean(parsedScopeInput) &&
-    (activeScopeKey === `course:${courseId}` ||
-      activeScopeKey.startsWith('stack:') ||
-      (activeScopeKey.startsWith('ext:') && embedded && !!embedToken))
+    (parsedScopeInput?.scopeType === DiscussionScopeType.Course ||
+      parsedScopeInput?.scopeType === DiscussionScopeType.PracticeStack ||
+      (parsedScopeInput?.scopeType === DiscussionScopeType.ExternalBlock &&
+        embedded &&
+        !!embedToken))
 
   const threads = threadsData?.courseDiscussionThreads?.threads ?? []
   const courseDisplayLabel = t('shared.generic.course')
@@ -158,7 +162,14 @@ function useCourseDiscussion({
 
       setThreadDraft('')
       setPostThreadAnonymous(false)
-      await refetchThreads()
+      try {
+        await refetchThreads()
+      } catch {
+        toast({
+          type: 'error',
+          message: t('pwa.courseQA.refreshError'),
+        })
+      }
     } catch {
       toast({
         type: 'error',

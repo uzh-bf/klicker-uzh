@@ -15,7 +15,10 @@ import StudentElement, {
 } from '@klicker-uzh/shared-components/src/StudentElement'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStudentResponse'
-import { ChoicesResponse } from '@klicker-uzh/types'
+import {
+  buildPracticeStackDiscussionScopeKey,
+  ChoicesResponse,
+} from '@klicker-uzh/types'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -322,7 +325,7 @@ function ElementStack({
     stack.type === 'PRACTICE_QUIZ' &&
     isCourseQARolloutEnabled &&
     isCourseQAEnabled
-  const stackDiscussionScopeKey = `stack:${stack.id}`
+  const stackDiscussionScopeKey = buildPracticeStackDiscussionScopeKey(stack.id)
   const showInlineDiscussion =
     !previewOnly &&
     !isEmbeddedFlow &&

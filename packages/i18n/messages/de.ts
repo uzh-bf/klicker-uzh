@@ -944,6 +944,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beitrag konnte nicht erstellt werden. Überprüfen Sie die Berechtigungen oder Embed-Einstellungen.',
       threadPostError:
         'Beitrag konnte nicht erstellt werden. Bitte versuchen Sie es erneut.',
+      refreshError:
+        'Die Aktion war erfolgreich, aber die Diskussion konnte nicht aktualisiert werden. Bitte aktualisieren Sie die Seite.',
       postRateLimited:
         'Sie posten zu schnell. Warten Sie einen Moment und versuchen Sie es erneut.',
       replyPostFailed:
