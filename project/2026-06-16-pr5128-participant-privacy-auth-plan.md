@@ -74,7 +74,11 @@ Recommended recovery hierarchy:
 
 Implementation notes:
 
-- `@simplewebauthn/browser` and `@simplewebauthn/server` are present in `pnpm-lock.yaml` as transitive dependencies but are not declared in package manifests. Add direct pinned dependencies in the app/package that owns passkeys before implementation. Official docs: https://simplewebauthn.dev/docs/packages/server and https://simplewebauthn.dev/docs/advanced/passkeys
+- **Corrected 2026-08-01.** `@simplewebauthn/browser` and `@simplewebauthn/server` are not installed at all, transitively or otherwise. They appear in `pnpm-lock.yaml` only as optional unmet peers of `@auth/core`, pinned there to `browser ^9.0.1` / `server ^9.0.2`. Adding them is an architecture choice rather than a version pin, and this plan takes the standalone route: pin both packages at the current major (13.x) in whichever package owns non-assessment participant login, independent of `next-auth` and `@auth/core`.
+- The alternative — Auth.js's own WebAuthn provider — is ruled out on three counts. `apps/auth` runs `next-auth@4.24.14`, whose installed provider set contains no WebAuthn or passkey provider at all; that provider exists only in Auth.js v5, still published as `5.0.0-beta.*`; and `@auth/core` still peer-pins SimpleWebAuthn v9 in its newest release, so adopting it would mean a beta auth-library major *and* a four-major-old WebAuthn library. `@auth/core` is not a direct dependency anywhere in this repo — it arrives through `@auth/prisma-adapter` — so its v9 pin stays inert and constrains nothing.
+- Passkeys are non-assessment participant login only. Assessment login stays Edu-ID, and `apps/frontend-control` only redirects to `apps/auth` and serves lecturers, so the relying-party ID scopes to the PWA origin alone rather than to a shared parent domain. The trade-off is that a host-scoped RP ID does not carry to a second participant-facing origin if one is ever added, and does not survive a PWA domain change.
+- For implementers: the verification response shape changed at v11 (`AuthenticatorDevice` became `WebAuthnCredential`, and `registrationInfo.credentialID` moved to `registrationInfo.credential.id`), and `generateAuthenticationOptions()` gained a required `rpID` at v10. Auth.js's v9-era examples and current SimpleWebAuthn documentation are therefore not interchangeable.
+- Official docs: https://simplewebauthn.dev/docs/packages/server and https://simplewebauthn.dev/docs/advanced/passkeys
 
 ### Communication Surfaces in Current Code
 
@@ -416,7 +420,7 @@ The stored copies are the hard part. `snapshotHash` covers `subject.email`, and 
 8. Require a durable recovery method on the next non-live login, or after a short grace window:
    - Preferred: passkey.
    - Required fallback: downloadable recovery codes.
-   - Shared-device warning: do not create passkeys on lab/shared computers; use recovery codes instead.
+   - Shared-device warning, corrected 2026-08-01: do not create a **platform** passkey (Touch ID, Windows Hello) on a lab or shared computer, because the key is bound to that machine and whoever unlocks it next can authenticate as the student. A **cross-platform** passkey on the student's own phone or security key is the recommended pattern for shared devices — the private key never touches the shared machine. Steer this at registration through `authenticatorSelection.authenticatorAttachment` rather than discouraging passkeys outright; recovery codes are the fallback for students who have neither.
 9. Delete/consume challenge.
 
 Why no email reset: without storing at least an email hash linked to the participant, email cannot prove ownership of an existing account. Email can verify a mailbox for signup, but not recover an account later. The recovery contract must be passkey/recovery file/LTI.
@@ -1086,6 +1090,7 @@ Falls ein Konto für diese E-Mail-Adresse existiert, senden wir dir einen einmal
 ### Browser / E2E
 
 - PWA signup/login/recovery in non-assessment mode.
+- Run one real passkey registration and authentication round-trip against the running PWA origin before treating any passkey slice as done. That the relying-party ID is valid on the workspace-namespaced development domains is inferred from public-suffix rules and from the cookie-domain derivation already relied on for cross-app sessions, not from a browser round-trip — so it is the first thing to check, not the last.
 - LTI launch to non-assessment course through local verifier.
 - Assessment login through auth app and assessment PWA.
 - Lecturer assessment roster/results export.
