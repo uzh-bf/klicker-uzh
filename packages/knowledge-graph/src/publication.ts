@@ -93,12 +93,18 @@ export async function getPublishedKnowledgeGraph(
 
   const build = await prisma.kBGraphBuild.findUnique({
     where: { id: kb.publishedGraphBuildId },
-    select: { id: true, graphName: true, sourceContentDigest: true },
+    select: {
+      id: true,
+      kbId: true,
+      status: true,
+      graphName: true,
+      sourceContentDigest: true,
+    },
   })
 
-  // A published pointer with no build behind it leaves nothing to read, even
-  // though the KB believes a graph is published.
-  if (build === null) {
+  // The pointer is deliberately not a database relation. Treat it as untrusted
+  // state: only a completed build belonging to this KB can name a served graph.
+  if (build === null || build.kbId !== kbId || build.status !== 'SUCCEEDED') {
     throw new KnowledgeGraphNotPublishedError('EMPTY')
   }
 

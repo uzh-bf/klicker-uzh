@@ -14,6 +14,8 @@ type MockKB = {
 
 type MockBuild = {
   id: string
+  kbId: string
+  status: 'QUEUED' | 'PROCESSING' | 'SUCCEEDED' | 'FAILED'
   graphName: string
   sourceContentDigest: string
 } | null
@@ -60,6 +62,8 @@ describe('knowledge graph publication guard', () => {
       kb: { publishedGraphBuildId: 'build-1', resources: RESOURCES },
       publishedBuild: {
         id: 'build-1',
+        kbId: 'kb-id',
+        status: 'SUCCEEDED',
         graphName: 'klickeruzh:kb:kb-id:build-1',
         sourceContentDigest: CURRENT_DIGEST,
       },
@@ -85,6 +89,8 @@ describe('knowledge graph publication guard', () => {
       kb: { publishedGraphBuildId: 'build-1', resources: RESOURCES },
       publishedBuild: {
         id: 'build-1',
+        kbId: 'kb-id',
+        status: 'SUCCEEDED',
         graphName: 'klickeruzh:kb:kb-id:build-1',
         sourceContentDigest: 'digest-from-an-older-content-set',
       },
@@ -101,6 +107,8 @@ describe('knowledge graph publication guard', () => {
       kb: { publishedGraphBuildId: 'build-1', resources: RESOURCES },
       publishedBuild: {
         id: 'build-1',
+        kbId: 'kb-id',
+        status: 'SUCCEEDED',
         graphName: 'klickeruzh:kb:kb-id:build-1',
         sourceContentDigest: CURRENT_DIGEST,
       },
@@ -111,6 +119,49 @@ describe('knowledge graph publication guard', () => {
     await expect(getPublishedKnowledgeGraph(prisma, 'kb-id')).resolves.toEqual(
       expect.objectContaining({ buildId: 'build-1', isStale: false })
     )
+  })
+
+  it.each([
+    [
+      'a queued build',
+      {
+        id: 'build-1',
+        kbId: 'kb-id',
+        status: 'QUEUED' as const,
+        graphName: 'klickeruzh:kb:kb-id:build-1',
+        sourceContentDigest: CURRENT_DIGEST,
+      },
+    ],
+    [
+      'a failed build',
+      {
+        id: 'build-1',
+        kbId: 'kb-id',
+        status: 'FAILED' as const,
+        graphName: 'klickeruzh:kb:kb-id:build-1',
+        sourceContentDigest: CURRENT_DIGEST,
+      },
+    ],
+    [
+      'a build owned by another KB',
+      {
+        id: 'build-1',
+        kbId: 'other-kb',
+        status: 'SUCCEEDED' as const,
+        graphName: 'klickeruzh:kb:other-kb:build-1',
+        sourceContentDigest: CURRENT_DIGEST,
+      },
+    ],
+  ])('rejects a published pointer to %s', async (_, publishedBuild) => {
+    const promise = getPublishedKnowledgeGraph(
+      mockPrisma({
+        kb: { publishedGraphBuildId: 'build-1', resources: RESOURCES },
+        publishedBuild,
+      }),
+      'kb-id'
+    )
+
+    await expect(promise).rejects.toMatchObject({ code: 'EMPTY' })
   })
 
   it.each([

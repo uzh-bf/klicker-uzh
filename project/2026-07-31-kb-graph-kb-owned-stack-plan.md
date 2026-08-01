@@ -22,8 +22,8 @@ Base: `kb-poc` @ `38625cbbf`. Worktree: `trees/kb-graph-stack`. Gate 1 approved 
 - R8 Build controls in a dedicated card in `KnowledgeBaseDetail`.
 - R9 Stale label is **lecturer-only**, on KB and graph views. Students get no staleness signal. (Narrows the 2026-07-30 "every graph-backed feature" ruling.)
 - R10 One ADR, establishing `docs/adr/`.
-- R11 Nothing lands in FalkorDB until complete; finished graph written in one step. Versioning via GraphML export to Blob.
-- R12 GraphML under a reserved prefix in the owner's KB container, excluded from resource quota, bounded retention swept by `kbMaintenance`.
+- R11 Nothing lands in FalkorDB until complete; every build writes to its own recorded graph name and the published pointer moves only to a successful build. Versioning via GraphML export to Blob.
+- R12 GraphML under a reserved prefix in the owner's KB container, excluded from resource quota. After a bounded grace period, `kbMaintenance` sweeps both GraphML and any graph name that is neither active nor published.
 - R13 Lecturer viewer in KB workspace **and** student viewer in chat, both KB-owned.
 - R14 Carry Patrick's 25 commits by squashing to ~5 layer-aligned commits (him as author), rebased onto `kb-poc`, then refactor forward.
 
@@ -57,12 +57,12 @@ Each layer is independently functional, independently reviewable, green at its o
 
 - **Schema.** Drop `ChatbotKnowledgeGraph`. Add `KBGraphBuild`, an append-only attempt ledger mirroring `KBIngestionRun` (client-supplied uuid id = idempotency key; `status`, `qualityTier`, `sourceContentDigest`, `graphName`, `graphmlBlobName`, `externalOperationId`, `externalStartedAt`, `statusMessage`, `errorCode`, `startedAt`, `finishedAt`). On `KB`, two plain uuid columns following the `ingestionAttemptId` precedent — `activeGraphBuildId` (the single-slot claim target for R1) and `publishedGraphBuildId` (what FalkorDB currently serves, R11). Enums `KBGraphBuildStatus` (QUEUED/PROCESSING/SUCCEEDED/FAILED/SUPERSEDED — timeouts are FAILED with an error code, keeping the enum aligned with `KBIngestionStatus`) and `KBGraphQualityTier`. Fresh migration; the parked `20260720150000_chatbot_knowledge_graph` is not ported.
 - **Digest (R2).** Compute over the active serving set — `resourceId` + `activeContentSha256` of every non-deleted resource with an active hash — on demand, no column on `KB`. A pending replacement never suppresses the revision still serving RAG.
-- **Identity.** `getKnowledgeGraphName(chatbotId)` → `kb:<kbId>`; `graphSession` and `getPublishedKnowledgeGraph` re-scoped to `kbId`. These are the only three seams the reader exposes.
+- **Identity.** `getKnowledgeGraphName(kbId, buildId)` → `klickeruzh:kb:<kbId>:<buildId>`; each completed build records its own graph name, while `graphSession` and `getPublishedKnowledgeGraph` are re-scoped to `kbId`. These are the only three seams the reader exposes.
 - **Publication rule (R11).** The parked rule returned `DIRTY` = not published. Invert it: a build whose digest no longer matches the KB still serves; staleness is a label, not an outage.
 
 `docs/domain-model.md` lands with this refactor, where its prose becomes true. Green at its own tip: `check`, `lint`, and the package's vitest run in-container.
 
-**L3 `feat/kb-graph-lifecycle`** — replace the direct Hatchet generation bridge with external-service dispatch on the pinned manifest (R4), reconciliation (R5), timeout release, GraphML export recording and retention sweep in `kbMaintenance` (R12), quality-tier config mapping (R7); GraphQL status/rebuild/read ops re-pointed at the KB with KB-edit authorization.
+**L3 `feat/kb-graph-lifecycle`** — replace the direct Hatchet generation bridge with external-service dispatch on the pinned manifest (R4), reconciliation (R5), timeout release, GraphML export plus retention sweep of only unreferenced, non-active/non-published graph names in `kbMaintenance` (R12), quality-tier config mapping (R7); GraphQL status/rebuild/read ops re-pointed at the KB with KB-edit authorization.
 
 **L4 `feat/kb-graph-manage-ui`** — move build controls from `ChatbotKnowledgeGraphPanel` to a dedicated card in `KnowledgeBaseDetail` (R8): status, stale label (R9), tier selector, rebuild with cost stated; lecturer viewer keeping Patrick's Cytoscape presentation and accessible DOM fallback.
 
@@ -94,3 +94,4 @@ Each layer is independently functional, independently reviewable, green at its o
 - 2026-08-01: Independent L1 review found that a platform-refresh ledger row could displace a concurrent lecturer attempt in the polled resource projection. The connection and its status filter now dereference `KBResource.ingestionAttemptId`; focused real-PostgreSQL `knowledge.test.ts` plus `knowledgeWebhooks.test.ts` pass 73/73 and GraphQL typecheck passes.
 - 2026-08-01: Separate simplification review over `ed2cba55d..35988b8d2` found no actionable reduction. Gate 2 is approved and L2 is rebasing onto L1; revalidation is pending.
 - 2026-08-01: L2 rebased cleanly onto L1. Its R2 digest now follows every non-deleted `activeContentSha256`, not the latest resource status, so a queued or processing replacement cannot omit its still-serving revision. The graph package passes 68 focused tests and typecheck; Prisma sync, workspace `check` (26/26), syncpack, Prettier, documentation validation, and the production build (23/23) pass. Workspace lint remains blocked only by the known analytics `pandas==2.2.2` C-compiler environment failure. Independent L2 review and simplification remain pending.
+- 2026-08-01: Independent L2 review required the reader to reject a pointer to a foreign or non-successful build and Turbo to retain `KB_FALKORDB_*` configuration. The follow-up adds queued, failed, and foreign-pointer coverage (71 graph tests), records the pointer invariant in `klicker-data-model`, and aligns the per-build graph-name and bounded-retention contract. Focused tests, workspace `check` (26/26), documentation validation, and the production build (23/23) pass; separate L2 simplification remains pending.
