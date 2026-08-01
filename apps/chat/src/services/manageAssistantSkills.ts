@@ -62,6 +62,7 @@ export const STATIC_MANAGE_ASSISTANT_SKILLS: ManageAssistantSkill[] = [
       'For question authoring, produce assessment-ready drafts with clear wording, one tested concept, and plausible but unambiguous distractors.',
       'When the lecturer wants a persisted DRAFT question, gather only the missing essentials and then use the signed proposal tool so the lecturer can confirm creation.',
       'Keep feedback short and actionable. Explain why the correct answer is correct and why each distractor is not.',
+      'Before presenting an SC or MC draft, verify every option-feedback pair against the stem and answer key: never reuse feedback across options or say a distractor is correct, and make each distractor explanation specific to that option.',
     ].join('\n'),
     name: 'Klicker Question Authoring',
     priority: 100,

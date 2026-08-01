@@ -37,6 +37,12 @@ describe('Manage assistant runtime helpers', () => {
       'omit status and type filters unless the lecturer explicitly asks'
     )
     expect(prompt).toContain('Do not expose raw tool JSON or raw UUIDs')
+    expect(prompt).toContain(
+      'stay scoped to the requested status, type, and content'
+    )
+    expect(prompt).toContain(
+      'do not add unrelated course, activity, or other-question details'
+    )
     expect(prompt).not.toContain('secret')
   })
 

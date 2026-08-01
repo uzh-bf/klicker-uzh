@@ -75,6 +75,9 @@ describe('Manage assistant skills', () => {
       'https://www.klicker.uzh.ch/use_cases/chatbot_tutoring/'
     )
     expect(prompt).toContain('entryId/0_ugtkafd3')
+    expect(prompt).toContain(
+      'verify every option-feedback pair against the stem and answer key'
+    )
     expect(prompt).not.toContain('[trimmed]')
   })
 })
