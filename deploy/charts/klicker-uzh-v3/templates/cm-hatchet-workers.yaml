@@ -1,4 +1,7 @@
 {{- $fullName := include "chart.fullname" . -}}
+{{- if and .Values.hatchet.kbGraph.workflowName (empty .Values.backendGraphql.knowledgeGraph.host) }}
+{{- fail "backendGraphql.knowledgeGraph.host must be configured when hatchet.kbGraph.workflowName is enabled" }}
+{{- end }}
 apiVersion: v1
 kind: ConfigMap
 metadata:

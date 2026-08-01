@@ -412,7 +412,6 @@ type TimedOutKBGraphBuild = {
   sourceContentDigest: string
   createdAt: Date
   externalOperationId: string
-  kb: { activeGraphBuildId: string | null }
 }
 
 async function recordIneligibleLateSuccess(
@@ -444,21 +443,21 @@ async function acceptLateKBGraphSuccess(
   finishedAt: Date
 ): Promise<void> {
   await prisma.$transaction(async (tx) => {
-    const lockedKb = await tx.$queryRaw<Array<{ id: string }>>`
-      SELECT "id"
+    const lockedKb = await tx.$queryRaw<
+      Array<{
+        id: string
+        activeGraphBuildId: string | null
+        deletedAt: Date | null
+      }>
+    >`
+      SELECT "id", "activeGraphBuildId", "deletedAt"
       FROM "public"."KB"
       WHERE "id" = CAST(${build.kbId} AS UUID)
       FOR UPDATE
     `
-    if (lockedKb.length !== 1) {
-      return
-    }
-
-    const currentKb = await tx.kB.findUnique({
-      where: { id: build.kbId },
-      select: { activeGraphBuildId: true, deletedAt: true },
-    })
+    const currentKb = lockedKb[0]
     if (
+      lockedKb.length !== 1 ||
       !currentKb ||
       currentKb.deletedAt !== null ||
       currentKb.activeGraphBuildId !== null
@@ -487,6 +486,19 @@ async function acceptLateKBGraphSuccess(
       )
       return
     }
+
+    // Resource refresh webhooks lock only their resource row. Lock every
+    // current resource after the KB row so a serving hash cannot change while
+    // the pinned digest is checked. Resource creation/deletion already takes
+    // the KB row lock, so the set cannot change around this snapshot.
+    await tx.$queryRaw<Array<{ id: string }>>`
+      SELECT resource."id"
+      FROM "public"."KBResource" AS resource
+      WHERE resource."kbId" = CAST(${build.kbId} AS UUID)
+        AND resource."deletedAt" IS NULL
+      ORDER BY resource."id" ASC
+      FOR UPDATE OF resource
+    `
 
     const currentDigest = await computeKBContentDigest(tx, build.kbId)
     if (currentDigest !== build.sourceContentDigest) {
@@ -607,7 +619,6 @@ export async function monitorActiveKBGraphBuilds(
       sourceContentDigest: true,
       createdAt: true,
       externalOperationId: true,
-      kb: { select: { activeGraphBuildId: true } },
     },
     orderBy: { createdAt: 'asc' },
     ...(timedOutOffset > 0 ? { skip: timedOutOffset } : {}),

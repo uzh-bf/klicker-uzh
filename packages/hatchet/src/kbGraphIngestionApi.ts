@@ -6,6 +6,7 @@ import {
   StorageSharedKeyCredential,
 } from '@azure/storage-blob'
 import { HatchetClient } from '@hatchet-dev/typescript-sdk'
+import { getKnowledgeGraphConfig } from '@klicker-uzh/knowledge-graph'
 import {
   KBGraphQualityTier,
   KBResourceType,
@@ -247,6 +248,7 @@ export function validateKBGraphWorkerConfig(
   }
 
   getExternalKBGraphConfig(env)
+  getKnowledgeGraphConfig(env)
   getKBGraphTimeoutSeconds(env)
   getKBGraphQualityConfig(KBGraphQualityTier.STANDARD, env)
   getKBGraphQualityConfig(KBGraphQualityTier.HIGH, env)

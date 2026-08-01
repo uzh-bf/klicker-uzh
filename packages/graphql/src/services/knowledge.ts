@@ -1962,17 +1962,7 @@ export async function rebuildKbKnowledgeGraph(
     if (kb.activeGraphBuildId) {
       const activeBuild = await prisma.kBGraphBuild.findFirst({
         where: { id: kb.activeGraphBuildId, kbId },
-        select: {
-          id: true,
-          status: true,
-          statusMessage: true,
-          qualityTier: true,
-          sourceContentDigest: true,
-          startedAt: true,
-          finishedAt: true,
-          createdAt: true,
-          updatedAt: true,
-        },
+        select: KB_GRAPH_BUILD_CONFIG_SELECT,
       })
       if (
         activeBuild &&
@@ -2040,17 +2030,7 @@ export async function rebuildKbKnowledgeGraph(
           })),
         },
       },
-      select: {
-        id: true,
-        status: true,
-        statusMessage: true,
-        qualityTier: true,
-        sourceContentDigest: true,
-        startedAt: true,
-        finishedAt: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: KB_GRAPH_BUILD_CONFIG_SELECT,
     })
     const claimed = await prisma.kB.updateMany({
       where: { id: kbId, activeGraphBuildId: null },

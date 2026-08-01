@@ -42,6 +42,10 @@ const externalEnv = {
   KB_GRAPH_STANDARD_CLEANING_MODEL: 'klickeruzh/azure/gpt-4.1-nano',
   KB_GRAPH_HIGH_GENERATION_MODEL: 'klickeruzh/azure/gpt-5.4-high',
   KB_GRAPH_HIGH_CLEANING_MODEL: 'klickeruzh/azure/gpt-4.1',
+  KB_FALKORDB_HOST: 'falkordb.other',
+  KB_FALKORDB_PORT: '6379',
+  KB_FALKORDB_TLS: 'false',
+  KB_FALKORDB_QUERY_TIMEOUT_MS: '5000',
 }
 
 function createBuild(overrides: Record<string, unknown> = {}) {
@@ -157,7 +161,11 @@ function createMonitorPrisma(
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
     kBResource: { findMany: vi.fn().mockResolvedValue(servingResources) },
-    $queryRaw: vi.fn().mockResolvedValue([{ id: KB_ID }]),
+    $queryRaw: vi
+      .fn()
+      .mockResolvedValue([
+        { id: KB_ID, activeGraphBuildId: null, deletedAt: null },
+      ]),
     $transaction: vi.fn(),
   }
   prisma.$transaction.mockImplementation(async (callback) => callback(prisma))
@@ -463,7 +471,6 @@ describe('KB graph external reconciliation', () => {
           sourceContentDigest: matchingDigest,
           createdAt: CREATED_AT,
           externalOperationId: 'external-run-id',
-          kb: { activeGraphBuildId: null },
         },
       ],
       servingResources: [
@@ -509,7 +516,6 @@ describe('KB graph external reconciliation', () => {
           sourceContentDigest: SOURCE_DIGEST,
           createdAt: CREATED_AT,
           externalOperationId: 'external-run-id',
-          kb: { activeGraphBuildId: null },
         },
       ],
       servingResources: [
