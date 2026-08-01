@@ -4,6 +4,7 @@ import {
   CreateGroupActivityDocument,
   EditGroupActivityDocument,
   Element,
+  ElementType,
   GroupActivity,
   ParameterType,
 } from '@klicker-uzh/graphql/dist/ops'
